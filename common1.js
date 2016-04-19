@@ -1569,8 +1569,8 @@ SSML=・               ~TR/speech-synthesis11/\n\
 STREAMS=主            ~/Streams-ja.html\n\
 STREAMS=・            streams.spec.whatwg.org/\n\
 STREAMS=・            github.com/whatwg/streams\n\
-SVG2=主               www.hcn.zaq.ne.jp/___/SVG11-2nd/●Version 1 日本語訳\n\
-SVG=主                www.hcn.zaq.ne.jp/___/SVG11-2nd/\n\
+SVG2=副               triple-underscore.github.io/SVG11/●Version 1 日本語訳\n\
+SVG=主                triple-underscore.github.io/SVG11/\n\
 TYPEDARRAY=主         ~/TypedArray-ja.html\n\
 TYPEDARRAY=版         www.khronos.org/registry/typedarray/specs/latest/\n\
 TOUCHEVENTS=主        ~/touch-events-ja.html\n\
@@ -1628,8 +1628,8 @@ COMMON_DATA.REF_DATA2 = '\n\
 ~TR/CSS2/●        ~momdoG/css2/\n\
 ~CSSWG/css2/●     ~momdoG/css2/\n\
 	SVG (@ 不可)\n\
-~TR/SVG/●         www.hcn.zaq.ne.jp/___/SVG11-2nd/\n\
-~TR/SVG11/●       www.hcn.zaq.ne.jp/___/SVG11-2nd/\n\
+~TR/SVG/●         triple-underscore.github.io/SVG11/\n\
+~TR/SVG11/●       triple-underscore.github.io/SVG11/\n\
 	HTML (@ 不可)\n\
 ~HTML5/●          ~momdoG/html/\n\
 ~TR/html5/●       ~momdoG/html5/\n\
