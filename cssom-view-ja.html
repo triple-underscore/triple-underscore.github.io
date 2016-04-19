@@ -1,0 +1,7845 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<title>CSSOM View Module （日本語訳）</title>
+<meta name="keywords" content="CSSOM,DOM,view,仕様,W3C">
+
+<link rel="stylesheet" href="common.css" type="text/css" />
+<link rel="stylesheet" href="common-css.css" type="text/css" />
+<script src="common0.js" ></script>
+<script src="common1.js" async></script>
+
+<script>
+
+var source_data;
+
+COMMON_DATA.page_state_key = '___CSS';
+COMMON_DATA.init = function(expanded){
+	var options = {
+		original_url: 'https://drafts.csswg.org/cssom-view/',
+		spec_status: 'WD',
+		main: 'MAIN',
+		hash_case_modified: 'dfn',
+		fill_text_link: '#_versions > dd, #references dd',
+		alt_refs: 'references',
+		ref_id_prefix: 'biblio-',
+		ref_id_lowercase: true,
+	};
+
+	if(expanded) return options;
+
+	source_data = {
+		html: E('MAIN').innerHTML,
+		link_map: Util.getMapping('_link_map'),
+		levels: '英語主体:英語寄り:漢字主体:カナ主体',
+		level: 2,
+		generate: expand
+	};
+	Util.switchWordsInit(source_data);
+	Util.DEFERRED.push(init2);
+
+//	Util.del_j(); // checked: 160401 spec
+
+	return options;
+}
+
+function expand(mapping1){
+
+	var class_map = {
+		e: 'element',
+		a: 'attr',
+		et: 'event-type',
+		mb: 'dictionary-member',
+		opf: 'dictionary-member',
+//		l: 'literal',
+		p: 'property',
+		css: 'css',
+		v: 'value',
+		tnote: 'trans-note'
+	};
+
+	var tag_map = {
+		I: 'code',
+		m: 'code',
+		mb: 'code',
+		opf: 'code',
+		et: 'code',
+		e: 'code',
+		a: 'code',
+		p: 'code',
+		css: 'code',
+		c: 'code',
+		v: 'code',
+		V: 'var',
+		tnote: 'span'
+	};
+
+	var link_map = this.link_map;
+	var nesting = '';
+	var in_idl = false;
+	var idl_ifc = '';
+
+	if(!source_data.diagrams){
+		source_data.diagrams = Object.create(null);
+		repeat('#_resources > *[id]', function(e){
+			source_data.diagrams[e.id] = e;
+		});
+	}
+	Util.removeParts(source_data.diagrams);
+
+	E('MAIN').innerHTML = Util.replaceWords1(
+		this.html.replace(
+			/⇒！?|◎[^<◎`]*|%[\w\u4E00-\u9FFF~]+|`(.+?)([$@!\^])(\w*)/g,
+			create_html
+		),
+		mapping1
+	);
+
+	Util.rebuildToc('MAIN', '_toc_list0');// 目次構築
+	Util.replaceParts(source_data.diagrams);// 挿入
+
+	function create_html(match, key, indicator, klass){
+
+if(!key) {
+//	var t = match.charAt(0);
+	switch(match[0]){
+	case '%':
+		return '<var>' + match.slice(1) + '</var>';
+	case '⇒':
+		if(match[1] === '！'){
+			in_idl = true;
+			nesting += '</pre>';
+			return '<pre class="idl">';
+		} else {
+			nesting += '</span>';
+			return '：<span class="block">';
+		}
+	}//◎
+	var result = nesting;
+	if(in_idl) {
+		in_idl = false;
+	} else {
+		result += '<span lang="en">' + match.slice(1) + '</span>';
+	}
+	nesting = '';
+	return result;
+}
+
+var text = key;
+var href = '';
+var classname = class_map[klass];
+var tag = tag_map[klass];
+
+switch(klass){
+case '': // plain
+	if(indicator === '^'){
+		return mapping1[key] || '＊＊';// remap
+	}
+	break;
+case 'r': // ref
+	text = '[' + key + ']';
+	href = '#biblio-' + key.toLowerCase();
+	break;
+case 'I': // IDL interface
+	if((indicator === '@') || (indicator === '!')){
+		idl_ifc = key;
+	}
+	href = '#' + key.toLowerCase();
+	if(in_idl) tag = '';
+	break;
+	
+case 'mb': // IDL dictionary member
+case 'm': // IDL member
+	var n = text.indexOf('(');
+	if(n > 0){
+		key = text.slice(0, n);
+		text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
+	}
+	href = '#dom-' + (
+		(key === idl_ifc) ? idl_ifc : (idl_ifc + '-' + key)
+	).toLowerCase();
+	if(in_idl) tag = '';
+	break;
+case 'l': // literal
+	text = '"<code class="literal">' + text + '</code>"'
+	break;
+case 'v': // variables
+	break;
+case 'dgm':
+	return '<a id="_dgm-' + key + '">＊</a>'
+	break;
+case 'tnote': 
+	text = '【' + text + '】';
+	break;
+default: //
+	break;
+}
+
+if(tag) {
+	text = '<' + tag + (
+		classname ? ' class="' + classname + '"' : ''
+	) + '>' + text + '</' + tag + '>';
+}
+
+
+if(indicator !== '^'){
+	href = link_map[klass ? (klass + '.' + key) : key] || href;
+	if(!href){
+		console.log(match); // check error
+		return match;
+	}
+
+	switch(indicator){
+	case '!':
+	case '$':
+		text = '<a href="' + href + '">' + text + '</a>';
+		break;
+	case '@':
+//		href = href_data_map[key] || href;
+		text = '<dfn id="' + href.slice(1) + '">' + text + '</dfn>';
+		break;
+	default:
+		console.log(match);
+		return match;
+	}
+}
+return text;
+
+	}
+}
+
+</script>
+
+
+<!--%testing demos -->
+<script>
+function init2(){
+	repeat('input[data-params]', function(e){
+		var event = e.getAttribute('data-event') || 'click';
+		e.addEventListener(event, display_attrs, false);
+	});
+
+	var DATA = {
+		Window:{
+			event_type: ['scroll', 'resize'],
+			obj: function(){return window;},
+			attrs: 'screen innerWidth innerHeight scrollX pageXOffset scrollY pageYOffset screenX screenY outerWidth outerHeight devicePixelRatio'
+		},
+		MediaQueryList:{
+			obj:
+function(){
+  var v = E('_test-mql_text').value.replace(/\'/g, '\"');
+  this.src = 'window.matchMedia(\'' + v + '\')';
+  return window.matchMedia(v);
+},
+			attrs: 'media matches'
+		},
+		Screen:{
+			obj: function(){return window.screen;},
+			attrs: 'availWidth availHeight width height colorDepth pixelDepth'
+		},
+		'Element.scrollIntoView':{
+			obj:
+function(){
+	var top = E('_test-scrollIntoView-top').checked;
+	var tag_name = E('_test-scrollIntoView-tagName').value;
+	var pos = {x: window.scrollX, y: window.scrollY};
+  //= var tag_name= ..., top = ... ;
+  var e = document.getElementsByTagName(tag_name);
+  e = e.item(Math.floor(Math.random() * e.length));
+  e.scrollIntoView(top);//=
+
+	select(e);
+	revert_pos = pos;
+	return (
+		'element.scrollIntoView(' + top + ')\n（クリックで元の位置へ復帰）'
+	);
+}
+		},
+
+		'Element.scrollIntoView0':{
+			obj:
+function(){
+	var behavior = E('_test-scrollIntoView-behavior').value;
+	var block = E('_test-scrollIntoView-block').value;
+	var inline = E('_test-scrollIntoView-inline').value;
+	var pos = {x: window.scrollX, y: window.scrollY};
+  //= var tag_name= ... , behavior = ... , block = ... ;
+  var e = document.getElementsByTagName(tag_name);
+  e = e.item(Math.floor(Math.random() * e.length));
+  e.scrollIntoView({
+    behavior: behavior,
+    block: block,
+    inline: inline
+  });//=
+
+	select(e);
+	revert_pos = pos;
+	return (
+		'element.scrollIntoView( { behavior: "' + behavior + '", block: "' + block + '" } )\n（クリックで元の位置へ復帰）'
+	);
+}
+		},
+
+		'Window.scroll':{
+			obj:
+function(){
+	var x, y, e;
+	e = E('_test-scroll-x');
+	e.value = x = parseInt(e.value);
+	e = E('_test-scroll-y');
+	e.value = y = parseInt(e.value);
+
+	var pos = {x: window.scrollX, y: window.scrollY};
+	var method_name = '';
+	repeat('input[name="_test-scroll-fn"]', function(e){
+		if(e.checked){
+			method_name = e.id.slice('_test-scroll-'.length);
+		}
+	})
+	if(!method_name) return;
+//=
+	window[method_name](x, y);//=
+
+	revert_pos = pos;
+	return(
+		method_name + '(' + x + ',' + y + ')'
+		+ '\n（クリックで元の位置へ復帰）' 
+	);
+}
+		},
+		Element:{
+			event_type: 'mouseover',
+			obj: function(event){return event.target;},
+			attrs: 'scrollTop scrollLeft scrollWidth scrollHeight clientTop clientLeft clientWidth clientHeight'
+		},
+		HTMLElement:{
+			event_type: 'mouseover',
+			obj: function(event){return event.target;},
+			attrs: 'offsetParent offsetTop offsetLeft offsetWidth offsetHeight'
+		},
+		'Selection.getBoundingClientRect':{
+			event_type: ['mousemove', 'keyup'],
+// https://developer.mozilla.org/en-US/docs/DOM/Selection
+// chrome はテキスト未選択時に getRangeAt がエラーを投出
+			obj:
+function(){//=
+  var selection = document.getSelection();
+  return selection.isCollapsed? {} :
+    selection.getRangeAt(0).getBoundingClientRect();//=
+},
+			attrs: 'top right bottom left width height'
+		},
+		'Selection.getClientRects':{
+			event_type: ['mousemove', 'keyup'],
+			obj:
+function(){//=
+  var selection = document.getSelection();
+  return selection.isCollapsed? {} :
+    selection.getRangeAt(0).getClientRects();//=
+},
+			attrs: 'length'
+		},
+		MouseEvent:{
+			event_type: 'mousemove',
+			obj: function(event){return event;},
+			attrs: 'screenX screenY pageX pageY clientX clientY x y offsetX offsetY'
+		},
+		ClientRect:{
+			event_type: 'mouseover',
+			obj: function(event){return event.target.getBoundingClientRect();},
+			attrs: 'top right bottom left width height'
+		},
+		getClientRects:{
+			event_type: 'mouseover',
+			obj: function(event){return event.target.getClientRects();},
+			attrs: 'length'
+		},
+		elementFromPoint:{
+			event_type: 'mousemove',
+			obj:
+function(event){
+  select(//=
+    document.elementFromPoint(event.clientX, event.clientY)//=
+  );
+}
+		},
+		elementsFromPoint:{
+			event_type: 'mousemove',
+			obj:
+function(event){
+  return document.elementsFromPoint(event.clientX, event.clientY);
+},
+			attrs: 'length'
+		},
+		caretPositionFromPoint:{
+			event_type: 'mousemove',
+			obj:
+function(event){
+  return document.caretPositionFromPoint(event.clientX, event.clientY);
+},
+			attrs: 'offsetNode offset'
+		},
+		NULL:{}
+	};
+
+	var revert_pos = null;
+	var interface_name = null;
+	var current_elem = null;
+
+//	display_attrs = 
+	function display_attrs(event){
+		var key = event.currentTarget.getAttribute('data-params');
+		interface_name = key;
+		revert_pos = null;
+
+		window.addEventListener('click', disable_view, true);
+		if(! ('event_type' in DATA[key])) {
+			show_attrs();
+			interface_name = null;
+			return;
+		}
+		switch(key){
+		case 'Window':
+		case 'Selection.getBoundingClientRect':
+		case 'Selection.getClientRects':
+			show_attrs();
+		}
+		enable_listener(true);
+	}
+
+	E('_test-mql_text').onfocus = function(){
+		E('_test-mql_text').onfocus = null;
+		var mql_options = E('_MQL_options');
+		mql_options.firstChild.data.split(';').forEach(function(mq){
+			var option = C('option');
+			option.textContent = mq.trim();
+			mql_options.appendChild(option);
+		});
+	}
+
+return;
+
+//	var select = document.body.classList ? select1 : function(){};
+	function select(e){
+		hilight(false);
+		current_elem = e;
+		hilight(true);
+		function hilight(h){
+			if(!current_elem) return;
+			// outline style はどの要素からも利用されていないものと見なす
+			current_elem.style.outline = h ? 'solid red 1px' : '';
+		}
+	}
+
+	function enable_listener(enable){
+		var types = interface_name && DATA[interface_name].event_type;
+		if(!types) return;
+		if(typeof(types) === 'string'){
+			types = [types];
+		}
+		types.forEach(function(type){
+			enable?
+				window.addEventListener(type, show_attrs, false):
+				window.removeEventListener(type, show_attrs, false);
+		});
+	}
+
+	function disable_view(event){
+		E('_info-view').className = '';
+		enable_listener(false);
+		window.removeEventListener('click', disable_view, true);
+		select(null);
+		if(revert_pos) {
+			if(!event.target.onclick){
+				window.scrollTo(revert_pos.x, revert_pos.y);
+			}
+			revert_pos = null;
+		}
+	}
+
+	function show_attrs(event){
+		var obj;
+		var data = DATA[interface_name];
+		try {
+			obj = data.obj(event);
+		} catch(e){
+			show_text('次の実行に失敗：\n  ' + source_of(data));
+			enable_listener(false);
+			return;
+		}
+		if(!obj) return;
+		var texts = [];
+		if(typeof(obj) === 'string'){
+			texts[0] = obj;
+		} else if('attrs' in data){
+			texts = ['● オブジェクト：', source_of(data), '● 属性：'];
+			var attrs = data.attrs;
+			if(typeof(attrs) === 'string'){
+				attrs = data.attrs = attrs.split(' ');
+			}
+			attrs.forEach(function(name){
+				texts.push(
+					(name + '                     ').slice(0, 18) + 
+					': ' + obj[name]
+				)
+			});
+		}
+		if(event && (event.type === 'mouseover')){
+			select(event.target);
+		}
+		show_text(texts.join('\n'));
+	}
+	
+	function show_text(text){
+		E('_info-box').textContent = text;
+		E('_info-view').className = 'show';
+	}
+
+	function source_of(data){
+		if('src' in data) return data.src;
+		var s = data.obj.toString ?
+			data.obj.toString() : '(ソースコードを取得できません。)';
+		var m = s.match(/\/\/=([^\0]+)\/\/=|return\s([^;}]+)/);
+		return data.src = ((m && (m[1] || m[2])) || s).trim();
+	}
+
+}
+
+</script>
+
+
+<!--% 訳文 id → 原文 id -->
+<script type="text/plain" id="_original_id_map">
+
+</script>
+<!-- ＊
+	IDL 内部:
+	dom-Window-moveTo:dom-window-movetox-y
+	dom-Window-moveBy:dom-window-movebyx-y
+	dom-Window-resizeTo:dom-window-resizetox-y
+	dom-Window-resizeBy:dom-window-resizebyx-y
+	dom-Window-scroll:dom-window-scrolloptions
+	dom-Window-scrollBy:dom-window-scrolloptions
+	dom-Document-elementFromPoint:dom-document-elementfrompointx-y
+	dom-Document-elementsFromPoint:dom-document-elementsfrompointx-y
+
+//	Util.del_j(); //checked 2015-01-22 spec
+		toc: 'toc',
+		hash_case_modified: 'dfn',
+-->
+
+<!--% リンク定義 -->
+<script type="text/plain" id="_link_map">
+
+同じ側:#_same-side
+有効~横幅:#_effective-width
+有効~縦幅:#_effective-height
+文書:#_document
+
+r.DOM:#biblio-whatwg-dom
+
+	potentially scrollable:#potentially-scrollable
+~scroll可能になり得る:#potentially-scrollable
+~scroll可能になり得ない:#potentially-scrollable
+~padding辺:#padding-edge
+~border辺:#border-edge
+~margin辺:#margin-edge
+~resize手続き:#run-the-resize-steps
+根~要素:#root-element
+~scrollさせる:#scroll-an-element
+~scroll処理待ち~list:#pending-scroll-event-targets
+~scroll手続き:#run-the-scroll-steps
+~supportされる~open_m特色機能~名:#supported-open-feature-name
+媒体~query~list:#media-query-list
+媒体~queryを評価して変化を報告する:#evaluate-media-queries-and-report-changes
+mq.媒体:#mediaquerylist-media
+mq.文書:#mediaquerylist-document
+mq.合致状態:#mediaquerylist-matches-state
+有限~値に正規化-:#normalize-non-finite-values
+頁~zoom:#page-zoom
+~pinch~zoom:#pinch-zoom
+
+
+要素を~scrollさせる:#scroll-an-element
+瞬時に:#concept-instant-scroll
+滑らか:#concept-smooth-scroll
+滑らかに~scroll:#concept-smooth-scroll
+滑らかな~scroll:#concept-smooth-scroll
+~scrollを遂行する:#perform-a-scroll
+
+内容~辺:#content-edge
+~margin辺:#margin-edge
+~padding辺:#padding-edge
+境界辺:#border-edge
+~scrolling区画:#scrolling-area
+~scrolling~box:#scrolling-box
+~canvas:#canvas
+表示域:#viewport
+初期~包含塊:#initial-containing-block
+内容:#content
+文書~内容:#document-content
+開始辺:#beginning-edges
+終止辺:#ending-edges
+
+原点:#concept-geometry-rectangle-origin
+x 座標:#concept-geometry-rectangle-x-coordinate
+y 座標:#concept-geometry-rectangle-y-coordinate
+横幅:#concept-geometry-rectangle-width
+縦幅:#concept-geometry-rectangle-height
+
+座標系変換:#transforms
+矩形:#concept-geometry-rectangle
+
+V.要素:#_element
+V.文書:#_document
+
+~layout~box:#layout-box
+CSS ~layout~box:#css-layout-box
+SVG ~layout~box:#svg-layout-box
+	媒体~query~list ~listenerの~list:#list-of-media-query-list-listeners
+	媒体~query~list :#media-query-list
+~caret位置:#caret-position
+~caret~node:#caret-node
+~caret~offset:#caret-offset
+~caret範囲:#caret-range
+~view内に~scrollさせる:#scroll-an-element-into-view
+文書の開始位置に~scroll:#scroll-to-the-beginning-of-the-document
+
+中止-:#smooth-scroll-aborted
+完了-:#smooth-scroll-completed
+	＊~scrollする:#perform-a-scroll
+瞬時に:#concept-instant-scroll
+滑らか:#concept-smooth-scroll
+瞬時に~scroll:#concept-instant-scroll
+滑らかな~scroll:#concept-smooth-scroll
+
+~overflow方向:#overflow-directions
+~resizeと移動は許容され:#allowed-to-resize-and-move
+
+
+HTML body 要素:#the-html-body-element
+
+
+p.scroll-behavior:#propdef-scroll-behavior
+p.position:~CSSPOS#propdef-position
+v.auto:#valdef-scroll-behavior-auto
+v.smooth:#valdef-scroll-behavior-smooth
+
+
+v.table:~CSSDISP#valdef-display-table
+v.inline-table:~CSSDISP#valdef-display-inline-table
+v.table-column:~CSSDISP#valdef-display-table-column
+v.table-column-group:~CSSDISP#valdef-display-table-column-group
+
+辞書~値に変換-:~WEBIDL#es-dictionary
+	dfn-convert-ecmascript-to-idl-value
+
+	top:#dom-scrolltooptions-top
+	left:#dom-scrolltooptions-left
+
+et.change:#eventdef-mediaquerylist-change
+
+
+I.ScrollBehavior:#enumdef-scrollbehavior
+I.ScrollOptions:#dictdef-scrolloptions
+I.ScrollToOptions:#dictdef-scrolltooptions
+I.MediaQueryList:#mediaquerylist
+I.MediaQueryListEvent:#mediaquerylistevent
+I.MediaQueryListEventInit:#dictdef-mediaquerylisteventinit
+
+I.ScrollLogicalPosition:#enumdef-scrolllogicalposition
+I.ScrollIntoViewOptions:#dictdef-scrollintoviewoptions
+
+I.Screen:#screen
+I.CaretPosition:#caretposition
+I.CSSBoxType:#enumdef-cssboxtype
+I.BoxQuadOptions:#dictdef-boxquadoptions
+I.ConvertCoordinateOptions:#dictdef-convertcoordinateoptions
+I.GeometryUtils:#geometryutils
+I.GeometryNode:#typedefdef-geometrynode
+
+I.Window:~HTML5/browsers.html#window
+
+I.Document:~DOM4#interface-document
+I.Element:~DOM4#interface-element
+I.Text:~DOM4#interface-text
+I.Node:~DOM4#interface-node
+I.Range:~DOM4#interface-range
+
+I.EventTarget:~DOM4#interface-eventtarget
+I.EventListener:~DOM4#interface-eventtarget
+	#eventlistener
+I.Event:~DOM4#interface-event
+I.EventInit:~DOM4#interface-event
+	#EventInit
+I.HTMLElement:~HTMLDOM#htmlelement
+I.WindowProxy:~HTML5/browsers.html#windowproxy
+I.HTMLImageElement:~HTML5/embedded-content.html#htmlimageelement
+I.EventHandler:~WAPI#eventhandler
+
+I.MouseEvent:~UIEVENTS#interface-mouseevent
+I.MouseEventInit:~UIEVENTS#mouseeventinit
+
+I.CSSPseudoElement:~CSSWG/css-pseudo-4/#csspseudoelement
+
+I.DOMPoint:~GEOMETRY#dompoint
+I.DOMPointInit:~GEOMETRY#dictdef-dompointinit
+I.DOMRect:~GEOMETRY#domrect
+I.DOMRectReadOnly:~GEOMETRY#domrectreadonly
+I.DOMQuad:~GEOMETRY#domquad
+I.DOMQuadInit:~GEOMETRY#dictdef-domquadinit
+
+m.AT_TARGET:~DOM4#dom-event-at_target
+	bubbles:~DOM4#
+m.removeEventListener:~DOM4#dom-eventtarget-removeeventlistener
+m.addEventListener:~DOM4#dom-eventtarget-addeventlistener
+m.type:~DOM4#dom-event-type
+m.isTrusted:~DOM4#dom-event-istrusted
+m.startContainer:~DOM4#dom-range-startcontainer
+m.startOffset:~DOM4#dom-range-startoffset
+m.type:~DOM4#dom-event-type
+~open_m~method:~HTML5/browsers.html#dom-open
+
+m.defaultView:~HTML5/browsers.html#dom-document-defaultview
+mb.block:#dom-scrollintoviewoptions-block
+mb.inline:#dom-scrollintoviewoptions-inline
+mb.behavior:#dom-scrolloptions-behavior
+mb.left:#dom-scrolltooptions-left
+mb.top:#dom-scrolltooptions-top
+
+opf.width:#supported-open-feature-name-width
+opf.height:#supported-open-feature-name-height
+opf.left:#supported-open-feature-name-left
+opf.top:#supported-open-feature-name-top
+
+et.resize:#eventdef-window-resize
+et.scroll:#eventdef-document-scroll
+
+l.auto:#dom-scrollbehavior-auto
+l.instant:#dom-scrollbehavior-instant
+l.smooth:#dom-scrollbehavior-smooth
+
+l.start:#dom-scrolllogicalposition-start
+l.center:#dom-scrolllogicalposition-center
+l.end:#dom-scrolllogicalposition-end
+l.nearest:#dom-scrolllogicalposition-nearest
+
+l.margin:#dom-cssboxtype-margin
+l.border:#dom-cssboxtype-border
+l.padding:#dom-cssboxtype-padding
+l.content:#dom-cssboxtype-content
+
+
+~event~listener:~DOM4#concept-event-listener
+~event-loop:~WAPI#event-loop
+
+mq.構文解析-:~CSSOM#parse-a-media-query-list
+mq.直列化-:~CSSOM#serialize-a-media-query-list
+
+匿名~塊~box:~CSS2VISUREN#anonymous-block-level
+視覚~整形~model:~CSS2VISUREN#visual-model-intro
+
+HTML 要素:~HTMLINFRA#html-elements
+同一生成元:~HTML5/browsers.html#same-origin
+閲覧文脈:~HTML5/browsers.html#browsing-context
+補助~閲覧文脈:~HTML5/browsers.html#auxiliary-browsing-context
+	予備の
+結付けられている文書:~HTML5/browsers.html#concept-document-window
+
+作動中の文書:~HTML5/browsers.html#active-document
+
+待行列:~WAPI#task-queue
+~taskを待行列に入れ:~WAPI#queue-a-task
+	title=queue a task
+~task:~WAPI#concept-task
+	title=concept-task
+~commaで分割:~HTMLINFRA#split-a-string-on-commas
+整数として構文解析-:~HTMLINFRA#rules-for-parsing-integers
+空白:~HTMLINFRA#space-character
+頭部と尾部の空白~並びを剥いだ:~HTMLINFRA#strip-leading-and-trailing-whitespace
+	#space-character
+
+
+~event~handler:~WAPI#event-handlers
+~event~handler ~event型:~WAPI#event-handler-event-type
+~event~handler IDL 属性:~WAPI#event-handler-idl-attributes
+
+ASCII 小文字化:~DOM4#converted-to-ascii-lowercase
+	~HTMLINFRA#converted-to-ascii-lowercase
+文字の大小は区別される:~DOM4#case-sensitive
+文字大小区別:~DOM4#case-sensitive
+
+~event:~DOM4#concept-event
+~eventを発火させる:~DOM4#concept-event-fire
+発火-:~DOM4#concept-event-fire
+	title=concept-event-fire
+配送~flag:~DOM4#dispatch-flag
+配送:~DOM4#concept-event-dispatch
+
+過去互換~mode:~DOM4#concept-document-quirks
+	title=concept-quirks-mode
+境界点:~DOM4#concept-range-bp
+
+始点:~DOM4#concept-range-start
+終点:~DOM4#concept-range-end
+	文書:~DOM4#concept-document
+~node文書:~DOM4#concept-node-document
+文脈~obj:~DOM4#context-object
+文書~要素:~DOM4#document-element
+
+在する:~WEBIDL#dfn-present
+
+辞書:~WEBIDL#dfn-dictionary
+	辞書~member:~WEBIDL#dfn-dictionary-member
+	多重定義解決~algo:~WEBIDL#dfn-overload-resolution-algorithm
+符号単位:~WEBIDL#dfn-code-unit
+
+~incumbent設定群~obj:~WAPI#incumbent-settings-object
+担当の閲覧文脈:~WAPI#responsible-browsing-context
+
+
+塊~flow方向:~CSSWM#block-flow-direction
+行内~基底~方向:~CSSWM#inline-base-direction
+
+p.direction:~CSSWM#propdef-direction
+p.border-left-width:~CSSBG#border-left-width
+p.border-top-width:~CSSBG#border-top-width
+p.display:~CSS2VISUREN#propdef-display
+p.overflow-x:~CSSOVERFLOW#propdef-overflow-x
+p.overflow-y:~CSSOVERFLOW#propdef-overflow-y
+p.overflow:~CSSOVERFLOW#propdef-overflow
+
+p.pointer-events:~SVG2/interact.html#PointerEventsProperty
+	position:~CSSPOS#position
+	#propdef-position？
+v.hidden:~CSSOVERFLOW#valdef-overflow-hidden
+v.visible:~CSSOVERFLOW#valdef-overflow-visible
+
+~box断片:~CSSBREAK#box-fragment
+
+	●追加
+dir:~HTML5/elements.html#the-dir-attribute
+
+行内:~CSSDISP#inline
+包含塊:~CSSDISP#containing-block
+初期~包含塊:~CSSDISP#initial-containing-block
+置換要素:~CSS2CONFORM#replaced-element
+
+被包含:~DOM4#contained
+半被包含:~DOM4#partially-contained
+中身:~DOM4#concept-range-content
+~typographic文字~単位:~CSSTEXT#typographic-character-unit
+書記素~cluster:~CSSTEXT#grapheme-cluster
+
+</script>
+<!-- 
+
+追加リンク：
+https://dvcs.w3.org/hg/pointerevents/raw-file/tip/pointerEvents.html
+~TR/SVG11/interact.html#PointerEventsProperty
+
+box dimensions:~CSS2BOX#box-dimensions
+canvas:~CSS21/intro.html#the-canvas
+viewport:~CSS2VISUREN#viewport
+containing block:~CSS2VISUDET#containing-block-details
+
+	HTML5
+familiar with:~HTML5/browsers.html#familiar-with
+open():~HTML5/browsers.html#dom-open
+Media Queries:~TR/css3-mediaqueries/
+
+直列化:~CSSOM#serialize-a-media-query-list"
+構文解析:~CSSOM#parse-a-media-query-list"
+
+-->
+
+
+<!--% 語彙置換データ-->
+
+<script type="text/plain" id="words_table1">
+GEOMETRY:https://drafts.fxtf.org/geometry-1/
+	http://www.w3.org/TR/uievents/
+open_m: <code>open()</code> 
+</script>
+
+
+<!--%語彙  -->
+<script type="text/plain" id="words_table">
+此れ:<b>これ°</b>
+offset:
+範囲:range::~
+
+token:::トークン
+access:::アクセス
+
+alpha:::アルファ
+channel:::チャンネル
+view:::ビュー
+offset:::オフセット
+
+client:::クライアント
+window:::ウィンドウ
+code:::コード
+error:::エラー
+
+代用対:surrogate pair::サロゲートペア:
+zero:::ゼロ
+text:::テキスト
+node:::ノード
+byte:::バイト
+pixel:::ピクセル
+bit:::ビット
+font:::フォント
+browser:::ブラウザ
+flag:::フラグ
+
+query:::クエリ
+mode:::モード
+list:::リスト
+	セット:set
+		→ ON, OFF
+script:::スクリプト
+
+	●CSS layout
+viewport::::ビューポート
+canvas:::キャンバス
+ascent:::アセント
+descent:::ディセント
+overflow:
+行内:inline:~::インライン
+flow::::フロー
+prop:property::プロパティ
+box:::ボックス
+断片:fragment::~
+resize:::リサイズ
+根:root::~:ルート
+layout:::レイアウト
+容器:container::コンテナ
+size:::サイズ
+screen:::スクリーン
+column:
+group:
+
+margin:::マージン
+padding:::パディング
+border:::ボーダー
+	ボーダー辺:~border~edge
+頁:page::ページ
+可用:available:~
+空間:space:~
+
+基底:base::~
+塊:block::ブロック
+方向:inline base direction:~
+行内:inline:~
+初期:initial:~
+包含塊:containing block::包含ブロック
+
+	bounding ボックス:bounding box
+	bounding ボーダーボックス:bounding border box
+
+
+	境界1:bounding:~
+要素境界:element bounding border box:~
+縦組:vertical writing mode:~
+	列グループ:column group:~
+置換要素:replaced element:~
+匿名:anonymous::~
+表示域:viewport:~::ビューポート
+描画-:render:~
+描画:rendering:~
+描画域:rendering surface:~
+
+整形:formatting:~
+視覚的:visual:~
+視覚:visual:~
+内容:content:~
+中身:content:~
+	内容~順:content order:~
+包含-:contain:~
+bounding:
+横書き:horizontal writing:~
+
+揃う:align する:~
+揃えら:align さ:~
+揃える:align する:~
+揃点:alignment point:揃え点
+
+	●css
+適用対象:applies to:~
+継承-:inherit:~
+百分率:percentage:~
+算出値:computed value:~
+使用値:used value:~
+指定値:specified value:~
+animation:::アニメーション
+frame:::フレーム
+同期-:synchronize:~
+
+正準的:canonical:~
+具現化法:rendering:~::レンダリング
+
+	●scroll／UI
+scroll:::スクロール
+scrolling:::スクロール
+scrolling0:scrolling::スクロール処理
+	scrolling0 mechanism:::スクロール機構
+位置-:位置
+位置:position:~
+目的位置:position:~
+仕組み:mechanism:~
+bar:::バー
+zoom:::ズーム
+zooming:::ズーム法
+caret:::キャレット
+widget:::ウィジェット
+pinch:::ピンチ
+
+滑らか:smooth::~
+拡大:zoom:~
+倍率:scale factor:~
+移動:move:~
+処理待ち:pending:~
+接触判定:hit-testing:~
+挿入位置指示:insertion point indicator:~
+挿入-:insert:~
+瞬時:instant:~
+計量:metric:~
+周期:interval:~
+進行中:ongoing:~
+
+	拡大鏡:glass:~
+動作-:act:~
+動作:action:~
+行為:action:~
+対話:interaction:~
+
+	●幾何
+幾何:geometry:~
+境界:bounds:~
+矩形:rectangle:~
+矩形の:rectangular:~
+相対的:relative:~
+地点:position:~
+原点:origin:~
+座標:coordinate:~
+矩形:rectangle:~
+点:point:~
+寸法:dimension:~
+	右横書:right-to-left:~
+	横書:horizontal writing:~
+	右向き:left-to-right:~
+	左向き:right-to-left †
+方向:direction:~
+横方向:horizontal:~
+縦方向:vertical:~
+上端:top:~
+下端:bottom:~
+左端:left:~
+右端:right:~
+上辺:top edge:~
+下辺:bottom edge:~
+左辺:left edge:~
+右辺:right edge:~
+上方:upward:~
+下方:downward:~
+左方:leftward:~
+右方:rightward:~
+開始辺:beginning edge:~
+終止辺:ending edge:~
+辺:edge:~
+領域:area:~
+区画:area:~
+	幅:width:~
+	高さ:height:~
+横幅:width:~
+縦幅:height:~
+
+有効横幅:有効 width:~
+有効縦幅:有効 height:~
+距離:distance:~
+外側:outside:~
+	内側:inside:~
+内縁:inner:~
+外縁:outer:~
+	innermost, outermost
+四辺形:quadrilateral shape:~
+
+座標系変換:transform::~
+
+
+
+	●DOM／IDL
+~sequence:
+連列:sequence
+method:::メソッド
+interface:::インタフェース
+window:::ウィンドウ
+obj:object::オブジェクト
+callback:::コールバック
+辞書:dictionary::ディクショナリ
+incumbent:
+node:::ノード
+member:::メンバ
+
+listener:::リスナ
+event:::イベント
+event-loop:event loop::イベントループ
+target:::ターゲット
+listener:::リスナ
+handler:::ハンドラ
+task:::タスク
+新たな:new:~
+変換-:convert:~
+待行列:queue:待ち行列
+伝播-:propagete:~
+伝播:propagation:~
+型:type:~
+
+設定群:settings::~
+構築子:constructor:~
+配送:dispatch:~
+子:child:~
+親:parent:~
+子孫:descendant:~
+先祖:ancestor:~
+属性:attribute:~
+拡張属性:extended attribute:~
+同一生成元:same origin:~
+
+名前:name:~
+名:name:~
+値:value:~
+
+例外:exception:~
+閲覧文脈:browsing context:~
+文脈:context:~
+補助:auxiliary:~
+浮上:bubble:~
+発火-:fire:~
+符号単位:code unit:~
+文書:document:~
+名前空間:namespace:~
+
+在する:present する:在る
+不在:not present:~
+被取得時:被 get 時:~
+被設定時:被 set 時:~
+被呼出時:被 invoke 時:~
+呼出す:invoke する:呼び出す
+呼出され:invoke され:呼び出され
+呼出さ:invoke し:呼び出さ
+呼出した:invoke した:呼び出した
+
+要素:element:~
+要素幅:element 幅:~
+関連要素:associated element:~
+境界点:boundary point:~
+初期化-:initialize:~
+
+作成-:create:~
+
+作動中の:active::~:アクティブ
+
+	●仕様
+UA:user agent:UA
+algo:algorithm::アルゴリズム
+support:::サポート
+platform:::プラットフォーム
+utility::ユーティリティ
+慣行:conventions:~
+仕様:spec:~
+指定-:specify:~
+拡張:extension:~
+省略可:optional:~
+任意選択:optional:~
+無視-:ignore:~
+	終了:terminate:~
+順序:order:~
+中止-:abort:~
+完了-:complete:~
+適合:conforming:~
+適合性:conformance:~
+特色機能:feature:~
+	相互運用可能:interoperable:~
+明示的:explicit:~
+要件:requirements:~
+利用者:user:~
+作者:author:~
+model:::モデル
+挙動:behavior:ふるまい
+挙動して:behave して:ふるまって
+結付けら:associate さ:結び付けら
+
+定義:definition:~
+定義-:define:~
+定義0:-defined:定義
+方式:manner:~
+適用-:apply:~
+制御:control:~
+導入-:introduce:~
+手続き:steps:~
+独自の:custom:~
+後方互換性:backwards compatibility:~
+互換性:compatibility:~
+拘束:constraints:~
+決定-:determine:~
+既定:default:~
+既定の:default:~
+許容-:allow:~
+開発者:developer:~
+期待-:expect:~
+特定0の:particular:ある特定の
+遂行-:perform:~
+統合-:integrate:~
+正規の:regular:~
+
+	●未分類
+剥いだ:strip した:~
+空白:whitespace:~
+navigate:::ナビゲート
+表現-:represent:~
+算出-:compute:~
+切詰める:clamp する:切り詰める
+	分割- split／
+整数:integer:~
+過去互換:quirks:~
+構文解析-:parse:~:::パース
+解析済み:parsed:~:::パース済み
+直列化-:serialize:~::シリアライズ
+comma:::カンマ
+文法:grammar:~
+出力:output:~
+機器:device:~
+媒体:media::~:メディア
+
+文字:character:~
+文字列:string:~
+書記素:grapheme::~
+typographic:::タイポグラフィック
+cluster:::クラスタ
+	片割れhalf
+	全部的な full
+
+静的:static:~
+合致:match:~::マッチ
+合致状態:matches state:~::マッチ状態
+
+変化:changes:~
+変化-:change:~
+検知-:detect:~
+	形:form
+	引数:argument
+除去-:remove:~
+付加-:append:追加
+	追加-:add:~
+情報:information:~
+空:empty:~
+bug:::バグ
+
+
+終点:end:~
+始点:start:~
+	除外:exclude:~
+	名前:name:~
+選択-:select:~
+初期:initial:~
+	値:value:~
+	規定:normative:~
+	はみ出す:overflow:~
+	揃:align:~
+
+単位:unit:~
+
+担当の:responsible:~
+下層:underlying:~
+正規化-:normalize:~
+評価-:evaluate:~
+報告-:report:~
+有限:finite:~
+別名:alias:~
+軸:axis:~
+座標軸:axis:~
+現在の:current:~
+引数:argument:~
+
+</script>
+<!-- その他の語
+~~適度な:not get too 〜
+
+magnifying
+terminology:
+implement:
+implementation:
+参照文献references
+key words
+optional
+例example
+順order
+plus
+define
+run
+running
+otherwise: 他の場合
+range
+結果:result
+first
+return
+揃え／align
+ふりをするmasquerade
+
+-->
+<!--
+
+~CSS2VISUREN#anonymous-block-level
+http://dvcs.w3.org/hg/domcore/raw-file/tip/Overview.html
+
+ -->
+
+
+<!--%style -->
+<!-- 
+   td { vertical-align:baseline }
+   td, th { border:solid }
+   table { border:hidden; border-collapse:collapse }
+
+	code :link, code :visited { color:inherit }
+-->
+
+
+<style>
+	code > dfn {color: inherit; background-color: #FFC;} /* 追加 */
+
+
+dt.method a,
+code > a,
+pre a {
+    color:  inherit;
+}
+
+#_info-view {
+	position: fixed;
+	z-index:10;
+	display: none;
+	padding: 0;
+	bottom: 0;
+	right: 0;
+	min-width:20em;
+	background: #FEE;
+	outline: ridge gray 4px;
+}
+#_info-view.show {
+	display: block;
+}
+
+
+._test {
+	background: #EFE;
+	color: green;
+	border: ridge green 2px;
+	padding: 0.5em;
+}
+
+.trans-note {
+	font-weight: normal;
+}
+
+div.en::before {
+	content: "↑";
+	color: gray;
+	display: block;
+}
+
+.literal {
+	color: gray;
+}
+
+
+.dictionary-member {
+	color: #006633;
+}
+
+.element::before,
+.element::after {
+	content: none;
+}
+
+</style>
+
+</head>
+
+<body class="draft">
+
+<div style="display:none;">
+
+<input type="hidden" id="_page_config" value="" />
+<!--%resource pool -->
+	<div id="_resources">
+
+<div id="_dgm-Window" class="_test">
+利用中のブラウザで<br><!-- ※ -->
+・これらの属性の
+<input value="取得を試みる" data-params="Window" type="button">
+<br>
+・
+x:<input id="_test-scroll-x" value="0" size="5" type="text">
+y:<input id="_test-scroll-y" value="0" size="5" type="text">
+を入力に<br>
+<label><input name="_test-scroll-fn" id="_test-scroll-scroll" type="radio"><code>scroll()</code></label>
+<label><input name="_test-scroll-fn" id="_test-scroll-scrollTo" type="radio"><code>scrollTo()</code></label>
+<label><input name="_test-scroll-fn" id="_test-scroll-scrollBy" checked="" type="radio"><code>scrollBy()</code></label>
+<!-- 
+<label><input type="radio" name="_test-scroll-fn"  id="_test-scroll-resizeTo" checked /><code >resizeTo()</code></label>
+<label><input type="radio" name="_test-scroll-fn"  id="_test-scroll-resizeBy" checked /><code >resizeBy()</code></label>
+<label><input type="radio" name="_test-scroll-fn"  id="_test-scroll-moveTo" checked /><code >moveTo()</code></label>
+<label><input type="radio" name="_test-scroll-fn"  id="_test-scroll-moveBy" checked /><code >moveBy1()</code></label>
+ -->
+を
+<input value="呼び出す" data-params="Window.scroll" type="button">
+<br>
+次の媒体クエリ：<br>
+<input id="_test-mql_text" value="(orientation: landscape)" size="70" list="_MQL_options" data-event="change" data-params="MediaQueryList" type="text">
+<br>
+に対し，
+<code>Window.matchMedia()</code>
+の
+<input id="_test-MediaQueryList" value="取得を試みる" data-params="MediaQueryList" type="button">
+<datalist id="_MQL_options" style="display: none;"><!--
+(width >= 800px);
+(width <= 800px);
+(height >= 600px);
+(height <= 600px);
+(min-device-width: 640px);
+(max-device-width: 640px);
+(min-device-height: 480px);
+(max-device-height: 480px);
+(orientation: landscape);
+(orientation: portrait);
+(min-aspect-ratio: 1/1);
+(min-aspect-ratio: 2/1);
+(min-aspect-ratio: 1/2);
+(max-aspect-ratio: 1/1);
+(max-aspect-ratio: 2/1);
+(max-aspect-ratio: 1/2);
+(color);
+(min-color: 8);
+(max-color: 8);
+(min-color-index: 256);
+(max-color-index: 256);
+(monochrome);
+(min-resolution: 96dpi);
+(max-resolution: 96dpi);
+(scan: interlace);
+(scan: progressive);
+(grid);
+(update-frequency: none);
+(update-frequency: slow);
+(update-frequency: normal);
+(overflow-block: none);
+(overflow-block: scroll);
+(overflow-block: optional-paged);
+(overflow-block: paged);
+(overflow-inline: none);
+(overflow-inline: scroll);
+(inverted-colors: none);
+(inverted-colors: inverted);
+(pointer: none);
+(pointer: fine);
+(pointer: fine);
+(hover: none);
+(hover: on-demand);
+(hover: hover);
+(any-pointer: none);
+(any-pointer: coarse);
+(any-pointer: fine);
+(any-hover: none);
+(any-hover: on-demand);
+(any-hover: hover);
+(light-level: dim);
+(light-level: normal);
+(light-level: washed);
+(scripting: none);
+(scripting: initial-only);
+(scripting: enabled);
+
+
+all;braille;embossed;handheld;print;projection;screen;speech;tty;tv;aural
+--></datalist>
+</div>
+
+<div id="_dgm-Screen" class="_test">
+利用中のブラウザでこれらの属性の
+<input value="取得を試みる" data-params="Screen" type="button">
+</div>
+
+
+<div id="_dgm-Document" class="_test">
+利用中のブラウザでマウス位置に対する
+<br>
+(1) <code>elementFromPoint()</code> の結果を
+<input id="_test-elementFromPoint" value="表示する" data-params="elementFromPoint" type="button">
+<br>
+(1) <code>elementsFromPoint()</code> の結果の Array.length の
+<input id="_test-elementsFromPoint" value="取得を試みる" data-params="elementsFromPoint" type="button">
+<br>
+(2) <code>caretPositionFromPoint()</code> の
+<input id="_test-caretPositionFromPoint" value="取得を試みる" data-params="caretPositionFromPoint" type="button">
+</div>
+
+
+<div id="_dgm-Element" class="_test">
+利用中のブラウザで<br>
+マウスが重なった要素について
+<br>
+・これらの属性の
+<input value="取得を試みる" data-params="Element" type="button"><br>
+・<code>getClientRects()</code> の
+<input value="取得を試みる" data-params="getClientRects" type="button"><br>
+・<code>getBoundingClientRect()</code> の
+<input value="取得を試みる" data-params="ClientRect" type="button">
+<br>
+ランダムに選ばれた
+<select size="1" id="_test-scrollIntoView-tagName"><option selected="">P</option><option>LI</option><option>H2</option><option>DT</option><option>DD</option></select>
+要素に対し<br>
+・<code>scrollIntoView(<label><input name="_test-SIV-top" id="_test-scrollIntoView-top" checked="" type="radio">true</label>
+<label><input name="_test-SIV-top" type="radio">false</label>)</code>
+を
+<input id="_test-scrollIntoView" value="呼び出す" data-params="Element.scrollIntoView" type="button"><br>
+・<code>scrollIntoView( {
+	behavior:
+<select size="1" id="_test-scrollIntoView-behavior"><option selected="">auto</option><option>instant</option><option>smooth</option></select>
+	, block:
+<select size="1" id="_test-scrollIntoView-block">
+	<option selected="">start</option>
+	<option>center</option>
+	<option>end</option>
+	<option>nearest</option>
+</select>
+	, inline:
+<select size="1" id="_test-scrollIntoView-inline">
+	<option>start</option>
+	<option selected="">center</option>
+	<option>end</option>
+	<option>nearest</option>
+</select>
+} )</code> を
+<input id="_test-scrollIntoView0" value="呼び出す" data-params="Element.scrollIntoView0" type="button">
+</div>
+
+
+<div id="_dgm-HTMLElement" class="_test">
+利用中のブラウザでマウスが重なった要素について，これらの属性の
+<input value="取得を試みる" data-params="HTMLElement" type="button">
+</div>
+
+
+<div id="_dgm-Range" class="_test">
+利用中のブラウザでテキスト選択に応じて，その範囲に対する<br>
+(1) <code>getClientRects()</code> の
+<input id="_test-Selection.getClientRects" value="取得を試みる" data-params="Selection.getClientRects" type="button">
+<br>
+(2) <code>getBoundingClientRect()</code> の
+<input id="_test-Selection.getBoundingClientRect" value="取得を試みる" data-params="Selection.getBoundingClientRect" type="button">
+</div>
+
+<div id="_dgm-MouseEvent" class="_test">
+利用中のブラウザで mousemove イベントに対する，これらの属性の
+<input id="_test-MouseEvent" value="取得を試みる" data-params="MouseEvent" type="button">
+</div>
+
+
+	</div>
+</div>
+
+
+
+<aside class="trans-meta">
+<h1>CSSOM View Module 日本語訳</h1>
+<p>
+<a id="_THIS_PAGE">このページ</a>
+は、
+<a href="http://www.w3.org/">W3C</a> により副題の日付にて <strong >作業草案</strong>として公開された
+<a id="_SPEC_URL">CSSOM View Module</a>
+を日本語に翻訳したものです。
+<strong >この翻訳の正確性は保証されません。</strong>
+この仕様の公式な文書は英語版であり、この日本語版は公式のものではありません。
+【 と 】で囲まれた部分は<span class="trans-note">【訳者による注釈】</span>です。
+（<a href="index.html">他のウェブ関連仕様の一覧と共通機能の詳細</a>）
+</p>
+
+<p >
+更新：<time>2016-04-17</time>
+（公開：<time>2012-09-22</time> ）
+</p>
+
+<p>
+このページの大部分はスクリプトにより生成されています（
+古いブラウザなど，一部のブラウザには対応していません：
+<span id="_GENERATING"></span>）。
+</p>
+
+<p>
+本文ダブルクリックで当該箇所の原文が表示されます（左下隅に各種 表示切替ボタン — CSS や DOM の対応が古いブラウザでは、一部機能しないことがあります）。
+</p>
+
+<address id="_CONTACT">　</address>
+
+</aside>
+
+<header>
+
+<div><a href="http://www.w3.org/" id="_W3C">W3C</a></div>
+
+	<hgroup>
+<h1 id="cssom-view-module">CSSOM View Module</h1>
+<h2 id="w3c-doctype">2016 年 4 月 14 日付 W3C 作業草案</h2>
+	</hgroup>
+
+<dl id="_versions">
+	<dt title="This version:">このバージョン</dt>
+	<dd>http://www.w3.org/TR/2016/WD-cssom-view-1-20160414/</dd>
+
+	<dt title="Latest version:">最新発行版</dt>
+	<dd>https://www.w3.org/TR/cssom-view-1/</dd>
+
+	<dt title="Editor’s Draft:">編集者草案</dt>
+	<dd>https://drafts.csswg.org/cssom-view/</dd>
+
+	<dt title="Previous version:">以前のバージョン</dt>
+	<dd>https://www.w3.org/TR/2013/WD-cssom-view-20131217/</dd>
+	<dd>https://www.w3.org/TR/2011/WD-cssom-view-20110804/</dd>
+	<dd>https://www.w3.org/TR/2009/WD-cssom-view-20090804/</dd>
+	<dd>https://www.w3.org/TR/2008/WD-cssom-view-20080222/</dd>
+	<dd>https://www.w3.org/TR/2000/REC-DOM-Level-2-Style-20001113/</dd>
+
+	<dt>Feedback:</dt>
+	<dd><a href="mailto:www-style@w3.org?subject=%5Bcssom-view%5D%20YOUR%20TOPIC%20HERE">www-style@w3.org</a> with subject line “<kbd>[cssom-view] <i>… message topic …</i></kbd>” (<a href="http://lists.w3.org/Archives/Public/www-style/" rel="discussion">archives</a>)</dd>
+
+	<dt title="Test Suite:">テスト一式</dt>
+	<dd>http://test.csswg.org/suites/cssom-view-1_dev/nightly-unstable/</dd>
+
+	<dt title="Issue Tracking:">最新の課題：</dt>
+	<dd><a href="#issues-index">Inline In Spec</a></dd>
+
+	<dt title="Editors:">編集</dt>
+	<dd><a href="mailto:simonp@opera.com">Simon Pieters</a>
+(<a href="http://www.opera.com">Opera Software ASA</a>)</dd>
+
+	<dt title="Former Editors:">前任編集者</dt>
+	<dd><a href="http://www.w3.org/wiki/User:Gadams">Glenn Adams</a>
+(<a href="http://www.cox.com">Cox Communications, Inc.</a>)
+<a href="mailto:glenn.adams@cos.com">glenn.adams@cos.com</a></dd>
+	<dd><a href="https://annevankesteren.nl/">Anne van Kesteren</a>
+(<a href="http://www.opera.com">Opera Software ASA</a>) <a href="mailto:annevk@annevk.nl">annevk@annevk.nl</a></dd>
+
+	<dt>Issues list:</dt>
+	<dd><a href="https://www.w3.org/Bugs/Public/buglist.cgi?product=CSS&amp;component=CSSOM%20View&amp;resolution=---">Bugzilla</a> (<a href="https://www.w3.org/Bugs/Public/enter_bug.cgi?product=CSS&amp;component=CSSOM%20View">file a bug</a>)</dd>
+
+</dl>
+
+<small class="copyright">
+<a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © 2016 <a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> (<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>, <a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>, <a href="http://www.keio.ac.jp/">Keio</a>, <a href="http://ev.buaa.edu.cn/">Beihang</a>). W3C <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, <a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and <a href="http://www.w3.org/Consortium/Legal/copyright-documents">document use</a> rules apply.
+</small>
+
+</header>
+
+
+<h2 title="Abstract" id="abstract">要約</h2>
+
+<p>
+この仕様で導入される API は、作者に，文書の視覚的ビューを調べたり, 操作するための方法を与える。
+これには、要素のレイアウトボックスの位置の取得, スクリプトを通した表示域サイズの取得, 要素のスクロール処理なども含まれる。
+<span lang="en">
+The APIs introduced by this specification provide authors with a way to inspect and manipulate the visual view of a document. This includes getting the position of element layout boxes, obtaining the width of the viewport through script, and also scrolling an element.
+</span></p>
+
+<p>
+<a href="http://www.w3.org/TR/CSS/">CSS</a>
+は、（ HTML や XML などの）構造を備える文書から，
+スクリーン, 紙, スピーチ, 等々
+の媒体への具現化法を記述するための言語である。
+<span lang="en">
+CSS is a language for describing the rendering of structured documents (such as HTML and XML) on screen, on paper, in speech, etc.
+</span></p>
+
+<h2 title="Status of This Document" id="sotd">この文書の位置付け</h2>
+
+<p>
+この節では、発行時点における…
+<span class="trans-note">【
+以下，この節の内容は
+<a href="css-common-ja.html#status" >CSS 日本語訳 共通ページ</a>
+に委譲。
+】</span></p>
+
+
+<nav class="toc" id="toc">
+<h2 title="Table of Contents">目次</h2>
+<ol id="_toc_list0"></ol></nav>
+
+
+
+<main id="MAIN" style="display: none;">
+
+<section id="background">
+
+<h2 title="Background">1. 背景</h2>
+
+<p>
+この仕様にて定義される特色機能の多くは、長い間~browserから~supportされてきた。
+この仕様の目標は、これらの特色機能を，すべての~browserが相互運用可能な形に実装し得るように定義することである。
+仕様では、作者にとって有用になるであろう，一組の新たな特色機能も定義する。
+(If they are not you can bug us!)
+<!--  -->
+◎
+Many of the features defined in this specification have been supported by browsers for a long period of time. The goal of this specification is to define these features in such a way that they can be implemented by all browsers in an interoperable manner. The specification also defines a couple of new features that will hopefully be useful to authors. (If they are not you can bug us!)
+</p>
+
+
+	</section>
+	<section id="terminology">
+<h2 title="Terminology">2. 各種用語</h2>
+
+<p>
+この仕様で用いられる用語は DOM, CSSOM, HTML による。
+`DOM$r
+`CSSOM$r
+`HTML$r
+◎
+Terminology used in this specification is from DOM, CSSOM and HTML. [DOM] [CSSOM] [HTML]
+</p>
+
+<p>
+`HTML body 要素@
+とは、根 `HTML 要素$ `html^e の子である，最初の `body^e `HTML 要素$ である。
+◎
+The HTML body element is the first body HTML element child of the root HTML element html.
+</p>
+
+<p class="trans-note">【
+文書の
+`根~要素@
+という語も現れる。
+これは、`文書~要素$と同義（ HTML 文書であれば `html^e 要素）になると見られる。
+】</p>
+
+<p>
+`内容~辺@,
+`~padding辺@,
+`~border辺@,
+`~margin辺@,
+`表示域@（~viewport）
+は CSS にて定義される。
+◎
+Content edge, padding edge, border edge, margin edge, and viewport are defined by CSS.
+</p>
+
+<p class="trans-note">【
+参照 —
+<a href="~CSS2BOX#box-dimensions">各種~辺の定義と図式</a>,
+<a href="~CSS2VISUREN#viewport">表示域</a>
+】</p>
+
+<div class="p">
+<p>
+［
+要素／`表示域$
+］は、次のいずれかを満たすとき，
+`~scrolling~box@
+が結付けられる：
+</p>
+
+<ul >
+	<li>
+それは、~scrolling0の仕組みを有する。
+</li>
+	<li>
+<p>
+次の両者を満たす：
+</p>
+		<ul>
+			<li>
+その内容は、その内容~区画を~overflowする
+</li>
+			<li>
+その［
+`overflow-x$p, `overflow-y$p
+］いずれかの~propの使用値は `hidden$v である
+`CSS3-OVERFLOW-3$r
+<!-- CSS3-BOX -->
+</li>
+		</ul>
+	</li>
+</ul>
+◎
+Elements and viewports have an associated scrolling box if has a scrolling mechanism or it overflows its content area and the used value of the overflow-x or overflow-y property is hidden. [CSS3-BOX]
+</div>
+
+<p class="trans-note">【
+この`~scrolling~box$を指して，単に
+<q>要素／表示域の~scrolling~box</q>
+と記す。
+そのような~boxが結付けられていない（存在しない）ことを，
+<q>（要素／表示域は）~scrolling~boxを持たない</q>
+と記す。
+】</p>
+
+<p>
+要素は、次のすべてを満たすとき，
+`~scroll可能になり得る@
+とされる。
+◎
+An element is potentially scrollable if all of the following conditions are true:
+</p>
+
+
+<ul>
+	<li>
+要素は `CSS ~layout~box$を持つ。
+◎
+The element has an associated CSS layout box.
+</li>
+
+	<li>
+要素は `HTML body 要素$でない, または（要素は HTML body 要素であって）
+`根~要素$の［
+`overflow-x$p,
+`overflow-y$p
+］~propいずれかの使用値は `visible$v でない
+◎
+The element is not the HTML body element, or it is and the root element’s used value of the overflow-x or overflow-y properties is not visible.
+	</li>
+
+	<li>
+要素の［
+`overflow-x$p,
+`overflow-y$p
+］~propいずれかの使用値は `visible$v でない
+◎
+The element’s used value of the overflow-x or overflow-y properties is not visible.
+</li>
+
+</ul>
+
+<p class="note">注記：
+要素は、`~scroll可能になり得る$としても，`~scrolling~box$は持たないこともある。
+具体的には、要素は `overflow$p が `auto^v に設定されているが，その内容は内容~区画を~overflowしない場合など。
+◎
+Note: An element that is potentially scrollable might not have a scrolling box. For instance, it could have overflow set to auto but not have its content overflowing its content area.
+</p>
+
+<p>
+`表示域$または要素の`~scrolling~box$は、`表示域$の／要素の`塊~flow方向$ と`行内~基底~方向$
+に応じて，次の様な縦横２方向の
+`~overflow方向@
+を持つ：
+◎
+A scrolling box of a viewport or element has two overflow directions, depending on the viewport’s or element’s block flow direction and inline base direction, as follows:
+</p>
+
+
+<!-- ﹇﹈][ -->
+
+<div>
+
+<table>
+<thead><tr><th>`塊~flow方向$
+</th><th>`行内~基底~方向$
+</th><th>`~overflow方向$
+</th></tr></thead>
+
+<tbody><tr><td>top-to-bottom ↓
+</td><td>left-to-right →
+</td><td>右方＆下方 →↓
+
+</td></tr><tr><td>left-to-right →
+</td><td>left-to-right †
+</td><td>（同上）
+
+</td></tr><tr><td>top-to-bottom ↓
+</td><td>right-to-left ←
+</td><td>左方＆下方 ←↓
+
+</td></tr><tr><td>right-to-left ←
+</td><td>left-to-right †
+</td><td>（同上）
+
+</td></tr><tr><td>right-to-left ←
+</td><td>right-to-left †
+</td><td>左方＆上方 ←↑
+
+</td></tr><tr><td>left-to-right →
+</td><td>right-to-left †
+</td><td>右方＆上方 →↑
+</td></tr></tbody>
+
+</table>
+
+<p class="trans-note">【†
+`行内~基底~方向$の left-to-right, right-to-left は順に，［
+HTML `dir$ 要素や CSS `direction$p ~prop
+］がとる値 `ltr^v, `rtl^v に対応する。
+上の表から，縦書き（`塊~flow方向$が left-to-right ／ right-to-left ）のときの left-to-right は下向きを意味することになる。
+その意図は、縦組において 左横書きの~textを 90 度回転してレイアウトするときに，行が伸びる方向を下向きにすることに対応すると見られる（右横書きの~textは逆方向 — 上向き — になる）。
+】</p>
+
+<dl lang="en">
+	<dt>If the block flow direction is top-to-bottom and the inline base direction is left-to-right</dt>
+	<dt>If the block flow direction is left-to-right and the inline base direction is left-to-right</dt>
+	<dd>
+Rightward and downward.</dd>
+
+	<dt>If the block flow direction is top-to-bottom and the inline base direction is right-to-left</dt>
+	<dt>If the block flow direction is right-to-left and the inline base direction is left-to-right</dt>
+	<dd>Leftward and downward.</dd>
+
+	<dt>If the block flow direction is right-to-left and the inline base direction is right-to-left</dt>
+	<dd>Leftward and upward.</dd>
+
+	<dt>If the block flow direction is left-to-right and the inline base direction is right-to-left</dt>
+	<dd>Rightward and upward.</dd>
+
+</dl>
+</div>
+
+
+<p>
+`表示域$／要素の
+`~scrolling区画@
+とは、その`~overflow方向$に応じて 各辺が次の様に定められる，~boxである：
+◎
+The term scrolling area refers to a box of a viewport or an element that has the following edges, depending on the viewport’s or element’s scrolling box’s overflow directions.
+</p>
+
+<div><!-- en-box -->
+<p class="trans-note">【
+この訳では、原文の内容と等価になるように，パラメタ化により大幅に圧縮して記述する。
+】</p>
+
+<p>
+記号 %D は 右方／左方／下方／上方 いずれかの方向を表し,
+`D'^V は その反対~方向を表すとする。
+`~overflow方向$に %D が含まれている（すなわち `D'^V は含まれていない）ならば、~boxの %D,  `D'^V 側の辺は次で与えられる：
+</p>
+
+<table>
+<thead><tr><th></th><th>`表示域$に対しては
+</th><th>要素に対しては
+</th></tr></thead>
+
+<tbody><tr><th>%D 側の辺
+</th><td>
+［
+`初期~包含塊$の %D 側の辺, および
+`表示域$のすべての子孫の~boxの %D 側の`~margin辺$
+］のうち，最も %D 側の辺。
+◎
+The D-most edge of the D edge of the initial containing block and the D margin edge of all of the viewport’s descendants' boxes.
+</td><td>
+［
+要素の %D 側の`~padding辺$, および
+要素のすべての子孫の~boxの %D 側の`~margin辺$
+］のうち，最も %D 側の辺
+— ただし，要素の先祖を`包含塊$として持つような~boxは除外する。
+◎
+The D-most edge of the element’s D padding edge and the D margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.
+
+</td></tr><tr><th style="white-space:pre;">`D'^V 側の辺
+
+</th><td>
+`初期~包含塊$の `D'^V 側の辺。
+◎
+The D' edge of the initial containing block.
+</td><td>
+要素の `D'^V 側の`~padding辺$。
+◎
+The element’s D' padding edge.
+
+</td></tr></tbody></table>
+
+<p class="trans-note">【
+子孫~box（ descendant boxes ）： CSS の`視覚~整形~model$参照。
+】【
+“除外”：
+例えば “position:fixed” にされている子孫~要素により生成される~boxは、除外されると見られる。
+】</p>
+
+<div lang="en"><table>
+ <tbody><tr>
+  <th>If the overflow directions are…</th>
+  <th>For a viewport</th>
+  <th>For an element</th>
+ </tr><tr>
+  <td>rightward and downward</td>
+  <td>
+   <dl>
+    <dt>top edge</dt>
+    <dd>The top edge of the initial containing block.</dd>
+    <dt>right edge</dt>
+    <dd>The right-most edge of the right edge of the initial containing block and the right margin edge of all of the viewport’s descendants' boxes.</dd>
+    <dt>bottom edge</dt>
+    <dd>The bottom-most edge of the bottom edge of the initial containing block and the bottom margin edge of all of the viewport’s descendants' boxes.</dd>
+    <dt>left edge</dt>
+    <dd>The left edge of the initial containing block.</dd>
+   </dl>
+  </td><td>
+   <dl>
+    <dt>top edge</dt>
+    <dd>The element’s top padding edge.</dd>
+    <dt>right edge</dt>
+    <dd>The right-most edge of the element’s right padding edge and the right margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.</dd>
+    <dt>bottom edge</dt>
+    <dd>The bottom-most edge of the element’s bottom padding edge and the bottom margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.</dd>
+    <dt>left edge</dt>
+    <dd>The element’s left padding edge.</dd>
+   </dl>
+ </td></tr><tr>
+  <td>leftward and downward</td>
+  <td>
+   <dl>
+    <dt>top edge</dt>
+    <dd>The top edge of the initial containing block.</dd>
+    <dt>right edge</dt>
+    <dd>The right edge of the initial containing block.</dd>
+    <dt>bottom edge</dt>
+    <dd>The bottom-most edge of the bottom edge of the initial containing block and the bottom margin edge of all of the viewport’s descendants' boxes.</dd>
+    <dt>left edge</dt>
+    <dd>The left-most edge of the left edge of the initial containing block and the left margin edge of all of the viewport’s descendants' boxes.</dd>
+   </dl>
+  </td><td>
+   <dl>
+    <dt>top edge</dt>
+    <dd>The element’s top padding edge.</dd>
+    <dt>right edge</dt>
+    <dd>The element’s right padding edge.</dd>
+    <dt>bottom edge</dt>
+    <dd>The bottom-most edge of the element’s bottom padding edge and the bottom margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.</dd>
+    <dt>left edge</dt>
+    <dd>The left-most edge of the element’s left padding edge and the left margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.</dd>
+   </dl>
+ </td></tr><tr>
+  <td>leftward and upward</td>
+  <td>
+   <dl>
+    <dt>top edge</dt>
+    <dd>The top-most edge of the top edge of the initial containing block and the top margin edge of all of the viewport’s descendants' boxes.</dd>
+    <dt>right edge</dt>
+    <dd>The right edge of the initial containing block.</dd>
+    <dt>bottom edge</dt>
+    <dd>The bottom edge of the initial containing block.</dd>
+    <dt>left edge</dt>
+    <dd>The left-most edge of the left edge of the initial containing block and the left margin edge of all of the viewport’s descendants' boxes.</dd>
+   </dl>
+  </td><td>
+   <dl>
+    <dt>top edge</dt>
+    <dd>The top-most edge of the element’s top padding edge and the top margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.</dd>
+    <dt>right edge</dt>
+    <dd>The element’s right padding edge.</dd>
+    <dt>bottom edge</dt>
+    <dd>The element’s bottom padding edge.</dd>
+    <dt>left edge</dt>
+    <dd>The left-most edge of the element’s left padding edge and the left margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.</dd>
+   </dl>
+ </td></tr><tr>
+  <td>rightward and upward</td>
+  <td>
+   <dl>
+    <dt>top edge</dt>
+    <dd>The top-most edge of the top edge of the initial containing block and the top margin edge of all of the viewport’s descendants' boxes.</dd>
+    <dt>right edge</dt>
+    <dd>The right-most edge of the right edge of the initial containing block and the right margin edge of all of the viewport’s descendants' boxes.</dd>
+    <dt>bottom edge</dt>
+    <dd>The bottom edge of the initial containing block.</dd>
+    <dt>left edge</dt>
+    <dd>The left edge of the initial containing block.</dd>
+   </dl>
+  </td><td>
+   <dl>
+    <dt>top edge</dt>
+    <dd>The top-most edge of the element’s top padding edge and the top margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.</dd>
+    <dt>right edge</dt>
+    <dd>The right-most edge of the element’s right padding edge and the right margin edge of all of the element’s descendants' boxes, excluding boxes that have an ancestor of the element as their containing block.</dd>
+    <dt>bottom edge</dt>
+    <dd>The element’s bottom padding edge.</dd>
+    <dt>left edge</dt>
+    <dd>The element’s left padding edge.</dd>
+   </dl>
+</td></tr></tbody></table></div>
+
+</div><!-- en-box -->
+
+
+<p>
+`~scrolling区画$の
+`原点@
+は、
+`~scrolling区画$が`表示域$である場合は，`初期~包含塊$の原点に位置し、
+他の場合は，要素の~scroll位置が既定の位置にあるときの
+要素の~padding辺の左上隅に位置する。
+x, y 座標は それぞれ右方, 下方へ増大する。
+◎
+The origin of a scrolling area is the origin of the initial containing block if the scrolling area is a viewport, and otherwise the top left padding edge of the element when the element has its default scroll position. The x-coordinate increases rightwards, and the y-coordinate increases downwards. 
+</p>
+
+<div><!-- en-box -->
+<p>
+~boxあるいは要素の
+`開始辺@
+／
+`終止辺@
+とは、それぞれ，その `~overflow方向$と
+反対~方向 ／ 同じ方向
+に位置する２辺を指す（例えば，`~overflow方向$が 右方＆下方 ならば、
+開始辺は左辺および上辺 ／
+終止辺は右辺および下辺
+等々）。
+`ここでも、原文と等価になるように，圧縮して訳している。^tnote
+</p>
+
+
+	<div lang="en">
+<p>
+The beginning edges of a particular set of edges of a box or element are the following edges:</p>
+
+<dl class="switch">
+	<dt>If the overflow directions are rightward and downward</dt>
+	<dd>The top and left edges.</dd>
+	<dt>If the overflow directions are leftward and downward</dt>
+	<dd>The top and right edges.</dd>
+	<dt>If the overflow directions are leftward and upward</dt>
+	<dd>The bottom and right edges.</dd>
+	<dt>If the overflow directions are rightward and upward</dt>
+	<dd>The bottom and left edges.</dd>
+</dl>
+
+<p>The ending edges of a particular set of edges of a box or element are the following edges:</p>
+
+<dl class="switch">
+	<dt>If the overflow directions are rightward and downward</dt>
+	<dd>The bottom and right edges.</dd>
+	<dt>If the overflow directions are leftward and downward</dt>
+	<dd>The bottom and left edges.</dd>
+	<dt>If the overflow directions are leftward and upward</dt>
+	<dd>The top and left edges.</dd>
+	<dt>If the overflow directions are rightward and upward</dt>
+	<dd>The top and right edges.</dd>
+</dl>
+	</div>
+</div><!-- en-box -->
+
+<p>
+語
+`CSS ~layout~box@
+は CSS のそれと同じ意味とする。
+この仕様の要件の目的においては、
+`display$p ~propの算出値が
+`table-column$v ／ `table-column-group$v
+になるような要素は、（それぞれ， ~column／~column~groupの） `CSS ~layout~box$を持つものと見なされ~MUST。
+`要素は、複数の~layout~boxを持つこともある。^tnote
+◎
+The term CSS layout box refers to the same term in CSS. For the purpose of the requirements in this specification, elements that have a computed value of the display property that is table-column or table-column-group must be considered to have an associated CSS layout box (the column or column group, respectively).
+</p>
+
+<p>
+語
+`SVG ~layout~box@
+は SVG のそれと同じ意味とする。
+◎
+The term SVG layout box refers to the same term in SVG.
+</p>
+
+<p class="issue">
+語
+`CSS ~layout~box$,
+`SVG ~layout~box$
+のいずれも，現時点では CSS や SVG の中で定義されていない。
+◎
+The terms CSS layout box and SVG layout box are not currently defined by CSS or SVG.
+</p>
+
+<p>
+語
+`~layout~box@
+は
+`CSS ~layout~box$,
+`SVG ~layout~box$
+のいずれかを指す。
+◎
+The term layout box refers to either a CSS layout box or an SVG layout box. 
+</p>
+
+<p class="trans-note">【
+“要素に結付けられている（ CSS ／ SVG ）`~layout~box$のことを，単に
+<q>要素の~layout~box</q>
+と記す。
+そのような~boxが存在しない（例えば描画の対象でない要素など）ことを，
+<q>（要素は）~layout~boxを持たない</q>
+と記す。
+】</p>
+
+<p>
+語
+`座標系変換@
+は、 SVG ／ CSS による，座標系変換を指す。
+`SVG$r
+`CSS-TRANSFORMS-1$r
+◎
+The term transforms refers to SVG transforms and CSS transforms. [SVG] [CSS-TRANSFORMS-1]
+</p>
+
+
+<p>
+IDL ~method／属性（以下，単に “~member” ）から別の~memberが呼ばれるときは、~UAは，~memberの内部 API を呼出さ~MUST
+— すなわち、作者は独自の ECMAScript ~propや関数で上書きして，~memberの挙動を変更することはできない。
+◎
+When a method or an attribute is said to call another method or attribute, the user agent must invoke its internal API for that attribute or method so that e.g. the author can’t change the behavior by overriding attributes or methods with custom properties or functions in ECMAScript.
+</p>
+
+<p>
+特に指定されない限り、文字列の比較は，`文字大小区別$で行われる。
+◎
+Unless otherwise stated, string comparisons are done in a case-sensitive manner.
+</p>
+
+
+
+		<section id="css-pixels">
+
+<h3 title="CSS pixels">2.1. CSS ~pixel</h3>
+
+<p>
+特に指定されない限り、この仕様で定義される API に対する，すべての座標と寸法は、 CSS ~pixel単位とする。
+◎
+All coordinates and dimensions for the APIs defined in this specification are in CSS pixels, unless otherwise specified.
+</p>
+
+<p class="note">注記：
+このことは、例えば
+`matchMedia()^c
+には該当しない。
+そのような所では単位は明示的に与えられる。
+◎
+Note: This does not apply to e.g. matchMedia() as the units are explicitly given there.
+</p>
+
+
+		</section>
+		<section id="zooming">
+<h3 title="Zooming">2.2. ~zooming</h3>
+
+<div>
+<p>
+~zoomには，次の２種類のものがある
+`CSS-DEVICE-ADAPT$r：
+</p>
+
+<ul>
+	<li>
+初期 表示域の~sizeに影響する
+`頁~zoom@，および
+</li>
+	<li>
+拡大鏡のように挙動して,
+初期 表示域や実際の表示域には影響しない，
+`~pinch~zoom@
+。
+`局所的な~zoom。おそらく、マルチタッチ機器の UI で利用される，二本指で “つまんで” 拡げる操作に由来する呼称。^tnote
+</li>
+</ul>
+
+◎
+There are two kinds of zoom, page zoom which affects the size of the initial viewport, and pinch zoom which acts like a magnifying glass and does not affect the initial viewport or actual viewport. [CSS-DEVICE-ADAPT]
+</div>
+
+		</section>
+		<section id="_trans-conventions_">
+
+<h3 class="trans-note">【日本語訳に固有の表記規約】</h3>
+
+<p>
+記述を簡潔にするため、この訳では，次の（非公式な）用語／記号を定義する：
+</p>
+
+<ul>
+	<li>
+~algoや定義の記述に利用されている各種記号（ ~LET, ~EQ, ~IF, ~WHILE 等々）の意味や定義の詳細は、~SYMBOL_DEF_REFを~~参照されたし。
+</li>
+	<li>
+此れとは、`文脈~obj$の略記である。
+</li>
+	<li>
+`文書@
+とは、
+`Document$I ~interfaceを実装する~objの略記である。
+</li>
+	<li>
+`表示域$の
+`有効~横幅@ ／
+`有効~縦幅@
+とは、`表示域$に~scroll~barが描画されているときは その部分の区画は除外した，`表示域$の横幅／縦幅を表す（~scroll~barが無ければ，通常の意味の横幅／縦幅と同じになる）。
+</li>
+</ul>
+
+<p>
+加えて、次の記法を用いる：
+</p>
+
+<ul>
+	<li>
+<p>
+記法 “［ %W ｜ %H ］” （ "｜" は全角の縦棒）は、縦横それぞれの方向についての，並立的な記述を表す。
+</p>
+
+<p>
+例えば：
+<span class="block">
+“［ x 属性 ｜ y 属性 ］ は表示域の［ 左端の x 座標 ｜ 上端の y 座標 ］ を返す”
+</span>
+と記されていれば、それは２つの記述：
+
+<span class="block">
+“x 属性 は表示域の左端の x 座標を返す”,<br>
+“y 属性 は表示域の上端の y 座標を返す”
+</span>
+
+が，並立的に重ねられていることを表す。
+この対応関係は，同じ~algoの中の別々の段の間でも維持される。
+</p>
+
+<small>（このような表記を導入する理由は、記述の簡約以外にも，［
+縦横両方向に関する記述であって, その両方向について対称性がある
+］ことを明らかにすることもある。）</small>
+</li>
+
+</ul>
+
+
+		</section>
+	</section>
+	<section id="common-infrastructure">
+
+<h2 title="Common Infrastructure">3. 共通基盤</h2>
+
+		<section id="scrolling">
+<h3 title="Scrolling">3.1. ~scrolling0</h3>
+
+<div class="p">
+<p>
+~UAは，次を入力に…：
+</p>
+
+<ul class="params">
+	<li>
+関連要素： %要素
+</li>
+	<li>
+~scrollの挙動（省略可）： %挙動
+</li>
+	<li>
+目的位置： %目的位置
+</li>
+</ul>
+
+<p>
+…
+`~scrolling~box$ %~box の
+`~scrollを遂行する@
+ときは、次を実行する：
+</p>
+◎
+When a user agent is to perform a scroll of a scrolling box box, to a given position position, an associated element element and optionally a scroll behavior behavior (which is "auto" if omitted), the following steps must be run:
+</div>
+
+<ol>
+	<li>
+~IF［
+%挙動 は省略されている
+］
+⇒
+%挙動 ~SET `auto$l
+◎
+↑</li>
+
+	<li>
+~IF［
+%~box において`滑らかな~scroll$は進行中である
+］
+⇒
+それを`中止-$する
+◎
+Abort any ongoing smooth scroll for box.
+</li>
+
+	<li>
+<p>
+~IF［
+~UAは， `scroll-behavior$p ~propを尊守する
+］~AND［
+次のいずれかが満たされる
+］…：
+◎
+If the user agent honors the scroll-behavior property and one of the following are true:
+</p>
+
+<p class="trans-note">【
+尊守（ honor ） —
+~supportしていて, かつ
+その機能が（環境設定 他により）可能化されてもいる，といった含みも込められた語と見られる。
+】</p>
+
+		<ul>
+			<li>
+［
+%挙動 ~EQ `auto$l
+］~AND［
+%要素 ~NEQ ~NULL
+］~AND［
+%要素 の `scroll-behavior$p ~propの算出値 ~EQ `smooth$v
+］
+◎
+behavior is "auto" and element is not null and its computed value of the scroll-behavior property is smooth
+</li>
+			<li>
+%挙動 ~EQ `smooth$l
+◎
+behavior is smooth
+</li>
+		</ul>
+
+<p>
+…ならば
+⇒
+%目的位置 へ向けて，
+%~box を`滑らかに~scroll$する
+◎
+...then perform a smooth scroll of box to position. Otherwise, perform an instant scroll of box to position.
+</p>
+	</li>
+	<li>
+~ELSE
+⇒
+%目的位置 へ向けて，
+%~box を`瞬時に~scroll$する
+</li>
+
+</ol>
+
+<p>
+~UAは，%目的位置 へ向けて
+`~scrolling~box$ %~box を
+`滑らかに~scroll@
+するときは、~UA定義の~~速度＆~~動きにより， %~box の~scroll位置を更新し~MUST。
+~scrollの
+`完了-@
+時には、
+%~box の~scroll位置は %目的位置 にされ~MUST。
+~scrollは~algoまたは利用者により
+`中止-@
+され得る。
+◎
+When a user agent is to perform a smooth scroll of a scrolling box box to position, it must update the scroll position of box in a user-agent-defined fashion over a user-agent-defined amount of time. When the scroll is completed, the scroll position of box must be position. The scroll can also be aborted, either by an algorithm or by the user.
+</p>
+
+<p>
+~UAは，`~scrolling~box$ %~box を
+%目的位置 へ向けて
+`瞬時に~scroll@
+させるときは、
+%~box の~scroll位置を %目的位置 に更新し~MUST。
+◎
+When a user agent is to perform an instant scroll of a scrolling box box to position, it must update the scroll position of box to position.
+</p>
+
+
+<p>
+文書 %文書 を
+`文書の開始位置に~scroll@
+するときは、次を実行する：
+◎
+To scroll to the beginning of the document for a document document, follow these steps:
+</p>
+
+<ol>
+	<li>
+%表示域 ~LET
+%文書 に結付けられている`表示域$
+◎
+Let viewport be the viewport that is associated with document.
+</li>
+
+	<li>
+%目的位置 ~LET
+%表示域 の`開始辺$が`~scrolling区画$の`開始辺$に揃えられたときに %表示域 がとる，~scroll位置
+◎
+Let position be the the scroll position viewport would have by aligning the beginning edges of the scrolling area with the beginning edges of viewport.
+</li>
+
+	<li>
+~IF［
+%目的位置 ~EQ %表示域 の現在の~scroll位置
+］~AND［
+%表示域 において`滑らかな~scroll$は進行中でない
+］
+⇒
+~RET
+◎
+If position is the same as viewport’s current scroll position, and viewport does not have an ongoing smooth scroll, abort these steps.
+</li>
+
+	<li>
+<p>
+次を入力に，
+%表示域 の`~scrollを遂行する$
+</p>
+		<dl>
+			<dt>関連要素</dt>
+			<dd>
+%文書 の`根~要素$が在れば それ ／ 無ければ ~NULL
+</dd>
+			<dt>目的位置</dt>
+			<dd>
+%目的位置
+</dd>
+		</dl>
+◎
+Perform a scroll of viewport to position, and document’s root element as the associated element, if there is one, or null otherwise. 
+</li>
+
+</ol>
+
+<p class="note">注記：
+この~algoは、
+HTML により定義される，［
+`#top^c 素片識別子
+`<a href="~HTML5/browsers.html#the-indicated-part-of-the-document">The indicated part of the document</a>^tnote
+へ~navigateするとき
+］に利用される。
+`HTML$r
+◎
+Note: This algorithm is used when navigating to the #top fragment identifier, as defined in HTML. [HTML]
+</p>
+
+
+		</section>
+		<section id="webidl-values">
+
+<h3 title="WebIDL values">3.2. WebIDL 値</h3>
+
+<p>
+与えられた値 %x を
+`有限~値に正規化-@
+するときは、
+%x が特別な浮動小数点リテラル値
+（ `Infinity^I ／ `-Infinity^c ／ `NaN^I ）
+`WEBIDL$r
+である場合は、それを値 `0^c にする。
+◎
+When asked to normalize non-finite values for a value x, if x is one of the three special floating point literal values (Infinity, -Infinity or NaN), then x must be changed to the value 0. [WEBIDL]
+</p>
+
+
+		</section>
+	</section>
+	<section id="extensions-to-the-window-interface">
+
+<h2 title="Extensions to the Window Interface">4. `Window^I ~interfaceに対する拡張</h2>
+
+⇒！
+enum `ScrollBehavior@I { `auto@l, `instant@l, `smooth@l };
+
+dictionary `ScrollOptions@I {
+  `ScrollBehavior$I `behavior@mb = `auto$l;
+};
+
+dictionary `ScrollToOptions@I : `ScrollOptions$I {
+  unrestricted double `left@mb;
+  unrestricted double `top@mb;
+};◎
+
+<!---->
+⇒！
+partial interface `Window!I {
+  [NewObject] `MediaQueryList$I `matchMedia$m(DOMString %query);
+  [SameObject, Replaceable] readonly attribute `Screen$I `screen$m;
+
+  // <span title="browsing context">閲覧文脈</span>
+  void `moveTo$m(long %x, long %y);
+  void `moveBy$m(long %x, long %y);
+  void `resizeTo$m(long %x, long %y);
+  void `resizeBy$m(long %x, long %y);
+
+  // <span title="viewport">表示域</span>
+  [Replaceable] readonly attribute long `innerWidth$m;
+  [Replaceable] readonly attribute long `innerHeight$m;
+
+  // <span title="viewport scrolling">表示域~scroll</span>
+  [Replaceable] readonly attribute double `scrollX$m;
+  [Replaceable] readonly attribute double `pageXOffset$m;
+  [Replaceable] readonly attribute double `scrollY$m;
+  [Replaceable] readonly attribute double `pageYOffset$m;
+  void `scroll$m(optional `ScrollToOptions$I %options);
+  void `scroll$m(unrestricted double %x, unrestricted double %y);
+  void `scrollTo$m(optional `ScrollToOptions$I %options);
+  void `scrollTo$m(unrestricted double %x, unrestricted double %y);
+  void `scrollBy$m(optional `ScrollToOptions$I %options);
+  void `scrollBy$m(unrestricted double %x, unrestricted double %y);
+
+  // <span title="client">~client~window</span>
+  [Replaceable] readonly attribute long `screenX$m;
+  [Replaceable] readonly attribute long `screenY$m;
+  [Replaceable] readonly attribute long `outerWidth$m;
+  [Replaceable] readonly attribute long `outerHeight$m;
+  [Replaceable] readonly attribute double `devicePixelRatio$m;
+};◎
+
+
+`Window^dgm
+
+<p>
+`matchMedia(query)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+When the matchMedia(query) method is invoked these steps must be run:
+</p>
+
+<ol>
+	<li>
+<p>
+~RET 次のように設定された，新たな `MediaQueryList$I ~obj：
+</p>
+		<ul>
+			<li>
+`媒体~query~list$ ~SET 
+%query を
+<a href="~CSSOM#parse-a-media-query-list">構文解析-</a>
+した結果
+</li>
+
+			<li>
+`文書$mq ~SET 此れに`結付けられている文書$
+</li>
+		</ul>
+◎
+Let parsed media query list be the result of parsing query.
+◎
+Return a new MediaQueryList object, with the context object’s associated Document as the document, with parsed media query list as its associated media query list.
+
+	</li>
+</ol>
+
+<p>
+`screen@m
+属性の被取得時には
+⇒
+`Window$I ~objに結付けられている `Screen$I ~objを返さ~MUST。
+◎
+The screen attribute must return the Screen object associated with the Window object.
+</p>
+
+<p class="note">注記：
+`WindowProxy$I
+~objを通した `screen^c への~accessでは、`文書$が~navigateされた際には、異なる結果が取得され得る。
+◎
+Note: Accessing screen through a WindowProxy object might yield different results when the Document is navigated.
+</p>
+
+
+
+<p>
+`moveTo(x, y)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The moveTo(x, y) method must follow these steps:
+</p>
+
+<ol>
+	<li>
+任意選択で
+⇒
+~RET
+◎
+Optionally, terminate these steps.
+</li>
+
+	<li>
+%target ~LET 此れの`閲覧文脈$
+◎
+Let target be the browsing context of the context object.
+</li>
+
+	<li>
+~IF［［
+`~incumbent設定群~obj$の`担当の閲覧文脈$
+］に %target の `~resizeと移動は許容され$ていない
+］
+⇒
+~RET
+◎
+Let source be the responsible browsing context of the incumbent settings object.
+◎
+If source is not allowed to resize and move target, terminate these steps.
+</li>
+
+	<li>
+任意選択で，~UA定義0の方式で
+⇒
+%x, %y
+を［
+可用な空間の外に~windowが出ない様な大きさ
+］に切詰める
+◎
+Optionally, clamp x and y in a user-agent-defined manner so that the window does not move outside the available space.
+</li>
+
+	<li>
+%target の~windowを，その左上隅が［
+出力~機器の左上隅から相対的な［
+%target の CSS ~pixel単位による座標 (%x, %y) 
+］］に揃うように移動させる。
+ここで，各~座標軸の正方向は［
+右方, 下方
+］とする。
+◎
+Move target’s window such that the window’s top left corner is at coordinates (x, y) relative to the top left corner of the output device, measured in CSS pixels of target. The positive axes are rightward and downward. 
+</li>
+
+</ol>
+
+<p>
+`moveBy(x, y)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The moveBy(x, y) method must follow these steps:
+</p>
+
+<ol>
+	<li>
+任意選択で
+⇒
+~RET
+◎
+Optionally, terminate these steps.
+</li>
+
+	<li>
+%target ~LET 此れの`閲覧文脈$
+◎
+Let target be the browsing context of the context object.
+</li>
+
+	<li>
+~IF［［
+`~incumbent設定群~obj$の`担当の閲覧文脈$
+］に %target の `~resizeと移動は許容され$ていない
+］
+⇒
+~RET
+◎
+Let source be the responsible browsing context of the incumbent settings object.
+◎
+If source is not allowed to resize and move target, terminate these steps.
+</li>
+
+	<li>
+任意選択で，~UA定義0の方式で
+⇒
+%x, %y
+を［
+可用な空間の外に~windowが出ない様な大きさ
+］に切詰める
+◎
+Optionally, clamp x and y in a user-agent-defined manner so that the window does not move outside the available space.
+</li>
+
+	<li>
+%target の~windowを，
+%target の CSS ~pixel単位で［
+右方に %x, 下方に %y
+］だけ移動させる
+◎
+Move target’s window x CSS pixels of target rightward and y CSS pixels of target downward.
+</li>
+
+</ol>
+
+
+<p>
+`resizeTo(x, y)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The resizeTo(x, y) method must follow these steps:
+</p>
+
+<ol>
+	<li>
+任意選択で
+⇒
+~RET
+◎
+Optionally, terminate these steps.
+</li>
+
+	<li>
+%target ~LET 此れの`閲覧文脈$
+◎
+Let target be the browsing context of the context object.
+</li>
+
+	<li>
+~IF［［
+`~incumbent設定群~obj$の`担当の閲覧文脈$
+］に %target の `~resizeと移動は許容され$ていない
+］
+⇒
+~RET
+◎
+Let source be the responsible browsing context of the incumbent settings object.
+◎
+If source is not allowed to resize and move target, terminate these steps.
+</li>
+
+	<li>
+任意選択で，~UA定義0の方式で
+⇒
+%x, %y
+を［
+可用な空間の中で~windowの大きさが~~適度な上限／下限に収まる
+］ように切詰める
+◎
+Optionally, clamp x and y in a user-agent-defined manner so that the window does not get too small or bigger than the available space.
+</li>
+
+	<li>
+%target の~windowを，~resizeする
+— その右辺と下辺を %target の CSS ~pixel単位で［
+表示域の左辺と右辺の距離は %x,
+表示域の上辺と下辺の距離は %y
+］になるように移動させる
+◎
+Resize target’s window by moving its right and bottom edges such that the distance between the left and right edges of the viewport are x CSS pixels of target and the distance between the top and bottom edges of the viewport are y CSS pixels of target.
+</li>
+
+	<li>
+任意選択で，~UA定義0の方式で
+⇒
+%target の~windowを，可用な空間をはみ出さないように移動させる
+◎
+Optionally, move target’s window in a user-agent-defined manner so that it does not grow outside the available space.
+</li>
+
+</ol>
+
+<p>
+`resizeBy(x, y)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The resizeBy(x, y) method must follow these steps:
+</p>
+
+
+<ol>
+	<li>
+任意選択で
+⇒
+~RET
+◎
+Optionally, terminate these steps.
+</li>
+
+	<li>
+%target ~LET 此れの`閲覧文脈$
+◎
+Let target be the browsing context of the context object.
+</li>
+
+	<li>
+~IF［［
+`~incumbent設定群~obj$の`担当の閲覧文脈$
+］に %target の `~resizeと移動は許容され$ていない
+］
+⇒
+~RET
+◎
+Let source be the responsible browsing context of the incumbent settings object.
+◎
+If source is not allowed to resize and move target, terminate these steps.
+</li>
+
+	<li>
+任意選択で，~UA定義0の方式で
+⇒
+%x, %y
+を［
+可用な空間の中で~windowの大きさが~~適度な上限／下限に収まる
+］ように切詰める
+◎
+Optionally, clamp x and y in a user-agent-defined manner so that the window does not get too small or bigger than the available space.
+</li>
+
+	<li>
+%target の~windowを，~resizeする
+— その右辺と下辺を %target の CSS ~pixel単位で［
+左辺を %x,
+上辺を %y
+］だけ移動させる
+◎
+Resize target’s window by moving its right edge x CSS pixels of target rightward and its bottom edge y CSS pixels of target downward.
+</li>
+
+	<li>
+任意選択で，~UA定義0の方式で
+⇒
+%target の~windowを，可用な空間をはみ出さないように移動させる
+◎
+Optionally, move target’s window in a user-agent-defined manner so that it does not grow outside the available space.
+</li>
+
+</ol>
+
+<p>
+次のすべての条件が成立するとき、
+`閲覧文脈$ %A には，`閲覧文脈$ %B の
+`~resizeと移動は許容され@
+る：
+◎
+A browsing context A is allowed to resize and move a browsing context B if all the following conditions are met:
+</p>
+
+<ul>
+	<li>
+%B は（利用者による行為ではなく）~scriptにより作成された`補助~閲覧文脈$である。
+◎
+B is an auxiliary browsing context that was created by a script (as opposed to by an action of the user).
+</li>
+
+	<li>
+%A は %B に対し
+<a href="~HTML5/browsers.html#familiar-with">familiar with</a>
+である。
+◎
+A is familiar with B.
+</li>
+
+</ul>
+
+
+
+<div class="p">
+<p>
+［
+`innerWidth@m ｜ `innerHeight@m
+］属性の被取得時には、次を実行し~MUST：
+</p>
+
+<ol>
+	<li>
+~IF［
+此れの`表示域$は無い
+］
+⇒
+~RET ~zero
+</li>
+	<li>
+~RET
+`表示域$の［
+横幅 ｜ 縦幅
+］（~scroll~barが描画されている場合はその~sizeも含める）
+</li>
+</ol>
+◎
+The innerWidth attribute must return the viewport width including the size of a rendered scroll bar (if any), or zero if there is no viewport.
+</div>
+
+
+<div class="example">
+<p>
+表示域の横幅は，次の~code片で取得できる：
+◎
+The following snippet shows how to obtain the width of the viewport:
+</p>
+
+<pre>var viewportWidth = innerWidth</pre>
+
+</div>
+
+<div class="en">
+<p lang="en">
+The innerHeight attribute must return the viewport height including the size of a rendered scroll bar (if any), or zero if there is no viewport.
+</p>
+</div>
+
+
+<div class="p">
+<p>
+［
+`scrollX@m ｜ `scrollY@m
+］属性の被取得時には、次を実行し~MUST：
+</p>
+
+<ol>
+	<li>
+~IF［
+此れの`表示域$は無い
+］
+⇒
+~RET ~zero
+</li>
+	<li>
+~RET
+`初期~包含塊$原点に相対的な，
+`表示域$の［
+左端の x 座標 ｜ 上端の y 座標
+］
+</li>
+</ol>
+◎
+The scrollX attribute attribute must return the x-coordinate, relative to the initial containing block origin, of the left of the viewport, or zero if there is no viewport.
+</div>
+
+<p>
+［
+`pageXOffset@m ｜ `pageYOffset@m
+］属性の被取得時には
+⇒
+［
+`scrollX$m ｜ `scrollY$m
+］属性と同じ値を返さ~MUST。
+◎
+The pageXOffset attribute must return the value returned by the scrollX attribute.
+</p>
+
+<div class="en">
+	<div lang="en">
+<p>
+The scrollY attribute attribute must return the y-coordinate, relative to the initial containing block origin, of the top of the viewport, or zero if there is no viewport.
+</p>
+
+<p>
+The pageYOffset attribute must return the value returned by the scrollY attribute.
+</p>
+	</div>
+</div>
+
+<p>
+`scroll()@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+When the scroll() method is invoked these steps must be run:
+</p>
+
+<ol>
+
+	<li>
+<p>
+~IF［
+~methodは 1 個の引数 %options を伴って呼出された
+］：
+◎
+If invoked with one argument, follow these substeps:
+</p>
+		<ol>
+			<li>
+%x ~LET %options に `left$mb 辞書~memberは［
+在するならば その値／
+不在ならば `表示域$の現在の x 軸~scroll位置
+］
+◎
+Let options be the argument.
+◎
+Let x be the value of the left dictionary member of options, if present, or the viewport’s current scroll position on the x axis otherwise.
+</li>
+
+			<li>
+%y ~LET %options に `top$mb 辞書~memberは［
+在するならば その値／
+不在ならば `表示域$の現在の y 軸~scroll位置
+］
+◎
+Let y be the value of the top dictionary member of options, if present, or the viewport’s current scroll position on the y axis otherwise.
+</li>
+		</ol>
+	</li>
+
+	<li>
+
+<p>
+~IF［
+~methodは 2 個の引数 %x, %y を伴って呼出された
+］：
+◎
+If invoked with two arguments, follow these substeps:
+</p>
+		<ol>
+			<li>
+%options ~LET
+~NULL を
+IDL `ScrollToOptions$I 型の`辞書~値に変換-$した結果
+`WEBIDL$r
+◎
+Let options be null converted to a ScrollToOptions dictionary. [WEBIDL]
+◎
+Let x and y be the arguments, respectively.
+</li>
+
+		</ol>
+	</li>
+
+	<li>
+%x, %y を`有限~値に正規化-$
+◎
+Normalize non-finite values for x and y.
+</li>
+
+	<li>
+~IF［
+此れの`表示域$は無い
+］
+⇒
+~RET
+◎
+If there is no viewport, abort these steps.
+</li>
+
+	<li>
+`有効~横幅^V ~LET `表示域$の`有効~横幅$
+◎
+Let viewport width be the width of the viewport excluding the width of the scroll bar, if any.
+</li>
+
+	<li>
+`有効~縦幅^V ~LET `表示域$の`有効~縦幅$
+◎
+Let viewport height be the height of the viewport excluding the height of the scroll bar, if any.
+</li>
+	<li>
+%~scrolling区画 ~LET `表示域$の`~scrolling区画$
+◎
+↓</li>
+	<li>
+<p>
+`表示域$の横方向の`~overflow方向$に応じて：
+◎
+↓</p>
+		<dl class="switch">
+			<dt>右方
+◎
+If the viewport has rightward overflow direction
+</dt>
+			<dd>
+%x ~LET
+max( 0, min( %x, ( %~scrolling区画 の横幅 − `有効~横幅^V )))
+◎
+Let x be max(0, min(x, viewport scrolling area width - viewport width)).
+</dd>
+
+			<dt>左方
+◎
+If the viewport has leftward overflow direction
+</dt>
+
+			<dd>
+%x ~LET
+min( 0, max( %x, ( `有効~横幅^V − %~scrolling区画 の横幅 )))
+◎
+Let x be min(0, max(x, viewport width - viewport scrolling area width)).
+</dd>
+
+		</dl>
+	</li>
+
+	<li>
+<p>
+`表示域$の縦方向の`~overflow方向$に応じて：
+</p>
+		<dl class="switch">
+			<dt>下方
+◎
+If the viewport has downward overflow direction
+</dt>
+			<dd>
+%y ~LET
+max( 0, min( %y, ( %~scrolling区画 の縦幅 − `有効~縦幅^V )))
+◎
+Let y be max(0, min(y, viewport scrolling area height - viewport height)).
+</dd>
+
+			<dt>上方
+◎
+If the viewport has upward overflow direction
+</dt>
+
+			<dd>
+%y ~LET
+min( 0, max( %y, ( `有効~縦幅^V − %~scrolling区画 の縦幅 )))
+◎
+Let y be min(0, max(y, viewport height - viewport scrolling area height)).
+</dd>
+
+		</dl>
+	</li>
+
+	<li>
+%目的位置 ~LET
+%~scrolling区画 の座標 ( %x, %y ) が`表示域$の左上隅に揃えられるような，`表示域$の~scroll位置
+◎
+Let position be the scroll position the viewport would have by aligning the x-coordinate x of the viewport scrolling area with the left of the viewport and aligning the y-coordinate y of the viewport scrolling area with the top of the viewport.
+</li>
+
+	<li>
+~IF［
+%目的位置 ~EQ `表示域$の現在の~scroll位置
+］~AND［
+`表示域$において`滑らかな~scroll$は進行中でない
+］
+⇒
+~RET
+◎
+If position is the same as the viewport’s current scroll position, and the viewport does not have an ongoing smooth scroll, abort these steps.
+</li>
+
+	<li>
+%文書 ~LET `表示域$に結付けられている`文書$
+◎
+Let document be the viewport’s associated Document.
+</li>
+
+	<li>
+<p>
+次を入力に，`表示域$の`~scrollを遂行する$
+</p>
+		<dl>
+			<dt>関連要素</dt>
+			<dd>
+%文書 の`根~要素$があれば それ ／
+なければ ~NULL
+</dd>
+			<dt>~scrollの挙動</dt>
+			<dd>
+%options の `behavior$mb 辞書~memberの値
+</dd>
+			<dt>目的位置</dt>
+			<dd>
+%目的位置
+</dd>
+		</dl>
+◎
+Perform a scroll of the viewport to position, document’s root element as the associated element, if there is one, or null otherwise, and the scroll behavior being the value of the behavior dictionary member of options.
+</li>
+
+</ol>
+
+
+<p>
+`scrollTo()@m
+~methodの被呼出時には
+⇒
+~UAは、同じ引数で `scroll()$m ~methodが呼出されたかのように，動作し~MUST。
+◎
+When the scrollTo() method is invoked, the user agent must act as if the scroll() method was invoked with the same arguments.
+</p>
+
+
+<p>
+`scrollBy()@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+When the scrollBy() method is invoked, the user agent must run these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+~methodは 2 個の引数 %x, %y を伴って呼出された
+］：
+◎
+If invoked with two arguments, follow these substeps:
+</p>
+
+		<ol>
+			<li>
+%options ~LET
+~NULL を
+IDL `ScrollToOptions$I 型の`辞書~値に変換-$した結果
+`WEBIDL$r
+◎
+Let options be null converted to a ScrollToOptions dictionary. [WEBIDL]
+</li>
+
+			<li>
+%options の［
+`left$mb, `top$mb
+］辞書~member ~LET 順に［
+%x, %y
+］
+◎
+Let x and y be the arguments, respectively.
+◎
+Let the left dictionary member of options have the value x.
+◎
+Let the top dictionary member of options have the value y.
+</li>
+
+		</ol>
+	</li>
+
+	<li>
+%options の［
+`left$mb, `top$mb
+］辞書~member を`有限~値に正規化-$する
+◎
+Normalize non-finite values for the left and top dictionary members of options.
+</li>
+
+
+	<li>
+%options の［
+`left$mb, `top$mb
+］辞書~memberに，［
+`scrollX$m, `scrollY$m
+］の値を順に加算する
+◎
+Add the value of scrollX to the left dictionary member.
+◎
+Add the value of scrollY to the top dictionary member.
+</li>
+
+	<li>
+%options を唯一の引数に，
+`scroll()$m ~methodが呼出されたかのように，動作する
+◎
+Act as if the scroll() method was invoked with options as the only argument.
+</li>
+
+</ol>
+
+
+<div class="p">
+<p>
+［
+`screenX@m ｜ `screenY@m
+］属性の被取得時には、次を実行し~MUST：
+</p>
+
+<ol>
+	<li>
+~IF［
+此れの~client~windowは存在しない
+］
+⇒
+~RET ~zero
+</li>
+	<li>
+~RET
+出力~機器の~screenの原点に相対的な, ~pixel単位による，~client~window†の［
+左端の x 座標 ｜ 上端の y 座標
+］
+</li>
+</ol>
+◎
+The screenX attribute must return the x-coordinate, relative to the origin of the screen of the output device, of the left of the client window as number of pixels, or zero if there is no such thing.
+◎
+The screenY attribute must return the y-coordinate, relative to the origin of the screen of the output device, of the top of the client window as number of pixels, or zero if there is no such thing.
+</div>
+
+<p class="trans-note">【†
+“~client~window” がどの部分を指すのか，定義されていないが、現実の~browserのふるまいからは，外枠も含めた~window全体が占める区画を指すものと推定される。
+】</p>
+
+
+<div class="p">
+<p>
+［
+`outerWidth@m ｜ `outerHeight@m
+］属性の被取得時には、次を実行し~MUST：
+</p>
+
+<ol>
+	<li>
+~IF［
+此れの~client~windowは存在しない
+］
+⇒
+~RET ~zero
+</li>
+	<li>
+~RET ~client~windowの［
+横幅 ｜ 縦幅
+］
+</li>
+</ol>
+◎
+The outerWidth attribute must return the width of the client window. If there is no client window this attribute must return zero.
+◎
+The outerHeight attribute must return the height of the client window. If there is no client window this attribute must return zero.
+</div>
+
+<p>
+`devicePixelRatio@m
+属性の被取得時には、次を実行し~MUST：
+◎
+The devicePixelRatio attribute must return the result of the following algorithm:
+</p>
+
+<ol>
+	<li>
+~IF［
+出力~機器は存在しない
+］
+⇒
+~RET 1
+◎
+If there is no output device, return 1 and abort these steps.
+</li>
+
+	<li>
+`CSS ~pixel~size^V ~LET ［
+現在の`頁~zoom$倍率
+］, および［
+`~pinch~zoom$倍率 1.0
+］の下での， CSS ~pixel~size
+◎
+Let CSS pixel size be the size of a CSS pixel at the current page zoom scale factor and at a pinch zoom scale factor of 1.0.
+</li>
+
+	<li>
+%機器~pixel~size ~LET
+出力~機器の機器~pixelの縦~size
+◎
+Let device pixel size be the vertical size of a device pixel of the output device.
+</li>
+
+	<li>
+~RET
+`CSS ~pixel~size^V ÷ %機器~pixel~size
+◎
+Return the result of dividing CSS pixel size by device pixel size.
+</li>
+
+</ol>
+
+		<section id="the-features-argument-to-the-open()-method">
+<h3 title="The features argument to the open() method">4.1. ~open_m~methodに対する %features 引数</h3>
+
+<!-- open-features!I -->
+<p>
+HTML は，`~open_m~method$を定義しているが、３番目の引数 %features がどのような効果をもたらすかについては，定義していない。
+`HTML$r
+◎
+HTML defines the open() method but has no defined effect for the third argument, features. [HTML]
+</p>
+
+
+<p>
+この仕様は、その引数の効果を，次の様に定義する：
+◎
+This specification defines the effect of the features argument for user agents that do not opt to ignore it, as follows:
+</p>
+
+
+<ol>
+	<li>
+~IF［
+~open_m~methodによる結果、新たな`補助~閲覧文脈$は作成されない
+］
+⇒
+~RET
+◎
+If the method does not result in a new auxiliary browsing context being created, terminate these steps.
+</li>
+
+	<li>
+%target ~LET 作成される新たな`補助~閲覧文脈$
+◎
+Let target be the new auxiliary browsing context.
+</li>
+
+	<li>
+%tokens ~LET
+%features を`~commaで分割$した結果
+◎
+Let tokens be the result of splitting features on commas.
+</li>
+
+	<li>
+`解析済み features^V ~LET 新たな空の`辞書$
+◎
+Let parsed features be a new empty dictionary.
+</li>
+
+	<li>
+<p>
+~FOR
+%tokens 内の ~EACH ( ~token %token ) に対し：
+◎
+Token loop: For each token token in tokens, follow these substeps:
+</p>
+
+<div>
+
+		<ol>
+			<li>
+~IF［
+%token の中に文字 `=^l (U+003D) は含まれていない 
+］
+⇒
+~CONTINUE
+</li>
+
+			<li>
+［
+%名前, %値
+］ ~LET %token をその中の最初の文字 `=^l の所で 2 個の文字列に~~分割した結果
+</li>
+
+			<li>
+%名前 ~SET ［
+%名前 から
+`頭部と尾部の空白~並びを剥いだ$結果
+］を `ASCII 小文字化$した結果
+</li>
+			<li>
+~IF［
+%名前 は `解析済み features^V 内に在する
+］
+⇒
+~CONTINUE
+</li>
+			<li>
+~IF［
+%名前 ~NIN `~supportされる~open_m特色機能~名$
+］
+⇒
+~CONTINUE
+</li>
+			<li>
+%値 ~LET %値 を`整数として構文解析-$した結果
+</li>
+			<li>
+~IF［
+%値 ~EQ ~error
+］
+⇒
+~CONTINUE
+</li>
+
+			<li>
+`解析済み features^V 内の %名前 ~memberの値 ~SET %値
+</li>
+		</ol>
+
+
+<ol lang="en"
+	><li>Let input be token.
+</li><li>Let position point at the first character of input.
+</li><li>Skip whitespace.
+</li><li>Collect a sequence of characters that are not space characters nor "=" (U+003D). Let name be the collected characters, converted to ASCII lowercase.
+</li><li>If name is in parsed features or if name is not a supported open() feature name, continue token loop.
+</li><li>Skip whitespace.
+</li><li>If the character at position is not "=" (U+003D), continue token loop.
+</li><li>Advance position by one.
+</li><li>If position is past the end of input, continue token loop.
+</li><li>Collect a sequence of characters that are any characters. Let raw value be the collected characters.
+</li><li>Let value be the result of invoking the rules for parsing integers on raw value.
+</li><li>If value is an error, continue token loop.
+</li><li>Set name in parsed features to value.
+</li></ol>
+
+</div>
+
+	</li>
+
+	<li>
+<p>
+~IF［
+`解析済み features^V 内に `left$opf は在する
+］：
+◎
+If left is present in parsed features, follow these substeps:
+</p>
+
+		<ol>
+			<li>
+%x ~LET `left$opf の値
+◎
+Let x be the value of left.
+</li>
+
+			<li>
+任意選択で，~UA定義0の方式で
+⇒
+%x を［
+可用な空間の外に~windowが出ない様な大きさ
+］に切詰める
+◎
+Optionally, clamp x in a user-agent-defined manner so that the window does not move outside the available space.
+</li>
+
+			<li>
+任意選択で
+⇒
+%target の~windowを，［
+%target の CSS ~pixelによる，出力~機器の左辺に相対的な［
+~windowの左辺の横方向 座標
+］］が %x に位置する様に移動させる。
+— 正の値が右方を向くとする。
+◎
+Optionally, move target’s window such that the window’s left edge is at the horizontal coordinate x relative to the left edge of the output device, measured in CSS pixels of target. The positive axis is rightward.
+</li>
+
+		</ol>
+	</li>
+
+	<li>
+<p>
+~IF［
+`解析済み features^V 内に `top$opf は在する
+］：
+◎
+If top is present in parsed features, follow these substeps:
+</p>
+
+		<ol>
+			<li>
+%y ~LET `top$opf の値
+◎
+Let y be the value of top.
+</li>
+
+			<li>
+任意選択で，~UA定義0の方式で
+⇒
+%y を［
+可用な空間の外に~windowが出ない様な大きさ
+］に切詰める
+◎
+Optionally, clamp y in a user-agent-defined manner so that the window does not move outside the available space.
+</li>
+
+			<li>
+任意選択で
+⇒
+%target の~windowを，［
+%target の CSS ~pixelによる，出力~機器の上辺に相対的な［
+~windowの上辺の縦方向 座標
+］］は %y に位置する様に移動させる。
+— 正の値が下方を向くとする。
+◎
+Optionally, move target’s window such that the window’s top edge is at the vertical coordinate y relative to the top edge of the output device, measured in CSS pixels of target. The positive axis is downward.
+</li>
+
+		</ol>
+	</li>
+
+	<li>
+<p>
+~IF［
+`解析済み features^V 内に `width$opf は在する
+］：
+◎
+If width is present in parsed features, follow these substeps:
+</p>
+
+		<ol>
+			<li>
+%x ~LET `width$opf の値
+◎
+Let x be the value of width.
+</li>
+
+			<li>
+任意選択で，~UA定義0の方式で
+⇒
+%x
+を，可用な空間の中で~windowの大きさが~~適度な上限／下限に収まるように切詰める
+◎
+Optionally, clamp x in a user-agent-defined manner so that the window does not get too small or bigger than the available space.
+</li>
+
+			<li>
+任意選択で
+⇒
+［
+表示域の左辺と右辺の距離は %target CSS ~pixel単位で %x になる
+］様に， %target の~windowの右辺を移動させることにより，その~windowの~sizeを変える
+◎
+Optionally, size target’s window by moving its right edge such that the distance between the left and right edges of the viewport are x CSS pixels of target.
+</li>
+
+			<li>
+任意選択で，~UA定義0の方式で
+⇒
+%target の~windowを，可用な空間をはみ出さないように移動させる
+◎
+Optionally, move target’s window in a user-agent-defined manner so that it does not grow outside the available space. 
+</li>
+
+		</ol>
+	</li>
+
+	<li>
+<p>
+~IF［
+`解析済み features^V 内に `height$opf は在する
+］：
+◎
+If height is present in parsed features, follow these substeps:
+</p>
+
+		<ol>
+			<li>
+%y ~LET `height$opf の値
+◎
+Let y be the value of height.
+</li>
+
+			<li>
+任意選択で，~UA定義0の方式で
+⇒
+%y を，可用な空間の中で~windowの大きさが~~適度な上限／下限に収まるように切詰める
+◎
+Optionally, clamp y in a user-agent-defined manner so that the window does not get too small or bigger than the available space.
+</li>
+
+			<li>
+任意選択で
+⇒
+［
+表示域の上辺と下辺の距離は %target CSS ~pixel単位で %y になる
+］様に， %target の~windowの右辺を移動させることにより，その~windowの~sizeを変える
+◎
+Optionally, size target’s window by moving its bottom edge such that the distance between the top and bottom edges of the viewport are y CSS pixels of target.
+</li>
+
+			<li>
+任意選択で，~UA定義0の方式で
+⇒
+%target の~windowを，可用な空間をはみ出さないように移動させる
+◎
+Optionally, move target’s window in a user-agent-defined manner so that it does not grow outside the available space.
+</li>
+
+		</ol>
+	</li>
+</ol>
+
+<p>
+`~supportされる~open_m特色機能~名@
+は、次のいずれかである：
+◎
+A supported open() feature name is one of the following:
+</p>
+
+<dl>
+	<dt>`width@opf</dt>
+	<dd>
+表示域の横幅
+◎
+The width of the viewport.
+</dd>
+
+	<dt>`height@opf</dt>
+	<dd>
+表示域の縦幅
+◎
+The height of the viewport.
+</dd>
+
+	<dt>`left@opf</dt>
+	<dd>
+~windowの左端の位置
+◎
+The left position of the window.
+</dd>
+
+	<dt>`top@opf</dt>
+	<dd>
+~windowの上端の位置
+◎
+The top position of the window.
+</dd>
+
+</dl>
+
+		</section>
+		<section id="the-mediaquerylist-interface">
+<h3 title="The MediaQueryList Interface">4.2. `MediaQueryList^I ~interface</h3>
+
+<p>
+この節は、 `HTML$r に定義される`~event-loop$に統合される。
+◎
+This section integrates with the event loop defined in HTML. [HTML]
+</p>
+
+<p>
+`MediaQueryList$I ~objには、次に挙げるものが結付けられる：
+</p>
+
+<dl class="def-list">
+	<dt>`媒体~query~list@</dt>
+	<dt>`文書@mq</dt>
+	<dd>
+作成-時に設定される。
+◎
+A MediaQueryList object has an associated media query list and an associated document set on creation.
+</dd>
+
+	<dt>`媒体@mq</dt>
+	<dd>
+<a href="~CSSWG/cssom/#serialize-a-media-query-list">直列化-</a>
+された形による`媒体~query~list$。
+◎
+A MediaQueryList object has an associated media which is the serialized form of the associated media query list.
+</dd>
+
+	<dt>`合致状態@mq</dt>
+	<dd>
+結付けられている`媒体~query~list$が［
+`文書$mqの状態に合致するときは true ／
+~ELSE_ false
+］を返す。
+◎
+A MediaQueryList object has an associated matches state which is true if the associated media query list matches the state of the document, and false otherwise.
+</dd>
+
+</dl>
+
+<p>
+`文書$ %文書 に対し，
+`媒体~queryを評価して変化を報告する@
+ときは、次を実行する：
+◎
+When asked to evaluate media queries and report changes for a Document doc, run these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~FOR
+%文書 を`文書$mqに持つような，
+~EACH ( `MediaQueryList$I ~obj %target )
+に対し，先に作成されたものから順に：
+◎
+For each MediaQueryList object target that has doc as its document, in the order they were created, oldest first, run these substeps:
+</p>
+
+		<ol>
+			<li>
+<p>
+~IF［
+%target の`合致状態$mqは、この手続きが前回 実行されたときから変化した
+］
+⇒
+次の様に初期化された新たな`~event$を，
+%target に向けて`配送$する：
+</p>
+
+<ul>
+	<li>~eventは `MediaQueryList!I ~interfaceを利用する。</li>
+	<li>`type$m 属性 ~SET `change$et</li>
+	<li>`isTrusted$m 属性 ~SET true</li>
+	<li>`media$m 属性 ~SET %target の`媒体$mq</li>
+	<li>`matches$m 属性 ~SET %target の`合致状態$mq<!--fingerprint--></li>
+</ul>
+◎
+If target’s matches state has changed since the last time these steps were run, dispatch a new event to target using the MediaQueryList interface, with its type attribute initialized to change, its isTrusted attribute initialized to true, its media attribute initialized to target’s media, and its matches attribute initialized to target’s matches state.
+   </li>
+		</ol>
+	</li>
+</ol>
+
+
+<div class="example">
+<p>
+`表示域$の方位（ orientation ）の変化を検知する簡単な~code片は、次のように書かれるであろう：
+◎
+A simple piece of code that detects changes in the orientation of the viewport can be written as follows:
+</p>
+
+<pre>
+function handleOrientationChange(%event) {
+  if(%event.`matches$m) // landscape
+    …
+  else
+    …
+}
+var %mql = <a href="#dom-window-matchmedia">`matchMedia^m</a>(`(orientation:landscape)^l);
+%mql.`onchange$m = handleOrientationChange;
+</pre>
+
+</div>
+
+⇒！
+interface `MediaQueryList@I : `EventTarget$I {
+  readonly attribute DOMString `media$m;
+  readonly attribute boolean `matches$m;
+  void `addListener$m(`EventListener$I? %listener);
+  void `removeListener$m(`EventListener$I? %listener);
+           attribute `EventHandler$I `onchange$m;
+};◎
+
+<p>
+`media@m
+属性の被取得時には
+⇒
+此れに結付けられている`媒体$mqを返さ~MUST。
+◎
+The media attribute must return the associated media.
+</p>
+
+<p>
+`matches@m
+属性の被取得時には
+⇒
+此れに結付けられている`合致状態$mqを返さ~MUST。
+<!--fingerprint-->
+◎
+The matches attribute must return the associated matches state.
+</p>
+
+<p>
+`addListener(listener)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The addListener(listener) method must run these steps:
+</p>
+
+<ol>
+	<li>
+~IF［
+%listener ~EQ ~NULL
+］
+⇒
+~RET
+◎
+If listener is null, terminate these steps.
+</li>
+
+	<li>
+%~list ~LET 此れに結付けられている［
+`~event~listener$の~list
+］
+◎
+↓</li>
+
+	<li>
+~IF［
+%~list 内に［
+( <b>type</b>, <b>callback</b>, <b>capture</b> )
+~EQ ( `change$et, %listener, false )
+］なる`~event~listener$がある
+］
+⇒
+~RET
+◎
+↓</li>
+
+	<li>
+次のようにされた`~event~listener$を， %~list に付加する
+⇒
+( <b>type</b>, <b>callback</b>, <b>capture</b> )
+~SET ( `change$et, %listener, false )
+◎
+Append an event listener to the associated list of event listeners with type set to change, callback set to listener, and capture set to false, unless there already is an event listener in that list with the same type, callback, and capture. 
+</li>
+</ol>
+
+<p>
+`removeListener(listener)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The removeListener(listener) method must run these steps:
+</p>
+
+
+<ol>
+	<li>
+%~list ~LET 此れに結付けられている［
+`~event~listener$の~list
+］
+◎
+↓</li>
+	<li>
+~IF［
+%~list 内に［
+( <b>type</b>, <b>callback</b>, <b>capture</b> )
+~EQ ( `change$et, %listener, false )
+］なる`~event~listener$がある
+］
+⇒
+その~event~listenerを %~list から除去する
+◎
+Remove an event listener from the associated list of event listeners, whose type is change, callback is listener, and capture is false.
+</li>
+</ol>
+
+<p class="note">注記：
+この仕様は、当初，
+`addListener()$m ／ `removeListener()$m
+による独自の~callbackの仕組みを利用していた
+— その~callbackは，結付けられている`媒体~query~list$を引数に呼出されていた。
+今や、通常の~eventの仕組みが代わりに利用される。
+後方互換性のため、
+`addListener()$m ／ `removeListener()$m
+~methodは基本的に
+`addEventListener()$m ／ `removeEventListener()$m
+の別名になり， `change$et ~eventが `MediaQueryList$I のふりをする。
+◎
+Note: This specification initially had a custom callback mechanism with addListener() and removeListener(), and the callback was invoked with the associated media query list as argument. Now the normal event mechanism is used instead. For backwards compatibility, the addListener() and removeListener() methods are basically aliases for addEventListener() and removeEventListener(), respectively, and the change event masquerades as a MediaQueryList.
+</p>
+
+<p>
+次に挙げる`~event~handler$（および対応する`~event~handler ~event型$）が、`~event~handler IDL 属性$として， `MediaQueryList$I ~interfaceを実装する すべての~objから~supportされ~MUST：
+◎
+The following are the event handlers (and their corresponding event handler event types) that must be supported, as event handler IDL attributes, by all objects implementing the MediaQueryList interface:
+</p>
+
+<table class="complex data">
+
+<thead><tr>
+<th title="Event handler">`~event~handler$</th>
+<th title="Event handler event type">`~event~handler ~event型$</th>
+</tr></thead>
+
+<tbody>
+<tr><td>`onchange@m
+</td><td>`change$et
+</td></tr></tbody>
+</table>
+
+⇒！
+[<a href="http://dom.spec.whatwg.org/#concept-event-constructor">Constructor</a>(
+    DOMString type,
+    optional `MediaQueryListEventInit$I eventInitDict
+)]
+interface `MediaQueryListEvent@I : `Event$I {
+  readonly attribute DOMString `media$m;
+  readonly attribute boolean `matches$m;
+};
+
+
+dictionary `MediaQueryListEventInit@I : `EventInit$I {
+  DOMString `media@mb = "";
+  boolean `matches@mb = false;
+};◎
+
+<!-- `MediaQueryListEvent@I -->
+<p>
+`media@m
+属性の被取得時には
+⇒
+初期化-時の値を返さ~MUST。
+◎
+The media attribute must return the value it was initialized to.
+</p>
+
+<p>
+`matches@m
+属性の被取得時には
+⇒
+初期化-時の値を返さ~MUST。
+◎
+The matches attribute must return the value it was initialized to.
+</p>
+
+
+			<section id="mediaquerylist-event-summary">
+
+<h4 title="Event summary">4.2.1. ~event要覧</h4>
+
+~INFORMATIVE
+
+<table class="complex data">
+<thead><tr><th>~event
+</th><th>~interface
+</th><th>~target
+</th><th>~~説明
+</th></tr></thead>
+
+<tbody><tr><td>`change@et
+</td><td>`Event$I
+</td><td>`MediaQueryList$I
+</td><td>
+`合致状態$mqが変化したときに `MediaQueryList$I に向けて発火される。
+◎
+Fired at the MediaQueryList when the matches state changes.
+</td></tr></tbody></table>
+
+
+			</section>
+		</section>
+		<section id="the-screen-interface">
+
+<h3 title="The Screen Interface">4.3. `Screen^I ~interface</h3>
+
+<p>
+その名前が示唆するように， `Screen$I ~interfaceは、出力~機器の~screenについての情報を表現する。
+◎
+As its name suggests, the Screen interface represents information about the screen of the output device.
+</p>
+
+⇒！
+interface `Screen@I {
+  readonly attribute long `availWidth$m;
+  readonly attribute long `availHeight$m;
+  readonly attribute long `width$m;
+  readonly attribute long `height$m;
+  readonly attribute unsigned long `colorDepth$m;
+  readonly attribute unsigned long `pixelDepth$m;
+};◎
+
+`Screen^dgm
+
+<p>
+［
+`availWidth@m ｜ `availHeight@m
+］属性の被取得時には
+⇒
+出力~機器の描画域に可用な［
+横幅 ｜ 縦幅
+］を CSS ~pixel単位で返さ~MUST。
+◎
+The availWidth attribute must return the available width of the rendering surface of the output device, in CSS pixels.
+◎
+The availHeight attribute must return the available height of the rendering surface of the output device, in CSS pixels.
+</p>
+
+<p>
+［
+`width@m ｜ `height@m
+］属性の被取得時には
+⇒
+出力~機器の［
+横幅 ｜ 縦幅
+］を CSS ~pixel単位で返さ~MUST。
+◎
+The width attribute must return the width of the output device, in CSS pixels.
+◎
+The height attribute must return the height of the output device, in CSS pixels.
+</p>
+
+
+<p class="trans-note">【
+出力~機器の “描画域” が定義されていないが、（慣例的には，）実行環境が備える（その環境ごとに固有の）タスクバー等の区画は除外した部分を指すものと見られる。
+】</p>
+
+<p>
+`colorDepth@m
+属性の被取得時には
+⇒
+24 を返さ~MUST。
+◎
+The colorDepth attribute must return 24.
+</p>
+
+<p>
+`pixelDepth@m
+属性の被取得時には
+⇒
+24 を返さ~MUST。
+◎
+The pixelDepth attribute must return 24.
+</p>
+
+<p class="note">注記：
+`colorDepth^c と `pixelDepth^c 属性は無用の長物だが，互換性のために含められている。
+◎
+Note: The colorDepth and pixelDepth attributes are useless but are included for compatibility.
+</p>
+
+
+		</section>
+	</section>
+	<section id="extensions-to-the-document-interface">
+
+<h2 title="Extensions to the Document Interface">5. `Document^I ~interfaceに対する拡張</h2>
+
+⇒！
+partial interface `Document!I {
+  `Element$I? `elementFromPoint$m(double %x, double %y);
+  sequence&lt;`Element$I&gt; `elementsFromPoint$m(double %x, double %y);
+  `CaretPosition$I? `caretPositionFromPoint$m(double %x, double %y);
+  readonly attribute `Element$I? `scrollingElement$m;
+};◎
+
+`Document^dgm
+
+
+<p>
+`elementFromPoint(x, y)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The elementFromPoint(x, y) method must follow these steps:
+</p>
+
+<ol>
+
+	<li>
+~IF［
+此れに結付けられている`表示域$はない
+］
+⇒
+~RET ~NULL
+◎
+↓</li>
+
+	<li>
+~IF［［［
+0 ≤ %x ≤ `表示域$の`有効~横幅$
+］, かつ［
+0 ≤ %y ≤ `表示域$の`有効~縦幅$
+］］でない
+］
+⇒
+~RET ~NULL
+◎
+If either argument is negative, x is greater than the viewport width excluding the size of a rendered scroll bar (if any), or y is greater than the viewport height excluding the size of a rendered scroll bar (if any), or there is no viewport associated with the document, return null and terminate these steps.
+</li>
+
+	<li>
+~IF［
+`表示域$の子孫に対する`座標系変換$を適用した下で，座標 (%x, %y) の接触判定の標的になる`~layout~box$は`表示域$内にある
+］
+⇒
+~RET それに結付けられている要素
+◎
+If there is a layout box in the viewport that would be a target for hit testing at coordinates x,y, when applying the transforms that apply to the descendants of the viewport, return the associated element and terminate these steps.
+</li>
+
+	<li>
+~RET
+此れは`根~要素$を［
+持つならば それ ／
+持たないならば ~NULL
+］
+◎
+If the document has a root element, return the root element and terminate these steps.
+◎
+Return null.
+</li>
+
+</ol>
+
+<p class="note">注記：
+`elementFromPoint()^c ~methodは必ずしも，最も手前に塗られている要素を返すわけではない。
+例えば要素は
+`pointer-events$p
+CSS ~propの利用を通して接触判定の標的から除外され得る。
+<span class="trans-note">【
+<a href="~TR/SVG11/interact.html#PointerEventsProperty">参照</a>（ SVG ）
+】</span>
+◎
+Note: The elementFromPoint() method does not necessarily return the top-most painted element. For instance, an element can be excluded from being a target for hit testing by using the pointer-events CSS property.
+</p>
+
+<p class="atrisk">
+`elementsFromPoint(x, y)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The elementsFromPoint(x, y) method must follow these steps:
+</p>
+
+<ol>
+	<li>
+%連列 ~LET 空~連列
+◎
+Let sequence be a new empty sequence.
+</li>
+
+	<li>
+~IF［
+此れに結付けられている`表示域$はない
+］
+⇒
+~RET %連列
+◎
+↓</li>
+
+	<li>
+~IF［［［
+0 ≤ %x ≤ `表示域$の`有効~横幅$
+］~AND［
+0 ≤ %y ≤ `表示域$の`有効~縦幅$
+］］でない
+］
+⇒
+~RET %連列
+◎
+If either argument is negative, x is greater than the viewport width excluding the size of a rendered scroll bar (if any), or y is greater than the viewport height excluding the size of a rendered scroll bar (if any), or there is no viewport associated with the document, return sequence and terminate these steps.
+</li>
+
+	<li>
+<p>
+~FOR
+`表示域$の子孫に対する`座標系変換$を適用した下で，座標 (%x, %y) の接触判定の標的になる（何もそれに overlap していない†としても）ような，`表示域$ 内の~EACH ( `~layout~box$ ) に対し、 topmost の†~boxから, それらの塗り順序に従って
+⇒
+~boxに結付けられている要素を %連列 に付加する
+◎
+For each layout box in the viewport, in paint order, starting with the topmost box, that would be a target for hit testing at coordinates x,y even if nothing would be overlapping it, when applying the transforms that apply to the descendants of the viewport, append the associated element to sequence.
+</p>
+<p class="trans-note">【†
+塗られる内容が無いとしても？
+】【†
+最も手前に塗られている？
+】</p>
+
+	</li>
+
+	<li>
+~IF［
+此れは`根~要素$ %根 を持つ
+］~AND［
+%連列 の最後の項 ~NEQ %根 
+］
+⇒
+%根 を %連列 に付加する
+◎
+If the document has a root element, and the last item in sequence is not the root element, append the root element to sequence.
+</li>
+
+	<li>
+~RET %連列
+◎
+Return sequence.
+</li>
+
+</ol>
+
+
+<p>
+`caretPositionFromPoint(x, y)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The caretPositionFromPoint(x, y) method must return the result of running these steps:
+</p>
+
+<ol>
+	<li>
+~IF［
+此れに結付けられている`表示域$はない
+］
+⇒
+~RET ~NULL
+◎
+If there is no viewport associated with the document, return null.
+</li>
+
+	<li>
+~IF［［［
+0 ≤ %x ≤ `表示域$の`有効~横幅$
+］~AND［
+0 ≤ %y ≤ `表示域$の`有効~縦幅$
+］］でない
+］
+⇒
+~RET ~NULL
+<!-- 
+引数が指す座標が`表示域$の外を指す場合、 null を返す（“表示域の外” の定義は上の <code>elementFromPoint</code> の記述と同じ）。
+ -->
+◎
+If either argument is negative, x is greater than the viewport width excluding the size of a rendered scroll bar (if any), y is greater than the viewport height excluding the size of a rendered scroll bar (if any) return null.
+</li>
+
+	<li>
+~IF［［
+`表示域$の子孫に対する`座標系変換$を適用した下で，`表示域$内の座標
+( %x, %y )
+の所に~text挿入位置指示が挿入されることになる
+］ではない
+］
+⇒
+~RET ~NULL
+◎
+If at the coordinates x,y in the viewport no text insertion point indicator would have been inserted when applying the transforms that apply to the descendants of the viewport, return null.
+</li>
+
+	<li>
+<p>
+~IF［
+`表示域$の子孫に対する`座標系変換$を適用した下で，`表示域$内の座標
+( %x, %y )
+の所に, かつ［
+`置換要素$である~text入力~widget
+］内に，~text挿入位置指示が挿入されることになる
+］
+⇒
+~RET 各種~propが次のように設定された`~caret位置$
+◎
+If at the coordinates x,y in the viewport a text insertion point indicator would have been inserted in a text entry widget which is also a replaced element, when applying the transforms that apply to the descendants of the viewport, return a caret position with its properties set as follows:
+</p>
+
+		<dl>
+			<dt>`~caret~node$</dt>
+			<dd>
+~text入力~widgetに対応する~node。
+◎
+The node corresponding to the text entry widget.
+</dd>
+
+			<dt>`~caret~offset$</dt>
+			<dd>
+左端から~text挿入位置指示が挿入される地点までの符号単位の個数。
+◎
+The amount of 16-bit units to the left of where the text insertion point indicator would have inserted.
+</dd>
+			<dd class="trans-note">【
+`符号単位$
+（ 16-bit unit, code unit ）：
+Unicode （ UTF-16 ）の代用対（拡張用の文字~code割り当て域に属する文字）では１文字に 4 ~byte消費されるが、それに関わらず， javascript の文字列~処理では常に 2 ~byteを文字１個分と数えるため、通常の意味の “Unicode 文字” （符号位置）と区別するためにこの語が用いられる。
+】</dd>
+			<dt>`~caret範囲$</dt>
+			<dd>
+~NULL
+◎
+null
+</dd>
+
+		</dl>
+	</li>
+	<li>
+<p>
+~RET 各種~propが次の様に設定された`~caret位置$：
+◎
+↓</p>
+		<dl>
+			<dt>`~caret範囲$</dt>
+			<dd>
+<p>
+`表示域$の子孫に対する`座標系変換$を適用した下で，~text挿入位置指示が挿入されることになる地点を指すような、畳まれた状態の `Range$I ~obj。
+◎
+Otherwise, return a caret position where the caret range is a collapsed Range object for the position where the text insertion point indicator would have been inserted when applying the transforms that apply to the descendants of the viewport, and the other properties are set as follows:
+</dd>
+			<dd class="trans-note">【
+畳まれた状態（ collapsed ）：
+Range ~objの`始点$と`終点$が同じ`境界点$を指すようにされた状態（始点~nodeと終点~nodeが同一，かつ始点~offsetと終点~offsetが等しい）
+】</dd>
+
+			<dt>`~caret~node$</dt>
+			<dd>
+`~caret範囲$
+の
+`startContainer$m
+◎
+The startContainer of the caret range.
+</dd>
+
+			<dt>`~caret~offset$</dt>
+			<dd>
+`~caret範囲$
+の
+`startOffset$m
+◎
+The startOffset of the caret range.
+</dd>
+
+		</dl>
+	</li>
+</ol>
+
+
+<p class="note">注記：
+接触判定の詳細は、この仕様の視野外であり，したがって
+`elementFromPoint()$m
+と
+`caretPositionFromPoint()$m
+についての正確な詳細も同様になる。
+接触判定は希望的には，CSS または HTML の将来版にて定義されることになる。
+◎
+Note: The specifics of hit testing are out of scope of this specification and therefore the exact details of elementFromPoint() and caretPositionFromPoint() are therefore too. Hit testing will hopefully be defined in a future revision of CSS or HTML.
+</p>
+
+
+<p class="atrisk">
+`scrollingElement@m
+属性の被取得時には、次を実行し~MUST：
+◎
+The scrollingElement attribute, on getting, must run these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+此れは`過去互換~mode$下にある
+］：
+◎
+If the Document is in quirks mode, follow these substeps:
+</p>
+
+		<ol>
+			<li>
+~IF［
+`HTML body 要素$ %body は在る
+］~AND［
+%body は`~scroll可能になり得ない$
+］
+⇒
+~RET %body
+◎
+If the HTML body element exists, and it is not potentially scrollable, return the HTML body element and abort these steps.
+</li>
+			<li>
+~RET ~NULL
+◎
+Return null and abort these steps.
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+`根~要素$は在る
+］
+⇒
+~RET それ
+◎
+If there is a root element, return the root element and abort these steps.
+</li>
+
+	<li>
+~RET ~NULL
+◎
+Return null.
+</li>
+</ol>
+
+
+<p class="note">注記：
+`scrollTop^m,
+`scrollLeft^m
+に対し，`過去互換~mode$の挙動を常に利用する非適合~UAには、
+`scrollingElement$m
+属性は，常に
+`HTML body 要素$
+（あるいは，なければ ~NULL ）を返すものと期待されている。
+この API は、 Web 開発者が，~scrolling0 API に利用する正しい要素を取得できるようにするためにある
+— 特定0の~UAの挙動を前提にしたり，どの要素が表示域を~scrollするかを見るために実際に~scrollする必要なく。
+◎
+Note: For non-conforming user agents that always use the quirks mode behavior for scrollTop and scrollLeft, the scrollingElement attribute is expected to also always return the HTML body element (or null if it does not exist). This API exists so that Web developers can use it to get the right element to use for scrolling APIs, without making assumptions about a particular user agent’s behavior or having to invoke a scroll to see which element scrolls the viewport.
+</p>
+
+
+<p class="note">注記：
+`HTML body 要素$ は
+HTML の `document.body^m とは異なる
+— 後者は `frameset^m 要素も返し得る。
+◎
+Note: The HTML body element is different from HTML’s document.body in that the latter can return a frameset element.
+</p>
+
+
+
+
+		<section id="the-caretposition-interface">
+<h3 title="The CaretPosition Interface">5.1. `CaretPosition^I ~interface</h3>
+
+<p>
+`~caret位置@
+とは、~text挿入位置指示の位置を与えるものであり，常に
+`~caret~node@,
+`~caret~offset@,
+`~caret範囲@
+が結付けられる。
+~caret位置は
+`CaretPosition$I
+~objにより表現される。
+◎
+A caret position gives the position of a text insertion point indicator. It always has an associated caret node, caret offset, and caret range. It is represented by a CaretPosition object.
+</p>
+
+⇒！
+interface `CaretPosition@I {
+  readonly attribute `Node$I `offsetNode$m;
+  readonly attribute unsigned long `offset$m;
+  [NewObject] `DOMRect$I? `getClientRect$m();
+};◎
+
+<p>
+`offsetNode@m
+属性の被取得時には
+⇒
+此れの`~caret~node$を返さ~MUST。
+◎
+The offsetNode attribute must return the caret node.
+</p>
+
+<p>
+`offset@m
+属性の被取得時には
+⇒
+此れの`~caret~offset$を返さ~MUST。
+◎
+The offset attribute must return the caret offset.
+</p>
+
+<p>
+`getClientRect@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The getClientRect() method must follow these steps, aborting on the first step that returns a value:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+此れの`~caret範囲$ ~NEQ ~NULL
+］：
+◎
+If caret range is not null:
+</p>
+		<ol>
+			  <li>
+%list ~LET
+その範囲に対し
+`getClientRects()^m
+~methodを呼出した結果
+◎
+Let list be the result of invoking the getClientRects() method on the range.
+</li>
+			<li>
+~IF［
+%list は空である
+］
+⇒
+~RET ~NULL
+◎
+If list is empty, return null.
+</li>
+			<li>
+~RET %list 内の最初の `DOMRect$I ~obj
+◎
+Return the DOMRect object in list at index 0.
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+此れの`~caret~node$ %node は，［
+`置換要素$である~text入力~widgetである
+~AND
+文書~内に在る<!-- ＊in the document -->
+］］
+⇒
+~RET 
+%node とその先祖に対する`座標系変換$を適用した下で、
+%node 内の，`~caret~offset$ の値で表現される~caretに対する静的 `DOMRect$I ~obj
+◎
+If caret node is a text entry widget that is a replaced element, and that is in the document, return a static DOMRect object for the caret in the widget as represented by the caret offset value. The transforms that apply to the element and its ancestors are applied.
+</li>
+
+	<li>
+~RET ~NULL
+◎
+Return null.
+</li>
+
+</ol>
+
+
+		</section>
+	</section>
+	<section id="extension-to-the-element-interface">
+
+<h2 title="Extensions to the Element Interface">6.  `Element^I ~interfaceに対する拡張</h2>
+
+
+⇒！
+enum `ScrollLogicalPosition@I { `start@l, `center@l, `end@l, `nearest@l };
+dictionary `ScrollIntoViewOptions@I : `ScrollOptions$I {
+  `ScrollLogicalPosition$I `block@mb = `center$l;
+  `ScrollLogicalPosition$I `inline@mb = `center$l;
+};◎
+
+
+
+<!---->
+⇒！
+partial interface `Element!I {
+  sequence&lt;`DOMRect$I&gt; `getClientRects$m();
+  [NewObject] `DOMRect$I `getBoundingClientRect$m();
+  void `scrollIntoView$m();
+  void `scrollIntoView$m((boolean or object) %arg);
+  void `scroll$m(optional `ScrollToOptions$I %options);
+  void `scroll$m(unrestricted double %x, unrestricted double %y);
+  void `scrollTo$m(optional `ScrollToOptions$I %options);
+  void `scrollTo$m(unrestricted double %x, unrestricted double %y);
+  void `scrollBy$m(optional `ScrollToOptions$I %options);
+  void `scrollBy$m(unrestricted double %x, unrestricted double %y);
+  attribute unrestricted double `scrollTop$m;
+  attribute unrestricted double `scrollLeft$m;
+  readonly attribute long `scrollWidth$m;
+  readonly attribute long `scrollHeight$m;
+  readonly attribute long `clientTop$m;
+  readonly attribute long `clientLeft$m;
+  readonly attribute long `clientWidth$m;
+  readonly attribute long `clientHeight$m;
+};◎
+
+`Element^dgm
+
+<p>
+`getClientRects()@m
+~methodの被呼出時には、次の~algoの結果を返さ~MUST：
+◎
+The getClientRects() method, when invoked, must return the result of the following algorithm:
+</p>
+
+
+<ol>
+	<li>
+~IF［
+此れは`~layout~box$を持たない
+］
+⇒
+~RET 空~連列
+◎
+If the element on which it was invoked does not have an associated layout box return an empty sequence and stop this algorithm.
+</li>
+
+	<li>
+~IF［
+此れは `SVG ~layout~box$ `SVG$r を持つ
+］
+⇒
+~RET ［
+次のような矩形を表す `DOMRect$I ~obj
+］１個のみからなる連列
+⇒
+［
+此れとその子孫に対する`座標系変換$を適用した下で，
+SVG 仕様の定義に従う此れの~bounding~box
+］
+◎
+If the element has an associated SVG layout box return a sequence containing a single DOMRect object that describes the bounding box of the element as defined by the SVG specification, applying the transforms that apply to the element and its ancestors.
+</li>
+
+	<li>
+
+<p>
+~RET ［
+次で与えられる静的 `DOMRect$I ~objの~list
+］を包含する連列
+⇒
+~listは、その各 `DOMRect$I が，次の拘束を満たすような 一個の`~box断片$の~border区画を表すものからなる：
+◎
+Return a sequence containing static DOMRect objects in content order, one for each box fragment, describing its border area (including those with a height or width of zero) with the following constraints:
+</p>
+
+		<ul>
+			<li>
+此れとその先祖に対する`座標系変換$は，適用される。
+◎
+Apply the transforms that apply to the element and its ancestors.
+</li>
+
+			<li>
+此れの `display$p ~propの算出値
+~IN { `table$v, `inline-table$v }
+の場合
+⇒
+table ~box と caption ~boxは含めるが, 匿名~容器~boxは含めない。
+◎
+If the element on which the method was invoked has a computed value for the display property of table or inline-table include both the table box and the caption box, if any, but not the anonymous container box.
+</li>
+
+			<li>
+~list内の各 `匿名~塊~box$は，その子~boxたちに置換する。
+~list内の匿名~塊~boxが尽きるまで，これを繰り返す。
+◎
+Replace each anonymous block box with its child box(es) and repeat this until no anonymous block boxes are left in the final list.
+</li>
+		</ul>
+
+<p>
+ここで：
+</p>
+		<ul>
+			<li>
+縦幅／横幅
+が~zeroのものも~listから除外しない。
+</li>
+			<li>
+~listは、内容~順による。
+</li>
+		</ul>
+
+
+	</li>
+</ol>
+
+<p>
+`getBoundingClientRect()@m
+~methodの被呼出時には、次の~algoによる結果を返さ~MUST：
+◎
+The getBoundingClientRect() method, when invoked, must return the result of the following algorithm:
+</p>
+<ol>
+	<li>
+%list ~LET
+此れ上で
+`getClientRects()$m
+を呼出した結果
+◎
+Let list be the result of invoking getClientRects() on the same element this method was invoked on.
+</li>
+
+	<li>
+~IF［
+%list は空である
+］
+⇒
+~RET 次のようにされた静的 `DOMRect$I ~obj
+⇒
+［
+`x^m, `y^m, `width^m, `height^m
+］属性 ~SET 0
+◎
+If the list is empty return a static DOMRect object whose x, y, width and height members are zero.
+</li>
+
+	<li>
+<p>
+~ELSE
+⇒
+~RET ［
+次に挙げるすべての矩形を包含するような，最小の矩形
+］を表現する静的 `DOMRect$I ~obj
+</p>
+		<ul>
+			<li>
+%list の最初の矩形。
+</li>
+			<li>
+%list 内の矩形のうち，［
+縦幅, 横幅
+のいずれかは 非~zero
+］であるもの。
+</li>
+		</ul>
+◎
+Otherwise, return a static DOMRect object describing the smallest rectangle that includes the first rectangle in list and all of the remaining rectangles of which the height or width is not zero.
+</li>
+
+</ol>
+
+<div class="example">
+<p>
+次の~code片は文書~内の最初の `div^e 要素の~sizeを取得する：
+◎
+The following snippet gets the dimensions of the first div element in a document:
+</p>
+
+<pre>
+var example = document
+    .getElementsByTagName("div")[0]
+    .getBoundingClientRect();
+var exampleWidth = example.width;
+var exampleHeight = example.height;
+</pre>
+</div>
+
+<p>
+`scrollIntoView(arg)@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The scrollIntoView(arg) method must run these steps:
+</p>
+
+<ol>
+
+ <!-- scrollIntoView() means top=true but scrollIntoView(undefined) means top=false, to align with impls. -->
+
+	<li>
+%options ~LET ［
+%arg は~objであるならば %arg ／
+~ELSE_ ~NULL
+］
+◎
+Let options be null.
+◎
+If arg is an object, let options be arg.
+</li>
+
+	<li>
+%options ~SET %options を
+IDL `ScrollIntoViewOptions$I 型の`辞書~値に変換-$した結果
+`WEBIDL$r
+◎
+Convert options to a ScrollIntoViewOptions dictionary. [WEBIDL]
+</li>
+	<li>
+~IF［
+%arg は与えられていない
+］~OR［
+%arg ~EQ ~T
+］
+⇒
+%options の `block$mb 辞書~memberの値 ~SET `start$l；<br>
+%options の `inline$mb 辞書~memberの値 ~SET `nearest$l
+◎
+If arg is not specified or is true, let the block dictionary member of options have the value "start", and let the inline dictionary member of options have the value "nearest".
+</li>
+
+	<li>
+~ELIF［
+%arg ~EQ ~F
+］
+⇒
+%options の
+`block$mb 辞書~memberの値 ~SET `end$l ；<br>
+%options の
+`inline$mb 辞書~memberの値 ~SET `nearest$l
+◎
+If arg is false, let the block dictionary member of options have the value "end", and let the inline dictionary member of options have the value "nearest".
+</li>
+
+	<li>
+~IF［
+此れは`~layout~box$を持たない
+］
+⇒
+~RET
+◎
+If the element does not have any associated layout box terminate these steps.
+</li>
+
+
+	<li>
+%options を用いて，此れを`~view内に~scrollさせる$
+◎
+Scroll the element into view with the options options.
+</li>
+
+	<li>
+任意選択で
+⇒
+利用者に 此れを注目してもらう何らかの動作があれば，それを遂行する。
+◎
+Optionally perform some other action that brings the element to the user’s attention.
+</li>
+
+</ol>
+
+<p>
+`scroll()@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+The scroll() method must run these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+~methodは 1 個の引数 %options を伴って呼出された
+］：
+◎
+If invoked with one argument, follow these substeps:
+</p>
+		<ol>
+
+			<li>
+%options の［
+`left$mb, `top$mb
+］辞書~member を（もし在するならば）`有限~値に正規化-$する
+◎
+Let options be the argument.
+◎
+Normalize non-finite values for left and top dictionary members of options, if present.
+</li>
+
+			<li>
+%x ~LET 
+%options に `left$mb 辞書~memberは［
+在するならば その値／
+不在ならば 此れの現在の x 軸~scroll位置
+］
+◎
+Let x be the value of the left dictionary member of options, if present, or the element’s current scroll position on the x axis otherwise.
+</li>
+
+			<li>
+%y ~LET %options に `top$mb 辞書~memberは［
+在するならば その値／
+不在ならば 此れの現在の y 軸~scroll位置
+］
+◎
+Let y be the value of the top dictionary member of options, if present, or the element’s current scroll position on the y axis otherwise.
+</li>
+
+		</ol>
+	</li>
+
+	<li>
+<p>
+~IF［
+~methodは 2 個の引数 %x, %y を伴って呼出された
+］：
+◎
+If invoked with two arguments, follow these substeps:
+</p>
+
+		<ol>
+			<li>
+%options ~LET
+~NULL を
+IDL `ScrollToOptions$I 型の`辞書~値に変換-$した結果
+`WEBIDL$r
+◎
+Let options be null converted to a ScrollToOptions dictionary. [WEBIDL]
+</li>
+
+			<li>
+%options の［
+`left$mb, `top$mb
+］辞書~member ~LET 順に［
+%x, %y
+］を`有限~値に正規化-$した結果
+◎
+Let x and y be the arguments, respectively.
+◎
+Normalize non-finite values for x and y.
+◎
+Let the left dictionary member of options have the value x.
+◎
+Let the top dictionary member of options have the value y.
+</li>
+
+		</ol>
+	</li>
+	<li>
+%文書 ~LET 此れの`~node文書$
+◎
+Let document be the element’s node document.
+</li>
+	<li>
+~IF［
+%文書 は`作動中の文書$でない
+］
+⇒
+~RET
+◎
+If document is not the active document, terminate these steps.
+</li>
+	<li>
+%window ~LET %文書 の `defaultView$m 属性~値
+◎
+Let window be the value of document’s defaultView attribute.
+</li>
+	<li>
+~IF［
+%window ~EQ ~NULL
+］
+⇒
+~RET
+◎
+If window is null, terminate these steps.
+</li>
+	<li>
+~IF［
+此れは`根~要素$である
+］~AND［
+%文書 は`過去互換~mode$下にある
+］
+⇒
+~RET
+◎
+If the element is the root element and document is in quirks mode, terminate these steps.
+</li>
+	<li>
+~IF［
+此れは`根~要素$である
+］
+⇒
+( `scrollX^m, %y ) を引数に渡して
+`scroll()^m を呼出す；<br />
+~RET
+◎
+If the element is the root element invoke scroll() on window with scrollX on window as first argument and y as second argument, and terminate these steps.
+</li>
+	<li>
+~IF［
+此れは `HTML body 要素$ である
+］~AND［
+%文書 は`過去互換~mode$下にある
+］~AND［
+此れは`~scroll可能になり得ない$
+］
+⇒
+%options を唯一の引数に渡して
+%window 上の `scroll()^m を呼出す；<br />
+~RET
+◎
+If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, invoke scroll() on window with options as the only argument, and terminate these steps.
+</li>
+
+	<li>
+<p>
+~IF［
+此れは，次のいずれかを満たす
+］…：
+</p>
+
+<ul>
+	<li>
+`CSS ~layout~box$を持たない
+</li>
+	<li>
+`~scrolling~box$を持たない
+</li>
+	<li>
+~overflowしない
+</li>
+</ul>
+
+<p>
+…ならば
+⇒
+~RET
+</p>
+◎
+If the element does not have any associated CSS layout box, the element has no associated scrolling box, or the element has no overflow, terminate these steps.
+</li>
+
+	<li>
+<p>
+次を入力に，此れを`~scrollさせる$：
+</p>
+		<dl>
+			<dt>~scrollの挙動</dt>
+			<dd>
+%options の `behavior$mb 辞書~memberの値
+</dd>
+			<dt>目的位置</dt>
+			<dd>
+( %x, %y )
+</dd>
+		</dl>
+◎
+Scroll the element to x,y, with the scroll behavior being the value of the behavior dictionary member of options.
+</li>
+</ol>
+
+
+<p>
+`scrollTo()@m
+~methodの被呼出時には
+⇒
+~UAは、同じ引数で `scroll()$m ~methodが呼出されたかのように，動作し~MUST。
+◎
+When the scrollTo() method is invoked, the user agent must act as if the scroll() method was invoked with the same arguments.
+</p>
+
+<p>
+`scrollBy()@m
+~methodの被呼出時には、次を実行し~MUST
+］：
+◎
+When the scrollBy() method is invoked, the user agent must run these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+~methodは 1 個の引数 %options を伴って呼出された
+］：
+◎
+If invoked with one argument, follow these substeps:
+</p>
+		<ol>
+			<li>
+%options の［
+`left$mb, `top$mb
+］辞書~member を（もし在するならば）`有限~値に正規化-$する
+<!-- ＊既定値？ -->
+◎
+Let options be the argument.
+◎
+Normalize non-finite values for left and top dictionary members of options, if present.
+</li>
+		</ol>
+	</li>
+
+	<li>
+<p>
+~IF［
+~methodは 2 個の引数 %x, %y を伴って呼出された
+］：
+◎
+If invoked with two arguments, follow these substeps:
+</p>
+
+		<ol>
+			<li>
+%options ~LET
+~NULL を
+IDL `ScrollToOptions$I 型の`辞書~値に変換-$した結果
+`WEBIDL$r
+◎
+Let options be null converted to a ScrollToOptions dictionary. [WEBIDL]
+◎
+Let x and y be the arguments, respectively.
+</li>
+			<li>
+%options の［
+`left$mb, `top$mb
+］辞書~member ~SET 順に［
+%x, %y
+］を`有限~値に正規化-$した結果
+◎
+Normalize non-finite values for x and y.
+◎
+Let the left dictionary member of options have the value x.
+◎
+Let the top dictionary member of options have the value y.
+</li>
+		</ol>
+	</li>
+
+	<li>
+%options の［
+`left$mb, `top$mb
+］辞書~memberに，此れの［
+`scrollLeft$m, `scrollLeft$m
+］値を順に加算する
+◎
+Add the value of scrollLeft to the left dictionary member.
+◎
+Add the value of scrollTop to the top dictionary member.
+</li>
+
+	<li>
+%options を唯一の引数に，
+`scroll()$m ~methodが呼出されたかのように，動作する
+◎
+Act as if the scroll() method was invoked with options as the only argument.
+</li>
+</ol>
+
+
+<p>
+［
+`scrollTop@m ｜ `scrollLeft@m
+］属性の被取得時には、次を実行し~MUST：
+◎
+The scrollTop attribute, on getting, must return the result of running these steps:
+</p>
+
+
+<ol>
+	<li>
+%文書 ~LET 此れの`~node文書$
+◎
+Let document be the element’s node document.
+</li>
+	<li>
+~IF［
+%文書 は`作動中の文書$でない
+］
+⇒
+~RET 0
+◎
+If document is not the active document, return zero and terminate these steps.
+</li>
+	<li>
+%window ~LET %文書 の `defaultView$m 属性~値
+◎
+Let window be the value of document’s defaultView attribute.
+</li>
+	<li>
+~IF［
+%window ~EQ ~NULL
+］
+⇒
+~RET 0
+◎
+If window is null, return zero and terminate these steps.
+</li>
+	<li>
+~IF［
+此れは`根~要素$である
+］~AND［
+%文書 は`過去互換~mode$下にある
+］
+⇒
+~RET 0
+◎
+If the element is the root element and document is in quirks mode, return zero and terminate these steps.
+</li>
+
+	<li>
+
+<p>
+~IF［
+次のいずれかが満たされる
+］…：
+</p>
+
+		<ul>
+			<li>
+此れは`根~要素$である
+</li>
+			<li>
+［
+此れは `HTML body 要素$である
+］~AND［
+%文書 は`過去互換~mode$下にある
+］~AND［
+此れは`~scroll可能になり得ない$
+］
+</li>
+		</ul>
+<p>
+…ならば
+⇒
+~RET %window 上の［
+`scrollY^m ｜ `scrollX^m
+］の値
+</p>
+
+◎
+If the element is the root element return the value of scrollY on window.
+◎
+If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, return the value of scrollY on window.
+</li>
+
+	<li>
+~IF［
+此れは `CSS ~layout~box$を持たない
+］
+⇒
+~RET ~zero
+◎
+If the element does not have any associated CSS layout box, return zero and terminate these steps.
+</li>
+
+	<li>
+~RET
+此れの`~scrolling区画$の揃点から相対的な，
+此れの`~padding辺$の［
+上端の y 座標 ｜ 左端の x 座標
+］
+◎
+Return the y-coordinate of the scrolling area at the alignment point with the top of the padding edge of the element.
+</li>
+
+</ol>
+
+
+<p>
+［
+`scrollTop@m ｜ `scrollLeft@m
+］属性の被設定時には、次を実行し~MUST：
+◎
+When setting the scrollTop attribute these steps must be run:
+</p>
+
+<ol>
+
+	<li>
+%v ~LET 与えられた値を`有限~値に正規化-$した結果
+◎
+Let y be the given value.
+◎
+Normalize non-finite values for y.
+</li>
+
+	<li>
+%文書 ~LET 此れの`~node文書$
+◎
+Let document be the element’s node document.
+</li>
+	<li>
+~IF［
+%文書 は`作動中の文書$でない
+］
+⇒
+~RET
+◎
+If document is not the active document, terminate these steps.
+</li>
+	<li>
+%window ~LET %文書 の `defaultView$m 属性~値
+◎
+Let window be the value of document’s defaultView attribute.
+</li>
+	<li>
+~IF［
+%window ~EQ ~NULL
+］
+⇒
+~RET
+◎
+If window is null, terminate these steps.
+</li>
+	<li>
+~IF［
+此れは`根~要素$である
+］~AND［
+%文書 は`過去互換~mode$下にある
+］
+⇒
+~RET
+◎
+If the element is the root element and document is in quirks mode, terminate these steps.
+</li>
+	<li>
+
+<p>
+~IF［
+次のいずれかが満たされる
+］…：
+</p>
+
+		<ul>
+			<li>
+此れは`根~要素$である
+</li>
+			<li>
+［
+此れは `HTML body 要素$ である
+］~AND［
+%文書 は`過去互換~mode$下にある
+］~AND［
+此れは`~scroll可能になり得ない$
+］
+</li>
+		</ul>
+<p>
+…ならば：
+</p>
+		<ol >
+			<li>
+<p>
+次の引数を渡して， `scroll()^m を呼出す：
+</p>
+				<ol>
+					<li>
+第一~引数：［
+`scrollX^m の値｜ %v
+］
+</li>
+					<li>
+第二~引数：［
+%v ｜ `scrollY^m の値
+］
+</li>
+				</ol>
+			</li>
+			<li>
+~RET
+</li>
+		</ol>
+◎
+If the element is the root element invoke scroll() on window with scrollX on window as first argument and y as second argument, and terminate these steps.
+◎
+If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, invoke scroll() on window with scrollX as first argument and y as second argument, and terminate these steps.
+</li>
+	<li>
+<p>
+~IF［
+此れは，次のいずれかを満たす
+］
+⇒
+~RET：
+</p>
+
+<ul>
+	<li>
+`CSS ~layout~box$を持たない
+</li>
+	<li>
+`~scrolling~box$を持たない
+</li>
+	<li>
+~overflowしない
+</li>
+</ul>
+◎
+If the element does not have any associated CSS layout box, the element has no associated scrolling box, or the element has no overflow, terminate these steps.
+</li>
+
+	<li>
+<p>
+次を入力に，此れを`~scrollさせる$：
+</p>
+		<dl>
+			<dt>~scrollの挙動</dt>
+			<dd>
+`auto$l
+</dd>
+			<dt>目的位置</dt>
+			<dd>
+( ［
+`scrollLeft$m の値 ｜ %v
+］,
+［
+%v ｜ `scrollTop$m の値
+］ )
+</dd>
+		</dl>
+◎
+Scroll the element to scrollLeft,y, with the scroll behavior being "auto".
+</li>
+
+</ol>
+
+<div class="en">
+	<div lang="en">
+<p>
+The scrollLeft attribute, on getting, must return the result of running these steps:
+</p>
+
+<ol>
+	<li>
+Let document be the element’s node document.
+</li>
+	<li>
+If document is not the active document, return zero and terminate these steps.
+</li>
+	<li>
+Let window be the value of document’s defaultView attribute.
+</li>
+	<li>
+If window is null, return zero and terminate these steps.
+</li>
+	<li>
+If the element is the root element and document is in quirks mode, return zero and terminate these steps.
+</li>
+	<li>
+If the element is the root element return the value of scrollX on window.
+</li>
+	<li>
+If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, return the value of scrollX on window.
+</li>
+	<li>
+If the element does not have any associated CSS layout box, return zero and terminate these steps.
+</li>
+	<li>
+Return the x-coordinate of the scrolling area at the alignment point with the left of the padding edge of the element.
+</li>
+</ol>
+
+<p>
+When setting the scrollLeft attribute these steps must be run:
+</p>
+
+<ol>
+	<li>
+Let x be the given value.
+</li>
+	<li>
+Normalize non-finite values for x.
+</li>
+	<li>
+Let document be the element’s node document.
+</li>
+	<li>
+If document is not the active document, terminate these steps.
+</li>
+	<li>
+Let window be the value of document’s defaultView attribute.
+</li>
+	<li>
+If window is null, terminate these steps.
+</li>
+	<li>
+If the element is the root element and document is in quirks mode, terminate these steps.
+</li>
+	<li>
+If the element is the root element invoke scroll() on window with x as first argument and scrollY on window as second argument, and terminate these steps.
+</li>
+	<li>
+If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, invoke scroll() on window with x as first argument and scrollY on window as second argument, and terminate these steps.
+</li>
+	<li>
+If the element does not have any associated CSS layout box, the element has no associated scrolling box, or the element has no overflow, terminate these steps.
+</li>
+	<li>
+Scroll the element to x,scrollTop, with the scroll behavior being "auto".
+</li>
+</ol>
+
+	</div>
+</div>
+
+
+<p>
+［
+`scrollWidth@m ｜ `scrollHeight@m 
+］属性の被取得時には、次を実行し~MUST：
+◎
+The scrollWidth attribute must return the result of running these steps:
+</p>
+
+<ol>
+	<li>
+%文書 ~LET 此れの`~node文書$
+◎
+Let document be the element’s node document.
+</li>
+	<li>
+~IF［
+%文書 は`作動中の文書$でない
+］
+⇒
+~RET 0
+◎
+If document is not the active document, return zero and terminate these steps.
+</li>
+	<li>
+<p>
+~IF［
+次のいずれかが満たされる
+］…：
+</p>
+
+		<ul >
+			<li>
+［
+%文書 は`過去互換~mode$下にない
+］~AND［
+此れは`根~要素$である
+］
+</li>
+			<li>
+［
+%文書 は`過去互換~mode$下にある
+］~AND［
+此れは `HTML body 要素$である
+］~AND［
+此れは
+`~scroll可能になり得ない$
+］
+</li>
+		</ul>
+
+<p>
+…ならば：
+</p>
+		<ol>
+			<li>
+~IF［
+此れの`表示域$は無い
+］
+⇒
+~RET ~zero
+</li>
+			<li>
+~RET
+max( `表示域$の`~scrolling区画$の［
+横幅 ｜ 縦幅
+］, `表示域$の［
+`有効~横幅$ ｜ `有効~縦幅$
+］ )
+</li>
+		</ol>
+◎
+Let viewport width be the width of the viewport excluding the width of the scroll bar, if any, or zero if there is no viewport.
+◎
+If the element is the root element and document is not in quirks mode return max(viewport scrolling area width, viewport width).
+◎
+If the element is the HTML body element, document is in quirks mode and the element is not potentially scrollable, return max(viewport scrolling area width, viewport width).
+</li>
+
+	<li>
+~IF［
+此れは `CSS ~layout~box$を持たない
+］
+⇒
+~RET ~zero
+◎
+If the element does not have any associated CSS layout box return zero and terminate these steps.
+</li>
+
+	<li>
+~RET
+此れの`~scrolling区画$の［
+横幅 ｜ 縦幅
+］
+◎
+Return the width of the element’s scrolling area.
+</li>
+
+</ol>
+
+<div class="en">
+	<div lang="en">
+<p>
+The scrollHeight attribute must return the result of running these steps:
+</p>
+
+<ol>
+	<li>
+Let document be the element’s node document.
+</li>
+	<li>
+If document is not the active document, return zero and terminate these steps.
+</li>
+	<li>
+Let viewport height be the height of the viewport excluding the height of the scroll bar, if any, or zero if there is no viewport.
+</li>
+	<li>
+If the element is the root element and document is not in quirks mode return max(viewport scrolling area height, viewport height).
+</li>
+	<li>
+If the element is the HTML body element, document is in quirks mode and the element is not potentially scrollable, return max(viewport scrolling area height, viewport height).
+</li>
+	<li>
+If the element does not have any associated CSS layout box return zero and terminate these steps.
+</li>
+	<li>
+Return the height of the element’s scrolling area.
+</li>
+
+</ol>
+	</div>
+</div>
+
+<p>
+［
+`clientTop@m ｜ `clientLeft@m
+］属性の被取得時には，次を実行し~MUST：
+◎
+The clientTop attribute must run these steps:
+</p>
+
+<ol>
+	<li>
+~IF［
+此れは `CSS ~layout~box$を持たない
+］~OR［
+此れの `CSS ~layout~box$は`行内$である
+］
+⇒
+~RET ~zero
+◎
+If the element has no associated CSS layout box or if the CSS layout box is inline, return zero.
+</li>
+
+	<li>
+<p>
+~RET 次の和：
+</p>
+
+		<ul>
+			<li>
+［
+`border-top-width$p ｜ `border-left-width$p
+］~propの算出値
+</li>
+			<li>
+`~padding辺$の［
+上端 ｜ 左端
+］と`~border辺$の［
+上端 ｜ 左端
+］の間に描画された~scroll~barの［
+縦幅 ｜ 横幅
+］
+</li>
+		</ul>
+<p>
+— ここで、
+此れとその先祖に対する`座標系変換$は適用しないとする。
+</p>
+◎
+Return the computed value of the border-top-width property plus the height of any scrollbar rendered between the top padding edge and the top border edge, ignoring any transforms that apply to the element and its ancestors.
+	</li>
+</ol>
+
+<div class="en">
+	<div lang="en">
+<p>
+The clientLeft attribute must run these steps:
+</p>
+
+<ol>
+	<li>
+If the element has no associated CSS layout box or if the CSS layout box is inline, return zero.
+</li>
+
+	<li>
+Return the computed value of the border-left-width property plus the width of any scrollbar rendered between the left padding edge and the left border edge, ignoring any transforms that apply to the element and its ancestors.
+</li>
+</ol>
+
+	</div>
+</div>
+
+
+<p>
+［
+`clientWidth@m ｜ `clientHeight@m
+］属性の被取得時には，次を実行し~MUST：
+◎
+The clientWidth attribute must run these steps:
+</p>
+
+<ol>
+	<li>
+~IF［
+此れは `CSS ~layout~box$を持たない
+］~OR［
+此れの `CSS ~layout~box$は`行内$である
+］
+⇒
+~RET ~zero
+◎
+If the element has no associated CSS layout box or if the CSS layout box is inline, return zero.
+</li>
+
+	<li>
+<p>
+~IF［
+次のいずれかが満たされる
+］…：
+</p>
+		<ul>
+			<li>
+［
+此れは`根~要素$である
+］~AND［
+%文書 は`過去互換~mode$下にない
+］
+</li>
+			<li>
+［
+此れは `HTML body 要素$ である
+］~AND［
+%文書 は`過去互換~mode$下にある
+］
+</li>
+		</ul>
+
+<p>
+…ならば
+⇒
+~RET
+`表示域$の［
+`有効~横幅$ ｜ `有効~縦幅$
+］
+</p>
+◎
+If the element is the root element and the element’s node document is not in quirks mode, or if the element is the HTML body element and the element’s node document is in quirks mode, return the viewport width excluding the size of a rendered scroll bar (if any).
+</li>
+
+	<li>
+<p>
+~RET  `~padding辺$の［
+横幅 ｜ 縦幅
+］
+— ここで：
+</p>
+
+<ul>
+	<li>
+`~padding辺$と`~border辺$の間に~scroll~barが描画されている場合は，その分の［
+横幅 ｜ 縦幅
+］は除外する。
+</li>
+	<li>
+此れとその先祖に対する`座標系変換$は適用しないとする。
+</li>
+</ul>
+◎
+Return the width of the padding edge excluding the width of any rendered scrollbar between the padding edge and the border edge, ignoring any transforms that apply to the element and its ancestors.
+</li>
+
+</ol>
+
+<div class="en">
+	<div lang="en">
+<p>
+The clientHeight attribute must run these steps:
+</p>
+
+<ol>
+	<li>
+If the element has no associated CSS layout box or if the CSS layout box is inline, return zero.
+</li>
+
+	<li>
+If the element is the root element and the element’s node document is not in quirks mode, or if the element is the HTML body element and the element’s node document is in quirks mode, return the viewport height excluding the size of a rendered scroll bar (if any).
+</li>
+
+	<li>
+Return the height of the padding edge excluding the height of any rendered scrollbar between the padding edge and the border edge, ignoring any transforms that apply to the element and its ancestors.
+</li>
+</ol>
+	</div>
+</div>
+
+		<section id="element-scrolling-members">
+<h3 title="Element Scrolling Members">6.1. `Element^I の~scrolling0</h3>
+
+<p>
+`ScrollIntoViewOptions$I 辞書 %options
+を用いて，要素 %要素 を
+`~view内に~scrollさせる@
+ときは
+⇒
+~FOR
+`~scrolling~box$ %~box を確立した
+~EACH (［ 先祖~要素 または`表示域$］%S )
+に対し，最も内縁の`~scrolling~box$から最も外縁のそれの順に、次を実行する：
+◎
+To scroll an element into view element, with a ScrollIntoViewOptions dictionary options, means to run these steps for each ancestor element or viewport that establishes a scrolling box scrolling box, in order of innermost to outermost scrolling box:
+</p>
+
+<ol>
+	<li>
+~IF［［
+%要素 に結付けられている`文書$
+］と［
+%S に結付けられている`文書$
+］とは，`同一生成元$でない
+］
+⇒
+~RET
+◎
+If the Document associated with element is not same origin with the Document associated with the element or viewport associated with box, terminate these steps.
+</li>
+
+	<li>
+%要素境界 ~LET ［
+要素に対し
+`getBoundingClientRect()$m
+を呼出した結果
+］を表現する~box
+◎
+Let element bounding border box be the box that the return value of invoking getBoundingClientRect() on element represents.
+</li>
+
+	<li>
+以下において、
+%~box の辺 %e に対する
+%要素境界 の
+`同じ側@
+の辺とは、
+%e と物理的に同じ側に位置する
+%要素境界 の辺を指すとする。
+◎
+Let scrolling box edge A be the beginning edge in the block flow direction of scrolling box, and let element edge A be element bounding border box’s edge on the same physical side as that of scrolling box edge A.
+◎
+Let scrolling box edge B be the ending edge in the block flow direction of scrolling box, and let element edge B be element bounding border box’s edge on the same physical side as that of scrolling box edge B.
+◎
+Let scrolling box edge C be the beginning edge in the inline base direction of scrolling box, and let element edge C be element bounding border box’s edge on the same physical side as that of scrolling box edge C.
+◎
+Let scrolling box edge D be the ending edge in the inline base direction of scrolling box, and let element edge D be element bounding border box’s edge on the same physical side as that of scrolling box edge D.
+</li>
+
+	<li>
+<p>
+%目的位置 ~LET［
+`塊~flow方向$ ｜ `行内~基底~方向$
+］の それぞれについて、以下に従って与えられる， %~box が揃えられることになる~scroll位置：
+◎
+Let element width be the distance between element edge C and element edge D.
+◎
+Let scrolling box width be the distance between scrolling box edge C and scrolling box edge D.
+◎
+Let position be the scroll position scrolling box would have by following these steps:
+</p>
+
+<p>
+この段における［
+`開始辺$／`終止辺$／中心
+］は，［
+`塊~flow方向$ ｜ `行内~基底~方向$
+］に位置するものを指すとする。
+◎
+↓↓</p>
+
+		<ol>
+			<li>
+<p>
+~scroll位置は、 %options の［
+`block$mb ｜ `inline$mb
+］辞書~memberの値に応じて：
+◎
+↓</p>
+
+
+				<dl class="switch">
+					<dt>`start$l</dt>
+					<dd>
+%~boxの`開始辺$に，
+%要素境界 の`同じ側$の辺を揃える
+◎
+If the block dictionary member of options is "start", align element edge A with scrolling box edge A.
+</dd>
+
+					<dt>`end$l</dt>
+					<dd>
+%~boxの`終止辺$に，
+%要素境界 の`同じ側$の辺を揃える
+◎
+Otherwise, if the block dictionary member of options is "end"; align element edge B with scrolling box edge B.
+</dd>
+
+
+					<dt>`center$l</dt>
+					<dd>
+%要素境界 の中心と %~box の中心とを揃える
+◎
+Otherwise, if the block dictionary member of options is "center"; align the center of element bounding border box with the center of scrolling box in scrolling box’s block flow direction.
+</dd>
+
+					<dt>`nearest$l</dt>
+					<dd>
+<ol>
+	<li>
+%要素~幅 ~LET
+%~box の［`開始辺$, `終止辺$］と`同じ側$にある，
+%要素境界 の２辺の距離
+◎
+↑</li>
+
+	<li>
+%~box幅 ~LET
+%~box の`開始辺$と`終止辺$の距離
+◎
+↑</li>
+	<li>
+
+<p>
+%~box と %要素境界 の位置関係に応じて：
+◎
+Otherwise, it is "nearest"; follow these steps:
+</p>
+
+		<dl class="switch">
+			<dt>
+%~box の`開始辺$と`終止辺$のいずれについても，その外側に
+%要素境界 の`同じ側$の辺が位置する場合
+◎
+If element edge A and element edge B are both outside scrolling box edge A and scrolling box edge B
+</dt>
+			<dd>
+何もしない
+`現在の~scroll位置と同じ^tnote
+◎
+Do nothing.
+</dd>
+			<dt>
+［
+%~box の`開始辺$の外側に
+%要素境界 の`同じ側$の辺が位置する
+］~AND［
+%要素~幅 ~LT %~box幅
+］
+◎
+If element edge A is outside scrolling box edge A and element width is less than scrolling box width
+</dt>
+
+			<dt>
+［
+%~box の`終止辺$の外側に
+%要素境界 の`同じ側$の辺が位置する
+］~AND［
+%要素~幅 ~GT %~box幅
+］
+◎
+If element edge B is outside scrolling box edge B and element width is greater than scrolling box width
+</dt>
+			<dd>
+%~boxの`開始辺$に，
+%要素境界 の`同じ側$の辺を揃える
+◎
+Align element edge A with scrolling box edge A.
+</dd>
+
+			<dt>
+［
+%~box の`開始辺$の外側に
+%要素境界 の`同じ側$の辺が位置する
+］~AND［
+%要素~幅 ~GT %~box幅
+］
+◎
+If element edge A is outside scrolling box edge A and element width is greater than scrolling box width
+</dt>
+
+			<dt>
+［
+%~box の`終止辺$の外側に
+%要素境界 の`同じ側$の辺が位置する
+］~AND［
+%要素~幅 ~LT %~box幅
+］
+◎
+If element edge B is outside scrolling box edge B and element width is less than scrolling box width
+</dt>
+			<dd>
+%~boxの`終止辺$に，
+%要素境界 の`同じ側$の辺を揃える
+◎
+Align element edge B with scrolling box edge B.
+</dd>
+		</dl>
+	</li>
+</ol>
+
+					</dd>
+				</dl>
+			</li>
+		</ol>
+
+<div class="en">
+	<ol lang="en">
+		<li>
+If the inline dictionary member of options is "start", align element edge C with scrolling box edge C.
+</li>
+		<li>
+Otherwise, if the inline dictionary member of options is "end"; align element edge D with scrolling box edge D.
+</li>
+		<li>
+Otherwise, if the inline dictionary member of options is "center", align the center of element bounding border box with the center of scrolling box in scrolling box’s inline base direction.
+</li>
+		<li>
+Otherwise, it is "nearest"; follow these steps:
+			<dl class="switch">
+				<dt>
+If element edge C and element edge D are both outside scrolling box edge C and scrolling box edge D
+</dt>
+				<dd>
+Do nothing.
+</dd>
+				<dt>
+If element edge C is outside scrolling box edge C and element width is less than scrolling box width
+</dt>
+
+				<dt>
+If element edge D is outside scrolling box edge D and element width is greater than scrolling box width
+</dt>
+				<dd>
+Align element edge C with scrolling box edge C.
+</dd>
+
+				<dt>
+If element edge C is outside scrolling box edge C and element width is greater than scrolling box width
+</dt>
+
+				<dt>
+If element edge D is outside scrolling box edge D and element width is less than scrolling box width
+</dt>
+				<dd>
+Align element edge D with scrolling box edge D.
+</dd>
+			</dl>
+		</li>
+	</ol>
+</div>
+
+	</li>
+
+	<li>
+~IF［
+%目的位置 ~EQ %~box の現在の~scroll位置
+］~AND［
+%~box において`滑らかな~scroll$は進行中でない
+］
+⇒
+~RET
+◎
+If position is the same as scrolling box’s current scroll position, and scrolling box does not have an ongoing smooth scroll, abort these steps.
+</li>
+
+	<li>
+<p>
+次を入力に，
+%~box の`~scrollを遂行する$。
+</p>
+
+
+		<dl>
+			<dt>関連要素</dt>
+			<dd>
+［
+%S は要素であるならば %S ／
+%S は`表示域$であるならば ［
+%S に結付けられている`文書$の`根~要素$があれば それ ／
+なければ ~NULL
+］］
+</dd>
+			<dt>~scrollの挙動</dt>
+			<dd>
+%options の `behavior$mb 辞書~member
+</dd>
+			<dt>目的位置</dt>
+			<dd>
+%目的位置
+</dd>
+		</dl>
+◎
+If scrolling box is associated with an element
+◎
+	Let associated element be the element.
+◎
+If scrolling box is associated with a viewport
+◎
+	Let document be the viewport’s associated Document. Let associated element be document’s root element, if there is one, or null otherwise.
+◎
+Let behavior be the behavior dictionary member of options.
+◎
+Perform a scroll of scrolling box to position, associated element as the associated element and behavior as the scroll behavior.
+</li>
+
+</ol>
+
+
+<div class="p">
+<p>
+~UAは、次を入力に，要素 %要素 を
+`~scrollさせる@
+ときは
+⇒
+~scrollの挙動（省略可）： %挙動；<br>
+目的位置： ( %x, %y )
+</p>
+
+<p>
+次を実行する：
+</p>
+◎
+To scroll an element element to x,y optionally with a scroll behavior behavior (which is "auto" if omitted) means to:
+</div>
+
+<ol>
+	<li>
+~IF［
+%挙動 は省略されている
+］
+⇒
+%挙動 ~SET `auto$l
+◎
+↑</li>
+
+	<li>
+%~box ~LET %要素 の`~scrolling~box$
+◎
+Let box be element’s associated scrolling box.
+</li>
+
+	<li>
+<p>
+%x ~LET
+%~box の横方向の`~overflow方向$に応じて，次で与えられる値：
+◎
+↓</p>
+		<dl class="switch">
+			<dt>右方
+◎
+If box has rightward overflow direction
+</dt>
+			<dd>
+max( 0, min( %x, %要素 の`~scrolling区画$の横幅 − %要素 の`~padding辺$の横幅 ))
+◎
+Let x be max(0, min(x, element scrolling area width - element padding edge width)).
+</dd>
+
+			<dt>左方
+◎
+If box has leftward overflow direction
+</dt>
+
+			<dd>
+min( 0, max( %x, %要素 の`~padding辺$の横幅 − %要素 の`~scrolling区画$の横幅 ))
+◎
+Let x be min(0, max(x, element padding edge width - element scrolling area width)).
+</dd>
+		</dl>
+	</li>
+
+	<li>
+<p>
+%y ~LET
+%~box の縦方向の`~overflow方向$に応じて，次で与えられる値：
+◎
+↓</p>
+		<dl class="switch">
+			<dt>下方
+◎
+If box has downward overflow direction
+</dt>
+			<dd>
+max( 0, min( %y, %要素 の`~scrolling区画$の縦幅 − %要素 の`~padding辺$の縦幅 ))
+◎
+Let y be max(0, min(y, element scrolling area height - element padding edge height)).
+</dd>
+
+			<dt>上方
+◎
+If box has upward overflow direction
+</dt>
+
+			<dd>
+%y ~LET
+min( 0, max( %y, %要素 の`~padding辺$の縦幅 − %要素 の`~scrolling区画$の縦幅 ))
+◎
+Let y be min(0, max(y, element padding edge height - element scrolling area height)).
+</dd>
+		</dl>
+	</li>
+
+	<li>
+%目的位置 ~LET
+`~scrolling区画$の座標 ( %x, %y ) は
+%~box の左上隅に揃えられるような， %~box の~scroll位置
+◎
+Let position be the scroll position box would have by aligning scrolling area x-coordinate x with the left of box and aligning scrolling area y-coordinate y with the top of box.
+</li>
+
+	<li>
+~IF［
+%目的位置 ~EQ %~box の現在の~scroll位置
+］~AND［
+%~box において`滑らかな~scroll$は進行中でない
+］
+⇒
+~RET
+◎
+If position is the same as box’s current scroll position, and box does not have an ongoing smooth scroll, abort these steps.
+</li>
+
+	<li>
+<p>
+次を入力に，
+%~box の`~scrollを遂行する$
+</p>
+		<dl>
+			<dt>関連要素</dt>
+			<dd>
+%要素
+</dd>
+			<dt>~scrollの挙動</dt>
+			<dd>
+%挙動
+</dd>
+			<dt>目的位置</dt>
+			<dd>
+%目的位置
+</dd>
+		</dl>
+◎
+Perform a scroll of box to position, element as the associated element and behavior as the scroll behavior.
+</li>
+
+</ol>
+		</section>
+
+	</section>
+	<section id="extensions-to-the-htmlelement-interface">
+
+<h2 title="Extensions to the HTMLElement Interface">7. `HTMLElement^I ~interfaceに対する拡張</h2>
+
+⇒！
+partial interface `HTMLElement!I {
+  readonly attribute `Element$I? `offsetParent$m;
+  readonly attribute long `offsetTop$m;
+  readonly attribute long `offsetLeft$m;
+  readonly attribute long `offsetWidth$m;
+  readonly attribute long `offsetHeight$m;
+};◎
+
+`HTMLElement^dgm
+
+<p>
+`offsetParent@m
+属性の被取得時には、次を実行し~MUST：
+◎
+The offsetParent attribute must return the result of running these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+此れは次のいずれかを満たす
+］
+⇒
+~RET ~NULL：
+◎
+If any of the following holds true return null and terminate this algorithm:
+</p>
+		<ul>
+			<li>
+`CSS ~layout~box$を持たない。
+◎
+The element does not have an associated CSS layout box.
+</li>
+
+			<li>
+`根~要素$である。
+◎
+The element is the root element.
+</li>
+
+			<li>
+`HTML body 要素$である。
+◎
+The element is the HTML body element.
+</li>
+
+			<li>
+`position$p ~propの算出値 ~EQ `fixed^v
+◎
+The element’s computed value of the position property is fixed.
+</li>
+
+		</ul>
+	</li>
+	<li>
+<p>
+%S ~LET 此れの先祖~要素のうち，次のいずれかを満たすものからなる集合
+◎
+Return the nearest ancestor element of the element for which at least one of the following is true and terminate this algorithm if such an ancestor is found:
+</p>
+		<ul>
+			<li>
+`position$p ~propの算出値 ~NEQ `static^v
+◎
+The computed value of the position property is not static.
+</li>
+
+			<li>
+`HTML body 要素$である。
+◎
+It is the HTML body element.
+</li>
+
+			<li>
+［
+此れの `position$p ~propの算出値 ~EQ `static^v
+］の場合に限り
+⇒
+先祖は［
+`td^e, `th^e, `table^e
+］いずれかの `HTML 要素$ である
+◎
+The computed value of the position property of the element is static and the ancestor is one of the following HTML elements: td, th, or table.
+</li>
+
+		</ul>
+	</li>
+	<li>
+~IF［
+%S は空でない
+］
+⇒
+~RET %S 内の要素のうち，此れに最も近い先祖
+◎
+↑</li>
+	<li>
+~RET ~NULL
+◎
+Return null.
+</li>
+
+</ol>
+
+<p>
+［
+`offsetTop@m ｜ `offsetLeft@m
+］属性の被取得時には、次を実行し~MUST：
+◎
+The offsetTop attribute must return the result of running these steps:
+</p>
+<ol>
+	<li>
+~IF［
+此れは `HTML body 要素$である
+］~OR［
+此れは `CSS ~layout~box$を持たない
+］
+⇒
+~RET ~zero
+◎
+If the element is the HTML body element or does not have any associated CSS layout box return zero and terminate this algorithm.
+</li>
+
+	<li>
+~IF［
+此れの `offsetParent$m ~EQ ~NULL
+］
+⇒
+~RET ［
+`初期~包含塊$原点に相対的な，此れの最初の `CSS ~layout~box$の`~border辺$の［
+上端の y 座標 ｜ 左端の x 座標
+］］
+— ここで、此れとその先祖に対する`座標系変換$は適用しないとする。
+◎
+If the offsetParent of the element is null return the y-coordinate of the top border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors, and terminate this algorithm.
+</li>
+
+	<li>
+
+<div class="p">
+<p>
+~RET
+( 此れの最初の `CSS ~layout~box$の`~border辺$の［
+上端の y 座標 ｜ 左端の x 座標
+］ ) −
+( 此れの
+`offsetParent$m
+の最初の `CSS ~layout~box$の`~padding辺$の［
+上端の y 座標 ｜ 左端の x 座標
+］ )
+— ここで：
+</p>
+
+		<ul>
+			<li>
+いずれの座標も`初期~包含塊$の原点に相対的とする。
+</li>
+			<li>
+此れとその先祖に対する`座標系変換$は適用しないとする。
+</li>
+		</ul>
+◎
+Return the result of subtracting the y-coordinate of the top padding edge of the first CSS layout box associated with the offsetParent of the element from the y-coordinate of the top border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors.
+</div>
+
+<p class="note">注記：
+複数の行~boxからなる`行内$要素については、その最初の `CSS ~layout~box$のみが考慮されることになる。
+◎
+Note: An inline element that consists of multiple line boxes will only have its first CSS layout box considered.
+</p>
+
+	</li>
+</ol>
+
+<div class="en">
+	<div lang="en">
+<p>
+The offsetLeft attribute must return the result of running these steps:
+</p>
+
+<ol>
+	<li>
+If the element is the HTML body element or does not have any associated CSS layout box return zero and terminate this algorithm.
+</li>
+
+	<li>
+If the offsetParent of the element is null return the x-coordinate of the left border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, , ignoring any transforms that apply to the element and its ancestors, and terminate this algorithm.
+</li>
+
+	<li>
+Return the result of subtracting the x-coordinate of the left padding edge of the first CSS layout box associated with the offsetParent of the element from the x-coordinate of the left border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors.
+</li>
+</ol>
+	</div>
+</div>
+
+<p>
+［
+`offsetWidth@m ｜ `offsetHeight@m
+］属性の被取得時には、次を実行し~MUST：
+◎
+The offsetWidth attribute must return the result of running these steps:
+</p>
+<ol>
+	<li>
+~IF［
+此れは `CSS ~layout~box$を持たない
+］
+⇒
+~RET ~zero
+◎
+If the element does not have any associated CSS layout box return zero and terminate this algorithm.
+</li>
+
+	<li>
+~RET 
+此れの最初の `CSS ~layout~box$の`~border辺$の［
+横幅 ｜ 縦幅
+］
+— ここで、此れとその先祖に対する`座標系変換$は適用しないとする。
+◎
+Return the border edge width of the first CSS layout box associated with the element, ignoring any transforms that apply to the element and its ancestors.
+</li>
+
+</ol>
+
+<div class="en">
+	<div lang="en">
+<p>
+The offsetHeight attribute must return the result of running these steps:
+</p>
+
+<ol>
+	<li>
+If the element does not have any associated CSS layout box return zero and terminate this algorithm.
+</li>
+
+	<li>
+Return the border edge height of the first CSS layout box associated with the element, ignoring any transforms that apply to the element and its ancestors.
+</li>
+</ol>
+
+	</div>
+</div>
+
+
+	</section>
+	<section id="excensions-to-the-htmlimageelement-interface">
+
+<h2 title="Extensions to the HTMLImageElement Interface">8. `HTMLImageElement^I ~interfaceに対する拡張</h2>
+
+⇒！
+partial interface `HTMLImageElement!I {
+  readonly attribute long `x$m;
+  readonly attribute long `y$m;
+};◎
+
+
+<div class="p">
+<p>
+［
+`x@m ｜ `y@m
+］属性の被取得時には、次を実行し~MUST：
+</p>
+
+<ol>
+	<li>
+~IF［
+此れは `CSS ~layout~box$を持たない
+］
+⇒
+~RET ~zero
+</li>
+	<li>
+~RET `初期~包含塊$の原点に相対的な［
+此れの最初の `CSS ~layout~box$の`~border辺$
+］の［
+左端の x 座標 ｜ 上端の y 座標
+］］
+— ここで、此れとその先祖に対する`座標系変換$は適用しないとする。
+</li>
+</ol>
+◎
+The x attribute, on getting, must return the x-coordinate of the left border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors, or zero if there is no CSS layout box.
+◎
+The y attribute, on getting, must return the y-coordinate of the top border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors, or zero if there is no CSS layout box. 
+</div>
+
+	</section>
+	<section id="extensions-to-the-range-interface">
+
+
+<h2 title="Extensions to the Range Interface">9. `Range^I ~interfaceに対する拡張</h2>
+
+<p>
+この節で述べる~methodが返す~objは静的で~MUST。
+◎
+The objects the methods described below return must be static.
+</p>
+
+<p class="trans-note">【
+静的：
+すなわち、取得された~objの内容が，動的に変化することはない
+— これは、
+[NewObject] IDL 拡張属性に対応する（この節~以外の IDL ~memberも同様）。
+】</p>
+
+⇒！
+partial interface `Range!I {
+  sequence&lt;`DOMRect$I&gt; `getClientRects$m();
+  [NewObject] `DOMRect$I `getBoundingClientRect$m();
+};◎
+
+
+`Range^dgm
+
+<p>
+`getClientRects()@m
+~methodの被呼出時には、次を実行し~MUST：
+◎
+↓</p>
+
+<ol>
+	<li>
+~IF［
+此れは文書~内を指していない
+］
+⇒
+~RET 空~連列~obj
+◎
+↓</li>
+	<li>
+<p>
+~RET ［
+次の拘束に合致するような静的 `DOMRect$I ~obj
+］からなる，内容~順の~listを包含する連列~obj：
+◎
+The getClientRects() method, when invoked, must return an empty sequence if the range is not in the document and otherwise a sequence object containing static DOMRect objects in content order that matches the following constraints:
+</p>
+
+		<ul>
+			<li>
+~FOR
+此れに`被包含$なる ~EACH ( %要素 ) に対する
+⇒
+%要素 上の
+`getClientRects()^m
+を呼出した返り値に含まれる~border区画たち。
+◎
+For each element selected by the range, whose parent is not selected by the range, include the border areas returned by invoking getClientRects() on the element.
+</li>
+
+			<li>
+<p>
+此れに［
+`半被包含$または`被包含$†
+］なる
+~EACH( `Text$I ~node )
+（`始点$と`終点$が同じになるものも含まれる）に対する
+⇒
+（行~box全体ではなく）選択された部分のみを囲む `DOMRect$I ~obj。
+</p>
+
+<p class="trans-note">【†
+`被包含$なる要素~内の `Text^I ~nodeも除外されないことになる。
+】</p>
+
+<p>
+これらの `DOMRect$I ~objの境界は、~font計量を用いて算出される。
+したがって，横書きの下では、各~boxの
+縦方向の寸法は~fontの~ascentと~descentから決定され,
+横方向の寸法は~textの送り幅から決定される。
+此れの`中身$が `~typographic文字~単位$ `CSS-TEXT-3$r
+を部分的に含む場合（例： 代用対の片割れや書記素~clusterの一部分）、境界を算出する目的においては，その`~typographic文字~単位$を全部的に含め~MUST。
+要素の先祖に対する`座標系変換$は、適用される。
+</p>
+
+<p class="trans-note">【
+“送り幅（ advance ）”
+— 対象~textが描画される起点から，後続の~textが同じ行に描画されるとするときの，その起点までの長さ
+】</p>
+
+◎
+For each Text node selected or partially selected by the range (including when the boundary-points are identical), include a DOMRect object (for the part that is selected, not the whole line box). The bounds of these DOMRect objects are computed using font metrics; thus, for horizontal writing, the vertical dimension of each box is determined by the font ascent and descent, and the horizontal dimension by the text advance width. If the range covers a partial typographic character unit (e.g. half a surrogate pair or part of a grapheme cluster), the full typographic character unit must be included for the purpose of computing the bounds of the relevant DOMRect. [CSS-TEXT-3] The transforms that apply to the ancestors are applied.
+
+
+			</li>
+		</ul>
+	</li>
+</ol>
+
+<p>
+`getBoundingClientRect@m
+~methodの被呼出時には、次の~algoによる結果を返さ~MUST：
+◎
+The getBoundingClientRect() method, when invoked, must return the result of the following algorithm:
+</p>
+		<ol>
+
+	<li>
+%list ~LET 此れ上で
+`getClientRects()$m
+を呼出した結果
+◎
+Let list be the result of invoking getClientRects() on the same range this method was invoked on.
+</li>
+
+	<li>
+~IF［
+%list は空である
+］
+⇒
+~RET 次のようにされた静的 `DOMRect$I ~obj
+⇒
+［
+`x^m, `y^m, `width^m, `height^m
+］属性 ~SET 0
+◎
+If list is empty return a static DOMRect object whose x, y, width and height members are zero.
+</li>
+
+	<li>
+<p>
+~ELSE
+⇒
+~RET ［
+次に挙げるすべての矩形を包含するような，最小の矩形
+］を表現する静的 `DOMRect$I ~obj
+</p>
+		<ul>
+			<li>
+%list の最初の矩形。
+</li>
+			<li>
+%list 内の矩形のうち，［
+縦幅, 横幅
+のいずれかは 非~zero
+］であるもの。
+</li>
+		</ul>
+◎
+Otherwise, return a static DOMRect object describing the smallest rectangle that includes the first rectangle in list and all of the remaining rectangles of which the height or width is not zero.
+</li>
+
+</ol>
+
+	</section>
+	<section id="extensions-to-the-mouseevent-interface">
+
+<h2 title="Extensions to the MouseEvent Interface">10. `MouseEvent^I ~interfaceに対する拡張</h2>
+
+<p class="issue">
+この~obj IDL 片は、一部の~memberを再定義している。
+Can we resolve this somehow?<!--  -->
+◎
+The object IDL fragment redefines some members. Can we resolve this somehow?
+</p>
+
+
+⇒！
+partial interface `MouseEvent!I {
+  readonly attribute double `screenX$m;
+  readonly attribute double `screenY$m;
+  readonly attribute double `pageX$m;
+  readonly attribute double `pageY$m;
+  readonly attribute double `clientX$m;
+  readonly attribute double `clientY$m;
+  readonly attribute double `x$m;
+  readonly attribute double `y$m;
+  readonly attribute double `offsetX$m;
+  readonly attribute double `offsetY$m;
+};
+
+partial dictionary `MouseEventInit!I {
+  double `screenX@m = 0.0;
+  double `screenY@m = 0.0;
+  double `clientX@m = 0.0;
+  double `clientY@m = 0.0;
+};◎
+
+`MouseEvent^dgm
+
+
+<!-- `MouseEvent!I -->
+<p>
+［
+`screenX@m ｜ `screenY@m
+］属性の被取得時には
+⇒
+~screenの原点に相対的な，此れが生じた地点の［
+x 座標 ｜ y 座標
+］を返さ~MUST。
+◎
+The screenX attribute must return the x-coordinate of the position where the event occurred relative to the origin of the screen.
+◎
+The screenY attribute must return the y-coordinate of the position where the event occurred relative to the origin of the screen.
+</p>
+
+
+<p>
+［
+`pageX@m ｜ `pageY@m
+］属性の被取得時には、次を実行し~MUST：
+◎
+The pageX attribute must follow these steps:
+</p>
+
+<ol>
+	<li>
+~IF［
+此れの`配送~flag$ ~EQ ~ON
+］
+⇒
+~RET
+`初期~包含塊$の原点に相対的な，此れが生じた地点の［
+横方向 ｜ 縦方向
+］の座標
+◎
+If the event’s dispatch flag is set, return the horizontal coordinate of the position where the event occurred relative to the origin of the initial containing block and terminate these steps.
+</li>
+
+	<li>
+%offset ~SET
+此れに結付けられている `Window$I ~objが［
+あれば，その［
+`scrollX^m ｜ `scrollY^m
+］属性の値 ／
+無ければ ~zero
+］。
+◎
+Let offset be the value of the scrollX attribute of the event’s associated Window object, if there is one, or zero otherwise.
+</li>
+
+	<li>
+~RET ［
+%offset + ( 此れの［
+`clientX$m ｜ `clientY$m
+］属性の値 )
+］
+◎
+Return the sum of offset and the value of the event’s clientX attribute. 
+</li>
+</ol>
+
+
+<div class="en">
+	<div lang="en">
+<p>
+The pageY attribute must follow these steps:
+</p>
+
+<ol>
+	<li>
+If the event’s dispatch flag is set, return the vertical coordinate of the position where the event occurred relative to the origin of the initial containing block and terminate these steps.
+</li>
+
+	<li>
+Let offset be the value of the scrollY attribute of the event’s associated Window object, if there is one, or zero otherwise.
+</li>
+
+	<li>
+Return the sum of offset and the value of the event’s clientY attribute. 
+</li>
+</ol>
+	</div>
+</div>
+
+<p>
+［
+`clientX@m ｜ `clientY@m
+］属性の被取得時には
+⇒
+`表示域$の原点に相対的な，此れが生じた地点の［
+x 座標 ｜ y 座標
+］を返さ~MUST。
+◎
+The clientX attribute must return the x-coordinate of the position where the event occurred relative to the origin of the viewport.
+◎
+The clientY attribute must return the y-coordinate of the position where the event occurred relative to the origin of the viewport.
+</p>
+
+<p>
+［
+`x@m ｜ `y@m
+］属性の被取得時には
+⇒
+［
+`clientX$m ｜ `clientY$m
+］と同じ値を返さ~MUST。
+◎
+The x attribute must return the value of clientX.
+◎
+The y attribute must return the value of clientY.
+</p>
+
+<p>
+［
+`offsetX@m ｜ `offsetY@m
+］属性の被取得時には、次を実行し~MUST：
+◎
+The offsetX attribute must follow these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+此れの`配送~flag$ ~EQ ~ON
+］
+⇒
+~RET 
+要素とその先祖に対する`座標系変換$は適用しない下で，
+target ~nodeの`~padding辺$の原点に相対的な，此れが生じた地点の［
+x 座標 ｜ y 座標
+］
+◎
+If the event’s dispatch flag is set, return the x-coordinate of the position where the event occurred relative to the origin of the padding edge of the target node, ignoring the transforms that apply to the element and its ancestors, and terminate these steps.
+</p>
+
+<p class="trans-note">【
+target ~node：
+此れの`配送$先の~node（より明確には，~event伝播の中で `AT_TARGET$m に該当する~node）。
+】</p>
+</li>
+
+	<li>
+~RET ［
+`pageX$m ｜ `pageY$m
+］属性の値
+◎
+Return the value of the event’s pageX attribute. 
+</li>
+</ol>
+
+<div class="en">
+	<div lang="en">
+<p>
+The offsetY attribute must follow these steps:
+</p>
+
+<ol>
+	<li>
+If the event’s dispatch flag is set, return the y-coordinate of the position where the event occurred relative to the origin of the padding edge of the target node, ignoring the transforms that apply to the element and its ancestors, and terminate these steps.
+</li>
+
+	<li>
+Return the value of the event’s pageY attribute. 
+</li>
+</ol>
+	</div>
+</div>
+
+	</section>
+	<section id="geometry">
+
+<h2 title="Geometry">11. 幾何</h2>
+
+		<section id="the-geometryutils-interface">
+<h3 title="The GeometryUtils Interface" class="atrisk">11.1. `GeometryUtils^I ~interface</h3>
+
+⇒！
+enum `CSSBoxType@I { `margin@l, `border@l, `padding@l, `content@l };
+dictionary `BoxQuadOptions@I {
+  `CSSBoxType$I `box@mb = `border$l;
+  `GeometryNode$I `relativeTo@mb; // XXX default document (i.e. viewport)
+};
+
+dictionary `ConvertCoordinateOptions@I {
+  `CSSBoxType$I `fromBox@mb = `border$l;
+  `CSSBoxType$I `toBox@mb = `border$l;
+};
+
+[NoInterfaceObject]
+interface `GeometryUtils@I {
+  sequence&lt;`DOMQuad$I&gt; `getBoxQuads$m(
+      optional `BoxQuadOptions$I %options
+  );
+  `DOMQuad$I `convertQuadFromNode$m(
+      `DOMQuadInit$I %quad,
+      `GeometryNode$I %from,
+      optional `ConvertCoordinateOptions$I %options
+  );
+  `DOMQuad$I `convertRectFromNode$m(
+      `DOMRectReadOnly$I %rect,
+      `GeometryNode$I %from,
+      optional `ConvertCoordinateOptions$I %options
+  );
+  `DOMPoint$I `convertPointFromNode$m(
+      `DOMPointInit$I %point,
+      `GeometryNode$I %from,
+      optional `ConvertCoordinateOptions$I %options
+  ); // XXX z,w turns into 0
+};
+ 
+`Text$I implements `GeometryUtils$I; // like Range
+`Element$I implements `GeometryUtils$I;
+`CSSPseudoElement$I implements `GeometryUtils$I;
+`Document$I implements `GeometryUtils$I;
+
+typedef (`Text$I or `Element$I or `CSSPseudoElement$I or `Document$I) `GeometryNode@I;◎
+
+<p>
+`getBoxQuads(options)@m
+~methodは次を実行し~MUST：
+◎
+The getBoxQuads(options) method must run the following steps:
+</p>
+
+<ol>
+	<li class="issue">
+DOM order
+
+<p>p1 = top left even in RTL</p>
+<p>scale to 0 means divide by zero, return 0x0</p>
+<p>cross-frames not allowed, throw WrongDocumentError?</p>
+<p>points are flattened (3d transform), z=0. like getClientRect</p>
+<p>test block in inline</p>
+<p>pseudo-elements before/after are children of the element</p>
+<p>viewport boxes are all the same</p>
+	</li>
+</ol>
+
+<p>
+`convertQuadFromNode(quad, from, options)@m
+~methodは次を実行し~MUST：
+◎
+The convertQuadFromNode(quad, from, options) method must run the following steps:
+</p>
+
+<ol><li><p class="issue">`未策定^tnote</li></ol>
+
+<p>
+`convertRectFromNode(rect, from, options)@m
+~methodは次を実行し~MUST：
+◎
+The convertRectFromNode(rect, from, options) method must run the following steps:
+</p>
+
+<ol><li><p class="issue">`未策定^tnote</li></ol>
+
+
+<p>
+`convertPointFromNode(point, from, options)@m
+~methodは次を実行し~MUST：
+◎
+The convertPointFromNode(point, from, options) method must run the following steps:
+</p>
+
+<ol><li><p class="issue">`未策定^tnote</li></ol>
+
+		</section>
+	</section>
+
+	<section id="events">
+<h2 title="Events">12. ~event</h2>
+
+		<section id="resizing-viewports">
+<h3 title="Resizing viewports">12.1. 表示域の~size変更</h3>
+
+<p>
+この節は、 `HTML$r に定義される`~event-loop$に統合される。
+◎
+This section integrates with the event loop defined in HTML. [HTML]
+</p>
+
+<p>
+`文書$ %文書 の
+`~resize手続き@
+を実行するときは：
+◎
+When asked to run the resize steps for a Document doc, run these steps:
+</p>
+
+<ol>
+
+	<li>
+<p>
+~IF［
+この手続きが最後に実行されてから
+`表示域$の横幅または縦幅は変化した†
+］
+⇒
+%文書 に結付けられている `Window$I ~objに向けて，名前 `resize$et の~eventを`発火-$する
+</p>
+
+<p>†
+例えば：
+</p>
+		<ul>
+			<li>
+利用者が~browserの~windowを［
+~resize／拡大
+］したとき
+</li>
+			<li>
+`頁~zoom$倍率が変化したとき
+</li>
+			<li>
+`iframe^e 要素の寸法が変化したとき
+</li>
+		</ul>
+◎
+If doc’s viewport has had its width or height changed (e.g. as a result of the user resizing the browser window, or changing the page zoom scale factor, or an iframe element’s dimensions are changed) since the last time these steps were run, fire an event named resize at the Window object associated with doc. 
+</li>
+
+</ol>
+
+		</section>
+		<section id="scrolling-0">
+
+<h3 title="Scrolling">12.2. ~scrolling0</h3>
+
+<p>
+この節は、 `HTML$r に定義される`~event-loop$に統合される。
+◎
+This section integrates with the event loop defined in HTML. [HTML]
+</p>
+
+<p>
+各 `文書$には、
+<dfn id="pending-scroll-event-targets">処理待ちにある~scroll~event~targetたちの~list</dfn>
+が結付けられる（初期~時は空）
+— 長いので以下
+<dfn>~scroll処理待ち~list</dfn>
+と略記する。
+◎
+Each Document has an associated list of pending scroll event targets, initially empty.
+</p>
+
+<p>
+~UAは、`表示域$が~scrollされる度に（利用者との対話, API，いずれによるものであっても），次を実行し~MUST：
+◎
+Whenever a viewport gets scrolled (whether in response to user interaction or by an API), the user agent must run these steps:
+</p>
+
+<ol>
+
+	<li>
+%文書 ~LET `表示域$に結付けられている`文書$
+◎
+Let doc be the viewport’s associated Document.
+</li>
+
+	<li>
+~IF［
+%文書 ~IN %文書 の`~scroll処理待ち~list$
+］
+⇒
+~RET
+◎
+If doc is already in doc’s pending scroll event targets, abort these steps.
+</li>
+
+	<li>
+%文書 を %文書 の`~scroll処理待ち~list$に付加する
+◎
+Append doc to doc’s pending scroll event targets.
+</li>
+
+</ol>
+
+<p>
+~UAは、要素が~scrollされる度に（利用者との対話,  API，いずれによるものであっても），次を実行し~MUST：
+◎
+Whenever an element gets scrolled (whether in response to user interaction or by an API), the user agent must run these steps:
+</p>
+
+<ol>
+
+	<li>
+%文書 ~LET 要素の`~node文書$
+◎
+Let doc be the element’s node document.
+</li>
+
+	<li>
+~IF［
+要素 ~IN %文書 の`~scroll処理待ち~list$
+］
+⇒
+~RET
+◎
+If the element is already in doc’s pending scroll event targets, abort these steps.
+</li>
+
+	<li>
+%文書 の`~scroll処理待ち~list$に要素を付加する
+◎
+Append the element to doc’s pending scroll event targets.
+</li>
+
+</ol>
+
+<p>
+`文書$ %文書 の
+`~scroll手続き@
+を実行するときは：
+◎
+When asked to run the scroll steps for a Document doc, run these steps:
+</p>
+
+<ol>
+
+	<li>
+
+<p>
+~FOR
+%文書 の`~scroll処理待ち~list$内の ~EACH ( %target ) に対し，~listに追加された順序で：
+◎
+For each item target in doc’s pending scroll event targets, in the order they were added to the list, run these substeps:
+</p>
+
+		<ol>
+
+			<li>
+~IF［
+%target は`文書$である
+］
+⇒
+%target にて浮上する
+名前 `scroll$et の~eventを`発火-$する
+◎
+If target is a Document, fire an event named scroll that bubbles at target.
+</li>
+
+			<li>
+~ELSE
+⇒
+%target に向けて，名前 `scroll$et の~eventを`発火-$する
+◎
+Otherwise, fire an event named scroll at target.
+</li>
+
+		</ol>
+	</li>
+	<li>
+%文書 の`~scroll処理待ち~list$を空にする
+◎
+Empty doc’s pending scroll event targets.
+</li>
+
+</ol>
+
+		</section>
+		<section id="event-summary">
+<h4 title="Event summary">12.3. ~event要覧</h4>
+
+~INFORMATIVE
+
+<table class="complex data">
+<thead><tr><th>~event
+</th><th>~interface
+</th><th>~target
+</th><th>~~説明
+</th></tr></thead>
+
+<tbody>
+<tr><td>`resize@et
+</td><td>`Event$I
+</td><td>`Window$I
+</td><td>
+`表示域$が~resizeされたときに `Window$I に向けて発火される。
+◎
+Fired at the Window when the viewport is resized.
+
+</td></tr><tr><td>`scroll@et
+</td><td>`Event$I
+</td><td>`文書$, 要素
+</td><td>
+［
+`表示域$ ／ 要素
+］が~scrollされたときに［
+`文書$ ／ 要素
+］に向けて発火される。
+◎
+Fired at the Document or element when the viewport or element is scrolled, respectively. 
+
+</td></tr></tbody></table>
+
+
+		</section>
+	</section>
+	<section id="css-properties">
+
+<h3 title="CSS properties">13. CSS ~prop</h3>
+
+<p class="issue">
+この節の特色機能は他の仕様に移動されるべきであろう。
+◎
+The features in this section should be moved to some other specification.
+</p>
+
+			<section id="smooth-scrolling:-the-scroll-behavior-property">
+<h2 title="Smooth Scrolling: The scroll-behavior Property">13.1. 滑らかな~scroll： `scroll-behavior^p ~prop</h2>
+
+
+<div>
+`●名^ `scroll-behavior@p
+`●値^ `auto$v | `smooth$v
+`●初^ `auto$v
+`●適^ `~scrolling~box$
+`●継^ されない
+`●百^ 利用不可
+`●媒^ 視覚的
+`●算^ 指定値
+`●ア^ 不可
+`●順^ 文法に従う
+`●表終^
+
+<pre lang="en">
+Name: 	scroll-behavior
+Value: 	auto | smooth
+Initial: 	auto
+Applies to: 	scrolling boxes
+Inherited: 	no
+Percentages: 	n/a
+Media: 	visual
+Computed value: 	specified value
+Animatable: 	no
+Canonical order: 	per grammar
+</pre>
+
+</div>
+
+<p>
+`scroll-behavior$p
+~propは、 navigation†や CSSOM ~scroll API により~scrollが生じた際の，`~scrolling~box$による~scrollの挙動を指定する。
+他のどの~scrollも，この~propからは影響されない
+— 例えば利用者により行われるものなど。
+この~propが`根~要素$に指定された場合、代わりに`表示域$に適用される。
+`† ~scrollなので頁~内の移動を指すものと考えられるが、頁~外からの移動も含まれるかも？^tnote
+◎
+The scroll-behavior property specifies the scrolling behavior for a scrolling box, when scrolling happens due to navigation or CSSOM scrolling APIs. Any other scrolls, e.g. those that are performed by the user, are not affected by this property. When this property is specified on the root element, it applies to the viewport instead.
+</p>
+
+
+<p class="note">注記：
+HTML `body^e 要素の `scroll-behavior$p ~propは、表示域へは <em>伝播しない</em>。
+◎
+The scroll-behavior property of the HTML body element is not propagated to the viewport.
+</p>
+
+
+<dl>
+	<dt>`auto@v</dt>
+	<dd>
+`~scrolling~box$による~scrollは、`瞬時に$行われる。
+◎
+The scrolling box is scrolled in an instant fashion.
+</dd>
+
+	<dt>`smooth@v</dt>
+	<dd>
+`~scrolling~box$による~scrollは、~UA定義0の速度と動きにより，`滑らか$に行われる。
+~UAは~platform慣行があればそれに従うべきである。
+◎
+The scrolling box is scrolled in a smooth fashion using a user-agent-defined timing function over a user-agent-defined period of time. User agents should follow platform conventions, if any.
+</dd>
+
+</dl>
+
+<p>
+~UAはこの~propを無視してよい。
+◎
+User agents may ignore this property.
+</p>
+
+		</section>
+	</section>
+	<section id="change-history">
+
+<h2 title="Change History">変更履歴</h2>
+
+<p>
+この節では、この仕様の各発行版の間の変更点の一部を文書化する。
+この節は，網羅的なものではない。
+~bug修正および編集上の変更点は、一般に挙げられない。
+◎
+This section documents some of the changes between publications of this specification. This section is not exhaustive. Bug fixes and editorial changes are generally not listed.
+</p>
+
+
+		<section id="changes-from-2013-12-17">
+<h3 title="Changes From 17 December 2013">2013 年 12 月 17 日以降の変更点</h3>
+
+<ul>
+	<li>
+`Element!I 上の
+`scrollIntoView()$m ~methodは、変更が加えられ，拡張された。
+◎
+The scrollIntoView() method on Element was changed and extended.
+</li>
+
+	<li>
+`Element!I 上の［
+`scrollTop$m, `scrollLeft$m
+］属性は、~objをとらなくなった。
+代わりに［
+`scroll()$m, `scrollTo()$m, `scrollBy()$m
+］~methodが追加された。
+◎
+The scrollTop and scrollLeft IDL attributes on Element changed to no longer take an object; the scroll(), scrollTo() and scrollBy() methods were added instead.
+</li>
+
+	<li>
+`Element!I 上の［
+`scrollWidth$m, `scrollHeight$m, `clientTop$m, `clientLeft$m, `clientWidth$m 
+`clientHeight$m
+］IDL 属性は、整数を返す元のふるまいに戻された。
+◎
+The scrollWidth, scrollHeight, clientTop, clientLeft, clientWidth and clientHeight IDL attributes on Element were changed back to return integers.
+</li>
+
+	<li>
+`DOMRectList^I ~interfaceは除去された。
+◎
+The DOMRectList interface was removed.
+</li>
+
+	<li>
+`Document!I 上に `scrollingElement$m 属性が追加された。
+◎
+The scrollingElement IDL attribute on Document was added.
+</li>
+
+	<li>
+`Window$I 上の一部の readonly 属性は、
+[Replaceable] IDL 拡張属性 注釈付きにされた。
+◎
+Some readonly attributes on Window were annotated with [Replaceable] IDL extended attribute.
+</li>
+
+	<li>
+［
+`MediaQueryList$I,
+`scroll$et ~event,
+`resize$et ~event
+］は、~animation~frameと同期できるように，
+HTML における`~event-loop$に統合された。
+◎
+MediaQueryList, scroll event and resize event are integrated with the event loop in HTML so they are synchronized with animation frames.
+</li>
+
+	<li>
+`scroll-behavior$p に対する `instant^v 値は、 `auto$v に改称された。
+◎
+The instant value of scroll-behavior was renamed to auto.
+</li>
+
+	<li>
+`Element!I 上の `scrollLeft$m の原点は、（右横書きにも対応するように）変更された。
+◎
+The origin of scrollLeft on Element was changed (for RTL).
+</li>
+
+	<li>
+`Element!I 上の `scrollIntoView()$m ~method, および
+`Window!I 上の［
+`scroll()$m, `scrollTo()$m, `scrollBy()$m
+］~methodは、関連する辞書~型~値を最初の引数にとるようにされた。
+◎
+The scrollIntoView() method on Element and scroll(), scrollTo() and scrollBy() methods on Window take the relevant dictionary as the first argument.
+</li>
+
+	<li>
+`MediaQueryList!I ~interfaceは、正規の~event API を利用し，それを通して
+`addListener()$m を定義するように変更された。
+◎
+The MediaQueryList interface was changed to use regular event API and define addListener() in terms of that.
+</li>
+
+</ul>
+
+
+		</section>
+		<section id="changes-from-2011-08-04">
+<h3 title="Changes From 4 August 2011 To 17 December 2013">2011 年 8 月 4 日 から 2013 年 12 月 17 日までの変更点</h3>
+
+<ul>
+	<li>
+right-to-left （`行内~基底~方向$）, および
+縦組も取り扱われるようになった。
+◎
+The specification now handles right-to-left and vertical writing modes.
+</li>
+
+	<li>
+`頁~zoom$, `~pinch~zoom$が織り込まれた。
+◎
+The specification is now aware of page zoom and pinch zoom.
+</li>
+
+	<li>
+`scroll-behavior$p
+CSS ~propが導入され、滑らかな~scrollを制御できるように，~scrolling0 API が拡張された。
+◎
+The scroll-behavior CSS property is introduced and scrolling APIs are extended with a mechanism to control smooth scrolling.
+</li>
+
+	<li>
+`moveTo()^m,
+`moveBy()^m,
+`resizeTo()^m,
+`resizeBy()^m
+~methodが定義された。
+◎
+The moveTo(), moveBy(), resizeTo() and resizeBy() methods are now defined.
+</li>
+
+	<li>
+`innerWidth^m
+等々は WebIDL 型 `long^c ではなく，`double^c を利用するようにされた。
+◎
+innerWidth et al now use the WebIDL type double instead of long.
+</li>
+
+	<li>
+`devicePixelRatio^m
+が定義された。
+◎
+devicePixelRatio is now defined.
+</li>
+
+	<li>
+`window.open()^m
+に対する
+`features^v 引数が定義された。
+◎
+The features argument to window.open() is now defined.
+</li>
+
+	<li>
+`Screen$I の
+`colorDepth^m,
+`pixelDepth^m
+属性は、 24 を返すようにされた。
+◎
+The colorDepth and pixelDepth attributes of Screen now always return 24.
+</li>
+
+	<li>
+`Element$I に
+`elementsFromPoint()^m
+~methodが導入された。
+◎
+The elementsFromPoint() method of Element is introduced.
+</li>
+
+	<li>
+`座標系変換$が織り込まれた。
+◎
+The specification is now aware of transforms.
+</li>
+
+	<li>
+幾何~utility API がいくつか導入されたが、まだ仕様化されていない。
+◎
+Some geometry utility APIs are introduced but are not yet specified.
+</li>
+
+	<li>
+`ClientRect^I は `DOMRect^I に改称され、 Geometry 仕様に移動された。
+`GEOMETRY-1$r
+◎
+ClientRect has been renamed to DOMRect and has moved to the Geometry specification. [GEOMETRY-1]
+</li>
+
+	<li>
+`resize$et, `scroll$et
+~eventの発火-時機について定義された。
+◎
+The specification now defines when the resize and scroll events fire. 
+</li>
+</ul>
+
+		</section>
+	</section>
+
+</main><!-- id="MAIN" -->
+
+	<section id="acks">
+
+<h2 title="Acknowledgments">謝辞</h2>
+
+<p>
+この文書に対する次の方々からの寄与に感謝する：
+</p>
+
+<div >
+The editors would like to thank
+
+Alan Stearns,
+Alexey Feldgendler,
+Antonio Gomes,
+Björn Höhrmann,
+Boris Zbarsky,
+Chris Rebert,
+Dan Bates,
+David Vest,
+Elliott Sprehn,
+Garrett Smith,
+Henrik Andersson,
+Hallvord R. M. Steen,
+Kang-Hao Lu,
+Leif Arne Storset,
+Luiz Agostini,
+Maciej Stachowiak,
+Michael Dyck,
+Mike Wilson,
+Morten Stenshorne,
+Olli Pettay,
+Pavel Curtis,
+Peter-Paul Koch,
+Rachel Kmetz,
+Rick Byers,
+Robert O’Callahan,
+Sam Weinig,
+Scott Johnson,
+Sebastian Zartner,
+Stewart Brodie,
+Sylvain Galineau,
+Tab Atkins,
+Tarquin Wilton-Jones,
+Thomas Moore,
+Thomas Shinnick,
+and
+Xiaomei Ji
+
+for their contributions to this document.
+</div>
+
+<p>
+この草案にて指定された特色機能の多くを，Windows Internet Explorer ブラウザにて最初に実装した Microsoft の人達に特別な謝意を。
+<span lang="en">
+Special thanks to the Microsoft employees who first implemented many of the features specified in this draft, which were first widely deployed by the Windows Internet Explorer browser.
+</span></p>
+
+
+	</section>
+	<section id="conformance">
+<h2 title="Conformance">2. 適合性</h2>
+
+<p class="trans-note">【
+この節の内容は
+<a href="css-common-ja.html#conformance">CSS 日本語訳 共通ページ</a>
+に委譲
+】</p>
+
+
+	</section>
+	<section id="references">
+
+<h2 title="References" >参照文献</h2>
+
+		<section id="normative">
+<h3 title="Normative References">文献（規定）</h3>
+
+
+
+
+
+<dl>
+
+	<dt>[CSS-BACKGROUNDS-3]</dt>
+	<dd>CSS Backgrounds and Borders Module Level 3</dd>
+	<dd>https://drafts.csswg.org/css-backgrounds-3/</dd>
+
+	<dt>[CSS-BREAK-3]</dt>
+	<dd>Rossen Atanassov; Elika Etemad. CSS Fragmentation Module Level 3. 14 January 2016. CR.</dd>
+	<dd>http://dev.w3.org/csswg/css-break/</dd>
+
+	<dt>[CSS-DEVICE-ADAPT]</dt>
+	<dd>Rune Lillesveen; Florian Rivoal; Matt Rakow. CSS Device Adaptation Module Level 1. 29 March 2016. WD.</dd>
+	<dd>http://www.w3.org/TR/css-device-adapt-1/</dd>
+
+	<dt>[CSS-DISPLAY-3]</dt>
+	<dd>Tab Atkins Jr.; Elika Etemad. CSS Display Module Level 3. 15 October 2015. WD.</dd>
+	<dd>http://dev.w3.org/csswg/css-display/</dd>
+
+	<dt>[CSS-OVERFLOW-4]</dt>
+	<dd>CSS Overflow Module Level 4</dd>
+	<dd>https://drafts.csswg.org/css-overflow-4/</dd>
+
+	<dt>[CSS-POSITION-3]</dt>
+	<dd>CSS Positioned Layout Module Level 3</dd>
+	<dd>https://drafts.csswg.org/css-position-3/</dd>
+
+	<dt>[CSS-PSEUDO-4]</dt>
+	<dd>Daniel Glazman; Elika Etemad; Alan Stearns. CSS Pseudo-Elements Module Level 4. 15 January 2015. WD.</dd>
+	<dd>http://dev.w3.org/csswg/css-pseudo-4/</dd>
+
+	<dt>[CSS-TEXT-3]</dt>
+	<dd>Elika Etemad; Koji Ishii. CSS Text Module Level 3. 10 October 2013. LCWD.</dd>
+	<dd >http://www.w3.org/TR/css-text-3/</dd>
+
+	<dt>[CSS-TRANSFORMS-1]</dt>
+	<dd>Simon Fraser; et al. CSS Transforms Module Level 1. 26 November 2013. WD.</dd>
+	<dd>http://www.w3.org/TR/css-transforms-1/</dd>
+
+	<dt>[CSS-VALUES]</dt>
+	<dd>Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 3. 11 June 2015. CR.</dd>
+	<dd>http://dev.w3.org/csswg/css-values/</dd>
+
+	<dt>[CSS-WRITING-MODES-3]</dt>
+	<dd>Elika Etemad; Koji Ishii. CSS Writing Modes Level 3. 15 December 2015. CR.</dd>
+	<dd>http://dev.w3.org/csswg/css-writing-modes-3/</dd>
+
+	<dt>[CSS2]</dt>
+	<dd>Bert Bos; et al. Cascading Style Sheets Level 2 Revision 1 (CSS 2.1) Specification. 7 June 2011. REC.</dd>
+	<dd>http://www.w3.org/TR/CSS2</dd>
+
+	<dt>[CSS3-BOX]</dt>
+	<dd>Bert Bos. CSS basic box model. 9 August 2007. WD.</dd>
+	<dd>http://www.w3.org/TR/css3-box</dd>
+
+	<dt>[CSSOM]</dt>
+	<dd>Simon Pieters; Glenn Adams. CSS Object Model (CSSOM). 17 March 2016. WD.</dd>
+	<dd>http://www.w3.org/TR/cssom-1/</dd>
+
+	<dt>[DOM]</dt>
+	<dd>Anne van Kesteren. DOM Standard. Living Standard.</dd>
+	<dd>https://dom.spec.whatwg.org/</dd>
+
+	<dt>[GEOMETRY-1]</dt>
+	<dd>Simon Pieters; Dirk Schulze; Rik Cabanier. Geometry Interfaces Module Level 1. 25 November 2014. CR.</dd>
+	<dd>http://dev.w3.org/fxtf/geometry/</dd>
+
+	<dt>[HTML]</dt>
+	<dd>Ian Hickson. HTML Standard. Living Standard.</dd>
+	<dd>https://html.spec.whatwg.org/multipage/</dd>
+
+<!-- 
+	<dt>[RFC2119]</dt>
+ -->
+
+	<dt>[SVG]</dt>
+	<dd>Jon Ferraiolo. Scalable Vector Graphics (SVG) 1.0 Specification. 4 September 2001. REC.</dd>
+	<dd>http://www.w3.org/TR/SVG/</dd>
+
+	<dt>[WEBIDL]</dt>
+	<dd>Cameron McCormack; Boris Zbarsky. WebIDL Level 1. 8 March 2016. CR.</dd>
+	<dd>http://www.w3.org/TR/WebIDL-1/</dd>
+</dl>
+
+		</section>
+		<section id="informative">
+<h3 title="Informative References">文献（参考）</h3>
+
+
+
+<dl>
+
+	<dt>[SVG2]</dt>
+	<dd>Nikos Andronikos; et al. Scalable Vector Graphics (SVG) 2. 15 September 2015. WD.</dd>
+	<dd>https://svgwg.org/svg2-draft/</dd>
+</dl>
+
+		</section>
+	</section>
+
+	<section>
+<h2 id="index" title="Index">索引</h2>
+<p class="trans-note">【
+この節の内容は省略（ウィンドウ下端の索引機能を利用されたし）。
+】</p>
+	</section>
+
+
+	<section>
+<h2 id="property-index" title="Property Index" data-cycling=".propdef">プロパティ索引</h2>
+<h2 id="idl-index" title="IDL Index" data-cycling="pre.idl">IDL 索引</h2>
+<h2 id="issues-index" title="Issues Index" data-cycling=".issue">課題索引</h2>
+
+<p class="trans-note">【
+これらの節の内容は省略（見出しクリックで巡回）。
+】</p>
+	</section>
+
+
+
+
+<div id="_info-view">（クリックで消去）<pre id="_info-box"></pre></div>
+
+</body>
+
+
+<!-- 
+
+dom-open-features-
+	
+dom-window-scroll"
+	dom-window-scrollto"
+	dom-window-scrolloptions"
+
+	-elements?frompoint
+		$0x-y
+<code>auto</code>
+	<code>"auto"</code>
+geometryutils-convertpointfromnode
+	dom-geometryutils-convertpointfromnodepoint-from-options
+
+<code><a href="#dom-scrolltooptions-left">left</a></code> dictionary
+<code><a href="#dom-scrolltooptions-top">top</a></code> dictionary member
+and the scroll behavior being the value of the <code><a href="#dom-scrolloptions-behavior">behavior</a></code>
+
+
+-->

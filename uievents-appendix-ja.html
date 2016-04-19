@@ -1,0 +1,4552 @@
+<!doctype html><html lang="ja"><head><meta charset="UTF-8">
+<title>UI Events 仕様 — Appendix（日本語訳）</title>
+<meta name="keywords" content="Event,DOM3,UI,イベント,発火,仕様,W3C">
+
+<link rel="stylesheet" href="common.css" type="text/css" />
+<link rel="stylesheet" href="common-w3c.css" type="text/css" />
+
+<script src="common0.js" ></script>
+<script src="common1.js" async></script>
+
+<script>
+var source_data;
+
+COMMON_DATA.page_state_key = '___UI-EVENTS';
+COMMON_DATA.init = function(expanded){
+	var options = {
+		original_url: 'https://w3c.github.io/uievents/',
+//		original_url: 'http://www.w3.org/TR/uievents/',
+		main: 'MAIN',
+		spec_status: 'WD',
+		fill_text_link: '#_versions > dd, #references dd',
+		alt_refs: 'references',
+		ref_id_prefix: 'biblio-',
+		ref_id_lowercase: true,
+	};
+
+	if(expanded) return options;
+
+	source_data = {
+		html: E('MAIN').innerHTML,
+		link_map: Util.getMapping('_link_map'),
+		levels: 'ほぼ英語:英語寄り:英語+漢字:漢字主体:カナ主体',
+		level: 3,
+		generate: expand
+	}
+
+	Util.switchWordsInit(source_data);
+//	Util.del_j(); //checked 2015-08-23 spec
+
+	return options;
+}
+
+
+function expand(mapping1){
+	var link_map = this.link_map;
+	var unicode_map = this.unicode_map;
+	var class_map = {
+		r: 'ref', // 参照文献
+		I: 'idl-def', // interface, dictionary, enum 
+		E: 'error',
+		l: 'literal',
+		et: 'event-type',
+		e: 'element',
+		attr: 'attr',
+		kY: 'key',
+		kU: 'unicode',
+		kC: 'key-code',
+		cap: 'key-cap',
+	};
+	var tag_map = {
+		c: 'code',
+		I: 'code',
+		i: 'code',
+		m: 'code',
+		E: 'code',
+		et: 'code',
+		l: 'code',
+		e: 'code',
+		attr: 'code',
+		kY: 'code',
+		kU: 'code',
+		kC: 'code',
+		cap: 'span',
+		v: 'var',
+	};
+	var current_ifc = '#';
+	var in_idl = false;
+
+	if(!source_data.diagrams){
+		source_data.diagrams = Object.create(null);
+		repeat('#_resources > *[id]', function(e){
+			source_data.diagrams[e.id] = e;
+		});
+	}
+	Util.removeParts(source_data.diagrams);
+
+	E('MAIN').innerHTML = Util.replaceWords1(
+		this.html.replace(
+			/◎[^`<◎]*|【.*?】|%[\w~一-鿆]+|`(.*?)([$@!\^])(\w*)/g,
+			create_html
+		),
+		mapping1
+	);
+
+	Util.rebuildToc('MAIN0', '_toc_list0');// 目次構築
+	Util.replaceParts(source_data.diagrams);// 挿入
+
+	function create_html(match, key, indicator, klass){
+if(!indicator) {
+	switch(match.charAt(0)){
+	case '%':
+		return '<var>' + match.slice(1) + '</var>'
+	case '【':
+		return '<span class="trans-note">' + match + '</span>'
+	case '◎':
+	default:
+	}
+	return '<span lang="en">' + match.slice(1).trim() + '</span>';
+}
+
+var text = key;
+var href = '';
+var classname = class_map[klass];
+var tag = tag_map[klass];
+
+switch(klass){
+case '': // plain
+	if(indicator === '^') return mapping1[key];// remap
+	break;
+case 'r': // ref
+	text = '[' + key + ']';
+	href = '#biblio-' + key.toLowerCase();
+	break;
+case 'attr': // DOM attr name
+	break;
+case 'e': // DOM element tag name
+	text = '&lt;' + key + '&gt;';
+	break;
+
+case 'kY': // key event .key value
+	href = "~UIEVENTS-KEY#key-" + key;
+	break;
+case 'kC': // key event .code value
+	href = "~UIEVENTS-CODE#code-" + key;
+	break;
+case 'kGl': // key glyph
+	text = '"<code class="glyph">' + text + '</code>"';
+	break;
+case 'l': // literal
+	text = '"<code class="literal">' + text + '</code>"';
+	break;
+case 'kU': // unicode code point
+	text = '\\u' + key;
+	break;
+case 'cap': // key cap
+	break;
+
+case 'I': // IDL interface
+	href = '#' + key.toLowerCase();
+	if((indicator === '@') || (indicator === '!')){
+		current_ifc = '#dom-' + href.slice(1) + '-';
+	}
+	if(in_idl) tag = '';
+	break;
+case 'm' : // interface member
+	key = key.replace(/\(.+/, '');
+	var j = key.indexOf('.');
+	if(j < 0 ) {
+		href = current_ifc + key.toLowerCase();
+	} else {
+		text = text.slice(j + 1);
+		href = '#dom-' + key.replace(/\./, '-').toLowerCase();
+	}
+	break;
+case 'et': // event type
+	href = '#' + key.toLowerCase();
+	//href = '#event-type-' + key;
+	break;
+case 'c':
+	break;
+case 'v': // variable
+	break;
+default:
+}
+
+classname = classname ? ' class="' + classname + '"' : '';
+if(tag) {
+	text = '<' + tag + classname + '>' + text + '</' + tag + '>';
+}
+
+if(indicator !== '^'){
+	href = link_map[klass ? (klass + '.' + key) : key] || href;
+	if(!href){
+		console.log(match); // check error
+		return match;
+	}
+
+	switch(indicator){
+	case '!':
+	case '$':
+		text = '<a href="' + href + '">' + text + '</a>';
+		break;
+	case '@':
+//		href = href_data_map[key] || href;
+		text = '<dfn id="' + href.slice(1) + '">' + text + '</dfn>';
+		break;
+	default:
+		console.log(match);
+		return match;
+	}
+}
+
+return text;
+
+	}
+}
+
+</script>
+
+<!--% 訳文 id → 原文 id -->
+<script type="text/plain" id="_original_id_map">
+	dfn-code-point:
+</script>
+
+<!--%links -->
+<script type="text/plain" id="_link_map">
+	~keyboard~eventと~key値:~UIEVENTS#keys
+	内的~key修飾~状態:~UIEVENTS#internal-key-modifier-state
+	~key修飾~状態:~UIEVENTS#internal-key-modifier-state
+	~key修飾~名:~UIEVENTS#modifier-key-name
+
+各種~UI~eventに共通する文脈~情報:~UIEVENTS#_common-UI-event-context
+各種~mouse~eventに共通する文脈~情報:~UIEVENTS#_common-mouse-event-context
+各種~keyboard~eventに共通する文脈~情報:~UIEVENTS#_common-keyboard-event-context
+	各種~組成~eventに共通する文脈~情報:~UIEVENTS#_common-composition-event-context
+各種~変異~eventに共通する文脈~情報:#_common-mutation-event-context
+	広義先祖:~DOM4#concept-tree-inclusive-ancestor
+	組成~event:~UIEVENTS#events-compositionevents
+作動化の誘発と挙動:~UIEVENTS#event-flow-activation
+~event型~節:~UIEVENTS#event-types
+
+	→ 別名／重複→集約, 本文内
+	~event相:~UIEVENTS#event-phase
+	浮上-相:~UIEVENTS#bubble-phase
+	捕獲-相:~UIEVENTS#capture-phase
+	標的~相:~UIEVENTS#target-phase
+浮上-:~UIEVENTS#bubble-phase
+
+~eventの配送と~DOM~event~flow:~UIEVENTS#event-flow
+変更点:~UIEVENTS#changes-drafts
+
+	●補完
+~trusted:~UIEVENTS#trusted-events
+同期:~UIEVENTS#sync-async
+
+
+r.UIEVENTS-CODE:~UIEVENTS#biblio-uievents-code
+r.UIEVENTS-KEY:~UIEVENTS#biblio-uievents-key
+r.DOM4:~UIEVENTS#biblio-dom4
+r.DOM:~UIEVENTS#biblio-dom
+r.WebIDL:~UIEVENTS#biblio-webidl
+r.HTML5:~UIEVENTS#biblio-html5
+
+et.focus:~UIEVENTS#event-type-focus
+et.focusin:~UIEVENTS#event-type-focusin
+et.focusout:~UIEVENTS#event-type-focusout
+et.blur:~UIEVENTS#event-type-blur
+et.keydown:~UIEVENTS#event-type-keydown
+et.keyup:~UIEVENTS#event-type-keyup
+et.click:~UIEVENTS#event-type-click
+et.dblclick:~UIEVENTS#event-type-dblclick
+et.error:~UIEVENTS#event-type-error
+et.load:~UIEVENTS#event-type-load
+et.mousemove:~UIEVENTS#event-type-mousemove
+et.mousedown:~UIEVENTS#event-type-mousedown
+et.mouseup:~UIEVENTS#event-type-mouseup
+et.beforeinput:~UIEVENTS#event-type-beforeinput
+et.input:~UIEVENTS#event-type-input
+	et.resize:~CSSOMVIEW#eventdef-window-resize
+
+
+I.InputEvent:~UIEVENTS#interface-inputevent
+	＊
+I.Event:~UIEVENTS#event
+I.EventInit:~UIEVENTS#eventinit
+I.EventTarget:~UIEVENTS#eventtarget
+I.CustomEvent:~UIEVENTS#customevent
+I.Document:~UIEVENTS#document
+	I.EventListener:#eventlistener
+I.Window:~UIEVENTS#window
+
+I.UIEvent:~UIEVENTS#interface-uievent
+I.FocusEvent:~UIEVENTS#interface-focusevent
+I.MouseEvent:~UIEVENTS#interface-mouseevent
+I.WheelEvent:~UIEVENTS#interface-wheelevent
+I.KeyboardEvent:~UIEVENTS#interface-keyboardevent
+I.CompositionEvent:~UIEVENTS#interface-compositionevent
+I.KeyboardEventInit:~UIEVENTS#keyboardeventinit
+
+	I.Attr:~DOM4#attr
+	I.Element
+
+m.KeyboardEvent.repeat:~UIEVENTS#dom-keyboardevent-repeat
+m.KeyboardEvent.key:~UIEVENTS#dom-keyboardevent-key
+m.KeyboardEvent.location:~UIEVENTS#dom-keyboardevent-location
+m.Document.createEvent:~DOM4#dom-document-createevent
+
+m.Event.isTrusted:~UIEVENTS#dom-event-istrusted
+m.Event.initEvent:~UIEVENTS#dom-event-initevent
+m.InputEvent.data:~UIEVENTS#dom-inputevent-data
+m.FocusEvent.relatedTarget:~UIEVENTS#dom-focusevent-relatedtarget
+
+	テキスト組成システム
+浮上相
+取消可能:~UIEVENTS#_cancelable
+
+~pointing先:#_pointing
+
+	●用語集
+作動化の挙動:~UIEVENTS#activation-behavior
+作動化の誘発:~UIEVENTS#activation-trigger
+作者:#author
+
+文字~値:~UIEVENTS#character-value
+既定~動作:~UIEVENTS#default-action
+	~delta:~UIEVENTS#delta
+
+非推奨:#deprecated
+非推奨に:#deprecated
+
+配送:~UIEVENTS#dispatch
+文書:~UIEVENTS#document
+~DOM~app:#dom-application
+~DOM0:#dom-level-0
+空~文字列:~UIEVENTS#empty-string
+~event:~UIEVENTS#event
+~focus:~UIEVENTS#event-focus
+~event~focus:~UIEVENTS#event-focus
+~focus環:~UIEVENTS#event-focus-ring
+~event~focus環:~UIEVENTS#event-focus-ring
+~event~handler:~UIEVENTS#event-handler
+~event~listener:~UIEVENTS#event-listener
+~event序列:~UIEVENTS#event-order
+	~event相:~UIEVENTS#event-phase
+~event標的:~UIEVENTS#event-target
+標的:~UIEVENTS#event-target
+~event型:~UIEVENTS#event-type
+発火-:~UIEVENTS#fire
+~host言語:#host-language
+	~hysteresis:~UIEVENTS#hysteresis
+~IME:~UIEVENTS#ime
+~key~mapping:~UIEVENTS#key-mapping
+~key値:~UIEVENTS#key-value
+	名前空間~URI:~UIEVENTS#namespace-uri
+~text組成~system:~UIEVENTS#text-composition-system
+	木:~UIEVENTS#tree
+~Unicode符号位置:~UIEVENTS#unicode-code-point
+符号位置:~UIEVENTS#unicode-code-point
+未初期化値:~UIEVENTS#un-initialized-value
+~UA:#user-agent
+~Window:~UIEVENTS#window
+
+</script>
+
+<!--%置換語 -->
+<script type="text/plain" id="words_table1">
+DS:DOMString
+	F:false
+	NULL:null
+INFORMATIVE:<p><em>この節は参考である。</em><span lang="en">This section is informative.</span></p>
+UIEVENTS:uievents-ja.html
+
+UIEVENTS-KEY:http://www.w3.org/TR/uievents-key/
+UIEVENTS-CODE:http://www.w3.org/TR/uievents-code/
+
+MANYARGS:<span class="comment">/* たくさんの引数 */</span>
+OMIT0:<p class="trans-note">【以下、この訳では，この節の内容は省略する。】</p>
+SPACEBAR:<span style="color:#AAAAAA"> Space </span>
+
+●型:<table class="eventdef"><tbody><tr><th>型<td>
+●界面:<tr><th>~ifc<td>
+●同期:<tr><th>同期？<td>
+●浮上:<tr><th>浮上-？<td>
+●標的:<tr><th>標的<td>
+●取消:<tr><th>取消可？<td>
+●既定動作:<tr><th>既定~動作<td>
+●文脈:<tr><th>文脈~情報<td>
+●表終:</tbody></table>
+
+
+
+
+</script>
+
+<!--%語彙 -->
+<script type="text/plain" id="words_table">
+	●
+DOM2:DOM Level 2:DOM2
+DOM0:DOM Level 0:DOM0
+DOM:
+API:
+OS:
+UA:
+UI:
+Unicode:
+Web:
+IME:
+	●カナ
+
+machine::::マシン
+access:::アクセス
+	access可能:accessible
+accessibility:::アクセス容易性:アクセシビリティ
+
+code::::コード
+data::::データ
+index:::
+instance:::インスタンス
+	instance化:::instantiating#1
+link::::リンク
+list::::リスト
+
+local::::ローカル
+localhost::::ローカルホスト
+network::::ネットワーク
+client::::クライアント
+fetch:::
+port::::ポート
+transaction::::トランザクション
+dash::::ダッシュ
+codebase::::コードベース
+open::::
+submit::送信
+
+property::::プロパティ
+style:::スタイル
+text::::テキスト
+install::::インストール
+typing::::タイピング
+sensitive:
+
+	●event flow
+Events:
+event::::イベント
+	event-seq:event sequence::イベント列
+
+組成:composition::~::コンポジション
+
+	~Composition~Events:::
+	~composing:#1
+flow::::フロー
+
+誘発:trigger::~
+trusted:
+	信用済み
+相:phase::~::フェーズ
+	target:::ターゲット
+標的:target:::ターゲット
+	at-target:
+捕獲-:capture::~::キャプチャ
+捕獲:capturing::~::キャプチャリング
+浮上-:bubble::~::バブル
+浮上:bubbling::~::バブリング
+
+動作-:act::~::アクト
+動作:action::~::アクション
+	作動:actuation::~::アクチュエーション
+作動化-:activate::~::アクティベート
+作動化:activation::~::アクティベーション
+作動化の:activation::~::アクティベーションの
+
+既定:default::~::デフォルト
+取消して:cancel して::~::キャンセルして
+取消した:cancel した::~::キャンセルした
+取消し:canceling::~::キャンセリング
+取消す:cancel する::~::キャンセルする
+取消-:cancel::~::キャンセル
+取消:cancelation::~::キャンセレーション
+取消可能:cancelable::~::キャンセル可能
+取消可否:cancelable::~::キャンセル可否
+取消可:cancelable::~::キャンセル可能
+
+発火-:fire::~
+発火:firing::~
+source::::ソース
+
+資源:resource::~:リソース
+連列:sequence::~::シーケンス
+	順々にsequential
+	~sequence:::
+序列:order::~::オーダー
+
+合成-:synthesize:~
+合成:synthesis:~
+	同時:simultaneous:~
+同期:sync:~
+型:type:~
+相互相対順序:set order relative to one another:互いに相対的な順序
+文脈依存:varies:~
+登録-:register::~
+登録:registration::~
+配送:dispatch::~::ディスパッチ
+	即時:immediate:~
+
+副:secondary:~
+conflated:
+split:
+
+	●dom/idl/js
+作成-:create:~
+	構築子:constructor::~::コンストラクタ
+	~calling::::
+	＄bit::::ビット
+call:
+handler::::ハンドラ
+ifc:interface:::インタフェース
+listener::::リスナ
+listen::::リッスン
+member::::メンバ
+辞書:dictionary:::ディクショナリ
+method::::メソッド
+node::::ノード
+obj:object:::オブジェクト
+parameter::::パラメタ
+script::::スクリプト
+scripting::::スクリプティング
+library::::ライブラリ
+support::::サポート
+	未~supportの:unsupported:~
+定数:constant::~
+例外:exception:~
+
+木:tree::~::ツリー
+親:parent::~
+子:child::~
+広義先祖:inclusive ancestor::~
+広義子孫:inclusive descendant::~
+子孫:descendant::~
+文書:document::~
+部分木:subtree::~::部分ツリー
+先祖:ancestor::~
+
+
+	最も近い共通の広義先祖:nearest-common-inclusive-ancestor:~
+初期の:initial:~
+初期化-:initialize:~
+初期化:initialization:~
+初期化子:initializer:~
+初期時:initial 時:~
+	初期時の:initialized:~
+未初期化値:un-initialized value:un-initialized 値:~
+	既定値
+属性:attribute:~
+文字列:string:~
+引数:argument:~
+要素:element:~
+値:value:~
+名前:name:~
+名:name:~
+部分的:partial::~
+追補的:supplemental:~
+片:fragment:~
+
+	●UI
+click::::クリック
+custom::::カスタム
+	custom化:::customize
+desktop::::デスクトップ
+給-:feed:~
+focus::::フォーカス
+被focus:focused:被 focus::被フォーカス
+失う:lose する:~
+失った:lose した:~
+
+button::::ボタン
+plugin::::プラグイン
+icon::::アイコン
+form::::フォーム
+	一群:group:::グループ
+	check::::チェック
+	形:form:~
+対話性:interactivity:~
+対話的:interactive:~
+動的:dynamic:~
+
+利用者操作:user interaction:利用者による操作
+
+
+	●UI keyboard
+map:::
+mapping::::マッピング
+key::::キー
+layout::::レイアウト
+	配列0:layout:::配列
+	keyboard-layout:keyboard layout:::キー配列
+約物:punctuation characters:~
+	行:line:~
+
+文字:character:~
+大文字:uppercase:~
+	~~大文字~capital-letter:#1
+小文字:lowercase:~
+文字大小区別:case-sensitive:~
+文字大小無視:case-insensitive:~
+符号位置:code point:~
+	~function key:~
+
+修飾:modifier:~
+修飾-:modify:~
+未修飾の:unmodified:~
+未修飾:unmodified:~
+印字可能:printable:~
+
+
+	●装置
+装置:device:~
+物理的:physical:~
+第一:primary:~
+keyboard::::キーボード
+	押-:press:~
+	離-:release:~
+
+	●仕様
+class::::クラス
+native:
+software:::ソフトウェア
+mark::::マーク
+仕様:spec:~
+指定-:specify:~
+	策定中:underspecified:~
+特有:-specific:~
+作者:author:~
+
+保安上の:security::~::セキュリティ上の
+system::::システム
+version::::バージョン
+	版
+model::::モデル
+module::::モジュール
+platform::::プラットフォーム
+	各~platform間で~~可用になる~cross-platform:#1
+program::::プログラム
+	program的に:::programmatical
+app:application:::アプリ
+著作tool:authoring tool::著作ツール
+browser::::ブラウザ
+level::::レベル
+host::::ホスト
+computer::::コンピュータ
+	に備わる:~native::::
+architecture::::アーキテクチャ
+vendor::::ベンダ
+keyword::::キーワード
+risk::::リスク
+安定化:stabilize:~
+非互換:incompatible:~
+互換:compatible:~
+互換性:compatibility:~
+後方互換性:backwards-compatibility:~
+抽象化:abstraction:~
+実装-:implement:~
+実装:implementation:~
+実装者:implementer:~
+将来:future:~
+導入-:introduce:~
+	序論:introduction:~
+懸念:concerns:~
+拡張-:extend:~
+拡張:extension:~
+	拡張するとき:extending:~
+指針:guideline:~
+	挙動-:behave:~
+挙動:behavior:ふるまい
+提案-:propose:~
+提言:suggestion:~
+概念:concept:~
+旧来の:legacy:~
+明確化-:clarify:~
+明確化:clarifications:~
+明示的:explicit:~
+未知の:unknown:~
+既知の:known:~
+標準:standard:~
+標準化-:standardize:~
+標準化:standardization:~
+標準化過程:Recommendation Track:~
+第三者主体:third party:~
+公式の:official:~
+公式化:formalize:~
+公式的:formal:~
+再定義-:redefine:~
+判定基準:criteria:~
+利用:use:~
+利用者:user:~
+相応しく:suitable で:~
+参照:reference:~
+	~~参照
+	指す:refer:~
+参考:informative:~
+参考の:informative:~
+図式:diagram:~
+国際化:internationalization:~
+国際的:international:~
+定義-:define:~
+定義:definition:~
+宣言的な:declarative:~
+推奨-:recommend:~
+非推奨:deprecated:~
+非推奨に:deprecate:~
+	非推奨にされmarked as deprecated
+相互運用可能:interoperable:~
+特色機能:feature:~
+規範的:normative:~
+規約:convention:~
+言語:language:~
+言語束縛:binding:~
+訂正:correction:~
+記述:description:~
+記述-:describe:~
+設計:design:~
+詳細:details:~
+論点:discussion:~
+謝辞:acknowledgement:~
+適合-:conform:~
+適合:conforming:~
+適合性:conformance:~
+	適合している~
+任意選択:optional:~
+
+高性能な:performant:~
+遂行-:perform:~
+能力:capabilities:~
+	則って:in accordance with:~
+	注視して:with attention で:~
+用語集:glossary:~
+解決-:solve:~
+	能:ability:機能
+有意義な:meaningful:~
+	違って~unlike:#2
+用法:usage:~
+通例的:usual:~
+	最新の:most recent:~
+関心:interest:~
+改称-:rename:~
+改訂-:revise:~
+改訂:revision:~
+分裂:disruption:~
+題材:material:~
+明快:clear:~
+	多くの:many:~
+	別々:separate:~
+	別の:another:~
+	加えて:additionally:~
+結付けら:associate さ:結び付けら
+一定の:certain:~
+不整合:inconsistency:~
+整合する:consistent になる:~
+一貫して:consistent で:
+主張-:claim:~
+予期-:expect:~
+事例:case:~
+事実:fact:~
+今や:now:~
+仕方:way:~
+仕組み:mechanism:~
+	他の:other:~
+	他の場合:otherwise:~
+付録:Appendix:~
+	appendix:~
+殆どの:most:ほとんどの
+奨励-:encourage:~
+最終的に:eventual に:~
+方式:manner:~
+方法:how:~
+既存の:existing:~
+早期の:early:~
+有意:significant:~
+有用:useful:~
+概して:typical に:~
+機能:function:~
+機能性:functionality:~
+汎用:generic:~
+一般的:general:~
+一般的な:general:~
+決定-:determine:~
+	特に:particularly:~
+	特に:specifically:~
+特定0の:particular:ある特定の
+特定の:specific:~
+	異なる:different:~
+節:section:~
+統合:integrate:~
+目的0:purpose:目的
+考慮点:consideration:~
+者:person:~
+自立的な:standalone:~
+作業草案:Working Draft:~
+草案:draft:~
+相反-:contradict:~
+競合-:conflict:~
+要件:requirement:~
+要求-:require:~
+要約:summary:~
+	Abstract
+通常の:normal:~
+通常は:normally:~
+適切:appropriate:~
+適用-:apply:~
+	適用し得る:applicable:~
+開発-:develop:~
+	開発元:organization:~
+関係-:relate:~
+関係:relation:~
+関係する:related:~
+	~~関係ない:no bearing
+	関連の／関連する:relevant:~
+類別:category:~
+代替:alternate:~
+代替の:alternative:~
+代用:replacement:~
+代用の:replacement:代わりの:~
+代表的な:typical:~
+仮想:virtual:~
+伝統的:traditional:~
+使役-:employ:~
+依存-:depend:~
+依存:dependent:~
+	依存しない:independent
+依拠-:rely:~
+依拠可能:reliable:~
+	依然として:still:~
+保全-:preserve:~
+保持-:hold:~
+側面:aspect:~
+共通の:common:~
+共通的に:common に:よく
+可用:available:~
+可能0:possible:可能
+収束:converge:~
+取扱い:handling:取り扱い
+取扱う:handle する:取り扱う
+	必要:need:~
+必要性:needs:~
+	必要とされ:necessarily:~
+手段:means:~
+	後者:latter:~
+意味-:mean:~
+意味:meaning:~
+意味論:semantics:~
+	~~意味論的な~~部分:semantic meaning
+意図-:intend:~
+手続き:steps:~
+指示-:indicate:~
+提供-:provide:~
+	改善-:improve:~
+基本:basic:~
+変更点:changes:~
+単独の:single:~
+	同様に:similarly:~
+問題:problem:~
+	回答:answer:~
+	例:example:~
+用語:term:~
+取組む:address する:取り組む
+取組まな:address しな:取り組まな
+全部的:full:~
+	全:full:~
+	満たす:meet する
+	勧める:suggest／advised:
+	ある種の
+	各:each:~
+用立てる:make use する:~
+望む:wish する:~
+望んだ:wish した:~
+相違-:differ:~
+備考:notes:~
+feedback::::フィードバック
+原型的な:prototyped::~
+実験:experiment:~
+出自の:origin:~
+完全さ:completenes:~
+管理-:manage:~
+文書化-:document 化:~
+可用性:availability:~
+呈示-:present:~
+
+固定化-:fix:~
+固定的な:fixed:~
+適応-:accommodate:~
+機能単位:functional component:~
+採用者:adopter:~
+勧告:Recommendation:~
+位置付け:status:~
+再構築:rebuild:~
+利便性:facilities:~
+再考-:reconsider:~
+再編成-:reorder:~
+不十分:insufficient:~
+中核の:core:~
+低下-:decrease:~
+
+	●
+機密的:confidential:~
+悪意的:malicious:悪意のある
+情報:information:~
+
+
+一意な:unique:~
+改変-:modify:~
+改変:modification:~
+入力:input:~
+公開-:expose:~
+
+外部:external:~
+内容:content:~
+処理:process:~
+処理能:performance:~
+手入力:enter:入力
+
+切替える:switch する:切り替える
+移転:shift:~
+
+削除-:delete:~
+効果:effect:~
+包含-:contain:~
+判別-:distinguish:~
+反映-:reflect:~
+取得0-:retrieve:取得
+同一:identical:~
+因子:factor:~
+困難:difficult:~
+報告-:report:~
+変換:conversion:~
+変換-:convert:~
+変更:change:~
+変化-:change:~
+変異:mutation:~
+完全:complete:~
+実行-:execute:~
+実行可能:executable:~
+	対応-:correspond:~
+	対応する:corresponding:~
+	常に:always:~
+広範:wide:~
+	広く:broader に:~
+手動:manual:~
+挿入-:insert:~
+挿入:insertion:~
+接頭辞:prefix:~
+
+攻撃:attack:~
+	数:number:~
+数的:numeric:~
+	numerical
+文脈:context::~::コンテキスト
+文脈的:contextual:~
+新たな:new:~
+更新-:update:~
+最初の:first:~
+二番目の:second:~
+	最大限に:maximum:~
+
+可能化-:enable:~
+条件:condition:~
+検知-:detect:~
+検知:detecting:~
+構造:structure:~
+状態:state:~
+
+現在:currently:~
+現在の:current:~
+理由:reason:~
+生成-:generate:~
+生成:generation:~
+生産-:produce:~
+
+派性-:derive:~
+環境:environment:~
+環境設定:configuration:~
+
+	起動:initiation:~
+起動-:initiate:~
+起動0-:launch:起動
+	矩形の:rectangular:~
+確保-:ensure:~
+空:empty:~
+等価:equivalent:~
+
+範囲:range:~
+	結果:result:~
+維持管理-:maintain:~
+
+	網羅する:exhaustive:~
+編集:editing:~
+編集-:edit:~
+置換-:replace:~
+自動的:automatical:~
+表現-:represent:~
+表現:representation:~
+視野:scope:~:::スコープ
+解釈-:interpret:~
+計算-:calculate:~
+設定-:set:~
+誤入力:typos:~
+説明:explanation:~
+識別-:identify:~
+識別子:identifier:~
+
+追加-:add:~
+追加:addition:~
+追加の:additional:~
+送信-:send:~
+通知-:notify:~
+進捗:progress:~
+	進捗~中:in-progress
+除去-:remove:~
+除去:removal:~
+重要:important:~
+
+	関わらず:regardless:~
+階層:hierarchy:~
+順序:order:~
+順序付けら:order さ:~
+順序付け:ordering:~
+	類似する:similar:~
+	似る／似た:similar:~
+	字類:category:~
+	類別~s:categories:~
+
+
+	●未分類
+名前空間付き:namespaced:~
+	名前空間:namespace:~
+	速さ:rate:~
+以前の:previous:~
+元の:original:~
+直接的:direct:~
+直接的な:direct:~
+自前の:own:~
+</script>
+
+<!--%他の語
+
+	-specifically,
+	成熟する~mature:#1
+	因る~due~to
+basis:#2
+best practice ~best~practices
+bugging:#1
+cost:#1
+hand-crafted:#1
+lovingly:#1
+re-map:#1
+separation:#1
+~especially:#1
+~participant:#1
+~substantial:#1
+~~利用:subscribe
+~~対象になる:subject to
+~~延期 left
+~~挿入~put:#1
+~~普通の〜にはないnot be commonly available on
+~~理由は:stem する
+~~表す:signify
+~~関わる:call out
+あたる:consultする
+ことになる:forthcoming:#1
+書かれた時点で、:At the time of writing
+しばらくして後 After some time,
+とされて:designate
+には無い:absence from
+サイト:site
+事項:portions:~
+全面的に:entirety
+則って:accordingly
+助力:help:~
+参考本:informative books
+取り上げられ:picked up
+取り出-:draw
+取り込まれる:encompass
+合成-:synthesize:~
+困難である:challenge
+場当たり的:ad-hoc:#1
+大きく貢献:substantial material contributions
+委ねられ:left
+得られる:gain
+必要な:reasonable
+成し:constitute
+批判:critiques
+携わった方々:participants
+支持を受けて:in favor
+方々:people:#2
+最悪の場合:worst case
+最早:no longer:~
+望ましい:desirable
+概ね:briefly
+決めた:decide した:~
+決めら:decide さ:~
+発生する:arise
+示す:demonstrated
+答え:answer:~
+落とされ:drop
+表:table
+複数から選ぶ問い:choice question
+要で:critical:
+
+-->
+
+
+<!--%style -->
+
+<!--%style -->
+<style>
+
+.key, .key-code, .key-cap {
+	padding:0 0.2em;
+	color: black;
+	border-radius: 3px;
+}
+
+.key {
+	/* event.key value */
+    background-color: #B0E0E6;
+}
+.glyph {
+	color: black;
+	background-color: #FFE4B5;
+}
+.key-code { /* event.code value */
+	background: #f0a4f0;
+}
+
+.key-cap {
+	border: outset 1px silver;
+	font-family: sans-serif0, sans-serif;
+}
+
+.unicode {
+    color: #191970;
+    background-color: #98FB98;
+}
+
+
+.idl-member-defs > dt {
+	font-family: monospace0, monospace;
+}
+.idl-member-defs > dt > i {
+	font-weight: normal;
+	font-style: normal;
+	font-family: serif0, serif;
+	color: gray;
+}
+.idl-member-defs > dt > i::before {
+	content: '（';
+}
+.idl-member-defs > dt > i::after {
+	content: '）';
+}
+
+.error {
+	color: green;
+}
+
+*[lang="en"] {
+	white-space: pre-line;
+}
+
+
+
+
+/* event 定義表 */
+
+tr {
+	border-top: 1px solid silver;
+}
+
+table.eventdef {
+	border-spacing: 0px;
+	background-color: hsl(300, 50%, 95% );
+	border-left: 0.5em solid;
+}
+
+table.eventdef {
+	border-left-color: hsl(300, 70%, 80% )
+}
+
+table.eventdef tr,
+table.eventdef td {
+	border-top-color: hsl(300, 50%, 85% );
+}
+
+table.eventdef th {
+	white-space: nowrap;
+}
+
+table.eventdef td {
+	min-width: 12em;
+	border-left: 1px solid hsl(300, 50%, 85% );
+}
+
+
+</style>
+
+
+</head>
+
+<body>
+
+
+<div style="display:none;">
+<input type="hidden" id="_page_config" value="" />
+</div>
+
+<aside class="trans-meta">
+<h1>UI Events （付録）日本語訳</h1>
+<p>
+<a id="_THIS_PAGE">このページ</a>
+は、
+<a href="http://www.w3.org/">W3C</a> による
+<a id="_SPEC_URL">UI Events</a>
+（ 旧 DOM Level 3 Events ）の
+適合性, 旧来との互換性に関する各 節その他の日本語訳です（
+<a href="uievents-ja.html">他の部分の日本語訳</a>
+）。
+</p>
+
+<p >
+更新：<time>2016-03-19</time>
+（公開：<time>2015-08-28</time> ）
+</p>
+
+<p >
+このページの大部分はスクリプトにより生成されています（
+古いブラウザなど，一部のブラウザには対応していません：
+<span id="_GENERATING"></span>）。
+</p>
+
+<p>
+本文ダブルクリックで当該箇所の原文が表示されます（左下隅に各種 表示切替ボタン — CSS や DOM の対応が古いブラウザでは、一部機能しないことがあります）。
+</p>
+
+<address id="_CONTACT">　</address>
+
+</aside>
+
+
+<header>
+
+	<hgroup>
+<h1>UI Events 仕様</h1>
+<h2>付録, および適合性</h2>
+<!-- real 160318 -->
+	</hgroup>
+
+<p class="trans-note">【
+<a href="uievents-ja.html" >UI Events の他の部分の日本語訳</a>
+】</p>
+
+</header>
+
+
+<nav class="toc" id="contents">
+<h2 class="toc">目次</h2>
+<ol id="_toc_list0"></ol></nav>
+
+<main id="MAIN"><!-- style="display:none;" -->
+
+		<section id="ui-events-conformance">
+<h3 title="Conformance">1.2. 適合性</h3>
+
+<p><strong>この節は規範的である。</strong>
+◎
+This section is normative.
+</p>
+
+<p>
+この仕様における，各種~keyword：
+“〜しなければ（〜しては）ならない” （ MUST, MUST NOT ）,
+“要求される” （ REQUIRED ）,
+“〜するべきである（でない）” （ SHOULD, SHOULD NOT ）,
+“推奨される” （ RECOMMENDED ）,
+“〜してよい” （ MAY ）,
+“任意選択” （ OPTIONAL ）
+は、
+`RFC2119$r に則って解釈されるとする。
+【原文の MAY は、この意味の MAYでないもの（許可でない “may” ）も多量に含まれている（ほぼすべて~~機械的に大文字の “MAY” にされている）ので、それらは和訳には反映されていない。】
+◎
+Within this specification, the key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RECOMMENDED, MAY, and OPTIONAL are to be interpreted as described in [RFC2119].
+</p>
+
+<p>
+この仕様は
+DOM Level 3 Core
+仕様 `DOM-Level-3-Core$r 
+の文脈で解され，~DOM実装に対する一般的な考慮点が適用される。
+<!-- ＊
+例えば，名前空間~URI$【利用されていない】の取扱いは
+<a href="http://www.w3.org/TR/DOM-Level-3-Core/core.html#Namespaces-Considerations"><em>XML Namespaces</em></a>
+にて論じられる。
+ -->
+<a href="http://www.w3.org/TR/DOM-Level-3-Core/introduction.html#ID-Conformance">適合性</a>
+についての追加の情報は、 `DOM-Level-3-Core$r を見よ。
+`~UA$は、この仕様に適合するために，別の仕様に全面的に適合することは要求されないが、その中の，この仕様に~~関わる部分には適合し~MUST（例：
+適合~UI~Events `~UA$は， `WebIDL$r にて定義される ~DS ~data型を~supportし~MUSTが、
+~UI~Eventsに適合するために `WebIDL$r にて定義される，あらゆる ~method／~data型を~supportする必要はない）。
+◎
+This specification is to be understood in the context of the DOM Level 3 Core specification [DOM-Level-3-Core] and the general considerations for DOM implementations apply. For example, handling of namespace URIs is discussed in XML Namespaces. For additional information about conformance, please see the DOM Level 3 Core specification [DOM-Level-3-Core]. A user agent is not required to conform to the entirety of another specification in order to conform to this specification, but it MUST conform to the specific parts of any other specification which are called out in this specification (e.g., a conforming UI Events user agent MUST support the DOMString data type as defined in [[Web IDL]], but need not support every method or data type defined in [[Web IDL]] in order to conform to UI Events).
+</p>
+
+<p>
+この仕様が定義する適合性は、次の~classの主体
+— `~UA$／仕様／内容~作者 —
+を対象にする：
+◎
+This specification defines several classes of conformance for different user agents, specifications, and content authors:
+</p>
+
+
+			<section id="conf-interactive-ua">
+<h4 title="Web browsers and other dynamic or interactive user agents">1.2.1. ~Web~browserその他の 動的／対話的 ~UA</h4>
+
+
+<p>
+動的／対話的 `~UA$
+— ここでは単に
+“~browser”と総称する（
+~Web~browser,
+AT（ Accessibility Technology ー ~accessibilityのための技術）~app,
+その他の類似する~programなど）
+— が~UI~Eventsに適合するためには、次を~supportする必要がある：
+◎
+A dynamic or interactive user agent, referred to here as a browser (be it a Web browser, AT (Accessibility Technology) application, or other similar program), conforms to UI Events if it supports:
+</p>
+		<ul>
+			<li>
+`DOM-Level-3-Core$r にて定義される中核の~module。
+◎
+the Core module defined in [DOM-Level-3-Core]
+</li>
+			<li>
+`~eventの配送と~DOM~event~flow$の仕組み。
+◎
+the Event dispatch and DOM event flow mechanism
+</li>
+			<li>
+この仕様にて定義される，［
+~ifc, ~event, および
+それらに結付けられている
+~method, 属性, 意味論
+］すべて。
+ただし、`非推奨に$されたものを除く（
+適合~UAは，後方互換性のためとして，非推奨にされた［
+~ifc／~event／~API
+］を実装して~MAYが、適合するためには要求されない）。
+◎
+all the interfaces and events with their associated methods, attributes, and semantics defined in this specification with the exception of those marked as deprecated (a conforming user agent MAY implement the deprecated interfaces, events, or APIs for backwards compatibility, but is not required to do so in order to be conforming)
+</li>
+			<li>
+［
+`UIEVENTS-KEY$r ／ `UIEVENTS-CODE$r
+］にて定義される，［
+`key^m ／ `code^m
+］値の完全な集合（~platform可用性の~~対象になる）。
+◎
+the complete set of key and code values defined in [UIEvents-Key] and [UIEvents-Code] (subject to platform availability), and
+</li>
+			<li>
+この仕様にて定義される，他のすべての規範的~要件。
+◎
+all other normative requirements defined in this specification.
+</li>
+		</ul>
+<p>
+適合~browserは、与えられた `EventTarget$I に適切な~eventを，
+その`~event型$に定義されている条件を満たしたときに`発火-$し~MUST。
+◎
+A conforming browser MUST dispatch events appropriate to the given EventTarget when the conditions defined for that event type have been met.
+</p>
+
+<p>
+~ifc＆`~event型~節$にて指定される，関係する`~event型$を実装する~browserは、特に ~UI~Eventsに適合する。
+◎
+A browser conforms specifically to UI Events if it implements the interfaces and related event types specified in §5 Event Types.
+</p>
+
+<p>
+適合~browserは、この仕様に述べる方式で，［
+~scripting／ 宣言的な対話性 ／ ~eventを検知して発火する他の何らかの手段
+］を~supportし, かつ
+その`~event型$に対し指定されている~APIを~supportし~MUST。
+◎
+A conforming browser MUST support scripting, declarative interactivity, or some other means of detecting and dispatching events in the manner described by this specification, and MUST support the APIs specified for that event type.
+</p>
+
+<p>
+適合~browserは、他のすべての適合性~判定基準を満たすことに加えて，既存の内容との後方互換性のために，［
+この仕様にて`非推奨に$された特色機能
+］を実装して~MAYが、実装しないことが奨励される。
+◎
+In addition to meeting all other conformance criteria, a conforming browser MAY implement features of this specification marked as deprecated, for backwards compatibility with existing content, but such implementation is discouraged.
+</p>
+
+<p>
+適合~browserは、［［
+`~eventの配送と~DOM~event~flow$の仕組み,
+~ifc,
+~event,
+~UI~Eventsにて定義される他の特色機能
+］を利用する，この仕様に見出されない特色機能
+］も~supportして，その実装に適切な追加の［
+~ifc／`~event型$
+］を実装して~MAY。
+そのような特色機能は、将来~仕様にて標準化され得る。
+◎
+A conforming browser MAY also support features not found in this specification, but which use the §3.1 Event dispatch and DOM event flow mechanism, interfaces, events, or other features defined in this specification, and MAY implement additional interfaces and event types appropriate to that implementation. Such features can be later standardized in future specifications.
+</p>
+
+<p>
+~browserは、この仕様から要求される事項すべてに適合していない限り，~UI~Eventsに適合していると主張しては~MUST_NOT。
+そのような実装で，この仕様の一部の事項に適合するものは、それらの特定の事項に適合していると主張して~MAY。
+◎
+A browser which does not conform to all required portions of this specification MUST NOT claim conformance to UI Events. Such an implementation which does conform to portions of this specification MAY claim conformance to those specific portions.
+</p>
+
+<p>
+適合~browserは、この仕様における各種 IDL 片に対しても， `WebIDL$r 仕様に述べられる適合~実装で~MUST。
+◎
+A conforming browser MUST also be a conforming implementation of the IDL fragments in this specification, as described in the Web IDL specification [WebIDL].
+</p>
+
+			</section>
+			<section id="conf-author-tools">
+<h4 title="Authoring tools">1.2.2. 著作tool</h4>
+
+<p>
+内容~著作toolは、各種`~event型$, および
+`~eventの配送と~DOM~event~flow$~modelを，この仕様にて定義される方式と整合するように利用する内容を生産するならば、~UI~Eventsに適合するとされる。
+◎
+A content authoring tool conforms to UI Events if it produces content which uses the event types and §3.1 Event dispatch and DOM event flow model, consistent in a manner as defined in this specification.
+</p>
+
+<p>
+この仕様にて`非推奨に$された特色機能を利用する内容を生産するような 内容~著作toolは、 ~UI~Events に適合していると主張しては~MUST_NOT。
+◎
+A content authoring tool MUST NOT claim conformance to UI Events for content it produces which uses features of this specification marked as deprecated in this specification.
+</p>
+
+
+<p>
+適合 内容~著作toolは、［
+自身が生産する内容~文書における
+どの`~host言語$に対しても，それに適切な
+`~event型$＆~ifc
+すべて
+］に対し，それらを利用する手段を，内容~作者に提供する~SHOULDである。
+◎
+A conforming content authoring tool SHOULD provide to the content author a means to use all event types and interfaces appropriate to all host languages in the content document being produced.
+</p>
+
+
+			</section>
+			<section id="conf-authors">
+<h4 title="Content authors and content">1.2.3. 内容~作者／内容</h4>
+
+<p>
+作者が作成する内容は、［
+`~event型$, および
+`~eventの配送と~DOM~event~flow$~model
+］を，この仕様に定義される方式と整合するように利用するとき、~UI~Eventsに適合するとされる。
+◎
+A content author creates conforming UI Events content if that content uses the event types and §3.1 Event dispatch and DOM event flow model, consistent in a manner as defined in this specification.
+</p>
+
+
+<p>
+内容~作者は，この仕様にて`非推奨に$された特色機能を利用する~SHOULDでない
+— この仕様や他所にて定義される代用の仕組みに依拠する~SHOULDである。
+◎
+A content author SHOULD NOT use features of this specification marked as deprecated, but SHOULD rely instead upon replacement mechanisms defined in this specification and elsewhere.
+</p>
+
+<p>
+適合~内容は、~ifc／`~event型$の意味論をこの仕様にて述べるように利用し~MUST。
+◎
+Conforming content MUST use the semantics of the interfaces and event types as described in this specification.
+</p>
+
+<p class="note">注記：
+内容~作者には、
+<a href="http://www.w3.org/TR/WAI-WEBCONTENT/">~accessibility</a>
+と
+<a href="http://www.w3.org/standards/techs/i18n">国際化</a>
+の指針~仕様に述べられる best practice に従うことを勧める。
+◎
+Content authors are advised to follow best practices as described in accessibility and internationalization guideline specifications.
+</p>
+
+
+			</section>
+			<section id="conf-specs">
+<h4 title="Specifications and host languages">1.2.4. 仕様／~host言語</h4>
+
+<p>
+仕様／`~host言語$は、［
+`~eventの配送と~DOM~event~flow$の仕組み,
+~ifc,
+~event,
+`DOM4$rにて定義される他の特色機能
+］を参照して利用する, かつ
+これらの特色機能を非互換な仕方で拡張しないならば、~UI~Eventsに適合する。
+◎
+A specification or host language conforms to UI Events if it references and uses the §3.1 Event dispatch and DOM event flow mechanism, interfaces, events, or other features defined in [DOM4], and does not extend these features in incompatible ways.
+</p>
+
+<p>
+仕様／`~host言語$は、
+~ifc＆`~event型~節$にて指定される，関係する`~event型$
+を参照して利用するならば，特に~UI~Eventsに適合する。
+適合~仕様は、この仕様の［
+~ifc／`~event型$
+］に 相反したり競合しない方式で，その仕様に適切な［
+~ifc／`~event型$
+］を追加で定義したり, この仕様の［
+~ifc／`~event型$
+］を拡張して~MAY。
+◎
+A specification or host language conforms specifically to UI Events if it references and uses the interfaces and related event types specified in Event Types. A conforming specification MAY define additional interfaces and event types appropriate to that specification, or MAY extend the UI Events interfaces and event types in a manner that does not contradict or conflict with the definitions of those interfaces and event types in this specification.
+</p>
+
+<p>
+~UI~Eventsを参照する仕様, および`~host言語$は、この仕様にて `非推奨に$された特色機能を［
+利用する／推奨する
+］ことなく，（可用ならば）その特色機能の代用として，この仕様にて指示されるものを［
+利用する／推奨する
+］~SHOULDである。
+◎
+Specifications or host languages which reference UI Events SHOULD NOT use or recommend features of this specification marked as deprecated, but SHOULD use or recommend the indicated replacement for that the feature (if available).
+</p>
+
+			</section>
+		</section>
+
+
+
+
+
+	<section id="legacy-event-initializers" class="appendix">
+
+<h2 title="Legacy Event Initializers">7. 旧来の~event初期化子</h2>
+
+<p>
+<em>この節は規定である。</em>
+以下の特色機能は、廃用にされた。
+これらは、旧来の~softwareとの互換性が要求される`~UA$によってのみ実装されるべきである。
+◎
+This section is normative. The following features are obsolete and should only be implemented by user agents that require compatibility with legacy software.
+</p>
+
+<p>
+この仕様の早期の~versionには、~ifc上に，~parameterの長〜い~listが要求されるような初期化~method（例えば `initMouseEvent()^m ）が含まれていた
+— それは、殆どの事例で，~event~objの属性すべてを全部的に初期化しない。
+このため、基本 `Event$I ~ifcから派性された~event~ifcを実装する~eventを全部的に初期化するためには，派性された<em>それぞれの</em> ~ifcの初期化子を明示的に~callすることが要求されていた。
+◎
+Early versions of this specification included an initialization method on the interface (for example initMouseEvent) that required a long list of parameters that, in most cases, did not fully initialize all attributes of the event object. Because of this, event interfaces which were derived from the basic Event interface required that the initializer of each of the derived interfaces be called explicitly in order to fully initialize an event.
+</p>
+
+		<div class="example">
+
+<p>
+`MutationEvent!I の属性すべてを初期化するためには、
+2 つの初期化子~method
+`initEvent()^m,
+`initMutationEvent()^m
+の~callを要する。
+◎
+Initializing all the attributes of a MutationEvent requires calls to two initializer methods: initEvent and initMutationEvent.
+</p>
+		</div>
+
+<p>
+この標準は長く開発され続けていたため、これらの（今や非推奨の）初期化子~methodに依存している実装もある。
+完全さのため，これらの旧来の~event初期化子をこの付録にて述べる。
+◎
+Due in part to the length of time in the development of this standard, some implementations MAY have taken a dependency on these (now deprecated) initializer methods. For completeness, these legacy event initializers are described in this Appendix.
+</p>
+
+		<section id="legacy-event-initializer-interfaces">
+<h3 title="Legacy Event Initializer Interfaces">7.1. 旧来の~event初期化子~ifc</h3>
+~INFORMATIVE
+
+<p>
+この節では、この仕様の早期の~versionにて導入されたが 今や`非推奨に$された，旧来の初期化子~methodを文書~化する。
+◎
+This section documents legacy initializer methods that were introduced in earlier versions of the this specification.
+</p>
+
+			<section id="idl-interface-UIEvent-initializers">
+<h4 title="Initializers for interface UIEvent">7.1.1. `UIEvent^I ~ifc用の初期化子</h4>
+
+<pre class="idl">
+partial interface `UIEvent!I {
+    // <span class="comment">この仕様により非推奨にされた</span>
+    void `initUIEvent@m (~MANYARGS);
+};</pre>
+
+~OMIT0
+
+			</section>
+			<section id="idl-interface-MouseEvent-initializers">
+<h4 title="Initializers for interface MouseEvent">7.1.2. `MouseEvent^I ~ifc用の初期化子</h4>
+
+<pre class="idl">
+partial interface `MouseEvent!I {
+    // <span class="comment">この仕様により非推奨にされた</span>
+    void `initMouseEvent@m (~MANYARGS);
+};</pre>
+
+~OMIT0
+
+			</section>
+			<section id="idl-interface-WheelEvent-initializers">
+<h4 title="Initializers for interface WheelEvent">7.1.3. `WheelEvent^I ~ifc用の初期化子</h4>
+
+<pre class="idl">
+partial interface `WheelEvent!I {
+    // <span class="comment">この仕様により導入されたが非推奨にされた</span>
+    void `initWheelEvent@m (~MANYARGS);
+};</pre>
+
+~OMIT0
+
+
+			</section>
+			<section id="idl-interface-KeyboardEvent-initializers">
+<h4 title="Initializers for interface KeyboardEvent">7.1.4. `KeyboardEvent^I ~ifc用の初期化子</h4>
+<p class="note">注記：
+この旧来の `KeyboardEvent^I 初期化子に対する引数~listは、（他の初期化子には在る） %detailArg 引数を含まない代わりに， %locale 引数が追加されている（`変更点$を見よ）。
+既存の実装との互換性のため、この不整合は保全される必要がある。
+◎
+The argument list to this legacy KeyboardEvent initializer does not include the detailArg (present in other initializers) and adds the locale argument (see §12.2 Changes between different drafts of UI Events); it is necessary to preserve this inconsistency for compatibility with existing implementations.
+</p>
+
+<pre class="idl">
+partial interface `KeyboardEvent!I {
+    // <span class="comment">この仕様により導入されたが非推奨にされた</span>
+    void `initKeyboardEvent@m (~MANYARGS);
+};</pre>
+
+~OMIT0
+
+
+			</section>
+			<section id="idl-interface-CompositionEvent-initializers">
+<h4 title="Initializers for interface CompositionEvent">7.1.5. `CompositionEvent^I ~ifc用の初期化子</h4>
+
+<p class="note">注記：
+この旧来の `CompositionEvent^I 初期化子に対する引数~listは、（他の初期化子には在る） %detailArg を含まない代わりに，
+%locale 引数が追加されている（`変更点$を見よ）。
+既存の実装との互換性のため、この不整合は保全される必要がある。
+◎
+The argument list to this legacy CompositionEvent initializer does not include the detailArg (present in other initializers) and adds the locale argument (see §12.2 Changes between different drafts of UI Events); it is necessary to preserve this inconsistency for compatibility with existing implementations.
+</p>
+
+<pre class="idl">
+partial interface `CompositionEvent$I {
+    // <span class="comment">この仕様により導入されたが非推奨にされた</span>
+    void `initCompositionEvent@m (~MANYARGS);
+};</pre>
+
+~OMIT0
+
+
+			</section>
+		</section>
+	</section>
+	<section id="legacy-key-attributes">
+
+
+<h2 title="Legacy Key Attributes">8. 旧来の~key属性</h2>
+
+~INFORMATIVE
+
+<p>
+以下の属性は、廃用にされた。
+これらは、［
+これらの~keyboard~eventが要求される旧来の~software
+］との互換性が要求される`~UA$によってのみ実装されるべきである。
+◎
+This section is non-normative. The following attributes are obsolete and should only be implemented by user agents that require compatibility with legacy software that requires these keyboard events.
+</p>
+
+<p>
+これらの特色機能は，公式的には指定されたことがなく、現在の~browser実装は，有意な仕方で様々になる。
+~script~libraryも含む多数の旧来の内容が，`~UA$の検知に依拠し, それに則って動作することから、これらの旧来の属性や~eventを公式化するような，どのような試みも、それが何かを固定化したり可能化するに伴い，内容を壊す~riskをもたらすことを意味する。
+加えて、これらの属性は，国際的~用法に相応しくなく、~accessibilityへの懸念にも取組まない。
+◎
+These features were never formally specified and the current browser implementations vary in significant ways. The large amount of legacy content, including script libraries, that relies upon detecting the user agent and acting accordingly means that any attempt to formalize these legacy attributes and events would risk breaking as much content as it would fix or enable. Additionally, these attributes are not suitable for international usage, nor do they address accessibility concerns.
+</p>
+
+<p>
+したがって，この仕様は、~keyboard入力を取扱うために共通的に使役される~eventや属性を規範的に定義しない
+— 旧来の内容との互換性のために`~UA$内に在っても~MAYが。
+作者は、
+`charCode^m ／ `keyCode^m
+属性の代わりに
+`KeyboardEvent.key$m 属性を利用する~SHOULDである。
+◎
+Therefore, this specification does not normatively define the events and attributes commonly employed for handling keyboard input, though they MAY be present in user agents for compatibility with legacy content. Authors SHOULD use the key attribute instead of the charCode and keyCode attributes.
+</p>
+
+<p>
+しかしながら，これらの特色機能の現在の状態, および
+規範的な
+~event／属性
+と これらとの関係を文書化する目的0のため、この節にて，参考の記述を提供する。
+これらの属性や~eventを~~実際に~supportする実装には、この節にて提供される定義を利用することを勧める。
+◎
+However, for the purpose of documenting the current state of these features and their relation to normative events and attributes, this section provides an informative description. For implementations which do support these attributes and events, it is suggested that the definitions provided in this section be used.
+</p>
+
+
+		<section id="legacy-KeyboardEvent">
+<h3 title="Legacy KeyboardEvent supplemental interface">8.1. 旧来の `KeyboardEvent^I 追補的~ifc</h3>
+
+~INFORMATIVE
+
+<p>
+<!-- `KeyboardEvent!I  -->
+~browserによる~keyboardの~supportは、伝統的に 3 個の場当たり的な属性［
+`keyCode$m,
+`charCode$m,
+`which$m
+］に依拠している。
+◎
+Browser support for keyboards has traditionally relied on three ad-hoc attributes, keyCode, charCode, and which.
+</p>
+
+
+<div class="p">
+<p>
+これらの属性は、いずれも，押された~keyのある側面を表現する数的~codeを返す：
+</p>
+
+<ul>
+	<li>
+`keyCode^m は，~key自身の~index。
+</li>
+	<li>
+`charCode^m は， 文字~keyの ASCII 値。
+</li>
+	<li>
+`which^m は，可用な所では文字~値／他の場合は~key~index。
+</li>
+</ul>
+
+<p>
+これらの属性に対する値, および 属性の可用性は、［
+~platform, ~keyboardの言語と~layout, `~UA$, ~version, 各種~event型
+］に渡り，一貫してない。
+</p>
+◎
+All three of these attributes return a numerical code that represents some aspect of the key pressed: keyCode is an index of the key itself. charCode is the ASCII value of the character keys. which is the character value where available and otherwise the key index. The values for these attributes, and the availability of the attribute, is inconsistent across platforms, keyboard languages and layouts, user agents, versions, and even event types.
+</div>
+
+			<section id="legacy-interface-KeyboardEvent">
+<h4 title="Interface KeyboardEvent (supplemental)">8.1.1. ~ifc `KeyboardEvent^I （追補的）</h4>
+
+<p class="intro-dom">
+この仕様にて導入された。
+◎
+Introduced in this specification
+</p>
+
+<p>
+`KeyboardEvent^I 部分的~ifcは、
+`KeyboardEvent!I ~ifcに
+`charCode$m,
+`keyCode$m,
+`which$m
+属性を追加する，参考の拡張である。
+◎
+The partial KeyboardEvent interface is an informative extension of the KeyboardEvent interface, which adds the charCode, keyCode, and which attributes.
+</p>
+
+<p>
+`KeyboardEvent^I 部分的~ifcは、実装がこの拡張を~supportするならば，
+`KeyboardEvent^l を引数に `Document.createEvent()$m ~methodを~callして得られる。
+◎
+The partial KeyboardEvent interface can be obtained by using the createEvent() method call in implementations that support this extension.
+</p>
+
+
+<pre class="idl">
+partial interface `KeyboardEvent!I {
+    // <span class="comment"
+title="The following support legacy user agents"
+>次のものは旧来の~UAを~supportする</span>
+    readonly attribute unsigned long `charCode$m;
+    readonly attribute unsigned long `keyCode$m;
+    readonly attribute unsigned long `which$m;
+};</pre>
+
+
+<dl class="idl-member-defs">
+
+	<dt>readonly unsigned long `charCode@m</dt>
+	<dd>
+この属性は、文字~入力を生成する `keypress$et ~eventのために
+文字~値を保持する。
+値は、その文字の~Unicode符号位置をとる（例：
+印字可能~文字に対しては，
+`event.charCode^m は `event.key.charCodeAt(0)^m
+と同じになる）。
+`keydown$et ／ `keyup$et ~eventに対する
+`charCode^m の値は， 0 である。
+◎
+charCode holds a character value, for keypress events which generate character input. The value is the Unicode reference number (code point) of that character (e.g. event.charCode = event.key.charCodeAt(0) for printable characters). For keydown or keyup events, the value of charCode is 0.
+</dd>
+
+	<dt>readonly unsigned long `keyCode@m</dt>
+	<dd>
+この属性は、押された~keyに結付けられている未修飾の識別子を~~表す，~system／実装に依存する数的~codeを保持する。
+`key$m 属性と違って、この仕様では，可能0な値の集合は規範的に定義されない。
+これらの `keyCode^m の値は、概して，
+ASCII `RFC20$r`US-ASCII$r ／
+Windows 1252 `WIN1252$r
+内の 10 進~符号位置を表現する~SHOULDであるが、適切な他の文字集合から取り出しても~MAY。
+~keyを識別できない実装は、~key値 `0^cap を利用する。
+◎
+keyCode holds a system- and implementation-dependent numerical code signifying the unmodified identifier associated with the key pressed. Unlike the key attribute, the set of possible values are not normatively defined in this specification. Typically, these value of the keyCode SHOULD represent the decimal codepoint in ASCII [RFC20][US-ASCII] or Windows 1252 [WIN1252], but MAY be drawn from a different appropriate character set. Implementations that are unable to identify a key use the key value 0. See §8.2 Legacy key models for more details on how to determine the values for keyCode.
+</dd>
+	<dd>
+`keyCode^m に対する値を決定する方法についての詳細は、
+<a href="#legacy-key-models">旧来の~key~model</a>
+を見よ。
+◎
+↑</dd>
+
+	<dt>readonly unsigned long `which@m</dt>
+	<dd>
+この属性は、［
+押された~keyに結付けられている, 未修飾の, ［
+~system／実装
+］に依存する識別子
+］を~~表すような数的~codeを保持する。
+大方の事例では、値は `keyCode$m と同一になる。
+◎
+which holds a system- and implementation-dependent numerical code signifying the unmodified identifier associated with the key pressed. In most cases, the value is identical to keyCode.
+</dd>
+</dl>
+
+
+
+			</section>
+			<section id="legacy-dictionary-KeyboardEventInit">
+<h4 title="Interface KeyboardEventInit (supplemental)">8.1.2. 辞書 `KeyboardEventInit^I （追補的）</h4>
+
+<p>
+`KeyboardEvent^I において［
+`keyCode^m,
+`charCode^m,
+`which^m
+］を~supportする~browserは、
+`KeyboardEventInit$I 辞書に，次の~memberも追加する~SHOULDである。
+◎
+Browsers that include support for keyCode, charCode, and which in KeyboardEvent should also add the following members to the KeyboardEventInit dictionary.
+</p>
+
+<p>
+`KeyboardEventInit^I 部分的~辞書は、
+`KeyboardEventInit!I 辞書に，［
+対応する `KeyboardEvent^I 属性を初期化する
+`charCode$m,
+`keyCode$m,
+`which$m
+~member
+］を追加する，参考の拡張である。
+◎
+The partial KeyboardEventInit dictionary is an informative extension of the KeyboardEventInit dictionary, which adds charCode, keyCode, and which members to initialize the corresponding KeyboardEvent attributes.
+</p>
+
+
+<pre class="idl">
+partial dictionary `KeyboardEventInit!I {
+    // <span class="comment"
+title="The following support legacy user agents"
+>次のものは旧来の~UAを~supportする</span>
+    unsigned long `charCode$m = 0;
+    unsigned long `keyCode$m = 0;
+    unsigned long `which$m = 0;
+};</pre>
+
+<dl class="idl-member-defs">
+	<!-- Dictionary `KeyboardEventInit$I Members -->
+	<dt>unsigned long `charCode@m = 0</dt>
+	<dd>
+`KeyboardEvent^I の `charCode^m 属性を
+~eventの文字に対する~Unicode符号位置
+に初期化する。
+◎
+Initializes the charCode attribute of the KeyboardEvent to the Unicode code point for the event’s character.
+</dd>
+
+	<dt>unsigned long `keyCode@m = 0</dt>
+	<dd>
+`KeyboardEvent^I の `keyCode^m 属性を［
+~system／実装に依存する，押された~keyに結付けられている未修飾の識別子
+］を~~表す数的~codeに初期化する。
+◎
+Initializes the keyCode attribute of the KeyboardEvent to the system- and implementation-dependent numerical code signifying the unmodified identifier associated with the key pressed.
+</dd>
+
+	<dt>unsigned long `which@m = 0</dt>
+	<dd>
+`KeyboardEvent^I の `which^m 属性を［
+実装に依存する，押された~keyに結付けられている未修飾の識別子
+］を~~表す数的~codeに初期化する。
+大方の事例では、値は `KeyboardEvent.keyCode$m に同一になる。
+◎
+Initializes the which attribute of the KeyboardEvent to the implementation-dependent numerical code signifying the unmodified identifier associated with the key pressed. In most cases, the value is identical to keyCode.
+</dd>
+</dl>
+
+			</section>
+		</section>
+		<section id="legacy-key-models">
+<h3 title="Legacy key models">8.2. 旧来の~key~model</h3>
+~INFORMATIVE
+
+<p>
+これらの属性~上にどの値が公開されるかは、~event型により，実装~間で相違する。
+実装は、次のいずれを公開することを選んでも~MAY
+—
+`keyCode^m ~property内に
+仮想~key~codeと文字~codeを（<em>~conflated~model</em>）, または
+別々の†
+`keyCode^m, `charCode^m ~property内に報告する（<em>~split~model</em>）。
+【† “別々の（ separate ）” — 何が別々？ 別々の~event？】
+◎
+Implementations differ on which values are exposed on these attributes for different event types. An implementation MAY choose to expose both virtual key codes and character codes in the keyCode property (conflated model), or report separate keyCode and charCode properties (split model).
+</p>
+
+			<section id="determine-keydown-keyup-keyCode">
+<h4 title="How to determine keyCode for keydown and keyup events">8.2.1. `keydown^et ／ `keyup^et ~eventに対し `keyCode^m を決定する方法</h4>
+
+<p>
+`keydown$et ／ `keyup$et
+~eventに対する `keyCode^m は、次のように計算される：
+◎
+The keyCode for keydown or keyup events is calculated as follows:
+</p>
+
+<ol>
+	<li>
+`~IME$が~key入力を処理していて，~eventが `keydown$et である場合：
+229 を返す。
+◎↓↓
+Read the virtual key code from the operating system’s event information, if such information is available.
+◎
+If an Input Method Editor is processing key input and the event is keydown, return 229.
+</li>
+	<li>
+入力~keyが修飾なしで押されたときに，数的~文字（ 0 〜 9 ）が挿入されることになる場合：
+その数的~文字の ASCII ~codeを返す。
+◎
+If input key when pressed without modifiers would insert a numerical character (0-9), return the ASCII code of that numerical character.
+</li>
+	<li>
+入力~keyが修飾なしで押されたときに， a 〜 z の小文字が挿入されることになる場合：
+それに対応する大文字の ASCII ~codeを返す。
+◎
+If input key when pressed without modifiers would insert a lower case character in the a-z alphabetical range, return the ASCII code of the upper case equivalent.
+</li>
+	<li>
+実装が ~OS／~platformのための~key~code変換~表を~supportしていて、その表に，与えられた入力に対する代替の仮想~key値が指定されている場合：
+その値を返す。
+◎
+If the implementation supports a key code conversion table for the operating system and platform, look up the value. If the conversion table specifies an alternate virtual key value for the given input, return the specified value.
+</li>
+	<li>
+実装~特有の仕方で決定される~keyの機能が，［
+<a href="#fixed-virtual-key-codes">固定的な仮想~key~code表</a>
+内のいずれかの~key
+］に対応する場合、それに対応する~key~codeを返す。
+◎
+If the key’s function, as determined in an implementation-specific way, corresponds to one of the keys in the §8.2.3 Fixed virtual key codes table, return the corresponding key code.
+</li>
+	<li>
+~OSの~event情報によるによる仮想~key~codeが可用な場合：
+その~key~codeを返す。
+◎
+↑Return the virtual key code from the operating system.
+</li>
+	<li>
+他の場合、 0 を返す。
+◎
+If no key code was found, return 0.
+</li>
+				</ol>
+			</section>
+			<section id="determine-keypress-keyCode">
+<h4 title="How to determine keyCode for keypress events">8.2.2. `keypress$et~eventに対し `keyCode^m を決定する方法</h4>
+
+<p>
+`keypress$et ~eventに対する `keyCode^m は、次のように計算される：
+◎
+The keyCode for keypress events is calculated as follows:
+</p>
+
+				<ol>
+	<li>
+実装が
+<em>~conflated~model</em>を~supportする場合：
+`keyCode^m を手入力された文字の~Unicode符号位置に設定する。
+◎
+If the implementation supports a conflated model, set keyCode to the Unicode code point of the character being entered.
+</li>
+	<li>
+実装が
+<em>~split~model</em>を~supportする場合：
+`keyCode^m を 0 に設定する。
+◎
+If the implementation supports a split model, set keyCode to 0.
+</li>
+				</ol>
+			</section>
+			<section id="fixed-virtual-key-codes">
+<h4 title="Fixed virtual key codes">8.2.3. 固定的な仮想~key~code</h4>
+
+<p>
+次の~keyに対する仮想~key~codeは、通例的に，~desktop~system上の~keyboard~layout間では変化しない：
+◎
+The virtual key codes for the following keys do not usually change with keyboard layouts on desktop systems:
+</p>
+
+				<table class="legacy-key-table">
+<tbody><tr><th>~key
+<th>仮想~key~code
+<th>備考
+
+<tr><td>`Backspace$kY
+<td>8
+<td>
+
+<tr><td>`Tab$kY
+<td>9
+<td>
+
+<tr><td>`Enter$kY
+<td>13
+<td>
+
+<tr><td>`Shift$kY
+<td>16
+<td>
+
+<tr><td>`Control$kY
+<td>17
+<td>
+
+<tr><td>`Alt$kY
+<td>18
+<td>
+
+<tr><td>`CapsLock$kY
+<td>20
+<td>
+
+<tr><td>`Escape$kY
+<td>27
+<td>`Esc^cap
+
+<tr><td>`~SPACEBAR^kY<!-- ＊ -->
+<td>32
+<td>
+
+<tr><td>`PageUp$kY
+<td>33
+<td>
+
+<tr><td>`PageDown$kY
+<td>34
+<td>
+
+<tr><td>`End$kY
+<td>35
+<td>
+
+<tr><td>`Home$kY
+<td>36
+<td>
+
+<tr><td>`ArrowLeft$kY
+<td>37
+<td>
+
+<tr><td>`ArrowUp$kY
+<td>38
+<td>
+
+<tr><td>`ArrowRight$kY
+<td>39
+<td>
+
+<tr><td>`ArrowDown$kY
+<td>40
+<td>
+
+<tr><td>`Delete$kY
+<td>46
+<td>`Del^cap
+</tbody></table>
+
+
+			</section>
+			<section id="optionally-fixed-virtual-key-codes">
+<h4 title="Optionally fixed virtual key codes">8.2.4. 固定的な仮想~key~code（任意選択）</h4>
+
+<p>
+次の約物は、~keyboard~layout間で仮想~codeが変わり得るが、これらの値を報告することは、 US-English ~keyboard~layoutを予期している旧来の内容においては，より互換になる~~可能性が高い：
+◎
+The following punctuation characters MAY change virtual codes between keyboard layouts, but reporting these values will likely be more compatible with legacy content expecting US-English keyboard layout:
+</p>
+
+				<table class="legacy-key-table">
+<tbody><tr><th>~key
+<th>文字
+<th>仮想~key~code
+
+<tr><td>Semicolon
+<td>`&#x3B;^kGl
+<td>186
+
+<tr><td>Colon
+<td>`&#x3A;^kGl
+<td>186
+
+<tr><td>Equals sign
+<td>`&#x3D;^kGl
+<td>187
+
+<tr><td>Plus
+<td>`&#x2B;^kGl
+<td>187
+
+<tr><td>Comma
+<td>`&#x2C;^kGl
+<td>188
+
+<tr><td>Less than sign
+<td>`&#x3C;^kGl
+<td>188
+
+<tr><td>Minus
+<td>`&#x2D;^kGl
+<td>189
+
+<tr><td>Underscore
+<td>`&#x5F;^kGl
+<td>189
+
+<tr><td>Period
+<td>`&#x2E;^kGl
+<td>190
+
+<tr><td>Greater than sign
+<td>`&#x3E;^kGl
+<td>190
+
+<tr><td>Forward slash
+<td>`&#x2F;^kGl
+<td>191
+
+<tr><td>Question mark
+<td>`&#x3F;^kGl
+<td>191
+
+<tr><td>Backtick
+<td>`&#x60;^kGl
+<td>192
+
+<tr><td>Tilde
+<td>`&#x7E;^kGl
+<td>192
+
+<tr><td>Opening square bracket
+<td>`&#x5B;^kGl
+<td>219
+
+<tr><td>Opening curly brace
+<td>`&#x7B;^kGl
+<td>219
+
+<tr><td>Backslash
+<td>`&#x5C;^kGl
+<td>220
+
+<tr><td>Pipe
+<td>`&#x7C;^kGl
+<td>220
+
+<tr><td>Closing square bracket
+<td>`&#x5D;^kGl
+<td>221
+
+<tr><td>Closing curly brace
+<td>`&#x7D;^kGl
+<td>221
+
+<tr><td>Single quote
+<td>`&#x27;^kGl
+<td>222
+
+<tr><td>Double quote
+<td>`&#x22;^kGl
+<td>222
+</tbody></table>
+			</section>
+		</section>
+	</section>
+	<section id="legacy-event-types">
+
+<h2 title="Legacy Event Types">9. 旧来の~event型</h2>
+
+<p>
+<em>この節は規定である。</em>
+以下の~event型は、廃用にされた。
+これらは、旧来の~softwareとの互換性が要求される`~UA$によってのみ実装されるべきである。
+◎
+This section is normative. The following event types are obsolete and should only be implemented by user agents that require compatibility with legacy software.
+</p>
+
+<p>
+この節の目的0は、これらの特色機能の現在の状態, および
+規範的な~eventと これらとの関係を文書化することである。
+これらの~eventを~~実際に~supportする実装には、この節に提供される定義を利用することを勧める。
+◎
+The purpose of this section is to document the current state of these features and their relation to normative events. For implementations which do support these events, it is suggested that the definitions provided in this section be used.
+</p>
+
+<p>
+次の一覧に，この仕様にて`非推奨に$された~event型の要約（参考）を提供する。
+それらは、参照と完全さのために ここに含められている。
+◎
+The following table provides an informative summary of the event types which are deprecated in this specification. They are included here for reference and completeness.
+</p>
+
+<div style="overflow:auto;"><table class="data-table">
+<thead><tr><th>~event型◎Event Type
+<th>`同期$？◎Sync / Async
+<th>`浮上-$？◎Bubbling Phase
+<th>`~trusted$ ~event標的~型◎Trusted event target types
+<th>DOM ~ifc◎DOM Interface
+<th>取消可否◎Cancelable
+<!-- <th>既定動作◎Default Action -->
+</thead>
+
+<tbody><tr><td>`DOMActivate$et
+<td>あり
+<td>する
+<td>`Element^I
+<td>`UIEvent$I
+<td>可
+
+<tr><td>`DOMAttrModified$et
+<td>あり
+<td>する
+<td>`Element^I
+<td>`MutationEvent$I
+<td>不可
+
+<tr><td>`DOMCharacterDataModified$et
+<td>あり
+<td>する
+<td>`Text^I, `Comment^I, `ProcessingInstruction^I
+<td>`MutationEvent$I
+<td>不可
+
+<tr><td>`DOMFocusIn$et
+<td>あり
+<td>する
+<td>`Window$I, `Element^I
+<td>`FocusEvent$I
+<td>不可
+
+<tr><td>`DOMFocusOut$et
+<td>あり
+<td>する
+<td>同上
+<td>`FocusEvent$I
+<td>不可
+
+<tr><td>`DOMNodeInserted$et
+<td>あり
+<td>する
+<td>`Element^I, `Attr^I, `Text^I, `Comment^I, `DocumentType^I,
+`ProcessingInstruction^I
+<td>`MutationEvent$I
+<td>不可
+
+<tr><td>`DOMNodeInsertedIntoDocument$et
+<td>あり
+<td>しない
+<td>同上
+<td>`MutationEvent$I
+<td>不可
+
+<tr><td>`DOMNodeRemoved$et
+<td>あり
+<td>する
+<td>同上
+<td>`MutationEvent$I
+<td>不可
+
+<tr><td>`DOMNodeRemovedFromDocument$et
+<td>あり
+<td>しない
+<td>同上
+<td>`MutationEvent$I
+<td>不可
+
+<tr><td>`DOMSubtreeModified$et
+<td>あり
+<td>する
+<td>`Window$I, `Document^I, `DocumentFragment^I, `Element^I, `Attr^I
+<td>`MutationEvent$I
+<td>不可
+
+<tr><td rowspan="2">`keypress$et
+<td>あり
+<td>する
+<td>`Element^I
+<td>`KeyboardEvent$I
+<td>可
+<tr><td colspan="5">
+既定動作（文脈依存）：
+<ul>
+	<li>
+`~text組成~system$を起動0する
+</li>
+	<li>
+`blur$et ／ `focus$et ~event
+</li>
+	<li>
+`DOMActivate$et ~event
+</li>
+	<li>
+他の~event
+</li>
+</ul>
+
+◎
+Varies: launch text composition system; blur and focus events; DOMActivate event; other event
+</tbody></table></div>
+
+
+		<section id="legacy-uievent-events">
+<h3 title="Legacy UIEvent events">9.1. 旧来の `UIEvent^I ~event</h3>
+
+			<section id="legacy-uievent-event-types">
+<h4 title="Legacy UIEvent event types">9.1.1. 旧来の各種 `UIEvent^I ~event型</h4>
+
+				<section id="event-type-DOMActivate">
+<h5>9.1.1.1. `DOMActivate^et</h5>
+
+`●型^ `DOMActivate@et
+`●界面^ `UIEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Element^I
+`●取消^ 可
+`●既定動作^ なし
+`●文脈^
+
+<p>
+次を除き，`各種~UI~eventに共通する文脈~情報$にて与えられる：
+</p>
+
+<ul>
+	<li>
+`Event.target$m：
+作動化されている要素
+◎
+• Event.target : element being activated
+• UIEvent.view : Window
+• UIEvent.detail : 0
+</li>
+</ul>
+`●表終^
+
+<p>
+`~UA$は、［
+~button, ~link, その他 状態が変化し得る要素が作動化された
+］とき，
+【~supportするならば】
+この~eventを発火し~MUST。
+詳細は、`作動化の誘発と挙動$ 節に。
+◎
+A user agent MUST dispatch this event when a button, link, or other state-changing element is activated. Refer to §3.5 Activation triggers and behavior for more details.
+</p>
+
+<p class="warning" id="DOMActivate-deprecated">
+`DOMActivate$et `~event型$は、参照と完全さのために
+この仕様にて定義されるが、この仕様は，関係する`~event型$ `click$et への支持を受けて，この型の~eventの利用を`非推奨に$する。
+他の仕様は、後方互換性のために，自前の `DOMActivate$et `~event型$を定義して維持管理して~MAY。
+◎
+The DOMActivate event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type in favor of the related event type click. Other specifications MAY define and maintain their own DOMActivate event type for backwards compatibility.
+</p>
+
+<p class="note" id="DOMActivate-click">注記：
+`DOMActivate$et と `click$et とは，完全に等価ではないが、
+`click$et `~event型$に実装されている挙動は，［
+`DOMActivate$et `~event型$の最も要の，~accessibility設計の側面
+］が取り込まれるように開発されており、
+`DOMActivate$et より広範に実装されている。
+内容~作者には、~accessibilityを最大限に確保するため，
+`click$et `~event型$を利用することが奨励される
+— 関係する `mousedown$et ／ `mouseup$et `~event型$でなく。
+◎
+While DOMActivate and click are not completely equivalent, implemented behavior for the click event type has developed to encompass the most critical accessibility aspects for which the DOMActivate event type was designed, and is more widely implemented. Content authors are encouraged to use the click event type rather than the related mousedown or mouseup event type to ensure maximum accessibility.
+</p>
+
+
+<p>
+`DOMActivate$et `~event型$を~supportする実装は、`作動化の誘発$に結付けられている `click$et ~eventの`既定~動作$として，
+`DOMActivate$et ~eventも発火する~SHOULDである。
+しかしながら，そのような実装は、各`作動化の誘発$ごとに，結付けられている`作動化の挙動$を一度だけ起動する~SHOULDである。
+◎
+Implementations which support the DOMActivate event type SHOULD also dispatch a DOMActivate event as a default action of a click event which is associated with an activation trigger. However, such implementations SHOULD only initiate the associated activation behavior once for any given occurrence of an activation trigger.
+</p>
+
+
+<div class="example">
+<p>
+`DOMActivate$et `~event型$は、`~host言語$における実装が意図されている
+XForms `XFORMS$r に対しては~supportすることが要求される。
+XForms が，［
+この仕様の `DOMActivate$et `~event型$を~supportしない~native実装
+］内への~installするものと意図されている
+~pluginや~script
+］に基づいて実装されるような所では、
+XForms `~UA$は、自前の `DOMActivate$et ~eventを，適切な`作動化の誘発$に基づいて，合成して発火する必要がある。
+◎
+The DOMActivate event type is REQUIRED to be supported for XForms [XFORMS], which is intended for implementation within a host language. In a scenario where a plugin or script-based implementation of XForms is intended for installation in a native implementation of this specification which does not support the DOMActivate event type, the XForms user agent has to synthesize and dispatch its own DOMActivate events based on the appropriate activation triggers.
+</p>
+
+<p>
+したがって，
+`click$et ~eventが~UI~Eventsに適合する`~UA$により発火されるときには、
+XForms `~UA$は，［
+その `click$et ~eventの`既定~動作$として，同じ関連する各種~propertyを伴う `DOMActivate$et ~eventを合成する
+］かどうかを決定する必要がある。
+それを決定する基としては、［
+`click$et ~eventが`~trusted$かどうかや,
+その`~event標的$に `DOMActivate$et ~event~listener登録されているかどうか
+］が適切になるであろう。
+◎
+Thus, when a click event is dispatched by a user agent conforming to UI Events, the XForms user agent has to determine whether to synthesize a DOMActivate event with the same relevant properties as a default action of that click event. Appropriate cues might be whether the click event is trusted, or whether its event target has a DOMActivate event listener registered.
+</p>
+
+</div>
+
+<p class="note">注記：
+`DOMActivate$et が多くの`~UA$で相互運用可能に~supportされることに依拠しないこと。
+代わりに， `click$et `~event型$が利用される~SHOULDである
+— 広く実装から~supportされており，より~access可能な挙動を提供するので。
+◎
+Don’t rely upon the interoperable support of DOMActivate in many user agents. Instead, the click event type should be used since it will provide more accessible behavior due to broader implementation support.
+</p>
+
+<p class="warning">
+`DOMActivate$et `~event型$は、この仕様にて`非推奨に$された。
+◎
+The DOMActivate event type is deprecated in this specification.
+</p>
+
+				</section>
+			</section>
+			<section id="legacy-uievent-event-order">
+<h4 title="Activation event order">9.1.2. 作動化~event序列</h4>
+
+<p>
+`DOMActivate^et ~eventを~supportする`~UA$は、~eventを相互相対順序で発火し~MUST（~~関係する~eventのみ挙げる）:
+◎
+If the DOMActivate event is supported by the user agent, then the events MUST be dispatched in a set order relative to each other: (with only pertinent events listed):
+</p>
+
+<table class="event-sequence-table">
+<tbody><tr><td>
+<th>~event型
+<th>備考
+
+<tr><td>1.
+<td>`click$et
+<td>
+
+<tr><td>2.
+<td>`DOMActivate$et
+<td>
+`既定~動作$により生じる（ `~UA$が~supportするなら）
+— <a href="~UIEVENTS#_synthesized">合成であっても</a>，
+`Event.isTrusted$m は~T 。
+◎
+default action, if supported by the user agent; synthesized; isTrusted="true"
+
+<tr><td>
+<td>
+<td><em>
+`作動化の挙動$も含む，他のすべての`既定~動作$
+</em>
+◎
+All other default actions, including the activation behavior
+
+</tbody></table>
+
+<p>
+被focus要素が~key~eventで作動化された場合の，代表的な~event連列（~~関係する~eventのみ挙げる）を次に示す：
+◎
+If the focused element is activated by a key event, then the following shows the typical sequence of events (with only pertinent events listed):
+</p>
+
+<table class="event-sequence-table">
+<tbody><tr><td>
+<th>~event型
+<th>備考
+
+<tr><td>1.
+<td>`keydown$et
+<td>
+<!-- copy -->
+`Enter^cap ／ `~SPACEBAR^cap ~keyなど，要素を作動化できる~keyで~MUST。
+さもなければ要素は作動化されない。
+◎
+MUST be a key which can activate the element, such as the Enter or    (spacebar) key, or the element is not activated
+
+<tr><td>2.
+<td>`click$et
+<td>
+<!-- copy -->
+`既定~動作$により生じる
+— <a href="~UIEVENTS#_synthesized">合成であっても</a>，
+`Event.isTrusted$m は~T 。
+◎
+default action; synthesized; isTrusted="true"
+
+<tr><td>3.
+<td>`DOMActivate$et
+<td>
+<!-- copy -->
+同上。
+◎
+default action, if supported by the user agent; synthesized; isTrusted="true"
+
+<tr><td>
+<td>
+<td>
+<!-- copy -->
+`作動化の挙動$も含む，他のすべての`既定~動作$
+◎
+All other default actions, including the activation behavior
+</tbody></table>
+			</section>
+		</section>
+		<section id="legacy-focusevent-events">
+<h3 title="Legacy FocusEvent events">9.2. 旧来の `FocusEvent^I ~event</h3>
+
+			<section id="legacy-focusevent-event-types">
+<h4 title="Legacy FocusEvent event types">9.2.1. 旧来の各種 `FocusEvent^I ~event型</h4>
+
+				<section id="event-type-DOMFocusIn">
+<h5>9.2.1.1. `DOMFocusIn^et</h5>
+
+`●型^ `DOMFocusIn@et
+`●界面^ `FocusEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Window$I, `Element^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+<p >
+次を除き、 `focus$et と同じ：
+</p>
+<ul>
+	<li>
+`FocusEvent.relatedTarget$m ： ~NULL
+</li>
+</ul>
+
+
+◎
+• Event.target : event target receiving focus
+• UIEvent.view : Window
+• UIEvent.detail : 0
+• FocusEvent.relatedTarget : null
+
+`●表終^
+
+<p>
+`~UA$は、［
+`~event標的$が~focusを受け取った
+］とき，この~eventを発火し~MUST。
+標的~要素が~focusを受け取るのは、この型の~eventが配送される前で~MUST。
+この型の~eventが発火されるのは、 `focus$et ~eventの後で~MUST。
+◎
+A user agent MUST dispatch this event when an event target receives focus. The focus MUST be given to the element before the dispatch of this event type. This event type MUST be dispatched after the event type focus.
+</p>
+
+<p class="warning">
+`DOMFocusIn$et
+~event型は、
+参照と完全さのためにこの仕様にて定義されるが、
+この仕様は，
+関係する~event型 `focus$et ／ `focusin$et への支持を受けて，この型の~eventの利用を`非推奨に$する。
+◎
+The DOMFocusIn event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type in favor of the related event types focus and focusin.
+</p>
+
+
+				</section>
+				<section id="event-type-DOMFocusOut">
+<h5>9.2.1.2. `DOMFocusOut^et</h5>
+
+`●型^ `DOMFocusOut@et
+`●界面^ `FocusEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Window$I, `Element^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+
+<p >
+次を除き、 `blur$et と同じ：
+</p>
+<ul>
+	<li>
+`FocusEvent.relatedTarget$m ： ~NULL
+</li>
+</ul>
+
+◎
+• Event.target : event target losing focus
+• UIEvent.view : Window
+• UIEvent.detail : 0
+• FocusEvent.relatedTarget : null
+
+`●表終^
+
+<p>
+`~UA$は、［
+`~event標的$が~focusを失った
+］とき，この~eventを発火し~MUST。
+要素が~focusを失うのは、この型の~eventが配送されるより前で~MUST。
+この型の~eventは、 `blur$et ~eventの後に発火され~MUST。
+◎
+A user agent MUST dispatch this event when an event target loses focus. The focus MUST be taken from the element before the dispatch of this event type. This event type MUST be dispatched after the event type blur.
+</p>
+
+<p class="warning">
+`DOMFocusOut$et ~event型は，参照と完全さのためにこの仕様にて定義されるが、
+この仕様は，関係する~event型
+`blur$et, `focusout$et
+への支持を受けて，この型の~eventの利用を`非推奨に$する。
+◎
+The DOMFocusOut event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type in favor of the related event types blur and focusout.
+</p>
+
+				</section>
+			</section>
+			<section id="legacy-focusevent-event-order">
+<h4 title="Legacy FocusEvent event order">9.2.2. 旧来の `FocusEvent^I ~event序列</h4>
+
+<p>
+非推奨
+`DOMFocusIn$et ／ `DOMFocusOut$et
+~eventも含まれる下で、被focus要素がない状態から，~focusが要素 `A^v, `B^v の順に移転したときの，代表的な~event連列を次に示す：
+◎
+The following is the typical sequence of events when a focus is shifted between elements, including the deprecated DOMFocusIn and DOMFocusOut events. The order shown assumes that no element is initially focused.
+</p>
+
+<table class="event-sequence-table">
+<tbody><tr><td>
+<th>~event型
+<th>備考
+
+<tr><td>
+<td>
+<td><em>
+利用者が~focusを移転させた
+</em>
+◎
+User shifts focus
+
+<tr><td>1.
+<td>`focusin$et
+<td>
+要素 `A^v が~focusを受け取る前に送信される
+◎
+Sent before first target element receives focus
+<tr><td>2.
+<td>`focus$et
+<td>
+要素 `A^v が~focusを受け取った後に送信される
+◎
+Sent after first target element receives focus
+<tr><td>3.
+<td>`DOMFocusIn$et
+<td>~supportされる場合のみ
+
+<tr><td>
+<td>
+<td><em>
+利用者が~focusを移転させた
+</em>
+◎
+User shifts focus
+
+<tr><td>4.
+<td>`focusout$et
+<td>
+要素 `A^v が~focusを失う前に送信される
+◎
+Sent before first target element loses focus
+<tr><td>5.
+<td>`focusin$et
+<td>
+要素 `B^v が~focusを受け取る前に送信される
+◎
+Sent before second target element receives focus
+<tr><td>6.
+<td>`blur$et
+<td>
+要素 `A^v が~focusを失った後に送信される
+◎
+Sent after first target element loses focus
+<tr><td>7.
+<td>`DOMFocusOut$et
+<td>~supportされる場合のみ
+
+<tr><td>8.
+<td>`focus$et
+<td>
+要素 `B^v が~focusを受け取った後に送信される
+◎
+Sent after second target element receives focus
+<tr><td>9.
+<td>`DOMFocusIn$et
+<td>~supportされる場合のみ
+</tbody></table>
+			</section>
+		</section>
+		<section id="legacy-keyboardevent-events">
+<h3 title="Legacy KeyboardEvent events">9.3. 旧来の `KeyboardEvent^I ~event</h3>
+
+<p>
+`keypress$et ~eventは、［
+~keyが押された効果により~DOMが更新される前に，
+~key~eventを捕獲して処理する
+］伝統的~methodである。
+`keypress$et ~eventを用立てる~codeは、概して，
+`KeyboardEvent!I の旧来の［
+`charCode$m,
+`keyCode$m,
+`which$m
+］属性に依拠する。
+◎
+The keypress event is the traditional method for capturing key events and processing them before the DOM is updated with the effects of the key press. Code that makes use of the keypress event typically relies on the legacy charCode, keyCode, and which attributes.
+</p>
+
+<p>
+`keypress$et ~eventは~key~event特有であり，より一般的な［
+`beforeinput$et, `input$et
+］~eventによる~event連列に置換されることに注意。
+これらの新たな入力~eventは、~keyboard動作に特有でなく，元の~sourceに関わらず，利用者による入力を捕獲するために利用できる。
+◎
+Note that the keypress event is specific to key events, and has been replaced by the more general event sequence of beforeinput and input events. These new input events are not specific to keyboard actions and can be used to capture user input regardless of the original source.
+</p>
+
+
+			<section id="legacy-keyboardevent-event-types">
+<h4 title="Legacy KeyboardEvent event types">9.3.1. 旧来の各種 `KeyboardEvent^I ~event型</h4>
+
+				<section id="event-type-keypress">
+<h5>9.3.1.1. `keypress^et</h5>
+
+`●型^ `keypress@et
+`●界面^ `KeyboardEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Element^I
+`●取消^ 可
+`●既定動作^ 
+<p>
+文脈依存：
+</p>
+
+<ul>
+	<li>
+`~text組成~system$を起動0させる
+</li>
+	<li>
+`blur$et ＆ `focus$et ~event
+</li>
+	<li>
+`DOMActivate$et ~event
+</li>
+	<li>
+その他の~event
+</li>
+</ul>
+◎
+Varies: launch text composition system; blur and focus events; DOMActivate event; other event
+`●文脈^
+
+<p>
+次を除き，`各種~keyboard~eventに共通する文脈~情報$にて与えられる：
+</p>
+
+<ul>
+	<li>
+`KeyboardEvent.charCode$m：
+この~eventに対する旧来の文字~値
+</li>
+	<li>
+`KeyboardEvent.keyCode$m：
+この~keyに対する旧来の数的~code
+</li>
+	<li>
+`KeyboardEvent.which$m：
+この~keyに対する旧来の数的~code
+</li>
+	<li>
+`KeyboardEvent.repeat$m：
+`false^c
+</li>
+</ul>
+
+◎
+• Event.target : focused element processing the key event or if no element focused, then the body element if available, otherwise the root element
+• UIEvent.view : Window
+• UIEvent.detail : 0
+• KeyboardEvent.charCode : legacy character value for this event
+• KeyboardEvent.keyCode : legacy numerical code for this key
+• KeyboardEvent.which : legacy numerical code for this key
+• KeyboardEvent.key : the key value of the key pressed.
+• KeyboardEvent.code : the code value associated with the key’s physical placement on the keyboard.
+• KeyboardEvent.location : the location of the key on the device.
+• KeyboardEvent.altKey : true if 'Alt' modifier was active, otherwise false
+• KeyboardEvent.shiftKey : true if 'Shift' modifier was active, otherwise false
+• KeyboardEvent.ctrlKey : true if 'Control' modifier was active, otherwise false
+• KeyboardEvent.metaKey : true if 'Meta' modifier was active, otherwise false
+• KeyboardEvent.repeat : false
+• KeyboardEvent.isComposing : true if the key event occurs as part of a composition session, otherwise false
+
+`●表終^
+
+<p>
+`~UA$ は、~supportするならば，［
+~keyが押されたとき，その~keyは 通常は`文字~値$を生産する
+］とき, そのときに限り，この型の~eventを発火し~MUST。
+`keypress$et ~event型は装置~依存であり，［
+入力~装置の能力,
+それらが~OSにて~mapされる方法
+］に依拠する。
+◎
+If supported by a user agent, this event MUST be dispatched when a key is pressed down, if and only if that key normally produces a character value. The keypress event type is device dependent and relies on the capabilities of the input devices and how they are mapped in the operating system.
+</p>
+
+<p>
+この型の~eventが生成されるのは、`~key~mapping$の後で~MUST。
+また、`~IME$の利用~時に発火されては~MUST_NOT。
+◎
+This event type MUST be generated after the key mapping. It MUST NOT be fired when using an input method editor.
+</p>
+
+<p>
+この~eventが取消された場合、`既定~動作$の取消しに加えて， `input$et ~eventも発火させなくする~SHOULDである。
+◎
+If this event is canceled, it should prevent the input event from firing, in addition to canceling the default action.
+</p>
+
+<p>
+作者は `keypress$et ~eventの代わりに， `beforeinput$et ~eventを利用する~SHOULDである。
+◎
+Authors SHOULD use the beforeinput event instead of the keypress event.
+</p>
+
+<p class="note">注記：
+`keypress$et ~eventは、伝統的に，物理的~keyでなく `文字~値$の検知に結付けられており、環境設定によって，すべての~keyに可用とは限らない。
+◎
+The keypress event is traditionally associated with detecting a character value rather than a physical key, and might not be available on all keys in some configurations.
+</p>
+
+<p class="warning">
+`keypress$et ~event型は，参照と完全さのためにこの仕様にて定義されるが、この仕様は，この型の~eventの利用を`非推奨に$する。
+編集~文脈の下では、作者は，代わりに `beforeinput$et ~eventを~~利用できる。
+◎
+The keypress event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type. When in editing contexts, authors can subscribe to the beforeinput event instead.
+</p>
+
+				</section>
+			</section>
+			<section id="keypress-event-order">
+<h4 title="keypress et event order">9.3.2. `keypress^et ~event序列</h4>
+
+<p>
+`keypress$et ~event型が発火されるのは、同じ~keyに結付けられている
+`keydown$et ~eventの後, かつ
+`keyup$et ~eventの前で~MUST。
+◎
+The keypress event type MUST be dispatched after the keydown event and before the keyup event associated with the same key.
+</p>
+
+<p>
+`keypress$et ~event型が発火されるのは、同じ~keyに結付けられている
+`beforeinput$et ~eventの後, かつ
+`input$et ~eventの前で~MUST。
+◎
+The keypress event type MUST be dispatched after the beforeinput event and before the input event associated with the same key.
+</p>
+
+<p>
+次の例に、
+`keypress$et ~eventを~supportする~UAによる~key~eventの連列を示す：
+◎
+The sequence of key events for user-agents the support the keypress event is demonstrated in the following example:
+</p>
+
+				<div class="example">
+
+<table class="event-sequence-table">
+<tbody><tr><td>
+<th>~event型
+<th>`KeyboardEvent.key$m
+<th>`InputEvent.data$m
+
+<tr><td>1.
+<td>`keydown$et
+<td>`a^kY
+<td>
+
+<tr><td>2.
+<td>`beforeinput$et
+<td>
+<td>`a^kGl
+
+<tr><td>3.
+<td>`keypress$et
+<td>`a^kY
+<td>
+
+<tr><td>
+<td colspan="3"><em>
+<!-- copy -->
+この~keyに関係する`既定~動作$
+— 文字を~DOMの中へ挿入するなど —
+があれば，それが行われる。
+</em>
+◎
+Any default actions related to this key, such as inserting a character in to the DOM.
+
+<tr><td>4.
+<td>`input$et
+<td>
+<td>
+
+<tr><td>5.
+<td>`keyup$et
+<td>`a^kY
+<td>
+</tbody></table>
+				</div>
+			</section>
+		</section>
+		<section id="legacy-mutationevent-events">
+<h3 title="Legacy MutationEvent events">9.4. 旧来の `MutationEvent^I ~event</h3>
+
+<p>
+変異~event~moduleは、
+属性, ~text, 名前
+に対する改変を含め，文書~構造における変化を通知できるようにするために設計されている。
+◎
+The mutation and mutation name event modules are designed to allow notification of any changes to the structure of a document, including attribute, text, or name modifications.
+</p>
+
+<p class="note">注記：
+`MutationEvent$I ~ifcに結付けられている どの~event型も，取消可能とされてはいない。
+その~~理由は、［
+既存の，文書を改変するような~DOM~ifc
+］を，［
+それにより生じる~eventが取消されたときには，その変化が生じなくさせる
+］ように用立てることが，とても困難である事実に因る。
+これは，依然として 欲されている能力であるが、~DOMに対する~transaction~~機能の追加まで，~~延期された方が良いであろうと決められた。
+◎
+None of the event types associated with the MutationEvent interface are designated as cancelable. This stems from the fact that it is very difficult to make use of existing DOM interfaces which cause document modifications if any change to the document might or might not take place due to cancelation of the resulting event. Although this is still a desired capability, it was decided that it would be better left until the addition of transactions into the DOM.
+</p>
+
+<p>
+多くの場合、~DOM木に対する単独の改変から，複数の変異~eventの発火が生じ得る。
+それらの変異~eventが発火される順序は，この仕様では指定されない
+— それは、実装に委ねられる。
+◎
+Many single modifications of the tree can cause multiple mutation events to be dispatched. Rather than attempt to specify the ordering of mutation events due to every possible modification of the tree, the ordering of these events is left to the implementation.
+</p>
+
+
+<div class="warning">
+<p>
+<a href="#interface-MutationEvent">`MutationEvent^I ~ifc</a>
+は、~DOM2 Events にて導入されたが、未だ，`~UA$間で完全にも相互運用可能にも実装されていない。
+加えて，この設計による~ifcは、処理能を保ったまま実装するのが~~困難であると批判されている。
+◎
+The MutationEvent interface was introduced in DOM Level 2 Events, but has not yet been completely and interoperably implemented across user agents. In addition, there have been critiques that the interface, as designed, introduces a performance and implementation challenge.
+</p>
+
+<p>
+`MutationObserver^I ~ifcを利用する新たな仕組みが
+DOM4 `DOM$r にて提供されている
+— それは、変異~eventが解決する利用~事例に，より高性能な方式で取組む。
+したがって、この仕様は，旧来の挙動の参照と完全さのため，変異~eventについて述べるが、
+`MutationEvent$I ~ifcの利用を`非推奨に$する。
+◎
+DOM4 [DOM4] provides a new mechanism using a MutationObserver interface which addresses the use cases that mutation events solve, but in a more performant manner. Thus, this specification describes mutation events for reference and completeness of legacy behavior, but deprecates the use of the MutationEvent interface.
+</p>
+
+</div>
+
+			<section id="interface-mutationevent">
+<h4 title="Interface MutationEvent">9.4.1. ~ifc `MutationEvent^I</h4>
+
+<p class="intro-dom">
+~DOM2にて導入され、この仕様にて`非推奨に$された。
+◎
+Introduced in DOM Level 2, deprecated in this specification
+</p>
+
+<p>
+`MutationEvent^I ~ifcは、変異~eventに特有の文脈的~情報を提供する。
+◎
+The MutationEvent interface provides specific contextual information associated with Mutation events.
+</p>
+
+<p>
+`MutationEvent^I ~ifcの~instanceを作成するためには、
+`Document.createEvent()$m
+~methodを利用する。
+◎
+To create an instance of the MutationEvent interface, use the createEvent() method call.
+</p>
+
+<pre class="idl">
+interface `MutationEvent@I : `Event$I {
+    // <span class="comment">`attrChange$m 値</span>
+    const unsigned short `MODIFICATION$m = 1;
+    const unsigned short `ADDITION$m = 2;
+    const unsigned short `REMOVAL$m = 3;
+
+    readonly attribute `Node^I?          `relatedNode$m;
+    readonly attribute ~DS      `prevValue$m;
+    readonly attribute ~DS      `newValue$m;
+    readonly attribute ~DS      `attrName$m;
+    readonly attribute unsigned short `attrChange$m;
+
+    void `initMutationEvent$m (~MANYARGS);
+};</pre>
+
+<dl class="idl-member-defs">
+	<dt>const unsigned short `MODIFICATION@m = 1</dt>
+	<dt>const unsigned short `ADDITION@m = 2</dt>
+	<dt>const unsigned short `REMOVAL@m = 3</dt>
+	<dd>
+これらの定数は、順に，
+`Attr^I が［
+改変された／追加された／除去された
+］ことを表す。
+◎
+MutationEvent . MODIFICATION
+• The Attr was modified in place. 
+◎
+MutationEvent . ADDITION
+• The Attr was just added. 
+◎
+MutationEvent . REMOVAL
+• The Attr was just removed. 
+</dd>
+
+	<dt>readonly `Node^I? `relatedNode@m</dt>
+	<dd>
+この属性は、変異~eventに関係する副~nodeを識別するために利用され~MUST。
+例えば、~nodeに向けて，親が変更されたことを指示する変異~eventが発火された場合、この属性の値は，その変更された親になる。
+代わりに，部分木の中のある~nodeが変化したことを指示する~eventが発火された場合、この属性の値は，変更された~nodeで~MUST。
+`DOMAttrModified$et ~eventの事例では、それは，
+<span class="trans-note">【
+`attrChange$m 属性の値に応じて
+】</span>
+［
+改変された ／ 追加された ／ 除去された
+］ `Attr^I ~nodeを指示する。
+◎
+relatedNode MUST be used to identify a secondary node related to a mutation event. For example, if a mutation event is dispatched to a node indicating that its parent has changed, the relatedNode will be the changed parent. If an event is instead dispatched to a subtree indicating a node was changed within it, the relatedNode MUST be the changed node. In the case of the DOMAttrModified event, it indicates the Attr node which was modified, added, or removed.
+</dd>
+
+	<dd>
+`未初期化値$： ~NULL
+◎
+The un-initialized value of this attribute MUST be null.
+</dd>
+
+
+	<dt>readonly ~DS `prevValue@m</dt>
+	<dd>
+この属性は、［
+`DOMAttrModified$et ~eventにおける `Attr^I ~node ／
+`DOMCharacterDataModified$et ~eventにおける `CharacterData^I ~node
+］の以前の値を指示する。
+◎
+prevValue indicates the previous value of the Attr node in DOMAttrModified events, and of the CharacterData node in DOMCharacterDataModified events.
+</dd>
+	<dd>
+`未初期化値$： `空~文字列$
+◎
+The un-initialized value of this attribute MUST be "" (the empty string).
+</dd>
+
+	<dt>readonly ~DS `newValue@m</dt>
+	<dd>
+この属性は、［
+`DOMAttrModified$et ~eventにおける `Attr^I ~node ／
+`DOMCharacterDataModified$et ~eventにおける `CharacterData^I ~node
+］の新たな値を指示する。
+◎
+newValue indicates the new value of the Attr node in DOMAttrModified events, and of the CharacterData node in DOMCharacterDataModified events.
+</dd>
+	<dd>
+`未初期化値$： `空~文字列$
+◎
+The un-initialized value of this attribute MUST be "" (the empty string).
+</dd>
+
+	<dt>readonly ~DS `attrName@m</dt>
+	<dd>
+この属性は、 `DOMAttrModified$et ~eventにて変更された `Attr^I ~nodeの名前を
+指示する。
+◎
+attrName indicates the name of the changed Attr node in a DOMAttrModified event.
+</dd>
+	<dd>
+`未初期化値$： `空~文字列$
+◎
+The un-initialized value of this attribute MUST be "" (the empty string).
+</dd>
+
+	<dt>readonly unsigned short `attrChange@m</dt>
+	<dd>
+この属性は、 `DOMAttrModified$et ~eventを誘発した変更の種類
+— `MODIFICATION$m ／ `ADDITION$m ／ `REMOVAL$m
+のいずれか —
+を指示する。
+◎
+attrChange indicates the type of change which triggered the DOMAttrModified event. The values can be MODIFICATION, ADDITION, or REMOVAL.
+◎
+The un-initialized value of this attribute MUST be 0.
+</dd>
+	<dd>
+`未初期化値$： 0
+</dd>
+	<dd class="note">注記：
+`未初期化値$ 0 に対しては、定義される定数は無い。
+◎
+There is no defined constant for the attrChange value of 0 (the un-initialized value).
+</dd>
+
+
+	<dt>void `initMutationEvent()@m</dt>
+	<dd>
+この~methodは、
+`MutationEvent$I ~objの各種~属性を初期化する。
+この~methodは、
+`Event.initEvent()$m
+と同じ挙動を持つ。
+引数は、いずれも省略不可。
+%relatedNodeArg のみ，~NULL もとり得る。
+◎
+Initializes attributes of a MutationEvent object. This method has the same behavior as initEvent().
+</dd>
+	<dd>
+
+<table class="parameters">
+<tbody><tr><th>引数
+<th>説明
+
+<tr><td>%typeArg
+<td>
+<!-- copy -->
+`Event.initEvent()$m ~methodのそれと同じ
+◎
+Refer to the initEvent() method for a description of this parameter.
+
+<tr><td>%bubblesArg
+<td>
+同上
+◎
+Refer to the initEvent() method for a description of this parameter.
+
+<tr><td>%cancelableArg
+<td>
+同上
+◎
+Refer to the initEvent() method for a description of this parameter.
+
+<tr><td>%relatedNodeArg
+<td>
+`relatedNode$m
+を指定する。
+◎
+Specifies MutationEvent.relatedNode.
+
+<tr><td>%prevValueArg
+<td>
+`prevValue$m
+を指定する。
+`空~文字列$でもよい。
+◎
+Specifies MutationEvent.prevValue. This value MAY be the empty string.
+
+<tr><td>%newValueArg
+<td>
+`newValue$m
+を指定する。
+`空~文字列$でもよい。
+◎
+Specifies MutationEvent.newValue. This value MAY be the empty string.
+
+<tr><td>%attrNameArg
+<td>
+`attrName$m
+を指定する。
+`空~文字列$でもよい。
+◎
+Specifies MutationEvent.attrName. This value MAY be the empty string.
+
+<tr><td>%attrChangeArg
+<td>
+`attrChange$m
+を指定する。
+0 でもよい。
+◎
+Specifies MutationEvent.attrChange. This value MAY be 0.
+</tbody></table>
+
+</dd>
+</dl>
+
+			</section>
+
+
+			<section id="legacy-mutationevent-event-types">
+<h4 title="Legacy MutationEvent event types">9.4.2. 各種~旧来の変異~event型</h4>
+
+
+<p>
+以下に，各種~変異~event型を挙げる。
+◎
+The mutation event types are listed below.
+</p>
+
+<p class="warning">
+この仕様は、この節に挙げる~event型を，参照と完全さのために定義するが、これらの どの~event型の利用も`非推奨に$する。
+◎
+The XXXXX event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type.
+</p>
+
+
+				<section id="event-type-DOMAttrModified">
+<h5>9.4.2.1. `DOMAttrModified^et</h5>
+
+`●型^ `DOMAttrModified@et
+`●界面^ `MutationEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Element^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+
+
+<ul>
+	<li>
+`Event.target$m：
+属性が改変されている要素。
+◎
+Event.target: element whose attribute is being modified
+</li>
+	<li>
+<p>
+`MutationEvent!I ：
+</p>
+		<ul>
+			<li>
+`attrName$m：
+変更された `Attr^I ~nodeの名前。
+◎
+MutationEvent.attrName: the name of the changed Attr node
+</li>
+			<li>
+`attrChange$m：
+`Attr^I が［
+改変された／追加された／除去された
+］かに応じて，対応する定数。
+◎
+MutationEvent.attrChange: the numerical code corresponding to the most applicable attrChangeType
+</li>
+			<li>
+`relatedNode$m：
+［
+改変された／追加された／除去された
+］ `Attr^I ~node。
+◎
+MutationEvent.relatedNode: the Attr node that has been modified, added, or removed.
+</li>
+			<li>
+`newValue$m：
+`Attr^I ~nodeが［
+改変された／追加された
+］場合は，その新たな値。
+◎
+MutationEvent.newValue: new value of the attribute, if the Attr node has been added or modified
+</li>
+			<li>
+`prevValue$m：
+`Attr^I ~nodeが［
+改変された／除去された
+］場合は，その以前の値。
+◎
+MutationEvent.prevValue: previous value of the attribute, if the Attr node has been removed or modified
+</li>
+		</ul>
+	</li>
+</ul>
+
+`●表終^
+
+<p>
+`~UA$は、［
+`Attr.value^m が改変された, あるいは
+`Attr^I ~nodeが `Element^I に追加された／から除去された
+］とき，この型の~eventを発火し~MUST。
+この~eventの`~event標的$は、変更が生じた `Element^I ~nodeで~MUST。
+この型の~eventが，［
+新たな値が `Attr.value^m に設定されたが，その値は元の値と同じである
+］場合にも生じるかどうかは、実装~依存である。
+◎
+A user agent MUST dispatch this event after an Attr.value has been modified and after an Attr node has been added to or removed from an Element. The event target of this event MUST be the Element node where the change occurred. It is implementation dependent whether this event type occurs when the children of the Attr node are changed in ways that do not affect the value of Attr.value.
+◎
+The DOMAttrModified event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type.
+</p>
+
+
+				</section>
+				<section id="event-type-DOMCharacterDataModified">
+<h5>9.4.2.2. `DOMCharacterDataModified^et</h5>
+
+`●型^ `DOMCharacterDataModified@et
+`●界面^ `MutationEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Text^I, `Comment^I, `ProcessingInstruction^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+
+<p>
+次を除き，`各種~変異~eventに共通する文脈~情報$にて与えられる：
+</p>
+
+
+<ul>
+	<li>
+`Event.target$m：
+内容が改変された~obj
+</li>
+	<li>
+<p>
+`MutationEvent!I ：
+</p>
+		<ul>
+			<li>
+`relatedNode$m：
+内容が改変された~objの親~node
+</li>
+			<li>
+`newValue$m：
+~objの新たな値
+</li>
+			<li>
+`prevValue$m：
+~objの以前の値
+</li>
+		</ul>
+	</li>
+</ul>
+
+◎
+• Event.target : object whose content is being modified
+• MutationEvent.attrName : the empty string
+• MutationEvent.attrChange : 0
+• MutationEvent.relatedNode : parent node of the object whose content is being modified
+• MutationEvent.newValue : new value of the object
+• MutationEvent.prevValue : previous value of the object
+`●表終^
+
+<p>
+`~UA$は、［
+`CharacterData.data^m ／
+`ProcessingInstruction.data^m
+］が改変されたとき，この型の~eventを発火し~MUST。
+<!-- 
+~node自身は 挿入されても削除されてもいない場合に
+-->
+この~eventの`~event標的$は、その改変された~nodeで~MUST。
+◎
+A user agent MUST dispatch this event after CharacterData.data or ProcessingInstruction.data have been modified, but the node itself has not been inserted or deleted. The event target of this event MUST be the CharacterData node or the ProcessingInstruction node.
+◎
+The DOMCharacterDataModified event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type.
+</p>
+
+
+				</section>
+				<section id="event-type-DOMNodeInserted">
+<h5>9.4.2.3. `DOMNodeInserted^et</h5>
+
+`●型^ `DOMNodeInserted@et
+`●界面^ `MutationEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Element^I, `Attr^I, `Text^I, `Comment^I, `DocumentType^I,
+`ProcessingInstruction^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+
+<p>
+次を除き，`各種~変異~eventに共通する文脈~情報$にて与えられる：
+</p>
+<ul>
+	<li>
+`Event.target$m：
+挿入されている要素
+</li>
+	<li>
+`MutationEvent.relatedNode$m：
+挿入された~nodeの親~node, あるいは
+`Attr^I ~nodeの場合は その `ownerElement^m
+</li>
+</ul>
+
+◎
+• Event.target : element which is being inserted
+• MutationEvent.attrName : the empty string
+• MutationEvent.attrChange : 0
+• MutationEvent.relatedNode : parent node of the node that has been inserted, or the ownerElement in the case of Attr nodes
+• MutationEvent.newValue : the empty string
+• MutationEvent.prevValue : the empty string
+`●表終^
+
+<p>
+`~UA$は、［
+`Attr^I ~node以外の~nodeが 別の~nodeの子として追加された
+］とき，この型の~eventを発火し~MUST。
+`~UA$は［
+`Attr^I ~nodeが`Element^I ~node に追加された
+］ときにも，この~eventを発火して~MAY（次の注記を見よ）。
+この~eventは、挿入し~~終えた後に配送され~MUST。
+この~eventの`~event標的$は、挿入された~nodeで~MUST。
+◎
+A user agent MUST dispatch this event type when a node other than an Attr node has been added as a child of another node. A user agent MAY dispatch this event when an Attr node has been added to an Element node (see note below). This event MUST be dispatched after the insertion has taken place. The event target of this event MUST be the node being inserted.
+</p>
+
+<p class="note">注記：
+属性の挿入を検知するためには、代わりに
+`DOMAttrModified$et ~event型を利用する。
+◎
+For detecting attribute insertion, use the DOMAttrModified event type instead.
+◎
+The DOMNodeInserted event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type.
+</p>
+
+
+				</section>
+				<section id="event-type-DOMNodeInsertedIntoDocument">
+<h5>9.4.2.4. `DOMNodeInsertedIntoDocument^et</h5>
+
+`●型^ `DOMNodeInsertedIntoDocument@et
+`●界面^ `MutationEvent$I
+`●同期^ あり
+`●浮上^ しない
+`●標的^ `Element^I, `Attr^I, `Text^I, `Comment^I, `DocumentType^I,
+`ProcessingInstruction^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+
+`DOMNodeInserted$et と同じ
+
+◎
+• Event.target : element which is being inserted
+• MutationEvent.attrName : the empty string
+• MutationEvent.attrChange : 0
+• MutationEvent.relatedNode : parent node of the node that has been inserted, or the ownerElement in the case of Attr nodes
+• MutationEvent.newValue : the empty string
+• MutationEvent.prevValue : the empty string
+
+`●表終^
+
+<p>
+`~UA$は、［
+~nodeが［
+その直接的な挿入 ／
+~nodeを包含しいる部分木の挿入
+］を通して，文書の中へ挿入された
+］とき，この型の~eventを発火し~MUST。
+`~UA$は、
+`Attr^I ~nodeを `Element^I の部分木の一部として扱って~MAY。
+この~eventは、挿入し~~終えた後に配送され~MUST。
+この~eventの`~event標的$は、挿入された~nodeで~MUST。
+~nodeが直接的に挿入された場合、この型の~eventの前に，型 `DOMNodeInserted$et の~eventが生じ~MUST。
+◎
+A user agent MUST dispatch this event when a node has been inserted into a document, either through direct insertion of the node or insertion of a subtree in which it is contained. A user agent MAY treat an Attr node as part of an Element’s subtree. This event MUST be dispatched after the insertion has taken place. The event target of this event MUST be the node being inserted. If the node is being directly inserted, the event type DOMNodeInserted MUST occur before this event type.
+◎
+The DOMNodeInsertedIntoDocument event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type.
+</p>
+
+
+				</section>
+				<section id="event-type-DOMNodeRemoved">
+<h5>9.4.2.5. `DOMNodeRemoved^et</h5>
+
+`●型^ `DOMNodeRemoved@et
+`●界面^ `MutationEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Element^I, `Attr^I, `Text^I, `Comment^I, `DocumentType^I,
+`ProcessingInstruction^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+
+<p>
+次を除き，`各種~変異~eventに共通する文脈~情報$にて与えられる：
+</p>
+<ul>
+	<li>
+`Event.target$m：
+除去された要素
+</li>
+	<li>
+`MutationEvent.relatedNode$m：
+除去された~nodeの親~node, あるいは
+`Attr^I ~nodeの場合は その `ownerElement^m
+</li>
+</ul>
+
+◎
+• Event.target : element which is being removed
+• MutationEvent.attrName : the empty string
+• MutationEvent.attrChange : 0
+• MutationEvent.relatedNode : the parent node of the node being removed, or the ownerElement in the case of Attr nodes
+• MutationEvent.newValue : the empty string
+• MutationEvent.prevValue : the empty string
+`●表終^
+
+<p>
+`~UA$は、［
+`Attr^I ~node以外の~nodeが その親~nodeから除去されつつある
+］とき，この型の~eventを発火し~MUST。
+`~UA$は［
+`Attr^I ~nodeが その `ownerElement^m から除去されつつある
+］とき、この~eventを発火しても~MAY（次の注記を見よ）。
+この~eventは、除去し~~終える前に配送され~MUST。
+<!-- 
+http://www.w3.org/TR/DOM-Level-2-Events/events.html#Events-eventgroupings-mutationevents
+ -->
+この~eventの`~event標的$は、除去されつつある~nodeで~MUST。
+◎
+A user agent MUST dispatch this event when a node other than an Attr node is being removed from its parent node. A user agent MAY dispatch this event when an Attr node is being removed from its ownerElement (see note below). This event MUST be dispatched before the removal takes place. The event target of this event MUST be the node being removed.
+</p>
+
+<p class="note" id="DOMNodeRemoved-attr">注記：
+属性の除去を依拠可能に検知するためには、代わりに
+`DOMAttrModified$et ~event型を利用する。
+◎
+For reliably detecting attribute removal, use the DOMAttrModified event type instead.
+◎
+The DOMNodeRemoved event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type.
+</p>
+
+
+				</section>
+				<section id="event-type-DOMNodeRemovedFromDocument">
+<h5>9.4.2.6. `DOMNodeRemovedFromDocument^et</h5>
+
+`●型^ `DOMNodeRemovedFromDocument@et
+`●界面^ `MutationEvent$I
+`●同期^ あり
+`●浮上^ しない
+`●標的^ `Element^I, `Attr^I, `Text^I, `Comment^I, `DocumentType^I,
+`ProcessingInstruction^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+
+`DOMNodeRemoved$et と同じ
+
+◎
+• Event.target : element which is being removed
+• MutationEvent.attrName : the empty string
+• MutationEvent.attrChange : 0
+• MutationEvent.relatedNode : the parent node of the node being removed, or the ownerElement in the case of Attr nodes
+• MutationEvent.newValue : the empty string
+• MutationEvent.prevValue : the empty string
+
+`●表終^
+
+<p>
+`~UA$は、［
+~nodeが［
+その直接的な除去, または
+~nodeを包含している部分木の除去
+］を通して，文書から除去されつつある
+］とき，この型の~eventを発火し~MUST。
+`~UA$は、 `Attr^I ~nodeを`Element^I の部分木の一部として扱って~MAY。
+この~eventは、除去し~~終える前に配送され~MUST。
+この型の~eventの`~event標的$は、除去されつつある~nodeで~MUST。
+~nodeが直接的に除去される場合、この型の~eventの前に，型 `DOMNodeRemoved$et の~eventが生じ~MUST。
+◎
+A user agent MUST dispatch this event when a node is being removed from a document, either through direct removal of the node or removal of a subtree in which it is contained. A user agent MAY treat an Attr node as part of an Element’s subtree. This event MUST be dispatched before the removal takes place. The event target of this event type MUST be the node being removed. If the node is being directly removed, the event type DOMNodeRemoved MUST occur before this event type.
+</p>
+
+<p class="note">注記：
+<!-- copy -->
+属性の除去を依拠可能に検知するためには、代わりに
+`DOMAttrModified$et ~event型を利用する。
+◎
+For reliably detecting attribute removal, use the DOMAttrModified event type instead.
+◎
+The DOMNodeRemovedFromDocument event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type.
+</p>
+
+
+				</section>
+				<section id="event-type-DOMSubtreeModified">
+<h5>9.4.2.7. `DOMSubtreeModified^et</h5>
+
+`●型^ `DOMSubtreeModified@et
+`●界面^ `MutationEvent$I
+`●同期^ あり
+`●浮上^ する
+`●標的^ `Window$I, `Document^I, `DocumentFragment^I, `Element^I, `Attr^I
+`●取消^ 不可
+`●既定動作^ なし
+`●文脈^
+
+<p>
+次を除き，`各種~変異~eventに共通する文脈~情報$にて与えられる：
+</p>
+<ul>
+	<li>
+`Event.target$m：
+改変された部分木の親【根？】~node
+</li>
+</ul>
+
+◎
+• Event.target : parent node of subtree being modified
+• MutationEvent.attrName : the empty string
+• MutationEvent.attrChange : 0
+• MutationEvent.relatedNode : null
+• MutationEvent.newValue : the empty string
+• MutationEvent.prevValue : the empty string
+
+`●表終^
+
+<p>
+これは、文書に対するすべての変更を通知するための一般的な~eventである、より特定の変異~eventの代わりに利用できる。
+これは、文書に対する単独の改変の後，あるいは
+実装の裁量により 複数の変更が生じた後に発火されて~MAY。
+後者の事例は、一般的に，同時または頻繁に生じるような複数の変更に適応するために利用される~SHOULDである。
+この~eventの標的は、変更に関わった~nodeたちの共通の親†のうち，最も子孫のもので~MUST
+【† 共通の先祖？ 一つの~nodeのみの場合は~node自身？】
+。
+この~eventは、生じた変異（たち）により生じる他のどの~eventよりも後に配送され~MUST。
+◎
+This is a general event for notification of all changes to the document. It can be used instead of the more specific mutation and mutation name events. It MAY be dispatched after a single modification to the document or, at the implementation’s discretion, after multiple changes have occurred. The latter case SHOULD generally be used to accommodate multiple changes which occur either simultaneously or in rapid succession. The target of this event MUST be the lowest common parent of the changes which have taken place. This event MUST be dispatched after any other events caused by the mutation(s) have occurred.
+◎
+The DOMSubtreeModified event type is defined in this specification for reference and completeness, but this specification deprecates the use of this event type.
+</p>
+
+
+				</section>
+			</section>
+			<section id="_common-mutation-event-context">
+<h4>各種~変異~eventに共通する文脈~情報（trusted events）</h4>
+
+<p class="trans-note">【
+この訳では、各所に共通する記述をこの節に集約する。
+】</p>
+
+<p>
+変異~eventに共通する文脈~情報を以下に挙げる。
+個々の~event型にて定義されるものは、これらより優先される：
+</p>
+
+<dl>
+	<dt>`MutationEvent!I ：</dt>
+	<dd>
+		<dl>
+			<dt>`attrName$m</dt>
+			<dd>
+`空~文字列$
+◎
+MutationEvent.attrName: the empty string
+</dd>
+			<dt>`attrChange$m</dt>
+			<dd>
+0
+◎
+MutationEvent.attrChange: 0
+</dd>
+			<dt>`relatedNode$m</dt>
+			<dd>
+~NULL
+◎
+MutationEvent.relatedNode: null
+</dd>
+			<dt>`newValue$m</dt>
+			<dd>
+`空~文字列$
+◎
+MutationEvent.newValue: the empty string
+</dd>
+			<dt>`prevValue$m</dt>
+			<dd>
+`空~文字列$
+◎
+MutationEvent.prevValue: the empty string
+</dd>
+		</dl>
+	</dd>
+</dl>
+
+			</section>
+		</section>
+	</section>
+	<section id="extending-events">
+
+
+<h2 title="Extending Events">10. ~eventを拡張するとき</h2>
+~INFORMATIVE
+
+		<section id="extending-events-intro">
+<h3 title="Introduction">10.1. 序論</h3>
+
+<p>
+この仕様は，いくつかの~ifcと多数の~eventを定義するが、あらゆる目的0を網羅するわけではない。
+この仕様は、内容~作者や実装者が，この~ifc＆~eventの集合を，競合することなく拡張して、
+欲される機能性を追加できるようにするための，
+2 つの仕組み
+<a href="#extending-events-Custom_Events">~custom~event</a>,
+および
+<a href="#extending-events-Impl_Extensions">実装~特有の拡張</a>
+を提供する。
+◎
+This specification defines several interfaces and many events, however, this is not an exhaustive set of events for all purposes. To allow content authors and implementers to add desired functionality, this specification provides two mechanisms for extend this set of interfaces and events without creating conflicts: custom events and implementation-specific extensions.
+</p>
+		</section>
+		<section id="extending-events-Custom_Events">
+<h3 title="Custom Events">10.2. ~custom~event</h3>
+
+<p>
+~script作者は、機能単位を通して，~appをその~architectureに有意義な~event型により定義したいと望むこともあろう。
+内容~作者は、
+`CustomEvent$I ~ifcを利用して，利用している抽象化~levelに適切な，自前の~eventを作成できる。
+◎
+A script author MAY wish to define an application in terms of functional components, with event types that are meaningful to the application architecture. The content author can use the CustomEvent interface to create their own events appropriate to the level of abstraction they are using.
+</p>
+
+			<div class="example">
+
+<p>
+内容~作者は、動的に生成される図表を備える~appを作成したとする。
+この図表は、［
+5 分ごと ／
+新たな情報が給されてきたとき ／
+利用者が手動で~buttonを~clickしたとき
+］に，更新されるとする。
+図表の更新を要するときに~callされる必要がある，いくつかの~handlerがある：
+~appは、［
+最新の~dataを~fetchする ／
+更新~中にあることを表す~iconを利用者に示す ／
+図表を再構築する
+］などを行う必要がある。
+内容~作者は、これを管理するためとして，いずれかの誘発~条件が満たされたとき発火されるような
+~custom “`updateChart^et” ~eventを利用できる：
+◎
+A content author might have created an application which features a dynamically generated bar chart. This bar chart is meant to be updated every 5 minutes, or when a feed shows new information, or when the user refreshes it manually by clicking a button. There are several handlers that have to be called when the chart needs to be updated: the application has to fetch the most recent data, show an icon to the user that the event is being updated, and rebuild the chart. To manage this, the content author can choose to create a custom updateChart event, which is fired whenever one of the trigger conditions is met:
+</p>
+
+<pre>var chartData = ...;
+var evt = document.createEvent("CustomEvent");
+evt.initCustomEvent( "updateChart", true, false, { data: chartData });
+document.documentElement.dispatchEvent(evt);
+</pre>
+			</div>
+		</section>
+		<section id="extending-events-Impl_Extensions">
+<h3 title="Implementation Specific Extensions">10.3. 実装~特有の拡張</h3>
+
+<p>
+新たに設計される原型的な~eventや，実装~特有の機能性のために意図される~eventは、標準化された~eventから判別されることが望ましい。
+その種の~eventに対しては、実装者は，［
+他の実装による同じ~eventや, 標準化された~event
+］から判別するため、~event型に［
+実装~特有の 短い接頭辞
+］を付与する~SHOULDである。
+これは、 CSS における
+<a href="http://www.w3.org/TR/CSS21/syndata.html#vendor-keywords">~vendor特有の~keyword接頭辞</a>
+に類似する。
+CSS で利用されている~dash（ `"-"^c ）はないが。
+それは Javascript にて属性~名に利用するときに問題になるので。
+◎
+While a new event is being designed and prototyped, or when an event is intended for implementation-specific functionality, it is desirable to distinguish it from standardized events. Implementors SHOULD prefix event types specific to their implementations with a short string to distinguish it from the same event in other implementations and from standardized events. This is similar to the vendor-specific keyword prefixes in CSS, though without the dashes ("-") used in CSS, since that can cause problems when used as an attribute name in Javascript.
+</p>
+
+
+<div class="example">
+<p>
+ある~browser~vendor “FooCorp” は、新たな~event `jump^et を導入したいと望んだとする。
+この~vendorは、自身に特有の接頭辞 `foo^l を利用して，自身の~browserにて `fooJump^et を実装したとする。
+早期の採用者は、
+`someElement.addEventListener("fooJump", doJump, false )^m
+を利用して，その~eventを実験し始め,
+FooCorp へ~feedbackを提供し，
+FooCorp はそれに則って `fooJump^et の挙動を変更する。
+◎
+A particular browser vendor, "FooCorp", might wish to introduce a new event, jump. This vendor implements fooJump in their browser, using their vendor-specific prefix: 'foo'. Early adopters start experimenting with the event, using someElement.addEventListener("fooJump", doJump, false ), and provide feedback to FooCorp, who change the behavior of fooJump accordingly.
+</p>
+
+<p>
+しばらくして後、別の~vendor “BarOrg” も，同じ機能性を取り入れたいと決めたが、実装は少しばかり異なるものにされ、~event型~名は，~vendor特有の自前の接頭辞 `"bar"^c を利用して `barJump^et にされたとする。
+この~versionの `jump^et ~event型を実験している内容~作者は、
+BarOrg の~event型~名で~event~listenerを登録する。
+両~browserに対応する様に~codeを書く内容~作者は、各~event型ごとに別々の~handlerを登録するか, または
+同じ~handlerを利用しつつ，その中で~event型~名に応じて動作を切替えることもできる。
+したがって、異なる~codebaseにおける早期の実験は競合することなく、早期の採用者は，複数の実装に対応する維持管理し易い~codeを書けるようになる。
+◎
+After some time, another vendor, BarOrg, decides they also want the functionality, but implement it slightly differently, so they use their own vendor-specific prefix, "bar" in their event type name: barJump. Content authors experimenting with this version of the jump event type register events with BarOrg’s event type name. Content authors who wish to write code that accounts for both browsers can either register each event type separately with specific handlers, or use the same handler and switch on the name of the event type. Thus, early experiments in different codebases do not conflict, and the early adopter is able to write easily-maintained code for multiple implementations.
+</p>
+
+<p>
+最終的に、内容~作者や利用者からの~feedback, または 公式的な標準化を通すことに因り、~browserの挙動は，安定化され, 一つに収束した特色機能として成熟するであろう。
+このように安定化され, 競合-の~riskが低下した頃合いに、（公式的に標準化される前であっても）内容~作者は、分岐した~codeを除去し, 同じ~event~handlerと より汎用の登録~method
+`someElement.addEventListener( "jump", doJump, false)^c
+を利用して，
+~event型名 `jump^et を利用できるようになる。
+◎
+Eventually, as the feature matures, the behavior of both browsers stabilizes and might converge due to content author and user feedback or through formal standardization. As this stabilization occurs, and risk of conflicts decrease, content authors can remove the forked code, and use the jump event type name (even before it is formally standardized) using the same event handler and the more generic registration method someElement.addEventListener( "jump", doJump, false).
+</p>
+
+</div>
+
+			<section id="extending-events-prefixes">
+<h4 title="Known Implementation-Specific Prefixes">10.3.1. 既知の，実装~特有の接頭辞</h4>
+
+<p>
+この仕様が書かれた時点で既知の［
+~event型~名 接頭辞
+］には、次のものがある：
+◎
+At the time of writing, the following event-type name prefixes are known to exist:
+</p>
+
+<table><thead><tr><th>接頭辞◎Prefix
+<th>Web Engine ( 開発元 )◎Web Engine (Organization)
+</thead>
+
+<tbody><tr><td>`moz^c, `Moz^c
+<td>Gecko (Mozilla)
+
+<tr><td>`ms^c, `MS^c
+<td>Trident (Microsoft)
+
+<tr><td>`o^c, `O^c
+<td>Presto (Opera Software)
+
+<tr><td>`webkit^c
+<td>WebKit (Apple, Google, 他)
+</tbody></table>
+
+			</section>
+		</section>
+	</section>
+	<section id="security-considerations">
+
+<h2 title="Security Considerations">11. 保安上の考慮点</h2>
+
+<p>
+この付録では、 UI Events の実装における保安上の考慮点について論じる。
+論点は、［
+この仕様にて定義される ~event~model, ~API, ~event
+］の実装から直接的に発生する保安上の課題に限られる。
+実装は，概して、［
+~scripting言語 ／
+他の~API ／
+この文書にて定義されない追加の~event
+］の様な，他の特色機能を~supportする。
+これらの特色機能は，未知の因子を成すので、この文書の視野~外である。
+実装者は、そのような特色機能に関する保安上の考慮点については，それを~~規定している仕様にあたる~SHOULDである。
+◎
+This appendix discusses security considerations for UI Events implementations. The discussion is limited to security issues that arise directly from implementation of the event model, APIs and events defined in this specification. Implementations typically support other features like scripting languages, other APIs and additional events not defined in this document. These features constitute an unknown factor and are out of scope of this document. Implementers SHOULD consult the specifications of such features for their respective security considerations.
+</p>
+
+<p>
+この仕様にて定義される~event型の多くは、利用者による動作に呼応して発火される。
+これは、悪意的~event~listenerが［
+利用者が概して機密的と見なす情報
+］への~accessも得られるようにする。
+例えば：
+利用者が~formを埋めるときの誤入力 ／
+~formを~submitする前に，複数から選ぶ問いに対する答えを再考したかどうか ／
+~typingの速さ ／
+入力~時に第一に利用される仕組み，等々。
+最悪の場合、悪意的~event~listenerは、利用者操作すべてを捕獲して，それらを
+XMLHttpRequest ~ifcなどの，~DOM実装にて一般的に可用な手段を通して第三者主体へ~submitすることもできる。
+◎
+Many of the event types defined in this specification are dispatched in response to user actions. This allows malicious event listeners to gain access to information users would typically consider confidential, e.g., typos they might have made when filling out a form, if they reconsider their answer to a multiple choice question shortly before submitting a form, their typing rate or primary input mechanism. In the worst case, malicious event listeners could capture all user interactions and submit them to a third party through means (not defined in this specification) that are generally available in DOM implementations, such as the XMLHttpRequest interface.
+</p>
+
+<p>
+外部~dataを読込む利便性を~supportする~DOM実装は、
+`error$et ~eventの様な~eventが［
+~computer~systemや~networkの環境に関する~sensitive情報
+］への~accessを提供し得る。
+例として，［
+~local~networkや, 異なる~port上の~localhost
+］上の資源を埋め込もうと試みるような，悪意的 HTML 文書が挙げられる。
+埋め込まれた`~DOM~app$は、
+`error$et, `load$et
+~eventを~listenすることにより，
+~network内の他のどの~computerが ~local~systemから~access可能なのか, あるいは
+~systemのどの~portが~openされているかを決定して，更なる攻撃に役立てることも可能になる。
+◎
+In DOM implementations that support facilities to load external data, events like the error event can provide access to sensitive information about the environment of the computer system or network. An example would be a malicious HTML document that attempts to embed a resource on the local network or the localhost on different ports. An embedded DOM application could then listen for error and load events to determine which other computers in a network are accessible from the local system or which ports are open on the system to prepare further attacks.
+</p>
+
+<p>
+UI Events のみの実装は，この種類の攻撃を遂行するには一般的に不十分であり、保安上の考慮点は，そのような攻撃を~supportし得る利便性に適用される。
+この仕様への適合性においては、~DOM実装は、
+`~DOM~app$が
+機密的／~sensitive
+な情報へ~accessできなくするために必要とされる手続きを採って~MAY。
+例えば、~local~network上の資源を埋め込もうと試みる~nodeへは， `load$et ~eventを発火しないことにするなど。
+◎
+An implementation of UI Events alone is generally insufficient to perform attacks of this kind and the security considerations of the facilities that possibly support such attacks apply. For conformance with this specification, DOM implementations MAY take reasonable steps to ensure that DOM applications do not get access to confidential or sensitive information. For example, they might choose not to dispatch load events to nodes that attempt to embed resources on the local network.
+</p>
+
+
+	</section>
+	<section id="changes-from-earlier-versions">
+
+<h2 title="Changes">12. 変更点</h2>
+
+		<section id="changes-DOMEvents2to3Changes">
+<h3 title="Changes between DOM Level 2 Events and UI Events">12.1. ~DOM2~eventと~UI~Eventsとの間の変更点</h3>
+
+<p>
+~ifcと~event型に対しいくつもの明確化がなされた。
+`HTMLEvents^I ~moduleは、この文書では最早~定義されない。
+`focus$et／`blur$et
+~eventは `UIEvent$I ~moduleに追加され，
+`dblclick$et ~eventは `MouseEvent$I ~moduleに追加された。
+この新たな仕様は、
+~DOM~event~flow, ~event型, ~DOM~ifc
+の間を より良く分離する。
+◎
+Numerous clarifications to the interfaces and event types have been made. The HTMLEvents module is no longer defined in this document. The focus and blur events have been added to the UIEvent module, and the dblclick event has been added to the MouseEvent module. This new specification provides a better separation between the DOM event flow, the event types, and the DOM interfaces.
+</p>
+
+			<section id="changes-DOMEvents2to3Changes-flow">
+<h4 title="Changes to DOM Level 2 event flow">12.1.1. ~DOM2~event~flowに対する変更点</h4>
+
+<p>
+この新たな仕様は、~event~flowに次の新たな概念を導入した：
+◎
+This new specification introduced the following new concepts in the event flow:
+</p>
+
+				<ul>
+	<li>
+`~event~listener$は、今や順序付けられた。
+~DOM2では，~eventの順序付けは指定されてなかった。
+◎
+Event listeners are now ordered. In DOM Level 2, the event ordering was unspecified.
+</li>
+	<li>
+既存の実装を反映するため、~event~flowは，今や `Window$I を含む。
+◎
+The event flow now includes the Window, to reflect existing implementations.
+</li>
+				</ul>
+			</section>
+			<section id="changes-DOMEvents2to3Changes-event-types">
+<h4 title="Changes to DOM Level 2 event types">12.1.2. ~DOM2~event型に対する変更点</h4>
+
+<p>
+~event型には多くの明確化がなされた。
+適合性は、今や明示的に 各~event型に対し定義される
+— ~event型に利用される~ifcを通してのみならず。
+◎
+Many clarifications have been made on the event types. The conformance is now explicitly defined against the event types, and not only in terms of interfaces used by the event types.
+</p>
+
+<p>
+`MutationEvents^I は`非推奨に$された。
+この仕様の早期の草案には在った名前空間付き~eventの~supportも，除去された。
+◎
+"MutationEvents" have been deprecated. Support for namespaced events, present in early drafts of this specification, has also been removed.
+</p>
+
+<p>
+`DOMNodeInserted$et ／ `DOMNodeRemoved$et
+~event型を~supportする~UAに対しては、この仕様は最早
+`Attr^I ~nodeに向けて~eventを発火することを要求しない。
+◎
+For user agents which support the DOMNodeInserted and DOMNodeRemoved event types, this specification no longer requires that the event type be fired for Attr nodes.
+</p>
+
+<p>
+既存の実装を反映するため、 `resize^et ~event型は，最早~浮上せず，
+`mousemove$et ~eventは，今や`取消可能$にされた。
+◎
+The resize event type no longer bubbles and the mousemove event is now cancelable, reflecting existing implementations.
+</p>
+			</section>
+			<section id="changes-DOMLevel2to3Changes">
+<h4 title="Changes to DOM Level 2 Events interfaces">12.1.3. ~DOM2~event~ifcに対する変更点</h4>
+
+
+
+Interface Event
+
+
+<dl>
+	<dt>`Event$I ~ifc</dt>
+	<dd>
+新たな属性 `defaultPrevented^m, および
+新たな~method `stopImmediatePropagation()^m
+が加えられた。
+◎
+The Event interface has one new attribute, defaultPrevented, and one new method, stopImmediatePropagation().
+</dd>
+	<dd>
+`timeStamp^m 属性は，今や
+ECMAScript 言語束縛の `Number^I に。
+提案された訂正は
+`DOM-Level-3-Core$r にも同じ変更を加えることになる。
+◎
+timeStamp is now a Number in the ECMAScript binding. A proposed correction to make the same change in [DOM-Level-3-Core] is forthcoming.
+↓</dd>
+	<dd>
+~DOM2~Eventsでは `type^m 属性は文字大小無視と見なしていたが、この仕様では文字大小区別と見なす。
+◎
+This specification considers the type attribute to be case-sensitive, while DOM Level 2 Events considers type to be case-insensitive.
+</dd>
+
+	<dt>`EventTarget$I ~ifc</dt>
+	<dd>
+`dispatchEvent()^m ~methodは、改変された。
+◎
+The method dispatchEvent() was modified.
+</dd>
+
+	<dt>`MouseEvent$I ~ifc</dt>
+	<dd>
+新たな~method `getModifierState()^m が加えられた。
+◎
+The MouseEvent interface has one new method getModifierState().
+</dd>
+
+	<dt>`EventException^E 例外</dt>
+	<dd>
+この例外は、この仕様から除去された。
+~~以前の
+`DISPATCH_REQUEST_ERR^m ~codeは，名前
+`InvalidStateError^E の `DOMException^I に対応付けられた。
+◎
+The exception EventException is removed in this specification. The prior DISPATCH_REQUEST_ERR code is re-mapped to a DOMException of type InvalidStateError.
+</dd>
+</dl>
+
+			</section>
+			<section id="changes-DOMLevel3Addons">
+<h4 title="New Interfaces">12.1.4. 新たな~ifc</h4>
+
+<div class="p">
+
+<p>
+次の~ifcが~Events~moduleに追加された：
+</p>
+<ul ><li>`CustomEvent$I
+</li><li>`FocusEvent$I
+</li><li>`KeyboardEvent$I
+</li><li>`CompositionEvent$I
+</li><li>`WheelEvent$I
+</li></ul>
+
+
+
+◎
+The interfaces CustomEvent, FocusEvent, KeyboardEvent, CompositionEvent, and WheelEvent were added to the Events module.
+</div>
+			</section>
+		</section>
+		<section id="changes-drafts">
+<h3 title="Changes between different drafts of UI Events">12.2. ~UI~Eventsの各 草案における変更点</h3>
+
+<p>
+DOM3 ~Events文書は、元々は 2000 年 〜 2003 年に開発され、実装者からの更なる~feedbackと関心を待つべく， W3C Note として発行された。
+2006 年には、標準化過程における 改訂と進捗のために取り上げられ，実装の現在の状態と~script作者の必要性を反映するように改訂された。
+◎
+The DOM Level 3 Events document was originally developed between 2000 and 2003, and published as a W3C Note, pending further feedback and interest from implementers. In 2006, it was picked up for revision and progress on the Recommendation Track, and was then revised to reflect the current state of implementation and the needs of script authors.
+</p>
+
+<p>
+その位置付けが公式の勧告ではなく W3C Note に過ぎないにも関わらず、
+DOM3 Events は，一部の実装を見ていて, 他の仕様からも参照されているので、この仕様を現在の環境に依然として適応させつつ，分裂を極力抑えるように配慮されてきた。
+◎
+Despite its status only as a W3C Note, rather than an official Recommendation, DOM 3 Events saw some implementation, and was also referenced by other specifications, so care is being taken to cause minimal disruption, while still adapting the specification to the current environment.
+</p>
+
+<p>
+現在の仕様は、題材を明確化するため、早期の W3C Note から, および
+DOM2 Events の構造からも，有意に再編成されている。
+階層と~event~flowをより明快に表現するため、新たな図式も~~挿入された。
+草案の変遷に伴う重要な変更点の一部をここに示す：
+◎
+The current specification has been reordered significantly from the earlier W3C Note form, and also from the structure of DOM2 Events, in order to clarify the material. New diagrams have been put in place to represent hierarchies and events flows more clearly. Here are some of the more important changes between drafts:
+</p>
+
+<ul>
+	<li>
+~keyに対する一意な識別子と~~区別するため、
+“~key識別子”の特色機能は，“`~key値$”に改称された。
+◎
+The "key identifier" feature has been renamed "key value" to disambiguate them from unique identifiers for keys.
+</li>
+	<li>
+`KeyboardEvent!I ~ifcは、（ 2003 〜 2010 年まで）
+`keyIdentifier^m, `keyLocation^m
+属性を持つように概ね定義されていたが、現在の
+`KeyboardEvent.key$m, `KeyboardEvent.location$m
+属性の支持を受けて，これらは除去された。
+これらの属性は，広範に実装されていない。
+◎
+The KeyboardEvent interface was briefly (from 2003-2010) defined to have keyIdentifier and keyLocation attributes, but these were removed in favor of the current key and location attributes. These attributes were not widely implemented.
+</li>
+	<li>
+`KeyboardEvent$I ／ `CompositionEvent$I
+~ifcに，
+`locale^m 属性が定義された。
+この属性は、~~策定中にあり，必要十分に指定されるまで，
+technical note
+へ移行された。
+詳細は、
+<a href="https://www.w3.org/TR/2014/WD-uievents-20140612/">この UI Events 仕様の旧~version</a>
+（ DOM3Events 仕様が "UI Events" に改称される前のもの）を参照のこと。
+◎
+The KeyboardEvent and CompositionEvent interfaces defined a locale attribute. This attribute was underspecified and moved into a technical note until it can be specified adequately. Refer to this old version of UI Events (before the DOM3Events spec was renamed "UI Events") for details.
+</li>
+	<li>
+`KeyboardEvent$I は、
+`keypress$et ~eventのみに利用されていた `char^m 属性を持っていたが、その~eventは`非推奨に$されたので、この属性は最早~有用でなくなり，除去された。
+◎
+The KeyboardEvent also had a char attribute that was only used by the keypress event. Since the keypress event has been deprecated, this attribute was no longer useful and was removed.
+</li>
+	<li>
+`change^et, `submit^et, `reset^et
+~eventは除去された
+— それらは HTML ~form特有であり，
+`HTML5$r にて指定されるので。
+◎
+The change, submit, and reset events were removed, since they were specific to HTML forms, and are specified in [HTML5].
+</li>
+	<li>
+現在の `beforeinput$et, `input$et ~eventへの支持を受けて，［
+元々は `keypress$et のための代用として 提案された `textInput^et ~event
+］は、除去された。
+◎
+The textInput event, originally proposed as a replacement for keypress, was removed in favor of the current beforeinput and input events.
+</li>
+	<li>
+名前空間付き~eventは除去された。
+◎
+Namespaced events have been removed.
+</li>
+	<li>
+`WebIDL$r を利用するように更新された。
+◎
+Updated to use [WebIDL].
+</li>
+	<li>
+`EventException^E は除去された。
+◎
+EventException has been removed.
+</li>
+</ul>
+
+		</section>
+	</section>
+	<section id="glossary">
+<h2 title="Glossary">14. 用語集</h2>
+
+<p class="trans-note">【
+ここでは、原文の用語集の中から，主に適合性に関する用語を挙げる。
+他の用語は、<a href="~UIEVENTS#glossary" >別ページ</a>にて。
+】</p>
+
+<dl id="glossary-list">
+	<dt>`作者@ （ author ）</dt>
+	<dd>
+この仕様の文脈においては、
+<em>作者</em> ／
+<em>内容~作者</em> ／
+<em>~script作者</em>
+は、この仕様にて定義される ~ifc, ~event, ~event~flowを利用する
+~scriptや他の実行可能~内容を書く者である。
+詳細は、適合性の類別における
+<a href="#conf-authors">内容~作者と内容</a>
+を見よ。
+◎
+In the context of this specification, an author, content author, or script author is a person who writes script or other executable content that uses the interfaces, events, and event flow defined in this specification. See §1.2.3 Content authors and content conformance category for more details.
+</dd>
+
+	<dt>`~UA@ （ user agent ）</dt>
+	<dd>
+~browserや内容~著作toolなど、通常は~client~machine上で稼働し，利用者の利益を代表して 内容を［
+取得0-, 解釈-, 実行-, 呈示-, 作成-
+］するために動作するような~programを~~指す。
+利用者は、その時々に応じて，異なる~UAを異なる目的0で利用して，内容とやりとりすることもある。
+<em>適合</em> ~UAに課される要件の詳細は、
+<a href="#conf-interactive-ua">~Web~browserその他の 動的／対話的 ~UA</a>,
+<a href="#conf-author-tools">著作tool</a>
+を見よ。
+◎
+A program, such as a browser or content authoring tool, normally running on a client machine, which acts on a user’s behalf in retrieving, interpreting, executing, presenting, or creating content. Users MAY act on the content using different user agents at different times, for different purposes. See the §1.2.1 Web browsers and other dynamic or interactive user agents and §1.2.2 Authoring tools for details on the requirements for a conforming user agent.
+</dd>
+
+
+	<dt>`非推奨@ （ deprecated ）</dt>
+	<dd>
+非推奨と~markされた特色機能は、古い実装や仕様への参照として，この仕様に含まれてはいるが、任意選択であり，利用しないことが奨励される。
+非推奨にされるのは、この仕様において，既存のまたは進捗~中の代用があるものに限られ~MUST。
+特色機能をまだ~supportしていない実装は、既存の内容との後方互換性の理由で，非推奨の特色機能を実装しても~MAYが、内容~作者は，利用~事例を解決する仕方が他にあるならば，非推奨の特色機能を利用する~SHOULDでない。
+この仕様を参照する他の仕様は、特色機能が非推奨にされたことへの支持を受けて，非推奨の特色機能は利用せずに，その代用を参照する~SHOULDである。
+この仕様にて非推奨と~markされた特色機能は、将来~仕様から落とされるものと予期されている。
+◎
+Features marked as deprecated are included in the specification as reference to older implementations or specifications, but are OPTIONAL and discouraged. Only features which have existing or in-progress replacements MUST be deprecated in this specification. Implementations which do not already include support for the feature MAY implement deprecated features for reasons of backwards compatibility with existing content, but content authors creating content SHOULD NOT use deprecated features, unless there is no other way to solve a use case. Other specifications which reference this specification SHOULD NOT use deprecated features, but SHOULD point instead to the replacements of which the feature is deprecated in favor. Features marked as deprecated in this specification are expected to be dropped from future specifications.
+</dd>
+
+	<dt>`~DOM~app@ （ DOM application ）</dt>
+	<dd>
+~DOM~appは、［
+内容~作者により書かれた~script, または
+自動的に生成された~code
+］であって、動的な または対話的な内容を作るために，［
+~ifc, ~method, 属性, ~event, その他，この仕様にて述べられた特色機能
+］を利用するものである。
+例えば、~UAにて利用者に公開される~Web~app。
+◎
+A DOM application is script or code, written by a content author or automatically generated, which takes advantage of the interfaces, methods, attributes, events, and other features described in this specification in order to make dynamic or interactive content, such as Web applications, exposed to users in a user agent.
+</dd>
+
+
+	<dt>`~host言語@ （ host language ）</dt>
+	<dd>
+別の言語や~API仕様の各種~特色機能を統合する言語
+— それらの特色機能を再定義することなく，その出自の仕様を規範的に参照し、それらの特色機能を その出自の仕様にて定義される仕方のみに従って拡張するような。
+出自の仕様は，概して，自立的な言語でなく、いくつかの~host言語の文脈の下でのみ実装されることが意図される。
+例えば， XHTML, HTML, SVG は、~UI~Eventsに対する~host言語にあたり、この仕様にて定義される~objと~modelを統合し, 拡張する。
+◎
+Any language which integrates the features of another language or API specification, while normatively referencing the origin specification rather than redefining those features, and extending those features only in ways defined by the origin specification. An origin specification typically is only intended to be implemented in the context of one or more host languages, not as a standalone language. For example, XHTML, HTML, and SVG are host languages for UI Events, and they integrate and extend the objects and models defined in this specification.
+</dd>
+
+</dl>
+
+	</section>
+
+</main>
+	<section id="acknowledgements-contributors">
+
+<h2 title="Acknowledgements">13. 謝辞</h2>
+
+<p class="1st">
+DOM Working Group,
+DOM Interest Group,
+WebAPI Working Group,
+WebApps Working Group
+に携わった方々を含め，多くの方々が DOM 仕様（ Level 1, 2, 3 ）に寄与された。
+とりわけ次の方々に感謝する：
+<span lang="en">
+Many people contributed to the DOM specifications (Level 1, 2 or 3), including participants of the DOM Working Group, the DOM Interest Group, the WebAPI Working Group, and the WebApps Working Group. We especially thank the following:
+</span></p>
+
+<div>
+Andrew Watson (Object Management Group),
+Andy Heninger (IBM),
+Angel Diaz (IBM),
+Anne van Kesteren (Opera Software),
+Arnaud Le Hors (W3C and IBM),
+Arun Ranganathan (AOL),
+Ashok Malhotra (IBM and Microsoft),
+Ben Chang (Oracle),
+Bill Shea (Merrill Lynch),
+Bill Smith (Sun),
+Björn Höhrmann,
+Bob Sutor (IBM),
+Charles McCathie-Nevile (Opera Software, <em>Co-Chair</em>),
+Chris Lovett (Microsoft),
+Chris Wilson (Microsoft),
+Christophe Jolif (ILOG),
+David Brownell (Sun),
+David Ezell (Hewlett-Packard Company),
+David Singer (IBM),
+Dean Jackson (W3C, <em>W3C Team Contact</em>),
+Dimitris Dimitriadis (Improve AB and invited expert),
+Don Park (invited),
+Doug Schepers (Vectoreal),
+Elena Litani (IBM),
+Eric Vasilik (Microsoft),
+Gavin Nicol (INSO),
+Gorm Haug Eriksen (Opera Software),
+Ian Davis (Talis Information Limited),
+Ian Hickson (Google),
+Ian Jacobs (W3C),
+James Clark (invited),
+James Davidson (Sun),
+Jared Sorensen (Novell),
+Jeroen van Rotterdam (X-Hive Corporation),
+Joe Kesselman (IBM),
+Joe Lapp (webMethods),
+Joe Marini (Macromedia),
+John Robinson (AOL),
+Johnny Stenback (Netscape/AOL),
+Jon Ferraiolo (Adobe),
+Jonas Sicking (Mozilla Foundation),
+Jonathan Marsh (Microsoft),
+Jonathan Robie (Texcel Research and Software AG),
+Kim Adamson-Sharpe (SoftQuad Software Inc.),
+Lauren Wood (SoftQuad Software Inc., <em>former Chair</em>),
+Laurence Cable (Sun),
+Luca Mascaro (HTML Writers Guild),
+Maciej Stachowiak (Apple Computer),
+Marc Hadley (Sun Microsystems),
+Mark Davis (IBM),
+Mark Scardina (Oracle),
+Martin Dürst (W3C),
+Mary Brady (NIST),
+Michael Shenfield (Research In Motion),
+Mick Goulish (Software AG),
+Mike Champion (Arbortext and Software AG),
+Miles Sabin (Cromwell Media),
+Patti Lutsky (Arbortext),
+Paul Grosso (Arbortext),
+Peter Sharpe (SoftQuad Software Inc.),
+Phil Karlton (Netscape),
+Philippe Le Hégaret (W3C, <em>W3C Team Contact and former Chair</em>),
+Ramesh Lekshmynarayanan (Merrill Lynch),
+Ray Whitmer (iMall, Excite@Home, and Netscape/AOL, <em>Chair</em>),
+Rezaur Rahman (Intel),
+Rich Rollman (Microsoft),
+Rick Gessner (Netscape),
+Rick Jelliffe (invited),
+Rob Relyea (Microsoft),
+Robin Berjon (Expway, <em>Co-Chair</em>),
+Scott Hayman (Research In Motion),
+Scott Isaacs (Microsoft),
+Sharon Adler (INSO),
+Stéphane Sire (IntuiLab),
+Steve Byrne (JavaSoft),
+Tim Bray (invited),
+Tim Yu (Oracle),
+Tom Pixley (Netscape/AOL),
+T.V. Raman (Google).
+Vidur Apparao (Netscape) and
+Vinod Anupam (Lucent).
+</div>
+
+<p>
+前任の編集者たち：
+</p>
+
+<div>
+Former editors: Tom Pixley (Netscape Communications Corporation) until July 2002; Philippe Le Hégaret (W3C) until November 2003; Björn Höhrmann (Invited Expert) until January 2008; Doug Schepers (W3C) from March 2008 to May 2011; and Jacob Rossi (Microsoft) from March 2011 to October 2011.
+</div>
+
+<p>
+WebApps Working Group の中では、次の方々が，この仕様を改良し, 改訂する過程に大きく貢献された：
+<span lang="en">
+Contributors: In the WebApps Working Group, the following people made substantial material contributions in the process of refining and revising this specification:
+</span></p>
+
+<div>
+Bob Lund (Cable Laboratories),
+Cameron McCormack (Invited Expert / Mozilla),
+Daniel Danilatos (Google),
+Gary Kacmarcik (Google),
+Glenn Adams (Samsung),
+Hallvord R. M. Steen (Opera),
+Hironori Bono (Google),
+Mark Vickers (Comcast),
+Masayuki Nakano (Mozilla),
+Olli Pettay (Mozilla),
+Takayoshi Kochi (Google) and
+Travis Leithead (Microsoft).
+</div>
+
+<p>
+<strong>用語集に貢献された方々：</strong>
+<span lang="en">
+Glossary contributors:
+</span></p>
+
+<div>
+Arnaud Le Hors (W3C) and
+Robert S. Sutor (IBM Research).
+</div>
+
+<p>
+<strong>Test suite に貢献された方々</strong>
+<span lang="en">
+Test suite contributors:
+</span></p>
+
+<div>
+Carmelo Montanez (NIST),
+Fred Drake,
+Mary Brady (NIST),
+Neil Delima (IBM),
+Rick Rivello (NIST),
+Robert Clary (Netscape),
+with a special mention to Curt Arnold.
+</div>
+
+<p>
+提言や訂正（バグや問題があれば、投稿されたし！）を送信して, あるいは
+参考本や Web サイトを書いて，この仕様の改善に助力された、以下の方々に：
+<span lang="en">
+Thanks to all those who have helped to improve this specification by sending suggestions and corrections (please, keep bugging us with your issues!), or writing informative books or Web sites:
+</span></p>
+
+<div>
+Al Gilman,
+Alex Russell,
+Alexander J. Vincent,
+Alexey Proskuryakov,
+Arkadiusz Michalski,
+Brad Pettit,
+Cameron McCormack,
+Curt Arnold,
+David Flanagan,
+Dylan Schiemann,
+Erik Arvidsson,
+Garrett Smith,
+Giuseppe Pascale,
+James Su,
+Jan Goyvaerts (regular-expressions.info),
+Jorge Chamorro,
+Kazuyuki Ashimura,
+Ken Rehor,
+Magnus Kristiansen,
+Martijn Wargers,
+Martin Dürst,
+Michael B. Allen,
+Mike Taylor,
+Misha Wolf,
+Ojan Vafai,
+Oliver Hunt,
+Paul Irish,
+Peter-Paul Koch,
+Richard Ishida,
+Sean Hogan,
+Sergey Ilinsky,
+Sigurd Lerstad,
+Steven Pemberton,
+Tony Chang,
+William Edney and
+Øistein E. Andersen.
+</div>
+
+	</section>
+
+	<section id="references">
+
+<h2 title="References">参照文献</h2>
+
+<p class="trans-note">【
+ここには、この付録ページに固有のもののみ挙げる。
+】</p>
+
+
+		<section id="references-References-Normative">
+<h3 title="Normative References">文献（規範的）</h3>
+
+<dl>
+	<dt>[DOM-Level-3-Core]</dt>
+	<dd>Arnaud Le Hors; et al. Document Object Model (DOM) Level 3 Core Specification. 7 April 2004. REC.</dd>
+	<dd>http://www.w3.org/TR/DOM-Level-3-Core/</dd>
+
+	<dt>[RFC2119]</dt>
+	<dd>S. Bradner. Key words for use in RFCs to Indicate Requirement Levels. March 1997. Best Current Practice.</dd>
+	<dd>https://tools.ietf.org/html/rfc2119</dd>
+
+</dl>
+
+		</section>
+		<section id="references-References-Informative">
+<h3 title="Informative References">文献（参考）</h3>
+
+
+<dl>
+
+	<dt>[RFC20]</dt>
+	<dd>V.G. Cerf. ASCII format for network interchange. October 1969. Internet Standard.</dd>
+	<dd>https://tools.ietf.org/html/rfc20</dd>
+
+	<dt>[US-ASCII]</dt>
+	<dd>Coded Character Set - 7-Bit American Standard Code for Information Interchange. 1986. 
+   </dd>
+
+	<dt>[WIN1252]</dt>
+	<dd>Windows 1252 a Coded Character Set - 8-Bit.</dd>
+	<dd>http://www.microsoft.com/globaldev/reference/sbcs/1252.htm</dd>
+
+	<dt>[XFORMS]</dt>
+	<dd>John Boyer. XForms 1.0 (Third Edition). 29 October 2007. REC.</dd>
+	<dd>http://www.w3.org/TR/xforms/</dd>
+
+</dl>
+
+
+		</section>
+	</section>
+	<section id="idl-index">
+<h2 title="IDL Index" data-cycling="pre.idl">IDL 索引</h2>
+<p class="trans-note">【
+この節の内容は省略（見出しクリックで巡回）。
+】</p>
+	</section>
+
+
+</body></html>
+

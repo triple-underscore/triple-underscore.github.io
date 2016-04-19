@@ -1,0 +1,3768 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<title>Writing Promise-Using Specifications （日本語訳）</title>
+
+<meta name="keywords" content="js,es6,ecmascript,promise,仕様">
+
+<link rel="stylesheet" href="common.css" type="text/css" />
+<script src="common0.js" ></script>
+<script src="common1.js" async></script>
+
+
+<script>
+var source_data;
+
+COMMON_DATA.init = function(expanded){
+	var options = {
+		original_url: 'http://www.w3.org/2001/tag/doc/promises-guide',
+		main: 'MAIN',
+		fill_text_link: '#references dd',
+		toc: 'contents',
+		alt_refs: 'references',
+		ref_id_prefix: 'biblio-',
+		ref_id_lowercase: true,
+	};
+
+
+	if(expanded){
+		var e = E('_optional_controls');
+		if(e) {
+			e.parentNode.removeChild(e);
+		}
+		return options;
+	}
+
+	source_data = {
+		html: E('MAIN').innerHTML,
+		link_map: Util.getMapping('_link_map'),
+		levels: 'ほぼ英語:英語主体:英語寄り:漢字主体:カナ主体',
+		level: 3,
+		generate: expand
+	};
+	Util.switchWordsInit(source_data)
+
+//	Util.del_j(); // verified: 141122 spec
+
+	return options;
+}
+
+function expand(mapping1){
+	var link_map = this.link_map;
+	var nesting = ''
+	var class_map = {
+		r: 'ref',
+		es: 'es',
+		l: 'literal',
+		et: 'event-type',
+	}
+	var tag_map = {
+		l: 'code',
+		es: 'code',
+		i: 'i',
+		c: 'code',
+		et: 'code',
+		v: 'var',
+	}
+
+	E('MAIN').innerHTML = Util.replaceWords1(
+		this.html.replace(
+			/⇒|【.*?】|◎[^<◎`]*|`(.+?)([$@\^])(\w*)/g,
+			create_html
+		),
+		mapping1
+	);
+
+	Util.rebuildToc('MAIN', '_toc_list0');// 目次構築
+	return;
+
+function create_html(match, key, indicator, klass){
+	if(!indicator) {
+		switch(match.charAt(0)){
+		case '⇒':
+			nesting += '</span>';
+			return '：<span class="block">';
+			break;
+		case '【':
+			return '<span class="trans-note">' + match + '<\/span>'
+		}
+		//◎
+		var result = nesting + '<span lang="en">' + match.slice(1) + '</span>';
+		nesting = '';
+		return result;
+	}
+
+	var text = key;
+	var href = link_map[klass ? (klass + '.' + key) : key] || '';
+	var classname = class_map[klass];
+	var tag = tag_map[klass];
+
+	switch(klass){
+	case '': // plain
+		if(indicator === '^') return mapping1[key];// remap
+		id = link_map[key];
+		break;
+	case 'r': // ref
+		text = '[' + key + ']';
+		href = '#biblio-' + key.toLowerCase();
+		break;
+	case 'l': //
+		text = '"' + key + '"';
+		break;
+	case 'c': //
+		var i = key.indexOf('(');
+		if(i > 0) {
+			text = key.slice(0, i)
+			+ key.slice(i).replace(/\w+/g, '<var>$&</var>')
+		}
+		break;
+	case 'et': //
+	case 'b': //
+	case 'i': //
+	case 'v':
+		break;
+//typedef-integer, number-value
+	default:
+		if(!classname) return match;
+		text = key;
+	}
+
+
+	classname = classname ? ' class="' + classname + '"' : '';
+	if(tag) {
+		text = '<' + tag + classname + '>' + text + '</' + tag + '>';
+	}
+
+	if(href){
+		switch(indicator){
+		case '^':
+			break;
+		case '$':
+			text = '<a href="' + href + '">' + text + '<\/a>';
+			break;
+		case '@':
+	//		href = href_data_map[key] || href;
+			text = '<dfn id="' + href.slice(1) + '">' + text + '<\/dfn>';
+			break;
+		default:
+			console.log(match);
+			return match;
+		}
+	}
+//	if(!href && indicator !== '^') console.log(match); // check error
+
+	return text;
+
+}
+}
+
+</script>
+<!-- 
+
+	if(values) {
+		text = 
+			'<span class="css">'
+			+ text
+			+ ': <code class="value">'
+			+ values.replace(/_/g, ' ')
+			+ '</code></span>'
+	}
+
+ -->
+
+<!--% 置換データ -->
+<!--% 訳文 id → 原文 id -->
+<script type="text/plain" id="_original_id_map">
+initial-value:
+</script>
+
+
+<!--%links -->
+<script type="text/plain" id="_link_map">
+射:#_arrow-func
+初期値:#initial-value
+新たな~promise:#a-new-promise
+解決する:#resolve-promise
+解決して:#resolve-promise
+解決-:#resolve-promise
+	解決済みの:#a-promise-resolved-with
+~promiseとして解決する:#resolved-as-a-promise
+~promiseとして解決され:#resolved-as-a-promise
+解決され:#a-promise-resolved-with
+
+却下する:#reject-promise
+却下され:#a-promise-rejected-with
+却下された~promise:#a-promise-rejected-with
+変形する:#transforming-by
+変形した:#transforming-by
+
+充足~時:#upon-fulfillment
+却下~時:#upon-rejection
+~promise-call:#promise-calling
+すべてを待機する:#waiting-for-all
+すべてを待機-:#waiting-for-all
+
+充足~値:#fulfillment-value
+事由~値:#reason-value
+
+	●§
+	#example-resource-open
+	#example-delay
+	#promise-call-in-js
+	#always-return-promises
+	#should-promise-call
+	#shorthand-manipulating
+	#example-batch-request
+
+
+	●HTML
+並列的:~HTMLINFRA#in-parallel
+~taskを待入する:~WAPI#queue-a-task
+関連する設定群~obj:~WAPI#relevant-settings-object-for-a-global-object
+	~WAPI#relevant-settings-object
+担当の~event~loop:~WAPI#responsible-event-loop
+
+作動中の文書:~BROWSERS#active-document
+c.Window:~BROWSERS#window
+単純~eventを発火する:~WAPI#fire-a-simple-event
+閲覧文脈:~BROWSERS#browsing-context
+
+	●ES6
+c.Promise.all:~ES6#sec-promise.all
+c.Promise.prototype.then:~ES6#sec-promise.prototype.then
+c.Promise.reject:~ES6#sec-promise.reject
+c.Promise.resolve:~ES6#sec-promise.resolve
+~realm:~ES6#sec-code-realms
+%Promise%:~ES6#sec-well-known-intrinsic-objects
+
+	組込みの ECMAScript ~error型:~ES6#sec-error-objects
+	ECMAScript の次の~version:~ES6#sec-promise-objects
+	`reject^c 関数:~ES6#sec-promise-reject-functions
+	`resolve^c 関数:~ES6#sec-promise-resolve-functions
+	`Promise^c 構築子:~ES6#sec-promise-constructor
+
+	●WebIDL
+~PromiseT:~WEBIDL#es-promise
+~callback関数:~WEBIDL#dfn-callback-function
+~callback~interface:~WEBIDL#dfn-callback-interface
+~promise型:~WEBIDL#es-promise
+c.USVString:~WEBIDL#es-USVString
+
+多重定義:~WEBIDL#idl-overloading
+多重定義~解決~algo:~WEBIDL#dfn-overload-resolution-algorithm
+演算:~WEBIDL#dfn-operation
+共用体~型:~WEBIDL#idl-union
+c.DOMException:~WEBIDL#dfn-DOMException
+可反復:~WEBIDL#idl-iterable
+	投出
+	例外
+
+	“演算” 節:~WEBIDL#es-operations
+	WebIDL 仕様により:~WEBIDL#es-operations
+	Web IDL:http://www.w3.org/TR/WebIDL/
+
+	それらを呼出して:~WEBIDL#es-invoking-callback-functions
+	~promiseが決着したときの手続きを遂行する:~WEBIDL#dfn-perform-steps-once-promise-is-settled
+	WebIDL により:~WEBIDL#es-exceptions
+
+
+c.Request:~FETCH#dom-request
+c.Response:~FETCH#response
+~fetch:~FETCH#dom-global-fetch
+c.IDBRequest:~INDEXEDDB#request-api
+c.send():~XHR#dom-xmlhttprequest-send
+
+Streams API:https://github.com/whatwg/streams
+
+</script>
+<!-- 
+	https://github.com/w3ctag/promises-guide/issues/27
+	https://annevankesteren.nl/2014/08/asynchronicity
+	http://promisesaplus.com/
+	http://lists.w3.org/Archives/Public/public-webcrypto/2014Mar/0141.html
+	http://www.w3.org/2001/tag/doc/promises-guide
+	http://www.w3.org/TR/WebIDL/
+	http://www.w3.org/TR/service-workers/
+	https://github.com/w3ctag/promises-guide/commits
+	https://github.com/w3ctag/promises-guide/issues?state=open
+	https://github.com/domenic/promises-unwrapping/issues/85
+	http://lists.w3.org/Archives/Public/www-tag/2014Jan/0108.html
+
+-->
+
+<!--%語彙  -->
+<script type="text/plain" id="words_table1">
+BROWSERS:https://html.spec.whatwg.org/multipage/browsers.html
+ES6:https://tc39.github.io/ecma262/
+	http://www.ecma-international.org/ecma-262/6.0/
+	http://people.mozilla.org/~jorendorff/es6-draft.html
+MANIFEST:http://w3c.github.io/manifest/
+INDEXEDDB:IndexedDB-2nd-ja.html
+	http://www.w3.org/TR/IndexedDB/
+PromiseT: <code>Promise&lt;<var>T</var>&gt;</code> 
+射:=&gt;
+</script>
+
+<script type="text/plain" id="words_table">
+manifest:
+vagaries:
+global:
+ready:
+listen:
+
+
+such::そのような
+nothing:
+
+API:
+DOM:
+	ECMAScript:
+UA:user agent:UA
+URL:
+
+logic::::ロジック
+main::::メイン
+cancel::キャンセル
+idea:::アイデア
+popular::::ポピュラー
+task::::タスク
+background::::バックグラウンド
+thread::::スレッド
+test::::テスト
+community::::コミュニティ
+block::::ブロック
+list::リスト
+access::::アクセス
+accessor::::アクセサ
+algo:algorithm:::アルゴリズム
+animation::::アニメーション
+app:application:::アプリ
+approach::::アプローチ
+back-and-forth:back and forth
+
+based:-based:に基づく:::ベースの
+
+bookmark::::ブックマーク
+buffer::::バッファ
+buffering::::バッファ処理
+button::::ボタン
+cache::::キャッシュ
+守られ:care され:~
+原則:advice:~
+channel::::チャンネル
+code::::コード
+collection::::コレクション
+data::::データ
+encapsulate::::カプセル化
+entry::::エントリ
+error-handling::::error-handling#1
+error::::エラー
+escape::::エスケープ
+event::::イベント
+loop::::ループ
+fetch:
+catch:
+class::::クラス
+flow::::フロー
+font::::フォント
+framework::::フレームワーク
+handler::::ハンドラ
+instance::::インスタンス
+interface::::インタフェース
+応接する:interface する:~
+library::::ライブラリ
+machine::::マシン
+memory:::記憶域::メモリ
+metadata::::メタデータ
+method::::メソッド
+microtask::::極小タスク
+mode::::モード
+model::::モデル
+ms:milliseconds::ミリ秒
+network::::ネットワーク
+obj:object:::オブジェクト
+
+
+paradigm::::パラダイム
+parameter::::パラメタ
+pattern::::パタン
+platform::::プラットフォーム
+primitive::::プリミティブ
+
+realm::::レルム
+thenable:
+
+promise:
+promise-call:
+	promise-called:
+	promise-calling:
+	promise-property:
+call:
+callback:
+calling:
+内部slot:internal slot::内部 slot:内部スロット
+
+property::::プロパティ
+待行列:queue::待ち行列::キュー
+待入する:queue する::待ち行列に入れる::キューする
+待入され:queue され::待ち行列に入れられ::キューされ
+	queue:
+queue-up:
+
+script::::スクリプト
+status::::ステータス
+storage::::ストレージ
+stream::::ストリーム
+streaming::::ストリーミング
+version::::バージョン
+web:::::ウェブ
+zero::::ゼロ
+
+却下-:reject::~
+却下:rejection::~
+却下済み:rejected::~
+充足-:fulfill::~
+充足:fulfillment::~
+充足済み:fulfilled::~
+待機-:wait::~
+解決-:resolve::~
+解決:resolution::~
+通知-:signal::~
+作成-:create::~
+作成法:creating::~
+作成時:create 時::~
+操作-:manipulate::~
+集成-:aggregate::~
+決着-:settle::~
+決着:settling::~
+変形-:transform::~
+反応-:react::~::リアクト
+反応:reaction::~::リアクション
+
+並列的な:parallel::~
+並列的:parallel::~
+設定群:settings::~
+関連する:relevant な:~
+担当の:responsible::~
+非同期性:asynchronicity::~
+非同期的:asynchronous::~
+非同期的な:asynchronous::~
+同期的:synchronous::~
+同期的な:synchronous::~
+非同期:async:~
+one-and-done::一回で終える
+一度限り:one-time:~
+一度限りの:one-time:~
+演算:operation::~
+状態:state::~
+明言-:state:~
+共用体:union::~
+関数:function::~
+通知0-:notify:通知
+通知0:notification:通知
+遅延:delay::~
+
+例外:exception::~
+内在的:intrinsic::~
+内的:internal::~
+初期化-:initialize:~
+初期値:initial value:~
+取得子:getter::~
+新たな:new::~
+型:type::~
+
+略記:shorthand::~
+発火-:fire::~
+多重定義:overload::~
+失敗-:fail::~
+失敗:failure::~
+成功-:succeed:~
+成功:success:~
+成功裡:successful:~
+注釈文:prose::~
+引数:argument:~
+投出:throw::~
+句:phrase::~::フレーズ
+
+利用者:user::~
+
+完了:completion:~
+完了-:complete:~
+走る:run する:~
+走らせ:run させ:~
+	running
+返値:return value:返り値
+返し:return し:~
+返す:return する:~
+返され:return され:~
+返さな:return しな:~
+返せる:return できる:~
+
+読取る:read する:読み取る
+読取り:reading:読み取り
+書出す:write する:書き出す
+書く:write する:~
+書けば:write すれば:~
+書込み:writing:書き込み
+書かれ:write され:~
+書手:writer:書き手
+
+
+	用意ができた~ready::::
+	~vagaries of clearly manifesting
+否定的:negative:~
+説明0:illustrate:説明
+局面:scenario:~
+明白化-:clear に manifest:~
+加味-:account:~
+作動中の:active な:~
+勧める:advise する:~
+
+請う:ask する:~
+請われ:ask され:~
+欲する:want する:~
+欲して:want して:~
+
+申込める:subscribe できる:~
+申込んで:subscribe して:~
+診る:consult する:~
+診な:consult しな:~
+
+自問-:ask:~
+後続して:successive に:~
+時機:time:~
+転換:turn:~
+
+旧世界:old world:~
+計算:computation:~
+懸念:concern:~
+請求:demand:~
+不許可に:permission を deny:~
+処分済み:disposed:~
+終止:finished:~
+
+叩いた:hit した:~
+役立つ:helpful になる:~
+情報的な:informational:情報を与える
+指図-:instruct:~
+巨大:large:~
+
+load::::ロード
+loaded::load 済み::ロード済み
+未load:unloaded:未 load::未ロード
+再load:reload:~::リロード
+	~re-load:再~load
+	読込み:load:読み込み
+	読込む:load する:読み込む
+	読込まれ:load され:読み込まれ
+	読込済み:loaded:読み込み済み
+	未読込み:unloaded:未読み込み
+	再~load:reload:再読み込み
+
+関係0-:matter:関係
+原型的:prototypical:~
+	~reacting
+
+再設定-:reset:~:::リセット
+	~resolving::::
+配列順序:sequencing:~
+変種:variant:~
+nothing::何も無し
+	一部分:part:~
+仮定-:pretend:~
+blog-post:blog post:ブログ投稿
+微妙:subtle:~
+消費-:consume:~
+使用者:consumer:~
+一助:help:~
+一般化:generalization:~
+一般的:general:~
+	一般的に:in general:~
+不可能:impossible:~
+不在:absence:~
+不正:incorrect:~
+両者:both:~
+中止:abort:~
+主な:primary:~
+主に:primary に:~
+予期-:expect:~
+期待-:expect:~
+事例:case:~
+事由:reason:~
+今や:now:~
+今後の:later:~
+仕方:way:~
+仕様:spec:~
+仕組み:mechanism:~
+	他の:other:~
+付録:appendix:~
+以前:previous:~
+仲介-:mediate:~
+伝播-:propagate:~
+位置:position:~
+	何か:something:~
+	何故なら:because:~
+余分な:extra:~
+作者:author:~
+	例:example:~
+	例えば:for example:~
+例外的:exceptional:~
+供給-:supply:~
+便宜:convenience:~
+保つ:keep する:~
+保存:save:~
+候補:candidate:~
+値:value:~
+側面:aspect:~
+働く:work する:~
+作業:work:~
+働ける:work できる:~
+入力の:incoming:入力された
+入力:input:~
+	入子の:nested:~
+下位手続き:nested steps:~
+全体:entire:~
+全部的:full:~
+公開-:expose:~
+共通的な:common な:よくある
+内側:inside:~
+内容:content:~
+処理-:process:~
+	初回の:initial:~
+
+審判:judgement call:~
+	判定:judgement:~
+別々:separate:~
+別の:another:~
+利用:use:~
+用法:usage:~
+前:before:~
+加えて，:additionally:~
+効果:effect:~
+動作:action:~
+包含-:contain:~
+単独の:single:~
+単純:simple:~
+単純な:simple:~
+	単純に:simply:~
+単純化-:simplify:~
+即時:immediate:~
+
+参照:reference:~
+参照-:refer:~
+	繰返し~recurring::::
+繰返:繰り返
+反映-:reflect:~
+
+取扱い:handling:取り扱い
+	取扱う:handle する:取り扱う
+取扱え:handle でき:取り扱え
+取扱っ:handle し:取り扱っ
+	取扱わ:handle し:取り扱わ
+	取扱われ:handle され:取り扱われ
+	扱-:treat／deal with
+
+含まれ:include され:~
+含む:include する:~
+含め:include し:~
+呼出す:invoke する:呼び出す
+呼出され:invoke され:呼び出され
+呼出して:invoke して:呼び出して
+呼出:invocation:呼び出し
+受信-:receive:~
+受容:accept:~
+iterable:
+	可反復:iterable:~
+可用:available:~
+可能0:possible:可能
+可能性0:possibilities:可能性
+名前:name:~
+回答:answer:~
+型:type:~
+増分的:incremental:~
+壊れた:broken:~
+変換-:convert:~
+変換:conversion:~
+変異:mutation:~
+多義的:ambiguous:~
+	あいまい:ambiguous:~
+
+殆どの:most:ほとんどの
+妥当:valid:~
+	invalid
+孕まれ:involve され:~
+定義-:define:~
+定義:definition:~
+実行-:execute:~
+実行:execution:~
+遂行-:perform:~
+遂行:performing:~
+実装者:implementer:~
+実際:actual:~
+宣言-:declare:~
+容易く:easy に:~
+対応-:correspond:~
+対応0:corresponding:対応する
+導入:introduction:~
+導出-:derive:~
+	少数の:a few:~
+帰結:consequence:~
+常に:always:~
+広範:wide:~
+強い:strong:~
+強いる:force する:~
+形:form:~
+影響0:impact:影響
+役割:role:~
+後:after:~
+	後者:latter:~
+	前者:former:~
+従来の:conventional:~
+必要-:need:~
+	必要とされる:necessary:~
+情報:information:~
+意味-:mean:~
+所属-:belong:~
+手動:manual:~
+手引き:guidance:~
+手続き:steps:~
+技法:technique:~
+抽象化-:abstract-away:~
+拙い:poor:~
+拡張-:extend:~
+指定-:specify:~
+指示-:indicate:~
+	指示するもの
+指示子:indicator:~
+挙動:behavior:ふるまい
+提供-:provide:~
+操作法:manipulating:~
+改変:modifying:~
+改変不可の:un-modifiable:~
+数種の:several:~
+文字列:string:~
+文書:document:~
+文書化-:document 化:~
+方式:manner:~
+方法:how:~
+旧式:legacy:~
+旧来の:legacy:~
+明示的:explicit:~
+更新-:update:~
+最初の:first:~
+第一:first:~
+最大:maximum:~
+	最早:no-longer:~
+最終的:eventual:~
+最終的な:eventual:~
+最終的:eventual:~
+	eventually:~
+有用:useful:~
+望む:wish する:~
+末端利用者:end-user:~
+本質的:essential:~
+格納済み:previously-stored:~
+検出:detection:~
+検知-:detect:~
+取得0:retrieve:取得
+検証-:validate:~
+検証:validation:~
+構築子:constructor::~::コンストラクタ
+有構造clone:structured clone:~:有構造 clone:有構造クローン
+標準の:standard:~
+次回の:next:~
+初回の:initial:~
+正しく:correct に:~
+正確:exact:~
+段:step:~
+注記-:note:~
+	通過:pass
+渡す:pass する:~
+渡され:pass され:~
+渡した:pass した:~
+渡せる:pass できる:~
+
+特有の:specific:~
+特定の:specific:~
+状況:situation:~
+状況下:circumstance:~
+現在の:current:~
+環境:environment:~
+	~appeal to environmental asynchrony
+環境上の:environmental:環境における
+
+	:environmental:~
+非同時性:asynchrony:~
+生じ:occur し:~
+生じる:occur する:~
+生産-:produce:~
+画像:image:~
+直接的:direct:~
+相似:analogy:~
+相似的:analogous:~
+省略-:omit:~
+真:true:~
+移行-:move:~
+稀:rare:~
+空:empty:~
+等価な:equivalent:~
+等価:equivalent:~
+算出-:compute:~
+節:section:~
+簡便:convenient:~
+簡潔:concise:~
+末端利用者:end user:~
+
+組上げる:compose する:組み上げる
+組込みの:built-in:組み込みの
+結付けら:associate さ:結び付けら
+結果:result:~
+結果の:resulting:~
+統一化-:unify:~
+統一的:uniform:~
+統合-:integrate:~
+翻訳-:translate:~
+背景:background:~
+自動的:automatic:~
+表現-:represent:~
+補助的:supporting:~
+複数の:multiple:~
+複雑な:complicated:~
+要約-:summarize:~
+要素:element:~
+要請:request:~
+見なす:consider する:~
+見なさ:consider さ:~
+見出され:found:~
+見出せ:find でき:~
+見出し:heading:~
+観測-:observe:~
+観測可能:observable:~
+解-:understand:~
+言語:language:~
+設計:design:~
+許容-:allow:~
+試みる:attempt する:~
+試みて:attempt して:~
+詳細:details:~
+誘発-:trigger:~
+説明-:explain:~
+論点:discussion:~
+議論:debate:~
+資源:resource::~:リソース
+述べる:describe する:~
+追加-:add:~
+追加の:additional:~
+送受信-:send or receive:~
+通例的:usual:~
+	通例的には:usually:~
+通信-:communicate:~
+通常の:normal:~
+適切:appropriate:~
+適合-:conform:~
+適合性:conformance:~
+適用可能:applicable:~
+遷移:transition:~
+選択:choice:~
+部位:portion:~
+配列:array:~
+重複:duplicate:~
+重要:important:~
+量:amount:~
+開発:development:~
+開発者:developer:~
+関係:relation:~
+閲覧文脈:browsing-context:~
+除いて:except して:~
+集合:set:~
+設定-:set:~
+頁:page:~:::ページ
+高価な:expensive:~
+同じく:~
+連絡先情報:contact:~
+抜出る:exit する:抜け出る
+現実:real-world:~
+正解:right solution:~
+質問:question:~
+念頭:mind:~
+不確かな:sure でない:~
+挿入-:insert:~
+	各:each:~
+	合間:between:~
+	同じ:same:~
+</script>
+
+<!--% 他の語
+末尾側:toward the end
+少しでもremotely
+到来:advent
+自前の:own
+場当たり的:ad-hoc
+~~正確:accurate
+
+について推論:reason about
+取組む:address する:取り組む
+類する:similar:~
+開始ing:starting:~
+関心を持つ／関心がある:interested-in:~
+何でもよい:not relevant:~
+~versus::::
+代わりに:instead:~
+このこと~subject::::
+向けのもの:audience:~
+見よ:see:~
+依然として:still:~
+使い過ぎ:over-using:~
+一つの:one:~
+上:above:~
+下:below:~
+しない方が良い:bad:~
+まずい:bad:~
+与-:give:~
+何度も行われる:iterative:~
+場合によっては:possibly:~
+多い:often:~
+易く:ease:~
+易い
+対照的に:in contrast に:~
+少なくとも:least:~
+次の:following:~
+決して:never:~
+沿う:along:~
+種々の:variety:~
+多くの:many:~
+知る:know する:~
+必ず-:ensure:~
+示す:show する:~
+示され:show され:~
+考える:think する:~
+自身:itself:~
+良い:good:~
+行:line:~
+行われ:done:~
+通:through:~
+~~全体を通して~throughout::
+~stand::::
+~standalone::::
+解ってもらうappeal:~
+~~定式化:encode:~
+~appealing:
+~interesting::::
+~~開始させる~kick off::::
+~large::::
+~allowing:
+~meant::::
+relation to 〜 ~nail down :相対的な時点に確定する
+利用者~~入力を促すときUser interface prompts
+~quite::::
+~reading::::
+使い勝手の良い~nice::::
+注目~notice::::
+	こと~occasion::::
+~old::::
+~once::::
+~potentially::::
+開~opening up
+~passing::::
+OK:
+Once:
+One:
+~against:
+違って~Unlike:
+ありふれている:abound throughout
+傍系として~alongside:
+ちょっとした~aslight:
+〜になる~become／~becoming:
+繊細
+一まとめに~together::::
+二倍:twice
+成す~comprise::::
+~consist::::
+一対一対応:~one-to-one correspondence::::
+とりわけ~especially::::
+それが生じた時点とされる:that eventuality comes to pass
+~~記す~express::::
+更には~furthermore::::
+更なる／更に~further
+得-~get::::
+起こる:happen する:~
+互いに競いながら~test:battle-test
+戻る:back する:~
+戻る:moves backward
+~block
+遮断
+これからは:~going~forward
+念頭に置く~keeping~it~in~mind::::
+
+問い:question:~
+何かを問うもの:question:~
+
+置く~put::::
+互いに合致しない~mismatched::::
+に関してwith~respect~to
+言-~say::::
+散らばる~scattered::::
+関して~regard::::
+返信~replies::::
+~~時間のかかる計算::::long-running computation
+失われる~lost::::
+ほぼ~mostly::::
+すなわち~namely::::
+一連の~series::::
+同様に、~similarly::::
+読み飛ばし:skip し:~
+場所~place::::
+押した:press した:~
+~sure::::
+もの~thing::::
+遂に完成~culminate::::
+について扱う~dealing with::::
+~differing::::
+書式上のもの~form of documentation::::
+一例~draw::::
+
+going:#1
+とてもvery:#5
+non-blocking:blockせずに
+further:#2
+waiting:#1
+
+ある種の:certain class:~
+ひょっとして:perhaps:~
+おそらく:probably:~
+ここ:here:~
+この:this:~
+これらの:these:~
+しかしながら:however:~
+したがって:thus:~
+すでに:already:~
+すべての:all:~
+その:that:~
+それら:they:~
+それらの:their:~
+それらの:those:~
+べきである:should:~
+ほぼ:almost:~
+よくある:commonly-encountered:~
+
+~~十分である~just~fine
+単に~just
+複数回~more~than~once
+特に、~In~particular
+同様に~like::::
+ちょうど同じく~just~like 〜as~well.
+もちろん~of~course
+様な~like
+何かを問うものphrased as a question
+
+注記される~call~out
+通じて~over
+多種多様な~large variety of differing
+あるとする~take
+往復moves back and forth
+成す~consist
+時点~at~the~time
+多種のmany sorts
+
+好例Good cases
+理由~why
+終わりに、To close,
+~take~care〜~advice〜の原則が守られる
+表す~stand~s~in~for
+
+-->
+<!--%style  -->
+<style>
+.comment {
+	font-family: serif0, serif;
+	color: green;
+	white-space: normal;
+}
+
+q {
+	display: block;
+	margin: 0.6em 0.6em 0.6em 2em;
+	text-decoration: underline;
+}
+
+var {
+	font-family: serif0, serif;
+}
+
+b {
+	color: black;
+}
+
+i {
+	text-decoration: underline;
+}
+
+.event-type {
+	color: purple;
+}
+
+.es {
+	color: #041;
+}
+
+.literal {
+	color: gray;
+}
+
+/* 例／注記 */
+.note, .example {
+	padding: .5em;
+	/* padding: .5rem; /* proposed unit in css3-values */
+	border-width: .5em;
+	/* border-left-width: .5rem; /* proposed unit in css3-values */
+	border-style: none none none solid;
+}
+
+/* Example box */
+.example {
+	border-color: #E0CB52;
+	background: #FCFAEE;
+}
+
+/* Examples */
+.example > pre {
+	background: #FCFADC;
+}
+
+.note {
+	border-color: #52E052;
+	background: #E9FBE9;
+}
+
+
+</style>
+<!-- 
+code {
+	background: #F0F0F0;
+}
+-->
+
+</head>
+
+<body>
+
+
+<div style="display:none;">
+<input type="hidden" id="_page_config" value="" />
+</div>
+
+<aside class="trans-meta">
+<h1>Writing Promise-Using Specifications 日本語訳</h1>
+<p>
+<a id="_THIS_PAGE">このページ</a>
+は、
+<a href="http://www.w3.org/">W3C</a> により，副題の日付にて公開された
+<a href="http://www.w3.org/2001/tag/doc/promises-guide">Writing Promise-Using Specifications</a>
+
+を日本語に翻訳したものです。
+<strong >この翻訳の正確性は保証されません。</strong>
+この仕様の公式な文書は英語版であり、この日本語版は公式のものではありません。
+【 と 】で囲まれた部分は<span class="trans-note">【訳者による注釈】</span>です。
+（<a href="index.html">他のウェブ関連仕様の一覧と共通機能の詳細</a>）
+</p>
+
+<p >
+更新：<time>2016-04-14</time>
+（公開：<time>2015-01-12</time> ）
+</p>
+
+<p >
+このページの大部分はスクリプトにより生成されています（
+古いブラウザなど，一部のブラウザには対応していません：
+<span id="_GENERATING"></span>）。
+</p>
+
+<p>
+本文ダブルクリックで当該箇所の原文が表示されます（左下隅に各種 表示切替ボタン — CSS や DOM の対応が古いブラウザでは、一部機能しないことがあります）。
+</p>
+
+<address id="_CONTACT">　</address>
+</aside>
+
+
+<header>
+
+<h1 id="title" title="Writing Promise-Using Specifications">Promise を利用する仕様を書くとき — Writing Promise-Using Specifications</h1>
+<h2 id="subtitle" title="A Collection of Interesting Ideas">様々なアイデア集,  2016 年 2 月 16 日</h2>
+
+<dl>
+	<dt title="Editor:">編集</dt>
+	<dd class="editor">
+<a href="https://domenic.me/">Domenic Denicola</a> (Google)
+<a href="mailto:d@domenic.me">d@domenic.me</a>
+</dd>
+	<dt>Participate:</dt>
+	<dd><a href="https://github.com/w3ctag/promises-guide">GitHub w3ctag/promises-guide</a> (<a href="https://github.com/w3ctag/promises-guide/issues/new">file an issue</a>; <a href="https://github.com/w3ctag/promises-guide/issues?state=open">open issues</a>)</dd>
+</dl>
+
+<small class="copyright">
+<a href="http://creativecommons.org/publicdomain/zero/1.0/" rel="license">CC0</a>
+<!-- 
+<img alt=CC0 src=https://i.creativecommons.org/p/zero/1.0/80x15.png>
+-->
+To the extent possible under law, the editors have waived all copyright and related or neighboring rights to this work.
+In addition, as of 16 February 2016, the editors have made this specification available under the
+<a href="http://www.openwebfoundation.org/legal/the-owf-1-0-agreements/owfa-1-0" rel="license">Open Web Foundation Agreement Version 1.0</a>,
+which is available at http://www.openwebfoundation.org/legal/the-owf-1-0-agreements/owfa-1-0.
+Parts of this work may be from another specification document.
+If so, those parts are instead covered by the license of that specification document.
+</small>
+</header>
+
+	<section id="abstract">
+<h2 title="Abstract">要約</h2>
+
+<p>
+この文書は、promise を［
+作成する／
+受容する／
+操作する
+］ような仕様を書くための手引きを与える。
+また、 promise を利用する仕様を記すときに 注釈文にて利用できる，一連の略記法についても述べる。
+<span lang="en">
+This document gives guidance on how to write specifications that create, accept, or manipulate promises. It also includes a series of prose shorthands you can use in your specification to work with promises.
+</span></p>
+
+	</section>
+
+
+<nav id="contents" class="toc">
+<h2 title="Table of Contents">目次</h2>
+<ol id="_toc_list0"></ol></nav>
+
+
+<main id="MAIN" style="display: none;">
+
+	<section id="intro">
+<h2 title="Introduction">1. 序論</h2>
+
+<p>
+<em>~promise</em>
+（ “約束” ）とは、［
+単独の非同期的な演算
+］の最終的な結果を表現する，~objである。
+それは，非同期的な関数からも返し得るので、使用者は，演算が成功した／失敗したときに~callされるような~callbackを待入することのみならず、返された~promise~objを操作して，様々な~~分岐の可能性0を開けるようになる。
+◎
+A promise is an object that represents the eventual result of a single asynchronous operation. They can be returned from asynchronous functions, thus allowing consumers to not only queue up callbacks to be called when the operation succeeds or fails, but also to manipulate the returned promise object, opening up a variety of possibilities.
+</p>
+
+<p>
+~promiseは、
+Dojo, jQuery, YUI, Ember, Angular, WinJS, Q, その他諸々の，~popularな~frameworkの一部分も含め，多くの JavaScript ~library間で互いに競いながら~testされてきた。
+これは、遂には
+<a href="http://promisesaplus.com/">Promises/A+ ~community仕様</a>
+【<a href="Promises_Aplus-ja.html" >和訳</a>】
+として完成され、殆どの~libraryはそれに適合している。
+今や、標準の `Promise^c ~classが
+<a href="~ES6#sec-promise-objects">ECMAScript の次の~version</a>
+`ECMASCRIPT$r に含まれ、各種~web~platform~APIは，それら非同期的な演算のための~promiseを返せるようになっている。
+◎
+Promises have been battle-tested in many JavaScript libraries, including as part of popular frameworks like Dojo, jQuery, YUI, Ember, Angular, WinJS, Q, and others. This culminated in the Promises/A+ community specification which most libraries conformed to. Now, a standard Promise class is included in the next version of ECMAScript [ECMASCRIPT], allowing web platform APIs to return promises for their asynchronous operations.
+</p>
+
+<p>
+~promiseは今や、すべての “~one-and-done” 非同期的な演算のための，~web~platformにおける~paradigmである。
+以前まで、仕様は，~such演算のために，互いに合致しない 種々の仕組みを利用していた。
+これからは、この型のすべての非同期的な演算は，代わりに~promiseを返すように指定されるべきである
+— ~platformに，非同期性のための統一化された~primitiveを与えるために。
+◎
+Promises are now the web platform’s paradigm for all "one and done" asynchronous operations. Previously, specifications used a variety of mismatched mechanisms for such operations. Going forward, all asynchronous operations of this type should be specified to instead return promises, giving our platform a unified primitive for asynchronicity.
+</p>
+
+<p class="note">
+この文書は主に，仕様の書手たちに向けたのものであるが、~promiseを利用する
+~library／~app
+を書く JavaScript 開発者にとっても有用になる。
+特に仕様の書手~向けの節は、開発者が読み飛ばし易くするため，その旨が注記される。
+◎
+Although the primary audience of this document is specification writers, it is also useful for JavaScript developers who want to write libraries or applications using promises. We will call out sections that are spec-writer specific so developers can skip them more easily.
+</p>
+
+
+	</section>
+	<section id="when-to-use">
+<h2 title="When to Use Promises">2. ~promiseをいつ利用するか</h2>
+
+
+
+		<section id="one-and-done">
+<h3 title="One-and-Done Operations">2.1. ~one-and-done演算</h3>
+
+<p>
+~promiseは、主に，［［［
+単独の非同期的な演算
+］を~~開始させる~method
+］から，返されるもの
+］として利用される。
+~promiseを返す関数は、通常の同期的な関数とは対照的に，非同期的な関数†として考えるべきである
+— ここには とても強い相似があることを念頭に置いておけば、~such関数を書いたり, それについて推論するのも 容易くなる。
+◎
+The primary use case for promises is returning them from a method that kicks off a single asynchronous operation. One should think of promise-returning functions as asynchronous functions, in contrast to normal synchronous functions; there is a very strong analogy here, and keeping it in mind makes such functions easier to write and reason about.
+</p>
+
+<p>
+例えば：
+通常の同期的な関数は、値を返すか, または 例外を投出する。
+相似的に、非同期的な関数†は，［
+ある値により充足されるか, または
+ある事由により却下される
+］ような，~promiseを返すことになる。
+同期的な関数が “~nothing”（すなわち， `undefined^es ）を返し得るのとちょうど同じく、非同期的な関数から返される~promiseも，~nothing（ `undefined^es ）で充足し得る
+— この事例においては、~promiseの充足は，単純に非同期的な演算の完了を通知する。
+【† より詳しく述べるなら、非同期的な演算を “包装する” 関数 — “その実行を<em>約束する</em> ~promise~objとして即時に（同期的に）返すような関数” の略記。】
+◎
+For example, normal synchronous functions can either return a value or throw an exception. Asynchronous functions will, analogously, return a promise, which can either be fulfilled with a value, or rejected with a reason. Just like a synchronous function that returns "nothing" (i.e. undefined), promises returned by asynchronous functions can be fulfilled with nothing (undefined); in this case the promise fulfillment simply signals completion of the asynchronous operation.
+</p>
+
+<p>
+~such非同期的な演算の例は、各種~web仕様にありふれている
+— ~promiseの仕組みにより：
+◎
+Examples of such asynchronous operations abound throughout web specifications:
+</p>
+
+<ul>
+
+	<li>
+非同期的な I/O 演算：
+~storage~APIにより~dataを 読取る／書出す ~methodは、~promiseを返せるようになる。
+◎
+Asynchronous I/O operations: methods to read or write from a storage API could return a promise.
+</li>
+
+	<li>
+非同期的な~network演算：
+~networkを通じて~dataを送受信する~methodは、~promiseを返せるようになる。
+◎
+Asynchronous network operations: methods to send or receive data over the network could return a promise.
+</li>
+
+	<li>
+~~時間のかかる計算：
+何かを算出するために ある程度時間を~~要する~methodは、結果<!---->のための~promiseを返した上で，別の~thread上で働けるようになる。
+◎
+Long-running computations: methods that take a while to compute something could do the work on another thread, returning a promise for the result.
+</li>
+
+	<li>
+利用者に~~入力を促すとき：
+利用者に回答を請う~methodは、~promiseを返せるようになる。
+◎
+User interface prompts: methods that ask the user for an answer could return a promise.
+</li>
+</ul>
+
+<p>
+以前までは、~web仕様は，非同期的な演算のために，多種多様な~patternを利用していた。
+これらは，
+<a href="#legacy">後述の付録</a>
+にて文書化されているので、何が今や旧式と見なされているかについての~ideaを得られる。
+今や、~platform~primitiveとして，~promiseがある
+— ~such~approachは最早~必要とされない。
+◎
+Previously, web specifications used a large variety of differing patterns for asynchronous operations. We’ve documented these in an appendix below, so you can get an idea of what is now considered legacy. Now that we have promises as a platform primitive, such approaches are no longer necessary.
+</p>
+
+		</section>
+		<section id="one-time-events">
+<h3 title="One-Time &quot;Events&quot;">2.2. 一度限りの “~event”</h3>
+
+<p>
+~promiseは、すでに
+充足された／却下された
+後でも，
+【まだ処理が終わっていないかのように，その結果について通知を受けることを】
+申込めるので、ある種の “~event” においては，とても有用になり得る。
+一度だけ起こるものであって，作者が すでに生じた後にも その~statusを観測したいと欲することが多いとき、［
+充足されたのは，それが生じた時点とされる
+］ような~promiseを提供することは、とても簡便な~APIを与える。
+◎
+Because promises can be subscribed to even after they’ve already been fulfilled or rejected, they can be very useful for a certain class of "event." When something only happens once, and authors often want to observe the status of it after it’s already occurred, providing a promise that becomes fulfilled when that eventuality comes to pass gives a very convenient API.
+</p>
+
+<p>
+~such “~event” の原型的な例として、~loadedかどうかを指示するものが挙げられる：
+画像, ~font, あるいは文書などの資源でさえ、［［
+資源が全部的に~loadされたときにのみ，充足済みになる（あるいは，資源の~load時に~errorが~~生じたときは却下済みになる）
+］ような~promise
+］を返すような， `loaded^c ~propertyを提供し得る。
+作者は常に、
+`resource.loaded.then(onLoaded, onFailure)^c
+と記すことで，［
+資源の用意ができ次第，実行されることになる
+］ような動作を待入される。
+これは、［
+資源がすでに~loadされていたときでも，
+`onLoaded^v を実行する~microtaskを待入する
+］ように，働く。
+対照的に，~event~modelでは、［
+~eventが発火された時点で，作者がまだ申込んでいない場合
+］には、その情報は失われる。
+◎
+The prototypical example of such an "event" is a loaded indicator: a resource such as an image, font, or even document, could provide a loaded property that is a promise that becomes fulfilled only when the resource has fully loaded (or becomes rejected if there’s an error loading the resource). Then, authors can always queue up actions to be executed once the resource is ready by doing resource.loaded.then(onLoaded, onFailure). This will work even if the resource was loaded already, queueing a microtask to execute onLoaded. This is in contrast to an event model, where if the author is not subscribed at the time the event fires, that information is lost.
+</p>
+
+
+
+		</section>
+		<section id="state-transitions">
+<h3 title="More General State Transitions">2.3. より一般的な，状態~遷移</h3>
+
+<p>
+ある種の事例においては、~promiseは、［
+状態~遷移を通知するための一般的な仕組み
+］として，有用になり得る。
+この用法には微妙な所があるが、正しく行われたなら、使用者にとって，とても使い勝手の良い~APIを提供できる。
+◎
+In certain cases, promises can be useful as a general mechanism for signaling state transitions. This usage is subtle, but can provide a very nice API for consumers when done correctly.
+</p>
+
+<p>
+この~patternは、一度限りの “~event” 利用~事例の一般化と考えられる。
+例えば、いくつかの `&lt;img&gt;^c 要素があるとする。
+それらは、 `src^c ~propertyを再設定することにより，再~loadさせられる
+— すなわち，それらの状態は、 `~loaded^i から `未load^i へ戻るようにも遷移し得る。
+したがって、 `~loaded^i になることは，一度限りではない：
+代わりに、画像は，実際には［
+`~loaded^i,  `未load^i の状態を往復する
+］ような状態~machineを成す。
+~such局面においては、それぞれの画像に［
+~promiseを返す `loaded^c ~property
+］を与えることが，依然として有用になる
+— それは、次回の［
+`~loaded^i 状態へ移行する状態~遷移
+］を通知する（あるいは、画像がすでに `~loaded^i 状態にあるならば，すでに充足済みにある~promiseを返す）。
+この~propertyは、画像が `~loaded^i 状態から `未load^i 状態へ戻るまでは、取得0される度に，同じ~promiseを返すべきである。
+`未load^i 状態へ戻ったなら、<em>次回の</em>  `~loaded^i への遷移を表現するような，新たな~promiseが作成される。
+◎
+One can think of this pattern as a generalization of the one-time "events" use case. For example, take &lt;img&gt; elements. By resetting their src property, they can be re-loaded; that is, they can transition back from a loaded state to an unloaded state. Thus becoming loaded is not a one-time occasion: instead, the image actually consists of a state machine that moves back and forth between loaded and unloaded states. In such a scenario, it is still useful to give images a promise-returning loaded property, which will signal the next state transition to a loaded state (or be already fulfilled if the image is already in a loaded state). This property should return the same promise every time it is retrieved, until the image moves backward from the loaded state into the unloaded state. Once that occurs, a new promise is created, representing the next transition to loaded.
+</p>
+
+<p>
+`~loaded^i へ遷移し得る資源のみならず、~platformにおいて これが有用になり得る，多くの場面がある
+— 例えば：
+`終止^i へ遷移し得る~animation ／
+`処分済み^i へ遷移し得る高価な資源 ／
+`未load^i になり得る~cache
+など。
+◎
+There are many places in the platform where this can be useful, not only for resources which can transition to loaded, but e.g. for animations that can transition to finished, or expensive resources that can transition to disposed, or caches that can become unloaded.
+</p>
+
+<p>
+この~patternのちょっとした変種は、ある~classが［
+状態を遷移させるような~method
+］を包含していて，その策定者が［
+その状態~遷移が完了したときに，それを指示させたい
+］と欲しているときに生じる。
+その事例においては、［
+その~methodが~promiseを返すようにする
+］ことができる
+— その~classの~obj上の~propertyに指示させる代わりに。
+`Streams API$ は、その `wait()^c ／ `close()^c ~methodに対し，この変種を利用する。
+一般的に、~methodは動作のために, ~propertyは情報的な状態~遷移のために，利用されるべきである。
+◎
+A slight variant of this pattern occurs when your class contains a method that causes a state transition, and you want to indicate when that state transition completes. In that case you can return a promise from the method, instead of keeping it as a property on your object. The streams API uses this variant for its wait() and close() methods. In general, methods should be used for actions, and properties for informational state transitions.
+</p>
+
+<p>
+終わりに、この~patternの使い過ぎに注意。
+あらゆる状態~遷移が，対応0~promiseの~propertyを必要とするわけではない。
+有用であろう指示子には、次のものが含まれる：
+◎
+To close, we must caution against over-using this pattern. Not every state transition needs a corresponding promise-property. Indicators that it might be useful include:
+</p>
+
+<ul>
+
+	<li>
+作者は、ほぼ常に，その状態~遷移の<em>次の</em>~instanceに関心があるのであって、遷移が生じる度に繰返し通知0を必要とすることは，稀である。
+例えば、作者は，画像~要素が再loadされる度に それを知りたいと望むことは稀にしかない
+— 通例的には、単純に，画像の初回の~load, 場合によっては
+その `src^c を再設定した後に生じる次回の~loadに限られる。
+◎
+Authors are almost always interested in the next instance of that state transition, and rarely need recurring notification every time it occurs. For example, rarely do authors care to know every time an image element is reloaded; usually they simply care about the initial load of the image, or possibly the next one that occurs after resetting its src.
+</li>
+
+	<li>
+作者が関心を持つのは、すでに生じた遷移に反応することであることが多い。
+例えば作者は、［
+画像が~loadされたとき, あるいは
+画像がすでに~loadされていた場合は可能0な限り早くに，何らかの~codeを走らせたい
+］と欲することが多い。
+◎
+Authors are often interested in reacting to transitions that have already occurred. For example, authors often want to run some code once an image is loaded; if the image is already loaded, they want to run the code as soon as possible.
+</li>
+</ul>
+
+
+
+		</section>
+	</section>
+	<section id="when-not-to-use">
+<h2 title="When Not to Use Promises">3. ~promiseを利用すべきでないとき</h2>
+
+<p>
+~promiseは、多種の非同期的な演算に対し，広範に適用可能であるが、非同期性のためであっても，依然として適切でない状況はある。
+◎
+Although promises are widely applicable to asynchronous operations of many sorts, there are still situations where they are not appropriate, even for asynchronicity.
+</p>
+
+
+
+		<section id="recurring-events">
+<h3 title="Recurring Events">3.1. 繰返される~event</h3>
+
+<p>
+複数回~生じ得るような どの~eventも、~promiseの “~one-and-done” ~modelに対する良い候補にはならない。
+~promiseに対し、代わりに一連の~eventを表現するような，単独の非同期的な演算はない。
+ここでは、従来の `EventTarget^c の用法で~~十分である。
+◎
+Any event that can occur more than once is not a good candidate for the "one and done" model of promises. There is no single asynchronous operation for the promise to represent, but instead a series of events. Conventional EventTarget usage is just fine here.
+</p>
+
+
+
+		</section>
+		<section id="streaming-data">
+<h3 title="Streaming Data">3.2. ~streaming~data</h3>
+
+<p>
+~dataが巨大にもなることもあって, 増分的に生産し得るものである場合、~promiseはおそらく，正解ではない。
+代わりに、開発~下にある `Streams API$ を利用したいと欲するであろう
+— それは、作者が，~data~streamを［
+その内容~全体を~memory内に~bufferすることなく処理して，増分的に組上げる
+］ことを~~可能にする。
+◎
+If the amount of data involved is potentially large, and could be produced incrementally, promises are probably not the right solution. Instead, you’ll want to use the under-development streams API, which allows authors to process and compose data streams incrementally, without buffering the entire contents of the stream into memory.
+</p>
+
+<p>
+注記：
+すべての~dataが~memory内に~bufferされても懸念にならないような事例に対しては、便宜のため，Streams API の傍系として~promise~APIを提供できる場合もあるが、あくまで補助的な役割になるであろう。
+◎
+Note that in some cases, you could provide a promise API alongside a streaming API, as a convenience for those cases when buffering all the data into memory is not a concern. But this would be a supporting, not primary, role.
+</p>
+
+
+
+		</section>
+	</section>
+	<section id="api-design-guidance">
+<h2 title="API Design Guidance">4. ~API設計の手引き</h2>
+
+<p>
+仕様の~APIにおいて~promiseを利用したり受容することには、少数の微妙な側面がある。
+ここでは、よくある質問や状況に取組む。
+◎
+There are a few subtle aspects of using or accepting promises in your API. Here we attempt to address commonly-encountered questions and situations.
+</p>
+
+
+
+		<section id="errors">
+<h3 title="Errors">4.1. ~error</h3>
+
+			<section id="always-return-promises">
+<h4 title="Promise-Returning Functions Should Always Return Promises">4.1.1. ~promiseを返す関数は，常に~promiseを返すべきである</h4>
+
+<p>
+~promiseを返す関数は、すべての状況下で，常に~promiseを返すべきである
+— 結果が同期的に可用であっても, あるいは
+入力が妥当でないことを同期的に検知し得るとしても、この情報は，統一的な~channelを通して通信される必要がある。
+開発者が次のように書けば：
+◎
+Promise-returning functions should always return a promise, under all circumstances. Even if the result is available synchronously, or the inputs can be detected as invalid synchronously, this information needs to be communicated through a uniform channel so that a developer can be sure that by doing
+</p>
+
+<pre class="lang-javascript">
+promiseFunction()
+  .then(`onSuccess^v)
+  .catch(`onFailure^v);
+</pre>
+
+<p>
+すべての成功／~errorを取扱えるようにするため。
+◎
+they are handling all successes and all errors.
+</p>
+
+<p>
+特に，~promiseを返す関数は、決して，~errorを同期的に投出するべきでない
+— そうすると、その使用者に~error取扱い~logicの重複を強いることになるので：
+<code>catch (`e^v) { ... }</code>
+~block内に一つ,
+<code>.catch(`e^v 射 { ... })</code>
+~block内にもう一つ。
+引数を検証する際に~errorになるときでも、すべての~errorは、却下済み~promiseを返すことにより，通知されるべきである。
+◎
+In particular, promise-returning functions should never synchronously throw errors, since that would force duplicate error-handling logic on the consumer: once in a catch (e) { ... } block, and once in a .catch(e =&gt; { ... }) block. Even argument validation errors are not OK. Instead, all errors should be signaled by returning rejected promises.
+</p>
+
+<p class="trans-note">【
+記法
+<code>`args^v `射@ `code^v</code>
+は、 `args^v を入力に `code^v を実行する無名~関数の略記（
+<a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/arrow_functions">arrow function</a>
+）。
+】</p>
+
+<p>
+WebIDL ~based仕様については、この~~原則は
+<a href="~WEBIDL#es-operations">WebIDL 仕様により</a>
+自動的に守られる：
+WebIDL の［
+`演算$や, `多重定義~解決~algo$自身
+］により投出される，どの例外も、自動的に 却下に変換される。
+手動により検証する方法の例は、後述の
+<a href="#example-validated-delay">`validatedDelay^c 例</a>
+を見よ。
+◎
+For WebIDL-based specs, this is taken care of automatically by the WebIDL specification: any exceptions thrown by WebIDL operations, or by the WebIDL overload resolution algorithm itself, are automatically converted into rejections. For an example of how to do manual validation, see the validatedDelay example below.
+</p>
+
+
+
+			</section>
+			<section id="reasons-should-be-errors">
+<h4 title="Rejection Reasons Should Be Errors">4.1.2. 却下~事由は `Error^c にするべきである</h4>
+
+<p>
+~promiseの却下~事由は、常に
+ECMAScript `Error^c 型の~instanceにされるべきである
+— 同期的に投出される例外が、常に `Error^c の~instanceにされるべきであることと，ちょうど同様に。
+◎
+Promise rejection reasons should always be instances of the ECMAScript Error type, just like synchronously-thrown exceptions should always be instances of Error as well.
+</p>
+
+<p>
+特に，~DOMや他の~web~platform仕様においては、このことは、
+`DOMError^c を決して利用せず，代わりに［
+<a href="~WEBIDL#es-exceptions">WebIDL により</a>
+拡張された `Error^c である， `DOMException$c
+］が利用されるべきであることを意味する。
+もちろん、
+<a href="~ES6#sec-error-objects">組込みの ECMAScript ~error型</a>
+も利用できる。
+◎
+In particular, for DOM or other web platform specs, this means you should never use DOMError, but instead use DOMException, which per WebIDL extends Error. You can of course also use one of the built-in ECMAScript error types.
+</p>
+
+
+
+			</section>
+			<section id="rejections-should-be-exceptional">
+<h4 title="Rejections Should Be Used for Exceptional Situations">4.1.3. 却下は、例外的な状況に対し利用されるべきである</h4>
+
+<p>
+正確に何を以って “例外的” と見なすかは，議論になるのが常だが、
+~API仕様において~promiseを`却下する$ことにする前に，常に自問するべきである：
+この関数が同期的であったとするとき、この状況下で，例外の投出-を期待するだろうか？
+あるいは，（ `null^es, `false^es, `undefined^es のような）失敗~値を期待するだろうか？
+~APIの使用者にとっては，いずれの挙動がより有用になるか？について、考えるべきである。
+不確かなときは、~APIが同期的であると仮定した下で，開発者たちが例外の投出を期待するかどうか、考えるべきである。
+◎
+What exactly you consider "exceptional" is up for debate, as always. But, you should always ask, before rejecting a promise: if this function was synchronous, would I expect a thrown exception under this circumstance? Or perhaps a failure value (like null, false, or undefined)? You should think about which behavior is more useful for consumers of your API. If you’re not sure, pretend your API is synchronous and then think if your developers would expect a thrown exception.
+</p>
+
+<p>
+却下が~~適切になる事例には、次がある：
+◎
+Good cases for rejections include:
+</p>
+
+<ul>
+
+	<li>
+~storageへの書込みや~networkからの読取りなどの I/O 演算に失敗したとき。
+◎
+A failed I/O operation, like writing to storage or reading from the network.
+</li>
+
+	<li>
+要請された~taskを完了させることが不可能なとき：
+例えば、演算が
+`accessUsersContacts()^c
+【“利用者の連絡先情報に~accessする”】
+であって，利用者が不許可にしたなら、却下済み~promiseを返す†べきである。
+◎
+When it will be impossible to complete the requested task: for example if the operation is accessUsersContacts() and the user denies permission, then it should return a rejected promise.
+</li>
+
+	<li>
+非同期的な演算を試みている間に，内的に何かが壊れているような状況：
+例えば、開発者から妥当でない~dataが渡された, あるいは
+環境がこの演算に対し妥当でない状態にあるなど。
+◎
+Any situation where something is internally broken while attempting an asynchronous operation: for example if the developer passes in invalid data, or the environment is in an invalid state for this operation.
+</li>
+</ul>
+
+<p class="trans-note">【†
+“却下済み~promiseを返す” →
+非同期的なので、~~正確には，
+“返した~promiseを却下する”
+と記すべきように思われる（［
+予め不許可にするように環境設定されている
+］ならば、却下済みとして返し得るであろうが）。
+他も同様。
+】</p>
+
+
+<p>
+却下が~~不適切になる事例には、次がある：
+◎
+Bad uses of rejections include:
+</p>
+
+<ul>
+
+	<li>
+非同期的に請われた値を，見出せなかったとき：
+例えば，
+【“非同期的な map” asyncMap があるとして，】
+<!-- 
+maplike
+-->
+`asyncMap.get(key)^c は、 `key^v に対する~entryがないときは，
+`undefined^es に対する~promiseを返すべきである。
+同様に、 `asyncMap.has(key)^c は， `false^es に対する~promiseを返すべきである。
+`key^v の不在は，例外的でないであろうから、却下済み~promiseを返すのは，拙い選択になるであろう。
+◎
+When a value is asked for asynchronously and is not found: for example asyncMap.get("key") should return a promise for undefined when there is no entry for "key", and similarly asyncMap.has("key") should return a promise for false. The absence of "key" would be unexceptional, and so a rejected promise would be a poor choice.
+</li>
+
+	<li>
+演算は何かを問うものであり, その回答が否定的になるとき：
+例えば演算が
+`hasPermissionToAccessUsersContacts()^c
+【“利用者の連絡先情報への~accessは許可されているか？”】
+であって，利用者が不許可にしたときは、`却下する$のでなく，
+`false^es で充足された~promiseを返すべきである。
+◎
+When the operation is phrased as a question, and the answer is negative: for example if the operation is hasPermissionToAccessUsersContacts() and the user has denied permission, then it should return a promise fulfilled with false; it should not reject.
+</li>
+</ul>
+
+<p>
+審判が必要とされるような事例には、次がある：
+◎
+Cases where a judgement call will be necessary include:
+</p>
+
+<ul>
+
+	<li>
+問いなのか請求なのかについて、より あいまいな~API：
+例えば `requestUsersContacts()^c 
+【“連絡先情報の~~入力を要請する”】
+は、利用者が不許可にしたとき，
+`null^es で充足された~promiseを返すことも，あるいは［
+利用者が不許可にしたことを明言する~error
+］で却下された~promiseを返すことも考え得る。
+◎
+APIs that are more ambiguous about being a question versus a demand: for example requestUsersContacts() could return a promise fulfilled with null if the user denies permission, or it could return a promise rejected with an error stating that the user denied permission.
+</li>
+</ul>
+
+
+
+			</section>
+		</section>
+		<section id="async-algorithms">
+<h3 title="Asynchronous Algorithms">4.2. 非同期的な~algo</h3>
+
+<p class="note">
+この節は、主に仕様の書手~向けである。
+ここでは、注釈文において，非同期的な~algo~flowを明白化するときの~vagariesについて扱う。
+これについての背景は、
+<a href="https://annevankesteren.nl/2014/08/asynchronicity">非同期性についての Anne 氏の~blog-post</a>
+†を見よ。
+【† 要約：非同期に実行される~algoの中で，不用意に大域的な~propertyを汚すと、並列的に実行されている JavaScript ~codeの信頼性を確保できなくなる。】
+◎
+This section is primarily for spec writers, dealing with the vagaries of clearly manifesting asynchronous algorithm flow in prose. For more background on this subject, see Anne’s blog post on asynchronicity.
+</p>
+
+
+
+			<section id="simply-resolve-or-reject">
+<h4 title="Simply Resolve or Reject the Promise">4.2.1. ~promiseを単純に解決する／却下するとき</h4>
+
+<p>
+~callbackの旧世界と違って、
+成功, ~error
+それぞれの事例に対し，別々の~callback型を（例えば WebIDL において）作成する必要はない。
+代わりに，単に~promiseを
+`解決する$／`却下する$
+だけでよい。
+◎
+Unlike in the old world of callbacks, there’s no need to create separate callback types (e.g. in WebIDL) for your success and error cases. Instead, just resolve or reject your promise.
+</p>
+
+
+
+			</section>
+			<section id="explicit-async-steps">
+<h4 title="Note Parallel Steps Explicitly">4.2.2. 並列的な手続きを明示的に注記する</h4>
+
+<p>
+仕様の~algo内のどの手続きが，作者の JavaScript ~codeと並列的に走るか
+— すなわち，~script実行を~blockしないことになるか —
+について注記することは、重要である。
+これは、~algoの実装者に［
+どの演算が，例えば~background~threadや非同期的な I/O ~callを利用する必要があるか
+］について指図する。
+また、作者たちにとっては，［
+~algoの演算に関して <em>彼らの</em>演算に期待されている配列順序
+］を知る一助になる。
+そのためには、 `HTML$r の “`並列的$に” という句を利用する。
+◎
+It is important to note which steps in your algorithms will be run in parallel with the author’s JavaScript code, i.e. without blocking script execution. This instructs implementers as to which operations will need to use e.g. a background thread or asychronous I/O calls. And it helps authors to know the expected sequencing of their operations with respect to those of your algorithm. To do this, use the phrase in parallel from [HTML].
+</p>
+
+<p>
+例として、次の手続きは、 `ms^v ~ms後に`解決され$る~promiseを与える：
+◎
+As an example, the following steps will give a promise that is resolved after ms milliseconds:
+</p>
+
+<ol>
+
+	<li>
+`p^v ~LET `新たな~promise$
+◎
+Let p be a new promise.
+</li>
+
+	<li>
+<p>
+次の手続きを`並列的$に走らせる：
+◎
+Run the following steps in parallel:
+</p>
+		<ol>
+			<li>
+`ms^v ~ms待機する
+◎
+Wait ms milliseconds.
+</li>
+
+			<li>
+`undefined^es で `p^v を`解決する$。
+◎
+Resolve p with undefined.
+</li>
+		</ol>
+	</li>
+
+	<li>
+~RET `p^v 【 上の下位手続きが終わるのを待たずに】
+◎
+Return p.
+</li>
+</ol>
+
+<p>
+“並列的に走らせる”
+の見出しを省略したなら、~algoは，実装者に［
+~main~threadを `ms^v ~ms間~blockする
+］ように指図することになり、とてもまずい！
+<!-- 
+書かれたなら、この~algoは，~blockせずに正しく待機することを述べる。
+ -->
+◎
+If we had omitted the "Run the following steps in parallel" heading, then the algorithm would have instructed implementers to block the main thread for ms milliseconds, which is very bad! Whereas as written, this algorithm correctly describes a non-blocking wait.
+</p>
+
+
+
+			</section>
+			<section id="queue-tasks">
+<h4 title="Queue Tasks to Invoke Developer Code">4.2.3. 開発者~codeを呼出す~taskは待入する</h4>
+
+<p>
+~promiseは、非同期~演算について開発者に通知0することに関して，多くの詳細を抽象化する。
+例えば、
+<q>`x^v を引数に，~callback `cb^v を~callする`~taskを待入する$</q>
+と記す代わりに、
+<q>`x^v で `p^v を`解決する$</q>
+と記すことができる
+— そうすれば、［
+それが通常の~promiseの仕組みを利用することになる
+］と解されるようになる（すなわち，開発者は、~promiseの `then^c ~methodに~callbackを渡すことにより、その<!-- 決着＊ --> 充足／却下 を待機できる
+— それは，次回の~microtaskにおいて それらの~callbackを~callすることになる）。
+なので、~promise~based非同期的な~algoの内側では、殆どの事例において，明示的に~taskを待入するように記す必要はなくなる。
+◎
+Promises abstract away many of the details regarding notifying the developer about async operations. For example, you can say "resolve p with x" instead of e.g. "queue a task to call the callback cb with x," and it’s understood that this will use the normal promise mechanisms. (Namely, the developer can wait for fulfillment or rejection by passing callbacks to the promise’s then method, which will call those callbacks in the next microtask.) So in most cases, you will not need to explicitly queue tasks inside your promise-based asynchronous algorithms.
+</p>
+
+<p>
+しかしながら、［
+~promiseが仲介し得るものを超える仕方で，開発者~codeと応接する必要がある所
+］では、依然として，~taskを待入するように記す必要がある。
+例えば、［
+開発者による~event~handlerの中へ~callし得る
+］ような~eventを，発火させたいと欲することもあろう。
+あるいは、有構造clone演算を遂行する必要があるかもしれない
+— それは、
+<a href="http://lists.w3.org/Archives/Public/public-webcrypto/2014Mar/0141.html">取得子を誘発し得る</a>
+【要約： Object.defineProperty で設定された get を誘発し得る — すなわち，これも開発者~codeを~callし得る】
+。
+これらが，~algoの非同期的な部位の内側で行われなければならない場合、［
+特定の~task待行列を介して, および それに入れられる~taskにより，行われる
+］ことを指定する必要がある。
+これは、［
+~such~APIの開発者から観測可能な演算が起こる，正確な時機
+］を，［
+その待入される他の~task
+］, および［
+~promiseにより利用される~microtask待行列
+］の両者から相対的な時点に確定させる。
+◎
+However, in cases where you need to interface with developer code in more ways than can be mediated via the promise, you’ll still need to queue a task. For example, you may want to fire an event, which can call into developer event handlers. Or you may need to perform a structured clone operation, which can trigger getters. If these things must be done inside the asynchronous portion of your algorithm, you need to specify that they are done via a queued task, and with a specific task queue. This nails down the exact time such developer-observable operations happen both in relation to other queued tasks, and to the microtask queue used by promises.
+</p>
+
+<p>
+例として、次の手続きは，
+`ms^v ~ms後に`解決され$る~promiseを返すことになるが、
+`window^c 上にも名前 `timerfinished^et の~eventを発火する：
+◎
+As an example, the following steps will return a promise resolved after ms milliseconds, but also fire an event named timerfinished on window:
+</p>
+
+<ol>
+
+	<li>
+`p^v ~LET 新たな~promise
+◎
+Let p be a new promise.
+</li>
+
+	<li>
+<p>
+次の手続きを`並列的$に走らせる：
+◎
+Run the following steps in parallel:
+</p>
+		<ol>
+			<li>
+`ms^v ~ms間~待機する
+◎
+Wait ms milliseconds.
+</li>
+
+			<li>
+`undefined^es で `p^v を`解決する$
+◎
+Resolve p with undefined.
+</li>
+
+			<li>
+［［［［
+`閲覧文脈$にて`作動中の文書$
+］の `Window$c ~obj
+］に向けて，［
+名前 `timerfinished^et の
+<a href="~WAPI#fire-a-simple-event">単純~event
+］を発火する</a>
+］ような
+<a href="~WAPI#queue-a-task">~task ］を待入する</a>
+◎
+Queue a task to fire a simple event named timerfinished at the browsing context active document’s Window object.
+</li>
+		</ol>
+	</li>
+
+	<li>
+~RET `p^v
+◎
+Return p.
+</li>
+</ol>
+
+
+
+			</section>
+		</section>
+		<section id="accepting-promises">
+<h3 title="Accepting Promises">4.3. ~promiseを受容するとき</h3>
+
+
+
+			<section id="resolve-arguments">
+<h4 title="Promise Arguments Should Be Resolved">4.3.1. ~promise引数は解決されるべきである</h4>
+
+<div class="p">
+<p>
+一般的に、引数が~promiseであると期待される所では、~thenable
+<span class="trans-note">【
+`then^c ~methodを備える~obj
+】</span>
+も非~promise値も許容されるべきである
+— 引数を利用する前に，
+<em>`~promiseとして解決する$</em>
+ことにより。
+<em>決して</em>，次をするべきでない：
+</p>
+
+<ul>
+	<li>
+入力の値に対する 型~検出
+</li>
+	<li>
+~promiseと他の値との間の`多重定義$
+</li>
+	<li>
+~promiseを`共用体~型$ 内に置くこと
+</li>
+</ul>
+
+◎
+In general, when an argument is expected to be a promise, you should also allow thenables and non-promise values by resolving the argument to a promise before using it. You should never do a type-detection on the incoming value, or overload between promises and other values, or put promises in a union type.
+</div>
+
+<p>
+WebIDL を利用する仕様においては、これは， WebIDL `~promise型$により自動的に守られる。
+JavaScript において それが意味する所を見るため、~promiseに `ms^v ~msの遅延を追加する，次の関数を考える：
+◎
+In WebIDL-using specs, this is automatically taken care of by the WebIDL promise type. To see what it means in JavaScript, consider the following function, which adds a delay of ms milliseconds to a promise:
+</p>
+
+<div class="example">
+<pre class="lang-javascript">
+function addDelay(`promise^v, `ms^v) {
+    return Promise.resolve(`promise^v).then(`v^v `射$
+        new Promise(`resolve^v 射
+            setTimeout(() 射 `resolve^v(`v^v), `ms^v);
+        );
+    );
+}
+
+var `p1^v = addDelay(doAsyncOperation(), 500);
+var `p2^v = addDelay("value", 1000);
+</pre>
+</div>
+
+<p>
+この例においては、
+`p1^v は，［［
+`doAsyncOperation()^c から返される `promise^v
+］が充足されてから 500 ~ms後に，その演算の値で充足される
+］ことになる（または、 `p1^v は `promise^v が却下され次第，却下されることになる）。
+また，入力の引数は`~promiseとして解決され$るので、この関数は，文字列 `value^l を渡したときにも働ける：
+`p2^v は、1000 ~ms後に， `value^l で充足されることになる。
+このような仕方で、本質的に，それを［
+値に対し即時に充足される~promise
+］として扱っている。
+◎
+In this example, p1 will be fulfilled 500 ms after the promise returned by doAsyncOperation() fulfills, with that operation’s value. (Or p1 will reject as soon as that promise rejects.) And, since we resolve the incoming argument to a promise, the function can also work when you pass it the string "value": p2 will be fulfilled with "value" after 1000 ms. In this way, we essentially treat it as an immediately-fulfilled promise for that value.
+</p>
+
+
+
+			</section>
+			<section id="should-promise-call">
+<h4 title="Developer-Supplied Promise-Returning Functions Should Be &quot;Promise-Called&quot;">4.3.2. ~promiseを返す関数として開発者から供給された関数は “~promise-callされる” べきである</h4>
+
+<p>
+仕様の策定者は、［［
+~promiseを返す関数を期待しているもの【引数など】
+］に対し，開発者から供給された `関数^v
+］に対しては、［
+`関数^v が~thenableや非~promise値
+を返す, あるいは 例外を投出する
+］ことも許容するべきである。
+また、これらすべての事例に対し，［
+`関数^v がそれに相似的な~promise
+<span class="trans-note">【
+すなわち， `関数^v の返値で解決された, あるいは `関数^v が投出した例外で却下された~promise
+】</span>
+を返した
+］かのように扱うべきである。
+この処理は、
+“ `関数^v を `~promise-call$する”
+と呼ばれる演算に~encapsulateできる。
+これにより、同期的な形のときでも、成功／失敗に対し，非同期的な形のときと同じように反応させられる。
+◎
+If the developer supplies you with a function that you expect to return a promise, you should also allow it to return a thenable or non-promise value, or even throw an exception, and treat all these cases as if they had returned an analogous promise. We can encapsulate this process in an operation called promise-calling the supplied function. This allows us to have the same reaction to synchronous forms of success and failure that we would to asynchronous forms.
+</p>
+
+<p>
+これを利用する方法と，何故そうすべきかについての更なる論点は、後述の
+<a href="#example-resource-open">`resource.open^c 例</a>
+を見よ。
+◎
+See the resource.open example below for further discussion of how and why this should be used.
+</p>
+
+
+
+			</section>
+		</section>
+	</section>
+	<section id="shorthand-phrases">
+<h2 title="Shorthand Phrases">5. 略記のための句</h2>
+
+<p class="note">
+この節は、主に仕様の書手~向けである。
+ここでは、共通的な各種~promise演算の遂行を，注釈文にてどう述べるかについて扱う。
+◎
+This section is primarily for spec writers, dealing with ways of performing common promise operations in prose.
+</p>
+
+<p class="note">
+この節は、最終的には， WebIDL の当該箇所に移行されるべきである。
+<a href="https://github.com/w3ctag/promises-guide/issues/27">#27</a>
+を見よ。
+◎
+This section should eventually move to WebIDL, where it belongs. See #27.
+</p>
+
+<p>
+仕様を書くときは、共通的な~promise演算を簡潔に参照できると簡便である。
+以下では、それを行えるようにするための，一連の略記を定義する。
+◎
+When writing such specifications, it’s convenient to be able to refer to common promise operations concisely. We define here a set of shorthands that allow you to do so.
+</p>
+
+<p class="trans-note">【
+以下に現れる語
+“充足~値”／“事由~値”
+の
+“充足”／“事由”
+は、値の役割を明らかにするための呼称であり、値の範囲に何らかの要件を課すものではない（一部は、訳者による補完である）。
+】</p>
+
+
+
+		<section id="shorthand-creating">
+<h3 title="Creating Promises">5.1. ~promiseを作成するとき</h3>
+
+<div class="p">
+<p>
+`新たな~promise@
+とは、［
+初期化されているが, まだ解決されていない，新たな~promise~obj
+］を，更に操作するためのものとして与えるものである。
+それは、
+<span class="block"><code>
+new Promise((`resolve^v, `reject^v) `射$ { ... })
+</code></span>
+を~callすることに等価である
+— ここで：
+</p>
+
+<ul>
+	<li>
+`Promise()^c には、
+<a href="~ES6#sec-promise-constructor">`Promise^c 構築子</a>
+の`初期値$を利用する。
+</li>
+
+	<li>
+`...^c は、今後の利用
+— <a href="#shorthand-manipulating">~promiseの操作法</a>
+節による略記の定義~内で利用される —
+のために
+`resolve^v ／ `reject^v
+の値を保存する~codeを表す。
+【具体的には <a href="#example-add-delay">6.3 節の JavaScript ~code例</a>に】
+</li>
+</ul>
+
+◎
+A new promise gives a new, initialized-but-unresolved promise object to manipulate further. It is equivalent to calling new Promise((resolve, reject) =&gt; { ... }), using the initial value of the Promise constructor. Here ... stands in for code that saves the value of resolve and reject for later use by the shorthands under §5.2 Manipulating Promises.
+</div>
+
+<div class="p">
+<p>
+( 充足~値 `x^v )
+が与えられている下における，句
+<q>
+<dfn id="a-promise-resolved-with">`x^v で解決された（新たな）~promise</dfn>
+</q>
+とは、
+`Promise.resolve(x)^c による結果の~promiseを~~表す略記である
+— ここで：
+</p>
+
+<ul>
+	<li>
+`Promise.resolve^c には、 `Promise.resolve$c の`初期値$を利用する。
+</li>
+</ul>
+
+<p>
+そのような結果を得ることを、
+<q>
+（ `x^v を）
+`~promiseとして解決する@
+</q>
+とも記す。
+</p>
+◎
+A promise resolved with x or x resolved as a promise is shorthand for the result of Promise.resolve(x), using the initial value of Promise.resolve.
+</div>
+
+<div class="p">
+<p>
+( 事由~値 `r^v )
+が与えられている下における，句
+<q>
+<dfn id="a-promise-rejected-with">`r^v で却下された（新たな）~promise</dfn>
+</q>
+とは、
+`Promise.reject(r)^c の結果を~~表す略記である
+— ここで：
+</p>
+
+<ul>
+	<li>
+`Promise.reject^c には、 `Promise.reject$c の`初期値$を利用する。
+</li>
+</ul>
+
+◎
+A promise rejected with r is shorthand for the result of Promise.reject(r), using the initial value of Promise.reject.
+</div>
+
+<!-- from ES6
+The resolve function returns either a new promise resolved with the passed argument, or the argument itself if the argument is a promise produced by this constructor.
+
+The reject function returns a new promise rejected with the passed argument.
+-->
+
+		</section>
+		<section id="shorthand-manipulating">
+<h3 title="Manipulating Promises">5.2. ~promiseを操作するとき</h3>
+
+<p>
+( ~promise `p^v, 充足~値 `x^v )
+が与えられている下における，句
+<q>`x^v で `p^v を
+<dfn id="resolve-promise">解決する</dfn></q>
+とは、［［
+`p^v の作成時に格納済みの，
+<a href="~ES6#sec-promise-resolve-functions">`resolve^v 関数</a>
+］に，引数 `x^v を渡して~callする
+］ことを表す略記である。
+◎
+Resolve p with x is shorthand for calling a previously-stored resolve function from creating p, with argument x.
+</p>
+
+<!-- 
+A promise reject function is an anonymous built-in function that has [[Promise]] and [[AlreadyResolved]] internal slots.
+ -->
+
+<p>
+( ~promise `p^v, 事由~値 `r^v )
+が与えられている下における，句
+<q>`r^v で `p^v を
+`却下する@
+</q>
+とは、［［
+`p^v の作成時に格納済みの，
+<a href="~ES6#sec-promise-reject-functions">`reject^v 関数</a>
+］に，引数 `r^v を渡して~callする
+］ことを表す略記である。
+◎
+Reject p with r is shorthand for calling a previously-stored reject function from creating p, with argument r.
+</p>
+
+<p class="trans-note">【
+同じ
+“解決-”, “却下-”
+が、新たな~promiseを作成するときと，操作するときの両者に用いられてることに注意。
+“`x^v で`解決され$た~promise” は、
+“`新たな~promise$ `p^v を作成した上で， `x^v で `p^v を`解決-$した結果の `p^v”
+と同じものになるようにも思われるが、確かめたわけではない。
+<!-- 
+原文では前者が過去形, 後者が現在形として記されているが、
+日本語では、そのような区別の仕方が難しいこともある。
+既存の~promiseの有無で区別する。
+ -->
+】</p>
+
+<p>
+これらの略記が，`並列的$に走らせている~algoの中で利用されている場合、
+`p^v に`関連する設定群~obj$の`担当の~event~loop$上に，格納済みの関数を~callする`~taskを待入する$。
+◎
+If the algorithm using these shorthands is running in parallel, the shorthands queue a task on p’s relevant settings object’s responsible event loop to call the stored function.
+</p>
+
+
+
+		</section>
+		<section id="shorthand-reacting">
+<h3 title="Reacting to Promises">5.3. ~promiseに反応させるとき</h3>
+
+<div class="p">
+<p>
+( ~promise `p^v, 充足~値 `v^v )
+が与えられている下における，句
+<q>
+`v^v による `p^v の
+`充足~時@
+には…（ `下位手続き^v ）
+</q>
+とは、［
+`p.then(onFulfilled)^c が
+【 onFulfilled が~callされる前に】
+~callされている
+］ことを表す略記である†
+— ここで：
+</p>
+
+<ul>
+	<li>
+`p.then^c には、 `Promise.prototype.then$c の`初期値$を利用する。
+</li>
+
+	<li>
+後続して与えられる `下位手続き^v が `onFulfilled^v 関数を成す。
+</li>
+
+<!-- from ES6
+When the then method is called with arguments onFulfilled and onRejected the following steps are taken:
+-->
+	<li>
+充足~値 `v^v が，［
+`下位手続き^v が `onFulfilled^v の引数として~accessする値
+］を与える††。
+</li>
+</ul>
+
+◎
+Upon fulfillment of p with value v is shorthand for calling p.then(onFulfilled), with the successive nested steps comprising the onFulfilled function, and using the initial value of Promise.prototype.then. The steps then have access to onFulfilled’s argument as v.
+</div>
+
+<div class="p">
+
+<p>
+( ~promise `p^v, 事由~値 `r^v )
+が与えられている下における，句
+<q>
+`r^v による `p^v の
+`却下~時@
+には…（ `下位手続き^v ）
+</q>
+とは、［
+<code>p.then(`undefined^es, `onRejected^v)</code>
+が
+【 onRejected が~callされる前に】
+~callされている
+］ことを表す略記である†
+— ここで：
+</p>
+
+
+<ul>
+	<li>
+`p.then^c には、 `Promise.prototype.then$c の`初期値$を利用する。
+</li>
+
+	<li>
+後続して与えられる `下位手続き^v が `onRejected^v 関数を成す。
+</li>
+
+	<li>
+事由~値 `r^v が，［
+`下位手続き^v が `onRejected^v の引数として~accessする値
+］を与える††。
+</li>
+</ul>
+
+◎
+Upon rejection of p with reason r is shorthand for calling p.then(undefined, onRejected), with the successive nested steps comprising the onRejected function, and using the initial value of Promise.prototype.then. The steps then have access to onRejected’s argument as r.
+</div>
+
+
+<p class="trans-note">【†
+充足-／却下-の時機は不定なので、これらの句
+“〜時には…”
+は、
+“〜されたとき” と “すでに〜されていたとき”
+の両者が~~含まれている。
+】【††
+`下位手続き^v の中で，引数が利用されない場合、充足~値／事由~値が省略されて，単に
+<q>`p^v の充足~時には…</q>
+等と記されることもある。
+】</p>
+
+<div class="p">
+<p>
+(
+~promise `p^v,
+充足~handler `fulfillmentHandler^v （省略可）,
+却下~handler `rejectionHandler^v （省略可）
+)
+が与えられている下における，句
+<q>
+（それらの~handlerで） `p^v を
+`変形する@
+</q>
+とは、［
+<code>p.then(`fulfillmentHandler^v, `rejectionHandler^v)</code>
+を~callする
+］ことを表す略記である
+— ここで：
+</p>
+
+<ul>
+	<li>
+`p.then^c には、 `Promise.prototype.then$c の`初期値$を利用する。
+</li>
+	<li class="trans-note">【
+充足~handler／却下~handlerが省略されている場合、
+`undefined^es として扱うものと見られる。
+<!-- ＊
+両者とも省略される場合があり得るかどうかは定かでない。
+ -->
+】</li>
+</ul>
+◎
+Transforming p with a fulfillment and/or rejection handler is shorthand for calling p.then(fulfillmentHandler, rejectionHandler), using the initial value of Promise.prototype.then.
+</div>
+
+<div class="example">
+<p>
+後者の句の例を挙げる：
+◎
+Some examples of the latter phrase would be
+</p>
+<ol>
+
+	<li>
+［
+`undefined^es を返す充足~handler
+］で `p^v を`変形した$結果を返す。
+◎
+Return the result of transforming p with a fulfillment handler that returns undefined.
+</li>
+</ol>
+
+<p>
+あるいは
+◎
+or
+</p>
+
+<ol>
+
+	<li>
+［
+第一~引数の二倍を返す，充足~handler
+］で `p^v を`変形した$結果を返す。
+◎
+Return the result of transforming p with a fulfillment handler that returns twice its first argument.
+</li>
+</ol>
+
+<p>
+これらは順に、次に対応する：
+◎
+These correspond to
+</p>
+
+<pre class="lang-javascript">
+return `p^v.then(() `射$ undefined);
+</pre>
+
+<p>
+,
+◎
+and
+</p>
+<pre class="lang-javascript">
+return `p^v.then(`x^v 射 2 * `x^v);
+</pre>
+
+<p>
+（もちろん，より複雑な変形-も可能0である
+— 下の
+<a href="#example-resource-open">`resource.open^c 例</a>
+に示されるように。）
+◎
+respectively. (More complicated transforms are of course possible as well, as shown in the resource.open example below.)
+</p>
+</div>
+
+
+
+		</section>
+		<section id="aggregating-promises">
+<h3 title="Aggregating Promises">5.4. 複数の~promiseを集成するとき</h3>
+
+<div class="p">
+<p>
+いくつかの~promiseからなる~collectionが与えられた下で，
+<q>その
+`すべてを待機する@
+</q>
+ときの結果は、
+`Promise.all(promiseArray)^c を~callして作成される~promiseである
+— ここで：
+</p>
+
+<ul>
+	<li>
+`all^c には、 `Promise.all$c の`初期値$を利用する。
+</li>
+	<li>
+`promiseArray^v は、その~collectionによる配列である。
+</li>
+</ul>
+
+◎
+The result of waiting for all of a collection of promises is a promise created by calling Promise.all(promiseArray), where promiseArray is that collection in array form and we use the initial value of Promise.all.
+</div>
+
+
+<!-- from ES6
+A Promise.all resolve element function is an anonymous built-in function that is used to resolve a specific Promise.all element. Each Promise.all resolve element function has [[Index]], [[Values]], [[Capabilities]], [[RemainingElements]], and [[AlreadyCalled]] internal slots.
+-->
+
+<div class="p">
+<p>
+この句は［
+それぞれが~promiseを返すような，複数の非同期的な演算
+］を`並列的$に 遂行した上で，それら一まとめに対し 反応させたいと望むときに、有用になる。
+結果の~promiseは：
+</p>
+
+<ul>
+	<li>
+与えられた~promiseすべてが充足されたならば
+⇒
+［
+それらの充足~値からなる配列
+］で充足されることになる。
+</li>
+	<li>
+他の場合、すなわち，いずれかの~promiseが却下されたならば
+⇒
+［
+それらのうち最初に生じた却下~事由
+］で却下されることになる。
+</li>
+</ul>
+
+◎
+This phrase is useful when you wish to perform multiple asynchronous operations in parallel that return promises, and then react to them all together. If all of the given promises fulfill, then the resulting promise will be fulfilled with an array corresponding to the fulfillment values. If any of them reject, then the resulting promise will be rejected with the first rejection reason to occur.
+</div>
+
+
+<p>
+この句の用法~例は
+<a href="#example-batch-request">`batchRequest( urls )^c 節</a>
+にて見出される。
+◎
+An example usage of this phrase is found in §6.7 batchRequest ( urls ).
+</p>
+
+
+
+		</section>
+		<section id="shorthand-promise-calling">
+<h3 title="Promise-Calling">5.5. ~promise-callするとき</h3>
+
+<p>
+関数 `f^v が与えられた下で，
+<q>
+<code>`f^v(...`args^v)</code> を
+<dfn id="promise-calling">~promise-call</dfn>
+</q>
+したときの結果は、次で与えられる：
+◎
+The result of promise-calling f(...args) is:
+</p>
+
+<ul>
+
+	<li>
+`f^v を~callして充足~値 `v^v が返されたならば
+⇒
+`v^v で`解決され$た~promise
+◎
+If the call returns a value v, the result of resolving v as a promise.
+</li>
+
+	<li>
+`f^v を~callして例外 `e^v が投出されたならば
+⇒
+`e^v で`却下され$た~promise
+◎
+If the call throws an exception e, a promise rejected with e.
+</li>
+</ul>
+
+<div class="note" id="promise-call-in-js">
+<p>
+JavaScript では、~promise-callは，次のように~~記せるであろう：
+◎
+In JavaScript, you might express promise-calling this way:
+</p>
+
+<pre class="lang-javascript">
+function promiseCall(`f^v, `...args^v) {
+    try {
+        return Promise.resolve(`f^v(`...args^v));
+    } catch (`e^v) {
+        return Promise.reject(`e^v);
+    }
+}
+</pre>
+</div>
+
+
+
+		</section>
+		<section id="shorthand-note-onrealms">
+<h3 title="A Note on Realms">5.6. ~realmについての注記</h3>
+
+<p>
+すべての事例において、
+<q>
+<code>Promise.resolve</code> の
+`初期値@
+</q>
+の様な句を利用するときは、［［［
+指定されている関数（この場合は `resolve^c ）
+］に結付けられている`~realm$†
+］の中での初期値
+］を意味する。
+例えば、
+`window.f()^c が
+“`1^es で`解決され$た~promise”
+を返すものと指定されている場合：
+◎
+In all cases, when we use phrases like "the initial value of Promise.resolve," we mean the initial value within the realm associated to the function being specified. So for example, if window.f() is specified to return "a promise resolved with 1," then:
+</p>
+
+<p class="trans-note">【†
+“~~領域” — 大雑把に言えば、［
+当の~codeが参照している, または作成した，~obj／関数
+］が “属する” ECMAScript 大域環境
+】</p>
+
+<pre class="lang-javascript">
+assert(windowA.f().constructor === windowA.Promise);
+assert(windowB.f().constructor === windowB.Promise);
+
+/* <span class="comment">
+関数が呼出されている~objの~realmは、効果を持たない
+— 関数の~realmだけが，関係0する：
+◎
+The realm of the object the function is being invoked on has no effect;
+the function’s realm is all that matters.
+</span>*/
+assert(windowA.f.call(windowB).constructor === windowA.Promise);
+
+/* <span class="comment">
+次のものは、~promise構築子に対する変異も伝播することを意味する：
+◎
+This means mutations to the Promise constructor also propagate.
+</span>*/
+
+windowA.Promise.prototype.foo = "bar";
+assert(windowA.f().foo === "bar");
+assert(windowB.f().foo === undefined);
+
+/* <span class="comment">
+`Promise.resolve^c の~algoは、~globalを診る代わりに，内在的な, 改変不可の `%Promise%$ を利用するので、
+名前 `Promise^l の~global~propertyに対する改変は，返値には影響0しない
+◎
+But since the algorithm for Promise.resolve uses the un-modifiable %Promise%
+intrinsic, instead of consulting the global, modifying the global property named
+"Promise" does not impact the return value.
+</span>*/
+const `oldPromise^v = windowA.Promise;
+windowA.Promise = () `射$ throw new Error(
+    "<span
+	title="I break developer code, but not platform code!"
+	>開発者~codeは壊しますが，~platform~codeは壊しません。</span>"
+);
+assert(windowA.f().constructor !== windowA.Promise);
+assert(windowA.f().constructor === `oldPromise^v);
+</pre>
+
+<p>
+更なる情報については、
+<a href="http://lists.w3.org/Archives/Public/www-tag/2014Jan/0108.html">この www-tag ~thread</a>
+を見よ — とりわけ返信を。
+◎
+For more information, see this www-tag thread, especially the replies.
+</p>
+
+
+
+		</section>
+	</section>
+	<section id="examples">
+<h2 title="Examples">6. 例</h2>
+
+<p class="note">
+この節は、ほぼ仕様の書手~向けであるが、仕様の注釈文を JavaScript に翻訳した例も与える。
+◎
+This section is mostly for spec writers, although it does give examples of the spec prose translated into JavaScript.
+</p>
+
+
+
+		<section id="example-delay">
+<h3>6.1. `delay( ms )^c</h3>
+
+<p>
+`delay^c は、 `ms^v ~ms内に充足されることになる，~promiseを返す関数である。
+~promiseの解決は，一~行の注釈文で記せる：
+◎
+delay is a function that returns a promise that will be fulfilled in ms milliseconds. It illustrates how simply you can resolve a promise, with one line of prose.
+</p>
+
+<ol>
+
+	<li>
+`ms^v ~LET ToNumber(`ms^v)
+◎
+Let ms be ToNumber(ms).
+</li>
+
+	<li>
+`ms^v ~LET ［
+`ms^v ~EQ `NaN^es ならば `+0^es ／
+~ELSE_ { `ms^v, `+0^es } の最大
+］
+◎
+If ms is NaN, let ms be +0; otherwise let ms be the maximum of ms and +0.
+</li>
+
+	<li>
+`p^v ~LET 新たな~promise
+◎
+Let p be a new promise.
+</li>
+
+	<li>
+<p>
+次の手続きを`並列的$に走らせる：
+◎
+Run the following steps in parallel:
+</p>
+		<ol>
+			<li>
+`ms^v ~ms間 待機する
+◎
+Wait ms milliseconds.
+</li>
+
+			<li>
+`undefined^es で `p^v を`解決する$
+◎
+Resolve p with undefined.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET `p^v
+◎
+Return p.
+</li>
+</ol>
+
+<p>
+JavaScript による等価な関数は，次の様になるであろう：
+◎
+The equivalent function in JavaScript would be
+</p>
+
+<pre class="lang-javascript">
+function delay(`ms^v) {
+    `ms^v = Number(`ms^v);
+    `ms^v = Number.isNaN(`ms^v) ? +0 : Math.max(`ms^v, +0);
+    return new Promise(`resolve^v `射$ setTimeout(`resolve^v, `ms^v));
+}
+</pre>
+
+<p>
+あるいは、指定された手続きに，より一対一に対応するように記すなら：
+◎
+or, in a more one-to-one correspondence with the specified steps,
+</p>
+
+<pre class="lang-javascript">
+function delay(`ms^v) {
+    // <span class="comment" title="Steps 1, 2"
+	>段 1, 2</span>
+    `ms^v = Number(`ms^v);
+    `ms^v = Number.isNaN(`ms^v) ? +0 : Math.max(`ms^v, +0);
+
+    // <span class="comment" title="Step 3"
+	>段 3</span>
+    let `resolve^v;
+    const `p^v = new Promise(`r^v 射 { `resolve^v = `r^v });
+
+    // <span class="comment" title="Step 4"
+	>段 4</span>
+    setTimeout(() 射 `resolve^v(undefined), `ms^v);
+
+    // <span class="comment" title="Step 5"
+	>段 5</span>
+    return `p^v;
+}
+</pre>
+
+
+
+		</section>
+		<section id="example-validated-delay">
+<h3>6.2. `validateddelay( ms )^c</h3>
+
+<p>
+`validatedDelay^c 関数は、その引数を検証することになる点を除いて，
+<a href="#example-delay">`delay^c 関数</a>
+とほぼ同様である。
+これは、どの非同期的な演算であれ、その開始~前に即時の失敗を通知させるために，却下済み~promiseを利用する方法を示す：
+◎
+The validatedDelay function is much like the delay function, except it will validate its arguments. This shows how to use rejected promises to signal immediate failure before even starting any asynchronous operations.
+</p>
+
+<ol>
+
+	<li>
+`ms^v ~LET ToNumber(`ms^v)
+◎
+Let ms be ToNumber(ms).
+</li>
+
+	<li>
+~IF［
+`ms^v ~EQ `NaN^es
+］
+⇒
+~RET
+`TypeError^es で`却下され$た~promise
+◎
+If ms is NaN, return a promise rejected with a TypeError.
+</li>
+
+	<li>
+~IF［
+`ms^v ~LT ~zero
+］
+⇒
+~RET `RangeError^es で`却下され$た~promise
+◎
+If ms is less than zero, return a promise rejected with a RangeError.
+</li>
+
+	<li>
+`p^v ~LET 新たな~promise
+◎
+Let p be a new promise.
+</li>
+
+	<li>
+<p>
+次の手続きを`並列的$に走らせる：
+◎
+Run the following steps in parallel:
+</p>
+		<ol>
+			<li>
+`ms^v ~ms間 待機する
+◎
+Wait ms milliseconds.
+</li>
+
+			<li>
+`undefined^es で `p^v を`解決する$
+◎
+Resolve p with undefined.
+</li>
+		</ol>
+	</li>
+
+	<li>
+~RET `p^v
+◎
+Return p.
+</li>
+</ol>
+
+<p>
+JavaScript による等価な関数は，次の様になるであろう：
+◎
+The equivalent function in JavaScript would be
+</p>
+
+<pre class="lang-javascript">
+function delay(`ms^v) {
+    `ms^v = Number(`ms^v);
+
+    if (Number.isNaN(`ms^v)) {
+        return Promise.reject(new TypeError("Not a number."));
+    }
+    if (`ms^v &lt; 0) {
+        return Promise.reject(new RangeError("ms must be at least zero."));
+    }
+
+    return new Promise(`resolve^v `射$ setTimeout(`resolve^v, `ms^v));
+}
+</pre>
+
+
+
+		</section>
+		<section id="example-add-delay">
+<h3>6.3. `addDelay( promise, ms )^c</h3>
+
+<p>
+`addDelay^c は、引数 `promise^v の決着†と，返される~promiseの決着との合間に
+余分な `ms^v ~msの遅延を追加する関数である。
+引数 `promise^v を`~promiseとして解決する$ことで、非~promise値や~thenableも `promise^v に渡せるようにしている所に注目。
+【†決着した ＝ 充足されたか, または却下されたこと】
+◎
+addDelay is a function that adds an extra ms milliseconds of delay between promise settling and the returned promise settling. Notice how it resolves the incoming argument to a promise, so that you could pass it a non-promise value or a thenable.
+</p>
+
+<ol>
+	<li>
+`ms^v ~LET ToNumber(`ms^v)
+◎
+Let ms be ToNumber(ms).
+</li>
+
+	<li>
+`ms^v ~LET［
+`ms^v ~EQ `NaN^es ならば `+0^es ／
+~ELSE_ { `ms^v, `+0^es } の最大
+］
+◎
+If ms is NaN, let ms be +0; otherwise let ms be the maximum of ms and +0.
+</li>
+
+	<li>
+`p^v ~LET `新たな~promise$
+◎
+Let p be a new promise.
+</li>
+
+	<li>
+`resolvedToPromise^v ~LET `promise^v で`解決され$た~promise
+◎
+Let resolvedToPromise be the result of resolving promise to a promise.
+</li>
+
+	<li>
+<p>
+充足~値 `v^v による
+`resolvedToPromise^v の`充足~時$には、次の手続きを`並列的$に遂行する：
+◎
+Upon fulfillment of resolvedToPromise with value v, perform the following steps in parallel:
+</p>
+		<ol>
+			<li>
+`ms^v ~ms間 待機する
+◎
+Wait ms milliseconds.
+</li>
+
+			<li>
+`v^v で `p^v を`解決する$
+◎
+Resolve p with v.
+</li>
+		</ol>
+	</li>
+
+	<li>
+<p>
+事由~値 `r^v による `resolvedToPromise^v の`却下~時$には、次の手続きを`並列的$に遂行する：
+◎
+Upon rejection of resolvedToPromise with reason r, perform the following steps in parallel:
+</p>
+
+		<ol>
+			<li>
+`ms^v ~ms間 待機する
+◎
+Wait ms milliseconds.
+</li>
+
+			<li>
+`r^v で `p^v を`却下する$
+◎
+Reject p with r.
+</li>
+		</ol>
+	</li>
+
+	<li>
+~RET `p^v
+◎
+Return p.
+</li>
+</ol>
+
+
+<p>
+JavaScript による等価な関数は，次の様になるであろう：
+◎
+The equivalent function in JavaScript would be
+</p>
+
+<pre class="lang-javascript">
+function addDelay(`promise^v, `ms^v) {
+    `ms^v = Number(`ms^v);
+    `ms^v = Number.isNaN(`ms^v) ? +0 : Math.max(`ms^v, +0);
+
+    let `resolve^v, `reject^v;
+    const `p^v = new Promise((`res^v, `rej^v) `射$ { `resolve^v = `res^v; `reject^v = `rej^v; });
+
+    const resolvedToPromise = Promise.resolve(`promise^v);
+    resolvedToPromise.then(
+        `v^v 射 setTimeout(() 射 `resolve^v(`v^v), `ms^v),
+        `r^v 射 setTimeout(() 射 `reject^v(`r^v), `ms^v)
+    );
+
+    return `p^v;
+}
+</pre>
+
+
+
+		</section>
+		<section id="example-resource-open">
+<h3>6.4. `resource.open ( resourcePath, openingOperation )^c</h3>
+
+<p>
+`resource.open^c
+は、［
+その働きの大部分は，渡された関数 `openingOperation^v の実行-が占める
+］が、しかる~~後，［
+この演算の結果を反映するように `resource^c の~propertyたちを更新する
+］ような，~methodである。
+これは、［
+Streams 仕様にて用いられている一部の技法
+］の，単純化された~versionである。
+この~methodは、別の関数を `~promise-call$ する方法, その理由について説明0するために~~導入したものである。
+◎
+resource.open is a method that executes the passed function openingOperation to do most of its work, but then updates the resource’s properties to reflect the result of this operation. It is a simplified version of some of the techniques used in the streams specification. The method is meant to illustrate how and why you might promise-call another function.
+</p>
+
+<ol>
+
+	<li>
+`resourcePath^v ~LET ToString(`resourcePath^v)
+◎
+Let resourcePath be ToString(resourcePath).
+</li>
+
+	<li>
+`openingPromise^v ~LET
+`openingOperation^v(`resourcePath^v)
+を`~promise-call$した結果
+◎
+Let openingPromise be the result of promise-calling openingOperation(resourcePath).
+</li>
+
+	<li>
+<p>
+~RET 次の~handlerで `openingPromise^v を`変形した$結果：
+◎
+Return the result of transforming openingPromise with:
+</p>
+		<ul>
+			<li>
+［
+`this.status^c ~SET `opened^l
+］にするような，充足~handler。
+◎
+A fulfillment handler that sets this.status to "opened".
+</li>
+
+			<li>
+引数 `r^v を伴って~callされたときに［
+`this.status^c ~SET `errored^l；
+`this.error^c ~SET `r^v
+］にするような，却下~handler。
+◎
+A rejection handler that, when called with argument r, set this.status to "errored" and this.error to r.
+</li>
+		</ul>
+	</li>
+</ol>
+
+<p>
+<a href="#promise-call-in-js">上に定義された `promiseCall^c 関数</a>
+を利用すれば、JavaScript による等価な関数は，次の様になるであろう：
+◎
+The equivalent function in JavaScript would be
+</p>
+
+<pre class="lang-javascript">
+resource.open = function (`resourcePath^v, `openingOperation^v) {
+    `resourcePath^v = String(`resourcePath^v);
+
+    return promiseCall(`openingOperation^v, `resourcePath^v).then(
+        `v^v `射$ {
+            this.status = "opened";
+        },
+        `r^v 射 {
+            this.status = "errored";
+            this.error = `r^v;
+        }
+    );
+};
+</pre>
+
+<p>
+◎
+using the promiseCall function defined above.
+</p>
+
+<div class="note">
+<p>注記：
+単に `openingOperation^v を~callしていないことに注意
+— すなわち，直接的に
+<code>`openingOperation^v(`resourcePath^v)</code>
+を行うことにするなら、~codeは次の様になるが：
+◎
+Note how if we had instead just called openingOperation, i.e. done openingOperation(resourcePath) directly, then code like
+</p>
+
+<pre class="lang-javascript">
+resource.open(`synchronouslyOpenTheResource^v).then(`doSomethingElse^v);
+</pre>
+
+<p>
+それは~promiseを返さないので、返値~上で `then^c を~callするときに失敗することになる。
+それを加味したとしても，
+`synchronouslyOpenTheResource^v が~errorを投出したときはどうするか？
+結果が `errored^l ~statusになるように欲するが、`~promise-call$しなければ、その~errorにより，単純に `resource.open^c から抜出ることになってしまう。
+ここでは、`~promise-call$が とても役立つことが見れる。
+◎
+would fail. It would not return a promise, so calling then on the return value would fail. Even if we accounted for that, what if synchronouslyOpenTheResource threw an error? We would want that to result in an "errored" status, but without promise-calling, that would not be the case: the error would simply cause resource.open to exit. So you can see that promise-calling is quite helpful here.
+</p>
+</div>
+
+
+
+		</section>
+		<section id="example-environment-ready">
+<h3>6.5. `environment^v`.ready^c</h3>
+
+<p>
+ある “環境” を表現する
+`Environment^c ~obj `environment^v の
+`ready^c ~methodは、環境の何らかの部分
+— 例えば，~DOM文書 —
+が “~ready” になったときに，それを通知する~propertyであるとする。
+ここでは、その環境における非同時性について~~定式化する方法を説明0する：
+◎
+environment.ready is a property that signals when some part of some environment becomes "ready," e.g. a DOM document. It illustrates how to encode environmental asynchronicity.
+</p>
+
+<ul>
+	<li>
+どの `Environment^c ~objも，［
+新たな~promiseに初期化される， [[ready]] 内部slot
+］を有するようにする。
+`environment^v の `ready^c 取得子が~callされたときは、この `Environment^c ~objの [[ready]] 内部slotの値が返されるとする。
+◎
+Let every Environment object have a [[ready]] internal slot, initialized with a new promise. When the getter for environment.ready is called, return the value of this Environment object’s [[ready]] internal slot.
+</li>
+
+	<li>
+<p>
+次の各~段が `Environment^c ~objを~readyにするような，ある~algoの末尾側に挿入されることになるであろう：
+◎
+The following steps might be inserted toward the end of some algorithm for readying Environment objects:
+</p>
+		<ul>
+			<li>
+当の環境が成功裡に~readyになったときは
+⇒
+`undefined^es で［
+`Environment^c ~obj の [[ready]] ~promise
+］を`解決する$
+◎
+If the environment becomes ready successfully, resolve this Environment object’s [[ready]] promise with undefined.
+</li>
+
+			<li>
+当の環境が~readyになるのに失敗したときは
+⇒
+［
+~load失敗を説明する `Error^es ~instance
+］で［
+`Environment^c ~obj の [[ready]] ~promise
+］を`却下する$
+◎
+If the environment fails to become ready, reject this Environment object’s [[ready]] promise with an Error instance explaining the load failure.
+</li>
+		</ul>
+	</li>
+</ul>
+
+
+		</section>
+		<section id="example-add-bookmark">
+<h3>6.6. `addbookmark()^c</h3>
+
+<p>
+`addBookmark^c は、［
+現在の~web頁を~bookmarkとして追加する
+］ことを利用者に要請する，関数である。
+これは、
+<a href="https://github.com/domenic/promises-unwrapping/issues/85">何度も行われる設計~作業</a>
+から取り出されたものであり、
+環境上の非同時性を，現実にありそうな局面として解ってもらうと伴に、即時の却下についても説明0するものである。
+◎
+addBookmark is a function that requests that the user add the current web page as a bookmark. It’s drawn from some iterative design work and illustrates a more real-world scenario of appealing to environmental asynchrony, as well as immediate rejections.
+</p>
+
+<ol>
+	<li>
+~IF［
+この~methodは、明示的な利用者~動作の結果として，呼出された
+］のではない
+⇒
+~RET ［
+名前 `SecurityError^l の新たな `DOMException$c
+］で`却下され$た~promise
+◎
+If this method was not invoked as a result of explicit user action, return a promise rejected with a new DOMException whose name is "SecurityError".
+</li>
+
+	<li>
+<p>
+~IF［
+文書の［
+mode of operation†
+］ ~EQ standalone††
+］
+⇒
+~RET ［
+名前 `NotSupported^l の新たな `DOMException$c
+］で`却下され$た~promise
+◎
+If the document’s mode of operation is standalone, return a promise rejected with a new DOMException whose name is "NotSupported".
+</p>
+
+【† <a href="~MANIFEST#dfn-display-mode">display mode</a>, ††<a href="~MANIFEST#dfn-display-modes-values">standalone</a> ？】
+</li>
+
+	<li>
+`promise^v ~LET 新たな~promise
+◎
+Let promise be a new promise.
+</li>
+
+	<li>
+`info^v ~LET ［
+~web~appの~metadata
+］を得た結果
+◎
+Let info be the result of getting a web application’s metadata.
+</li>
+
+	<li>
+<p>
+次の手続きを`並列的$に走らせる：
+◎
+Run the following steps in parallel:
+</p>
+
+		<ol>
+			<li>
+<p>
+`info^v を用いて, ~UA特有の方式で，［
+末端利用者が~bookmarkを追加したいと欲するかどうか，選択する
+］ことを許容する
+◎
+Using info, and in a manner that is user-agent specific, allow the end user to make a choice as to whether they want to add the bookmark.
+</p>
+				<ol>
+					<li>
+~IF［
+末端利用者は
+~bookmarkの追加-要請を中止した（利用者が~escapeキーを叩いた, “~cancel” ~buttonを押したなど）
+］
+⇒
+［
+名前 `AbortError^l の新たな `DOMException$c
+］で `promise^v を`却下する$
+◎
+If the end-user aborts the request to add the bookmark (e.g., they hit escape, or press a "cancel" button), reject promise with a new DOMException whose name is "AbortError".
+</li>
+
+					<li>
+~ELSE
+⇒
+`undefined^es で `promise^v を`解決する$
+◎
+Otherwise, resolve promise with undefined.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+	<li>
+~RET `promise^v
+◎
+Return promise.
+</li>
+</ol>
+
+
+
+		</section>
+		<section id="example-batch-request">
+<h3>6.7. `batchRequest( urls )^c</h3>
+
+<p>
+`SERVICE-WORKERS$r では、何箇所かで
+“`すべてを待機する$”
+が利用されている。
+`batchRequest^c は、その種のある利用を単純化した~versionを説明0する。
+それは、~URLの~iterable
+【<a href="~WEBIDL#idl-iterable" >可反復</a>？】
+を入力にとり，各~URLを~fetchして作成された `Response$c ~objからなる配列に対する~promiseを返す。
+いずれかの~fetchが失敗した場合には、その失敗で`却下され$た~promiseを返す。
+◎
+Several places in [SERVICE-WORKERS] use waiting for all. batchRequest illustrates a simplified version of one of their uses. It takes as input an iterable of URLs, and returns a promise for an array of Response objects created by fetching the corresponding URL. If any of the fetches fail, it will return a promise rejected with that failure.
+</p>
+
+<ol>
+
+	<li>
+`responsePromises^v ~LET 新たな空~list
+◎
+Let responsePromises be a new empty list
+</li>
+
+	<li>
+<p>
+~FOR
+`urls^v 内の~EACH ( 値 `url^v ) に対し：
+◎
+For each value url of urls,
+</p>
+		<ol>
+			<li>
+`url^v ~LET
+`url^v を
+`USVString$c
+に変換した結果
+◎
+Let url be the result of converting url to a USVString.
+</li>
+
+			<li>
+`req^v ~LET 構築子に `url^v を渡して，新たな `Request$c を作成した結果
+◎
+Let req be the result of creating a new Request passing url to the constructor.
+</li>
+
+			<li>
+`p^v ~LET
+<a href="https://fetch.spec.whatwg.org/#dom-global-fetch">`fetch(req)^c</a>
+を~callした結果
+◎
+Let p be the result of calling fetch with req.
+</li>
+
+			<li>
+`responsePromises^v に `p^v を追加-
+◎
+Add p to responsePromises.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET `responsePromises^v の`すべてを待機-$した結果
+◎
+Return the result of waiting for all of responsePromises.
+</li>
+</ol>
+
+
+
+		</section>
+	</section>
+	<section id="webidl">
+<h2 title="WebIDL and Promises">7. WebIDL と~promise</h2>
+
+<p class="note">
+この節は，主に仕様の書手~向けであり、~promiseを，~web仕様にてよく利用される~interface定義~言語と統合する方法について扱う。
+◎
+This section is primarily for spec writers, dealing with how promises integrate with an interface definition language often used in web specs.
+</p>
+
+<p>
+`WEBIDL$r は`~PromiseT$ 型を提供する
+— それは
+WebIDL を通してそれらの~APIを公開するような仕様を書くときに，利用できる。
+参照し易くするため、~PromiseT 型が及ぼす影響0を，ここに要約する。
+◎
+[WEBIDL] provides a Promise&lt;T&gt; type which can be used when writing specifications that expose their API through WebIDL. We summarize the impact of Promise&lt;T&gt; here for easy reference.
+</p>
+
+
+
+		<section id="webidl-promise-return-values">
+<h3 title="Promise&lt;T&gt; Return Values">7.1. ~PromiseT 型の返値</h3>
+
+<p>
+すべての WebIDL 返値と同様、返値として~PromiseT 型を宣言することは、~algoの値を返す実際の段には，影響0しない。
+それは単純に書式上のものであり、［
+~promiseでない何か, または
+WebIDL `T^v 型でない充足~値による~promise
+］を返すように仕様を書くことは、不正になる。
+◎
+Like all WebIDL return values, declaring a return value of type Promise&lt;T&gt; has no impact on the algorithm’s actual return steps. It is simply a form of documentation, and if you return something that is not a promise or is a promise with a fulfillment value that is not of WebIDL-type T, then you have written incorrect documentation into your spec.
+</p>
+
+<p>
+しかしながら、［
+~methodや~accessorを，~promiseを返すように宣言する
+］ことには、一つの重要な影響0がある：
+それは、［
+さもなければ
+— 例えば，型~変換に失敗した結果として —
+投出されるような例外が、必ず~catchされ，却下済み~promiseに転換される
+］ようにする（ WebIDL の
+<a href="~WEBIDL#es-operations">“演算” 節</a>
+の
+“If O has a return type that is a promise type …”
+【“〜の返値~型が~promise型であるならば…”】
+の所, および その文書~~全体に散らばる，それに類する句を見よ）。
+これにより、少なくとも例外については、［
+<a href="#always-return-promises">~promiseを返す関数は，常に~promiseを返すべきである</a>
+］原則は，自動的に守られることになる。
+◎
+However, declaring that your method or accessor returns a promise does have one important impact: it ensures that any exceptions that it would otherwise throw, e.g. as a result of failed type conversions, are caught and turned into rejected promises. (See the "Operations" section, "If O has a return type that is a promise type …", and similar phrases scattered throughout the document.) This automatically takes care of the advice in §4.1.1 Promise-Returning Functions Should Always Return Promises, at least for exceptions.
+</p>
+
+
+
+		</section>
+		<section id="webidl-promise-parameters">
+<h3 title="Promise&lt;T&gt; Parameters">7.2. ~PromiseT 型の~parameter</h3>
+
+<p>
+WebIDL ~methodの~parameterが ~PromiseT 型として宣言されているとき、その~parameterとして渡された どの引数も自動的に`~promiseとして解決され$、
+<a href="#resolve-arguments">~promise引数は解決されるべきである</a>
+原則は守られることになる。
+◎
+When a parameter of a WebIDL method is declared as Promise&lt;T&gt;, it will automatically resolve any arguments passed in that position. This will take care of the "Promise Arguments Should Be Resolved" advice above.
+</p>
+
+<p>
+WebIDL ~PromiseT 型の引数が得られたなら、 WebIDL による
+“<a href="~WEBIDL#dfn-perform-steps-once-promise-is-settled">~promiseが決着したときの手続きを遂行する</a>”
+~algoを利用できる。
+これは、上の
+`充足~時$には…／`却下~時$には…
+の略記~句とよく似るが、 “充足~時には” の手続きを走らす前に，［
+~promiseの充足~値を WebIDL 型 `T^v に変換する
+］段も追加されている。
+加えて、仕様の~algoが［
+前者／後者の手続きを走らせて導出される，~promise
+］を返すようにもする。
+型~変換に失敗した場合、~algoは［
+それを失敗させた~error
+］で却下された~promiseを返すようにする。
+◎
+If you have a WebIDL Promise&lt;T&gt; argument, you can use the WebIDL perform some steps once a promise is settled algorithm. This is much like our upon fulfillment … and upon rejection … shorthand phrases above, but it will add an additional step of converting the promise’s fulfillment value to the WebIDL type T before running any upon-fulfillment steps. Additionally it causes your algorithm to return a promise derived from running those steps. If the type conversion fails, your algorithm will return a promise rejected with the error causing that failure.
+</p>
+
+<p>
+ここでの `T^v は、 <em>充足~値の</em>  WebIDL 型を指すことに注意。
+更には、 WebIDL の
+“~promiseが決着したときの手続きを遂行する”
+~algoを利用する場合にのみ，影響0するものであり、他の仕方で~promiseを利用する場合（別の関数を通して それを渡すなど）は，そうならない。
+型が何でもよければ、 `Promise&lt;any&gt;^c 型を~parameterに利用することを勧める。
+◎
+Note that the T here refers to a WebIDL type for the fulfillment value. Furthermore, it only has impact if you use the WebIDL "perform some steps …" algorithm, and not if you use the promise in other ways (such as passing it along to another function). If that is not relevant, we advise using Promise&lt;any&gt; for parameters.
+</p>
+
+<div class="note">
+<p>
+解決の挙動の帰結として、~PromiseT 型の~parameterは，他のいかなる~parameterとも`多重定義$し得ない。
+例えば、次のように宣言することはできない：
+◎
+As a consequence of the resolution behavior, Promise&lt;T&gt; parameters cannot be overloaded with any other parameters. For example, you cannot do:
+</p>
+
+<pre class="idl">
+// <span class="comment" title="INVALID WEBIDL">妥当でない WebIDL</span>
+void f(Promise&lt;DOMString&gt; `x^v);
+void f(DOMString `y^v);
+</pre></div>
+
+
+		</section>
+		<section id="webidl-developer-functions-returning-promises">
+<h3 title="Developer Functions Returning Promises">7.3. ~promiseを返す開発者~関数</h3>
+
+<p>
+WebIDL においては、`~callback関数$として宣言することにより（または、稀な事例では`~callback~interface$を介して）、 JavaScript 関数を~~引数にとれるようになる。
+それは後に、 WebIDL 値の~listを~~引数に
+<a href="~WEBIDL#es-invoking-callback-functions">呼出される</a>。
+◎
+In WebIDL, you consume JavaScript functions by declaring them as WebIDL callback functions (or, in rare cases, via callback interfaces) and later invoking them with a list of WebIDL values.
+</p>
+
+<p>
+WebIDL の仕組みを利用して JavaScript 関数を~callすることにした場合、呼出~algoにおいては、自動的に返値を［
+~promiseとして解決する, あるいは例外が投出されたなら却下済み~promiseに変換する
+］ことになり、［
+<a href="#should-promise-call">~promiseを返す関数として開発者から供給された関数は “~promise-callされる” べきである</a>
+］原則は，自動的に守られることになる。
+◎
+If you use WebIDL’s mechanisms for calling JavaScript functions, the invocation algorithm will automatically resolve return values and convert thrown exceptions into rejected promises. This automatically takes care of the advice in §4.3.2 Developer-Supplied Promise-Returning Functions Should Be "Promise-Called".
+</p>
+
+
+
+		</section>
+		<section id="webidl-examples">
+<h3 title="Examples">7.4. 例</h3>
+
+<div class="example">
+<p>
+~promiseを返す~method：
+◎
+Promise-returning methods:
+</p>
+
+<pre class="idl">
+interface ProtectedResource {
+  Promise&lt;void&gt; requestAccess();
+  // ...
+};
+
+interface Quoter {
+  Promise&lt;DOMString&gt; getInterestingQuote();
+};
+</pre>
+</div>
+
+<div class="example">
+<p>
+~promiseを返す~property：
+◎
+Promise-returning properties
+</p>
+
+<pre class="idl">
+interface StateMachine {
+  readonly attribute Promise&lt;void&gt; loaded;
+
+  Promise&lt;void&gt; load();
+};
+</pre>
+</div>
+
+<div class="example">
+<p>
+~promiseを受容する~method：
+◎
+Promise-accepting methods
+</p>
+
+<pre class="idl">
+interface Waiter {
+  void waitUntil(Promise&lt;any&gt; `promise^v);
+};
+</pre>
+</div>
+
+<div class="example">
+<p>
+~promiseを返す開発者~関数
+◎
+Promise-returning developer functions
+</p>
+
+<pre class="idl">
+callback Promise&lt;DOMString&gt; ResourceLoader();
+
+interface ResourceConsumer {
+  void loadAndConsumeResource(ResourceLoader `loader^v);
+};
+</pre>
+</div>
+
+		</section>
+	</section>
+	<section id="legacy">
+
+<h2 title="Appendix: Legacy APIs for Asynchronicity">付録： 旧来の非同期 API </h2>
+
+<p>
+多くの~web~platform API は、~promiseの到来より前に書かれているため、自前の場当たり的な仕方で，非同期的 演算の［
+完了／失敗
+］を通知している。
+これらには次のものが含まれる：
+◎
+Many web platform APIs were written before the advent of promises, and thus came up with their own ad-hoc ways of signaling asynchronous operation completion or failure. These include:
+</p>
+
+
+<ul>
+	<li>
+IndexedDB のいくつかの~methodは、
+`onsuccess^c ／ `onerror^c
+~event~handlerを伴う `IDBRequest$c ~objを返す。
+◎
+IndexedDB returning IDBRequest objects, with their onsuccess and onerror events
+</li>
+
+	<li>
+File System API の
+<a href="http://www.w3.org/TR/file-system-api/#methods">`methods^c</a>
+【？】は、~parameterに種々の
+`successCallback^c ／ `errorCallback^c
+をとる。
+◎
+The File API’s methods taking various successCallback and errorCallback parameters
+</li>
+
+	<li>
+Notifications API の
+<a href="https://notifications.spec.whatwg.org/#dom-notification-requestpermissioncallback">`requestPermission^c</a>
+~methodは、自身の~callbackを
+`granted^l ／ `denied^l
+で~callする。
+◎
+The Notifications API’s requestPermission method, which calls its callback with "granted" or "denied"
+</li>
+
+	<li>
+Fullscreen API の
+<a href="https://fullscreen.spec.whatwg.org/#dom-element-requestfullscreen">`requestFullscreen^c</a>
+~methodは、文書~obj上に
+`fullscreenchange^et ／ `fullscreenerror^et
+~eventを誘発し、成功／失敗を検知するためには、それを~listenしなければならない。
+◎
+The Fullscreen API’s requestFullscreen method, which triggers onfullscreenchange or onfullscreenerror events on the nearby document object that must be listened to in order to detect success or failure
+</li>
+
+	<li>
+XMLHttpRequest の `send()$c ~methodは、複数回にわたり `readystatechange^et を誘発し，~objの各種~propertyを~status~情報で更新する
+— ~~最終的な状態~遷移の成功／失敗を~~正確に検知するためには、その情報を診なければならない。
+◎
+XMLHttpRequest’s send method, which triggers onreadystatechange multiple times and updates properties of the object with status information which must be consulted in order to accurately detect success or failure of the ultimate state transition
+</li>
+
+</ul>
+
+<p>
+【仕様の策定者は、】
+これらに類似するような何かが少しでも見出されるなら、それは~~止めて，代わりに~promiseを利用するように。
+◎
+If you find yourself doing something even remotely similar to these, stop, and instead use promises.
+</p>
+
+
+	</section>
+
+</main>
+
+
+	<section id="conformance">
+<h2 title="Conformance"> 適合性</h2>
+
+<p class="trans-note">【
+この節の内容は
+<a href="css-common-ja.html#document-conventions">CSS 日本語訳 共通ページ</a>
+（表記規約）に委譲
+】</p>
+
+<!-- 
+Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
+
+All of the text of this specification is normative except sections explicitly marked as non-normative, examples, and notes. [RFC2119]
+
+Examples in this specification are introduced with the words “for example” or are set apart from the normative text with class="example", like this:
+
+        This is an example of an informative example.
+
+Informative notes begin with the word “Note” and are set apart from the normative text with class="note", like this:
+
+Note, this is an informative note.
+ -->
+
+	</section>
+	<section id="references">
+<h2 title="References">参照文献</h2>
+
+		<section id="normative">
+<h3 title="Normative References">文献（規範）</h3>
+
+
+
+
+<dl>
+
+	<dt>[ECMASCRIPT]</dt>
+	<dd>ECMAScript Language Specification</dd>
+	<dd>https://tc39.github.io/ecma262/</dd>
+<!-- 
+	<dd>http://www.ecma-international.org/ecma-262/6.0/index.html</dd>
+ -->
+
+	<dt>[HTML]</dt>
+	<dd>Ian Hickson. HTML Standard. Living Standard.</dd>
+	<dd>https://html.spec.whatwg.org/multipage/</dd>
+
+	<dt>[WebIDL]</dt>
+	<dd>Cameron McCormack; Boris Zbarsky. WebIDL Level 1. 8 March 2016. CR.</dd>
+	<dd>https://heycam.github.io/webidl/</dd>
+
+<!-- 
+	<dt>[RFC2119]</dt>
+ -->
+
+</dl>
+
+		</section>
+		<section id="informative">
+<h3 title="Informative References">文献（参考）</h3>
+
+
+<dl>
+
+	<dt>[SERVICE-WORKERS]</dt>
+	<dd>Alex Russell; Jungkee Song; Jake Archibald. Service Workers. 25 June 2015. WD.</dd>
+	<dd>https://slightlyoff.github.io/ServiceWorker/spec/service_worker/</dd>
+</dl>
+
+		</section>
+	</section>
+	<section id="index">
+<h2 title="Index">索引</h2>
+<p class="trans-note">【
+この節の内容は省略（ウィンドウ下端の索引機能を利用されたし）。
+】</p>
+	</section>
+
+<!-- 
+<div class="p">
+<ul>
+	<li>
+</li>
+	<li>
+</li>
+	<li>
+</li>
+</ul>
+
+</div>
+ -->
