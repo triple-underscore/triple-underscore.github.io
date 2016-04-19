@@ -131,12 +131,12 @@ Util.fillMisc = function(options){//PAGE_DATA
 		}
 		if(e = E('_THIS_PAGE')){
 			e.href =
-				'http://www.hcn.zaq.ne.jp/___/WEB/' +
+				'https://triple-underscore.github.io/' +
 				window.location.pathname.match(/[^\/]+$/)[0];
 	//		e.textContent = 'このページ';
 		}
 		if(e = E('_CONTACT')){
-			e.innerHTML = '誤訳その他ご指摘／ご意見は<a href="http://www.hcn.zaq.ne.jp/___/about.html">連絡先</a>まで。'
+			e.innerHTML = '誤訳その他ご指摘／ご意見は<a href="https://triple-underscore.github.io/about.html">連絡先</a>まで。'
 		}
 	}
 
@@ -1215,7 +1215,7 @@ COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
 
 // 短縮形 URL の接頭辞 対応表
 COMMON_DATA.JA_BASIS = {
-	'' :       'www.hcn.zaq.ne.jp/___/WEB',
+	'' :       'triple-underscore.github.io/',
 	XML :      'www.hcn.zaq.ne.jp/___/XML',
 	mitsue:    'standards.mitsue.co.jp/resources/w3c/TR',
 	momdo:     'momdo.s35.xrea.com/web-html-test/spec',
@@ -1412,7 +1412,7 @@ DOM=版                ~TR/dom/●W3C版\n\
 DOM=・                ~TR/domcore/\n\
 DOMLEVEL2STYLE=主     ~adagio/tr_dom2_style/expanded-toc.html\n\
 ECMASCRIPT=主         tsofthome.appspot.com/ecmascript.html●第五版 訳\n\
-ELEMENTTRAVERSAL=主   www.hcn.zaq.ne.jp/___/DOM/ElementTraversal.html\n\
+	ELEMENTTRAVERSAL=主   www.hcn.zaq.ne.jp/___/DOM/ElementTraversal.html\n\
 ENCODING=主           ~/Encoding-ja.html\n\
 ENCODING=・           encoding.spec.whatwg.org/\n\
 FETCH=主              ~/Fetch-ja.html\n\
