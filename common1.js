@@ -1216,7 +1216,7 @@ COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
 // 短縮形 URL の接頭辞 対応表
 COMMON_DATA.JA_BASIS = {
 	'' :       'triple-underscore.github.io/',
-	XML :      'www.hcn.zaq.ne.jp/___/XML',
+	XML :      'https:triple-underscore.github.io/XML',
 	mitsue:    'standards.mitsue.co.jp/resources/w3c/TR',
 	momdo:     'momdo.s35.xrea.com/web-html-test/spec',
 	momdoG:    'momdo.github.io',
@@ -1608,7 +1608,7 @@ XHR=編                dvcs.w3.org/hg/xhr/raw-file/default/xhr-1/Overview.html\n
 XML11=主              w4ard.eplusx.net/translation/W3C/REC-xml11-20060816/\n\
 XML=主                w4ard.eplusx.net/translation/W3C/REC-xml-20081126/\n\
 XML=・                ~TR/xml/\n\
-XMLNS=主              ~XML/Namespaces-ja.html\n\
+XMLNS=主              ~XML/xml-ns-ja.html\n\
 XMLNS=・              ~TR/xml-names/\n\
 XMLSS=主              ~XML/xml-stylesheet-ja.html\n\
 XMLSS=・              ~TR/xml-stylesheet/\n\
