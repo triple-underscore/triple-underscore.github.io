@@ -1,0 +1,4543 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<title>Compositing and Blending Level 1 （日本語訳）</title>
+
+<link rel="stylesheet" href="common.css" type="text/css" />
+<link rel="stylesheet" href="common-css.css" type="text/css" />
+<script src="common0.js" ></script>
+<script src="common1.js" async></script>
+
+<script >
+
+COMMON_DATA.init = function(expanded){
+//	Util.del_j(); //checked 2014-02-20 spec
+
+	Util.DEFERRED.push(function(){
+		mixDemoInit();
+		if(expanded) return;
+
+		repeat('img[src^="//:0#"]', function(e){
+			e.src = 'compositing/' + e.getAttribute('src').slice(5);
+		})
+
+//TODO
+		var f = Util.CLICK_HANDLERS._toggle_words;
+		Util.CLICK_HANDLERS._toggle_words = function(){
+			f();
+			mixDemoInit();
+		}
+	})
+
+	return {
+		original_url: 'http://dev.w3.org/fxtf/compositing-1/',
+		spec_status: 'CR',
+		main: 'MAIN',
+		toc: 'contents',
+		alt_refs: 'references',
+		ref_id_prefix: 'biblio-',
+		ref_id_lowercase: true,
+		fill_text_link: '#_versions > dd, #references dd',
+		word_switch: 'replace_table'
+	};
+
+}
+
+
+function mixDemoInit(){
+
+	E('_reset_mix_demo').addEventListener('click', function(event){
+		reset();
+	}, false);
+	enable_reset(false);
+
+	E('_drop_area').addEventListener('dragover', function(event){
+		event.preventDefault();// ページ遷移防止
+	}, false);
+	E('_drop_area').addEventListener('drop', function(event){
+		event.preventDefault();
+		var file = event.dataTransfer.files[0];
+		if(!file) return;
+		var url = window.URL.createObjectURL(file);
+		switch(event.target.tagName){
+		case 'IMG': // source image
+			loadSource(url, event.target);
+			break;
+		case 'SPAN': // backdrop
+			loadBackdrop(url);
+			break;
+		}
+	}, false);
+
+	function enable_reset(t){
+		var e = E('_reset_mix_demo');
+		e.style.display = t ? 'inline' : 'none';
+	}
+
+	function loadSource(url, img){
+		repeat('.mix-demo > img', function(e){
+			e.src = url;
+		});
+		img.src = url;
+		enable_reset(true);
+	}
+
+	function loadBackdrop(url){
+		repeat('.mix-demo', function(e){
+			e.style.background = 'url(' + url + ')';
+		});
+		enable_reset(true);
+	}
+	
+	function reset(){
+		repeat('.mix-demo', function(e){
+			e.style.background = '';
+			var img = e.firstElementChild;
+			if(!img) img = e.previousElementSibling;
+			if(img){
+				img.src = 'compositing/composite-source.png';
+			}
+		});
+		enable_reset(false);
+	}
+}
+</script>
+
+
+<!--%style -->
+<style type="text/css">
+figure {
+	background: white;
+}
+
+pre.formula {
+	margin-left: 2em;
+	padding: 0.5em;
+	background: #EFE;
+}
+.params {
+	margin-left: 2em;
+}
+
+.comp-table {
+	border-collapse:separate;
+	margin-left: 2em;
+}
+
+.comp-box {
+	position:relative;
+	width: 120px;
+	height: 120px;
+	border: solid black 1px;
+}
+
+.comp-box > div {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.comp-source {
+	width: 60%;
+	height: 100%;
+	background: rgb(104, 199, 232);
+}
+
+.comp-dest {
+	width: 100%;
+	height: 40%;
+	background: rgb(255, 220, 0);
+}
+
+.comp-both {
+	width: 60%;
+	height: 40%;
+}
+
+.comp-box, .comp-negate {
+	background: white;
+	background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAGklEQVQYlWP4jwamTZuGghnooABdAB3QQQEAIlnXoZ5sWUwAAAAASUVORK5CYII=);
+}
+
+.compositing-sample {
+	background: url(data:image/svg+xml;base64,PHN2Zw0KCXZlcnNpb249IjEuMSINCgl4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciDQoJd2lkdGg9IjE4cHgiIGhlaWdodD0iMThweCINCgl2aWV3Qm94PSItOSAtOSAxOCAxOCINCj4NCjxwYXRoIGZpbGw9IiNFMEUwRTAiIGQ9Ik0wLDAgaDkgdjkgaC05IHogaC05IHYtOSBoOSB6IiAvPg0KPC9zdmc+DQo=);
+}
+
+
+.mix-demo {
+	display: inline-block;
+	margin-left: 1em;
+	width: 200px;
+	height:200px;
+	isolation: isolate;
+	background: url(compositing/backdrop.png);
+	background-repeat: repeat;
+}
+.mix-demo > img {
+	width: 200px;
+	height:200px;
+}
+
+#_ex-blend_background_opacity {
+	position: relative;
+	height: 16em;
+	min-width: 24em;
+}
+#_ex-blend_background_opacity > div {
+	position: absolute;
+	width: 12em;
+	height: 4em;
+	left: 0.5em;
+}
+#_ex-blend_background_opacity > div > div {
+	position: absolute;
+	width: 8em;
+	height: 100%;
+	left: 2em;
+}
+#_ex-blend_background_opacity > div > span {
+	position: absolute;
+	left: 14em;
+	line-height: 4em;
+	white-space: nowrap;
+}
+
+</style>
+
+<!--%語彙 -->
+<script type="text/plain" id="replace_table">
+
+	●色／合成
+後景:backdrop
+後景色:backdrop color
+後景上:backdrop 上
+初期後景:initial backdrop
+背後:behind
+背景:background
+ボーダー:border
+隔離-:isolate
+隔離:isolation
+隔離グループ:isolated group
+ページグループ:page group
+グループ:group
+グループ合成:group compositing
+合成グループ:compositing group
+	グループ分け:grouping
+
+レイヤ:layer
+下層:underlying
+	重なり合う:overlap
+	重ね合せ:overlapping
+	重なり合わない:non-overlapping
+	奥側／下端:bottom
+
+アルファ:alpha
+単純アルファ:simple alpha
+
+合成-:composite
+合成:compositing
+合成後:composite 後
+合成公式:compositing formula
+	合成モデル
+合成法:compositing
+合成演算子:compositing operator
+合成演算:compositing operation
+合成結果:resultant composite
+混色関数:blending function
+一般公式:general formula
+一般形:general form
+一般:general
+
+比率:fraction
+比率項:fractional term
+混合-:mix
+混合:mixing
+混合関数:mixing function
+混色-:blend
+混色:blending
+混色モード:blend mode
+混色公式:blending formula
+	混合公式→混色公式
+含有率:inclusion
+	screening
+	screen
+	overlay
+
+矩形:rectangle
+	source
+	dest
+	destination
+コントラスト:contrast
+暗度:darkness
+彩度:saturation
+明度:lightness
+色:color
+色値:color value
+色相:hue
+陰影:shadow
+不透明:opaque
+不透明度:opacity
+交差-:intersect
+交差域:area of intersection
+光度:luminosity
+光輝:highlight
+透明:transparent
+透明度:transparency
+拡散:diffused
+
+反転-:invert
+反転:inverse
+補色:complement
+
+画素:pixel
+画素色:pixel color
+部分画素:sub-pixel
+
+減算:subtract
+減量:reduce
+演算-:operate
+演算:operation
+	operating
+演算子:operator
+積算-:multiply
+積算済みの:premultiplied
+積算済みでない:non-premultiplied
+	積をとる:multiply
+	multiplying
+等式:equation
+区分:region
+被覆:coverage
+被覆率:coverage
+補助関数:auxiliary function
+関数:function
+領域:area
+図形:shape
+寄与:contribute
+寄与分:contribution
+	寄与して:contributing
+成分:component
+色成分:color component
+成分別:separable
+	成分別でない:nonseparable
+
+モノクロ:monochrome
+モード:mode
+グラデーション:gradient
+	結合法則:invariance
+		invariant
+	knockout
+
+シーン:scene
+スポットライト:spotlight
+公式:formula
+円:circle
+
+チャンネル:channel
+バッファ:buffer
+幾何的:geometric
+	幾何的に:geometry
+生産-:produce
+手法:method
+
+黒色:black
+単色:solid color
+灰色:gray
+白色:white
+青色:blue
+緑色:green
+黄緑色:lime
+赤色:red
+色空間:color space
+	色付け:coloring
+	色彩強調:tinting
+
+	初期の:initial
+	塗り:painting
+	塗りつぶされ:filled
+	重み:weight
+	重みで:weighting
+	面積:area
+	点線:dotted line
+	照らす:shining
+加重平均:weighted average
+投影:project
+実用的:practical
+調整:modulate
+
+	●CSS／SVG
+スタイル:style
+スタイルシート:style sheet
+トップレベル:top level
+	バージョン:version
+プロパティ:property
+使用値:used value
+初期値:initial value
+アニメーション:animatation
+算出値:computed value
+指定値:specified value
+継承:inherit
+媒体:media
+	適用対象:
+内容:content
+描画-:render
+描画:rendering
+文脈:context
+確立:establish
+積層文脈:stacking context
+構文:syntax
+百分率:percentage
+
+算出-:compute
+簡略形:shorthand
+要素:element
+グラフィックス要素:graphics element
+グラフィックス参照要素:graphics referencing elements
+コンテナ要素:container elements
+規則:rule
+	値型:type
+カンマ:comma
+	カンマ区切りの:comma-separated
+属性:attribute
+
+視覚的:visual
+文書:document
+文書片:document fragment
+変形:transform
+	座標系変換:transformation
+フィルタ効果:filter
+マスキング:masking
+クリッピング:clipping
+オブジェクト:object
+画像:image
+	先祖:ancestor
+
+	●仕様
+	実装-:implement
+標準:standard
+特色機能:feature
+課題:issue
+マークアップ:markup
+モジュール:module
+モデル:model
+リスク:risk
+レベル:level
+仕様:specification
+	開発:develop
+キーワード:keyword
+相互作用:interaction
+セキュリティ:security
+情報:information
+攻撃者:attacker
+保護-:protect
+計時攻撃:timing attack
+	仕掛ける:mount
+時間:time
+可読性:readability
+	用語／項:term
+	特有の:specific
+	草案:draft
+	規定でない:non-normative
+	規定／正式な／規範:normative
+	依存-:depend:~
+	依存-:dependent:~
+	依存して:depending
+	依存しない:independent
+	編集者:editor
+	高度な:advanced
+強化:enhance
+明確化:clarify
+明示的:explicit
+概念的:conceptual
+	拡張-:expand
+	拡張-:extend
+
+
+	●一般語
+実施:practice
+アクセス:access
+アプローチ:approach
+アルゴリズム:algorithm
+コード:code
+ゼロ:zero
+タグ:tag
+	詳細:detail
+グラフィック:graphic
+グラフィック的:graphical
+グラフィック演算:graphical operations
+
+テキスト:text
+ファイル:file
+リスト:list
+リンク:link
+部分的:partial
+代数:algebra
+作成-:create
+	作成:creation
+維持-:preserve
+値:value
+
+再設定-:reset
+出力:output
+分割-:divide
+制御:control
+削除-:delete
+割合:percentage
+効果:effect
+包含-:contain
+包含:containing
+	動作-:act
+	参照:reference
+反映-:reflect
+合致-:match
+同義語:synonymous
+名前:name
+変化-:change
+変換-:convert
+変更-:change
+変更点:changes
+外側:outside
+定義-:define
+定義:definition
+
+形成-:form
+影響-:affect
+意図:intent
+指定-:specify
+指定法:specifying
+既定:default
+本体:body
+格納-:store
+検知-:detect
+段落:paragraph
+
+決定-:determine
+相違:difference
+知識:knowledge
+空:empty
+絵図:artwork
+置換-:replace
+表現-:represent
+表現:representation
+表示-:display
+複雑:complex
+要約:abstract
+解決-:resolve
+計算-:calculate
+計算:calculation
+	calculating
+記述:description
+適用-:apply
+選択:select
+	selection
+順序:order
+除去:remove
+	逆算:reverse
+再構成:reconstruct
+効率的:efficient
+数学的:mathematical
+構築-:construct
+超過-:exceed
+完全:full
+基本的:basic
+事例:case
+
+	~alongside
+	~~in~place~with:
+	〜からなる:consists
+	〜するものとする。:shall
+	〜により積算される:multiplied
+	〜に向けて:toward
+	〜に基づく:based
+	〜に従って:according
+	〜に注意。:note
+	〜に関わらず:regardless
+	〜の代わりに:instead
+	〜の後に:after
+	〜の間:during
+	〜まで:until
+	〜分:amount
+	ある特定の／地点ごとに:particular
+	いくつかの:several
+	この:this
+	しかしながら:however
+	すでに:already
+	すべての:all
+	それら自身:themselves
+	なければならない:must
+	ふるまい:behavior
+	べきである:should
+	もの:ones
+	やりとり
+	やりとり-:interact
+	より~dark:	~darker
+	より低い:lower
+	より小さく:smaller
+	より明るい:	~lighter
+	より長い:	~longer
+
+	スライド写真:photographic slides
+	一定の:certain
+	一部分:	~aspect
+	一部／部分:part
+	上の:above
+	上端／前面:top
+	不変なまま:unchanged
+	与えられ:given
+	与える:give
+	中央:middle
+	中間処理:intermediate
+	中間段階:gradations
+
+	丸められる:rounded
+	以前の:previous
+	位置とサイズが決定:sized~and~positioned
+	作る
+	併合:merge
+	例:example
+	供する:offering
+	保ち続ける:retain
+
+	個々に:individually
+	個々の:individual
+	個数:number
+	元の:original
+	内部:inside
+	切り下げ:rounded down
+	切り詰め:clamp
+	別々に:separately
+	利用-:use
+	加えて，:additionally
+
+	包含している:containing
+	区切られ:separated
+	単独の:single
+	単純に:simply
+	参照する:	~refer
+	参考の:informative
+	反映:realized
+	可能な:possible
+	右:right
+	右下隅:bottom right corner
+	合計の:total
+	合計／和:	~sum
+	同じ:same
+	同時に:simultaneous に
+	同様の:similar
+	含む:include
+	含めて:including
+	図:figure
+	地点:point
+	地面と空:land and sky
+	変更が加えられた:modified
+	大まかな:rough
+	好ましい／望まれる:preferred
+	全体／のみ:complete
+	完全に:fully
+	実際の:actual
+	対応している:corresponding
+	対照的に:as opposed to
+	少なくとも:at least
+	属する:belongs
+	左:left
+	常に:always
+	強い:harsh
+	形:form
+	後続の:subsequent
+	従う:follow
+	必要なだけ:enough
+	性質:property
+	意味:meaning
+	意味する:means
+	意味する／:	~implies
+	戻す 1:	~extract
+	戻す:back
+	手続き:steps
+	指す:points to
+	挙げられ:listed
+	捉える:seen
+	推定-:infer
+	新たな:new
+	方法:way
+	明るくさせる:lighten
+	暗い:	~dark
+	暗くさせる:darken
+	更なる:further
+	最も:most
+	最大の:maximum
+	最小の:minimum
+	最終的な:final
+	現れない:enable
+	有用:useful
+	築く:build
+	次の:following
+	次の:next
+	正の:positive
+	残りの:remaining
+	段階:step
+	現れる:present
+	現在の:current
+	生じる:occur
+	用いて／利用して:using
+	画期的な:landmark
+	異なる:different
+	確保:ensure
+	示す:show
+	種々の:various
+	章:chapter
+	節:section
+	簡潔さ:simplicity
+	純粋:pure
+	組み合せ:combination
+	combining
+	組み合せる／結合する:combine
+	instance:
+	結果:result
+	結果の:~resultant
+	統合:incorporating
+	繰り返し:repeat
+	置かれる:	~placed
+	考慮する:consider
+	自前の:	~own
+
+
+	行われ:performed
+	表される:expressed
+	要する:entail
+	見なされ:considered
+	調べる:	~examine
+	調査して:studying
+	輝かせる:	~brightens
+	述べる:describe
+	追加して／加算して:adding
+	追加の:additional
+	透過する:show through
+	通例:	~usually
+	通例的には:typically
+	通常:normal
+	適用して:applying
+	重要:important
+	閉区間／:inclusive
+	非:non
+	紙飛行機:airplane
+	２個の:two
+	２番目の:second
+
+	1:	~believes
+	4.001:	~becomes
+	-:	~overall
+	12 個の:twelve
+	1:	~causes
+	1:	~causing
+	1:	~cite
+	1:	~clip
+	1:	~compared
+	1:	~comprises
+	1:	~corner
+	1:	~div
+	1:	~down
+	1:	~draw
+	1:	~ever
+	1:	~everything
+	強制:force
+	1:	~gets
+	1:	~imply
+	1:	~leaves
+	1:	~light
+	成分ごとに個別に扱わずに:separable ones that look at each component individually
+	1:	~max
+	1:	~mid
+	1:	~min
+	1:	~moment
+	1:	~neither
+	1:	~obtaining
+	1:	~open
+	1:	~preferably
+	1:	~put
+
+	1:	~satisfying
+	1:	~self
+	1:	~sending
+	1:	~setting
+	1:	~shifts
+	1:	~stops
+	1:	~stored
+	1:	~subject
+	1:	~subscripts
+	1:	~taken
+	1:	~termed
+	1:	~took
+	1:	~turn
+	1:	~unneeded
+	1:	~updated
+	1:	~work
+	1:	~worked
+	1:	~working
+	1:	~you
+	2:	~addition
+	2:	~followed
+	2:	~takes
+	3.001:	~make
+	3:	~constituent
+	3:	~having
+	3:	~sample
+	3:	~sub
+	3:	~upon
+	5:	~made
+	6:	~onto
+	6:	~pre
+	SVG:svg
+	~range範囲
+	substitute置き換えた
+
+</script>
+
+</head>
+
+<body>
+
+
+<aside class="trans-meta">
+<h1>Compositing and Blending 日本語訳</h1>
+<p>
+<a id="_THIS_PAGE">このページ</a>
+は、
+<a href="http://www.w3.org/">W3C</a> により，副題の日付にて
+<strong >勧告候補</strong>として公開された
+<a id="_SPEC_URL">Compositing and Blending Level 1</a>
+を日本語に翻訳したものです。
+<strong >この翻訳の正確性は保証されません。</strong>
+この仕様の公式な文書は英語版であり、この日本語版は公式のものではありません。
+【 と 】で囲まれた部分は<span class="trans-note">【訳者による注釈】</span>です。
+（<a href="index.html">他のウェブ関連仕様の一覧と共通機能の詳細</a>）
+</p>
+
+<p>
+更新：<time>2015-05-22</time>
+（公開：<time>2014-04-05</time> ）
+</p>
+
+<p>
+本文ダブルクリックで当該箇所の原文が表示されます（左下隅に各種 表示切替ボタン — CSS や DOM の対応が古いブラウザでは、一部機能しないことがあります）。
+</p>
+
+<address id="_CONTACT">　</address>
+
+</aside>
+
+<header>
+<div><a href="http://www.w3.org/" id="_W3C">W3C</a></div>
+
+<h1 id="title">色の合成と混色 — Compositing and Blending Level 1</h1>
+
+<h2 id="subtitle">2015 年 4 月 26 日付 勧告候補</h2>
+
+<dl id="_versions">
+	<dt title="This version:">このバージョン：</dt>
+	<dd>http://www.w3.org/TR/2015/CR-compositing-1-20150426/</dd>
+
+	<dt title="Latest version:">最新 発行バージョン：</dt>
+	<dd>http://www.w3.org/TR/compositing-1/</dd>
+
+	<dt title="Editor's Draft:">編集者草案</dt>
+	<dd>http://dev.w3.org/fxtf/compositing-1/</dd>
+
+	<dt title="Previous version:">以前のバージョン：</dt>
+	<dd>http://www.w3.org/TR/2014/WD-compositing-1-20140220/</dd>
+
+	<dt title="Feedback:">フィードバック：</dt>
+	<dd>
+	<dd><a href="mailto:public-fx@w3.org?subject=%5Bcompositing%5D%20feedback">public-fx@w3.org</a>
+with subject line
+“<kbd>[compositing] <i>… message topic …</i></kbd>”(<a href="http://lists.w3.org/Archives/Public/public-fx/">archives</a>)</dd>
+
+	<dt title="Test Suite:">テストスイート</dt>
+	<dd>http://test.csswg.org/suites/compositing-1_dev/nightly-unstable/</dd>
+
+	<dt title="Editors:">編集：</dt>
+	<dd><a href="mailto:cabanier@adobe.com">Rik Cabanier</a> (Adobe Systems Inc.)</dd>
+	<dd><a href="mailto:Nikos.Andronikos@cisra.canon.com.au">Nikos Andronikos</a> (Canon Information Systems Research Australia)</dd>
+
+</dl>
+
+<small class="copyright">
+<a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright" rel="license">Copyright</a> © 2015 
+<a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup>
+(<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>,
+<a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>,
+<a href="http://www.keio.ac.jp/">Keio</a>,
+<a href="http://ev.buaa.edu.cn/">Beihang</a>), All Rights Reserved. W3C
+<a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>,
+<a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a>
+and
+<a href="http://www.w3.org/Consortium/Legal/copyright-documents">document use</a>
+rules apply.</small>
+</header>
+
+
+	<section id="abstract">
+<h2 title="Abstract">要約</h2>
+
+<p>
+Compositing （合成）は、異なるいくつかの要素の図形を単独の画像の中に組み合せる方法を述べる。
+合成には種々のアプローチをとり得る。
+SVG と CSS の以前のバージョンでは、
+<a href="http://www.w3.org/TR/SVG11/masking.html#SimpleAlphaBlending">単純アルファ合成</a>
+<a>[SVG11]</a>
+が利用されていた。
+このモデルでは、それぞれの要素は、自前のバッファに描画された上で，
+Porter Duff <a>source-over</a> 演算子を用いて <a>後景</a>に併合されていた。
+この仕様は、次を供することにより，この単純アルファ合成モデルを拡張し、新たな合成モデルを定義する：
+<span lang="en">
+Compositing describes how shapes of different elements are combined into a single image. There are various possible approaches for compositing. Previous versions of SVG and CSS used Simple Alpha Compositing. In this model, each element is rendered into its own buffer and is then merged with its backdrop using the Porter Duff source-over operator. This specification will define a new compositing model that expands upon the Simple Alpha Compositing model by offering:
+</span></p>
+
+<ul>
+	<li>
+追加の Porter Duff 合成演算子
+<span lang="en">
+additional Porter Duff compositing operators
+</span></li>
+
+	<li>
+図形が重なり合う領域で色を混合する方法を制御できるようにする，より高度な混色（ blending ）モード
+<span lang="en">
+advanced blending modes which allow control of how colors mix in the areas where shapes overlap
+</span></li>
+
+	<li>
+合成グループ
+<span lang="en">
+compositing groups
+</span></li>
+</ul>
+
+<p>
+加えて，この仕様は、混色とグループ隔離のための CSS プロパティ, および［
+<a>[2DCONTEXT2]</a>
+にて定義される
+<a><code>globalCompositeOperation</code></a>
+属性のプロパティ
+］を定義する。
+<span lang="en">
+In addition, this specification will define CSS properties for blending and group isolation and the properties of the ‘globalcompositeoperation’ attribute as defined in [2DCONTEXT2].
+</span></p>
+
+	</section>
+	<section id="status">
+<h2 title="Status of this document">この文書の位置付け</h2>
+
+<p>
+<em>これは編集者草案の公開の複製です…</em>
+<span class="trans-note">【
+以下、この節の他の内容は
+<a href="css-common-ja.html#status" >CSS 日本語訳 共通ページ</a>
+に委譲
+】</span></p>
+
+<p>
+この文書は、（
+<a href="http://www.w3.org/Style/">Style Activity</a>
+の一部門の）
+<a href="http://www.w3.org/Style/CSS/members">CSS Working Group</a>
+と（
+<a href="http://www.w3.org/Graphics/">Graphics Activity</a>
+の一部門の）
+<a href="http://www.w3.org/Graphics/SVG/WG/">SVG Working Group</a>
+により、
+<a href="http://www.w3.org/2005/10/Process-20051014/tr.html#maturity-levels" >勧告候補</a>
+として制作されました。
+<span lang="en">
+This document was produced by the CSS Working Group (part of the Style Activity) and the SVG Working Group (part of the Graphics Activity) as a Candidate Recommendation.
+</span></p>
+
+<p>
+この文書は
+<a href="http://www.w3.org/Consortium/Patent-Policy-20040205/">5 February 2004 W3C Patent Policy</a>
+に従事するグループにより制作されました。
+W3C はそれぞれのグループの成果物に関連して
+<a href="http://www.w3.org/2004/01/pp-impl/32061/status" rel="disclosure">public list of any patent disclosures (CSS)</a>
+と
+<a href="http://www.w3.org/2004/01/pp-impl/19480/status" rel="disclosure">public list of any patent disclosures (SVG)</a>
+を維持管理しています。
+これらのページには特許開示の手引き<!--1-->も含まれます。
+特許に関する実際的知識を持ち、そこに
+<a href="http://www.w3.org/Consortium/Patent-Policy-20040205/#def-essential">Essential Claim(s)</a>
+が含まれていると主張<!--0-->する者は
+<a href="http://www.w3.org/Consortium/Patent-Policy-20040205/#sec-Disclosure">W3C Patent Policy 第 6 節</a>
+に則って情報を開示しなければなりません。
+<span lang="en">
+This document was produced by groups operating under the 5 February 2004 W3C Patent Policy. W3C maintains a public list of any patent disclosures (CSS) and a public list of any patent disclosures (SVG) made in connection with the deliverables of each group; these pages also includes instructions for disclosing a patent. An individual who has actual knowledge of a patent which the individual believes contains Essential Claim(s) must disclose the information in accordance with section 6 of the W3C Patent Policy.
+</span></p>
+
+
+<p>
+Compositing and Blending Level 1 のための
+テストスィートと実装 報告
+は，勧告候補の段階にて開発中にあり、
+2015 年 8 月 17 日までに出来上がる見込みです。
+詳細は
+“<a href="#cr-exit-criteria">勧告候補からの昇格基準</a>”
+に。
+<span lang="en">
+A test suite and implementation report for Compositing and Blending Level 1 will be developed during the Candidate Recommendation phase, which will last a minimum of six months, and at least until 17 August 2014. See the section “CR exit criteria” for more details.
+</span></p>
+
+	</section>
+	<nav id="contents" class="toc">
+<h2 title="Table of contents">目次</h2>
+
+<!--  --></nav>
+
+<main id="MAIN">
+
+	<section id="introduction">
+<h2 title="Introduction">1. 序論</h2>
+
+<p>
+<em>この節は規定ではない。</em><br>
+この文書の前半部分では、 CSS における合成を制御するための各種プロパティについて述べる。
+後半部分では、 Porter Duff 合成, および混色の，アルゴリズムについて述べる。
+<span lang="en">
+This subsection is non-normative. The first part of this document describes the properties used to control the compositing in CSS. The second part will describe the algorithms of Porter Duff compositing and blending.
+</span></p>
+
+	</section>
+	<section id="reading-this-document">
+<h2 title="Reading This Document">2. この文書を読むにあたって</h2>
+
+<p>
+他から指定されない限り、この文書の各節は規定とする。
+<span lang="en">
+Each section of this document is normative unless otherwise specified.
+</span></p>
+
+		<section id="module-interactions">
+<h3 title="Module interactions">2.1. モジュール間の相互作用</h3>
+
+<p>
+この仕様は、一連の CSS  プロパティを定義する。
+それらは，それらが適用される要素の視覚的な描画に影響する。
+これらの効果は、要素が
+<a>[CSS21]</a>
+による<a>視覚整形モデル</a>に従って 位置とサイズが決定された後に，適用される。
+これらのプロパティの一部の値による結果，<a>包含ブロック</a>や<a>積層文脈</a>が作成される場合がある。
+<span lang="en">
+This specification defines a set of CSS properties that affect the visual rendering of elements to which those properties are applied; these effects are applied after elements have been sized and positioned according to the Visual formatting model from [CSS21]. Some values of these properties result in the creation of a containing block, and/or the creation of a stacking context.
+</span></p>
+
+<p>
+<a>background-blend-mode</a>
+プロパティは、
+CSS <a>背景とボーダー</a>モジュール <a>[CSS3BG]</a>
+にて定義されるプロパティを基に，築かれている。
+<span lang="en">
+The background-blend-mode property also builds upon the properties defined in the CSS Backgrounds and Borders module [CSS3BG].
+</span></p>
+
+<p>
+この仕様は、
+<a>[SVG11]</a> にて指定される
+<a href="http://www.w3.org/TR/SVG11/masking.html#SimpleAlphaBlending" title="simple alpha blending">単純アルファ合成</a>
+と
+<a>[CSS3COLOR]</a> による
+<a href="http://www.w3.org/TR/css3-color/#alpha" title="simple alpha compositing">単純アルファ合成</a>
+の規則も強化する。
+<span lang="en">
+This specification also enhances the rules as specified in Section 14.2 Simple alpha compositing of [SVG11] and simple alpha compositing of [CSS3COLOR].
+</span></p>
+
+<p>
+このモジュールは
+<a>[2DCONTEXT2]</a>
+にて定義される
+<a><code>globalCompositeOperation</code></a>
+も拡張する。
+<span lang="en">
+This module also extends the ‘globalcompositeoperation’ as defined in [2DCONTEXT2].
+</span></p>
+
+		</section>
+		<section id="values">
+<h3 title="Values">2.2. 値</h3>
+
+<p class="trans-note">【
+この節の内容は
+<a href="css-common-ja.html#values" >CSS 日本語訳 共通ページ</a>
+に委譲
+】</p>
+
+		</section>
+	</section>
+	<section id="csscompositingandblending">
+<h2 title="Specifying Blending in CSS">3. CSS における混色の指定</h2>
+
+		<section id="compositingandblendingorder">
+<h3 title="Order of graphical operations">3.1. グラフィック演算の順序</h3>
+
+<p>
+合成モデルは <a>SVG 合成</a>モデル <a>[SVG11]</a> に従わなければならない：
+フィルタ効果があれば，それを最初に適用した後、クリッピング, マスキング, 混色, 合成を適用する。
+<span lang="en">
+The compositing model must follow the SVG compositing model [SVG11]: first any filter effect is applied, then any clipping, masking, blending and compositing.
+</span></p>
+
+		</section>
+		<section id="csscompositingrules_CSS">
+<h3 title="Behavior specific to HTML">3.2. HTML に特有のふるまい</h3>
+
+<p>
+CSS における，<a>積層文脈</a>を作成するもの
+<span class="trans-note">【<a href="https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Understanding_z_index/The_stacking_context" >参考</a>】</span>
+すべては、<a>隔離グループ</a>と見なされなければならない。
+HTML 要素自体は、グループを作成するべきでない。
+<span lang="en">
+Everything in CSS that creates a stacking context must be considered an ‘isolated’ group. HTML elements themselves should not create groups.
+</span></p>
+
+<p>
+混色が適用されている要素は、その要素が属する<a>積層文脈</a>
+<a>[CSS21]</a>
+の，下層の内容すべてと伴に混色されなければならない。
+<span lang="en">
+An element that has blending applied, must blend with all the underlying content of the stacking context [CSS21] that that element belongs to.
+</span></p>
+
+		</section>
+		<section id="csscompositingrules_SVG">
+<h3 title="Behavior specific to SVG">3.3. SVG に特有のふるまい</h3>
+
+<p>
+既定では、どの要素も，非 <a>隔離グループ</a>を作成しなければならない。
+<span lang="en">
+By default, every element must create a non-isolated group.
+</span></p>
+
+<!-- SVG has the following <a href="http://www.w3.org/TR/SVG11/render.html#Introduction">compositing model</a>: first any filter effect is applied, then any clipping, masking,  blending and compositing -->
+
+<p>
+しかしながら， SVG の一定の演算では、<a>隔離グループ</a>が作成されることになる。
+次のいずれかの特色機能が利用されている場合、そのグループは，隔離されなければならない：
+<span lang="en">
+However, certain operations in SVG will create isolated groups. If one of the following features is used, the group must become isolated:
+</span></p>
+
+<ul>
+	<li>
+不透明度
+<span lang="en">
+opacity
+</span></li>
+
+	<li>
+フィルタ効果
+<span lang="en">
+filters
+</span></li>
+
+	<li>
+<p>
+3 次元的な変形（ transforms, 座標系変換）
+（ 2 次元的な変形は、隔離を生じさせてはならない）。
+<span lang="en">
+3D transforms (2D transforms must NOT cause isolation)
+</span></p>
+
+<p class="trans-note">【
+元々の SVG 1.1 仕様は， 3 次元の座標系変換のための機能を備えていないが、
+<a href="css-transforms-ja.html#svg-three-dimensional-functions" >CSS Transform 仕様により拡張されている</a>。
+】</p>
+	</li>
+
+	<li>
+混色
+<span lang="en">
+blending
+</span></li>
+
+	<li>
+マスキング
+<span lang="en">
+masking
+</span></li>
+</ul>
+
+		</section>
+		<section id="csskeywords">
+<h3 title="CSS Properties">3.4. 各種 CSS プロパティ</h3>
+
+			<section id="mix-blend-mode">
+<h4 title="The mix-blend-mode property">3.4.1. <code class="property">mix-blend-mode</code> プロパティ</h4>
+
+<p>
+混色モードは、色を後景に混合する際に利用されなければならない公式を定義する。
+このふるまいは、<a>混色</a>の節にて詳細に述べられる。
+<span lang="en">
+The blend mode defines the formula that must be used to mix the colors with the backdrop. This behavior is described in more detail in Blending.
+</span></p>
+
+<table class="propdef"><tbody>
+<tr><th>名前</th><td>
+<dfn id="propdef-mix-blend-mode" class="property">mix-blend-mode</dfn>
+</td></tr><tr><th>値</th><td>
+<a><var>&lt;blend-mode&gt;</var></a>
+</td></tr><tr><th>初期値</th><td><a>normal</a>
+</td></tr><tr><th>適用対象</th><td>
+すべての要素。
+SVG においては、
+<a>コンテナ要素</a>,
+<a>グラフィックス要素</a>,
+<a>グラフィックス参照要素</a>。
+<a>[SVG11]</a>
+<span lang="en">
+All elements. In SVG, it applies to container elements, graphics elements and graphics referencing elements. [SVG11]
+</span></td></tr><tr><th>継承</th><td>されない
+</td></tr><tr><th>百分率</th><td>利用不可
+</td></tr><tr><th>媒体</th><td>視覚的
+</td></tr><tr><th>算出値</th><td>指定値<!-- as specified -->
+</td></tr><tr><th>アニメーション</th><td>不可
+</td></tr></tbody></table>
+
+<p>
+<a><var>&lt;blend-mode&gt;</var></a>
+値型の構文は次で与えられる：
+<span lang="en">
+The syntax of the property of &lt;blend-mode&gt; is given with:
+</span></p>
+
+<pre class="blendmode">
+<dfn id="ltblendmodegt"><var>&lt;blend-mode&gt;</var></dfn>
+  = <a>normal</a>
+  | <a>multiply</a>
+  | <a>screen</a>
+  | <a>overlay</a>
+  | <a>darken</a>
+  | <a>lighten</a>
+  | <a>color-dodge</a>
+  | <a>color-burn</a>
+  | <a>hard-light</a>
+  | <a>soft-light</a>
+  | <a>difference</a>
+  | <a>exclusion</a>
+  | <a>hue</a>
+  | <a>saturation</a>
+  | <a>color</a>
+  | <a>luminosity</a>
+</pre>
+
+<p class="note">注記：
+<a>normal</a>
+以外の混色モードが要素に適用されるときは、新たな<a>積層文脈</a>
+<a>[CSS21]</a>
+が確立されなければならない。
+このグループは、その要素を包含する<a>積層文脈</a>
+と伴に混色され, 合成されなければならない。
+<span lang="en">
+Note: Applying a blendmode other than normal to the element must establish a new stacking context [CSS21]. This group must then be blended and composited with the stacking context that contains the element.
+</span></p>
+
+<div class="example">
+<p>
+次のマークアップとスタイル規則が与えられたなら：
+<span lang="en">
+Given the following sample markup:
+</span></p>
+
+<pre>
+&lt;body&gt;
+   &lt;img src="ducky.png"/&gt;
+&lt;/body&gt;
+</pre>
+
+<p><span lang="en">And the following style rule:</span></p>
+
+<pre>
+body { background-color: lime; }
+</pre>
+
+<p>
+次の結果が生産されることになる：
+<span lang="en">
+... will produce the following result:
+</span></p>
+
+<figure><img
+	alt="example of an image of duck with the lime color of the document"
+	src="//:0#ducky_normal.png"
+	style="width:30%"
+><figcaption>
+黄緑色（ <samp class="value">lime</samp> ）の後景上の，部分的に透明な画像
+<span lang="en">
+Partially transparent image on a lime backdrop
+</span></figcaption></figure>
+
+<p>
+スタイル規則を，混色を含むように変更したとするとき：
+<span lang="en">
+If we change the style rule to include blending:
+</span></p>
+
+<pre>
+body { background-color: lime; }
+img { <a>mix-blend-mode</a>: <a>multiply</a>; }
+</pre>
+
+<p>
+&lt;body&gt; 要素の黄緑色 背景と混色された画像が出力されることになる。
+<span lang="en">
+... the output will be the image blending with the lime background of the &lt;body&gt; element.
+</span></p>
+
+<figure><img
+	alt="example of an image of duck blending with the lime color of the document"
+	src="//:0#ducky_multiply.png"
+	style="width:30%"
+><figcaption>
+黄緑色の後景上の，透明な画像の混色
+<span lang="en">
+Blending of a transparent image on a lime backdrop.
+</span></figcaption></figure>
+
+<!-- 
+<figure><div
+	style="
+display: inline-block;
+background: lime;
+width: 30%;
+"><img
+	src="//:0#ducky_normal.png"
+	style="width: 100%; mix-blend-mode: multiply;"
+></div><figcaption>
+（利用中のブラウザによる表示）
+</figcaption></figure>
+ -->
+
+</div>
+
+	<div class="example">
+<p>
+次の SVG コードとスタイル規則が与えられたなら：
+<span lang="en">
+Given the following svg code:
+</span></p>
+
+<pre>
+&lt;svg&gt;
+  &lt;circle cx="40" cy="40" r="40" fill="red"/&gt;
+  &lt;circle cx="80" cy="40" r="40" fill="lime"/&gt;
+  &lt;circle cx="60" cy="80" r="40" fill="blue"/&gt;
+&lt;/svg&gt;
+</pre>
+
+<p><span lang="en">And the following style rule:</span></p>
+
+<pre>
+circle { <a>mix-blend-mode</a>: <a>screen</a>; }
+</pre>
+
+<p>
+３個の円が混色されて出力される。
+各 円は，奥から前面にかけて描画され、要素が重なり合う所では，混色モードにより色が変化する。
+<span lang="en">
+... the output will be blending of the 3 circles. Each circle is rendered from bottom to top. Where the elements overlap, the blend mode produces a change in color.
+</span></p>
+
+<figure><img
+	alt="example of 3 circles blending with a screen blend mode"
+	src="data:image/svg+xml;base64,
+PHN2Zw0KCXZlcnNpb249IjEuMSINCgl4bWxucz0iaHR0cDovL3d3dy53My5vcmcv
+MjAwMC9zdmciDQoJd2lkdGg9IjIwMHB4IiBoZWlnaHQ9IjIwMHB4Ig0KCXZpZXdC
+b3g9Ii0xMDAgLTEwMCAyMDAgMjAwIg0KPg0KDQo8Y2lyY2xlIGZpbGw9IiNGRjAw
+MDAiDQoJY3g9Ii0zMCIgY3k9Ii0xNy4zMiIgcj0iNjAiIC8+DQo8Y2lyY2xlIGZp
+bGw9IiMwMEZGMDAiDQoJY3g9IjMwIiBjeT0iLTE3LjMyIiByPSI2MCIgLz4NCjxj
+aXJjbGUgZmlsbD0iIzAwMDBGRiINCgljeD0iMCIgY3k9IjM0LjY0IiByPSI2MCIg
+Lz4NCg0KPHBhdGggZmlsbD0iI0ZGRkYwMCINCglkPSJNMCwtNjkuMjgNCkE2MCw2
+MCAwLDAsMSAwLDM0LjY0DQpBNjAsNjAgMCwwLDEgMCwtNjkuMjgNCnoiIC8+DQo8
+cGF0aCBmaWxsPSIjMDBGRkZGIg0KCWQ9Ik02MCwzNC42NA0KQTYwLDYwIDAsMCwx
+IC0zMCwtMTcuMzINCkE2MCw2MCAwLDAsMSA2MCwzNC42NA0KeiIgLz4NCjxwYXRo
+IGZpbGw9IiNGRjAwRkYiDQoJZD0iTS02MCwzNC42NA0KQTYwLDYwIDAsMCwxIDMw
+LC0xNy4zMg0KQTYwLDYwIDAsMCwxIC02MCwzNC42NA0KeiIgLz4NCjxwYXRoIGZp
+bGw9IiNGRkZGRkYiDQoJZD0iTTAsMzQuNjQNCkE2MCw2MCAwLDAsMSAtMzAsLTE3
+LjMyDQpBNjAsNjAgMCwwLDEgMzAsLTE3LjMyDQpBNjAsNjAgMCwwLDEgMCwzNC42
+NA0KeiIgLz4NCg0KPC9zdmc+DQo="
+	style="width:30%"
+><figcaption>
+<!-- 
+//:0#screen_example.svg
+ -->
+<a>screen</a> 混色モードで混色された３個の円
+<span lang="en">
+Example of 3 circles blending with a screen blend mode
+</span></figcaption></figure>
+  </div>
+
+	<div class="example">
+<p>
+次のスタイルシートと文書片において：
+<span lang="en">
+In the following style sheet and document fragment:
+</span></p>
+
+<pre>
+body { background-color: lime; }
+div { background-color: red; width: 200px; opacity: .95}
+img { <a>mix-blend-mode</a>: <a>difference</a>; }
+
+&lt;body&gt;
+  &lt;div&gt;
+     &lt;img src="ducky.png"/&gt;
+  &lt;/div&gt;
+&lt;/body&gt;
+</pre>
+
+<p>
+&lt;div&gt; 要素­上の <a>opacity</a> は、新たな<a>積層文脈</a>を作成する。
+これにより，新たなグループが作成され、画像は &lt;body&gt; の色とは混色されなくなる。
+<span lang="en">
+... the opacity on the &lt;div&gt; element is causing the creation of a stacking context. This causes the creation of a new group so the image doesn’t blend with the color of the &lt;body&gt;.
+</span></p>
+
+<figure><img
+	alt="example of an image of duck blending with the lime color of the document"
+	src="//:0#ducky_difference.png"
+	style="width:30%"
+><figcaption>
+積層文脈の中での混色の例
+<span class="trans-note">【
+左側の赤色領域が &lt;div&gt; の範囲。元の画像の周辺部は透明。
+】</span>
+<span lang="en">
+Example of blending within a stacking context.
+</span></figcaption></figure>
+
+<p>
+画像が黄緑色とは混色されなくなる様子に注意。
+<span lang="en">
+Note how the image is not blending with the lime color.
+</span></p></div>
+
+	<div class="example">
+<p>
+次のマークアップとスタイル規則が与えられたなら：
+<span lang="en">
+Given the following sample markup:
+</span></p>
+
+<pre>
+</pre>
+
+<pre>
+&lt;body&gt;
+   &lt;div&gt;
+     &lt;p&gt;<a>overlay</a> blending on text&lt;/p&gt;
+   &lt;/div&gt;
+&lt;/body&gt;
+</pre>
+
+<p>
+<span lang="en">
+And the following style rule:
+</span></p>
+
+<pre>div { background-image: url('texture.png'); }
+@font-face {
+  font-family: "Mythos Std";
+  src: url("http://myfontvendor.com/mythos.otf");
+}
+p {
+  <a>mix-blend-mode</a>: <a>overlay</a>;
+  font-family: "Mythos Std" 
+}
+</pre>
+
+
+<figure><img
+	alt="example of text that has an overlay blend on top of a texture"
+	src="//:0#overlay_text.png"
+	style="width:75%"
+><figcaption>
+画像上に <a>overlay</a> 混色されるテキスト。
+<span lang="en">
+Text with a blend overlay on top of an image.
+</span></figcaption></figure>
+  </div>
+
+
+			</section>
+			<section id="isolation">
+<h4 title="The isolation property">3.4.2. <code class="property">isolation</code> プロパティ</h4>
+
+<p>
+SVG においては、これは，要素が隔離されるかどうかを定める。
+CSS においては、
+<a>isolation</a> の値を <a class="value">isolate</a> にすることは，要素を<a>積層文脈</a>にすることを意味する。
+<span lang="en">
+In SVG, this defines whether an element is isolated or not.
+For CSS, setting isolation to isolate will turn the element into a stacking context.
+</span></p>
+
+<p>
+要素に対する <a>isolation</a> の既定の値は，隔離されないことを意味する
+<code class="value">auto</code>
+をとる。
+しかしながら，積層文脈 <a>[CSS21]</a> を作成させるような演算については、グループは隔離されなければならない。
+これらの演算については、
+<a href="#csscompositingrules_CSS">HTML に特有のふるまい</a>
+と
+<a href="#csscompositingrules_SVG">SVG に特有のふるまい</a>
+にて述べられる。
+<span lang="en">
+By default, elements use the auto keyword which implies that they are not isolated. However operations that cause the creation of stacking context [CSS21] must cause a group to be isolated. These operations are described in 'behavior specific to HTML' and 'behavior specific to SVG'.
+</span></p>
+
+<table class="propdef"><tbody>
+<tr><th>名前</th><td>
+<dfn id="propdef-isolation" class="property">isolation</dfn>
+</td></tr><tr><th>値</th><td>
+<a><var>&lt;isolation-mode&gt;</var></a>
+</td></tr><tr><th>初期値</th><td><code class="value">auto</code>
+</td></tr><tr><th>適用対象</th><td>
+すべての要素。
+SVG においては、
+<a>コンテナ要素</a>,
+<a>グラフィックス要素</a>,
+<a>グラフィックス参照要素</a>。
+<a>[SVG11]</a>
+<span lang="en">
+All elements. In SVG, it applies to container elements, graphics elements and graphics referencing elements. [SVG11]
+</span></td></tr><tr><th>継承</th><td>されない
+</td></tr><tr><th>百分率</th><td>利用不可
+</td></tr><tr><th>媒体</th><td>視覚的
+</td></tr><tr><th>算出値</th><td>指定値
+</td></tr><tr><th>アニメーション</th><td>不可
+</td></tr></tbody></table>
+
+<p>
+<a><var>&lt;isolation-mode&gt;</var></a>
+値型の構文は次で与えられる：
+<span lang="en">
+The syntax of the property of &lt;isolation-mode&gt; is given with:
+</span></p>
+
+<pre class="isolated"><dfn id="isolated-propid"><var>&lt;isolation-mode&gt;</var></dfn> = <code class="value">auto</code> | <a class="value">isolate</a>
+</pre>
+
+<p id="img_isolation">
+CSS においては、背景 画像や <a>img</a> の内容は、常に，<a>隔離グループ</a>の中に描画されなければならない。
+例えば， <code>img</code> タグを通して SVG ファイルへリンクを張っている場合、
+SVG の絵図は，内容の後景とは混色されないことになる。
+<span lang="en">
+In CSS, a background image or the content of an img must always be rendered into an isolated group. For instance, if you link to an SVG file through the img tag, the artwork of that SVG will not blend with the backdrop of the content.
+</span></p>
+
+<p>
+SVG における
+<a>mask</a>
+は、常に，<a>隔離グループ</a>を作成する。
+<span lang="en">
+In SVG, mask always creates an isolated group.
+</span></p>
+
+
+			</section>
+			<section id="background-blend-mode">
+<h4 title="The background-blend-mode property">3.4.3. <code class="property">background-blend-mode</code> プロパティ</h4>
+
+<p>
+各 背景レイヤ†の混色 モードを定義する。
+<span lang="en">
+Defines the blending mode of each background layer.
+</span></p>
+
+<p class="trans-note">【
+† — <a>background-image</a>
+プロパティにより指定される（画像などによる）背景
+】</p>
+
+<p>
+各 背景レイヤは、［
+そのレイヤより下層にある［
+要素の他の背景レイヤ
+］と要素の背景 色
+］と混色されなければならない。
+背景レイヤは、要素の背後の内容と混色されてはならない。
+代わりに，<a>隔離グループ</a>の中に描画されているかのように動作しなければならない。
+<!-- ＊
+【背後の — 概ね，要素の先祖の内容？】
+ -->
+<span lang="en">
+Each background layer must blend with the element’s background layer that is below it and the element’s background color. Background layers must not blend with the content that is behind the element, instead they must act as if they are rendered into an isolated group.
+</span></p>
+
+<p>
+<a>background-blend-mode</a>
+プロパティの記述は次に従う：
+<span lang="en">
+The description of the background-blend-mode property is as follows:
+</span></p>
+
+<table class="propdef"><tbody>
+<tr><th>名前</th><td>
+<dfn id="propdef-background-blend-mode" class="property">background-blend-mode</dfn>
+</td></tr><tr><th>値</th><td>
+<a>&lt;blend-mode&gt;</a>#
+</td></tr><tr><th>初期値</th><td><a>normal</a>
+</td></tr><tr><th>適用対象</th><td>
+すべての HTML 要素
+<span lang="en">
+All HTML elements
+</span>
+</td></tr><tr><th>継承</th><td>されない
+</td></tr><tr><th>百分率</th><td>利用不可
+</td></tr><tr><th>媒体</th><td>視覚的
+</td></tr><tr><th>算出値</th><td>指定値
+</td></tr><tr><th>アニメーション</th><td>不可
+</td></tr></tbody></table>
+
+<p>
+<a>background-blend-mode</a>
+リストは、
+<a>background-image</a>
+<a>[CSS3BG]</a>
+と同じ順序で適用されなければならない。
+すなわち、リストの最初の要素が、現在の前面レイヤに適用されることになる。
+プロパティに与えられたカンマ区切りの値の個数が，レイヤ数に満たない場合、
+UA は，リストの値を必要なだけ繰り返して, その使用値を計算しなければならない。
+<span lang="en">
+The background-blend-mode list must be applied in the same order as background-image [CSS3BG]. This means that the first element in the list will apply to the layer that is on top. If a property doesn’t have enough comma-separated values to match the number of layers, the UA must calculate its used value by repeating the list of values until there are enough.
+</span></p>
+
+<p>
+<a>background</a>
+<a>[CSS3BG]</a>
+簡略形が利用されたときには、その適用対象の要素に対する
+<a>background-blend-mode</a>
+プロパティは，その初期値に再設定されなければならない。
+<span lang="en">
+If the background [CSS3BG] shorthand is used, the background-blend-mode property for that element must be reset to its initial value.
+</span></p>
+
+<div class="example">
+<p>
+次のマークアップとスタイル規則が与えられたなら：
+<span lang="en">
+Given the following sample markup:
+</span></p>
+
+<pre>
+&lt;body&gt;
+   &lt;div&gt;&lt;/div&gt;
+&lt;/body&gt;
+</pre>
+
+<p><span lang="en">And the following style rule:</span></p>
+
+<pre>
+body { background-color: lime; }
+div { 
+  width: 200px;
+  height: 200px;
+  background-size: 200px 200px;
+  background-repeat:no-repeat;
+  background-image:
+      linear-gradient(to right, #000000 0%,#ffffff 100%),
+      url('ducky.png');
+  <a>background-blend-mode</a>: difference, normal;
+}
+</pre>
+
+<figure><img
+	alt="example of div that has an image of a duck and a gradient that is blending"
+	src="//:0#ducky_background_blend.png"
+	style="width:30%"
+><figcaption>
+２つの背景 画像の混色。
+<span lang="en">
+Blending of 2 background images.
+</span></figcaption></figure>
+
+<p>
+グラデーション（ <samp class="value">linear-gradient</samp> ）は、 <a>body</a> の色とは混色 されないことに注意。
+それは元の色を保ち続ける。
+<span lang="en">
+Note that the gradient is not blending with the color of body. Instead it retains its original color.
+</span></p>
+
+<p class="trans-note">【
+このコード例の <samp>ducky.png</samp> とグラデーションの順序は逆であろう（グラデーションの方が前面になっている）。
+この混色モードでは、結果は同じになるが。
+】</p>
+
+</div>
+
+
+			</section>
+		</section>
+	</section>
+	<section id="canvascompositingandblending">
+<h2 title="Specifying Compositing and Blending in Canvas 2D">4. Canvas 2D における合成と混色の指定法</h2>
+
+<p>
+<a>canvas 2d</a>（二次元キャンバス）文脈は、現在の［ 合成と混色 ］の演算子を設定する
+<a><code>globalCompositeOperation</code></a>
+属性を定義する。
+<span lang="en">
+The canvas 2d context defines the ‘globalCompositeOperation’ attribute that is used to set the current compositing and blending operator.
+</span></p>
+
+<p>
+このプロパティは次の値をとる：
+<span lang="en">
+This property takes the following value:
+</span></p>
+
+<table class="propdef"><tbody>
+<tr><th>名前</th><td>
+<dfn id="propdef-mix" class="property">globalCompositeOperation</dfn>
+</td></tr><tr><th>値</th><td>
+<a><var>&lt;blend-mode&gt;</var></a> | <a><var>&lt;composite-mode&gt;</var></a>
+</td></tr><tr><th>初期値</th><td><a>source-over</a>
+</td></tr></tbody></table>
+
+<p>
+<a><var>&lt;composite-mode&gt;</var></a>
+値型の構文は次で与えられる：
+<span lang="en">
+The syntax of the property of &lt;composite-mode&gt; is given with:
+</span></p>
+
+<pre class="composite">
+<dfn id="compositemode"><var>&lt;composite-mode&gt;</var></dfn>
+  = <a>clear</a>
+  | <a>copy</a>
+  | <a>source-over</a>
+  | <a>destination-over</a>
+  | <a>source-in</a>
+  | <a>destination-in</a>
+  | <a>source-out</a>
+  | <a>destination-out</a>
+  | <a>source-atop</a>
+  | <a>destination-atop</a>
+  | <a>xor</a>
+  | <a>lighter</a>
+</pre>
+<!-- removed:141126
+<a>destination</a>
+ -->
+
+	</section>
+	<section id="whatiscompositing">
+<h2 title="Introduction to compositing">5. 合成の概要</h2>
+
+<p>
+合成とは、グラフィック要素を，その後景に組み合せることである。
+<span lang="en">
+Compositing is the combining of a graphic element with its backdrop.
+</span></p>
+
+<p>
+この仕様にて述べられるモデルにおける合成の演算は、２つの手続き
+<a>混色</a>と <a>Porter-Duff 合成</a>
+からなる。
+混色の段階は、グラフィック要素と後景との色のやりとりの仕方を決定する。
+<span lang="en">
+In the model described in this specification there are two steps to the overall compositing operation - Porter-Duff compositing and blending. The blending step determines how the colors from the graphic element and the backdrop interact.
+</span></p>
+
+<p>
+通例的には、混色の段階が先に行われ， Porter-Duff 合成の段階が後続する。
+混色の段階においては、要素と<a>後景</a>を混合した結果の色が計算される。
+グラフィック要素の色は、この結果の色に置換される。
+しかる後、グラフィック要素は，指定された合成演算子を用いて<a>後景</a>に合成される。
+<span lang="en">
+Typically, the blending step is performed first, followed by the Porter-Duff compositing step. In the blending step, the resultant color from the mix of the element and the the backdrop is calculated. The graphic element’s color is replaced with this resultant color. The graphic element is then composited with the backdrop using the specified compositing operator.
+</span></p>
+
+<p class="note">注記：
+図形は、数学的な記述により定義される。
+ある特定の地点は、図形の内部に位置するかそうでないかのいずれかになる。
+中間段階は無い。
+<span lang="en">
+Shape is defined by the mathematical description of the shape. A particular point is either inside the shape or it is not. There are no gradations.
+</span></p>
+
+<p class="note">注記：
+アルファ値で表される不透明度は、それぞれの地点ごとに色値と伴に格納される。
+アルファ値の範囲は 0 〜 1 の閉区間である。
+値 0 は、図形のその地点に対する画素の被覆率がゼロであり，透明であることを意味する。
+すなわち、幾何的にその地点の画素に重なり合わないので，その地点の色への寄与分が無いことを意味する。
+値 1 は、画素が完全に不透明であり，形状が画素­全体に重なり合うことを意味する。
+<span lang="en">
+Note: Opacity is described using an alpha value, stored alongside the color value for each particular point. The alpha value is between 0 and 1, inclusive. A value of 0 means that the pixel has no coverage at that point, and is therefore transparent; i.e. there is no color contribution from any geometry because the geometry does not overlap this pixel. A value of 1 means that the pixel is fully opaque; the geometry completely overlaps the pixel.
+</span></p>
+
+		<section id="simplealphacompositing">
+<h3 title="Simple alpha compositing">5.1. 単純アルファ合成</h3>
+
+<!-- 
+Cs = (1 − αb) × Cs + αb × B(Cb, Cs)
+	B(Cb, Cs) = Cs
+   = (1 − αb) × Cs + αb × Cs
+   = Cs // そのまま
+
+Co = αs × Fa × Cs + αb × Fb × Cb
+	Fa = 1; Fb = 1 − αs // source over
+   = αs × Cs + αb × (1 − αs) × Cb
+   = αs Cs + cb − αs cb
+   = αs Cs + cb(1 − αs)
+
+ -->
+<p>
+単純アルファ合成の公式は，次で与えられる：
+<span lang="en">
+The formula for simple alpha compositing is
+</span></p>
+
+<pre class="formula">
+co = Cs × αs + Cb × αb × (1 − αs)
+</pre>
+
+<p>
+各種変数は：
+<span lang="en">
+Where
+</span></p>
+
+<table class="params"><tbody>
+
+<tr><th>co</th><td>
+合成後の，積算済みの<!--1-->画素 値 
+<span lang="en">
+co: the premultiplied pixel value after compositing
+</span></td></tr>
+<tr><th>Cs</th><td>
+合成される source グラフィック要素（以下，単に “source” と記す）の色値
+<span lang="en">
+Cs: the color value of the source graphic element being composited
+</span></td></tr>
+<tr><th>αs</th><td>
+source のアルファ値
+<span lang="en">
+αs: the alpha value of the source graphic element being composited
+</span></td></tr>
+<tr><th>Cb</th><td>
+<a>後景</a>の色値
+<span lang="en">
+Cb: the color value of the backdrop
+</span></td></tr>
+<tr><th>αb</th><td>
+<a>後景</a>のアルファ値
+<span lang="en">
+αb: the alpha value of the backdrop
+</span></td></tr>
+</tbody></table>
+
+<p class="note">注記：
+すべての値は 0 〜 1 の閉区間に入る。
+<span lang="en">
+Note: All values are between 0 and 1 inclusive.
+</span></p>
+
+<p class="trans-note">【
+明示的に言及されていないので，解り難くなっているが、単純アルファ合成は，
+<a href="#whatiscompositing" >合成の概要</a>
+の冒頭に述べた一般の場合において、混色の段階が自明なものにされ（結果は， source の色そのまま）， Porter-Duff 合成が <a>source-over</a> にされた、特殊な場合になる。
+すなわち、この節に示されている単純アルファ合成の公式の中の Cs は，<a>混色</a>の段階の結果をそのまま表している。
+】</p>
+
+<p>
+合成後の画素 値（ co ）は、 source からの寄与分
+[ Cs × αs ]
+と, 後景からの寄与分
+[ Cb × αb × (1 − αs) ]
+を加算して与えられる。
+色の寄与分を決定するため、 source も後景も、その色値が，それぞれのアルファで積算される。
+アルファ ゼロは，色の寄与分がないことを意味し、部分的なアルファは，その割合の色が寄与することを意味する。
+後景の寄与分は、 source の不透明度に基づいて更に減量される：
+概念的には、後景のうち [ 1 − αs ] の割合が source を透過することを意味する —
+すなわち、 source が完全に不透明（αs ＝ 1 ）ならば，後景は透過しなくなる。
+<span lang="en">
+The pixel value after compositing (co) is given by adding the contributions from the source graphic element [Cs x αs] and the backdrop [Cb x αb x (1 - αs)]. For both the graphic element and the backdrop, the color values are multiplied by the alpha to determine the amount of color that contributes. With zero alpha meaning that the color does not contribute and partial alpha means that some percentage of the color contributes. The contribution of the backdrop is further reduced based on the opacity of the graphic element. Conceptually, (1 - αs) of the backdrop shows through the graphic element, meaning that if the graphic element is fully opaque (αs=1) then no backdrop shows through.
+</span></p>
+
+<p>
+上に挙げられた単純アルファ合成の公式は、［
+後景と source
+］の色を，それぞれのアルファによる重みで加重平均をとって得られる色を与える。
+結果の合成アルファ値は、単純に，合成される一連の要素が寄与するアルファの合計になる。
+結果の合成アルファの公式は：
+<span lang="en">
+The simple alpha compositing formula listed above gives a resultant color which is the result of the weighted average of the backdrop color and graphic element color, with the weighting determined by the backdrop and graphic element alphas. The resultant alpha value of the composite is simply the sum of the contributed alpha of the composited elements. The formula for the resultant alpha of the composite is
+</span></p>
+
+<pre class="formula">
+αo = αs + αb × (1 − αs)
+</pre>
+
+<!-- 
+αo = αs1 + αb (1 - αs1) = 1 - (1 - αb) (1 - αs1)
+1 - αo = (1 - αb) (1 - αs1)
+
+	Ti = 1 - αs[i]; i = 1, 2, ...
+	T0 = 1 - αb
+	αi = i-th αo; i = 1, 2, ...
+	α0 = αb = 1 - T0
+
+1 - αi = (1 - α[i-1]) Ti
+	TOi = 1 - αi
+TOi = TO[i-1] Ti
+
+TO1 = TO0 T1 = T0 T1
+TO2 = TO1 T2 = T0 T1 T2
+...
+TOi = T0 T1 T2 ... Ti
+	結果の透明度 = 各 透明度すべての積
+
+-->
+<p><span lang="en">Where</span></p>
+
+<table class="params"><tbody>
+
+<tr><th>αo</th><td>
+合成アルファ値
+<span lang="en">
+αo: the alpha value of the composite
+</span></td></tr>
+<tr><th>αs</th><td>
+source のアルファ値
+<span lang="en">
+αs: the alpha value of the graphic element being composited
+</span></td></tr>
+<tr><th>αb</th><td>
+<a>後景</a>のアルファ値
+<span lang="en">
+αb: the alpha value of the backdrop
+</span></td></tr>
+</tbody></table>
+
+
+<div class="note">
+<p>
+色と不透明度は、積算済みの<!--1-->値を格納した方がより効率的になることが多い。
+積算済みの<!--1-->値は，次で与えられる：
+<span lang="en">
+Often, it can be more efficient to store a pre-multiplied value for the color and opacity. The pre-multiplied value is given by
+</span></p>
+
+<pre class="formula">
+cs = Cs × αs
+</pre>
+
+<p><span lang="en">with</span></p>
+
+<table class="params"><tbody>
+<tr><th>cs</th><td>
+積算済みの<!--1-->値
+<span lang="en">
+cs: the pre-multiplied value
+</span></td></tr>
+<tr><th>Cs</th><td>
+色値
+<span lang="en">
+Cs: the color value
+</span></td></tr>
+<tr><th>αs</th><td>
+アルファ値
+<span lang="en">
+αs: the alpha value
+</span></td></tr>
+</tbody></table>
+
+
+<p>
+したがって，積算済みの<!--1-->値を用いる単純アルファ合成の公式は次の様になる：
+<span lang="en">
+Thus the formula for simple alpha compositing using pre-multiplied values becomes
+</span></p>
+
+<pre class="formula">
+co = cs + cb × (1 − αs)
+</pre>
+
+<p>
+非 積算済みの<!--1-->色成分は、積算済みの<!--1-->値から，公式を逆算して得られる：
+<span lang="en">
+To extract the color component of a pre-multiplied value, the formula is reversed:
+</span></p>
+
+<pre class="formula">
+Co = co ÷ αo
+</pre>
+  </div>
+
+
+			<section id="simplealphacompositingexamples">
+<h4 title="Examples of simple alpha compositing">5.1.1. 単純アルファ合成の例</h4>
+
+<div class="example">
+
+<figure><img
+	class="compositing-sample"
+	alt="Simple box showing alpha compositing"
+	src="//:0#simple_box.svg"
+></figure>
+
+<p>
+ここでは，最も基本的な事例を述べる。
+単色（ α = 1 ）で塗りつぶされた 1 個の図形からなる。
+図形は、空の背景に合成される。
+空の背景は、合成結果に効果を持たない。
+<span lang="en">
+This describes the most basic case. It consists of 1 shape that is filled with a solid color (α = 1). The shape is composited with an empty background. The empty background has no effect on the resultant composite.
+</span></p>
+
+<pre class="formula">
+Cs = RGB(1, 0, 0)
+αs = 1
+Cb = RGB(0, 0, 0)
+αb = 0
+
+co = Cs × αs + Cb × αb × (1 − αs)
+   = RGB(1, 0, 0) × 1 + RGB(0, 0, 0) × 0 × (1 − 1)
+   = RGB(1, 0, 0)
+</pre>
+  </div>
+
+	<div class="example">
+<figure><img
+	class="compositing-sample"
+	alt="simple shape"
+	src="//:0#two_box.svg"
+></figure>
+
+<p>
+次は，より複雑な例。
+透明度は無いが、2 個の図形が交差している。
+<span lang="en">
+This is a more complex example. There is no transparency, but the 2 shapes intersect.
+</span></p>
+
+<p>
+交差域に合成公式を適用すると：
+<span lang="en">
+Applying the compositing formula in the area of intersection, gives:
+</span></p>
+
+<pre class="formula">
+Cs = RGB(0, 0, 1)
+αs = 1
+Cb = RGB(1, 0, 0)
+αb = 1
+
+co = Cs × αs + Cb × αb × (1 − αs)
+   = RGB(0, 0, 1) × 1 + RGB(1, 0, 0) × 1 × (1 − 1)
+   = RGB(0, 0, 1)
+</pre>
+
+<p>
+合成結果のアルファを計算する：
+<span lang="en">
+Calculating the alpha of the resultant composite
+</span></p>
+
+<pre class="formula">
+αo = αs + αb × (1 − αs)
+   = 1 + 1 × (1 − 1)
+   = 1
+</pre>
+
+<p>
+合成結果の色成分を計算する：
+<span lang="en">
+Calculating the color component of the resultant composite
+</span></p>
+
+<pre class="formula">
+Co = co ÷ αo
+   = RGB(0, 0, 1) ÷ 1
+   = RGB(0, 0, 1)
+</pre>
+  </div>
+
+	<div class="example">
+<figure><img
+	class="compositing-sample"
+	alt="interaction of a solid box with a transparent box on top"
+	src="//:0#two_box_transparency.svg"
+></figure>
+
+<p>
+図形はいくらかの透明度を持つが，<a>後景</a>は完全に不透明。
+<span lang="en">
+This is an example where the shape has some transparency, but the backdrop is fully opaque.
+</span></p>
+
+<p>
+交差域に合成公式を適用すると：
+<span lang="en">
+Applying the compositing formula in the area of intersection, gives:
+</span></p>
+
+<pre class="formula">
+Cs = RGB(0, 0, 1)
+αs = 0.5
+Cb = RGB(1, 0, 0)
+αb = 1
+
+co = Cs × αs + Cb × αb × (1 − αs)
+   = RGB(0, 0, 1) × 0.5 + RGB(1, 0, 0) × 1 × (1 − 0.5)
+   = RGB(0, 0, 1) × 0.5 + RGB(1, 0, 0) × 0.5
+   = RGB(0.5, 0, 0.5)
+</pre>
+
+<p>
+合成結果のアルファを計算する：
+<span lang="en">
+Calculating the alpha of the resultant composite
+</span></p>
+
+<pre class="formula">
+αo = αs + αb × (1 − αs)
+   = 0.5 + 1 × (1 − 0.5)
+   = 1
+</pre>
+
+<p>
+合成結果の色成分を計算する：
+<span lang="en">
+Calculating the color component of the resultant composite
+</span></p>
+
+<pre class="formula">
+Co = co ÷ αo
+   = RGB(0.5, 0, 0.5) ÷ 1
+   = RGB(0.5, 0, 0.5)
+</pre>
+
+  </div>
+
+	<div class="example">
+
+<p>
+図形と<a>後景</a>の両者とも透明な例：
+</p>
+
+<figure><img
+	class="compositing-sample"
+	alt="interaction of 2 transparent boxes"
+	src="//:0#two_box_transparency_both.svg"
+></figure>
+
+<p><span lang="en">Figure 4 shows an example where both the shape and the backdrop are transparent.</span></p>
+
+<p>
+交差域に合成公式を適用すると：
+<span lang="en">
+Applying the compositing formula in the area of intersection, gives:
+</span></p>
+
+<pre class="formula">
+Cs = RGB(0, 0, 1)
+αs = 0.5
+Cb = RGB(1, 0, 0)
+αb = 0.5
+
+co = Cs × αs + Cb × αb × (1 − αs)
+   = RGB(0, 0, 1) × 0.5 + RGB(1, 0, 0) × 0.5 × (1 − 0.5)
+   = RGB(0, 0, 1) × 0.5 + RGB(1, 0, 0) × 0.25
+   = RGB(0.25, 0, 0.5)
+</pre>
+
+<p>
+合成結果のアルファを計算する：
+<span lang="en">
+Calculating the alpha of the resultant composite
+</span></p>
+
+<pre class="formula">
+αo = αs + αb × (1 − αs)
+   = 0.5 + 0.5 × (1 − 0.5)
+   = 0.75
+</pre>
+
+<p>
+合成結果の色成分を計算する：
+<span lang="en">
+Calculating the color component of the resultant composite
+</span></p>
+
+<pre class="formula">
+Co = co ÷ αo
+   = RGB(0.25, 0, 0.5) ÷ 0.75
+   = RGB(0.33, 0, 0.66)
+</pre>
+
+	</div>
+
+
+			</section>
+		</section>
+	</section>
+	<section id="generalformula">
+<h2 title="General Formula for Compositing and Blending">6. 合成と混色の一般公式</h2>
+
+<p>
+合成と混色のための一般公式は、この２つの手続きにおいて，合成演算子と混色関数を選択できるようにする。
+これらの関数の中で利用される項についての詳細は、次節にて述べる。
+<span lang="en">
+The general formula for compositing and blending which allows for selection of the compositing operator and blending function comprises two steps. The terms used in these functions will be described in detail in the following sections.
+</span></p>
+
+<p>
+混色 段階に適用される公式：
+<span lang="en">
+Apply the blend in place
+</span></p>
+
+<pre class="formula">
+Cs = (1 − αb) × Cs + αb × B(Cb, Cs)
+</pre>
+
+<p>
+合成 段階に適用される公式：
+<span lang="en">
+Composite
+</span></p>
+
+<pre class="formula">
+Co = αs × Fa × Cs + αb × Fb × Cb
+</pre>
+
+<p><span lang="en">Where:</span></p>
+
+<table class="params"><tbody>
+
+<tr><th>Cs</th><td>
+source 色
+<span lang="en">
+Cs: is the source color
+</span></td></tr>
+
+<tr><th>Cb</th><td>
+後景色
+<span lang="en">
+Cb: is the backdrop color
+</span></td></tr>
+
+<tr><th>αs</th><td>
+source アルファ
+<span lang="en">
+αs: is the source alpha
+</span></td></tr>
+
+<tr><th>αb</th><td>
+後景アルファ
+<span lang="en">
+αb: is the backdrop alpha
+</span></td></tr>
+
+<tr><th>B(Cb, Cs)</th><td>
+混合関数
+<span lang="en">
+B(Cb, Cs): is the mixing function
+</span></td></tr>
+
+<tr><th>Fa, Fb</th><td>
+利用する Porter Duff 演算子にて定義される
+<span lang="en">
+Fa: is defined by the Porter Duff operator in use
+</span>
+<span lang="en">
+Fb: is defined by the Porter Duff operator in use
+</span></td></tr>
+
+</tbody></table>
+
+
+
+	</section>
+	<section id="backdropCalc">
+<h2 title="Backdrop calculation">7. 後景の計算</h2>
+
+<p>
+<dfn id="backdrop">後景</dfn>（ backdrop ）とは、要素の背後の内容であり，要素の合成 <em >先</em>（ destination ）になる。
+これは、後景が，以前のすべての要素の合成による結果であることを意味する。
+<span lang="en">
+The backdrop is the content behind the element and is what the element is composited with. This means that the backdrop is the result of compositing all previous elements.
+</span></p>
+
+<p class="trans-note">【
+後景 — 背景（ background ）と語感が似るが，処理モデルにおける取り扱いが異なる — 背景は “要素の一部” であり，合成 <em >元</em>（ source ）になる。
+】</p>
+
+		<section id="backdropexamples">
+<h3 title="Examples of backdrop calculation">7.1. 後景の計算例</h3>
+
+	<div class="example">
+<figure><img
+	class="compositing-sample"
+	alt="example of a simple backdrop calculation"
+	src="//:0#simple_backdrop.svg"
+></figure>
+
+<p>
+この例には 2 個の単純な図形がある。
+青色の図形に対する後景は、赤色 図形の右下隅の部分を含んでいる。
+点線は、青色 図形を合成する際に調べられる領域を示す。
+<span lang="en">
+This example has 2 simple shapes. The backdrop for the blue shape includes the bottom right corner of the red shape . The dotted line shows the area that is examined during compositing of the blue shape.
+</span></p></div>
+
+	<div class="example">
+<figure><img
+	class="compositing-sample"
+	alt="example of a backdrop with alpha"
+	src="//:0#simple_backdrop_alpha.svg"
+></figure>
+
+<p>
+後景の中の図形はアルファ値を持つ。
+この後景の図形のアルファ値は，後景が計算される間 維持される。
+<span lang="en">
+The shape in the backdrop has an alpha value. The alpha value of the backdrop shape is preserved when the backdrop is calculated.
+</span></p></div>
+
+
+		</section>
+	</section>
+	<section id="groups">
+<h2 title="Compositing Groups">8. 合成グループ</h2>
+
+<p>
+合成グループにより、合成と後景とのやりとりを制御できるようになる。
+グループは、グループ内の合成 効果が、すでにシーンにある内容（後景）とどのようにやりとりするかを指定するために利用できる。
+<span lang="en">
+Compositing groups allow more control over the interaction of compositing with the backdrop. Groups can be used to specify how a compositing effect within a group will interact with the content that is already in the scene (the backdrop).
+</span></p>
+
+<p>
+合成グループは、任意個数の要素からなり得る。
+また、他の合成グループを包含し得る。
+<span lang="en">
+Compositing groups may be made up of any number of elements, and may contain other compositing groups.
+</span></p>
+
+<p>
+合成グループの既定のプロパティは、グループを持たないとき
+<!-- ＊
+【特にグループ分けが指示されないとき】
+ -->
+との視覚的な相違を生じさせないものとする。
+<a>グループ合成の結合法則</a>
+を見よ。
+<span lang="en">
+The default properties of a compositing group shall cause no visual difference compared to having no group. See Group Invariance.
+</span></p>
+
+<p>
+合成グループは、最初に要素のグループを<a>初期後景</a>上に合成して描画される。
+この結果は、色とアルファの情報を包含する単独の要素になる。
+しかる後，この要素が<a>グループ後景</a>上に合成される。
+この手続きは、<a>グループ後景</a>が，最終的な合成の結果に寄与する単独の部分になることを
+確保するものとする。
+<span lang="en">
+A compositing group is rendered by first compositing the elements of the group onto the initial backdrop. The result of this is a single element containing color and alpha information. This element is then composited onto the group backdrop. Steps shall be taken to ensure the group backdrop makes only a single contribution to the final composite.
+</span></p>
+
+<dl>
+	<dt id="initialbackdrop" title="initial backdrop">初期後景</dt>
+	<dd><p>
+初期後景が、グループの最初の要素の合成に利用される後景である。
+これは、［
+非 <a>隔離グループ</a>に対しては，それに対する<a>グループ後景</a>
+］, ［
+<a>隔離グループ</a>に対しては，完全に透明な後景
+］と同じになる。
+<span lang="en">
+The initial backdrop is the backdrop used for compositing the group’s first element. This will be the same as the group backdrop in a non-isolated group, or a fully transparent backdrop for an isolated group.
+</span></p></dd>
+
+	<dt id="groupbackdrop" title="group backdrop">グループ後景</dt>
+	<dd><p>
+<span class="trans-note">【グループに対する】</span>
+グループ後景とは、［［
+グループの最初の要素
+］の直前までの，すべての要素
+］による，合成の結果である。
+<span lang="en">
+The group backdrop is the result of compositing all elements up to but not including the first element in the group.
+</span></p></dd>
+</dl>
+
+		<section id="groupinvariance">
+<h3 title="Group invariance">8.1. グループ合成の結合法則</h3>
+
+<p>
+<a>単純アルファ合成</a>の重要な性質として、その演算が，結合法則を満たすことが挙げられる
+<span class="trans-note">【†】</span>
+。
+このふるまいは、この仕様の中で述べるより複雑なモデルにおいても維持される。
+既定の属性により グループ分けが追加されたり, 除去されても、視覚的な相違を示さないものとする：
+<span lang="en">
+An important property of simple alpha compositing is its group invariance. This behavior is preserved in the more complex model described in this specification. Adding or removing grouping with default attributes shall not show visual differences.
+</span></p>
+
+<pre class="formula">
+so: A + B + C = A + (B + C) = (A + B) + C
+</pre>
+
+<p class="trans-note">【
+"+" は数値の加法ではなく，合成の演算を表す。
+】</p>
+
+
+<p>
+グループに，隔離
+<span class="trans-note">【 <a>isolation</a>: <code class="value">isolate</code> 】</span>,
+［ <a>normal</a> 以外の混色モード
+<span class="trans-note">【 <a>mix-blend-mode</a> 】</span>
+］,
+［ <a>source-over</a> 以外の Porter Duff 合成演算子 ］
+などの属性が追加された場合、この結合法則は成立しなくなり得る。
+<span lang="en">
+When adding attributes to the group such as isolate, blending modes other than normal or Porter Duff compositing operators other than source-over, groups may no longer be invariant.
+</span></p>
+
+
+<div class="trans-note">
+<p >【
+† 結合法則 —
+原文には “group invariance” としか記されていないが、おそらく，合成演算に関する
+<a href="http://ja.wikipedia.org/wiki/%E7%B5%90%E5%90%88%E6%B3%95%E5%89%87" >結合法則</a>
+を意味するものと解釈して記述を補完している（
+<a href="http://dbaron.org/log/20130306-compositing-blending" >参考</a>
+）。
+（ “group invariance” ＝ どのように “グループ分け” しても結果は “不変” ）
+</p>
+
+<p>
+この仕様に現れる語 “（合成）グループ” とは、合成演算の結合順序を表現するための概念と考えられる。
+例えば、レイヤ A 上にレイヤ B, C, D を順に合成することを考える。
+このとき、合成演算を記号 + で表すならば、合成結果を得る過程には：
+</p>
+
+<pre >
+((A + B) + C) + D
+A + (B + (C + D))
+A + ((B + C) + D)
+</pre>
+
+<p>
+その他、種々の方法があり，結合法則が成立しなければ結果は異なり得る。
+そのため、式の括弧をどのように与えるかを定義する必要があり、それが “グループ” と呼ばれているものにあたると見られる。
+】</p>
+</div>
+
+		</section>
+		<section id="isolatedgroups">
+<h3 title="Isolated Groups">8.2. 隔離グループ</h3>
+
+<p>
+隔離グループにおける<a>初期後景</a>は、完全に透明な黒色になるものとする。
+<span lang="en">
+In an isolated group, the initial backdrop shall be black and fully transparent.
+</span></p>
+
+<p>
+この場合の<a>初期後景</a>は，<a>グループ後景</a>と異なる。
+<a>グループ後景</a>とのやりとりは、グループに算出された［
+色, 図形, アルファ
+］が それと合成されるときにのみ、生じるものとする。
+<span lang="en">
+In this instance, the initial backdrop is different than the group backdrop. The only interaction with the group backdrop shall occur when the group’s computed color, shape and alpha are composited with it.
+</span></p>
+
+<p>
+合成における<a>隔離グループ</a>の効果については、
+<a href="#groupcompositing">隔離グループと各種 Porter Duff モード</a>
+を見よ。
+混色における<a>隔離グループ</a>の効果については、
+<a href="#isolationblending">混色におけるグループ隔離の効果</a>
+を見よ。
+<span lang="en">
+See ‘Isolated groups and Porter Duff modes’ for a description of the effect of isolated groups on compositing. See ‘Effect of group isolation on blending’ for a description of the effect of isolated groups on blending.
+</span></p>
+
+		</section>
+		<section id="pagebackdrop">
+<h3 title="The Page Group">8.3. ページグループ</h3>
+
+<p>
+ページグループが，トップレベルのグループである。
+他のすべての要素とグループは、このグループの中に合成される。
+ページグループは<a>隔離グループ</a>である。
+<span lang="en">
+The top level group is the page group. All other elements and groups are composited into this group. The page group is an isolated group.
+</span></p>
+
+<p>
+ページグループは、不透明度 100% の白色による後景色と合成される
+<span lang="en">
+The page group is composited with a backdrop color of white with 100% opacity.
+</span></p>
+
+		</section>
+	</section>
+	<section id="advancedcompositing">
+<h2 title="Advanced compositing features">9. 高度な合成 特色機能</h2>
+
+<p>
+<a>単純アルファ合成</a>は、
+<a>source-over</a> Porter Duff  合成演算子を利用する。
+<span lang="en">
+Simple alpha compositing uses the source-over Porter Duff compositing operator.
+</span></p>
+
+<p>
+Porter Duff 合成は、画素
+<span class="trans-note">【概念的な微小領域】</span>
+の最終的な色に寄与し得る，その画素の中の２つの図形（ source と destination 
+<span class="trans-note">【 合成元と合成先 —  後者は長いので以下 “dest” と略記する】</span>
+）によるモデルに基づく。
+画素は、4 つの部分画素の区分に分割される。
+各 区分は， source と dest の可能な組み合せを表現する。
+<a>[PORTERDUFF]</a>
+<span lang="en">
+Porter Duff compositing is based on a model of a pixel in which two shapes (source and destination) may contribute to the final color of the pixel. The pixel is divided into 4 sub-pixel regions and each region represents a possible combination of source and destination. [PORTERDUFF]
+</span></p>
+
+<p>
+４つの区分とは：
+<span lang="en">
+The four regions are:
+</span></p>
+
+<dl>
+	<dt title="Source Only">source のみ</dt>
+	<dd><p>
+source のみが画素色に寄与する区分
+<span lang="en">
+Where only the source contributes to the pixel color
+</span></p></dd>
+
+	<dt title="Destination only">dest のみ</dt>
+	<dd><p>
+dest のみが画素色に寄与する区分
+<span lang="en">
+where only the destination contributes to the pixel color
+</span></p></dd>
+
+	<dt title="Both">両者の組み合せ</dt>
+	<dd><p>
+画素色が source と dest の両者による組み合せから定義され得る区分。
+<span lang="en">
+Source and Destination – where both the source and destination may combine to define the pixel color
+</span></p></dd>
+
+	<dt title="None">なし</dt>
+	<dd><p>
+source も dest も最終的な画素色に寄与しない区分。
+<span lang="en">
+No source or Destination – where neither make a contribution to the final pixel color
+</span></p></dd></dl>
+
+<p class="note">注記：
+dest は、後景の同義語である。
+この節で利用される語 dest（ destination ）は、 Porter Duff 合成について述べるときの標準の語と見なされる。
+加えて、合成演算子の名前には <code>destination</code> が利用される。
+<span lang="en">
+Note: Destination is synonymous with backdrop. The term destination is used in this section as this is considered the standard when working with Porter Duff compositing. Additionally, the compositing operators use destination in their names.
+</span></p>
+
+<figure>
+<!-- ＊
+<img
+	alt="overview of the regions affected by porter duff"
+	src="//:0#PD_regions.svg">
+ -->
+<div class="comp-box" style="width: 300px; height: 300px; text-align:center;">
+<div class="comp-dest" style="width:40%; left:60%;">dest のみ</div>
+<div class="comp-source" style="height: 60%; top: 40%;">source のみ</div>
+<div class="comp-both" style="background: rgb(156, 201, 180);">両者の組み合せ</div>
+<div class="comp-both" style="width:40%; height: 60%; left:60%; top: 40%; ">両方なし</div>
+</div>
+</figure>
+
+<p>
+各 区分からの最終的な画素色への寄与分は、その画素における図形の被覆率と, 利用する演算子により定義される。
+被覆率は、アルファを通して指定される。
+完全アルファ（ α = 1 ）は完全に覆うことを意味し，アルファ ゼロ（ α = 0 ）は全く覆わないことを意味する。
+これは、画素の各 区分の面積が，画素に寄与している各 図形の被覆率に依存することを意味する。
+各 区分の面積は、
+<span class="trans-note">【画素の面積を 1 として】</span>
+次の等式により計算し得る：
+<span lang="en">
+The contribution from each region to the final pixel color is defined by the coverage of the shape at that pixel, and the operator in use. Coverage is specified in terms of alpha. Full alpha (1) implies full coverage, while zero alpha (0) implies no coverage. This means that the area of each region within the sub-pixel is dependent on the coverage of each shape contributing to the pixel. The area of each region can be calculated with the following equations:
+</span></p>
+
+<div>
+
+<figure>
+<table>
+
+<thead style="background: #DDF"><tr><th>区分
+</th><th>被覆率
+</th><th>計算例（ αs = 0.6,  αb = 0.4 ）
+</th></tr></thead>
+
+<tbody>
+<tr><th title="Both">両者の組み合せ</th><td>αs × αb
+<td>0.6 × 0.4 = 0.24
+</td></tr>
+
+<tr><th title="Source only">source のみ</th><td>αs × (1 − αb)
+<td>0.6 × (1 − 0.4) = 0.36
+</td></tr>
+
+<tr><th title="Destination only">dest のみ</th><td>αb × (1 − αs)
+<td>0.4 × (1 − 0.6) = 0.16
+</td></tr>
+
+<tr><th title="None">なし
+</th><td style="padding-right: 2em;">(1 − αs) × (1 − αb)
+<td>(1 − 0.6) × (1 − 0.4) = 0.24
+</td></tr>
+</tbody></table>
+
+<figcaption>
+αs = source の被覆率,
+αb = dest の被覆率
+（計算例の被覆率は、上の図式に示された source と dest の被覆率に合致するように選ばれている）
+</figcaption></figure>
+
+
+	<div lang="en">
+<!-- 
+上の図の source と dest は，いずれも被覆率 0.5 を表現している：
+ -->
+<p>
+The figure above represents coverage of 0.5 for both source and destination.
+</p>
+
+<pre lang="en">
+Both = 0.5 × 0.5 = 0.25 
+Source Only = 0.5 (1 − 0.5) = 0.25
+Destination Only = 0.5(1 − 0.5) = 0.25
+None = (1 − 0.5)(1 − 0.5) = 0.25
+</pre>
+
+<p>
+Therefore, the coverage of each region is 0.25 in this example.
+</p>
+	</div>
+</div>
+
+<p class="trans-note">【
+上の図式, および以下の節で述べる各種 演算子にて示される図式は、 1 画素の被覆率としても，あるいは図に示された通りの（不透明な）２枚のグラフィック（全高または全幅が全体に渡る長方形）の重ね合せとしても捉え得る（上の図の “両者の組み合せ” の色は仮の色であり，演算子に依存する）。
+前者の捉え方をより忠実に反映させるため、この訳では，原文の図式を改変している。
+】</p>
+
+
+		<section id="porterduffcompositingoperators">
+<h3 title="The Porter Duff Compositing Operators">9.1. Porter Duff 合成演算子</h3>
+
+<p>
+合成の代数は、
+Lucasfilm で仕事をしていた Thomas Porter と Tom Duff による，画期的な論文にて定義され、 12 個の “Porter Duff” 演算子が開発された。
+これらの演算子は、［［
+アルファ, あるいは画素 被覆率
+］［
+チャンネル／値
+］を持つグラフィック的オブジェクト
+］の重ね合せから形成される，４つの部分画素 区分における混合の結果を制御する。
+演算子には、４つの区分による実用的な組み合せすべてが利用されている。
+<span lang="en">
+The landmark paper by Thomas Porter and Tom Duff, who worked for Lucasfilm, defined the algebra of compositing and developed the twelve "Porter Duff" operators. These operators control the results of mixing the four sub-pixel regions formed by the overlapping of graphical objects that have an alpha or pixel coverage channel/value. The operators use all practical combinations of the four regions.
+</span></p>
+
+<p>
+12 個の基本的な Porter Duff 演算子は、 source と dest の可能な組み合せすべてを網羅する。
+<span lang="en">
+There are 12 basic Porter Duff operators, satisfying all possible combinations of source and destination.
+</span></p>
+
+<p>
+各 演算子を幾何的に表現するなら、各 図形からの寄与分は，出力に対する図形の合計の被覆率として捉えられる。
+例えば， <a>source-over</a> においては、 source が寄与し得る比率は 完全（ 1.0 ）であり,
+dest の寄与し得る比率は 残る ( 1 − αs ) になる。<!-- ＊残る？ -->
+これには、画素の最終的な被覆率のための等式を与えるため，source と dest の被覆率による変更が加えられる。
+<span lang="en">
+From the geometric representation of each operator, the contribution of each shape can be seen to be expressed as a fraction of the total coverage of the output. For example, in source over, the possible contribution of source is full (1) and the possible contribution of destination is whatever is remaining (1 – αs). This is modified by the coverage of source and destination to give the equation for the final coverage of the pixel:
+</span></p>
+
+<pre class="formula">
+αo = αs × 1 + αb × (1 − αs)
+</pre>
+
+<p>
+それぞれの演算子は、比率項
+Fa （この例では 1 ）と
+Fb （この例では 1 − αs ）を定義し，最終的な画素 値に寄与し得る 図形の被覆率を指定する。
+被覆率のための等式の一般形は：
+<span lang="en">
+The fractional terms Fa (1 in this example) and Fb (1 – αs in this example) are defined for each operator and specify the fraction of the shapes that may contribute to the final pixel value. The general form of the equation for coverage is:
+</span></p>
+
+<pre class="formula">
+αs × Fa + αb × Fb
+</pre>
+
+<p>
+色も統合された一般の Porter Duff 等式は：
+<span lang="en">
+and incorporating color gives the general Porter Duff equation
+</span></p>
+
+<pre class="formula">
+co = αs × Fa × Cs + αb × Fb × Cb
+</pre>
+
+<p><span lang="en">Where:</span></p>
+
+<table class="params"><tbody>
+
+<tr><th>co</th><td>
+出力アルファによる積算済みの<!--1-->，出力 色（ 0 ≤ co ≤ 1 ）。
+<span lang="en">
+co is the output color pre-multiplied with the output alpha [0 &lt;= co &lt;= 1]
+</span></td></tr>
+
+<tr><th>Fa</th><td>
+αs が source Fa 
+<span class="trans-note">【すなわち， Fa × Cs 】</span>
+の被覆率であり、演算子により定義される Fa が，（アルファにより積算されていない） source 色 Cs の含有率を制御する。
+<span lang="en">
+αs is the coverage of the source Fa is defined by the operator and controls inclusion of the source Cs is the color of the source (not multiplied by alpha)
+</span></td></tr>
+
+<tr><th>Fb</th><td>
+αb が dest Fb
+<span class="trans-note">【すなわち，Fb × Cb 】</span>
+の被覆率であり、演算子により定義される Fb が，（アルファにより積算されていない） dest 色 Cb の含有率を制御する
+<span lang="en">
+αb is the coverage of the destination Fb is defined by the operator and controls inclusion of the destination Cb is the color of the destination (not multiplied by alpha)
+</span></td></tr>
+</tbody></table>
+
+
+			<section id="porterduffcompositingoperators_clear">
+<h4 title="Clear">9.1.1. <code class="value">clear</code></h4>
+
+<p>
+どの区分も，結果に現れない。
+<span lang="en">
+No regions are enabled.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff clear"
+	src="//:0#PD_clr.svg"
+></figure>
+ -->
+
+<!-- 
+<figure><img\s+alt="([^"]+)"\s+src="([^"]+)"\s*></figure>
+<a href="$2" title="$1">元画像</a>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 0; Fb = 0
+co = 0
+αo = 0
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_src">
+<h4 title="Copy">9.1.2. <code class="value">copy</code></h4>
+
+<p>
+source のみが，結果に現れる。
+<span lang="en">
+Only the source will be present.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff copy"
+	src="//:0#PD_src.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 1; Fb = 0
+co = αs × Cs
+αo = αs
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_dst">
+<h4 title="Destination">9.1.3. <code class="value">destination</code></h4>
+
+<p>
+dest のみが，結果に現れる。
+<span lang="en">
+Only the destination will be present.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff destination"
+	src="//:0#PD_dst.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 0; Fb = 1
+co = αb × Cb
+αo = αb
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_srcover">
+<h4 title="Source Over">9.1.4. <code class="value">source-over</code></h4>
+
+<p>
+dest の上に source を置いたものが，結果に現れる。
+<span lang="en">
+Source is placed over the destination.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff source over"
+	src="//:0#PD_src-over.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+<div class="comp-source"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 1; Fb = 1 − αs
+co = αs × Cs + αb × Cb × (1 − αs)
+αo = αs + αb × (1 − αs)
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_dstover">
+<h4 title="Destination Over">9.1.5. <code class="value">destination-over</code></h4>
+
+<p>
+source の上に dest が置いたものが，結果に現れる。
+<span lang="en">
+Destination is placed over the source.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff destination over"
+	src="//:0#PD_dst-over.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-source"></div>
+<div class="comp-dest"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 1 − αb; Fb = 1
+co = αs × Cs × (1 − αb) + αb × Cb
+αo = αs × (1 − αb) + αb
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_srcin">
+<h4 title="Source In">9.1.6. <code class="value">source-in</code></h4>
+
+<p>
+source の中の dest に重なり合う部分のみが，結果に現れる。
+<span lang="en">
+The source that overlaps the destination, replaces the destination.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff source in"
+	src="//:0#PD_src-in.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-both comp-source"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = αb; Fb = 0
+co = αs × Cs × αb
+αo = αs × αb
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_dstin">
+<h4 title="Destination In">9.1.7. <code class="value">destination-in</code></h4>
+
+<p>
+dest の中の source に重なり合う部分のみが，結果に現れる。
+<span lang="en">
+Destination which overlaps the source, replaces the source.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff destination in "
+	src="//:0#PD_dst-in.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-both comp-dest"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 0; Fb = αs
+co = αb × Cb × αs 
+αo = αb × αs
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_srcout">
+<h4 title="Source Out">9.1.8. <code class="value">source-out</code></h4>
+
+<p>
+source の中の dest に重なり合わない部分のみが，結果に現れる。
+<span lang="en">
+Source is placed, where it falls outside of the destination.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff source out"
+	src="//:0#PD_src-out.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-source"></div>
+<div class="comp-dest comp-negate"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 1 − αb; Fb = 0
+co = αs × Cs × (1 − αb)
+αo = αs × (1 − αb)
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_dstout">
+<h4 title="Destination Out">9.1.9. <code class="value">destination-out</code></h4>
+
+<p>
+dest の中の source に重なり合わない部分のみが，結果に現れる。
+<span lang="en">
+Destination is placed, where it falls outside of the source.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff destination out"
+	src="//:0#PD_dst-out.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+<div class="comp-source comp-negate"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 0; Fb = 1 − αs
+co = αb × Cb × (1 − αs)
+αo = αb × (1 − αs)
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_srcatop">
+<h4 title="Source Atop">9.1.10. <code class="value">source-atop</code></h4>
+
+<p>
+source の中の dest に重なり合う部分と,  dest の他の部分が，結果に現れる。
+<span lang="en">
+Source which overlaps the destination, replaces the destination. Destination is placed elsewhere.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff source atop"
+	src="//:0#PD_src-atop.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+<div class="comp-both comp-source"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = αb; Fb = 1 − αs
+co = αs × Cs × αb + αb × Cb × (1 − αs)
+αo = αs × αb + αb × (1 − αs)
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_dstatop">
+<h4 title="Destination Atop">9.1.11. <code class="value">destination-atop</code></h4>
+
+<p>
+dest の中の source に重なり合う部分と, source の他の部分が，結果に現れる。
+<span lang="en">
+Destination which overlaps the source replaces the source. Source is placed elsewhere.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff destination atop"
+	src="//:0#PD_dst-atop.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-source"></div>
+<div class="comp-both comp-dest"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 1 − αb; Fb = αs
+co = αs × Cs × (1 − αb) + αb × Cb × αs
+αo = αs × (1 − αb) + αb × αs
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_xor">
+<h4 title="XOR">9.1.12. <code class="value">xor</code></h4>
+
+<p>
+source と dest の重なり合わない部分が 組み合せられて，結果に現れる。
+<span lang="en">
+The non-overlapping regions of source and destination are combined.
+</span></p>
+
+<!-- 
+<figure><img
+	alt="example of porter duff xor"
+	src="//:0#PD_xor.svg"
+></figure>
+ -->
+
+<table class="comp-table">
+<thead><tr><td>source</td><td>dest</td><td>結果</td></tr></thead>
+<tbody><tr><td><div class="comp-box">
+<div class="comp-source"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+</div></td><td><div class="comp-box">
+<div class="comp-dest"></div>
+<div class="comp-source"></div>
+<div class="comp-both comp-negate"></div>
+</div></td></tr></tbody></table>
+
+<pre class="formula">
+Fa = 1 − αb; Fb = 1 − αs
+co = αs × Cs × (1 − αb) + αb × Cb × (1 − αs)
+αo = αs × (1 − αb) + αb × (1 − αs)
+</pre>
+
+
+			</section>
+			<section id="porterduffcompositingoperators_plus">
+<h4 title="Lighter">9.1.13. <code class="value">lighter</code></h4>
+
+<p>
+source と dest の和が，結果に現れる。
+Porter Duff 論文 <a>[PORTERDUFF]</a> では， “plus” 演算子として定義されている。
+<span lang="en">
+Display the sum of the source image and destination image. It is defined in the Porter Duff paper as the plus operator [PORTERDUFF].
+</span></p>
+
+<pre class="formula">
+Fa = 1; Fb = 1
+co = αs × Cs + αb × Cb;
+αo = αs + αb
+</pre>
+
+
+			</section>
+		</section>
+		<section id="groupcompositing">
+<h3 title="Group compositing behavior with Porter Duff modes">9.2. 各種 Porter Duff モードにおけるグループ合成のふるまい</h3>
+  <!--<h4 id="groupcompositingisolation">隔離グループと各種 Porter Duff モード</h4>-->
+
+<p>
+<a>隔離グループ</a>における要素の合成において、要素が合成される<a>初期後景</a>は，透明な黒色にされる。
+グループの中の最も奥側の要素が，後景に依存する Porter Duff 合成演算子 —
+<a>destination</a>,
+<a>source-in</a>,
+<a>destination-in</a>,
+<a>destination-out</a>,
+<a>source-atop</a>
+など
+— を利用している場合、合成した結果は空になる。
+グループ内の後続の要素は、最初の合成結果に合成される。
+<!-- ＊
+順次，累積的に？
+ -->
+<span lang="en">
+When compositing the elements within an isolated group, the elements are composited over a transparent black initial backdrop. If the bottom element in the group uses a Porter Duff compositing operator which is dependent on the backdrop, such as destination, source-in, destination-in, destination-out or source-atop, then the result of the composite will be empty. Subsequent elements within the group are composited with the result of the first composite.
+</span></p>
+
+		</section>
+	</section>
+	<section id="blending">
+<h2 title="Blending">10. 混色</h2>
+
+<p>
+混色は、合成­過程の一部分を成すものであり， source 要素と<a>後景</a>とが重なり合う所における色の混合を計算する。
+概念的には、 source 要素の色が 後景と混色された上で、結果の，色に変更が加えられた source 要素が 後景に合成される。
+実施においては，これは一段階にまとめて行われるのが通例である。
+混色の計算では、積算済みの<!--1-->色値が利用されてはならない。
+<span lang="en">
+Blending is the aspect of compositing that calculates the mixing of colors where the source element and backdrop overlap. Conceptually, the colors in the source element are blended in place with the backdrop. After blending, the modified source element is composited with the backdrop. In practice, this is usually all performed in one step. The blending calculations must not use pre-multiplied color values.
+</span></p>
+
+<p class="trans-note">【
+すなわち，以下に見られるように、混色の本質的な部分を成す混色関数 B() には，アルファ（不透明度）は関わらない。
+】</p>
+
+<p>
+“混合” の公式は、次で定義される：
+<span lang="en">
+The "mixing" formula is defined as:
+</span></p>
+
+<pre class="formula">
+Cm = B(Cb, Cs)
+</pre>
+
+<p><span lang="en">with:</span></p>
+
+<table class="params"><tbody>
+
+<tr><th>Cm</th><td>
+混色 後の結果の色
+<span lang="en">
+Cm: the result color after blending
+</span></td></tr>
+
+<tr><th>B</th><td>
+混色を行う公式
+<span lang="en">
+B: the formula that does the blending
+</span></td></tr>
+
+<tr><th>Cb</th><td>
+<a>後景</a>色
+<span lang="en">
+Cb: the backdrop color
+</span></td></tr>
+
+<tr><th>Cs</th><td>
+source 色
+<span lang="en">
+Cs: the source color
+</span></td></tr>
+</tbody></table>
+
+<p>
+混色公式の結果は、色の範囲の最小の／最大の値に切り詰められなければならない。
+<span lang="en">
+The result of the mixing formula must be clamped to the minimum and maximum values of the color range.
+</span></p>
+
+<p>
+混合関数の結果は、後景アルファにより調整される。
+後景が完全に不透明ならば、混合関数の結果がそのまま表示に反映される。
+後景に透明度がある場合、最終的な結果は，後景アルファで制御される重みによる， source 色と, 混合された色との加重平均になる。
+すなわち、結果の色値は次の様になる：
+<span lang="en">
+The result of the mixing function is modulated by the backdrop alpha. A fully opaque backdrop allows the mixing function to be fully realized. A transparent backdrop will cause the final result to be a weighted average between the source color and mixed color with the weight controlled by the backdrop alpha. The value of the new color becomes:
+</span></p>
+
+<pre class="formula">
+Cr = (1 − αb) × Cs + αb × B(Cb, Cs)
+</pre>
+
+<p><span lang="en">with:</span></p>
+
+<table class="params"><tbody>
+
+<tr><th>Cr</th><td>
+結果の色
+<span lang="en">
+Cr: the result color
+</span></td></tr>
+<tr><th>B</th><td>
+混色を行う公式
+<span lang="en">
+B: the formula that does the blending
+</span></td></tr>
+<tr><th>Cs</th><td>
+source 色
+<span lang="en">
+Cs: the source color
+</span></td></tr>
+<tr><th>Cb</th><td>
+<a>後景</a>色
+<span lang="en">
+Cb: the backdrop color
+</span></td></tr>
+<tr><th>αb</th><td>
+<a>後景</a>アルファ
+<span lang="en">
+αb: the backdrop alpha
+</span></td></tr>
+</tbody></table>
+
+
+	<div class="example">
+
+<figure>
+<!-- 
+<img
+	alt="example of blending with opacity"
+	src="//:0#blend_background_opacity.svg"
+>
+-->
+<div id="_ex-blend_background_opacity">
+
+<div style="top:0; height:100%; background:transparent"
+><div style="background:#FF0000"></div></div>
+
+<div style="top:0.5em; background:#00FF00"
+><div style="background:#FFFF00"></div><span>RGB(0, 1, 0)</span></div>
+<div style="top:5.5em; background:#7FFF7F"
+><div style="background:#FF8000"></div><span>RGB(0, 1, 0, .5)</span></div>
+<div style="top:10.5em; background:#E5FFE5"
+><div style="background:#FF1A00"></div><span>RGB(0, 1, 0, .1)</span></div>
+</div>
+<figcaption>
+不透明度が異なるいくつかの緑色 矩形の上に赤色の矩形を置く混色 モードの例。
+<a>後景</a>の不透明度がより小さくなるに伴い，前面に塗られる矩形はより赤くなる。
+<span lang="en">
+This example has a red rectangle with a blending mode that is placed on top of a set of green rectangles that have different levels of opacity.
+</span>
+<span lang="en">
+Note how the top rectangle shifts more toward red as the opacity of the backdrop gets smaller.
+</span>
+</figcaption></figure>
+
+</div>
+
+
+<p class="note">注記：
+source と後景が交差する領域における色値は，次の公式で与えられ、指定された Porter Duff 合成公式により合成される。
+単純アルファ混色の場合の公式は次の様になる：
+<span lang="en">
+Note: The following formula gives the color value in the area where the source and backdrop intersects and then composites with the specified Porter Duff compositing formula. For simple alpha blending, the formula thus becomes:
+</span></p>
+
+<p>
+<a>単純アルファ合成</a>の公式：
+<span lang="en">
+simple alpha compositing:
+</span></p>
+
+<pre class="formula">
+co = cs + cb × (1 − αs)
+</pre>
+
+<p>
+積算済みでない<!--1-->値による公式は：
+<span lang="en">
+written as non-premultiplied:
+</span></p>
+
+<pre class="formula">
+αo × Co = αs × Cs + (1 − αs) × αb × Cb
+</pre>
+
+<p>
+Cs を混色による結果
+<span class="trans-note">【 上述の Cr 】</span>
+に置き換えた
+<span class="trans-note">【一般の混色モードの場合の】</span>
+結果は：
+<span lang="en">
+now substitute the result of blending for Cs:
+</span></p>
+
+<pre class="formula">
+αo × Co = αs × ((1 − αb) × Cs + αb × B(Cb, Cs)) + (1 − αs) × αb × Cb
+        = αs × (1 − αb) × Cs + αs × αb × B(Cb, Cs) + (1 − αs) × αb × Cb
+</pre>
+
+
+		<section id="blendingseparable">
+<h3 title="Separable blend modes">10.1. 成分別による混色モード</h3>
+
+<p>
+結果の各 色成分が，<a>後景</a>と source の対応する色成分のみから決定される場合
+— すなわち，混色公式が，対応する成分ごとに<strong>別々に</strong>適用される場合 —
+その混色モードを，成分別と呼ぶ。
+<span lang="en">
+A blend mode is termed separable if each component of the result color is completely determined by the corresponding components of the constituent backdrop and source colors — that is, if the mixing formula is applied separately to each set of corresponding components.
+</span></p>
+
+<p>
+以下に挙げる各種 混色モードは、混色公式 B(Cb, Cs) を，各 色成分ごとに適用することになる。
+簡単にするため、この節のすべての例では， <a>source-over</a> 合成を利用する。
+<span lang="en">
+Each of the following blend modes will apply the blending function B(Cb, Cs) on each of the color components. For simplicity, all the examples in this chapter use source-over compositing.
+</span></p>
+
+<div class="trans-note">
+<figure id="_drop_area">
+<img src="//:0#composite-source.png" width="200" height="200">
+<span class="mix-demo"></span>
+<figcaption>
+以下の例に利用される source 画像（左）と後景
+<input type="button" value="リセット" id="_reset_mix_demo" />
+</figcaption></figure>
+
+<p>
+上の画像&shy;領域に画像を drag ＆ drop すると、以下の例のブラウザ表示を変更できる
+（ source 画像は収まるように拡縮され，後景&shy;画像は拡縮されずに敷き詰められる）
+</p>
+</div>
+
+
+
+			<section id="blendingnormal">
+<h4 id="valdef-blend-mode-normal" title="normal blend mode">10.1.1. <code class="value">normal</code> 混色モード</h4>
+
+<p id="normal">
+これが、いかなる混色も行わないことを指定する，既定の値である。
+混色公式は、単純に source 色を選択する。
+<span lang="en">
+This is the default attribute which specifies no blending. The blending formula simply selects the source color.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = Cs
+</pre>
+
+<figure><img
+	alt="example of normal blending"
+	src="//:0#normal.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: normal;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingmultiply">
+<h4 id="valdef-blend-mode-multiply" title="multiply blend mode">10.1.2. <code class="value">multiply</code> 混色モード</h4>
+
+<p>
+source 色と dest 色を積算する。
+<span lang="en">
+The source color is multiplied by the destination color and replaces the destination.
+</span></p>
+
+<p>
+結果の色は、どの場所でも， source か dest の暗い方 以下の暗さになる。
+どの色も，黒色と <a>multiply</a> した結果は、黒色になる。
+どの色も，白色と <a>multiply</a> した結果は、元の色のままになる。
+<span lang="en">
+The resultant color is always at least as dark as either the source or destination color. Multiplying any color with black results in black. Multiplying any color with white preserves the original color.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = Cb × Cs
+</pre>
+
+<figure><img
+	alt="example of multiply blending"
+	src="//:0#multiply.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: multiply;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingscreen">
+<h4 id="valdef-blend-mode-screen" title="screen blend mode">10.1.3. <code class="value">screen</code> 混色モード</h4>
+
+<p>
+<a>後景</a>色の補色と source 色の補色を積算した結果の補色をとる。
+<span class="trans-note">【補色 — 明度も反転された補色】</span>
+<span lang="en">
+Multiplies the complements of the backdrop and source color values, then complements the result.
+</span></p>
+
+<p>
+結果の色は、どの場所でも， source か dest の明るい方 以上の明るさになる。
+どの色も，白色と <a>screen</a> した結果は白色になる。
+どの色も，黒色と <a>screen</a> した結果は元の色のままになる。
+その効果は、複数のスライド写真を同じ screen 上に同時に投影したときと同様になる。
+<span lang="en">
+The result color is always at least as light as either of the two constituent colors. Screening any color with white produces white; screening with black leaves the original color unchanged. The effect is similar to projecting multiple photographic slides simultaneously onto a single screen.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = 1 − (1 − Cb) × (1 − Cs)
+          = Cb + Cs − (Cb × Cs)
+</pre>
+
+<figure><img
+	alt="example of screen blending"
+	src="//:0#screen.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: screen;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingoverlay">
+<h4 id="valdef-blend-mode-overlay" title="overlay blend mode">10.1.4. <code class="value">overlay</code> 混色モード</h4>
+
+<p>
+<a>後景</a>の色値に依存して， <a>multiply</a> するか または <a>screen</a> する
+<span lang="en">
+Multiplies or screens the colors, depending on the backdrop color value.
+</span></p>
+
+<p>
+source 色を，その光輝と陰影を維持しつつ，
+<a>後景</a>に overlay する。
+<a>後景</a>色は置換されないが、<a>後景</a>の明度または暗度が反映されるように， source 色と混合される。
+<span lang="en">
+Source colors overlay the backdrop while preserving its highlights and shadows. The backdrop color is not replaced but is mixed with the source color to reflect the lightness or darkness of the backdrop.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = HardLight(Cs, Cb)
+</pre>
+
+<p>
+<a>overlay</a> は、 <a>hard-light</a> 混色モードの反転である。
+その公式については， <a>hard-light</a> の定義を見よ。
+<span lang="en">
+Overlay is the inverse of the hard-light blend mode. See the definition of hard-light for the formula.
+</span></p>
+
+<figure><img
+	alt="example of overlay blending"
+	src="//:0#overlay.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: overlay;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingdarken">
+<h4 id="valdef-blend-mode-darken" title="darken blend mode">10.1.5. <code class="value">darken</code> 混色モード</h4>
+
+<p>
+<a>後景</a>と source 色のより暗い方を選択する。
+<span lang="en">
+Selects the darker of the backdrop and source colors.
+</span></p>
+
+<p>
+<a>後景</a>は、 source がより暗い所では source に置換され，他所では不変なままにされる。
+<span lang="en">
+The backdrop is replaced with the source where the source is darker; otherwise, it is left unchanged.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = min(Cb, Cs)
+</pre>
+
+<figure><img
+	alt="example of darken blending"
+	src="//:0#darken.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: darken;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendinglighten">
+<h4 id="valdef-blend-mode-lighten" title="lighten blend mode">10.1.6. <code class="value">lighten</code> 混色モード</h4>
+
+<p>
+<a>後景</a>と source 色の，より明るい方を選択する。
+<span lang="en">
+Selects the lighter of the backdrop and source colors.
+</span></p>
+
+<p>
+<a>後景</a>は、 source がより明るい所では source に置換され，他所では不変なままにされる。
+<span lang="en">
+The backdrop is replaced with the source where the source is lighter; otherwise, it is left unchanged.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = max(Cb, Cs)
+</pre>
+
+
+<p class="note">注記：
+結果が
+<span class="trans-note">【色の】</span>
+範囲を超過する所では，切り下げられなければならない。
+<span lang="en">
+Note: The result must be rounded down if it exceeds the range.
+</span></p>
+
+<figure><img
+	alt="example of lighten blending"
+	src="//:0#lighten.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: lighten;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingcolordodge">
+<h4 id="valdef-blend-mode-color-dodge" title="color-dodge blend mode">10.1.7. <code class="value">color-dodge</code> 混色モード</h4>
+
+<p>
+source 色を反映するように，<a>後景</a>色を輝かせる。
+黒色による塗りでは，何も変わらない。
+<span lang="en">
+Brightens the backdrop color to reflect the source color. Painting with black produces no changes.
+</span></p>
+
+<pre class="formula">
+if(Cb == 0)
+    B(Cb, Cs) = 0
+else if(Cs == 1)
+    B(Cb, Cs) = 1
+else
+    B(Cb, Cs) = min(1, Cb ÷ (1 − Cs))
+</pre>
+
+<figure><img
+	alt="example of color dodge blending"
+	src="//:0#colordodge.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: color-dodge;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingcolorburn">
+<h4 id="valdef-blend-mode-color-burn" title="color-burn blend mode">10.1.8. <code class="value">color-burn</code> 混色モード</h4>
+
+<p>
+source 色を反映するように<a>後景</a>色を暗くさせる。
+白色による塗りでは，何も変わらない。
+<span lang="en">
+Darkens the backdrop color to reflect the source color. Painting with white produces no change.
+</span></p>
+
+<pre class="formula">
+if(Cb == 1)
+    B(Cb, Cs) = 1
+else if(Cs == 0)
+    B(Cb, Cs) = 0
+else
+    B(Cb, Cs) = 1 − min(1, (1 − Cb) ÷ Cs)
+</pre>
+
+<figure><img
+	alt="example of color burn blending"
+	src="//:0#colorburn.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: color-burn;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendinghardlight">
+<h4 id="valdef-blend-mode-hard-light" title="hard-light blend mode">10.1.9. <code class="value">hard-light</code> 混色モード</h4>
+
+<p>
+source 色値に依存して，色を積算するか または <a>screen</a> する。
+その効果は、<a>後景</a>上に強いスポットライトを照らしたときと同様になる。
+<span lang="en">
+Multiplies or screens the colors, depending on the source color value. The effect is similar to shining a harsh spotlight on the backdrop.
+</span></p>
+
+<pre class="formula">
+if(Cs ≤ 0.5)
+    B(Cb, Cs) = Multiply(Cb, 2 × Cs)
+else
+    B(Cb, Cs) = Screen(Cb, 2 × Cs − 1)
+</pre>
+
+<!--
+B(Cb, Cs) = Cb + m (2 Cs - 1)
+
+	m = (Cs <= 0.5) ? Cb : (1 - Cb)
+-->
+
+<p>
+公式については <a>multiply</a> と <a>screen</a> の定義を見よ。
+<span lang="en">
+See the definition of multiply and screen for their formulas.
+</span></p>
+
+<figure><img
+	alt="example of hard light blending"
+	src="//:0#hardlight.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: hard-light;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingsoftlight">
+<h4 id="valdef-blend-mode-soft-light" title="soft-light blend mode">10.1.10. <code class="value">soft-light</code> 混色モード</h4>
+
+<p>
+source 色値に依存して，色を暗くさせるか明るくさせる。
+その効果は、<a>後景</a>上に拡散スポットライトを照らしたときと同様になる。
+<span lang="en">
+Darkens or lightens the colors, depending on the source color value. The effect is similar to shining a diffused spotlight on the backdrop.
+</span></p>
+
+<pre class="formula">
+if(Cs ≤ 0.5)
+    B(Cb, Cs) = Cb − (1 − 2 × Cs) × Cb × (1 − Cb)
+else
+    B(Cb, Cs) = Cb + (2 × Cs − 1) × (D(Cb) − Cb)
+    ここで
+    if(Cb ≤ 0.25)
+        D(Cb) = ((16 × Cb − 12) × Cb + 4) × Cb
+    else
+        D(Cb) = sqrt(Cb)
+</pre>
+
+<figure><img
+	alt="example of soft light blending"
+	src="//:0#softlight.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: soft-light;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingdifference">
+<h4 id="valdef-blend-mode-difference" title="difference blend mode">10.1.11. <code class="value">difference</code> 混色モード</h4>
+
+<p>
+２つの色の，より明るい方の色からより暗い方の色を減算する。
+<span lang="en">
+Subtracts the darker of the two constituent colors from the lighter color.
+</span></p>
+
+<p>
+白色による塗りは，<a>後景</a>色を反転させる。
+黒色による塗りでは，何も変わらない。
+<span lang="en">
+Painting with white inverts the backdrop color; painting with black produces no change.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = abs( Cb − Cs )
+</pre>
+
+<figure><img
+	alt="example of difference blending"
+	src="//:0#difference.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: difference;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingexclusion">
+<h4 id="valdef-blend-mode-exclusion" title="exclusion blend mode">10.1.12. <code class="value">exclusion</code> 混色モード</h4>
+
+<p>
+<a>difference</a> モードと同様の効果を生産するが、コントラストは弱くなる。
+白色による塗りでは，<a>後景</a>色を反転させる。
+黒色による塗りでは，何も変わらない。
+<span lang="en">
+Produces an effect similar to that of the Difference mode but lower in contrast. Painting with white inverts the backdrop color; painting with black produces no change
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = Cb + Cs − 2 × Cb × Cs
+</pre>
+
+<figure><img
+	alt="example of exclusion blending"
+	src="//:0#exclusion.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: exclusion;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+		</section>
+		<section id="blendingnonseparable">
+<h3 title="Non-separable blend modes">10.2. 成分別でない混色モード</h3>
+
+<p>
+成分別でない混色モードでは、成分ごとに個別に扱わずに，すべての色成分の組み合せを考慮する。
+これらすべての混色モードは、概念的には，次の手続きを要する：
+<span lang="en">
+Nonseparable blend modes consider all color components in combination as opposed to the separable ones that look at each component individually. All of these blend modes conceptually entail the following steps:
+</span></p>
+
+<ol>
+	<li>
+<a>後景</a>と source 色を，混色の色空間から中間処理のための［
+色相, 彩度, 光度
+］による表現に変換する。
+<span lang="en">
+Convert the backdrop and source colors from the blending color space to an intermediate hue-saturation-luminosity representation.
+</span></li>
+
+	<li>
+<a>後景</a>と source の色から選択される［
+色相, 彩度, 光度
+］成分の何らかの組み合せを基に，新たな色を作る。
+<span lang="en">
+Create a new color from some combination of hue, saturation, and luminosity components selected from the backdrop and source colors.
+</span></li>
+
+	<li>
+その結果を逆変換して元の色空間に戻す。
+<span lang="en">
+Convert the result back to the original color space.
+</span></li>
+</ol>
+
+<p>
+成分別でない混色モードの公式では、いくつかの補助関数を用いる：
+<span lang="en">
+The nonseparable blend mode formulas make use of several auxiliary functions:
+</span></p>
+
+<pre class="formula">
+Lum(C) := 0.3 × C.red + 0.59 × C.green + 0.11 × C.blue
+Max(C) := max(C.red, C.green, C.blue)
+Min(C) := min(C.red, C.green, C.blue)
+
+ClipColor(C) {
+    L = Lum(C)
+    max := Max(C)
+    min := Min(C)
+    if(min &lt; 0)
+        C.red   = L + (C.red   − L) × L ÷ (L − min)
+        C.green = L + (C.green − L) × L ÷ (L − min)
+        C.blue  = L + (C.blue  − L) × L ÷ (L − min)
+
+    if(max &gt; 1)
+        C.red   = L + (C.red   − L) × (1 − L) ÷ (max − L)
+        C.green = L + (C.green − L) × (1 − L) ÷ (max − L)
+        C.blue  = L + (C.blue  − L) × (1 − L) ÷ (max − L)
+
+    return C
+}
+
+SetLum(C, l) {
+    d = l − Lum(C)
+    C.red   += d
+    C.green += d
+    C.blue  += d
+    return ClipColor(C)
+}
+
+Sat(C) := Max(C) − Min(C)
+</pre>
+<!-- 
+L = min
+0.3 R + 0.59 G + 0.11 B == R
+0.59 G + 0.11 B == 0.7R < 0
+
+
+Lum(C) = 0.3 x Cred + 0.59 x Cgreen + 0.11 x Cblue
+
+ClipColor(C)
+	L = Lum(C)
+	n = min(Cred, Cgreen, Cblue)
+	x = max(Cred, Cgreen, Cblue)
+	if(n < 0)
+		C = L + (((C - L) * L) / (L - n))
+
+	if(x > 1)
+		C = L + (((C - L) * (1 - L)) / (x - L))
+
+	return C
+
+SetLum(C, l)
+	d = l - Lum(C)
+	Cred = Cred + d
+	Cgreen = Cgreen + d
+	Cblue = Cblue + d
+	return ClipColor(C)
+
+Sat(C) = max(Cred, Cgreen, Cblue) - min(Cred, Cgreen, Cblue)
+
+-->
+
+
+<p>
+次の関数の［
+.min, .mid, .max
+］は、それぞれ，関数に入った時点で値が［
+最小, 中央, 最大
+］の異なる色成分を指すとする。
+<span lang="en">
+The subscripts min, mid, and max in the next function refer to the color components having the minimum, middle, and maximum values upon entry to the function.
+</span></p>
+
+<pre class="formula">
+SetSat(C, s) {
+    if(C.max &gt; C.min)
+        C.mid = ((C.mid − C.min) ÷ (C.max − C.min)) × s
+        C.max = s
+    else
+        C.mid = C.max = 0
+    C.min = 0
+    return C
+}
+</pre>
+
+
+			<section id="blendinghue">
+<h4 id="valdef-blend-mode-hue" title="hue blend mode">10.2.1. <code class="value">hue</code> 混色モード</h4>
+
+<p>
+source 色の色相, <a>後景</a>色の彩度と光度を伴う色を作る。
+<span lang="en">
+Creates a color with the hue of the source color and the saturation and luminosity of the backdrop color.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = SetLum(SetSat(Cs, Sat(Cb)), Lum(Cb))
+</pre>
+
+<figure><img
+	alt="example of hue blending"
+	src="//:0#hue.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: hue;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingsaturation">
+<h4 id="valdef-blend-mode-saturation" title="saturation blend mode">10.2.2. <code class="value">saturation</code> 混色モード</h4>
+
+<p>
+source 色の彩度, <a>後景</a>色の色相と光度を伴う色を作る。
+このモードによる，<a>後景</a>の中の純粋な灰色（彩度なし）領域に対する塗りでは、何も変わらない。
+<span lang="en">
+Creates a color with the saturation of the source color and the hue and luminosity of the backdrop color. Painting with this mode in an area of the backdrop that is a pure gray (no saturation) produces no change.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = SetLum(SetSat(Cb, Sat(Cs)), Lum(Cb))
+</pre>
+
+<figure><img
+	alt="example of saturation blending"
+	src="//:0#saturation.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: saturation;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingcolor">
+<h4 id="valdef-blend-mode-color" title="color blend mode">10.2.3. <code class="value">color</code> 混色モード</h4>
+
+<p>
+source 色の色相と彩度, <a>後景</a>色の光度を伴う色を作る。
+これは、<a>後景</a>の灰色レベルを維持し，モノクロ画像の色付けや, カラー画像の色彩強調（ tinting ）に有用になる。
+<span lang="en">
+Creates a color with the hue and saturation of the source color and the luminosity of the backdrop color. This preserves the gray levels of the backdrop and is useful for coloring monochrome images or tinting color images.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = SetLum(Cs, Lum(Cb))
+</pre>
+
+<figure><img
+	alt="example of color blending"
+	src="//:0#color.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: color;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+
+			</section>
+			<section id="blendingluminosity">
+<h4 id="valdef-blend-mode-luminosity" title="luminosity blend mode">10.2.4. <code class="value">luminosity</code> 混色モード</h4>
+
+<p>
+source 色の光度，および<a>後景</a>色の色相と彩度を伴う色を作る。
+これは、 <a>color</a> モードの反転 効果を生産する。
+<span lang="en">
+Creates a color with the luminosity of the source color and the hue and saturation of the backdrop color. This produces an inverse effect to that of the Color mode.
+</span></p>
+
+<pre class="formula">
+B(Cb, Cs) = SetLum(Cb, Lum(Cs))
+</pre>
+
+<figure><img
+	alt="example of luminosity blending"
+	src="//:0#luminosity.png"
+><span class="mix-demo"><img
+	src="//:0#composite-source.png"
+	style="mix-blend-mode: luminosity;"
+></span><figcaption>
+想定される描画（左）と利用中のブラウザによる表示
+</figcaption></figure>
+
+			</section>
+		</section>
+		<section id="isolationblending">
+<h3 title="Effect of group isolation on blending">10.3. 混色におけるグループ隔離の効果</h3>
+
+
+<div class="example">
+<p>
+次の例では，図左の紙飛行機を構築するために利用されている要素は 通常のグループ,
+図右の紙飛行機は<a>隔離グループ</a>に属し、いずれも，混色モードは
+<a class="value">multiply</a>
+に設定されているとする。
+<span lang="en">
+Note: In the following example, the elements used to construct the paper airplane are within a group. Each of these elements has their blend mode set to multiply.
+</span>
+<span lang="en">
+The airplane on the left is a normal group, the airplane on the right is an isolated group.
+</span></p>
+
+<p>
+図右の<a>隔離グループ</a>においては、グループ内の要素は，空（から）の<a>初期後景</a>上に合成されるので、図の地面と空（そら）が描かれた後景（以下 <var>B</var> と記す）とは積算されない。
+図左の通常のグループにおいては、グループ内の要素は，
+<!-- ＊
+【個別的ではなく グループ一体として？】
+-->
+<var>B</var> 上に合成されるので、 <var>B</var> と積算される。
+両者とも，グループ合成の結果は、
+<a>mix-blend-mode</a> に <a>normal</a>
+（グループに適用される既定の <a>mix-blend-mode</a> ）を用いて，<var>B</var> 上に合成される。
+<span lang="en">
+In the isolated group, the elements within the group are composited onto an empty initial backdrop, this stops the elements within the group multiplying with the backdrop. In the normal group, the elements within the group are composited onto the initial backdrop containing the land and sky. Therefore the elements of the airplane multiply with the land and sky. In both instances, the result of the group composite is composited onto the land and sky using the normal mix-blend-mode (the default mix-blend-mode applied to the group).
+</span></p>
+
+<figure><img
+	alt="example of isolated group blending"
+	src="//:0#isolate_blend_example.png"
+></figure>
+  </div>
+
+
+		</section>
+	</section>
+	<section id="security">
+<h2 title="Security issues with compositing and blending">11. 合成と混色に伴うセキュリティ上の課題</h2>
+
+<p>
+混色と合成の演算にかかる時間は、 source と dest の画素に依存しないことが重要である。
+画素の値に関わらず、演算にかかる時間は一定になるように実装されなければならない。
+<span lang="en">
+It is important that the timing to the blending and compositing operations is independent of the source and destination pixel. Operations must be implemented in such a way that they always take the same amount of time regardless of the pixel values.
+</span></p>
+
+<div class="note">
+<p>
+この規則に沿わない場合、攻撃者が情報を推定したり, 計時攻撃を仕掛けることが可能になる。
+<span lang="en">
+If this rule is not followed, an attacker could infer information and mount a timing attack.
+</span></p>
+
+<p>
+計時攻撃は、演算にかかる時間を調査して，保護されている内容についての情報を取得する手法である。
+例えば、赤色の画素を描く時間が緑色の画素より長くかかるとき、要素の内容へのアクセスを要することなく，描画された要素の大まかな画像を再構成し得る。
+<span lang="en">
+A timing attack is a method of obtaining information about content that is otherwise protected, based on studying the amount of time it takes for an operation to occur. If, for example, red pixels took longer to draw than green pixels, one might be able to reconstruct a rough image of the element being rendered, without ever having access to the content of the element.
+</span></p></div>
+
+
+	</section>
+
+
+	<section id="changes">
+<h2 title="Changes">12. 変更点</h2>
+
+<p>
+<a href="http://www.w3.org/TR/2014/CR-compositing-1-20140220/">2014 年 2 月 20 日付 勧告候補</a>
+から、次の変更が加えられた：
+<span lang="en">
+The following changes were made relative to the Candidate Recommendation of 20 February 2014:
+</span></p>
+
+<ul>
+	<li>
+<code>img</code> 要素で埋め込まれた SVG 画像に対する，
+<a>isolation</a> の強制は、リスク下でなくなった。
+<span lang="en">
+force isolation of SVG images embedded as &lt;img&gt; no longer at risk
+</span></li>
+	<li>
+<a><var>&lt;composite-mode&gt;</var></a> から
+<a>destination</a> の選択肢を除去
+<span lang="en">
+removed destination as an option for &lt;composite-mode&gt;
+</span></li>
+</ul>
+
+
+<p>
+<a href="http://www.w3.org/TR/2013/WD-compositing-1-20131010/">2014 年 1 月 7 日付 最終草案</a>
+から、次の変更が加えられた：
+<span lang="en">
+The following changes were made relative to the Last Call Working draft of 7 January 2014:
+</span></p>
+
+<ul>
+	<li>
+不要な参照文献を削除。
+<span lang="en">
+unneeded normative and informative references were removed
+</span></li>
+</ul>
+
+<p>
+<a href="http://www.w3.org/TR/2013/WD-compositing-1-20131010/">2013 年 10 月 10 日付 最終草案</a>
+から、次の変更が加えられた：
+<span lang="en">
+The following changes were made relative to the Last Call Working draft of 10 October 2013:
+</span></p>
+
+
+<ul>
+	<li>
+knockout を、規定でない節から削除。
+<span lang="en">
+knockout was removed from the non-normative section
+</span></li>
+
+	<li>
+SVG についての段落を，単純アルファ合成から削除
+<span lang="en">
+removed paragraph on SVG from simple alpha compositing
+</span></li>
+
+	<li>
+CSS を含むように要約を更新し，意図を明確化。
+<span lang="en">
+updated abstract to include CSS and clarify intent
+</span></li>
+
+	<li>
+clip-to-self とその参照文献を削除。
+<span lang="en">
+removed clip-to-self and its references
+</span></li>
+
+	<li>
+5-10 節を規定に変更。 
+それらの節の注記／例を明確化。
+<span lang="en">
+Changed section 5-10 to be normative + clarified notes/examples in those sections
+</span></li>
+</ul>
+
+<p>
+<a href="http://www.w3.org/TR/2013/WD-compositing-1-20130625/">2013-06-25 草案</a>
+から、次の変更が加えられた：
+<span lang="en">
+The following changes were made relative to the Working Draft of 2013-06-25:
+</span></p>
+
+<ul>
+	<li>
+SVG において<a>隔離グループ</a>を作成する演算子の一つ， clipping を、削除。
+<span lang="en">
+clipping was removed as one of the operators that creates an isolated group in SVG
+</span></li>
+
+	<li>
+background-blend-mode を，他の background 構文における繰り返しのふるまいと合致するように変更。
+<span lang="en">
+background-blend-mode was changed so it matches repeating behavior of other background syntaxes.
+</span></li>
+
+	<li>
+mix-composite プロパティを削除。
+<span lang="en">
+The mix-composite property was removed
+</span></li>
+
+	<li>
+すべての open 課題は，解決された。
+<span lang="en">
+all open issues were resolved
+</span></li>
+</ul>
+
+	</section>
+	<section id="conformance">
+<h2 title="Conformance">適合性</h2>
+
+<p class="trans-note">【
+この節の内容は、
+“<span id="cr-exit-criteria">勧告候補からの昇格基準</span>”
+も含め，
+<a href="css-common-ja.html#conformance" >CSS 日本語訳 共通ページ</a>
+に委譲
+】</p>
+
+	</section>
+	<section id="references">
+<h2 title="References">参照文献</h2>
+
+		<section id="normative">
+<h3 title="Normative References">参照文献（規範）</h3>
+
+
+<dl>
+	<dt>[2DCONTEXT2]</dt>
+	<dd>Rik Cabanier; et al. HTML Canvas 2D Context, Level 2. 28 August 2014. WD.</dd>
+	<dd>http://www.w3.org/TR/2dcontext2/</dd>
+
+	<dt>[CSS21]</dt>
+	<dd>Bert Bos; et al. Cascading Style Sheets Level 2 Revision 1 (CSS&nbsp;2.1) Specification. 7 June 2011. W3C Recommendation.</dd>
+	<dd>http://www.w3.org/TR/2011/REC-CSS2-20110607</dd>
+
+	<dt>[CSS3BG]</dt>
+	<dd>Bert Bos; Elika J. Etemad; Brad Kemper. CSS Backgrounds and Borders Module Level 3. 24 July 2012. W3C Candidate Recommendation. (Work in progress.)</dd>
+	<dd>http://www.w3.org/TR/2012/CR-css3-background-20120724/</dd>
+
+	<dt>[CSS3COLOR]</dt>
+	<dd>Tantek Çelik; Chris Lilley; L. David Baron. CSS Color Module Level 3. 7 June 2011. W3C Recommendation.</dd>
+	<dd>http://www.w3.org/TR/2011/REC-css3-color-20110607</dd>
+
+	<dt>[SVG]</dt>
+	<dd>Jon Ferraiolo. Scalable Vector Graphics (SVG) 1.0 Specification. 4 September 2001. REC.</dd>
+	<dd>http://www.w3.org/TR/SVG/</dd>
+
+	<dt>[SVG11]</dt>
+	<dd>Erik Dahlström; et al. Scalable Vector Graphics (SVG) 1.1 (Second Edition). 16 August 2011. REC.</dd>
+	<dd>http://www.w3.org/TR/SVG11/</dd>
+
+	<dt>[CSS-BACKGROUNDS-3]</dt>
+	<dd>CSS Backgrounds and Borders Module Level 3</dd>
+	<dd>http://www.w3.org/TR/css3-background/</dd>
+
+	<dt>[CSS-COLOR-3]</dt>
+	<dd>CSS Color Module Level 3</dd>
+	<dd>http://www.w3.org/TR/css3-color/</dd>
+
+	<dt>[CSS-VALUES]</dt>
+	<dd>Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 3. 11 June 2015. CR.</dd>
+	<dd>http://www.w3.org/TR/css-values/</dd>
+
+	<dt>[HTML5]</dt>
+	<dd>Robin Berjon; et al. HTML5. 28 October 2014. REC.</dd>
+	<dd>http://www.w3.org/TR/html5/</dd>
+
+<!-- 
+	<dt>[RFC2119]</dt>
+ -->
+</dl>
+
+		</section>
+		<section id="informative">
+<h3 title="Informative References">参照文献（参考）</h3>
+
+<dl>
+
+	<dt>[PORTERDUFF]</dt>
+	<dd>Thomas Porter; Tom Duff. Compositing digital images. July 1984. ISSN 0097-8930</dd>
+</dl>
+
+		</section>
+	</section>
+	<section id="index">
+<h2 title="Index">索引</h2>
+
+<p class="trans-note">【
+この節の内容は省略（ウィンドウ下端の索引機能を利用されたし）。
+】</p>
+	</section>
+	<section id="property-index">
+<h2 title="Property index" data-cycling=".propdef">プロパティ索引</h2>
+
+<p class="trans-note">【
+この節の内容は省略（見出しクリックで巡回）。
+】</p>
+
+	</section>
+</main><!-- MAIN -->
+
+
+
+<script type="text/plain" id="_link_map">
+
+	background-blend-mode:#propdef-background-blend-mode％
+	mix-blend-mode:#propdef-mix-blend-mode％
+	isolation:#propdef-isolation％
+
+	<blend-mode>:#ltblendmodegt％
+	<composite-mode>:#compositemode％
+	<isolation-mode>:#isolated-propid％
+	<color>:https://drafts.csswg.org/css-values-3/#colors
+
+グループ後景:#groupbackdrop
+初期後景:#initialbackdrop
+
+	●§
+clear:#porterduffcompositingoperators_clear
+copy:#porterduffcompositingoperators_src
+destination:#porterduffcompositingoperators_dst
+source-over:#porterduffcompositingoperators_srcover
+destination-over:#porterduffcompositingoperators_dstover
+source-in:#porterduffcompositingoperators_srcin
+source-atop:#porterduffcompositingoperators_srcatop
+destination-atop:#porterduffcompositingoperators_dstatop
+destination-in:#porterduffcompositingoperators_dstin
+source-out:#porterduffcompositingoperators_srcout
+destination-out:#porterduffcompositingoperators_dstout
+xor:#porterduffcompositingoperators_xor
+lighter:#porterduffcompositingoperators_plus
+
+	●§
+normal:#valdef-blend-mode-normal
+multiply:#valdef-blend-mode-multiply
+screen:#valdef-blend-mode-screen
+overlay:#valdef-blend-mode-overlay
+darken:#valdef-blend-mode-darken
+lighten:#valdef-blend-mode-lighten
+color-dodge:#valdef-blend-mode-color-dodge
+color-burn:#valdef-blend-mode-color-burn
+hard-light:#valdef-blend-mode-hard-light
+soft-light:#valdef-blend-mode-soft-light
+difference:#valdef-blend-mode-difference
+exclusion:#valdef-blend-mode-exclusion
+
+hue:#valdef-blend-mode-hue
+saturation:#valdef-blend-mode-saturation
+color:#valdef-blend-mode-color
+luminosity:#valdef-blend-mode-luminosity
+
+	normal:#blendingnormal
+	multiply:#blendingmultiply
+	screen:#blendingscreen
+	overlay:#blendingoverlay
+	darken:#blendingdarken
+	lighten:#blendinglighten
+	color-dodge:#blendingcolordodge
+	color-burn:#blendingcolorburn
+	hard-light:#blendinghardlight
+	soft-light:#blendingsoftlight
+	difference:#blendingdifference
+	exclusion:#blendingexclusion
+	
+	hue:#blendinghue
+	saturation:#blendingsaturation
+	color:#blendingcolor
+	luminosity:#blendingluminosity
+
+	●§
+混色:#blending
+混色におけるグループ隔離の効果:#isolationblending
+グループ合成の結合法則:#groupinvariance
+
+隔離グループと各種 Porter Duff モード:#groupcompositing
+Porter-Duff 合成:#advancedcompositing
+単純アルファ合成:#simplealphacompositing
+
+後景:#backdrop
+混色:#blending
+変更点の節:#changes
+
+隔離グループ:#isolatedgroups
+
+	normal:#normal → <p id="normal">
+HTML に特有のふるまい:#csscompositingrules_CSS
+SVG に特有のふるまい:#csscompositingrules_SVG
+	isolation:#img_isolation
+
+
+	●CSS2
+CSS プロパティ定義規約:http://www.w3.org/TR/CSS2/about.html#property-defs
+視覚整形モデル:css22-visuren-ja.html
+包含ブロック:css22-visuren-ja.html#containing-block
+inherit:http://www.w3.org/TR/CSS2/cascade.html#value-def-inherit
+積層文脈:css22-visuren-ja.html#x43
+	https://drafts.csswg.org/css2/visuren.html#x44
+	http://www.w3.org/TR/CSS2/zindex.html
+	css22-visuren-ja.html#z-index
+
+	●CSS Backgrounds
+背景とボーダー:css-backgrounds-ja.html#placement
+	http://www.w3.org/TR/css3-background/#placement
+background-image:css-backgrounds-ja.html#background-image
+	https://drafts.csswg.org/css-backgrounds-3/#background-image
+	http://www.w3.org/TR/css3-background/#the-background-image
+background:css-backgrounds-ja.html#background
+	http://www.w3.org/TR/css3-background/#the-background
+
+	●SVG
+	http://www.w3.org/TR/2011/REC-SVG11-20110816
+SVG 合成:http://www.w3.org/TR/SVG11/render.html#Introduction
+	単純アルファ合成:http://www.w3.org/TR/SVG11/masking.html#SimpleAlphaBlending
+コンテナ要素:http://www.w3.org/TR/SVG/intro.html#TermContainerElement
+グラフィックス要素:http://www.w3.org/TR/SVG/intro.html#TermGraphicsElement
+グラフィックス参照要素:http://www.w3.org/TR/SVG11/intro.html#TermGraphicsReferencingElement
+	mask:http://www.w3.org/TR/SVG/masking.html#Masking
+
+	●Canvas 2D
+canvas 2d:http://www.w3.org/TR/2dcontext
+globalCompositeOperation:http://www.w3.org/TR/2dcontext/#dom-context-2d-globalcompositeoperation
+	http://www.w3.org/TR/2dcontext2/#dom-context-2d-globalcompositeoperation
+	http://www.w3.org/TR/2dcontext/#dom-context-2d-globalcompositeoperation
+
+	単純アルファ合成:http://www.w3.org/TR/css3-color/#alpha
+
+opacity:http://www.w3.org/TR/css3-color/#opacity
+mask:http://www.w3.org/TR/SVG/masking.html#MaskProperty
+img:https://html.spec.whatwg.org/multipage/embedded-content-0.html#the-img-element
+body:https://html.spec.whatwg.org/multipage/semantics.html#the-body-element
+
+
+</script>
+
+<script type="text/plain" id="_class_map">
+<blend-mode>:type
+<composite-mode>:type
+<isolation-mode>:type
+	background-blend-mode:property
+	mix-blend-mode:property
+isolation:property
+background-image:property
+background:property
+opacity:property
+mask:property
+img:element
+body:element
+
+
+clear:value
+copy:value
+destination-atop:value
+destination-in:value
+destination-out:value
+destination-over:value
+destination:value
+lighter:value
+source-atop:value
+source-in:value
+source-out:value
+source-over:value
+xor:value
+
+normal:value
+multiply:value
+screen:value
+overlay:value
+darken:value
+lighten:value
+color-dodge:value
+color-burn:value
+hard-light:value
+soft-light:value
+difference:value
+exclusion:value
+
+hue:value
+saturation:value
+color:value
+luminosity:value
+
+</script>
+
+<script>
+new function(){
+//	alert(E('_link_map'));
+	var link_map = Util.getMapping('_link_map');
+	var class_map = Util.getMapping('_class_map');
+
+	repeat('dfn', function(e){
+		var id = e.id, text = e.textContent;
+		if(id && text) {
+			if(!(text in link_map)){
+				link_map[text] = '#' + id;
+			}
+			var classname = e.className;
+			if(classname)
+				class_map[text] = classname;
+		}
+	});
+
+	repeat('a', function(a){
+		if(a.href) return;
+		var key = a.textContent;
+		switch(key.charAt(0)){
+		case '[' :
+//		console.log(key);
+			a.href = '#biblio-' + key.slice(1,-1).toLowerCase();
+			return;
+		}
+		var href = link_map[key];
+		if(href) {
+			a.href = href;
+		}
+		var classname = class_map[key];
+		if(classname){
+			a.className = classname;
+		}
+	});
+
+}
+
+
+</script>
+
+</body>
+</html>
