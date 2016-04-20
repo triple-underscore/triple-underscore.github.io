@@ -1216,7 +1216,7 @@ COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
 // 短縮形 URL の接頭辞 対応表
 COMMON_DATA.JA_BASIS = {
 	'' :       'triple-underscore.github.io/',
-	XML :      'https:triple-underscore.github.io/XML',
+	XML :      'triple-underscore.github.io/XML',
 	mitsue:    'standards.mitsue.co.jp/resources/w3c/TR',
 	momdo:     'momdo.s35.xrea.com/web-html-test/spec',
 	momdoG:    'momdo.github.io',
