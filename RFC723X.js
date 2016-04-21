@@ -1608,7 +1608,7 @@ referrer::::リファラ\n\
 合致:match::~::マッチ\n\
 照合:matching::~::マッチング\n\
 同じ:same:~\n\
-同一:identical:~\n\
+	一致:identical:~\n\
 同一性:identity:~\n\
 同封-:enclose::~\n\
 同意-:agree:~\n\
