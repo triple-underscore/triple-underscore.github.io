@@ -1,4 +1,3 @@
-# triple-underscore.github.io
 
 <p lang="ja">
 各種 web platform 関連仕様の日本語訳。
