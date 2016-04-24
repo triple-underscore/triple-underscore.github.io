@@ -439,6 +439,8 @@ API 基底~URL:~WAPI#api-base-url
 ~entry設定群~obj:~WAPI#entry-settings-object
 尚早に中止され:~WAPI#abort-a-running-script
 走中の~scriptを中止-:~WAPI#abort-a-running-script
+応答を処理する:~WAPI#fetching-scripts-process-response
+
 
 作動中の~timerの~list:~WAppAPI#list-of-active-timers
 
@@ -1253,7 +1255,7 @@ grayscale::::グレイスケール
 </p>
 
 <p>
-更新： <time>2016-04-07</time>
+更新： <time>2016-04-25</time>
 （公開：<time>2012-03-11</time> ）
 </p>
 
@@ -1273,7 +1275,7 @@ grayscale::::グレイスケール
 
 
 <h1>10. Web Workers</h1>
-<h2>最終更新 2016 年 4 月 7 日</h2>
+<h2>最終更新 2016 年 4 月 24 日</h2>
 
 <nav class="toc" id="toc">
 <h2>目次</h2>
@@ -3496,53 +3498,98 @@ Obtain script by switching on the value of options's type member:
 		<dl class="switch">
 			<dt>`classic^l</dt>
 			<dd>
+次を与える下で，`~classic~worker~scriptを~fetchする$
+⇒
 ( %~url , %~referrer, %設定群~obj, %行先 )
-を与える下で，`~classic~worker~scriptを~fetchする$
 ◎
 Fetch a classic worker script given url, referrer, settings object, and destination.
 </dd>
 			<dt>`module^l</dt>
 			<dd>
-( %~url , %options の `credentials^m ~memberの値, %行先, 空~文字列†, %設定群~obj )
-を与える下で，`~module~script木を~fetchする$
+次を与える下で，`~module~script木を~fetchする$
+⇒
+( %~url , %options の `credentials^m ~memberの値, 空~文字列†, `not parser-inserted^l, %行先, %設定群~obj )
 ◎
-Fetch a module script tree given url, the value of the credentials member of options, the empty string (as no cryptographic nonce is present for workers), destination, and settings object.
+Fetch a module script tree given url, the value of the credentials member of options, the empty string (as no cryptographic nonce is present for workers), "not parser-inserted", destination, and settings object.
 </dd>
 			<dd class="note">†
-~workerに対しては %暗号用~nonceはない。
+~workerに対しては %暗号用~nonce はない。
 ◎
 ↑</dd>
 		</dl>
 
-<div class="p">
 <p>
-この~fetchが非同期に完了するまで待機した上で：
+いずれの場合も、~fetchが非同期に完了するまで待機する
+— ここで：
+◎
+↓</p>
+
+		<ul>
+			<li>
+<p>
+`応答を処理する$ときは，次の手続きを遂行する：
+◎
+In both cases, to process the response response, perform the following steps:
 </p>
 
-			<ol>
-				<li>
+				<ol>
+					<li>
+%~worker大域~scope の`~url$ ~SET %応答 の `~url$rs
+◎
+Set worker global scope's url to response's url.
+</li>
+					<li>
+%~worker大域~scope の`~Https状態$ ~SET %応答 の`~Https状態$rs
+◎
+Set worker global scope's HTTPS state to response's HTTPS state.
+</li>
+					<li>
+次を与える下で，
+<a href="~CSP3#initialize-global-object-csp">大域~objの~Csp~listを初期化する</a>
+`CSP$r
+⇒
+( %~worker大域~scope, %応答 )
+◎
+Execute the Initialize a global object's CSP list algorithm on worker global scope and response. [CSP]
+</li>
+					<li>
+~RET ~T
+◎
+Return true.
+</li>
+				</ol>
+			</li>
+
+			<li>
+<p>
+~fetchが完了したなら：
+</p>
+				<ol>
+					<li>
+%~script ~LET ~fetchの結果
+</li>
+					<li>
+<p>
 ~IF［
-~fetchの結果 ~EQ ~NULL
+%~script ~EQ ~NULL
 ］：
-					<ol>
-						<li>
+</p>
+						<ol>
+							<li>
 次を行う`~taskを待入する$
 ⇒
 %~worker に向けて，名前 `error$et の`単純~eventを発火する$
 </li>
-						<li>
+							<li>
 ~RET
 </li>
 					</ol>
 				</li>
-				<li>
-%~script ~SET ~fetchの結果
-</li>
-		</ol>
+			</ol>
 ◎
 If the algorithm asynchronously completes with null, queue a task to fire a simple event named error at worker, and abort these steps. Otherwise, continue the rest of these steps after the algorithm's asynchronous completion, with script being the asynchronous completion value.
-</div>
-
+</li>
+		</ul>
 	</li>
 
 	<li>
@@ -3586,30 +3633,6 @@ Add to worker global scope's list of the worker's Documents the Document objects
 %親~worker大域~scope の`~worker~list$に追加する
 ◎
 If parent worker global scope is not null, add worker global scope to the list of the worker's workers of parent worker global scope.
-</li>
-	<li>
-%~worker大域~scope の`~url$ ~SET %応答 の `~url$rs
-◎
-Set worker global scope's url to response's url.
-</li>
-	<li>
-%~worker大域~scope の`~Https状態$ ~SET %応答 の`~Https状態$rs
-◎
-Set worker global scope's HTTPS state to response's HTTPS state.
-</li>
-	<li>
-%~worker大域~scope の`種別$ ~SET %options の `type^m ~memberの値
-◎
-Set worker global scope's type to the value of the type member of options.
-</li>
-	<li>
-( %~worker大域~scope, %応答 )
-を与える下で，
-<a href="~CSP3#initialize-global-object-csp">大域~objの~Csp~listを初期化する~algo</a>
-を実行する
-`CSP$r
-◎
-Execute the Initialize a global object's CSP list algorithm on worker global scope and response. [CSP]
 </li>
 
 	<li>
@@ -5018,8 +5041,9 @@ As with the worker's script, the script here is always assumed to be JavaScript,
 			</li>
 			<li>
 %~script ~LET
-( %~source, %設定群~obj )
 を与える下で，`~classic~scriptを作成-$した結果
+⇒
+( %~source, %設定群~obj )
 ◎
 Let script be the result of creating a classic script using source and settings object.
 </li>
@@ -5033,9 +5057,9 @@ If response is CORS-cross-origin, pass the muted errors flag to the create a cla
 </li>
 			<li>
 <p>
-(
-%~script, %再投出error~flag ~SET ~ON
-) を与える下で，`~classic~scriptを走らす$
+次を与える下で，`~classic~scriptを走らす$
+⇒
+( %~script, %再投出error~flag ~SET ~ON )
 ◎
 Run the classic script script, passing the rethrow errors flag.
 </p>
