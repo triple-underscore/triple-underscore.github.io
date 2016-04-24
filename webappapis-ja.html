@@ -391,7 +391,6 @@ et.rejectionhandled:~HTML-IND#event-rejectionhandled
 et.reset:~HTML-IND#event-reset
 et.select:~HTML-IND#event-select
 et.show:~HTML-IND#event-show
-	＊et.sort:~HTML-IND#event-sort
 et.storage:~HTML-IND#event-storage
 et.submit:~HTML-IND#event-submit
 et.toggle:~HTML-IND#event-toggle
@@ -488,6 +487,7 @@ i.No CORS:~HTMLINFRA#attr-crossorigin-none
 ~script:#concept-script
 資格証~mode:#concept-module-script-credentials-mode
 暗号用~nonce:#concept-module-script-nonce
+構文解析器~状態:#concept-module-script-parser
 
 ~classic~script:#classic-script
 ~classic~scriptを作成-:#creating-a-classic-script
@@ -531,18 +531,16 @@ i.No CORS:~HTMLINFRA#attr-crossorigin-none
 1.大域~obj:#concept-realm-global
 	~Realmの大域~obj
 関連する設定群~obj:#relevant-settings-object
-	＊環境~設定群~objの大域~obj:#concept-settings-object-global
 0.大域~obj:#concept-settings-object-global
 ~Realm:#environment-settings-object's-realm
 	'
 1.設定群~obj:#concept-realm-settings-object
 	~Realmの設定群~obj
-	＊大域~objの~Realm:#concept-global-object-realm
 0.~Realm:#concept-global-object-realm
+	大域~objの~Realm:#concept-global-object-realm
 
 要請を設定しておく:#fetching-scripts-set-up-request
-応答を検証する:#fetching-scripts-validate-response
-
+応答を処理する:#fetching-scripts-process-response
 
 ~scriptを走らすために準備する:#prepare-to-run-script
 走らせた~scriptを片付ける:#clean-up-after-running-script
@@ -699,6 +697,7 @@ rq.要請~URL:~FETCH#concept-request-url
 rq.資格証~mode:~FETCH#concept-request-credentials-mode
 rq.~URL資格証~利用~flag:~FETCH#concept-request-use-url-credentials-flag
 rq.暗号用~nonce~metadata:~FETCH#concept-request-nonce-metadata
+rq.構文解析器~metadata:~FETCH#concept-request-parser-metadata
 rs.本体:~FETCH#concept-response-body
 rs.~header~list:~FETCH#concept-response-header-list
 rs.~ok~status:~FETCH#ok-status
@@ -1156,7 +1155,6 @@ system::::システム
 続行-:continue:~
 hook::::フック
 option::::オプション
-検証-:validate:~
 差挟まれ:interleaveされ:差し挟まれ
 結合-:coalesce:~
 飛ばす:skip する:~
@@ -1534,7 +1532,6 @@ fallback::::フォールバック
 
 
 	●その他
-	＊
 	止める cease
 	並行して:alongside
 	end up
@@ -1724,7 +1721,7 @@ fallback::::フォールバック
 </p>
 
 <p>
-更新： <time>2016-04-12</time>
+更新： <time>2016-04-24</time>
 （公開：<time>2016-01-08</time> ）
 </p>
 
@@ -1747,7 +1744,7 @@ fallback::::フォールバック
 
 	<hgroup>
 <h1 id="scripting">8.1. Scripting — スクリプト処理</h1>
-<h2>HTML Living Standard — 最終更新 2016 年 4 月 12 日</h2>
+<h2>HTML Living Standard — 最終更新 2016 年 4 月 22 日</h2>
 	</hgroup>
 
 </header>
@@ -2053,6 +2050,17 @@ A cryptographic nonce
 ~importされた~moduleを~fetchするときに利用される，`暗号用~nonce~metadata$rq
 ◎
 A cryptographic nonce used to fetch imported modules.
+</dd>
+
+	<dt>
+`構文解析器~状態@
+◎
+A parser state
+</dt>
+	<dd>
+~importされた~moduleを~fetchするときに利用される，`構文解析器~metadata$rq
+◎
+The parser metadata used to fetch imported modules.
 </dd>
 
 </dl>
@@ -2384,12 +2392,14 @@ The various script-fetching algorithms below have two hooks that may be customiz
 Set up the request, which takes a request which it may modify before the algorithm continues
 </li>
 	<li>
-`応答を検証する@
+`応答を処理する@
 手続きは、与えられた`応答$xに対し，［
+成功／失敗
+］を指示する［
 ~T／~F
-］を返さ~MUST。
+］を返す。
 ◎
-Validate the response, which takes a response and must either return true or false
+Process the response, which takes a response and must either return true or false to indicate success or failure, respectively
 </li>
 </ul>
 
@@ -2401,7 +2411,7 @@ Service Workers is an example of a specification that runs these algorithms with
 </p>
 
 <p class="algo-head">
-( %~url, %~CORS設定, %暗号用~nonce, %設定群~obj, %文字~符号化方式 )
+( %~url, %~CORS設定, %暗号用~nonce, %構文解析器~状態, %設定群~obj, %文字~符号化方式 )
 が与えられた下で，
 `script$e 要素 %要素 に対し
 `~classic~scriptを~fetchする@
@@ -2411,7 +2421,7 @@ Service Workers is an example of a specification that runs these algorithms with
 （成功~時には）新たな`~classic~script$
 ］いずれかを結果として，`非同期に完了する$：
 ◎
-To fetch a classic script for a script element element, given a url, a CORS setting, a cryptographic nonce, a settings object, and a character encoding, run these steps. The algorithm will asynchronously complete with either null (on failure) or a new classic script (on success).
+To fetch a classic script for a script element element, given a url, a CORS setting, a cryptographic nonce, a parser state, a settings object, and a character encoding, run these steps. The algorithm will asynchronously complete with either null (on failure) or a new classic script (on success).
 </p>
 
 <ol>
@@ -2432,9 +2442,10 @@ Let request be the result of creating a potential-CORS request given url and COR
 </li><li>`種別$rq ~SET `script^l
 </li><li>`行先$rq ~SET `script^l
 </li><li>`暗号用~nonce~metadata$rq ~SET %暗号用~nonce
+</li><li>`構文解析器~metadata$rq ~SET %構文解析器~状態
 </li></ul>
 ◎
-Set request's client to settings object, its type to "script", its destination to "script", and its cryptographic nonce metadata to cryptographic nonce.
+Set request's client to settings object, its type to "script", its destination to "script", its cryptographic nonce metadata to cryptographic nonce, and its parser metadata to parser state.
 </li>
 	<li>
 ~IF［
@@ -2489,7 +2500,7 @@ response can be either CORS-same-origin or CORS-cross-origin. This only affects 
 </li>
 			<li>
 ［
-~call元にて`応答を検証する$手続きが指定されている
+~call元にて`応答を処理する$手続きが指定されている
 ］~AND［
 %応答 に対しそれを遂行した結果 ~EQ ~F
 ］
@@ -2499,7 +2510,7 @@ response can be either CORS-same-origin or CORS-cross-origin. This only affects 
 ◎
 If response's type is "error", or response's status is not an ok status, asynchronously complete this algorithm with null, and abort these steps.
 ◎
-If the caller specified custom steps to validate the response, perform them on response. If they return false, complete this algorithm with null, and abort these steps.
+If the caller specified custom steps to process the response, perform them on response. If they return false, complete this algorithm with null, and abort these steps.
 </li>
 
 
@@ -2583,10 +2594,11 @@ To fetch a classic worker script given a url, a referrer, a settings object, and
 </li><li>`~referrer$rq ~SET %~referrer
 </li><li>`~mode$rq ~SET `same-origin^l
 </li><li>`資格証~mode$rq ~SET `same-origin^l
+</li><li>`構文解析器~metadata$rq ~SET `not parser-inserted^l
 </li><li>`~URL資格証~利用~flag$rq ~SET ~ON
 </li></ul>
 ◎
-Let request be a new request whose url is url, client is settings object, type is "script", destination is destination, referrer is referrer, mode is "same-origin", credentials mode is "same-origin", and whose use-URL-credentials flag is set.
+Let request be a new request whose url is url, client is settings object, type is "script", destination is destination, referrer is referrer, mode is "same-origin", credentials mode is "same-origin", parser metadata is "not parser-inserted", and whose use-URL-credentials flag is set.
 </li>
 	<li>
 ~IF［
@@ -2628,7 +2640,7 @@ Return from this algorithm, and run the remaining steps as part of the fetch's p
 </li>
 			<li>
 ［
-この~algoの~call元にて`応答を検証する$手続きが指定されている
+この~algoの~call元にて`応答を処理する$手続きが指定されている
 ］~AND［
 %応答 に対しそれを遂行した結果 ~EQ ~F
 ］
@@ -2638,7 +2650,7 @@ Return from this algorithm, and run the remaining steps as part of the fetch's p
 ◎
 If response's type is "error", or response's status is not an ok status, asynchronously complete this algorithm with null, and abort these steps.
 ◎
-If the caller specified custom steps to validate the response, perform them on response. If they return false, complete this algorithm with null, and abort these steps.
+If the caller specified custom steps to process the response, perform them on response. If they return false, complete this algorithm with null, and abort these steps.
 </li>
 	<li>
 %~source~text ~LET
@@ -2663,7 +2675,7 @@ Asynchronously complete this algorithm with script.
 </ol>
 
 <p class="algo-head">
-( %~url, %資格証~mode, %暗号用~nonce, %行先, %設定群~obj, %先祖~list（省略可） )
+( %~url, %資格証~mode, %暗号用~nonce, %構文解析器~状態, %行先, %設定群~obj, %先祖~list（省略可） )
 が与えられた下で
 `~module~script木を~fetchする@
 ときは、次を走らす。
@@ -2672,7 +2684,7 @@ Asynchronously complete this algorithm with script.
 （成功~時には）`~module~script$
 ］いずれかを結果として，`非同期に完了する$：
 ◎
-To fetch a module script tree given a url, a credentials mode, a cryptographic nonce, a destination, a settings object, and an optional ancestor list, run these steps. The algorithm will asynchronously complete with either null (on failure) or a module script (on success).
+To fetch a module script tree given a url, a credentials mode, a cryptographic nonce, a parser state, a destination, a settings object, and an optional ancestor list, run these steps. The algorithm will asynchronously complete with either null (on failure) or a module script (on success).
 </p>
 
 <ol>
@@ -2687,13 +2699,13 @@ If ancestor list is not given, let it be an empty list.
 </li>
 	<li>
 <p>
-( %~url, %資格証~mode, %暗号用~nonce, %行先, %設定群~obj )
+( %~url, %資格証~mode, %暗号用~nonce, %構文解析器~状態, %行先, %設定群~obj )
 を与える下で，`単独の~module~scriptを~fetchする$
 — この~algoの~call元にて［
-`要請を設定しておく$ ／ `応答を検証する$
+`要請を設定しておく$ ／ `応答を処理する$
 ］手続きが指定されている場合は、それらも~fetchする~algoに渡す。
 ◎
-Fetch a single module script given url, credentials mode, cryptographic nonce, destination, and settings object. If the caller of this algorithm specified custom set up the request or validate the response steps, pass those along while fetching a single module script.
+Fetch a single module script given url, credentials mode, cryptographic nonce, parser state, destination, and settings object. If the caller of this algorithm specified custom set up the request or process the response steps, pass those along while fetching a single module script.
 </p>
 
 <p>
@@ -2842,19 +2854,19 @@ Otherwise, if url is not in ancestor list, add url to urls.
 ~FOR
 %~url~list 内の~EACH ( %~url ) に対し
 ⇒
-( %~url, %~module~script の`資格証~mode$, %~module~script の`暗号用~nonce$, %行先, %~module~script の`設定群~obj$, %先祖~list )
+( %~url, %~module~script の`資格証~mode$, %~module~script の`暗号用~nonce$, %~module~script の`構文解析器~状態$, %行先, %~module~script の`設定群~obj$, %先祖~list )
 を与える下で，`~module~script木を~fetchする$：
 ◎
-For each url in urls, fetch a module script tree given url, module script's credentials mode, module script's cryptographic nonce, destination, module script's settings object, and ancestor list.
+For each url in urls, fetch a module script tree given url, module script's credentials mode, module script's cryptographic nonce, module script's parser state, destination, module script's settings object, and ancestor list.
 </p>
 
 <p class="note">注記：
 ここでは意図的に，［
-`要請を設定しておく$／`応答を検証する$
+`要請を設定しておく$／`応答を処理する$
 ］手続きは渡さない。
 これらの~hookは、~module~script木の根における~top-levelの~fetchにのみ適用される。
 ◎
-It is intentional that no custom set up the request or validate the response steps are passed along here. Those hooks only apply to the top-level fetch at the root of the module script tree.
+It is intentional that no custom set up the request or process the response steps are passed along here. Those hooks only apply to the top-level fetch at the root of the module script tree.
 </p>
 
 		<ul>
@@ -2884,7 +2896,7 @@ Once all of the fetch a module script tree invocations asynchronously complete w
 </ol>
 
 <p class="algo-head">
-( %~url, %資格証~mode, %暗号用~nonce, %行先, %設定群~obj )
+( %~url, %資格証~mode, %暗号用~nonce, %構文解析器~状態, %行先, %設定群~obj )
 が与えられた下で，
 `単独の~module~scriptを~fetchする@
 するときは、次を走らす。
@@ -2893,7 +2905,7 @@ Once all of the fetch a module script tree invocations asynchronously complete w
 （成功~時には）`~module~script$
 ］いずれかを結果として，`非同期に完了する$：
 ◎
-To fetch a single module script, given a url, a credentials mode, a cryptographic nonce, a destination, and a settings object, run these steps. The algorithm will asynchronously complete with either null (on failure) or a module script (on success).
+To fetch a single module script, given a url, a credentials mode, a cryptographic nonce, a parser state, a destination, and a settings object, run these steps. The algorithm will asynchronously complete with either null (on failure) or a module script (on success).
 </p>
 
 <ol>
@@ -2943,11 +2955,12 @@ Create an entry in module map with key url and value "fetching".
 </li><li>`~mode$rq ~SET `cors^l
 </li><li>`資格証~mode$rq ~SET %資格証~mode
 </li><li>`暗号用~nonce~metadata$rq ~SET %暗号用~nonce
+</li><li>`構文解析器~metadata$rq ~SET %構文解析器~状態
 </li><li>`~client$rq ~SET %設定群~obj 
 </li></ul>
 
 ◎
-Let request be a new request whose url is url, destination is destination, type is "script", mode is "cors", credentials mode is credentials mode, cryptographic nonce metadata is cryptographic nonce, and client is settings object.
+Let request be a new request whose url is url, destination is destination, type is "script", mode is "cors", credentials mode is credentials mode, cryptographic nonce metadata is cryptographic nonce, parser metadata is parser stateand client is settings object.
 </li>
 	<li>
 ~IF［
@@ -3018,12 +3031,12 @@ For historical reasons, fetching a classic script does not include MIME type che
 			<li>
 <p>
 ［
-この~algoの~call元にて`応答を検証する$手続きが指定されている
+この~algoの~call元にて`応答を処理する$手続きが指定されている
 ］~AND［
 %応答 に対しそれを遂行した結果 ~EQ ~F
 ］
 ◎
-The caller specified custom steps to validate the response, which when performed on response return false.
+The caller specified custom steps to process the response, which when performed on response return false.
 </li>
 		</ul>
 
@@ -3127,12 +3140,12 @@ Return script.
 </ol>
 
 <p class="algo-head">
-( %~script~source, %環境~設定群~obj, %~script基底~URL, %資格証~mode, %暗号用~nonce )
+( %~script~source, %環境~設定群~obj, %~script基底~URL, %資格証~mode, %暗号用~nonce, %構文解析器~状態 )
 が与えられた下で，
 `~module~scriptを作成-@
 するときは：
 ◎
-To create a module script, given some script source, an environment settings object, a script base URL, a credentials mode, and a cryptographic nonce:
+To create a module script, given some script source, an environment settings object, a script base URL, a credentials mode, a cryptographic nonce, and a parser state:
 </p>
 
 
@@ -3198,6 +3211,11 @@ Set script's credentials mode to the credentials mode provided.
 %~script の`暗号用~nonce$ ~SET %暗号用~nonce
 ◎
 Set script's cryptographic nonce to the cryptographic nonce provided.
+</li>
+	<li>
+%~script の`構文解析器~状態$ ~SET %構文解析器~状態
+◎
+Set script's parser state to the parser state.
 </li>
 	<li>
 ~RET %~script
@@ -3683,14 +3701,17 @@ Consider the following two pages, with the first being loaded in a browser windo
 <pre>
 &lt;!-- a/a.html --&gt;
 &lt;!DOCTYPE HTML&gt;
+&lt;html lang="ja"&gt;
 &lt;title&gt;外縁~頁&lt;/title&gt;
 &lt;iframe src="../b/b.html"&gt;&lt;/iframe&gt;
 &lt;input type=button onclick="frames[0].hello()" value="Hello"&gt;
 </pre>
 
+
 <pre>
 &lt;!-- b/b.html --&gt;
 &lt;!DOCTYPE HTML&gt;
+&lt;html lang="ja"&gt;
 &lt;title&gt;内縁~頁&lt;/title&gt;
 &lt;script&gt;
  function hello() {
@@ -3885,7 +3906,7 @@ The JavaScript specification defines the JavaScript job and job queue abstractio
 しかしながら、技術的には，実装定義の挙動の範囲内として是認される仕方ではあっても、結局は，本質的に~job待行列の基盤をまるごと迂回するような，遠回しでとっ散らかった回避策であふれることになる。
 ここでは、この道は採らない代わりに，以下の各~下位~節に与える`故意的な違反$xを導入する。
 ◎
-This is not strictly true. It is in fact possible, by taking liberal advantage of the many "implementation defined" sections of the algorithm, to contort it to our purposes. However, the end result is a mass of messy indirection and workarounds that essentially bypasses the job queue infrastructure entirely, albeit in a way that is technically sanctioned within the bounds of implementation-defined behavior. We do not take this path, and instead introduce the following willful violation.
+This is not strictly true. It is in fact possible, by taking liberal advantage of the many "implementation defined" sections of the algorithm, to contort it to our purposes. However, the end result is a mass of messy indirection and workarounds that essentially bypasses the job queue infrastructure entirely, albeit in a way that is technically sanctioned within the bounds of implementation-defined behaviour. We do not take this path, and instead introduce the following willful violation.
 </p>
 
 <p>
@@ -4400,7 +4421,7 @@ Returning true cancels event per the event handler processing algorithm.
 <ol>
 	<li>
 <p>
-次を~~入力に その`~errorを報告する$：
+次を与える下で，その`~errorを報告する$：
 </p>
 
 		<ul>
@@ -6073,8 +6094,8 @@ When an event handler content attribute is set, execute the following steps:
 <ol>
 	<li>
 ~IF［［
-( %属性 を有している`要素$x, `script attribute^l )
-を~~入力に，
+( %属性 を有している`要素$x, `script attribute^l, 所与の値 )
+を与える下で，
 <a href="~CSP3#should-block-inline">要素の~inline型の挙動は~CSPにより阻止されるべきか？</a>
 `CSP$r
 ］を実行した結果 ~EQ `阻止ed^i
@@ -6082,7 +6103,7 @@ When an event handler content attribute is set, execute the following steps:
 ⇒
 ~RET
 ◎
-If the Should element's inline behavior be blocked by Content Security Policy? algorithm returns "Blocked" when executed upon the attribute's element and "script attribute", then abort these steps. [CSP]
+If the Should element's inline behavior be blocked by Content Security Policy? algorithm returns "Blocked" when executed upon the attribute's element, "script attribute", and the attribute's value, then abort these steps. [CSP]
 </li>
 	<li>
 対応している`~event~handler$ ~SET
@@ -6211,7 +6232,7 @@ The interfaces implemented by the event object do not influence whether an event
 `~event~handler処理~algo@
 は、
 ( `~event~handler$ %H , `Event$I ~obj %E )
-を~~入力にとり，次で与えられる：
+に対し，次を行う：
 ◎
 The event handler processing algorithm for an event handler H and an Event object E is as follows:
 </p>
@@ -6645,7 +6666,7 @@ Set H's value to null.
 </li>
 			<li>
 <p>
-次を~~入力に，`~errorを報告する$
+次を与える下で，`~errorを報告する$
 </p>
 
 		<ul>
