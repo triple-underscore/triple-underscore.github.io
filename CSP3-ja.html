@@ -236,7 +236,7 @@ CSP:
 HTTP-network:
 HTTP:
 URL:
-
+JS:JavaScript
 	API
 	Content Security Policy
 	CSSOM
@@ -469,6 +469,8 @@ whitelist::::ホワイトリスト
 sniffing:
 	持ち込む:bring する
 	構文解析-時に挿入され:parser-inserted
+完全性:integrity::~
+
 
 	●CSP 対象
 text::::テキスト
@@ -544,9 +546,10 @@ digest::::ダイジェスト
 	被設定時:被 set 時:~
 合格-:pass::~::パス
 
-阻止する:block する::阻む::ブロックする
-阻止され:block され::阻まれ::ブロックされ
-阻止でき:block でき::阻め::ブロックでき
+阻止-:block::~::ブロック
+	阻止する:block する::阻む::ブロックする
+	阻止され:block され::阻まれ::ブロックされ
+	阻止でき:block でき::阻め::ブロックでき
 阻止ed:Blocked::阻まれる::ブロックされる
 
 合致:match::~::マッチ
@@ -651,6 +654,7 @@ compilation::::コンパイル
 困難:difficult:~
 在する:present する:在る
 	在しな:present しな:無
+	在する下:presence
 型:type::~
 種別:type::~
 基底:base:~
@@ -774,6 +778,7 @@ version::::バージョン
 避ける:avoid する:~
 避けて:avoid して:~
 期待-:expect:~
+期待:expectations:~
 一意な:unique:~
 一般:general:~
 一般的:general:~
@@ -938,7 +943,12 @@ app:application:::アプリ
 	策定-:land:~
 状況:situations:~
 旧来の:legacy:~
+依拠-:rely:~
+尊守-:honor:~
+視野:scope:~
 
+	拡げ:expand
+	広範:wide:~
 	反した~goes against
 	例えば,~for instance
 	手短に言えば~In~short
@@ -1493,6 +1503,7 @@ rq.~window:~FETCH#concept-request-window
 rq.~target閲覧文脈:~FETCH#concept-request-target-browsing-context
 rq.暗号用~nonce~metadata:~FETCH#concept-request-nonce-metadata
 rq.構文解析器~metadata:~FETCH#concept-request-parser-metadata
+rq.完全性~metadata:~FETCH#concept-request-integrity-metadata
 
 ~URL:~DOM4#concept-document-url
 
@@ -1662,7 +1673,7 @@ i {
 </p>
 
 <p >
-更新：<time>2016-04-21</time>
+更新：<time>2016-04-26</time>
 （公開：<time>2015-12-12</time> ）
 </p>
 
@@ -1684,7 +1695,7 @@ i {
 <header>
 	<hgroup>
 <h1 id="title">Content Security Policy Level 3</h1>
-<h2 id="subtitle">2016 年 4 月 20 日付 編集者草案</h2>
+<h2 id="subtitle">2016 年 4 月 25 日付 編集者草案</h2>
 	</hgroup>
 <dl id="_versions">
 	<dt title="This version:">このバージョン：</dt>
@@ -2053,11 +2064,23 @@ The 'unsafe-hash-attributes' source expression will now allow event handlers and
 </li>
 
 	<li>
-`~source式$の照合では、`局所~scheme$uのみならず，非`~network~scheme$uは，明示的に~whitelist化することが要求されるものとされた
+`~source式$の照合では、`局所~scheme$uのみならず，どの非`~network~scheme$uも，明示的に~whitelist化することが要求されるようになった
 — `~urlは ( 生成元, ~redirect回数 ) について式に合致するか？$A
 を見よ。
 ◎
 The source expression matching has been changed to require explicit whitelisting of any non-network scheme, rather than local scheme, as described in §6.1.11.4 Does url match expression in origin with redirect count?.
+</li>
+
+	<li>
+~hashに基づく~source式は、今や，外部~scriptを~whitelist化できる
+— 要請を誘発する当の `script$e 要素に［
+現在の施策により~whitelist化されている完全性~metadataの集合
+］を指定することで。
+詳細は、
+<a href="#external-hash">外部~JSに対する~hashによる~whitelist化</a>
+節を見よ。
+◎
+Hash-based source expressions may now whitelist external scripts if the script element that triggers the request specifies a set of integrity metadata which is whitelisted by the current policy. Details in §8.4 Whitelisting external JavaScript with hashes.
 </li>
 
 </ol>
@@ -4330,7 +4353,7 @@ Given a violation (violation), this algorithm returns a JSON text string represe
 	<li>
 <p>
 %~obj ~LET
-各種~propertyが次のように初期化された，新たな JavaScript ~obj
+各種~propertyが次のように初期化された，新たな~JS ~obj
 ◎
 Let object be a new JavaScript object with properties initialized as follows:
 </p>
@@ -5026,7 +5049,7 @@ This directive controls requests which transmit or receive data from other origi
 
 <div class="p">
 <p>
-JavaScript は、［
+~JSは、［
 情報を送受信するために外部~serverへ直接的に接続する
 ］ための，少数の仕組みを提供0する：
 </p>
@@ -6276,7 +6299,7 @@ Inline script blocks MUST pass through §4.2.3 Should element’s inline type be
 </li>
 	<li>
 <p>
-次の JavaScript 実行~sink†は、
+次の~JS実行~sink†は、
 `unsafe-eval$pl ~source式で通過制御される：
 ◎
 The following JavaScript execution sinks are gated on the "unsafe-eval" source expression:
@@ -6375,6 +6398,81 @@ If request’s type is "script", and its destination is "subresource":
 If the result of executing §6.1.11.2 Does nonce match source list? on request’s cryptographic nonce metadata and this directive’s value is "Matches", return "Allowed".
 </li>
 
+
+
+			<li>
+<p>
+~IF［
+この指令の`値$は［
+`hash-source$p 文法に合致するような `~source式$
+］を 1 個以上~包含する
+］~AND［
+%要請 の `完全性~metadata$rq ~NEQ 空~文字列
+］：
+◎
+If this directive’s value contains one or more source expressions that match the hash-source grammar, and request’s integrity metadata is not the empty string, then:
+</p>
+
+				<ol>
+					<li>
+`完全性~sourceたち^v ~LET
+%要請 の`完全性~metadata$rqを渡して，
+Subresource Integrity `SRI$r による
+<a href="https://w3c.github.io/webappsec-subresource-integrity/#parse-metadata">~metadataを構文解析する~algo</a>
+を実行した結果
+◎
+Let integrity sources be the result of executing the Subresource Integrity §parse-metadata algorithm on request’s integrity metadata. [SRI]
+</li>
+
+					<li>
+~Assert：
+`完全性~sourceたち^v ~NEQ `no metadata^l
+◎
+Assert: integrity sources is not "no metadata".
+</li>
+
+					<li>
+<p>
+~IF［
+`完全性~sourceたち^v 内のどの %~source に対しても，［
+次の両者を満たす `~source式$ %式
+］が %~list に包含されている
+］…：
+</p>
+
+<ul ><li>%~source の `hash-algo^P 成分 ~EQ %式 の `hash-algorithm$p 成分
+</li><li>%~source の `base64-value^P 成分 ~EQ %式 の `base64-value$p 成分
+</li></ul>
+
+<p>
+…ならば
+⇒
+~RET `許容ed^i
+— 完全性~合致に因り。
+◎
+Let bypass due to integrity match be true.
+◎
+For each source in integrity sources:
+◎
+If this directive’s value does not contain a source expression whose hash-algorithm is a case-sensitive match for source’s hash-algo component, and whose base64-value is a case-sensitive match for source’s base64-value, then set bypass due to integrity match to false.
+◎
+If bypass due to integrity match is true, return "Allowed".
+</li>
+
+				</ol>
+
+<p class="note">注記：
+ここで検証0するのは、［
+%要請 の`完全性~metadata$rqで与えられる~metadataの集合
+］が［
+この指令により~whitelist化された `hash-source$p `~source式$たちの集合
+］に包含されているかどうかまでである。
+これは、応答において合致しない資源を阻止するときに，~browserによる Subresource Integrity `SRI$r の施行に依拠している。
+◎
+Note: Here, we verify only that the request contains a set of integrity metadata which is a subset of the hash-source source expressions whitelisted by this directive. We rely on the browser’s enforcement of Subresource Integrity [SRI] to block non-matching resources upon response.
+</p>
+
+			</li>
 			<li>
 <p>
 ~IF［
@@ -8346,18 +8444,31 @@ If present in a script-src or default-src directive, it has two main effects:
 </p>
 
 <ul>
-	<li>(A)：
+	<li>
+<p>(A)：
+［
 `host-source$p, `scheme-source$p
-式, および `unsafe-inline$pl `keyword-source$p は、~scriptの読込み時には無視される。
+］式, および `keyword-source$p［
+`unsafe-inline$pl, `self$pl
+］は、~scriptの読込み時には無視される。
 ◎
-host-source and scheme-source expressions, as well as the "'unsafe-inline'" keyword-source will be ignored when loading script.
-</li>
+host-source and scheme-source expressions, as well as the "'unsafe-inline'" and "'self' keyword-sources will be ignored when loading script.
+</p>
+
+<p>
+`hash-source$p, `nonce-source$p
+式は、尊守されることになる。
+◎
+hash-source and nonce-source expressions will be honored.
+</p>
+	</li>
 
 	<li>(B)：
 `構文解析-時に挿入され$たものではない `script$e 要素により誘発される~script要請は、許容される。
 ◎
 Script requests which are triggered by non-parser-inserted script elements are allowed.
 </li>
+
 </ul>
 
 <p>
@@ -8456,6 +8567,7 @@ sadness.js will not load, however, as document.write() produces script elements 
 		<section id="unsafe-hash-attributes-usage">
 <h3 title="Usage of &quot;'unsafe-hash-attributes'&quot;">8.3. `unsafe-hash-attributes^pl の用法</h3>
 
+~INFORMATIVE
 
 <p>
 ［
@@ -8501,6 +8613,68 @@ Rather than whitelisting "'unsafe-inline'", they decide to use "'unsafe-hash-att
 
 </div>
 
+
+		</section>
+		<section id="external-hash">
+<h3 title="Whitelisting external JavaScript with hashes ">8.4. 外部~JSに対する~hashによる~whitelist化</h3>
+
+~INFORMATIVE
+
+<p>
+`CSP2$r では、~hash`~source式$は，~inlineの~scriptに限って~whitelist化できていたが、今や Subresource Integrity `SRI$r が広範に配備されたので，外部化された~JSも可能化するように視野を拡げられる。
+◎
+In [CSP2], hash source expressions could only whitelist inlined script, but now that Subresource Integrity is widely deployed, we can expand the scope to enable externalized JavaScript as well.
+</p>
+
+<p>
+ある `script$e に対し，複数の完全性~metadataからなる集合が指定された場合、
+要請が施策の `hash-source$p たちに合致する必要十分条件は、［
+`script$e の完全性~metadata内の <em>各</em> ~itemが当の施策に合致する
+］ときになる。
+◎
+If multiple sets of integrity metadata are specified for a script, the request will match a policy’s hash-sources if and only if each item in a script's integrity metadata matches the policy.
+</p>
+
+<div class="example">
+<p >
+MegaCorp 社は，内容が期待に合致することを確保するため、~page上の 2 個の特定の~scriptを~whitelist化したいとする
+— 次の施策を設定したとするとき：
+◎
+MegaCorp, Inc. wishes to whitelist two specific scripts on a page in a way that ensures that the content matches their expectations. They do so by setting the following policy:
+</p>
+
+
+<pre>
+`Content-Security-Policy$h:
+    script-src 'sha256-abc123' 'sha512-321cba'
+</pre>
+
+<p>
+この施策が在する下では、次の各 `script$e 要素は，~whitelist化されることになる
+— いずれも，施策に合致する完全性~metadataのみを包含するので：
+◎
+In the presence of that policy, the following script elements would be whitelisted because they contain only integrity metadata that matches the policy:
+</p>
+
+<pre>
+&lt;script integrity="sha256-abc123" ...&gt;&lt;/script&gt;
+&lt;script integrity="sha512-321cba" ...&gt;&lt;/script&gt;
+&lt;script integrity="sha256-abc123 sha512-321cba" ...&gt;&lt;/script&gt;
+</pre>
+
+<p>
+一方で，次の各 `script$e 要素は，施策に合致しない~metadataを包含するので、いずれも（他の~metadataは合致していても）~whitelist化されない：
+◎
+While the following script elements would not be whitelisted because they contain metadata that does not match the policy (even though other metadata does match):
+</p>
+
+<pre>
+&lt;script integrity="<mark>sha384-xyz789</mark>" ...&gt;&lt;/script&gt;
+&lt;script integrity="<mark>sha384-xyz789</mark> sha512-321cba" ...&gt;&lt;/script&gt;
+&lt;script integrity="sha256-abc123 <mark>sha384-xyz789</mark> sha512-321cba" ...&gt;&lt;/script&gt;
+</pre>
+
+</div>
 
 		</section>
 	</section>
@@ -8589,7 +8763,7 @@ Lots of people are awesome. For instance:
 Mario and all of Cure53.
 </li>
 	<li>
-Artur Jank, Michele Spagnuolo, Lukas Weichselbaum, Jochen Eisinger, and the
+Artur Janc, Michele Spagnuolo, Lukas Weichselbaum, Jochen Eisinger, and the
 rest of Google’s CSP Cabal.
 </li>
 </ul>
@@ -8716,6 +8890,10 @@ rest of Google’s CSP Cabal.
 	<dt>[SHA2]</dt>
 	<dd>FIPS PUB 180-4, Secure Hash Standard.</dd>
 	<dd>http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf</dd>
+
+	<dt>[SRI]</dt>
+	<dd>Devdatta Akhawe; et al. Subresource Integrity. 12 November 2015. CR.
+	<dd>http://www.w3.org/TR/SRI/</dd>
 
 	<dt>[WHATWG-DOM]</dt>
 	<dd>Anne van Kesteren. DOM Standard. Living Standard.</dd>
