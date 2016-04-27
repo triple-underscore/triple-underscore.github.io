@@ -6,5 +6,5 @@
 
 <p lang="en">
 These are Japanese translations of various specs related to the web platform.
-Visit <a href="https://triple-underscore.github.io/index.html">the index page</a> to see them.
+Visit <a href="https://triple-underscore.github.io/index.html">the index page</a> to browse them.
 </p>
