@@ -1250,6 +1250,7 @@ COMPOSITING1=版       ~TR/compositing-1/\n\
 COMPOSITING1=編       dev.w3.org/fxtf/compositing-1/\n\
 CORS=副               ~/Fetch-ja.html●Fetch 日本語訳\n\
 CSP3=主               ~/CSP3-ja.html\n\
+CSP3=副2              hashedhyphen.github.io/webappsec-specjp/csp/index.html\n\
 CSP3=編               w3c.github.io/webappsec-csp/\n\
 CSP2=主               ~/CSP-ja.html\n\
 CSP2=版               ~TR/CSP2/\n\
