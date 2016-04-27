@@ -835,6 +835,7 @@ HTMLRendering:HTML-rendering-ja.html\n\
 HTMLCONFORM:HTML-conform-ja.html\n\
 HTMLDOM:HTML-dom-ja.html\n\
 HTMLDND:HTML-DND-ja.html\n\
+HTMLSCRIPT:HTML-scripting-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
 HTMLRENDERING:HTML-rendering-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
