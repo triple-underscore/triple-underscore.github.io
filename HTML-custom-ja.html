@@ -734,7 +734,7 @@ palpable:
 有修飾:qualified:~
 欠点:drawbacks:~
 漸進的:progressive:~
-
+候補:candidates:~
 
 	残す:left
 	少しばかり:slightly
@@ -908,6 +908,7 @@ palpable:
 -->
 <script type="text/plain" id="_link_map">
 c.[CEReactions]:#cereactions
+CEReactions:#cereactions
 
 ps.defined:~HTML-SELECTORS#selector-defined
 
@@ -1067,7 +1068,9 @@ A.付加-:~DOM4#concept-element-attributes-append
 切断-時:~HTMLINFRA#node-is-disconnected
 
 互いに関係するかつ生成元も類似する閲覧文脈~群:~HTML5/browsers.html#unit-of-related-similar-origin-browsing-contexts
+
 例外を報告する:~WAPI#report-the-exception
+関連する大域~obj:~WAPI#concept-relevant-global
 
 呼出す:~WEBIDL#es-invoking-callback-functions
 値に変換-:~WEBIDL#es-type-mapping
@@ -2252,13 +2255,13 @@ The customElements attribute of the Window interface must return the CustomEleme
 
 <pre class="idl">
 interface `CustomElementsRegistry@I {
-  void `define$m(
+[`CEReactions$] void `define$m(
        DOMString %name,
        Function %constructor,
        optional `ElementDefinitionOptions$I %options
   );
   any `get$m(DOMString name);
-  [NewObject] Promise&lt;void&gt; `whenDefined$m(DOMString %name);
+  Promise&lt;void&gt; `whenDefined$m(DOMString %name);
 };
 
 dictionary `ElementDefinitionOptions@I {
@@ -2278,11 +2281,10 @@ Every CustomElementsRegistry has a set of custom element definitions, initially 
 各 `CustomElementsRegistry$I は、
 `定義済時~promise~map@
 も持つ。
-それは、`妥当な~custom要素~名$から~promise~listへの対応付けを与え、
+それは、`妥当な~custom要素~名$から~promiseへの対応付けを与え、
 `whenDefined()$m ~methodを実装するために利用される。
-`定義済時~promise~map$内に格納される~promiseへは、強い参照が作成されては~MUST_NOT。
 ◎
-Every CustomElementsRegistry also has a when-defined promise map, mapping valid custom element names to lists of promises. It is used to implement the whenDefined() method. Storing a promise in the when-defined promise map must not create a strong reference to that promise.
+Every CustomElementsRegistry also has a when-defined promise map, mapping valid custom element names to promises. It is used to implement the whenDefined() method.
 </p>
 
 <p class="trans-note">【
@@ -2559,11 +2561,47 @@ Let definition be a new custom element definition with name name, local name loc
 Add definition to this CustomElementsRegistry.
 </li>
 	<li>
+%文書 ~LET
+此れに`関連する大域~obj$の
+<a href="~HTML5/browsers.html#concept-document-window">文書</a>
+◎
+Let document be this CustomElementsRegistry's relevant global object's Document object.
+</li>
+	<li>
+<p>
+%昇格~候補 ~LET
+%文書 内の要素のうち，次を満たすものからなる木~順序による~list：
+</p>
+
+<ul><li>( 名前空間, 局所~名 ) ~EQ  ( `~HTML名前空間$, %局所~名 )
+</li><li>加えて，［
+%extends ~NEQ ~NULL
+］の場合は、次も満たす
+⇒
+要素は［
+( 名前, 値 ) ~EQ ( `is$a, %name )
+］なる属性を有する
+</li></ul>
+
+◎
+Let upgrade candidates be all elements in document whose namespace is the HTML namespace and whose local name is localName, in tree order. Additionally, if extends is non-null, only include elements that have an attribute named is whose value is name.
+</li>
+	<li>
+~FOR
+%昇格~候補 内の ~EACH ( 要素 %要素 ) に対し
+⇒
+次を与える下で，`~custom要素を昇格する反応を待入れる$
+⇒
+( %要素, %定義 )
+◎
+For each element element in upgrade candidates, enqueue a custom element upgrade reaction given element and definition.
+</li>
+	<li>
 <p>
 ~IF［
 此れの`定義済時~promise~map$内に［
 ~key ~EQ  %name
-］なる~entryがある
+］なる~entry %~entry がある
 ］：
 ◎
 If this CustomElementsRegistry's when-defined promise map contains an entry with key name:
@@ -2571,22 +2609,16 @@ If this CustomElementsRegistry's when-defined promise map contains an entry with
 
 		<ol>
 			<li>
-%~promise~list ~LET その~entryの値
+`undefined^js で［
+%~entry の値（ ~promise ）
+］を`解決-$する
 ◎
-Let promiseList be the value of that entry.
+Let promise be the value of that entry.
+◎
+Resolve promise with undefined.
 </li>
 			<li>
-~FOR
-%~promise~list 内の ~EACH ( %~promise ) に対し
-⇒
-`undefined^js で %~promise を`解決-$する
-◎
-For each promise in promiseList, resolve promise with undefined.
-</li>
-			<li>
-此れの`定義済時~promise~map$から［
-~key ~EQ %name
-］なる~entryを削除する
+此れの`定義済時~promise~map$から %~entry を削除する
 ◎
 Delete the entry with key name from this CustomElementsRegistry's when-defined promise map.
 </li>
@@ -2661,27 +2693,18 @@ Let map be this CustomElementsRegistry's when-defined promise map.
 ］
 ⇒
 %~map 内に［
-(~key, 値 ) ~SET ( %name, 空~list )
+(~key, 値 ) ~SET ( %name, `新たな~promise$ )
 ］にされた~entryを作成する
 ◎
-If map does not contain an entry with key name, create an entry in map with key name and whose value is an empty list.
+If map does not contain an entry with key name, create an entry in map with key name and whose value is a new promise.
 </li>
 	<li>
-%~promise~list ~LET 
+%~promise ~LET 
 %~map 内の［
 ~key ~EQ %name
 ］なる~entryの値
 ◎
-Let promiseList be the value of the entry in map with key name.
-</li>
-	<li>
-%~promise ~LET `新たな~promise$
-◎
-↓</li>
-	<li>
-%~promise~list に %~promise を付加する
-◎
-Let promise be a new promise, and append promise to promiseList.
+Let promise be the value of the entry in map with key name.
 </li>
 	<li>
 ~RET %~promise
@@ -3306,3 +3329,4 @@ However, in practice this imprecision could lead to non-interoperable implementa
 	</section>
 
 </main>
+
