@@ -774,7 +774,7 @@ IETF:https://tools.ietf.org/html\n\
 CSS22:https://drafts.csswg.org/css2\n\
 CSS21:https://www.w3.org/TR/CSS21\n\
 CSSWG:https://drafts.csswg.org\n\
-SVG11:https://www.w3.org/TR/SVG11\n\
+SVG11:SVG11\n\
 SVG2:https://svgwg.org/svg2-draft\n\
 HTML5:https://html.spec.whatwg.org/multipage\n\
 HTML50:https://www.w3.org/TR/html5\n\
