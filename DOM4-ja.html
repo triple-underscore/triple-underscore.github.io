@@ -294,9 +294,9 @@ ID:
 node::::ノード
 shadow:
 light:
+unclosed:::閉じてない
 root:
 深優先前順走査:preorder, depth-first traversal:深さ優先かつ前順による走査
-
 根:root::~::ルート
 先祖:ancestor::~
 子孫:descendant::~
@@ -1221,6 +1221,7 @@ target.i:#_item
 ~shadowも含む深優先前順走査:#shadow-including-preorder-depth-first-traversal
 ~shadowも含む文書~内にある:#in-a-shadow-including-document
 ~shadowも含む根:#concept-shadow-including-root
+~unclosed~node:#concept-unclosed-node
 
 	●slot
 ~slot:#concept-slot
@@ -1630,7 +1631,7 @@ div.trans-note {
 </p>
 
 <p>
-更新： <time>2016-05-17</time>
+更新： <time>2016-05-21</time>
 （公開： <time>2012-01-28</time>）
 </p>
 
@@ -1665,7 +1666,7 @@ MTUsMTAsMTAsMTVtLTEwLTE1bC0xMCwxNSIvPgo8L3N2Zz4K"
 
 	<hgroup>
 <h1>DOM</h1>
-<h2>Living Standard — 最終更新 2016 年 5 月 10 日</h2>
+<h2>Living Standard — 最終更新 2016 年 5 月 12 日</h2>
 	</hgroup>
 
 <dl>
@@ -2885,6 +2886,7 @@ interface @Event {
   ~RA ~DS $type;
   ~RA $EventTarget? $target;
   ~RA $EventTarget? $currentTarget;
+  sequence&lt;$EventTarget&gt; $composedPath();
 
   ~CUS $NONE = 0;
   ~CUS $CAPTURING_PHASE = 1;
@@ -2979,6 +2981,16 @@ Returns the object to which event is dispatched.
 現在~呼出されている `callback$i を持つ`~event~listener$が登録されている~objを返す。
 ◎
 Returns the object whose event listener’s callback is currently being invoked.
+</dd>
+
+ <dt>%event . $composedPath()</dt>
+ <dd>
+%event の`経路$内にある各 `item$i ~obj（それ上で~listenerが呼出される~obj）からなる~listを返す
+— ただし、［
+`~shadow根$の`~mode$sR ~EQ `closed^l
+］なる`~shadow木$内の`~node$であって， %event の $currentTarget からは到達できないものは、返値から除かれる。
+◎
+Returns the item objects of event’s path (objects on which listeners will be invoked), except for any nodes in shadow trees of which the shadow root’s mode is "closed" that are not reachable from event’s currentTarget.
 </dd>
 
  <dt>%event . $eventPhase</dt>
@@ -3095,6 +3107,72 @@ The type attribute must return the value it was initialized to. When an event is
 ◎
 The target and currentTarget attributes must return the values they were initialized to. When an event is created the attributes must be initialized to null.
 </dd>
+
+	<dt>@composedPath()</dt>
+	<dd>
+<p>
+被呼出時には、次を走らせ~MUST：
+◎
+The composedPath() method, when invoked, must run these steps:
+</p>
+
+<ol>
+ <li>
+%~composed経路 ~LET 新たな空~list
+◎
+Let composedPath be a new empty list.
+</li>
+ <li>
+%経路 ~LET 此れの`経路$
+◎
+↓</li>
+ <li>
+%現~target ~LET 此れの $currentTarget 属性~値
+◎
+Let currentTarget be context object’s currentTarget attribute value.
+</li>
+ <li>
+~IF［
+%現~target は`~node$である
+］
+⇒
+~FOR
+此れの %経路 内の~EACH( %組 ) に対し
+⇒
+~IF［
+%組 の `item$i は %現~target の`~unclosed~node$である
+］
+⇒
+%組 の `item$i を %~composed経路 に付加する
+◎
+For each tuple in context object’s path:
+◎
+If currentTarget is a node and tuple’s item is an unclosed node of currentTarget, or currentTarget is not a node, then append tuple’s item to composedPath.
+</li>
+ <li>
+~ELSE
+⇒
+~FOR
+此れの %経路 内の~EACH( %組 ) に対し
+⇒
+%組 の `item$i を %~composed経路 に付加する
+◎
+↑</li>
+ <li>
+~RET %~composed経路
+◎
+Return composedPath.
+</li>
+</ol>
+
+<p class="note">注記：
+この~algoは、`配送$~algoに対する %~target 引数が`~node$でないときは，
+%~event 引数の最終的な`経路$内のどの組も，`~node$を包含しないものと見做している。
+◎
+This algorithm assumes that when the target argument to the dispatch algorithm is not a node, none of the tuples in event argument’s eventual path will contain a node either.
+</p>
+	</dd>
+
 
 	<dt>@eventPhase</dt>
 	<dd>
@@ -12536,7 +12614,7 @@ Shadow roots’s associated host is never null.
 %根 ~EQ ［［［
 %~event の`経路$
 ］内の最初の組
-］の `item^i
+］の `item$i
 ］の`根$
 ］
 ⇒
@@ -12659,6 +12737,26 @@ An object A is a shadow-including ancestor of an object B, if and only if B is a
 ◎
 A shadow-including inclusive ancestor is an object or one of its shadow-including ancestors.
 </p>
+
+<div class="p">
+<p>
+`~node$ %A が `~node$ %B の
+`~unclosed~node@
+であるとは、 %A の`根$ %根 が次のいずれかを満たすことを意味する：
+</p>
+
+<ul ><li>%根 は %B の`~shadowも含む広義先祖$である
+</li><li>%根 は`~shadow根$であって，［
+%根 の`~mode$sR ~EQ `open^l
+］~AND［
+%根 の`~host$は %B の`~unclosed~node$である
+］
+</li></ul>
+
+◎
+A node A is an unclosed node of a node B, if A’s root is a shadow-including inclusive ancestor of B, or A’s root is a shadow root whose mode is "open" and host is an unclosed node of B.
+</div>
+
 
 <hr>
 
@@ -21217,6 +21315,3 @@ hairy
 
 </body>
 </html>
-
-
-
