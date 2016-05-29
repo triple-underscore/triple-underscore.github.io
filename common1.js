@@ -1215,7 +1215,7 @@ COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
 
 // 短縮形 URL の接頭辞 対応表
 COMMON_DATA.JA_BASIS = {
-	'' :       'triple-underscore.github.io/',
+	'' :       'triple-underscore.github.io',
 	XML :      'triple-underscore.github.io/XML',
 	mitsue:    'standards.mitsue.co.jp/resources/w3c/TR',
 	momdo:     'momdo.s35.xrea.com/web-html-test/spec',
@@ -1440,6 +1440,9 @@ MQ4=編                ~CSSWG/mediaqueries-4/\n\
 MEDIAQ=主             ~mitsue/css3-mediaqueries/\n\
 MEDIAQ=副             ~/mediaqueries4-ja.html●Level 4 日本語訳\n\
 MEDIAQ=副             www.asahi-net.or.jp/~ax2s-kmtn/internet/css/REC-css3-mediaqueries-20120619.html\n\
+MIX=主                ~/mixed-content-ja.html\n\
+MIX=版                ~TR/mixed-content/\n\
+MIX=編                w3c.github.io/webappsec-mixed-content/\n\
 MEDIAQ=版             ~TR/css3-mediaqueries/\n\
 NAVIGATIONTIMING2=主  ~/navigation-timing-2-ja.html\n\
 NAVIGATIONTIMING2=版  ~TR/navigation-timing-2/\n\
