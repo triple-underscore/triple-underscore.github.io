@@ -849,6 +849,7 @@ UIEVENTS-A:uievents-appendix-ja.html\n\
 URLSpec:URL-ja.html\n\
 WAPI:webappapis-ja.html\n\
 WEBIDL:WebIDL-ja.html\n\
+WEBSOCKET:WebSocket-ja.html\n\
 WORKERS:Workers-ja.html\n\
 XHR:XHR-ja.html\n\
 \n';
