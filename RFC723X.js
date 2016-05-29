@@ -1373,8 +1373,7 @@ zero:::ゼロ\n\
 今や:now:~\n\
 今後の:later:~\n\
 介入-:intervene:~\n\
-介在者:man-in-the-middle::~\n\
-	中間者\n\
+中間者:man-in-the-middle::~\n\
 仕方:way:~\n\
 仕様:spec:~\n\
 仕組み:mechanism:~\n\
