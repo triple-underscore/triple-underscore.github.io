@@ -316,7 +316,7 @@ new function(){
 //	var w = screen.width;...
 	var meta = C('meta');
 	meta.setAttribute('name', 'vewport');
-	meta.setAttribute('content', 'width=device-width, initial-scale=1');
+	meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no');
 	head.appendChild(meta);
 }
 
