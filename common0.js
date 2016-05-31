@@ -802,6 +802,7 @@ CSSFONT:css-fonts-ja.html\n\
 CSSGRID:css-grid-ja.html\n\
 CSSIMAGE:css-images-ja.html\n\
 CSSINLINE:css-inline-ja.html\n\
+CSSLOGICAL:css-logical-props-ja.html\n\
 CSSMCOL:css-multicol-ja.html\n\
 CSSNS:css-namespaces-ja.html\n\
 CSSOM:cssom-ja.html\n\
