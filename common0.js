@@ -777,7 +777,8 @@ CSSWG:https://drafts.csswg.org\n\
 SVG11:SVG11\n\
 SVG2:https://svgwg.org/svg2-draft\n\
 HTML5:https://html.spec.whatwg.org/multipage\n\
-HTML50:https://www.w3.org/TR/html5\n\
+	HTML50:https://www.w3.org/TR/html5\n\
+HTML50:https://www.w3.org/TR/html51\n\
 CSP3:CSP3-ja.html\n\
 CSP2:CSP-ja.html\n\
 COMPOSITING:compositing-ja.html\n\
