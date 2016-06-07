@@ -14,8 +14,6 @@ CLICK_HANDLERS
 	main: 'MAIN',
 	toc: 目次 id
 	alt_refs: 'references',
-	hash_case_modified: （選択子）
-		id の文字大小が原文と異なるような要素
 	word_switch: false
 	no_index:
 		用語索引なしならば true
@@ -768,7 +766,7 @@ id 付きの dfn, dt, H2 〜 H6 タグの参照元リンクの一覧, 原文リ�
 	getBoundingClientRect
 
 
-//original_url, hash_case_modified, no_original_dfn
+//original_url, no_original_dfn
 */
 
 
@@ -901,10 +899,7 @@ Util.dfnInit = function(){
 		if(id in original_id_map){
 			return original_id_map[id];
 		}
-		if(PAGE_DATA.hash_case_modified && /^dom-/.test(id)){
-			return id.toLowerCase();
-		}
-		return id; // normal
+		return id;
 	}
 
 	function dfnHide(){

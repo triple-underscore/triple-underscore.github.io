@@ -464,7 +464,7 @@ Util.initAdditional = function(options){
 		if(!id) return;
 		var id = targetId1(id) || id;
 
-		var e = E(id) || E1(id);
+		var e = E(id);
 		if(e){
 // html.spec.whatwg.org/multipage/browsers.html#location-object-setter-navigate
 			window.location.hash = e.id;
@@ -486,7 +486,6 @@ Util.initAdditional = function(options){
 		function targetId(){
 			var hash = window.location.hash;
 			if(!hash) return;
-			if(!content_generated && !PAGE_DATA.hash_case_modified) return;
 
 			var id = hash.slice(1);
 			if(id.indexOf('_xref') === 0) return; // 生成リンク
@@ -510,24 +509,6 @@ Util.initAdditional = function(options){
 			var match = Util.textData('_original_id_map').match(rxp);
 			if(!match) return;
 			return match[1];
-		}
-
-
-		function E1(id){
-			var tag = PAGE_DATA.hash_case_modified;
-			if(!tag) return null;
-			if(!/^dom-/.test(id)) return null;
-	
-			var DFNs = document.getElementsByTagName(tag);
-			id = id.toLowerCase();
-			for(var i = 0; i < DFNs.length; i++){
-				var dfn = DFNs[i];
-				var id1 = dfn.id;
-				if(id1 && (id1.toLowerCase() === id)){
-					return dfn;
-				}
-			}
-			return null;
 		}
 	}
 }
