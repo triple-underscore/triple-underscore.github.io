@@ -835,6 +835,9 @@ WEBIDL:WebIDL-ja.html\n\
 WEBSOCKET:WebSocket-ja.html\n\
 WORKERS:Workers-ja.html\n\
 XHR:XHR-ja.html\n\
+REFERRER-POLICY:webappsec-referrer-policy-ja.html\n\
+MIXED-CONTENT:webappsec-mixed-content-ja.html\n\
+SECURE-CONTEXT:webappsec-secure-contexts-ja.html\n\
 \n';
 
 /** 語彙 */
