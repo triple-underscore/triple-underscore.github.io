@@ -1461,6 +1461,7 @@ PROGRESSEVENTS=版     ~TR/progress-events\n\
 RESOURCETIMING=主     ~/resource-timing-ja.html\n\
 RESOURCETIMING=版     ~TR/resource-timing/\n\
 RESOURCETIMING=編     w3c.github.io/resource-timing/\n\
+REFERRERPOLICY=主     ~/webappsec-referrer-policy-ja.html\n\
 RFC1034=主            srgia.com/docs/rfc1034j.html\n\
 RFC1123=主            hp.vector.co.jp/authors/VA002682/rfc1123j.htm\n\
 RFC1123=副2           www2s.biglobe.ne.jp/~hig/tcpip/HostReq_Appl.html\n\
@@ -1747,6 +1748,7 @@ COOKIES:RFC6265\n\
 ORIGIN:RFC6454\n\
 WSP:RFC6455\n\
 WEBIDL1:WEBIDL\n\
+REFERRER:REFERRERPOLICY\n\
 TLS12:RFC5246\n\
 TLS:RFC5246\n\
 ';
