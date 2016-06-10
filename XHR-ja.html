@@ -859,11 +859,12 @@ fe.値:#concept-formdata-entry-value
 名前:~FETCH#concept-header-name
 値:~FETCH#concept-header-value
 正規化-:~FETCH#concept-header-value-normalize
+結合済みの値:~FETCH#concept-header-value-combined
 ~header:~FETCH#concept-header
+~header~list:~FETCH#concept-header-list
 追加-:~FETCH#concept-header-list-append
 結合-:~FETCH#concept-header-list-combine
-~header~list:~FETCH#concept-header-list
-
+整列して結合-:~FETCH#concept-header-list-sort-and-combine
 ~network~error:~FETCH#concept-network-error
 
 rq.要請:~FETCH#concept-request
@@ -1084,7 +1085,7 @@ ol {
 </p>
 
 <p id="_dates">
-更新： <time>2016-04-26</time>
+更新： <time>2016-06-10</time>
 （公開： <time>2012-10-25</time>）
 </p>
 
@@ -1130,7 +1131,7 @@ Zz4K"
 ></a>
 
 <h1 id="xmlhttprequest-ls">XMLHttpRequest</h1>
-<h2>Living Standard — 最終更新 2016 年 4 月 26 日</h2>
+<h2>Living Standard — 最終更新 2016 年 6 月 7 日</h2>
 
 <dl>
 	<dt>Participate:</dt>
@@ -1151,7 +1152,11 @@ Zz4K"
 the <a href="https://github.com/w3c/web-platform-tests/">W3C Web platform testsuite</a>
 — contributions welcome!</dd>
 
+	<dt>各国語翻訳（非規範的）</dt>
+	<dd>日本語（このページ）</dd>
+
 </dl>
+
 
 </header>
 
@@ -2633,7 +2638,6 @@ Set.
 Set.
 </dd>
 
-
    <dt>`本体$rq◎body</dt>
    <dd>
 `要請~本体$
@@ -2646,15 +2650,6 @@ request body
 `文脈~obj$に`関連する設定群~obj$
 ◎
 settings object
-</dd>
-
-   <dt>`行先$rq◎destination</dt>
-   <dd>
-`subresource^l
-`要更新^tnote
-<!-- ＊ -->
-◎
-"subresource"
 </dd>
 
    <dt>`同期~flag$rq◎synchronous flag</dt>
@@ -3617,40 +3612,24 @@ The getResponseHeader(name) method must run these steps:
 
 <ol>
  <li>
-~IF［
-`応答$の`~header~list$rs内の［
+`応答$の`~header~list$rs内に［
 `名前$ ~EQ %name なる`~header$
-］は複数個 在る
+］はない
 ］
 ⇒
-~RET
-それらの`値$を、~list順により，~byte対［
-0x2C 0x20
-］で区切って連結した単独の~byte列
-◎
-If response's header list has multiple headers whose name is name, return their values in list order as a single byte sequence separated from each other by a 0x2C 0x20 byte pair.
-</li>
-
- <li>
-~IF［
-`応答$の`~header~list$rs内の［
-`名前$ ~EQ %name なる`~header$
-］は 1 個だけ在る
-］
-⇒
-~RET その`値$
-◎
-If response's header list has one header whose name is name, return its value.
-</li>
-
- <li>
 ~RET ~NULL
 ◎
-Return null. 
+If response's header list has no header whose name is name, then return null.
+</li>
+ <li>
+~RET
+( %名前, `応答$の`~header~list$rs )
+に対する`結合済みの値$
+◎
+Return the combined value given name and response's header list.
 </li>
 
 </ol>
-
 
 <p class="note">注記：
 `応答$に公開される`~header~list$rsは、 Fetch 標準に従って，絞り込まれる。
@@ -3696,21 +3675,68 @@ The print() function will get to process something like:
 
 <h4 title="The getAllResponseHeaders() method">4.6.5. `getAllResponseHeaders()^m ~meth</h4>
 
+
 <p>
 `getAllResponseHeaders()@m
-~methの被呼出時には、`応答$の`~header~list$rsを，［
-その各`~header$を ~list順に連結して得られる，単独の~byte列
-］として返さ~MUST
-— この連結においては、各`~header$の間は~byte対［
-0x0D 0x0A
-］で区切り，各`~header$の［
-`値$と`名前$
-］の間は~byte対［
-0x3A 0x20
-］で区切るものとする。
+~methの被呼出時には、次を走らせ~MUST：
 ◎
-The getAllResponseHeaders() method must return response's header list, in list order, as a single byte sequence with each header separated by a 0x0D 0x0A byte pair, and each name and value of a header separated by a 0x3A 0x20 byte pair.
+The getAllResponseHeaders() method, when invoked, must run these steps:
 </p>
+
+<ol>
+ <li>
+%出力 ~LET 空~byte列
+◎
+Let output be an empty byte sequence.
+</li>
+
+ <li>
+%~header~list ~LET `応答$の`~header~list$rsを`整列して結合-$した結果
+◎
+Let headers be the result of running sort and combine with response's header list.
+</li>
+
+ <li>
+<p>
+~FOR
+%~header~list 内の~EACH( %~header ) に対し：
+◎
+For each header in headers, run these substeps:
+</p>
+
+  <ol>
+   <li>
+<p>
+%出力 に次の並びを付加する：
+</p>
+
+<ol ><li>%~header の`名前$
+</li><li>~byte対 0x3A 0x20
+</li><li>%~header の`値$
+</li></ol>
+
+◎
+Append header's name, followed by a 0x3A 0x20 byte pair, followed by header's value, to output.
+</li>
+
+   <li>
+~IF［
+この回の~~反復は最後でない
+］
+⇒
+%出力 に~byte対 0x0D 0x0A を付加する
+◎
+If header is not the last pair in headers, then append a 0x0D 0x0A byte pair, to output.
+</li>
+  </ol>
+
+ <li>
+~RET %出力
+◎
+Return output.
+</li>
+</ol>
+
 
 <p class="note">注記：
 `応答$に公開される`~header~list$rsは、 Fetch 標準に従って，絞り込まれる。
