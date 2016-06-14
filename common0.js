@@ -790,6 +790,7 @@ CSSNS:css-namespaces-ja.html\n\
 CSSOM:cssom-ja.html\n\
 CSSOMVIEW:cssom-view-ja.html\n\
 CSSOVERFLOW:https://drafts.csswg.org/css-overflow-4/\n\
+CSSOVERFLOW3:css-overflow3-ja.html\n\
 CSSPAGE:css-page-ja.html\n\
 CSSPOS:https://drafts.csswg.org/css-position-3/\n\
 CSSREGION:https://drafts.csswg.org/css-regions-1/\n\
