@@ -1101,7 +1101,6 @@ approach::::アプローチ\n\
 architecture::::アーキテクチャ\n\
 archive::::アーカイヴ\n\
 asterisk::::アスタリスク\n\
-authoring::::オーサリング\n\
 backslash::::バックスラッシュ\n\
 based:-based:に基づく:::ベースの\n\
 binary::::バイナリ\n\
@@ -2443,7 +2442,6 @@ stateless::::ステートレス\n\
 追加-:add:~\n\
 追加:addition:~\n\
 追加の:additional:~\n\
-追尾:tracking::~::トラッキング\n\
 追跡:trace::~::トレース\n\
 	逆:reverse:~\n\
 透過性:transparency::~\n\
