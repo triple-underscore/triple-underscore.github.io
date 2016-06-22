@@ -1107,7 +1107,7 @@ COMMON_DATA.addAltRefs = function(id){
 	Util.get_mapping(
 		COMMON_DATA.REF_DATA2
 			.replace(/~(\w+)/g, function(s, s1){ return JA_BASIS[s1];})
-			.replace(/● */g, ':http://'),
+			.replace(/● */g, ':https://'),
 		JA_LINKS
 	);
 
@@ -1130,7 +1130,9 @@ COMMON_DATA.addAltRefs = function(id){
 //			if(! prefix in JA_BASIS) throw prefix;
 			url = JA_BASIS[prefix] + url0;
 		}
-		var url1 = 'http://' + url;
+		var url1 = ( url[0] === '＃' ) ?
+			( 'http://' + url.slice(1)) :
+			( 'https://' + url);
 		switch(mark){
 			case '主':
 				JA_REFS[key] = is_local? ( '.' + url0 ) : url1;
@@ -1203,7 +1205,10 @@ COMMON_DATA.addAltRefs = function(id){
 	}
 }
 
-/** 文献 id = 英文 URL = 和訳 URL の対応データ*/
+/** 文献 id = 英文 URL = 和訳 URL の対応データ
+
+URL の先頭の文字 '＃' は http:// ／ 他は https://
+*/
 
 COMMON_DATA.JA_REFS = Object.create(null); // 文献 id -> 和訳 URL
 COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
@@ -1212,29 +1217,25 @@ COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
 COMMON_DATA.JA_BASIS = {
 	'' :       'triple-underscore.github.io',
 	XML :      'triple-underscore.github.io/XML',
-	mitsue:    'standards.mitsue.co.jp/resources/w3c/TR',
-	momdo:     'momdo.s35.xrea.com/web-html-test/spec',
+	mitsue:    '＃standards.mitsue.co.jp/resources/w3c/TR',
+	momdo:     '＃momdo.s35.xrea.com/web-html-test/spec',
 	momdoG:    'momdo.github.io',
 	ipa:       'www.ipa.go.jp/security/rfc',
-	adagio:    'www.y-adagio.com/public/standards',
+	adagio:    '＃www.y-adagio.com/public/standards',
 	TR:        'www.w3.org/TR',
 	CSSWG:     'drafts.csswg.org',
 	HTML5:     'html.spec.whatwg.org/multipage',
 	IETF:      'tools.ietf.org/html',
-	HTTPWG:    'httpwg.github.io/specs',
+	HTTPWG:    '＃httpwg.github.io/specs',
 	suika:     'wiki.suikawiki.org',
-	studying:  'www.eonet.ne.jp/~h-hash/rfc_ja'
-//	HTML5:     'www.whatwg.org/specs/web-apps/current-work/multipage'
 //	default:   ''
 };
-//http://html.spec.whatwg.org/multipage/dom.html#htmlelement
 
 /*
 主 副 版 編 ・
-＃ ＃ ＃ ＃ 　 参照文献に追加する？
-　 　 ＃ ＃ ＃ 和訳リンク対応表に追加する？  JA_LINKS に (url:ref-id) を追加
-＃ 　 　 　 　 hover 時に表示する？       JA_REFS に  (ref-id:url) を追加
-
+■ ■ ■ ■ 　 参照文献に追加する？
+　 　 ■ ■ ■ 和訳リンク対応表に追加する？  JA_LINKS に (url:ref-id) を追加
+■ 　 　 　 　 hover 時に表示する？       JA_REFS に  (ref-id:url) を追加
 */
 
 COMMON_DATA.REF_DATA = '\n\
@@ -1252,11 +1253,10 @@ CSP2=版               ~TR/CSP2/\n\
 CSP2=編               w3c.github.io/webappsec/specs/content-security-policy/\n\
 CSP1=主               ~/CSP10-ja.html\n\
 CSP1=版               ~TR/CSP/\n\
-CSS1=主               www.doraneko.org/webauth/css1/19961217/Overview.html\n\
+CSS1=主               ＃www.doraneko.org/webauth/css1/19961217/Overview.html\n\
 	CSS1=＊               ~TR/REC-CSS1\n\
-CSS21=主              ~momdoG/css2/cover.html\n\
-	CSS21=主              ~momdo/CSS21/cover.html\n\
-CSS21=副2             hp.vector.co.jp/authors/VA022006/css/index.html\n\
+CSS21=主              ~momdoG/css2/Overview.html\n\
+CSS21=副2             ＃hp.vector.co.jp/authors/VA022006/css/index.html\n\
 CSS21=副              ~adagio/tr_css2/toc.html●2.0 日本語訳 2\n\
 CSS21=版              ~TR/CSS2/\n\
 CSS21=編              ~CSSWG/css2/\n\
@@ -1324,7 +1324,7 @@ CSS3TEXT=主           ~/css-text-ja.html\n\
 CSS3TEXT=編           ~CSSWG/css-text-3/\n\
 CSS3TEXT=版           ~TR/css-text-3/\n\
 CSS3TEXTDECOR=主      ~/css-text-decor-ja.html\n\
-CSS3TEXTDECOR=副2     ~momdo/CR-css-text-decor-3-20130801.html\n\
+CSS3TEXTDECOR=副2     ~momdoG/css-text-decor-3/\n\
 CSS3TEXTDECOR=編      ~CSSWG/css-text-decor-3/\n\
 CSS3TEXTDECOR=版      ~TR/css-text-decor-3/\n\
 CSSTRANSFORMS1=・     ~CSSWG/css-transforms/\n\
@@ -1391,7 +1391,7 @@ CSSUI3=版             ~TR/css3-ui/\n\
 CSSUI3=・             ~TR/css-ui-3/\n\
 CSSUI3=編             ~CSSWG/css-ui-3/\n\
 CSSVAL=主             ~/css-values-ja.html\n\
-CSSVAL=副2            ~momdo/CR-css3-values-20130404.html\n\
+CSSVAL=副2            ~momdoG/css3-values/\n\
 CSSVAL=版             ~TR/css3-values/\n\
 CSSVAL=・             ~TR/css-values/\n\
 CSSVAL=編             ~CSSWG/css-values/\n\
@@ -1399,7 +1399,7 @@ CSSVAL=・             ~CSSWG/css-values-3/\n\
 	CSSVAL=・            ~CSSWG/css-values/\n\
 CSSWRITINGMODES=・    ~CSSWG/css-writing-modes/\n\
 CSSWRITINGMODES=主    ~/css-writing-modes-ja.html\n\
-CSSWRITINGMODES=副2   suzukima.github.io/css-ja/css3-writing-modes/\n\
+CSSWRITINGMODES=副2   ＃suzukima.github.io/css-ja/css3-writing-modes/\n\
 CSSWRITINGMODES=版    ~TR/css3-writing-modes/\n\
 CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-3/\n\
 CSSWILLCHANGE1=主     ~/css-will-change-ja.html\n\
@@ -1409,8 +1409,7 @@ DOM=編                dom.spec.whatwg.org/●LS\n\
 DOM=版                ~TR/dom/●W3C版\n\
 DOM=・                ~TR/domcore/\n\
 DOMLEVEL2STYLE=主     ~adagio/tr_dom2_style/expanded-toc.html\n\
-ECMASCRIPT=主         tsofthome.appspot.com/ecmascript.html●第五版 訳\n\
-	ELEMENTTRAVERSAL=主   www.hcn.zaq.ne.jp/___/DOM/ElementTraversal.html\n\
+ECMASCRIPT=主         ＃tsofthome.appspot.com/ecmascript.html●第五版 訳\n\
 ENCODING=主           ~/Encoding-ja.html\n\
 ENCODING=・           encoding.spec.whatwg.org/\n\
 FETCH=主              ~/Fetch-ja.html\n\
@@ -1429,7 +1428,7 @@ HTML=副               ~momdoG/html5/Overview.html●日本語(部分)訳\n\
 HTML=副               ~momdoG/html51/Overview.html●5.1 日本語(部分)訳\n\
 	HTML=版               ~TR/html51/●W3C\n\
 	HTML=版               html.spec.whatwg.org/multipage/●LS\n\
-HTML401=主            www.asahi-net.or.jp/~sd5a-ucd/rec-html401j/cover.html\n\
+HTML401=主            ＃www.asahi-net.or.jp/~sd5a-ucd/rec-html401j/cover.html\n\
 INDEXEDDB=主          ~/IndexedDB-2nd-ja.html\n\
 INDEXEDDB=版          ~TR/IndexedDB/\n\
 INDEXEDDB=編          w3c.github.io/IndexedDB/\n\
@@ -1437,7 +1436,7 @@ MQ4=主                ~/mediaqueries4-ja.html\n\
 MQ4=編                ~CSSWG/mediaqueries-4/\n\
 MEDIAQ=主             ~mitsue/css3-mediaqueries/\n\
 MEDIAQ=副             ~/mediaqueries4-ja.html●Level 4 日本語訳\n\
-MEDIAQ=副             www.asahi-net.or.jp/~ax2s-kmtn/internet/css/REC-css3-mediaqueries-20120619.html\n\
+MEDIAQ=副             ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/css/REC-css3-mediaqueries-20120619.html\n\
 MIX=主                ~/webappsec-mixed-content-ja.html\n\
 MIX=版                ~TR/mixed-content/\n\
 MIX=編                w3c.github.io/webappsec-mixed-content/\n\
@@ -1446,7 +1445,7 @@ NAVIGATIONTIMING2=主  ~/navigation-timing-2-ja.html\n\
 NAVIGATIONTIMING2=版  ~TR/navigation-timing-2/\n\
 NAVIGATIONTIMING=主   ~/navigation-timing-ja.html\n\
 NAVIGATIONTIMING=版   ~TR/navigation-timing/\n\
-NETSCAPE=主           www.futomi.com/lecture/cookie/specification.html\n\
+NETSCAPE=主           ＃www.futomi.com/lecture/cookie/specification.html\n\
 PAGEVISIBILITY=主     ~/page-visibility-ja.html\n\
 PAGEVISIBILITY=版     ~TR/page-visibility/\n\
 PERFORMANCETIMELINE2=主    ~/performance-timeline-2-ja.html\n\
@@ -1463,27 +1462,19 @@ RESOURCETIMING=版     ~TR/resource-timing/\n\
 RESOURCETIMING=編     w3c.github.io/resource-timing/\n\
 REFERRERPOLICY=主     ~/webappsec-referrer-policy-ja.html\n\
 RFC1034=主            srgia.com/docs/rfc1034j.html\n\
-RFC1123=主            hp.vector.co.jp/authors/VA002682/rfc1123j.htm\n\
-RFC1123=副2           www2s.biglobe.ne.jp/~hig/tcpip/HostReq_Appl.html\n\
-RFC1630=主            srgia.com/docs/rfc1630j.html\n\
-RFC1928=主            srgia.com/docs/rfc1928j.html\n\
-RFC2046=主            www.asahi-net.or.jp/~bd9y-ktu/htmlrel_f/dtd_f/rfc_f/rfc2046j.html\n\
-RFC2109=主            lab.moyo.biz/translations/rfc/rfc2109-ja.xsp\n\
-RFC2109=副2           www5b.biglobe.ne.jp/~type-aya/rfc/rfc2109j.txt\n\
-RFC2119=主            www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc2119j.html\n\
-RFC2119=副2           www.asahi-net.or.jp/~sd5a-ucd/rfc-j/rfc-2119j.html\n\
-RFC2119=副3           www.t-net.ne.jp/~cyfis/rfc/format/rfc2119_ja.html\n\
+RFC1123=主            ＃hp.vector.co.jp/authors/VA002682/rfc1123j.htm\n\
+RFC1123=副2           ＃www2s.biglobe.ne.jp/~hig/tcpip/HostReq_Appl.html\n\
+RFC1630=主            ＃srgia.com/docs/rfc1630j.html\n\
+RFC1928=主            ＃srgia.com/docs/rfc1928j.html\n\
+RFC2046=主            ＃www.t-net.ne.jp/~cyfis/rfc/mime/rfc2046_ja-1.html\n\
+RFC2119=主            ＃www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc2119j.html\n\
+RFC2119=副2           ＃www.asahi-net.or.jp/~sd5a-ucd/rfc-j/rfc-2119j.html\n\
+RFC2119=副3           ＃www.t-net.ne.jp/~cyfis/rfc/format/rfc2119_ja.html\n\
 RFC2119=副4           ~ipa/RFC2119JA.html\n\
-	RFC2119=副5           ~studying/rfc2119.ja.html\n\
-	RFC2145=主            ~studying/rfc2145.ja.html\n\
-	RFC2295=主            ~studying/rfc2295.ja.html\n\
 RFC2397=・            ~IETF/rfc2397\n\
-RFC2397=主            d.hatena.ne.jp/tily/20071103/p1\n\
-	RFC2388=主            ~studying/rfc2388.ja.html\n\
+RFC2397=主            ＃d.hatena.ne.jp/tily/20071103/p1\n\
 HTTP=主               ~/RFC723X-ja.html\n\
-	HTTP=副               ~studying/rfc2616.ja.html●日本語訳（旧版）\n\
 HTTP=副2              ~suika/n/HTTP%2F1.1\n\
-	RFC2616=主            ~studying/rfc2616.ja.html\n\
 RFC2616=主            ~/RFC2616-ja.html\n\
 RFC2616=副            ~/RFC723X-ja.html\n\
 RFC2616=・            ~IETF/rfc2616\n\
@@ -1491,38 +1482,31 @@ RFC2616=・            www.ietf.org/rfc/rfc2616.txt\n\
 RFC2616=副2           ~suika/n/RFC%202616\n\
 RFC2616=・            www.w3.org/Protocols/rfc2616/rfc2616-sec8.html\n\
 RFC2616=・            www.w3.org/Protocols/rfc2616/rfc2616-sec13.html\n\
-	RFC2617=主            ~studying/rfc2617.ja.html\n\
-	RFC2774=主            ~studying/rfc2774.ja.html\n\
-	RFC2817=主            ~studying/rfc2817.ja.html\n\
 RFC2817=副            ~ipa/RFC2817JA.html\n\
 RFC2817=・            ~IETF/rfc2817\n\
 RFC2818=主            ~suika/n/RFC%202818\n\
 RFC2818=副2           ~ipa/RFC2818JA.html\n\
-	RFC2818=副3           ~studying/rfc2818.ja.html\n\
 RFC2818=・            www.ietf.org/rfc/rfc2818.txt\n\
 RFC2818=・            ~IETF/rfc2818\n\
-	RFC2965=主            ~studying/rfc2965.ja.html\n\
 RFC3174=主            ~ipa/RFC3174JA.html\n\
-RFC3174=副2           www7b.biglobe.ne.jp/~k-west/SSLandTLS/rfc3174-Ja.txt\n\
-RFC3490=主            www.jdna.jp/survey/rfc/rfc3490j.html\n\
-RFC3629=主            www5d.biglobe.ne.jp/~stssk/rfc/rfc3629j.html\n\
-RFC3629=副2           www.akanko.net/marimo/data/rfc/rfc3629-jp.txt\n\
-	RFC3986=主            ~studying/rfc3986.ja.html\n\
+RFC3174=副2           ＃www7b.biglobe.ne.jp/~k-west/SSLandTLS/rfc3174-Ja.txt\n\
+RFC3490=主            ＃www.jdna.jp/survey/rfc/rfc3490j.html\n\
+RFC3629=主            ＃www5d.biglobe.ne.jp/~stssk/rfc/rfc3629j.html\n\
+RFC3629=副2           ＃www.akanko.net/marimo/data/rfc/rfc3629-jp.txt\n\
 RFC3986=主            ~/RFC3986-ja.html\n\
 RFC3986=・            ~IETF/rfc3986\n\
 RFC3986=・            www.ietf.org/rfc/rfc3986.txt\n\
 RFC3987=主            ~suika/n/RFC%203987\n\
 RFC4086=主            ~ipa/RFC4086JA.html\n\
-RFC4122=主            rui86.hatenablog.jp/entry/2013/07/18/065147\n\
+RFC4122=主            ＃rui86.hatenablog.jp/entry/2013/07/18/065147\n\
 RFC4270=主            ~ipa/RFC4270JA.html\n\
-RFC4291=主            srgia.com/docs/rfc4291j.html\n\
-RFC4648=主            www5d.biglobe.ne.jp/~stssk/rfc/rfc4648j.html\n\
-RFC5234=主            www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc5234j.html\n\
+RFC4291=主            ＃srgia.com/docs/rfc4291j.html\n\
+RFC4648=主            ＃www5d.biglobe.ne.jp/~stssk/rfc/rfc4648j.html\n\
+RFC5234=主            ＃www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc5234j.html\n\
 RFC5246=主            ~ipa/RFC5246-00JA.html\n\
-RFC5321=主            www.hde.co.jp/rfc/rfc5321_ja.txt\n\
-RFC5322=主            srgia.com/docs/rfc5322j.html\n\
-RFC5322=副2           www.hde.co.jp/rfc/rfc5322_ja.txt\n\
-	RFC5789=主            ~studying/rfc5789.ja.html\n\
+RFC5321=主            ＃www.hde.co.jp/rfc/rfc5321_ja.txt\n\
+RFC5322=主            ＃srgia.com/docs/rfc5322j.html\n\
+RFC5322=副2           ＃www.hde.co.jp/rfc/rfc5322_ja.txt\n\
 RFC5789=・            ~IETF/rfc5789\n\
 RFC5890=主            jprs.co.jp/idn/rfc5890j.txt\n\
 RFC5891=主            jprs.co.jp/idn/rfc5891j.txt\n\
@@ -1536,7 +1520,7 @@ RFC6454=・            ~IETF/rfc6454\n\
 RFC6455=主            ~/RFC6455-ja.html\n\
 RFC6901=主            ~/RFC6901-ja.html\n\
 RFC6902=主            ~/RFC6902-ja.html\n\
-RFC6919=主            www.geocities.jp/toyprog/rfc/rfc6919.txt\n\
+RFC6919=主            ＃www.geocities.jp/toyprog/rfc/rfc6919.txt\n\
 RFC6919=・            ~IETF/rfc6919\n\
 RFC7230=主            ~/RFC7230-ja.html\n\
 RFC7230=・            ~IETF/rfc7230\n\
@@ -1558,7 +1542,7 @@ RFC7235=・            ~IETF/rfc7235\n\
 RFC7235=・            ~HTTPWG/rfc7235.html\n\
 RFC7301=主            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md\n\
 SELECT=主             ~mitsue/css3-selectors/\n\
-SELECT=副2            zng.info/specs/css3-selectors.html\n\
+SELECT=副2            ＃zng.info/specs/css3-selectors.html\n\
 SELECT=副3            ~/selectors4-ja.html●Level 4 日本語訳\n\
 SELECT=版             ~TR/css3-selectors/\n\
 SELECT=編             ~CSSWG/selectors-3/\n\
@@ -1576,7 +1560,7 @@ SECURECONTEXTS=編     w3c.github.io/webappsec-secure-contexts/\n\
 SRI=主                ~/webappsec-subresource-integrity-ja.html\n\
 SRI=版                www.w3.org/TR/SRI/\n\
 SRI=編                w3c.github.io/webappsec-subresource-integrity/\n\
-SSML=主               www.asahi-net.or.jp/~ax2s-kmtn/ref/accessibility/REC-speech-synthesis11-20100907.html\n\
+SSML=主               ＃www.asahi-net.or.jp/~ax2s-kmtn/ref/accessibility/REC-speech-synthesis11-20100907.html\n\
 SSML=・               ~TR/speech-synthesis11/\n\
 STREAMS=主            ~/Streams-ja.html\n\
 STREAMS=・            streams.spec.whatwg.org/\n\
@@ -1595,7 +1579,7 @@ USERTIMING=版         ~TR/user-timing/\n\
 UIEVENTS=主           ~/uievents-ja.html\n\
 UIEVENTS=版           ~TR/uievents/\n\
 UIEVENTS=編           w3c.github.io/uievents/\n\
-WCAG20=主             waic.jp/docs/WCAG20/Overview.html\n\
+WCAG20=主             ＃waic.jp/docs/WCAG20/Overview.html\n\
 WCAG20=・             ~TR/WCAG20/\n\
 WEBIDL=主             ~/WebIDL-ja.html\n\
 WEBIDL=版             ~TR/WebIDL-1/\n\
@@ -1615,10 +1599,9 @@ WORKERS=版            ~TR/workers/\n\
 WORKERS=編            w3c.github.io/workers/\n\
 XHR=・                xhr.spec.whatwg.org/\n\
 XHR=主                ~/XHR-ja.html\n\
-XHR=版                ~TR/XMLHttpRequest/\n\
-XHR=編                dvcs.w3.org/hg/xhr/raw-file/default/xhr-1/Overview.html\n\
-XML11=主              w4ard.eplusx.net/translation/W3C/REC-xml11-20060816/\n\
-XML=主                w4ard.eplusx.net/translation/W3C/REC-xml-20081126/\n\
+XHR=版                ~TR/XMLHttpRequest/●W3C版\n\
+XML11=主              ＃w4ard.eplusx.net/translation/W3C/REC-xml11-20060816/\n\
+XML=主                ＃w4ard.eplusx.net/translation/W3C/REC-xml-20081126/\n\
 XML=・                ~TR/xml/\n\
 XMLNS=主              ~XML/xml-ns-ja.html\n\
 XMLNS=・              ~TR/xml-names/\n\
