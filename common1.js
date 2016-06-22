@@ -1429,8 +1429,8 @@ HIGHRESOLUTIONTIME=版 ~TR/hr-time/\n\
 HTML=主               ~momdoG/html/●日本語(部分)訳\n\
 HTML=副               ~momdoG/html5/Overview.html●日本語(部分)訳\n\
 HTML=副               ~momdoG/html51/Overview.html●5.1 日本語(部分)訳\n\
-	HTML=版               ~TR/html51/●W3C\n\
-	HTML=版               html.spec.whatwg.org/multipage/●LS\n\
+	HTML=・               ~TR/html/●W3C\n\
+	HTML=・               html.spec.whatwg.org/multipage/●LS\n\
 HTML401=主            ＃www.asahi-net.or.jp/~sd5a-ucd/rec-html401j/cover.html\n\
 INDEXEDDB=主          ~/IndexedDB-2nd-ja.html\n\
 INDEXEDDB=版          ~TR/IndexedDB/\n\
@@ -1512,7 +1512,6 @@ RFC5246=主            ~ipa/RFC5246-00JA.html\n\
 RFC5321=主            ＃www.hde.co.jp/rfc/rfc5321_ja.txt\n\
 RFC5322=主            ＃srgia.com/docs/rfc5322j.html\n\
 RFC5322=副2           ＃www.hde.co.jp/rfc/rfc5322_ja.txt\n\
-RFC5789=・            ~IETF/rfc5789\n\
 RFC5890=主            jprs.co.jp/idn/rfc5890j.txt\n\
 RFC5891=主            jprs.co.jp/idn/rfc5891j.txt\n\
 RFC5895=主            jprs.co.jp/idn/rfc5895j.txt\n\
@@ -1631,6 +1630,7 @@ COMMON_DATA.REF_DATA2 = '\n\
 ~TR/SVG11/●       triple-underscore.github.io/SVG11/\n\
 	HTML (@ 不可)\n\
 ~HTML5/●          ~momdoG/html/\n\
+~TR/html/●        ~momdoG/html/\n\
 ~TR/html5/●       ~momdoG/html5/\n\
 ';
 
