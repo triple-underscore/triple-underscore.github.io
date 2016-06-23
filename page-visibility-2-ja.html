@@ -1,34 +1,162 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
-<title>Page Visibility 2 — ページ可視性（バージョン ２ 日本語訳）</title>
+<title>Page Visibility 2 （日本語訳）</title>
 
 <link rel="stylesheet" href="common.css" type="text/css" />
 <link rel="stylesheet" href="common-w3c.css" type="text/css" />
 <script src="common0.js" ></script>
 <script src="common1.js" async></script>
 
-<script >
+
+<script>
+var source_data;
+
+COMMON_DATA.page_state_key = '___TIMING';
 COMMON_DATA.init = function(expanded){
-
-//Util.del_j(); // 検証済み 2015-07-15
-
-	return {
+	var options = {
 		original_url: 'https://w3c.github.io/page-visibility/',
 		spec_status: 'ED',
 		main: 'MAIN',
-		toc: 'toc',
-		alt_refs: 'references',
 		fill_text_link: '#_versions > dd, #references dd',
+		alt_refs: 'references',
 		ref_id_prefix: 'bib-',
-		word_switch: 'replace_table'
+//		ref_id_lowercase: true,
 	};
+
+	if(expanded) return options;
+
+	source_data = {
+		html: E('MAIN').innerHTML,
+		link_map: Util.getMapping('_link_map'),
+		levels: '英語主体:英語寄り:漢字主体:カナ主体',
+		level: 2,
+		generate: expand,
+	};
+	Util.switchWordsInit(source_data);
+
+//	Util.del_j(); // checked 160622
+
+	return options;
 }
+
+function expand(mapping1){
+
+	var class_map = {
+		l: 'literal',
+		et: 'event-type',
+		E: 'error',
+	};
+
+	var tag_map = {
+		I: 'code',
+		m: 'code',
+		c: 'code',
+		e: 'code',
+		et: 'code',
+		E: 'code',
+		l: 'code',
+	};
+
+	var link_map = this.link_map;
+	var nesting = '';
+	var _event_tester = E('_event_tester')
+
+	E('MAIN').innerHTML = Util.replaceWords1(
+		this.html.replace(
+			/⇒！?|◎[^<◎]*|【.*?】|%[\w\u4E00-\u9FFF~]+|`(.+?)([$@\^])(\w*)/g,
+			create_html
+		),
+		mapping1
+	);
+	// 目次構築
+	Util.rebuildToc('MAIN0', '_toc_list0');
+
+	E('_event_tester_placeholder').appendChild(_event_tester);
+
+	function create_html(match, key, indicator, klass){
+
+
+if(!key) {
+	switch(match[0]){
+	case '⇒':
+		nesting += '</span>';
+		return '：<span class="block">';
+	case '【':
+		return '<span class="trans-note">' + match + '</span>'
+	case '%':
+		return '<var>' + match.slice(1) + '</var>';
+	}//◎
+	result = nesting + '<span lang="en">' + match.slice(1) + '</span>';
+	nesting = '';
+	return result;
+}
+
+var text = key;
+var href = '';
+var classname = class_map[klass];
+var tag = tag_map[klass];
+
+switch(klass){
+case 'r': // ref
+	text = '[' + key + ']';
+	href = '#bib-' + key;
+	break;
+case 'l': // literal
+	text = '"<code class="literal">' + text + '</code>"'
+	break;
+case 'd': // IDL dictionary member
+	break;
+case 'm': // IDL member
+	var n = text.indexOf('(');
+	if(n > 0){
+		key = text.slice(0, n);
+		text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
+	}
+	break;
+default: //
+	break;
+}
+
+if(tag) {
+	text = '<' + tag + (
+		classname ? ' class="' + classname + '"' : ''
+	) + '>' + text + '</' + tag + '>';
+}
+
+
+if(indicator !== '^'){
+	href = link_map[klass ? (klass + '.' + key) : key] || href;
+	if(!href){
+		console.log(match); // check error
+		return match;
+	}
+
+	switch(indicator){
+	case '!':
+	case '$':
+		text = '<a href="' + href + '">' + text + '</a>';
+		break;
+	case '@':
+		text = '<dfn id="' + href.slice(1) + '">' + text + '</dfn>';
+		break;
+	default:
+		console.log(match);
+		return match;
+	}
+}
+
+return text;
+
+
+	}
+}
+
+
 
 </script>
 
 <script>
-
 var _tester = {
-	get_state: function(){
+	getVisibilityState: function(){
 		return (
 			'hidden: ' + document.hidden + 
 			',  visibilityState: ' + document.visibilityState
@@ -36,29 +164,23 @@ var _tester = {
 	},
 
 	logging: false,
-	start: null,
+	start_time: null,
 
-	visiblity_listener: function(event){
-//		if(document.visibilityState === 'unloaded') throw 'visibility state: unloaded'
-
+	logVisibilityState: function(event){
+		var time = ((new Date - _tester.start_time) / 1000).toFixed(3);
+		var state = _tester.getVisibilityState()
 		var div = C('div');
-		var dur = 
-		div.textContent = 
-			'イベント発生 ( ' +
-			((new Date - _tester.start) / 1000).toFixed(3) +
-			' 秒)：' + 
-			_tester.get_state();
-
+		div.textContent = 'イベント発生 ( ' + time + ' 秒)：' + state;
 		E('_event_log').appendChild(div);
 	},
 
-	test_event: function(){
+	toggle_listener: function(){
 		var button = E('_test_visiblity_event');
-		var listener = this.visiblity_listener;
+		var listener = this.logVisibilityState;
 		if(this.logging = ! this.logging){ 
 			document.addEventListener('visibilitychange', listener);
 			button.value = '終了する';
-			this.start = new Date;
+			this.start_time = new Date;
 		} else {
 			document.removeEventListener('visibilitychange', listener);
 			E('_event_log').textContent = '';
@@ -66,201 +188,381 @@ var _tester = {
 		}
 	}
 }
-
 </script>
+
+
 
 <!--% 訳文 id → 原文 id -->
 <script type="text/plain" id="_original_id_map">
 top-level-document:
+dom-visibilitystate-unloaded:
+</script>
+
+<!--%links -->
+<script type="text/plain" id="_link_map">
+	●dom
+I.Document:#dom-document
+	~HTMLDOM#document
+文書:#dom-document
+	~HTMLDOM#the-document-object
+I.VisibilityState:#visibilitystate
+
+m.visibilityState:#dom-visibilitystate
+m.hidden:#dom-document-hidden
+m.onvisibilitychange:#dom-document-onvisibilitychange
+m.defaultView:#dfn-defaultview
+	~HTML5x/browsers.html#dom-window-defaultview
+
+
+l.hidden:#dom-visibilitystate-hidden
+l.visible:#dom-visibilitystate-visible
+l.prerender:#dom-visibilitystate-prerender
+l.unloaded:#dom-visibilitystate-unloaded
+
+	●event
+et.visibilitychange:#dfn-visibilitychange
+et.blur:#dfn-blur
+	~HTML5x/fullindex.html#eventdef-global-blur
+et.focus:#dfn-focus
+	~HTML5x/fullindex.html#eventdef-global-focus
+et.pageshow:#dfn-pageshow
+	~HTML5x/fullindex.html#eventdef-global-pageshow
+
+	~HTML5x/editing.html#focus-management
+	~HTML5x/editing.html#focus-management
+	~HTML5x/browsers.html#event-pageshow
+
+	●
+可視性~状態:#dfn-visibility-states
+可視性~状態を決定する手続き:#dfn-steps-to-determine-the-visibility-state
+文書が hidden かどうか決定する手続き:#dfn-steps-to-determine-if-the-document-is-hidden
+~now~hidden~algo:#dfn-now-hidden-algorithm
+~now~visible~algo:#dfn-now-visible-algorithm
+
+	●
+単純~eventを発火する:#dfn-fire-a-simple-event
+	~WAPI#fire-a-simple-event
+	~DOM4#concept-event-fire
+~taskを待入する:~WAPI#queue-a-task
+待入する:#dfn-queue-a-task
+	~WAPI#queue-a-task
+	~HTML5x/webappapis.html#queuing
+	
+~session履歴~entry:#dfn-session-history-entry
+	~HTML5x/browsers.html#session-history-entry
+~task源:#dfn-task-source
+	~WAPI#task-source
+~task:#dfn-task
+	~WAPI#concept-task
+	~HTML5x/webappapis.html#tasks
+~top-level閲覧文脈:#dfn-top-level-browsing-context
+	~HTML5x/browsers.html#top-level-browsing-context
+~unload:#dfn-unload
+	~HTML5x/browsers.html#unloading-documents
+文書~unload時の可視性~変更~手続き:#dfn-unloading-document-visibility-change-steps
+	~HTML5x/browsers.html#unloading-document-visibility-change-steps
+~event~handler IDL 属性:#event-handler-idl-attributes
+	~WAPI#event-handler-idl-attributes
+	~HTML5x/webappapis.html#event-handler-idl-event-handler-idl-attribute
+利用者~対話~task源:#user-interaction-task-source
+	~WAPI#user-interaction-task-source
+
+事前具現化-:#prerender
+	~TR/resource-hints/#prerender
+</script>
+
+
+
+<!--%置換 -->
+<script type="text/plain" id="words_table1">
 </script>
 
 <!--%語 -->
-<script id="replace_table" type="text/plain">
-	判別
-マシン:machine
-変更:change
-	仕事:work
-エージェント:agent
+<script type="text/plain" id="words_table">
 
-	前面:foreground
-	背後:background
-	拡大鏡:magnifier
-プライバシー:privacy
-第三者主体:third party
-内容:content
-	実用的:practical
-	公開: 1
-サイト:site
-	開発者: 2
-プログラム:program
-プログラム的:programmatic
-文書:document
-	通知:notify
-ウェブ:web
-	ウェブ上の:web based
-ページ:page
-バッファ処理:buffering
-	設計: 2
-資源:resource
-実行時:runtime
-利用者体験:user experience
-最適化-:optimize
-	定義: 2
-被取得時:被 get 時
-決定-:determine
-	on getting
-セッション履歴:session history
-エントリ:entry
-	表示中:
-ロック:lock
-サポート:support
-	検知: 2
-タスク:task
-タスク源:task source
-	待ち行列:queue
-同期的:synchronous
-浮上:bubble
-実用的:practical
-見地:consideration
-公開:exposure
-包含-:contain
-概念:concept
-仕様:spec
-適用可能:applicable
-事例:case
-適応-:accommodate
-取消不可:not cancelable
-既定動作:default action
-単純:simple
-適合性:conformance
-アプリ:application
-	タブ:tab
-任意選択:optional
-ビュー:view
-タブ:tab
-	ツール:tool
-アクセス支援:accessibility
-	アクセス容易性
-ツール:tool
-	支援aid
-支援技術:assistive technologies
-発火:fire
-不可視:hidden
-可視性状態:visibility state
-	状態
-利用者:user
-拡張:extension
-スクリーン:screen
-	告知: now...
-イベント:event
-イベントハンドラ:event handler
-照会-:query
-監視-:listen
-可視性:visibility
-最小化:minimize
-	仕様:specification
-インタフェース:interface
-アルゴリズム:algorithm
-トップレベル:top-level
-閲覧文脈:browsing context
-可視:visible
-属性:attribute
+	●仕様
+UA:user agent:UA
+algo:algorithm::アルゴリズム
+app:application::アプリ
+machine:::マシン
+privacy:::プライバシー
+support:::サポート
+accessibility:::アクセス容易性
+tool:::ツール
+model:::モデル
+program:::プログラム
+	〜的:programmatic
+事例:case:~
+仕事:work:~
+仕様:spec:~
+仕組み:mechanism:~
+任意選択:optional:~
+体験:experience:~
+公開:exposure:~
+利用者:user:~
+効率的:efficient:~
+各種用語:terminology:~
+定義-:define:~
+実施上の:practical:~
+実行時:runtime:~
+手続き:steps:~
+支援-:aid:~
+支援技術:assistive technologies:~
+既存の:existing:~
+最適化-:optimize:~
+概して:typical に:~
+概念:concept:~
+歴史的:historical:~
+理由:reason:~
+発行:publish:~
+第三者主体:third party:~
+編集者草案:Editor’s Draft:~
+見地:consideration:~
+設計:design:~
+賢く:intellegent に:~
+適合性:conformance:~
+適応-:accommodate:~
+適用-:apply:~
+	適用し得る:applicable:~
+開発:development:~
+開発者:developer:~
+拡張:extension:~
+拡張-:extend:~
+変更点:changes:~
+増補:enhancements:~
+明確化:clarifications:~
+手段:means:~
+保守-:maintain:~
+精度:precision:~
+挙動:behavior:ふるまい
+改めれ:alter でき:~
+条件:condition:~
+	ふるまいを切り替える:making 〜 decisions
+	知り得る下で:with knowledge of
+	位置付け
+	例:example
+	例えば:for example
+	協力:contributions
+	序論:Introduction
+	用例
+	用途
+	発行時点
+	目次
+	節
+	考えら
+	要約
+	謝意
+	謝辞
+	難しくprevents
+	面で
+	響く
 
-発行:publish
-各種用語:terminology
-反応-:reacting
-変化:change
-	より賢くintellegentに
-休止:pause
-再開:resume
-加減速:throttle
-	
-	処理:processing
-解析:analytics
+	●可視性 状態
+now:
+hidden:
+visible:
+	不可視:hidden:~
+可視:visible::~
+可視性:visibility::~
+状態:state::~
+最小化:minimize:~
+反応-:react:~
+変化:change:~
+
+lock:::ロック
+screen:::スクリーン
+前面の:foreground:~
+背後の:background:~
+覆われ:obscure され:~
+全部的:full:~
+	示-:show
+	見えている
+	どこか一部:at least partially
+
+	●処理 model
+event:::イベント
+handler:::ハンドラ
+単純:simple:~
+発火:fire:~
+	浮上:bubble:~
+	取消不可:not cancelable:~
+listen:~
+既定動作:default action:~::デフォルトアクション
+task:::タスク
+源:source::~
+待行列:queue::待ち行列:キュー
+待入する:queue する::待ち行列に入れる:キューする
+待入され:queue され::待ち行列に入れられ:キューされ
+同期的:synchronous:~
+対話:interaction:~
+
+通知-:notify:~
+決定-:determine:~
+照会-:query:~
+遷移-:transition:~
+走らせ:run し:~
+走らす:run する:走らせる
+処理:processing:~
+取扱う:handle する:取り扱う
+
+
+	●未分類
+top-level:::トップレベル
+閲覧文脈:browsing context:~
+session:::セッション
+履歴:history:~
+entry:::エントリ
+unload:
+読込まれ:load され:読み込まれ
+辿って:traverse して:~
+文書:document:~
+site:::サイト
+web:::
+page:::ページ
+資源:resource::~:リソース
+内容:content:~
+
+
+実行:execution:~
+休止-:pause:~
+再開-:resume:~
+加減速-:throttle:~
+効率性:efficiency:~
+電力:power:~
+自動的:automatic:~
+再生:playback:~
+video:::ビデオ
+自動再生:autoplay:~
+animation:::アニメーション
+loop:::ループ
+logic:::ロジック
+処理能:performance:~::パフォーマンス
+改善-:improve:~
+向上-:improve:~
+縮退-:scale back:~
+解析:analytics:~
+buffering:::バッファ処理
+view:ビュー
+tab:::タブ
+事前具現化-:prerender::事前に具現化:プリレンダー
+拡大鏡:magnifier:~
+
+
+code:::コード
+mode:::モード
+obj:object::オブジェクト
+interface:::インタフェース
+
+変更:change:~
+被取得時:被 get 時:~
+追加-:add:~
+除去-:remove:~
+包含-:contain:~
+属性:attribute:~
 	By combining 組み合わ
-効率性:efficiency
-電力:power
-自動的:automatic
-再生:playback
-ビデオ:video
-自動再生:autoplay
-アニメーション:animation
-	繰り返しloop
-ロジック:logic 
-性能:performance
-改善-:improve
-反映-:reflect
-	列挙型:enum
-全部的:full
-	fully
-手段:means
-	通知:to be notified
-開発者:developer
-開発:development
-設計:design
+反映-:reflect:~
+列挙型:enum:~
+値:value:~
+型:type:~
+設定-:set:~
 
-歴史的事由:historical reason
-	維持-:maintain
-遷移-:transition
-対話:interaction
-休止-:pause
-事前描画:prerender
+組合せれ:combine すれ:~
+名前:name:~
+合致-:match:~
+
+可能:possible:~
+追加の:additional:~
+
+	上にある
+	上の
+	下で
+	与える
+	介して
+	他の
+	代わって
+	基づいて:based on
+	以下
+	似た
+	入る
+	全
+	利用-:use
+	前に
+	同じ:the same
+	向けて
+	対する
+	場合:if
+	多く
+	大きく
+	対応する
+	常に:always:~
+	得る
+	所で
+	扱う
+	持-
+	挙げる
+	方
+	時
+	時点
+	最も近く:best
+	次に
+	次の
+	現在:now
+
+
+	結果
+	自身
+	表す
+	見なして
+	読み
+	費やす
+	返さ:return し
+	返され:return され
+	返す:return する
+	部分も
+	間
+	際に
+	no longer
+	でありつつ:still
+	like
+
 </script>
-
-<!-- その他の単語 （３回以上）
-use: 3
-defines: 3
-
-defined: 3
-updated: 3
-period: 3
-operating: 3
-knowledge: 3
-longer: 3
-秒:second
-examples: 3
-	key words: 3
-	phrased: 3
-typically: 3
-still: 3
-shown: 3
-like: 3
-value: 3
-determine: 4
-current: 4
-section: 4
-work: 4
-introduction: 4
-show: 4
-どこか一部でも:partially
-覆われ:obscured
-run: 4
-name: 4
-勧告:recommendation
-バージョン:version
-規定:normative
-参考:non-normative
-手続き:steps
-UA:user agent
-最も近くbest
--->
 
 <!--%style -->
 <style>
 
-.event {
-	color: purple;
-}
-
-a.event > code {
-	color: purple;
+pre.idl {
+	white-space: pre-wrap;
 }
 
 </style>
 
 </head>
 
+
 <body>
+
+<div hidden>
+<input type="hidden" id="_page_config" value="" />
+
+
+<div id="_event_tester" class="_test">
+利用中のブラウザでこのイベントの監視を
+<input type="button"
+	id="_test_visiblity_event"
+	value="開始する"
+	onclick="_tester.toggle_listener()"/>：
+<div id="_event_log" style="text-indent: 2em;"></div>
+<small>
+（イベントがサポートされていれば、開始後，［
+タブの切替,
+ウィンドウ最小化,
+別ページへ進む → 戻る
+］等の操作により，可視性が切り替わる度に文書の
+<code>hidden</code>, <code>visibilityState</code> 属性の取得結果が表示されます — 未サポートの場合は何も起きません）
+</small>
+</div>
+
+</div>
 
 <aside class="trans-meta">
 <h1>Page Visibility 2 日本語訳</h1>
@@ -278,7 +580,7 @@ a.event > code {
 </p>
 
 <p>
-更新：<time>2016-05-02</time>
+更新：<time>2016-06-23</time>
 （公開：<time>2014-04-24</time> ）
 </p>
 
@@ -294,22 +596,24 @@ a.event > code {
 
 <div><a href="http://www.w3.org/" id="_W3C">W3C</a></div>
 
-<h1>ページ可視性（バージョン 2 ） — Page Visibility 2</h1>
-
-<h2>W3C 編集者草案 2016 年 4 月 22 日</h2>
-
+	<hgroup>
+<h1>ページ可視性 — Page Visibility 2</h1>
+<h2>2016 年 6 月 22 日付 編集者草案</h2>
+	</hgroup>
 
 <dl id="_versions">
+
 	<dt title="This version:">このバージョン</dt>
-	<dt title="Latest editor's draft:">最新 編集者草案</dt>
+	<dt title="Latest editor's draft:">編集者草案</dt>
 	<dd>https://w3c.github.io/page-visibility/</dd>
 
-	<dt title="Latest version:">最新バージョン</dt>
+	<dt title="Latest published version:">最新発行バージョン</dt>
 	<dd>http://www.w3.org/TR/page-visibility/</dd>
 
 	<dt title="Editors:">編集</dt>
-    <dd>Arvind Jain, Google Inc.,</dd>
-	<dd>Jatinder Mann, Microsoft Corp.</dd>
+	<dd>Ilya Grigorik, Google, igrigorik@gmail.com</dd>
+	<dd>Arvind Jain, Google Inc., (Until December 2014)</dd>
+	<dd>Jatinder Mann, Microsoft Corp. (Until February 2014)</dd>
 
 	<dt>Repository:</dt>
 	<dd><a href="https://github.com/w3c/page-visibility">We are on Github.</a></dd>
@@ -317,11 +621,15 @@ a.event > code {
 File a bug.</a></dd>
 	<dd><a href="https://github.com/w3c/page-visibility/commits/gh-pages">Commit history.</a></dd>
 
-	<dt>Mailing list:</dt>
-	<dd><a href="https://lists.w3.org/Archives/Public/public-web-perf/">public-web-perf@w3.org</a></dd>
+	<dt title="Mailing list:">メーリングリスト</dt>
+	<dd>
+<a href="https://lists.w3.org/Archives/Public/public-web-perf/">public-web-perf@w3.org</a>
+(<a href="public-web-perf-request@w3.org">subscribe</a>,
+<a href="http://lists.w3.org/Archives/Public/public-web-perf/">archived</a>)
+</dd>
 
 	<dt title="Implementation:">実装</dt>
-	<dd><a href="http://caniuse.com/#feat=pagevisibility">Can I use High Resolution Time?</a></dd>
+	<dd><a href="http://caniuse.com/#feat=pagevisibility">Can I use Page Visibility?</a></dd>
 	<dd><a href="http://w3c-test.org/page-visibility/">Test Suite</a></dd>
 	<dd><a href="https://github.com/w3c/web-platform-tests/tree/master/page-visibility">Test Suite repository</a></dd>
 
@@ -329,33 +637,33 @@ File a bug.</a></dd>
 
 
 <small class="copyright">
-<a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a>
-© 2015
+<a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> ©
+2016
 <a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup>
 (<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>,
 <a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>,
 <a href="http://www.keio.ac.jp/">Keio</a>, <a href="http://ev.buaa.edu.cn/">Beihang</a>). 
 <abbr title="World Wide Web Consortium">W3C</abbr> <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>,
 <a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and
-<a href="http://www.w3.org/Consortium/Legal/copyright-documents">document use</a>
+<a rel="license" href="http://www.w3.org/Consortium/Legal/copyright-documents">document use</a>
 rules apply.
 </small>
 
 </header>
 
-<hr class="top">
 
+<div id="MAIN" style="display:none;">
 
 	<section id="abstract">
 
 <h2 title="Abstract">要約</h2>
 
 <p>
-この仕様は、ページの現在の<a>可視性状態</a>をプログラム的に判別するための手段を定義する。
-これは、電力と CPU の面で効率的なウェブ­アプリの開発を支援する。
-<span lang="en">
+この仕様は、~pageの`可視性~状態$を~program的に決定するための手段を定義する。
+これは、電力と CPU の面で効率的な~web~appの開発を支援する。
+◎
 This specification defines a means to programmatically determine the visibility state of a document. This can aid in the development of power and CPU efficient web applications.
-</span></p>
+</p>
 
 	</section>
 
@@ -371,9 +679,9 @@ This specification defines a means to programmatically determine the visibility 
 】</span></p>
 
 <p>
-<span lang="en">
+◎
 Please send comments to public-web-perf@w3.org (archived) with [PageVisibility] at the start of the subject line.
-</span></p>
+</p>
 <!-- 
 
 This section describes the status of this document at the time of its publication. Other documents may supersede this document. A list of current W3C publications and the latest revision of this technical report can be found in the W3C technical reports index at http://www.w3.org/TR/.
@@ -392,97 +700,124 @@ This document is governed by the 1 August 2014 W3C Process Document.
 
 <p>
 この文書は
-<a href="http://www.w3.org/2010/webperf/">Web Performance</a>
-Working Group により編集者草案として発行されました。
-コメントがあれば、
-<a href="public-web-perf@w3.org">public-web-perf@w3.org</a>
-(<a href="public-web-perf-request@w3.org">subscribe</a>,
-<a href="http://lists.w3.org/Archives/Public/public-web-perf/">archived</a>)
-宛まで送られるよう願います。
-<span lang="en">
+<a href="http://www.w3.org/2010/webperf/">Web Performance Working Group</a>
+により編集者草案として~~発行されました。
+コメントを歓迎します。
+宛先は冒頭に挙げたメーリングリスト宛まで。
+◎
 This document was published by the Web Performance Working Group as an Editor's Draft. If you wish to make comments regarding this document, please send them to public-web-perf@w3.org (subscribe, archives). All comments are welcome.
-</span></p>
+</p>
 
 	</section>
 
 <nav class="toc" id="toc">
 <h2 title="Table of Contents">目次</h2>
-<!--  --></nav>
+<ol id="_toc_list0"></ol>
+</nav>
 
-
-<div id="MAIN">
+<main id="MAIN0">
 
 	<section id="introduction">
 
 <h2 title="Introduction">1. 序論</h2>
 
+~INFORMATIVE
+
 <p>
-Page Visibility API は、プログラム的に<a>トップレベル閲覧文脈</a>の現在の<a>可視性状態</a>を判別したり, <a>可視性状態</a>が変化した際に通知を受けられるようにするための手段を定義する。
-ページの<a>可視性状態</a>を判別できない間、ウェブ開発者たちは，ウェブ­ページを常に可視と見なして設計してきた。
-これは、マシンの資源をより多く消費するのみならず、ウェブ開発者たちが，ページが利用者から可視であるかどうかに基づいて，実行時のふるまいを変えることも難しくしている。
-ウェブ­ページを，その<a>可視性状態</a>について判別できる下で設計できれば、利用者体験とサイトの効率性を改善させられる。
-<span lang="en">
+Page Visibility API は、~program的に`~top-level閲覧文脈$の`可視性~状態$を決定したり, `可視性~状態$の変化~時に通知してもらえるようにするための手段を定義する。
+~pageの`可視性~状態$を決定できない間、~web開発者たちは，~web~pageを常に可視とみなして設計してきた。
+これは、~machine資源をより多く費やすのみならず、~web開発者たちが［
+~pageが利用者から可視であるかどうかに基づいて 実行時にふるまいを切り替える
+］ことも，難しくしている。
+~web~pageを，その`可視性~状態$について知り得る下で設計できれば、利用者~体験と~siteの効率性を改善させられる。
+◎
 The Page Visibility API defines a means to programmatically determine the visibility state of a top level browsing context, and to be notified if the visibility state changes. Without knowing the visibility state of a page, web developers have been designing web pages as if they are always visible. This not only results in higher machine resource utilization, but it prevents web developers from making runtime decisions based on whether the web page is visible to the user. Designing web pages with knowledge of the page's visibility state can result in improved user experiences and power efficient sites.
-</span></p>
+</p>
 
 <p>
-この API により、ウェブ­アプリは，利用者から <a>"visible"</a> （可視）かどうかに基づいて ふるまいを変えられるようになる。
-例えば、ページが <a>"visible"</a> でなくなった時点で仕事を減らす用途に，この API を利用できる。
-<span lang="en">
+この API により、~web~appは，利用者から `visible$l （可視）かどうかに基づいて挙動を改めれるようになる。
+例えば、~pageが `visible$l でなくなったときに 仕事を縮退できる。
+◎
 With this API, web applications can choose to alter their behavior based on whether they are visible to the user or not. For example, this API can be used to scale back work when the page is no longer visible.
-</span></p>
+</p>
 
+	</section>
+	<section id="conformance">
+<h2 title="Conformance">2. 適合性</h2>
+
+<p class="trans-note">【
+この節の内容は
+<a href="w3c-common-ja.html#conformance" >W3C 日本語訳 共通ページ</a>
+に委譲
+】</p>
+
+		<section id="_conventions">
+<h3 class="trans-note">【日本語訳に固有の表記規約】</h3>
+
+<p>
+この訳の，~algoや定義の記述に利用されている各種記号（ ~LET, ~EQ, ~IF, ~EACH (…), ~RET, 等々）の意味や定義の詳細は、~SYMBOL_DEF_REFを~~参照されたし。
+</p>
+
+		</section>
 	</section>
 	<section id="examples-of-usage">
 
-<h2 title="Examples of usage">2. 用例</h2>
+<h2 title="Examples of usage">3. 用例</h2>
+
+~INFORMATIVE
 
 <p>
-アプリは、自身が
-<a>"visible"</a> のときには ビデオを自動再生して，
-<a>"hidden"</a> のときには
-再生を自動的に休止させることで、利用者体験を改善させ,
-CPU と電力の効率性を最適化することもできる：
-<span lang="en">
+~appは、自身が `visible$l のときは~videoを自動再生し， `hidden$l のときは 再生を自動的に休止させることで、利用者~体験を改善させつつ， CPU と電力の効率性を最適化することもできる：
+◎
 To improve the user experience and optimize CPU and power efficiency the application could autoplay a video when the application is visible, and automatically pause the playback when the application is hidden:
-</span></p>
+</p>
 
 
 <div class="example">
 
 <p>
 例 1.
-可視性に対応するビデオ再生
-<span lang="en">
+可視性に対応する~video再生
+◎
 Example 1: Visibility-aware video playback
-</span></p>
+</p>
 
 <pre >
-var <var>videoElement</var> = document.getElementById("videoElement");
+var %videoElement = document.getElementById("videoElement");
 
-// <span class="comment" title="pause video buffering if page is being prerendered"> ページが事前描画（ prerender ）されているときは，ビデオのバッファ処理を休止する</span>
+/* <span class="comment">
+~pageが事前具現化-（ prerender ）されているときは，~videoの~bufferingを休止する
+◎
+pause video buffering if page is being prerendered
+</span> */
 if (document.visibilityState == "prerender") {
   // ...
 }
 
-// <span class="comment" title="Autoplay the video if application is visible"
-><a>"visible"</a> ならビデオを自動再生する</span>
+/* <span class="comment">
+`visible$l なら~videoを自動再生する
+◎
+Autoplay the video if application is visible
+</span> */
 if (document.visibilityState == "visible") {
-  <var>videoElement</var>.play();
+  %videoElement.play();
 }
 
-// <span class="comment" title="Handle page visibility change events"
->ページ可視性­変化イベントを取り扱う</span>
+/* <span class="comment">
+~page可視性~変化~eventを取扱う
+◎
+Handle page visibility change events
+</span> */
 function handleVisibilityChange() {
 if (document.visibilityState == "hidden") {
-    <var>videoElement</var>.pause();
+    %videoElement.pause();
   } else {
-    <var>videoElement</var>.play();
+    %videoElement.play();
   }
 }
 
 document.addEventListener(
-    '<code class="event">visibilitychange</code>', handleVisibilityChange, false
+    '`visibilitychange^et', handleVisibilityChange, false
 );
 </pre>
 
@@ -490,234 +825,242 @@ document.addEventListener(
 
 
 <p>
-似たようなロジックは、
+似たような~logicは、［
 より賢く［
-休止／再開／加減速
+休止-／再開-／加減速-
 ］する ／
-アニメーションの繰り返しなどのアプリ­コードの実行 ／
-解析 ／
-その他の処理などにも適用できる。
-<a>Document</a> インタフェースの <a>visibilityState</a> 属性と
-<a class="event">visibilitychange</a> イベントを組み合せれば、アプリはページの可視性イベントを照会したり, 監視して、利用者体験も向上させるとともに，効率性と性能も改善させられるようになる。
-<span lang="en">
+~animation~loopなどの ~app~codeの実行 ／
+解析
+］その他の処理にも適用できる。
+`Document$I ~interfaceの `visibilityState$m 属性と
+`visibilitychange$et ~eventを組合せれば、~appは，~pageの可視性~eventを照会したり, ~listenして、利用者~体験を向上させつつ 効率性や処理能も改善できるようになる。
+◎
 Similar logic can be applied to intellegently pause and resume, or throttle, execution of application code such as animation loops, analytics, and other types of processing. By combining the visibilityState attribute of the Document interface and the visibilitychange event, the application is able to both query and listen to page visibility events to deliver a better user experience, as well as improve efficiency and performance of its execution.
-</span></p>
+</p>
 
 	</section>
 	<section id="visibility-states-and-the-visibilitystate-enum">
-<h2 title="Visibility states and the VisibilityState enum">3. 可視性状態と <code>VisibilityState</code> 列挙型</h2>
+<h2 title="Visibility states and the VisibilityState enum">4. 可視性~状態と `VisibilityState^I 列挙型</h2>
 
 <p>
-<a>トップレベル閲覧文脈</a>
-の <a>Document</a> は、次のいずれかの
-<dfn id="dfn-visibility-states">可視性状態</dfn>
+`~top-level閲覧文脈$の`文書$は、次のいずれかの
+`可視性~状態@
 をとり得る：
-<span lang="en">
+◎
 The Document of the top level browsing context can be in one of the following visibility states:
-</span></p>
+</p>
 
 <dl>
-	<dt><dfn id="idl-def-.hidden">"hidden"</dfn></dt>
+	<dt>`hidden@l</dt>
 	<dd>
-<a>Document</a> のどの部分も，どのスクリーンにおいても <a>"visible"</a> でないことを表す。
-<span lang="en">
+`文書$のどの部分も，どの~screenにおいても `visible$l でないことを表す。
+◎
 The Document is not visible at all on any screen. 
-</span></dd>
-	<dt><dfn id="idl-def-.visible">"visible"</dfn></dt>
-	<dd>
-<a>Document</a> は，あるスクリーンにて どこか一部が可視であることを表す。
-これは <a>hidden</a> 属性が <code>false</code> に設定されているときと同じ条件になる。
-<span lang="en">
-The Document is at least partially visible on at least one screen. This is the same condition under which the hidden attribute is set to false.
-</span></dd>
+</dd>
 
-	<dt><dfn id="idl-def-.prerender">"prerender"</dfn></dt>
+	<dt>`visible@l</dt>
 	<dd>
-<a>Document</a> が事前描画（ prerender ）モードの下で読み込まれていて，まだ可視でない。
-<span lang="en">
+`文書$は，ある~screenにて どこか一部が可視であることを表す。
+これは `hidden$m 属性が ~F に設定されているときと同じ条件になる。
+◎
+The Document is at least partially visible on at least one screen. This is the same condition under which the hidden attribute is set to false.
+</dd>
+
+	<dt>`prerender@l</dt>
+	<dd>
+`文書$が事前具現化-（ prerender ）~modeの下で読込まれていて，まだ可視でない。
+◎
 The Document is loaded in the prerender mode and is not yet visible.
-</span></dd>
-	<dt><dfn id="idl-def-.unloaded">"unloaded"</dfn></dt>
-	<dd>
-UA は <a>Document</a> を <a>unload </a> しつつある。
-<a>visibilityState</a> 属性が返す値 <a>"unloaded"</a> のサポートは、
-UA の <em class="rfc2119">任意選択</em> である。
-<span lang="en">
-The user agent is to unload the Document. User agent support of the unloaded return value of the visibilityState attribute is OPTIONAL.
-</span></dd>
+</dd>
+
 </dl>
 
 <p>
-<a>可視性状態</a> は、 <a>VisibilityState</a> 列挙型の値を介して API に反映される：
-<span lang="en">
+`可視性~状態$ は、 `VisibilityState$I 列挙型の値を介して API に反映される：
+◎
 The visibility states are reflected in the API via the VisibilityState enum.
-</span></p>
+</p>
 
 <pre class="idl">
-enum <dfn id="VisibilityState">VisibilityState</dfn> {
-    <a href="#idl-def-.hidden">"hidden"</a>,
-    <a>"visible"</a>,
-    <a>"prerender"</a>
+enum `VisibilityState@I {
+    `hidden$l,
+    `visible$l,
+    `prerender$l
 };
 </pre>
 
 	</section>
 	<section id="extensions-to-the-document-interface">
-
-<h2 title="Extensions to the Document interface">4. <code>Document</code> インタフェースに対する拡張</h2>
+<h2 title="Extensions to the Document interface">5. `Document^I ~interfaceに対する拡張</h2>
 
 <p>
-この仕様は、 <a>Document</a> インタフェース
-<a href="#HTML5">[HTML5]</a>
+この仕様は、 
+`Document$I ~interface `HTML5$r
 を拡張する：
-<span lang="en">
-This specification extends the [HTML5] Document interface:
-</span></p>
+◎
+This specification extends the [HTML51] Document interface: 
+</p>
 
 
 <pre class="idl">
-partial interface <dfn id="document">Document</dfn> {
-    readonly    attribute boolean         <a>hidden</a>;
-    readonly    attribute <a>VisibilityState</a> <a>visibilityState</a>;
-                attribute EventHandler onvisibilitychange;
+partial interface `Document$I {
+    readonly    attribute boolean         `hidden$m;
+    readonly    attribute `VisibilityState$I `visibilityState$m;
+                attribute EventHandler `onvisibilitychange$m;
 
 };
 </pre>
 
 <div class="_test">
 利用中のブラウザでこれらの属性の
-<input type="button" value="取得を試みる" onclick="this.parentNode.lastChild.textContent = _tester.get_state()"/>
-：<div style="text-indent: 2em; color: black; font-family:monospace;"></div></div>
+<input type="button" value="取得を試みる" onclick="alert(_tester.getVisibilityState())"/>
+</div>
+
 
 		<section id="hidden-attribute">
-<h3 title="hidden attribute">4.1 <code>hidden</code> 属性</h3>
+<h3 title="hidden attribute">5.1 `hidden^m 属性</h3>
 
 <p>
-<a>hidden</a> 属性の被取得時には、UA は，次に与える
-<dfn id="dfn-steps-to-determine-if-the-document-is-hidden">文書が hidden かどうか決定する手続き</dfn>
-を実行しなければ<em class="rfc2119">ならない</em>：
-<span lang="en">
+`hidden$m 属性の被取得時には、~UAは，次に与える
+`文書が hidden かどうか決定する手続き@
+の結果を返さ~MUST：
+◎
 On getting, the hidden attribute MUST run the steps to determine if the document is hidden:
-</span></p>
-
-
+</p>
 
 <ol>
 	<li>
-<a>可視性状態を決定する手続き</a>から <a>"visible"</a> が返されるならば、
-<code>true</code> を返す
-<span lang="en">
+~IF［
+`可視性~状態を決定する手続き$を走らせた結果 ~EQ `visible$l
+］
+⇒
+~RET ~F
+◎
 If steps to determine the visibility state return visible, then return false.
-</span></li>
-
+</li>
 	<li>
-<code>false</code> を返す
-<span lang="en">
-Otherwise, return false.
-</span></li>
+~RET ~T
+◎
+Otherwise, return true.
+</li>
 </ol>
 
+
 <p class="note">
-歴史的事由から， <a>hidden</a> 属性のサポートは維持されている。
-開発者は、可能な所では <a>visibilityState</a> を利用するべきである。
-<span lang="en">
+歴史的~理由から， `hidden$m 属性の~supportは保守されている。
+開発者は、可能な所では `visibilityState$m を利用するべきである。
+◎
 Support for hidden attribute is maintained for historical reasons. Developers should use visibilityState where possible.
-</span></p>
+</p>
 
 		</section>
 		<section id="visibilitystate-attribute">
-<h3 title="visibilityState attribute">4.2 <code>visibilityState</code> 属性</h3>
+<h3 title="visibilityState attribute">5.2 `visibilityState^m 属性</h3>
 
 
 <p>
-<a>visibilityState</a> 属性の被取得時には、UA は，次に与える
-<dfn id="dfn-steps-to-determine-the-visibility-state">可視性状態を決定する手続き</dfn>
-を実行しなければ<em class="rfc2119">ならない</em>：
-<span lang="en">
+`visibilityState@m
+属性の被取得時には、~UAは，次に与える
+`可視性~状態を決定する手続き@
+を走らせ~MUST：
+◎
 On getting, the visibilityState attribute the user agent MUST run the steps to determine the visibility state:
-</span></p>
+</p>
 
 <ol>
 	<li>
-<var>doc</var> :← <a>トップレベル閲覧文脈</a> の <a>Document</a>
-<span lang="en">
+%文書 ~LET `~top-level閲覧文脈$の`文書$
+◎
 Let doc be the Document of the top level browsing context.
-</span></li>
-
+</li>
 	<li>
-<var>doc</var> の <a>defaultView</a> は <code>null</code> ならば、
-<a>"hidden"</a> を返す
-<span lang="en">
+~IF［
+%文書 の `defaultView$m ~EQ ~NULL
+］
+⇒
+~RET `hidden$l
+◎
 If the defaultView of doc is null, return hidden.
-</span></li>
+</li>
 
 	<li>
-他の場合、 <var>doc</var> の<a>可視性状態</a>に最も近く合致する <a>VisibilityState</a> 値を返す：
-<span lang="en">
+<p>
+次に従って， %文書 の`可視性~状態$に最も近く合致する `VisibilityState$I 値を返す：
+◎
 Otherwise, return the VisibilityState value that best matches the visibility state of doc:
-</span>
-
+</p>
 
 		<ol>
 			<li>
-<var>doc</var> は<a>事前描画</a>（ prerender ）されていて, かつ
-それまで <a>"visible"</a> に遷移していないならば、
-<a>"prerender"</a> を返す。
-<span lang="en">
-If doc was prerendered and has not previously transitioned to "visible", return "prerender".
-</span></li>
+~IF［
+%文書 は`事前具現化-$ `RESOURCE-HINTS$r されている
+］~AND［
+%文書 は それまでに `visible$l に遷移していない
+］
+⇒
+~RET `prerender$l
+◎
+If doc was prerendered [RESOURCE-HINTS] and has not previously transitioned to "visible", return "prerender".
+</li>
 			<li>
 <p>
-次の場合は <a>"visible"</a> を返す：
-<span lang="en">
+~IF［
+次のいずれかに該当する
+］
+⇒
+~RET `visible$l ：
+◎
 Return "visible" if:
-</span></p>
+</p>
 				<ul>
 					<li>
-UA は最小化されてなく, かつ <var>doc</var> は前面のタブ上にある。
-<span lang="en">
+~UAは最小化されてない 【アイコン化, 等】
+~AND
+%文書 は前面の~tab上にある
+◎
 The user agent is not minimized and doc is the foreground tab.
-</span></li>
+</li>
 					<li>
-UA は拡大鏡などのアクセス支援ツールにより全部的に覆われているが，
-<var>doc</var> のビューは見えている。
-<span lang="en">
+~UAは 拡大鏡などの~accessibility~toolにより全部的に覆われている
+~AND
+%文書 の~viewは見えている
+◎
 The user agent is fully obscured by an accessibility tool, like a magnifier, but a view of the doc is shown.
-</span></li>
+</li>
 				</ul>
 			<li>
 <p>
-次の場合は <a>"hidden"</a> を返す：
-<span lang="en">
+~IF［
+次のいずれかに該当する
+］
+⇒
+~RET `hidden$l ：
+◎
 Return "hidden" if:
-</span></p>
+</p>
 
 				<ul>
 					<li>
-UA は最小化されている。
-<span class="trans-note">【アイコン化, 等】</span>
-<span lang="en">
+~UAは最小化されている
+~OR
+%文書 は背後の~tab上にある
+◎
 The user agent is minimized.
-</span></li>
-					<li>
-UA は最小化されてはいないが，
-<var>doc</var> は背後のタブ上にある。
-<span lang="en">
+◎
 The user agent is not minimized, but doc is on a background tab.
-</span></li>
+</li>
 
 					<li>
-UA は
-<var>doc</var> を <a>unload </a> しつつある。
-<span lang="en">
+~UA は %文書 を`~unload$しつつある
+◎
 The user agent is to unload doc.
-</span></li>
+</li>
 
 					<li>
-OS がスクリーンをロックしている。
-<span lang="en">
+OS が~screenを~lockしている
+◎
 The Operating System lock screen is shown.
-</span></li>
+</li>
 				</ul>
 			</li>
 		</ol>
@@ -725,247 +1068,259 @@ The Operating System lock screen is shown.
 </ol>
 
 <p>
-概して，フル­スクリーンでありつつ, ページのビューも表示するような支援技術に適応する目的においては、適用可能であれば，
-UA が最小化されてはいないが，他のアプリに全部的に覆われているときには、
-<a>"hidden"</a> の代わりに <a>"visible"</a> が返されても<em class="rfc2119">よい</em>。
-<span lang="en">
+概して，全~screenでありつつ, ~pageの~viewも示すような支援技術に適応するためとして、適用し得るなら，［
+~UAが最小化されてはいないが，他の~appで全部的に覆われている
+］ときには， `hidden$l に代わって `visible$l が返されても~MAY。
+◎
 To accommodate assistive technologies that are typically full screen but still show a view of the page, when applicable, on getting, the visibilityState attribute MAY return visible, instead of hidden, when the user agent is not minimized but is fully obscured by other applications.
-</span></p>
+</p>
 
 		</section>
 
 		<section id="onvisiblitychange-event-handler">
-<h3 title="onvisiblitychange event handler">4.3. <code>onvisiblitychange</code> イベントハンドラ</h3>
+<h3 title="onvisiblitychange event handler">5.3. `onvisiblitychange^m ~event~handler</h3>
 
 <p>
-<code>onvisibilitychange</code> は
-<a class="event">visibilitychange</a> イベント型に対する
-<a href="webappapis-ja.html#event-handler-idl-attributes">イベントハンドラ IDL 属性</a>
-である。
-<span lang="en">
-onvisibilitychange is an event handler IDL attribute for the visibilitychange event type.</span></p>
+`onvisibilitychange@m は
+`visibilitychange$et ~event型に対する`~event~handler IDL 属性$である。
+◎
+onvisibilitychange is an event handler IDL attribute for the visibilitychange event type.
+</p>
 
 
 		</section>
 	</section>
 	<section id="dfn-visibilitychange">
-<h2 title="Reacting to visibilitychange changes">5. <code class="event">visibilitychange</code> （可視性変化）に反応するとき</h2>
+<h2 title="Reacting to visibilitychange changes">6. `visibilitychange^et （可視性の変化）に反応するとき</h2>
 
 <p>
-以下における<a>タスク</a>に対する<a>タスク源</a>は、
-<a>利用者­対話タスク源</a>である。
-<span lang="en">
+以下における`~task$に対する`~task源$は、`利用者~対話~task源$である。
+◎
 The task source for these tasks is the user interaction task source.
-</span></p>
+</p>
 
 <p>
-UA は<a>トップレベル閲覧文脈</a>の <a>Document</a> の可視性の変化が検知されたとき、次の手続きを実行しなければ<em class="rfc2119">ならない</em>。
-<span lang="en">
+~UAは、`~top-level閲覧文脈$の`文書$の可視性が変化したものと決定したときは，次の手続きを走らせ~MUST。
+◎
 When the user agent determines that the visibility of the Document of the top level browsing context has changed, the user agent MUST run the following steps:
-</span></p>
+</p>
 
 
 <ol>
 	<li>
-<var>doc</var> :←
-<a>トップレベル閲覧文脈</a> の <a>Document</a>
-<span lang="en">
+%文書 ~LET `~top-level閲覧文脈$の`文書$
+◎
 Let doc be the Document of the top level browsing context.
-</span></li>
+</li>
 
 	<li>
 <p>
-<var>doc</var> は現在 <a>"visible"</a> ならば：
-<span lang="en">
+~IF［
+%文書 は現在 `visible$l である
+］：
+◎
 If doc is now visible:
-</span></p>
+</p>
 		<ol>
-			<li><p>
-<a>セッション履歴エントリ</a>向けて辿りにかかっているならば、
-<a class="event">pageshow</a> イベントを発火する手続きに入る前に，
-<a>now visible アルゴリズム</a>を実行する。
-<span lang="en">
+			<li>
+%~task ~LET `~now~visible~algo$を走らせる`~task$
+◎
+↓</li>
+			<li>
+~IF［
+`~session履歴~entry$に向けて辿っている
+］
+⇒
+`pageshow$et ~eventを発火する手続きに入る前に， %~task を走らせる
+◎
 If traversing to a session history entry, run the now visible algorithm before running the step to fire the pageshow event.
-</span></p></li>
-
+</li>
 			<li>
-他の場合：
-<a>now visible アルゴリズム</a>を実行する<a>タスクを待ち行列に入れる</a>。
-<span lang="en">
+~ELSE
+⇒
+%~task を`待入する$
+◎
 Otherwise, queue a task that runs the now visible algorithm.
-</span></li>
+</li>
 		</ol>
 	</li>
 
 	<li>
 <p>
-他の場合、 <var>doc</var> は［
-<a>"visible"</a> でない／でなくなった
-］, または［
-UA は <var>doc</var> を unload しつつある
-］ならば：
-<span lang="en">
+~ELIF
+%文書 は［
+`visible$l でなくなった
+］~OR［
+~UAは %文書 を`~unload$しつつある
+］：
+◎
 Else if doc is now not visible, or if the user agent is to unload doc:
-</span></p>
+</p>
 
-		<ol >
+		<ol>
 			<li>
-UA は、その <a>Document</a> を <a>unload </a> しつつあるときは、
-<a>unloading 文書の可視性­変更­手続き</a>
-の間に，<a>now hidden アルゴリズム</a>を実行する。
-<span lang="en">
+%~task ~LET `~now~hidden~algo$を走らせる`~task$
+◎
+↓</li>
+			<li>
+~IF［
+~UAは、 %文書 を`~unload$しつつある
+］
+⇒
+`文書~unload時の可視性~変更~手続き$の間に， %~task を走らす。
+◎
 If the user agent is to unload the Document, run the now hidden algorithm during the unloading document visibility change steps.
-</span></li>
+</li>
 
 			<li>
-他の場合、<a>now hidden アルゴリズム</a>を実行する<a>タスクを待ち行列に入れる</a>。
-<span lang="en">
+~ELSE
+⇒
+%~task を`待入する$
+◎
 Otherwise, queue a task that runs the now hidden algorithm.
-</span></li>
+</li>
 		</ol>
 	</li>
 </ol>
 
 <p>
-<dfn id="now-visible-algorithm">now visible アルゴリズム</dfn>
-は、次の手続きを同期的に実行する：
-<span lang="en">
+`~now~visible~algo@
+は、次の手続きを同期的に走らす：
+◎
 The now visible algorithm runs the following steps synchronously:
-</span></p>
+</p>
 
 <ol>
 	<li>
-<var>doc</var> :← <a>トップレベル閲覧文脈</a> の <a>Document</a>
-<span lang="en">
+`~top-level閲覧文脈$の`文書$に向けて，名前 `visibilitychange^et の`単純~eventを発火する$
+◎
 Let doc be the Document of the top level browsing context.
-</span></li>
-
-	<li>
-<var>doc</var> に向けて、［
-浮上する, かつ
-取消不可, かつ
-既定動作を持たない
-］ような，名前 <code class="event">visibilitychange</code> の<a>単純イベントを発火する</a>。
-<span lang="en">
+◎
 Fire a simple event named visibilitychange that bubbles, isn't cancelable, and has no default action, at the doc.
-</span></li>
+</li>
 </ol>
 
 <p>
-<dfn id="now-hidden-algorithm">now hidden アルゴリズム</dfn>
-は、次の手続きを同期的に実行する：
-<span lang="en">
+`~now~hidden~algo@
+は、次の手続きを同期的に走らす：
+◎
 The now hidden algorithm runs the following steps synchronously:
-</span></p>
+</p>
 
 <ol>
-
 	<li>
-<var>doc</var> :← <a>トップレベル閲覧文脈</a> の <a>Document</a>
-<span lang="en">
+`~top-level閲覧文脈$の`文書$に向けて，名前 `visibilitychange^et の`単純~eventを発火する$
+◎
 Let doc be the Document of the top level browsing context.
-</span></li>
-
-	<li>
-<var>doc</var> に向けて、［
-浮上する, かつ
-取消不可である, かつ
-既定動作を持たない
-］ような，名前 <code class="event">visibilitychange</code> の<a>単純イベントを発火する</a>。
-<span lang="en">
+◎
 Fire a simple event named visibilitychange that bubbles, isn't cancelable, and has no default action, at the doc.
-</span></li>
+</li>
 </ol>
+
+<p>
+他から指定されない限り、
+`visibilitychange^et には，既定動作はない。
+◎
+↑</p>
+
+
+<div id="_event_tester_placeholder"></div>
 
 	</section>
 	<section id="privacy">
 
-<h2 title="Privacy">6. プライバシー</h2>
+<h2 title="Privacy">7. ~privacy</h2>
 
 <p>
 <em>Page Visibility API</em>
-は、ウェブ­ページ上の第三者主体による内容からも，
-<a>トップレベル閲覧文脈</a>に包含されている
-<a>Document</a> の可視性を（ <a class="event">focus</a> や <a class="event">blur</a> イベントなどの既存の仕組みよりも詳細に）判別できるようにする。
-しかしながら，実用的な見地からは、この追加の公開が プライバシーに大きく響くものとは考えられていない。
-<span lang="en">
+は、~web~page上の第三者主体による内容からも，
+`~top-level閲覧文脈$に包含されている`文書$の可視性を（ `focus$et や `blur$et ~eventなどの既存の仕組みより高い精度で）決定できるようにする。
+しかしながら，実施上の見地からは、この追加の公開が ~privacyに大きく響くとは考えられていない。
+◎
 The Page Visibility API enables third party content on a web page to determine the visibility of the Document contained by the top level browsing context with higher precision compared to existing mechanisms, like focus or blur events. However, for practical considerations, the additional exposure is not substantial.
-</span></p>
+</p>
 
 	</section>
 	<section id="terminology">
-<h2 title="Terminology">7. 各種用語</h2>
+<h2 title="Terminology">8. 各種用語</h2>
+
 <p>
-次に挙げる
-概念／インタフェース
-は
-<a>[HTML5]</a> 仕様にて定義される：
-<span lang="en">
-The following concepts and interfaces are defined in the [HTML5] specification:
+以下に挙げる概念や用語は、
+`HTML51$r 仕様に定義される：
+◎
+The following concepts and interfaces are defined in the [HTML51] specification:
+</p>
 <!-- 
 
+この節の内容（外部~仕様に定義される用語の一覧）の和訳は、省略する（代わりに用語には当の仕様へのリンクを直接あてがっている）。
+
+ -->
+<div >
+
+
+<ul ><li>`Document@I ~interface
+（<a href="~HTMLDOM#document">参照先</a>）
+<span class="trans-note">【
+この訳では、 `Document$I ~objを単に`文書$と略記する。
+】</span>
+</li><li>`defaultView@m 属性
+（<a href="~HTML5x/browsers.html#dom-window-defaultview">参照先</a>）
+</li><li>`blur@et ~event
+（<a href="~HTML5x/fullindex.html#eventdef-global-blur">参照先</a>）
+</li><li>`focus@et ~event
+（<a href="~HTML5x/fullindex.html#eventdef-global-focus">参照先</a>）
+</li><li>`pageshow@et ~event
+（<a href="~HTML5x/fullindex.html#eventdef-global-pageshow">参照先</a>）
+</li><li>`単純~eventを発火する@
+（<a href="~WAPI#fire-a-simple-event">参照先</a>）
+</li><li>`~event~handler IDL 属性@
+（<a href="~WAPI#event-handler-idl-attributes">参照先</a>）
+</li><li>`利用者~対話~task源@
+（<a href="~WAPI#user-interaction-task-source">参照先</a>）
+</li><li>`~task@
+（<a href="~WAPI#concept-task">参照先</a>）
+</li><li>~taskを`待入する@
+（<a href="~WAPI#queue-a-task">参照先</a>）
+</li><li>`~task源@
+（<a href="~WAPI#task-source">参照先</a>）
+</li><li>`~top-level閲覧文脈@
+（<a href="~HTML5x/browsers.html#top-level-browsing-context">参照先</a>）
+</li><li>`~session履歴~entry@
+（<a href="~HTML5x/browsers.html#session-history-entry">参照先</a>）
+</li><li>`~unload@
+（<a href="~HTML5x/browsers.html#unloading-documents">参照先</a>）
+</li><li>`文書~unload時の可視性~変更~手続き@
+（<a href="~HTML5x/browsers.html#unloading-document-visibility-change-steps">参照先</a>）
+</li><li>`事前具現化-@
+（<a href="~TR/resource-hints/#prerender">参照先</a>）
+</li></ul>
+
+<pre lang="en">
 defaultView
 pageshow
 session history entry
-    top level browsing context
-    unloading document visibility change steps
-    unload
-    Document
-    blur
-    focus
-    queue a task
-    task source
-    task
--->
-</span></p>
+top level browsing context
+unloading document visibility change steps
+unload
+Document
+blur
+focus
+queue a task
+task source
+task
 
-<dl class="def-list">
-	<dt id="dfn-defaultview"><a href="http://www.w3.org/TR/html5/browsers.html#dom-document-defaultview"><code>defaultView</code></a></dt>
+The [DOM4] specification defines how to fire a simple event.
+</pre>
 
-	<dt id="dfn-pageshow"><a href="http://www.w3.org/TR/html5/browsers.html#event-pageshow" class="event">pageshow</a></dt>
-
-	<dt id="dfn-session-history-entry"><a href="http://www.w3.org/TR/html5/browsers.html#session-history-entry">セッション履歴エントリ</a></dt>
-
-	<dt id="dfn-top-level-browsing-context"><a href="http://www.w3.org/TR/html5/browsers.html#top-level-browsing-context"
->トップレベル閲覧文脈</a></dt>
-
-	<dt id="dfn-unloading-document-visibility-change-steps"><a href="http://www.w3.org/TR/html5/browsers.html#unloading-document-visibility-change-steps">unloading 文書の可視性­変更­手続き</a></dt>
-
-	<dt id="dfn-unload"><a href="http://www.w3.org/TR/html5/browsers.html#unloading-documents">unload </a></dt>
-
-	<dt id="#dom-document"><a href="http://www.w3.org/TR/html5/dom.html#document">Document</a></dt>
-
-	<dt id="dfn-blur"><a href="http://www.w3.org/TR/html5/editing.html#focus-management" class="event">blur</a></dt>
-
-	<dt id="dfn-focus"><a href="http://www.w3.org/TR/html5/editing.html#focus-management" class="event">focus</a></dt>
-
-	<dt id="dfn-queue-a-task"><a href="webappapis-ja.html#queue-a-task">タスクを待ち行列に入れる</a></dt>
-
-	<dt id="dfn-task-source"><a href="webappapis-ja.html#task-source">タスク源</a></dt>
-
-	<dt id="dfn-task"><a href="webappapis-ja.html#concept-task">タスク</a></dt>
-</dl>
-
-<p>
-次のものは <a>[DOM4]</a> 仕様に定義される：
-<span lang="en">
-The [DOM4] specification defines how to fire a simple event. 
-</span></p>
-
-<dl class="def-list">
-	<dt id="dfn-fire-a-simple-event"><a href="https://dom.spec.whatwg.org/#concept-event-fire">単純イベントを発火する</a></dt>
-</dl>
+</div>
 
 
 	</section>
-
-</div><!-- END id="MAIN" -->
-
 	<section id="acknowledgments">
+<h2 title="Acknowledgements">謝辞</h2>
 
-<h2 title="Acknowledgements">A. 謝辞</h2>
 <p>
-この仕事に対する，次の方々による寄与に謝意を：
+次の方々による，この仕事への協力に謝意を：
 </p>
 
 <p >
@@ -973,159 +1328,72 @@ We would like to sincerely thank Karen Anderson, Nic Jansma, Alex Komoroske, Cam
 </p>
 
 	</section>
-	<section id="conformance">
-<h2 title="Conformance">B. 適合性</h2>
+    <section id="changes">
+<h2 title="Changes">変更点</h2>
 
-<p class="trans-note">【
-この節の内容は
-<a href="w3c-common-ja.html#conformance" >W3C 日本語訳 共通ページ</a>
-に委譲
-】</p>
-<!-- 
-<a href="w3c-common-ja.html#terminology" >W3C 日本語訳 共通ページ</a>
+~INFORMATIVE
 
-As well as sections marked as non-normative, all authoring guidelines, diagrams, examples, and notes in this specification are non-normative. Everything else in this specification is normative.
+<p>
+<a href="https://www.w3.org/TR/2013/REC-page-visibility-20131029/">2013 年 10 月 29 日付 Page Visibility （第 2 版）</a>
+からの変更点は：
+◎
+The following where changes since Page Visibility (Second Edition) 29 October 2013:
+</p>
 
-The key words MAY, MUST, and OPTIONAL are to be interpreted as described in [RFC2119]. 
--->
+<ul>
+	<li>
+`VisibilityState$I の `unloaded^l 値は，除去された。
+◎
+VisibilityState.unloaded has been removed.
+</li>
+	<li>
+`hidden$m 属性は歴史的にされた。
+代わりに `visibilityState$m を利用すること。
+◎
+Document.hidden is historical. Use Document.visibilityState instead.
+</li>
+	<li>
+`onvisibilitychange$m ~event~handler IDL 属性が追加された。
+◎
+Document.onvisibilitychange has been added.
+</li>
+	<li>
+処理~modelと~algoに対する種々の増補と明確化。
+◎
+Various enhancements and clarifications in the processing model and algorithms.
+</li>
+</ul>
+
 
 	</section>
+
+</main></div><!-- MAIN -->
+
 	<section id="references">
-<h2 title="References">C. 参照文献</h2>
+<h2 title="References">参照文献</h2>
 
 		<section id="normative-references">
 
-<h3 title="Normative references">C.1 文献（規範的）</h3>
+<h3 title="Normative references">文献（規範的）</h3>
 
 <dl>
 	<dt>[DOM4]</dt>
-	<dd>Anne van Kesteren; Aryeh Gregor; Ms2ger; Alex Russell; Robin Berjon. W3C DOM4. 18 June 2015. W3C Last Call Working Draft.</dd>
-	<dd>http://www.w3.org/TR/dom/</dd>
+	<dd>Anne van Kesteren; Aryeh Gregor; Ms2ger; Alex Russell; Robin Berjon. W3C. W3C DOM4. 19 November 2015. W3C Recommendation.</dd>
+	<dd>https://www.w3.org/TR/dom/</dd>
 
-	<dt>[HTML5]</dt>
-	<dd>Ian Hickson; Robin Berjon; Steve Faulkner; Travis Leithead; Erika Doyle Navara; Edward O'Connor; Silvia Pfeiffer. HTML5. 28 October 2014. W3C Recommendation.</dd>
-	<dd>http://www.w3.org/TR/html5/</dd>
+	<dt>[HTML51]</dt>
+	<dd>Steve Faulkner; Arron Eicholz; Travis Leithead; Alex Danilo. W3C. HTML 5.1. 21 June 2016. W3C Candidate Recommendation.</dd>
+	<dd>https://www.w3.org/TR/html51/</dd>
+
+	<dt>[RESOURCE-HINTS]</dt>
+	<dd>Ilya Grigorik. W3C. Resource Hints. 27 May 2016. W3C Working Draft.</dd>
+	<dd>https://www.w3.org/TR/resource-hints/</dd>
 
 <!-- 
 	<dt>[RFC2119]</dt>
-	<dd>S. Bradner. Key words for use in RFCs to Indicate Requirement Levels. March 1997. Best Current Practice.</dd>
-	<dd>https://tools.ietf.org/html/rfc2119</dd>
  -->
-
-	<dt>[animation-timing]</dt>
-	<dd>James Robinson; Cameron McCormack. Timing control for script-based animations. 22 September 2015. W3C Note.</dd>
-	<dd>http://www.w3.org/TR/animation-timing/</dd>
 
 </dl>
 
 		</section>
 	</section>
-
-
-<!--% DATA SECTION -->
-<div style="display:none;">
-
-<input type="hidden" id="_page_config" value="" />
-
-
-<script type="text/plain" id="_link_map1">
-hidden:#hidden-attribute
-visibilityState:#visibilitystate-attribute
-visibilitychange:#dfn-visibilitychange
-	onvisibilitychange
-
-	http://www.w3.org/TR/html5/webappapis.html
-利用者­対話タスク源:webappapis-ja.html#user-interaction-task-source
-	タスクを待ち行列に入れる:webappapis-ja.html#queue-a-task
-	タスク源:webappapis-ja.html#task-source
-	タスク:webappapis-ja.html#concept-task
-	イベントハンドラ IDL 属性:webappapis-ja.html#event-handler-idl-attributes
-
-
-[HTML5]:#bib-HTML5
-[DOM4]:#bib-HTML5
-[animation-timing]:#bib-animation-timing
-
-事前描画:https://w3c.github.io/resource-hints/#prerender
-
-	now hidden アルゴリズム:#dfn-now-hidden-algorithm
-	now visible アルゴリズム:#dfn-now-visible-algorithm
-	steps to determine if the document is hidden#dfn-steps-to-determine-if-the-document-is-hidden
-	可視性状態#dfn-visibility-states
-	
-	DFN:Document#dom-document
-	DFN:animation task source#dfn-animation-task-source
-	DFN:blur#dfn-blur
-	DFN:defaultView#dfn-defaultview
-	DFN:fire a simple event#dfn-fire-a-simple-event
-	DFN:focus#dfn-focus
-	hidden#idl-def-.hidden
-	
-	pageshow#dfn-pageshow
-	prerender#idl-def-.prerender
-	DFN:queue a task#dfn-queue-a-task
-	DFN:session history entry#dfn-session-history-entry
-	DFN:steps to determine the visibility state#dfn-steps-to-determine-the-visibility-state
-	DFN:task source#dfn-task-source
-	DFN:task#dfn-task
-	DFN:top level browsing context#dfn-top-level-browsing-context
-	DFN:unload#dfn-unload
-	＊unloaded#idl-def-.unloaded
-	unloading document visibility change steps#dfn-unloading-document-visibility-change-steps
-	visible#idl-def-.visible
-
-
-</script>
-<script type="text/plain" id="_class_map1">
-</script>
-<!-- 
-
-	W3C 日本語訳 共通ページ:w3c-common-ja.html#conformance
-	W3C 日本語訳 共通ページ:w3c-common-ja.html#terminology
-	unloading document visibility change steps:http://www.w3.org/TR/html5/browsers.html#unloading-document-visibility-change-steps
-	セッション履歴エントリ:http://www.w3.org/TR/html5/browsers.html#session-history-entry
-	トップレベル閲覧文脈:http://www.w3.org/TR/html5/browsers.html#top-level-browsing-context
--->
-
-
-<script>
-new function(){
-	var map = Object.create(null);
-	repeat("#MAIN dt[id], #MAIN dfn[id]", function(e){
-		var text = wrap(e);
-		map[text] = '#' + e.id;
-	});
-
-	Util.getMapping('_link_map1', {map:map});
-
-	repeat('#MAIN a', function(e){
-		var text = wrap(e);
-		if(e.href) return;
-		var href = map[text];
-		if(!href){
-//			console.log(text) //＊
-			return;
-		}
-		e.href = href;
-	});
-
-	function wrap(e){
-		var text = e.textContent;
-		if(/^"\w+"$/.test(text)){
-e.innerHTML = '"<code class="literal">' + text.slice(1,-1) + '</code>"'
-		} else if( (e.parentNode.tagName !== 'PRE') 
-			&& /^\w+$/.test(text)){
-			var code = document.createElement('code');
-			code.appendChild(e.firstChild);
-			e.insertBefore(code, e.firstChild);
-		}
-		return text;
-	}
-}
-</script>
-</div>
-
-
-</body>
-</html>
-
