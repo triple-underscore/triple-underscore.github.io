@@ -884,6 +884,7 @@ Util.dfnInit = function(){
 	var handlers = this.CLICK_HANDLERS;
 	handlers.DT =
 	handlers.DFN =
+	handlers.H1 =
 	handlers.H2 =
 	handlers.H3 =
 	handlers.H4 =
