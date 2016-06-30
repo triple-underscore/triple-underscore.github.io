@@ -24,18 +24,6 @@ function repeat(selector, callback){
 	}
 }
 
-if(!window.console){
-	window.console = EMPTY_FUNC;
-}
-
-
-new function(){
-	window.addEventListener("beforeunload", function(event) {
-		history.replaceState({ scroll_pos: window.scrollY }, '');
-		//console.log('beforeunload');
-	});
-}
-
 // 予約済みメンバ
 var Util = {
 	_COMP_: false,
@@ -83,9 +71,12 @@ var Util = {
 
 	switchView: EMPTY_FUNC,
 	ref_position: null,
+//	supportsListenerOptions: false,
 
 	XXXXX: EMPTY_FUNC
 };
+
+
 
 /* 改行／コロン区切りの文字列データから連想配列を取得
 引数
@@ -282,6 +273,7 @@ Util.del_j = function(){
 };
 
 
+
 var PAGE_DATA = {};
 
 var COMMON_DATA = {
@@ -308,6 +300,26 @@ var COMMON_DATA = {
 
 
 COMMON_DATA.saveStorage = EMPTY_FUNC;
+
+
+new function(){
+	if(!window.console){
+		window.console = { log: EMPTY_FUNC };
+	}
+
+	window.addEventListener("beforeunload", function(event) {
+		history.replaceState({ scroll_pos: window.scrollY }, '');
+		//console.log('beforeunload');
+	});
+
+/*	try {
+		var opts = Object.defineProperty({}, 'passive', {
+			get: function() { Util.supportsListenerOptions = true;}
+		});
+		window.addEventListener("test", null, opts);
+	} catch (e) {}
+*/
+}
 
 new function(){
 	// meta with viewport for mbile (ideally, should be set by CSS, not meta tag)
@@ -377,33 +389,6 @@ new function(){
 			return page_state;
 		}
 	}
-
-/*
-	// 表示状態を hidden field から読み込む
-	function get_state(){
-		var page_state = null;
-		if(!E('_page_config')) return;
-		page_state = E('_page_config').value;
-
-		COMMON_DATA.saveStorage = save_state;
-
-		if(! page_state || (page_state.length > 1000)) return;
-		try {
-			page_state = JSON.parse(page_state);
-		} catch(e) {
-			return;
-		}
-
-		if(page_state instanceof Object){
-			return page_state;
-		}
-	}
-
-	// 表示状態を hidden field に保存
-	function save_state(data){
-		E('_page_config').value = JSON.stringify(data);
-	}
-*/
 }
 
 

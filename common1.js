@@ -727,11 +727,11 @@ Util.ref_position = {
 
 		window.addEventListener('resize', onreflow, false);
 		window.addEventListener('orientationchange', onreflow, false);
-	
-		 window.setTimeout(function(){
+
+		window.setTimeout(function(){
 			ref_position.releaseAndFix();
 		}, 500);
-	
+
 		function onreflow(){
 			if(reflow_timer){
 				clearTimeout(reflow_timer);
@@ -892,15 +892,16 @@ Util.dfnInit = function(){
 	handlers.H6 = dfnShow;
 	return;// dfnShow;
 
-	function originalID(id, e, is_header){
-		if(!PAGE_DATA.original_url) return '';
-		if(!is_header && PAGE_DATA.no_original_dfn) return '';
+	function setLinkForOriginal(id, is_header){
+		// 原文リンク先を設定
+		dfnOriginal.style.display = 'none';
 
-		if(id.charAt(0) === '_') return ''; // 和訳固有の id
-		if(id in original_id_map){
-			return original_id_map[id];
-		}
-		return id;
+		if(id.charAt(0) === '_') return; // 和訳固有の id
+		if(!is_header && PAGE_DATA.no_original_dfn) return;
+		if(!PAGE_DATA.original_url) return;
+
+		dfnOriginal.href = PAGE_DATA.original_url + '#' + (original_id_map[id] || id);
+		dfnOriginal.style.display = '';
 	}
 
 	function dfnHide(){
@@ -964,15 +965,8 @@ Util.dfnInit = function(){
 		dfnIndex = -1;
 //		dfnTargetScrollPositionY = window.scrollY;
 
-		var original_id = originalID(id, dfn, is_header);
-		if(original_id){
-			dfnOriginal.href = PAGE_DATA.original_url + '#' + original_id;
-			dfnOriginal.style.display = '';
-		} else {
-			dfnOriginal.style.display = 'none';
-		}
+		setLinkForOriginal(id, is_header);
 
-		// http://www.w3.org/TR/selectors-api/#queryselector
 		// 合致するものが無ければ空の NodeList
 		dfnIndecies = [];
 		dfnLinks = document.querySelectorAll(
