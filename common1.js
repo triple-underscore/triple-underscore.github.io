@@ -9,12 +9,21 @@ CLICK_HANDLERS
 /******** 付帯機能 *********/
 
 /** 付帯機能 初期化
-	original_url: URL
+PAGE_DATA member
+	spec_status:
+		ED, REC, etc.
+	original_url:
 		原文 URL
-	main: 'MAIN',
-	toc: 目次 id
-	alt_refs: 'references',
-	word_switch: false
+	original_id_map
+		
+	main:
+		'MAIN'
+	toc:
+		目次 id
+	alt_refs:
+		'references',
+	word_switch:
+		false
 	no_index:
 		用語索引なしならば true
 	no_original_dfn:
@@ -23,6 +32,10 @@ CLICK_HANDLERS
 		要素内容の text を URL としてリンクを作成させる
 	expanded:
 		page は展開状態で保存されている
+	ref_id_lowercase
+		小文字 id
+	ref_id_prefix
+		'biblio-' etc.
 */
 
 
@@ -232,18 +245,16 @@ Util.CLICK_HANDLERS = {
 /** 原文表示切替 */
 Util.CLICK_HANDLERS._toggle_source = function(){
 	Util.switchView(function(){
-		COMMON_DATA.setState('show_original',
-			Util.toggleClass(document.body, 'show-original')
-		);
+		var on = Util.toggleClass(document.body, 'show-original');
+		COMMON_DATA.setState('show_original', on);
 	});
 };
 /** 目次表示切替 */
 Util.CLICK_HANDLERS._toggle_toc = function(){
 	Util.switchView(function(){
-		COMMON_DATA.setState('side_menu', 
-			Util.toggleClass(document.body, 'side-menu')
-		);
+		var on = Util.toggleClass(document.body, 'side-menu');
 		Util.ref_position.releaseAndFix()
+		COMMON_DATA.setState('side_menu', on);
 	});
 };
 /** 全体表示 常時化切替 */

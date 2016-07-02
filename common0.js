@@ -71,6 +71,8 @@ var Util = {
 
 	switchView: EMPTY_FUNC,
 	ref_position: null,
+	page_state: Object.create(null),
+	saveStorage: EMPTY_FUNC,
 //	supportsListenerOptions: false,
 
 	XXXXX: EMPTY_FUNC
@@ -273,33 +275,32 @@ Util.del_j = function(){
 };
 
 
-
-var PAGE_DATA = {};
+var PAGE_DATA = {}; // see common1.js for possible members
 
 var COMMON_DATA = {
-	PAGE_STATE: {},
+	// TODO move to Util
 	getState: function(key, default_val, type){
-		if(! (key in this.PAGE_STATE) ) return default_val;
-		var val = this.PAGE_STATE[key];
+		if(! (key in Util.page_state) ) return default_val;
+		var val = Util.page_state[key];
 		return (type && (typeof(val) !== type))? default_val : val;
 	},
 	setState: function(key, val){
-		var data = this.PAGE_STATE;
-		var old_val = data[key];
+		var page_state = Util.page_state;
+		var old_val = page_state[key];
 		if(val === old_val) return;
 		if(val === undefined){
-			delete PAGE_STATE[key];
+			delete page_state[key];
 		} else {
-			data[key] = val;
+			page_state[key] = val;
 		}
-		this.saveStorage(data);
+
+		history.replaceState( page_state, '' );
+		Util.saveStorage(page_state);
 	},
+
 	page_state_key: null,
 	init : null
 };
-
-
-COMMON_DATA.saveStorage = EMPTY_FUNC;
 
 
 new function(){
@@ -307,12 +308,8 @@ new function(){
 		window.console = { log: EMPTY_FUNC };
 	}
 
-	window.addEventListener("beforeunload", function(event) {
-		history.replaceState({ scroll_pos: window.scrollY }, '');
-		//console.log('beforeunload');
-	});
-
-/*	try {
+/*
+	try {
 		var opts = Object.defineProperty({}, 'passive', {
 			get: function() { Util.supportsListenerOptions = true;}
 		});
@@ -338,10 +335,14 @@ new function(){
 
 	// 初期化
 	function init(){
+		document.removeEventListener('DOMContentLoaded', init, false);
 
 		// 利用者 表示設定
-		var page_state = (JSON && get_state()) || {};
-		COMMON_DATA.PAGE_STATE = page_state;
+
+		var page_state = (JSON && get_state()) // setup saveStorage
+		Util.page_state =
+		page_state = history.state || page_state || Util.page_state;
+
 		if(page_state.show_original){
 			Util.toggleClass(document.body, 'show-original')
 		}
@@ -351,7 +352,12 @@ new function(){
 		if(COMMON_DATA.init) {
 			Util.initAdditional(COMMON_DATA.init(E('view_control')), page_state);
 		}
-		document.removeEventListener('DOMContentLoaded', init, false);
+/*
+		window.addEventListener("beforeunload", function(event) {
+			history.replaceState( Util.page_state, '' );
+		}
+*/
+
 	}
 
 	// 表示状態を DOM Storage / hidden field から読み込む
@@ -363,7 +369,7 @@ new function(){
 		try {
 // sessionStorage property へのアクセスのみでも security error になることがある
 			page_state = sessionStorage.getItem(storage_key);
-			COMMON_DATA.saveStorage = function(data){
+			Util.saveStorage = function(data){
 				sessionStorage.setItem(storage_key, JSON.stringify(data));
 			};
 		} catch(e){
@@ -373,7 +379,7 @@ new function(){
 			if(!elem) return;
 
 			page_state = elem.value;
-			COMMON_DATA.saveStorage = function(data){
+			Util.saveStorage = function(data){
 				elem.value = JSON.stringify(data);
 			};
 		}
@@ -434,16 +440,7 @@ Util.initAdditional = function(options){
 
 /** 内容生成／load 後に素片識別子のアンカーにジャンプ */
 	function navToInit(){
-
-//		history.scrollRestoration = 'manual';
-		window.addEventListener("beforeunload", function(event) {
-			history.replaceState(
-				{ scroll_pos: [window.scrollX, window.scrollY] }, ''
-			);
-		});
-		if(scrollToState()){
-			return;
-		};
+		if( history.state ) return; // back/forward
 
 		var id = targetId();
 		if(!id) return;
@@ -458,15 +455,7 @@ Util.initAdditional = function(options){
 			}
 			e.focus();
 		}
-
-		function scrollToState(){
-			var state = history.state;
-			if(!state) return false;
-			var pos = state.scroll_pos;
-			if(!pos) return false;
-			window.scrollTo(pos[0], pos[1]);
-			return true;
-		}
+		history.replaceState( Util.page_state, '' );
 
 		function targetId(){
 			var hash = window.location.hash;
