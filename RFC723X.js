@@ -1640,7 +1640,6 @@ referrer::::リファラ\n\
 回答:answer:~\n\
 対処-:work around:~\n\
 対処法:workaround:~\n\
-因子:factor:~\n\
 困難:difficult:~\n\
 図:figure:~\n\
 図式:diagram:~\n\
