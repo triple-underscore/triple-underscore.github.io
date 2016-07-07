@@ -286,7 +286,9 @@ m.returnValue:~HTML-BROWSE#dom-beforeunloadevent-returnvalue
 m.click:~HTML-INTERACT#dom-click
 m.onmessage:~HTML-COMMS#handler-messageport-onmessage
 m.postMessage:~HTML-COMMS#dom-window-postmessage
-m.Worker:~WORKERS#dom-worker
+	＊m.Worker:~WORKERS#dom-worker
+m.MessageChannel:~HTML-COMMS#dom-messagechannel
+
 
 	~UIEVENTS#dom-mouseevent-XXXXX
 		screenX, screenY, clientX, clientY, button, relatedTarget
@@ -573,6 +575,7 @@ gL.~Realm:#concept-global-object-realm
 関連する~Realm:#concept-relevant-realm
 
 要請を設定しておく:#fetching-scripts-set-up-request
+~fetchを遂行する:#fetching-scripts-perform-fetch
 応答を処理する:#fetching-scripts-process-response
 
 ~scriptを走らすために準備する:#prepare-to-run-script
@@ -747,6 +750,7 @@ x.~fetch:~FETCH#concept-fetch
 x.~MIME型を抽出-:~FETCH#concept-header-extract-mime-type
 x.要請:~FETCH#concept-request
 x.応答:~FETCH#concept-response
+x.~network~error:~FETCH#concept-network-error
 x.応答を処理する:~FETCH#process-response
 x.終了-:~FETCH#concept-fetch-terminate
 x.~HTTPS状態~値:~FETCH#concept-https-state-value
@@ -793,7 +797,6 @@ js.TypeError:~ES6#sec-native-error-types-used-in-this-standard-typeerror
 jA.EnqueueJob:~ES6#sec-enqueuejob
 jA.FunctionBody:~ES6#prod-FunctionBody
 jA.FunctionCreate:~ES6#sec-functioncreate
-	＊jA.GetActiveScriptOrModule():~ES6#sec-getactivescriptormodule
 jA.HostEnsureCanCompileStrings:~ES6#sec-hostensurecancompilestrings
 jA.HostPromiseRejectionTracker:~ES6#sec-host-promise-rejection-tracker
 jA.HostResolveImportedModule:~ES6#sec-hostresolveimportedmodule
@@ -1150,6 +1153,7 @@ task::::タスク
 同期区間:synchronous section::~
 同期的な:synchronous::~
 非同期的な:asynchronous::~
+非同期:asynchronous:~
 	古い:old:~
 近過去:recent:~
 遠過去:old:~
@@ -1226,7 +1230,6 @@ task::::タスク
 再帰的:recursive:~
 重複:deduplicate:~
 構文:syntax:~
-非同期:asynchronous:~
 完了-:complete:~
 無視-:ignore:~
 差挟まれ:interleaveされ:差し挟まれ
@@ -1872,7 +1875,7 @@ data::::データ
 </p>
 
 <p>
-更新： <time>2016-07-01</time>
+更新： <time>2016-07-07</time>
 （公開：<time>2016-01-08</time> ）
 </p>
 
@@ -1895,7 +1898,7 @@ data::::データ
 
 	<hgroup>
 <h1>スクリプト処理 — Scripting</h1>
-<h2>HTML Living Standard — 最終更新 2016 年 6 月 30 日</h2>
+<h2>HTML Living Standard — 最終更新 2016 年 7 月 6 日</h2>
 	</hgroup>
 
 </header>
@@ -2431,9 +2434,9 @@ An environment settings object also has an outstanding rejected promises weak se
 <h4 title="Fetching scripts">8.1.3.2. ~scriptの~fetching</h4>
 
 <p>
-下に示す，~scriptを~fetchする種々の~algoには、~call元により~customizeできる 2 つの~hookがある：
+下に示す，~scriptを~fetchする種々の~algoには、~call元により~customizeできる 3 つの~hookがある：
 ◎
-The various script-fetching algorithms below have two hooks that may be customized by their callers:
+The various script-fetching algorithms below have three hooks that may be customized by their callers:
 </p>
 
 <ul>
@@ -2442,6 +2445,13 @@ The various script-fetching algorithms below have two hooks that may be customiz
 手続きにより、~algoを継続する前に`要請$xを改変できる。
 ◎
 Set up the request, which takes a request which it may modify before the algorithm continues
+</li>
+	<li>
+`~fetchを遂行する@
+手続きは、与えられた`要請$xに対し，`応答$xを結果として（`~network~error$xにもなり得る）
+`非同期に完了-$し~MUST
+◎
+Perform the fetch, which takes a request and must asynchronously complete with a response (which may be a network error)
 </li>
 	<li>
 `応答を処理する@
@@ -2488,9 +2498,9 @@ To fetch a classic script for a script element element, given a url, a CORS sett
 %要請 ~LET
 次を与える下で，`~CORSになり得る要請を作成-$した結果
 ⇒
-( %~url, %~CORS設定 )
+( %~url, `script^l, %~CORS設定 )
 ◎
-Let request be the result of creating a potential-CORS request given url and CORS setting.
+Let request be the result of creating a potential-CORS request given url, "script", and CORS setting.
 </li>
 	<li>
 <p>
@@ -2499,42 +2509,64 @@ Let request be the result of creating a potential-CORS request given url and COR
 
 <ul ><li>`~client$rq ~SET %設定群~obj
 </li><li>`種別$rq ~SET `script^l
-</li><li>`行先$rq ~SET `script^l
 </li><li>`暗号用~nonce~metadata$rq ~SET %暗号用~nonce
 </li><li>`構文解析器~metadata$rq ~SET %構文解析器~状態
 </li></ul>
 ◎
-Set request's client to settings object, its type to "script", its destination to "script", its cryptographic nonce metadata to cryptographic nonce, and its parser metadata to parser state.
+Set request's client to settings object, its type to "script", its cryptographic nonce metadata to cryptographic nonce, and its parser metadata to parser state.
 </li>
 	<li>
 ~IF［
-この~algoの~call元にて，`要請を設定しておく$~custom手続きが指定されている
+この~algoの~call元にて，`要請を設定しておく$~custom手続き %A が指定されている
 ］
 ⇒
-%要請 に対し，それを遂行する
+%要請 に対し %A を遂行する
 ◎
 If the caller specified custom steps to set up the request, perform them on request.
 </li>
 	<li>
-%要請 を`~fetchする$x
-◎
-Fetch request.
-</li>
-
-	<li>
+<div class="p">
 <p>
+~IF［
+この~algoの~call元にて，`~fetchを遂行する$~custom手続き %A が指定されている
+］：
+</p>
+		<ol>
+			<li>
+%要請 に対し %A を遂行する
+</li>
+			<li>
+~RET
+— ただし，以降の手続きは、 %A を完了した結果の`応答$x %応答 に対し走らす
+</li>
+		</ol>
+◎
+If the caller specified custom steps to perform the fetch, perform them on request. Return from this algorithm, and when the custom perform the fetch steps complete with response response, run the remaining steps.
+</div>
+
+<div class="p">
+<p>
+~ELSE：
+</p>
+		<ol>
+			<li>
+%要請 を`~fetchする$x
+</li>
+			<li>
 ~RET
 — ただし，以降の手続きは、［
 ~fetchした結果の`応答$x %応答に対し`応答を処理する$x
-］一部として走らす：
+］一部として走らす
+</li>
+		</ol>
 ◎
-Return from this algorithm, and run the remaining steps as part of the fetch's process response for the response response.
-</p>
+Otherwise, fetch request. Return from this algorithm, and run the remaining steps as part of the fetch's process response for the response response.
+</div>
 
 <p class="note">注記：
 %応答 は、［
 `~CORS同一生成元$, `~CORS非同一生成元$
-］のいずれかになり得る。
+］のいずれにもなり得る。
 これは、~error報告がどう起こるかにのみ影響する。
 ◎
 response can be either CORS-same-origin or CORS-cross-origin. This only affects how error reporting happens.
@@ -2638,8 +2670,6 @@ Asynchronously complete this algorithm with script.
 ］いずれかを結果として，`非同期に完了-$する：
 ◎
 To fetch a classic worker script given a url, a settings object, and a destination, run these steps. The algorithm will asynchronously complete with either null (on failure) or a new classic script (on success).
-
-, a referrer, 
 </p>
 
 
@@ -2663,26 +2693,55 @@ Let request be a new request whose url is url, client is settings object, type i
 </li>
 	<li>
 ~IF［
-この~algoの~call元にて，`要請を設定しておく$~custom手続きが指定されている
+この~algoの~call元にて，`要請を設定しておく$~custom手続き %A が指定されている
 ］
 ⇒
-%要請 に対し，それを遂行する
+%要請 に対し %A を遂行する
 ◎
 If the caller specified custom steps to set up the request, perform them on request.
 </li>
 	<li>
-%要請 を`~fetchする$x
-◎
-Fetch request.
+<div class="p">
+<p>
+~IF［
+この~algoの~call元にて，`~fetchを遂行する$~custom手続き %A が指定されている
+］：
+</p>
+		<ol>
+			<li>
+%要請 に対し %A を遂行する
 </li>
-	<li>
+			<li>
+~RET
+— ただし，以降の手続きは、 %A を完了した結果の`応答$x %応答 に対し走らす
+</li>
+		</ol>
+
+◎
+If the caller specified custom steps to perform the fetch, perform them on request. Return from this algorithm, and when the custom perform the fetch steps complete with response response, run the remaining steps.
+</div>
+
+<div class="p">
+<p>
+~ELSE：
+</p>
+		<ol>
+			<li>
+%要請 を`~fetchする$x
+</li>
+			<li>
 ~RET
 — ただし，以降の手続きは、［
 ~fetchした結果の`応答$x %応答に対し`応答を処理する$x
-］一部として走らす：
-◎
-Return from this algorithm, and run the remaining steps as part of the fetch's process response for the response response.
+］一部として走らす
 </li>
+		</ol>
+◎
+Otherwise, fetch request. Return from this algorithm, and run the remaining steps as part of the fetch's process response for the response response.
+</div>
+
+
+	</li>
 	<li>
 <p>
 ~IF［
@@ -2701,9 +2760,9 @@ Return from this algorithm, and run the remaining steps as part of the fetch's p
 </li>
 			<li>
 ［
-この~algoの~call元にて`応答を処理する$手続きが指定されている
+この~algoの~call元にて`応答を処理する$手続き %A が指定されている
 ］~AND［
-%応答 に対しそれを遂行した結果 ~EQ ~F
+%応答 に対し %A を遂行した結果 ~EQ ~F
 ］
 </li>
 		</ul>
@@ -2804,10 +2863,10 @@ If referrer is not given, let it be "client".
 %~referrer
 )
 — この~algoの~call元にて［
-`要請を設定しておく$ ／ `応答を処理する$
-］手続きが指定されている場合は、それらも~fetchする~algoに渡す。
+`要請を設定しておく$ ／ `~fetchを遂行する$ ／`応答を処理する$
+］~custom手続きが指定されている場合、それらも渡す。
 ◎
-Fetch a single module script given url, credentials mode, cryptographic nonce, parser state, destination, fetch client settings object, module map settings object, and referrer. If the caller of this algorithm specified custom set up the request or process the response steps, pass those along while fetching a single module script.
+Fetch a single module script given url, credentials mode, cryptographic nonce, parser state, destination, fetch client settings object, module map settings object, and referrer. If the caller of this algorithm specified custom set up the request, perform the fetch, or process the response steps, pass those along while fetching a single module script.
 </p>
 
 <p>
@@ -2963,11 +3022,11 @@ Otherwise, if url is not in ancestor list, add url to urls.
 %先祖~list,
 %~module~script の`基底~URL$mS
 )
+— この~algoの~call元にて`~fetchを遂行する$~custom手続きが指定されている場合、それも渡す。
 ◎
-For each url in urls, fetch a module script tree given url, module script's credentials mode, module script's cryptographic nonce, module script's parser state, destination, module script's settings object, module script's settings object, ancestor list, and module script's base URL.
-
-, and ancestor list.
+For each url in urls, fetch a module script tree given url, module script's credentials mode, module script's cryptographic nonce, module script's parser state, destination, module script's settings object, module script's settings object, ancestor list, and module script's base URL. If the caller of this algorithm specified custom perform the fetch steps, pass those along while fetching a module script tree.
 </p>
+
 
 <p class="note">注記：
 ここでは意図的に，［
@@ -2980,14 +3039,12 @@ It is intentional that no custom set up the request or process the response step
 
 		<ul>
 			<li>
-これらの~fetchのうち，いずれかが［
+これらの~fetchいずれかが［
 ~NULL を結果として，`非同期に完了-$した
 ］ときは
 ⇒
-~UAは、他のすべての~fetchを`終了-$xしてよい
-— その場合は
-⇒
-~NULL を結果として，`非同期に完了-$し~MUST
+~NULL を結果として，`非同期に完了-$する
+— ~UAは、他のすべての~fetchを`終了-$xしてよい
 ◎
 If any of the fetch a module script tree invocations asynchronously complete with null, the user agent may terminate any or all of the other fetches, and must then asynchronously complete this algorithm with null.
 </li>
@@ -3082,34 +3139,57 @@ Let request be a new request whose url is url, destination is destination, type 
 </li>
 	<li>
 ~IF［
-この~algoの~call元にて，`要請を設定しておく$~custom手続きが指定されている
+この~algoの~call元にて，`要請を設定しておく$~custom手続き %A が指定されている
 ］
 ⇒
-%要請 に対し，それを遂行する
+%要請 に対し %A を遂行する
 ◎
 If the caller specified custom steps to set up the request, perform them on request.
 </li>
 	<li>
-%要請 を`~fetchする$x
-◎
-Fetch request.
-</li>
-	<li>
+<div class="p">
 <p>
+~IF［
+この~algoの~call元にて，`~fetchを遂行する$~custom手続き %A が指定されている
+］：
+</p>
+		<ol>
+			<li>
+%要請 に対し %A を遂行する
+</li>
+			<li>
+~RET
+— ただし，以降の手続きは、 %A を完了した結果の`応答$x %応答 に対し走らす
+</li>
+		</ol>
+◎
+If the caller specified custom steps to perform the fetch, perform them on request. Return from this algorithm, and when the custom perform the fetch steps complete with response response, run the remaining steps.
+</div>
+
+<div class="p">
+<p>
+~ELSE：
+</p>
+		<ol>
+			<li>
+%要請 を`~fetchする$x
+</li>
+			<li>
 ~RET
 — ただし，以降の手続きは、［
 ~fetchした結果の`応答$x %応答に対し`応答を処理する$x
-］一部として走らす：
+］一部として走らす
+</li>
+		</ol>
 ◎
-Return from this algorithm, and run the remaining steps as part of the fetch's process response for the response response.
-</p>
+Otherwise, fetch request. Return from this algorithm, and run the remaining steps as part of the fetch's process response for the response response.
+</div>
 
 <p class="note">注記：
-%応答 は常に`~CORS同一生成元$である。
+%応答 は、常に`~CORS同一生成元$になる。
 ◎
 response is always CORS-same-origin.
 </p>
-
 	</li>
 	<li>
 <p>
@@ -3149,9 +3229,9 @@ For historical reasons, fetching a classic script does not include MIME type che
 			<li>
 <p>
 ［
-この~algoの~call元にて`応答を処理する$手続きが指定されている
+この~algoの~call元にて，`応答を処理する$~custom手続き %A が指定されている
 ］~AND［
-%応答 に対しそれを遂行した結果 ~EQ ~F
+%応答 に対し %A を遂行した結果 ~EQ ~F
 ］
 ◎
 The caller specified custom steps to process the response, which when performed on response return false
@@ -3202,7 +3282,7 @@ Set the value of the entry in module map whose key is url to module script, and 
 </p>
 
 <p class="note">注記：
-`~module~map$が`要請~URL$rqで~keyされる一方で，`~module~script$に対する`基底~URL$mSは`応答~URL$rsに設定されるのは、意図的である。
+`~module~map$は`要請~URL$rqで~keyされる一方で，`~module~script$の`基底~URL$mSは`応答~URL$rsに設定されるのは、意図的である。
 前者は~fetchを重複する`させなくする？^tnoteために利用される一方で、後者は~URL解決に利用される。
 ◎
 It is intentional that the module map is keyed by the request URL, whereas the base URL for the module script is set to the response URL. The former is used to deduplicate fetches, while the latter is used for URL resolution.
@@ -4396,26 +4476,28 @@ Consider the following very simple example:
 &lt;!DOCTYPE html&gt;
 &lt;iframe&gt;&lt;/iframe&gt;
 &lt;script&gt;
-  new frames[0].Worker('worker.js');
+  new frames[0].MessageChannel();
 &lt;/script&gt;
 </pre>
 
 <p>
-`Worker()$m 構築子が，その~algoの様々な箇所で利用する`~incumbent設定群~obj$を検索するとき、`~scriptを有している最上端の実行~文脈$は， `script$e 要素に対応している それになる：
+`MessageChannel()$m 構築子が，新たな `MessagePort$I ~objの所有者として利用する`~incumbent設定群~obj$を検索するとき、`~scriptを有している最上端の実行~文脈$は， `script$e 要素に対応している それになる：
 それは、`~classic~scriptを走らす$~algoの間に，
 `ScriptEvaluation$jA() の一部として，`~JS実行~文脈~stack$js上に~pushされたものである。
 ~WebIDL~callbackの呼出は孕まれないので、この文脈の`~incumbent決定-時に飛ばす~counter$は~zeroであり、したがってそれが，`~incumbent設定群~obj$を決定するために利用される。
 その結果は、 `window^c の`環境~設定群~obj$になる。
 ◎
-When the Worker() constructor looks up the incumbent settings object to use for various parts of its algorithm, the topmost script-having execution context will be that corresponding to the script element: it was pushed onto the JavaScript execution context stack as part of ScriptEvaluation during the run a classic script algorithm. Since there are no Web IDL callback invocations involved, the context's skip-when-determining-incumbent counter is zero, so it is used to determine the incumbent settings object; the result is the environment settings object of window.
+When the MessageChannel() constructor looks up the incumbent settings object to use as the owner of the new MessagePort objects, the topmost script-having execution context will be that corresponding to the script element: it was pushed onto the JavaScript execution context stack as part of ScriptEvaluation during the run a classic script algorithm. Since there are no Web IDL callback invocations involved, the context's skip-when-determining-incumbent counter is zero, so it is used to determine the incumbent settings object; the result is the environment settings object of window.
 </p>
 
 <p>
 （この例では、 `frames[0]^c の`環境~設定群~obj$は，全く孕まれない。
-それが`現在の設定群~obj$になるが、 `Worker()$m 構築子は，現在の〜ではなく ~incumbent〜についてのみ~careする。）
+それが`現在の設定群~obj$になるが、 `MessageChannel()$m 構築子は，現在の〜ではなく ~incumbent〜についてのみ~careする。）
 ◎
 (In this example, the environment settings object of frames[0] is not involved at all. It is the current settings object, but the Worker() constructor cares only about the incumbent, not current.)
+<!-- ＊更新漏れ Worker() -->
 </p>
+
 </div>
 
 <div class="example">
