@@ -735,6 +735,7 @@ HTML5:https://html.spec.whatwg.org/multipage\n\
 HTML50:https://www.w3.org/TR/html5\n\
 HTML51:https://www.w3.org/TR/html51\n\
 HTML5x:https://www.w3.org/TR/html\n\
+BROWSERS:browsers-ja.html\n\
 CSP3:CSP3-ja.html\n\
 CSP2:CSP-ja.html\n\
 COMPOSITING:compositing-ja.html\n\
