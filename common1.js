@@ -1373,6 +1373,9 @@ CSSFLEX=編            ~CSSWG/css-flexbox-1/\n\
 CSSGRID=主            ~/css-grid-ja.html\n\
 CSSGRID=版            ~TR/css-grid-1/\n\
 CSSGRID=編            ~CSSWG/css-grid-1/\n\
+CSSINLINE=主          ~/css-inline-ja.html\n\
+CSSINLINE=版          ~TR/css-inline/\n\
+CSSINLINE=編          ~CSSWG/css-inline/\n\
 CSSNAMESPACES=主      ~/css-namespaces-ja.html\n\
 CSSNAMESPACES=副2     ~mitsue/css3-namespace/\n\
 CSSNAMESPACES=副3     ~momdo/REC-css-namespaces-3-20140320.html\n\
@@ -1686,6 +1689,7 @@ CSSCOLOR4:CSSCOLOR\n\
 CSSCOUNTERSTYLES3:CSSCOUNTERSTYLES\n\
 CSSGRID1:CSSGRID\n\
 CSS3GRIDLAYOUT:CSSGRID\n\
+CSSINLINE3:CSSINLINE\n\
 CSS3CONDITIONAL:CSSCONDITIONAL\n\
 CSSCONDITIONAL3:CSSCONDITIONAL\n\
 CSS3EXCLUSIONS:CSSEXCLUSIONS\n\
