@@ -908,6 +908,7 @@ Util.dfnInit = function(){
 		dfnOriginal.style.display = 'none';
 
 		if(id.charAt(0) === '_') return; // 和訳固有の id
+		if(original_id_map[id] === '') return; // 和訳固有の id
 		if(!is_header && PAGE_DATA.no_original_dfn) return;
 		if(!PAGE_DATA.original_url) return;
 
