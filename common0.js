@@ -799,6 +799,7 @@ HTMLSCRIPT:HTML-scripting-ja.html\n\
 HTMLCUSTOM:HTML-custom-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
 HTMLRENDERING:HTML-rendering-ja.html\n\
+HTMLGAPI:HTML-global-api-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
 PROMISES:promises-guide-ja.html\n\
 RTiming:resource-timing-ja.html\n\
