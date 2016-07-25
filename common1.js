@@ -163,7 +163,7 @@ EDCG: 'W3C Draft Community Group Report',
 PR: 'W3C Proposed Recommendation',
 CR: 'W3C Candidate Recommendation',
 REC: 'W3C Recommendation',
-NOTE: 'W3C Note',
+NOTE: 'W3C Working Group Note',
 LS: 'Living Standard',
 IETFPR: 'IETF PROPOSED STANDARD'
 		}[key];
@@ -1755,6 +1755,7 @@ ORIGIN:RFC6454\n\
 WSP:RFC6455\n\
 WEBIDL1:WEBIDL\n\
 REFERRER:REFERRERPOLICY\n\
+UPGRADE:UPGRADEINSECUREREQUESTS\n\
 TLS12:RFC5246\n\
 TLS:RFC5246\n\
 ';
