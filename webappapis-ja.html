@@ -504,6 +504,9 @@ i.No CORS:~HTMLINFRA#attr-crossorigin-none
 
 ~script:#concept-script
 ~source~text:#concept-classic-script-source-text
+
+mS.~instantiation状態:#concept-module-script-instantiation-state
+mS.~instantiation~error:#concept-module-script-instantiation-error
 mS.資格証~mode:#concept-module-script-credentials-mode
 mS.暗号用~nonce:#concept-module-script-nonce
 mS.構文解析器~状態:#concept-module-script-parser
@@ -528,6 +531,8 @@ mS.基底~URL:#concept-module-script-base-url
 単独の~module~scriptを~fetchする:#fetch-a-single-module-script
 ~worker用~module~script木を~fetchする:#fetch-a-module-worker-script-tree
 ~module~script木を~fetchする内部手続き:#internal-module-script-tree-fetching-procedure
+
+~instantiateされていない広義~子孫~module~script:#uninstantiated-inclusive-descendant-module-scripts
 
 ~fetchを遂行する:#fetching-scripts-perform-fetch
 V.~top-level内~flag:#fetching-scripts-is-top-level
@@ -1097,6 +1102,7 @@ task::::タスク
 待行列:queue::待ち行列::キュー
 待加えら:enqueue さ::待ち行列に加えら::エンキューさ
 通知-:notify:~
+合図:signal::通知::シグナル
 通知:notification:~
 通知待ちの:about-to-be-notified:~
 黙秘-:mute::~
@@ -1184,6 +1190,7 @@ task::::タスク
 並列的:parallel:~
 待機-:wait:~
 
+	現-:current:~
 現在の:current:~
 環境:environment:~
 解決-:resolve:~
@@ -1244,6 +1251,7 @@ task::::タスク
 送信-:send:~
 変化-:change:~
 依存関係:dependencies:~
+graph::::グラフ
 再帰的:recursive:~
 重複:deduplicate:~
 構文:syntax:~
@@ -1262,7 +1270,9 @@ data::::データ
 文:statement:~
 	上層:on top of
 	重ねる:layer
-
+	辺:edges:~
+	探索:search／exploring
+	深さ~~優先~depth-first 
 
 
 	●event
@@ -1520,8 +1530,11 @@ UA:user agent:UA
 第三者主体:third-party:~
 仕事:work:~
 並行する:parallel な:~
+技法:technique:~
+実際の:actual な:~
 
 	●仕様（他）
+	関心:interesting:
 	現時点では:currently:~
 	感知し得ない:cannot be sensitive:~
 	一連の:series of
@@ -1559,7 +1572,8 @@ UA:user agent:UA
 	すぐに:right away
 	以降:the rest
 	ひねくりまわすcontort:
-	十分:sufficient:~
+	十分:sufficient
+	十分:suffice
 	両者:both:~
 	止め-:cease
 	並行して:alongside
@@ -1797,6 +1811,7 @@ fall-back:fall back:::フォールバック
 更新:update:~
 順序:order:~
 有順序:ordered:~
+無順序:unordered:~
 条件:condition:~
 現在:currently:~
 直接的:direct:~
@@ -1836,6 +1851,7 @@ fall-back:fall back:::フォールバック
 周期的:periodical:~
 検索-:look up:~
 data::::データ
+出力:output:~
 
 	●その他
 	終える:finish
@@ -1911,7 +1927,7 @@ data::::データ
 </p>
 
 <p>
-更新： <time>2016-07-23</time>
+更新： <time>2016-08-09</time>
 （公開：<time>2016-01-08</time> ）
 </p>
 
@@ -1934,7 +1950,7 @@ data::::データ
 
 	<hgroup>
 <h1>スクリプト処理 — Scripting</h1>
-<h2>HTML Living Standard — 最終更新 2016 年 7 月 22 日</h2>
+<h2>HTML Living Standard — 最終更新 2016 年 8 月 8 日</h2>
 	</hgroup>
 
 </header>
@@ -2215,6 +2231,26 @@ A base URL
 これは、外部~module~scriptに対しては，~scriptが得られた~URLになり、~inline~module~scriptに対しては，それを包含している文書の`基底~URL$になる。
 ◎
 A base URL used for resolving module specifiers when resolving a module specifier. This will either be the URL from which the script was obtained, for external module scripts, or the document base URL of the containing document, for inline module scripts.
+</dd>
+
+	<dt>`~instantiation状態@mS</dt>
+	<dd>
+以前に~instantiateするのに失敗した~module上の
+`ModuleDeclarationInstantiation$jA() を再~呼出を防止するために利用される。
+次のいずれか
+⇒
+`uninstantiated^l ／ `errored^l ／ `instantiated^l
+◎
+One of "uninstantiated", "errored", or "instantiated", used to prevent reinvocation of ModuleDeclarationInstantiation on modules that failed to instantiate previously.
+</dd>
+
+	<dt>`~instantiation~error@mS</dt>
+	<dd>
+<p>
+~JS値。
+`~instantiation状態$mS ~EQ `errored^l の場合に限り，意味を持つ。
+◎
+A JavaScript value, which has meaning only if the instantiation state is "errored".
 </dd>
 
 	<dt>
@@ -3112,14 +3148,14 @@ Fetch a single module script given url, fetch client settings object, destinatio
 </p>
 
 <p>
-この~fetchが %~module~script を結果として`非同期に完了-$したときは：
+この段の~fetchが %結果 を結果として`非同期に完了-$したときは：
 ◎
 Return from this algorithm, and run the following steps when fetching a single module script asynchronously completes with result:
 </p>
 		<ol>
 			<li>
 ~IF［
-%~module~script ~EQ ~NULL
+%結果 ~EQ ~NULL
 ］
 ⇒
 ~NULL を結果として，`非同期に完了-$する
@@ -3127,31 +3163,222 @@ Return from this algorithm, and run the following steps when fetching a single m
 If result is null, asynchronously complete this algorithm with null and abort these steps.
 </li>
 			<li>
-%先祖~list に %~url を付加する
-◎
-↓</li>
-			<li>
 <p>
-次を与える下で， %~module~script の`子孫を~fetchする$
+%結果 は`~module~script$である
+— 次を与える下で， %結果 の`子孫を~fetchする$
 ⇒
-%行先, %先祖~list
+%行先, ［
+%先祖~list に %~url を付加した結果
+］
 ◎
-Otherwise, result is a module script. Fetch the descendants of result given destination and an ancestor list obtained by appending url to ancestor list.
+Otherwise, result is a module script. Fetch the descendants of result given destination and an ancestor list obtained by appending url to ancestor list. Wait for fetching the descendants of a module script to asynchronously complete with descendants result before proceeding to the next step.
 </p>
 
 <p>
-この~fetchが［
-%子孫~結果 を結果として，`非同期に完了-$した
-］ときは
-⇒
-%子孫~結果 を結果として，`非同期に完了-$する
+この段の~fetchが %子孫~結果 を結果として`非同期に完了-$したときは：
 ◎
-When fetching the descendants of a module script asynchronously completes with descendants result, asynchronously complete this algorithm with descendants result.
+↑</p>
+
+				<ol>
+					<li>
+%~record ~LET %結果 の`~module~record$mS
+◎
+Let record be result's module record.
+</li>
+					<li>
+<p>
+%~instantiation~status ~LET %~record . `ModuleDeclarationInstantiation$jA()
+◎
+Let instantiationStatus be record.ModuleDeclarationInstantiation().
 </p>
+
+<p class="note">注記：
+この段は、当の~moduleの~instantiateされていない依存関係すべてに対し，再帰的に
+`ModuleDeclarationInstantiation$jA() を~callする。
+◎
+This step will recursively call ModuleDeclarationInstantiation all of the module's uninstantiated dependencies.
+</p>
+					</li>
+					<li>
+<p>
+~FOR
+%結果 の`~instantiateされていない広義~子孫~module~script$内の
+~EACH( `~module~script$ %~script ) に対し：
+◎
+For each module script script in result's uninstantiated inclusive descendant module scripts, perform the following steps:
+</p>
+						<ol>
+							<li>
+~IF［
+%~instantiation~status は中途完了である
+］：
+
+<ul ><li>%~script の`~instantiation状態$mS ~SET `errored^l
+</li><li>%~script の`~instantiation~error$mS ~SET %~instantiation~status .`Value^sl
+</li><li>%~script の`~module~record$mS ~SET ~NULL
+</li></ul>
+
+◎
+If instantiationStatus is an abrupt completion, then set script's instantiation state to "errored", its instantiation error to instantiationStatus.[[Value]], and its module record to null.
+</li>
+							<li>
+~ELSE
+⇒
+%~script の`~instantiation状態$mS `instantiated^l
+◎
+Otherwise, set script's instantiation state to "instantiated".
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
+%子孫~結果 を結果として`非同期に完了-$する
+◎
+Asynchronously complete this algorithm with descendants result.
+</p>
+
+<p class="note">注記：
+ここで %結果 ではなく %子孫~結果 で完了することは意図的である
+— これにより、~error合図は~call元まで伝播するようになる。
+◎
+It is intentional that we complete with descendants result here, and not result, as this allows us to propagate error signals to the caller.
+</p>
+					</li>
+				</ol>
 			</li>
 		</ol>
 	</li>
 </ol>
+
+
+
+<p class="algo-head">
+上の~algoにおける`~module~script$ %~script の
+`~instantiateされていない広義~子孫~module~script@
+とは、次に従って決定される`~module~script$の集合である：
+◎
+In the above algorithm, a module script script's uninstantiated inclusive descendant module scripts is a set of module scripts determined as follows:
+</p>
+
+<ol>
+	<li>
+%~module~map ~LET %~script の`設定群~obj$の`~module~map$
+◎
+Let module map be script's settings object's module map.
+</li>
+	<li>
+%~stack ~LET %~script のみからなる~list
+◎
+Let stack be a list containing script.
+</li>
+	<li>
+%広義~子孫 ~LET 空~集合
+◎
+Let inclusive descendants be an empty set.
+</li>
+	<li>
+<p>
+~WHILE［
+%~stack は空でない
+］：
+◎
+While stack is not empty:
+</p>
+
+		<ol>
+			<li>
+%現~script ~LET %~stack の最後の要素；<br />
+%~stack から最後の要素を除去する
+◎
+Let current be the last element of stack. Remove it from stack.
+</li>
+			<li>
+<p>
+~IF［
+%現~script ~NIN %広義~子孫
+］~AND［
+%現~script ~NIN %~stack
+］：
+◎
+If current is not in inclusive descendants and is not in stack, then:
+</p>
+
+				<ol>
+					<li>
+%現~script を %広義~子孫 に追加する
+◎
+Add current to inclusive descendants.
+</li>
+					<li>
+<p>
+~FOR ( %現~script の`~module~record$mS ) . `RequestedModules^sl 内の ~EACH ( %指定子 ) に対し：
+</p>
+
+						<ol>
+							<li>
+%~URL ~LET 次を与える下で，`~module指定子を解決-$した結果
+⇒
+( %現~script, %指定子 )
+</li>
+							<li>
+~IF［
+%~URL ~EQ `失敗^i
+］
+⇒
+~CONTINUE
+</li>
+							<li>
+~IF［
+%~module~map 内に %~URL を~keyとする~entryはない
+］
+⇒
+~CONTINUE
+</li>
+							<li>
+%子~module ~LET %~module~map 内の %~URL を~keyとする~entryの値
+</li>
+							<li>
+~IF［
+%子~module ~NIN %広義~子孫
+］
+⇒
+%子~module を %~stack に追加する
+</li>
+						</ol>
+
+◎
+Let child specifiers be the value of current's module record's [[RequestedModules]] internal slot.
+◎
+Let child URLs be the set obtained by calling resolve a module specifier once for each element of child specifiers, given current and that element. Omit any failures.
+◎
+Let child modules be the set obtained by looking up each value in module map whose key is given by an element of child URLs.
+◎
+For each s in child modules that is not in inclusive descendants, add s to stack.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~RET
+%広義~子孫 内の要素のうち［
+`~instantiation状態$mS ~EQ `uninstantiated^l
+］なるものすべてからなる~list
+◎
+Return a list containing all elements of inclusive descendants whose instantiation state is "uninstantiated".
+</li>
+
+</ol>
+
+<p class="note">注記：
+上の~algoは、~moduleの依存関係~graphを深さ~~優先で探索する。
+ここでの主な関心は，この~graphの “辺” を決定する方法であり、実際の探索~法は重要でない
+— 出力は無順序~集合であり、~graphを探索する他の技法でも十分になる。
+◎
+The above algorithm gives a depth-first search of the module dependency graph. The main interesting part is in how the "edges" of this graph are determined. The actual search implementation is not important; any other technique for exploring the graph will suffice, given that the output is an unordered set.
+</p>
+
 
 
 <p class="algo-head">
@@ -3480,27 +3707,31 @@ Otherwise, if url is not in ancestor list, add url to urls.
 For each url in urls, perform the internal module script tree fetching procedure given url, module script's credentials mode, module script's cryptographic nonce, module script's parser state, destination, module script's settings object, module script's settings object, ancestor list, module script's base URL, and with the top-level module fetch flag unset. If the caller of this algorithm specified custom perform the fetch steps, pass those along while performing the internal module script tree fetching procedure.
 </p>
 
+
+<div class="p">
+
+<p>
+すべての %~url に対する~fetchingが`非同期に完了-$するまで待機した上で：
+</p>
+
 		<ul>
 			<li>
-この段のいずれかの~fetchingが［
+ある %~url に対する~fetchingが［
 ~NULL を結果として，`非同期に完了-$した
 ］ときは
 ⇒
 ~NULL を結果として，`非同期に完了-$する
-— ~UAは、他のすべての~fetchを`終了-$xしてよい
-◎
-If any of the internal module script tree fetching procedure invocations asynchronously complete with null, the user agent may terminate any or all of the other fetches, and must then asynchronously complete this algorithm with null.
 </li>
 			<li>
-これらの~fetchingすべてが［
-`~module~script$ %~module~script を結果として，`非同期に完了-$した
-］ときは
+他の場合
 ⇒
 %~module~script を結果として，`非同期に完了-$する
-◎
-Once all of the internal module script tree fetching procedure invocations asynchronously complete with a module script, asynchronously complete this algorithm with module script.
 </li>
 		</ul>
+◎
+Wait for all of the internal module script tree fetching procedure invocations to asynchronously complete. If any of them asynchronously complete with null, then asynchronously complete this algorithm with null. Otherwise, asynchronously complete this algorithm with module script.
+</div>
+
 	</li>
 </ol>
 
@@ -3845,42 +4076,35 @@ Let settings be the settings object of s.
 Check if we can run script with settings. If this returns "do not run" then abort these steps.
 </li>
 	<li>
-%~record ~LET %~script の`~module~record$mS
-◎
-Let record be s's module record.
-</li>
-	<li>
 <p>
-%~instantiation~status ~LET
-%~record . `ModuleDeclarationInstantiation$jA()
-◎
-Let instantiationStatus be record.ModuleDeclarationInstantiation().
-</p>
-
-<p class="note">注記：
-この段は、~moduleの依存関係すべてを再帰的に~instantiateすることになる。
-◎
-This step will recursively instantiate all of the module's dependencies.
-</p>
-
-	</li>
-	<li>
 ~IF［
-%~instantiation~status は中途完了である
+%~script の`~instantiation状態$mS ~EQ `errored^l
 ］：
+</p>
 		<ol>
 			<li>
 次を与える下で，`例外を報告する$
 ⇒
-%~script,
-%~instantiation~status . `Value^sl
+%~script, %~script の`~instantiation~error$mS
 </li>
 			<li>
 ~RET
 </li>
 		</ol>
 ◎
-If instantiationStatus is an abrupt completion, report the exception given by instantiationStatus.[[Value]] for s and abort these steps.
+If s's instantiation state is "errored", then report the exception given by s's instantiation error for s and abort these steps.
+</li>
+	<li>
+~Assert：
+%~script の`~instantiation状態$mS ~EQ `instantiated^l
+（したがって， %~script の`~module~record$mS ~NEQ ~NULL ）
+◎
+Assert: s's instantiation state is "instantiated" (and thus its module record is not null).
+</li>
+	<li>
+%~record ~LET %~script の`~module~record$mS
+◎
+Let record be s's module record.
 </li>
 	<li>
 %設定群 を用いて`~scriptを走らすために準備する$
@@ -3917,7 +4141,7 @@ This step will recursively evaluate all of the module's dependencies.
 （~UAが`走中の~scriptを中止-$したため `ModuleEvaluation$jA は完了しなかった場合には、この段は遂行しないこと。）
 </p>
 ◎
-If evaluationStatus is an abrupt completion, report the exception given by evaluationStatus.[[Value]] for s. (Do not perform this step if ModuleEvaluation fails to complete as a result of the user agent aborting the running script.)
+If evaluationStatus is an abrupt completion, then report the exception given by evaluationStatus.[[Value]] for s. (Do not perform this step if ModuleEvaluation fails to complete as a result of the user agent aborting the running script.)
 </li>
 	<li>
 %設定群 を用いて，`走らせた~scriptを片付ける$
@@ -3925,6 +4149,8 @@ If evaluationStatus is an abrupt completion, report the exception given by evalu
 Clean up after running script with settings.
 </li>
 </ol>
+
+
 
 <p class="algo-head">
 `環境~設定群~obj$ %設定群 を用いて
@@ -5449,19 +5675,22 @@ Let url be the result of resolving a module specifier given referencing module s
 Let resolved module script be the value of the entry in module map whose key is url. If no such entry exists, or if the value is null or "fetching", throw a TypeError exception and abort these steps.
 </li>
 	<li>
-~ELSE
-⇒
-~THROW `TypeError$js
-◎
-↑</li>
-	<li>
 ~IF［
-%解決済~module~script の値 ~IN { ~NULL, `fetching^l }
+%解決済~module~script の`~instantiation状態$mS ~EQ `errored^l
 ］
 ⇒
-~THROW `TypeError$js
+~THROW %解決済~module~script の`~instantiation~error$mS
 ◎
-↑</li>
+If resolved module script's instantiation state is "errored", then throw resolved module script's instantiation error.
+</li>
+	<li>
+~Assert：
+%解決済~module~script の`~instantiation状態$mS ~EQ `instantiated^l
+（したがって，その`~module~record$mS ~NEQ ~NULL ）
+◎
+Assert: resolved module script's instantiation state is "instantiated" (and thus its module record is not null).
+</li>
+
 	<li>
 ~RET
 %解決済~module~script の`~module~record$mS
