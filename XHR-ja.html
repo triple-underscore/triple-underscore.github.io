@@ -810,6 +810,7 @@ AO.ReadFromReadableStreamReader:~STREAMS#read-from-readable-stream-reader
 要請を終了-:#terminate-the-request
 同期~flag:#synchronous-flag
 ~upload完了-~flag:#upload-complete-flag
+~upload~listener~flag:#upload-listener-flag
 
 応答 MIME 型:#response-mime-type
 上書き MIME 型:#override-mime-type
@@ -1094,7 +1095,7 @@ ol {
 </p>
 
 <p id="_dates">
-更新： <time>2016-07-28</time>
+更新： <time>2016-08-12</time>
 （公開： <time>2012-10-25</time>）
 </p>
 
@@ -1140,7 +1141,7 @@ Zz4K"
 ></a>
 
 <h1 id="xmlhttprequest-ls">XMLHttpRequest</h1>
-<h2>Living Standard — 最終更新 2016 年 7 月 27 日</h2>
+<h2>Living Standard — 最終更新 2016 年 8 月 11 日</h2>
 
 <dl>
 	<dt>Participate:</dt>
@@ -1736,23 +1737,24 @@ The data transfer has been completed or something went wrong during the transfer
 各 `XMLHttpRequest$I ~objには、次の概念が要請に結付けられる（括弧内は初期~値）：
 </p>
 
-<ul>
-	<li>`要請~method@</li><!-- FETCH.concept-method -->
-	<li>`要請~URL@</li><!-- .concept-url？ -->
-	<li>`~header~list$である，`作者~要請~header~list@（空）</li>
-	<li>`要請~本体@（ ~NULL ）</li>
-	<li>`同期~flag@（ ~OFF ）</li>
-	<li>`~upload完了-~flag@（ ~OFF ）</li>
-</ul>
+<ul ><li>`要請~method@<!-- FETCH.concept-method -->
+</li><li>`要請~URL@<!-- .concept-url？ -->
+</li><li>`~header~list$である，`作者~要請~header~list@（空）
+</li><li>`要請~本体@（ ~NULL ）
+</li><li>`同期~flag@（ ~OFF ）
+</li><li>`~upload完了-~flag@（ ~OFF ）
+</li><li>`~upload~listener~flag@（ ~OFF ）
+</li></ul>
 
 ◎
-Each XMLHttpRequest object has the following request-associated concepts: request method, request URL, author request headers, request body, synchronous flag, and upload complete flag.
+Each XMLHttpRequest object has the following request-associated concepts: request method, request URL, author request headers, request body, synchronous flag, upload complete flag, and upload listener flag.
+
 ◎
 The author request headers is an initially empty header list.
 ◎
 The request body is initially null.
 ◎
-The synchronous flag and upload complete flag are initially unset.
+The synchronous flag, upload complete flag, and upload listener flag are initially unset.
 </div>
 
 
@@ -1992,8 +1994,13 @@ Set variables associated with the object as follows:
      <li>
 `時間切れ停止~flag$ ~SET ~OFF
 ◎
-Unset the stop timeout flag.
+Unset the stop timeout flag and upload listener flag.
 </li>
+
+     <li>
+`~upload~listener~flag$ ~SET ~OFF
+◎
+↑</li>
 
      <li>
 `要請~method$ ~SET %method
@@ -2590,8 +2597,17 @@ If Content-Type is non-null and author request headers contains no header named 
 Otherwise, if the header named `Content-Type` in author request headers has a value that is a valid MIME type, which has a `charset` parameter whose value is not a case-insensitive match for encoding, and encoding is not null, then set all the `charset` parameters whose value is not a case-insensitive match for encoding of that `Content-Type` header's value to encoding.
 </li>
   </ol>
-
  </li>
+
+ <li>
+~IF［
+此れの`~upload~obj$に登録されている~event~listenerがある
+］
+⇒
+`~upload~listener~flag$ ~SET ~ON
+◎
+If one or more event listeners are registered on the associated XMLHttpRequestUpload object, then set upload listener flag.
+</li>
 
  <li>
 <p>
@@ -2667,10 +2683,10 @@ Set if the synchronous flag is set.
 </dd>
    <dt>`CORS予行~利用~flag$rq◎use-CORS-preflight flag</dt>
    <dd>
-`~upload~obj$上に 1 個以上の~event~listenerが登録されているならば ~ON ／
+`~upload~listener~flag$ ~EQ ~ON ならば ~ON ／
 ~ELSE_ ~OFF
 ◎
-Set if one or more event listeners are registered on the associated XMLHttpRequestUpload object.
+Set if upload listener flag is set.
 </dd>
 
 
@@ -2733,13 +2749,15 @@ Fire a progress event named loadstart with 0 and 0.
    <li>
 ~IF［
 `~upload完了-~flag$ ~EQ ~OFF
+］~AND［
+`~upload~listener~flag$ ~EQ ~ON
 ］
 ⇒
 ( 0, %要請 の`本体$rqの`総~byte数$ )
 を与える下で，
 `~upload~obj$に向けて，名前 `loadstart$et の`進捗~eventを発火する$
 ◎
-If the upload complete flag is unset, fire a progress event named loadstart on the XMLHttpRequestUpload object with 0 and req's body's total bytes.
+If the upload complete flag is unset and upload listener flag is set, then fire a progress event named loadstart on the XMLHttpRequestUpload object with 0 and req's body's total bytes.
 </li>
 
    <li>
@@ -2820,17 +2838,20 @@ If not roughly 50ms have passed since these subsubsteps were last invoked, termi
 </li>
 
  <li>
+~IF［
+`~upload~listener~flag$ ~EQ ~ON
+］
+⇒
 %要請 の`本体$rqの
 ( `伝送済み~byte数$, `総~byte数$ )
 を与える下で，
 `~upload~obj$に向けて，名前 `progress$et の`進捗~eventを発火する$。
 <!-- upload complete flag can never be set here I hope -->
 ◎
-Fire a progress event named progress on the XMLHttpRequestUpload object with request's body's transmitted bytes and request's body's total bytes.
+If upload listener flag is set, then fire a progress event named progress on the XMLHttpRequestUpload object with request's body's transmitted bytes and request's body's total bytes.
 </li>
 
 </ol>
-
 
 <p class="algo-head">
 %要請 に対し，`要請の本体終端を処理する$ときは、次の下位手続きを走らす：
@@ -2843,6 +2864,16 @@ To process request end-of-body for request, run these subsubsteps:
 `~upload完了-~flag$ ~SET ~ON
 ◎
 Set the upload complete flag.
+</li>
+
+     <li>
+~IF［
+`~upload~listener~flag$ ~EQ ~ON
+］
+⇒
+~RET
+◎
+If upload listener flag is unset, then terminate these subsubsteps.
 </li>
 
      <li>
@@ -3400,14 +3431,23 @@ At this point it is clear that the synchronous flag is unset.
 ］：
 ◎
 If the upload complete flag is unset, follow these substeps:
-</p><ol>
+</p>
+   <ol>
    <li>
 `~upload完了-~flag$ ~SET ~ON
 ◎
 Set the upload complete flag.
 </li>
-
- <li>
+   <li>
+<p>
+~IF［
+`~upload~listener~flag$ ~EQ ~ON
+］：
+◎
+If upload listener flag is unset, then terminate these substeps.
+</p>
+    <ol>
+     <li>
 ( 0, 0 )
 を与える下で，
 `~upload~obj$に向けて，名前 `progress$et の`進捗~eventを発火する$
@@ -3415,7 +3455,7 @@ Set the upload complete flag.
 Fire a progress event named progress on the XMLHttpRequestUpload object with 0 and 0.
 </li>
 
- <li>
+     <li>
 ( 0, 0 )
 を与える下で，
 `~upload~obj$に向けて，名前 %~event名 の`進捗~eventを発火する$
@@ -3423,15 +3463,16 @@ Fire a progress event named progress on the XMLHttpRequestUpload object with 0 a
 Fire a progress event named event on the XMLHttpRequestUpload object with 0 and 0.
 </li>
 
- <li>
+     <li>
 ( 0, 0 )
 を与える下で，
 `~upload~obj$に向けて，名前 `loadend$et の`進捗~eventを発火する$
 ◎
 Fire a progress event named loadend on the XMLHttpRequestUpload object with 0 and 0. 
 </li>
+    </ol>
+   </li>
   </ol>
-
  </li>
 
  <li>
@@ -5497,6 +5538,7 @@ Sunava Dutta,
 Takeshi Kurosawa,
 Takeshi Yoshino,
 Thomas Roessler,
+Thomas Wisniewski,
 Tom Magliery,
 Travis Leithead,
 Yehuda Katz,
