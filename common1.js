@@ -169,7 +169,7 @@ IETFPR: 'IETF PROPOSED STANDARD'
 		}[key];
 		if(!text) return;
 
-		var color = { ED: 'red', EDCG: 'red', IETFPR: 'gray', LS: 'green' }[key];
+		var color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', LS: 'green' }[key];
 		var div = C('div');
 		div.id = 'sideways-logo';
 		var div1 = C('div');
