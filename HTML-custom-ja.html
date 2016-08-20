@@ -622,6 +622,7 @@ catch:
 走らせ:run し:~
 走る:run する:~
 走らな:run しな:~
+走行中:running:~
 動作:action::~::アクション
 走査-:traverse:~
 	::トラバース
@@ -1064,10 +1065,7 @@ EBNF 記法:https://www.w3.org/TR/xml/#sec-notation
 ~custom要素~状態:~DOM4#concept-element-custom-element-state
 x.~custom要素~定義:~DOM4#concept-element-custom-element-definition
 ~is0値:~DOM4#concept-element-is-value
-
-定義中の名前の集合:#set-of-being-defined-names
-定義中の構築子の集合:#set-of-being-defined-constructors
-
+要素~定義~走行中~flag:#element-definition-is-running
 
 cD.~lifecycle~callback~map:#concept-custom-element-definition-lifecycle-callbacks
 cD.観測先の属性~list:#concept-custom-element-definition-observed-attributes
@@ -1263,7 +1261,7 @@ code.ABNF {
 
 	<hgroup>
 <h1>カスタム要素 — Custom elements</h1>
-<h2>HTML Living Standard — 最終更新 2016 年 8 月 17 日</h2>
+<h2>HTML Living Standard — 最終更新 2016 年 8 月 19 日</h2>
 	</hgroup>
 </header>
 
@@ -2400,21 +2398,12 @@ dictionary `ElementDefinitionOptions@I {
 Every CustomElementsRegistry has a set of custom element definitions, initially empty. In general, algorithms in this specification look up elements in the registry by any of name, local name, or constructor.
 </dd>
 
-	<dt>`定義中の名前の集合@</dt>
-	<dt>`定義中の構築子の集合@</dt>
+	<dt>`要素~定義~走行中~flag@</dt>
 	<dd>
-順に，［
-`妥当な~custom要素~名$たち, ~JS関数~objたち
-］を包含する。
-これらは、`要素~定義$の間に，［
-`要素~定義$を 再入的に再び実行し得る，~script
-］が［
-同じ［
-名前, 構築子
-］を利用して，別の要素を定義する
-］ことは，起こり得ないようにすることを確保するために利用される。
+初期~時は ~OFF。
+`要素~定義$が再入的に呼出されるのを防止するためにある。
 ◎
-Every CustomElementsRegistry also has a set of being-defined names and a set of being-defined constructors, containing valid custom element names and JavaScript function objects, respectively. These are used to ensure that when script executes during element definition, which can reentrantly cause element definition again, the script cannot define another element using the same name or constructor.
+Every CustomElementsRegistry also has an element definition is running flag which is used to prevent reentrant invocations of element definition. It is initially unset.
 </dd>
 
 	<dt>`定義済時~promise~map@</dt>
@@ -2571,15 +2560,6 @@ If this CustomElementsRegistry contains an entry with name name, then throw a "N
 </li>
 	<li>
 ~IF［
-%name ~IN 此れの`定義中の名前の集合$
-］
-⇒
-~THROW `NotSupportedError$E
-◎
-If this CustomElementsRegistry's set of being-defined names contains name, then throw a "NotSupportedError" DOMException and abort these steps.
-</li>
-	<li>
-~IF［
 此れ内に［
 `構築子$cD ~EQ %constructor
 ］なる~entryがある
@@ -2588,15 +2568,6 @@ If this CustomElementsRegistry's set of being-defined names contains name, then 
 ~THROW `NotSupportedError$E
 ◎
 If this CustomElementsRegistry contains an entry with constructor constructor, then throw a "NotSupportedError" DOMException and abort these steps.
-</li>
-	<li>
-~IF［
-%constructor ~IN 此れの`定義中の構築子の集合$
-］
-⇒
-~THROW `NotSupportedError$E
-◎
-If this CustomElementsRegistry's set of being-defined constructors contains constructor, then throw a "NotSupportedError" DOMException and abort these steps.
 </li>
 	<li>
 %局所~名 ~LET %name
@@ -2647,16 +2618,19 @@ Set localName to extends.
 </li>
 		</ol>
 	</li>
-
 	<li>
-此れの`定義中の名前の集合$に %name を追加する
+~IF［
+此れの`要素~定義~走行中~flag$ ~EQ ~ON
+］
+⇒
+~THROW `NotSupportedError$E
 ◎
-Add name to this CustomElementsRegistry's set of being-defined names.
+If this CustomElementsRegistry's element definition is running flag is set, then throw a "NotSupportedError" DOMException and abort these steps.
 </li>
 	<li>
-此れの`定義中の構築子の集合$に %constructor を追加する
+此れの`要素~定義~走行中~flag$ ~SET ~ON
 ◎
-Add constructor to this CustomElementsRegistry's set of being-defined constructors.
+Set this CustomElementsRegistry's element definition is running flag.
 </li>
 	<li>
 <p>
@@ -2753,19 +2727,14 @@ If observedAttributesIterable is not undefined, then set observedAttributes to t
 <p>
 (B)：
 ◎
-Then, perform the following substeps, regardless of whether the above steps threw an exception or not:
+Then, perform the following substep, regardless of whether the above steps threw an exception or not:
 </p>
 
 		<ol>
 			<li>
-此れの`定義中の名前の集合$ から %name を除去する
+此れの`要素~定義~走行中~flag$ ~SET ~OFF
 ◎
-Remove name from this CustomElementsRegistry's set of being-defined names.
-</li>
-			<li>
-此れの`定義中の構築子の集合$から %constructor を除去する
-◎
-Remove constructor from this CustomElementsRegistry's set of being-defined constructors.
+Unset this CustomElementsRegistry's element definition is running flag.
 </li>
 			<li>
 ~IF［
@@ -2774,7 +2743,7 @@ Remove constructor from this CustomElementsRegistry's set of being-defined const
 ⇒
 ~THROW その例外
 ◎
-Finally, if the first set of steps threw an exception, then rethrow that exception, and terminate this algorithm. Otherwise, continue onward.
+Finally, if the first set of substeps threw an exception, then rethrow that exception, and terminate this algorithm. Otherwise, continue onward.
 </li>
 		</ol>
 	</li>
@@ -3816,18 +3785,18 @@ Any nonstandard APIs introduced by the user agent that could modify the DOM in s
 
 <div class="note">
 <p>注記：
-これを書いている時点では、次の非~標準の, または標準~化されていない~APIが，これに該当するものとして知られている：
+これを書いている時点では、次に挙げる［
+非~標準の, または標準~化されていない
+］~APIが，これに該当するものとして知られている：
 ◎
 As of the time of this writing, the following nonstandard or not-yet-standardized APIs are known to fall into this category:
 </p>
 
 <ul>
 	<li>
-`HTMLElement$I の［
-`innerText^m, `outerText^m
-］~IDL属性
+`HTMLElement$I の `outerText^m ~IDL属性
 ◎
-HTMLElement's innerText and outerText IDL attributes
+HTMLElement's outerText IDL attribute
 </li>
 	<li>
 `HTMLInputElement$I の［
