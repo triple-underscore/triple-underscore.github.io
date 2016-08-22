@@ -801,6 +801,7 @@ HTMLINFRA:HTML-infrastructure-ja.html\n\
 HTMLRENDERING:HTML-rendering-ja.html\n\
 HTMLGAPI:HTML-global-api-ja.html\n\
 HTMLgrouping:HTML-grouping-ja.html\n\
+HTMLtextlevel:HTML-text-level-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
 PROMISES:promises-guide-ja.html\n\
 RTiming:resource-timing-ja.html\n\
