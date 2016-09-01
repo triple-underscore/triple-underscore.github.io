@@ -391,6 +391,7 @@ host::::ホスト
 username::::ユーザ名
 password::::パスワード
 stream::::ストリーム
+chunk::::チャンク
 code::::コード
 protocol::::プロトコル
 活動:activity::~
@@ -447,7 +448,7 @@ arraybuffer::::配列バッファ
 
 充足-:fulfill::~
 却下-:reject::~
-	読取った:read した::読み取った
+読取った:read した::読み取った
 読取る:read する::読み取る
 読取:read::読み取り
 call:
@@ -799,8 +800,6 @@ et.timeout:#event-xhr-timeout
 e.progress:~HTML5/forms.html#the-progress-element
 h.Content-Type:~RFC7231#section-3.1.1.5
 
-AO.ReadFromReadableStreamReader:~STREAMS#read-from-readable-stream-reader
-
 利用者~資格証:#user-credentials
 要請~method:#request-method
 要請~URL:#request-url
@@ -856,9 +855,10 @@ x.応答:~FETCH#concept-response
 応答を処理する:~FETCH#process-response
 要請の本体を処理する:~FETCH#process-request-body
 要請の本体終端を処理する:~FETCH#process-request-end-of-body
-
 読取器を取得-:~FETCH#concept-get-reader
 すべての~byte列を読取る~promise:~FETCH#concept-read-all-bytes-from-readablestream
+~chunkを読取った:~FETCH#concept-read-chunk-from-readablestream
+
 
 終了-:~FETCH#concept-fetch-terminate
 ~fetching:~FETCH#concept-fetch
@@ -1094,7 +1094,7 @@ ol {
 </p>
 
 <p id="_dates">
-更新： <time>2016-08-12</time>
+更新： <time>2016-09-02</time>
 （公開： <time>2012-10-25</time>）
 </p>
 
@@ -1140,7 +1140,7 @@ Zz4K"
 ></a>
 
 <h1 id="xmlhttprequest-ls">XMLHttpRequest</h1>
-<h2>Living Standard — 最終更新 2016 年 8 月 11 日</h2>
+<h2>Living Standard — 最終更新 2016 年 9 月 1 日</h2>
 
 <dl>
 	<dt>Participate:</dt>
@@ -2989,8 +2989,13 @@ If response's body is null, then run handle response end-of-body and return.
 </li>
 
      <li>
+%本体 ~LET %応答 の`本体$rs
+◎
+↓</li>
+
+     <li>
 <p>
-%読取器 ~LET %応答 の`本体$rsの`~stream$から`読取器を取得-$した結果
+%読取器 ~LET %本体 の`~stream$から`読取器を取得-$した結果
 ◎
 Let reader be the result of getting a reader from response's body's stream.
 </p>
@@ -3004,10 +3009,9 @@ This operation will not throw an exception.
 
      <li>
 <p>
-%読取 ~LET
-`ReadFromReadableStreamReader$AO( %読取器 ) を~callした結果：
+%読取 ~LET %本体 の`~stream$から %読取器 で`~chunkを読取った$結果
 ◎
-Let read be the result of calling ReadFromReadableStreamReader(reader).
+Let read be the result of reading a chunk from response's body's stream with reader.
 </p>
 
 <ul>
@@ -3015,7 +3019,7 @@ Let read be the result of calling ReadFromReadableStreamReader(reader).
 
 <div class="p">
 <p>
-%読取 が次を満たす~obj：
+%読取 が次の両者を満たす~obj：
 </p>
 
 <ul ><li>`done^c ~prop ~EQ ~F
@@ -3025,7 +3029,9 @@ Let read be the result of calling ReadFromReadableStreamReader(reader).
 <p>
 で充足されたときは
 ⇒
-次の手続き(A) を走らせた上で、この`応答を処理する$手続きを再度~走らす
+次の下位手続き(A) を走らせた上で、［
+この，`応答を処理する$手続き
+］を再度~走らす
 </p>
 
 ◎
@@ -3033,7 +3039,7 @@ When read is fulfilled with an object whose done property is false and whose val
 </div>
 
 <p>
-手続き(A)：
+下位手続き(A)：
 </p>
 
       <ol>
@@ -3063,7 +3069,7 @@ If state is headers received, then set state to loading and fire an event named 
 </li>
 
        <li>
-%応答 の`本体$rsの
+%本体 の
 ( `伝送済み~byte数$, `総~byte数$ )
 を与える下で，名前 `progress$et の`進捗~eventを発火する$
 ◎
@@ -3125,17 +3131,15 @@ If the timeout attribute value is not zero, terminate this fetch if it has not r
    </li>
 
    <li>
+<p >
 ~IF［
-%応答 の`本体$rs ~EQ ~NULL
+%応答 の`本体$rs ~NEQ ~NULL
 ］
-⇒
-%応答 の`本体終端を取扱う$；<br />
-~RET
 ◎
 If response's body is null, then run handle response end-of-body and return.
-</li>
-
-   <li>
+</p>
+    <ol>
+     <li>
 <p>
 %読取器 ~LET %応答 の`本体$rsの`~stream$から`読取器を取得-$した結果
 ◎
@@ -3149,28 +3153,26 @@ This operation will not throw an exception.
 </p>
    </li>
 
-   <li>
+     <li>
 %promise ~LET
 %応答 の`本体$rsの`~stream$から， %読取器 を用いて`すべての~byte列を読取る~promise$
 ◎
 Let promise be the result of reading all bytes from response's body's stream with reader.
 </li>
 
-   <li>
+     <li>
 %promise が充足されるか却下されるまで待機する
-◎
-Wait for promise to be fulfilled or rejected.
-</li>
-
-   <li>
-~IF［
-%promise は %~byte列 で充足された
-］
+⇒
+%promise が %~byte列 で充足されたときは
 ⇒
 `受信済み~byte列$に %~byte列 を付加する
 ◎
-If promise is fulfilled with bytes, then append bytes to received bytes.
+Wait for promise to be fulfilled or rejected.
+◎
+• If promise is fulfilled with bytes, then append bytes to received bytes.
 </li>
+    </ol>
+   </li>
    <li>
 %応答 の`本体終端を取扱う$
 ◎
