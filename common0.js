@@ -800,6 +800,7 @@ HTMLCUSTOM:HTML-custom-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
 HTMLRENDERING:HTML-rendering-ja.html\n\
 HTMLGAPI:HTML-global-api-ja.html\n\
+HTMLmetadata:HTML-metadata-ja.html\n\
 HTMLgrouping:HTML-grouping-ja.html\n\
 HTMLtextlevel:HTML-text-level-ja.html\n\
 HTMLsections:HTML-sections-ja.html\n\
