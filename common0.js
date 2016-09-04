@@ -737,7 +737,6 @@ HTML51:https://www.w3.org/TR/html51\n\
 HTML5x:https://www.w3.org/TR/html\n\
 BROWSERS:browsers-ja.html\n\
 CSP3:CSP3-ja.html\n\
-CSP2:CSP-ja.html\n\
 COMPOSITING:compositing-ja.html\n\
 CASCADE:css-cascade-ja.html\n\
 CSS2BOX:css22-box-ja.html\n\
@@ -805,13 +804,12 @@ HTMLgrouping:HTML-grouping-ja.html\n\
 HTMLtextlevel:HTML-text-level-ja.html\n\
 HTMLsections:HTML-sections-ja.html\n\
 HTMLedits:HTML-edits-ja.html\n\
+HTMLselectors:selectors-html-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
 PROMISES:promises-guide-ja.html\n\
 RTiming:resource-timing-ja.html\n\
-SELECTORS-HTML:selectors-html-ja.html\n\
 TIMELINE:performance-timeline-2-ja.html\n\
 UIEVENTS:uievents-ja.html\n\
-UIEVENTS-A:uievents-appendix-ja.html\n\
 URLSpec:URL-ja.html\n\
 WAPI:webappapis-ja.html\n\
 WEBIDL:WebIDL-ja.html\n\
