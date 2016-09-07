@@ -803,6 +803,7 @@ HTMLmetadata:HTML-metadata-ja.html\n\
 HTMLgrouping:HTML-grouping-ja.html\n\
 HTMLtextlevel:HTML-text-level-ja.html\n\
 HTMLsections:HTML-sections-ja.html\n\
+HTMLlinks:HTML-links-ja.html\n\
 HTMLedits:HTML-edits-ja.html\n\
 HTMLselectors:selectors-html-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
