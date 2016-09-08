@@ -1099,7 +1099,7 @@ app:application:::アプリケーション\n\
 適用性:applicability:~\n\
 approach::::アプローチ\n\
 architecture::::アーキテクチャ\n\
-archive::::アーカイヴ\n\
+archive::::アーカイブ\n\
 asterisk::::アスタリスク\n\
 backslash::::バックスラッシュ\n\
 based:-based:に基づく:::ベースの\n\
@@ -1961,7 +1961,6 @@ referrer::::リファラ\n\
 文書化:document 化:~\n\
 文法:grammar:~\n\
 文脈:context::~\n\
-	コンテクスト\n\
 新たな:new:~\n\
 方法:how:~\n\
 方針:strategy:~\n\
