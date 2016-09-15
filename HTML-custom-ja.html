@@ -566,7 +566,6 @@ catch:
 例外:exception:~
 例外投出あり:rethrow any exceptions:~
 投出-:throw:~
-中途完了:abrupt completion:~
 呼出す:invoke する:呼び出す
 呼出され:invoke され:呼び出され
 被呼出時:被 invoke 時:~
@@ -1005,9 +1004,9 @@ et.keydown:~UIEVENTS#event-type-keydown
 	●jA
 jA.Construct:~TC39#sec-construct
 jA.Get:~TC39#sec-get-o-p
+jA.Type:~TC39#sec-ecmascript-data-types-and-values
 jA.IsConstructor:~TC39#sec-isconstructor
 jA.SameValue:~TC39#sec-samevalue
-jA.Type:~TC39#sec-ecmascript-data-types-and-values
 
 
 l.button:~ARIASpec#button
@@ -1064,7 +1063,6 @@ x.~custom要素~定義:~DOM4#concept-element-custom-element-definition
 
 cD.~lifecycle~callback~map:#concept-custom-element-definition-lifecycle-callbacks
 cD.観測先の属性~list:#concept-custom-element-definition-observed-attributes
-cD.~prototype:#concept-custom-element-definition-prototype
 cD.名前:#concept-custom-element-definition-name
 	定義済み名:#concept-custom-element-definition-name
 cD.局所~名:#concept-custom-element-definition-local-name
@@ -1226,7 +1224,7 @@ code.ABNF {
 </p>
 
 <p>
-更新： <time>2016-09-07</time>
+更新： <time>2016-09-16</time>
 （公開：<time>2016-05-04</time> ）
 </p>
 
@@ -1248,7 +1246,7 @@ code.ABNF {
 
 	<hgroup>
 <h1>カスタム要素 — Custom elements</h1>
-<h2>HTML Living Standard — 最終更新 2016 年 9 月 6 日</h2>
+<h2>HTML Living Standard — 最終更新 2016 年 9 月 15 日</h2>
 	</hgroup>
 </header>
 
@@ -2197,16 +2195,6 @@ A constructor
 A custom element constructor
 </dd>
 	<dt>
-`~prototype@cD
-◎
-A prototype
-</dt>
-  	<dd>
-~JS~obj
-◎
-A JavaScript object
-</dd>
-	<dt>
 `観測先の属性~list@cD
 ◎
 A list of observed attributes
@@ -2588,10 +2576,19 @@ Run the following substeps while catching any exceptions:
 		<ol>
 			<li>
 %~prototype ~LET
-`Get$jA( %constructor, `prototype^l)
+`Get$jA( %constructor, `prototype^l )
 （例外投出あり）
 ◎
 Let prototype be Get(constructor, "prototype"). Rethrow any exceptions.
+</li>
+			<li>
+~IF［
+`Type$jA( %~prototype ) ~NEQ `Object^jc
+］
+⇒
+~THROW `TypeError$E
+◎
+If Type(prototype) is not Object, then throw a TypeError exception.
 </li>
 			<li>
 %lifecycleCallbacks ~LET 次の~keyを伴い, どの~keyに対応する値も ~NULL にされた~map
@@ -2697,13 +2694,12 @@ Finally, if the first set of substeps threw an exception, then rethrow that exce
 <ul ><li>`名前$cD ~SET %name
 </li><li>`局所~名$cD ~SET %局所~名
 </li><li>`構築子$cD ~SET %constructor
-</li><li>`~prototype$cD ~SET %~prototype
 </li><li>`観測先の属性~list$cD ~SET %観測先~属性~list
 </li><li>`~lifecycle~callback~map$cD ~SET %lifecycleCallbacks
 </li></ul>
 
 ◎
-Let definition be a new custom element definition with name name, local name localName, constructor constructor, prototype prototype, observed attributes observedAttributes, and lifecycle callbacks lifecycleCallbacks.
+Let definition be a new custom element definition with name name, local name localName, constructor constructor, observed attributes observedAttributes, and lifecycle callbacks lifecycleCallbacks.
 </li>
 	<li>
 此れに %定義 を追加する
@@ -3030,6 +3026,19 @@ Let C be definition's constructor.
 </li>
 	<li>
 <p>
+次の下位手続き (A), (B) を順に走らす
+— ただし， (A) にて例外が投出されたときは、その時点で，下の (B) に~~移行する：
+◎
+Run the following substeps while catching any exceptions:
+</p>
+
+<p>
+(A)：
+</p>
+
+		<ol>
+			<li>
+<p>
 %構築-結果 ~LET `Construct$jA( %C )
 ◎
 Let constructResult be Construct(C).
@@ -3043,8 +3052,43 @@ Let constructResult be Construct(C).
 ◎
 If C non-conformantly uses an API decorated with the [CEReactions] extended attribute, then the reactions enqueued at the beginning of this algorithm will execute during this step, before C finishes and control returns to this algorithm. Otherwise, they will execute after C and the rest of the upgrade process finishes.
 </p>
-	</li>
-	<li>
+</li>
+			<li>
+<p>
+~IF［
+`SameValue$jA( %構築-結果 . [[value]], %要素 ) ~EQ ~F
+］
+⇒
+~THROW `InvalidStateError$E
+◎
+If SameValue(constructResult, element) is false, then throw an "InvalidStateError" DOMException.
+</p>
+
+<div class="note">
+<p >
+注記：
+これは、次の場合に生じ得る：
+</p>
+
+<ul ><li>%C が、 `super()^jc を~callする前に，同じ~custom要素の別の~instanceを構築している
+</li><li>%C が、構築子から任意の~objを返すような，~JS による `return^jc を上書きする特色機能を利用している
+</li></ul>
+
+◎
+This can occur if C constructs another instance of the same custom element before calling super(), or if C uses JavaScript's return-override feature to return an arbitrary object from the constructor.
+</div>
+
+			</li>
+		</ol>
+
+<p>
+(B)：
+◎
+Then, perform the following substep, regardless of whether the above steps threw an exception or not:
+</p>
+
+		<ol>
+			<li>
 <p>
 %定義 の`構築~stack$cDから最後の~entryを除去する
 ◎
@@ -3070,63 +3114,34 @@ If C does not call super() (i.e. it is not conformant), or if any step in the HT
 </p>
 </div>
 
-	</li>
-	<li>
+			</li>
+			<li>
 <p>
 ~IF［
-%構築-結果 は中途完了である
-］
-◎
-If constructResult is an abrupt completion, then:
-</p>
-		<ol>
-			<li>
-%要素 の`~custom要素~状態$ ~SET `failed^l
-◎
-Set element's custom element state to "failed".
-</li>
-			<li>
-~THROW %構築-結果
-<!-- (i.e., rethrow the exception) -->
-◎
-Return constructResult (i.e., rethrow the exception), and terminate these steps.
-</li>
-		</ol>
-	</li>
-	<li>
-<p>
-~IF［
-`SameValue$jA( %構築-結果 . [[value]], %要素 ) ~EQ ~F
+上の (A) にて例外が投出された
 ］：
 ◎
-If SameValue(constructResult.[[value]], element) is false, then:
+Finally, if the above steps threw an exception, then:
 </p>
-
-		<ol>
-			<li>
+				<ol>
+					<li>
 %要素 の`~custom要素~状態$ ~SET `failed^l
 ◎
 Set element's custom element state to "failed".
 </li>
-			<li>
-~THROW `InvalidStateError$E
+					<li>
+%要素 の`~custom要素~反応~待行列$を空にする
 ◎
-Throw an "InvalidStateError" DOMException, and terminate these steps.
+Empty element's custom element reaction queue.
 </li>
-		</ol>
-
-
-<p class="note">注記：
-これは、次の場合に生じ得る：
-%C が［
-`super()^jc を~callする前に，同じ~custom要素の別の~instanceを構築している
-］場合、あるいは
-%C が［
-構築子から任意の~objを返すような，~JS による `return^jc を上書きする特色機能を利用している
-］場合。
+					<li>
+~THROW 投出された例外
 ◎
-This can occur if C constructs another instance of the same custom element before calling super(), or if C uses JavaScript's return-override feature to return an arbitrary object from the constructor.
-</p>
+Rethrow the exception, and terminate this algorithm.
+</li>
+				</ol>
+			</li>
+		</ol>
 	</li>
 	<li>
 %要素 の`~custom要素~状態$ ~SET `custom^l
