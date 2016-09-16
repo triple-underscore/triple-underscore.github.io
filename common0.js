@@ -815,6 +815,7 @@ HTMLtextlevel:HTML-text-level-ja.html\n\
 HTMLsections:HTML-sections-ja.html\n\
 HTMLlinks:HTML-links-ja.html\n\
 HTMLedits:HTML-edits-ja.html\n\
+HTMLinput:HTML-input-ja.html\n\
 HTMLselectors:selectors-html-ja.html\n\
 WEBSOCKET:WebSocket-ja.html\n\
 WORKERS:Workers-ja.html\n\
