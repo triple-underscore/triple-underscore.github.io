@@ -804,6 +804,7 @@ HTMLconform:HTML-conform-ja.html\n\
 HTMLdom:HTML-dom-ja.html\n\
 HTMLdnd:HTML-DND-ja.html\n\
 HTMLformE:HTML-form-elements-ja.html\n\
+HTMLforms:HTML-forms-ja.html\n\
 HTMLscript:HTML-scripting-ja.html\n\
 HTMLcustom:HTML-custom-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
