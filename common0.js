@@ -48,7 +48,7 @@ var Util = {
 	rxp_wordsX: null,
 	rxp_words1: null,
 
-	removeParts: EMPTY_FUNC,
+	collectParts: EMPTY_FUNC,
 	replaceParts: EMPTY_FUNC,
 
 // common1.js
@@ -204,25 +204,10 @@ Util.supplyLinkFromText = function(e){
 	}
 };
 
-
-Util.removeParts = function(parts){
-	Object.getOwnPropertyNames(parts).forEach(function(id){
-		var e = parts[id];
-		if(e.parentNode){
-			e.parentNode.removeChild(e);
-		}
-	});
-};
-
-Util.replaceParts = function(parts){
-	Object.getOwnPropertyNames(parts).forEach(function(id){
-		var part = parts[id];
-		var e = E(id);
-		if(e) {
-			e.parentNode.replaceChild(part, e);
-		} else {
-			console.log('replaceParts: place holder not found for id=' + id );
-		}
+Util.collectParts = function(parts){
+	// 既定の収集器
+	repeat('#_persisted_parts > *[id]', function(e){
+		parts[e.id] = e;
 	});
 };
 
@@ -562,6 +547,7 @@ Util.buildTocList = function(root){
 Util.switchWordsInit = function(source_data){
 
 	source_data.levels = source_data.levels.split(':');
+
 	source_data.switchWords =  function(level){
 		level = Math.min(level & 0xF, this.levels.length);
 		var mapping = Util.get_mapping(
@@ -571,8 +557,42 @@ Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
 			+ COMMON_DATA.SYMBOLS
 			+ get_data('words_table1')
 		);
+
+		var parts = this.persisted_parts;
+		if(parts){
+			Object.getOwnPropertyNames(parts).forEach(function(id){
+				var e = parts[id];
+				if(e.parentNode){
+					e.parentNode.removeChild(e);
+				}
+			});
+		}
+
 		this.generate(mapping);
+
+		var parts = this.persisted_parts;
+		if(parts){
+//			console.log(parts);
+			Object.getOwnPropertyNames(parts).forEach(function(id){
+				var part = parts[id];
+				var e = E(id);
+				if(e) {
+					e.parentNode.replaceChild(part, e);
+				} else {
+					console.log('replaceParts: place holder not found for id=' + id );
+				}
+			});
+		}
+		if(this.toc_main){
+			createToc(this.toc_main);
+		}
 		this.level = level;
+	}
+
+	if(source_data.collectParts){
+		var parts = source_data.persisted_parts || Object.create(null);
+		source_data.collectParts(parts);
+		source_data.persisted_parts = parts;
 	}
 
 	source_data.switchWords(
@@ -594,6 +614,23 @@ return;
 		//textData
 		var e = id && E(id);
 		return (e && e.textContent) || '';
+	}
+
+	function createToc(id){
+		var root = E(id);
+		var nav = C('nav');
+		nav.className = 'toc';
+//		nav.id = 'contents';
+		var h2 = C('h2');
+		h2.textContent = '目次';
+		nav.appendChild(h2);
+		nav.appendChild(Util.buildTocList(root));
+		var parent = root.parentNode;
+		if(parent.tagName === 'MAIN'){
+			parent.parentNode.insertBefore(nav, parent);
+		} else {
+			parent.insertBefore(nav, root);
+		}
 	}
 }
 
