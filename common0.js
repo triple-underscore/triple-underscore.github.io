@@ -618,9 +618,14 @@ return;
 
 	function createToc(id){
 		var root = E(id);
-		var nav = C('nav');
-		nav.className = 'toc';
-//		nav.id = 'contents';
+		var nav = E('_toc');
+		if(nav){
+			nav.textContent = '';
+		} else {
+			nav = C('nav');
+			nav.className = 'toc';
+			nav.id = '_toc';
+		}
 		var h2 = C('h2');
 		h2.textContent = '目次';
 		nav.appendChild(h2);
