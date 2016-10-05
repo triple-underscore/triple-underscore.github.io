@@ -1238,7 +1238,7 @@ grayscale::::グレイスケール
 </p>
 
 <p>
-更新： <time>2016-09-02</time>
+更新： <time>2016-10-05</time>
 （公開：<time>2012-03-11</time> ）
 </p>
 
@@ -1258,7 +1258,7 @@ grayscale::::グレイスケール
 
 	<hgroup>
 <h1>Web Workers</h1>
-<h2>HTML Living Standard — 最終更新 2016 年 9 月 1 日</h2>
+<h2>HTML Living Standard — 最終更新 2016 年 10 月 5 日</h2>
 	</hgroup>
 
 <main id="MAIN" style="display:none;">
@@ -4532,30 +4532,36 @@ Any same-origin URL will do, including blob: URLs.
 </p>
 	</li>
 	<li>
-<p>
-次の下位手続きを不可分的に実行する：
-◎
-Execute the following substeps atomically:
-</p>
-
-		<ol>
-			<li>
 %~worker ~LET 新たな `SharedWorker$I ~obj
 ◎
 Let worker be a new SharedWorker object.
 </li>
-			<li>
+	<li>
 %外側~port ~LET ［
 `所有者$： %外側~設定群
 ］の下で作成される，`新たな~MessagePort~obj$
 ◎
 Create a new MessagePort object whose owner is outside settings. Let this be the outside port.
 </li>
-			<li>
+	<li>
 %~worker の `port$m 属性 ~SET %外側~port
 ◎
 Assign outside port to the port attribute of worker.
 </li>
+	<li>
+`保安的~文脈？^V ~LET
+`設定群は保安的~文脈であるか？$( %外側~設定群 )
+◎
+Let isSecureContext be the result of executing Is environment settings object a secure context? on outside settings.
+</li>
+	<li>
+<p>
+次の下位手続きを`並列的$に走らす：
+◎
+Run these substeps in parallel:
+</p>
+
+		<ol>
 			<li>
 %~worker大域~scope ~LET ~NULL
 ◎
@@ -4600,13 +4606,13 @@ Let worker global scope be null.
 </p>
 
 ◎
-If there exists a SharedWorkerGlobalScope object whose closing flag is false, whose name is exactly equal to name, whose constructor url is equal to urlString, and whose relevant settings object's origin is same origin with outside settings's origin, then let worker global scope be that SharedWorkerGlobalScope object.
+If there exists a SharedWorkerGlobalScope object whose closing flag is false, whose name is exactly equal to name, whose constructor url is equal to urlString, and whose relevant settings object's origin is same origin with outside settings's origin, then set worker global scope to that SharedWorkerGlobalScope object.
 ◎
 If worker global scope is not null, but the user agent has been configured to disallow communication between the worker represented by the worker global scope and the scripts whose settings object is outside settings, then set worker global scope to null.
 ◎
 For example, a user agent could have a development mode that isolates a particular top-level browsing context from all other pages, and scripts in that development mode could be blocked from connecting to shared workers running in the normal browser mode.
 ◎
-If worker global scope is not null, then run these steps:
+If worker global scope is not null, then run these subsubsteps:
 </div>
 
 				<ol>
@@ -4620,16 +4626,24 @@ If worker global scope is not null, then run these steps:
 Let settings object be the relevant settings object for worker global scope.
 </li>
 					<li>
+<p>
 ~IF［
-`設定群は保安的~文脈であるか？$( %外側~設定群 )
-~NEQ
-`設定群は保安的~文脈であるか？$( %設定群~obj )
+`設定群は保安的~文脈であるか？$( %設定群~obj ) ~NEQ `保安的~文脈？^V
 `SECURE-CONTEXTS$r
 ］
+</p>
+						<ol>
+							<li>
+次を行う`~taskを待入する$
 ⇒
-~THROW `SecurityError^E
+%~worker に向けて，名前 `error$et の`単純~eventを発火する$
+</li>
+							<li>
+~RET
+</li>
+					</ol>
 ◎
-If the result of executing Is environment settings object a secure context? on outside settings does not match the result of executing the same algorithm on settings object, then throw a "SecurityError" DOMException and abort these steps. [SECURE-CONTEXTS]
+If the result of executing Is environment settings object a secure context? on settings object is not isSecureContext, then queue a task to fire a simple event named error at worker and abort these subsubsteps. [SECURE-CONTEXTS]
 </li>
 					<li>
 %~worker を %~worker大域~scope に結付ける
@@ -4659,7 +4673,6 @@ Entangle outside port and inside port.
 </li><li>名前は `connect$et
 </li><li>浮上しない
 </li><li>取消し不可
-</li><li>既定~動作を持たない
 </li><li>
 <p>
 各種~属性は次のように初期化する：
@@ -4671,9 +4684,8 @@ Entangle outside port and inside port.
 </li></ul>
 
 ◎
-Create a trusted event that uses the MessageEvent interface, with the name connect, which does not bubble, is not cancelable, has no default action, has a data attribute whose value is initialized to the empty string, has a ports attribute whose value is initialized to a new frozen array containing only the newly created port, and has a source attribute whose value is initialized to the newly created port. Queue a task, using the DOM manipulation task source, to dispatch the event at worker global scope.
+Create a trusted event that uses the MessageEvent interface, with the name connect, which does not bubble, is not cancelable, has a data attribute whose value is initialized to the empty string, has a ports attribute whose value is initialized to a new frozen array containing only the newly created port, and has a source attribute whose value is initialized to the newly created port. Queue a task, using the DOM manipulation task source, to dispatch the event at worker global scope.
 </li>
-
 					<li>
 `DOM 操作~task源$を利用して，次を行う`~taskを待入する$
 ⇒
@@ -4696,23 +4708,12 @@ Add to worker global scope's list of the worker's Documents the list of relevant
 ◎
 If outside settings's global object is a WorkerGlobalScope object, add worker global scope to the list of the worker's workers of outside settings's global object.
 </li>
-					<li>
-~RET %~worker
-◎
-Return worker and abort all these steps.
-</li>
 				</ol>
 			</li>
-		</ol>
-	</li>
-	<li>
-~RET %~worker
-— ただし、以下の手続きは`並列的$に遂行する。
-◎
-Return worker and perform the remaining steps in parallel.
-</li>
-	<li>
+			<li>
 <p>
+~ELSE
+⇒
 次を与える下で，`~workerを走らす$：
 </p>
 
@@ -4724,7 +4725,14 @@ Return worker and perform the remaining steps in parallel.
 </li></ul>
 
 ◎
-Run a worker given worker, urlRecord, outside settings, outside port, and options.
+Otherwise, run a worker given worker, urlRecord, outside settings, outside port, and options.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET %~worker
+◎
+Return worker.
 </li>
 </ol>
 
