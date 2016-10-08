@@ -734,17 +734,17 @@ T:true\n\
 ON:ON\n\
 OFF:OFF\n\
 NULL: null \n\
-PLUS: <code class="op">+</code> \n\
-MINUS: <code class="op">−</code> \n\
-MUL: <code class="op">×</code> \n\
-DIV: <code class="op">÷</code> \n\
-MOD: <code class="op">%</code> \n\
-DECBY: <code class="op">−=</code> \n\
-INCBY: <code class="op">+=</code> \n\
-GT: <code class="op">&gt;</code> \n\
-LT: <code class="op">&lt;</code> \n\
-LTE: <code class="op">≤</code> \n\
-GTE: <code class="op">≥</code> \n\
+PLUS: <span class="op">+</span> \n\
+MINUS: <span class="op">−</span> \n\
+MUL: <span class="op">×</span> \n\
+DIV: <span class="op">÷</span> \n\
+MOD: <span class="op">%</span> \n\
+DECBY: <span class="op">−=</span> \n\
+INCBY: <span class="op">+=</span> \n\
+GT: <span class="op">&gt;</span> \n\
+LT: <span class="op">&lt;</span> \n\
+LTE: <span class="op">≤</span> \n\
+GTE: <span class="op">≥</span> \n\
 IN: <span class="op">∈</span> \n\
 NIN: <span class="op">∉</span> \n\
 UNSPECIFIED:<span class="trans-note">【…未策定】</span>\n\
