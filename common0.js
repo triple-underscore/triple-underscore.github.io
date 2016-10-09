@@ -560,7 +560,7 @@ Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
 
 		var parts = this.persisted_parts;
 		if(parts){
-			Object.getOwnPropertyNames(parts).forEach(function(id){
+			Object.keys(parts).forEach(function(id){
 				var e = parts[id];
 				if(e.parentNode){
 					e.parentNode.removeChild(e);
@@ -573,7 +573,7 @@ Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
 		var parts = this.persisted_parts;
 		if(parts){
 //			console.log(parts);
-			Object.getOwnPropertyNames(parts).forEach(function(id){
+			Object.keys(parts).forEach(function(id){
 				var part = parts[id];
 				var e = E(id);
 				if(e) {

@@ -19,6 +19,7 @@ var source_data = {
 	},
 
 	html: '',
+	toc_main: 'MAIN0',
 	levels: 'ほぼ英語:英語主体:漢字+英語:漢字主体:カナ主体',
 
 	class_map: {
@@ -75,9 +76,6 @@ var source_data = {
 			this.html.replace(this.rxp2, create_html),
 			mapping1
 		);
-
-		// 目次構築
-		Util.rebuildToc('MAIN', '_toc_list0');
 
 		// header id を section から補完
 		repeat('section[id]', function(e){
@@ -851,7 +849,6 @@ IETF-org: “IETF (iesg@ietf.org) — Internet Engineering Task Force” \n\
 共通頁:RFC723X 共通ページ\n\
 HTTP11-abbr:<abbr title="Hypertext Transfer Protocol (version 1.1)">HTTP/1.1</abbr>\n\
 Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け</h2><p class="trans-note">【この節の内容は、著作権の告知も含め，<a href="RFC723X-ja.html#status">RFC723X 共通ページ</a>に委譲。】</p></section>\n\
-Table-of-Contents:<nav class="toc" id="toc"><h2 title="Table of Contents">目次</h2><ol id="_toc_list0"></ol></nav>\n\
 ',
 
 /** Words 
