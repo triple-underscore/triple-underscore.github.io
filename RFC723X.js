@@ -90,7 +90,7 @@ var source_data = {
 		function create_html(match, key, indicator, klass){
 
 if(!indicator) {//◎
-	return '<span lang="en">' + match.slice(1) + '<\/span>';
+	return '<span lang="en">' + match.slice(1) + '</span>';
 }
 
 var text = key;
@@ -175,7 +175,7 @@ case 'dfn':
 	if(href) {
 		return (
 '<dfn id="_' + href.slice(1) + '_" data-cycling="a[href=\'' + href + '\']">'
-+ text + '<\/dfn>'
++ text + '</dfn>'
 		);
 	}
 */
@@ -191,9 +191,10 @@ default:
 //		text = key;
 }
 
-classname = classname ? ' class="' + classname + '"' : '';
 if(tag) {
-	text = '<' + tag + classname + '>' + text + '</' + tag + '>';
+	text = '<' + tag + (
+		classname ? ' class="' + classname + '"' : ''
+	) + '>' + text + '</' + tag + '>';
 }
 
 if(href){
@@ -201,11 +202,11 @@ if(href){
 	case '^':
 		break;
 	case '$':
-		text = '<a href="' + href + '">' + text + '<\/a>';
+		text = '<a href="' + href + '">' + text + '</a>';
 		break;
 	case '@':
 //		href = href_data_map[key] || href;
-		text = '<dfn id="' + href.slice(1) + '">' + text + '<\/dfn>';
+		text = '<dfn id="' + href.slice(1) + '">' + text + '</dfn>';
 		break;
 	default:
 		console.log(match);

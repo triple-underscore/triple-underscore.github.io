@@ -863,6 +863,8 @@ HEcustom:HTML-custom-ja.html\n\
 HEtextlevel:HTML-text-level-ja.html\n\
 HEsections:HTML-sections-ja.html\n\
 HEscripting:HTML-scripting-ja.html\n\
+HEcanvas:https://html.spec.whatwg.org/multipage/scripting.html\n\
+HEtables:https://html.spec.whatwg.org/multipage/tables.html\n\
 WEBSOCKET:WebSocket-ja.html\n\
 WORKERS:Workers-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
