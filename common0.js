@@ -853,6 +853,7 @@ HTMLindex:HTML-index-ja.html\n\
 HTMLlinks:HTML-links-ja.html\n\
 HTMLrendering:HTML-rendering-ja.html\n\
 HTMLselectors:selectors-html-ja.html\n\
+HTMLemb:https://html.spec.whatwg.org/multipage/embedded-content.html\n\
 HEinteractive:HTML-interactive-elements-ja.html\n\
 HEforms:HTML-form-elements-ja.html\n\
 HEinput:HTML-input-ja.html\n\
