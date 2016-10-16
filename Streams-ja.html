@@ -614,11 +614,8 @@ version::::バージョン
 概念:concept:~
 確信-:believe:~
 	対照的:in contrast:~
-判別-:distinguish:~
-悪影響:consequences:~
 最適化-:optimize:~
 最適化:optimization:~
-最適:optimal:~
 手引き:guide:~
 単純化:simplification:~
 基礎:basis:~
@@ -705,8 +702,12 @@ feedback:::フィードバック
 抽象:abstract:~
 重要:important:~
 安全:safe:~
-	謝辞:acknowledgment:~
+局面:scenario:~
+非対称性:asymmetry:~
 
+	もたらす:introduce
+	外から見える:noticable
+	謝辞:acknowledgment:~
 	~~想定:imagine／-
 	興味を引く:interesting
 	想起:evocative
@@ -906,7 +907,7 @@ protocol::::プロトコル
 public:::公開::パブリック
 random::::ランダム
 remote::::リモート
-self-hosted:
+self-hosted:::自己完結的な
 server::::サーバ
 shut-down:shut down
 socket:::::ソケット
@@ -1713,7 +1714,7 @@ code {
 </p>
 
 <p>
-更新：<time>2016-10-13</time>
+更新：<time>2016-10-16</time>
 （公開：<time>2015-01-19</time> ）
 </p>
 
@@ -1742,7 +1743,7 @@ code {
 ></a>
 	<hgroup>
 <h1 id="title">Streams</h1>
-<h2>Living Standard — 最終更新 2016 年 10 月 12 日</h2>
+<h2>Living Standard — 最終更新 2016 年 10 月 14 日</h2>
 	</hgroup>
 <dl>
 	<dt>Participate:</dt>
@@ -1757,7 +1758,7 @@ code {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a></dd>
-	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/8a671b6cc3670cce3a93567e9324c27d0c6aa435" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/ff1d3c9af8a01f4b03a508281844b72a92b533c7" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/streamsstandard">@streamsstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -3339,17 +3340,26 @@ Return true.
 
 			</section>
 			<section id="readable-stream-tee">
-<h4 class="throws">3.3.6. `ReadableStreamTee ( stream, shouldClone )^A</h4>
+<h4 class="throws">3.3.6. `ReadableStreamTee ( stream, cloneForBranch2 )^A</h4>
 
 <p>
 この抽象~演算は、所与の可読~streamを`二叉化-$したいと望むような，他の仕様から~callされる用途に意図されている。
-その二番目の引数は、［
+◎
+This abstract operation is meant to be called from other specifications that may wish to tee a given readable stream.
+</p>
+
+<p>
+二番目の引数 %cloneForBranch2 は、［
 元の~streamからの~dataが，［
-返された分岐~内にて可視になる前に，`有構造~clone$される `HTML$r
+二番目の分岐~内に現れる前に，`有構造~clone$される `HTML$r
 ］かどうか
 ］を統治する。
+これは、両 分岐が消費されるとき
+— ~chunkの転送-時など —
+互いに干渉しあうおそれがある局面で有用になる。
+しかしながら、両 分岐の間に 外から見える非対称性も，もたらされることになる。
 ◎
-This abstract operation is meant to be called from other specifications that may wish to tee a given readable stream. Its second argument governs whether or not the data from the original stream will be structured cloned before becoming visible in the returned branches. [HTML]
+The second argument, cloneForBranch2, governs whether or not the data from the original stream will be structured cloned before appearing in the second of the returned branches. This is useful for scenarios where both branches are to be consumed in such a way that they might otherwise interfere with each other, such as by transfering their chunks. However, it does introduce a noticable asymmetry between the two branches. [HTML]
 </p>
 
 <ol class="algo">
@@ -3361,9 +3371,9 @@ Assert: ! IsReadableStream(stream) is true.
 </li>
 	<li>
 ~Assert：
-`Type$A(%shouldClone) ~EQ `Boolean^b
+`Type$A(%cloneForBranch2) ~EQ `Boolean^b
 ◎
-Assert: Type(shouldClone) is Boolean.
+Assert: Type(cloneForBranch2) is Boolean.
 </li>
 	<li>
 %reader ~LET ? `AcquireReadableStreamDefaultReader$A(%stream)
@@ -3392,9 +3402,9 @@ Let pull be a new ReadableStreamTee pull function.
 	<li>
 %pull.[[reader]] ~SET %reader；<br>
 %pull.[[teeState]] ~SET %teeState；<br>
-%pull.[[shouldClone]] ~SET %shouldClone
+%pull.[[cloneForBranch2]] ~SET %cloneForBranch2
 ◎
-Set pull.[[reader]] to reader, pull.[[teeState]] to teeState, and pull.[[shouldClone]] to shouldClone.
+Set pull.[[reader]] to reader, pull.[[teeState]] to teeState, and pull.[[cloneForBranch2]] to cloneForBranch2.
 </li>
 	<li>
 %cancel1 ~LET 新たな`~ReadableStreamTee第一~分岐 取消-関数$
@@ -3515,42 +3525,15 @@ Return « branch1Stream, branch2Stream ».
 </li>
 </ol>
 
-<div class="note">
-
-<p>
-上に与えられた~algoは、各~chunkに対し，二つの~cloneを作成して，元の~chunkを破棄する
-— ［
-~cloneを一つだけ作成して，一方の分岐に与えつつ、元の~chunkを他方の分岐に与える
-］のではなく。
-これは、各~分岐から見える~chunkの対称性を確保するために行われる：
-例えば、［
-<samp >const r = /?:/; r.expando = "!";</samp>
-］に対する `r^c の~cloneは、 `expando^c ~propを持たないので，元のものと判別できるようになる。
-◎
-The given algorithm creates two clones of each chunk, and discards the original, instead of creating one clone and giving the original to one branch and the clone to another. This is done to ensure symmetry between the chunks seen by each branch; for example, the clone of const r = /?:/; r.expando = "!"; is distinguishable from the original since the clone will not have the expando property.
-</p>
-
-<p>
-しかしながら，特定の事例では、実装は，観測し得る悪影響は伴われないような，より最適な何かを行えることもある。
-例えば、各~chunkが実装により作成されるものであって, 開発者により改変できない場合、元の~chunkとその~cloneとを判別できなくすることも可能0になり得る
-— その場合、必要とされる~clone演算は片方のみになる —
-<a href="https://lists.w3.org/Archives/Public/public-webcrypto/2014Mar/0141.html">ただし，慎重に！</a>
-◎
-However, in specific cases implementations may be able to do something more optimal, without observable consequences. For example if each chunk is created by the implementation, and cannot otherwise be modified by the developer, it may be possible to ensure the original and its clone are not distinguishable, in which case only one clone operation would be necessary. But, be careful!
-</p>
-
-</div>
-
 <p>
 `~ReadableStreamTee~pull関数@
-は、所与の`可読~stream読取器$から~dataを~pullして，
-二つの他の~stream（結付けられた二叉化-の各 “分岐”）の中へ~enqueueする，組込みの匿名~関数である。
-各 `ReadableStreamTee$A ~pull関数は、内部~slotに［
-[[reader]], [[branch1]], [[branch2]], [[teeState]],[[shouldClone]]
-］を持つ。
-`ReadableStreamTee$A ~pull関数 %F が~callされたときは、次の手続きを遂行する：
+は，組込みの匿名~関数であり、所与の`可読~stream読取器$から~dataを~pullして，
+二つの他の~stream（結付けられた二叉化-の各 “分岐”）の中へ~enqueueする。
+この関数の各~instance %F は、内部~slotに［
+[[reader]], [[branch1]], [[branch2]], [[teeState]],[[cloneForBranch2]]
+］を持ち，~callされたときは 次の手続きを遂行する：
 ◎
-A ReadableStreamTee pull function is an anonymous built-in function that pulls data from a given readable stream reader and enqueues it into two other streams ("branches" of the associated tee). Each ReadableStreamTee pull function has [[reader]], [[branch1]], [[branch2]], [[teeState]], and [[shouldClone]] internal slots. When a ReadableStreamTee pull function F is called, it performs the following steps:
+A ReadableStreamTee pull function is an anonymous built-in function that pulls data from a given readable stream reader and enqueues it into two other streams ("branches" of the associated tee). Each ReadableStreamTee pull function has [[reader]], [[branch1]], [[branch2]], [[teeState]], and [[cloneForBranch2]] internal slots. When a ReadableStreamTee pull function F is called, it performs the following steps:
 </p>
 
 <ol class="algo">
@@ -3559,9 +3542,9 @@ A ReadableStreamTee pull function is an anonymous built-in function that pulls d
 %branch1 ~LET %F.[[branch1]]；<br>
 %branch2 ~LET %F.[[branch2]]；<br>
 %teeState ~LET %F.[[teeState]]；<br>
-%shouldClone ~LET %F.[[shouldClone]]
+%cloneForBranch2 ~LET %F.[[cloneForBranch2]]
 ◎
-Let reader be F.[[reader]], branch1 be F.[[branch1]], branch2 be F.[[branch2]], teeState be F.[[teeState]], and shouldClone be F.[[shouldClone]].
+Let reader be F.[[reader]], branch1 be F.[[branch1]], branch2 be F.[[branch2]], teeState be F.[[teeState]], and cloneForBranch2 be F.[[cloneForBranch2]].
 </li>
 
 	<li>
@@ -3606,8 +3589,8 @@ Assert: Type(done) is Boolean.
 ◎
 If done is true and teeState.[[closedOrErrored]] is false,
 </p>
-		<ol>
-	<li>
+				<ol>
+					<li>
 <p>
 ~IF
 %teeState.[[canceled1]] ~EQ `false^b
@@ -3615,17 +3598,16 @@ If done is true and teeState.[[closedOrErrored]] is false,
 ◎
 If teeState.[[canceled1]] is false,
 </p>
-		<ol>
-			<li>
+						<ol>
+							<li>
 ! `ReadableStreamDefaultControllerClose$A(%branch1)
 を遂行する
 ◎
 Perform ! ReadableStreamDefaultControllerClose(branch1).
 </li>
-		</ol>
-	</li>
-
-	<li>
+						</ol>
+					</li>
+					<li>
 <p>
 ~IF
 %teeState.[[canceled2]] ~EQ `false^b
@@ -3633,23 +3615,23 @@ Perform ! ReadableStreamDefaultControllerClose(branch1).
 ◎
 If teeState.[[canceled2]] is false,
 </p>
-		<ol>
-			<li>
+						<ol>
+							<li>
 ! `ReadableStreamDefaultControllerClose$A(%branch2)
 を遂行する
 ◎
 Perform ! ReadableStreamDefaultControllerClose(branch2).
 </li>
-		</ol>
-	</li>
-	<li>
+						</ol>
+					</li>
+					<li>
 %teeState.[[closedOrErrored]] ~SET `true^b
 ◎
 Set teeState.[[closedOrErrored]] to true.
 </li>
-		</ol>
-	</li>
-	<li>
+				</ol>
+			</li>
+			<li>
 ~IF
 %teeState.[[closedOrErrored]] ~EQ `true^b
 ⇒
@@ -3657,80 +3639,52 @@ Set teeState.[[closedOrErrored]] to true.
 ◎
 If teeState.[[closedOrErrored]] is true, return undefined.
 </li>
-
-	<li>
-<p>
-~IF
-%teeState.[[canceled1]] ~EQ `false^b
-：
-◎
-If teeState.[[canceled1]] is false,
-</p>
-		<ol>
 			<li>
-%value1 ~LET %value 
+( %value1, %value2 ) ~LET ( %value, %value )
 ◎
-Let value1 be value.
+Let value1 and value2 be value.
 </li>
 			<li>
-~IF
-%shouldClone ~EQ `true^b
+~IF［
+%teeState.[[canceled2]] ~EQ `false^b
+］~AND［
+%cloneForBranch2 ~EQ `true^b 
+］
 ⇒
-%value1 ~SET ? `StructuredClone$A(%value)
+%value2 ~SET ? `StructuredClone$A(%value2)
 ◎
-If shouldClone is true, set value1 to ? StructuredClone(value).
+If teeState.[[canceled2]] is false and cloneForBranch2 is true, set value2 to ? StructuredClone(value2).
 </li>
 			<li>
+~IF
+%teeState.[[canceled1]] ~EQ `false^b 
+⇒
 ? `ReadableStreamDefaultControllerEnqueue$A(%branch1, %value1)
 を遂行する
 ◎
-Perform ? ReadableStreamDefaultControllerEnqueue(branch1, value1).
+If teeState.[[canceled1]] is false, perform ? ReadableStreamDefaultControllerEnqueue(branch1, value1).
 </li>
-		</ol>
-	</li>
-
-	<li>
-<p>
+			<li>
 ~IF
 %teeState.[[canceled2]] ~EQ `false^b
-：
-◎
-If teeState.[[canceled2]] is false,
-</p>
-				<ol>
-					<li>
-%value2 ~LET %value 
-◎
-Let value2 be value.
-</li>
-					<li>
-~IF
-%shouldClone ~EQ `true^b
 ⇒
-%value2 ~SET ? `StructuredClone$A(%value)
-◎
-If shouldClone is true, set value2 to ? StructuredClone(value).
-</li>
-					<li>
 ? `ReadableStreamDefaultControllerEnqueue$A(%branch2, %value2)
 を遂行する
 ◎
-Perform ? ReadableStreamDefaultControllerEnqueue(branch2, value2).
+If teeState.[[canceled2]] is false, perform ? ReadableStreamDefaultControllerEnqueue(branch2, value2).
 </li>
-				</ol>
-			</li>
 		</ol>
 	</li>
 </ol>
 
 <p>
 `~ReadableStreamTee第一~分岐 取消-関数@
-は、［
+は，組込みの匿名~関数であり、［
 結付けられた二叉化-の最初の分岐に対する取消
-］に反応する，組込みの匿名~関数であり、そのそれぞれは，内部~slotに［
+］に反応する。
+この関数の各~instance %F は、内部~slotに［
 [[stream]], [[teeState]]
-］を持つ。
-この関数 %F が，引数 %reason を伴って~callされたときは、次の手続きを遂行する：
+］を持ち，引数 %reason を伴って~callされたときは 次の手続きを遂行する：
 ◎
 A ReadableStreamTee branch 1 cancel function is an anonymous built-in function that reacts to the cancellation of the first of the two branches of the associated tee. Each ReadableStreamTee branch 1 cancel function has [[stream]] and [[teeState]] internal slots. When a ReadableStreamTee branch 1 cancel function F is called with argument reason, it performs the following steps:
 </p>
@@ -3790,12 +3744,12 @@ Return teeState.[[promise]].
 
 <p>
 `~ReadableStreamTee第二~分岐 取消-関数@
-は、［
+は，組込みの匿名~関数であり、［
 結付けられた二叉化-の二番目の分岐に対する取消
-］に反応する，組込みの匿名~関数であり、そのそれぞれは，内部~slotに［
+］に反応する。
+この関数の各~instance %F は、内部~slotに［
 [[stream]], [[teeState]]
-］を持つ。
-この関数 %F が引数 %reason を伴って~callされたときは、次の手続きを遂行する：
+］を持ち，引数 %reason を伴って~callされたときは 次の手続きを遂行する：
 ◎
 A ReadableStreamTee branch 2 cancel function is an anonymous built-in function that reacts to the cancellation of the second of the two branches of the associated tee. Each ReadableStreamTee branch 2 cancel function has [[stream]] and [[teeState]] internal slots. When a ReadableStreamTee branch 2 cancel function F is called with argument reason, it performs the following steps:
 </p>
@@ -13590,6 +13544,7 @@ Jake Archibald,
 Jens Nockert,
 Mangala Sadhu Sangeet Singh Khalsa,
 Marcos Caceres,
+Marvin Hagemeister,
 Michael Mior,
 Mihai Potra,
 Stephen Sugden,
