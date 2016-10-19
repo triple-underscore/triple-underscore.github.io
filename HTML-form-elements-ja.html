@@ -266,6 +266,9 @@ I.Text:~DOM4#interface-text
 
 m.value:~DOM4#dom-domtokenlist-value
 m.createElement:~DOM4#dom-document-createelement
+m.bubbles:~DOM4#dom-event-bubbles
+m.cancelable:~DOM4#dom-event-cancelable
+m.isTrusted:~DOM4#dom-event-istrusted
 m.document.forms:~HTMLdom#dom-document-forms
 m.forms:~HTMLdom#dom-document-forms
 m.item:~DOM4#dom-htmlcollection-nameditem
@@ -664,7 +667,6 @@ text/html における~tag省略:~HTMLdom#concept-element-tag-omission
 
 ~ASCII大小無視:~HTMLINFRA#ascii-case-insensitive
 ~ASCII互換~符号化方式:~HTMLINFRA#ascii-compatible-encoding
-発火-:~HTMLINFRA#concept-event-fire
 ~HTML名前空間:~HTMLINFRA#html-namespace-2
 
 結付けられている文書:~BROWSERS#concept-document-window
@@ -675,9 +677,7 @@ text/html における~tag省略:~HTMLdom#concept-element-tag-omission
 ~taskを待入し:~WAPI#queue-a-task
 待入され:~WAPI#queue-a-task
 現在の大域~obj:~WAPI#current-global-object
-単純~eventを発火する:~WAPI#fire-a-simple-event
 利用者~対話~task源:~WAPI#user-interaction-task-source
-
 
 浮動小数点数として最良の表現:~HTMLINFRA#best-representation-of-the-number-as-a-floating-point-number
 真偽~属性:~HTMLINFRA#boolean-attribute
@@ -695,7 +695,6 @@ text/html における~tag省略:~HTMLdom#concept-element-tag-omission
 反映-:~HTMLINFRA#reflect
 浮動小数点数として構文解析-:~HTMLINFRA#rules-for-parsing-floating-point-number-values
 非~負~整数として構文解析-:~HTMLINFRA#rules-for-parsing-non-negative-integers
-~trusted:~HTMLINFRA#concept-events-trusted
 空白区切りの一意な~tokenからなる無順序~集合:~HTMLINFRA#unordered-set-of-unique-space-separated-tokens
 妥当な浮動小数点数:~HTMLINFRA#valid-floating-point-number
 妥当な非~負~整数:~HTMLINFRA#valid-non-negative-integer
@@ -721,6 +720,7 @@ x.~label:~ENCODING#label
 ~URL:~URLSpec#concept-url
 
 ~ID:~DOM4#concept-id
+発火-:~DOM4#concept-event-fire
 ~clone時の手続き:~DOM4#concept-node-clone-ext
 要素を作成-:~DOM4#concept-create-element
 ~data:~DOM4#concept-cd-data
@@ -1071,8 +1071,6 @@ widget::::ウィジェット
 作動中:active::~::アクティブ
 作動化:activation::~::アクティブ化
 作動化の:activation::~::アクティブ化の
-取消可能:cancelable::~::キャンセル可能
-取消され:cancel され::~::キャンセルされ
 合成:synthetic::~
 
 方向性:directionality:~
@@ -1200,7 +1198,6 @@ call:
 live:
 待機-:wait:~
 投出:throw:~
-浮上-:bubble:~
 誘発-:trigger:~
 配送-:dispatch:~
 呼出す:invoke する:呼び出す
@@ -1993,7 +1990,7 @@ out of 233 257 824 bytes available</meter></p>
 </p>
 
 <p>
-更新： <time>2016-09-29</time>
+更新： <time>2016-10-19</time>
 （公開：<time>2016-09-25</time> ）
 </p>
 
@@ -2015,7 +2012,7 @@ out of 233 257 824 bytes available</meter></p>
 <header id="head">
 	<hgroup>
 <h1>フォーム用の要素 — Forms</h1>
-<h2>HTML Living Standard — 最終更新 2016 年 10 月 12 日</h2>
+<h2>HTML Living Standard — 最終更新 2016 年 10 月 18 日</h2>
 	</hgroup>
 </header>
 
@@ -3542,26 +3539,22 @@ If the button element's node document is not fully active, abort these steps.
 Let menu be the element's designated pop-up menu, if any. If there isn't one, then abort these steps.
 </li>
 			<li>
-%event ~LET 次のようにされた~event：
+<p>
+%build ~LET %~menu に向けて、次のようにされた~eventを `発火-$した結果：
+</p>
 
-<ul><li>名前 `show$et
+<ul ><li>名前 `show$et
 </li><li>`RelatedEvent$I ~interfaceを利用する
-</li><li>`~trusted$
+</li><li>`cancelable$m  属性 ~SET ~T
 </li><li>`relatedTarget$m 属性 ~SET %B
-</li><li>取消可能
 </li></ul>
 
-
 ◎
-Fire a trusted event with the name show at menu, using the RelatedEvent interface, with the relatedTarget attribute initialized to the button element. The event must be cancelable.
+Let build be the result of firing an event named show at menu, using RelatedEvent, with the cancelable attribute initialized to true and the relatedTarget attribute initialized to the button element.
 </li>
 			<li>
-%~menu に向けて、 %~event を`発火-$する
-◎
-↑</li>
-			<li>
 ~IF［
-%~event は取消されなかった
+%build ~EQ ~T
 ］
 ⇒
 次を与える下で，
@@ -3569,7 +3562,8 @@ Fire a trusted event with the name show at menu, using the RelatedEvent interfac
 ⇒
 ( %~source, %~subject ) ~SET ( %~menu, %B )
 ◎
-If the event is not canceled, then build and show the menu for menu, with the button element as the subject.
+If build is true, then build and show the menu for menu, with the button element as the subject.
+If the event is not canceled, then 
 </li>
 		</ol>
 	</dd>
@@ -4233,33 +4227,42 @@ If the multiple attribute is present, and the element is not disabled, then the 
 </div>
 
 
-<div>
 <p>
 ~UAは、 `select$e 要素 %S に対する
 `選択-更新の通知を送信-@
-するときは，次を走らす`~taskを待入し$~MUST：
+するときは、`利用者~対話~task源$を利用する, 次を走らす`~taskを待入し$~MUST：
+◎
+When the user agent is to send select update notifications, queue a task, using the user interaction task source, to run these steps:
 </p>
 
-<ol><li>名前 `input$et の`単純~eventを発火する$
-</li><li>名前 `change$et の`単純~eventを発火する$
-</li></ol>
-
+<ol>
+	<li>
+%isTrusted ~LET ［
+`~JS実行~文脈~stack$は空でないならば、~F ／
+~ELSE_ ~T
+］
+◎
+Let isTrusted be false, if the JavaScript execution context stack is not empty, and true otherwise.
+</li>
+	<li>
 <p>
-ここで、両~eventとも，次のようにされ~MUST：
+%S に向けて、順に 名前［
+`input$et, `change$et
+］の~eventを，次のように属性を初期化した上で`発火-$する：
 </p>
 
-<ul><li>%S を標的にする。
-</li><li>浮上する。
-</li><li>`利用者~対話~task源$を利用する。
-</li><li>待入する時点で`~JS実行~文脈~stack$は空でないならば、`~trusted$でない。
+<ul><li>`bubbles$m 属性 ~SET ~T
+</li><li>`isTrusted$m 属性 ~SET %isTrusted
 </li></ul>
 
 ◎
-When the user agent is to send select update notifications, queue a task to first fire a simple event that bubbles named input at the select element, and then fire a simple event that bubbles named change at the select element, using the user interaction task source as the task source. If the JavaScript execution context stack was not empty when the user agent was to send select update notifications, then the resulting input and change events must not be trusted.
-</div>
+Fire an event named input at the select element, with the bubbles attribute initialized to true and the isTrusted attribute initialized to isTrusted.
+◎
+Fire an event named change at the select element, with the bubbles attribute initialized to true and the isTrusted attribute initialized to isTrusted.
+</li>
+</ol>
 
-
-<div>
+<div class="p">
 <p>
 `select$e 要素 %S に対する`再設定~algo$は、次を走らす：
 </p>
@@ -5959,7 +5962,9 @@ A textarea element is mutable if it is neither disabled nor has a readonly attri
 	<li>
 どの時点であれ，利用者が 要素の``生の値$を変更したときは、次を行う`~taskを待入し$~MUST
 ⇒
-`textarea$e 要素に向けて，浮上する名前 `input$et の`単純~eventを発火する$
+`textarea$e 要素に向けて、名前 `input$et の~eventを，［
+`bubbles$m 属性 ~SET ~T
+］に初期化した上で `発火-$する
 </li>
 	<li>
 前項の`~taskを待入する$前に，利用者との対話に相応しい間 待機して~MAY
@@ -5972,7 +5977,7 @@ A textarea element is mutable if it is neither disabled nor has a readonly attri
 </ul>
 
 ◎
-When a textarea is mutable, its raw value should be editable by the user: the user agent should allow the user to edit, insert, and remove text, and to insert and remove line breaks in the form of U+000A LINE FEED (LF) characters. Any time the user causes the element's raw value to change, the user agent must queue a task to fire a simple event that bubbles named input at the textarea element. User agents may wait for a suitable break in the user's interaction before queuing the task; for example, a user agent could wait for the user to have not hit a key for 100ms, so as to only fire the event when the user pauses, instead of continuously for each keystroke.
+When a textarea is mutable, its raw value should be editable by the user: the user agent should allow the user to edit, insert, and remove text, and to insert and remove line breaks in the form of U+000A LINE FEED (LF) characters. Any time the user causes the element's raw value to change, the user agent must queue a task to fire an event named input at the textarea element, with the bubbles attribute initialized to true. User agents may wait for a suitable break in the user's interaction before queuing the task; for example, a user agent could wait for the user to have not hit a key for 100ms, so as to only fire the event when the user pauses, instead of continuously for each keystroke.
 </div>
 
 
@@ -6053,10 +6058,11 @@ Set the element's dir attribute to "ltr" if the user selected a left-to-right wr
 	<li>
 次を行う`~taskを待入する$
 ⇒
-`textarea$e 要素に向けて
-浮上する名前 `input$et の`単純~eventを発火する$
+`textarea$e 要素に向けて、名前 `input$et の~eventを，［
+`bubbles$m 属性 ~SET ~T
+］に初期化した上で`発火-$する
 ◎
-Queue a task to fire a simple event that bubbles named input at the textarea element.
+Queue a task to fire an event named input at the textarea element, with the bubbles attribute initialized to true.
 </li>
 
 </ol>
