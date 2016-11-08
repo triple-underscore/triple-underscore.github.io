@@ -783,7 +783,7 @@ RFC7231:RFC7231-ja.html\n\
 RFC7232:RFC7232-ja.html\n\
 RFC7234:RFC7234-ja.html\n\
 CSSWG:https://drafts.csswg.org\n\
-CSS22:https://drafts.csswg.org/css2\n\
+CSS22:https://www.w3.org/TR/CSS22\n\
 CSS21:https://www.w3.org/TR/CSS21\n\
 CSP3:CSP3-ja.html\n\
 COMPOSITING:compositing-ja.html\n\
