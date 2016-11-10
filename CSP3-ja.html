@@ -225,10 +225,11 @@ Fetch:
 URL:
 	IP
 IPv6:
-cache::::キャッシュ
+keepalive:
 manifest::::マニフェスト
 protocol::::プロトコル
 url::::
+id:
 fetch::::
 	~fetch~~処理:fetching
 port::::ポート
@@ -1268,7 +1269,7 @@ P.RWS:#_RWS
 I.SecurityPolicyViolationEventDisposition:#enumdef-securitypolicyviolationeventdisposition
 I.SecurityPolicyViolationEventInit:#dictdef-securitypolicyviolationeventinit
 I.SecurityPolicyViolationEvent:#securitypolicyviolationevent
-I.ServiceWorker:https://w3c.github.io/ServiceWorker/#service-worker-interface
+I.ServiceWorker:https://w3c.github.io/ServiceWorker/#serviceworker
 I.SharedWorker:~WORKERS#sharedworker
 I.Worker:~WORKERS#worker
 I.WorkerGlobalScope:~WORKERS#workerglobalscope
@@ -1496,7 +1497,10 @@ A.~urlは ( 生成元, ~redirect回数 ) について~source~listに合致する
 A.~urlは ( 生成元, ~redirect回数 ) について式に合致するか？:#match-url-to-source-expression
 A.有効な指令を取得-:#effective-directive-for-a-request
 	要請に対する有効な指令を取得する
-A.~scheme-partは別の~scheme-partに合致するか？:#match-schemes
+A.~scheme成分は別の~scheme成分に合致するか？:#match-schemes
+A.~host成分は別の~host成分に合致するか？:#match-hosts
+A.~port成分は別の~port成分, ~schemeに合致するか？:#match-ports
+A.~path成分は別の~path成分に合致するか？:#match-paths
 A.要素 は ( 型, ~source ) について~source~listに合致するか？:#match-element-to-source-list
 A.要素は~nonceableか？:#is-element-nonceable
 
@@ -1558,22 +1562,25 @@ rs.~url:~FETCH#concept-response-url
 
 要請:~FETCH#concept-request
 rq.本体:~FETCH#concept-request-body
-rq.~cache~mode:~FETCH#concept-request-cache-mode
 rq.~client:~FETCH#concept-request-client
 rq.資格証~mode:~FETCH#concept-request-credentials-mode
+rq.~keepalive~flag:~FETCH#request-keepalive-flag
 rq.現在の~url:~FETCH#concept-request-current-url
 rq.行先:~FETCH#concept-request-destination
 	＊rq.大域~obj:~FETCH#concept-request-global-object
+	＊rq.~cache~mode:~FETCH#concept-request-cache-mode
 rq.~header~list:~FETCH#concept-request-header-list
 rq.起動元:~FETCH#concept-request-initiator
 rq.~method:~FETCH#concept-request-method
 rq.生成元:~FETCH#concept-request-origin
 rq.~redirect~mode:~FETCH#concept-request-redirect-mode
+rq.~mode:~FETCH#concept-request-mode
 rq.種別:~FETCH#concept-request-type
 rq.~url:~FETCH#concept-request-url
 rq.~window:~FETCH#concept-request-window
-rq.~target閲覧文脈:#
+rq.~target閲覧文脈:#concept-request-target-browsing-context
 	＊~FETCH#concept-request-target-browsing-context
+rq.~target~client~id:~FETCH#concept-request-target-client-id
 rq.暗号用~nonce~metadata:~FETCH#concept-request-nonce-metadata
 rq.構文解析器~metadata:~FETCH#concept-request-parser-metadata
 rq.完全性~metadata:~FETCH#concept-request-integrity-metadata
@@ -1738,7 +1745,7 @@ i {
 </p>
 
 <p >
-更新：<time>2016-11-08</time>
+更新：<time>2016-11-10</time>
 （公開：<time>2015-12-12</time> ）
 </p>
 
@@ -1761,7 +1768,7 @@ i {
 <a href="https://www.w3.org/" id="_W3C">W3C</a>
 	<hgroup>
 <h1 id="title">Content Security Policy Level 3</h1>
-<h2 id="subtitle">2016 年 11 月 7 日付 編集者草案</h2>
+<h2 id="subtitle">2016 年 11 月 9 日付 編集者草案</h2>
 	</hgroup>
 <dl id="_versions">
 	<dt title="This version:">このバージョン</dt>
@@ -2133,7 +2140,6 @@ unsafe-hashed-attributes is a work in progress. &lt;https://github.com/w3c/webap
 The source expression matching has been changed to require explicit presence of any non-network scheme, rather than local scheme, unless that non-network scheme is the same as the scheme of protected resource, as described in §6.6.1.6 Does url match expression in origin with redirect count?.
 </li>
 	<li class="wip">
-<p >
 ~hashに基づく~source式は、今や，外部~scriptに合致し得る
 — 要請を誘発する当の `script$e 要素が［
 完全性~metadataの集合を指定していて，それが現在の施策~内に~listされている
@@ -2143,15 +2149,7 @@ The source expression matching has been changed to require explicit presence of 
 節を見よ。
 ◎
 Hash-based source expressions may now match external scripts if the script element that triggers the request specifies a set of integrity metadata which is listed in the current policy. Details in §8.4 Allowing external JavaScript via hashes.
-</p>
-
-<p class="issue">
-`SRI$r との統合はまだ策定段階にある。
-<a href="https://github.com/w3c/webappsec-csp/issues/78">&lt;https://github.com/w3c/webappsec-csp/issues/78&gt;</a>
-◎
-SRI integration is a work in progress. &lt;https://github.com/w3c/webappsec-csp/issues/78&gt;
-</p>
-	</li>
+</li>
 	<li>
 `disown-opener$dir 指令は、<!-- ＊ -->内容に対する制御を別の閲覧文脈に与えるような仕方では，資源を開けないことを確保する。
 ◎
@@ -2179,7 +2177,8 @@ The navigation-to directive gives a resource control over the endpoints to which
 ~EQ, ~NEQ, ~IN, ~NIN
 ］に添えられる
 “`~ACI@”
-は、記号の意味を `~ASCII大小無視$による比較に基づくように改めることを表す（比較される対象が`~ASCII~byte$列の場合は、 UTF-8 に符号化された~Unicode文字列と見なした上で）。
+は、記号の意味を `~ASCII大小無視$による比較に基づくように改めることを表す（比較される対象が`~ASCII~byte$列の場合は、 UTF-8 に符号化された~Unicode文字列と見なした上で
+— この仕様の`~ASCII~byte$列は、常にそのように文字列と同一視されている）。
 </p>
 
 <p>
@@ -2614,7 +2613,7 @@ An inline check, which takes an Element a type string, and a soure string as arg
 	<dt>`初期化@A</dt>
 	<dd>
 ( ［
-`文書$または `大域~obj$
+`文書$ ／ `大域~obj$
 ］, `応答$ , `施策$ )
 を引数にとり，
 `文書の~CSP~listを初期化する$A間に実行される。
@@ -2762,14 +2761,14 @@ A serialized source list is a string of ASCII bytes, consisting of a space-delim
 ;        / `https://*.example.com:12/path/to/file.js^s
 `host-source@p       = [ `scheme-part$p "://" ]
                     `host-part$p
-                    [ `port-part$p ]
+                    [ ":" `port-part$p ]
                     [ `path-part$p ]
 `scheme-part@p       = `scheme$p
                   ; scheme is defined in section 3.1 of RFC 3986.
 `host-part@p         = "*"
                   / [ "*." ] 1*`host-char$p *( "." 1*`host-char$p )
 `host-char@p         = `ALPHA$P / `DIGIT$P / "-"
-`port-part@p         = ":" ( 1*`DIGIT$P / "*" )
+`port-part@p         = 1*`DIGIT$P / "*"
 `path-part@p         = `path-abempty$p
                   ; path-abempty is defined in section 3.3 of RFC 3986.
 
@@ -5003,16 +5002,16 @@ type
 • ""
 </li>
 							<li>
-`~cache~mode$rq ~SET `no-cache^l
-◎
-cache mode
-• "no-cache"
-</li>
-							<li>
 `資格証~mode$rq ~SET `same-origin^l
 ◎
 credentials mode
 • "same-origin"
+</li>
+							<li>
+`~keepalive~flag$rq ~SET ~ON
+◎
+keepalive flag
+• "true"
 </li>
 							<li>
 `~header~list$rq ~SET ［
@@ -5036,6 +5035,13 @@ redirect mode
 • "error"
 </li>
 						</ul>
+
+<p class="note">注記：
+%要請 の`~mode$rqは既定で `no-cors^l であり、対する応答は まるごと無視される。
+◎
+Note: request’s mode defaults to "no-cors"; the response is ignored entirely.
+</p>
+
 					</li>
 					<li>
 %要請 を`~fetch$する
@@ -5198,6 +5204,11 @@ In either case, developers SHOULD NOT include either 'unsafe-inline', or data: a
 Fetch directives control the locations from which certain resource types may be loaded. For instance, script-src allows developers to allow trusted sources of script to execute on a page, while font-src controls the sources of web fonts.
 </p>
 
+<p class="trans-note">【
+この節に現れる `FETCH$r 仕様の用語
+`~target閲覧文脈@rq
+は、その仕様の更新により廃されている（ `~target~client~id$rqに代えられた）。
+】</p>
 
 
 			<section id="directive-child-src">
@@ -5308,7 +5319,7 @@ Given a request (request) and a policy (policy):
 	<li>
 %名前 ~LET %要請 に対する`有効な指令を取得-$Aした結果
 ◎
-Let name be the result of executing §6.6.1.8 Get the effective directive for request on request.
+Let name be the result of executing §6.6.1.11 Get the effective directive for request on request.
 </li>
 	<li>
 ~IF［
@@ -5364,7 +5375,7 @@ Given a request (request), a response (response), and a policy (policy):
 	<li>
 %名前 ~LET %要請 に対する`有効な指令を取得-$Aした結果
 ◎
-Let name be the result of executing §6.6.1.8 Get the effective directive for request on request.
+Let name be the result of executing §6.6.1.11 Get the effective directive for request on request.
 </li>
 	<li>
 ~IF［
@@ -5776,7 +5787,7 @@ Given a request (request) and a policy (policy):
 	<li>
 %名前 ~LET %要請 に対する`有効な指令を取得-$Aした結果
 ◎
-Let name be the result of executing §6.6.1.8 Get the effective directive for request on request.
+Let name be the result of executing §6.6.1.11 Get the effective directive for request on request.
 </li>
 	<li>
 ~IF［
@@ -7076,50 +7087,50 @@ If the result of executing §6.6.1.2 Does nonce match source list? on request’
 			<li>
 <p>
 ~IF［
-この指令の`値$は［
+%~list 内に［
 `hash-source$p 文法に合致するような `~source式$
-］を 1 個以上~包含する
-］~AND［
-%要請 の `完全性~metadata$rq ~NEQ 空~文字列
+］がある
 ］：
 ◎
-If this directive’s value contains one or more source expressions that match the hash-source grammar, and request’s integrity metadata is not the empty string, then:
+Let integrity expressions be the set of source expressions in this directive’s value that match the hash-source grammar.
+◎
+If integrity expressions is not empty:
 </p>
 
 				<ol>
 					<li>
 `完全性~sourceたち^v ~LET
-%要請 の`完全性~metadata$rqを渡して，
-`~metadataを構文解析-$した結果 `SRI$r
+%要請 の`完全性~metadata$rqを渡して，`~metadataを構文解析-$した結果
+`SRI$r
 ◎
-Let integrity sources be the result of executing the Subresource Integrity §parse-metadata algorithm on request’s integrity metadata. [SRI]
-</li>
-					<li>
-~Assert：
-`完全性~sourceたち^v ~NEQ `~metadataなし^i
-◎
-Assert: integrity sources is not "no metadata".
+Let integrity sources be the result of executing the algorithn defined in Subresource Integrity §parse-metadata on request’s integrity metadata. [SRI]
 </li>
 					<li>
 <p>
 ~IF［
-`完全性~sourceたち^v 内のどの %~source に対しても，［
-次の両者を満たす `~source式$ %式
-］が %~list に包含されている
+次のすべてが満たされる
 ］…：
 </p>
 
-<ul ><li>%~source の `hash-algo^P 成分 ~EQ %式 の `hash-algorithm$p 成分
-</li><li>%~source の `base64-value^P 成分 ~EQ %式 の `base64-value$p 成分
+<ul><li>`完全性~sourceたち^v ~NEQ `~metadataなし^i
+</li><li>`完全性~sourceたち^v は空でない
+</li><li>`完全性~sourceたち^v 内のどの %~source に対しても，［
+次の両者を満たす `~source式$ %式
+］が %~list 内にある：
+
+	<ul ><li>%~source の `hash-algo^P 成分 ~EQ %式 の `hash-algorithm$p 成分
+	</li><li>%~source の `base64-value^P 成分 ~EQ %式 の `base64-value$p 成分
+	</li></ul>
 </li></ul>
 
 <p>
 …ならば
 ⇒
 ~RET `許容ed^i
-— 完全性~合致に因り。
 </p>
 
+◎
+If integrity sources is "no metadata" or an empty set, skip the remaining substeps.
 ◎
 Let bypass due to integrity match be true.
 ◎
@@ -7941,7 +7952,7 @@ The following algorithm is called during HTML’s set the frozen base url algori
 
 
 				<section id="allow-base-for-document">
-<h5 title="Is base allowed for document? " data-algorithm="Is base allowed for document?">6.2.1.1. %文書 に対する %基底 は許容されるか？</h5>
+<h5 title="Is base allowed for document? ">6.2.1.1. %文書 に対する %基底 は許容されるか？</h5>
 
 <p>
 次の~algoは、
@@ -9312,73 +9323,24 @@ If expression is the string "*", return "Matches" if one or more of the followin
 ◎
 Note: This logic means that in order to allow resource from a non-network scheme, it has to be either explicitly specified (e.g. default-src * data: custom-scheme-1: custom-scheme-2:, or the protected resource must be loaded from the same scheme.
 </p>
-
 	</li>
 	<li>
-<p>
 ~IF［
 %式 は `scheme-source$p 文法に合致する
-］~OR［
-%式 は `host-source$p 文法に合致する
-］：
-◎
-If expression matches the scheme-source or host-source grammar:
-</p>
-		<ol>
-			<li>
-~IF［
-%式 は `scheme-part$p を有する
-］~AND［
-`~scheme-partは別の~scheme-partに合致するか？$A(
+］
+⇒
+~RET
+`~scheme成分は別の~scheme成分に合致するか？$A(
 %式 の `scheme-part$p, %~url の`~scheme$u
 )
-~EQ `非合致^i
-］
-⇒
-~RET `非合致^i
 ◎
-If expression has a scheme-part and §6.6.1.7 Does scheme-part match another scheme-part? returns "Does Not Match" given expression’s scheme-part and url’s scheme, return "Does Not Match".
-</li>
-			<li>
-~IF［
-%式 は `scheme-source$p 文法に合致する
-］
-⇒
-~RET `合致es^i
+If expression matches the scheme-source or host-source grammar:
 ◎
-If expression matches the scheme-source grammar, return "Matches".
-</li>
-		</ol>
-
-<div class="note">
-<p>注記：
-この~logicは、実質的に次を意味する：
-</p>
-
-<ul>
-	<li>
-`script-src http:^s
-は
-`script-src http: https:^s
-に等価になる（ (A) の場合）
-</li>
-	<li>
-`script-src http://example.com/^s
-は
-`script-src http://example.com https://example.com^s
-に等価になる（ (B) の場合）
-</li>
-</ul>
-
-<p>
-同様に，WebSocket ~schemeは、対応する HTTP ~schemeに等価になる。
-短く言えば、明示的に保安的~schemeでない式は，保安的~schemeへの昇格を常に許容する。
-</p>
+• If expression has a scheme-part and §6.6.1.7 Does scheme-part A match scheme-part B? returns "Does Not Match" given expression’s scheme-part and url’s scheme, return "Does Not Match".
 ◎
-Note: This logic effectively means that script-src http: is equivalent to script-src http: https:, and script-src http://example.com/ is equivalent to script-src http://example.com https://example.com. As well as WebSocket schemes are equivalent to corresponding HTTP schemes. In short, we always allow a secure upgrade from an explicitly insecure expression.
-</div>
-
-	</li>
+• If expression matches the scheme-source grammar, return "Matches".
+◎
+↓</li>
 	<li>
 <p>
 ~IF［
@@ -9398,44 +9360,33 @@ If expression matches the host-source grammar:
 If url’s host is null, return "Does Not Match".
 </li>
 			<li>
-<p>
 ~IF［
-%式 は `scheme-part$p を持たない
+%式 は `scheme-part$p を含む
 ］~AND［
-次のいずれの条件も満たされない
+`~scheme成分は別の~scheme成分に合致するか？$A(
+%式 の `scheme-part$p, %~url の`~scheme$u
+)
+~EQ `非合致^i
 ］
 ⇒
 ~RET `非合致^i
-：
 ◎
-If expression does not have a scheme-part, then return "Does Not Match" unless one of the following conditions is met:
+↑</li>
+			<li>
+<p>
+~IF［
+%式 は `scheme-part$p を含まない
+］~AND［
+`~scheme成分は別の~scheme成分に合致するか？$A(
+＊？~NULL, %~url の`~scheme$u
+)
+~EQ `非合致^i
+］
+⇒
+~RET `非合致^i
+◎
+If expression does not have a scheme-part and and §6.6.1.7 Does scheme-part A match scheme-part B? returns "Does Not Match" given null and url’s scheme, return "Does Not Match".
 </p>
-				<ol>
-					<li>
-%生成元 の`~scheme$u ~EQ %~url の`~scheme$u
-◎
-origin’s scheme is url’s scheme
-</li>
-					<li>
-［
-%生成元 の`~scheme$u ~EQ `http^l
-］~AND［
-%~url の`~scheme$u ~IN
-{ `https^l, `ws^l, `wss^l }
-］
-◎
-origin’s scheme is "http", and url’s scheme one of "https", "ws", or "wss".
-</li>
-					<li>
-［
-%生成元 の`~scheme$u ~EQ `https^l
-］~AND［
-%~url の`~scheme$u ~EQ `wss^l
-］
-◎
-origin’s scheme is "https", and url’s scheme is "wss".
-</li>
-			</ol>
 
 <p class="note">注記：
 上の `scheme-part$p に対するときと同様に、~schemeを伴わない `host-source$p 式は，非保安的~schemeから保安的~schemeへの昇格を許容する。
@@ -9444,134 +9395,36 @@ Note: As with scheme-part above, we allow schemeless host-source expressions to 
 </p>
 			</li>
 			<li>
-%~host成分 ~LET %式 の `host-part$p
-◎
-↓</li>
-			<li>
-<p>
 ~IF［
-%~host成分 の最初の文字 ~EQ `~asterisk$
-］：
-◎
-If the first character of expression’s host-part is an U+002A ASTERISK character (*):
-</p>
-				<ol>
-					<li>
-%残 ~SET %式 から先頭の`~asterisk$を除去した結果
-◎
-Let remaining be the result of removing the leading "*" from expression.
-</li>
-					<li>
-~IF［
-%残 ~NEQ`~ACI$［
-%~url の`~host$uの（ %残 と同じ長さの）~~尾部
-］］
-⇒
-~RET `非合致^i
-◎
-If remaining (including the leading U+002E FULL STOP character (.)) is not an ASCII case-insensitive match for the rightmost characters of url’s host, then return "Does Not Match".
-</li>
-				</ol>
-			</li>
-			<li>
-~ELIF［
-%~host成分 ~NEQ`~ACI$ %~url の`~host$u
+`~host成分は別の~host成分に合致するか？$A(
+%式 の `host-part$p, %~url の`~host$u
+)
+~EQ `非合致^i
 ］
 ⇒
 ~RET `非合致^i
 ◎
-If the first character of expression’s host-part is not an U+002A ASTERISK character (*), and url’s host is not an ASCII case-insensitive match for expression’s host-part, return "Does Not Match".
+If §6.6.1.8 Does host-part A match host-part B? returns "Does Not Match" given expression’s host-part and url’s host, return "Does Not Match".
 </li>
 			<li>
-<div>
-<p>
 ~IF［
-次のいずれかの条件が満たされる
+`~port成分は別の~port成分, ~schemeに合致するか？$A(［
+%式 は `port-part$p を含むならば それ ／
+~ELSE_ ~NULL
+］, %~url の`~port$u,
+%~url の`~scheme$u
+)
+~EQ `非合致^i
 ］
 ⇒
 ~RET `非合致^i
-</p>
-				<ul>
-					<li>
-［
-%~host成分 は `IPv4address$p 規則 `RFC3986$r に合致する
-］~AND［
-%~host成分 ~NEQ `127.0.0.1^l
-］
+◎
+If §6.6.1.9 Does port-part A match port-part B for scheme B? returns "Does Not Match" given expression’s port-part (or null if expression does not contain a port-part) and url’s port, return "Does Not Match".
 </li>
-					<li>
-%~host成分 は `~IPv6~address$uである
-</li>
-				</ul>
-
-◎
-If expression’s host-part matches the IPv4address rule from [RFC3986], and is not "127.0.0.1"; or if expression’s host-part is an IPv6 address, return "Does Not Match".
-</div>
-
-<p class="note">注記：
-この仕様の将来~versionは、用法や需要に依存して，~literalによる［
-IPv6 ／ IPv4
-］~addressを許容するかもしれない。
-しかしながら、 IP ~addressの保安上の特質は，名前を有する~hostに比して弱いので、作者には，可能0なら後者を選好することが奨励される。
-◎
-Note: A future version of this specification may allow literal IPv6 and IPv4 addresses, depending on usage and demand. Given the weak security properties of IP addresses in relation to named hosts, however, authors are encouraged to prefer the latter whenever possible.
-</p>
-			</li>
-			<li>
-%~port成分 ~LET 
-%式 は `port-part$p を［
-包含しないならば ~NULL ／
-包含するならば それ
-］
-◎
-↓</li>
 			<li>
 <p>
 ~IF［
-次のいずれも満たされない
-］
-⇒
-~RET `非合致^i：
-◎
-↓</p>
-				<ul>
-					<li>
-［
-%~port成分 ~EQ ~NULL
-］~AND［
-%~url の`~port$u ~EQ %~url の`~scheme$uに対する`既定~port$u
-］
-◎
-If expression does not contain a port-part, and url’s port is not the default port for url’s scheme, return "Does Not Match".
-◎
-If expression does contain a port-part, return "Does Not Match" unless one of the following conditions is met:
-</li>
-					<li>
-%~port成分 ~EQ `~asterisk$
-◎
-expression’s port-part is "*".
-</li>
-					<li>
-%~port成分 が表す数 ~EQ %~url の`~port$u
-◎
-expression’s port-part is the same number as url’s port.
-</li>
-					<li>
-［
-%~port成分 が表す数 ~EQ 80
-］~AND［
-%~url の`~port$u ~EQ 443
-］
-◎
-expression’s port-part is 80, and url’s port is 443.
-</li>
-				</ul>
-			</li>
-			<li>
-<p>
-~IF［
-%式 は
-空でない `path-part$p を包含する
+%式 は 空でない `path-part$p を含む
 ］~AND［
 %~redirect回数 ~EQ 0
 ］：
@@ -9580,74 +9433,21 @@ If expression contains a non-empty path-part, and redirect count is 0, then:
 </p>
 				<ol>
 					<li>
-%正確~合致 ~LET ［
-%式 の `path-part$p の~~最後の文字 ~EQ `~slash$
-ならば ~F ／
-~ELSE_ ~T
-］
+%~url~path ~LET
+~url の`~path$uの各~成分を`~slash$で区切って連結した結果
 ◎
-Let exact match be false if the final character of expression’s path-part is the U+002F SOLIDUS character (/), and true otherwise.
-</li>
-					<li>
-%~path~list ~LET
-%式 の `path-part$p を`~slash$で`厳密に分割-$した結果
-◎
-Let path list be the result of strictly splitting expression’s path-part on the U+002F SOLIDUS character (/).
+Let path be the resulting of joining url’s path on the U+002F SOLIDUS character (/).
 </li>
 					<li>
 ~IF［
-%~path~list の~item数 ~GT %~url の`~path$uの~item数
+`~path成分は別の~path成分に合致するか？$A( %式 の `path-part$p, %~url~path )
+~EQ `非合致^i
 ］
 ⇒
 ~RET `非合致^i
 ◎
-If path list has more items than url’s path, return "Does Not Match".
+If §6.6.1.10 Does path-part A match path-part B? returns "Does Not Match" given expression’s path-part and path, return "Does Not Match".
 </li>
-					<li>
-~IF［
-%正確~合致 ~EQ ~T
-］~AND［
-%~path~list の~item数 ~NEQ %~url の`~path$uの~item数
-］
-⇒
-~RET `非合致^i
-◎
-If exact match is true, and path list does not have the same number of items as url’s path, return "Does Not Match".
-</li>
-					<li>
-<p>
-~FOR
-%~path~list 内の ~EACH ( %式~path片 ) に対し：
-◎
-For each expression piece in path list:
-</p>
-						<ol>
-							<li>
-%~url~path片 ~LET %~url の`~path$u内の［
-%式~path片 と同じ~index
-］に位置する~item
-◎
-Let url piece be the next item in url’s path.
-</li>
-							<li>
-~IF［
-［
-%式~path片 を`~percent復号-$uした結果
-］ ~NEQ ［
-%~url~path片 を`~percent復号-$uした結果
-］
-］
-⇒
-~RET `非合致^i
-◎
-Percent decode expression piece.
-◎
-Percent decode url piece.
-◎
-If expression piece is not a case-sensitive match for url piece, return "Does Not Match".
-</li>
-						</ol>
-					</li>
 				</ol>
 			</li>
 			<li>
@@ -9657,31 +9457,35 @@ Return "Matches".
 </li>
 		</ol>
 	</li>
+
 	<li>
 <p>
 ~IF［
 %式 ~EQ`~ACI$ "`self$pl"
-］~AND［
-次のいずれかの条件は満たされる
-］
-⇒
-~RET `合致es^i
-：
+］：
 ◎
 If expression is an ASCII case-insensitive match for "'self'", return "Matches" if one or more of the following conditions is met:
 </p>
-		<ul>
+		<ol>
 			<li>
+~IF［
 %生成元 と［
 %~url の`生成元$u
 ］は同じである
+］
+⇒
+~RET `合致es^i
 ◎
 origin is the same as url’s origin
 </li>
 			<li>
 
 <p>
-次の条件すべてが満たされる：
+~IF［
+次のすべてが満たされる
+］
+⇒
+~RET `合致es^i：
 </p>
 				<ul>
 					<li>
@@ -9706,7 +9510,7 @@ origin’s host is the same as url’s host, origin’s port and url’s {{URL/p
 • url’s scheme is "https" or "wss"
 • origin’s scheme is "http"
 </li>
-		</ul>
+		</ol>
 
 <p class="note">注記：
 上の `scheme-part$p の~logicと同様に、
@@ -9731,12 +9535,13 @@ Return "Does Not Match".
 
 				</section>
 				<section id="match-schemes">
-<h5 title="Does scheme-part match another scheme-part? ">6.6.1.7.  %~scheme-part は別の %~scheme-part に合致するか？</h5>
+<h5 title="Does scheme-part A match scheme-part B?">6.6.1.7.  ~scheme成分は別の~scheme成分に合致するか？</h5>
 
 <p>
 次の~algoは、所与の`~ASCII~byte$列
 ( %A, %B )
-に対し， %A が %B に［
+に対し，
+%A が %B に［
 合致するならば `合致es^i ／
 合致しないならば `非合致^i
 ］を返す：
@@ -9748,7 +9553,7 @@ Given two strings of ASCII bytes A and B, this algorithm returns "Matches" if A 
 この~algoは非対称である。
 すなわち、 %A, %B を入れ替えた結果は同じになるとは限らない。
 ◎
-Note: This algorithm is not transitive. That is, A matching B does not mean that B will match A.
+Note: The matching relation is assymetric. That is, A matching B does not mean that B will match A.
 </p>
 
 <ol>
@@ -9804,9 +9609,340 @@ A is an ASCII case-insensitive match for "wss", and B is an ASCII case-insensiti
 Return "Does Not Match".
 </li>
 </ol>
+
+<div class="note">
+
+<p>注記：
+明示的に保安的~schemeでない式は，保安的~schemeへの昇格を常に許容する。
+すなわち，次の表の左列に挙げる式は、右列に挙げる式と等価に扱われる：
+</p>
+
+<table><tbody>
+<tr><td>`script-src http:^s
+<td>`script-src http: https:^s
+
+<tr><td>`script-src http://example.com/^s
+<td>`script-src http://example.com https://example.com^s
+
+<tr><td>`connect-src ws:^s
+<td>`connect-src ws: wss:^s
+
+</tbody></table>
+
+◎
+Note: We always allow a secure upgrade from an explicitly insecure expression. That is, script-src http: is treated as equivalent to script-src http: https:, script-src http://example.com to script-src http://example.com https://example.com, and connect-src ws: to connect-src ws: wss:.
+</div>
+
+<p class="issue">
+https://github.com/diracdeltas/sniffly への参照を追加する。
+◎
+Add a reference to https://github.com/diracdeltas/sniffly.
+</p>
+
+				</section>
+				<section id="match-hosts">
+<h5 title="Does host-part A match host-part B? ">6.6.1.8. ~host成分は別の~host成分に合致するか？</h5>
+
+<p>
+次の~algoは、所与の`~ASCII~byte$列
+( %A, %B )
+に対し，
+%A が %B に［
+合致するならば `合致es^i ／
+合致しないならば `非合致^i
+］を返す：
+◎
+Given two strings of ASCII bytes (A and B), this algorithm returns "Matches" if A matches B, and returns "Does Not Match" otherwise.
+</p>
+
+
+<p class="note">注記：
+この~algoは非対称である。
+すなわち、 %A, %B を入れ替えた結果は同じになるとは限らない。
+◎
+Note: The matching relation is assymetric. That is, A matching B does not mean that B will match A.
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+%A の最初の文字 ~EQ `~asterisk$
+］：
+◎
+If the first character of A is an U+002A ASTERISK character (*):
+</p>
+
+		<ol>
+			<li>
+%A ~SET %A から先頭の文字を除去した結果
+◎
+Let remaining be the result of removing the leading ("*") from A.
+</li>
+			<li>
+~RET［
+%A ~EQ`~ACI$［
+%B の~~尾部（ %A と同じ文字~数の）
+］ならば `合致es^i ／
+~ELSE_  `非合致^i
+］
+◎
+If remaining (including the leading U+002E FULL STOP character (.)) is an ASCII case-insensitive match for the rightmost characters of B, then return "Matches". Otherwise, return "Does Not Match".
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+%A ~NEQ`~ACI$ %B
+］
+⇒
+~RET `非合致^i
+◎
+If A is not an ASCII case-insensitive match for B, return "Does Not Match".
+</li>
+	<li>
+<div>
+<p>
+~IF［
+次のいずれかの条件が満たされる
+］
+⇒
+~RET `非合致^i：
+</p>
+				<ul>
+					<li>
+［
+%A は `IPv4address$p 規則 `RFC3986$r に合致する
+］~AND［
+%A ~NEQ `127.0.0.1^l
+］
+</li>
+					<li>
+%A は `~IPv6~address$uである
+</li>
+				</ul>
+
+◎
+If A matches the IPv4address rule from [RFC3986], and is not "127.0.0.1"; or if A is an IPv6 address, return "Does Not Match".
+</div>
+
+<p class="note">注記：
+この仕様の将来~versionは、用法や需要に依存して，~literalによる［
+IPv6 ／ IPv4
+］~addressを許容するかもしれない。
+しかしながら、 IP ~addressの保安上の特質は，名前を有する~hostに比して弱いので、作者には，可能0なら後者を選好することが奨励される。
+◎
+Note: A future version of this specification may allow literal IPv6 and IPv4 addresses, depending on usage and demand. Given the weak security properties of IP addresses in relation to named hosts, however, authors are encouraged to prefer the latter whenever possible.
+</p>
+	</li>
+	<li>
+~RET `合致es^i
+◎
+Return "Matches".
+</li>
+</ol>
+
+
+
+				</section>
+				<section id="match-ports">
+<h5 title="Does port-part A match port-part B for scheme B? ">6.6.1.9. ~port成分は別の~port成分, ~schemeに合致するか？</h5>
+
+
+<p>
+次の~algoは、所与の`~ASCII~byte$列
+( %A, %B, %~scheme )
+に対し，
+%A が ( %B, %~scheme ) に［
+合致するならば `合致es^i ／
+合致しないならば `非合致^i
+］を返す：
+◎
+Given three strings of ASCII bytes port A, port B, and scheme B, this algorithm returns "Matches" if A matches B, and returns "Does Not Match" otherwise.
+</p>
+
+
+<p class="note">注記：
+この~algoは非対称である。
+すなわち、 %A, %B を入れ替えた結果は同じになるとは限らない。
+◎
+Note: The matching relation is assymetric. That is, port A matching port B does not mean that port B will match port A.
+</p>
+
+<ol>
+	<li>
+%既定~port ~LET %~scheme の`既定~port$u
+◎
+↓</li>
+	<li>
+<p>
+~RET［
+次のいずれかが満たされるならば  `合致es^i ／
+~ELSE_ `非合致^i
+］：
+</p>
+
+<ul><li>［
+%A ~EQ 空
+］~AND［
+%B ~EQ %既定~port
+］
+</li><li>%A ~EQ `~asterisk$
+</li><li>［
+%A~NEQ 空
+］~AND［
+%A ~EQ %B †1
+］
+</li><li>［
+%B ~EQ 空
+］~AND［
+%A ~EQ %既定~port
+］
+</li></ul>
+
+◎
+If port A is empty:
+◎
+• If port B is the default port for scheme B, return "Matches". Otherwise, return "Does Not Match".
+◎
+If port A is equal to "*", return "Matches".
+◎
+If port A is a case-sensitive match for port B, return "Matches".
+◎
+If port B is empty:
+◎
+• If port A is the default port for scheme B, return "Matches". Otherwise, return "Does not Match".
+◎
+Return "Does Not Match".
+</li>
+</ol>
+
+<p class="trans-note">【
+この~algoを呼び出している所では ~NULL も渡しているが、おそらく，ここでの 空（ empty ）を意味する。
+】【
+`既定~port$uが未定義の場合にどう解釈されるのか不明。
+】【†1
+この比較は 数として行うのかどうか、はっきりしない。
+例えば `80^l と `080^l は異なる~portと扱われるかもしれない。
+】</p>
+
+
+
+				</section>
+				<section id="match-paths">
+<h5 title="Does path-part A match path-part B? ">6.6.1.10. ~path成分は別の~path成分に合致するか？</h5>
+
+<p>
+次の~algoは、所与の`~ASCII~byte$列
+( %A, %B )
+に対し，
+%A が %B に［
+合致するならば `合致es^i ／
+合致しないならば `非合致^i
+］を返す：
+◎
+Given two strings of ASCII bytes (A and B), this algorithm returns "Matches" if A matches B, and returns "Does Not Match" otherwise.
+</p>
+
+
+<p class="note">注記：
+この~algoは非対称である。
+すなわち、 %A, %B を入れ替えた結果は同じになるとは限らない。
+◎
+Note: The matching relation is assymetric. That is, A matching B does not mean that B will match A.
+</p>
+
+<ol>
+	<li>
+~IF［
+%A ~EQ 空~文字列
+］
+⇒
+~RET `合致es^i
+◎
+If A is empty, return "Matches".
+◎
+Let exact match be false if the final character of A is the U+002F SOLIDUS character (/), and true otherwise.
+</li>
+	<li>
+( %listA,  %listB ) ~LET 順に
+( %A, %B )
+を`~slash$で`厳密に分割-$した結果
+◎
+Let path list A and path list B be the result of strictly splitting A and B respestively on the U+002F SOLIDUS character (/).
+</li>
+	<li>
+( %LA, %LB ) ~LET ( %listA の~item数, %listB の~item数 )
+◎
+↓</li>
+	<li>
+~IF［
+%LA ~GT %LB
+］
+⇒
+~RET `非合致^i
+◎
+If path list A has more items than path list B, return "Does Not Match".
+</li>
+	<li>
+~IF［
+%A の~~最後の文字 ~NEQ `~slash$
+］
+⇒
+~IF［
+%LA ~NEQ %LB
+］
+⇒
+~RET `非合致^i
+◎
+If exact match is true, and path list A does not have the same number of items as path list B, return "Does Not Match".
+</li>
+	<li>
+<p>
+~ELSE
+⇒
+%LA ~DECBY 1
+</p>
+<p class="trans-note">【
+この段は、この訳による補完。
+】</p>
+	</li>
+	<li>
+<p>
+~EACH( 整数 %i ~IN { 1 〜 %LA } ) に対し：
+◎
+For each piece A in path list A:
+</p>
+		<ol>
+			<li>
+~IF［
+%listA の %i 番目の~itemを`~percent復号-$uした結果
+］ ~NEQ［
+%listB の %i 番目の~itemを`~percent復号-$uした結果
+］
+⇒
+~RET `非合致^i
+◎
+Let piece B be the next item in path list B.
+◎
+Percent decode piece A.
+◎
+Percent decode piece B.
+◎
+If piece A is not a case-sensitive match for piece B, return "Does Not Match".
+</li>
+		</ol>
+	</li>
+	<li>
+~RET `合致es^i
+◎
+Return "Matches".
+</li>
+</ol>
+
 				</section>
 				<section id="effective-directive-for-a-request">
-<h5 title="Get the effective directive for request">6.6.1.8. %要請 に対する有効な指令を取得する</h5>
+<h5 title="Get the effective directive for request">6.6.1.11. %要請 に対する有効な指令を取得する</h5>
 
 <p>
 各種 `~fetch指令$は、特定の型の`要請$を制御する。
@@ -11212,4 +11348,3 @@ rest of Google’s CSP Cabal.
 </section>
 
 </body></html>
-
