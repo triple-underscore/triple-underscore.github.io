@@ -769,12 +769,14 @@ SPECBUGS:https://www.w3.org/Bugs/Public/show_bug.cgi\n\
 TR:https://www.w3.org/TR\n\
 IETF:https://tools.ietf.org/html\n\
 TC39:https://tc39.github.io/ecma262/\n\
+INFRA:https://infra.spec.whatwg.org/\n\
 DOM4:DOM4-ja.html\n\
 ENCODING:Encoding-ja.html\n\
 FETCH:Fetch-ja.html\n\
 FILEAPI:File_API-ja.html\n\
 STREAMS:Streams-ja.html\n\
 URLSpec:URL-ja.html\n\
+MIMESNIFF:https://mimesniff.spec.whatwg.org/\n\
 WEBIDL:WebIDL-ja.html\n\
 XHR:XHR-ja.html\n\
 UIEVENTS:uievents-ja.html\n\
