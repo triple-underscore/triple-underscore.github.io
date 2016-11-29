@@ -1451,6 +1451,7 @@ INDEXEDDB=主          ~/IndexedDB-2nd-ja.html\n\
 INDEXEDDB=版          ~TR/IndexedDB/\n\
 INDEXEDDB=編          w3c.github.io/IndexedDB/\n\
 JLREQ=主              ~TR/jlreq/ja/\n\
+INFRA=主              ~/infra-ja.html\n\
 MQ4=主                ~/mediaqueries4-ja.html\n\
 MQ4=編                ~CSSWG/mediaqueries-4/\n\
 MEDIAQ=主             ~mitsue/css3-mediaqueries/\n\
