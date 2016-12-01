@@ -1644,6 +1644,7 @@ COMMON_DATA.REF_DATA2 = '\n\
 ~TR/CSS21/●       ~momdoG/css2/\n\
 ~TR/CSS2/●        ~momdoG/css2/\n\
 ~CSSWG/css2/●     ~momdoG/css2/\n\
+~CSSWG/css21/●    ~momdoG/css2/\n\
 	SVG (@ 不可)\n\
 ~TR/SVG/●         triple-underscore.github.io/SVG11/\n\
 ~TR/SVG11/●       triple-underscore.github.io/SVG11/\n\
@@ -1676,7 +1677,8 @@ HTML51:HTML\n\
 WEBIDL2:WEBIDL\n\
 DOMCORE:DOM\n\
 CSP:CSP3\n\
-	CSS2:CSS21\n\
+CSS2:CSS21\n\
+CSS22:CSS21\n\
 COMPOSITING:COMPOSITING1\n\
 CSSALIGN3:CSSALIGN\n\
 CSS3ANIMATIONS:CSSANIMATIONS1\n\
