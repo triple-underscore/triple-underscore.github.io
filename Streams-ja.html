@@ -849,7 +849,9 @@ support::::サポート
 承認-:acknowledge:~
 差挟まれ:interleave され:差し挟まれ
 差挟む:interleave する:差し挟む
-	遮られ:interruption
+遮らな:interrupt しな:~
+遮られ:interrupt され:~
+	interruption
 	探されlook for
 終えて:finish して:~
 終えた:finish した:~
@@ -1595,6 +1597,7 @@ A.WritableStreamDefaultWriterRelease:#writable-stream-default-writer-release
 A.WritableStreamDefaultWriterWrite:#writable-stream-default-writer-write
 A.WritableStreamError:#writable-stream-error
 A.WritableStreamFinishClose:#writable-stream-finish-close
+A.WritableStreamRejectPromisesInReactionToError:#writable-stream-reject-unresolved-promises
 A.WritableStreamFulfillWriteRequest:#writable-stream-fulfill-write-request
 A.WritableStreamUpdateBackpressure:#writable-stream-update-backpressure
 
@@ -1728,7 +1731,7 @@ code {
 </p>
 
 <p>
-更新：<time>2016-11-23</time>
+更新：<time>2016-12-06</time>
 （公開：<time>2015-01-19</time> ）
 </p>
 
@@ -1757,7 +1760,7 @@ code {
 ></a>
 	<hgroup>
 <h1 id="title">Streams</h1>
-<h2>Living Standard — 最終更新 2016 年 11 月 16 日</h2>
+<h2>Living Standard — 最終更新 2016 年 12 月 5 日</h2>
 	</hgroup>
 <dl>
 	<dt>Participate:</dt>
@@ -1772,7 +1775,7 @@ code {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a></dd>
-	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/b207635fc76a732d89c3626bc7cd3f8d7cf76da6" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/c58d42aa731cd494c522c90e6eeefd66cbc25b3b" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/streamsstandard">@streamsstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -9739,8 +9742,26 @@ A WritableStreamDefaultWriter instance, if the stream is locked to a writer, or 
 ］を表現する，~promiseたちの`~List$ 。
 ◎
 A List of promises representing the stream’s internal queue of pending writes
-</td></tr></tbody></table>
 
+<tr><td>[[pendingWriteRequest]]
+</td><td>
+現在~処理待ちの書込~演算に対する~promise
+◎
+The promise for the current pending write operation
+
+<tr><td>[[pendingCloseRequest]]
+</td><td>
+書込器の `close()$dw ~methodから返された~promise
+◎
+The promise returned from the writer close() method
+
+<tr><td>[[pendingAbortRequest]]
+</td><td>
+処理待ちの中止-演算に対する~promise
+◎
+The promise for a pending abort operation 
+
+</td></tr></tbody></table>
 
 
 			</section>
@@ -10154,6 +10175,53 @@ Let error be a new TypeError indicating that the stream has been aborted.
 Perform ! WritableStreamError(stream, error).
 </li>
 	<li>
+%controller ~LET %stream.[[writableStreamController]]
+◎
+Let controller be stream.[[writableStreamController]].
+</li>
+	<li>
+~Assert：
+%controller ~NEQ ~undefined
+◎
+Assert: controller is not undefined.
+</li>
+	<li>
+<p>
+~IF［
+%controller.[[writing]] ~EQ `true^b
+］~OR［
+%controller.[[inClose]] ~EQ `true^b
+］：
+◎
+If controller.[[writing]] is true or controller.[[inClose]] is true,
+</p>
+		<ol>
+			<li>
+%stream.[[pendingAbortRequest]] ~SET `新たな~promise$
+◎
+Set stream.[[pendingAbortRequest]] to a new promise.
+</li>
+			<li>
+~IF
+%controller.[[writing]] ~EQ `true^b
+⇒
+~RET %stream.[[pendingAbortRequest]] を［
+! `WritableStreamDefaultControllerAbort$A( %stream.[[writableStreamController]], %reason)
+を返す充足~handler
+］で`変形-$した結果
+◎
+If controller.[[writing]] is true, return the result of transforming stream.[[pendingAbortRequest]] by a fulfillment handler that returns ! WritableStreamDefaultControllerAbort(stream.[[writableStreamController]], reason).
+</li>
+			<li>
+~ELSE
+⇒
+~RET %stream.[[pendingAbortRequest]]
+◎
+Otherwise, return stream.[[pendingAbortRequest]].
+</li>
+		</ol>
+	</li>
+	<li>
 ~RET ! `WritableStreamDefaultControllerAbort$A( %stream.[[writableStreamController]],
 %reason )
 ◎
@@ -10227,34 +10295,44 @@ Return promise.
 
 <ol class="algo">
 	<li>
-%state ~LET %stream.[[state]]
+%oldState ~LET %stream.[[state]]
 ◎
-Let state be stream.[[state]].
+Let oldState be stream.[[state]].
 </li>
 	<li>
 ~Assert：
-%state ~IN { `writable^l, `closing^l }
+%oldState ~IN { `writable^l, `closing^l }
 ◎
-Assert: state is "writable" or "closing".
+Assert: oldState is "writable" or "closing".
 </li>
 	<li>
-<p>
-%stream.[[writeRequests]] 内の~EACH ( %writeRequest ) に対し：
+%stream.[[state]] ~SET `errored^l
 ◎
-Repeat for each writeRequest that is an element of stream.[[writeRequests]],
-</p>
-		<ol>
-			<li>
-%e で %writeRequest を`却下する$
-◎
-Reject writeRequest with e.
+Set stream.[[state]] to "errored".
 </li>
-		</ol>
-	</li>
 	<li>
-%stream.[[writeRequests]] ~SET 空`~List$
+%stream.[[storedError]] ~SET %e 
 ◎
-Set stream.[[writeRequests]] to an empty List.
+Set stream.[[storedError]] to e.
+</li>
+	<li>
+%controller ~LET %stream.[[writableStreamController]]
+◎
+Let controller be stream.[[writableStreamController]].
+</li>
+	<li>
+~IF［
+%controller ~EQ ~undefined
+］~OR［［
+%controller.[[writing]] ~EQ `false^b
+］ ~AND［
+%controller.[[inClose]] ~EQ `false^b
+］］
+⇒
+! `WritableStreamRejectPromisesInReactionToError$A( %stream )
+を遂行する
+◎
+If controller is undefined, or both controller.[[writing]] and controller.[[inClose]] are false, perform ! WritableStreamRejectPromisesInReactionToError(stream).
 </li>
 	<li>
 %writer ~LET %stream.[[writer]]
@@ -10271,19 +10349,8 @@ If writer is not undefined,
 </p>
 		<ol>
 			<li>
-%e で
-%writer.[[closedPromise]] を`却下する$
-◎
-Reject writer.[[closedPromise]] with e.
-</li>
-			<li>
-%writer.[[closedPromise]].[[PromiseIsHandled]] ~SET `true^b
-◎
-Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
-</li>
-			<li>
 ~IF［
-%state ~EQ `writable^l
+%oldState ~EQ `writable^l
 ］~AND［
 ! `WritableStreamDefaultControllerGetBackpressure$A( %stream.[[writableStreamController]]）~EQ `true^b
 ］
@@ -10291,7 +10358,7 @@ Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
 %e で
 %writer.[[readyPromise]] を`却下する$
 ◎
-If state is "writable" and ! WritableStreamDefaultControllerGetBackpressure(stream.[[writableStreamController]]) is true, reject writer.[[readyPromise]] with e.
+If oldState is "writable" and ! WritableStreamDefaultControllerGetBackpressure(stream.[[writableStreamController]]) is true, reject writer.[[readyPromise]] with e.
 </li>
 			<li>
 ~ELSE
@@ -10307,16 +10374,6 @@ Set writer.[[readyPromise]].[[PromiseIsHandled]] to true.
 </li>
 		</ol>
 	</li>
-	<li>
-%stream.[[state]] ~SET `errored^l
-◎
-Set stream.[[state]] to "errored".
-</li>
-	<li>
-%stream.[[storedError]] ~SET %e 
-◎
-Set stream.[[storedError]] to e.
-</li>
 </ol>
 
 
@@ -10328,9 +10385,9 @@ Set stream.[[storedError]] to e.
 <ol class="algo">
 	<li>
 ~Assert：
-%stream.[[state]] ~EQ `closing^l
+%stream.[[state]] ~IN { `closing^l, `errored^l }
 ◎
-Assert: stream.[[state]] is "closing".
+Assert: stream.[[state]] is "closing" or "errored".
 </li>
 	<li>
 ~Assert：
@@ -10339,23 +10396,176 @@ Assert: stream.[[state]] is "closing".
 Assert: stream.[[writer]] is not undefined.
 </li>
 	<li>
+<p>
+~IF
+%stream.[[state]] ~EQ `closing^l
+◎
+If stream.[[state]] is "closing",
+</p>
+		<ol>
+			<li>
+~undefined で
+%writer.[[closedPromise]] を`解決する$
+◎
+Resolve writer.[[closedPromise]] with undefined.
+</li>
+			<li>
 %stream.[[state]] ~SET `closed^l
 ◎
 Set stream.[[state]] to "closed".
 </li>
+		</ol>
+	</li>
 	<li>
-~undefined で
-%stream.[[writer]].[[closedPromise]] を`解決する$
+<p>
+~ELSE：
 ◎
-Resolve stream.[[writer]].[[closedPromise]] with undefined.
+Otherwise,
+</p>
+		<ol>
+			<li>
+~Assert：
+%stream.[[state]] ~EQ `errored^l
+◎
+Assert: stream.[[state]] is "errored".
 </li>
+			<li>
+%stream.[[storedError]] で
+%writer.[[closedPromise]] を`却下する$
+◎
+Reject writer.[[closedPromise]] with stream.[[storedError]].
+</li>
+			<li>
+%writer.[[closedPromise]].[[PromiseIsHandled]] ~SET `true^b
+◎
+Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~IF
+%stream.[[pendingAbortRequest]] ~NEQ ~undefined
+◎
+If stream.[[pendingAbortRequest]] is not undefined,
+</p>
+		<ol>
+			<li>
+~undefined で
+%stream.[[pendingAbortRequest]]  を`解決する$
+◎
+Resolve stream.[[pendingAbortRequest]] with undefined.
+</li>
+			<li>
+%stream.[[pendingAbortRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingAbortRequest]] to undefined.
+</li>
+		</ol>
+	</li>
 </ol>
 
 
 
 			</section>
+			<section id="writable-stream-reject-unresolved-promises">
+<h4 class="nothrow">4.4.4. `WritableStreamRejectPromisesInReactionToError ( stream )^A</h4>
+
+<ol class="algo">
+	<li>
+~Assert：
+%stream.[[state]] ~EQ `errored^l
+◎
+Assert: stream.[[state]] is "errored".
+</li>
+	<li>
+~Assert：
+%stream.[[pendingWriteRequest]] ~EQ ~undefined
+◎
+Assert: stream.[[pendingWriteRequest]] is undefined.
+</li>
+	<li>
+%storedError ~LET %stream.[[storedError]]
+◎
+Let storedError be stream.[[storedError]].
+</li>
+	<li>
+<p>
+%stream.[[writeRequests]] 内の~EACH ( %writeRequest ) に対し：
+◎
+Repeat for each writeRequest that is an element of stream.[[writeRequests]],
+</p>
+		<ol>
+			<li>
+%storedError で %writeRequest を`却下する$
+◎
+Reject writeRequest with storedError.
+</li>
+		</ol>
+	</li>
+	<li>
+%stream.[[writeRequests]] ~SET 空`~List$
+◎
+Set stream.[[writeRequests]] to an empty List.
+</li>
+	<li>
+<p>
+~IF
+%stream.[[pendingCloseRequest]] ~NEQ ~undefined
+◎
+If stream.[[pendingCloseRequest]] is not undefined,
+</p>
+		<ol>
+			<li>
+~Assert：
+%stream.[[writableStreamController]].[[inClose]] ~EQ `false^b
+◎
+Assert: stream.[[writableStreamController]].[[inClose]] is false.
+</li>
+			<li>
+%storedError で %stream.[[pendingCloseRequest]] を`却下する$
+◎
+Reject stream.[[pendingCloseRequest]] with storedError.
+</li>
+			<li>
+%stream.[[pendingCloseRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingCloseRequest]] to undefined.
+</li>
+		</ol>
+	</li>
+	<li>
+%writer ~LET %stream.[[writer]]
+◎
+Let writer be stream.[[writer]].
+</li>
+	<li>
+<p>
+~IF
+%writer ~NEQ ~undefined
+：
+◎
+If writer is not undefined,
+</p>
+		<ol>
+			<li>
+%storedError で
+%writer.[[closedPromise]] を`却下する$
+◎
+Reject writer.[[closedPromise]] with storedError.
+</li>
+			<li>
+%writer.[[closedPromise]].[[PromiseIsHandled]] ~SET `true^b
+◎
+Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
+</li>
+		</ol>
+	</li>
+</ol>
+
+			</section>
 			<section id="writable-stream-fulfill-write-request">
-<h4 class="nothrow">4.4.4. `WritableStreamFulfillWriteRequest ( stream )^A</h4>
+<h4 class="nothrow">4.4.5. `WritableStreamFulfillWriteRequest ( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10387,7 +10597,7 @@ Resolve writeRequest with undefined.
 
 			</section>
 			<section id="writable-stream-update-backpressure">
-<h4 class="nothrow">4.4.5. `WritableStreamUpdateBackpressure ( stream, backpressure )^A</h4>
+<h4 class="nothrow">4.4.6. `WritableStreamUpdateBackpressure ( stream, backpressure )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -11138,9 +11348,9 @@ If state is "closed" or "errored", return a promise rejected with a TypeError ex
 Assert: state is "writable".
 </li>
 	<li>
-%promise ~LET ! `WritableStreamAddWriteRequest$A( %stream )
+%stream.[[pendingCloseRequest]] ~SET `新たな~promise$
 ◎
-Let promise be ! WritableStreamAddWriteRequest(stream).
+Set stream.[[pendingCloseRequest]] to a new promise.
 </li>
 	<li>
 ~IF 
@@ -11163,9 +11373,9 @@ Set stream.[[state]] to "closing".
 Perform ! WritableStreamDefaultControllerClose(stream.[[writableStreamController]]).
 </li>
 	<li>
-~RET %promise 
+~RET %stream.[[pendingCloseRequest]]
 ◎
-Return promise.
+Return stream.[[pendingCloseRequest]].
 </li>
 </ol>
 
@@ -11527,6 +11737,16 @@ An object representation of the stream’s underlying sink; also used for the Is
 これは、再入~callを防止するために利用される。
 ◎
 A boolean flag set to true while the underlying sink’s write method is executing and has not yet fulfilled, used to prevent reentrant calls
+
+<tr><td>[[inClose]]
+</td><td>
+真偽~flag
+— `下層~槽$の `close()^c ~methodが実行-中にあって，まだ充足されていない間は、 `true^b に設定される。
+これは、
+`abort()$dw ~methodが `close()^c を遮らないようにするために利用される。
+◎
+A boolean flag set to true while the underlying sink’s close method is executing and has not yet fulfilled, used to prevent the abort() method from interrupting close 
+
 </td></tr></tbody></table>
 
 
@@ -11580,9 +11800,10 @@ Set this.[[queue]] to a new empty List.
 </li>
 	<li>
 ~this.[[started]] ~SET `false^b；<br>
-~this.[[writing]] ~SET `false^b
+~this.[[writing]] ~SET `false^b；<br>
+~this.[[inClose]] ~SET `false^b
 ◎
-Set this.[[started]] and this.[[writing]] to false.
+Set this.[[started]] and this.[[writing]] and this.[[inClose]] to false.
 </li>
 	<li>
 %normalizedStrategy ~LET ? `ValidateAndNormalizeQueuingStrategy$A( %size, %highWaterMark )
@@ -12073,6 +12294,11 @@ Perform ! DequeueValue(controller.[[queue]]).
 Assert: controller.[[queue]] is empty.
 </li>
 	<li>
+%controller.[[inClose]] ~SET `true^b
+◎
+Set controller.[[InClose]] to true.
+</li>
+	<li>
 %sinkClosePromise ~LET ! `PromiseInvokeOrNoop$A( %controller.[[underlyingSink]], `close^l, « %controller » )
 ◎
 Let sinkClosePromise be ! PromiseInvokeOrNoop(controller.[[underlyingSink]], "close", « controller »).
@@ -12085,20 +12311,42 @@ Upon fulfillment of sinkClosePromise,
 </p>
 		<ol>
 			<li>
+~Assert：
+%controller.[[inClose]] ~EQ `true^b
+◎
+Assert: controller.[[inClose]] is true.
+</li>
+			<li>
+%controller.[[inClose]] ~SET `false^b
+◎
+Set controller.[[inClose]] to false.
+</li>
+			<li>
 ~IF
-%stream.[[state]] ~NEQ `closing^l
+%stream.[[state]] ~NIN { `closing^l, `errored^l }
 ⇒
 ~RET
 ◎
-If stream.[[state]] is not "closing", return.
+If stream.[[state]] is not "closing" or "errored", return.
 </li>
-	<li>
-! `WritableStreamFulfillWriteRequest$A( %stream )
-を遂行する
+			<li>
+~Assert：
+%stream.[[pendingCloseRequest]] ~NEQ ~undefined
 ◎
-Perform ! WritableStreamFulfillWriteRequest(stream).
+Assert: stream.[[pendingCloseRequest]] is not undefined.
 </li>
-	<li>
+			<li>
+~undefined で
+%stream.[[pendingCloseRequest]] を`解決する$
+◎
+Resolve stream.[[pendingCloseRequest]] with undefined.
+</li>
+			<li>
+%stream.[[pendingCloseRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingCloseRequest]] to undefined.
+</li>
+			<li>
 ! `WritableStreamFinishClose$A( %stream )
 を遂行する
 ◎
@@ -12113,7 +12361,58 @@ Perform ! WritableStreamFinishClose(stream).
 ◎
 Upon rejection of sinkClosePromise with reason r,
 </p>
+
 		<ol>
+			<li>
+~Assert：
+%controller.[[inClose]] ~EQ `true^b
+◎
+Assert: controller.[[inClose]] it true.
+</li>
+			<li>
+%controller.[[inClose]] ~SET `false^b
+◎
+Set controller.[[InClose]] to false.
+</li>
+			<li>
+~Assert：
+%stream.[[pendingCloseRequest]] ~NEQ ~undefined
+◎
+Assert: stream.[[pendingCloseRequest]] is not undefined.
+</li>
+			<li>
+%r で
+%stream.[[pendingCloseRequest]] を`却下する$
+◎
+Reject stream.[[pendingCloseRequest]] with r.
+</li>
+
+			<li>
+%stream.[[pendingCloseRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingCloseRequest]] to undefined.
+</li>
+			<li>
+<p>
+~IF
+%stream.[[pendingAbortRequest]] ~NEQ ~undefined
+◎
+If stream.[[pendingAbortRequest]] is not undefined,
+</p>
+				<ol>
+					<li>
+%r で
+%stream.[[pendingAbortRequest]] を`却下する$
+◎
+Reject stream.[[pendingAbortRequest]] with r.
+</li>
+					<li>
+%stream.[[pendingAbortRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingAbortRequest]] to undefined.
+</li>
+				</ol>
+			</li>
 			<li>
 ! `WritableStreamDefaultControllerErrorIfNeeded$A( %controller, %r )
 を遂行する
@@ -12137,9 +12436,43 @@ Perform ! WritableStreamDefaultControllerErrorIfNeeded(controller, r).
 Set controller.[[writing]] to true.
 </li>
 	<li>
+%stream ~LET %controller.[[controllerWritableStream]]
+◎
+Let stream be controller.[[controllerWritableStream]].
+</li>
+	<li>
+~Assert：
+%stream.[[pendingWriteRequest]] ~EQ ~undefined
+◎
+Assert: stream.[[pendingWriteRequest]] is undefined.
+</li>
+	<li>
+~Assert：
+%stream.[[writeRequests]] は空である
+◎
+Assert: stream.[[writeRequests]] is not empty.
+</li>
+	<li>
+%writeRequest ~LET %stream.[[writeRequests]] の最初の要素
+◎
+Let writeRequest be the first element of stream.[[writeRequests]].
+</li>
+	<li>
+%stream.[[writeRequests]]
+から %writeRequest を除去する
+— 後続の要素たちは~~先頭へ一つずらす
+◎
+Remove writeRequest from stream.[[writeRequests]], shifting all other elements downward (so that the second becomes the first, and so on).
+</li>
+	<li>
+%stream.[[pendingAbortRequest]] ~SET %writeRequest
+◎
+Set stream.[[pendingWriteRequest]] to writeRequest.
+</li>
+	<li>
 %sinkWritePromise ~LET ! `PromiseInvokeOrNoop$A( %controller.[[underlyingSink]], `write^l, « %chunk, %controller » )
 ◎
-Let sinkWritePromise be ! PromiseInvokeOrNoop(controller.[[underlyingSink]], "write", « ‍chunk, controller »).
+Let sinkWritePromise be ! PromiseInvokeOrNoop(controller.[[underlyingSink]], "write", « chunk, controller »).
 </li>
 	<li>
 <p>
@@ -12149,46 +12482,93 @@ Upon fulfillment of sinkWritePromise,
 </p>
 		<ol>
 			<li>
-%stream ~LET %controller.[[controlledWritableStream]]
-◎
-Let stream be controller.[[controlledWritableStream]].
-</li>
-	<li>
 %state ~LET %stream.[[state]]
 ◎
 Let state be stream.[[state]].
 </li>
-	<li>
-~IF
-%state ~IN { `errored^l, `closed^l }
-⇒
-~RET
+			<li>
+~Assert：
+%controller.[[writing]] ~EQ `true^b
 ◎
-If state is "errored" or "closed", return.
+Assert: controller.[[writing]] is true.
 </li>
-	<li>
+			<li>
 %controller.[[writing]] ~SET `false^b
 ◎
 Set controller.[[writing]] to false.
 </li>
-	<li>
-! `WritableStreamFulfillWriteRequest$A( %stream )
+			<li>
+~Assert：
+%stream.[[pendingWriteRequest]] ~NEQ ~undefined
+◎
+Assert: stream.[[pendingWriteRequest]] is not undefined.
+</li>
+			<li>
+~undefined で
+%stream.[[pendingWriteRequest]] を`解決する$
+◎
+Resolve stream.[[pendingWriteRequest]] with undefined.
+</li>
+			<li>
+%stream.[[pendingWriteRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingWriteRequest]] to undefined.
+</li>
+			<li>
+<p>
+~IF
+%state ~EQ `errored^l
+：
+◎
+If state is "errored",
+</p>
+				<ol>
+					<li>
+! `WritableStreamRejectPromisesInReactionToError$A( %stream )
 を遂行する
 ◎
-Perform ! WritableStreamFulfillWriteRequest(stream).
+Perform ! WritableStreamRejectPromisesInReactionToError(stream).
 </li>
-	<li>
+					<li>
+<p>
+~IF
+%stream.[[pendingAbortRequest]] ~NEQ ~undefined
+◎
+If stream.[[pendingAbortRequest]] is not undefined,
+</p>
+						<ol>
+							<li>
+~undefined で
+%stream.[[pendingAbortRequest]]  を`解決する$
+◎
+Resolve stream.[[pendingAbortRequest]] with undefined.
+</li>
+							<li>
+%stream.[[pendingAbortRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingAbortRequest]] to undefined.
+</li>
+						</ol>
+					</li>
+					<li>
+~RET
+◎
+Return.
+</li>
+				</ol>
+			</li>
+			<li>
 %lastBackpressure ~LET ! `WritableStreamDefaultControllerGetBackpressure$A( %controller )
 ◎
 Let lastBackpressure be ! WritableStreamDefaultControllerGetBackpressure(controller).
 </li>
-	<li>
+			<li>
 ! `DequeueValue$A( %controller.[[queue]] )
 を遂行する
 ◎
 Perform ! DequeueValue(controller.[[queue]]).
 </li>
-	<li>
+			<li>
 <p>
 ~IF
 %state ~NEQ `closing^l
@@ -12196,13 +12576,13 @@ Perform ! DequeueValue(controller.[[queue]]).
 ◎
 If state is not "closing",
 </p>
-		<ol>
-			<li>
+				<ol>
+					<li>
 %backpressure ~LET ! `WritableStreamDefaultControllerGetBackpressure$A( %controller )
 ◎
 Let backpressure be ! WritableStreamDefaultControllerGetBackpressure(controller).
 </li>
-	<li>
+					<li>
 ~IF
 %lastBackpressure ~NEQ %backpressure 
 ⇒
@@ -12211,9 +12591,9 @@ Let backpressure be ! WritableStreamDefaultControllerGetBackpressure(controller)
 ◎
 If lastBackpressure is not backpressure, perform ! WritableStreamUpdateBackpressure(controller.[[controlledWritableStream]], backpressure).
 </li>
-		</ol>
-	</li>
-	<li>
+				</ol>
+			</li>
+			<li>
 ! `WritableStreamDefaultControllerAdvanceQueueIfNeeded$A( %controller )
 を遂行する
 ◎
@@ -12226,9 +12606,80 @@ Perform ! WritableStreamDefaultControllerAdvanceQueueIfNeeded(controller).
 事由 %r による
 %sinkWritePromise の`却下~時$には：
 ◎
-Upon rejection of sinkWritePromise with reason r,
+Upon rejection of sinkWritePromise with r,
 </p>
 		<ol>
+			<li>
+~Assert：
+%controller.[[writing]] ~EQ `true^b
+◎
+Assert: controller.[[writing]] is true.
+</li>
+			<li>
+%controller.[[writing]] ~SET `false^b
+◎
+Set controller.[[writing]] to false.
+</li>
+			<li>
+~Assert：
+%stream.[[pendingWriteRequest]] ~NEQ ~undefined
+◎
+Assert: stream.[[pendingWriteRequest]] is not undefined.
+</li>
+			<li>
+%r で
+%stream.[[pendingWriteRequest]] を`却下する$
+◎
+Reject stream.[[pendingWriteRequest]] with r.
+</li>
+			<li>
+%stream.[[pendingWriteRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingWriteRequest]] to undefined.
+</li>
+			<li>
+<p>
+~IF
+%stream.[[state]] ~EQ `errored^l
+：
+◎
+If stream.[[state]] is "errored",
+</p>
+				<ol>
+					<li>
+%stream.[[storedError]] ~SET %r
+◎
+Set stream.[[storedError]] to r.
+</li>
+					<li>
+! `WritableStreamRejectPromisesInReactionToError$A( %stream )
+を遂行する
+◎
+Perform ! WritableStreamRejectPromisesInReactionToError(stream).
+</li>
+				</ol>
+			</li>
+			<li>
+<p>
+~IF
+%stream.[[pendingAbortRequest]] ~NEQ ~undefined
+◎
+If stream.[[pendingAbortRequest]] is not undefined,
+</p>
+				<ol>
+					<li>
+%r で
+%stream.[[pendingAbortRequest]] を`却下する$
+◎
+Reject stream.[[pendingAbortRequest]] with r.
+</li>
+					<li>
+%stream.[[pendingAbortRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingAbortRequest]] to undefined.
+</li>
+				</ol>
+			</li>
 			<li>
 ! `WritableStreamDefaultControllerErrorIfNeeded$A( %controller, %r )
 を遂行する
@@ -13012,7 +13463,8 @@ Otherwise, return a promise resolved with returnValue.[[Value]].
 Set highWaterMark to ? ToNumber(highWaterMark).
 </li>
 	<li>
-<p >~IF［
+<p>
+~IF［
 %highWaterMark ~EQ `NaN^b
 ］~OR［
 %highWaterMark ~LT 0
@@ -14114,7 +14566,7 @@ to the extent possible under law, the editor has waived all copyright and relate
 
 	<dt>[SERVICE-WORKERS]</dt>
 	<dd>Alex Russell; et al. Service Workers 1.</dd>
-	<dd>https://w3c.github.io/ServiceWorker/v1/</dd>
+	<dd>https://w3c.github.io/ServiceWorker/</dd>
 </dl>
 
 		</section>
