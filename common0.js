@@ -846,6 +846,7 @@ WAPI:webappapis-ja.html\n\
 HTMLGAPI:HTML-global-api-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
 HTMLcloning:HTML-cloning-ja.html\n\
+HTMLcomms:HTML-comms-ja.html\n\
 HTMLconform:HTML-conform-ja.html\n\
 HTMLdate:HTML-date-ja.html\n\
 HTMLdnd:HTML-DND-ja.html\n\
