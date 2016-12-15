@@ -332,6 +332,7 @@ mark:::マーク
 呼出され:invoke され:呼び出され
 呼出:invocation:呼び出し
 被呼出時:被 invoke 時:~
+取得子:getter:~
 差挟む:interleave する:差し挟む
 	先送りpostpone／yield／get called back／to be performed／ to be repeatedly executed
 完了-:complete:~
@@ -401,6 +402,13 @@ mark:::マーク
 非同期:asynchronous:~
 投出-:throw:~
 	策:strategy:~
+
+競争:race:~
+並列的:parallel:~
+所要時間:duration:~
+	走らす
+	走らせ
+	走る
 
 	pop:::
 	taking:::
@@ -514,8 +522,25 @@ support:::サポート
 将来:future:~
 事例:case:~
 
+	可能になる:enable
 	させたい-:prefer:~
 	存続する限り:lifetime
+
+最良の:best:~
+処理能:performance:~
+開発者:developers:~
+奨励-:encourage:~
+不必要な:unnecessary:~
+有意義な:meaningful:~
+発火-:fire:~
+	し続けて:keep
+全体的な:overall :~
+	発揮させる:deliver
+効率性:efficiency:~
+効率的:efficient:~
+排する:eliminateする:~
+巨大block:large block:巨大 block:巨大ブロック
+改善-:improve:~
 
 	●保安
 算出-:compute:~
@@ -530,7 +555,7 @@ security:::セキュリティ
 	●未分類
 一意:unique:~
 片:fragment:~
-付加-:append:追加
+付加-:append:~
 作動中の:active な:~::アクティブ
 作動中:active:~::アクティブ
 値:value:~
@@ -791,7 +816,7 @@ p {
 </p>
 
 <p >
-更新： <time>2016-11-31</time>
+更新： <time>2016-12-15</time>
 （公開：<time>2015-11-27</time> ）
 </p>
 
@@ -1202,6 +1227,15 @@ Example of an idle period when there are no pending frame updates
 During an idle period the user agent will run idle callbacks in FIFO order until either the idle period ends or there are no more idle callbacks eligible to be run. As such, the user agent will not necessarily run all currently posted idle callbacks within a single idle period. Any remaining idle tasks are eligible to run during the next idle period.
 </p>
 
+<p class="note">注記：
+最良の処理能を発揮させるためには、開発者には，有意義な仕事を遂行しない不必要な~callback（例：
+`requestAnimationFrame()^m,
+`setTimeout()^m, 等々）は排することが奨励される
+— そのような~callbackを発火させ続けて，各~eventに反応するのを待機するのでなく、各~eventに反応する~callbackを，可用になり次第 必要に応じて~scheduleするほうがよい。
+この~patternにより、全体的な効率性は改善され、~UAは，背景~仕事の巨大blockをより効率的に遂行できるような，長い（ 50ms までの）遊休~callbackを~scheduleすることが可能になる。
+◎
+To deliver the best performance developers are encouraged to eliminate unnecessary callbacks (e.g. requestAnimationFrame, setTimeout, and so on) that do not perform meaningful work; do not keep such callbacks firing and waiting for events to react, instead schedule them as necessary to react to events once they become available. Such pattern improves overall efficiency, and enables the user agent to schedule long idle callbacks (up to 50ms) that can be used to efficiently perform large blocks of background work.
+</p>
 
 <p>
 現在の遊休~期間にて稼働可能であるとされる遊休~taskは、その遊休~期間が開始される前に~postされたものに限られる。
@@ -1353,7 +1387,7 @@ Each Window has:
 A list of idle request callbacks. The list MUST be initially empty and each entry in this list is identified by a number, which MUST be unique within the list for the lifetime of the Window object.
 </dd>
 	<dd class="trans-note">【
-数~自体には特に意味はなく、~list内に同一の~callbackが複数あっても，~list内の位置ごとに別々に扱うことを意味すると見られる。
+“数で識別される” とは、~list内に同一の~callbackが複数あっても，~list内の位置ごとに別々に扱うことを意味すると見られる。
 次項も同様。
 】</dd>
 
@@ -1379,7 +1413,8 @@ An idle callback identifier, which is a number which MUST initially be zero.
 %window の
 `遊休~callback~list内@
 とは、 %window の［
-`要請された遊休~callbackの~list$内, `稼働可能な遊休~callbackの~list$内
+`要請された遊休~callbackの~list$内,
+`稼働可能な遊休~callbackの~list$内
 ］の総称である。
 </p>
 
@@ -1415,20 +1450,29 @@ Let handle be window's idle callback identifier current value.
 ⇒
 ( `~callback$, `~handle$ ) ~SET ( %callback, %~handle )
 ◎
-Append callback to window's list of idle request callbacks, associated with handle.
+Push callback to the end of window's list of idle request callbacks, associated 
 </li>
-
 	<li>
 %遊休~callback を %window の`要請された遊休~callbackの~list$に付加する
+<!-- ＊ push = 付加 -->
 ◎
 ↑</li>
 
 	<li>
+<p>
 ~RET %~handle
 — ただし、以下の手続きは非同期に継続する。
 ◎
 Return handle and then continue running this algorithm asynchronously.
-</li>
+</p>
+
+<p class="note">注記：
+以降，手続きは並列的に走るが、任意選択の `timeout^m ~memberが提供されていれば， `setTimeout()^m に似た~timerも待入する。
+ここからは，遊休~callbackと~timeout~callbackの競争になり、先に~scheduleされた方がもう片方（例えば 遊休~callbackが先なら、~timeout~callbackの方）を取消すことになる。
+◎
+The following steps run in parallel and queue a timer similar to setTimeout() if the optional timeout property is provided. From here, the idle and timeout callbacks are raced and cancel each other—e.g. if the idle callback is scheduled first, then it cancels the timeout callback, and vice versa.
+</p>
+	</li>
 	<li>
 <p>
 ~IF［
@@ -1562,42 +1606,37 @@ cancelIdleCallback might be invoked for an entry in window's list of idle reques
 </li>
 </ul>
 
+<p class="trans-note">【
+これらの用語は、記述を簡潔かつ明確にするため，この訳に導入したものである。
+】</p>
 
 <p>
 `timeRemaining()@m
-~methodの被呼出時には、`~callback刻限$までの残り時間を，次の手続きで計算される `DOMHighResTimeStamp$I として返さ~MUST
-— 結果の値は， 5 ~micro秒までの~~精度に~~抑える~SHOULDである（
+~methodの被呼出時には、［
+`performance.now()$m から返される値が表現する時刻から
+`文脈~obj$の`~callback刻限$までの所要時間
+— ただし，後者が前者より過去の場合は 0
+］ を表現する `DOMHighResTimeStamp$I 型~値を返さ~MUST
+— ただし、結果の値は， 5 ~micro秒までの~~精度に~~抑える~SHOULDである（
 <a href="~HRTIME#privacy-security">~privacyと~security</a>
 `HR-TIME-2$r
 を見よ）：
 ◎
-When the timeRemaining() method is invoked on an IdleDeadline object it MUST return the amount of time remaining before the callback's deadline as a DOMHighResTimeStamp. The value SHOULD be accurate to 5 microseconds - see "Privacy and Security" section of [HR-TIME]. This value is calculated by performing the following steps:
-</p>
-
-<ol>
-	<li>
-%刻限 ~LET `文脈~obj$の`~callback刻限$を `DOMHighResTimeStamp$I 値に換算した結果
-◎
-Let deadline be the deadline of the associated callback as a [DOMHighResTimeStamp]. [HR-TIME-2]
-</li>
-	<li>
-%今 ~LET `performance.now()$m から返される時刻
+When the timeRemaining() method is invoked on an IdleDeadline object it MUST return the duration, as a DOMHighResTimeStamp, between the current time and the deadline argument passed to IdleDeadline. The value SHOULD be accurate to 5 microseconds - see "Privacy and Security" section of [HR-TIME]. This value is calculated by performing the following steps:
 ◎
 Let now be the value returned by [performance.now()].
-</li>
-	<li>
-~RET Max( %刻限 − %今, 0 )
 ◎
-Let timeRemaining be deadline - now.
+Let timeRemaining be deadline argument passed to IdleDeadline - now.
+~RET Max( %刻限 − %今, 0 )
 ◎
 If timeRemaining is negative, set it to 0.
 ◎
 Return timeRemaining.
-</li>
-</ol>
+</p>
 
 <p>
-`didTimeout@m 属性は、［
+`didTimeout@m
+属性の取得子は、［
 `文脈~obj$の`~timeout~flag$ ~EQ ~ON ならば ~T ／
 ~ELSE_ ~F
 ］を返さ~MUST。
@@ -1866,9 +1905,10 @@ Select any document from docs.
 ◎
 ↓</li>
 	<li>
-%稼働可能~list から %遊休~callback を除去する
+%稼働可能~list から最初の~callbackを除去する
+<!-- ＊Pop the top = 最初 -->
 ◎
-Pop callback from document's Window object's list of runnable idle callbacks.
+Pop the top callback from document's Window object's list of runnable idle callbacks.
 </li>
 	<li>
 ~IF［
