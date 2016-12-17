@@ -1442,6 +1442,7 @@ HRTIME2=編            w3c.github.io/hr-time/\n\
 HIGHRESOLUTIONTIME=主 ~/hr-time-ja.html\n\
 HIGHRESOLUTIONTIME=版 ~TR/hr-time/\n\
 HTML=主               ~momdoG/html/●日本語(部分)訳\n\
+HTML=副               ~/index.html#spec-list-html●日本語訳(このサイト)\n\
 HTML=副               ~momdoG/html5/Overview.html●日本語(部分)訳\n\
 HTML=副               ~momdoG/html51/Overview.html●5.1 日本語(部分)訳\n\
 	HTML=・               ~TR/html/●W3C\n\
