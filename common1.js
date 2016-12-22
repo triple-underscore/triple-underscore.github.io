@@ -1644,6 +1644,7 @@ CSS21=副              www.swlab.it.okayama-u.ac.jp/man/rec-css2/cover.html●2.
 */
 
 COMMON_DATA.REF_DATA2 = '\n\
+~TR/CSS22/●       ~momdoG/css2/\n\
 ~TR/CSS21/●       ~momdoG/css2/\n\
 ~TR/CSS2/●        ~momdoG/css2/\n\
 ~CSSWG/css2/●     ~momdoG/css2/\n\
