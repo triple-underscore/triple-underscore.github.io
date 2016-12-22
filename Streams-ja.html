@@ -1597,7 +1597,6 @@ A.WritableStreamDefaultWriterWrite:#writable-stream-default-writer-write
 A.WritableStreamError:#writable-stream-error
 A.WritableStreamFinishClose:#writable-stream-finish-close
 A.WritableStreamRejectPromisesInReactionToError:#writable-stream-reject-unresolved-promises
-A.WritableStreamFulfillWriteRequest:#writable-stream-fulfill-write-request
 A.WritableStreamUpdateBackpressure:#writable-stream-update-backpressure
 
 	■ TC39
@@ -1730,7 +1729,7 @@ code {
 </p>
 
 <p>
-更新：<time>2016-12-17</time>
+更新：<time>2016-12-22</time>
 （公開：<time>2015-01-19</time> ）
 </p>
 
@@ -1759,7 +1758,7 @@ code {
 ></a>
 	<hgroup>
 <h1 id="title">Streams</h1>
-<h2>Living Standard — 最終更新 2016 年 12 月 16 日</h2>
+<h2>Living Standard — 最終更新 2016 年 12 月 21 日</h2>
 	</hgroup>
 <dl>
 	<dt>Participate:</dt>
@@ -1774,7 +1773,7 @@ code {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a></dd>
-	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/fe04ee8797b29d8baa5d16250974b56f20012d55" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/68aa48c5e463bdc15c43944cd561ce6fcec5441c" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/streamsstandard">@streamsstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -9692,12 +9691,31 @@ Instances of WritableStream are created with the internal slots described in the
 </th></tr></thead>
 
 <tbody>
+<tr><td>[[pendingAbortRequest]]
+</td><td>
+処理待ちの中止-演算に対する~promise
+◎
+The promise for a pending abort operation
+</td></tr>
+
+<tr><td>[[pendingCloseRequest]]
+</td><td>
+書込器の `close()$dw ~methodから返された~promise
+◎
+The promise returned from the writer close() method
+
+</td></tr>
+
+<tr><td>[[pendingWriteRequest]]
+</td><td>
+現在~処理待ちの書込~演算に対する~promise
+◎
+The promise for the current pending write operation
 
 <tr><td>[[state]]
 </td><td>
 
 内部に利用される ~streamの現在の状態を包含している文字列
-
 — 次のいずれか：
 `writable^l, `closing^l, `closed^l, `errored^l
 ◎
@@ -9741,24 +9759,6 @@ A WritableStreamDefaultWriter instance, if the stream is locked to a writer, or 
 ］を表現する，~promiseたちの`~List$ 。
 ◎
 A List of promises representing the stream’s internal queue of pending writes
-
-<tr><td>[[pendingWriteRequest]]
-</td><td>
-現在~処理待ちの書込~演算に対する~promise
-◎
-The promise for the current pending write operation
-
-<tr><td>[[pendingCloseRequest]]
-</td><td>
-書込器の `close()$dw ~methodから返された~promise
-◎
-The promise returned from the writer close() method
-
-<tr><td>[[pendingAbortRequest]]
-</td><td>
-処理待ちの中止-演算に対する~promise
-◎
-The promise for a pending abort operation 
 
 </td></tr></tbody></table>
 
@@ -9872,9 +9872,12 @@ Set this.[[state]] to "writable".
 	<li>
 ~this.[[storedError]] ~SET ~undefined；<br>
 ~this.[[writer]] ~SET ~undefined；<br>
-~this.[[writableStreamController]] ~SET ~undefined
+~this.[[writableStreamController]] ~SET ~undefined；<br>
+~this.[[pendingAbortRequest]] ~SET ~undefined；<br>
+~this.[[pendingCloseRequest]] ~SET ~undefined；<br>
+~this.[[pendingWriteRequest]] ~SET ~undefined
 ◎
-Set this.[[storedError]], this.[[writer]], and this.[[writableStreamController]] to undefined.
+Set this.[[storedError]], this.[[writer]], this.[[writableStreamController]], this.[[pendingAbortRequest]], this.[[pendingCloseRequest]], and this.[[pendingWriteRequest]] to undefined.
 </li>
 	<li>
 ~this.[[writeRequests]] ~SET 新たな空`~List$
@@ -10205,11 +10208,11 @@ Set stream.[[pendingAbortRequest]] to a new promise.
 %controller.[[writing]] ~EQ `true^b
 ⇒
 ~RET %stream.[[pendingAbortRequest]] を［
-! `WritableStreamDefaultControllerAbort$A( %stream.[[writableStreamController]], %reason)
+! `WritableStreamDefaultControllerAbort$A( %controller, %reason)
 を返す充足~handler
 ］で`変形-$した結果
 ◎
-If controller.[[writing]] is true, return the result of transforming stream.[[pendingAbortRequest]] by a fulfillment handler that returns ! WritableStreamDefaultControllerAbort(stream.[[writableStreamController]], reason).
+If controller.[[writing]] is true, return the result of transforming stream.[[pendingAbortRequest]] by a fulfillment handler that returns ! WritableStreamDefaultControllerAbort(controller, reason).
 </li>
 			<li>
 ~ELSE
@@ -10221,10 +10224,10 @@ Otherwise, return stream.[[pendingAbortRequest]].
 		</ol>
 	</li>
 	<li>
-~RET ! `WritableStreamDefaultControllerAbort$A( %stream.[[writableStreamController]],
+~RET ! `WritableStreamDefaultControllerAbort$A( %controller,
 %reason )
 ◎
-Return ! WritableStreamDefaultControllerAbort(stream.[[writableStreamController]], reason).
+Return ! WritableStreamDefaultControllerAbort(controller, reason).
 </li>
 </ol>
 
@@ -10389,12 +10392,6 @@ Set writer.[[readyPromise]].[[PromiseIsHandled]] to true.
 Assert: stream.[[state]] is "closing" or "errored".
 </li>
 	<li>
-~Assert：
-%stream.[[writer]] ~NEQ ~undefined
-◎
-Assert: stream.[[writer]] is not undefined.
-</li>
-	<li>
 <p>
 ~IF
 %stream.[[state]] ~EQ `closing^l
@@ -10404,9 +10401,9 @@ If stream.[[state]] is "closing",
 		<ol>
 			<li>
 ~undefined で
-%writer.[[closedPromise]] を`解決する$
+%stream.[[writer]].[[closedPromise]] を`解決する$
 ◎
-Resolve writer.[[closedPromise]] with undefined.
+Resolve stream.[[writer]].[[closedPromise]] with undefined.
 </li>
 			<li>
 %stream.[[state]] ~SET `closed^l
@@ -10430,14 +10427,14 @@ Assert: stream.[[state]] is "errored".
 </li>
 			<li>
 %stream.[[storedError]] で
-%writer.[[closedPromise]] を`却下する$
+%stream.[[writer]].[[closedPromise]] を`却下する$
 ◎
-Reject writer.[[closedPromise]] with stream.[[storedError]].
+Reject stream.[[writer]].[[closedPromise]] with stream.[[storedError]].
 </li>
 			<li>
-%writer.[[closedPromise]].[[PromiseIsHandled]] ~SET `true^b
+%stream.[[writer]].[[closedPromise]].[[PromiseIsHandled]] ~SET `true^b
 ◎
-Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
+Set stream.[[writer]].[[closedPromise]].[[PromiseIsHandled]] to true.
 </li>
 		</ol>
 	</li>
@@ -10563,40 +10560,8 @@ Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
 </ol>
 
 			</section>
-			<section id="writable-stream-fulfill-write-request">
-<h4 class="nothrow">4.4.5. `WritableStreamFulfillWriteRequest ( stream )^A</h4>
-
-<ol class="algo">
-	<li>
-~Assert：
-%stream.[[writeRequests]] は空である
-◎
-Assert: stream.[[writeRequests]] is not empty.
-</li>
-	<li>
-%writeRequest ~LET %stream.[[writeRequests]] の最初の要素
-◎
-Let writeRequest be the first element of stream.[[writeRequests]].
-</li>
-	<li>
-%stream.[[writeRequests]]
-から %writeRequest を除去する
-— 後続の要素たちは~~先頭へ一つずらす
-◎
-Remove writeRequest from stream.[[writeRequests]], shifting all other elements downward (so that the second becomes the first, and so on).
-</li>
-	<li>
-~undefined で
-%writeRequest を`解決する$
-◎
-Resolve writeRequest with undefined.
-</li>
-</ol>
-
-
-			</section>
 			<section id="writable-stream-update-backpressure">
-<h4 class="nothrow">4.4.6. `WritableStreamUpdateBackpressure ( stream, backpressure )^A</h4>
+<h4 class="nothrow">4.4.5. `WritableStreamUpdateBackpressure ( stream, backpressure )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -11689,6 +11654,16 @@ Instances of WritableStreamDefaultController are created with the internal slots
 The WritableStream instance controlled
 </td></tr>
 
+<tr><td>[[inClose]]
+</td><td>
+真偽~flag
+— `下層~槽$の `close()^c ~methodが実行-中にあって，まだ充足されていない間は、 `true^b に設定される。
+これは、
+`abort()$dw ~methodが `close()^c を遮らないようにするために利用される。
+◎
+A boolean flag set to true while the underlying sink’s close method is executing and has not yet fulfilled, used to prevent the abort() method from interrupting close 
+</td></tr>
+
 <tr><td>[[queue]]
 </td><td>
 ~streamの［
@@ -11739,15 +11714,6 @@ An object representation of the stream’s underlying sink; also used for the Is
 これは、再入~callを防止するために利用される。
 ◎
 A boolean flag set to true while the underlying sink’s write method is executing and has not yet fulfilled, used to prevent reentrant calls
-
-<tr><td>[[inClose]]
-</td><td>
-真偽~flag
-— `下層~槽$の `close()^c ~methodが実行-中にあって，まだ充足されていない間は、 `true^b に設定される。
-これは、
-`abort()$dw ~methodが `close()^c を遮らないようにするために利用される。
-◎
-A boolean flag set to true while the underlying sink’s close method is executing and has not yet fulfilled, used to prevent the abort() method from interrupting close 
 
 </td></tr></tbody></table>
 
@@ -12484,11 +12450,6 @@ Upon fulfillment of sinkWritePromise,
 </p>
 		<ol>
 			<li>
-%state ~LET %stream.[[state]]
-◎
-Let state be stream.[[state]].
-</li>
-			<li>
 ~Assert：
 %controller.[[writing]] ~EQ `true^b
 ◎
@@ -12515,6 +12476,11 @@ Resolve stream.[[pendingWriteRequest]] with undefined.
 %stream.[[pendingWriteRequest]] ~SET ~undefined
 ◎
 Set stream.[[pendingWriteRequest]] to undefined.
+</li>
+			<li>
+%state ~LET %stream.[[state]]
+◎
+Let state be stream.[[state]].
 </li>
 			<li>
 <p>
@@ -14574,5 +14540,4 @@ to the extent possible under law, the editor has waived all copyright and relate
 
 		</section>
 	</section>
-
 
