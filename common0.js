@@ -842,6 +842,7 @@ HTML50:https://www.w3.org/TR/html5\n\
 HTML51:https://www.w3.org/TR/html51\n\
 HTML5x:https://www.w3.org/TR/html\n\
 BROWSERS:browsers-ja.html\n\
+NAVI:HTML-navigation-ja.html\n\
 WAPI:webappapis-ja.html\n\
 HTMLGAPI:HTML-global-api-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
