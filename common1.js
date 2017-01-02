@@ -159,7 +159,7 @@ Util.fillMisc = function(options){//PAGE_DATA
 
 WD: 'W3C Working Draft',
 ED: 'W3C Editor’s Draft',
-EDCG: 'W3C Draft Community Group Report',
+EDCG: 'W3C Community Group Draft Report',
 PR: 'W3C Proposed Recommendation',
 CR: 'W3C Candidate Recommendation',
 REC: 'W3C Recommendation',
