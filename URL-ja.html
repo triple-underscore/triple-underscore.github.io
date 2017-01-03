@@ -437,6 +437,7 @@ list::::リスト
 size::::サイズ
 _charset_:
 buffer::::バッファ
+token::::トークン
 URL:
 ASCII:
 HTML:
@@ -915,7 +916,7 @@ code > dfn {
 </p>
 
 <p>
-更新： <time>2016-12-29</time> （公開： <time>2012-10-20</time>）
+更新： <time>2017-01-04</time> （公開： <time>2012-10-20</time>）
 </p>
 
 <p >
@@ -946,7 +947,7 @@ code > dfn {
 
 	<hgroup>
 <h1>URL</h1>
-<h2>Living Standard — 最終更新 2016 年 12 月 28 日</h2>
+<h2>Living Standard — 最終更新 2017 年 1 月 3 日</h2>
 	</hgroup>
 
 <dl>
@@ -956,7 +957,7 @@ code > dfn {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/url/commits">https://github.com/whatwg/url/commits</a></dd>
-	<dd><a href="https://url.spec.whatwg.org/commit-snapshots/26caf4927f6c95ba4f56d701ecd8a52fdb664982/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://url.spec.whatwg.org/commit-snapshots/fbff6834a8a03576261f777d0e0afea5c1bc5a09/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/urlstandard">@urlstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -2926,12 +2927,11 @@ A URL’s scheme is an ASCII string that identifies the type of URL and can be u
 A URL’s username is an ASCII string identifying a user. It is initially the empty string.
 </dd>
 
-	<dt>`~password@url（初期~値： ~NULL ）</dt>
+	<dt>`~password@url（初期~値：空~文字列 ）</dt>
 	<dd>
-~NULL, または
 利用者の資格証明情報を識別する`~ASCII文字列$。
 ◎
-A URL’s password is either null or an ASCII string identifying a user’s credentials. It is initially null.
+A URL’s password is an ASCII string identifying a user’s credentials. It is initially the empty string. 
 </dd>
 
 	<dt>`~host@url（初期~値： ~NULL ）</dt>
@@ -3126,11 +3126,10 @@ HTTP(S) scheme, network scheme, and fetch scheme are used by HTML. [HTML]
 `~URL$が
 `資格証明情報を含む@
 とは、その［
-`~username$urlは空~文字列でない, または
-`~password$urlは ~NULL でない
-］ことを意味する。
+`~username$url, `~password$url
+］のいずれかは空~文字列でないことを意味する。
 ◎
-A URL includes credentials if either its username is not the empty string or its password is non-null.
+A URL includes credentials if its username or password is not the empty string.
 </p>
 
 <p class="trans-note">【
@@ -4026,9 +4025,10 @@ Let buffer be the empty string.
 </li>
 	<li>
 <var>@ ~flag</var> ~LET ~OFF ~BR
-<var>[] ~flag</var> ~LET ~OFF
+<var>[] ~flag</var> ~LET ~OFF ~BR
+%~password~token出現~flag ~LET ~OFF
 ◎
-Let the @ flag and the [] flag be unset.
+Let the @ flag, [] flag, and passwordTokenSeenFlag be unset.
 </li>
 	<li id="_state-machine"><p>
 %~pointer ~LET 0 （ %入力 内の最初の~cpを指す~pointer）
@@ -4694,13 +4694,13 @@ For each codePoint in buffer, run these substeps:
 ~IF［
 %~cp ~EQ ❝:
 ］~AND［
-`~password$url ~EQ ~NULL
+%~password~token出現~flag ~EQ ~OFF
 ］
 ⇒
-`~password$url ~SET ~NULL ~BR
+%~password~token出現~flag ~SET ~ON ~BR
 ~CONTINUE
 ◎
-If codePoint is ":" and url’s password is null, set url’s password to the empty string and run these substeps for the next code point.
+If codePoint is ":" and passwordTokenSeenFlag is unset, then set passwordTokenSeenFlag and run these substeps for the next code point.
 </li>
 									<li>
 %符号化済~cp ~LET
@@ -4710,12 +4710,12 @@ Let encodedCodePoints be the result of running UTF-8 percent encode codePoint us
 </li>
 									<li>
 ~IF［
-%url の`~password$url ~NEQ ~NULL
+%~password~token出現~flag ~EQ ~ON
 ］
 ⇒
 %url の`~password$url ~APPEND %符号化済~cp
 ◎
-If url’s password is non-null, append encodedCodePoints to url’s password.
+If passwordTokenSeenFlag is set, then append encodedCodePoints to url’s password.
 </li>
 									<li>
 ~ELSE
@@ -5660,27 +5660,11 @@ If c is not a URL code point and not "%", syntax violation.
 If c is "%" and remaining does not start with two ASCII hex digits, syntax violation.
 </li>
 							<li>
-~IF［
-`C$V ~EQ ❝%
-］~AND［
-`C1$V ~EQ `2^l
-］~AND［
-`C2$V ~IN { `e^l, `E^l }
-］
-⇒
-%~buffer ~APPEND ❝. ~BR
-%~pointer ~INCBY 2
-◎
-If c is "%" and remaining, ASCII lowercased starts with "2e", append "." to buffer and increase pointer by two.
-</li>
-							<li>
-~ELSE
-⇒
 %~buffer ~APPEND ［
 `既定の符号化集合$を用いて `C$V を`~UTF-8~percent符号化$した結果
 ］
 ◎
-Otherwise, UTF-8 percent encode c using the default encode set, and append the result to buffer..
+UTF-8 percent encode c using the default encode set, and append the result to buffer.
 </li>
 						</ol>
 					</li>
@@ -5991,29 +5975,11 @@ To set the password given a url and password, run these steps:
 
 <ol>
 	<li>
-~IF［
-%~password ~EQ 空~文字列
-］
-⇒
-%url の`~password$url ~SET ~NULL
-◎
-If password is the empty string, set url’s password to null.
-</li>
-	<li>
-		<p>
-~ELSE
-：
-◎
-Otherwise, run these substeps:
-</p>
-
-		<ol>
-			<li>
 %url の`~password$url ~SET 空~文字列
 ◎
 Set url’s password to the empty string.
 </li>
-			<li>
+	<li>
 ~FOR
 %~password 内の
 ~EACH ( ~cp %C ) に対し
@@ -6024,8 +5990,6 @@ Set url’s password to the empty string.
 ◎
 For each code point in password, UTF-8 percent encode it using the userinfo encode set, and append the result to url’s password.
 </li>
-		</ol>
-	</li>
 </ol>
 
 
@@ -6074,12 +6038,10 @@ Append "//" to output.
 			<li>
 <p>
 ~IF［
-%url の`~username$url ~NEQ 空~文字列
-］~OR［
-%url の`~password$url ~NEQ ~NULL
+%url は`資格証明情報を含む$
 ］：
 ◎
-If url’s username is not the empty string or url’s password is non-null, run these substeps:
+If url includes credentials, then: 
 </p>
 				<ol>
 					<li>
@@ -6089,13 +6051,13 @@ Append url’s username to output.
 </li>
 					<li>
 ~IF［
-%url の`~password$url ~NEQ ~NULL
+%url の`~password$url ~NEQ 空~文字列
 ］
 ⇒
 %出力 ~APPEND ❝:
 ~APPEND %url の`~password$url
 ◎
-If url’s password is non-null, append ":", followed by url’s password, to output.
+If url’s password is not the empty string, then append ":", followed by url’s password, to output.
 </li>
 					<li>
 %出力 ~APPEND ❝@
@@ -7172,32 +7134,9 @@ Set the username given context object’s url and the given value.
 
 	<dt>`password@m</dt>
 	<dd>
-<p>
-取得子は、次を走らせ~MUST：
+取得子は、此れの`~url$urlの`~password$urlを返さ~MUST。
 ◎
-The password attribute’s getter must run these steps:
-</p>
-
-		<ol>
-			<li>
-%~password ~LET 此れの`~url$urlの`~password$url
-◎
-↓</li>
-			<li>
-~IF［
-%~password ~EQ ~NULL
-］
-⇒
-~RET 空~文字列
-◎
-If context object’s url’s password is null, return the empty string.
-</li>
-			<li>
-~RET %~password
-◎
-Return context object’s url’s password.
-</li>
-		</ol>
+The password attribute’s getter must return context object’s url’s password. 
 </dd>
 	<dd>
 <p>
@@ -8110,6 +8049,7 @@ Sam Ruby,
 Sebastian Mayr,
 Simon Pieters,
 Simon Sapin,
+Steven Vachon,
 Stuart Cook,
 Sven Uhlig,
 吉野剛史 (Takeshi Yoshino),
