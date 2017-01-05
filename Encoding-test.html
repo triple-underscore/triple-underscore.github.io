@@ -53,15 +53,13 @@ window.onload = function(){
 		.replace(/\w+/g, function(feature){
 			return feature + ': ' + ((feature in window)? 'ok' : '未サポート');
 		});
+
+	E('output').value = '';
 	setText('error1', support);
+	resetOutputWrap();
 
 	E('file_input').addEventListener('change', function(event){
 		readFile(event.target.files[0]);
-	}, false);
-
-	E('wrap_output').addEventListener('change', function(event){
-		var wrap = e = event.currentTarget.checked;
-		E('output').setAttribute('wrap', wrap ? 'soft' : 'off')
 	}, false);
 
 	E('read_more').addEventListener('click', decode, false);
@@ -71,6 +69,16 @@ window.onload = function(){
 
 	E('encode').addEventListener('click', encode, false);
 	E('encode_output').value = '';
+
+	E('output_format').addEventListener('change', function(event){
+		outputBinaryAsText();
+	}, false);
+
+	E('wrap_output').addEventListener('change', resetOutputWrap, false);
+	function resetOutputWrap(){
+		E('output').style.whiteSpace =
+			E('wrap_output').checked ? 'pre-wrap' : 'pre';
+	}
 }
 
 var current_file = null;
@@ -113,7 +121,7 @@ function readFile(file){
 }
 
 var init_decoder, decode;
-var encode;
+var encode, outputBinaryAsText;
 
 new function(){
 	var buffer = null;
@@ -153,36 +161,41 @@ new function(){
 	};
 
 	var encoder = null;
+	var encoder_buffer = null;
 	encode = function(){
-		var label = E('encoder_labels').value;
-		if(!encoder || (label !== encoder.encoding)) {
-			encoder = new TextEncoder( label );
-			E('download').setAttribute('download', label + '-encoded.txt')
+		if(!encoder) {
+			encoder = new TextEncoder();
+			E('download').setAttribute('download', 'utf-8-encoded.txt')
 		}
 
 		var text = E('output').value;
-		var buffer = encoder.encode(text);
+		encoder_buffer = encoder.encode(text);
 		if(URL.createObjectURL){
-			E('download').href = URL.createObjectURL(new Blob([buffer]));
+			E('download').href = URL.createObjectURL(new Blob([encoder_buffer]));
 			E('download').parentNode.className = 'enabled';
 		}
 
-		E('encoded_size').textContent = buffer.byteLength;
+		E('encoded_size').textContent = encoder_buffer.byteLength;
+		outputBinaryAsText();
+	}
+	
+	outputBinaryAsText = function(){
+		if(!encoder_buffer) return;
 		var output = '';
 		switch(E('output_format').value){
 		case 'base64':
-			buffer.forEach(function(b){
+			encoder_buffer.forEach(function(b){
 				output += String.fromCharCode( b );
 			});
 			output = window.btoa(output);
 			break;
 		case 'Hex':
-			buffer.forEach(function(b){
+			encoder_buffer.forEach(function(b){
 				output += b.toString( 16 );
 			});
 			break;
 		default:
-			buffer.forEach(function(b){
+			encoder_buffer.forEach(function(b){
 				output += String.fromCharCode(0x2800 + b);
 			});
 			break;
@@ -224,22 +237,6 @@ new function(){
 </p>
 
 </div>
-
-<!-- 
-<p >
-動作確認（ 2014-01-17 時点）—
-サポート： FireFox ／
-未サポート：Safari, Chrome
-</p>
-
-
-<a href="https://www.khronos.org/registry/typedarray/specs/latest/" >Typed Array</a>（
-<a href="TypedArray-ja.html" >和訳</a>
-）,
-<a href="https://w3c.github.io/FileAPI/" >File API</a>（
-<a href="File_API-ja.html" >和訳</a>
-）
- -->
 
 
 <h2 >利用法</h2>
@@ -340,9 +337,8 @@ new function(){
 	</tbody>
 </table>
 
-<p >
-（＊）ファイルが巨大な場合、設定によっては、（主に，ブラウザが出力テキストを描画するときの）処理に時間がかかるかもしれません。
-</p>
+<p><small>
+（＊）ファイルが巨大な場合、設定によっては、（主に，ブラウザが出力テキストを描画するときの）処理に時間がかかるかもしれません。</small></p>
 <!-- 
 <label><input type="checkbox" id="stream" />
 追加</label>
@@ -350,13 +346,12 @@ new function(){
 <span id="error" style="color: red;"></span><br />
 
 出力結果：
-<label ><input type="checkbox" id="wrap_output" />自動改行（＊）</label>
+<label ><input type="checkbox" id="wrap_output" />自動改行</label>
 <br />
 <textarea
 	id="output"
 	rows="30" cols="80"
-	wrap="off"
-	style="width:100%; height:30em;"
+	style="width:100%; height:30em; white-space:pre;"
 ></textarea>
 
 
@@ -364,14 +359,9 @@ new function(){
 <h2><code>TextEncoder</code> を試す</h2>
 
 <p >
-上のテキストエリアの内容を，符号化方式に
-<select size="1" id="encoder_labels">
-<option selected="selected" >utf-8</option>
-<option>utf-16be</option>
-<option>utf-16le</option>
-</select>
-を用いて
-<input id="encode" type="button" value="符号化する" />：
+上のテキストエリアの内容を
+<input id="encode" type="button" value="符号化する" />
+<small>（符号化方式は utf-8 のみ。他の符号化方式は可用でない。）</small>：
 </p>
 
 <ul>
@@ -382,11 +372,11 @@ new function(){
 >ダウンロード</a>（要 <a href="File_API-ja.html#dfn-createObjectURL"><code>URL.createObjectURL()</code></a> サポート）
 </li>
 	<li>
-結果バイナリデータのサイズ：<span id="encoded_size">？</span> バイト
+結果のバイナリデータのサイズ：<span id="encoded_size">？</span> バイト
 </li>
 
 	<li>
-結果のバイナリデータは
+結果のバイナリデータを
 <select size="1" id="output_format">
 <option selected="selected">Unicode 点字</option>
 <option>base64</option>
@@ -400,69 +390,9 @@ new function(){
 <textarea
 	id="encode_output"
 	rows="30" cols="80"
-	wrap="off"
-	style="width:100%; height:30em;"
+	style="width:100%; height:30em; white-space:pre;"
 ></textarea>
 
 
 </body>
 </html>
-
-
-<!-- 
-
-<input type="button" value="16 進" id="codePoints2Hex"/>
-
-	E('codePoints2Hex').addEventListener('click', function(event){
-		var out = E('output');
-		var text = out.value;
-//		console.log(text)
-		out.value = codePoints2Hex(text)
-	}, false);
-
-function codePoints2Hex(text){
-	var counter = 0;
-	return text.replace(/[\s\S]/g, function(s){
-		return (
-			(s.charCodeAt(0) + 0x10000).toString(16).slice(1) +
-			((((++counter) & 15)) ? ' ' : '\n')
-		);
-	});
-}
-
-new function(){
-	HEX = [];
-	for(var i = 0; i < 256; i++){
-		HEX.[i] = i.toString(16).toUpperCase();
-	}
-}
-
-function toHexString(view){
-	for(var i = 0; i < L; i ++){
-		HEX[view[i]];
-	}
-	view.forEach(function(){
-		
-	}
-}
-
-function encode(text){
-	var label = 'utf-8'; // E('labels1').value;
-	var fatal = true; //! E('ignore_fatal1').checked;
-
-	var encoder = new TextEncoder(label, {fatal: fatal});
-	try {
-		return encoder.encode(text); // UInt8Array
-	} catch(e) {
-		setText('error', '符号化エラー：' + errorText(e));
-		return null;
-	}
-}
-
-	if( XXXX ){
-		if(!confirm('XXX ですが、続けますか？')) {
-			return;
-		}
-	}
-
- -->
