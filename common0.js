@@ -833,6 +833,7 @@ CSSWM:css-writing-modes-ja.html\n\
 CSSSIZING:css-sizing-ja.html\n\
 SIZING:css-sizing-ja.html\n\
 TRANSFORM:css-transforms-ja.html\n\
+TRANSFORM2:css-transforms2-ja.html\n\
 TRANSITION:css-transitions-ja.html\n\
 MQ4:mediaqueries4-ja.html\n\
 SVG11:SVG11\n\

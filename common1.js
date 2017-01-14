@@ -1344,6 +1344,7 @@ CSS3TEXTDECOR=編      ~CSSWG/css-text-decor-3/\n\
 CSS3TEXTDECOR=版      ~TR/css-text-decor-3/\n\
 CSSTRANSFORMS1=・     ~CSSWG/css-transforms/\n\
 CSSTRANSFORMS1=主     ~/css-transforms-ja.html\n\
+CSSTRANSFORMS1=副     ~/css-transforms2-ja.html●Level 2 日本語訳\n\
 CSSTRANSFORMS1=版     ~TR/css3-transforms/\n\
 CSSTRANSFORMS1=編     ~CSSWG/css-transforms-1/\n\
 CSSTRANSFORMS1=・     ~CSSWG/css-transforms/\n\
