@@ -1422,7 +1422,8 @@ CSSWRITINGMODES=・    ~CSSWG/css-writing-modes/\n\
 CSSWRITINGMODES=主    ~/css-writing-modes-ja.html\n\
 CSSWRITINGMODES=副2   ＃suzukima.github.io/css-ja/css3-writing-modes/\n\
 CSSWRITINGMODES=版    ~TR/css3-writing-modes/\n\
-CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-3/\n\
+CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-3/●編（Level 3）\n\
+CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-4/\n\
 CSSWILLCHANGE1=主     ~/css-will-change-ja.html\n\
 CSSWILLCHANGE1=版     ~TR/css-will-change-1/\n\
 DOM=主                ~/DOM4-ja.html\n\
@@ -1737,6 +1738,7 @@ CSSTEXTDECOR3:CSS3TEXTDECOR\n\
 CSS3UI:CSSUI3\n\
 CSSUI:CSSUI3\n\
 CSSWRITINGMODES3:CSSWRITINGMODES\n\
+CSSWRITINGMODES4:CSSWRITINGMODES\n\
 CSS3WRITINGMODES:CSSWRITINGMODES\n\
 CSS3NAMESPACE:CSSNAMESPACES\n\
 CSSNAMESPACES3:CSSNAMESPACES\n\
