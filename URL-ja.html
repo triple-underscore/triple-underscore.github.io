@@ -221,6 +221,8 @@ V.~piece:#ipv6piece
 ~ASCII~tabや~ASCII改行:~INFRA#ascii-tab-or-newline
 ~C0制御文字:~INFRA#c0-control
 ~C0制御文字や~space:~INFRA#c0-control-or-space
+空:~INFRA#list-is-empty
+	~EACH:~INFRA#list-iterate
 
 禁止~host~cp:#forbidden-host-code-point
 
@@ -951,7 +953,8 @@ code > dfn {
 </p>
 
 <p>
-更新： <time>2017-01-29</time> （公開： <time>2012-10-20</time>）
+更新： <time>2017-02-01</time>
+（公開： <time>2012-10-20</time>）
 </p>
 
 <p >
@@ -982,7 +985,7 @@ code > dfn {
 
 	<hgroup>
 <h1>URL</h1>
-<h2>Living Standard — 最終更新 2017 年 1 月 29 日</h2>
+<h2>Living Standard — 最終更新 2017 年 1 月 31 日</h2>
 	</hgroup>
 
 <dl>
@@ -992,7 +995,7 @@ code > dfn {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/url/commits">https://github.com/whatwg/url/commits</a></dd>
-	<dd><a href="https://url.spec.whatwg.org/commit-snapshots/cf9854c9e03c12af19e2a249a0d9d6bec6a7419b/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://url.spec.whatwg.org/commit-snapshots/b087fe2ab215caf656a94b067c9a69ae78f03c8f/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/urlstandard">@urlstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -2747,8 +2750,7 @@ If host is an IPv4 address, return the result of running the IPv4 serializer on 
 
 	<dt>`~IPv6~address$</dt>
 	<dd>
-❝[
-~APPEND ［
+❝[ ~APPEND ［
 %~host を`~IPv6直列化器$にかけた結果
 ］ ~APPEND ❝]
 ◎
@@ -3043,6 +3045,11 @@ A URL’s port is either null or a 16-bit unsigned integer that identifies a net
 ］であり、通例的には，資源の所在を階層的に識別するものになる。
 ◎
 A URL’s path is a list of zero or more ASCII strings holding data, usually identifying a location in hierarchical form. It is initially the empty list.
+</dd>
+	<dd class="note">注記：
+`~URL$が`特別$である場合、その`~path$urlは，常に`空$でない
+◎
+A special URL always has a non-empty path.
 </dd>
 
 	<dt>`~query@url（初期~値： ~NULL ）</dt>
@@ -4071,7 +4078,7 @@ If input contains a forbidden host code point, syntax violation, return failure.
 Let output be the empty string.
 </li>
 	<li>
-%入力 内の~EACH( ~cp ) に対し
+%入力 内の~EACH ( ~cp ) に対し
 ⇒
 %出力 ~APPEND `単純 符号化集合$を用いて~cp を`~UTF-8~percent符号化$した結果
 ◎
@@ -4775,14 +4782,12 @@ Otherwise
 					<li>
 <p>
 ~IF［
-`C$V ~EQ ❝/
-］~OR［［
 %url は`特別$である
 ］~AND［
-`C$V ~EQ ❝\
-］］：
+`C$V ~IN { ❝/, ❝\ }
+］：
 ◎
-If either c is "/", or url is special and c is "\", run these substeps:
+If url is special and c is "/" or "\", then: 
 </p>
 						<ol>
 							<li>
@@ -4801,6 +4806,15 @@ Set state to special authority ignore slashes state.
 </li>
 						</ol>
 					</li>
+					<li>
+~ELIF［
+`C$V ~EQ ❝/
+］
+⇒
+%state ~SET `権限$st
+◎
+Otherwise, if c is "/", then set state to authority state.
+</li>
 					<li>
 ~ELSE
 ⇒
@@ -5649,39 +5663,83 @@ Otherwise, append c to buffer.
 			<dd>
 				<ol>
 					<li>
+<p>
 ~IF［
-%url は`特別$である
-］~AND［
+%~url は`特別$である
+］：
+◎
+If url is special, then:
+</p>
+						<ol>
+							<li>
+~IF［
 `C$V ~EQ ❝\
 ］
 ⇒
 `構文違反$
+◎
+If c is "\", syntax violation.
 </li>
-					<li>
+							<li>
 %state ~SET `~path$st
+◎
+Set state to path state.
 </li>
-					<li>
+							<li>
 ~IF［
-`C$V ~EQ ❝/
-］~OR［［
-%url は`特別$である
-］~AND［
-`C$V ~EQ ❝\
-］］
-⇒
-何もしない
-</li>
-					<li>
-~ELSE
+`C$V ~NIN { ❝/, ❝\ }
+］
 ⇒
 %~pointer ~DECBY 1
+◎
+If c is neither "/" nor "\", then decrease pointer by one.
 </li>
+						</ol>
+					</li>
+					<li>
+~ELIF［
+%上書state ~EQ ε
+］~AND［
+`C$V ~EQ ❝?
+］
+⇒
+%~url の`~query$url ~SET 空~文字列 ~BR
+%state ~SET `~query$st
+◎
+Otherwise, if state override is not given and c is "?", then set url’s query to the empty string and state to query state.
+</li>
+					<li>
+~ELIF［
+%上書state ~EQ ε
+］~AND［
+`C$V ~EQ ❝#
+］
+⇒
+%~url の`素片$url ~SET 空~文字列 ~BR
+%state ~SET `素片$st
+◎
+Otherwise, if state override is not given and c is "#", then set url’s fragment to the empty string and state to fragment state.
+</li>
+					<li>
+<p>
+~ELIF［
+`C$V ~NEQ `EOF$i
+］
+</p>
+
+<ol><li>%state ~SET `~path$st
+</li><li>~IF［
+`C$V ~NEQ ❝/
+］
+⇒
+%~pointer ~DECBY 1
+</li></ol>
+
+◎
+Otherwise, if c is not EOF code point, then: set state to path state and if c is not "/", then decrease pointer by one.
+					</li>
 				</ol>
-◎
-If url is special and c is "\", syntax violation.
-◎
-Set state to path state, and if neither c is "/", nor url is special and c is "\", decrease pointer by one.
-</dd>
+			</dd>
 
 <!--% path-state -->
 			<dt>`~path@st</dt>
@@ -6189,8 +6247,7 @@ Set url’s username to the empty string.
 </li>
 	<li>
 ~FOR
-%~username 内の
-~EACH ( ~cp %C ) に対し
+%~username 内の~EACH ( ~cp %C ) に対し
 ⇒
 %url の`~username$url ~APPEND ［
 `~userinfo 符号化集合$を用いて %C を`~UTF-8~percent符号化$した結果
@@ -6217,8 +6274,7 @@ Set url’s password to the empty string.
 </li>
 	<li>
 ~FOR
-%~password 内の
-~EACH ( ~cp %C ) に対し
+%~password 内の~EACH ( ~cp %C ) に対し
 ⇒
 %url の`~password$url ~APPEND ［
 `~userinfo 符号化集合$を用いて %C を`~UTF-8~percent符号化$した結果
@@ -6253,7 +6309,8 @@ The URL serializer takes a URL url, an optional exclude fragment flag, and then 
 <ol>
 	<li>
 %出力 ~LET
-空~文字列 ~APPEND %url の`~scheme$url ~APPEND ❝:
+空~文字列 ~APPEND %url の`~scheme$url
+~APPEND ❝:
 ◎
 Let output be url’s scheme and ":" concatenated.
 </li>
@@ -6349,10 +6406,11 @@ If url’s cannot-be-a-base-URL flag is set, append the first string in url’s 
 	<li>
 ~ELSE
 ⇒
-%url の`~path$url内の ~EACH ( 文字列 %s （空~文字列も含む） ) に対し
+~FOR
+%~url の`~path$url内の~EACH ( %文字列 ) に対し
 ⇒
 %出力 ~APPEND ❝/
-~APPEND %s
+~APPEND %文字列
 ◎
 Otherwise, append "/", followed by the strings in url’s path (including empty strings), if any, separated from each other by "/", to output.
 </li>
@@ -7220,8 +7278,7 @@ It returns the Unicode rather than the ASCII serialization for compatibility wit
 		<ol>
 			<li>
 ~RET
-空~文字列
-~APPEND 此れの`~url$urlの`~scheme$url
+空~文字列 ~APPEND 此れの`~url$urlの`~scheme$url
 ~APPEND ❝:
 </li>
 		</ol>
@@ -7235,8 +7292,7 @@ The protocol attribute’s getter must return context object url’s scheme, fol
 `~URL$と上書stateの組：
 ( 此れの`~url$url, `~scheme開始-$st )
 ］を与える下で，［
-所与の値 ~APPEND
-❝: 
+所与の値 ~APPEND ❝:
 ］を`基本~URL構文解析器$にかける
 ◎
 The protocol attribute’s setter must basic URL parse the given value, followed by ":", with context object’s url as url and scheme start state as state override.
@@ -7574,13 +7630,14 @@ If context object’s url’s cannot-be-a-base-URL flag is set, then return cont
 			<li>
 %結果 ~LET 空~文字列
 ◎
-↓</li>
+If context object’s url’s path is empty, then return the empty string.
+</li>
 			<li>
 ~FOR
-%url の`~path$url内の
-~EACH ( 文字列 %s （空~文字列も含む） ) に対し
+%url の`~path$url内の~EACH ( %文字列 ) に対し
 ⇒
-%結果 ~APPEND ❝/ ~APPEND %s
+%結果 ~APPEND ❝/
+~APPEND %文字列
 ◎
 ↓</li>
 			<li>
@@ -7915,7 +7972,7 @@ Append a new name-value pair whose name is pair’s first item, and value is pai
 
 			<dt>`~record$</dt>
 			<dd>
-%init 内の~EACH( `~mapping$ ( %名, %値 ) ) に対し
+%init 内の~EACH ( `~mapping$ ( %名, %値 ) ) に対し
 ⇒
 %~query の`名値~組~list$に，新たな
 組( %名 : %値 )
