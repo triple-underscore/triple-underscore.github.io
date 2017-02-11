@@ -751,20 +751,20 @@ UNSPECIFIED:<span class="trans-note">【…未策定】</span>\n\
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>\n\
 INFORMATIVE:<p><em>この節は規定ではない。</em><span lang="en">This section is non-normative.</span></p>\n\
 FINGERPRINTING:<a class="fingerprinting" href="https://html.spec.whatwg.org/multipage/introduction.html#fingerprinting-vector"></a>\n\
-●名:<table class="propdef"><tbody><tr><th>名前</th><td>\n\
-●述:<table class="descdef"><tbody><tr><th>名前</th><td>\n\
-●対:</td></tr><tr><th>~For</th><td>\n\
-●値:</td></tr><tr><th>値</th><td class="prod">\n\
-●新値:</td></tr><tr><th>新たに定義される値</th><td class="prod">\n\
-●初:</td></tr><tr><th>初期値</th><td>\n\
-●適:</td></tr><tr><th>適用対象</th><td>\n\
-●継:</td></tr><tr><th>継承-</th><td>\n\
-●百:</td></tr><tr><th>百分率</th><td>\n\
-●媒:</td></tr><tr><th>媒体</th><td>\n\
-●算:</td></tr><tr><th>算出値</th><td>\n\
-●順:</td></tr><tr><th>正準的順序</th><td>\n\
-●ア:</td></tr><tr><th>~animation</th><td>\n\
-●表終:</td></tr></tbody></table>\n\
+●名:<table class="propdef"><tbody><tr><th>名前<td>\n\
+●述:<table class="descdef"><tbody><tr><th>名前<td>\n\
+●対:<tr><th>~For<td>\n\
+●値:<tr><th>値<td class="prod">\n\
+●新値:<tr><th>新たに定義される値<td class="prod">\n\
+●初:<tr><th>初期値<td>\n\
+●適:<tr><th>適用対象<td>\n\
+●継:<tr><th>継承-<td>\n\
+●百:<tr><th>百分率<td>\n\
+●媒:<tr><th>媒体<td>\n\
+●算:<tr><th>算出値<td>\n\
+●順:<tr><th>正準的順序<td>\n\
+●ア:<tr><th>~animation<td>\n\
+●表終:</tbody></table>\n\
 SPECBUGS:https://www.w3.org/Bugs/Public/show_bug.cgi\n\
 TR:https://www.w3.org/TR\n\
 IETF:https://tools.ietf.org/html\n\
