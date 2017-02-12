@@ -364,6 +364,7 @@ i.EOF:#eof-code-point
 ~cannot-be-a-base-URL~flag:#url-cannot-be-a-base-url-flag
 
 ~URL単位:#url-units
+~URL単位かどうか検証する:#_validate-if-url-unit
 ~URL~cp:#url-code-points
 
 	• GOTO label
@@ -4457,18 +4458,23 @@ Let pointer be a pointer to first code point in input.
 </li>
 	<li>
 <p>
-下に与える状態機械を反復的に走らす：
+~WHILE 無条件
 </p>
-		<ul>
+		<ol>
 			<li>
-各反復を終えた時点で、
-%~pointer が `EOF$i を指しているならば 反復を終え，そうでなければ %~pointer を 1 だけ増やした上で 次の~~反復を継続する。
+下に与える状態機械を走らす
 </li>
 			<li>
-この状態機械の中の “~RET” は、この~algo自身の終了を表すとする。
+~IF［
+`C$V ~EQ `EOF$i
+］
+⇒
+~BREAK
 </li>
-		</ul>
-
+			<li>
+%~pointer ~INCBY 1
+</li>
+		</ol>
 ◎
 Keep running the following state machine by switching on state. If after a run pointer points to EOF code point, go to the next step. Otherwise, increase pointer by one and continue with the state machine.
 </li>
@@ -4486,75 +4492,48 @@ Keep running the following state machine by switching on state. If after a run p
 </ol>
 
 <p>
-状態機械は、 %state に応じて，次を走らす：
+状態機械は、 %state に応じて，以下における対応する段を走らす
+— この状態機械の中では：
 ◎
 ↑↑</p>
 
-<p class="trans-note">【
+<ul>
+	<li>
+“~RET” は、上の~algo自身の終了を表すとする。
+</li>
+	<li>
+<p>
+`~URL単位かどうか検証する@
+ときは、次を走らすとする†：
+</p>
+		<ol>
+			<li>
+~IF［
+`C$V ~NIN { `~URL~cp$, ❝% }
+］
+⇒
+`検証~error$
+</li>
+			<li>
+~IF［
+`C$V ~EQ ❝%
+］~AND［［
+`C1$V ~NIN `~ASCII~hex数字$
+］~OR［
+`C2$V ~NIN `~ASCII~hex数字$
+］］
+⇒
+`検証~error$
+</li>
+		</ol>
+	</li>
+</ul>
+
+<p class="trans-note">【†
+この定義は、共通する記述を集約するために，この訳にて追加したもの。
+】【
 この状態機械は、現在の `state^i からは常に，自身または自身より後に示されている `state^i へ遷移するように、整列して記されている。
 】</p>
-
-
-<!-- 状態遷移の流れ（ “state” は省略）：
-scheme start
-	scheme
-	no scheme
-scheme
-	no scheme
-	special relative/authority
-	path/authority
-	relative
-	special authority slash
-	cannot-be-a-base-url path
-	file-state
-no scheme
-	relative
-	fragment
-special relative/authority
-	relative
-	special authority ignore slash
-path/authority
-	authority
-	path
-relative
-	relative slash
-	path
-	query
-	fragment
-relative slash
-	special authority ignore slash
-	file host
-	path
-special authority slash
-	special authority ignore slash
-special authority ignore slash
-	authority
-authority
-	host
-host = hostname
-	port
-	path start
-port
-	path start
-file
-	file slash
-file slash
-	file host
-file host
-	path start
-	path
-path start
-	path
-path
-	query
-	fragment
-cannot-be-a-base-url path
-	query
-	fragment
-query
-	fragment
-fragment
--->
 
 <dl class="switch">
 
@@ -4633,36 +4612,19 @@ Otherwise, if c is ":", run these substeps:
 <p>
 ~IF［
 %上書state ~NEQ ε
-］：
+］~AND［［
+%url の`~scheme$url, %~buffer
+］のうち，片方だけが`特別~scheme$である
+］
+⇒
+~RET
 ◎
 If state override is given, run these subsubsteps:
-</p>
-
-						<ol>
-							<li>
-~IF［
-%url の`~scheme$urlは`特別~scheme$である
-］~AND［
-%~buffer は`特別~scheme$でない
-］
-⇒
-~RET
 ◎
-If url’s scheme is a special scheme and buffer is not, then return.
-</li>
-							<li>
-~IF［
-%url の`~scheme$urlは`特別~scheme$でない
-］~AND［
-%~buffer は`特別~scheme$である
-］
-⇒
-~RET
+• If url’s scheme is a special scheme and buffer is not, then return.
 ◎
-If url’s scheme is not a special scheme and buffer is, then return.
+• If url’s scheme is not a special scheme and buffer is, then return.
 </li>
-						</ol>
-					</li>
 					<li>
 %url の`~scheme$url ~SET %~buffer
 ◎
@@ -4769,7 +4731,7 @@ Otherwise, set url’s cannot-be-a-base-URL flag, append an empty string to url�
 %state ~SET `~schemeなし$st ~BR
 %入力 の最初の~cpの所から、やり直す
 <span class="trans-note">【
-~GOTO この状態機械の<a href="#_state-machine">入り口</a>
+~GOTO この状態機械の反復の<a href="#_state-machine">入り口</a>
 】</span>
 ◎
 Otherwise, if state override is not given, set buffer to the empty string, state to no scheme state, and start over (from the first code point in input).
@@ -5074,8 +5036,7 @@ Otherwise, set url’s username to base’s username, url’s password to base�
 `C1$V ~EQ ❝/
 ］
 ⇒
-%~pointer ~INCBY 1 ~BR
-%state ~SET `特別 権限~slash無視$st
+%~pointer ~INCBY 1
 ◎
 If c is "/" and remaining starts with "/", set state to special authority ignore slashes state, and increase pointer by one.
 </li>
@@ -5083,11 +5044,14 @@ If c is "/" and remaining starts with "/", set state to special authority ignore
 ~ELSE
 ⇒
 `検証~error$ ~BR
-%~pointer ~DECBY 1 ~BR
-%state ~SET `特別 権限~slash無視$st
+%~pointer ~DECBY 1
 ◎
 Otherwise, validation error, set state to special authority ignore slashes state, and decrease pointer by one.
 </li>
+			<li>
+%state ~SET `特別 権限~slash無視$st
+◎
+↑</li>
 		</ol>
 	</dd>
 
@@ -6245,24 +6209,9 @@ Otherwise, run these steps:
 </p>
 				<ol>
 					<li>
-~IF［
-`C$V ~NIN { `~URL~cp$, ❝% }
-］
-⇒
-`検証~error$
+`~URL単位かどうか検証する$
 ◎
 If c is not a URL code point and not "%", validation error.
-</li>
-					<li>
-~IF［
-`C$V ~EQ ❝%
-］~AND［［
-`C1$V ~NIN `~ASCII~hex数字$
-］~OR［
-`C2$V ~NIN `~ASCII~hex数字$
-］］
-⇒
-`検証~error$
 ◎
 If c is "%" and remaining does not start with two ASCII hex digits, validation error.
 </li>
@@ -6281,62 +6230,49 @@ UTF-8 percent encode c using the default encode set, and append the result to bu
 <!--% cannot-be-a-base-url-path-state -->
 	<dt>`~cannot-be-a-base-URL~path@st</dt>
 	<dd>
+		<ol>
+			<li>
 <p>
 `C$V に応じて：
 ◎
 ↓</p>
-		<dl class="switch">
-			<dt>❝?</dt>
-			<dd>
+				<dl class="switch">
+					<dt>❝?</dt>
+					<dd>
 %url の`~query$url ~SET 空~文字列 ~BR
 %state ~SET `~query$st
 ◎
 If c is "?", set url’s query to the empty string and state to query state.
 </dd>
 
-			<dt>❝#</dt>
-			<dd>
+					<dt>❝#</dt>
+					<dd>
 %url の`素片$url ~SET 空~文字列 ~BR
 %state ~SET `素片$st
 ◎
 Otherwise, if c is "#", set url’s fragment to the empty string and state to fragment state.
 </dd>
 
-			<dt>`EOF$i</dt>
-			<dd>
+					<dt>`EOF$i</dt>
+					<dd>
 何もしない
 ◎
 ↓</dd>
 
-			<dt>~OTHER
+					<dt>~OTHER
 ◎
 Otherwise, run these substeps:
 </dt>
-			<dd>
-				<ol>
-					<li>
-~IF［
-`C$V ~NIN { `~URL~cp$, ❝% }
-］
-⇒
-`検証~error$
+					<dd>
+						<ol>
+							<li>
+`~URL単位かどうか検証する$
 ◎
 If c is not EOF code point, not a URL code point, and not "%", validation error.
-</li>
-					<li>
-~IF［
-`C$V ~EQ ❝%
-］~AND［［
-`C1$V ~NIN `~ASCII~hex数字$
-］~OR［
-`C2$V ~NIN `~ASCII~hex数字$
-］］
-⇒
-`検証~error$
 ◎
 If c is "%" and remaining does not start with two ASCII hex digits, validation error.
 </li>
-					<li>
+							<li>
 %url の`~path$url[0]
 ~APPEND ［
 `単純 符号化集合$を用いて `C$V を`~UTF-8~percent符号化$した結果
@@ -6344,9 +6280,11 @@ If c is "%" and remaining does not start with two ASCII hex digits, validation e
 ◎
 If c is not EOF code point, UTF-8 percent encode c using the simple encode set, and append the result to url’s path[0].
 </li>
-				</ol>
-			</dd>
-		</dl>
+						</ol>
+					</dd>
+				</dl>
+			</li>
+		</ol>
 	</dd>
 
 <!--% query-state -->
@@ -6436,24 +6374,9 @@ Otherwise, run these substeps:
 </p>
 				<ol>
 					<li>
-~IF［
-`C$V ~NIN { `~URL~cp$, ❝% }
-］
-⇒
-`検証~error$
+`~URL単位かどうか検証する$
 ◎
 If c is not a URL code point and not "%", validation error.
-</li>
-					<li>
-~IF［
-`C$V ~EQ ❝%
-］~AND［［
-`C1$V ~NIN `~ASCII~hex数字$
-］~OR［
-`C2$V ~NIN `~ASCII~hex数字$
-］］
-⇒
-`検証~error$
 ◎
 If c is "%" and remaining does not start with two ASCII hex digits, validation error.
 </li>
@@ -6470,61 +6393,50 @@ Append c to buffer.
 <!--% fragment-state -->
 	<dt>`素片@st</dt>
 	<dd>
+		<ol>
+			<li>
 <p>
 `C$V に応じて：
 ◎
 Switching on c:
 </p>
-		<dl class="switch">
-			<dt>`EOF$i</dt>
-			<dd>
+				<dl class="switch">
+					<dt>`EOF$i</dt>
+					<dd>
 何もしない
 ◎
 Do nothing.
 </dd>
 
-			<dt>`0000^U</dt>
-			<dd>
+					<dt>`0000^U</dt>
+					<dd>
 `検証~error$
 ◎
 Validation error.
 </dd>
 
-			<dt>~OTHER</dt>
-			<dd>
-				<ol>
-					<li>
-~IF［
-`C$V ~NIN { `~URL~cp$, ❝% }
-］
-⇒
-`検証~error$
+					<dt>~OTHER</dt>
+					<dd>
+						<ol>
+							<li>
+`~URL単位かどうか検証する$
 ◎
 If c is not a URL code point and not "%", validation error.
-</li>
-					<li>
-~IF［
-`C$V ~EQ ❝%
-］~AND［［
-`C1$V ~NIN `~ASCII~hex数字$
-］~OR［
-`C2$V ~NIN `~ASCII~hex数字$
-］］
-⇒
-`検証~error$
 ◎
 If c is "%" and remaining does not start with two ASCII hex digits, validation error.
 </li>
-					<li>
+							<li>
 %url の`素片$url ~APPEND ［
 `単純 符号化集合$を用いて `C$V を`~UTF-8~percent符号化$した結果
 ］
 ◎
 UTF-8 percent encode c using the simple encode set and append the result to url’s fragment.
 </li>
-				</ol>
-			</dd>
-		</dl>
+						</ol>
+					</dd>
+				</dl>
+			</li>
+		</ol>
 	</dd>
 </dl>
 
