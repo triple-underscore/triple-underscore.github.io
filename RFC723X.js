@@ -861,7 +861,7 @@ such::そのような\n\
 常に:always:~\n\
 両者:both:~\n\
 両:both:~\n\
-殆どの:most:~\n\
+殆どの:most:ほとんどの\n\
 伝え:inform し:~\n\
 伝える:inform する:~\n\
 	例:example:~\n\
@@ -1025,6 +1025,7 @@ such::そのような\n\
 見積もる:estimateする::~\n\
 解-:understand:~\n\
 解さな:understand しな:~\n\
+解せ:understand でき:~\n\
 \n\
 \n\
 \n\
@@ -1297,17 +1298,12 @@ zero:::ゼロ\n\
 一掃-:purge:~\n\
 一時的:temporary:~\n\
 一時的な:temporary:~\n\
-一汎:generic:一般\n\
-	汎的:generic:一般\n\
-一汎的:general:一般的\n\
-汎用:general-purpose:~\n\
-汎用の:general-purpose:~\n\
-	一般的:general:~\n\
-一般:common:~\n\
-一般に:common に:~\n\
+汎用:generic:~\n\
+一般:general:~\n\
+一般的:general:~\n\
+一般用:general-purpose:~\n\
 共通の:common:~\n\
 共通する:common な:~\n\
-	commonly\n\
 共通的に:common に:よく\n\
 共通的な:common:よくある\n\
 三字の:three-letter:~\n\
@@ -1330,7 +1326,6 @@ zero:::ゼロ\n\
 不明瞭に:obscure:~\n\
 不法な:bogus:~\n\
 不良:bad:~\n\
-不要な:unwanted:~\n\
 不透明:opaque::~\n\
 不透明な:opaque::~\n\
 不適正:improper:~\n\
@@ -2052,7 +2047,7 @@ referrer::::リファラ\n\
 概念:concept:~\n\
 概観:overview:~\n\
 構文:syntax::~::シンタックス\n\
-構文解析:parse::~::パース\n\
+構文解析-:parse::~::パース\n\
 構文解析処理:parsing::~::パース処理\n\
 構文解析器:parser::~::パーサ\n\
 構築0:building:構築\n\
