@@ -43,6 +43,7 @@ function expand(mapping1){
 		e: 'element',
 		a: 'attr',
 		E: 'error',
+		et: 'event-type',
 		h: 'header',
 		hm: 'method',
 		st: 'status',
@@ -59,6 +60,7 @@ function expand(mapping1){
 		I: 'code',
 		m: 'code',
 		mF: 'code',
+		et: 'code',
 		RqI: 'code',
 		RsI: 'code',
 		E: 'code',
@@ -427,6 +429,9 @@ mF.size:~FILEAPI#dfn-size
 mF.type:~FILEAPI#dfn-type
 mF.name:~FILEAPI#dfn-name
 
+et.fetch:~SW#service-worker-global-scope-fetch-event
+et.foreignfetch:~SW#service-worker-global-scope-foreignfetch-event
+
 	●message 構成子
 文字大小無視~byte列:#case-insensitive-byte-sequence
 ~byte文字大小無視:#byte-case-insensitive
@@ -512,6 +517,7 @@ rq.~cache~mode:#concept-request-cache-mode
 rq.応答~tainting:#concept-request-response-tainting
 rq.~client:#concept-request-client
 rq.~window:#concept-request-window
+rq.~service-worker~mode:#request-service-workers-mode
 rq.起動元:#concept-request-initiator
 rq.種別:#concept-request-type
 rq.行先:#concept-request-destination
@@ -525,7 +531,6 @@ rq.~clone:#concept-request-clone
 
 ~sandboxed-storage-area-URLs~flag:#sandboxed-storage-area-urls-flag
 局所URLonly~flag:#local-urls-only-flag
-~skip-service-worker~flag:#skip-service-worker-flag
 
 下位資源~要請:#subresource-request
 非~下位資源~要請:#non-subresource-request
@@ -1522,6 +1527,7 @@ access::::アクセス
 挙動する:behave する:ふるまう
 挙動:behavior:ふるまい
 見出せな:find できな:~
+受取る:receive する:受け取る
 
 誘発:triggering:~
 生成-:generate:~
@@ -1565,7 +1571,11 @@ access::::アクセス
 	●未分類
 ASCII:
 id:
-foreign:
+外来の:foreign::~
+外来:foreign::~
+迂回-:bypass:~
+
+event::::イベント
 callback:
 architecture::::アーキテクチャ
 plugin::::プラグイン
@@ -1684,7 +1694,7 @@ i {
 </p>
 
 <p>
-更新： <time>2016-02-09</time>
+更新： <time>2016-02-15</time>
 （公開： <time>2013-04-27</time>）
 </p>
 
@@ -1713,7 +1723,7 @@ i {
 ></a>
 	<hgroup>
 <h1>Fetch</h1>
-<h2>Living Standard — 最終更新 2016 年 2 月 8 日</h2>
+<h2>Living Standard — 最終更新 2016 年 2 月 14 日</h2>
 	</hgroup>
 
 <dl>
@@ -1728,7 +1738,7 @@ i {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/fetch/commits">GitHub whatwg/fetch/commits</a></dd>
-     <dd><a href="https://fetch.spec.whatwg.org/commit-snapshots/90cd540dc2a25df48b85a361f49901ac0835957b/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+     <dd><a href="https://fetch.spec.whatwg.org/commit-snapshots/d41c2380dc828e7a23c6196a344b42b2d0e9beec/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/fetchstandard">@fetchstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -3139,13 +3149,52 @@ A request has an associated keepalive flag. Unless stated otherwise it is unset.
 This can be used to allow the request to outlive the environment settings object, e.g., navigator.sendBeacon and the HTML img element set this flag. Requests with this flag set are subject to additional processing requirements. 
 </dd>
 
-
- <dt>!~skip-service-worker~flag@（ ~OFF ）</dt>
+ <dt>!~service-worker~mode@rq （ !all^l ）</dt>
  <dd>
-~flag値。
+次のいずれか
+⇒
+!all^l ／
+!foreign^l ／
+!none^l
 ◎
-A request has an associated skip-service-worker flag. Unless stated otherwise it is unset.
+A request has an associated service-workers mode, that is "all", "foreign", or "none". Unless stated otherwise it is "all".
 </dd>
+ <dd class="note">
+<p>注記：
+これは、どの~service-workerが，この~fetchに対し !fetch$et ~eventを受取るかを決定する：
+◎
+This determines which service workers will receive a fetch event for this fetch.
+</p>
+  <dl>
+   <dt>!all^l</dt>
+   <dd>
+関連する［
+局所的 ／ 外来の（ foreign ）
+］~service-workerは、この~fetchに対し［
+!fetch$et や !foreignfetch$et
+］~eventを取得することになる。
+◎
+Relevant local and foreign service workers will get a fetch or foreignfetch event for this fetch.
+</dd>
+
+   <dt>!foreign^l</dt>
+   <dd>
+関連する外来の~service-workerのみが，この~fetchに対し !foreignfetch$et ~eventを取得することになる。
+!fetch(input)$m は、大域~objが !ServiceWorkerGlobalScope$I である場合に，これを利用して現在の~service-workerを迂回する。
+◎
+Only relevant foreign service workers will get a foreignfetch event for this fetch. fetch(input) uses this to bypass the current service worker if the global is a ServiceWorkerGlobalScope.
+</dd>
+
+   <dt>!none^l</dt>
+   <dd>
+［
+局所的 ／ 外来の
+］~service-workerは、この~fetchに対する~eventを取得しない。
+◎
+Neither local nor foreign service workers will get events for this fetch.
+</dd>
+  </dl>
+ </dd>
 
  <dt>!起動元@rq（ 空~文字列 ）</dt>
  <dd>
@@ -7175,18 +7224,16 @@ Let actualResponse be null.
  <li>
 <p>
 ~IF［
-%要請 の!~skip-service-worker~flag$ ~EQ ~OFF
+%要請 の!~service-worker~mode$rq ~NEQ !none^l
 ］：
 ◎
-If request’s skip-service-worker flag is unset, then run these substeps:
+If request’s service-workers mode is not "none", then run these substeps: 
 </p>
 
   <ol>
    <li>
 ~IF［
-%要請 の!~client$rq ~EQ ~NULL
-］~OR［
-%要請 の!~client$rqの!大域~obj$enVは !ServiceWorkerGlobalScope$I ~objでない
+%要請 の!~service-worker~mode$rq ~EQ !all^l
 ］
 ⇒
 %応答 ~SET %要請 に対し
@@ -7195,7 +7242,7 @@ If request’s skip-service-worker flag is unset, then run these substeps:
 !HTML$r
 !SW$r
 ◎
-If request’s client is null or request’s client’s global object is not a ServiceWorkerGlobalScope object, then set response to the result of invoking handle fetch for request. [HTML] [SW]
+If request’s service-workers mode is "all", then set response to the result of invoking handle fetch for request. [HTML] [SW]
 </li>
    <li>
 <p>
@@ -7209,7 +7256,7 @@ If request’s client is null or request’s client’s global object is not a S
 ］
 ⇒
 %応答 ~SET %要請 に対し
-<a href="~SW#handle-foreign-fetch">~foreign~fetchを取扱った</a>
+<a href="~SW#handle-foreign-fetch">外来の~fetchを取扱った</a>
 結果
 !SW$r
 ◎
@@ -7392,9 +7439,9 @@ This step checks the CORS-preflight cache and if there is no suitable entry it p
 %要請 の!~redirect~mode$rq ~EQ !follow^l
 ］
 ⇒
-%要請 の!~skip-service-worker~flag$ ~SET ~ON
+%要請 の!~service-worker~mode$rq ~SET !foreign^l
 ◎
-If request’s redirect mode is "follow", then set request’s skip-service-worker flag.
+If request’s redirect mode is "follow", then set request’s service-workers mode to "foreign".
 </p>
 
 <p class="note">注記：
@@ -12514,13 +12561,22 @@ Let p be a new promise.
   </ol>
 ◎
 Let request be the associated request of the result of invoking the initial value of Request as constructor with input and init as arguments. If this throws an exception, reject p with it and return p.
+</li>
+ <li>
+~IF［
+%要請 の!~client$rqの!大域~obj$enVは !ServiceWorkerGlobalScope$I ~objである
+］
+⇒
+%要請 の!~service-worker~mode$rq ~SET !foreign^l
 ◎
-↓↓
-Let responseObject be a new Response object and a new associated Headers object whose guard is "immutable".
+If request’s client’s global object is a ServiceWorkerGlobalScope object, set request’s service-workers mode to "foreign".
 </li>
  <li>
 <p>
 この段は!並列的$htmlに走らす：
+◎
+↓↓
+Let responseObject be a new Response object and a new associated Headers object whose guard is "immutable".
 ◎
 Run the following in parallel:
 </p>
@@ -12844,7 +12900,7 @@ This change of scheme is essential to integrate well with fetching. E.g., HSTS w
 
 <ul ><li>!~url$rq ~SET %要請~URL
 </li><li>!~client$rq ~SET %~client 
-</li><li>!~skip-service-worker~flag$ ~SET ~ON
+</li><li>!~service-worker~mode$rq ~SET !none^l
 </li><li>!同期~flag$rq ~SET ~ON
 </li><li>!~mode$rq ~SET !websocket^l
 </li><li>!資格証~mode$rq ~SET !include^l
@@ -12853,7 +12909,7 @@ This change of scheme is essential to integrate well with fetching. E.g., HSTS w
 </li></ul>
 
 ◎
-Let request be a new request, whose url is requestURL, client is client, skip-service-worker flag is set, synchronous flag is set, mode is "websocket", credentials mode is "include", cache mode is "no-store", and redirect mode is "error".
+Let request be a new request, whose url is requestURL, client is client, service-workers mode is "none", synchronous flag is set, mode is "websocket", credentials mode is "include", cache mode is "no-store", and redirect mode is "error".
 </li>
  <li>
 %要請 の!~header~list$rqに
