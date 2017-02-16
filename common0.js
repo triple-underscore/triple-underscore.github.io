@@ -773,6 +773,7 @@ INFRA:infra-ja.html\n\
 DOM4:DOM4-ja.html\n\
 ENCODING:Encoding-ja.html\n\
 FETCH:Fetch-ja.html\n\
+SW:https://w3c.github.io/ServiceWorker/\n\
 FILEAPI:File_API-ja.html\n\
 STREAMS:Streams-ja.html\n\
 URLSpec:URL-ja.html\n\
@@ -860,6 +861,7 @@ HTMLinteraction:HTML-interaction-ja.html\n\
 HTMLrendering:HTML-rendering-ja.html\n\
 HTMLselectors:selectors-html-ja.html\n\
 HTMLemb:https://html.spec.whatwg.org/multipage/embedded-content.html\n\
+HTMLsyntax:https://html.spec.whatwg.org/multipage/syntax.html\n\
 HEinteractive:HTML-interactive-elements-ja.html\n\
 HEforms:HTML-form-elements-ja.html\n\
 HEinput:HTML-input-ja.html\n\
