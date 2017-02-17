@@ -2033,9 +2033,9 @@ referrer::::リファラ\n\
 格納済み:stored::~\n\
 桁:digit::~\n\
 梱包:packaging:~\n\
+検出-:detect:~\n\
 検出:detection:~\n\
 検分-:inspect:~\n\
-検知-:detect:~\n\
 検分:inspection:~\n\
 検査-:check:~\n\
 検査:check:~\n\
