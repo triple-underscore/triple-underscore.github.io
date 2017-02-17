@@ -1615,6 +1615,7 @@ A.WritableStreamDefaultWriterWrite:#writable-stream-default-writer-write
 A.IsWritableStreamDefaultController:#is-writable-stream-default-controller
 A.WritableStreamDefaultControllerAbort:#writable-stream-default-controller-abort
 A.WritableStreamDefaultControllerClose:#writable-stream-default-controller-close
+A.WritableStreamDefaultControllerGetChunkSize:#writable-stream-default-controller-get-chunk-size
 A.WritableStreamDefaultControllerGetDesiredSize:#writable-stream-default-controller-get-desired-size
 A.WritableStreamDefaultControllerUpdateBackpressureIfNeeded:#writable-stream-default-controller-update-backpressure-if-needed
 A.WritableStreamDefaultControllerWrite:#writable-stream-default-controller-write
@@ -1774,7 +1775,7 @@ code {
 </p>
 
 <p>
-更新：<time>2017-02-17</time>
+更新：<time>2017-02-18</time>
 （公開：<time>2015-01-19</time> ）
 </p>
 
@@ -1803,7 +1804,7 @@ code {
 ></a>
 	<hgroup>
 <h1 id="title">Streams</h1>
-<h2>Living Standard — 最終更新 2017 年 2 月 15 日</h2>
+<h2>Living Standard — 最終更新 2017 年 2 月 17 日</h2>
 	</hgroup>
 <dl>
 	<dt>Participate:</dt>
@@ -1818,7 +1819,7 @@ code {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a></dd>
-	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/57d54e7d8778e85af878b9359f267a09b9e2158e" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/311b52c9d9de5d68050336c41d0760b78ddc7acf" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/streamsstandard">@streamsstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -11664,25 +11665,12 @@ Note that what "success" means is up to the underlying sink; it may indicate sim
 If ! IsWritableStreamDefaultWriter(this) is false, return a promise rejected with a TypeError exception.
 </li>
 	<li>
-%stream ~LET ~this.[[ownerWritableStream]]
-◎
-Let stream be this.[[ownerWritableStream]].
-</li>
-	<li>
 ~IF
-%stream ~EQ ~undefined
+~this.[[ownerWritableStream]] ~EQ ~undefined
 ⇒
 ~RET `TypeError^b で`却下された~promise$
 ◎
-If stream is undefined, return a promise rejected with a TypeError exception.
-</li>
-	<li>
-~IF
-%stream.[[state]] ~EQ `closing^l
-⇒
-~RET `TypeError^b で`却下された~promise$
-◎
-If stream.[[state]] is "closing", return a promise rejected with a TypeError exception.
+If this.[[ownerWritableStream]] is undefined, return a promise rejected with a TypeError exception.
 </li>
 	<li>
 ~RET
@@ -12072,17 +12060,35 @@ Let stream be writer.[[ownerWritableStream]].
 Assert: stream is not undefined.
 </li>
 	<li>
+%controller ~LET %stream.[[writableStreamController]]
+◎
+Let controller be stream.[[writableStreamController]].
+</li>
+	<li>
+%chunkSize ~LET
+! `WritableStreamDefaultControllerGetChunkSize$A(%controller, %chunk)
+◎
+Let chunkSize be ! WritableStreamDefaultControllerGetChunkSize(controller, chunk).
+</li>
+	<li>
+~IF %stream ~NEQ %writer.[[ownerWritableStream]]
+⇒
+~RET `TypeError^b で`却下された~promise$
+◎
+If stream is not equal to writer.[[ownerWritableStream]], return a promise rejected with a TypeError exception.
+</li>
+	<li>
 %state ~LET %stream.[[state]]
 ◎
 Let state be stream.[[state]].
 </li>
 	<li>
 ~IF
-%state ~IN { `closed^l, `errored^l }
+%state ~NEQ `writable^l
 ⇒
 ~RET `TypeError^b で`却下された~promise$
 ◎
-If state is "closed" or "errored", return a promise rejected with a TypeError exception.
+If state is not "writable", return a promise rejected with a TypeError exception.
 </li>
 	<li>
 ~IF
@@ -12094,23 +12100,18 @@ If state is "closed" or "errored", return a promise rejected with a TypeError ex
 If stream.[[pendingAbortRequest]] is not undefined, return a promise rejected with a TypeError indicating that the stream has been aborted.
 </li>
 	<li>
-~Assert：
-%state ~EQ `writable^l
-◎
-Assert: state is "writable".
-</li>
-	<li>
 %promise ~LET
 ! `WritableStreamAddWriteRequest$A( %stream )
 ◎
 Let promise be ! WritableStreamAddWriteRequest(stream).
 </li>
 	<li>
-! `WritableStreamDefaultControllerWrite$A( %stream.[[writableStreamController]],
-%chunk )
+! `WritableStreamDefaultControllerWrite$A( %controller, %chunk, %chunkSize )
 を遂行する
 ◎
-Perform ! WritableStreamDefaultControllerWrite(stream.[[writableStreamController]], chunk).
+Perform ! WritableStreamDefaultControllerWrite(controller, chunk, chunkSize).
+
+stream.[[writableStreamController]], chunk).
 </li>
 	<li>
 ~RET %promise 
@@ -12533,8 +12534,59 @@ Perform ! WritableStreamDefaultControllerAdvanceQueueIfNeeded(controller).
 </ol>
 
 			</section>
+			<section id="writable-stream-default-controller-get-chunk-size">
+<h4 class="nothrow">4.8.4. `WritableStreamDefaultControllerGetChunkSize ( controller , chunk )^A</h4>
+
+<ol class="algo">
+	<li>
+%strategySize ~LET %controller.[[strategySize]]
+◎
+Let strategySize be controller.[[strategySize]].
+</li>
+	<li>
+~IF
+%strategySize ~EQ ~undefined
+⇒
+~RET `1^b
+◎
+If strategySize is undefined, return 1.
+</li>
+	<li>
+%returnValue ~LET `Call$A( %strategySize, ~undefined, « %chunk » )
+◎
+Let returnValue be Call(strategySize, undefined, « chunk »).
+</li>
+	<li>
+<p>
+~IF
+%returnValue は`中途完了$である
+：
+◎
+If returnValue is an abrupt completion,
+</p>
+		<ol>
+			<li>
+! `WritableStreamDefaultControllerErrorIfNeeded$A( %controller, %returnValue.[[Value]] )
+を遂行する
+◎
+Perform ! WritableStreamDefaultControllerErrorIfNeeded(controller, returnValue.[[Value]]).
+</li>
+			<li>
+~RET `1^b
+◎
+Return 1.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET %returnValue.[[Value]]
+◎
+Return returnValue.[[Value]].
+</li>
+</ol>
+			</section>
 			<section id="writable-stream-default-controller-get-desired-size">
-<h4 class="nothrow">4.8.4. `WritableStreamDefaultControllerGetDesiredSize ( controller )^A</h4>
+<h4 class="nothrow">4.8.5. `WritableStreamDefaultControllerGetDesiredSize ( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -12546,7 +12598,7 @@ Return controller.[[strategyHWM]] − controller.[[queueTotalSize]].
 
 			</section>
 			<section id="writable-stream-default-controller-update-backpressure-if-needed">
-<h4 class="nothrow">4.8.5. `WritableStreamDefaultControllerUpdateBackpressureIfNeeded ( controller, oldBackpressure )^A</h4>
+<h4 class="nothrow">4.8.6. `WritableStreamDefaultControllerUpdateBackpressureIfNeeded ( controller, oldBackpressure )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -12581,7 +12633,7 @@ If oldBackpressure is not backpressure, perform ! WritableStreamUpdateBackpressu
 
 			</section>
 			<section id="writable-stream-default-controller-write">
-<h4 class="nothrow">4.8.6. `WritableStreamDefaultControllerWrite ( controller, chunk )^A</h4>
+<h4 class="nothrow">4.8.7. `WritableStreamDefaultControllerWrite ( controller, chunk, chunkSize )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -12595,49 +12647,6 @@ Let stream be controller.[[controlledWritableStream]].
 ◎
 Assert: stream.[[state]] is "writable".
 </li>
-	<li>
-%chunkSize ~LET `1^b
-◎
-Let chunkSize be 1.
-</li>
-	<li>
-<p>
-~IF
-%controller.[[strategySize]] ~NEQ ~undefined
-：
-◎
-If controller.[[strategySize]] is not undefined,
-</p>
-		<ol>
-			<li>
-%chunkSize ~SET
-`Call$A( %controller.[[strategySize]], ~undefined, « %chunk » )
-◎
-Set chunkSize to Call(controller.[[strategySize]], undefined, « chunk »).
-</li>
-	<li>
-<p>
-~IF
-%chunkSize は`中途完了$である：
-◎
-If chunkSize is an abrupt completion,
-</p>
-				<ol>
-					<li>
-! `WritableStreamDefaultControllerErrorIfNeeded$A( %controller, %chunkSize.[[Value]] )
-を遂行する
-◎
-Perform ! WritableStreamDefaultControllerErrorIfNeeded(controller, chunkSize.[[Value]]).
-</li>
-	<li>
-~RET
-◎
-Return.
-</li>
-				</ol>
-			</li>
-		</ol>
-	</li>
 	<li>
 %writeRecord ~LET `~Record$ { [[chunk]]: %chunk }
 ◎
@@ -12693,7 +12702,7 @@ Perform ! WritableStreamDefaultControllerAdvanceQueueIfNeeded(controller).
 
 			</section>
 			<section id="writable-stream-default-controller-advance-queue-if-needed">
-<h4 class="nothrow">4.8.7. `WritableStreamDefaultControllerAdvanceQueueIfNeeded ( controller )^A</h4>
+<h4 class="nothrow">4.8.8. `WritableStreamDefaultControllerAdvanceQueueIfNeeded ( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -12756,7 +12765,7 @@ Otherwise, perform WritableStreamDefaultControllerProcessWrite(controller, write
 
 			</section>
 			<section id="writable-stream-default-controller-error-if-needed">
-<h4 class="nothrow">4.8.8. `WritableStreamDefaultControllerErrorIfNeeded ( controller, e )^A</h4>
+<h4 class="nothrow">4.8.9. `WritableStreamDefaultControllerErrorIfNeeded ( controller, e )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -12773,7 +12782,7 @@ If controller.[[controlledWritableStream]].[[state]] is "writable" or "closing",
 
 			</section>
 			<section id="writable-stream-default-controller-process-close">
-<h4 class="nothrow">4.8.9. `WritableStreamDefaultControllerProcessClose ( controller )^A</h4>
+<h4 class="nothrow">4.8.10. `WritableStreamDefaultControllerProcessClose ( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -12874,7 +12883,7 @@ Perform ! WritableStreamFinishPendingCloseWithError(stream, reason).
 
 			</section>
 			<section id="writable-stream-default-controller-process-write">
-<h4 class="nothrow">4.8.10. `WritableStreamDefaultControllerProcessWrite ( controller, chunk )^A</h4>
+<h4 class="nothrow">4.8.11. `WritableStreamDefaultControllerProcessWrite ( controller, chunk )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -13024,7 +13033,7 @@ If wasErrored is false, set controller.[[queue]] to an empty List.
 
 			</section>
 			<section id="writable-stream-default-controller-get-backpressure">
-<h4 class="nothrow">4.8.11. `WritableStreamDefaultControllerGetBackpressure ( controller )^A</h4>
+<h4 class="nothrow">4.8.12. `WritableStreamDefaultControllerGetBackpressure ( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -13042,7 +13051,7 @@ Return desiredSize ≤ 0.
 
 			</section>
 			<section id="writable-stream-default-controller-error">
-<h4 class="nothrow">4.8.12. `WritableStreamDefaultControllerError ( controller, e )^A</h4>
+<h4 class="nothrow">4.8.13. `WritableStreamDefaultControllerError ( controller, e )^A</h4>
 
 <ol class="algo">
 	<li>
