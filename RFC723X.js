@@ -1305,7 +1305,7 @@ zero:::ゼロ\n\
 共通の:common:~\n\
 共通する:common な:~\n\
 共通的に:common に:よく\n\
-共通的な:common:よくある\n\
+共通的な:common な:よくある\n\
 三字の:three-letter:~\n\
 三桁の:three-digit:~\n\
 三番目の:third:~\n\
@@ -2438,8 +2438,8 @@ stateless::::ステートレス\n\
 透過性:transparency::~\n\
 透過的:transparent::~\n\
 逐語的:verbatim:~\n\
-通例的に:usually:~\n\
-通例的には:usually:~\n\
+通例的に:usual に:~\n\
+通例的には:usual に:~\n\
 通信-:communicate::~\n\
 通信:communication::~\n\
 通常:normal:~\n\
