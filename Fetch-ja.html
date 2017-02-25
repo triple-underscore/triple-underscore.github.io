@@ -724,6 +724,8 @@ Bd.~dataを梱包-:#concept-body-package-data
 ~byte大文字~化:~INFRA#byte-uppercase
 空:~INFRA#list-is-empty
 ~list:~INFRA#list
+	~EACH:~INFRA#list-iterate
+	~EACH:~INFRA#map-iterate
 
 enc.~UTF-8:~ENCODING#utf-8
 enc.~UTF-8復号器:~ENCODING#utf-8-decoder
@@ -1183,6 +1185,7 @@ security::::セキュリティ
 保護:protect:~
 安全:safe:~
 
+inflight:::伝送中の
 予行:preflight::~::プリフライト
 不透明:opaque::~
 不透明な:opaque::~
@@ -1720,7 +1723,7 @@ i {
 </p>
 
 <p>
-更新： <time>2016-02-23</time>
+更新： <time>2016-02-25</time>
 （公開： <time>2013-04-27</time>）
 </p>
 
@@ -1749,7 +1752,7 @@ i {
 ></a>
 	<hgroup>
 <h1>Fetch</h1>
-<h2>Living Standard — 最終更新 2016 年 2 月 22 日</h2>
+<h2>Living Standard — 最終更新 2016 年 2 月 25 日</h2>
 	</hgroup>
 
 <dl>
@@ -1764,7 +1767,7 @@ i {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/fetch/commits">GitHub whatwg/fetch/commits</a></dd>
-	<dd><a href="https://fetch.spec.whatwg.org/commit-snapshots/68a986772901fe74f666f76a389dbc56cac1ad21/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://fetch.spec.whatwg.org/commit-snapshots/3b4cb5495389e8854279c04ebe1d89d6b078365e/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/fetchstandard">@fetchstandard</a></dd>
 
 	<dt>Tests:</dt>
@@ -3235,7 +3238,8 @@ A request has an associated keepalive flag. Unless stated otherwise it is unset.
 	<dd class="note">注記：
 これを利用すれば、要請は!環境~設定群~obj$の外で残存できるようになる
 — 例えば［
-!navigator.sendBeacon()$m ~meth／~HTML !img$e 要素
+!navigator.sendBeacon()$m ~meth／~HTML !img$e 要素 ／
+!~CSPの<a href="~CSP3#report-violation">違反~報告</a>^tnote
 ］は、この~flagを ~ON にする。
 この~flagが ~ON にされた要請には、追加の処理~要件が課される。
 ◎
@@ -8070,23 +8074,74 @@ If contentLengthValue is non-null, append `Content-Length`/contentLengthValue to
 <p>
 ~IF［
 %Content-Length値 ~NEQ ~NULL
-］~AND［
+~AND
 %~http要請 の!~keepalive~flag$rq ~EQ ~ON
-］~AND［
-%Content-Length値 ~GT ~UAにより定義される最大
+］：
+◎
+If contentLengthValue is non-null and httpRequest’s keepalive flag is set, then:
+</p>
+		<ol>
+			<li>
+%~inflight~keepalive~byte数 ~LET 0
+◎
+Let inflightKeepaliveBytes be zero.
+</li>
+			<li>
+%~group ~LET %~http要請 の!~client$rqの!~fetch~group$
+◎
+Let group be httpRequest’s client’s fetch group.
+</li>
+			<li>
+%~inflight記録~list ~LET 
+%~group 内の!~fetch記録$のうち［
+その!要請$fgの［
+!~keepalive~flag$rq ~EQ ~ON
+~AND
+!~done~flag$rq ~EQ ~OFF
+］なるもの
+］からなる同順の~list
+◎
+Let inflightRecords be the set of fetch records in group whose request has its keepalive flag set and done flag unset.
+</li>
+			<li>
+<p>
+%~inflight記録~list 内の ~EACH ( %~fetch記録 ) に対し：
+◎
+For each fetchRecord in inflightRecords:
+</p>
+				<ol>
+					<li>
+%~inflight要請 ~LET %~fetch記録 の!要請$fg
+◎
+Let inflightRequest be fetchRecord’s request.
+</li>
+					<li>
+%~inflight~keepalive~byte数 ~INCBY
+%~inflight要請 の!本体$rqの!総~byte数$bd
+◎
+Increment inflightKeepaliveBytes by inflightRequest’s body’s total bytes.
+</li>
+				</ol>
+			</li>
+			<li>
+~IF［
+( %Content-Length値 ~PLUS %~inflight~keepalive~byte数 ) ~GT 64 KiB †
 ］
 ⇒
 ~RET !~network~error$
 ◎
-If contentLengthValue is non-null, httpRequest’s keepalive flag is set, and contentLengthValue is greater than a user-agent-defined maximum, then return a network error.
-</p>
+If the sum of contentLengthValue and inflightKeepaliveBytes is greater than 64 kibibytes, then return a network error.
+</li>
+		</ol>
 
-<p class="note">注記：
-上の~UAにより定義される最大は、［
+<p class="note">注記†：
+上の~~上限 64 KiB
+!KiB は kibibyte — 1024 ~byte単位^tnote
+は、［
 !環境~設定群~obj$の外で残存することが許容され, 本体を包含する要請
 ］に対し、その~sizeには上限があり，要請が不定期に残り続けないことを確保するためにある。
 ◎
-The above user-agent-defined maximum ensures that requests that are allowed to outlive the environment settings object and contain a body, have a bounded size and are not allowed to stay alive indefinitely.
+The above limit ensures that requests that are allowed to outlive the environment settings object and contain a body, have a bounded size and are not allowed to stay alive indefinitely.
 </p>
 	</li>
 	<li>
@@ -8101,8 +8156,6 @@ The above user-agent-defined maximum ensures that requests that are allowed to o
 ［
 %~http要請 の!~referrer$rqを!~url直列化器$urlにかけた結果
 ］を!~UTF-8符号化-$encした結果
-<!-- XXX ideally we have an easier way to convert something ASCII-safe into bytes
-          concept-as-bytes -->
 ◎
 If httpRequest’s referrer is a URL, then append `Referer`/httpRequest’s referrer, serialized and UTF-8 encoded, to httpRequest’s header list.
 </li>
@@ -10304,7 +10357,7 @@ Append header’s first item/header’s second item to headers. Rethrow any exce
 ( %~key / %値 )
 を!付加-$Hlする（例外投出あり）
 ◎
-Otherwise, object is a record, then for each mapping (key, value) in object, append key/value to headers. Rethrow any exception.
+Otherwise, object is a record, then for each key → value in object, append key/value to headers. Rethrow any exception.
 </li>
 </ol>
 
@@ -13498,6 +13551,10 @@ neighboring rights to this work.
 	<dd>Simon Sapin. The data URL scheme.</dd>
 	<dd>https://simonsapin.github.io/data-urls/</dd>
 
+	<dt>[DOM]</dt>
+	<dd>Anne van Kesteren. DOM Standard. Living Standard.</dd>
+	<dd>https://dom.spec.whatwg.org/</dd>
+
 	<dt>[ENCODING]</dt>
 	<dd>Anne van Kesteren. Encoding Standard. Living Standard.</dd>
 	<dd>https://encoding.spec.whatwg.org/</dd>
@@ -13581,10 +13638,6 @@ neighboring rights to this work.
 	<dt>[WEBIDL]</dt>
 	<dd>Cameron McCormack; Boris Zbarsky; Tobie Langel. Web IDL.</dd>
 	<dd>https://heycam.github.io/webidl/</dd>
-
-	<dt>[WHATWG-DOM]</dt>
-	<dd>Anne van Kesteren. DOM Standard. Living Standard.</dd>
-	<dd>https://dom.spec.whatwg.org/</dd>
 
 	<dt>[WSP]</dt>
 	<dd>C. Holmberg, S. Hakansson, G. Eriksson. The WebSocket protocol.</dd>
