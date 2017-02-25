@@ -1656,6 +1656,8 @@ pair::::ペア
 JS:JavaScript
 接頭辞:prefix:~
 抽象:abstract:~
+可能化-:enable:~
+排他的:exclusive:~
 
 	result
 	extreme
@@ -1931,7 +1933,7 @@ samp {
 <a href="https://www.w3.org/" id="_W3C">W3C</a>
 	<hgroup>
 <h1 id="title">索引付きデータベース API — Indexed Database API 2.0</h1>
-<h2>2017 年 2 月 23 日付 編集者草案</h2>
+<h2>2017 年 2 月 24 日付 編集者草案</h2>
 	</hgroup>
 
 <dl id="_versions">
@@ -4736,53 +4738,69 @@ An upgrade transaction is a transaction with mode "versionchange".
 </p>
 
 <p>
-`昇格~tx$は、［
-`~db$への`接続$が~openされるとき，与えられた~versionが現在の`~version$dbより大きい
-］場合に，`昇格~txを稼働-$させる手続き†を通して，自動的に作成される。
-この`~tx$は、 `upgradeneeded$et ~event~handlerの内側で`作動中$になり，新たな［
-`保管庫$／`索引$
-］を作成できるようにする。
+`昇格~tx$は、`~db$への`接続$が~openされた後，`昇格~txを稼働-$する手続きの間に、指定された`~version$dbが現在の`~version$dbより大きい場合に，自動的に作成される。
+この`~tx$は、 `upgradeneeded$et ~event~handlerの内側で`作動中$になる。
 ◎
-An upgrade transaction is automatically created when running steps for running an upgrade transaction after a connection is opened to a database giving a greater version than the current version. This transaction will be active inside the upgradeneeded event handler, allowing the creation of new object stores and indexes.
+An upgrade transaction is automatically created when running the steps for running an upgrade transaction after a connection is opened to a database, if a version greater than the current version is specified. This transaction will be active inside the upgradeneeded event handler.
 </p>
 
-<p class="trans-note">【†
+<div class="note">
+
+<p>注記：
+`昇格~tx$は、`~db$内の［
+`保管庫$ ／ `索引$
+］の［
+作成, 名前の変更, 削除
+］を可能化する。
+◎
+An upgrade transaction enables the creation, renaming, and deletion of object stores and indexes in a database.
+</p>
+
+<p>
+`昇格~tx$は、排他的である。
+`~dbを~open$する手続きは、［
 `昇格~tx$が
 `稼働中@
-（ running ）という句も現れるが、おそらく，この手続きを処理している間を指す。
+にある間，~dbを~openしている`接続$
+］は，唯一に限られることを確保する。
+同じ`~db$への他のすべての`接続$が~closeされるまでは、
+`upgradeneeded$et ~eventは発火されず，したがって`昇格~tx$も開始されない。
+これは、以前のすべての~txが`終了-$されることを確保する。
+`昇格~tx$が稼働中にある限り、同じ`~db$への他の`接続$を~openしようとする試みは遅延され、同じ`接続$を利用するために
+<a href="#dom-idbdatabase-transaction">`transaction()^m</a>
+を~callして追加の~txを開始しようとする試みに対しては、例外が投出されることになる。
+したがって，`昇格~tx$は、［
+他の~txが同時並行的に稼働しない
+］ことに加え，稼働中の間は［
+同じ`~db$に対し，他の~txは待入されない
+］ことを確保する。
+◎
+An upgrade transaction is exclusive. The steps for opening a database ensure that only one connection to the database is open when an upgrade transaction is running. The upgradeneeded event isn’t fired, and thus the upgrade transaction isn’t started, until all other connections to the same database are closed. This ensures that all previous transactions are finished. As long as an upgrade transaction is running, attempts to open more connections to the same database are delayed, and any attempts to use the same connection to start additional transactions by calling transaction() will throw an exception. Thus upgrade transactions not only ensure that no other transactions are running concurrently, but also ensure that no new transactions are queued against the same database as long as the transaction is running.
+</p>
+
+<p>
+これは、`昇格~tx$が完了したなら，`~db$内の［
+`保管庫$, `索引$
+］の集合は、後続のすべての`接続$, `~tx$の存続期間において，一定であり続けることを確保する。
+◎
+This ensures that once an upgrade transaction is complete, the set of object stores and indexes in a database remain constant for the lifetime of all subsequent connections and transactions.
+</p>
+
+</div>
+
+<p class="trans-note">【
+簡潔に表記するため，次の用語を定義する：
 】</p>
 
 <p>
-`昇格~tx$は、他の~txと同時並行的に稼働することは決してない。
-~dbが現在の`~version$dbより高い番号の`~version$dbで~openされたときは、新たな `昇格~tx$が自動的に作成され†， `upgradeneeded$et ~eventが発火されたときに`~open要請$を通して可用にされる††。
-同じ`~db$への他のすべての`接続$が `~close済み$i になるまでは、
-`upgradeneeded$et ~eventは発火されず，
-`昇格~tx$は，開始されない。
-これにより、他のすべての~txは`終了-$されることが確保される。
-◎
-An upgrade transaction is never run concurrently with other transactions. When a database is opened with a version number higher than the current version, a new upgrade transaction is automatically created and made available through the open request when the upgradeneeded event is fired. The upgradeneeded event isn’t fired, and thus the upgrade transaction isn’t started, until all other connections to the same database are closed. This ensures that all other transactions are finished.
-</p>
-
-<div class="trans-note">
-
-<p>【†
-このとき以外に`昇格~tx$が作成される機会は無い。
-従って：
-</p>
-
-<ul>
-	<li>
-ある`接続$に`専属する$`昇格~tx$は，あっても一つだけである。
-この昇格~txを指して，`接続$に
+上述されたように，ある`接続$ %C に`専属する$`昇格~tx$ %T は、あっても一つだけであり，
+%C に`専属する$他のどの`~tx$よりも先に`開始-$される。
+%T を指して， %C に
 `専属の昇格~tx@
-と呼ぶことにする（接続にて昇格~txが生じなければ ε とする）。
-</li>
-	<li>
-`昇格~tx$は、同じ`接続$に`専属する$他のどの`~tx$よりも先に`開始-$される。
-</li>
-</ul>
+と呼ぶことにする（ %C にて`昇格~tx$が生じなければ ε とする）。
+</p>
 
-<p>††
+<p>
 この仕様に現れる，
 `昇格~txの中@
 という句は、［
@@ -4790,19 +4808,8 @@ An upgrade transaction is never run concurrently with other transactions. When a
 ］を意味する。
 “昇格~txの外”
 という句は、その否定を意味する。
-】</p>
-</div>
-
-<p>
-`接続$ %C に`専属の昇格~tx$が`稼働中$にある限り、 `~db$ %C↗ に対し別の`接続$を~openしようとする試みは遅延され、 %C を利用するような追加の~txを開始させる試みに対しては，例外が投出されることになる。
-したがって，`昇格~tx$は、［
-他の~txが同時並行的に稼働しない
-］ことに加え，`稼働中$の間は［
-同じ`~db$に対し，他の~txは待入されない
-］ことを確保する。
-◎
-As long as an upgrade transaction is running, attempts to open more connections to the same database are delayed, and any attempts to use the same connection to start additional transactions will result in an exception being thrown. Thus upgrade transactions not only ensure that no other transactions are running concurrently, but also ensure that no other transactions are queued against the same database as long as the transaction is running.
 </p>
+
 
 			</section>
 		</section>
@@ -7397,7 +7404,7 @@ If mode parameter is not "readonly" or "readwrite", throw a TypeError.
 </li>
 			<li>
 ~IF［
-此れに`専属の昇格~tx$があって, `稼働中$である
+此れに`専属の昇格~tx$があって, `稼働中$にある
 ］
 ⇒
 ~THROW `InvalidStateError$E
@@ -15780,3 +15787,4 @@ all of whose feedback and suggestions have led to improvements to this specifica
 この節の内容は省略（見出しクリックで巡回）。
 】</p>
 	</section>
+
