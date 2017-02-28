@@ -857,6 +857,7 @@ HTMLdom:HTML-dom-ja.html\n\
 HTMLforms:HTML-forms-ja.html\n\
 HTMLindex:HTML-index-ja.html\n\
 HTMLlinks:HTML-links-ja.html\n\
+HTMLnavigator:HTML-navigator-ja.html\n\
 HTMLinteraction:HTML-interaction-ja.html\n\
 HTMLrendering:HTML-rendering-ja.html\n\
 HTMLselectors:selectors-html-ja.html\n\
