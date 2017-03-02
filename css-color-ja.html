@@ -215,23 +215,8 @@ function initColorDraw(){
 	var scale = 10; // 階調数
 	var current_hue = NaN; // 
 	var isFixed = false; // 色値表示 一時固定
-	var rgb_val = {
-		r: 0,
-		g: 0,
-		b: 0,
-		toRgb: function(){
-			return ( 'rgb('
-+ Math.round(this.r * 100 / 255) + '%,'
-+ Math.round(this.g * 100 / 255) + '%,'
-+ Math.round(this.b * 100 / 255) + '%)'
-			);
-		},
-		toHex: function(){
-			return '#' + (
-0x1000000 | (this.r << 16) | (this.g << 8) | this.b
-			).toString(16).slice(1);
-		},
-	};
+	var rgb_val = [0,0,0];
+
 
 	(function(buf){
 		for(var i = 3; i < buf.length; i += 4){
@@ -248,7 +233,7 @@ function initColorDraw(){
 	E('_EX_HWB_canvas').addEventListener('mousemove', updateRGBValue, false);
 	E('_EX_HSL_canvas').addEventListener('click', fixVal, false);
 	E('_EX_HWB_canvas').addEventListener('click', fixVal, false);
-	E('_EX_rgbtext_hex').addEventListener('click', updateRGBText, false);
+	E('_EX_format').addEventListener('change', updateRGBText, false);
 	E('_EX_rgbtext').addEventListener('click', function(event){
 		event.target.select();
 	}, false);
@@ -346,23 +331,89 @@ function initColorDraw(){
 		var x = Math.floor(event.clientX - rect.left);
 		var y = Math.floor(event.clientY - rect.top);
 		var pixel = canvas.getContext('2d').getImageData(x, y, 1, 1).data;
-		rgb_val.r = pixel[0];
-		rgb_val.g = pixel[1];
-		rgb_val.b = pixel[2];
+		rgb_val = [pixel[0], pixel[1], pixel[2]];
 		updateRGBText();
 	}
 	function updateRGBText(){
-		E('_EX_rgbtext').value =
-			E('_EX_rgbtext_hex').checked ? 
-				rgb_val.toHex() : rgb_val.toRgb();
+		var format_func = formatter[E('_EX_format').value] || formatter.rgb16;
+		E('_EX_rgbtext').value = format_func(rgb_val);
 	}
-	
+
+
 	function fixVal(event){
 		if(isFixed) return;
 		if(event.target.tagName !== 'CANVAS') return;
 		isFixed = true;
 		setTimeout(function(){isFixed = false;}, 1000);
 	}
+
+	var formatter = {
+		rgb16: function(rgb){
+			return '#' + (
+0x1000000 | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
+			).toString(16).slice(1);
+		},
+
+		rgb10: function(rgb){
+			return ( 'rgb(' + rgb.join(' ') + ')' );
+		},
+
+		rgbPercent: function(rgb){
+			rgb = rgb.map(function(c){
+				return Math.round(c * 100 / 255) + '%';
+			});
+			return ( 'rgb(' + rgb.join(' ') + ')' );
+		},
+
+		hsl: function(rgb){
+			var R = rgb[0], G = rgb[1], B = rgb[2];
+			var max = Math.max(R, G, B) / 255;
+			var min = Math.min(R, G, B) / 255;
+			var diff = max - min;
+			var sum = max + min;
+
+			var H = current_hue;
+			var S = (diff === 0) ? 0 : (
+				diff / ( ( sum <= 1 ) ? sum : ( 2 - sum ) )
+			);
+			var L = sum / 2;
+
+			return (
+				'hsl(' +
+				Math.round( H ) + ' ' +
+				Math.round( S * 100 ) + '% ' + 
+				Math.round( L * 100 ) + '%)'
+			);
+		},
+
+		hwb: function(rgb){
+			var R = rgb[0], G = rgb[1], B = rgb[2];
+			var H = current_hue;
+			var W = Math.min(R, G, B) / 255;
+			var K = 1 - Math.max(R, G, B) / 255;
+			return (
+				'hwb(' +
+				Math.round( H ) + ' ' +
+				Math.round( W * 100 ) + '% ' + 
+				Math.round( K * 100 ) + '%)'
+			);
+		},
+
+		cmyk: function(rgb){
+			var R = rgb[0], G = rgb[1], B = rgb[2];
+			var v = Math.max(R, G, B);
+			var C = 0, M = 0, Y = 0, K = 1 - v / 255;
+			if(v !== 0){
+				C = 1 - ( R / v );
+				M = 1 - ( G / v );
+				Y = 1 - ( B / v );
+			}
+			var cmyk = [C,M,Y,K].map(function(c){
+				return Math.round(c * 100) + '%';
+			})
+			return ( 'device-cmyk(' + cmyk.join(' ') + ')' );
+		}
+	};
 }
 
 </script>
@@ -1977,6 +2028,8 @@ dt.prod::before {
 	title="hue"
 ></label>
 <span id="_EX_hue_value"></span>°
+<br />
+<label >階調
 <select id="_EX_scale" size="1" >
 	<option value="100" selected="selected" >連続</option>
 	<option value="33">51 段階</option>
@@ -1989,12 +2042,19 @@ dt.prod::before {
 	<option value="8">8 段階</option>
 	<option value="6">6 段階</option>
 	<option value="5">5 段階</option>
+</select></label>
+形式
+<select id="_EX_format" size="1" >
+	<option value="rgb16" selected="selected" >RGB（16進）</option>
+	<option value="rgb10">RGB（10進）</option>
+	<option value="rgbPercent">RGB（百分率）</option>
+	<option value="hsl">HSL</option>
+	<option value="hwb">HWB</option>
+	<option value="cmyk">CMYK（素朴）</option>
 </select>
-<input id="_EX_rgbtext_hex" type="checkbox"/>
-<input id="_EX_rgbtext" type="text" readonly
-	style=" background: transparent; border: none; color:yellow;"
+<input id="_EX_rgbtext" type="text" size="30" readonly
+	style=" background: transparent; border: none; color:yellow; font-family: monospace; font-size: 1.2em;"
 />
-
 <br />
 <figure>
 <canvas id="_EX_HSL_canvas" width="250" height="250"></canvas>
@@ -2009,6 +2069,7 @@ HWB 色（白味↓→黒味）
 </figcaption></figure>
 
 	</div>
+
 
 
 </div>
