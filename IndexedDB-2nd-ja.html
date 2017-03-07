@@ -293,8 +293,9 @@ m.result:#dom-idbrequest-result
 	m.error:#dom-idbrequest-error
 m.domain:~BROWSERS#dom-document-domain
 m.preventDefault:~DOM4#dom-event-preventdefault
-
-	m.type:~DOM4#dom-event-type
+m.bubbles:~DOM4#dom-event-bubbles
+m.type:~DOM4#dom-event-type
+m.cancelable:~DOM4#dom-event-cancelable
 
 mF.size:~FILEAPI#dfn-size
 mF.lastModified:~FILEAPI#dfn-lastModified
@@ -608,7 +609,9 @@ Cmp:#compare-two-keys
 	●外部
 被取消~flag:~DOM4#canceled-flag
 発火する:~DOM4#concept-event-fire
+配送する:~DOM4#concept-event-dispatch
 ~eventの構築法:~DOM4#constructing-events
+~eventを作成-:~DOM4#concept-event-create
 文書:~DOM4#concept-document
 親~標的を取得-:~DOM4#get-the-parent
 
@@ -726,9 +729,6 @@ microtask::::極小タスク
 発火-:fire::~
 発火:firing::~
 
-浮上-:bubble::~::バブル
-取消可:cancelable::~::キャンセル可
-取消不可:not cancelable::~::キャンセル不可
 取消-:cancel::~::キャンセル
 取消す:cancel する::~::キャンセルする
 被取消:canceled::取消::キャンセル
@@ -1908,7 +1908,7 @@ samp {
 </p>
 
 <p >
-更新：<time>2017-03-01</time>
+更新：<time>2017-03-07</time>
 （公開：<time>2015-08-06</time> ）
 </p>
 
@@ -1932,7 +1932,7 @@ samp {
 <a href="https://www.w3.org/" id="_W3C">W3C</a>
 	<hgroup>
 <h1 id="title">索引付きデータベース API — Indexed Database API 2.0</h1>
-<h2>2017 年 2 月 25 日付 編集者草案</h2>
+<h2>2017 年 3 月 3 日付 編集者草案</h2>
 	</hgroup>
 
 <dl id="_versions">
@@ -6439,36 +6439,44 @@ The newVersion attribute getter returns the new version of the database, or null
 Events are constructed as defined in Constructing events, in [DOM].
 </p>
 
-
-<div class="p">
 <p>
 %標的 に向けて
 `~version変更~eventを発火する@
-ときは、与えられた：
-</p>
-
-<ul class="input-params"
-	><li>%名前 ： `~event~handler~event型$
-</li><li>
-%旧~version ： 変更~前の~version
-</li><li>
-%新~version ： 変更~後の~version
-</li></ul>
-
-<p>
-に対し、 %標的 に向けて次の様にされた~eventを配送する：
-⇒＃
-`IDBVersionChangeEvent!I ~interfaceを実装する；
-`type^m ~SET %名前；
-`oldVersion^m ~SET %旧~version；
-`newVersion^m ~SET %新~version；
-浮上しない；
-取消不可
-</p>
-
+ときは、所与の
+( 名前 %e, %旧~version, %新~version )
+に対し，次を走らす：
 ◎
-To fire a version change event named e at target given oldVersion and newVersion, dispatch an event at target. The event must use the IDBVersionChangeEvent interface with its type set to e, its oldVersion attribute set to oldVersion, and its newVersion attribute set to newVersion. This event must not bubble or be cancelable.
-</div>
+To fire a version change event named e at target given oldVersion and newVersion, run the following steps:
+</p>
+
+<ol>
+	<li>
+%~event ~LET
+`IDBVersionChangeEvent$I を用いて`~eventを作成-$した結果
+◎
+Let event be the result of creating an event using IDBVersionChangeEvent.
+</li>
+	<li>
+%~event の各種~属性を次のように初期化する
+⇒＃
+`type$m ~SET %e；
+`bubbles$m ~SET ~F；
+`cancelable$m ~SET ~F；
+`oldVersion$m ~SET %旧~version；
+`newVersion$m ~SET %新~version
+◎
+• Set event’s type attribute to e.
+• Set event’s bubbles and cancelable attributes to false.
+• Set event’s oldVersion attribute to oldVersion.
+• Set event’s newVersion attribute to newVersion.
+</li>
+	<li>
+%標的 に向けて，
+%~event を`配送する$
+◎
+Dispatch event at target.
+</li>
+</ol>
 
 		</section>
 		<section id="_event-types">
@@ -6726,15 +6734,12 @@ Queue a task to run these substeps:
 ］：
 </p>
 <ol><li>%要請 の`~error$ ~SET %結果
-</li><li>%要請 に向けて 次の様にされた~eventを配送する
-⇒＃
-`Event$I ~interfaceを利用する；
-`type^m ~SET `error$et；
-浮上しない；
-取消不可
+</li><li>%要請 に向けて，名前 `error$et の~eventを［
+`bubbles$m 属性 ~SET ~T
+］に初期化した上で`発火する$
 </li></ol>
 ◎
-If result is an error, set the error of request to result and dispatch an event at request. The event must use the Event interface and set the type attribute to "error". The event does bubble but is not cancelable.
+If result is an error, set the error of request to result and fire an event named error at request with its bubbles attribute initialized to true.
 </li>
 							<li>
 <div class="p">
@@ -6742,20 +6747,15 @@ If result is an error, set the error of request to result and dispatch an event 
 ~ELSE：
 </p>
 <ol><li>%要請 の`結果$ ~SET %結果
-</li><li>%要請 に向けて 次の様にされた~eventを配送する
-⇒＃
-`Event$I ~interfaceを利用する；
-`type^m ~SET `success$et；
-浮上しない；
-取消不可
+</li><li>%要請 に向けて，名前 `success$et の~eventを`発火する$
 </li></ol>
 
-<p>†
+<p>
 上の`~dbを~open$する手続きが`昇格~txを稼働-$させた場合、
-`success$et ~eventの発火は，その昇格~txが完了した後に行われ~MUST。
+`success$et ~eventの発火は，その昇格~txが完了した後に行われ~MUST。†
 </p>
 ◎
-Otherwise, set the result of request to result and dispatch an event at request. The event must use the Event interface and set the type attribute to "success". The event does not bubble and is not cancelable. If the steps above resulted in an upgrade transaction being run, then firing the "success" event must be done after the upgrade transaction completes.
+Otherwise, set the result of request to result and fire an event named success at request. If the steps above resulted in an upgrade transaction being run, then firing the "success" event must be done after the upgrade transaction completes.
 </div>
 
 <p class="note">注記：
@@ -6849,15 +6849,12 @@ Queue a task to run these substeps:
 ］：
 </p>
 <ol><li>%要請 の`~error$ ~SET %結果 
-</li><li>%要請 に向けて 次の様にされた~eventを配送する
-⇒＃
-`Event$I ~interfaceを利用する；
-`type^m ~SET `error$et；
-浮上しない；
-取消不可
+</li><li>%要請 に向けて，名前 `error$et の~eventを［
+`bubbles$m 属性 ~SET ~T
+］に初期化した上で`発火する$
 </li></ol>
 ◎
-If result is an error set the error of request to result and dispatch an event at request. The event must use the Event interface and set the type attribute to "error". The event does bubble but is not cancelable.
+If result is an error set the error of request to result and fire an event named error at request with its bubbles attribute initialized to true.
 </li>
 							<li>
 <p>
@@ -11965,14 +11962,9 @@ Wait for all transactions created using connection to complete. Once they are co
 ~IF
 %強制~flag ~EQ ~ON
 ⇒
-%接続 に向けて 次の様にされた~eventを`発火する$
-⇒＃
-`type^m ~SET `close$et；
-`Event$I ~interfaceを利用する；
-浮上しない；
-取消不可
+%接続 に向けて，名前 `close$et の~eventを`発火する$
 ◎
-If the forced flag is set, then fire a close event at connection. The event must use the Event interface and have its type set to "close". The event must not bubble or be cancelable.
+If the forced flag is set, then fire an event named close at connection.
 </p>
 
 <p class="note">注記：
@@ -12203,14 +12195,9 @@ Queue a task to run the these substeps
 		<ol>
 			<li>
 <p>
-%~tx に向けて 次の様にされた~eventを配送する
-⇒＃
-`type^m ~SET `complete$et；
-`Event$I ~interfaceを利用する；
-浮上しない；
-取消不可
+%~tx に向けて，名前 `complete$et の~eventを`発火する$
 ◎
-Dispatch an event at transaction. The event must use the Event interface and have its type set to "complete". The event does not bubble and is not cancelable.
+Fire an event named complete at transaction.
 </p>
 
 <p class="note">注記：
@@ -12353,14 +12340,11 @@ Set the result of request to undefined.
 Set the error of request to a newly created "AbortError" DOMException.
 </li>
 					<li>
-%要請 に向けて次の様にされた~eventを配送する
-⇒＃
-`type^m ~SET `error$et；
-`Event$I ~interfaceを利用する；
-浮上する；
-取消可
+%要請 に向けて，名前 `error$et の~eventを［
+( `bubbles$m, `cancelable$m ) 属性~SET ( ~T, ~T )
+］に初期化した上で`発火する$
 ◎
-Dispatch an event at request. The event must use the Event interface and have its type set to "error". The event bubbles and is cancelable.
+Fire an event named error at request with its bubbles and cancelable attributes initialized to true.
 </li>
 				</ol>
 
@@ -12382,14 +12366,11 @@ Queue a task to run the following substeps:
 
 		<ol>
 			<li>
-%~tx に向けて 次の様にされた~eventを配送する
-⇒＃
-`type^m ~SET `abort$et；
-`Event$I ~interfaceを利用する；
-浮上しない；
-取消不可
+%~tx に向けて，名前 `abort$et の~eventを［
+`bubbles$m 属性 ~SET ~T
+］に初期化した上で`発火する$
 ◎
-Dispatch an event at transaction. The event must use the Event interface and have its type set to "abort". The event does bubble but is not cancelable.
+Fire an event named abort at transaction with its bubbles attribute initialized to true.
 </li>
 			<li>
 ~IF［
@@ -12915,55 +12896,52 @@ To fire a success event at a request, the implementation must run the following 
 </p>
 
 <ol>
-
+	<li>
+%~event ~LET
+`Event$I を用いて`~eventを作成-$した結果
+◎
+Let event be the result of creating an event using Event.
+</li>
+	<li>
+%~event の各種~属性を次のように初期化する
+⇒＃
+`type$m ~SET `success^l；
+`bubbles$m ~SET ~F；
+`cancelable$m ~SET ~F
+◎
+• Set event’s type attribute to "success".
+• Set event’s bubbles and cancelable attributes to false.
+</li>
 	<li>
 %~tx ~LET %要請 の`設置先~tx$
-<!-- 
-~source$に結付けられている~tx
- -->
 ◎
-Set transaction to the transaction associated with the source.
+Let transaction be request’s transaction.
 </li>
 	<li>
 %~tx の`作動中~flag$ ~SET ~ON
 ◎
-Set the active flag of transaction.
+Set transaction’s active flag.
 </li>
 	<li>
-%要請 に向けて 次の様にされた~eventを配送する†
-⇒＃
-`type^m ~SET `success$et；
-`Event$I ~interfaceを利用する；
-浮上しない；
-取消不可
+%要請 に向けて，
+%~event を`配送する$
+— ~eventの配送-中に，~event~handlerから例外が投出されたときは
+⇒
+次を入力に`~txを中止-$する
+⇒
+%error ~SET `AbortError$E
 ◎
-Dispatch an event at request. The event must use the Event interface and have its type set to "success". The event does not bubble and is not cancelable.
+Dispatch event at request.
+◎
+Unset transaction’s active flag.
+◎
+If an exception was propagated out from any event handler while dispatching event in step 6, run the steps to abort a transaction with transaction and a newly created "AbortError" DOMException.
 </li>
 	<li>
 %~tx の`作動中~flag$ ~SET ~OFF
 ◎
-Unset the active flag of transaction.
-</li>
+↑</li>
 </ol>
-
-<div class="p">
-<p>†
-~event配送-時に，~event~handlerから例外が投出されたときは：
-</p>
-
-<ol>
-	<li>
-次を入力に
-`~txを中止-$する
-⇒＃
-%~tx ~SET %~tx；
-%error ~SET `AbortError$E
-</li>
-</ol>
-
-◎
-If an exception was propagated out from any event handler while dispatching the event in step 3, abort the transaction by following the steps to abort a transaction with transaction and a newly created "AbortError" DOMException.
-</div>
 
 
 		</section>
@@ -12980,67 +12958,66 @@ To fire an error event at a request, the implementation must run the following s
 
 <ol>
 	<li>
-%~tx ~LET %要請 の`設置先~tx$
-<!-- 
-要請 の~sourceに結付けられている~tx
- -->
+%~event ~LET
+`Event$I を用いて`~eventを作成-$した結果
 ◎
-Set transaction to the transaction associated with the source.
+Let event be the result of creating an event using Event.
+</li>
+	<li>
+%~event の各種~属性を次のように初期化する
+⇒＃
+`type$m ~SET `error^l；
+`bubbles$m ~SET ~T；
+`cancelable$m ~SET ~T；
+◎
+• Set event’s type attribute to "error".
+• Set event’s bubbles and cancelable attributes to true.
+</li>
+	<li>
+%~tx ~LET %要請 の`設置先~tx$
+◎
+Let transaction be request’s transaction.
 </li>
 	<li>
 %~tx の`作動中~flag$ ~SET ~ON
 ◎
-Set the active flag of transaction.
-</li>
-	<li>
-%~event ~LET 次の様にされた新たな~event
-⇒＃
-`type^m ~SET `error$et；
-`Event$I ~interfaceを利用する；
-浮上する；
-取消可
-◎
-↓</li>
-	<li>
-%要請 に向けて %~event を配送する
-◎
-Dispatch an event at request. The event must use the Event interface and have its type set to "error". The event bubbles and is cancelable.
-</li>
-	<li>
-%~tx の`作動中~flag$ ~SET ~OFF
-◎
-Unset the active flag of transaction.
+Set transaction’s active flag.
 </li>
 	<li>
 <div class="p">
 
 <p>
-~IF［
-%~event の配送-時に，~event~handlerから例外が投出された
-］：
+%要請 に向けて，
+%~event を`配送する$
+— %~event の配送-時に，~event~handlerから例外が投出されたときは：
 </p>
-
-<ol>
-	<li>
+		<ol>
+			<li>
 次を入力に
 `~txを中止-$する
 ⇒＃
 %~tx ~SET %~tx；
 %error ~SET `AbortError$E
 </li>
-	<li>
+			<li>
+%~tx の`作動中~flag$ ~SET ~OFF
+</li>
+			<li>
 ~RET
 </li>
-</ol>
+		</ol>
 
 <p>
 これは、［
 %~event の`被取消~flag$ ~EQ ~ON
 ］の下でも行われる。
 </p>
-
 ◎
-If an exception was propagated out from any event handler while dispatching the event in step 3, abort the transaction by following the steps to abort a transaction with transaction and a newly created "AbortError" DOMException and terminate these steps. This is done even if the event’s canceled flag is not set.
+Dispatch event at request.
+◎
+Unset transaction’s active flag.
+◎
+If an exception was propagated out from any event handler while dispatching event in step 6, run the steps to abort a transaction with transaction and a newly created "AbortError" DOMException and terminate these steps. This is done even if the event’s canceled flag is not set.
 </div>
 
 <div class="note">
@@ -13048,19 +13025,19 @@ If an exception was propagated out from any event handler while dispatching the 
 すなわち、 `error$et ~eventの配送-時に，いずれかの~event~handlerから例外が投出されたときは：
 </p>
 
-<ul>
-	<li>
-~eventが `preventDefault()$m の~callにより取消されようが されまいが，~txは中止される。
-</li>
-	<li>
-~tx上の `error^m 属性には、要請の`~error$に代わって， `AbortError$E が利用される。
-</li>
-</ul>
+<ul><li>~eventが `preventDefault()$m の~callにより取消されようが されまいが，~txは中止される。
+</li><li>~tx上の `error^m 属性には、要請の`~error$に代わって， `AbortError$E が利用される。
+</li></ul>
 
 ◎
 This means that if an error event is fired and any of the event handlers throw an exception, transaction’s error property is set to an AbortError rather than request’s error, even if preventDefault() is never called.
 </div>
+
 	</li>
+	<li>
+%~tx の`作動中~flag$ ~SET ~OFF
+◎
+↑</li>
 	<li>
 ~IF［
 %~event の`被取消~flag$ ~EQ ~OFF
@@ -15800,4 +15777,3 @@ all of whose feedback and suggestions have led to improvements to this specifica
 この節の内容は省略（見出しクリックで巡回）。
 】</p>
 	</section>
-
