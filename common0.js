@@ -241,8 +241,11 @@ Util.del_j = function(){
 	repeat('*[lang="en"]', function(en){
 		var p = en.parentNode;
 		if(en.tagName === 'SPAN'){
+			var en1 = C('P');
+			p.insertBefore(en1, en);
+			en1.appendChild(en);
+			en = en1;
 			if(p === parent){
-				p.insertBefore(C('br'), en);
 				return;
 			}
 			parent = p;
