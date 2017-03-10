@@ -209,6 +209,7 @@ I.OnBeforeUnloadEventHandler:#onbeforeunloadeventhandler
 I.OnBeforeUnloadEventHandlerNonNull:#onbeforeunloadeventhandlernonnull
 I.OnErrorEventHandler:#onerroreventhandler
 I.OnErrorEventHandlerNonNull:#onerroreventhandlernonnull
+I.WindowOrWorkerGlobalScope:~HTMLGAPI#windoworworkerglobalscope
 
 I.BeforeUnloadEvent:~NAVI#beforeunloadevent
 I.Document:~HTMLdom#document
@@ -649,7 +650,6 @@ rej.取扱済みでない:#concept-promise-rejection-nothandled
 ~event~handler~event型:#event-handler-event-type
 ~event~handler処理~algo:#the-event-handler-processing-algorithm
 ~event~handlerの現在の値を取得-:#getting-the-current-value-of-the-event-handler
-	呼出す:#concept-invoke-event-handler
 
 click ~eventを発火する:#fire-a-click-event
 合成~mouse~eventを発火する:#fire-a-synthetic-mouse-event
@@ -901,6 +901,7 @@ node::::ノード
 instance::::インスタンス
 	~instance化-:instantiate
 	~instance化:instantiation
+mixin:
 
 内部slot:internal slot:内部 slot::内部スロット
 slot::::スロット
@@ -1959,7 +1960,7 @@ data::::データ
 </p>
 
 <p>
-更新： <time>2017-03-08</time>
+更新： <time>2017-03-10</time>
 （公開：<time>2016-01-08</time> ）
 </p>
 
@@ -1982,7 +1983,7 @@ data::::データ
 
 	<hgroup>
 <h1>スクリプト処理 — Scripting</h1>
-<h2>HTML Living Standard — 最終更新 2017 年 3 月 8 日</h2>
+<h2>HTML Living Standard — 最終更新 2017 年 3 月 9 日</h2>
 	</hgroup>
 
 </header>
@@ -7788,8 +7789,30 @@ If callback is null, then abort these steps.
 </li>
 	<li>
 <p>
+`特別~error~event取扱い^V ~LET ［［
+%E は `ErrorEvent$I ~objである
+］~AND［
+%E の `currentTarget$m は
+`WindowOrWorkerGlobalScope$I ~mixinを実装する
+］ならば ~T ／
+~ELSE_ ~F
+］
+◎
+Let special error event handling be true if E is an ErrorEvent object and E's currentTarget implements the WindowOrWorkerGlobalScope mixin. Otherwise, let special error event handling be false.
+</p>
+
+<p class="note">注記：
+~T ならば、 %E の `type$m は常に `error$et になる
+— `ErrorEvent$I ~instanceを伴って~callされる`~event~handler$は、
+`onerror$hd のみなので。
+◎
+In this case, E's type will always be error, since the only event handler is called with ErrorEvent instances is onerror.
+</p>
+	</li>
+	<li>
+<p>
 %返値 ~LET 次を与える下で %~callback を
-<a id="concept-invoke-event-handler" href="~WEBIDL#es-invoking-callback-functions">~WebIDL~callback関数として呼出した</a>
+<a href="~WEBIDL#es-invoking-callback-functions">呼出した</a>
 結果：
 ◎
 Process the Event object E as follows:
@@ -7802,21 +7825,10 @@ Process the Event object E as follows:
 ↓</li>
 			<li>
 <p>
-引数 ~SET 次で与えられる引数：
-◎
-↓</p>
-				<dl class="switch">
-					<dt>
-［
-%E は `ErrorEvent$I ~objである
-］~AND［
-%H に対する`~event~handler~IDL属性$の型 ~EQ `OnErrorEventHandler$I
-］の場合：
-◎
-If E is an ErrorEvent object and the event handler IDL attribute's type is OnErrorEventHandler
-</dt>
-					<dd>
-順に， %E の (
+引数 ~SET 
+`特別~error~event取扱い^V に応じて，［
+~F ならば %E のみ ／
+~T ならば 順に %E の (
 `message$m,
 `filename$m,
 `lineno$m,
@@ -7824,22 +7836,18 @@ If E is an ErrorEvent object and the event handler IDL attribute's type is OnErr
 `error$m
 )
 属性~値
+］
 ◎
-Invoke callback with five arguments, the first one having the value of E's message attribute, the second having the value of E's filename attribute, the third having the value of E's lineno attribute, the fourth having the value of E's colno attribute, the fifth having the value of E's error attribute, and with the callback this value set to E's currentTarget. Let return value be the callback's return value. [WEBIDL]
-</dd>
-
-					<dt>
-他の場合：
+↓</p>
+◎
+If special error event handling is true
+◎
+• Invoke callback with five arguments, the first one having the value of E's message attribute, the second having the value of E's filename attribute, the third having the value of E's lineno attribute, the fourth having the value of E's colno attribute, the fifth having the value of E's error attribute, and with the callback this value set to E's currentTarget. Let return value be the callback's return value. [WEBIDL]
 ◎
 Otherwise
-</dt>
-					<dd>
-%E のみ
 ◎
-Invoke callback with one argument, the value of which is the Event object E, with the callback this value set to E's currentTarget. Let return value be the callback's return value. [WEBIDL]
-</dd>
-				</dl>
-			</li>
+• Invoke callback with one argument, the value of which is the Event object E, with the callback this value set to E's currentTarget. Let return value be the callback's return value. [WEBIDL]
+</li>
 		</ul>
 <p>
 ~IF［
@@ -7850,8 +7858,6 @@ Invoke callback with one argument, the value of which is the Event object E, wit
 — 例外は伝播させる（それは、
 <a href="~DOM4#concept-event-listener-invoke">DOM ~event配送-~logic</a>
 へ伝播し，その`例外を報告する$ことになる）。
-◎
-In this step, invoke means to invoke the Web IDL callback function.
 ◎
 If an exception gets thrown by the callback, end these steps and allow the exception to propagate. (It will propagate to the DOM event dispatch logic, which will then report the exception.)
 </p>
@@ -7869,46 +7875,22 @@ Process return value as follows:
 </p>
 		<dl class="switch">
 			<dt>
-%型 ~EQ `mouseover$et
-◎
-If E's type is mouseover
-</dt>
-			<dt>
-［
-%型 ~EQ `error$et
-］~AND［
-%E は `ErrorEvent$I ~objである
-］
-◎
-If E's type is error and E is an ErrorEvent object
-</dt>
-			<dd>
-~IF［
-%返値 ~EQ ~T
-］
-⇒
-%E の`取消ed~flag$ ~SET ~ON
-◎
-If return value is true, then set E's canceled flag.
-</dd>
-
-			<dt>
-［
-%型 ~EQ `beforeunload$et
-］~AND［
 %E は `BeforeUnloadEvent$I ~objである
-］
 ◎
-If E's type is beforeunload and E is a BeforeUnloadEvent object
+If E is a BeforeUnloadEvent object
 </dt>
 			<dd class="note">注記：
-`~event~handler~IDL属性$の型は，
-`OnBeforeUnloadEventHandler$I
-であり、従って， %返値 は［
-~NULL または `DOMString^I
-］型に型強制されている。
+これが生じるのは、［
+%E の `type$m ~EQ `beforeunload$et
+］~AND［
+`~event~handler~IDL属性$は `OnBeforeUnloadEventHandler$I 型である
+］ときに限られる
+— `BeforeUnloadEvent$I ~instanceを伴って~callされる`~event~handler$は
+`onbeforeunload$hd のみなので。
+したがって，この事例では、
+%返値 は ~NULL 値または `DOMString^I 型に型強制されることになる。
 ◎
-The event handler IDL attribute's type is OnBeforeUnloadEventHandler, and the return value will therefore have been coerced into either the value null or a DOMString.
+This can only occur when E's type is beforeunload and when the event handler IDL attribute's type is OnBeforeUnloadEventHandler, since the only event handler that is called with BeforeUnloadEvent instances is onbeforeunload. In this case, return value will therefore have been coerced into either the value null or a DOMString.
 </dd>
 			<dd>
 <p>
@@ -7935,6 +7917,22 @@ E's returnValue attribute's value is the empty string, then set the returnValue 
 </li>
 				</ol>
 			</dd>
+
+			<dt>
+`特別~error~event取扱い^V ~EQ ~T
+◎
+If special error event handling is true
+</dt>
+			<dd>
+~IF［
+%返値 ~EQ ~T
+］
+⇒
+%E の`取消ed~flag$ ~SET ~ON
+◎
+If return value is true, then set E's canceled flag.
+</dd>
+
 			<dt>その他
 ◎
 Otherwise
@@ -8005,18 +8003,36 @@ For example, the following document fragment:
 </div>
 
 
-<p class="note">注記：
-関数の返値は、上で述べたように，~eventが取消されるかどうかに影響する：
-［
-返値 ~EQ ~F
-］の場合、~eventは取消される（ただし、
-`mouseover$et ~eventに対しては、~eventが取消されるためには返値 ~T になる必要がある）。
-`beforeunload$et ~eventにおいては、値は，代わりに［
-文書が~unloadされることを~promptするかどうか
-］を決定するために利用される。
+<div class="note">
+
+<p>注記：
+関数の返値は，~eventが取消されるかどうかに影響する
+— 上で述べたように、返値 ~EQ ~F の場合，~eventは取消される。
 ◎
-The return value of the function affects whether the event is canceled or not: as described above, if the return value is false, the event is canceled (except for mouseover events, where the return value has to be true to cancel the event). With beforeunload events, the value is instead used to determine whether or not to prompt about unloading the document.
+The return value of the function affects whether the event is canceled or not: as described above, if the return value is false, the event is canceled.
 </p>
+
+<p>
+歴史的~理由から、~platformには 2 つの例外がある
+◎
+There are two exceptions in the platform, for historical reasons:
+</p>
+
+<ul>
+	<li>
+大域~obj上の `onerror$hd ~handlerは、
+~T を返した場合に~eventを取消す。
+◎
+The onerror handlers on global objects, where returning true cancels the event
+</li>
+	<li>
+`onbeforeunload$hd ~handlerは、
+~NULL でも undefined でもない値を返した場合に~eventを取消すことになる。
+◎
+The onbeforeunload handler, where returning any non-null and non-undefined value will cancel the event.
+</li>
+	</ul>
+</div>
 
 
 <p>
@@ -8907,4 +8923,3 @@ Firing a click event at target means firing a synthetic mouse event named click 
 		</section>
 	</section>
 </main><!-- id="MAIN" -->
-
