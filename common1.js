@@ -1092,8 +1092,6 @@ Util.contextMenuInit = function(){
 
 
 COMMON_DATA.addAltRefs = function(id){
-	id = id || PAGE_DATA.alt_refs;
-
 	var LABELS = {
 		'主': '日本語訳',
 		'副': '日本語訳',
@@ -1119,7 +1117,20 @@ COMMON_DATA.addAltRefs = function(id){
 	);
 
 	var mapping = Object.create(null);
-	if(id) repeat('#' + id + ' dt', collect_entries);
+
+	var add_ref_link = EMPTY_FUNC;
+	var ref_node_list;
+	if(PAGE_DATA.ref_data){
+		add_ref_link = add_ref_link2;
+		collect_entries2(PAGE_DATA.ref_data)
+	} else{
+		id = id || PAGE_DATA.alt_refs;
+		if(id){
+			add_ref_link = add_ref_link1;
+			repeat('#' + id + ' dt', collect_entries1);
+		}
+	}
+
 
 	var m;
 	var rxp = /^(\w+)=(\S)(\d*)[\t ]+(~\w*)?([^\s●]+)(●.*)?$/mg;
@@ -1154,6 +1165,11 @@ COMMON_DATA.addAltRefs = function(id){
 				if(!(url in JA_LINKS)) JA_LINKS[url] = '@' + key;
 		}
 	}
+
+	if(ref_node_list){
+		ref_node_list.forEach(generateRefsHTML);
+	}
+
 	// 下位 directory への和訳リンク生成防止
 	if(PAGE_DATA.original_url){
 		COMMON_DATA.JA_LINKS[
@@ -1163,17 +1179,20 @@ COMMON_DATA.addAltRefs = function(id){
 
 
 //	console.log(JSON.stringify(JA_LINKS));
+	function refKey(s){
+		key = s.replace(/[^\w]/g, '').toUpperCase();
+		return REF_KEY_MAP[key] || key;
+	}
 
-	function collect_entries(dt){
+	function collect_entries1(dt){
 		var text = dt.textContent;
-		var key = text.replace(/[^\w]/g, '').toUpperCase();
 		if(!dt.id){
 			// dt に id を自動付与
 			text = text.slice(1, -1)// remove surrounding [,]
 			dt.id = ref_id_prefix +
 				(ref_id_lowercase ? text.toLowerCase() : text );
 		}
-		key = REF_KEY_MAP[key] || key;
+		var key = refKey(text);
 		if(key in mapping){
 			// 重複は最初の出現への参照を追加
 			add_ref_link0(dt, '#' + mapping[key].id, '【↑】')
@@ -1182,7 +1201,7 @@ COMMON_DATA.addAltRefs = function(id){
 		}
 	}
 
-	function add_ref_link(key, url, label){
+	function add_ref_link1(key, url, label){
 // TODO url が同じなら追加しない
 		var dt = mapping[key];
 		if(!dt) return;
@@ -1210,7 +1229,64 @@ COMMON_DATA.addAltRefs = function(id){
 		dd.appendChild(a);
 		return dd;
 	}
+
+	/* 素のテキストから生成（ bikeshed 用） */
+
+	function collect_entries2(selector){
+		ref_node_list = [];
+		repeat(selector, function(node){
+			var data = node.textContent;
+			data.replace(/\n\[.+\]/g, function(ref_name){
+				var key = refKey(ref_name);
+				mapping[key] = '';
+				return '';
+			});
+			ref_node_list.push({ root: node, data: data });
+		});
+	}
+
+	function add_ref_link2(key, url, label){
+		var v = mapping[key];
+		if(v === undefined) return;
+		var html = '<a href="' + url + '">' + label + '</a>';
+		mapping[key] += html;
+	}
+
+	function generateRefsHTML(item){
+		var last_key = '';
+		var html = item.data
+		.replace(/\n\[(.+)\]/g, function(match, ref_name){
+			var id = ref_id_prefix +
+				(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
+
+			var last_key1 = last_key;
+			var key = refKey(ref_name);
+			var altref = mapping[key];
+			if(altref){
+				if(altref[0] !== '<'){
+					last_key = '\n<dd><a href="#' + altref + '">【↑】</a></dd>'
+				} else {
+					last_key = '\n<dd class="trans-ja-refs">' + altref + '</dd>'
+					mapping[key] = id;
+				}
+			} else {
+				last_key = '';
+			}
+			return ( last_key1
+				+ '\n\n<dt id="' + id + '">[' + ref_name + ']</dt>'
+			);
+		})
+		.replace(/\s+URL: +(https?:[^\s]+)/g,
+			'\n<dd><a href="$1">$1</a></dd>'
+		).replace(/\n +(.+)/g, '\n<dd>$1</dd>');
+		html += last_key;
+
+		var dl = C('dl');
+		dl.innerHTML = html;
+		item.root.parentNode.replaceChild(dl, item.root);
+	}
 }
+
 
 /** 文献 id = 英文 URL = 和訳 URL の対応データ
 

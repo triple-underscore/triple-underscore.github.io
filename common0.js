@@ -195,6 +195,7 @@ Util.get_header = function(section){
 Util.supplyLinkFromText = function(e){
 	var text = e.firstChild;
 	if(
+		text &&
 		(text.nodeType === Node.TEXT_NODE) &&
 		/^https?:\/\//.test(text.data)
 	) {
