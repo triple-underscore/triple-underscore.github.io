@@ -1264,7 +1264,7 @@ COMMON_DATA.addAltRefs = function(id){
 			var altref = mapping[key];
 			if(altref){
 				if(altref[0] !== '<'){
-					last_key = '\n<dd><a href="#' + altref + '">【↑】</a></dd>'
+					last_key = '\n<dd class="trans-ja-refs"><a href="#' + altref + '">【↑】</a></dd>'
 				} else {
 					last_key = '\n<dd class="trans-ja-refs">' + altref + '</dd>'
 					mapping[key] = id;
@@ -1821,7 +1821,7 @@ CSSWRITINGMODES4:CSSWRITINGMODES\n\
 CSS3WRITINGMODES:CSSWRITINGMODES\n\
 CSS3NAMESPACE:CSSNAMESPACES\n\
 CSSNAMESPACES3:CSSNAMESPACES\n\
-CSS3BACKGROUNDS:CSSBACKGROUNDS3\n\
+CSS3BACKGROUND:CSSBACKGROUNDS3\n\
 CSS3BG:CSSBACKGROUNDS3\n\
 CSSBG:CSSBACKGROUNDS3\n\
 CSSSTYLEATTR1:CSSSTYLEATTR\n\
