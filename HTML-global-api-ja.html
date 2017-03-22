@@ -175,6 +175,9 @@ return text;
 
 
 	●IDL
+Serializable:~HTMLcloning#serializable
+Transferable:~HTMLcloning#transferable
+
 I.Document:~HTMLdom#document
 I.Function:~WEBIDL#Function
 I.Window:~BROWSERS#window
@@ -185,7 +188,6 @@ I.TimerHandler:#timerhandler
 I.DOMException:~WEBIDL#idl-DOMException
 
 E.InvalidCharacterError:~WEBIDL#invalidcharactererror
-E.DataCloneError:~WEBIDL#datacloneerror
 E.IndexSizeError:~WEBIDL#indexsizeerror
 E.InvalidStateError:~WEBIDL#invalidstateerror
 E.SecurityError:~WEBIDL#securityerror
@@ -340,13 +342,10 @@ x.~callback this 値:~WEBIDL#dfn-callback-this-value
 ~CORS非同一生成元:~HTMLINFRA#cors-cross-origin
 ~CSS~pixel:~CSSVAL#px
 転送可能:~HTMLcloning#transferable-objects
-~cloneable:~HTMLcloning#cloneable-objects
-sl.Clone:~HTMLcloning#clone-()
+直列化可能:~HTMLcloning#serializable-objects
 sl.Detached:~HTMLcloning#detached
-sl.Transfer:~HTMLcloning#transfer-()
 
 ~SVG-image:~SVG11/struct.html#ImageElement
-~closeされ:~TR/FileAPI/#closed
 完全に可用:~HEimages#img-all
 現在の再生位置:~HTMLemb#current-playback-position
 	error occurs during reading of the object:~HTMLconform#file-error-read
@@ -375,6 +374,11 @@ sub.生成元:~BROWSERS#same-origin
 却下-:~PROMISES#reject-promise
 新たな~promise:~PROMISES#a-new-promise
 却下された~promise:~PROMISES#a-promise-rejected-with
+
+転送-手続き:~HTMLcloning#transfer-steps
+転送-受信-時の手続き:~HTMLcloning#transfer-receiving-steps
+直列化~手続き:~HTMLcloning#serialization-steps
+逆直列化~手続き:~HTMLcloning#deserialization-steps
 
 </script>
 
@@ -406,7 +410,6 @@ IDL:::
 JS:JavaScript
 Realm:
 Record:
-宛先:target::~
 event::::イベント
 event-loop:event loop:::イベントループ
 task::::タスク
@@ -694,7 +697,6 @@ support::::サポート
 改変:modification:~
 改変-:modify:~
 検出-:detect:~
-直列化-:serialize::~::シリアライズ
 無視-:ignore:~
 終了の:termination:~
 組合せ:combination:~
@@ -871,8 +873,16 @@ logic::::ロジック
 資源:resource::~:リソース
 整形-:format:~
 復号可能:decodable::~::デコード可能
+転送-:transfer::~
 転送可能:transferable::~
-cloneable::::clone 可能
+受信-:receive::~
+直列化-:serialize::~::シリアライズ
+直列形:serialized::~::シリアル形
+直列化:serialization::~::シリアル化
+直列化可能:serializable::~::シリアライズ可能
+逆直列化:deserialization::~::逆シリアル化
+保持体:holder::~::ホルダ
+
 黒地透明:transparent black:~
 再生位置:playback position:~
 下層の:underlying:~
@@ -1062,7 +1072,7 @@ cloneable::::clone 可能
 
 	<hgroup>
 <h1>Web application APIs</h1>
-<h2>HTML Living Standard — 最終更新 2017 年 2 月 15 日</h2>
+<h2>HTML Living Standard — 最終更新 2017 年 3 月 22 日</h2>
 	</hgroup>
 
 </header>
@@ -2517,7 +2527,7 @@ The afterprint event can be used to revert annotations added in the earlier even
 <h2 title="Images">8.8. 画像</h2>
 
 <pre class="idl">
-[Exposed=(Window,Worker)]
+[Exposed=(Window,Worker), `Serializable$, `Transferable$]
 interface `ImageBitmap@I {
   readonly attribute unsigned long `width$m;
   readonly attribute unsigned long `height$m;
@@ -2688,89 +2698,115 @@ An ImageBitmap object's bitmap has an origin-clean flag, which indicates whether
 </ul>
 
 <p>
-各 `ImageBitmap$I %O は、`~cloneable$かつ`転送可能$である：
+各 `ImageBitmap$I は、`直列化可能$かつ`転送可能$である：
 ◎
-ImageBitmap objects are cloneable objects and transferable objects.
+ImageBitmap objects are serializable objects and transferable objects.
 </p>
 
-<ul>
-	<li>
 <p>
-%O の内部~method
-`Clone$sl( %宛先~Realm, %memory )
-は、次を走らせ~MUST（ %memory は無視される）：
+その`直列化~手続き$は、所与の
+( %値, %直列形 )
+に対し，次を走らす：
 ◎
-Each ImageBitmap object's [[Clone]](targetRealm, memory) internal method must run these steps:
+Their serialization steps, given value and serialized, are:
 </p>
 
-		<ol>
-			<li>
+<ol>
+	<li>
+%直列形 . `BitmapData^sl ~SET %値 の`~bitmap~data$の複製
+◎
+Set serialized.[[BitmapData]] to a copy of value's bitmap data.
+</li>
+	<li>
+%直列形 . `OriginClean^sl ~SET ［
+%値 の`生成元clean$ ~flag ~EQ ~ON ならば ~T ／
+~ELSE_ ~F
+］
+◎
+Set serialized.[[OriginClean]] to true if value's origin-clean flag is set, and false otherwise.
+</li>
+</ol>
+
+<p>
+その`逆直列化~手続き$は、所与の
+( %直列形, %値 )
+に対し，次を走らす：
+◎
+Their deserialization steps, given serialized and value, are:
+</p>
+
+<ol>
+	<li>
+%値 の`~bitmap~data$ ~SET  %直列形 . `BitmapData^sl
+◎
+Set value's bitmap data to serialized.[[BitmapData]].
+</li>
+	<li>
 ~IF［
-%O . `Detached$sl ~EQ ~T
+%直列形 . `OriginClean^sl ~EQ ~T
 ］
 ⇒
-~THROW `DataCloneError$E
+%値 の`生成元clean$ ~flag ~SET ~T
 ◎
-If this's [[Detached]] internal slot is true, then throw a "DataCloneError" DOMException.
+If serialized.[[OriginClean]] is true, set value's origin-clean flag.
 </li>
-			<li>
+</ol>
+
 <p>
-~RET 次のようにされた新たな `ImageBitmap$I ~obj
+その`転送-手続き$は、所与の
+( %値, %~data保持体 )
+に対し，次を走らす：
+◎
+Their transfer steps, given value and dataHolder, are:
 </p>
 
-<ul ><li>%宛先~Realm に属する
-</li><li>`~bitmap~data$ ~SET %O の`~bitmap~data$の複製
-</li><li>`生成元clean$ ~flag ~SET %O の`生成元clean$ ~flag
-</li></ul>
-
-◎
-Return a new ImageBitmap object in targetRealm whose bitmap data is a copy of this's bitmap data, and whose origin-clean flag is set to the same value as this's origin-clean flag.
-</li>
-		</ol>
-	</li>
+<ol>
 	<li>
-<p>
-%O の内部~method
-`Transfer$sl( %宛先~Realm )
-は、次を走らせ~MUST：
+%~data保持体 . `BitmapData^sl ~SET %値 の`~bitmap~data$
 ◎
-Each ImageBitmap object's [[Transfer]](targetRealm) internal method must run these steps:
+Set dataHolder.[[BitmapData]] to value's bitmap data.
+</li>
+	<li>
+%~data保持体 . `OriginClean^sl  ~SET ［
+%値 の`生成元clean$ ~flag ~EQ ~ON ならば ~T ／
+~ELSE_ ~F
+］
+◎
+Set dataHolder.[[OriginClean]] to true if value's origin-clean flag is set, and false otherwise.
+</li>
+	<li>
+%値 の`~bitmap~data$ ~SET ε
+◎
+Unset value's bitmap data.
+</li>
+</ol>
+
+<p>
+その`転送-受信-時の手続き$は、所与の
+( %~data保持体, %値 )
+に対し，次を走らす：
+◎
+Their transfer-receiving steps, given dataHolder and value, are:
 </p>
 
-		<ol>
-			<li>
-<p>
-%new ~LET 次のようにされた新たな `ImageBitmap$I ~obj
-</p>
+<ol>
+	<li>
+%値 の`~bitmap~data$ ~SET %~data保持体 . `BitmapData^sl
+◎
+Set value's bitmap data to dataHolder.[[BitmapData]].
+</li>
+	<li>
+~IF［
+%~data保持体 . `OriginClean^sl ~EQ ~T
+］
+⇒
+%値 の`生成元clean$ ~flag ~SET ~T
+◎
+If dataHolder.[[OriginClean]] is true, set value's origin-clean flag.
+</li>
+</ol>
 
-<ul ><li>%宛先~Realm に属する
-</li><li>%O と同じ下層の`~bitmap~data$を指す
-</li><li>`生成元clean$ ~flag ~SET %O の`生成元clean$ ~flag
-</li></ul>
-
-◎
-Let new be a new ImageBitmap object in targetRealm, pointing at the same underlying bitmap data as this.
-◎
-Set new's bitmap's origin-clean flag to the same values as this's bitmap's origin-clean flag.
-</li>
-			<li>
-%O の `Detached$sl 内部~slot値 ~SET ~T
-◎
-Set this's [[Detached]] internal slot value to true.
-</li>
-			<li>
-%O の`~bitmap~data$ ~SET ε
-◎
-Unset this's bitmap data.
-</li>
-			<li>
-~RET %new
-◎
-Return new.
-</li>
-		</ol>
-	</li>
-</ul>
+<hr>
 
 
 <p class="idl-def">
@@ -3082,7 +3118,9 @@ If image is a Blob object
 		<ol>
 			<li>
 ~IF［
-%image は`~closeされ$ている<!-- ＊削除 -->
+`<a href="~FILEAPI#readOperationSection">読取り演算</a>により？^tnote
+%image から~dataを
+<a href="~FILEAPI#file-error-read">読取る間に~errorが生じた</a>
 ］
 ⇒
 `InvalidStateError$E `で却下する$
@@ -3092,15 +3130,6 @@ If either the sw or sh arguments are specified but zero, return a promise reject
 If image is closed, then return a promise rejected with an "InvalidStateError" DOMException and abort these steps.
 ◎
 Return a new promise, but continue running these steps in parallel.
-</li>
-			<li>
-~IF［
-`<a href="~FILEAPI#readOperationSection">読取り演算</a>により？^tnote
-%image から~dataを
-<a href="~FILEAPI#file-error-read">読取る間に~errorが生じた</a>
-］
-⇒
-`InvalidStateError$E `で却下する$
 ◎
 Read the Blob object's data. If an error occurs during reading of the object, then reject the promise with an "InvalidStateError" DOMException, and abort these steps.
 </li>
