@@ -327,7 +327,7 @@ name:
 記述子:descriptor:~
 長さ:length:~
 file::::ファイル
-
+size::::サイズ
 	出力~prototype:outputProto
 	列挙可能~key~list:enumerableKeys
 	入力~値:inputValue
@@ -360,6 +360,9 @@ file::::ファイル
 	入力~長さ記述子:inputLenDescriptor
 	~file:file
 	値:value
+	~buffer直列形:bufferSerialized
+	~buffer:buffer
+	~size:size
 
 	●IDL／JS／data型
 list:
@@ -1377,14 +1380,14 @@ Otherwise, if value has an [[ArrayBufferData]] internal slot, then:
 If IsDetachedBuffer(value) is true, then throw a "DataCloneError" DOMException.
 </li>
 			<li>
-%size ~LET %値 . `ArrayBufferByteLength^sl
+%~size ~LET %値 . `ArrayBufferByteLength^sl
 ◎
 Let size be value.[[ArrayBufferByteLength]].
 </li>
 			<li>
 <p>
 %~dataの複製 ~LET
-? `CreateByteDataBlock$jA( %size )
+? `CreateByteDataBlock$jA( %~size )
 ◎
 Let dataCopy be ? CreateByteDataBlock(size).
 </p>
@@ -1396,7 +1399,7 @@ This can throw a RangeError exception upon allocation failure.
 </p>
 			</li>
 			<li>
-! `CopyDataBlockBytes$jA( %~dataの複製, 0, %値 . `ArrayBufferData^sl, 0, %size )
+! `CopyDataBlockBytes$jA( %~dataの複製, 0, %値 . `ArrayBufferData^sl, 0, %~size )
 を遂行する
 ◎
 Perform ! CopyDataBlockBytes(dataCopy, 0, value.[[ArrayBufferData]], 0, size).
@@ -1405,7 +1408,7 @@ Perform ! CopyDataBlockBytes(dataCopy, 0, value.[[ArrayBufferData]], 0, size).
 %直列形 ~SET {
 `Type^sl: `ArrayBuffer^l,
 `ArrayBufferData^sl: %~dataの複製,
-`ArrayBufferByteLength^sl: %size
+`ArrayBufferByteLength^sl: %~size
 }
 ◎
 Set serialized to { [[Type]]: "ArrayBuffer", [[ArrayBufferData]]: dataCopy, [[ArrayBufferByteLength]]: size }.
@@ -1422,19 +1425,19 @@ Otherwise, if value has a [[ViewedArrayBuffer]] internal slot, then:
 </p>
 		<ol>
 			<li>
-%buffer ~LET %値 . `ViewedArrayBuffer^sl
+%~buffer ~LET %値 . `ViewedArrayBuffer^sl
 ◎
 Let buffer be the value of value's [[ViewedArrayBuffer]] internal slot.
 </li>
 			<li>
-%bufferSerialized ~LET
-? `StructuredSerialize$jA( %buffer, %memory )
+%~buffer直列形 ~LET
+? `StructuredSerialize$jA( %~buffer, %memory )
 ◎
 Let bufferSerialized be ? StructuredSerialize(buffer, memory).
 </li>
 			<li>
 ~Assert：
-%bufferSerialized . `Type^sl ~EQ `ArrayBuffer^l
+%~buffer直列形 . `Type^sl ~EQ `ArrayBuffer^l
 ◎
 Assert: bufferSerialized.[[Type]] is "ArrayBuffer".
 </li>
@@ -1446,7 +1449,7 @@ Assert: bufferSerialized.[[Type]] is "ArrayBuffer".
 %直列形 ~SET {
 `Type^sl: `ArrayBufferView^l,
 `Constructor^sl: `DataView^l,
-`ArrayBufferSerialized^sl: %bufferSerialized,
+`ArrayBufferSerialized^sl: %~buffer直列形,
 `ByteLength^sl: %値 . `ByteLength^sl,
 `ByteOffset^sl: %値 . `ByteOffset^sl
 }
@@ -1470,7 +1473,7 @@ Assert: value has a [[TypedArrayName]] internal slot.
 %直列形 ~SET {
 `Type^sl: `ArrayBufferView^l,
 `Constructor^sl: %値 . `TypedArrayName^sl,
-`ArrayBufferSerialized^sl: %bufferSerialized,
+`ArrayBufferSerialized^sl: %~buffer直列形,
 `ByteLength^sl: %値 . `ByteLength^sl,
 `ByteOffset^sl: %値 . `ByteOffset^sl,
 `ArrayLength^sl: %値 . `ArrayLength^sl
@@ -1883,7 +1886,7 @@ If Type(key) is String, then:
 								<ol>
 									<li>
 %入力~記述子 ~LET  
-! %値.[[GetOwnProperty]]( %~key )
+! %値 . `GetOwnProperty^sl( %~key )
 ◎
 Let inputDesc be ! value.[[GetOwnProperty]](key).
 </li>
@@ -2929,11 +2932,11 @@ This specification used to define a "structured clone" algorithm, and more recen
 <p>
 ~callする側が［
 作者~codeが~UA~methodの中へ~callした結果として同期的に呼出されてはいない
-］場合、それが任意の~obj上で遂行されている場合には，［
+］場合、それが任意の~obj上で遂行されている場合には，抽象演算［
 `StructuredCloneWithTransfer$jA ／
 `StructuredSerialize$jA ／
 `StructuredSerializeWithTransfer$jA
-］抽象演算を呼出す前に，適正に［
+］を呼出す前に，適正に［
 `~scriptを走らすために準備する$ ／ `~callbackを走らすために準備する$
 ］よう~careし~MUST。
 このことは、必要とされる
@@ -2979,12 +2982,16 @@ This monkey patch will be moved in due course. See w3c/FileAPI issue 32.
 <p>
 `Blob$I ~objは、`直列化可能$である。
 `Blob$I ~interfaceは、 `Serializable$xA `拡張属性$で注釈され~MUST。
+◎
+Blob objects are serializable objects. The Blob interface must be annotated with the [Serializable] extended attribute. Their serialization steps, given value and serialized, are:
+</p>
+
+<p>
 その`直列化~手続き$は、所与の
 ( %値, %直列形 )
 に対し，次を走らす：
 ◎
-Blob objects are serializable objects. The Blob interface must be annotated with the [Serializable] extended attribute. Their serialization steps, given value and serialized, are:
-</p>
+↑</p>
 
 <ol>
 	<li>
@@ -3028,12 +3035,16 @@ Set value's underlying byte sequence to serialized.[[ByteSequence]].
 <p>
 `File$I ~objは、`直列化可能$である。
 `File$I ~interfaceは、 `Serializable$xA `拡張属性$で注釈され~MUST。
+◎
+File objects are serializable objects. The File interface must be annotated with the [Serializable] extended attribute. Their serialization steps, given value and serialized, are:
+</p>
+
+<p>
 その`直列化~手続き$は、所与の
 ( %値, %直列形 )
 に対し，次を走らす：
 ◎
-File objects are serializable objects. The File interface must be annotated with the [Serializable] extended attribute. Their serialization steps, given value and serialized, are:
-</p>
+↑</p>
 
 <ol>
 	<li>
@@ -3095,12 +3106,16 @@ Initialize the value of value's lastModified attribute to serialized.[[LastModif
 <p>
 `FileList$I ~objは`直列化可能$である。
 `FileList$I ~interfaceは `Serializable$xA `拡張属性$で注釈され~MUST。
+◎
+FileList objects are serializable objects. The FileList interface must be annotated with the [Serializable] extended attribute. Their serialization steps, given value and serialized, are:
+</p>
+
+<p>
 その`直列化~手続き$は、所与の
 ( %値, %直列形 )
 に対し，次を走らす：
 ◎
-FileList objects are serializable objects. The FileList interface must be annotated with the [Serializable] extended attribute. Their serialization steps, given value and serialized, are:
-</p>
+↑</p>
 
 <ol>
 	<li>
