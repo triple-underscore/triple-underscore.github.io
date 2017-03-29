@@ -586,6 +586,7 @@ refactoring::::リファクタリング
 意味-:mean:~
 尊重-:respect:~
 予期-:expect:~
+	不意に:unexpectedly
 順守-:obey:~
 意図的:intentional:~
 	意図-:intend:~
@@ -1010,6 +1011,7 @@ archive::::アーカイブ
 binary::::バイナリ
 bitmap::::ビットマップ
 cache:::::キャッシュ
+clean:
 code::::コード
 console::::コンソール
 data::::データ
@@ -1667,7 +1669,7 @@ code {
 ></a>
 	<hgroup>
 <h1 id="title">Streams</h1>
-<h2>Living Standard — 最終更新 2017 年 3 月 28 日</h2>
+<h2>Living Standard — 最終更新 2017 年 3 月 29 日</h2>
 	</hgroup>
 <dl>
 	<dt>Participate:</dt>
@@ -1682,7 +1684,7 @@ code {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a></dd>
-	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/830c24e023d24b353afe755aba47e5c67ad5cf5c" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/3b8099a3ca07ec4b1cf928e067734b8fa1e4e6e4" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/streamsstandard">@streamsstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -14096,10 +14098,15 @@ function makeWritableWebSocketStream(%url, %protocols) {
 
   return new WritableStream({
     start(%controller) {
+
       %ws.onerror = () =&gt; {
-          %controller.error(new Error("WebSocket に~errorが生じました"));
+        %controller.error(new Error(`WebSocket に~errorが生じました^l));
+        %ws.onclose = null;
+      };
+      %ws.onclose = () =&gt; {
+        %controller.error(new Error(`接続は不意に~serverにより~closeされました^l));
       }
-      return new Promise(%resolve => %ws.onopen = %resolve);
+      return new Promise(%resolve =&gt; %ws.onopen = %resolve);
     },
 
     write(%chunk) {
@@ -14113,22 +14120,33 @@ Return immediately, since the web socket gives us no easy way to tell when the w
     },
 
     close() {
-      return new Promise((%resolve, %reject) =&gt; {
-        %ws.onclose = %resolve;
-        %ws.close(1000);
+      return closeWS(1000);
       });
     },
 
     abort(%reason) {
-      return new Promise((%resolve, %reject) => {
-        %ws.onclose = %resolve;
-        %ws.close(4000, %reason && %reason.message);
-      });
+      return closeWS(4000, %reason && %reason.message);
     }
   });
+
+  function closeWS(%code, %reasonString) {
+    return new Promise((%resolve, %reject) =&gt; {
+      %ws.onclose = %e =&gt; {
+        if (%e.wasClean) {
+          %resolve();
+        } else {
+          %reject(new Error(`接続は~cleanに~closeされませんでした^l));
+        }
+      };
+      %ws.close(%code, %reasonString);
+    });
+  }
 }
 </pre>
-
+<!-- 
+The server closed the connection unexpectedly
+The connection was not closed cleanly
+-->
 
 <p>
 この関数を利用すれば、~web~socketに対する可書~streamを作成して，任意の可読~streamをそれに~pipeできるようになる：
@@ -14314,8 +14332,12 @@ class WebSocketSink {
   }
 
   start(%controller) {
+    this._ws.onclose = () =&gt; {
+      %controller.error(new Error(`接続は不意に~serverにより~closeされました^l));
+    }
     this._ws.addEventListener(`error^l, () =&gt; {
       %controller.error(new Error(`WebSocket に~errorが生じました^l));
+      this._ws.onclose = null;
     });
 
     return new Promise(%resolve =&gt; this._ws.onopen = %resolve);
@@ -14326,16 +14348,23 @@ class WebSocketSink {
   }
 
   close() {
-    return new Promise((%resolve, %reject) =&gt; {
-      this._ws.onclose = %resolve;
-      this._ws.close();
-    });
+    return this._closeWS(1000);
   }
 
   abort(%reason) {
-    return new Promise((%resolve, %reject) => {
-      %ws.onclose = %resolve;
-      %ws.close(4000, %reason && %reason.message);
+    return this._closeWS(4000, %reason &amp;&amp; %reason.message);
+  }
+
+  _closeWS(%code, %reason) {
+    return new Promise((%resolve, %reject) =&gt; {
+      this._ws.onclose = %e =&gt; {
+        if (%e.wasClean) {
+          %resolve();
+        } else {
+          %reject(new Error(`接続は~cleanに~closeされませんでした^l));
+        }
+      };
+      this._ws.close(code, reasonString);
     });
   }
 }
