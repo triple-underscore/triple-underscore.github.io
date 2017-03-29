@@ -490,6 +490,7 @@ care::::ケア
 待入れる:enqueue する::待ち行列に入れる::エンキューする
 待入れら:enqueue さ::待ち行列に入れら::エンキューさ
 極小task:microtask::極小 task:極小タスク:マイクロタスク
+checkpoint:
 
 
 昇格:upgrade::~::アップグレード
@@ -645,6 +646,7 @@ catch:
 渡され:pass され:~
 改変-:modify:~
 起動-:initiate:~
+包装-:wrap:~
 	早退-:bail out 〜 early
 	含-:include:~
 	含めて:including:~
@@ -955,8 +957,8 @@ I.Window:~BROWSERS#window
 I.HTMLInputElement:~HEinput#htmlinputelement
 I.HTMLLinkElement:~HEmetadata#htmllinkelement
 I.ShadowRoot:~DOM4#interface-shadowroot
-
-c.Function:~WEBIDL#Function
+I.Function:~WEBIDL#Function
+	＊？#common-Function
 
 	●m
 m.createElement:~DOM4#dom-document-createelement
@@ -996,7 +998,6 @@ et.click:~UIEVENTS#event-type-click
 et.keydown:~UIEVENTS#event-type-keydown
 
 	●jA
-jA.Construct:~TC39#sec-construct
 jA.Get:~TC39#sec-get-o-p
 jA.Type:~TC39#sec-ecmascript-data-types-and-values
 jA.IsConstructor:~TC39#sec-isconstructor
@@ -1113,6 +1114,7 @@ A.付加-:~DOM4#concept-element-attributes-append
 例外を報告する:~WAPI#report-the-exception
 関連する大域~obj:~WAPI#concept-relevant-global
 極小taskを待入する:~WAPI#queue-a-microtask
+極小task~checkpoint:~WAPI#perform-a-microtask-checkpoint
 
 ~focus可能:~HTMLinteraction#focusable-area
 ~form提出:~HTMLforms#concept-form-submit
@@ -1127,7 +1129,8 @@ A.付加-:~DOM4#concept-element-attributes-append
 編集可能:https://w3c.github.io/editing/execCommand.html#editable
 
 ~callback this 値:~WEBIDL#dfn-callback-this-value
-呼出す:~WEBIDL#es-invoking-callback-functions
+~callback関数で構築-:~WEBIDL#construct-a-callback-function
+~callback関数を呼出す:~WEBIDL#es-invoking-callback-functions
 に変換-:~WEBIDL#es-type-mapping
 拡張属性:~WEBIDL#dfn-extended-attribute
 
@@ -1217,7 +1220,7 @@ code.ABNF {
 </p>
 
 <p>
-更新： <time>2017-02-23</time>
+更新： <time>2017-03-29</time>
 （公開：<time>2016-05-04</time> ）
 </p>
 
@@ -1239,7 +1242,7 @@ code.ABNF {
 
 	<hgroup>
 <h1>カスタム要素 — Custom elements</h1>
-<h2>HTML Living Standard — 最終更新 2017 年 2 月 22 日</h2>
+<h2>HTML Living Standard — 最終更新 2017 年 3 月 28 日</h2>
 	</hgroup>
 </header>
 
@@ -1920,8 +1923,10 @@ In general, the constructor should be used to set up initial state and default v
 直接的／間接的
 に検査される。
 要件に従わない場合、~custom要素は，構文解析器や~DOM~APIにより~instance化できなくなる。
+このことは、構築子から起動される極小taskの内側で行われる仕事にも該当する
+— `極小task~checkpoint$は、構築の直後から生じれるので。
 ◎
-Several of these requirements are checked during element creation, either directly or indirectly, and failing to follow them will result in a custom element that cannot be instantiated by the parser or DOM APIs.
+Several of these requirements are checked during element creation, either directly or indirectly, and failing to follow them will result in a custom element that cannot be instantiated by the parser or DOM APIs. This is true even if the work is done inside a constructor-initiated microtask, as a microtask checkpoint can occur immediately after construction.
 </p>
 
 
@@ -2187,7 +2192,7 @@ A custom element definition describes a custom element and consists of:
 ◎
 A name
 </dt>
-  	<dd>
+	<dd>
 `妥当な~custom要素~名$
 ◎
 A valid custom element name
@@ -2198,7 +2203,7 @@ A valid custom element name
 ◎
 A local name
 </dt>
-  	<dd>
+	<dd>
 局所~名
 ◎
 A local name
@@ -2209,9 +2214,10 @@ A local name
 ◎
 A constructor
 </dt>
-  	<dd>
-`~custom要素~構築子$
+	<dd>
+`~custom要素~構築子$を包装する，~Web~IDL `Function$I ~callback関数~型の値
 ◎
+A Web IDL Function callback function type value wrapping the custom element constructor
 A custom element constructor
 </dd>
 	<dt>
@@ -2219,7 +2225,7 @@ A custom element constructor
 ◎
 A list of observed attributes
 </dt>
-  	<dd>
+	<dd>
 `sequence&lt;DOMString&gt;^jc 型~値
 ◎
 A sequence&lt;DOMString&gt;
@@ -2235,7 +2241,7 @@ A collection of lifecycle callbacks
 </dt>
 	  <dd>
 次の 4 個の~keyを伴い，いずれの~keyに対応する値も［
-~NULL （既定~値）, Web IDL `Function$c ~callback関数~型の値
+~NULL （既定~値）, ~Web~IDL `Function$I ~callback関数~型の値
 ］のいずれかをとるような，~map
 ⇒
 `connectedCallback^l,
@@ -2256,7 +2262,7 @@ A map, whose four keys are the strings "connectedCallback", "disconnectedCallbac
 ◎
 A construction stack
 </dt>
-  	<dd>
+	<dd>
 初期~時は空~list。
 この~listは、`要素を昇格$する~algo, および
 `~HTML要素~構築子$により操作される。
@@ -2429,7 +2435,7 @@ Defines a new custom element, mapping the given name to the given constructor as
 </dd>
 
 	<dt>%window . `customElements$m . `define$m(%name, %constructor, { extends: %baseLocalName })</dt>
-  	<dd>
+	<dd>
 `名前$cD %name の新たな`~custom要素$
 — `~custom化された組込みの要素$ —
 を定義する。
@@ -2453,7 +2459,7 @@ Retrieves the custom element constructor defined for the given name. Returns und
 </dd>
 
 	<dt>%window . `customElements$m . `whenDefined(name)$m</dt>
-  	<dd>
+	<dd>
 所与の`名前$cD（ %name ）の`~custom要素$が`定義済み$になったとき充足されることになる，~promiseを返す（すでに定義済みであれば、充足-済みの~promiseが即時に返されることになる）。
 %name が`妥当な~custom要素~名$でない場合、
 `SyntaxError$E で`却下された~promise$を返す。
@@ -2640,7 +2646,7 @@ Let callbackValue be Get(prototype, callbackName). Rethrow any exceptions.
 ］
 ⇒
 %lifecycleCallbacks の~key %~callback名 に対応する値 ~SET
-%~callback値 を Web IDL `Function$c ~callback型`に変換-$した結果
+%~callback値 を~Web~IDL `Function$I ~callback型`に変換-$した結果
 （例外投出あり）
 ◎
 If callbackValue is not undefined, then set the value of the entry in lifecycleCallbacks with key callbackName to the result of converting callbackValue to the Web IDL Function callback type. Rethrow any exceptions from the conversion.
@@ -3057,9 +3063,11 @@ Run the following substeps while catching any exceptions:
 		<ol>
 			<li>
 <p>
-%構築-結果 ~LET `Construct$jA( %C )
+%構築-結果 ~LET
+( %C, 空の引数~list )
+を与える下で，`~callback関数で構築-$した結果
 ◎
-Let constructResult be Construct(C).
+Let constructResult be the result of constructing C, with no arguments.
 </p>
 
 <p class="note">
@@ -3619,7 +3627,7 @@ Remove the first element of reactions, and let reaction be that element. Switch 
 
 <dl class="switch">
 	<dt>`昇格~反応$</dt>
-  	<dd>
+	<dd>
 次を与える下で，`要素を昇格$する
 ⇒
 ( %反応 の`~custom要素~定義$, %要素 )
@@ -3628,11 +3636,11 @@ Upgrade element using reaction's custom element definition.
 </dd>
 
 	<dt>`~callback反応$</dt>
-  	<dd>
-次を与える下で， %反応 の~callback関数を`呼出す$
+	<dd>
+次を与える下で， %反応 の`~callback関数を呼出す$
 ⇒
-`~callback this 値$： %要素,<br>
-引数~list： %反応 の引数~list
+引数~list： %反応 の引数~list,<br>
+`~callback this 値$： %要素
 ◎
 Invoke reaction's callback function with reaction's arguments, and with element as the callback this value.
 </dd>
@@ -3708,7 +3716,7 @@ Operations, attributes, setters, or deleters annotated with the [CEReactions] ex
 ◎
 Before executing the listed actions
 </dt>
-  	<dd>
+	<dd>
 `~custom要素~反応たちの~stack$に新たな`要素~待行列$を~pushする
 ◎
 Push a new element queue onto the custom element reactions stack.
@@ -3719,7 +3727,7 @@ Push a new element queue onto the custom element reactions stack.
 ◎
 After executing the listed actions
 </dt>
-  	<dd>
+	<dd>
 `~custom要素~反応たちの~stack$から`要素~待行列$を~popした上で、~popされた待行列~内の`~custom要素~反応たちを呼出す$
 ◎
 Pop the element queue from the custom element reactions stack, and invoke custom element reactions in that queue.
