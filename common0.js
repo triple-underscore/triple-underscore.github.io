@@ -876,6 +876,7 @@ HEgrouping:HTML-grouping-ja.html\n\
 HEedits:HTML-edits-ja.html\n\
 HEimages:HTML-images-ja.html\n\
 HEembed:HTML-embed-ja.html\n\
+HEmedia:HTML-media-ja.html\n\
 HEcustom:HTML-custom-ja.html\n\
 HEtextlevel:HTML-text-level-ja.html\n\
 HEsections:HTML-sections-ja.html\n\
