@@ -1644,7 +1644,7 @@ code {
 </p>
 
 <p>
-更新：<time>2017-04-06</time>
+更新：<time>2017-04-07</time>
 （公開：<time>2015-01-19</time> ）
 </p>
 
@@ -1673,7 +1673,7 @@ code {
 ></a>
 	<hgroup>
 <h1 id="title">Streams</h1>
-<h2>Living Standard — 最終更新 2017 年 4 月 5 日</h2>
+<h2>Living Standard — 最終更新 2017 年 4 月 6 日</h2>
 	</hgroup>
 <dl>
 	<dt>Participate:</dt>
@@ -1688,7 +1688,7 @@ code {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a></dd>
-	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/c34a8545bade2db29a6bbddefb73f1b0d740be9e" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/8597d3c68c7dc4352e344fb7e4f01d4596124d44" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/streamsstandard">@streamsstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -3208,18 +3208,15 @@ An implementation that waits for each write to successfully complete before proc
 				</ul>
 			</li>
 			<li>
-<strong>~shutdownは、すべての活動を停止させ~MUST</strong>
-— %shuttingDown が ~true になって以降は、~UAは，それ以上［
-%reader からの読取 ／ %writer への書込
-］を起動しては~MUST_NOT（進行中の 読取／書込 は、終えてよい）。
+<strong>~shutdownは、活動を停止させ~MUST</strong>
+— %shuttingDown が ~true になって以降は、~UAは，それ以上 %reader からの読取を起動しては~MUST_NOT。
+また、以下に述べるように，すでに読取された~chunkの書込のみを遂行し~MUST。
 特に，~UAは、［
-~this.[[state]], および %dest.[[state]]
-］上で［
 読取／書込
 ］を遂行する前に，以下の条件を検査し~MUST
 — それらは、即時に~shutdownに至らせることもあるので。
 ◎
-Shutdown must stop all activity: if shuttingDown becomes true, the user agent must not initiate further reads from reader or writes to writer. (Ongoing reads and writes may finish.) In particular, the user agent must check the below conditions on this.[[state]] and dest.[[state]] before performing any reads or writes, since they might lead to immediate shutdown.
+Shutdown must stop activity: if shuttingDown becomes true, the user agent must not initiate further reads from reader, and must only perform writes of already-read chunks, as described below. In particular, the user agent must check the below conditions before performing any reads or writes, since they might lead to immediate shutdown.
 </li>
 			<li>
 <p>
@@ -3323,6 +3320,14 @@ Closing must be propagated backward: if ! WritableStreamCloseQueuedOrInFlight(de
 </p>
 				<ol>
 					<li>
+~Assert：
+［
+読取した／書込した
+］`~chunk$はない
+◎
+Assert: no chunks have been read or written.
+</li>
+					<li>
 %destClosed ~LET 新たな `TypeError^b
 ◎
 Let destClosed be a new TypeError.
@@ -3360,6 +3365,33 @@ Shutdown with an action: if any of the above requirements ask to shutdown with a
 </p>
 				<ol>
 					<li>
+<p>
+~IF［
+%dest.[[state]] ~EQ `writable^l
+］~AND［
+! `WritableStreamCloseQueuedOrInFlight$A( %dest ) ~EQ ~false
+］：
+◎
+If dest.[[state]] is "writable" and ! WritableStreamCloseQueuedOrInFlight(dest) is false,
+</p>
+						<ol>
+							<li>
+~IF［
+読取されたがまだ書込されていない`~chunk$はある
+］
+⇒
+それらを %dest に書込する
+◎
+If any chunks have been read but not yet written, write them to dest.
+</li>
+							<li>
+読取されたすべての`~chunk$が書込されるまで（すなわち，対応する~promiseは決着するまで）待機する
+◎
+Wait until every chunk that has been read has been written (i.e. the corresponding promises have settled).
+</li>
+						</ol>
+					</li>
+					<li>
 ~IF
 %shuttingDown ~EQ ~true
 ⇒
@@ -3371,11 +3403,6 @@ If shuttingDown is true, abort these substeps.
 %shuttingDown ~SET ~true
 ◎
 Set shuttingDown to true.
-</li>
-					<li>
-進行中の書込があれば，それが終わるまで（すなわち，対応する~promiseが決着するまで）待機する。
-◎
-Wait until any ongoing write finishes (i.e. the corresponding promises settle).
 </li>
 					<li>
 <p>
@@ -3421,9 +3448,12 @@ Upon rejection of p with reason newError, finalize with newError.
 </p>
 <span lang="en" style="white-space:pre-line">
 Shutdown: if any of the above requirements or steps ask to shutdown, optionally with an error error, then:
+
+• If dest.[[state]] is "writable" and ! WritableStreamCloseQueuedOrInFlight(dest) is false,
+•• If any chunks have been read but not yet written, write them to dest.
+•• Wait until every chunk that has been read has been written (i.e. the corresponding promises have settled).
 • If shuttingDown is true, abort these substeps.
 • Set shuttingDown to true.
-• Wait until any ongoing write finishes (i.e. the corresponding promises settle).
 • Finalize, passing along error if it was given.
 </span>
 </div>
@@ -9461,19 +9491,19 @@ writeArrayToStream([1, 2, 3, 4, 5], %writableStream)
 <div class="example" id="example-manual-write-with-error-handling">
 
 <p>
-これまでの例では、その `close()$dw ~methodから返された~promiseを見ることで，~stream全体の成功か失敗かについてのみに注目していた。
-その~promise（ `closed$dw 取得子を利用して~accessすることもできる）は、~streamにて
+これまでの例では、書込器（ %writer ）の `close()$dw ~methodから返された~promiseを見ることで，~stream全体の成功か失敗かについてのみに注目していた。
+その~promiseは、~streamにて
 — その初期化-時, それへの書込み時, その~close時にて —
 何らかの不具合が生じたときに却下されることになり、また，~streamが成功裡に~closeされたなら 充足されることになる。
 多くの場合、これについて~careしておけば済む。
 ◎
-In the previous example we only paid attention to the success or failure of the entire stream, by looking at the promise returned by its close() method. That promise (which can also be accessed using the closed getter) will reject if anything goes wrong with the stream—initializing it, writing to it, or closing it. And it will fulfill once the stream is successfully closed. Often this is all you care about.
+In the previous example we only paid attention to the success or failure of the entire stream, by looking at the promise returned by the writer’s close() method. That promise will reject if anything goes wrong with the stream—initializing it, writing to it, or closing it. And it will fulfill once the stream is successfully closed. Often this is all you care about. 
 </p>
 
 <p>
-が、特定の`~chunk$に対し，書込みの成功について~careする場合は、~streamの `write()$dw ~methodから返される~promiseを利用できる：
+が、特定の`~chunk$に対し，書込みの成功について~careする場合は、書込器の `write()$dw ~methodから返される~promiseを利用できる：
 ◎
-However, if you care about the success of writing a specific chunk, you can use the promise returned by the stream’s write() method:
+However, if you care about the success of writing a specific chunk, you can use the promise returned by the writer’s write() method:
 </p>
 
 
@@ -11446,9 +11476,8 @@ The close method will close the associated writable stream. The underlying sink 
 この~methodは、~promiseを返す
 — それは、残りの`~chunk$すべてが成功裡に書込され，~stream成功裡に~closeしたなら，~undefined で充足される。
 この処理の間に~errorに遭遇した場合は却下される。
-（これは `closed$dw から返されるものと同じ~promiseになる。）
 ◎
-The method returns a promise that is fulfilled with undefined if all remaining chunks are successfully written and the stream successfully closes, or rejects if an error is encountered during this process. (This is the same promise as is returned by closed.)
+The method returns a promise that is fulfilled with undefined if all remaining chunks are successfully written and the stream successfully closes, or rejects if an error is encountered during this process.
 </p>
 
 </div>
