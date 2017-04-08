@@ -2298,8 +2298,8 @@ stateless::::ステートレス\n\
 維持-:retain:~\n\
 維持させ:sustain し:~\n\
 	維持し:retain し:~\n\
-維持管理-:maintain:~\n\
-維持管理:maintenance:~\n\
+保守-:maintain:~\n\
+保守:maintenance:~\n\
 網羅的:exhaustive:~\n\
 総集的:collective:~\n\
 	総:total:~\n\
