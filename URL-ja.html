@@ -56,7 +56,6 @@ function expand(mapping1){
 		V: 'var',
 		U: 'span',
 		X: 'span',
-		lb: 'i',
 		i: 'i',
 	};
 
@@ -264,11 +263,6 @@ sT.不透明な~host＆~port:#opaque-host-and-port-string
 ~IPv6直列化器:#concept-ipv6-serializer
 V.~piece:#ipv6piece
 
-
-	GOTO label
-lb.Main:#concept-ipv6-parser-main
-lb.IPv4:#concept-ipv6-parser-ipv4
-lb.Finale:#concept-ipv6-parser-finale
 
 	• URL
 ~URL:#concept-url
@@ -997,7 +991,7 @@ code > dfn {
 </p>
 
 <p>
-更新： <time>2017-04-08</time>
+更新： <time>2017-04-12</time>
 （公開： <time>2012-10-20</time>）
 </p>
 
@@ -1029,7 +1023,7 @@ code > dfn {
 
 	<hgroup>
 <h1>URL</h1>
-<h2>Living Standard — 最終更新 2017 年 4 月 7 日</h2>
+<h2>Living Standard — 最終更新 2017 年 4 月 11 日</h2>
 	</hgroup>
 
 <dl>
@@ -1039,7 +1033,7 @@ code > dfn {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/url/commits">https://github.com/whatwg/url/commits</a></dd>
-	<dd><a href="https://url.spec.whatwg.org/commit-snapshots/4a4c55959bec4f091373723bd0d507432d4b3dac/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://url.spec.whatwg.org/commit-snapshots/703fcd0b92053345582a36b2e4a642ab65df076e/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/urlstandard">@urlstandard</a></dd>
 
 	<dt>Tests:</dt>
@@ -2460,13 +2454,13 @@ Increase piece pointer by one and then set compress pointer to piece pointer.
 </li>
 		</ol>
 	</li>
-	<li>`Main@lb：
+	<li>
 <p>
 ~WHILE ［
 `C$V ~NEQ `EOF$i
 ］：
 ◎
-Main: while c is not the EOF code point:
+While c is not the EOF code point:
 </p>
 		<ol>
 			<li>
@@ -2502,19 +2496,18 @@ If compress pointer is non-null, validation error, return failure.
 %~piece~pointer ~INCBY 1 ~BR
 %~pointer ~INCBY 1 ~BR
 %圧縮~pointer ~SET %~piece~pointer ~BR
-~GOTO `Main$lb
+~CONTINUE
 ◎
-Increase pointer and piece pointer by one, set compress pointer to piece pointer, and then jump to Main.
+Increase pointer and piece pointer by one, set compress pointer to piece pointer, and then continue.
 </li>
 				</ol>
 			</li>
 			<li>
-%値 ~LET 0 ~BR
-%長th ~LET 0
+( %値, %長th ) ~LET ( 0, 0 )
 ◎
 Let value and length be 0.
 </li>
-	<li>
+			<li>
 ~WHILE ［
 %長th ~LT 4
 ］~AND［
@@ -2530,15 +2523,14 @@ While length is less than 4 and c is an ASCII hex digit, set value to value × 0
 </li>
 			<li>
 <p>
-`C$V に応じて：
+~IF［
+`C$V ~EQ ❝.
+］：
 ◎
-Switching on c:
+If c is U+002E (.), then:
 </p>
-				<dl class="switch">
-					<dt>❝.</dt>
-					<dd>
-						<ol>
-							<li>
+				<ol>
+					<li>
 ~IF［
 %長th ~EQ 0
 ］
@@ -2548,28 +2540,190 @@ Switching on c:
 ◎
 If length is 0, validation error, return failure.
 </li>
-							<li>
+					<li>
 %~pointer ~DECBY %長th
 ◎
 Decrease pointer by length.
 </li>
-							<li>
-~GOTO `IPv4$lb
+					<li>
+~IF［
+%~piece~pointer ~GT 6
+］
+⇒
+`検証~error$ ~BR
+~RET `失敗^i
 ◎
-Jump to IPv4.
+If piece pointer is greater than six, validation error, return failure.
 </li>
-							</ol>
-					</dd>
-
-					<dt>❝:</dt>
-					<dd>
+					<li>
+%ipv4個数 ~LET 0
+◎
+Let numbersSeen be 0.
+</li>
+					<li>
+<p>
+~WHILE ［
+`C$V ~NEQ `EOF$i
+］：
+◎
+While c is not the EOF code point:
+</p>
 						<ol>
 							<li>
+%ipv4片 ~LET ~NULL
+◎
+Let ipv4Piece be null.
+</li>
+							<li>
+<p>
+~IF［
+%ipv4個数 ~GT 0
+］：
+◎
+If numbersSeen is greater than 0, then:
+</p>
+								<ol>
+									<li>
+~IF［
+`C$V ~EQ ❝.
+］~AND［
+%ipv4個数 ~LT 4
+］
+⇒
+%~pointer ~INCBY 1
+◎
+If c is a U+002E (.) and numbersSeen is less than 4, then increase pointer by one.
+</li>
+									<li>
+~ELSE
+⇒
+`検証~error$ ~BR
+~RET `失敗^i
+◎
+Otherwise, validation error, return failure.
+</li>
+								</ol>
+							</li>
+							<li>
+~IF［
+`C$V ~NIN `~ASCII数字$
+］
+⇒
+`検証~error$ ~BR
+~RET `失敗^i
+<!-- prevent the empty string -->
+◎
+If c is not an ASCII digit, validation error, return failure.
+</li>
+							<li>
+<p>
+~WHILE ［
+`C$V ~IN `~ASCII数字$
+］：
+◎
+While c is an ASCII digit:
+</p>
+								<ol>
+									<li>
+~IF［
+%ipv4片 ~EQ 0
+］
+⇒
+`検証~error$ ~BR
+~RET `失敗^i
+◎
+Let number be c interpreted as decimal number.
+◎
+If ipv4Piece is null, then set ipv4Piece to number.
+◎
+Otherwise, if ipv4Piece is 0, validation error, return failure.
+</li>
+									<li>
+~IF［
+%ipv4片 ~EQ ~NULL
+］
+⇒
+%ipv4片 ~SET 0
+◎
+↑</li>
+									<li>
+%ipv4片 ~SET %ipv4片 ~MUL 10 + ［
+`C$V を 10 進数として解釈した値
+］
+◎
+Otherwise, set ipv4Piece to ipv4Piece × 10 + number.
+</li>
+									<li>
 %~pointer ~INCBY 1
 ◎
 Increase pointer by one.
 </li>
+									<li>
+~IF［
+%ipv4片 ~GT 255
+］
+⇒
+`検証~error$ ~BR
+~RET `失敗^i
+◎
+If ipv4Piece is greater than 255, validation error, return failure.
+</li>
+								</ol>
 							<li>
+`~piece$V ~SET `~piece$V ~MUL `100^X ~PLUS %ipv4片
+◎
+Set piece to piece × 0x100 + ipv4Piece.
+</li>
+							<li>
+%ipv4個数 ~INCBY 1
+◎
+Increase numbersSeen by one.
+</li>
+							<li>
+~IF［
+%ipv4個数 ~IN { 2, 4 }
+］
+⇒
+%~piece~pointer ~INCBY 1
+◎
+If numbersSeen is 2 or 4, then increase piece pointer by one.
+</li>
+							<li>
+~IF［
+`C$V ~EQ `EOF$i
+］~AND［
+%ipv4個数 ~NEQ 4
+］
+⇒
+`検証~error$ ~BR
+~RET `失敗^i
+◎
+If c is the EOF code point and numbersSeen is not 4, validation error, return failure.
+</li>
+						</ol>
+					</li>
+					<li>
+~BREAK
+◎
+Break.
+</li>
+				</ol>
+			</li>
+			<li>
+<p>
+~ELIF［
+`C$V ~EQ ❝:
+］：
+◎
+Otherwise, if c is U+003A (:):
+</p>
+				<ol>
+					<li>
+%~pointer ~INCBY 1
+◎
+Increase pointer by one.
+</li>
+					<li>
 ~IF［
 `C$V ~EQ `EOF$i
 ］
@@ -2579,19 +2733,18 @@ Increase pointer by one.
 ◎
 If c is the EOF code point, validation error, return failure.
 </li>
-						</ol>
-					</dd>
-
-					<dt>`EOF$i 以外◎Anything but the EOF code point</dt>
-					<dd>
+				</ol>
+			</li>
+			<li>
+~ELIF［
+`C$V ~NEQ `EOF$i
+］
+⇒
 `検証~error$ ~BR
 ~RET `失敗^i
 ◎
-Validation error, return failure.
-</dd>
-				</dl>
-
-			</li>
+Otherwise, if c is not the EOF code point, validation error, return failure.
+</li>
 			<li>
 `~piece$V ~SET %値
 ◎
@@ -2605,180 +2758,12 @@ Increase piece pointer by one.
 		</ol>
 	</li>
 	<li>
-~IF［
-`C$V ~EQ `EOF$i
-］
-⇒
-~GOTO `Finale$lb
-◎
-If c is the EOF code point, jump to Finale.
-</li>
-	<li>`IPv4@lb：
-<p>
-~IF［
-%~piece~pointer ~GT 6
-］
-⇒
-`検証~error$ ~BR
-~RET `失敗^i
-◎
-IPv4: if piece pointer is greater than six, validation error, return failure.
-</p></li>
-	<li>
-%数字列~数 ~LET 0
-◎
-Let numbersSeen be 0.
-</li>
-	<li>
-<p>
-~WHILE ［
-`C$V ~NEQ `EOF$i
-］：
-◎
-While c is not the EOF code point:
-</p>
-		<ol>
-			<li>
-%値 ~LET ~NULL
-◎
-Let value be null.
-</li>
-			<li>
-<p>
-~IF［
-%数字列~数 ~GT 0
-］：
-◎
-If numbersSeen is greater than 0, then:
-</p>
-				<ol>
-					<li>
-~IF［
-`C$V ~EQ ❝.
-］~AND［
-%数字列~数 ~LT 4
-］
-⇒
-%~pointer ~INCBY 1
-◎
-If c is a U+002E (.) and numbersSeen is less than 4, then increase pointer by one.
-</li>
-					<li>
-~ELSE
-⇒
-`検証~error$ ~BR
-~RET `失敗^i
-◎
-Otherwise, validation error, return failure.
-</li>
-				</ol>
-			</li>
-			<li>
-~IF［
-`C$V ~NIN `~ASCII数字$
-］
-⇒
-`検証~error$ ~BR
-~RET `失敗^i
-<!-- prevent the empty string -->
-◎
-If c is not an ASCII digit, validation error, return failure.
-</li>
-			<li>
-<p>
-~WHILE ［
-`C$V ~IN `~ASCII数字$
-］：
-◎
-While c is an ASCII digit:
-</p>
-				<ol>
-					<li>
-~IF［
-%値 ~EQ 0
-］
-⇒
-`検証~error$ ~BR
-~RET `失敗^i
-◎
-Let number be c interpreted as decimal number.
-◎
-If value is null, set value to number.
-◎
-Otherwise, if value is 0, validation error, return failure.
-</li>
-					<li>
-~IF［
-%値 ~EQ ~NULL
-］
-⇒
-%値 ~SET 0
-◎
-↑</li>
-					<li>
-%値 ~SET %値 ~MUL 10 + ［
-`C$V を 10 進数として解釈した値
-］
-◎
-Otherwise, set value to value × 10 + number.
-</li>
-					<li>
-%~pointer ~INCBY 1
-◎
-Increase pointer by one.
-</li>
-					<li>
-~IF［
-%値 ~GT 255
-］
-⇒
-`検証~error$ ~BR
-~RET `失敗^i
-◎
-If value is greater than 255, validation error, return failure.
-</li>
-				</ol>
-			</li>
-			<li>
-`~piece$V ~SET `~piece$V ~MUL `100^X ~PLUS %値
-◎
-Set piece to piece × 0x100 + value.
-</li>
-			<li>
-%数字列~数 ~INCBY 1
-◎
-Increase numbersSeen by one.
-</li>
-			<li>
-~IF［
-%数字列~数 ~IN { 2, 4 }
-］
-⇒
-%~piece~pointer ~INCBY 1
-◎
-If numbersSeen is 2 or 4, then increase piece pointer by one.
-</li>
-			<li>
-~IF［
-`C$V ~EQ `EOF$i
-］~AND［
-%~数字列~数 ~NEQ 4
-］
-⇒
-`検証~error$ ~BR
-~RET `失敗^i
-◎
-If c is the EOF code point and numbersSeen is not 4, validation error, return failure.
-</li>
-		</ol>
-	</li>
-	<li>`Finale@lb：
 <p>
 ~IF［
 %圧縮~pointer ~NEQ ~NULL
 ］：
 ◎
-Finale: if compress pointer is non-null, then:
+If compress pointer is non-null, then:
 </p>
 		<ol>
 			<li>
@@ -2805,7 +2790,6 @@ Set piece pointer to seven.
 While piece pointer is not zero and swaps is greater than zero, swap piece with the piece at pointer compress pointer + swaps − 1, and then decrease both piece pointer and swaps by one.
 </li>
 		</ol>
-
 	</li>
 	<li>
 ~ELIF［
@@ -2825,15 +2809,6 @@ Otherwise, if compress pointer is null and piece pointer is not eight, validatio
 Return address.
 </li>
 </ol>
-
-
-<p class="note">注記：
-念のため —
-`Main$lb, `IPv4$lb, `Finale$lb
-は、~algoのジャンプ先を記すものであり，それ以外の目的は無い。
-◎
-To be clear, Main, IPv4, and Finale are markers. They serve no purpose other than being a location the algorithm can jump to.
-</p>
 
 <hr>
 
