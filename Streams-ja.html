@@ -1643,7 +1643,7 @@ code {
 </p>
 
 <p>
-更新：<time>2017-04-07</time>
+更新：<time>2017-04-14</time>
 （公開：<time>2015-01-19</time> ）
 </p>
 
@@ -1672,7 +1672,7 @@ code {
 ></a>
 	<hgroup>
 <h1 id="title">Streams</h1>
-<h2>Living Standard — 最終更新 2017 年 4 月 6 日</h2>
+<h2>Living Standard — 最終更新 2017 年 4 月 13 日</h2>
 	</hgroup>
 <dl>
 	<dt>Participate:</dt>
@@ -1687,7 +1687,7 @@ code {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a></dd>
-	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/8597d3c68c7dc4352e344fb7e4f01d4596124d44" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://streams.spec.whatwg.org/commit-snapshots/e7bf9293d3e0b26f9221dada3723e31707db8c32" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/streamsstandard">@streamsstandard</a></dd>
 
 	<dt>各国語翻訳（非規範的）</dt>
@@ -9738,7 +9738,7 @@ start(controller) is called immediately, and can perform any actions necessary t
 write(chunk, controller) is called when a new chunk of data is ready to be written to the underlying sink. It can return a promise to signal success or failure of the write operation. The stream implementation guarantees that this method will be called only after previous writes have succeeded, and never after close or abort is called.
 </li>
 	<li>
-`close(controller)^c は、`生産器$が［
+`close()^c は、`生産器$が［
 自身による，一連の`~chunk$の~streamへの書込みを終え，
 ~queue-upされたすべての書込が成功裡に完了した
 ］ことを合図した後に~callされる。
@@ -9750,7 +9750,7 @@ write(chunk, controller) is called when a new chunk of data is ready to be writt
 ~queue-upされたすべての書込が成功した後に
 ］のみ，~callされることを保証する。
 ◎
-close(controller) is called after the producer signals that they are done writing chunks to the stream, and all queued-up writes successfully complete. It can perform any actions necessary to finalize writes to the underlying sink, and release access to it. If this process is asynchronous, it can return a promise to signal success or failure. The stream implementation guarantees that this method will be called only after all queued-up writes have succeeded.
+close() is called after the producer signals that they are done writing chunks to the stream, and all queued-up writes successfully complete. It can perform any actions necessary to finalize writes to the underlying sink, and release access to it. If this process is asynchronous, it can return a promise to signal success or failure. The stream implementation guarantees that this method will be called only after all queued-up writes have succeeded.
 </li>
 	<li>
 `abort(reason)^c は、`生産器$が［
@@ -10091,12 +10091,6 @@ If state is "closed", return a promise resolved with undefined.
 If state is "errored", return a promise rejected with stream.[[storedError]].
 </li>
 	<li>
-~Assert：
-%state ~EQ `writable^l
-◎
-Assert: state is "writable".
-</li>
-	<li>
 %error ~LET 新たな `TypeError^b
 — これは、~streamを中止するよう要請されたことを指示する
 ◎
@@ -10111,60 +10105,34 @@ Let error be a new TypeError indicating that the stream has been requested to ab
 If stream.[[pendingAbortRequest]] is not undefined, return a promise rejected with error.
 </li>
 	<li>
-%controller ~LET %stream.[[writableStreamController]]
-◎
-Let controller be stream.[[writableStreamController]].
-</li>
-	<li>
 ~Assert：
-%controller ~NEQ ~undefined
+%state ~IN { `writable^l, `erroring^l }
 ◎
-Assert: controller is not undefined.
+Assert: state is "writable" or "erroring".
 </li>
 	<li>
-<p>
-~IF［
-! `WritableStreamHasOperationMarkedInFlight$A( %stream ) ~EQ ~false
-］~AND［
-%controller.[[started]] ~EQ ~true
-］：
+%wasAlreadyErroring ~LET ~false
 ◎
-If ! WritableStreamHasOperationMarkedInFlight(stream) is false and controller.[[started]] is true,
-</p>
-		<ol>
-			<li>
-! `WritableStreamFinishAbort$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamFinishAbort(stream).
-</li>
-			<li>
-~RET
-! %controller.[[AbortSteps]](%reason)
-◎
-Return ! controller.[[AbortSteps]](reason).
-</li>
-		</ol>
-	</li>
-	<li>
-%writer ~LET %stream.[[writer]]
-◎
-Let writer be stream.[[writer]].
+Let wasAlreadyErroring be false.
 </li>
 	<li>
 <p>
 ~IF
-%writer ~NEQ ~undefined
+%state ~EQ `erroring^l
 ：
 ◎
-If writer is not undefined,
+If state is "erroring",
 </p>
 		<ol>
 			<li>
-! `WritableStreamDefaultWriterEnsureReadyPromiseRejected$A( %writer, %error )
-を遂行する
+%wasAlreadyErroring ~SET ~true
 ◎
-Perform ! WritableStreamDefaultWriterEnsureReadyPromiseRejected(writer, error).
+Set wasAlreadyErroring to true.
+</li>
+			<li>
+%reason ~SET ~undefined
+◎
+Set reason to undefined.
 </li>
 		</ol>
 	</li>
@@ -10175,97 +10143,23 @@ Let promise be a new promise.
 </li>
 	<li>
 %stream.[[pendingAbortRequest]] ~SET
-`~Record$ { [[promise]]: %promise, [[reason]]: %reason }
+`~Record$ { [[promise]]: %promise, [[reason]]: %reason, [[wasAlreadyErroring]]: %wasAlreadyErroring }
 ◎
-Set stream.[[pendingAbortRequest]] to Record {[[promise]]: promise, [[reason]]: reason}.
+Set stream.[[pendingAbortRequest]] to Record {[[promise]]: promise, [[reason]]: reason, [[wasAlreadyErroring]]: wasAlreadyErroring}.
+</li>
+	<li>
+~IF
+%wasAlreadyErroring ~EQ ~false
+⇒
+! `WritableStreamStartErroring$A( %stream, %error )
+を遂行する
+◎
+If wasAlreadyErroring is false, perform ! WritableStreamStartErroring(stream, error).
 </li>
 	<li>
 ~RET %promise
 ◎
 Return promise.
-</li>
-</ol>
-			</section>
-			<section id="writable-stream-error">
-<h4 class="nothrow">4.3.5. `WritableStreamError ( stream )^A</h4>
-
-<ol>
-	<li>
-%stream.[[state]] ~SET `errored^l
-◎
-Set stream.[[state]] to "errored".
-</li>
-	<li>
-%stream.[[storedError]] ~SET %error
-◎
-Set stream.[[storedError]] to error.
-</li>
-	<li>
-! %stream.[[writableStreamController]].[[ErrorSteps]]()
-を遂行する
-◎
-Perform ! stream.[[writableStreamController]].[[ErrorSteps]]().
-</li>
-	<li>
-<p>
-~IF
-%stream.[[pendingAbortRequest]] ~EQ ~undefined
-：
-◎
-If stream.[[pendingAbortRequest]] is undefined,
-</p>
-		<ol>
-			<li>
-%writer ~LET %stream.[[writer]]
-◎
-Let writer be stream.[[writer]].
-</li>
-			<li>
-<p>
-~IF
-%writer ~NEQ ~undefined
-：
-◎
-If writer is not undefined,
-</p>
-				<ol>
-					<li>
-! `WritableStreamDefaultWriterEnsureReadyPromiseRejected$A( %writer, %error )
-を遂行する
-◎
-Perform ! WritableStreamDefaultWriterEnsureReadyPromiseRejected(writer, error).
-</li>
-				</ol>
-			</li>
-		</ol>
-	</li>
-	<li>
-~IF
-! `WritableStreamHasOperationMarkedInFlight$A( %stream ) ~EQ ~false
-⇒
-! `WritableStreamRejectPromisesInReactionToError$A( %stream )
-を遂行する
-◎
-If ! WritableStreamHasOperationMarkedInFlight(stream) is false, perform ! WritableStreamRejectPromisesInReactionToError(stream).
-</li>
-</ol>
-
-			</section>
-			<section id="writable-stream-finish-abort">
-<h4 class="nothrow">4.3.6. `WritableStreamFinishAbort ( stream )^A</h4>
-
-<ol class="algo">
-	<li>
-%error ~LET 新たな `TypeError^b
-— ~streamは中止されたことを指示する
-◎
-Let error be a new TypeError indicating that the stream has been aborted.
-</li>
-	<li>
-! `WritableStreamError$A( %stream, %error )
-を遂行する
-◎
-Perform ! WritableStreamError(stream, error).
 </li>
 </ol>
 
@@ -10290,8 +10184,6 @@ To allow future flexibility to add different writable stream behaviors (similar 
 ◎
 The abstract operations in this section are interfaces that are used by the controller implementation to affect its associated WritableStream object, translating the controller’s internal state changes into developer-facing results visible through the WritableStream's public API.
 </p>
-
-
 
 			<section id="writable-stream-add-write-request">
 <h4 class="nothrow">4.4.1. `WritableStreamAddWriteRequest ( stream )^A</h4>
@@ -10327,8 +10219,280 @@ Return promise.
 </ol>
 
 			</section>
+			<section id="writable-stream-deal-with-rejection">
+<h4 class="nothrow">4.4.2. `WritableStreamDealWithRejection ( stream, error )^A</h4>
+
+<ol class="algo">
+	<li>
+%state ~LET %stream.[[state]]
+◎
+Let state be stream.[[state]].
+</li>
+	<li>
+<p>
+~IF
+%state ~EQ `writable^l
+：
+◎
+If state is "writable",
+</p>
+		<ol>
+			<li>
+! `WritableStreamStartErroring$A( %stream )
+を遂行する
+◎
+Perform ! WritableStreamStartErroring(stream).
+</li>
+			<li>
+~RET
+◎
+Return.
+</li>
+		</ol>
+	</li>
+	<li>
+~Assert：
+%state ~EQ `erroring^l
+◎
+Assert: state is "erroring".
+</li>
+	<li>
+! `WritableStreamFinishErroring$A( %stream )
+を遂行する
+◎
+Perform ! WritableStreamFinishErroring(stream).
+</li>
+</ol>
+
+			</section>
+			<section id="writable-stream-start-erroring">
+<h4 class="nothrow">4.4.3. `WritableStreamStartErroring ( stream, reason )^A</h4>
+
+<ol class="algo">
+	<li>
+~Assert：
+%stream.[[storedError]] ~EQ ~undefined
+◎
+Assert: stream.[[storedError]] is undefined.
+</li>
+	<li>
+~Assert：
+%stream.[[state]] ~EQ `writable^l
+◎
+Assert: stream.[[state]] is "writable".
+</li>
+	<li>
+%controller ~LET %stream.[[writableStreamController]]
+◎
+Let controller be stream.[[writableStreamController]].
+</li>
+	<li>
+~Assert：
+%controller ~NEQ ~undefined
+◎
+Assert: controller is not undefined.
+</li>
+	<li>
+%stream.[[state]] ~SET `erroring^l
+◎
+Set stream.[[state]] to "erroring".
+</li>
+	<li>
+Set stream.[[storedError]] to reason.
+</li>
+	<li>
+%writer ~LET %stream.[[writer]]
+◎
+Let writer be stream.[[writer]].
+</li>
+	<li>
+~IF
+%writer ~NEQ ~undefined
+⇒
+! `WritableStreamDefaultWriterEnsureReadyPromiseRejected$A( %writer, %reason )
+を遂行する
+◎
+If writer is not undefined, perform ! WritableStreamDefaultWriterEnsureReadyPromiseRejected(writer, reason).
+</li>
+	<li>
+~IF［
+! `WritableStreamHasOperationMarkedInFlight$A( %stream ) ~EQ ~false
+］~AND［
+%controller.[[started]] ~EQ ~true
+］
+⇒
+! `WritableStreamFinishErroring$A( %stream )
+を遂行する
+◎
+If ! WritableStreamHasOperationMarkedInFlight(stream) is false and controller.[[started]] is true, perform ! WritableStreamFinishErroring(stream).
+</li>
+</ol>
+
+			</section>
+			<section id="writable-stream-finish-erroring">
+<h4 class="nothrow">4.4.4. `WritableStreamFinishErroring ( stream )^A</h4>
+
+<ol class="algo">
+	<li>
+~Assert：
+%stream.[[state]] ~EQ `erroring^l
+◎
+Assert: stream.[[state]] is "erroring".
+</li>
+	<li>
+~Assert：
+! `WritableStreamHasOperationMarkedInFlight$A( %stream ) ~EQ ~false
+◎
+Assert: ! WritableStreamHasOperationMarkedInFlight(stream) is false.
+</li>
+	<li>
+%stream.[[state]] ~SET `errored^l
+◎
+Set stream.[[state]] to "errored".
+</li>
+	<li>
+! %stream.[[writableStreamController]].[[ErrorSteps]]()
+を遂行する
+◎
+Perform ! stream.[[writableStreamController]].[[ErrorSteps]]().
+</li>
+	<li>
+%storedError ~LET %stream.[[storedError]]
+◎
+Let storedError be stream.[[storedError]].
+</li>
+	<li>
+<p>
+%stream.[[writeRequests]] 内の~EACH ( %writeRequest ) に対し：
+◎
+Repeat for each writeRequest that is an element of stream.[[writeRequests]],
+</p>
+		<ol>
+			<li>
+%storedError で %writeRequest を`却下する$
+◎
+Reject writeRequest with storedError.
+</li>
+		</ol>
+	</li>
+	<li>
+%stream.[[writeRequest]] ~SET 空`~List$
+◎
+Set stream.[[writeRequest]] to an empty List.
+</li>
+	<li>
+<p>
+~IF
+%stream.[[pendingAbortRequest]] ~EQ ~undefined
+：
+◎
+if stream.[[pendingAbortRequest]] is undefined,
+</p>
+		<ol>
+			<li>
+! `WritableStreamRejectCloseAndClosedPromiseIfNeeded$A( %stream)
+を遂行する
+◎
+Perform ! WritableStreamRejectCloseAndClosedPromiseIfNeeded(stream).
+</li>
+			<li>
+~RET
+◎
+Return.
+</li>
+		</ol>
+	</li>
+	<li>
+%abortRequest ~LET %stream.[[pendingAbortRequest]]
+◎
+Let abortRequest be stream.[[pendingAbortRequest]].
+</li>
+	<li>
+%stream.[[pendingAbortRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingAbortRequest]] to undefined.
+</li>
+	<li>
+<p>
+~IF
+%abortRequest.[[wasAlreadyErroring]] ~EQ ~true
+：
+◎
+If abortRequest.[[wasAlreadyErroring]] is true,
+</p>
+		<ol>
+			<li>
+%storedError で %abortRequest.[[promise]] を`却下する$
+◎
+Reject abortRequest.[[promise]] with storedError.
+</li>
+			<li>
+! `WritableStreamRejectCloseAndClosedPromiseIfNeeded$A( %stream)
+を遂行する
+◎
+Perform ! WritableStreamRejectCloseAndClosedPromiseIfNeeded(stream).
+</li>
+			<li>
+~RET
+◎
+Return.
+</li>
+		</ol>
+	</li>
+	<li>
+%promise ~LET
+! %stream.[[writableStreamController]].[[AbortSteps]]( %abortRequest.[[reason]] )
+◎
+Let promise be ! stream.[[writableStreamController]].[[AbortSteps]](abortRequest.[[reason]]).
+</li>
+	<li>
+<p>
+%promise の`充足~時$には
+◎
+Upon fulfillment of promise,
+</p>
+		<ol>
+			<li>
+~undefined で
+%abortRequest.[[promise]] を`解決する$
+◎
+Resolve abortRequest.[[promise]] with undefined.
+</li>
+			<li>
+! `WritableStreamRejectCloseAndClosedPromiseIfNeeded$A( %stream)
+を遂行する
+◎
+Perform ! WritableStreamRejectCloseAndClosedPromiseIfNeeded(stream).
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+事由 %reason による
+%promise の`却下~時$には：
+◎
+Upon rejection of promise with reason reason,
+</p>
+		<ol>
+			<li>
+%reason で
+%abortRequest.[[promise]] を`却下する$
+◎
+Reject abortRequest.[[promise]] with reason.
+</li>
+			<li>
+! `WritableStreamRejectCloseAndClosedPromiseIfNeeded$A( %stream)
+を遂行する
+◎
+Perform ! WritableStreamRejectCloseAndClosedPromiseIfNeeded(stream).
+</li>
+		</ol>
+	</li>
+</ol>
+
+			</section>
 			<section id="writable-stream-finish-in-flight-write">
-<h4 class="nothrow">4.4.2. `WritableStreamFinishInFlightWrite ( stream )^A</h4>
+<h4 class="nothrow">4.4.5. `WritableStreamFinishInFlightWrite ( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10348,69 +10512,11 @@ Resolve stream.[[inFlightWriteRequest]] with undefined.
 ◎
 Set stream.[[inFlightWriteRequest]] to undefined.
 </li>
-	<li>
-%state ~LET %stream.[[state]]
-◎
-Let state be stream.[[state]].
-</li>
-	<li>
-<p>
-~IF
-%state ~EQ `errored^l
-：
-◎
-If state is "errored",
-</p>
-		<ol>
-			<li>
-! `WritableStreamFinishInFlightWriteInErroredState$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamFinishInFlightWriteInErroredState(stream).
-</li>
-			<li>
-~RET
-◎
-Return.
-</li>
-		</ol>
-	</li>
-	<li>
-~Assert：
-%state ~EQ `writable^l
-◎
-Assert: state is "writable".
-</li>
-	<li>
-! `WritableStreamHandleAbortRequestIfPending$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamHandleAbortRequestIfPending(stream).
-</li>
-</ol>
-
-			</section>
-			<section id="writable-stream-finish-in-flight-write-in-errored-state">
-<h4 class="nothrow">4.4.3. `WritableStreamFinishInFlightWriteInErroredState ( stream )^A</h4>
-
-<ol>
-	<li>
-! `WritableStreamRejectAbortRequestIfPending$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamRejectAbortRequestIfPending(stream).
-</li>
-	<li>
-! `WritableStreamRejectPromisesInReactionToError$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamRejectPromisesInReactionToError(stream).
-</li>
 </ol>
 
 			</section>
 			<section id="writable-stream-finish-in-flight-write-with-error">
-<h4 class="nothrow">4.4.4. `WritableStreamFinishInFlightWriteWithError ( stream, error )^A</h4>
+<h4 class="nothrow">4.4.6. `WritableStreamFinishInFlightWriteWithError ( stream, error )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10431,55 +10537,22 @@ Reject stream.[[inFlightWriteRequest]] with error.
 Set stream.[[inFlightWriteRequest]] to undefined.
 </li>
 	<li>
-%state ~LET %stream.[[state]]
-◎
-Let state be stream.[[state]].
-</li>
-	<li>
-<p>
-~IF
-%state ~EQ `errored^l
-：
-◎
-If state is "errored",
-</p>
-		<ol>
-			<li>
-! `WritableStreamFinishInFlightWriteInErroredState$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamFinishInFlightWriteInErroredState(stream).
-</li>
-			<li>
-~RET
-◎
-Return.
-</li>
-		</ol>
-	</li>
-	<li>
 ~Assert：
-%state ~EQ `writable^l
+%stream.[[state]] ~IN { `writable^l, `erroring^l }
 ◎
-Assert: state is "writable".
+Assert: stream.[[state]] is "writable" or "erroring".
 </li>
 	<li>
-! `WritableStreamError$A( %stream, %error )
+! `WritableStreamDealWithRejection$A( %stream, %error )
 を遂行する
 ◎
-Perform ! WritableStreamError(stream, error).
-</li>
-	<li>
-! `WritableStreamRejectAbortRequestIfPending$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamRejectAbortRequestIfPending(stream).
+Perform ! WritableStreamDealWithRejection(stream, error).
 </li>
 </ol>
 
 			</section>
 			<section id="writable-stream-finish-in-flight-close">
-<h4 class="nothrow">4.4.5. `WritableStreamFinishInFlightClose ( stream )^A</h4>
+<h4 class="nothrow">4.4.7. `WritableStreamFinishInFlightClose ( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10505,33 +10578,49 @@ Set stream.[[inFlightCloseRequest]] to undefined.
 Let state be stream.[[state]].
 </li>
 	<li>
+~Assert：
+%stream.[[state]] ~IN { `writable^l, `erroring^l }
+◎
+Assert: stream.[[state]] is "writable" or "erroring".
+</li>
+	<li>
 <p>
 ~IF
-%state ~EQ `errored^l
+%state ~EQ `erroring^l
 ：
 ◎
-If state is "errored",
+If state is "erroring",
 </p>
 		<ol>
 			<li>
-! `WritableStreamFinishInFlightCloseInErroredState$A( %stream )
-を遂行する
+%stream.[[storedError]] ~SET ~undefined
 ◎
-Perform ! WritableStreamFinishInFlightCloseInErroredState(stream).
+Set stream.[[storedError]] to undefined.
 </li>
 			<li>
-~RET
+<p>
+~IF
+%stream.[[pendingAbortRequest]] ~NEQ ~undefined
+：
 ◎
-Return.
+If stream.[[pendingAbortRequest]] is not undefined,
+</p>
+				<ol>
+					<li>
+~undefined で
+%stream.[[pendingAbortRequest]].[[promise]] を`解決する$
+◎
+Resolve stream.[[pendingAbortRequest]].[[promise]] with undefined.
 </li>
+					<li>
+%stream.[[pendingAbortRequest]] ~SET ~undefined
+◎
+Set stream.[[pendingAbortRequest]] to undefined.
+</li>
+				</ol>
+			</li>
 		</ol>
 	</li>
-	<li>
-~Assert：
-%state ~EQ `writable^l
-◎
-Assert: state is "writable".
-</li>
 	<li>
 %stream.[[state]] ~SET `closed^l
 ◎
@@ -10552,50 +10641,22 @@ Let writer be stream.[[writer]].
 If writer is not undefined, resolve writer.[[closedPromise]] with undefined.
 </li>
 	<li>
-<p>
-~IF
-%stream.[[pendingAbortRequest]] ~NEQ ~undefined
-：
+~Assert：
+%stream.[[pendingAbortRequest]] ~EQ ~undefined
 ◎
-If stream.[[pendingAbortRequest]] is not undefined,
-</p>
-		<ol>
-			<li>
-~undefined で
-%stream.[[pendingAbortRequest]].[[promise]] を`解決する$
-◎
-Resolve stream.[[pendingAbortRequest]].[[promise]] with undefined.
-</li>
-			<li>
-%stream.[[pendingAbortRequest]] ~SET ~undefined
-◎
-Set stream.[[pendingAbortRequest]] to undefined.
-</li>
-		</ol>
-	</li>
-</ol>
-
-			</section>
-			<section id="writable-stream-finish-in-flight-close-in-errored-state">
-<h4 class="nothrow">4.4.6. `WritableStreamFinishInFlightCloseInErroredState ( stream )^A</h4>
-
-<ol class="algo">
-	<li>
-! `WritableStreamRejectAbortRequestIfPending$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamRejectAbortRequestIfPending(stream).
+Assert: stream.[[pendingAbortRequest]] is undefined.
 </li>
 	<li>
-! `WritableStreamRejectClosedPromiseInReactionToError$A( %stream )
-を遂行する
+~Assert：
+%stream.[[storedError]] ~EQ ~undefined
 ◎
-Perform ! WritableStreamRejectClosedPromiseInReactionToError(stream).
+Assert: stream.[[storedError]] is undefined.
 </li>
 </ol>
+
 			</section>
 			<section id="writable-stream-finish-in-flight-close-with-error">
-<h4 class="nothrow">4.4.7. `WritableStreamFinishInFlightCloseWithError ( stream, error )^A</h4>
+<h4 class="nothrow">4.4.8. `WritableStreamFinishInFlightCloseWithError ( stream, error )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10616,56 +10677,44 @@ Reject stream.[[inFlightCloseRequest]] with error.
 Set stream.[[inFlightCloseRequest]] to undefined.
 </li>
 	<li>
-%state ~LET %stream.[[state]]
+~Assert：
+%stream.[[state]] ~IN { `writable^l, `erroring^l }
 ◎
-Let state be stream.[[state]].
+Assert: stream.[[state]] is "writable" or "erroring".
 </li>
-
 	<li>
 <p>
 ~IF
-%state ~EQ `errored^l
+%stream.[[pendingAbortRequest]] ~NEQ ~undefined
 ：
 ◎
-If state is "errored",
+If stream.[[pendingAbortRequest]] is not undefined,
 </p>
 		<ol>
 			<li>
-! `WritableStreamFinishInFlightCloseInErroredState$A( %stream )
-を遂行する
+%error で
+%stream.[[pendingAbortRequest]].[[promise]] を`却下する$
 ◎
-Perform ! WritableStreamFinishInFlightCloseInErroredState(stream).
+Reject stream.[[pendingAbortRequest]].[[promise]] with error.
 </li>
 			<li>
-~RET
+%stream.[[pendingAbortRequest]] ~SET ~undefined
 ◎
-Return.
+Set stream.[[pendingAbortRequest]] to undefined.
 </li>
 		</ol>
 	</li>
 	<li>
-~Assert：
-%state ~EQ `writable^l
-◎
-Assert: state is "writable".
-</li>
-	<li>
-! `WritableStreamError$A( %stream, %error )
+! `WritableStreamDealWithRejection$A( %stream, %error )
 を遂行する
 ◎
-Perform ! WritableStreamError(stream, error).
-</li>
-	<li>
-! `WritableStreamRejectAbortRequestIfPending$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamRejectAbortRequestIfPending(stream).
+Perform ! WritableStreamDealWithRejection(stream, error).
 </li>
 </ol>
 
 			</section>
 			<section id="writable-stream-close-queued-or-in-flight">
-<h4 class="nothrow">4.4.8.  `WritableStreamCloseQueuedOrInFlight ( stream )^A</h4>
+<h4 class="nothrow">4.4.9. `WritableStreamCloseQueuedOrInFlight ( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10683,59 +10732,6 @@ If stream.[[closeRequest]] is undefined and stream.[[inFlightCloseRequest]] is u
 ~RET ~true
 ◎
 Return true.
-</li>
-</ol>
-
-			</section>
-			<section id="writable-stream-handle-abort-request-if-pending">
-<h4 class="nothrow">4.4.9. `WritableStreamHandleAbortRequestIfPending ( stream )^A</h4>
-
-<ol>
-	<li>
-~IF
-%stream.[[pendingAbortRequest]] ~EQ ~undefined
-⇒
-~RET
-◎
-If stream.[[pendingAbortRequest]] is undefined, return.
-</li>
-	<li>
-! `WritableStreamFinishAbort$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamFinishAbort(stream).
-</li>
-	<li>
-%abortRequest ~LET %stream.[[pendingAbortRequest]]
-◎
-Let abortRequest be stream.[[pendingAbortRequest]].
-</li>
-	<li>
-%stream.[[pendingAbortRequest]] ~SET ~undefined
-◎
-Set stream.[[pendingAbortRequest]] to undefined.
-</li>
-	<li>
-%promise ~LET
-! %stream.[[writableStreamController]].[[AbortSteps]]( %abortRequest.[[reason]] )
-◎
-Let promise be ! stream.[[writableStreamController]].[[AbortSteps]](abortRequest.[[reason]]).
-</li>
-	<li>
-値 %result による %promise の`充足~時$には
-⇒
-%result で
-%abortRequest.[[promise]] を`解決する$
-◎
-Upon fulfillment of promise with value result, resolve abortRequest.[[promise]] with result.
-</li>
-	<li>
-事由 %reason による %promise の`却下~時$には
-⇒
-%reason で
-%abortRequest.[[promise]] を`却下する$
-◎
-Upon rejection of promise with reason reason, reject abortRequest.[[promise]] with reason.
 </li>
 </ol>
 
@@ -10761,6 +10757,7 @@ If stream.[[inFlightWriteRequest]] is undefined and controller.[[inFlightCloseRe
 Return true.
 </li>
 </ol>
+
 
 			</section>
 			<section id="writable-stream-mark-close-request-in-flight">
@@ -10826,12 +10823,43 @@ Set stream.[[inFlightWriteRequest]] to writeRequest.
 </li>
 </ol>
 
-
 			</section>
-			<section id="writable-stream-reject-closed-promise-in-reaction-to-error">
-<h4 class="nothrow">4.4.13. `WritableStreamRejectClosedPromiseInReactionToError ( stream )^A</h4>
+			<section id="writable-stream-reject-close-and-closed-promise-if-needed">
+<h4 class="nothrow">4.4.13. `WritableStreamRejectCloseAndClosedPromiseIfNeeded ( stream )^A</h4>
 
-<ol class="algo">
+<ol>
+	<li>
+~Assert：
+%stream.[[state]] ~EQ `errored^l
+◎
+Assert: stream.[[state]] is "errored".
+</li>
+	<li>
+<p>
+~IF
+%stream.[[pendingCloseRequest]] ~NEQ ~undefined
+◎
+If stream.[[closeRequest]] is not undefined,
+</p>
+		<ol>
+			<li>
+~Assert：
+%stream.[[inFlightCloseRequest]] ~EQ ~undefined
+◎
+Assert: stream.[[inFlightCloseRequest]] is undefined.
+</li>
+			<li>
+%stream.[[storedError]] で %stream.[[closeRequest]] を`却下する$
+◎
+Reject stream.[[closeRequest]] with stream.[[storedError]].
+</li>
+			<li>
+%stream.[[closeRequest]] ~SET ~undefined
+◎
+Set stream.[[closeRequest]] to undefined.
+</li>
+		</ol>
+	</li>
 	<li>
 %writer ~LET %stream.[[writer]]
 ◎
@@ -10863,101 +10891,8 @@ Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
 
 
 			</section>
-			<section id="writable-stream-reject-abort-request-if-pending">
-<h4 class="nothrow">4.4.14. `WritableStreamRejectAbortRequestIfPending ( stream )^A</h4>
-
-
-<ol class="algo">
-	<li>
-<p>
-~IF
-%stream.[[pendingAbortRequest]] ~NEQ ~undefined
-：
-◎
-If stream.[[pendingAbortRequest]] is not undefined,
-</p>
-		<ol>
-			<li>
-%stream.[[storedError]] で
-%stream.[[pendingAbortRequest]].[[promise]] を`却下する$
-◎
-Reject stream.[[pendingAbortRequest]].[[promise]] with stream.[[storedError]].
-</li>
-			<li>
-%stream.[[pendingAbortRequest]] ~SET ~undefined
-◎
-Set stream.[[pendingAbortRequest]] to undefined.
-</li>
-		</ol>
-	</li>
-</ol>
-
-			</section>
-			<section id="writable-stream-reject-promises-in-reaction-to-error">
-<h4 class="nothrow">4.4.15. `WritableStreamRejectPromisesInReactionToError ( stream )^A</h4>
-
-<ol class="algo">
-	<li>
-%storedError ~LET %stream.[[storedError]]
-◎
-Let storedError be stream.[[storedError]].
-</li>
-	<li>
-<p>
-%stream.[[writeRequests]] 内の~EACH ( %writeRequest ) に対し：
-◎
-Repeat for each writeRequest that is an element of stream.[[writeRequests]],
-</p>
-		<ol>
-			<li>
-%storedError で %writeRequest を`却下する$
-◎
-Reject writeRequest with storedError.
-</li>
-		</ol>
-	</li>
-	<li>
-%stream.[[writeRequests]] ~SET 空`~List$
-◎
-Set stream.[[writeRequests]] to an empty List.
-</li>
-	<li>
-<p>
-~IF
-%stream.[[pendingCloseRequest]] ~NEQ ~undefined
-◎
-If stream.[[closeRequest]] is not undefined,
-</p>
-		<ol>
-			<li>
-~Assert：
-%stream.[[inFlightCloseRequest]] ~EQ ~undefined
-◎
-Assert: stream.[[inFlightCloseRequest]] is undefined.
-</li>
-			<li>
-%storedError で %stream.[[closeRequest]] を`却下する$
-◎
-Reject stream.[[closeRequest]] with storedError.
-</li>
-			<li>
-%stream.[[closeRequest]] ~SET ~undefined
-◎
-Set stream.[[closeRequest]] to undefined.
-</li>
-		</ol>
-	</li>
-	<li>
-! `WritableStreamRejectClosedPromiseInReactionToError$A( %stream )
-を遂行する
-◎
-Perform ! WritableStreamRejectClosedPromiseInReactionToError(stream).
-</li>
-</ol>
-
-			</section>
 			<section id="writable-stream-update-backpressure">
-<h4 class="nothrow">4.4.16. `WritableStreamUpdateBackpressure ( stream, backpressure )^A</h4>
+<h4 class="nothrow">4.4.14. `WritableStreamUpdateBackpressure ( stream, backpressure )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10968,9 +10903,9 @@ Assert: stream.[[state]] is "writable".
 </li>
 	<li>
 ~Assert：
-`WritableStreamCloseQueuedOrInFlight$A( %backpressure ) ~EQ ~false
+! `WritableStreamCloseQueuedOrInFlight$A( %stream ) ~EQ ~false
 ◎
-Assert: WritableStreamCloseQueuedOrInFlight(stream) is false.
+Assert: ! WritableStreamCloseQueuedOrInFlight(stream) is false.
 </li>
 	<li>
 %writer ~LET %stream.[[writer]]
@@ -11124,7 +11059,7 @@ A promise returned by the writer’s ready getter
 `WritableStreamDefaultWriter()^dw 構築子は、一般に，直接的な利用は意図されていない
 — 代わりに，~streamの `getWriter()$ws ~methodが利用されるべきである。
 ◎
-The WritableStreamDefaultWriter constructor is generally not meant to be used directly; instead, a stream’s getWriter() method ought to be used.
+The WritableStreamDefaultWriter constructor is generally not meant to be used directly; instead, a stream’s getWriter() method ought to be be used.
 </p>
 </div>
 
@@ -11171,35 +11106,7 @@ If state is "writable",
 </p>
 		<ol>
 			<li>
-<p>
-~IF
-%stream.[[pendingAbortRequest]] ~NEQ ~undefined
-：
-◎
-If stream.[[pendingAbortRequest]] is not undefined,
-</p>
-				<ol>
-					<li>
-%error ~LET 新たな `TypeError^b
-— これは、~streamを中止するよう要請されたことを指示する
-◎
-Let error be a new TypeError indicating that the stream has been requested to abort.
-</li>
-					<li>
-~this.[[readyPromise]] ~SET
-%error で`却下された~promise$
-◎
-Set this.[[readyPromise]] to a promise rejected with error.
-</li>
-					<li>
-~this.[[readyPromise]].[[PromiseIsHandled]] ~SET ~true
-◎
-Set this.[[readyPromise]].[[PromiseIsHandled]] to true.
-</li>
-				</ol>
-			</li>
-			<li>
-~ELIF［
+~IF［
 ! `WritableStreamCloseQueuedOrInFlight$A( %stream ) ~EQ ~false
 ］~AND［
 %stream.[[backpressure]] ~EQ ~true
@@ -11207,7 +11114,7 @@ Set this.[[readyPromise]].[[PromiseIsHandled]] to true.
 ⇒
 ~this.[[readyPromise]] ~SET `新たな~promise$
 ◎
-Otherwise, if ! WritableStreamCloseQueuedOrInFlight(stream) is false and stream.[[backpressure]] is true, set this.[[readyPromise]] to a new promise.
+If ! WritableStreamCloseQueuedOrInFlight(stream) is false and stream.[[backpressure]] is true, set this.[[readyPromise]] to a new promise.
 </li>
 			<li>
 ~ELSE
@@ -11216,6 +11123,33 @@ Otherwise, if ! WritableStreamCloseQueuedOrInFlight(stream) is false and stream.
 ~undefined で`解決された~promise$
 ◎
 Otherwise, set this.[[readyPromise]] to a promise resolved with undefined.
+</li>
+			<li>
+~this.[[closedPromise]] ~SET `新たな~promise$
+◎
+Set this.[[closedPromise]] to a new promise.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~ELIF
+%state ~EQ `erroring^l
+：
+◎
+Otherwise, if state is "erroring",
+</p>
+		<ol>
+			<li>
+~this.[[readyPromise]] ~SET
+%stream.[[storedError]] で`却下された~promise$
+◎
+Set this.[[readyPromise]] to a promise rejected with stream.[[storedError]].
+</li>
+			<li>
+~this.[[readyPromise]].[[PromiseIsHandled]] ~SET ~true
+◎
+Set this.[[readyPromise]].[[PromiseIsHandled]] to true.
 </li>
 			<li>
 ~this.[[closedPromise]] ~SET `新たな~promise$
@@ -11718,20 +11652,10 @@ Let state be stream.[[state]].
 If state is "closed" or "errored", return a promise rejected with a TypeError exception.
 </li>
 	<li>
-~IF［
-%stream.[[pendingAbortRequest]] ~NEQ ~undefined
-］
-⇒
-~RET `TypeError^b で`却下された~promise$
-— これは、~streamを中止するよう要請されたことを指示する。
-◎
-If stream.[[pendingAbortRequest]] is not undefined, return a promise rejected with a TypeError indicating that the stream has been requested to abort.
-</li>
-	<li>
 ~Assert：
-%state ~EQ `writable^l
+%state ~IN { `writable^l, `erroring^l }
 ◎
-Assert: state is "writable".
+Assert: state is "writable" or "erroring".
 </li>
 	<li>
 ~Assert：
@@ -11750,13 +11674,16 @@ Let promise be a new promise.
 Set stream.[[closeRequest]] to promise.
 </li>
 	<li>
-~IF 
+~IF［
 %stream.[[backpressure]] ~EQ ~true
+］~AND［
+%state ~EQ `writable^l
+］
 ⇒
 ~undefined で
 %writer.[[readyPromise]] を`解決する$
 ◎
-If stream.[[backpressure]] is true, resolve writer.[[readyPromise]] with undefined.
+If stream.[[backpressure]] is true and state is "writable", resolve writer.[[readyPromise]] with undefined.
 </li>
 	<li>
 ! `WritableStreamDefaultControllerClose$A( %stream.[[writableStreamController]] )
@@ -11820,9 +11747,9 @@ If state is "errored", return a promise rejected with stream.[[storedError]].
 </li>
 	<li>
 ~Assert：
-%state ~EQ `writable^l
+%state ~IN { `writable^l, `erroring^l }
 ◎
-Assert: state is "writable".
+Assert: state is "writable" or "erroring".
 </li>
 	<li>
 ~RET
@@ -11833,8 +11760,35 @@ Return ! WritableStreamDefaultWriterClose(writer).
 </ol>
 
 			</section>
+			<section id="writable-stream-default-writer-ensure-closed-promise-rejected">
+<h4 class="nothrow">4.6.5. `WritableStreamDefaultWriterEnsureClosedPromiseRejected ( writer, error )^A</h4>
+
+<ol>
+	<li>
+~IF
+%writer.[[closedPromise]].[[PromiseState]] ~EQ `pending^l
+⇒
+%error で %writer.[[closedPromise]] を`却下する$
+◎
+If writer.[[closedPromise]].[[PromiseState]] is "pending", reject writer.[[closedPromise]] with error.
+</li>
+	<li>
+~ELSE
+⇒
+%writer.[[closedPromise]] ~SET %error で`却下された~promise$
+◎
+Otherwise, set writer.[[closedPromise]] to a promise rejected with error.
+</li>
+	<li>
+%writer.[[closedPromise]].[[PromiseIsHandled]] ~SET ~true
+◎
+Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
+</li>
+</ol>
+
+			</section>
 			<section id="writable-stream-default-writer-ensure-ready-promise-rejected">
-<h4 class="nothrow">4.6.5. `WritableStreamDefaultWriterEnsureReadyPromiseRejected ( writer, error )^A</h4>
+<h4 class="nothrow">4.6.6. `WritableStreamDefaultWriterEnsureReadyPromiseRejected ( writer, error )^A</h4>
 
 <ol>
 	<li>
@@ -11844,7 +11798,7 @@ Return ! WritableStreamDefaultWriterClose(writer).
 ⇒
 %error で %writer.[[readyPromise]] を`却下する$
 ◎
-If writer.[[readyPromise]].[[PromiseState]] is "pending", reject _writer.[[readyPromise]] with error.
+If writer.[[readyPromise]].[[PromiseState]] is "pending", reject writer.[[readyPromise]] with error.
 </li>
 	<li>
 ~ELSE
@@ -11863,7 +11817,7 @@ Set writer.[[readyPromise]].[[PromiseIsHandled]] to true.
 
 			</section>
 			<section id="writable-stream-default-writer-get-desired-size">
-<h4 class="nothrow">4.6.6. `WritableStreamDefaultWriterGetDesiredSize ( writer )^A</h4>
+<h4 class="nothrow">4.6.7. `WritableStreamDefaultWriterGetDesiredSize ( writer )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -11877,15 +11831,12 @@ Let stream be writer.[[ownerWritableStream]].
 Let state be stream.[[state]].
 </li>
 	<li>
-~IF［
-%state ~EQ `errored^l
-］~OR［
-%stream.[[pendingAbortRequest]] ~NEQ ~undefined
-］
+~IF
+%state ~IN { `errored^l, `erroring^l }
 ⇒
 ~RET `null^b
 ◎
-If state is "errored" or stream.[[pendingAbortRequest]] is not undefined, return null.
+If state is "errored" or "erroring", return null.
 </li>
 	<li>
 ~IF %state ~EQ `closed^l
@@ -11904,7 +11855,7 @@ Return ! WritableStreamDefaultControllerGetDesiredSize(stream.[[writableStreamCo
 
 			</section>
 			<section id="writable-stream-default-writer-release">
-<h4 class="nothrow">4.6.7. `WritableStreamDefaultWriterRelease ( writer )^A</h4>
+<h4 class="nothrow">4.6.8. `WritableStreamDefaultWriterRelease ( writer )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -11929,11 +11880,13 @@ Assert: stream.[[writer]] is writer.
 ◎
 Let releasedError be a new TypeError.
 </li>
+<!-- 
 	<li>
 %state ~LET %stream.[[state]]
 ◎
 Let state be stream.[[state]].
 </li>
+ -->
 	<li>
 ! `WritableStreamDefaultWriterEnsureReadyPromiseRejected$A( %writer, %releasedError)
 を遂行する
@@ -11941,28 +11894,10 @@ Let state be stream.[[state]].
 Perform ! WritableStreamDefaultWriterEnsureReadyPromiseRejected(writer, releasedError).
 </li>
 	<li>
-~IF［
-%state ~EQ `writable^l
-］~OR［
-! `WritableStreamHasOperationMarkedInFlight$A( %stream ) ~EQ ~true
-］
-⇒
-%releasedError で
-%writer.[[closedPromise]] を`却下する$
+! `WritableStreamDefaultWriterEnsureClosedPromiseRejected$A( %writer, %releasedError)
+を遂行する
 ◎
-If state is "writable" or ! WritableStreamHasOperationMarkedInFlight(stream) is true, reject writer.[[closedPromise]] with releasedError.
-</li>
-	<li>
-~ELSE
-⇒
-%writer.[[closedPromise]] ~SET %releasedError で`却下された~promise$
-◎
-Otherwise, set writer.[[closedPromise]] to a promise rejected with releasedError.
-</li>
-	<li>
-%writer.[[closedPromise]].[[PromiseIsHandled]] ~SET ~true
-◎
-Set writer.[[closedPromise]].[[PromiseIsHandled]] to true.
+Perform ! WritableStreamDefaultWriterEnsureClosedPromiseRejected(writer, releasedError).
 </li>
 	<li>
 %stream.[[writer]] ~SET ~undefined
@@ -11978,7 +11913,7 @@ Set writer.[[ownerWritableStream]] to undefined.
 
 			</section>
 			<section id="writable-stream-default-writer-write">
-<h4 class="nothrow">4.6.8. `WritableStreamDefaultWriterWrite ( writer, chunk )^A</h4>
+<h4 class="nothrow">4.6.9. `WritableStreamDefaultWriterWrite ( writer, chunk )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -12037,28 +11972,26 @@ If state is "errored", return a promise rejected with stream.[[storedError]].
 If ! WritableStreamCloseQueuedOrInFlight(stream) is true or state is "closed", return a promise rejected with a TypeError exception indicating that the stream is closing or closed.
 </li>
 	<li>
+~IF［
+%state ~EQ `erroring^l
+］
+⇒
+~RET %stream.[[storedError]] で`却下された~promise$
+◎
+If state is "erroring", return a promise rejected with stream.[[storedError]].
+</li>
+	<li>
 ~Assert：
 %state ~EQ `writable^l
 ◎
 Assert: state is "writable".
 </li>
 	<li>
-~IF
-%stream.[[pendingAbortRequest]] ~NEQ ~undefined
-⇒
-~RET `TypeError^b で`却下された~promise$
-— これは、~streamを中止する処理に入っていることを指示する。
-◎
-If stream.[[pendingAbortRequest]] is not undefined, return a promise rejected with a TypeError indicating that the stream is in the process of being aborted.
-</li>
-
-	<li>
 %promise ~LET
 ! `WritableStreamAddWriteRequest$A( %stream )
 ◎
 Let promise be ! WritableStreamAddWriteRequest(stream).
 </li>
-
 	<li>
 ! `WritableStreamDefaultControllerWrite$A( %controller, %chunk, %chunkSize )
 を遂行する
@@ -12310,11 +12243,11 @@ Let state be this.[[controlledWritableStream]].[[state]].
 </li>
 	<li>
 ~IF
-%state ~IN { `closed^l, `errored^l }
+%state ~NEQ `writable^l
 ⇒
-~THROW `TypeError^b
+~RET
 ◎
-If state is "closed" or "errored", throw a TypeError exception.
+If state is not "writable", return.
 </li>
 	<li>
 ! `WritableStreamDefaultControllerError$A( ~this, %e )
@@ -12352,18 +12285,10 @@ The reason these are in method form, instead of as abstract operations, is to ma
 
 <ol class="algo">
 	<li>
-%sinkAbortPromise ~LET
+~RET
 ! `PromiseInvokeOrNoop$A( ~this.[[underlyingSink]], `abort^l, « %reason » )
 ◎
-Let sinkAbortPromise be ! PromiseInvokeOrNoop(this.[[underlyingSink]], "abort", « reason »).
-</li>
-	<li>
-~RET
-%sinkAbortPromise を［
-~undefined を返す充足~handler
-］で`変形-$した結果
-◎
-Return the result of transforming sinkAbortPromise with a fulfillment handler that returns undefined.
+Return ! PromiseInvokeOrNoop(this.[[underlyingSink]], "abort", « reason »).
 </li>
 </ol>
 
@@ -12411,26 +12336,15 @@ Upon fulfillment of startPromise,
 </p>
 				<ol>
 					<li>
+~Assert：
+%stream.[[state]] ~IN { `writable^l, `erroring^l }
+◎
+Assert: stream.[[state]] is "writable" or "erroring".
+</li>
+					<li>
 ~this.[[started]] ~SET ~true
 ◎
 Set this.[[started]] to true.
-</li>
-					<li>
-~IF
-%stream.[[state]] ~EQ `errored^l
-⇒
-! `WritableStreamRejectAbortRequestIfPending$A( %stream )
-を遂行する
-◎
-If stream.[[state]] is "errored", perform ! WritableStreamRejectAbortRequestIfPending(stream).
-</li>
-					<li>
-~ELSE
-⇒
-! `WritableStreamHandleAbortRequestIfPending$A( %stream )
-を遂行する
-◎
-Otherwise, perform ! WritableStreamHandleAbortRequestIfPending(stream).
 </li>
 					<li>
 ! `WritableStreamDefaultControllerAdvanceQueueIfNeeded$A( ~this )
@@ -12449,21 +12363,18 @@ Upon rejection of startPromise with reason r,
 				<ol>
 					<li>
 ~Assert：
-%stream.[[state]] ~IN { `writable^l, `errored^l }
+%stream.[[state]] ~IN { `writable^l, `erroring^l }
 ◎
-Assert: stream.[[state]] is "writable" or "errored".
+Assert: stream.[[state]] is "writable" or "erroring".
 </li>
 					<li>
-! `WritableStreamDefaultControllerErrorIfNeeded$A( ~this, %r )
-を遂行する
-◎
-Perform ! WritableStreamDefaultControllerErrorIfNeeded(this, r).
+Set this.[[started]] to true.
 </li>
 					<li>
-! `WritableStreamRejectAbortRequestIfPending$A( %stream )
+! `WritableStreamDealWithRejection$A( %stream, %r )
 を遂行する
 ◎
-Perform ! WritableStreamRejectAbortRequestIfPending(stream).
+Perform ! WritableStreamDealWithRejection(stream, r).
 </li>
 				</ol>
 			</li>
@@ -12527,7 +12438,7 @@ Perform ! WritableStreamDefaultControllerAdvanceQueueIfNeeded(controller).
 
 			</section>
 			<section id="writable-stream-default-controller-get-chunk-size">
-<h4 class="nothrow">4.8.3. `WritableStreamDefaultControllerGetChunkSize ( controller , chunk )^A</h4>
+<h4 class="nothrow">4.8.3. `WritableStreamDefaultControllerGetChunkSize ( controller, chunk )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -12633,10 +12544,14 @@ Let stream be controller.[[controlledWritableStream]].
 </li>
 	<li>
 <p>
-~IF ! `WritableStreamCloseQueuedOrInFlight$A( %stream ) ~EQ ~false
+~IF［
+! `WritableStreamCloseQueuedOrInFlight$A( %stream ) ~EQ ~false
+］~AND［
+%stream.[[state]] ~EQ `writable^l
+］
 ：
 ◎
-If ! WritableStreamCloseQueuedOrInFlight(stream) is false,
+If ! WritableStreamCloseQueuedOrInFlight(stream) is false and stream.[[state]] is "writable",
 </p>
 		<ol>
 			<li>
@@ -12671,19 +12586,6 @@ Perform ! WritableStreamDefaultControllerAdvanceQueueIfNeeded(controller).
 Let stream be controller.[[controlledWritableStream]].
 </li>
 	<li>
-%state ~LET %stream.[[state]]
-◎
-Let state be stream.[[state]].
-</li>
-	<li>
-~IF
-%state ~IN { `closed^l, `errored^l }
-⇒
-~RET
-◎
-If state is "closed" or "errored", return.
-</li>
-	<li>
 ~IF
 %controller.[[started]] ~EQ ~false
 ⇒
@@ -12699,6 +12601,41 @@ If controller.[[started]] is false, return.
 ◎
 If stream.[[inFlightWriteRequest]] is not undefined, return.
 </li>
+	<li>
+%state ~LET %stream.[[state]]
+◎
+Let state be stream.[[state]].
+</li>
+	<li>
+~IF
+%state ~IN { `closed^l, `errored^l }
+⇒
+~RET
+◎
+If state is "closed" or "errored", return.
+</li>
+	<li>
+<p>
+~IF
+%state ~EQ `erroring^l
+：
+◎
+If state is "erroring",
+</p>
+		<ol>
+			<li>
+! `WritableStreamFinishErroring$A( %stream )
+を遂行する
+◎
+Perform ! WritableStreamFinishErroring(stream).
+</li>
+			<li>
+~RET
+◎
+Return.
+</li>
+		</ol>
+	</li>
 	<li>
 ~IF
 %controller.[[queue]] は空である
@@ -12727,7 +12664,7 @@ If writeRecord is "close", perform ! WritableStreamDefaultControllerProcessClose
 ! `WritableStreamDefaultControllerProcessWrite$A( %controller, %writeRecord.[[chunk]])
 を遂行する
 ◎
-Otherwise, perform WritableStreamDefaultControllerProcessWrite(controller, writeRecord.[[chunk]]).
+Otherwise, perform ! WritableStreamDefaultControllerProcessWrite(controller, writeRecord.[[chunk]]).
 </li>
 </ol>
 			</section>
@@ -12776,9 +12713,9 @@ Assert: controller.[[queue]] is empty.
 </li>
 	<li>
 %sinkClosePromise ~LET
-! `PromiseInvokeOrNoop$A( %controller.[[underlyingSink]], `close^l, « %controller » )
+! `PromiseInvokeOrNoop$A( %controller.[[underlyingSink]], `close^l, « » )
 ◎
-Let sinkClosePromise be ! PromiseInvokeOrNoop(controller.[[underlyingSink]], "close", « controller »).
+Let sinkClosePromise be ! PromiseInvokeOrNoop(controller.[[underlyingSink]], "close", « »).
 </li>
 	<li>
 <p>
@@ -12855,18 +12792,10 @@ Perform ! WritableStreamFinishInFlightWrite(stream).
 Let state be stream.[[state]].
 </li>
 			<li>
-~IF
-%state ~EQ `errored^l
-⇒
-~RET
-◎
-If state is "errored", return.
-</li>
-			<li>
 ~Assert：
-%state ~EQ `writable^l
+%state ~IN { `writable^l, `erroring^l }
 ◎
-Assert: state is "writable".
+Assert: state is "writable" or "erroring".
 </li>
 			<li>
 ! `DequeueValue$A( %controller )
@@ -12876,11 +12805,13 @@ Perform ! DequeueValue(controller).
 </li>
 			<li>
 <p>
-~IF
+~IF［
 ! `WritableStreamCloseQueuedOrInFlight$A(stream) ~EQ ~false
-：
+］~AND［
+%state ~EQ `writable^l
+］：
 ◎
-If ! WritableStreamCloseQueuedOrInFlight(stream) is false,
+If ! WritableStreamCloseQueuedOrInFlight(stream) is false and state is "writable",
 </p>
 				<ol>
 					<li>
@@ -12914,38 +12845,10 @@ Upon rejection of sinkWritePromise with reason,
 </p>
 		<ol>
 			<li>
-%wasErrored ~LET ~F
-◎
-Let wasErrored be false.
-</li>
-			<li>
-~IF
-%stream.[[state]] ~EQ `errored^l
-⇒
-%wasErrored ~SET ~true
-◎
-If stream.[[state]] is "errored", set wasErrored to true.
-</li>
-			<li>
 ! `WritableStreamFinishInFlightWriteWithError$A( %stream, %reason )
 を遂行する
 ◎
 Perform ! WritableStreamFinishInFlightWriteWithError(stream, reason).
-</li>
-			<li>
-~Assert：
-%stream.[[state]] ~EQ `errored^l
-◎
-Assert: stream.[[state]] is "errored".
-</li>
-			<li>
-~IF［
-%wasErrored ~EQ ~false
-］
-⇒
-%controller.[[queue]] ~SET 空の`~List$
-◎
-If wasErrored is false, set controller.[[queue]] to an empty List.
 </li>
 		</ol>
 	</li>
@@ -12986,10 +12889,10 @@ Let stream be controller.[[controlledWritableStream]].
 Assert: stream.[[state]] is "writable".
 </li>
 	<li>
-! `WritableStreamError$A( %stream, %error )
+! `WritableStreamStartErroring$A( %stream, %error )
 を遂行する
 ◎
-Perform ! WritableStreamError(stream, error).
+Perform ! WritableStreamStartErroring(stream, error).
 </li>
 </ol>
 			</section>
@@ -14220,7 +14123,7 @@ Return immediately, since the web socket gives us no easy way to tell when the w
 
     abort(%reason) {
       return closeWS(4000, %reason && %reason.message);
-    }
+    },
   });
 
   function closeWS(%code, %reasonString) {
@@ -14840,4 +14743,3 @@ to the extent possible under law, the editor has waived all copyright and relate
 
 		</section>
 	</section>
-
