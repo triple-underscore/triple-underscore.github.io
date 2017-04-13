@@ -715,6 +715,9 @@ musical:
 更新-:update:~
 帯域内:in-band::~
 破棄-:discard:~
+処理待ち:pending:~
+処理待ちの:pending:~
+	待ちの:in-flight
 
 	●範囲／timeline／再生／seek
 Date:
@@ -916,6 +919,7 @@ listen::::リッスン
 在する:present する:在る
 変化-:change:~
 変更-:change:~
+待行列:queue::~::キュー
 待入する:queue する::待ち行列に入れる::キューする
 待入され:queue され::待ち行列に入れられ::キューされ
 待入し:queue し::待ち行列に入れ::キューし
@@ -1054,6 +1058,8 @@ scripting::::スクリプト処理
 session::::セッション
 IDL:
 promise:
+callback:
+detach:
 fallback::::フォールバック
 factory::::ファクトリ
 algo:algorithm:::アルゴリズム
@@ -1588,8 +1594,9 @@ vD.内在的~横幅:#concept-video-intrinsic-width
 再生-中について通知-:#notify-about-playing
 内部~pause手続き:#internal-pause-steps
 再生~方向:#direction-of-playback
-	新たに導入される~cueの~list:~HTMLemb#list-of-newly-introduced-cues
-~time-march-on:~HTMLemb#time-marches-on
+
+新たに導入される~cueの~list:#list-of-newly-introduced-cues
+~time-march-on:#time-marches-on
 	~eventを準備-:~HTMLemb#prepare-an-event
 ~media資源の終端に達-:#reaches-the-end
 
@@ -1684,7 +1691,9 @@ text/html における~tag省略:~HTMLdom#concept-element-tag-omission
 環境~設定群~obj:~WAPI#environment-settings-object
 ~event-loop:~WAPI#event-loop
 最初の段:~WAPI#step1
+~task:~WAPI#concept-task
 ~task源:~WAPI#task-source
+~task待行列:~WAPI#task-queue
 ~taskを待入する:~WAPI#queue-a-task
 ~taskを待入し:~WAPI#queue-a-task
 待入され:~WAPI#queue-a-task
@@ -1722,6 +1731,8 @@ rq.~URL資格証~利用~flag:~FETCH#concept-request-use-url-credentials-flag
 ~cue~textを利用する~WebVTT~file:~WEBVTT#webvtt-file-using-cue-text
 入子の~cueのみを利用する~WebVTT~file:~WEBVTT#webvtt-file-using-only-nested-cues
 ~WebVTT-file:~WEBVTT#webvtt-file
+
+~detach:https://w3c.github.io/media-source/#mediasource-detach
 
 css.px:~CSSVAL#px
 	~CSS~pixel:~CSSVAL#px
@@ -4388,13 +4399,226 @@ When the load() method on a media element is invoked, the user agent must run th
 </dl>
 
 <p class="algo-head">
-`~media要素$に対する
+所与の`~media要素$ %要素 に対する
 `~media要素~読込み~algo@
-は、
-`…以下、この~algoの内容は未訳^tnote
+は、次を走らす：
 ◎
 The media element load algorithm consists of the following steps.
 </p>
+
+<ol>
+	<li>
+%要素 に対しすでに走らせている`資源~選定~algo$の~instanceがあれば，それを中止する
+◎
+Abort any already-running instance of the resource selection algorithm for this element.
+</li>
+	<li>
+%処理待ち~taskたち ~LET［
+ある`~task待行列$内の， %要素 の`~media要素~event~task源$から待入された`~task$
+］すべてからなる~list
+◎
+Let pending tasks be a list of all tasks from the media element's media element event task source in one of the task queues.
+</li>
+	<li>
+%処理待ち~taskたち 内の ~EACH( %~task ) に対し，待入された順に
+⇒
+~IF［
+%~task は［［
+`再生待ち~promiseたちを解決-$ ／ `再生待ち~promiseたちを却下-$
+］するものである
+］
+⇒
+それらの~promiseたちを即時に［
+解決-／却下-
+］する
+◎
+For each task in pending tasks that would resolve pending play promises or reject pending play promises, immediately resolve or reject those promises in the order the corresponding tasks were queued.
+</li>
+	<li>
+<p>
+%処理待ち~taskたち 内の ~EACH( %~task ) に対し
+⇒
+%~task をその`~task待行列$から除去する
+◎
+Remove each task in pending tasks from its task queue
+</p>
+
+<p class="note">注記：
+基本的に，~media要素が新たな資源の~loadingを開始したときは、処理待ちの~eventや~callbackは破棄され，［
+解決-／却下-
+］待ちの~promiseたちは即時に［
+解決-／却下-
+］される。
+◎
+Basically, pending events and callbacks are discarded and promises in-flight to be resolved/rejected are resolved/rejected immediately when the media element starts loading a new resource.
+</p>
+	</li>
+	<li>
+~IF［
+%要素 の `networkState$mM ~IN {
+`NETWORK_LOADING$mM, `NETWORK_IDLE$mM
+}
+］
+⇒
+次を走らす`~taskを待入する$
+⇒
+%要素 に向けて，名前 `abort$et の`~eventを発火-$する
+◎
+If the media element's networkState is set to NETWORK_LOADING or NETWORK_IDLE, queue a task to fire an event named abort at the media element.
+</li>
+	<li>
+<p>
+~IF［
+%要素 の`networkState$mM ~NEQ `NETWORK_EMPTY$mM
+］：
+◎
+If the media element's networkState is not set to NETWORK_EMPTY, then:
+</p>
+
+	<ol>
+			<li>
+次を走らす`~taskを待入する$
+⇒
+%要素 に向けて，名前 `emptied$et の`~eventを発火-$する
+◎
+Queue a task to fire an event named emptied at the media element.
+</li>
+			<li>
+~IF［
+%要素 に対し，進捗-中にある~fetchingがある
+］
+⇒
+~UAはそれを停止するべきである
+◎
+If a fetching process is in progress for the media element, the user agent should stop it.
+</li>
+			<li>
+~IF［
+%要素 に`割当されている~media提供元~obj$は `MediaSource$I ~objである
+］
+⇒
+それを`~detach$する
+◎
+If the media element's assigned media provider object is a MediaSource object, then detach it.
+</li>
+			<li>
+%要素 の`~media資源に特有の~trackを忘れる$
+◎
+Forget the media element's media-resource-specific tracks.
+</li>
+			<li>
+`readyState$mM ~SET `HAVE_NOTHING$mM
+◎
+If readyState is not set to HAVE_NOTHING, then set it to that state.
+</li>
+			<li>
+<p>
+~IF［
+%要素 の `paused$mM 属性 ~EQ ~F
+］：
+◎
+If the paused attribute is false, then:
+</p>
+				<ol>
+					<li>
+%要素 の `paused$mM 属性 ~SET ~T
+◎
+Set the paused attribute to true.
+</li>
+					<li>
+`再生待ち~promiseたちを却下-$する
+( %要素 の`再生待ち~promiseたちを取り出$した結果, `AbortError$E 例外 )
+◎
+Take pending play promises and reject pending play promises with the result and an "AbortError" DOMException.
+</li>
+				</ol>
+			</li>
+			<li>
+~IF［
+`seeking$mM ~EQ ~T
+］
+⇒
+`seeking$mM ~SET ~F
+◎
+If seeking is true, set it to false.
+</li>
+			<li>
+%要素 の`現在の再生~位置$ ~SET 0
+◎
+Set the current playback position to 0.
+</li>
+			<li>
+%前~位置 ~LET %要素 の`公式的な再生~位置$
+◎
+↓</li>
+			<li>
+%要素 の`公式的な再生~位置$ ~SET 0
+◎
+Set the official playback position to 0.
+</li>
+			<li>
+~IF［
+%前~位置 ~NEQ 0
+］
+⇒
+次を走らす`~taskを待入する$
+⇒
+%要素 に向けて，名前 `timeupdate$et の`~eventを発火-$する
+◎
+If this changed the official playback position, then queue a task to fire an event named timeupdate at the media element.
+</li>
+			<li>
+`時間軸~offset$ ~SET `NaN^jv
+◎
+Set the timeline offset to Not-a-Number (NaN).
+</li>
+			<li>
+<p>
+%要素 の `duration$mM 属性 ~SET `NaN^jv
+◎
+Update the duration attribute to Not-a-Number (NaN).
+</p>
+
+<p class="note">注記：
+~UAは、この段による時間長の変化に対しては，
+`durationchange$et ~eventは
+<a href="#durationChange">発火しない</a>
+ことになる。
+◎
+The user agent will not fire a durationchange event for this particular change of the duration.
+</p>
+			</li>
+		</ol>
+	</li>
+	<li>
+%要素 の `playbackRate$mM 属性 ~SET %要素 の `defaultPlaybackRate$mM 属性の値
+◎
+Set the playbackRate attribute to the value of the defaultPlaybackRate attribute.
+</li>
+	<li>
+%要素 の `error$mM 属性  ~SET ~NULL
+◎
+↓</li>
+	<li>
+%要素 の `自動再生~可能~flag$ ~SET ~T
+◎
+Set the error attribute to null and the can autoplay flag to true.
+</li>
+	<li>
+<p>
+%要素 の`資源~選定~algo$を呼出す
+◎
+Invoke the media element's resource selection algorithm.
+</p>
+
+<p class="note">注記：
+以前に %要素 に対し再生していた`~media資源$があれば，この時点で停止する。
+◎
+Playback of any previously playing media resource for this element stops.
+</p>
+	</li>
+</ol>
+
 
 <p class="algo-head">
 `~media要素$に対する
@@ -4609,7 +4833,7 @@ Thus, a time position included within a range of the objects return by the buffe
 Returns the length of the media resource, in seconds, assuming that the start of the media resource is at time zero.
 </dd>
 	<dd>
-時間長は可用でなければ  `NaN^jv を返す。
+時間長は可用でなければ `NaN^jv を返す。
 ◎
 Returns NaN if the duration isn't available.
 </dd>
@@ -6674,18 +6898,65 @@ It is possible for an element to which no explicit references exist to play audi
 
 <hr>
 
+<p>
+各`~media要素$ %要素 は
+`新たに導入される~cueの~list@
+を持つ
+`…以下、この用語に関わる要件は未訳。^tnote
+◎
+Each media element has a list of newly introduced cues...
+</p>
+
+
+<p>
+`~media要素$ %要素 における
+`~time-march-on@
+手続きは、次に従う：
+◎
+The time marches on steps are as follows:
+</p>
 
 <p class="trans-note">【
-以下、この節の内容は未訳。
+以下、この~algoの内容（`~text~track$を再生に同期させるための処理）は未訳。
 】</p>
 
-<!-- 
-Each media element has a list of newly introduced cues, ...
-新たに導入される~cueの~list
-~time-march-on
-~eventを準備-
--->
+<p class="note">注記：
+`~media要素$の`~node文書$が`全部的に作動中$でなくなった場合、文書が再び作動中になるまで，<a href="#media-playback" >再生は停止する</a>ことになる。
+◎
+If the media element's node document stops being a fully active document, then the playback will stop until the document is active again.
+</p>
 
+<p>
+`~media要素$ %要素 が`文書から除去され$たときは、次を走らせ~MUST：
+◎
+When a media element is removed from a Document, the user agent must run the following steps:
+</p>
+
+<ol>
+	<li>
+<p>
+%要素 を除去した`~task$を継続できるようにするため、次の一連の段を`同期区間$として，`安定~状態を待受ける$：
+◎
+Await a stable state, allowing the task that removed the media element from the Document to continue. The synchronous section consists of all the remaining steps of this algorithm. (Steps in the synchronous section are marked with ⌛.)
+</p>
+		<ol>
+			<li>
+~IF［
+%要素 は`文書~内$にある
+］
+⇒
+~RET
+◎
+⌛ If the media element is in a document, abort these steps.
+</li>
+			<li>
+%要素 に対する`内部~pause手続き$を走らす
+◎
+⌛ Run the internal pause steps for the media element.
+</li>
+		</ol>
+	</li>
+</ol>
 
 				</section>
 				<section id="seeking">
@@ -8241,3 +8512,4 @@ When a media element that is paused is removed from a document and not reinserte
 				</section>
 			</section>
 </main>
+
