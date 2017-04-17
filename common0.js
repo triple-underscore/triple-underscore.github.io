@@ -868,6 +868,7 @@ HTMLselectors:selectors-html-ja.html\n\
 HTMLemb:https://html.spec.whatwg.org/multipage/embedded-content.html\n\
 HTMLsyntax:https://html.spec.whatwg.org/multipage/syntax.html\n\
 HTMLxml:HTML-xhtml-ja.html\n\
+HTMLwriting:HTML-writing-ja.html\n\
 HEinteractive:HTML-interactive-elements-ja.html\n\
 HEforms:HTML-form-elements-ja.html\n\
 HEinput:HTML-input-ja.html\n\
