@@ -814,6 +814,7 @@ CSSFLEX:css-flexbox-ja.html\n\
 CSSFONT:css-fonts-ja.html\n\
 CSSGRID:css-grid-ja.html\n\
 CSSIMAGE:css-images-ja.html\n\
+CSSIMAGE4:css-images4-ja.html\n\
 CSSINLINE:css-inline-ja.html\n\
 CSSLOGICAL:css-logical-props-ja.html\n\
 CSSMCOL:css-multicol-ja.html\n\
