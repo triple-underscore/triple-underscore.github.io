@@ -819,7 +819,7 @@ CSSINLINE:css-inline-ja.html\n\
 CSSLOGICAL:css-logical-props-ja.html\n\
 CSSMCOL:css-multicol-ja.html\n\
 CSSNS:css-namespaces-ja.html\n\
-CSSOM:cssom-ja.html\n\
+CSSOM1:cssom-ja.html\n\
 CSSOMVIEW:cssom-view-ja.html\n\
 CSSOVERFLOW:https://drafts.csswg.org/css-overflow-4/\n\
 CSSOVERFLOW3:css-overflow3-ja.html\n\
