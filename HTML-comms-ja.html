@@ -1175,6 +1175,7 @@ m!MessagePort.close:#dom-messageport-close
 m!MessagePort.postMessage:#dom-messageport-postmessage
 m!MessagePort.start:#dom-messageport-start
 m!MessagePort.onmessage:#handler-messageport-onmessage
+m!MessagePort.onmessageerror:#handler-messageport-onmessageerror
 
 
 	9.6
@@ -1184,6 +1185,7 @@ m!BroadcastChannel.postMessage:#dom-broadcastchannel-postmessage
 m!BroadcastChannel.name:#dom-broadcastchannel-name
 m!BroadcastChannel.close:#dom-broadcastchannel-close
 m!BroadcastChannel.onmessage:#handler-broadcastchannel-onmessage
+m!BroadcastChannel.onmessageerror:#handler-broadcastchannel-onmessageerror
 
 	9.5.2
 	m.Constructor:#dom-messagechannel
@@ -1223,6 +1225,7 @@ et.connect:~HTMLindex#event-workerglobalscope-connect
 et.error:~HTMLindex#event-error
 et.hashchange:~HTMLindex#event-hashchange
 et.message:~HTMLindex#event-message
+et.messageerror:~HTMLindex#event-messageerror
 et.open:~HTMLindex#event-open
 et.resize:~CSSOMVIEW#eventdef-window-resize
 
@@ -1278,7 +1281,6 @@ st.Anonymous:~HTMLINFRA#attr-crossorigin-anonymous
 st.Use Credentials:~HTMLINFRA#attr-crossorigin-use-credentials
 	case-sensitive:~HTMLINFRA#case-sensitive
 
-jA.StructuredCloneWithTransfer:~HTMLcloning#structuredclonewithtransfer
 jA.StructuredSerialize:~HTMLcloning#structuredserialize
 jA.StructuredDeserialize:~HTMLcloning#structureddeserialize
 jA.StructuredSerializeWithTransfer:~HTMLcloning#structuredserializewithtransfer
@@ -1400,7 +1402,7 @@ url.素片:~URLSpec#concept-url-fragment
 </p>
 
 <p>
-更新： <time>2017-03-30</time>
+更新： <time>2017-04-25</time>
 （公開：<time>2016-12-06</time> ）
 </p>
 
@@ -1422,7 +1424,7 @@ url.素片:~URLSpec#concept-url-fragment
 <header id="head">
 	<hgroup>
 <h1>通信 — Communication</h1>
-<h2>HTML Living Standard — 最終更新 2017 年 3 月 29 日</h2>
+<h2>HTML Living Standard — 最終更新 2017 年 4 月 24 日</h2>
 	</hgroup>
 </header>
 
@@ -3389,31 +3391,19 @@ Set targetOrigin to parsedURL's origin.
 		</ol>
 	</li>
 	<li>
-%~clone~record ~LET 
-`StructuredCloneWithTransfer$jA( %message, %transfer, %宛先~Realm )
+%転送-を伴う直列化-結果 ~LET `StructuredSerializeWithTransfer$jA( %message, %transfer )
 （例外投出あり）
 ◎
-Let cloneRecord be StructuredCloneWithTransfer(message, transfer, targetRealm). Rethrow any exceptions.
+Let serializeWithTransferResult be StructuredSerializeWithTransfer(message, transfer). Rethrow any exceptions.
 </li>
 	<li>
-%~message~clone ~LET
-%~clone~record . `Deserialized^sl
+<p>
+`投函済み~message~task源$から，次を走らす`~taskを待入する$：
 ◎
-Let messageClone be cloneRecord.[[Deserialized]].
-</li>
-	<li>
-%新~port~list ~LET
-%~clone~record . `TransferredValues^sl 内のすべての `MessagePort$I ~objからなる，同順の新たな `凍結~配列$
-◎
-Let newPorts be a new frozen array consisting of all MessagePort objects in cloneRecord.[[TransferredValues]], if any, maintaining their relative order.
-</li>
-	<li>
-~RET
-— ただし、以降の手続きは`並列的$に継続する
-◎
-Return, but continue running these steps in in parallel.
-</li>
-	<li>
+Queue a task on the posted message task source to run the following steps:
+</p>
+		<ol>
+			<li>
 ~IF［
 %宛先~生成元 ~NEQ ε
 ］~AND［
@@ -3425,23 +3415,75 @@ Return, but continue running these steps in in parallel.
 ◎
 If the targetOrigin argument is not a single literal U+002A ASTERISK character (*) and targetWindow's associated Document's origin is not same origin with targetOrigin, then abort these steps.
 </li>
-	<li>
+			<li>
+%生成元 ~LET %現任の設定群 の`生成元$enVの`~Unicode直列化$
+◎
+Let origin be the Unicode serialization of incumbentSettings's origin.
+</li>
+			<li>
+%~source ~LET
+`WindowProxy$I ~objの対応している`？^tnote
+%現任の設定群 の`大域~obj$enV （ `Window$I ~obj）
+◎
+Let source be the WindowProxy object's corresponding to incumbentSettings's global object (a Window object).
+</li>
+			<li>
+%逆直列化-~record ~LET `StructuredDeserializeWithTransfer$jA( %転送-を伴う直列化-結果, %宛先~Realm )
+◎
+Let deserializeRecord be StructuredDeserializeWithTransfer(serializeWithTransferResult, targetRealm).
+</li>
+			<li>
 <p>
-`投函済み~message~task源$から，次を走らす`~taskを待入する$
-⇒
+~IF［
+前~段にて例外が投出された
+］：
+</p>
+				<ol>
+					<li>
+<p>
+%宛先~window に向けて，次のように初期化された名前 `messageerror$et の`~eventを発火-$する：
+</p>
+
+<ul ><li>`MessageEvent$I を利用する
+</li><li>`origin$m 属性 ~SET %生成元
+</li><li>`source$m 属性 ~SET %~source
+</li></ul>
+					</li>
+					<li>
+~RET
+</li>
+				</ol>
+◎
+If this throws an exception, fire an event named messageerror at targetWindow, using MessageEvent, with the origin attribute initialized to origin and the source attribute initialized to source, and then abort these steps.
+</li>
+			<li>
+%~message~clone ~LET %逆直列化-~record . `Deserialized^sl
+◎
+Let messageClone be deserializeRecord.[[Deserialized]].
+</li>
+			<li>
+%新~port~list ~LET
+%逆直列化-~record . `TransferredValues^sl 内の すべての `MessagePort$I ~objからなる，同順の新たな`凍結~配列$
+◎
+Let newPorts be a new frozen array consisting of all MessagePort objects in deserializeRecord.[[TransferredValues]], if any, maintaining their relative order.
+</li>
+			<li>
+<p>
 %宛先~window に向けて，次のように初期化された名前 `message$et の`~eventを発火-$する：
 </p>
 
 <ul ><li>`MessageEvent$I を利用する
+</li><li>`origin$m 属性 ~SET %生成元
+</li><li>`source$m 属性 ~SET %~source
 </li><li>`data$m 属性 ~SET  %~message~clone
-</li><li>`origin$m 属性 ~SET %現任の設定群 の`生成元$enVの`~Unicode直列化$
-</li><li>`source$m 属性 ~SET `WindowProxy$I ~obj’s corresponding`？^tnote %現任の設定群 の`大域~obj$enV （ `Window$I ~obj）
 </li><li>`ports$m 属性 ~SET %新~port~list
 </li></ul>
 
 ◎
-Queue a task on the posted message task source to fire an event named message at targetWindow, using MessageEvent, with the data attribute initialized to messageClone, the origin attribute initialized to the Unicode serialization of incumbentSettings's origin, the source attribute initialized to the WindowProxy object's corresponding incumbentSettings's global object (a Window object), and the ports attribute initialized to newPorts.
+Fire an event named message at targetWindow, using MessageEvent, with the origin attribute initialized to origin, the source attribute initialized to source, the data attribute initialized to messageClone, and the ports attribute initialized to newPorts.
 </li>
+		</ol>
+	</li>
 </ol>
 
 			</section>
@@ -3915,6 +3957,7 @@ interface `MessagePort@I : `EventTarget$I {
 
   // event handlers
   attribute `EventHandler$I ``onmessage$m;
+  attribute `EventHandler$I ``onmessageerror$m;
 };
 </pre>
 
@@ -4280,7 +4323,6 @@ If any of the objects in transfer are this MessagePort, then throw a "DataCloneE
 </p>
 <p class="trans-note">【†
 “内にある” が、 “配列~内に直接的に含まれている” ことを意味するのか，深く入子にされて含まれている場合も含めるのか、はっきりしない。
-（後者については、下の `StructuredCloneWithTransfer$jA() にて取扱われるのかも？）
 】</p>
 			</li>
 			<li>
@@ -4356,6 +4398,24 @@ Let targetRealm be finalTargetPort's relevant Realm.
 Let deserializeRecord be StructuredDeserializeWithTransfer(serializeWithTransferResult, targetRealm).
 </li>
 					<li>
+<p>
+~IF［
+前~段にて例外が投出された
+］：
+</p>
+				<ol>
+					<li>
+%最終~宛先~port に向けて，名前 `messageerror$et の,
+`MessageEvent$I を利用する`~eventを発火-$する
+</li>
+					<li>
+~RET
+</li>
+				</ol>
+◎
+If this throws an exception, fire an event named messageerror at finalTargetPort, using MessageEvent, and then abort these steps. 
+</li>
+					<li>
 %~message~clone ~LET %逆直列化-~record . `Deserialized^sl
 ◎
 Let messageClone be deserializeRecord.[[Deserialized]].
@@ -4367,24 +4427,17 @@ Let messageClone be deserializeRecord.[[Deserialized]].
 Let newPorts be a new frozen array consisting of all MessagePort objects in deserializeRecord.[[TransferredValues]], if any, maintaining their relative order.
 </li>
 					<li>
-%~event ~LET
-%宛先~Realm 内の `MessageEvent$I を用いて`~eventを作成-$した結果
+<p>
+%最終~宛先~port に向けて，次のように初期化された名前 `message$et の`~eventを発火-$する：
+</p>
+
+<ul ><li>`MessageEvent$I を利用する
+</li><li>`data$m 属性 ~SET  %~message~clone
+</li><li>`ports$m 属性 ~SET %新~port~list
+</li></ul>
+
 ◎
-Let e be the result of creating an event using MessageEvent in targetRealm.
-</li>
-					<li>
-%~event の
-( `type$m, `data$m, `ports$m ) 属性
-~SET
-( `message$et, %~message~clone, %新~port~list )
-に初期化する
-◎
-Initialize e's type attribute to message, its data attribute to messageClone, and its ports attribute to newPorts.
-</li>
-					<li>
-%最終~宛先~port に向けて %~event を`配送-$する
-◎
-Dispatch e at finalTargetPort.
+Fire an event named message at finalTargetPort, using MessageEvent, with the data attribute initialized to messageClone and the ports attribute initialized to newPorts.
 </li>
 				</ol>
 			</li>
@@ -4421,7 +4474,10 @@ The following are the event handlers (and their corresponding event handler even
 
 <tbody><tr><td>``onmessage@m
 <td>`message$et
- 
+
+<tr><td>``onmessageerror@m
+<td>`messageerror$et
+
 </tbody></table>
 
 <p>
@@ -4546,6 +4602,7 @@ interface `BroadcastChannel@I : `EventTarget$I {
   void ``postMessage$m(any %message);
   void ``close$m();
   attribute `EventHandler$I ``onmessage$m;
+  attribute `EventHandler$I ``onmessageerror$m;
 };
 </pre>
 
@@ -4768,9 +4825,36 @@ For each BroadcastChannel object destination in destinations, queue a task that 
 Let targetRealm be destination's relevant Realm.
 </li>
 					<li>
+%生成元 ~LET %~source設定群 の`生成元$enVの`~Unicode直列化$
+◎
+↓</li>
+					<li>
 %~data ~LET `StructuredDeserialize$jA( %直列形, %宛先~Realm )
 ◎
 Let data be StructuredDeserialize(serialized, targetRealm).
+</li>
+			<li>
+<p>
+~IF［
+前~段にて例外が投出された
+］：
+</p>
+				<ol>
+					<li>
+<p>
+%行先 に向けて，次のように初期化された名前 `messageerror$et の`~eventを発火-$する：
+</p>
+
+<ul ><li>`MessageEvent$I を利用する
+</li><li>`origin$m 属性 ~SET %生成元
+</li></ul>
+					</li>
+					<li>
+~RET
+</li>
+				</ol>
+◎
+If this throws an exception, then fire an event named messageerror at destination, using MessageEvent, with the origin attribute initialized to the Unicode serialization of sourceSettings's origin, and then abort these steps.
 </li>
 					<li>
 <p>
@@ -4779,7 +4863,7 @@ Let data be StructuredDeserialize(serialized, targetRealm).
 
 <ul ><li>`MessageEvent$I ~interfaceを利用する
 </li><li>`data$m 属性 ~SET %~data
-</li><li>`origin$m 属性 ~SET %~source設定群 の`生成元$enVの`~Unicode直列化$
+</li><li>`origin$m 属性 ~SET %生成元
 </li></ul>
 
 ◎
@@ -4856,6 +4940,9 @@ The following are the event handlers (and their corresponding event handler even
 
 <tbody><tr><td>``onmessage@m
 <td>`message$et
+
+<tr><td>``onmessageerror@m
+<td>`messageerror$et
 
 </tbody></table>
 
