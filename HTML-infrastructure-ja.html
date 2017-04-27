@@ -506,6 +506,7 @@ meta 要素から符号化方式を抽出する:#algorithm-for-extracting-a-char
 非~zero数に制限され:#limited-to-only-non-negative-numbers-greater-than-zero
 ~fallbackありの下で非~zero数に制限され:#limited-to-only-non-negative-numbers-greater-than-zero-with-fallback
 正数に制限され:#limited-to-numbers-greater-than-zero
+範囲に切詰められ:#clamped-to-the-range
 
 	limited to numbers greater than zero
 	limited to only non-negative numbers greater than zero
@@ -753,6 +754,7 @@ label::::ラベル
 正準的な:canonical:~
 	正規化済みの:normalized:~
 
+
 	●network／fetch／URL
 fetch:
 fetching:::fetch 処理
@@ -913,7 +915,6 @@ module::::モジュール
 	利用-:use:~
 利用者:user:~
 制御:control:~
-制限-:limit:~
 単純化:simplicity:~
 危険に:dangerous に:~
 取扱う:handle する:取り扱う
@@ -1108,6 +1109,9 @@ support::::サポート
 作成-:create:~
 作成:creation:~
 作成元:creator:~
+制限-:limit:~
+切詰めら:clamp さ:切り詰めら
+切詰めた:clamp した:切り詰めた
 
 	●未分類
 size::::サイズ
@@ -3419,16 +3423,19 @@ If a reflecting IDL attribute has a signed integer type (long) that is limited t
 無符号~整数~型（ `unsigned long$I ）の `~IDL属性$V に対しては：
 </dt>
 	<dd>
-この種の `~IDL属性$V には：
+この種の `~IDL属性$V には、次のいずれかに該当するものもある：
 
-<ul ><li>(A) `非~zero数に制限され@る, あるいは
+<ul ><li>(A) `非~zero数に制限され@る
 </li><li>(B) `~fallbackありの下で非~zero数に制限され@る
+</li><li>(C) ある最小, 最大による`範囲に切詰められ@る
 </li></ul>
 
-ものもある。
-(B) に該当する場合、当の~fallbackが何らかの
-`既定~値$V ~IN { 1 〜 2147483647 }
-を与えているものとして，以下を適用する。
+<p>
+(B) ／ (C)
+の場合、~fallbackとして，常に何らかの `既定~値$V が定義される。
+</p>
+
+
 ◎
 ↓</dd>
 
@@ -3438,32 +3445,40 @@ If a reflecting IDL attribute has a signed integer type (long) that is limited t
 </p>
 		<ol>
 			<li>
+%V ~LET ε
+</li>
+			<li>
+~IF［
+`内容~値$V ~NEQ ε
+］~AND［
+`内容~値$V を`非~負~整数として構文解析-$した結果 ~NEQ ~error
+］
+⇒
+%V ~SET その結果
+</li>
+			<li>
+~IF［
+`~IDL属性$V は上述の (C) に該当する
+］
+⇒
+~RET ［
+%V ~EQ ε ならば `既定~値$V ／
+~ELSE_ %V を所与の範囲に切詰めた結果
+］
+</li>
+			<li>
 %下限 ~LET ［
 `~IDL属性$V は上述の (A), (B) いずれかに該当するならば 1 ／
 ~ELSE_ 0
 ］
 </li>
 			<li>
-<p>
 ~IF［
-`内容~値$V ~NEQ ε
-］：
-</p>
-				<ol>
-					<li>
-%V ~LET `内容~値$V を`非~負~整数として構文解析-$した結果
-</li>
-					<li>
-~IF［
-%V ~NEQ ~error
-］~AND［
-%V ~IN { %下限 〜 2147483647 }
+%V ~IN { %下限 〜 2147483647 } （ %V ~NEQ ε ）
 ］
 ⇒
 ~RET %V
 </li>
-				</ol>
-			</li>
 			<li>
 ~RET［
 `既定~値$V ~NEQ ε ならば `既定~値$V ／
@@ -3481,7 +3496,7 @@ If a reflecting IDL attribute has a signed integer type (long) that is limited t
 </li>
 			<li>
 ~IF［
-`~IDL属性$V は`非~zero数に制限され$ている
+`~IDL属性$V は上述の (A) に該当する
 ］~AND［
 %V ~EQ 0
 ］
@@ -3508,12 +3523,17 @@ If a reflecting IDL attribute has a signed integer type (long) that is limited t
 `内容~属性$V の値 ~SET %V を表現するような`妥当な整数$のうち，可能な限り最短の文字列
 </li>
 		</ol>
+
+`設定子に関しては、 (C) に対する特別な扱いはない^tnote
+
 ◎
 If a reflecting IDL attribute has an unsigned integer type (unsigned long) then, on getting, the content attribute must be parsed according to the rules for parsing non-negative integers, and if that is successful, and the value is in the range 0 to 2147483647 inclusive, the resulting value must be returned. If, on the other hand, it fails or returns an out of range value, or if the attribute is absent, the default value must be returned instead, or 0 if there is no default value. On setting, first, if the new value is in the range 0 to 2147483647, then let n be the new value, otherwise let n be the default value, or 0 if there is no default value; then, n must be converted to the shortest possible string representing the number as a valid non-negative integer and that string must be used as the new content attribute value.
 ◎
 If a reflecting IDL attribute has an unsigned integer type (unsigned long) that is limited to only non-negative numbers greater than zero, then the behavior is similar to the previous case, but zero is not allowed. On getting, the content attribute must first be parsed according to the rules for parsing non-negative integers, and if that is successful, and the value is in the range 1 to 2147483647 inclusive, the resulting value must be returned. If, on the other hand, it fails or returns an out of range value, or if the attribute is absent, the default value must be returned instead, or 1 if there is no default value. On setting, if the value is zero, the user agent must throw an "IndexSizeError" DOMException. Otherwise, first, if the new value is in the range 1 to 2147483647, then let n be the new value, otherwise let n be the default value, or 1 if there is no default value; then, n must be converted to the shortest possible string representing the number as a valid non-negative integer and that string must be used as the new content attribute value.
 ◎
 If a reflecting IDL attribute has an unsigned integer type (unsigned long) that is limited to only non-negative numbers greater than zero with fallback, then the behavior is similar to the previous case, but disallowed values are converted to the default value. On getting, the content attribute must first be parsed according to the rules for parsing non-negative integers, and if that is successful, and the value is in the range 1 to 2147483647 inclusive, the resulting value must be returned. If, on the other hand, it fails or returns an out of range value, or if the attribute is absent, the default value must be returned instead. On setting, first, if the new value is in the range 1 to 2147483647, then let n be the new value, otherwise let n be the default value; then, n must be converted to the shortest possible string representing the number as a valid non-negative integer and that string must be used as the new content attribute value.
+◎
+If a reflecting IDL attribute has an unsigned integer type (unsigned long) that is clamped to the range [min, max], then on getting, the content attribute must first be parsed according to the rules for parsing non-negative integers, and if that is successful, and the value is between min and max inclusive, the resulting value must be returned. If it fails, the default value must be returned. If it succeeds but the value is less than min, min must be returned. If it succeeds but the value is greater than max, max must be returned. On setting, it behaves the same as setting a regular reflected unsigned integer.
 </dd>
 
 	<dt>
