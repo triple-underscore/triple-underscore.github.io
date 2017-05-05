@@ -816,7 +816,7 @@ CSSGRID:css-grid-ja.html\n\
 CSSIMAGE:css-images-ja.html\n\
 CSSIMAGE4:css-images4-ja.html\n\
 CSSINLINE:css-inline-ja.html\n\
-CSSLOGICAL:css-logical-props-ja.html\n\
+CSSLOGICAL:css-logical-ja.html\n\
 CSSMCOL:css-multicol-ja.html\n\
 CSSNS:css-namespaces-ja.html\n\
 CSSOM1:cssom-ja.html\n\
