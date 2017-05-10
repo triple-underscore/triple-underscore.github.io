@@ -34,7 +34,6 @@ var Util = {
 	get_mapping: EMPTY_FUNC,
 	textData: EMPTY_FUNC,
 	getDataByLevel: EMPTY_FUNC,
-	toggleClass: EMPTY_FUNC,
 	get_header: EMPTY_FUNC,
 	supplyLinkFromText: EMPTY_FUNC,
 	dump: EMPTY_FUNC,
@@ -163,22 +162,6 @@ Util.getDataByLevel = function(data, level){
 	;
 };
 
-// class トグル ( IE9 サポート TODO classList に置換)
-
-Util.toggleClass = function(e, token){
-	var c = e.className;
-	if(!c) {
-		e.className = token;
-		return true;
-	}
-	c = ' ' + c + ' ';
-	var i = c.indexOf(' ' + token + ' ');
-	var on = (i < 0);
-	e.className = on ?
-		c.slice(1) + token :
-		c.slice(1, i) + c.slice(i + token.length + 1, -1);
-	return on;
-};
 
 // 節見出しを取得
 Util.get_header = function(section){
@@ -333,10 +316,10 @@ new function(){
 		page_state = history.state || page_state || Util.page_state;
 
 		if(page_state.show_original){
-			Util.toggleClass(document.body, 'show-original')
+			document.body.classList.toggle('show-original');
 		}
 		if(page_state.side_menu){
-			Util.toggleClass(document.body, 'side-menu');
+			document.body.classList.toggle('side-menu');
 		}
 		if(COMMON_DATA.init) {
 			Util.initAdditional(COMMON_DATA.init(E('view_control')), page_state);

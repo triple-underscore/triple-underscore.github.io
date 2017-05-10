@@ -245,14 +245,14 @@ Util.CLICK_HANDLERS = {
 /** 原文表示切替 */
 Util.CLICK_HANDLERS._toggle_source = function(){
 	Util.switchView(function(){
-		var on = Util.toggleClass(document.body, 'show-original');
+		var on = document.body.classList.toggle('show-original');
 		COMMON_DATA.setState('show_original', on);
 	});
 };
 /** 目次表示切替 */
 Util.CLICK_HANDLERS._toggle_toc = function(){
 	Util.switchView(function(){
-		var on = Util.toggleClass(document.body, 'side-menu');
+		var on = document.body.classList.toggle('side-menu');
 		Util.ref_position.releaseAndFix()
 		COMMON_DATA.setState('side_menu', on);
 	});
@@ -261,7 +261,7 @@ Util.CLICK_HANDLERS._toggle_toc = function(){
 Util.CLICK_HANDLERS.view_control = function(event){
 	var e = E('view_control');
 	if(event.target !== e) return;
-	Util.toggleClass(e, '_hoverd')
+	e.classList.toggle('_hoverd')
 };
 
 //	_toggle_index 用語索引 
@@ -274,7 +274,7 @@ Util.toggleSource = function(target){
 		if(e.tagName === 'SECTION') return;
 		var c = e.lastElementChild;
 		if(c && c.lang === 'en'){
-			this.toggleClass(e, 'show-original');
+			e.classList.toggle('show-original');
 			return;
 		}
 	}
@@ -574,13 +574,12 @@ return;
 
 	function collect(){
 		var list = [];
-		repeat('dfn[id], dt[id]', add_item);
+		repeat('main dfn[id], main dt[id]', add_item);
 		return list;
 
 		function add_item(dfn){
 			var text = dfn.textContent.trim();
 			if(!text) return;
-			if(text.charAt(0) === '[') return; // おそらく参照文献
 			var id = dfn.id;
 			var a = C('a');
 
@@ -882,10 +881,10 @@ Util.dfnInit = function(){
 		var e0 = this.current || null;
 		if(e0 === e) return;
 		if(e0){
-			Util.toggleClass(e0, 'highlight');
+			e0.classList.toggle('highlight');
 		}
-		if(e) {
-			Util.toggleClass(e, 'highlight');
+		if(e){
+			e.classList.toggle('highlight');
 		}
 		this.current = e;
 	}
@@ -1023,7 +1022,7 @@ Util.dfnInit = function(){
 		// 表示を初期状態に戻す
 		dfnPanel.className = '';
 		dfnPanel.style.left =
-		dfnPanel.style.right = '';
+		dfnPanel.style.right = 'auto';
 		dfn.insertBefore(dfnPanel, dfn.firstChild);
 		//dfn.appendChild(dfnPanel);
 		dfnPanel.focus();
