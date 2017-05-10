@@ -1677,8 +1677,6 @@ STREAMS=・            streams.spec.whatwg.org/\n\
 STREAMS=・            github.com/whatwg/streams\n\
 SVG2=副               triple-underscore.github.io/SVG11/●Version 1 日本語訳\n\
 SVG=主                triple-underscore.github.io/SVG11/\n\
-TYPEDARRAY=主         ~/TypedArray-ja.html\n\
-TYPEDARRAY=版         www.khronos.org/registry/typedarray/specs/latest/\n\
 TOUCHEVENTS=主        ~/touch-events-ja.html\n\
 URL=主                ~/URL-ja.html\n\
 URL=編                url.spec.whatwg.org/●LS\n\
@@ -1833,7 +1831,6 @@ URLAPISPECIFICATION:URL\n\
 XMLHTTPREQUEST:XHR\n\
 HTML5:HTML\n\
 SVG11:SVG\n\
-TYPEDARRAYS:TYPEDARRAY\n\
 TOUCH:TOUCHEVENTS\n\
 WSAPI:WEBSOCKETS\n\
 WEBWORKERS:WORKERS\n\
