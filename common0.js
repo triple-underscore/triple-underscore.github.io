@@ -840,6 +840,7 @@ HTMLcms:HTML-micro-syntax-ja.html\n\
 HTMLcloning:HTML-cloning-ja.html\n\
 HTMLcomms:HTML-comms-ja.html\n\
 HTMLconform:HTML-conform-ja.html\n\
+HTMLdep:HTML-dependencies-ja.html\n\
 HTMLdnd:HTML-DND-ja.html\n\
 HTMLdom:HTML-dom-ja.html\n\
 HTMLforms:HTML-forms-ja.html\n\
