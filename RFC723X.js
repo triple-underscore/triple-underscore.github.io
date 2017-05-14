@@ -751,7 +751,7 @@ IETF Review:~5226#section-4.1\n\
 	日時~形式:~7231#section-7.1.1.1\n\
 日時:~7231#origination.date\n\
 時計:~7231#clock\n\
-主資源:~7231#primary-resource\n\
+首~資源:~7231#primary-resource\n\
 製品~識別子:~7231#product-identifier\n\
 検証子~header:~7231#response.validator\n\
 ~cacheable:~7231#cacheable.methods\n\
@@ -857,11 +857,6 @@ Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け<
 */
 
 	words_table: '\n\
-such::そのような\n\
-常に:always:~\n\
-両者:both:~\n\
-両:both:~\n\
-殆どの:most:ほとんどの\n\
 伝え:inform し:~\n\
 伝える:inform する:~\n\
 	例:example:~\n\
@@ -982,7 +977,6 @@ such::そのような\n\
 見出せ:find でき:~\n\
 見出して:find して:~\n\
 見出させ:find させ:~\n\
-試0:attempt:~\n\
 試み:attempt:~\n\
 試みた:attempt した:~\n\
 試みて:attempt して:~\n\
@@ -1338,7 +1332,7 @@ zero:::ゼロ\n\
 中継-:relay::~\n\
 中継者:intermediary::~\n\
 中間:intermediation:~\n\
-主:primary::~\n\
+首:primary::主\n\
 主体:party::~\n\
 主張:claim:~\n\
 主流に:prevalent に:~\n\
@@ -1362,7 +1356,6 @@ zero:::ゼロ\n\
 後方:backwards::~\n\
 後方互換:backwards-compatible::~\n\
 交換:exchange:~\n\
-今や:now:~\n\
 今後の:later:~\n\
 介入-:intervene:~\n\
 中間者:man-in-the-middle::~\n\
@@ -1517,10 +1510,7 @@ zero:::ゼロ\n\
 制限-:limit:~\n\
 上限:limit:~\n\
 制限:limitation:~\n\
-	前後:around:~\n\
 事前条件:precondition::~\n\
-前者:former:~\n\
-前者の:former:~\n\
 副作用:side effect:~\n\
 副次的な:secondary:~\n\
 副次的:secondary:~\n\
@@ -1672,7 +1662,6 @@ referrer::::リファラ\n\
 外側:outside:~\n\
 	外部:outside:~\n\
 外向けの:outgoing:~\n\
-外的:external:~\n\
 多様:diverse:~\n\
 多様性:diversity:~\n\
 多量:large amount:~\n\
@@ -1772,8 +1761,6 @@ referrer::::リファラ\n\
 導入:introduction:~\n\
 序論:introduction:~\n\
 導出-:derive:~\n\
-小さな:small:~\n\
-少数の:few:~\n\
 尚早:premature:~\n\
 尾部:trailing:~\n\
 頭部:leading:~\n\
@@ -1811,10 +1798,6 @@ referrer::::リファラ\n\
 待機-:wait::~\n\
 待機:wait::~\n\
 後処理:post-processing:~\n\
-	後続-:follow:~\n\
-後続の:subsequent:~\n\
-後者:latter:~\n\
-後者の:latter:~\n\
 復帰-:revert:~\n\
 心配:fear:~\n\
 必要十分:adequate:~\n\
@@ -1992,11 +1975,7 @@ referrer::::リファラ\n\
 最大:maximum:~\n\
 最大化-:maximize:~\n\
 最小:minimum:~\n\
-最後に:finally:~\n\
-最初の:first:~\n\
-最後の:last:~\n\
 最終:final:~\n\
-最終的:eventual:~\n\
 最良:best:~\n\
 最適化-:optimize:~\n\
 最適化:optimization:~\n\
@@ -2057,7 +2036,6 @@ referrer::::リファラ\n\
 再構築-:reconstruct:~\n\
 再構築:reconstruction:~\n\
 構造:structure:~\n\
-様々な:various:~\n\
 標準:standard::~\n\
 標準化-:standardize::~\n\
 権利:right:~\n\
@@ -2082,7 +2060,6 @@ referrer::::リファラ\n\
 欠如:lack:~\n\
 欠如する:lack する:欠く\n\
 欠陥:flaw:~\n\
-次0の:next:次の\n\
 次元:dimension:~\n\
 正しく:correct に:~\n\
 不正:incorrect:~\n\
@@ -2097,8 +2074,6 @@ referrer::::リファラ\n\
 正誤表:errata::~\n\
 歴史:history:~\n\
 歴史的:historical:~\n\
-	残りの:remaining:~\n\
-	残りの部分:remainder:~\n\
 段階:stage:~\n\
 比較-:compare::~\n\
 比較:comparison::~\n\
@@ -2219,7 +2194,6 @@ stateless::::ステートレス\n\
 確保-:ensure:~\n\
 確立-:establish::~\n\
 確立:establishing::~\n\
-確立0:establishment::確立\n\
 示唆-:suggest:~\n\
 禁止-:forbid::~\n\
 禁制:prohibit::~\n\
@@ -2302,7 +2276,6 @@ stateless::::ステートレス\n\
 保守:maintenance:~\n\
 網羅的:exhaustive:~\n\
 総集的:collective:~\n\
-	総:total:~\n\
 編集0:edit:編集\n\
 編集:editing:~\n\
 編集上の:editorial:~\n\
@@ -2422,19 +2395,16 @@ stateless::::ステートレス\n\
 責務:responsibility:~\n\
 資格証:credentials::資格証明情報::クレデンシャル\n\
 資源:resource::~:リソース\n\
-主資源:primary resource:主 resource:~:主リソース\n\
 資質:nature:~\n\
 性向:nature:~\n\
 起動-:initiate:~\n\
 起動させ:initiate し:~\n\
 超過-:exceed:~\n\
-	近い:near:~\n\
 近似:approximation:~\n\
 追加-:add:~\n\
 追加:addition:~\n\
 追加の:additional:~\n\
 追跡:trace::~::トレース\n\
-	逆:reverse:~\n\
 透過性:transparency::~\n\
 透過的:transparent::~\n\
 逐語的:verbatim:~\n\
@@ -2481,8 +2451,6 @@ stateless::::ステートレス\n\
 適時:timely:~\n\
 適正:proper:~\n\
 遭遇-:encounter:~\n\
-阻止:block:~:::ブロック\n\
-阻む:block する:~:::ブロックする\n\
 選好-:prefer:~\n\
 選好:preference:~\n\
 選好順:descending preference の order:選好度の高い順\n\
@@ -2560,7 +2528,32 @@ stateless::::ステートレス\n\
 
 
 /*
+常に:always:~\n\
+今や:now:~\n\
+両者:both:~\n\
+両:both:~\n\
+ほとんどの:most\n\
 既に:already:すでに\n\
+逆:reverse:~\n\
+近い:near:~\n\
+総:total:~\n\
+小さな:small:~\n\
+様々な:various:~\n\
+次:next:次の\n\
+残りの:remaining:~\n\
+残りの部分:remainder:~\n\
+少数の:few:~\n\
+後続の:subsequent:~\n\
+	後続-:follow:~\n\
+	前後:around:~\n\
+前者:former:~\n\
+前者の:former:~\n\
+後者:latter:~\n\
+後者の:latter:~\n\
+最初の:first:~\n\
+最後の:last:~\n\
+最後に:finally:~\n\
+最終的:eventual:~\n\
 全面的に:entire に:~\n\
 先立つ:prior:~\n\
 〜に先立って／先に／事前に／~~直前:prior to〜
@@ -3023,7 +3016,7 @@ IETF Review:~5226#section-4.1\n\
 	日時~形式:~7231#section-7.1.1.1\n\
 ／日時:~7231#section-7.1.1\n\
 〜時計:~7231#clock\n\
-〜主資源:~7231#primary-resource\n\
+〜首~資源:~7231#primary-resource\n\
 〜製品~識別子:~7231#product-identifier\n\
 ／検証子~header:~7231#validator-header\n\
 ／~cacheable:~7231#cacheable\n\
