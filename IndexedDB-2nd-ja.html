@@ -413,6 +413,7 @@ SortedList:#_X-SortedList
 db.名前:#database-name
 db.~version:#database-version
 ~db~access~task源:#database-access-task-source
+db.昇格~tx:#database-upgrade-transaction
 
 接続:#connection
 	接続先~db:#connection
@@ -428,7 +429,6 @@ i.~close待ち:#connection-close-pending-flag
 ~close:#connection-closed
 ~version変更~event:#connection-version-change-event
 
-専属の昇格~tx:#_connection-upgrade-transaction
 接続~待行列:#request-connection-queue
 
 	●transaction
@@ -603,8 +603,8 @@ Cmp:#compare-two-keys
 非同期に実行する:#asynchronously-execute-a-request
 
 昇格~txを稼働-:#run-an-upgrade-transaction
-を稼働-:#run-an-upgrade-transaction
 昇格~txを中止-:#abort-an-upgrade-transaction
+昇格~txが中止-:#abort-an-upgrade-transaction
 
 保管庫に~recordを格納する:#store-a-record-into-an-object-store
 
@@ -1275,6 +1275,7 @@ API:
 UA:user agent:UA
 targeted:
 tool::::ツール
+test::::テスト
 	comment:
 	common:
 仕様:spec:~
@@ -1303,7 +1304,7 @@ tool::::ツール
 作者:author:~
 仕組み:mechanism:~
 	複数の:multiple:~
-目的0:purpose:目的
+目的:purpose:~
 事例:case:~
 実際の:actual:~
 	2 番目／回目／個目:second:~
@@ -2002,7 +2003,7 @@ samp {
 </p>
 
 <p >
-更新：<time>2017-05-12</time>
+更新：<time>2017-05-18</time>
 （公開：<time>2015-08-06</time> ）
 </p>
 
@@ -2026,7 +2027,7 @@ samp {
 <a href="https://www.w3.org/" id="_W3C">W3C</a>
 	<hgroup>
 <h1 id="title">索引付きデータベース API — Indexed Database API 2.0</h1>
-<h2>2017 年 5 月 9 日付 編集者草案</h2>
+<h2>2017 年 5 月 15 日付 編集者草案</h2>
 	</hgroup>
 
 <dl id="_versions">
@@ -2046,10 +2047,9 @@ samp {
 
 	<dt title="Issue Tracking:">最新の課題</dt>
 	<dd><a href="https://github.com/w3c/IndexedDB/issues/">GitHub</a></dd>
-<!-- 
-	<dd><a href="#issues-index">仕様内</a></dd>
-https://github.com/w3c/IndexedDB/commits/master
- -->
+
+	<dt title="Version History:">バージョン履歴</dt>
+	<dd>https://github.com/w3c/IndexedDB/commits/master</dd>
 
 	<dt title="Editors:">編集</dt>
 	<dd><a href="mailto:alia@microsoft.com">Ali Alabbas</a> (Microsoft Corp.)</dd>
@@ -2939,6 +2939,24 @@ A database has a version. When a database is first created, its version is 0 (ze
 Each database has one version at a time; a database can’t exist in multiple versions at once. The only way to change the version is using an upgrade transaction.
 </dd>
 
+	<dt>`昇格~tx@db</dt>
+	<dd>
+`昇格~tx$または ε （存在しない）
+— 初期~時は ε とする。
+◎
+A database has at most one associated upgrade transaction, which is either null or an upgrade transaction, and is initially null.
+</dd>
+	<dd class="trans-note">【
+所与の時点で`~db$に生じている`昇格~tx$を指す。
+そのような~txは，あっても一つに限られ（ ~NULL は無いことを表す）、この`~db$を`~access先$とする，ある`接続$に`専属する$。
+】</dd>
+	<dd class="trans-note">【
+“昇格~txは
+`稼働して@
+いる（ running ）”
+という，未定義の句も現れるが、おそらく，これが非 ε であることを意味する。
+】</dd>
+
 </dl>
 
 			<section id="database-connection">
@@ -2994,13 +3012,14 @@ This is not affected by changes to the Document's domain.
 	<dt>`~version@Cn （ `version$m ）</dt>
 	<dd>
 作成-時に設定され、それ以降，変わらない。
-ただし、 %接続 に`専属の昇格~tx$が中止された場合には，`~db$の元の~versionに戻される。
+ただし，`昇格~txが中止-$された場合、
+%接続↗ である`~db$は，その元の~versionに戻される。
 %接続 が`~close$されて以降は変化しない。
 ◎
 A connection has a version, which is set when the connection is created. It remains constant for the lifetime of the connection unless an upgrade is aborted, in which case it is set to the previous version of the database. Once the connection is closed the version does not change.
 </dd>
 	<dd class="trans-note">【
-より詳細には、 %接続 に`専属の昇格~tx$が`終了-$して以降は変化しない。
+より詳細には、 %接続↗ の`昇格~tx$dbが`終了-$して以降は変化しない。
 】</dd>
 
 	<dt>`状態@Cn</dt>
@@ -3069,7 +3088,7 @@ A connection may be closed by a user agent in exceptional circumstances, for exa
 	<dt>`保管庫~集合@Cn （ `objectStoreNames$m ）</dt>
 	<dd>
 %接続 の作成-時に， %接続↗ に`専属する$`保管庫$たちの集合に初期化される。
-この集合の内容は、 %接続 に`専属の昇格~tx$が`稼働して$いる間を除いて，一定であり続ける。
+この集合の内容は、 %接続↗ の`昇格~tx$dbが`稼働して$いる間を除いて，一定であり続ける。
 ◎
 A connection has an object store set, which is initialized to the set of object stores in the associated database when the connection is created. The contents of the set will remain constant except when an upgrade transaction is running.
 </dd>
@@ -3261,8 +3280,8 @@ An object store handle has an associated object store and an associated transact
 %H↗ に`専属する$`索引$たちからなる集合
 ］に初期化される。
 この集合の内容は、 %H が`専属する$~txが［
-`昇格~tx$であって, `稼働して$いる
-］ときを除いて，一定であり続ける。
+`昇格~tx$であって, `稼働して$いる間
+］を除いて，一定であり続ける。
 ◎
 An object store handle has an index set, which is initialized to the set of indexes that reference the associated object store when the object store handle is created. The contents of the set will remain constant except when an upgrade transaction is running.
 </dd>
@@ -4928,18 +4947,8 @@ An upgrade transaction is automatically created when running the steps to run an
 
 <p class="trans-note">【†
 このとき以外に，`接続$に`専属する$`昇格~tx$が作成される機会はない。
-それは、同じ接続に`専属する$他のどの`~tx$よりも先に`開始-$される。
-簡潔に記すため、次の用語を定義する：
+したがってそれは、同じ接続に`専属する$他のどの`~tx$よりも先に`開始-$されることになる。
 】</p>
-
-<p>
-`接続$ %C に
-`専属の昇格~tx@
-は、
-%C に`専属する$`昇格~tx$が作成されたならば それ（唯一に限られる）／
-~ELSE_ ε とする。
-</p>
-
 
 <div class="note">
 
@@ -4956,9 +4965,7 @@ An upgrade transaction enables the creation, renaming, and deletion of object st
 <p>
 `昇格~tx$は、排他的である。
 `~dbを~open$する手続きは、［
-`昇格~tx$が
-`稼働して@
-いる間，~dbを~openしている`接続$
+`昇格~tx$が`稼働して$いる間，~dbを~openしている`接続$
 ］は，唯一に限られることを確保する。
 同じ`~db$への他のすべての`接続$が~closeされるまでは、
 `upgradeneeded$et ~eventは発火されず，したがって`昇格~tx$も開始されない。
@@ -5122,9 +5129,9 @@ A request’s get the parent algorithm returns the request’s transaction.
 また，`昇格~tx$が必要とされた場合も、同じ`~open要請$が［
 `upgradeneeded$et ~event, ~open演算~自身の最終~結果
 ］の両者に利用される。
-いずれの場合も、要請の `~done~flag$は、演算を実行する前に，また ~OFF にされ、その`結果$も変化し得る。
+事例によっては、要請の`~done~flag$は ~OFF にされてから再び ~ON にされ，`結果$は変化する, あるいは`~error$が設定されることもある。
 ◎
-Requests are not typically re-used, but there are exceptions. When a cursor is iterated, the success of the iteration is reported on the same request object used to open the cursor. And when an upgrade transaction is necessary, the same open request is used for both the upgradeneeded event and final result of the open operation itself. In both cases, the request’s done flag will be unset then set again, and the result can change.
+Requests are not typically re-used, but there are exceptions. When a cursor is iterated, the success of the iteration is reported on the same request object used to open the cursor. And when an upgrade transaction is necessary, the same open request is used for both the upgradeneeded event and final result of the open operation itself. In some cases, the request’s done flag will be unset then set again, and the result can change or error could be set insead. 
 </p>
 
 
@@ -6504,8 +6511,9 @@ Returns the IDBObjectStore, IDBIndex, or IDBCursor the request was made against,
 	<dt>%request . `transaction$m</dt>
 	<dd>
 %request の`設置先~tx$（ `IDBTransaction$I ）を返す。
-ただし， %request は`~open要請$である場合は、当の接続に`専属の昇格~tx$が`稼働して$いるならば それ ／
-~ELSE_ ~NULL
+ただし， %request は`~open要請$である場合は、それにより~openされた`~db$の`昇格~tx$dbが`稼働して$［
+いるならば それ ／
+いなければ ~NULL
 ］を返す。
 ◎
 Returns the IDBTransaction the request was made within. If this as an open request, then it returns an upgrade transaction while it is running, or null otherwise.
@@ -6702,7 +6710,7 @@ The oldVersion attribute getter returns the previous version of the database.
 	<dd>
 ~dbの新たな`~version$dbを返す。
 ただし、~dbが削除されつつあるときは ~NULL になる。
-`昇格~txを稼働-$させる手続きを見よ。
+`昇格~txを稼働-$する手続きを見よ。
 ◎
 The newVersion attribute getter returns the new version of the database, or null if the database is being deleted. See the steps to run an upgrade transaction.
 </dd>
@@ -6889,7 +6897,7 @@ interface `IDBFactory@I {
 存在するならば その現在の`~version$db ／
 存在しないならば`~version$db 1
 ］で~openするよう要請する。
-成功した場合の %request の `result$m は、その~dbへの`接続$（ `IDBOpenDBRequest$I ）になる。
+成功した場合の %request （ `IDBOpenDBRequest$I ）の `result$m は、その~dbへの`接続$になる。
 ◎
 Attempts to open a connection to the named database with the current version, or 1 if it does not already exist. If the request is successful request’s result will be the connection.
 </dd>
@@ -6912,7 +6920,7 @@ Attempts to open a connection to the named database with the current version, or
 </li>
 		</ul>
 <p>
-成功した場合の %request の `result$m は、当の`接続$（ `IDBOpenDBRequest$I ）になる。
+成功した場合の %request （ `IDBOpenDBRequest$I ）の `result$m は、当の`接続$になる。
 </p>
 ◎
 Attempts to open a connection to the named database with the specified version. If the database already exists with a lower version and there are open connections that don’t close in response to a versionchange event, the request will be blocked until all they close, then an upgrade will occur. If the database already exists with a higher version the request will fail. If the request is successful request’s result will be the connection.
@@ -7014,25 +7022,30 @@ Queue a task to run these steps:
 </p>
 						<ol>
 							<li>
+%要請 の
+( `~done~flag$, `結果$, `~error$ ) ~SET ( ~ON, ε, ε )
+◎
+↓</li>
+							<li>
 <p>
 ~IF［
 %結果 は~errorである
 ］：
 </p>
-<ol><li>%要請 の`~error$ ~SET %結果
+<ol ><li>%要請 の`~error$ ~SET %結果
 </li><li>%要請 に向けて，名前 `error$et の~eventを［
 ( `bubbles$m, `cancelable$m ) 属性~SET ( ~T, ~T )
 ］に初期化した上で`発火する$
 </li></ol>
 ◎
-If result is an error, set the error of request to result and fire an event named error at request with its bubbles and cancelable attributes initialized to true.
+If result is an error, set request’s result to undefined, set request’s error to result, set request’s done flag, and fire an event named error at request with its bubbles and cancelable attributes initialized to true.
 </li>
 							<li>
 <div class="p">
 <p>
 ~ELSE：
 </p>
-<ol><li>%要請 の`結果$ ~SET %結果
+<ol ><li>%要請 の`結果$ ~SET %結果
 </li><li>%要請 に向けて，名前 `success$et の~eventを`発火する$
 </li></ol>
 
@@ -7041,7 +7054,7 @@ If result is an error, set the error of request to result and fire an event name
 `success$et ~eventの発火は，その昇格~txが完了した後に行われ~MUST。†
 </p>
 ◎
-Otherwise, set the result of request to result and fire an event named success at request. If the steps above resulted in an upgrade transaction being run, then firing the "success" event must be done after the upgrade transaction completes.
+Otherwise, set request’s result to result, set request’s done flag, and fire an event named success at request. If the steps above resulted in an upgrade transaction being run, then firing the "success" event must be done after the upgrade transaction completes.
 </div>
 
 <p class="note">注記：
@@ -7054,16 +7067,17 @@ The last requirement is to ensure that in case another version upgrade is about 
 </p>
 
 <p class="note">注記：
-この時点では、要請の`設置先~tx$はないので、通常の［
+ここで，通常の［
 `~success~eventを発火する$ ／
 `~error~eventを発火する$
-］手続き（それは，`設置先~tx$を配送-前に作動化して配送-後に作動中でなくする）は，適用できない。
+］手続きを適用しないのは、要請の`設置先~tx$がないためである（その手続きは，`設置先~tx$を配送-前に作動化して配送-後に作動中でなくする）。
 <!-- details -->
 ◎
 Why aren’t the steps to fire a success event or fire an error event used?
 ◎
 There is no transaction associated with the request (at this point), so those steps — which activate an associated transaction before dispatch and deactivate the transaction after dispatch — do not apply. 
 </p>
+
 							</li>
 						</ol>
 					</li>
@@ -7130,25 +7144,30 @@ Queue a task to run these steps:
 </p>
 						<ol>
 							<li>
+%要請 の
+( `~done~flag$, `結果$, `~error$ ) ~SET ( ~ON, ε, ε )
+◎
+↓</li>
+							<li>
 <p>
 ~IF［
 %結果 は~errorである
 ］：
 </p>
-<ol><li>%要請 の`~error$ ~SET %結果 
+<ol ><li>%要請 の`~error$ ~SET %結果
 </li><li>%要請 に向けて，名前 `error$et の~eventを［
 ( `bubbles$m, `cancelable$m ) 属性~SET ( ~T, ~T )
 ］に初期化した上で`発火する$
 </li></ol>
 ◎
-If result is an error set the error of request to result and fire an event named error at request with its bubbles and cancelable attributes initialized to true.
+If result is an error, set request’s error to result, set request’s done flag, and fire an event named error at request with its bubbles and cancelable attributes initialized to true.
 </li>
 							<li>
 <p>
 ~ELSE：
 </p>
 
-<ol><li>%要請 の`結果$ ~SET ε
+<ol ><li>%要請 の`結果$ ~SET ε
 </li><li>次を入力に %要請 に向けて`~version変更~eventを発火-$する
 ⇒＃
 %名前 ~SET `success$et；
@@ -7157,7 +7176,7 @@ If result is an error set the error of request to result and fire an event named
 </li></ol>
 
 ◎
-Otherwise, set the result of request to undefined and fire a version change event named success at request with result and null.
+Otherwise, set request’s result to undefined, set request’s done flag, and fire a version change event named success at request with result and null.
 </li>
 						</ol>
 <p class="note">注記：
@@ -7430,22 +7449,27 @@ The createObjectStore(name, options) method, when invoked, must run these steps:
 
 		<ol>
 			<li>
-%~tx ~LET 此れに`専属の昇格~tx$
-◎
-↓</li>
-			<li>
-~IF［
-%~tx ~EQ ε
-］~OR［
-%~tx は`終了-$している
-］
-⇒
-~THROW `InvalidStateError$E
+%~tx ~LET 此れ↗の`昇格~tx$db
 ◎
 Let database be the database associated with this connection.
 ◎
-Let transaction be the upgrade transaction associated with database. If one does not exist or it is finished, throw an "InvalidStateError" DOMException.
+Let transaction be database’s upgrade transaction if it is not null, or throw an "InvalidStateError" DOMException otherwise.
 </li>
+			<li>
+<p>
+~IF［
+%~tx ~EQ ε
+］
+⇒
+~THROW `InvalidStateError$E
+</p>
+
+<p class="trans-note">【
+%~tx が此れ↗に`専属しない$場合も例外を投出するべきでは？
+】</p>
+
+◎
+↑</li>
 			<li>
 ~IF［
 %~tx は`作動中$でない
@@ -7584,22 +7608,27 @@ The deleteObjectStore(name) method, when invoked, must run these steps:
 
 		<ol>
 			<li>
-%~tx ~LET 此れに`専属の昇格~tx$
-◎
-↓</li>
-			<li>
-~IF［
-%~tx ~EQ ε
-］~OR［
-%~tx は`終了-$している
-］
-⇒
-~THROW `InvalidStateError$E
+%~tx ~LET 此れ↗の`昇格~tx$db
 ◎
 Let database be the database associated with this connection.
 ◎
-Let transaction be the upgrade transaction associated with database. If one does not exist or it is finished, throw an "InvalidStateError" DOMException.
+Let transaction be database’s upgrade transaction if it is not null, or throw an "InvalidStateError" DOMException otherwise.
 </li>
+			<li>
+<p>
+~IF［
+%~tx ~EQ ε
+］
+⇒
+~THROW `InvalidStateError$E
+</p>
+
+<p class="trans-note">【
+%~tx が此れ↗に`専属しない$場合も例外を投出するべきでは？
+】</p>
+
+◎
+↑</li>
 			<li>
 ~IF［
 %~tx は`作動中$でない
@@ -7672,9 +7701,9 @@ Returns a new transaction with the given mode ("readonly" or "readwrite") and sc
 
 	<dt>%connection . `close$m()</dt>
 	<dd>
-%connection を~closeさせる
+%connection を~closeする
 — ~closeし終えるのは、
-%connection に`専属する$, かつ`稼働して$いる`~tx$すべてが，稼働し終えた時点になる。
+%connection に`専属する$すべての`~tx$が，稼働し終えた時点になる。
 ◎
 Closes the connection once all running transactions have finished.
 </dd>
@@ -7693,7 +7722,7 @@ The transaction(storeNames, mode) method, when invoked, must run these steps:
 		<ol>
 			<li>
 ~IF［
-此れに`専属の昇格~tx$があって, `稼働して$いる
+此れ↗の`昇格~tx$dbは`稼働して$いる
 ］
 ⇒
 ~THROW `InvalidStateError$E
@@ -11406,7 +11435,7 @@ enum `IDBTransactionMode@I {
 	<dt>%transaction . `objectStoreNames$m</dt>
 	<dd>
 %transaction の`視野$に入る`保管庫$たちの名前からなる~listを返す。
-`接続$に`専属の昇格~tx$の視野は、その`~access先$~db内のすべての`保管庫$からなる。
+`昇格~tx$に対しては、視野は，当の`~db$の`保管庫$すべてからなる。
 ◎
 Returns a list of the names of object stores in the transaction’s scope. For an upgrade transaction this is all object stores in the database.
 </dd>
@@ -11414,7 +11443,7 @@ Returns a list of the names of object stores in the transaction’s scope. For a
 	<dt>%transaction . `mode$m</dt>
 	<dd>
 %transaction の`~mode$を返す。
-これは、`昇格~tx$に対しては， `versionchange$l ／
+`昇格~tx$に対しては， `versionchange$l ／
 他の~txに対しては，その作成-時に与えたもの（ `readonly$l ／ `readwrite$l ）になる。
 ◎
 Returns the mode the transaction was created with ("readonly" or "readwrite"), or "versionchange" for an upgrade transaction.
@@ -12138,7 +12167,7 @@ If db is null, let db be a new database with name name, version 0 (zero), and wi
 ⇒
 ~RET `Error$( `VersionError$E )
 ◎
-If db’s version is greater than version, abort these steps and return a new "VersionError" DOMException.
+If db’s version is greater than version, return a newly created "VersionError" DOMException and abort these steps.
 </li>
 	<li>
 %新~接続 ~LET
@@ -12228,7 +12257,7 @@ Wait until all connections in openConnections are closed.
 			<li>
 <p>
 次を入力に
-`昇格~txを稼働-$させる
+`昇格~txを稼働-$する
 ⇒＃
 %接続 ~SET %新~接続；
 %~version ~SET %~version；
@@ -12248,7 +12277,7 @@ Run the steps to run an upgrade transaction using connection, version and reques
 ⇒
 ~RET `Error$( `AbortError$E )
 ◎
-If connection was closed, create and return a newly created "AbortError" DOMException and abort these steps.
+If connection was closed, return a newly created "AbortError" DOMException and abort these steps.
 </li>
 					<li>
 <p >
@@ -12266,7 +12295,7 @@ If connection was closed, create and return a newly created "AbortError" DOMExce
 </li>
 						</ol>
 ◎
-If the upgrade transaction was aborted, run the steps to close a database connection with connection, create and return a newly created "AbortError" DOMException and abort these steps.
+If the upgrade transaction was aborted, run the steps to close a database connection with connection, return a newly created "AbortError" DOMException and abort these steps.
 </li>
 				</ul>
 			</li>
@@ -12386,7 +12415,7 @@ Once the close pending flag has been set no new transactions can be created usin
 `接続$が~closeされたとき、所与の`~db$への`接続$がすべて~closeされるまで，
 <a href="#version-change-close-block">阻まれ</a>,
 <a href="#delete-close-block">待機~中</a>にあった［
-`昇格~txを稼働-$させる演算／ `~dbを削除-$する演算
+`昇格~txを稼働-$する演算／ `~dbを削除-$する演算
 ］の待機は、解かれ得る。
 ◎
 Once the connection is closed, this can unblock the steps to run an upgrade transaction, and the steps to delete a database, which both wait for connections to a given database to be closed before continuing.
@@ -12552,11 +12581,12 @@ The steps to commit a transaction are as follows. This algorithm takes one argum
 
 <ol>
 	<li>
-%接続 ~LET %~tx が`専属する$`接続$
+%~db ~LET ( %~tx が`専属する$`接続$ )↗
 ◎
 ↓</li>
 	<li>
-%~tx により発行0された すべての変更を、 %接続↗ に書込する：
+%~tx により発行0された すべての変更を、
+%~db に書込する：
 ◎
 All the changes made to the database by transaction are written to the database.
 	<li>
@@ -12580,6 +12610,15 @@ Queue a task to run these steps:
 </p>
 		<ol>
 			<li>
+~IF［
+%~tx は`昇格~tx$である
+］
+⇒
+%~db の`昇格~tx$db ~SET ε
+◎
+If transaction is an upgrade transaction, set the database's upgrade transaction to null.
+</li>
+			<li>
 <p>
 %~tx に向けて，名前 `complete$et の~eventを`発火する$
 ◎
@@ -12599,7 +12638,7 @@ Even if an exception is thrown from one of the event handlers of this event, the
 ］
 ⇒
 ［
-%~tx を`設置先~tx$とする`要請$（すなわち、`昇格~txを稼働-$させる手続きに渡された %要請 ）
+%~tx を`設置先~tx$とする`要請$（すなわち、`昇格~txを稼働-$する手続きに渡された %要請 ）
 ］の`設置先~tx$ ~SET ε
 ◎
 If transaction is an upgrade transaction, then let request be the request associated with transaction and set request’s transaction to null.
@@ -12633,23 +12672,22 @@ The steps to abort a transaction are as follows. This algorithm takes two argume
 
 <ol>
 	<li>
+%~db ~LET ( %~tx が`専属する$`接続$ )↗
+◎
+↓</li>
+	<li>
 <p>
-%~tx により`~db$に発行0された，すべての変更を、復帰させる
-—
-`昇格~tx$に対しては：
+%~tx により %~db に発行0された，すべての変更を、復帰させる
+— `昇格~tx$に対しては：
 </p>
-		<ul>
-			<li>
-`~db$に`専属する$［
+
+<ul><li>%~db に`専属する$［
 `保管庫$／`索引$
 ］たちの集合, および`~version$dbの変更も，復帰させる。
-</li>
-			<li>
-%~tx の間に作成された［
+</li><li>%~tx の間に作成された［
 `保管庫$／`索引$
-］は、他の~algoの目的0においては，削除されたものと見なされる。
-			</li>
-		</ul>
+］は、他の~algoの目的においては，削除されたものと見なされる。
+</li></ul>
 ◎
 All the changes made to the database by the transaction are reverted. For upgrade transactions this includes changes to the set of object stores and indexes, as well as the change to the version. Any object stores and indexes which were created during the transaction are now considered deleted for the purposes of other algorithms.
 </li>
@@ -12708,7 +12746,7 @@ For each request in transaction’s request list with done flag unset, abort the
 
 				<ol>
 					<li>
-%要請 上の`~done~flag$ ~SET ~ON
+%要請 の`~done~flag$ ~SET ~ON
 ◎
 Set the done flag on request.
 </li>
@@ -12749,6 +12787,15 @@ Queue a task to run these steps:
 
 		<ol>
 			<li>
+~IF［
+%~tx は`昇格~tx$である
+］
+⇒
+%~db の`昇格~tx$db ~SET ε
+◎
+If transaction is an upgrade transaction, set the database's upgrade transaction to null.
+</li>
+			<li>
 %~tx に向けて，名前 `abort$et の~eventを［
 `bubbles$m 属性 ~SET ~T
 ］に初期化した上で`発火する$
@@ -12756,16 +12803,36 @@ Queue a task to run these steps:
 Fire an event named abort at transaction with its bubbles attribute initialized to true.
 </li>
 			<li>
+<p>
 ~IF［
 %~tx は`昇格~tx$である
-］
-⇒
-［
-%~tx を`設置先~tx$とする`要請$（すなわち、`昇格~txを稼働-$させる手続きに渡された %要請 ）
-］の`設置先~tx$ ~SET ε
+］：
 ◎
-If transaction is an upgrade transaction, then let request be the request associated with transaction and set request’s transaction to null.
+If transaction is an upgrade transaction, then:
+</p>
+				<ol>
+					<li>
+%要請 ~LET %~tx を`設置先~tx$とする`要請$（すなわち、`昇格~txを稼働-$する手続きに渡された %要請 ）
+◎
+Let request be the request associated with transaction.
 </li>
+					<li>
+%要請 の`設置先~tx$ ~SET ε
+◎
+Set request’s transaction to null.
+</li>
+					<li>
+%要請 の`結果$ ~SET ε
+◎
+Set request’s result to undefined.
+</li>
+					<li>
+%要請 の`~done~flag$ ~SET ~OFF
+◎
+Unset request’s done flag.
+</li>
+				</ol>
+			</li>
 		</ol>
 	</li>
 </ol>
@@ -12777,19 +12844,19 @@ If transaction is an upgrade transaction, then let request be the request associ
 
 <div class="p">
 <p>
-%source 上で %演算 を
+%source 上で %演算 を［
 `非同期に実行する@
-新たな要請を作成する手続き、あるいは
-既存の %要請 を用いて，
-%source 上で %演算 を
+ための新たな要請を作成する手続き ／
+既存の %要請 を用いて
 <dfn>非同期に実行する</dfn>
-手続きは、次で与えられる：
+手続き
+］は、次で与えられる：
 </p>
 
 <ul class="input-params"
 	><li>%source ： `保管庫~handle$／`索引~handle$
 </li><li>%演算： ~db上で遂行する`演算$
-</li><li>%要請： `要請$（省略時は ε — その場合，新たな要請を作成する）
+</li><li>%要請： `要請$（省略時は ε — その場合，新たな要請を作成することになる）
 </li></ul>
 ◎
 The steps to asynchronously execute a request are as follows. The algorithm takes a source object and an operation to perform on a database, and an optional request.
@@ -12826,18 +12893,6 @@ Assert: transaction is active.
 If request was not given, let request be a new request with source as source.
 </li>
 	<li>
-%要請 の`結果$ ~SET ε
-◎
-↓</li>
-	<li>
-%要請 の`~error$ ~SET ε
-◎
-↓</li>
-	<li>
-%要請 の`~done~flag$ ~SET ~OFF
-`この段は、この訳による補完^tnote
-</li>
-	<li>
 %~tx の`要請~list$に %要請 を追加する
 ◎
 Add request to the end of transaction’s request list.
@@ -12859,14 +12914,6 @@ Wait until all previously added requests in transaction have their done flag set
 %結果 ~LET %演算 を遂行した結果
 ◎
 Let result be the result of performing operation.
-</li>
-	<li>
-%要請 の`~done~flag$ ~SET ~ON
-◎
-↓</li>
-	<li>
-%~tx の`要請~list$から %要請 を除去する
-`この段は、この訳による補完^tnote
 </li>
 	<li>
 <p>
@@ -12896,10 +12943,12 @@ Queue a task to run these steps:
 		<ol>
 			<li>
 <p>
-%要請 の`~done~flag$ ~SET ~ON
+%要請 の
+( `~done~flag$, `結果$, `~error$ ) ~SET ( ~ON, ε, ε )
 ◎
 Set the done flag on request.
-</li>
+◎
+↓</li>
 			<li>
 <p>
 ~IF［
@@ -12910,12 +12959,9 @@ If result is an error, then:
 </p>
 				<ol>
 					<li>
-%要請 の`結果$ ~SET ε
+%要請 の`~error$ ~SET %結果
 ◎
 Set the result of request to undefined.
-</li>
-					<li>
-%要請 の`~error$ ~SET %結果
 ◎
 Set the error of request to result.
 </li>
@@ -12937,9 +12983,6 @@ Otherwise:
 %要請 の`結果$ ~SET %結果
 ◎
 Set the result of request to result.
-</li>
-					<li>
-%要請 の`~error$ ~SET ε
 ◎
 Set the error of request to undefined.
 </li>
@@ -12966,7 +13009,7 @@ Return request.
 <div class="p">
 <p>
 `昇格~txを稼働-@
-させる手続きは、次で与えられる：
+する手続きは、次で与えられる：
 </p>
 
 <ul class="input-params"
@@ -12988,10 +13031,17 @@ Let db be connection’s database.
 %~tx ~LET 次の様にされた新たな`昇格~tx$
 ⇒＃
 `専属する$`接続$ ~SET %接続；
-`視野$ ~SET %~db に`専属する$すべての`保管庫$；
-`作動中~flag$ ~SET ~OFF
+`視野$ ~SET %~db に`専属する$すべての`保管庫$
 ◎
 Let transaction be a new upgrade transaction with connection used as connection. The scope of transaction includes every object store in connection.
+</li>
+	<li>
+%~db の`昇格~tx$db ~SET %~tx
+◎
+Set database’s upgrade transaction to transaction.
+</li>
+	<li>
+%~tx の`作動中~flag$ ~SET ~OFF
 ◎
 Unset transaction’s active flag.
 </li>
@@ -13131,7 +13181,7 @@ These steps are run as needed by the steps to abort a transaction, which revert 
 Let connection be transaction’s connection.
 </li>
 	<li>
-%~db ~LET %接続↗ （ %接続 の`~access先$`~db$）
+%~db ~LET %接続↗
 ◎
 Let database be connection’s database.
 </li>
@@ -15810,7 +15860,7 @@ While these suggestions prevent trivial use of this API for user tracking, they 
 <p>
 しかしながら，利用者~追跡は、~UAとの協同が全くなくても，ある程度まで~~可能である
 — 具体的には、URL 内に~session識別子を利用して。
-この技法は、差し障りない目的0でも すでに共通的に利用されているが，利用者~追跡に容易に（遡及的にすら）転用できる。
+この技法は、差し障りない目的でも すでに共通的に利用されているが，利用者~追跡に容易に（遡及的にすら）転用できる。
 しかる後，この情報は、他~siteと共有され得る
 — 訪問者の IP ~addressその他の，利用者~特有の~data（例： user-agent ~headerや環境設定）を利用して、別々の~sessionを，利用者~profileに~~整合的に~~統合するために。
 ◎
@@ -16178,15 +16228,31 @@ Use [SameObject]/[NewObject] in IDL where appropriate. (issue #193, issue #194)
 Transaction-is-active test can be an assertion in the asynchronously execute a request steps. (issue #192)
 </li>
 	<li>
-`HTML$r による
-`StructuredSerializeForStorage$jA
-~hookを利用するようにした。
-`197$bug2
+`HTML$r の `StructuredSerializeForStorage$jA ~hookを利用するようにした。
+`197$bug2,
 `152$bug2
 ◎
 Use [HTML]'s StructuredSerializeForStorage hook. (issue #197, issue #152)
 </li>
-
+	<li>
+~testと実装で
+`createObjectStore()$m ／ `deleteObjectStore()$m
+から投出される例外に揃えるため
+`~db$の`昇格~tx$dbを定義した。
+`192$bug2
+◎
+Define database's associated upgrade transaction to align exceptions thrown from createObjectStore() and deleteObjectStore() with tests and implementations. (issue #192)
+</li>
+	<li>
+［
+`open()^m ／ `deleteDatabase()$m
+］による`要請$の［
+`結果$, `~done~flag$
+］を適切に設定するようにした。
+`161$bug2
+◎
+Set [=request/result]/done flag appropriately for requests from open() and deleteDatabase(). (issue #161)
+</li>
 </ul>
 
 	</section>
