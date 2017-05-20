@@ -1277,7 +1277,7 @@ COMMON_DATA.addAltRefs = function(id){
 		})
 		.replace(/\s+URL: +(https?:[^\s]+)/g,
 			'\n<dd><a href="$1">$1</a></dd>'
-		).replace(/\n +(.+)/g, '\n<dd>$1</dd>');
+		).replace(/\n +(.+)/g, '\n<dd lang="en-x-a0">$1</dd>');
 		html += last_key;
 
 		var dl = C('dl');
