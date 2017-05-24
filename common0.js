@@ -116,7 +116,7 @@ Util.textData = function(e, options){
 		e = E(e);
 		if(!e) return '';
 	}
-	var data = e.firstChild.data;
+	var data = e.textContent;
 	options = options || {};
 	if(!options.keep) {
 		e.parentNode.removeChild(e);
