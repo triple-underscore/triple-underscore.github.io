@@ -753,6 +753,7 @@ FINGERPRINTING:<a class="fingerprinting" href="https://html.spec.whatwg.org/mult
 ●ア:<tr><th>~animation<td>\n\
 ●表終:</tbody></table>\n\
 SPECBUGS:https://www.w3.org/Bugs/Public/show_bug.cgi\n\
+CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>\n\
 TR:https://www.w3.org/TR\n\
 IETF:https://tools.ietf.org/html\n\
 TC39:https://tc39.github.io/ecma262/\n\
