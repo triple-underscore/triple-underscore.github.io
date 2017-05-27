@@ -736,7 +736,7 @@ IN: <span class="op">∈</span> \n\
 NIN: <span class="op">∉</span> \n\
 UNSPECIFIED:<span class="trans-note">【…未策定】</span>\n\
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>\n\
-INFORMATIVE:<p><em>この節は規定ではない。</em><span lang="en">This section is non-normative.</span></p>\n\
+INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This section is non-normative.</span></p>\n\
 FINGERPRINTING:<a class="fingerprinting" href="https://html.spec.whatwg.org/multipage/introduction.html#fingerprinting-vector"></a>\n\
 ●名:<table class="propdef"><tbody><tr><th>名前<td>\n\
 ●述:<table class="descdef"><tbody><tr><th>名前<td>\n\
