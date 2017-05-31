@@ -434,7 +434,7 @@ new function(){
 	var JA_LINKS = {
 // SMIL Animation
 'http://www.w3.org/TR/2001/REC-smil-animation-20010904/':
-	'http://www.hcn.zaq.ne.jp/___/SMIL/smil_animation-ja.html',
+	'smil-animation.html',
 // SVG2
 // 'http://www.w3.org/TR/2012/WD-SVG2-20120828/':
 // 'http://www.w3.org/TR/2013/WD-SVG2-20130409/':
@@ -442,10 +442,10 @@ new function(){
 	'./',
 // CSS2
 'http://www.w3.org/TR/CSS2/':
-	'http://momdo.s35.xrea.com/web-html-test/spec/CSS21/cover.html',
+	'https://momdo.github.io/css2/Overview.html',
 	//'http://www.y-adagio.com/public/standards/tr_css2/toc.html',
 'http://www.w3.org/TR/2008/REC-CSS2-20080411/':
-	'http://momdo.s35.xrea.com/web-html-test/spec/CSS21/cover.html',
+	'https://momdo.github.io/css2/Overview.html',
 /*	colors.html generate.html media.html cascade.html
 	visufx.html visudet.html about.html aural.html colors.html
 	conform.html text.html ui.html visuren.html
@@ -466,14 +466,13 @@ new function(){
 //DOM2Core
 'http://www.w3.org/TR/DOM-Level-2-Core/':
 	'http://www.y-adagio.com/public/standards/tr_dom2_core/Overview.html',
-	//http://www.jsa.or.jp/stdz/instac/syoukai/H13/H13annual_report/12/ngc-wg3/offline/tr_dom2_core/Overview.html
-	//http://www2u.biglobe.ne.jp/~oz-07ams/prog/dom-ref/Core/index.html
+	//http://www2u.biglobe.ne.jp/~oz-07ams/2003/Core/index.html
 'http://www.w3.org/TR/2000/REC-DOM-Level-2-Core-20001113/':
 	'http://www.y-adagio.com/public/standards/tr_dom2_core/Overview.html',
 
 //DOM2Style/css
 'http://www.w3.org/TR/2000/REC-DOM-Level-2-Style-20001113/css.html':
-	'http://www2u.biglobe.ne.jp/~oz-07ams/prog/dom-ref/CSS/index.html',
+	'http://www2u.biglobe.ne.jp/~oz-07ams/2001/CSS/index.html',
 	// css.html#XXX -> CSS/XXX.html
 
 //DOM2Events
@@ -482,7 +481,7 @@ new function(){
 'http://www.w3.org/TR/2000/REC-DOM-Level-2-Events-20001113/':
 	'http://www.y-adagio.com/public/standards/tr_dom2_events/Overview.html',
 	// events.html, ecma-script-binding.html
-	//http://www2u.biglobe.ne.jp/~oz-07ams/prog/dom-ref/Events/index.html
+	//http://www2u.biglobe.ne.jp/~oz-07ams/2001/Events/index.html
 
 // XML
 'http://www.w3.org/TR/REC-xml/':
@@ -491,21 +490,21 @@ new function(){
 	'http://w4ard.s26.xrea.com/translation/W3C/REC-xml-20081126/',
 
 'http://www.w3.org/1999/06/REC-xml-stylesheet-19990629/':
-	'http://www.hcn.zaq.ne.jp/___/XML/xml-stylesheet-ja.html',
+	'https://triple-underscore.github.io/XML/xml-stylesheet-ja.html',
 
 'http://www.w3.org/TR/xmlbase/':
 //	'http://www.toyfish.net/docs/xmlbase/',
-	'http://www.hcn.zaq.ne.jp/___/XML/XMLBase-ja.html',
+	'https://triple-underscore.github.io/XML/xml-base-ja.html',
 'http://www.w3.org/TR/2009/REC-xmlbase-20090128/':
 //	'http://www.toyfish.net/docs/xmlbase/',
-	'http://www.hcn.zaq.ne.jp/___/XML/XMLBase-ja.html',
+	'https://triple-underscore.github.io/XML/xml-base-ja.html',
 
 'http://www.w3.org/TR/2006/REC-xml-names-20060816/':
-	'http://www.hcn.zaq.ne.jp/___/XML/Namespaces-ja.html',
+	'https://triple-underscore.github.io/XML/xml-ns-ja.html',
 'http://www.w3.org/TR/REC-xml-names/':
-	'http://www.hcn.zaq.ne.jp/___/XML/Namespaces-ja.html',
+	'https://triple-underscore.github.io/XML/xml-ns-ja.html',
 'http://www.w3.org/TR/xml-names11/':
-	'http://www.hcn.zaq.ne.jp/___/XML/Namespaces-ja.html?1.1'
+	'https://triple-underscore.github.io/XML/xml-ns-ja.html?1.1'
 
 	};
 	var ja_link = document.createElement('a');
