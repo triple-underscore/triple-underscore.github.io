@@ -87,8 +87,6 @@ var Util = {
 	options:
 		keep:
 			要素を DOM に残しておく場合は true
-		replacer:
-			変換前に文字列データを加工する関数（文字列 → 文字列）
 		map:
 			この連想配列（複製されない）にデータが追加される
 */
@@ -120,14 +118,6 @@ Util.textData = function(e, options){
 	options = options || {};
 	if(!options.keep) {
 		e.parentNode.removeChild(e);
-	}
-	if('replacer' in options){
-//	if(options && options.replacer){
-		if(options.regex){
-			data = data.replace(options.regex, options.replacer);
-		} else {
-			data = options.replacer(data);
-		}
 	}
 	return data;
 };
