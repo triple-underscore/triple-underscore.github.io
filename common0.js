@@ -828,6 +828,8 @@ WAPI:webappapis-ja.html\n\
 HTMLGAPI:HTML-global-api-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
 HTMLcms:HTML-common-microsyntaxes-ja.html\n\
+HTMLcdom:HTML-common-dom-interfaces-ja.html\n\
+HTMLurl:HTML-urls-and-fetching-ja.html\n\
 HTMLcloning:HTML-structured-data-ja.html\n\
 HTMLcomms:HTML-comms-ja.html\n\
 HTMLconform:HTML-conform-ja.html\n\
