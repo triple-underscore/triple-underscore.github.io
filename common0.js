@@ -827,12 +827,12 @@ NAVI:HTML-navigation-ja.html\n\
 WAPI:webappapis-ja.html\n\
 HTMLGAPI:HTML-global-api-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
-HTMLcms:HTML-micro-syntax-ja.html\n\
-HTMLcloning:HTML-cloning-ja.html\n\
+HTMLcms:HTML-common-microsyntaxes-ja.html\n\
+HTMLcloning:HTML-structured-data-ja.html\n\
 HTMLcomms:HTML-comms-ja.html\n\
 HTMLconform:HTML-conform-ja.html\n\
 HTMLdep:HTML-dependencies-ja.html\n\
-HTMLdnd:HTML-DND-ja.html\n\
+HTMLdnd:HTML-dnd-ja.html\n\
 HTMLdom:HTML-dom-ja.html\n\
 HTMLforms:HTML-forms-ja.html\n\
 HTMLindex:HTML-index-ja.html\n\
@@ -841,8 +841,7 @@ HTMLnavigator:HTML-navigator-ja.html\n\
 HTMLinteraction:HTML-interaction-ja.html\n\
 HTMLrendering:HTML-rendering-ja.html\n\
 HTMLselectors:selectors-html-ja.html\n\
-HTMLemb:https://html.spec.whatwg.org/multipage/embedded-content.html\n\
-HTMLsyntax:https://html.spec.whatwg.org/multipage/syntax.html\n\
+HTMLsyntax:https://html.spec.whatwg.org/multipage/parsing.html\n\
 HTMLxml:HTML-xhtml-ja.html\n\
 HTMLwriting:HTML-writing-ja.html\n\
 HEinteractive:HTML-interactive-elements-ja.html\n\
@@ -858,7 +857,7 @@ HEcustom:HTML-custom-ja.html\n\
 HEtextlevel:HTML-text-level-ja.html\n\
 HEsections:HTML-sections-ja.html\n\
 HEscripting:HTML-scripting-ja.html\n\
-HEcanvas:https://html.spec.whatwg.org/multipage/scripting.html\n\
+HEcanvas:https://html.spec.whatwg.org/multipage/canvas.html\n\
 HEtables:HTML-tables-ja.html\n\
 WEBSOCKET:WebSocket-ja.html\n\
 WORKERS:Workers-ja.html\n\
