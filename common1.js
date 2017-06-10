@@ -14,6 +14,8 @@ PAGE_DATA member
 		ED, REC, etc.
 	original_url:
 		原文 URL
+	original_urls:
+		原文 URL（複数
 	original_id_map
 		
 	main:
@@ -909,10 +911,24 @@ Util.dfnInit = function(){
 		if(id.charAt(0) === '_') return; // 和訳固有の id
 		if(original_id_map[id] === '') return; // 和訳固有の id
 		if(!is_header && PAGE_DATA.no_original_dfn) return;
-		if(!PAGE_DATA.original_url) return;
+		var original_url = PAGE_DATA.original_url;
+		var urls = PAGE_DATA.original_urls;
+		if(urls){// 複数の原文 URL に分岐
+			for(var e = E(id); e; e = e.parentNode){
+				if(urls.hasOwnProperty(e.id)){
+					original_url = urls[e.id];
+					break;
+				}
+			}
+		}
+		if(!original_url) return;
 
-		dfnOriginal.href = PAGE_DATA.original_url + '#' + (original_id_map[id] || id);
+		dfnOriginal.href = original_url + '#' + (original_id_map[id] || id);
 		dfnOriginal.style.display = '';
+	}
+
+	function originalURL(id){
+		return PAGE_DATA.original_url;
 	}
 
 	function dfnHide(){
