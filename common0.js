@@ -410,7 +410,7 @@ Util.initAdditional = function(options){
 
 		var e = E(id);
 		if(e){
-// html.spec.whatwg.org/multipage/browsers.html#location-object-setter-navigate
+// html.spec.whatwg.org/multipage/history.html#location-object-setter-navigate
 			window.location.hash = e.id;
 			if(! e.hasAttribute('tabIndex')){
 				e.tabIndex = 0;
@@ -820,9 +820,10 @@ SVG11:SVG11\n\
 SVG2:https://svgwg.org/svg2-draft\n\
 HTML5:https://html.spec.whatwg.org/multipage\n\
 HTML50:https://www.w3.org/TR/html5\n\
-HTML51:https://www.w3.org/TR/html51\n\
-HTML5x:https://www.w3.org/TR/html\n\
 BROWSERS:browsers-ja.html\n\
+WINDOW:HTML-window-ja.html\n\
+ORIGIN:HTML-origin-ja.html\n\
+HISTORY:HTML-history-ja.html\n\
 NAVI:HTML-navigation-ja.html\n\
 WAPI:webappapis-ja.html\n\
 HTMLGAPI:HTML-global-api-ja.html\n\
@@ -832,18 +833,20 @@ HTMLcdom:HTML-common-dom-interfaces-ja.html\n\
 HTMLurl:HTML-urls-and-fetching-ja.html\n\
 HTMLcloning:HTML-structured-data-ja.html\n\
 HTMLcomms:HTML-comms-ja.html\n\
+HTMLsse:HTML-server-sent-events-ja.html\n\
 HTMLconform:HTML-conform-ja.html\n\
 HTMLdep:HTML-dependencies-ja.html\n\
 HTMLdnd:HTML-dnd-ja.html\n\
 HTMLdom:HTML-dom-ja.html\n\
 HTMLforms:HTML-forms-ja.html\n\
+HTMLautofill:HTML-autofill-ja.html\n\
 HTMLindex:HTML-index-ja.html\n\
 HTMLlinks:HTML-links-ja.html\n\
 HTMLnavigator:HTML-navigator-ja.html\n\
 HTMLinteraction:HTML-interaction-ja.html\n\
 HTMLrendering:HTML-rendering-ja.html\n\
 HTMLselectors:selectors-html-ja.html\n\
-HTMLsyntax:https://html.spec.whatwg.org/multipage/parsing.html\n\
+HTMLparsing:https://html.spec.whatwg.org/multipage/parsing.html\n\
 HTMLxml:HTML-xhtml-ja.html\n\
 HTMLwriting:HTML-writing-ja.html\n\
 HEinteractive:HTML-interactive-elements-ja.html\n\

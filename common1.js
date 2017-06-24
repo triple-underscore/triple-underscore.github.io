@@ -16,8 +16,6 @@ PAGE_DATA member
 		原文 URL
 	original_urls:
 		原文 URL（複数
-	original_id_map
-		
 	main:
 		'MAIN'
 	toc:
@@ -1747,26 +1745,11 @@ COMMON_DATA.REF_DATA2 = '\n\
 ~TR/CSS2/●        ~momdoG/css2/\n\
 ~CSSWG/css2/●     ~momdoG/css2/\n\
 ~CSSWG/css21/●    ~momdoG/css2/\n\
-	SVG (@ 不可)\n\
 ~TR/SVG/●         triple-underscore.github.io/SVG11/\n\
 ~TR/SVG11/●       triple-underscore.github.io/SVG11/\n\
-	HTML (@ 不可)\n\
-~HTML5/●          ~momdoG/html/\n\
-~TR/html/●        ~momdoG/html/\n\
-~TR/html5/●       ~momdoG/html5/\n\
+	~HTML5/●          ~momdoG/html/\n\
 ';
 
-/*
-www.w3.org/html/wg/drafts/html/master/●  ~momdoG/html5/\n\
-	WHTAWG’s HTML to W3C’s HTML \n\
-	~HTML5/embedded-content.html●  ~momdoG/html5/embedded-content-0.html\n\
-	~HTML5/elements.html●          ~momdoG/html5/dom.html\n\
-	~HTML5/interaction.html●       ~momdoG/html5/editing.html\n\
-	~HTML5/indices.html●           ~momdoG/html5/index.html\n\
-	~HTML5/scripting.html●         ~momdoG/html5/scripting-1.html\n\
-	~HTML5/xhtml.html●             ~momdoG/html5/the-xhtml-syntax.html\n\
-	~HTML5/comms.html:\n\
-*/
 
 // 文献 id 別名 -> 文献 id
 COMMON_DATA.REF_KEY_MAP = '\n\
