@@ -801,6 +801,7 @@ option::::オプション
 正しく:correct に:~
 重要:important:~
 受容-:accept:~
+保全-:preserve:~
 
 	●未分類（動詞
 	抑止-:suppress:~
@@ -1196,6 +1197,9 @@ target.i:#_target
 すべて置換-:#concept-node-replace-all
 隣に挿入-:#insert-adjacent
 
+子~text内容~変更~手続き:#concept-node-text-change-ext
+子~text内容:#concept-child-text-content
+
 ~clone:#concept-node-clone
 ~clone時の手続き:#concept-node-clone-ext
 
@@ -1207,7 +1211,6 @@ target.i:#_target
 ~node:#concept-node
 空:#concept-node-empty
 等しい:#concept-node-equals
-
 
 文書片:#_concept-documentfragment
 文字~data~node:#_concept-cdata-node
@@ -1659,7 +1662,7 @@ div.trans-note {
 </p>
 
 <p>
-更新： <time>2017-06-24</time>
+更新： <time>2017-06-28</time>
 （公開： <time>2012-01-28</time>）
 </p>
 
@@ -1689,7 +1692,7 @@ div.trans-note {
 
 	<hgroup>
 <h1>DOM</h1>
-<h2>Living Standard — 最終更新 2017 年 6 月 15 日</h2>
+<h2>Living Standard — 最終更新 2017 年 6 月 27 日</h2>
 	</hgroup>
 
 <dl>
@@ -1699,7 +1702,7 @@ div.trans-note {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/dom/commits">GitHub whatwg/dom/commits</a></dd>
-     <dd><a href="https://dom.spec.whatwg.org/commit-snapshots/45121670b94aa8c3a1a2191bb26c15b551a23338/">Snapshot as of this commit</a></dd>
+     <dd><a href="https://dom.spec.whatwg.org/commit-snapshots/93db3408c360a958c2f1c00fbb99bf6c5d6fa5b2/">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/thedomstandard">@thedomstandard</a></dd>
 
      <dt>Tests:</dt>
@@ -6071,6 +6074,15 @@ Otherwise, insert node into parent’s children before child’s index.
 ◎
 If parent is a shadow host and node is a slotable, then assign a slot for node.
 </li>
+   <li id="cp-child-text-content-change-steps-if">
+~IF［
+%~node は $Text ~nodeである
+］
+⇒
+%親 に対する`子~text内容~変更~手続き$を走らす
+◎
+If node is a Text node, run the child text content change steps for parent.
+</li>
    <li id="cp-if-parent-assigned-nodes-empty">
 ~IF［
 %親 は`~slot$である
@@ -6675,6 +6687,7 @@ For each inclusive ancestor inclusiveAncestor of parent, if inclusiveAncestor ha
 ◎
 If suppress observers flag is unset, queue a mutation record of "childList" for parent with removedNodes a list solely containing node, nextSibling oldNextSibling, and previousSibling oldPreviousSibling.
 </li>
+	<!--cp-child-text-content-change-steps-if-->
 </ol>
 
 
@@ -9580,7 +9593,7 @@ Let node be the Text node descendant.
 
 <p class="trans-note">【
 木~順序で。
-加えて，~~厳密に述べるなら、このループの処理で木から除去される ^Text ~nodeは（動的に）反復対象から除外する必要もある。
+加えて，~~厳密に言えば、このループの中で木から除去される ^Text ~nodeは反復対象から除外する必要もある。
 】</p>
 
   <ol>
@@ -9700,8 +9713,13 @@ Remove node’s contiguous exclusive Text nodes (excluding itself), in tree orde
   </ol>
  </li>
 </ol>
-
 	</dd>
+	<dd class="note">注記：
+$normalize() は`子~text内容~変更~手続き$を走らす必要はない。
+それは $Text ~nodeたちを弄り倒すが，`子~text内容$は特に保全するように行うので。
+◎
+normalize() does not need to run any child text content change steps, since although it messes with Text nodes extensively, it does so specifically in a way that preserves the child text content.
+</dd>
 </dl>
 
 
@@ -15723,10 +15741,11 @@ Each node inheriting from the CharacterData interface has an associated mutable 
 
 
 <p class="algo-head">
-( ~offset: %offset, ~count: %count, ~data: %data )
-を与える下で，~node %node の
+~node %node の
 `~dataを置換-@
-するときは、次を走らす：
+するときは、所与の
+( ~offset: %offset, ~count: %count, ~data: %data )
+に対し，次を走らす：
 ◎
 To replace data of node node with offset offset, count count, and data data, run these steps:
 </p>
@@ -15789,65 +15808,86 @@ Starting from delete offset code units, remove count code units from node’s da
 <p>
 ~FOR
 ~EACH ( `範囲0$ %R ) に対し：
-◎
-↓</p>
+</p>
   <ol>
    <li>
+<p>
 ~IF［
 %R の`始端~node$ ~EQ %node
-］~AND［
+］：
+</p>
+    <ol>
+     <li>
+~IF［
 %offset ~LT %R の`始端~offset$ ~LTE %offset ~PLUS %count
 ］
 ⇒
 %R の`始端~offset$ ~SET %offset
-◎
-For each range whose start node is node and start offset is greater than offset but less than or equal to offset plus count, set its start offset to offset.
 </li>
+     <li>
+~IF［
+%R の`始端~offset$ ~GT %offset ~PLUS %count
+］
+⇒
+%R の`始端~offset$ ~INCBY %差分
+</li>
+    </ol>
+   </li>
    <li>
 <p>
 ~IF［
 %R の`終端~node$ ~EQ %node
-］~AND［
+］：
+</p>
+    <ol>
+     <li>
+<p>
+~IF［
 %offset ~LT %R の`終端~offset$ ~LTE %offset ~PLUS %count
 ］
 ⇒
 %R の`終端~offset$ ~SET %offset
 </p>
+
 <p class="trans-note">【
-範囲0の終端がちょうど置換される~~範囲の末尾を指している場合も，終端は置換した~~範囲の先頭に “寄せられる” ことになる。
+%R の終端がちょうど置換される~~範囲の末尾を指している場合も，終端は置換した~~範囲の先頭に “寄せられる” ことになる。
 】</p>
 
-◎
-For each range whose end node is node and end offset is greater than offset but less than or equal to offset plus count, set its end offset to offset.
-</li>
-   <li>
+     </li>
+     <li>
 ~IF［
-%R の`始端~node$ ~EQ %node
-］~AND［
-%R の`始端~offset$ ~GT %offset ~PLUS %count
-］
-⇒
-%R の`始端~offset$ ~INCBY %差分
-◎
-For each range whose start node is node and start offset is greater than offset plus count, increase its start offset by the number of code units in data, then decrease it by count.
-</li>
-   <li>
-~IF［
-%R の`終端~node$ ~EQ %node
-］~AND［
 %R の`終端~offset$ ~GT %offset ~PLUS %count
 ］
 ⇒
 %R の`終端~offset$ ~INCBY %差分
+</li>
+    </ol>
+   </li>
+  </ol>
+◎
+For each range whose start node is node and start offset is greater than offset but less than or equal to offset plus count, set its start offset to offset.
+◎
+For each range whose end node is node and end offset is greater than offset but less than or equal to offset plus count, set its end offset to offset.
+◎
+For each range whose start node is node and start offset is greater than offset plus count, increase its start offset by the number of code units in data, then decrease it by count.
 ◎
 For each range whose end node is node and end offset is greater than offset plus count, increase its end offset by the number of code units in data, then decrease it by count.
 </li>
-  </ol>
- </li>
+ <li>
+~IF［
+%node は $Text ~nodeである
+］~AND［
+%node の`親$ ~NEQ ~NULL
+］
+⇒
+%node の`親$に対する`子~text内容~変更~手続き$を走らす
+◎
+If node is a Text node and its parent is not null, run the child text content change steps for node’s parent.
+</li>
 </ol>
 
 <p class="algo-head">
-~node %node から
+`~node$ %node から
 `~dataの部分文字列@
 を得るときは、所与の
 ( ~offset: %offset, ~count: %count )
@@ -16091,6 +16131,24 @@ The contiguous Text nodes of a node node are node, node’s previous sibling Tex
 ◎
 The contiguous exclusive Text nodes of a node node are node, node’s previous sibling exclusive Text node, if any, and its contiguous exclusive Text nodes, and node’s next sibling exclusive Text node, if any, and its contiguous exclusive Text nodes, avoiding any duplicates.
 </div>
+
+<p class="algo-head">
+`~node$ %~node の
+`子~text内容@
+は、
+%~node の`子$である $Text ~nodeすべての`~data$を，`木~順序$で連結した結果である。
+◎
+The child text content of a node node is the concatenation of the data of all the Text node children of node, in tree order. 
+</p>
+
+<p>
+`適用仕様$は、`~node$に対する
+`子~text内容~変更~手続き@
+を定義して~MAY。
+◎
+This and other specifications may define child text content change steps
+for nodes. 
+</p>
 
 <hr>
 
@@ -21557,7 +21615,6 @@ hairy
 ある種の:certain
 尊守され:enshrined
 唯一の:the sole
+弄り倒す:messes with 〜 extensively
 -->
 
-</body>
-</html>
