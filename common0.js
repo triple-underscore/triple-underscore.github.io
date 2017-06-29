@@ -828,14 +828,13 @@ NAVI:HTML-navigation-ja.html\n\
 WAPI:webappapis-ja.html\n\
 HTMLGAPI:HTML-global-api-ja.html\n\
 HTMLINFRA:HTML-infrastructure-ja.html\n\
+HTMLdep:HTML-dependencies-ja.html\n\
 HTMLcms:HTML-common-microsyntaxes-ja.html\n\
 HTMLcdom:HTML-common-dom-interfaces-ja.html\n\
 HTMLurl:HTML-urls-and-fetching-ja.html\n\
 HTMLcloning:HTML-structured-data-ja.html\n\
 HTMLcomms:HTML-comms-ja.html\n\
 HTMLsse:HTML-server-sent-events-ja.html\n\
-HTMLconform:HTML-conform-ja.html\n\
-HTMLdep:HTML-dependencies-ja.html\n\
 HTMLdnd:HTML-dnd-ja.html\n\
 HTMLdom:HTML-dom-ja.html\n\
 HTMLforms:HTML-forms-ja.html\n\
