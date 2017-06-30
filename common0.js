@@ -731,7 +731,7 @@ FINGERPRINTING:<a class="fingerprinting" href="https://html.spec.whatwg.org/mult
 ●名:<table class="propdef"><tbody><tr><th>名前<td>\n\
 ●述:<table class="descdef"><tbody><tr><th>名前<td>\n\
 ●対:<tr><th>~For<td>\n\
-●値:<tr><th>値<td class="prod">\n\
+●値:<tr><th><a href="css-values-ja.html#value-defs">値</a><td class="prod">\n\
 ●新値:<tr><th>新たに定義される値<td class="prod">\n\
 ●初:<tr><th>初期値<td>\n\
 ●適:<tr><th>適用対象<td>\n\
