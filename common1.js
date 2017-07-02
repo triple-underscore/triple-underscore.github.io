@@ -172,10 +172,8 @@ IETFPR: 'IETF PROPOSED STANDARD'
 		var color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', LS: 'green' }[key];
 		var div = C('div');
 		div.id = 'sideways-logo';
-		var div1 = C('div');
-		if(color) div1.style.background = color;
-		div1.textContent = text;
-		div.appendChild(div1);
+		if(color) div.style.background = color;
+		div.textContent = text;
 		document.body.appendChild(div);
 	}
 
