@@ -847,7 +847,7 @@ HTMLrendering:HTML-rendering-ja.html\n\
 HTMLselectors:selectors-html-ja.html\n\
 HTMLxml:HTML-xhtml-ja.html\n\
 HTMLwriting:HTML-writing-ja.html\n\
-HTMLparsing:https://html.spec.whatwg.org/multipage/parsing.html\n\
+HTMLparsing:HTML-parsing-ja.html\n\
 HTMLobs:https://html.spec.whatwg.org/multipage/obsolete.html\n\
 HEinteractive:HTML-interactive-elements-ja.html\n\
 HEforms:HTML-form-elements-ja.html\n\
