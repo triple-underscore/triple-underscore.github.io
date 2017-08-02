@@ -749,6 +749,7 @@ IETF:https://tools.ietf.org/html\n\
 TC39:https://tc39.github.io/ecma262/\n\
 INFRA:infra-ja.html\n\
 DOM4:DOM4-ja.html\n\
+DOM-Parsing:DOM-Parsing-ja.html\n\
 ENCODING:Encoding-ja.html\n\
 FETCH:Fetch-ja.html\n\
 SW:https://w3c.github.io/ServiceWorker/\n\
