@@ -719,6 +719,7 @@ RS.取消す:#concept-cancel-readablestream
 検査:#_check-name-value-pair
 
 新たな~Headers:#_new-headers
+新たな~Response:#_new-response
 
 Hl.~header~list:#concept-headers-header-list
 Hl.付加-:#concept-headers-append
@@ -726,7 +727,9 @@ Hl.~guard:#concept-headers-guard
 Hl.埋める:#concept-headers-fill
 
 Rq.要請:#concept-request-request
+Rq.~Headers:#request-headers
 Rs.応答:#concept-response-response
+Rs.~Headers:#response-headers
 Rs.~trailer~promise:#concept-response-trailer-promise
 
 Bd.妨げられている:#concept-body-disturbed
@@ -862,8 +865,6 @@ BEACON:beacon-ja.html
 7234:RFC7234-ja.html
 7235:RFC7235-ja.html
 CLIENTHINTS:http://httpwg.org/http-extensions/client-hints.html
-
-Headers: <code>Headers</code> 
 
 form_data:<code>multipart/form-data</code>
 form_urlencoded:<code>application/x-www-form-urlencoded</code>
@@ -1401,6 +1402,10 @@ community::::コミュニティ
 局面:scenario:~
 
 	●stream/js/IDL/promise/primitives
+Headers:
+Response:
+Request:
+
 此れ:<b>これ°</b>
 IDL:
 list::::リスト
@@ -1587,7 +1592,6 @@ access::::アクセス
 ASCII:
 id:
 外来の:foreign::~
-＊外来:foreign::~
 迂回-:bypass:~
 forward::最新
 event::::イベント
@@ -1707,7 +1711,7 @@ i {
 </p>
 
 <p>
-更新： <time>2017-07-20</time>
+更新： <time>2017-08-13</time>
 （公開： <time>2013-04-27</time>）
 </p>
 
@@ -1736,7 +1740,7 @@ i {
 ></a>
 	<hgroup>
 <h1>Fetch</h1>
-<h2>Living Standard — 最終更新 2017 年 7 月 19 日</h2>
+<h2>Living Standard — 最終更新 2017 年 8 月 10 日</h2>
 	</hgroup>
 
 <dl>
@@ -1751,7 +1755,7 @@ i {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/fetch/commits">GitHub whatwg/fetch/commits</a></dd>
-	<dd><a href="https://fetch.spec.whatwg.org/commit-snapshots/194c2a135682d8cdcc35e31f4cb9466e1e160ebf/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://fetch.spec.whatwg.org/commit-snapshots/07999e9e5911ca246de2f31aace16f8eca9003bd/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/fetchstandard">@fetchstandard</a></dd>
 
 	<dt>Tests:</dt>
@@ -4018,9 +4022,22 @@ Let body be request’s body.
 If body is null, then queue a fetch task on request to process request end-of-body for request and abort these steps.
 </li>
 	<li>
-%読取り ~LET %本体 の!~stream$bdから!~chunkを読取った$RS結果
+<p>
+%読取器 ~LET %本体 の!~stream$bdから!読取器を取得-$RSした結果
 ◎
-Let read be the result of reading a chunk from body’s stream.
+Let reader be the result of getting a reader from body’s stream.
+</p>
+
+<p class="note">注記：
+この演算は例外を投出し得ない。
+◎
+This operation cannot throw an exception.
+</p>
+	</li>
+	<li>
+%読取り ~LET %読取器 で %本体 の!~stream$bdから!~chunkを読取った$RS結果
+◎
+Let read be the result of reading a chunk from body’s stream with reader.
 </li>
 	<li>
 ~RET
@@ -4120,7 +4137,7 @@ Otherwise, terminate the ongoing fetch with reason fatal and abort these steps.
 				</ul>
 			</li>
 			<li>
-%読取り ~SET %本体 の!~stream$bdから!~chunkを読取った$RS結果
+%読取り ~SET %読取器 で %本体 の!~stream$bdから!~chunkを読取った$RS結果
 ◎
 ↑↑</li>
 		</ol>
@@ -5153,7 +5170,7 @@ Return reader.
 
 <div class="p">
 <p class="algo-head">
-!~ReadableStream$ ~obj %読取器 から
+%読取器 で !~ReadableStream$ ~objから
 !~chunkを読取る@RS
 ときは、次を走らす：
 </p>
@@ -10411,7 +10428,7 @@ A Headers object also has an associated guard, which is "immutable", "request", 
 </ol>
 
 <p class="trans-note">【
-この表記は、翻訳として表現を明確化するために，この訳に導入したものである。
+この表記は、簡潔に記述するために，この訳に導入したものである。
 】</p>
 
 
@@ -11557,15 +11574,16 @@ enum !RequestRedirect@I {
 A Request object has an associated request (a request).
 </dd>
 
-	<dt>!Headers$I ~obj</dt>
+	<dt>!~Headers@Rq</dt>
 	<dd>
-この~objには，!要請$Rqの!~header~list$rqが結付けられる。
-!すなわち，同じ~header~listを前項の要請と共有する。^tnote
+~NULL または !Headers$I ~obj
+— 初期~時は ~NULL 。
 ◎
-A Request object also has an associated Headers object which is itself associated with request’s header list.
+A Request object also has an associated headers (null or a Headers object), initially null.
 </dd>
 
 </dl>
+
 
 <p>
 !Request$I ~objの!本体$Bdは、その!要請$Rqの!本体$rqである。
@@ -12034,19 +12052,24 @@ Set request’s method to method.
 		</ol>
 	</li>
 	<li>
-%R ~LET 次が結付けられた，新たな !Request$I ~obj
-⇒
-!要請$Rq ~SET %要請；<br>
-!Headers$I ~obj ~SET !新たな~Headers$( !request^l, %要請 の!~header~list$rq )
+%R ~LET 新たな !Request$I ~obj
 ◎
-Let r be a new Request object associated with request and a new associated Headers object whose guard is "request".
+Let r be a new Request object associated with request.
 </li>
 	<li>
-%headers ~LET %R の !Headers$I ~objの複製
-— !~header~list$Hl も含めて複製する
-<!-- it might contain a header that is no longer allowed per the mode change -->
+%R の!要請$Rq ~SET %要請
 ◎
-Let headers be a copy of r’s Headers object and its associated header list.
+↑</li>
+	<li>
+%R の!~Headers$Rq ~SET !新たな~Headers$( !request^l, %要請 の!~header~list$rq )
+◎
+Set r’s headers to a new Headers object, whose header list is request’s header list, and guard is "request".
+</li>
+	<li>
+%headers ~LET %R の!~Headers$Rqの複製
+— !~header~list$Hl も含めて複製する
+◎
+Let headers be a copy of r’s headers and its associated header list.
 </li>
 	<li>
 ~IF［
@@ -12058,9 +12081,9 @@ Let headers be a copy of r’s Headers object and its associated header list.
 If init’s headers member is present, set headers to init’s headers member.
 </li>
 	<li>
-%R の !Headers$I ~objの!~header~list$Hlを空にする
+%R の!~Headers$Rqの!~header~list$Hlを空にする
 ◎
-Empty r’s Headers object’s header list.
+Empty r’s headers’s header list.
 </li>
 	<li>
 <p>
@@ -12091,16 +12114,16 @@ If r’s request’s method is not a CORS-safelisted method, then throw a TypeEr
 If request’s integrity metadata is not the empty string, then throw a TypeError.
 </li>
 	<li>
-%R の !Headers$I ~objの!~guard$Hl  ~SET !request-no-cors^l
+%R の !~Headers$Rqの!~guard$Hl  ~SET !request-no-cors^l
 ◎
-Set r’s Headers object’s guard to "request-no-cors".
+Set r’s headers’s guard to "request-no-cors".
 </li>
 		</ol>
 	</li>
 	<li>
-%R の !Headers$I ~objを %headers で!埋める$Hl（例外投出あり）
+%R の !~Headers$Rqを %headers で!埋める$Hl（例外投出あり）
 ◎
-Fill r’s Headers object with headers. Rethrow any exceptions.
+Fill r’s headers with headers. Rethrow any exceptions.
 </li>
 	<li>
 %入力~本体 ~LET［
@@ -12176,17 +12199,17 @@ Otherwise, set body and Content-Type to the result of extracting init’s body m
 ~IF ［
 %内容~型 ~NEQ ~NULL
 ］~AND［［
-%R の !Headers$I ~objの!~header~list$Hl
+%R の!~Headers$Rqの!~header~list$Hl
 ］内に［
 !Content-Type$h を!名前に持つ~header$
 ］は無い
 ］
 ⇒
-%R の !Headers$I ~objに
+%R の!~Headers$Rqに
 ( !Content-Type$h / %内容~型 )
 を!付加-$Hlする（例外投出あり）
 ◎
-If Content-Type is non-null and r’s Headers object’s header list does not contain `Content-Type`, then append `Content-Type`/Content-Type to r’s Headers object. Rethrow any exception.
+If Content-Type is non-null and r’s headers’s header list does not contain `Content-Type`, then append `Content-Type`/Content-Type to r’s headers. Rethrow any exception.
 </li>
 		</ol>
 	</li>
@@ -12306,9 +12329,9 @@ The url attribute’s getter must return request’s url, serialized.
 
 	<dt>!headers@m</dt>
 	<dd>
-取得子は、此れの !Headers$I ~objを返さ~MUST。
+取得子は、此れの!~Headers$Rqを返さ~MUST。
 ◎
-The headers attribute’s getter must return the associated Headers object.
+The headers attribute’s getter must return the associated headers.
 </dd>
 
 	<dt>!type@m</dt>
@@ -12418,16 +12441,29 @@ The clone() method, when invoked, must run these steps:
 If this Request object is disturbed or locked, then throw a TypeError.
 </li>
 			<li>
-%要請 ~LET 此れの!要請$Rqを!~clone$rqした結果
+%~Request~objの~clone ~LET 新たな !Request$I ~obj
 ◎
-↓</li>
+Let clonedRequestObject be a new Request object.
+</li>
 			<li>
-~RET 次が結付けられた，新たな !Request$I ~obj
-⇒
-!要請$Rq ~SET %要請；<br>
-!Headers$I ~obj ~SET !新たな~Headers$( 此れの !Headers$I ~objの!~guard$Hl, %要請 の!~header~list$rq )
+%要請の~clone ~LET 此れの!要請$Rqを!~clone$rqした結果
 ◎
-Return a new Request object associated with the result of cloning request and a new associated Headers object whose guard is context object’s Headers object’s guard.
+Let clonedRequest be the result of cloning context object’s request.
+</li>
+			<li>
+%~Request~objの~clone の!要請$Rq ~SET %要請の~clone
+◎
+Set clonedRequestObject’s request to clonedRequest.
+</li>
+			<li>
+%~Request~objの~clone の!~Headers$Rq ~SET !新たな~Headers$( 此れの!~Headers$Rqの!~guard$Hl, %要請の~clone の!~header~list$rq )
+◎
+Set clonedRequestObject’s headers to a new Headers object whose header list is set to clonedRequest’s header list, and guard is context object’s headers' guard.
+</li>
+			<li>
+~RET %~Request~objの~clone
+◎
+Return clonedRequestObject.
 </li>
 		</ol>
 	</dd>
@@ -12475,6 +12511,10 @@ enum !ResponseType@I {
 };
 ◎
 
+<!-- 
+!Response@I
+-->
+
 <p>
 !Response$I ~objには、次のものが結付けられる：
 ◎
@@ -12488,25 +12528,40 @@ enum !ResponseType@I {
 A Response object has an associated response (a response).
 </dd>
 
-	<dt>!Headers$I ~obj</dt>
+	<dt>!~Headers@Rs</dt>
 	<dd>
-この~objには，!応答$Rsの!~header~list$rsが結付けられる。
-!すなわち，同じ~header~listを前項の応答と共有する。^tnote
+~NULL または !Headers$I ~obj
+— 初期~時は ~NULL 。
 ◎
-A Response object also has an associated Headers object which is itself associated with response’s header list.
+A Response object also has an associated headers (null or a Headers object), initially null.
 </dd>
 
 	<dt>!~trailer~promise@Rs</dt>
 	<dd>
 ~promise。
-<span class="note">
-!trailer$m 属性から利用される。
-</span>
 ◎
-A Response object also has an associated trailer promise (a promise). Used for the trailer attribute.
+A Response object also has an associated trailer promise (a promise).＼
 </dd>
-
+	<dd class="note">
+!trailer$m 属性から利用される。
+◎
+Used for the trailer attribute.
+</dd>
 </dl>
+
+<p>
+!新たな~Response@( %応答, %~Headers )
+という表記は、次のようにされた，新たな !Response$I ~objを表すとする：
+</p>
+
+<ol ><li>
+!応答$Rs ~SET %応答
+</li><li>!~Headers$Rs ~SET %~Headers
+</li></ol>
+
+<p class="trans-note">【
+この表記は、簡潔に記述するために，この訳に導入したものである。
+】</p>
 
 
 <p>
@@ -12515,9 +12570,6 @@ A Response object also has an associated trailer promise (a promise). Used for t
 A Response object’s body is its response’s body.
 </p>
 
-<!-- 
-!Response@I
--->
 <p class="idl-def">
 !Response(body, init)@m
 構築子の被呼出時には、次を走らせ~MUST：
@@ -12551,22 +12603,19 @@ If init’s statusText member does not match the reason-phrase token production,
 ◎
 ↓</li>
 	<li>
-%R ~LET 次が結付けられた，新たな !Response$I ~obj
-⇒
-!応答$Rs ~SET %応答；<br>
-!Headers$I ~obj ~SET !新たな~Headers$( !response^l, %応答 の!~header~list$rs )
+%R ~LET !新たな~Response$( %応答, !新たな~Headers$( !response^l, %応答 の!~header~list$rs ) )
 ◎
-Let r be a new Response object, associated with a new response and a new associated Headers object whose guard is "response".
+Let r be a new Response object associated with a new response.
+◎
+Set r’s headers to a new Headers object, whose header list is r’s response’s header list, and guard is "response".
 </li>
 	<li>
-%R の!応答$Rsの!~status$rs ~SET
-%init の !status$RsI ~member
+%応答 の!~status$rs ~SET %init の !status$RsI ~member
 ◎
 Set r’s response’s status to init’s status member.
 </li>
 	<li>
-%R の!応答$Rsの!~status~message$rs ~SET
-%init の !statusText$RsI ~member
+%応答 の!~status~message$rs ~SET %init の !statusText$RsI ~member
 ◎
 Set r’s response’s status message to init’s statusText member.
 </li>
@@ -12575,8 +12624,10 @@ Set r’s response’s status message to init’s statusText member.
 %init に !headers$RsI ~memberは!在する$idl
 ］
 ⇒
-%R の !Headers$I ~objを %init の !headers$RsI ~memberで!埋める$Hl（例外投出あり）
+%R の!~Headers$Rsを %init の !headers$RsI ~memberで!埋める$Hl（例外投出あり）
 ◎
+If init’s headers member is present, then fill r’s headers with init’s headers member. Rethrow any exceptions.
+
 If init’s headers member is present, then fill r’s Headers object with init’s headers member. Rethrow any exceptions.
 </li>
 	<li>
@@ -12664,22 +12715,22 @@ Return r.
 	<dd>
 <p>
 この静的~methの被呼出時には、次を走らせ~MUST：
+◎
+The static error() method, when invoked, must run these steps:
 </p>
 
 		<ol>
 			<li>
-%応答 ~LET 新たな!~network~error$
-</li>
-			<li>
-~RET 次が結付けられた，新たな !Response$I ~obj
-⇒
-!応答$Rs ~SET %応答；<br>
-!Headers$I ~obj ~SET !新たな~Headers$( !immutable^l, %応答 の!~header~list$rs )
+~RET !新たな~Response$( 新たな!~network~error$, !新たな~Headers$( !immutable^l ) )
+◎
+Let r be a new Response object, whose response is a new network error.
+◎
+Set r’s headers to a new Headers object whose guard is "immutable".
+◎
+Return r.
 </li>
 		</ol>
-◎
-The static error() method, when invoked, must return a new Response object, associated with a new network error and a new associated Headers object whose guard is "immutable".
-</dd>
+	</dd>
 
 	<dt>!redirect(url, status)@m</dt>
 	<dd>
@@ -12721,20 +12772,19 @@ If status is not a redirect status, then throw a RangeError.
 ◎
 ↓</li>
 			<li>
-%R ~LET 次が結付けられた，新たな !Response$I ~obj
-⇒
-!応答$Rs ~SET %応答；<br>
-!Headers$I ~obj ~SET !新たな~Headers$( !immutable^l, %応答 の!~header~list$rs )
+%R ~LET !新たな~Response$( %応答, !新たな~Headers$( !immutable^l ) )
 ◎
-Let r be a new Response object, associated with a new response and a new associated Headers object whose guard is "immutable".
+Let r be a new Response object, whose response is a new response.
+◎
+Set r’s headers to a new Headers object whose guard is "immutable".
 </li>
 			<li>
-%R の!応答$Rsの!~status$rs ~SET %status
+%応答 の!~status$rs ~SET %status
 ◎
 Set r’s response’s status to status.
 </li>
 			<li>
-%R の!応答$Rsの!~header~list$rsの中で
+%応答 の!~header~list$rsの中で
 ( !Location$h / ［
 %解析済~URL を!~url直列化器$urlにかけた結果
 ］を!~UTF-8符号化-$encした結果
@@ -12831,7 +12881,7 @@ The statusText attribute’s getter must return response’s status message.
 
 	<dt>!headers@m</dt>
 	<dd>
-取得子は、此れの !Headers$I ~objを返さ~MUST。
+取得子は、此れの!~Headers$Rsを返さ~MUST。
 ◎
 The headers attribute’s getter must return the associated Headers object.
 </dd>
@@ -12864,27 +12914,32 @@ The clone() method, when invoked, must run these steps:
 If context object is disturbed or locked, then throw a TypeError.
 </li>
 			<li>
-%応答 ~LET 此れの!応答$Rsを!~clone$rsした結果
+%応答の~clone ~LET 此れの!応答$Rsを!~clone$rqした結果
 ◎
-↓</li>
+Let clonedResponseObject be a new Response object.
+◎
+Let clonedResponse be the result of cloning context object’s response.
+</li>
 			<li>
-%R ~LET 次が結付けられた，新たな !Response$I ~obj
-⇒
-!応答$Rs ~SET %応答；<br>
-!Headers$I ~obj ~SET !新たな~Headers$( 此れの !Headers$I ~objの!~guard$Hl, %応答 の!~header~list$rs )
+%~Response~objの~clone ~LET !新たな~Response$( %応答の~clone, !新たな~Headers$( 此れの!~Headers$Rsの!~guard$Hl, %応答の~clone の!~header~list$rs ) )
+新たな !Response$I ~obj
 ◎
-Let clonedResponse be a new Response object associated with the result of cloning context object’s response and a new associated Headers object whose guard is context object’s Headers object’s guard.
+Set clonedResponseObject’s response to clonedResponse.
+◎
+Set clonedResponseObject’s headers to a new Headers object whose header list is set to clonedResponse’s header list, and guard is context object’s headers' guard.
 </li>
 			<li>
 此れの!~trailer~promise$Rsの!充足~時には$
 ⇒
-!新たな~Headers$( !immutable^l, %応答 の!~trailer$rs )
-で %R の!~trailer~promise$Rsを!解決する$
+!新たな~Headers$( !immutable^l, %応答の~clone の!~trailer$rs )
+で %~Response~objの~clone の!~trailer~promise$Rsを!解決する$
 ◎
-Upon fulfillment of context object’s trailer promise, resolve clonedResponse’s trailer promise with a new Headers object whose guard is "immutable" that is associated with clonedResponse’s trailer.
+Upon fulfillment of context object’s trailer promise, resolve clonedResponseObject’s trailer promise with a new Headers object whose guard is "immutable", and whose header list is clonedResponse’s trailer.
 </li>
 			<li>
-~RET %R
+~RET %~Response~objの~clone
+◎
+Return clonedResponseObject.
 ◎
 Return clonedResponse.
 </li>
@@ -12954,8 +13009,7 @@ If request’s client’s global object is a ServiceWorkerGlobalScope object, se
 <p>
 この段は!並列的$に走らす：
 ◎
-↓↓
-Let responseObject be a new Response object and a new associated Headers object whose guard is "immutable".
+↓↓Let responseObject be a new Response object and a new associated Headers object whose guard is "immutable".
 ◎
 Run the following in parallel:
 </p>
@@ -12967,7 +13021,11 @@ Run the following in parallel:
 Fetch request.
 </p>
 
-		<ul>
+		<ol>
+			<li>
+%R ~LET !新たな~Response$( %応答, !新たな~Headers$( !immutable^l ) )
+◎
+↑</li>
 			<li>
 <p>
 !応答を処理する$ときは：
@@ -12986,17 +13044,9 @@ To process response for response, run these substeps:
 If response’s type is "error", reject p with a TypeError and terminate these substeps.
 </li>
 					<li>
-%R ~LET 次が結付けられた，新たな !Response$I ~obj
-⇒
-!応答$Rs ~SET %応答；<br>
-!Headers$I ~obj ~SET !新たな~Headers$( !immutable^l, %応答 の!~header~list$rs )
-◎
-↑
+%R で %p を!解決する$
 ◎
 Associate responseObject with response.
-</li>
-					<li>
-%R で %p を!解決する$
 ◎
 Resolve p with responseObject. 
 </li>
@@ -13023,7 +13073,7 @@ Resolve responseObject’s trailer promise with trailerObject.
 </li>
 				</ol>
 			</li>
-		</ul>
+		</ol>
 	</li>
 	<li>
 ~RET %p
