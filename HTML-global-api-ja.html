@@ -282,8 +282,9 @@ V.~resize縦幅:#_resizeheight
 
 
 	●
-~ASCII英数字:~INFRA#ascii-alphanumeric
-~ASCII空白:~INFRA#ascii-whitespace
+~forgiving-base64復号-:~INFRA#forgiving-base64-decode
+~forgiving-base64符号化-:~INFRA#forgiving-base64-encode
+
 並列的:~HTMLINFRA#in-parallel
 
 ~animation~frame~callback識別子:#animation-frame-callback-identifier
@@ -487,19 +488,19 @@ method::::メソッド
 	●btoa
 Unicode:::
 base64:
+forgiving-base64:
 binary::::バイナリ
 bit::::ビット
-shift::::シフト
 byte::::バイト
 octet::::オクテット
 data::::データ
-復号-:decode::~::デコード
 文字:character:~
 文字列:string:~
 出力:output:~
 入力:input:~
 空:empty:~
-符号位置:code-point:~
+符号位置:code point:~
+復号-:decode::~::デコード
 符号化-:encode:~
 符号化方式:encoding:~
 変換-:convert:~
@@ -512,6 +513,7 @@ data::::データ
 ASCII:
 英数字:alphanumerics:~
 	語呂的には:mnemonic purposess
+失敗:failure:~
 
 	●prompt／印刷
 PDF:::
@@ -783,7 +785,6 @@ zero::::ゼロ
 
 状態:state:~
 複製:copy:~
-長さ:length:~
 頁:page:::ページ
 
 	order
@@ -1089,7 +1090,7 @@ logic::::ロジック
 </p>
 
 <p>
-更新： <time>2017-08-15</time>
+更新： <time>2017-08-16</time>
 （公開：<time>2016-07-23</time> ）
 </p>
 
@@ -1112,7 +1113,7 @@ logic::::ロジック
 
 	<hgroup>
 <h1>Web application APIs</h1>
-<h2>HTML Living Standard — 最終更新 2017 年 8 月 14 日</h2>
+<h2>HTML Living Standard — 最終更新 2017 年 8 月 15 日</h2>
 	</hgroup>
 
 </header>
@@ -1158,7 +1159,7 @@ interface `WindowOrWorkerGlobalScope@I {
 
   // base64 utility methods
   DOMString `btoa$m(DOMString %data);
-  DOMString `atob$m(DOMString %data);
+  ByteString `atob$m(DOMString %data);
 
   // timers
   long `setTimeout$m(
@@ -1316,10 +1317,10 @@ throw an "InvalidCharacterError" DOMException if data contains any character who
 </li>
 			<li>
 ~RET ［
-%data 内の各 文字を その符号位置を値とする 8 ~bit表現に変換して得られる~octet列
-］に， `RFC4648$r による~base64~algoを適用した結果
+%data 内の各 文字を その符号位置を値とする 8 ~bit表現に変換して得られる~byte列
+］を`~forgiving-base64符号化-$した結果の文字列
 ◎
-Otherwise, the user agent must convert data to a sequence of octets whose nth octet is the eight-bit representation of the code point of the nth character of data, and then must apply the base64 algorithm to that sequence of octets, and return the result. [RFC4648]
+Otherwise, the user agent must convert data to a byte sequence whose nth byte is the eight-bit representation of the nth code point of data, and then must apply forgiving-base64 encode to that byte sequence and return the result.
 </li>
 		</ol>
 	</dd>
@@ -1334,244 +1335,23 @@ The atob(data) method, when invoked, must run the following steps:
 
 		<ol>
 			<li>
-%data からすべての`~ASCII空白$を除去する
+%結果 ~LET %data を`~forgiving-base64復号-$した結果
 ◎
-Let position be a pointer into data, initially pointing at the start of the string.
-◎
-Remove all ASCII whitespace from data.
+Let decodedData be the result of running forgiving-base64 decode on data.
 </li>
 			<li>
 ~IF［
-%data の長さは 4 の倍数である
-］
-⇒
-次を 2 回 繰り返す
-⇒
-~IF［
-%data の最後の文字 ~EQ `003D^U (=)
-］
-⇒
-%data から最後の文字を除去する
-◎
-If the length of data divides by 4 leaving no remainder, then: if data ends with one or two U+003D EQUALS SIGN (=) characters, remove them from data.
-</li>
-			<li>
-%不足個数 ~LET 
-( %data の長さを 4 の倍数に切り上げた結果 ) − %data の長さ
-◎
-↓</li>
-			<li>
-~IF［
-%不足個数 ~EQ 3
+%結果 ~EQ `失敗^i
 ］
 ⇒
 ~THROW `InvalidCharacterError$E
 ◎
-If the length of data divides by 4 leaving a remainder of 1, throw an "InvalidCharacterError" DOMException and abort these steps.
+If decodedData is failure, then throw an "InvalidCharacterError" DOMException.
 </li>
 			<li>
-<p>
-~IF［
-%data 内に次に挙げるもの以外の文字がある
-］
-⇒
-~THROW `InvalidCharacterError$E
+~RET %結果
 ◎
-If data contains a character that is not in the following list of characters and character ranges, throw an "InvalidCharacterError" DOMException and abort these steps:
-</p>
-
-<ul ><li>`002B^U (+)
-</li><li>`002F^U (/)
-</li><li>`~ASCII英数字$
-</li></ul>
-
-			</li>
-			<li>
-%出力 ~LET 空~文字列
-◎
-Let output be a string, initially empty.
-</li>
-			<li>
-%buffer ~LET 空~list
-◎
-Let buffer be a buffer that can have bits appended to it, initially empty.
-</li>
-			<li>
-%data の末尾に %不足個数 個の `A^l を付加する
-◎
-↓↓</li>
-			<li>
-<p>
-~FOR %data 内の ~EACH ( 文字 %char ) に対し，先頭から順に：
-◎
-While position does not point past the end of data, run these substeps:
-</p>
-				<ol>
-					<li>
-<p>
-%n ~LET %char に応じて，次の表の右列に与えられる数
-— 表~内の “CP( %x )” は 文字 %x の符号位置を表す数とする：
-◎
-Find the character pointed to by position in the first column of the following table. Let n be the number given in the second cell of the same row.
-</p>
-
-<div >
-<table id="base64-table"><thead><tr><th>%char
-<th>%n
-</thead>
-
-<tbody><tr><td>`A^l 〜 `Z^l
-<td>CP( %char ) − CP( `A^l )
-
-<tr><td>`a^l 〜 `z^l
-<td>CP( %char ) − CP( `a^l ) + 26
-
-<tr><td>`0^l 〜 `9^l
-<td>CP( %char ) − CP( `0^l ) + 52
-
-<tr><td>`+^l
-<td>62
-
-<tr><td>`/^l
-<td>63
-
-</tbody></table>
-
-<div lang="en" style="white-space:pre-wrap;">
-Character 	Number
-• A	0
-• B	1
-• C	2
-• D	3
-• E	4
-• F	5
-• G	6
-• H	7
-• I	8
-• J	9
-• K	10
-• L	11
-• M	12
-• N	13
-• O	14
-• P	15
-• Q	16
-• R	17
-• S	18
-• T	19
-• U	20
-• V	21
-• W	22
-• X	23
-• Y	24
-• Z	25
-• a	26
-• b	27
-• c	28
-• d	29
-• e	30
-• f	31
-• g	32
-• h	33
-• i	34
-• j	35
-• k	36
-• l	37
-• m	38
-• n	39
-• o	40
-• p	41
-• q	42
-• r	43
-• s	44
-• t	45
-• u	46
-• v	47
-• w	48
-• x	49
-• y	50
-• z	51
-• 0	52
-• 1	53
-• 2	54
-• 3	55
-• 4	56
-• 5	57
-• 6	58
-• 7	59
-• 8	60
-• 9	61
-• +	62
-• /	63
-</div>
-</div>
-				</li>
-				<li>
-%buffer に %n を付加する
-◎
-Append to buffer the six bits corresponding to number, most significant bit first.
-</li>
-					<li>
-<p>
-~IF［
-%buffer の長さ ~EQ 4
-］：
-</p>
-						<ol>
-							<li>
-( %n1, %n2, %n3, %n4 ) ~LET %buffer の先頭から順に 4 個の数
-</li>
-							<li>
-<p >
-( %m1, %m2, %m3 ) ~LET 次の等式を満たす 3 個の 範囲 { 0 〜 255 } に入る整数
-⇒
-P( %m1, 16 ) + P( %m2, 8 ) + %m3 ~EQ
-P( %n1, 18 ) + P( %n2, 12 ) + P( %n3, 6 ) + %n4
-</p>
-<p>
-この段の “P( %x, %y )” は、
-( %x × ( 2 の %y 乗 ) )
-を表す（すなわち，左~bit~shift演算）。
-</p>
-							</li>
-							<li>
-順に，［
-%m1, %m2, %m3
-］を値とする符号位置に対応する文字を %出力 に付加する
-</li>
-							<li>
-%buffer を空にする
-</li>
-						</ol>
-
-◎
-If buffer has accumulated 24 bits, interpret them as three 8-bit big-endian numbers. Append the three characters with code points equal to those numbers to output, in the same order, and then empty buffer.
-◎
-Advance position by one character.
-</li>
-				</ol>
-			</li>
-			<li>
-<p>
-%出力 の末尾から %不足個数 個の文字を除去する
-◎
-If buffer is not empty, it contains either 12 or 18 bits. If it contains 12 bits, discard the last four and interpret the remaining eight as an 8-bit big-endian number. If it contains 18 bits, discard the last two and interpret the remaining 16 as two 8-bit big-endian numbers. Append the one or two characters with code points equal to those one or two numbers to output, in the same order.
-</p>
-
-<p class="note">注記：
-入力 %data は 1 文字あたり 6 ~bit, %出力 は 1 文字あたり 8 ~bit の~dataを表現するので、( %不足個数 × 2 ) 個の~bitが，入力の末尾から切り捨てられることになる。
-例えば 2 つの入力
-`YQ^l （ 6 ~bit表現 24, 16 ）, `YR^l （ 6 ~bit表現 24, 17 ）
-に対する `atob()^m の結果はいずれも `a^l になる。
-◎
-The discarded bits mean that, for instance, atob("YQ") and atob("YR") both return "a".
-</p>
-
-		   </li>
-			<li>
-~RET %出力
-◎
-Return output.
+Return decodedData.
 </li>
 		</ol>
 	</dd>
