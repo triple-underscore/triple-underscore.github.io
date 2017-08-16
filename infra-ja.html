@@ -34,7 +34,7 @@ COMMON_DATA.init = function(expanded){
 	};
 	Util.switchWordsInit(source_data);
 
-//	Util.del_j(); //checked: 170110 spec
+//	Util.del_j(); //checked: 170815 spec
 
 	return options;
 }
@@ -51,6 +51,7 @@ function expand(mapping1){
 		c: 'code',
 		U: 'span',
 		X: 'span',
+		i: 'i',
 		V: 'var',
 		tnote: 'span'
 	};
@@ -159,6 +160,9 @@ return text;
 ~byte小文字~化:#byte-lowercase
 byte.長さ:#byte-sequence-length
 
+同型に復号-:#isomorphic-decode
+同型に符号化-:#isomorphic-encode
+
 ~scalar値~文字列:#scalar-value-string
 ~JS文字列:#javascript-string
 文字列:#string
@@ -208,6 +212,8 @@ str.長さ:#string-length
 改行文字を剥ぐ:#strip-newlines
 改行文字を剥いだ:#strip-newlines
 
+~forgiving-base64復号-:#forgiving-base64-decode
+~forgiving-base64符号化-:#forgiving-base64-encode
 
 ~list:#list
 ~size:#list-size
@@ -305,6 +311,7 @@ List:~TC39#sec-list-and-record-specification-type
 再投出-:rethrow:~
 投出:throw:~
 継続-:continue:~
+演算-:operate:~
 演算:operation:~
 flow::::フロー
 所与の:given:与えられた
@@ -326,14 +333,14 @@ catch:
 	各:each
 条件:condition:~
 合致-:match:~
-演算-:operate:~
 操作-:manipulate:~
 block::::ブロック
 繰返す:repeat する:繰り返す
 表明:assertion:~
 宣言-:declare:~
 視野:scope::~::スコープ
-
+error::::エラー
+失敗:failure:~
 
 	●未分類
 JS:JavaScript
@@ -408,7 +415,7 @@ slash::::スラッシュ
 	〜:inclusive
 
 
-	●文字／文字列
+	●文字／文字列／byte列
 ASCII:
 Unicode:
 C0:
@@ -466,11 +473,16 @@ token::::トークン
 分割-:split::~
 変数:variable::~
 追跡-:track:~
+入出力:I/O:~
 入力:input:~
+出力:output:~
 孤立ed:isolated:孤立
 変換-:convert:~
 変換:conversion:~
-入出力:I/O:~
+同型に:isomorphic:~
+forgiving-base64:
+base64:
+	大目に:forgiving:~
 
 	連続する:consecutive な／
 	1 個の:single
@@ -537,6 +549,8 @@ instance::::インスタンス
 範囲:range::~
 名前:name::~
 名:name::~
+命名-:name::~
+命名:naming::~
 一意:unique:~
 変異不可:immutable:~
 
@@ -714,7 +728,12 @@ commit:
 長年の:long-standing:~
 	注記-:note
 欲され:desire され:欲され
+対称:symmetric:~
+	symmetry
+取扱い:handling:取り扱い
+稀:rare:まれ
 
+	返す:return
 	生じ:occur
 	特に:In particular
 	~~区別:distinction
@@ -827,12 +846,17 @@ commit:
 	ある種の:certain
 	前:previous
 	〜以前の:pre-
+	結果:result
 
 </script>
 
 
 <!--%style -->
 <style type="text/css">
+
+span[lang="en"] {
+	white-space: pre-line;
+}
 
 .hex-value {
 	font-family: sans-serif0, sans-serif;
@@ -866,7 +890,7 @@ commit:
 </p>
 
 <p>
-更新： <time>2017-07-22</time>
+更新： <time>2017-08-16</time>
 （公開：<time>2016-11-25</time> ）
 </p>
 
@@ -897,7 +921,7 @@ commit:
 
 	<hgroup>
 <h1 id="title">基盤 — Infra</h1>
-<h2 id="subtitle">Living Standard — 最終更新 2017 年 7 月 15 日</h2>
+<h2 id="subtitle">Living Standard — 最終更新 2017 年 8 月 15 日</h2>
 	</hgroup>
 
 <dl>
@@ -909,7 +933,7 @@ commit:
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/infra/commits">GitHub whatwg/infra/commits</a>
 </dd>
-	<dd><a href="https://infra.spec.whatwg.org/commit-snapshots/51f0a4170e699cb68b64a3643e27c5b226f69420/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<dd><a href="https://infra.spec.whatwg.org/commit-snapshots/8d7447e5462f2cd104b7bbe7a719227be80921cf/" id="commit-snapshot-link">Snapshot as of this commit</a>
 </dd>
 	<dd><a href="https://twitter.com/infrastandard">@infrastandard</a></dd>
 
@@ -1606,6 +1630,12 @@ An ASCII byte is a byte in the range 0x00 (NUL) to 0x7F (DEL), inclusive. As ill
 和訳では、例外なく `28^X `(^smb, 等々と記すことにする。
 】</p>
 
+<p class="example" id="example-byte-notation">
+`49^X `I^smb を`~UTF-8復号-$した結果は、`符号位置$ `0049^U `I^smb ）になる。
+◎
+0x49 (I) when UTF-8 decoded becomes the code point U+0049 (I).
+</p>
+
 		</section>
 		<section id="byte-sequences">
 <h3 title="Byte sequences">4.2. ~byte列</h3>
@@ -1648,9 +1678,10 @@ Headers, such as `Content-Type`, are byte sequences.
 
 <p class="note">注記：
 `文字列$から`~byte列$を取得するときは、
-`ENCODING$r による`~UTF-8符号化-$などの演算を利用する。
+`ENCODING$r による`~UTF-8符号化-$の利用が奨励される。
+稀な状況下では、`同型に符号化-$する必要があるかもしれない。
 ◎
-To get a byte sequence out of a string, use an operation such as UTF-8 encode from the Encoding Standard. [ENCODING]
+To get a byte sequence out of a string, using UTF-8 encode from the Encoding Standard is encouraged. In rare circumstances isomorphic encode might be needed. [ENCODING] 
 </p>
 
 <p>
@@ -1661,29 +1692,36 @@ To get a byte sequence out of a string, use an operation such as UTF-8 encode fr
 A byte sequence’s length is the number of bytes it contains.
 </p>
 
-
 <p class="algo-head">
-`~byte列$を
+`~byte列$ %入力 を
 `~byte小文字~化@
-するときは、 { `41^X `A^smb 〜 `5A^X `Z^smb } に入る ~EACH ( ~byte ) に対し， `20^X を加算した結果を返す。
+するときは、 %入力 内の各［
+%~byte ~IN { `41^X `A^smb 〜 `5A^X `Z^smb }
+］を［
+%~byte ~PLUS `20^X
+］に置換して得られる`~byte列$を返す。
 ◎
 To byte-lowercase a byte sequence, increase each byte it contains, in the range 0x41 (A) to 0x5A (Z), inclusive, by 0x20.
 </p>
 
 <p class="algo-head">
-`~byte列$を
-`~byte大文字~化@
-するときは、 { `61^X `a^smb 〜 `7A^X `z^smb } に入る ~EACH ( ~byte ) に対し， `20^X を減算した結果を返す。
+`~byte列$ %入力 を
+`~byte小文字~化@
+するときは、 %入力 内の各［
+%~byte ~IN { `61^X `a^smb 〜 `7A^X `z^smb }
+］を［
+%~byte ~MINUS `20^X
+］に置換して得られる`~byte列$を返す。
 ◎
 To byte-uppercase a byte sequence, subtract each byte it contains, in the range 0x61 (a) to 0x7A (z), inclusive, by 0x20.
 </p>
 
 <p class="trans-note">【
-`~byte列$ %s が与えられた下で、単に
-“%s を~byte小文字~化（大文字~化）する”
-等と記されたときは、 %s 自身をその結果に設定する（これは、
-“%s ~SET %s を~byte小文字~化（大文字~化）した結果”
-の略記を表す）。
+単に
+“%入力 を~byte小文字~化（大文字~化）する”
+等と記されたときは、 %入力 自身をその結果に設定する（これは、
+“%入力 ~SET %入力 を~byte小文字~化（大文字~化）した結果”
+の略記である）。
 】</p>
 
 
@@ -1695,11 +1733,27 @@ To byte-uppercase a byte sequence, subtract each byte it contains, in the range 
 A byte sequence A is a byte-case-insensitive match for a byte sequence B, if the byte-lowercase of A is the byte-lowercase of B.
 </p>
 
-<p class="example" id="example-byte-notation">
-`49^X `I^smb を`~UTF-8復号-$した結果は、`符号位置$ `0049^U `I^smb ）になる。
-◎
-0x49 (I) when UTF-8 decoded becomes the code point U+0049 (I).
+<div class="p">
+<p class="algo-head">
+`~byte列$ %入力 を
+`同型に復号-@
+するときは、次をいずれも満たすような`文字列$ %出力 を返す：
 </p>
+
+<ul>
+	<li>
+%出力 の`長さ$str ~EQ %入力 の`長さ$byte
+</li>
+	<li>
+任意の %N ~IN { 1 〜 %入力 の`長さ$byte } に対し
+⇒
+%出力 の %N 個目の`符号単位$の値 ~EQ %入力 の %N 個目の`~byte$の値
+</li>
+</ul>
+
+◎
+To isomorphic decode a byte sequence input, return a string whose length is equal to input’s length and whose code points have the same values as input’s bytes, in the same order.
+</div>
 
 		</section>
 		<section id="code-points">
@@ -1797,7 +1851,7 @@ Code points are sometimes referred to as characters and in certain contexts are 
 	<dt>
 `~surrogate@
 ◎
-A surrogate
+A surrogate＼
 </dt>
 	<dd>
 { `D800^U 〜 `DFFF^U }
@@ -1811,7 +1865,7 @@ is a code point that is in the range U+D800 to U+DFFF, inclusive.
 	<dt>
 `~scalar値@
 ◎
-A scalar value
+A scalar value＼
 </dt>
 	<dd>
 `~surrogate$でない`符号位置$
@@ -1823,7 +1877,7 @@ is a code point that is not a surrogate.
 `非文字@
 （ noncharacter ）
 ◎
-A noncharacter
+A noncharacter＼
 </dt>
 	<dd>
 {
@@ -1861,18 +1915,18 @@ is a code point that is in the range U+FDD0 to U+FDEF, inclusive, or U+FFFE, U+F
 	<dt>
 `~ASCII符号位置@
 ◎
-An ASCII code point
+An ASCII code point＼
 </dt>
 	<dd>
 { `0000^U NULL 〜 `007F^U DELETE }
 ◎
-An ASCII code point is a code point in the range U+0000 NULL to U+007F DELETE, inclusive.
+is a code point in the range U+0000 NULL to U+007F DELETE, inclusive.
 </dd>
 
 	<dt>
 `~ASCII~tabや~ASCII改行文字@
 ◎
-An ASCII tab or newline
+An ASCII tab or newline＼
 </dt>
 	<dd>
 { `0009^U TAB, `000A^U LF, `000D^U CR }
@@ -1883,7 +1937,7 @@ is U+0009 TAB, U+000A LF, or U+000D CR.
 	<dt>
 `~ASCII空白@
 ◎
-ASCII whitespace
+ASCII whitespace＼
 </dt>
 	<dd>
 { `0009^U TAB, `000A^U LF, `000C^U FF, `000D^U CR, `0020^U SPACE }
@@ -1900,7 +1954,7 @@ is U+0009 TAB, U+000A LF, U+000C FF, U+000D CR, or U+0020 SPACE.
 	<dt>
 `~C0制御文字@
 ◎
-A C0 control
+A C0 control＼
 </dt>
 	<dd>
 { `0000^U NULL 〜 `001F^U INFORMATION SEPARATOR ONE }
@@ -1911,7 +1965,7 @@ is a code point in the range U+0000 NULL to U+001F INFORMATION SEPARATOR ONE, in
 	<dt>
 `~C0制御文字や~space@
 ◎
-A C0 control or space
+A C0 control or space＼
 </dt>
 	<dd>
 { `~C0制御文字$, `0020^U SPACE }
@@ -1922,7 +1976,7 @@ is a C0 control or U+0020 SPACE.
 	<dt>
 `制御~文字@
 ◎
-A control
+A control＼
 </dt>
 	<dd>
 {
@@ -1936,7 +1990,7 @@ is a C0 control or a code point in the range U+007F DELETE to U+009F APPLICATION
 	<dt>
 `~ASCII数字@
 ◎
-An ASCII digit
+An ASCII digit＼
 </dt>
 	<dd>
 { `0030^U `0^smb 〜 `0039^U `9^smb }
@@ -1947,7 +2001,7 @@ is a code point in the range U+0030 (0) to U+0039 (9), inclusive.
 	<dt>
 `~ASCII~hex数字（大文字）@
 ◎
-An ASCII upper hex digit
+An ASCII upper hex digit＼
 </dt>
 	<dd>
 { `~ASCII数字$, `0061^U `A^smb 〜 `0066^U `F^smb }
@@ -1958,7 +2012,7 @@ is an ASCII digit or a code point in the range U+0041 (A) to U+0046 (F), inclusi
 	<dt>
 `~ASCII~hex数字（小文字）@
 ◎
-An ASCII lower hex digit
+An ASCII lower hex digit＼
 </dt>
 	<dd>
 { `~ASCII数字$, `0061^U `a^smb 〜 `0066^U `f^smb }
@@ -1969,7 +2023,7 @@ is an ASCII digit or a code point in the range U+0061 (a) to U+0066 (f), inclusi
 	<dt>
 `~ASCII~hex数字@
 ◎
-An ASCII hex digit
+An ASCII hex digit＼
 </dt>
 	<dd>
 { `~ASCII数字$, `0041^U 〜 `0046^U , `0061^U 〜 `0066^U }
@@ -1980,7 +2034,7 @@ is an ASCII upper hex digit or ASCII lower hex digit.
 	<dt>
 `~ASCII英大文字@
 ◎
-An ASCII upper alpha
+An ASCII upper alpha＼
 </dt>
 	<dd>
 { `0041^U `A^smb 〜 `0046^U `Z^smb }
@@ -1991,7 +2045,7 @@ is a code point in the range U+0041 (A) to U+005A (Z), inclusive.
 	<dt>
 `~ASCII英小文字@
 ◎
-An ASCII lower alpha
+An ASCII lower alpha＼
 </dt>
 	<dd>
 { `0061^U `a^smb 〜 `0066^U `Z^smb }
@@ -2002,7 +2056,7 @@ is a code point in the range U+0061 (a) to U+007A (z), inclusive.
 	<dt>
 `~ASCII英字@
 ◎
-An ASCII alpha
+An ASCII alpha＼
 </dt>
 	<dd>
 { `~ASCII英小文字$, `~ASCII英大文字$ }
@@ -2013,7 +2067,7 @@ is an ASCII upper alpha or ASCII lower alpha.
 	<dt>
 `~ASCII英数字@
 ◎
-An ASCII alphanumeric
+An ASCII alphanumeric＼
 </dt>
 	<dd>
 { `~ASCII数字$, `~ASCII英字$ }
@@ -2123,6 +2177,12 @@ A scalar value string is useful for any kind of I/O or other kind of operation w
 String can be used to refer to either a JavaScript string or scalar value string, when it is clear from the context which is meant or when the distinction is immaterial. Strings are denoted by double quotes and monospace font.
 </p>
 
+<p class="example" id="example-string-notation">
+`Hello, world!^l は文字列を表す。
+◎
+"Hello, world!" is a string.
+</p>
+
 <p>
 `文字列$の
 `長さ@str
@@ -2166,13 +2226,42 @@ A scalar value string can always be used as JavaScript string implicitly since i
 An implementation likely has to perform explicit conversion, depending on how it actually ends up representing JavaScript and scalar value strings. It is even fairly typical for implementations to have multiple implementations of just JavaScript strings for performance and memory reasons.
 </p>
 
-<hr>
-
-<p class="example" id="example-string-notation">
-`Hello, world!^l は文字列を表す。
+<p class="algo-head">
+`文字列$ %入力 を
+`同型に符号化-@
+するときは、次を走らす：
 ◎
-"Hello, world!" is a string.
+To isomorphic encode a string input, run these steps:
 </p>
+
+<ol>
+	<li>
+~Assert：
+%入力 内に `00FF^U より大きい`符号位置$はない。
+◎
+Assert: input contains no code points greater than U+00FF.
+</li>
+	<li>
+<p>
+~RET 次をいずれも満たすような`~byte列$ %出力：
+</p>
+		<ul>
+			<li>
+%出力 の`長さ$byte ~EQ %入力 の`長さ$str
+</li>
+			<li>
+任意の %N ~IN { 1 〜 %入力 の`長さ$str } に対し
+⇒
+%出力 の %N 個目の`~byte$の値 ~EQ %入力 の %N 個目の`符号単位$の値
+</li>
+		</ul>
+◎
+Return a byte sequence whose length is equal to input’s length and whose bytes have the same values as input’s code points, in the same order.
+</li>
+</ol>
+
+
+<hr>
 
 <p>
 `~ASCII文字列@
@@ -2183,27 +2272,27 @@ An ASCII string is a string whose code points are all ASCII code points.
 
 
 <p class="algo-head">
-`文字列$を
+`文字列$ %入力 を
 `~ASCII小文字~化@
-するときは、`文字列$内の各`~ASCII英大文字$を，それぞれに対応する`~ASCII英小文字$に置換した結果を返す。
+するときは、 %入力 内の各`~ASCII英大文字$を，それぞれに対応する`~ASCII英小文字$に置換した結果を返す。
 ◎
 To ASCII lowercase a string, replace all ASCII upper alphas in the string with their corresponding code point in ASCII lower alpha.
 </p>
 
 <p class="algo-head">
-`文字列$を
+`文字列$ %入力 を
 `~ASCII大文字~化@
-するときは、`文字列$内の各`~ASCII英小文字$を，それぞれに対応する`~ASCII英大文字$に置換した結果を返す。
+するときは、 %入力 内の各`~ASCII英小文字$を，それぞれに対応する`~ASCII英大文字$に置換した結果を返す。
 ◎
 To ASCII uppercase a string, replace all ASCII lower alphas in the string with their corresponding code point in ASCII upper alpha.
 </p>
 
 <p class="trans-note">【
-`文字列$ %s が与えられた下で、単に
-“%s を ~ASCII小文字~化（大文字~化）する”
-と記されたときは、 %s 自身をその結果に設定する（これは、
-“%s ~SET %s を~ASCII小文字~化（大文字~化）した結果”
-の略記を表す）。
+単に
+“%入力 を ~ASCII小文字~化（大文字~化）する”
+と記されたときは、 %入力 自身をその結果に設定する（これは、
+“%入力 ~SET %入力 を~ASCII小文字~化（大文字~化）した結果”
+の略記である）。
 この節に現れる他の，文字列を返す~algoも同様。
 】</p>
 
@@ -2581,6 +2670,8 @@ token might be the empty string.
 </li>
 			<li>
 %~token から`前後の~ASCII空白~列を剥ぐ$
+◎
+Strip leading and trailing ASCII whitespace from token.
 </li>
 			<li>
 %~token~list に %~token を`付加-$する
@@ -3306,8 +3397,196 @@ Another way of expressing our statusInstance tuple above would be as 200/`OK`.
 
 		</section>
 	</section>
+	<section id="forgiving-base64">
+<h2 title="Forgiving base64">6. ~forgiving-base64</h2>
+
+<p class="algo-head">
+所与の`~byte列$ %~data を
+`~forgiving-base64符号化-@
+するときは、［
+`RFC4648$r, 4 節に定義される~base64~algo
+］を %~data に適用した結果の文字列を返す。
+◎
+To forgiving-base64 encode given a byte sequence data, apply the base64 algorithm defined in section 4 of RFC 4648 to data and return the result. [RFC4648]
+</p>
+
+<p class="note">注記：
+これが，
+“`~forgiving-base64符号化-$”
+と命名されているのは、
+“`~forgiving-base64復号-$”
+と対称にするためである
+— 後者は、ある種の入力~用に~errorの取扱いを定義するので， RFC によるものと異なる。
+◎
+This is named forgiving-base64 encode for symmetry with forgiving-base64 decode, which is different from the RFC as it defines error handling for certain inputs.
+</p>
+
+<p class="trans-note">【
+符号化-, 復号-の命名は、~byte列の方が “元の~dataである” ことに基づく。
+】</p>
+
+<p class="algo-head">
+所与の文字列 %~data を
+`~forgiving-base64復号-@
+するときは、次を走らす：
+◎
+To forgiving-base64 decode given a string data, run these steps:
+</p>
+
+<ol>
+	<li>
+%~data からすべての`~ASCII空白$を除去する
+◎
+Remove all ASCII whitespace from data.
+</li>
+	<li>
+%~data 内 の~EACH( `符号位置$ %C ) に対し
+⇒
+~IF［
+%C ~NIN { `002B^U `+^smb, `002F^U `/^smb, `~ASCII英数字$ }
+］
+⇒
+~RET `失敗^i
+◎
+If data contains a code point that is not one of
+• U+002B (+)
+• U+002F (/)
+• ASCII alphanumeric 
+then return failure.
+</li>
+	<li>
+<p>
+~IF［
+%~data の`長さ$strは 4 の倍数である
+］
+⇒
+次を 2 回 繰り返す
+⇒
+~IF［
+%~data の最後の`符号位置$ ~EQ `003D^U `=^smb
+］
+⇒
+%~data から最後の`符号位置$を除去する
+◎
+If data’s length divides by 4 leaving no remainder, then:
+• If data ends with one or two U+003D (=) code points, then remove them from data.
+</p>
+
+<p class="trans-note">【
+この段は前~段より先に行われるべきでは？
+】</p>
+	</li>
+	<li>
+%不足個数 ~LET 
+( %~data の`長さ$strを 4 の倍数に切り上げた結果 ) − %~data の`長さ$str
+◎
+↓</li>
+	<li>
+~IF［
+%不足個数 ~EQ 3
+］
+⇒
+~RET `失敗^i
+◎
+If data’s length divides by 4 leaving a remainder of 1, then return failure.
+</li>
+	<li>
+%出力 ~LET 空`~byte列$
+◎
+Let output be an empty byte sequence.
+◎
+Let buffer be an empty buffer that can have bits appended to it.
+</li>
+	<li>
+%~data の末尾に %不足個数 個の `0041^U `A^smb を付加する
+◎
+↓↓</li>
+	<li>
+%位置 ~LET %~data の先頭を指している`位置~変数$
+◎
+Let position be a position variable for data, initially pointing at the start of data.
+</li>
+	<li>
+<p>
+~WHILE［
+%位置↗ ~NEQ ε
+］：
+◎
+While position does not point past the end of data:
+</p>
+		<ol>
+			<li>
+%buffer ~LET 0
+◎
+↓</li>
+			<li>
+<p>
+次を 4 回 繰り返す：
+</p>
+				<ol>
+					<li>
+%行 ~LET `RFC4648$r の表［
+Table 1: The Base 64 Alphabet
+］内の，次を満たす行
+⇒
+行の 2 列目に与えられている`符号位置$ ~EQ %位置↗
+</li>
+					<li>
+%buffer ~SET ( %buffer ~MUL 64 ) ~PLUS ( %行 の 1 列目に与えられる整数 )
+</li>
+					<li>
+%位置 ~INCBY 1
+</li>
+				</ol>
+◎
+Find the code point pointed to by position in the second column of Table 1: The Base 64 Alphabet of RFC 4648. Let n be the number given in the first cell of the same row. [RFC4648]
+◎
+Append the six bits corresponding to number, most significant bit first, to buffer.
+</li>
+			<li>
+( %m1, %m2, %m3 ) ~LET 次の等式を満たす，範囲 { 0 〜 255 } に入る 3 個の整数
+⇒
+( %m1 ~MUL 256 ~MUL 256 ) ~PLUS ( %m2 ~MUL 256 ) ~PLUS %m3 ~EQ %buffer
+◎
+If buffer has accumulated 24 bits, interpret them as three 8-bit big-endian numbers.＼
+</li>
+			<li>
+［
+%m1, %m2, %m3
+］を値にとる`~byte$たちを，順に %出力 に付加する
+◎
+Append three bytes with values equal to those numbers to output, in the same order, and then empty buffer.
+◎
+Advance position by 1.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+%出力 の末尾から %不足個数 個の`~byte$を除去する
+◎
+If buffer is not empty, it contains either 12 or 18 bits. If it contains 12 bits, then discard the last four and interpret the remaining eight as an 8-bit big-endian number. If it contains 18 bits, then discard the last two and interpret the remaining 16 as two 8-bit big-endian numbers. Append the one or two bytes with values equal to those one or two numbers to output, in the same order.
+</p>
+
+<p class="note">注記：
+入力 %~data は 1 文字あたり 6 ~bit, %出力 は 1 ~byteあたり 8 ~bit の~dataを表現するので、( %不足個数 × 2 ) 個の~bitが，入力の末尾から切り捨てられることになる。
+例えば 2 つの入力
+`YQ^l （ 6 ~bit表現 24, 16 ）, `YR^l （ 6 ~bit表現 24, 17 ）
+に対する結果はいずれも `a^bl になる。
+◎
+The discarded bits mean that, for instance, "YQ" and "YR" both return `a`.
+</p>
+	</li>
+	<li>
+~RET %出力
+◎
+Return output.
+</li>
+</ol>
+
+	</section>
 	<section id="namespaces">
-<h2 title="Namespaces">6. 名前空間</h2>
+<h2 title="Namespaces">7. 名前空間</h2>
 
 <div>
 <p>
@@ -3425,7 +3704,8 @@ Per <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="license">C
     V.G. Cerf. ASCII format for network interchange. October 1969. Internet Standard. URL: https://tools.ietf.org/html/rfc20 
 [RFC2119]
     S. Bradner. Key words for use in RFCs to Indicate Requirement Levels. March 1997. Best Current Practice. URL: https://tools.ietf.org/html/rfc2119 
-[UNICODE]
+[RFC4648]
+    S. Josefsson. The Base16, Base32, and Base64 Data Encodings. October 2006. Proposed Standard. URL: https://tools.ietf.org/html/rfc4648 [UNICODE]
     The Unicode Standard. URL: http://www.unicode.org/versions/latest/ 
 </script>
 
