@@ -1586,6 +1586,7 @@ RESOURCETIMING=版     ~TR/resource-timing/\n\
 RESOURCETIMING=編     w3c.github.io/resource-timing/\n\
 BEACON=主             ~/beacon-ja.html\n\
 BEACON=版             ~TR/beacon/\n\
+RESOURCEHINTS=主      ~/resource-hints-ja.html\n\
 REFERRERPOLICY=主     ~/webappsec-referrer-policy-ja.html\n\
 PERMISSIONS=主        ~/webappsec-permissions-ja.html\n\
 RFC1034=主            srgia.com/docs/rfc1034j.html\n\
