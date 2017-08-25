@@ -1504,7 +1504,6 @@ zero:::ゼロ\n\
 到着-:arrive:~\n\
 制定-:prescribe:~\n\
 制御:control::~\n\
-	制御し得る:controllable:~\n\
 制約-:restrict:~\n\
 制約:restriction:~\n\
 制限-:limit:~\n\
