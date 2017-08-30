@@ -230,6 +230,8 @@ sl.rootMargin:#dom-intersectionobserver-rootmargin-slot
 
 rp.observer:#dom-intersectionobserverregistration-observer
 rp.previousThresholdIndex:#dom-intersectionobserverregistration-previousthresholdindex
+rp.previousIsIntersecting:#dom-intersectionobserverregistration-previousisintersecting
+
 
 	%entries:#dom-intersectionobservercallback-entries
 	%observer:#dom-intersectionobservercallback-observer
@@ -606,6 +608,7 @@ cliping:
 交差-:intersect::~
 交差:intersection::~
 交差域:intersection::~
+交差あり:intersect している::~
 区画:area::~
 面積:area::~
 	拡げる／狭める:growing or shrinking
@@ -795,7 +798,7 @@ script::::スクリプト
 	-:inclusive
 	remain
 	間:during
-
+	前回:previous
 	rootBound
 	boundingClientRect
 	intersectionRect
@@ -842,7 +845,7 @@ script::::スクリプト
 </p>
 
 <p>
-更新： <time>2017-01-21</time>
+更新： <time>2017-08-30</time>
 （公開：<time>2016-12-13</time> ）
 </p>
 
@@ -861,7 +864,7 @@ script::::スクリプト
 
 	<hgroup>
 <h1>Intersection Observer 1</h1>
-<h2 id="subtitle">2017 年 1 月 20 日付 編集者草案</h2>
+<h2 id="subtitle">2017 年 8 月 29 日付 編集者草案</h2>
 	</hgroup>
 
 <dl id="_versions">
@@ -876,6 +879,9 @@ script::::スクリプト
 
 	<dt title="Editors:">編集</dt>
 	<dd><a href="mailto:mpb@google.com">Michael Blain</a> (Google)</dd>
+
+	<dt>Mailing list:</dt>
+	<dd><a href="mailto:public-web-perf@w3.org?subject=%5Bintersection-observer%5D">public-web-perf@w3.org</a>(<a href="mailto:public-web-perf-request@w3.org?subject=subscribe">subscribe</a>, <a href="https://lists.w3.org/Archives/Public/public-web-perf/">archives</a>)</dd>
 </dl>
 
 <small class="copyright"><a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © 2017 <a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> (<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>, <a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>, <a href="http://www.keio.ac.jp/">Keio</a>, <a href="http://ev.buaa.edu.cn/">Beihang</a>). W3C <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, <a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and <a href="http://www.w3.org/Consortium/Legal/copyright-documents">document use</a> rules apply.</small>
@@ -903,6 +909,20 @@ This specification describes an API that can be used to understand the visibilit
 	</section>
 	<section id="status">
 <h2 title="Status of this document">この文書の位置付け</h2>
+
+<p>
+この節では、発行時点における…
+<!-- 
+これは編集者草案の公開の複製です…
+-->
+<span class="trans-note">【
+以下、この節の他の内容は
+<a href="w3c-common-ja.html#status" >W3C 日本語訳 共通ページ</a> ／
+冒頭の Mailing list
+に委譲。
+】</span></p>
+
+
 	</section>
 
 
@@ -1339,12 +1359,13 @@ Return this.
 If target is in this’s internal [[ObservationTargets]] slot, return.
 </li>
 			<li>
-%交差~observer登録 ~LET 次のようにされた`交差~observer登録$
+%交差~observer登録 ~LET 次のようにされた 新たな`交差~observer登録$
 ⇒
-`observer$rp ~prop ~SET 此れ；<br>
-`previousThresholdIndex$rp ~prop ~SET −1
+( `observer$rp, `previousThresholdIndex$rp, `previousIsIntersecting$rp )
+~SET
+( 此れ, −1, ~F )
 ◎
-Let intersectionObserverRegistration be an IntersectionObserverRegistration record with an observer property set to this and a previousThresholdIndex property set to -1.
+Let intersectionObserverRegistration be an IntersectionObserverRegistration record with an observer property set to this, a previousThresholdIndex property set to -1, and a previousIsIntersecting property set to false.
 </li>
 			<li>
 %target.`RegisteredIntersectionObservers$sl に
@@ -1375,7 +1396,7 @@ Schedule an iteration of the event loop in the root's browsing context.
 			<li>
 %target.`RegisteredIntersectionObservers$sl から［
 `observer$rp ~prop ~EQ 此れ
-］なる `交差~observer登録$を除去する
+］を満たす`交差~observer登録$を除去する
 ◎
 Remove the IntersectionObserverRegistration record whose observer property is equal to this from target’s internal [[RegisteredIntersectionObservers]] slot.
 </li>
@@ -1408,7 +1429,7 @@ Note: MutationObserver does not implement unobserve(). For IntersectionObserver,
 ⇒
 %target.`RegisteredIntersectionObservers$sl から［
 `observer$rp ~prop ~EQ 此れ
-］なる`交差~observer登録$を除去する
+］を満たす`交差~observer登録$を除去する
 </li>
 			<li>
 此れ.`ObservationTargets$sl を空にする
@@ -2017,14 +2038,23 @@ Each Document has an IntersectionObserverTaskQueued flag which is initialized to
 </dd>
 	<dd class="trans-note">【
 −1 は初期~値。
-0 以上の値は、一部の特殊な事例を除き，要素の直近の交差~比率が
- 一連の~thresholdで区切られる何番目の区間に入っているかを指示する。
+0 以上の値は、一部の特殊な事例を除き，要素の直近の交差~比率が 一連の~thresholdで区切られる何番目の区間に入っているかを指示する。
 0 は 最小の~threshold未満, 最大~値は 最大~threshold以上の区間に対応する。
 】</dd>
+
+	<dt >`previousIsIntersecting@rp</dt>
+	<dd>
+真偽値を保持する。
+</dd>
+	<dd class="trans-note">【
+要素が交差しているかどうかを指示する。
+その変化を追跡するためにあり、変化-時には通知が生成される。
+】</dd>
+
 </dl>
 
 ◎
-Element objects have an internal [[RegisteredIntersectionObservers]] slot, which is initialized to an empty list. This list holds IntersectionObserverRegistration records, which have an observer property holding an IntersectionObserver and a previousThresholdIndex property holding a number between -1 and the length of the observer’s thresholds property (inclusive).
+Element objects have an internal [[RegisteredIntersectionObservers]] slot, which is initialized to an empty list. This list holds IntersectionObserverRegistration records, which have an observer property holding an IntersectionObserver, a previousThresholdIndex property holding a number between -1 and the length of the observer’s thresholds property (inclusive), and a previousIsIntersecting property holding a boolean.
 </div>
 
 
@@ -2458,33 +2488,42 @@ Let isIntersecting be true if targetRect and rootBounds intersect or are edge-ad
 If targetArea is non-zero, let intersectionRatio be intersectionArea divided by targetArea. Otherwise, let intersectionRatio be 1 if isIntersecting is true, or 0 if isIntersecting is false.
 </li>
 					<li>
-%~threshold~index ~LET 
-%~observer の `thresholds$m %T 内に［
-値 ~GT %交差~比率
-］なる~entryが［
-あれば それらのうち 最初の~entryの %T 内における~index ／
+%T ~LET %~observer の `thresholds$m
+◎
+↓</li>
+					<li>
+%~threshold~index ~LET %T 内の~entryに［
+~entryの値 ~GT %交差~比率
+］を満たすものが［
+あれば それらのうち %T 内で最初の~entryの~index ／
 なければ %T の長さ
 ］
 ◎
-Let thresholdIndex be the index of the first entry in observer.thresholds whose value is greater than intersectionRatio, or the length of observer.thresholds if intersectionRatio is greater than the last entry in observer.thresholds.
+Let thresholdIndex be the index of the first entry in observer.thresholds whose value is greater than intersectionRatio, or the length of observer.thresholds if intersectionRatio is greater than or equal to the last entry in observer.thresholds.
 </li>
 					<li>
 %交差~observer登録 ~LET 
 %target.`RegisteredIntersectionObservers$sl 内の［
 `observer$rp ~prop ~EQ %~observer
-］なる`交差~observer登録$
+］を満たす`交差~observer登録$
 ◎
 Let intersectionObserverRegistration be the IntersectionObserverRegistration record in target’s internal [[RegisteredIntersectionObservers]] slot whose observer property is equal to observer.
 </li>
 					<li>
-%以前の~threshold~index ~LET 
-%交差~observer登録 の `previousThresholdIndex$rp ~prop
+( %前回の~threshold~index, %前回に交差あり ) ~LET
+%交差~observer登録 の 
+( `previousThresholdIndex$rp, `previousIsIntersecting$rp )
+~prop
 ◎
 Let previousThresholdIndex be the intersectionObserverRegistration’s previousThresholdIndex property.
+◎
+Let previousIsIntersecting be the intersectionObserverRegistration’s previousIsIntersecting property.
 </li>
 					<li>
 ~IF［
-%~threshold~index ~NEQ %以前の~threshold~index
+%~threshold~index ~NEQ %前回の~threshold~index
+］~OR［
+%交差あり ~NEQ %前回に交差あり
 ］
 ⇒
 次を与える下で、
@@ -2492,14 +2531,17 @@ Let previousThresholdIndex be the intersectionObserverRegistration’s previousT
 ⇒
 ( %時刻, %~root境界, %~target矩形, %交差~矩形, %交差あり, %target )
 ◎
-If thresholdIndex does not equal previousThresholdIndex, queue an IntersectionObserverEntry, passing in observer, time, rootBounds, boundingClientRect, intersectionRect, isIntersecting, and target.
+If thresholdIndex does not equal previousThresholdIndex or if isIntersecting does not equal previousIsIntersecting, queue an IntersectionObserverEntry, passing in observer, time, rootBounds, boundingClientRect, intersectionRect, isIntersecting, and target.
 </li>
 					<li>
-%交差~observer登録 の `previousThresholdIndex$rp
-~prop ~SET %~threshold~index
+%交差~observer登録 の 
+( `previousThresholdIndex$rp, `previousIsIntersecting$rp )
+ ~prop ~SET ( %~threshold~index, %交差あり )
 <!-- ＊原文誤り threshold -->
 ◎
 Assign threshold to intersectionObserverRegistration’s previousThresholdIndex property.
+◎
+Assign isIntersecting to intersectionObserverRegistration’s previousIsIntersecting property.
 </li>
 				</ol>
 			</li>
@@ -2620,22 +2662,20 @@ For each fully active Document in docs, Run the update intersection observations
 <h3 title="Normative References">文献（規範）</h3>
 
 <script type="text/plain" class="ref_data">
-
 [CSS-SYNTAX-3]
-    Tab Atkins Jr.; Simon Sapin. CSS Syntax Module Level 3. URL: http://dev.w3.org/csswg/css-syntax/ 
+    Tab Atkins Jr.; Simon Sapin. CSS Syntax Module Level 3. URL: https://www.w3.org/TR/css-syntax-3/ 
 [CSS-VALUES-3]
-    Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 3. 29 September 2016. CR. URL: https://www.w3.org/TR/css-values-3/ 
-[CSS2]
-    Bert Bos; et al. Cascading Style Sheets Level 2 Revision 1 (CSS 2.1) Specification. 7 June 2011. REC. URL: https://www.w3.org/TR/CSS2 
+    Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 3. URL: https://www.w3.org/TR/css-values-3/ 
+[CSS22]
+    Bert Bos. Cascading Style Sheets Level 2 Revision 2 (CSS 2.2) Specification. URL: https://www.w3.org/TR/CSS22/ 
 [CSSOM-VIEW-1]
-    Simon Pieters. CSSOM View Module. URL: https://drafts.csswg.org/cssom-view/ 
+    Simon Pieters. CSSOM View Module. URL: https://www.w3.org/TR/cssom-view-1/ 
+[DOM]
+    Anne van Kesteren. DOM Standard. Living Standard. URL: https://dom.spec.whatwg.org/ 
 [GEOMETRY-1]
-    Simon Pieters; Dirk Schulze; Rik Cabanier. Geometry Interfaces Module Level 1. URL: http://dev.w3.org/fxtf/geometry/ 
+    Simon Pieters; Dirk Schulze; Rik Cabanier. Geometry Interfaces Module Level 1. URL: https://www.w3.org/TR/geometry-1/ 
 [WebIDL]
     Cameron McCormack; Boris Zbarsky; Tobie Langel. Web IDL. URL: https://heycam.github.io/webidl/ 
-[WHATWG-DOM]
-    Anne van Kesteren. DOM Standard. Living Standard. URL: https://dom.spec.whatwg.org/ 
-
 </script>
 
 </section>
