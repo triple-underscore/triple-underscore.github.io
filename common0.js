@@ -803,6 +803,7 @@ CSSPOS:https://drafts.csswg.org/css-position-3/\n\
 CSSREGION:https://drafts.csswg.org/css-regions-1/\n\
 SELECTORS4:selectors4-ja.html\n\
 SELECTORS:selectors4-ja.html\n\
+CSSPSEUDO:css-pseudo-ja.html\n\
 CSSSTYLEATTR:css-style-attr-ja.html\n\
 CSSSYN:css-syntax-ja.html\n\
 CSSTEXT:css-text-ja.html\n\
