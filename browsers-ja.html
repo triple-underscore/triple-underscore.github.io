@@ -243,6 +243,8 @@ web::
 意味:meaning:~
 結付けら:associate さ:結び付けら
 辞退-:decline:~
+影響-:affect:~
+見なさ:consider さ:~
 
 	●仕様
 UA:user agent:UA
@@ -281,7 +283,6 @@ well-defined:
 適切:appropriate:~
 可用:available:~
 効果:effect:~
-所与の:given:与えられた
 手続き:steps:~
 	-:substeps
 段:step:~
@@ -410,7 +411,7 @@ form::::フォーム
 伝播-:propagate:~
 共有-:share:~
 到達-:reach:~
-可能0:possible:可能
+	可能:possible
 可能化-:enable:~
 可能化:enabled:~
 合致-:match:~
@@ -448,6 +449,7 @@ form::::フォーム
 提出:submission::~
 対応関係:mapping:~
 集析:mining::~::マイニング
+複製-:copy:~
 	述べ-:describe
 	〜に基づく:based
 	含-:include
@@ -464,6 +466,7 @@ form::::フォーム
 	置かれ:put
 	said
 	束ねられ:tie
+	所与の:given
 	与-:give
 	渡-:passing
 
@@ -496,6 +499,9 @@ form::::フォーム
 mode::::モード
 	popup blocker
 対象0:subject:対象
+storage::::ストレージ
+区画:area:~
+真偽値:boolean:~
 
 	結果:result
 	結果になる:end up
@@ -562,6 +568,7 @@ mode::::モード
 	次:next
 	異なる:different
 	種々の:various
+	別々の:separate
 
 </script>
 
@@ -604,6 +611,7 @@ m.frameElement:#dom-frameelement
 m.opener:#dom-opener
 m.parent:#dom-parent
 m.top:#dom-top
+m.sessionStorage:~WEBSTORAGE#dom-sessionstorage
 
 	●event
 	et.load:~HTMLindex#event-load
@@ -653,7 +661,6 @@ disown:#disowned-its-opener
 内容~文書:#concept-bcc-content-document
 入子の閲覧文脈:#nested-browsing-context
 入子にしている閲覧文脈:#nested-browsing-context
-:#browsing-context-nested-through
 通して入子にされ:#browsing-context-nested-through
 
 子~閲覧文脈:#child-browsing-context
@@ -665,8 +672,7 @@ disown:#disowned-its-opener
 先祖:#ancestor-browsing-context
 先祖~閲覧文脈:#ancestor-browsing-context
 
-新たな閲覧文脈を作成-:#creating-a-new-browsing-context
-新たに作成-:#creating-a-new-browsing-context
+新たな閲覧文脈を作成する:#creating-a-new-browsing-context
 直接到達可能:#directly-reachable-browsing-contexts
 補助~閲覧文脈:#auxiliary-browsing-context
 互いに関係する閲覧文脈~群:#unit-of-related-browsing-contexts
@@ -810,7 +816,7 @@ Loading Web pages 章の
 </p>
 
 <p>
-更新： <time>2017-06-24</time>
+更新： <time>2017-09-06</time>
 （公開：<time>2016-07-12</time> ）
 </p>
 
@@ -832,7 +838,7 @@ Loading Web pages 章の
 <header>
 	<hgroup>
 <h1>閲覧文脈 — Browsing contexts</h1>
-<h2>HTML Living Standard — 最終更新 2017 年 6 月 8 日</h2>
+<h2>HTML Living Standard — 最終更新 2017 年 9 月 5 日</h2>
 	</hgroup>
 </header>
 
@@ -1095,10 +1101,13 @@ The result of executing Is environment settings object a secure context? on crea
 
 
 <p class="algo-head">
-`新たな閲覧文脈を作成-@
-するときは：
+`新たな閲覧文脈を作成する@
+ときは、所与の
+( %noopener （省略時は ~F） )
+に対し：
 ◎
-To create a new browsing context:
+To create a new browsing context, optionally given noopener:
+• If noopener was not given, let it be false.
 </p>
 
 <ol>
@@ -1108,12 +1117,8 @@ To create a new browsing context:
 Let browsingContext be a new browsing context.
 </li>
 	<li>
-%window ~LET 新たな`~window$
-◎
-↓</li>
-	<li>
-<p>
-%windowProxy ~LET 新たな `WindowProxy$I ~obj 
+( %window, %windowProxy ) ~LET
+( 新たな`~window$ ~obj, 新たな `WindowProxy$I ~obj )
 ◎
 ↓</li>
 	<li>
@@ -1156,9 +1161,9 @@ Let document be a new Document,＼
 			<li>
 `過去互換~mode$docにおいては
 ⇒
+%文書 の`種別$doc ~SET `html^l
 ◎
 marked as an HTML document in quirks mode,＼
-%文書 の`種別$doc ~SET `html^l
 </li>
 			<li>
 `内容~型$doc ~SET `text/html^l
@@ -1178,9 +1183,15 @@ completely loaded immediately.
 		</ul>
 	</li>
 	<li>
-%文書 は、単独の子 `html$e ~nodeを持ち，その~nodeは 2 つの空の子~node［
+%文書 が次を満たすことを確保する
+⇒
+［
+%文書 の子~nodeたちは 1 個の `html$e 要素 %html からなる
+］~AND［
+%html の子~nodeたちは 空の［
 `head$e 要素, `body$e 要素
-］を持つことを確保する
+］からなる
+］
 ◎
 Ensure that document has a single child html node, which itself has two empty child nodes: a head element, and a body element.
 </li>
@@ -1232,6 +1243,31 @@ Set the allow* flags for document.
 ◎
 Add document to browsingContext's session history.
 </li>
+	<li id="copy-session-storage">
+<!--
+NOTE: Clean up this logic in the future. SessionStorage ownership is unclear.
+https://github.com/whatwg/html/pull/2832#issuecomment-315239343
+-->
+~IF［
+%noopener ~EQ ~F
+］~AND［
+%B は`~top-level閲覧文脈$である
+］~AND［
+%B の`作成元の生成元$ ~EQ`生成元$sub %文書 の`生成元$
+］
+⇒
+%B の`作成元~閲覧文脈$から［
+%B の`作成元の生成元$に属する `sessionStorage$m ~storage区画
+］を［
+%B の~session~storage区画の集合
+］に複製する
+⇒
+これらの区画は、別々の, ［
+いかなる仕方でも互いに影響しないもの
+］と見なされ~MUST。
+◎
+If noopener is false, browsingContext is a top-level browsing context, and creator origin is same origin with document's origin, then copy the sessionStorage storage area of the creator origin from the creator browsing context into browsingContext's set of session storage areas. These areas must be considered separate, not affecting each other in any way.
+</li>
 	<li>
 ~RET %B
 ◎
@@ -1266,7 +1302,7 @@ Each browsing context container has a nested browsing context, which is either a
 <div class="p">
 <ul>
 	<li>
-%B は`入子の閲覧文脈$である，ともいう（すなわち、この言い回しは非 ~NULL も含意する）。
+%B は`入子の閲覧文脈$である，ともいう。
 </li>
 	<li>
 %B は %要素 を
@@ -1278,6 +1314,8 @@ Each browsing context container has a nested browsing context, which is either a
 </ul>
 
 <p class="trans-note">【
+すなわち、これらの言い回しは %B ~NEQ ~NULL も含意する
+】【
 同じ要素が複数の閲覧文脈を（直に）入子にしたり，複数の要素が同じ閲覧文脈を入子にすることはない。
 】</p>
 
@@ -1750,7 +1788,7 @@ Here the browsing context corresponding to iframeWindow was discarded when eleme
 <h3 title="Auxiliary browsing contexts">7.1.2. 補助~閲覧文脈</h3>
 
 <p>
-新たな閲覧文脈を、要素を`通して入子にされ$ないが，ある`~top-level閲覧文脈$には関係するように作成することも可能0である。
+新たな閲覧文脈を、要素を`通して入子にされ$ることなく，ある`~top-level閲覧文脈$に関係するように作成することも可能である。
 そのような閲覧文脈は、
 `補助~閲覧文脈@
 と呼ばれる。
@@ -1766,6 +1804,10 @@ It is possible to create new browsing contexts that are related to a top-level b
 ◎
 An auxiliary browsing context has an opener browsing context, which is the browsing context from which the auxiliary browsing context was created.
 </p>
+
+<p class="trans-note">【
+おそらく， “補助~閲覧文脈である” と “開いた閲覧文脈 ~NEQ ε” は、論理的に等価になると思われる。
+】</p>
 
 
 				<section id="navigating-auxiliary-browsing-contexts-in-the-dom">
@@ -1809,15 +1851,17 @@ An auxiliary browsing context has an opener browsing context, which is the brows
 	<li>
 <p>
 上に与えた %X が可用でなくなった時点で ~NULL に設定される。
-（ “`disown@” ）
 </p>
 
 <p class="trans-note">【
-この訳では、この用語 “`disown$” を利用しない
-— 代わりに `opener$m を直接 ~NULL に設定するように記述する。
-（この用語は、 ~JS “own property” に由来すると見られる。）
+`opener$m を~NULL に設定することを指して，
+“`disown@ する”
+という。
+が、この訳ではこの用語は利用せず，単に［
+`opener$m ~SET ~NULL
+］等と表記する（この用語は、 ~JS “own property” に由来すると見られる）。
 】【
-この節の記述は，原文から大きく再構成し直している。
+この節の記述は，原文から大きく再構成している。
 】</p>
 	</li>
 	<li>
@@ -1825,7 +1869,7 @@ An auxiliary browsing context has an opener browsing context, which is the brows
 </li>
 	<li>
 <p>
-設定子は、次の手続きを走らせ~MUST：
+設定子は、次を走らせ~MUST：
 </p>
 		<ol>
 			<li>
@@ -1866,15 +1910,15 @@ The opener IDL attribute on the Window object, on getting, must return the Windo
 <div class="note">
 
 <p>注記：
-`閲覧文脈$ %B の`~window$の `opener$m が ~NULL にされて以降は、
-%B 内の~scriptは，それを`開いた閲覧文脈$の`~window$（すなわち， %B を作成した~window）のどの~propも変更できなくなる。
+`閲覧文脈$ %B の`~window$の `opener$m が ~NULL に設定されて以降は、
+%B 内の~scriptは， %B を`開いた閲覧文脈$の`~window$（すなわち， %B を作成した~window）のどの~propも変更できなくなる。
 ◎
 If a browsing context has disowned its opener, the value of its window.opener is null. That prevents scripts in the browsing context from changing any properties of its opener browsing context's Window (i.e., the window from which the browsing context was created).
 </p>
 
 <p>
 他の場合、 %B 内の~scriptは `opener$m を利用して，`開いた閲覧文脈$の`~window$の~propを変更できる。
-例えば、%B 内で走っている~scriptは、 `window.opener.location^m の値を変更して，`開いた閲覧文脈$をまったく別の文書に~navigateできる。
+例えば、 %B 内で走っている~scriptは、 `window.opener.location^m の値を変更して，`開いた閲覧文脈$をまったく別の文書に~navigateできる。
 ◎
 Otherwise, if a browsing context has not disowned its opener, then scripts in that browsing context can use window.opener to change properties of its opener browsing context's Window. For example, a script running in the browsing context can change the value of window.opener.location, causing the opener browsing context to navigate to a completely different document.
 </p>
@@ -2542,17 +2586,19 @@ Most of the restrictions on sandboxed browsing contexts are applied by other alg
 <hr>
 
 <p class="algo-head">
-( `閲覧文脈~名$または ~NULL である %名前, `閲覧文脈$ %現  )
-が与えられた下で，
 `閲覧文脈を選ぶ規則@
-は、次に従う：
+は、所与の
+( `閲覧文脈~名$または ~NULL である %名前,
+`閲覧文脈$ %現,
+真偽値 %noopener )
+に対し，次に従う：
 ◎
-The rules for choosing a browsing context, given null or a browsing context name name and a browsing context current, are as follows:
+The rules for choosing a browsing context, given null or a browsing context name name, a browsing context current, and a boolean noopener are as follows:
 </p>
 
 <ol>
 	<li>
-%小文字~名 ~LET ［
+%小文字~化~名 ~LET ［
 %名前 ~EQ ~NULL ならば ~NULL ／
 ~ELSE_ %名前 を`~ASCII小文字~化$した結果
 ］
@@ -2561,7 +2607,7 @@ The rules for choosing a browsing context, given null or a browsing context name
 	<li>
 <p>
 %結果 ~SET
-%小文字~名 に応じて，次で与えられる閲覧文脈または ~NULL：
+%小文字~化~名 に応じて，次で与えられる閲覧文脈または ~NULL：
 ◎
 Let chosen be null.
 ◎
@@ -2700,9 +2746,9 @@ The user agent may offer the user one of:
 					<li>
 新たな~top-level閲覧文脈
 ⇒
-( %結果, %新 ) ~SET ( `新たに作成-$した`~top-level閲覧文脈$, ~T )
+( %結果, %新 ) ~SET ( `新たな閲覧文脈を作成する$( %noopener ), ~T )
 ◎
-Set chosen to a new top-level browsing context and new to true.
+Set chosen to a new top-level browsing context given noopener, and set new to true.
 </li>
 					<li>
 既存のものを再利用する
@@ -2726,9 +2772,9 @@ If this case occurs, it means that an author has explicitly sandboxed the docume
 		</ol>
 
 <p class="note">注記：
-利用者が辞退した場合／~UAが上の選択肢を提供0しなかった場合、
+利用者が辞退した場合／~UAが上の選択肢を提供0しなかった場合、［
 %結果, %新
-はそのままにされる。
+］はそのままにされる。
 ◎
 If the user declines or the user agent doesn't offer the above, the variables remain unchanged.
 </p>
@@ -2742,16 +2788,25 @@ If the user declines or the user agent doesn't offer the above, the variables re
 If the user agent has been configured such that in this instance it will create a new browsing context:
 </p>
 
-<div >
-<ol ><li>( %結果, %新 ) ~SET ( 新たな閲覧文脈, ~T )
-</li><li>%結果 を`開いた閲覧文脈$ ~SET %現
-</li><li>%結果 の`名前$ ~SET ［
-%小文字~名 ~NEQ `_blank^l ならば %名前 ／
+<div class="p">
+		<ol>
+			<li>
+( %結果, %新 ) ~SET ( `新たな閲覧文脈を作成する$( %noopener ), ~T )
+</li>
+			<li>
+%結果 を`補助~閲覧文脈$にする
+⇒
+%結果 を`開いた閲覧文脈$ ~SET %現
+</li>
+			<li>
+%結果 の`名前$ ~SET ［
+%小文字~化~名 ~NEQ `_blank^l ならば %名前 ／
 ~ELSE_ 空~文字列
 ］
-</li></ol>
+</li>
+		</ol>
 ◎
-Set chosen to a new auxiliary browsing context, with the opener browsing context being current, and set new to true. If name is not an ASCII case-insensitive match for "_blank", then chosen's name must be set to name (otherwise, it has no name).
+Set chosen to a new auxiliary browsing context given noopener with the opener browsing context being current, and set new to true. If name is not an ASCII case-insensitive match for "_blank", then chosen's name must be set to name (otherwise, it has no name).
 </div>
 
 <p class="note">注記：
