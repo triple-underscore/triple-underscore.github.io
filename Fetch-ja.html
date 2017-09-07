@@ -1399,7 +1399,6 @@ community::::コミュニティ
 	〜でない:illegal
 厳格:strict:~
 透過的:transparent:~
-相違:difference:~
 相互運用可能:interoperable:~
 条項:caveats:~
 	最終的に:eventual
@@ -1560,7 +1559,6 @@ access::::アクセス
 遂行-:perform:~
 取扱い:handling:取り扱い
 取扱う:handle する:取り扱う
-取扱える:handle できる:取り扱える
 取扱われ:handle され:取り扱われ
 取扱った:handle した:取り扱った
 挙動する:behave する:ふるまう
@@ -1758,7 +1756,7 @@ i {
 ></a>
 	<hgroup>
 <h1>Fetch</h1>
-<h2>Living Standard — 最終更新 2017 年 9 月 6 日</h2>
+<h2>Living Standard — 最終更新 2017 年 9 月 7 日</h2>
 	</hgroup>
 
 <dl>
@@ -1773,7 +1771,7 @@ i {
 
 	<dt>Commits:</dt>
 	<dd><a href="https://github.com/whatwg/fetch/commits">GitHub whatwg/fetch/commits</a></dd>
-	<dd><a href="https://fetch.spec.whatwg.org/commit-snapshots/829e56dd47534b8e6725ce0c56c5bdea6e23d222/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
+	<dd><a href="https://fetch.spec.whatwg.org/commit-snapshots/358dbf5296d91bb791d864b677b367bb11b3bf37/" id="commit-snapshot-link">Snapshot as of this commit</a></dd>
 	<dd><a href="https://twitter.com/fetchstandard">@fetchstandard</a></dd>
 
 	<dt>Tests:</dt>
@@ -2335,9 +2333,11 @@ A header list (list) contains a name (name) if list contains a header whose name
 </p>
 
 <p class="trans-note">【
-日本語表現の都合により、この訳では，この用語は利用せず、もっぱら
+この訳では，この用語は利用せず、もっぱら
 “!名前に持つ~header$”
-を用いて等価に記すことにする。
+を用いて等価に記すことにする
+— この用語の方が柔軟に利用でき, また
+日本語表現にも都合がよいので。
 】</p>
 
 <p class="algo-head">
@@ -5690,22 +5690,27 @@ Access-Control-Request-Headers   = 1#!field-name$p
 wildcard                         = "*"
 Access-Control-Allow-Origin      = origin-or-null / wildcard
 Access-Control-Allow-Credentials = !%x74.72.75.65^Z ; <span class="comment">!true^bl, 大小区別</span>
-Access-Control-Expose-Headers    = #!field-name$p / wildcard
+Access-Control-Expose-Headers    = #!field-name$p
 Access-Control-Max-Age           = !delta-seconds$p
-Access-Control-Allow-Methods     = #!method$p / wildcard
-Access-Control-Allow-Headers     = #field-name-or-wildcard
-field-name-or-wildcard           = !field-name$p / wildcard
+Access-Control-Allow-Methods     = #!method$p
+Access-Control-Allow-Headers     = !field-name$p
 </pre>
 
 
 <p class="note">注記：
-生成規則
-!Access-Control-Expose-Headers^p
-と
-!Access-Control-Allow-Headers^p
-の唯一の相違は、後者は~header値として !*, Authorization^bl を取扱える必要がある一方で，前者はそうでない点にある。
+［
+!Access-Control-Expose-Headers^h ／
+!Access-Control-Allow-Methods^h ／
+!Access-Control-Allow-Headers^h
+］応答!~header$に対する!値$hd !*^blは、［
+!資格証$を伴わない!要請$
+］に対しては，~wildcardとみなされる。
+そのような!要請$に対しては、値 !*^bl をとる［
+!~header$の!名前$hd ／
+!~method$
+］のみに合致させる仕方はない。
 ◎
-The difference between the Access-Control-Expose-Headers and Access-Control-Allow-Headers production is that the latter needs to be able to handle `*, Authorization` as header value whereas the former does not.
+For `Access-Control-Expose-Headers`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Headers` response headers the value `*` counts as a wildcard for requests without credentials. For such requests there is no way to solely match a header name or method that is `*`.
 </p>
 
 
@@ -6929,29 +6934,45 @@ If request’s response tainting is "cors", then run these substeps:
 Let headerNames be the result of extracting header list values given `Access-Control-Expose-Headers` and response’s header list.
 </li>
 					<li>
+<p>
 ~IF［
-%~header名s は !*^bl のみからなる
-］
-⇒
+%~header名s ~NIN { ~NULL, !失敗^i }
+］：
+◎
+↓</p>
+						<ol>
+							<li>
 ~IF［
 %要請 の!資格証~mode$rq ~NEQ !include^l
+］~AND［
+!*^bl ~IN %~header名s
 ］
 ⇒
 %応答 の!~CORSに公開される~header名~list$rs ~SET
 %応答 の!~header~list$rs内の各!~header$の!名前$hdからなる~list
 — ここで、各~名前は，~list内で一意にする
 ◎
-If headerNames is `*` and request’s credentials mode is not "include", then set response’s CORS-exposed header-name list to all unique header names in response’s header list.
+If request’s credentials mode is not "include" and headerNames contains `*`, then set response’s CORS-exposed header-name list to all unique header names in response’s header list.
 </li>
-					<li>
-~ELIF［
-%~header名s ~NIN { ~NULL, !失敗^i }
-］
+							<li>
+<p>
+~ELSE
 ⇒
 %応答 の!~CORSに公開される~header名~list$rs ~SET %~header名s
 ◎
-Otherwise, if headerNames is not null, failure, or `*`, then set response’s CORS-exposed header-name list to headerNames.
-</li>
+Otherwise, if headerNames is not null or failure, then set response’s CORS-exposed header-name list to headerNames.
+</p>
+
+<p class="note">注記：
+この時点でも， %~header名s のいずれかは !*^bl であり得るが、合致する!~header$は［
+!名前$hd ~EQ !*^bl
+］を満たすものに限られることになる。
+◎
+One of the headerNames can still be `*` at this point, but will only match a header whose name is `*`. 
+</p>
+							</li>
+						</ol>
+					</li>
 				</ol>
 			</li>
 			<li>
@@ -9653,9 +9674,6 @@ The CORS check is done on request rather than preflight to ensure the correct cr
 に対する!~header~list値を抽出-$hdした結果
 ◎
 Let methods be the result of extracting header list values given `Access-Control-Allow-Methods` and response’s header list.
-◎
-If methods is `*`, then set methods to a new list containing `*`.
-<!-- 不要 -->
 </li>
 			<li>
 %~header名s ~LET
@@ -9675,19 +9693,6 @@ Let headerNames be the result of extracting header list values given `Access-Con
 ~RET !~network~error$
 ◎
 If either methods or headerNames is failure, return a network error.
-</li>
-			<li>
-~IF［［
-!*^bl ~IN %~methods
-］~OR［
-!*^bl ~IN %~header名s
-］］~AND［
-%要請 の!資格証~mode$rq ~EQ !include^l
-］
-⇒
-~RET !~network~error$
-◎
-If methods or headerNames contains `*`, and request’s credentials mode is "include", then return a network error.
 </li>
 			<li>
 <p>
@@ -9715,39 +9720,52 @@ This ensures that a CORS-preflight fetch that happened due to request’s use-CO
 %要請 の!~method$rq ~NIN %~methods
 ］~AND［
 %要請 の!~method$rqは!~CORS安全な~method$でない
-］~AND［
+］~AND［［
+%要請 の!資格証~mode$rq ~EQ !include^l
+］~OR［
 !*^bl ~NIN %~methods
-］
+］］
 ⇒
 ~RET !~network~error$
 ◎
-If request’s method is not in methods, is not a CORS-safelisted method, and methods does not contain `*`, then return a network error.
+If request’s method is not in methods, request’s method is not a CORS-safelisted method, and request’s credentials mode is "include" or methods does not contain `*`, then return a network error.
 </li>
 			<li>
+<p>
+%要請 の!~header~list$rq内の~EACH( %~header ) に対し：
+</p>
+				<ol>
+					<li>
 ~IF［
-%要請 の!~header~list$rq内に［
-%~header名s 内のある名前を!名前に持つ~header$でない, かつ
-!~CORS非~wildcard要請~header名$を!名前に持つ~header$
-］は在る
+%~header は %~header名s 内のある名前を!名前に持つ~header$である
+］
+⇒
+~CONTINUE
+</li>
+					<li>
+~IF［
+%~header は!~CORS非~wildcard要請~header名$を!名前に持つ~header$である
 ］
 ⇒
 ~RET !~network~error$
+</li>
+					<li>
+~IF［
+%~header は!~CORS安全な要請~header$である
+］~AND［［
+%要請 の!資格証~mode$rq ~EQ !include^l
+］~OR［
+!*^bl ~NIN %~header名s
+］］
+⇒
+~RET !~network~error$
+</li>
+				</ol>
+
 ◎
 If one of request’s header list’s names is a CORS non-wildcard request-header name and is not a byte-case-insensitive match for an item in headerNames, then return a network error.
-</li>
-			<li>
-~IF［
-%要請 の!~header~list$rq内に［
-%~header名s 内のある名前を!名前に持つ~header$でない, かつ
-!~CORS安全な要請~header$
-］は在る
-］~AND［
-!*^bl ~NIN %~header名s
-］
-⇒
-~RET !~network~error$
 ◎
-If one of request’s header list' names is not a byte-case-insensitive match for an item in headerNames, its corresponding header is not a CORS-safelisted request-header, and headerNames does not contain `*`, then return a network error.
+For each header in request’s header list: if header is not a CORS-safelisted request-header, header’s name is not a byte-case-insensitive match for an item in headerNames, and request’s credentials mode is "include" or headerNames does not contain `*`, then return a network error.
 </li>
 			<li>
 %寿命 ~LET
@@ -14032,6 +14050,6 @@ ascribe:帰するとみなされ
 後に:subsequently
 いくつかの:several
 現時点では:currently
+みなされる:counts as a
 TODO: 各 enum 定数にも id を付与する
 -->
-
