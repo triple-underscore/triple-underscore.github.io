@@ -16,8 +16,9 @@ function C(tag){
 function EMPTY_FUNC(){}
 
 // セレクタ対象の要素を反復処理
-function repeat(selector, callback){
-	var elements = document.querySelectorAll(selector);
+function repeat(selector, callback, root){
+	if(!root) root = document
+	var elements = root.querySelectorAll(selector);
 	var L = elements.length;
 	for(var i = 0; i < L; i++){
 		callback(elements[i]);
@@ -461,18 +462,14 @@ section の入れ子階層を反映する，入れ子 ol による目次を得�
 ・ section の入れ子は直接の親子関係のみ
 ・ 子要素を持たない section は無視される
 ・ 自身またはその見出しに id があてがわれていない section も無視される
-・ 見出しの内容にリンクがあると生成項目のリンクが入れ子になる（不正）
 ・ 見出しの内容に id を持つ要素があると生成項目と id が重複する（不正）
 ・ 見出しの内容が巨大になる可能性がある
 ・ すべての Node を走査することになるが、実行速度は getElementsByTagName('section') による反復と変わらないか高速
 
-TODO rebuildToc -> Util.rebuildToc
-
-TODO 複数の toc source
 */
 
 
-function rebuildToc(main_id, list_id){
+Util.rebuildToc = function(main_id, list_id){
 	list_id = list_id || '_toc_list';
 	var toc_list = E(list_id), main = E(main_id);
 	if(toc_list && main) {
@@ -482,40 +479,44 @@ function rebuildToc(main_id, list_id){
 	}
 	return toc_list;
 }
-Util.rebuildToc = rebuildToc;
 
 Util.buildTocList = function(root){
-	var list = null;
 	var range = document.createRange();
-	for(var section = root.firstElementChild; 
-		section;
-		section = section.nextElementSibling
-	){
-		if('SECTION' !== section.tagName) continue;
-		var header = Util.get_header(section);
-		if(!header) continue;
-		var id = section.id || header.id;
-		if(!id) continue;
-		var a = C('a');
-		a.href = '#' + id;
-		range.selectNodeContents(header);
-		a.appendChild(range.cloneContents());
-/*		header = header.cloneNode(true);
-		var node;
-		while(node = header.firstChild){
-			if(node.id) node.removeAttribute('id');
-			a.appendChild(node);
-		}
-*/
-		var li = C('li');
-		li.appendChild(a);
-
-		var child_list = Util.buildTocList(section);
-		if(child_list) li.appendChild(child_list);
-		if(!list) list = C('ol');
-		list.appendChild(li);
+	var toc = buildToc(root);
+	if(toc) { // a 要素の入れ子を除去
+		repeat('a a', function(e){
+			range.selectNodeContents(e);
+			e.parentNode.replaceChild(range.extractContents(), e);
+		}, toc);
 	}
-	return list;
+	return toc;
+
+	function buildToc(root){
+		var list = null;
+		for(var section = root.firstElementChild; 
+			section;
+			section = section.nextElementSibling
+		){
+			if('SECTION' !== section.tagName) continue;
+			var header = Util.get_header(section);
+			if(!header) continue;
+			var id = section.id || header.id;
+			if(!id) continue;
+			var a = C('a');
+			a.href = '#' + id;
+			range.selectNodeContents(header);
+			a.appendChild(range.cloneContents());
+
+			var li = C('li');
+			li.appendChild(a);
+
+			var child_list = buildToc(section);
+			if(child_list) li.appendChild(child_list);
+			if(!list) list = C('ol');
+			list.appendChild(li);
+		}
+		return list;
+	}
 }
 
 
@@ -607,6 +608,7 @@ return;
 		h2.textContent = '目次';
 		nav.appendChild(h2);
 		nav.appendChild(Util.buildTocList(root));
+
 		var parent = root.parentNode;
 		if(parent.tagName === 'MAIN'){
 			parent.parentNode.insertBefore(nav, parent);
