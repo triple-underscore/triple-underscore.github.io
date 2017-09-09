@@ -488,6 +488,9 @@ Util.buildTocList = function(root){
 			range.selectNodeContents(e);
 			e.parentNode.replaceChild(range.extractContents(), e);
 		}, toc);
+		repeat('[id]', function(e){ // 重複 id を除去
+			e.removeAttribute('id');
+		}, toc);
 	}
 	return toc;
 
