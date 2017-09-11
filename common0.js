@@ -287,7 +287,7 @@ new function(){
 	if(!head) return;
 //	var w = screen.width;...
 	var meta = C('meta');
-	meta.setAttribute('name', 'vewport');
+	meta.setAttribute('name', 'viewport');
 	meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no');
 	head.appendChild(meta);
 }
