@@ -824,16 +824,16 @@ Util.dfnInit = function(){
 		dfnPanel.tabIndex = '-1';
 		dfnPanel.onkeydown = function(event){
 			if(event.metaKey || event.altKey || event.ctrlKey) return;
-			switch(event.keyCode || event.charCode){
-			case 27: // esc
+			switch(event.key){
+			case "Escape":
 	//			dfnJump0(-1); // back to the original position
 				dfnHide();
 				break;
-			case 37: // left arrow
+			case "ArrowLeft":
 				var index = dfnLinks.length + 1;
 				navBy(-1, event);
 				break;
-			case 39: // right arrow
+			case "ArrowRight":
 				navBy( 1, event);
 				break;
 			}
