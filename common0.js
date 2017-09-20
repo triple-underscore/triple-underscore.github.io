@@ -44,6 +44,7 @@ var Util = {
 	buildTocList: EMPTY_FUNC,
 
 	switchWordsInit: EMPTY_FUNC,
+	generateSource: EMPTY_FUNC,
 	replaceWords1: EMPTY_FUNC,
 	rxp_wordsX: null,
 	rxp_words1: null,
@@ -621,6 +622,67 @@ return;
 	}
 }
 
+Util.generateSource = function(source_data, words_mapping, createHTML){
+	var en_list = source_data.en_text_list;
+	if(!en_list){
+		// 前処理：英文を抽出して placeholder に置換など
+		source_data.en_text_list = en_list = [''];
+		var found_nesting = false;
+
+		source_data.html = source_data.html.replace(
+		/◎([^<◎]*)|【.*?】|⇒＃?\s*|<\/(li|p|dd|div|th|td)\b/g,
+		// ⇒を中で利用するタグはこれらのみ（ ... figcaption|blockquote|pre ）
+
+		// U+E000.., 私用領域（ likely never be used in the specs.
+
+		function f(match, en_text){
+			if(en_text) {
+				en_list.push( en_text.trim() );
+				found_nesting = false;
+				return String.fromCharCode(0xE000 + en_list.length - 1 )
+			}
+			switch(match[0]){
+			case '【':
+				return '<span class="trans-note">' + match + '</span>';
+				// TODO: 【\t で開始するならば <p> 用バージョン 等々
+			case '⇒':
+				found_nesting = true;
+				return match[1] === '＃' ? '\uEFFD': '\uEFFE'
+			case '<':
+				if(found_nesting) {
+					found_nesting = false;
+					return '\uEFFF' + match;
+				}
+				return match;
+				break;
+			}
+		});
+	}
+	var nesting = '';
+	return Util
+	.replaceWords1(createHTML(source_data.html), words_mapping)
+	.replace(/[\uE000-\uEFFF]/g, function(match){
+		switch(match){
+		case '\uEFFD':
+			nesting += '</span>';
+			return '：<span class="block preline">';
+		case '\uEFFE':
+			nesting += '</span>';
+			return '：<span class="block">';
+		case '\uEFFF': 
+			var result = nesting;
+			nesting = '';
+			return result;
+		default: // ◎
+			var result = en_list[match.charCodeAt(0) - 0xE000];
+			if(!result) return '';
+			// merge english text
+			var result = nesting + '<span lang="en">' + result + '</span>';
+			nesting = '';
+			return result;
+		}
+	});
+}
 
 Util.rxp_wordsX = /\b ((?:<\/[^>]*>)+)|([\u2E80-\u9FFF])(?=(<\w[^>]*>)*\w)/g;
 
@@ -700,6 +762,7 @@ EACH:<b>各</b>\n\
 GOTO:<b>GOTO</b>\n\
 BREAK:<b>BREAK</b>\n\
 CONTINUE:<b>CONTINUE</b>\n\
+此れ:<b>これ°</b>\n\
 Assert:<b>Assert</b>\n\
 MUST:なければならない\n\
 MUST_NOT:ならない\n\
