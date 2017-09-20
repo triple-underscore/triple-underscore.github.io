@@ -53,61 +53,46 @@ COMMON_DATA.init = function(expanded){
 }
 
 function expand(mapping1){
-	E('MAIN').innerHTML = Util.replaceWords1(create_html(this), mapping1);
 
-// 要素複製 ( Opera requires optional args, null, null)
-	var visited = Object.create(null), node, e;
-	var it = document.createNodeIterator(E('MAIN'), NodeFilter.SHOW_COMMENT, null, null);
-	while(node = it.nextNode()){
-		var id = node.data;
-		if(id.slice(0,3) !== 'cp-') continue;
-		e = visited[id];
-		if(!e) {
-			e = E(id);
-			if(e) {
-				e.removeAttribute('id');
-				visited[id] = e;
-			} else {
-				console.log('source undefined:' + id);
-				continue;
-			}
-		}
-		node.parentNode.replaceChild(e.cloneNode(true), node);
-	}
-}
-
-function create_html(source_data){
-	var link_map = source_data.link_map;
-	var ifc_names = source_data.ifc_names;
+	var link_map = this.link_map;
+	var ifc_names = this.ifc_names;
 
 	var in_idl = false;
 	var nesting = ''
-	, context_ifc = '';// prefix 省略時の既定 interface 名
-	return source_data.html.replace(
-		/⇒[！＃]*\s*|◎[^<◎]*|%[\w\-~一-鿆あ-ん]+|([\^@$]@?)([\w\.]+)(\([ \w,\[\]=…]*\))?|`(.+?)([\^@$])(\w*)/g,
-		replacer
-	);
+	var context_ifc = ''; // prefix 省略時の既定 interface 名
 
-	function bpGenerate(str){
-		return '<div class="bp-example">'
-		+ str.replace(/([\|\[\]\(\)])(\w?)/g, function(match, t, w){
-			switch(t) {
-			case '|':
-				return w ? '<span class="m">|<br>' + w + '</span>' : '|';
-			case '(':
-				return w ? '<i class="' + w + '">' : '<i>';
-			case '[':
-				return w ? '<b class="' + w + '">' : '<b>';
-			case ')':
-				return '</i>';
-			case ']':
-				return '</b>';
+	E('MAIN').innerHTML = Util.generateSource(this, mapping1, function(source){
+		return source.replace(
+		/%[\w\-~一-鿆あ-ん]+|([\^@$]@?)([\w\.]+)(\([ \w,\[\]=…]*\))?|`(.+?)([\^@$])(\w*)|！+/g,
+		create_html
+		);
+	});
+
+	new function(){
+	// 要素複製
+		var visited = Object.create(null), node, e;
+		// Opera requires optional args, null, null
+		var it = document.createNodeIterator(E('MAIN'), NodeFilter.SHOW_COMMENT, null, null);
+		while(node = it.nextNode()){
+			var id = node.data;
+			if(id.slice(0,3) !== 'cp-') continue;
+			e = visited[id];
+			if(!e) {
+				e = E(id);
+				if(e) {
+					e.removeAttribute('id');
+					visited[id] = e;
+				} else {
+					console.log('source undefined:' + id);
+					continue;
+				}
 			}
-		})
-		+ '</div>';
+			node.parentNode.replaceChild(e.cloneNode(true), node);
+		}
 	}
+	return;
 
-	function replacer(match, ind0, key, args, text, ind2, suffix){
+	function create_html(match, ind0, key, args, text, ind2, suffix){
 		if(text){
 			var href;
 			var key = text;
@@ -157,9 +142,6 @@ function create_html(source_data){
 				break;
 			case 'cite':
 				return '<cite>' + text + '</cite>';
-				break;
-			case 'tnote': 
-				return '<span class="trans-note">【' + text + '】</span>';
 				break;
 			default:
 				break;
@@ -220,38 +202,35 @@ text += args.replace(/(\w+)(\s=\s\w+)?/g, '<var>$1</var>$2');
 			switch(match[0]){
 			case '%':
 				return '<var>' + match.slice(1) + '</var>';
-			case '⇒':
-				switch(match[1]){
-				case '！':
-					in_idl = true;
-					nesting += '</pre>';
-					return '<pre class="idl">';
-				case '＃':
-					nesting += '</span>';
-					return '：<span class="block preline">';
-				default:
-					nesting += '</span>';
-					return '：<span class="block">';
-				}
-			case '◎':
-				var result;
-				if(in_idl) {
-					result = nesting;
-					in_idl = false;
-				} else {
-					result =
-						nesting
-						+ '<span lang="en">'
-						+ match.slice(1).trim()
-						+ '</span>';
-				}
-				nesting = '';
-				return result;
+			case '！':
+				in_idl = (match !== '！' );//！\n
+				return in_idl ? '<pre class="idl">' : '</pre>';
 			default: // 
 				return match;
 			}
 		}
 	}
+
+
+	function bpGenerate(str){
+		return '<div class="bp-example">'
+		+ str.replace(/([\|\[\]\(\)])(\w?)/g, function(match, t, w){
+			switch(t) {
+			case '|':
+				return w ? '<span class="m">|<br>' + w + '</span>' : '|';
+			case '(':
+				return w ? '<i class="' + w + '">' : '<i>';
+			case '[':
+				return w ? '<b class="' + w + '">' : '<b>';
+			case ')':
+				return '</i>';
+			case ']':
+				return '</b>';
+			}
+		})
+		+ '</div>';
+	}
+
 }
 </script>
 
@@ -402,7 +381,6 @@ realm:
 	上位の大域:superglobal
 
 IDL:
-此れ:<b>これ°</b>
 文脈obj:context object:文脈 object:::文脈オブジェクト
 obj:object::::オブジェクト
 
@@ -1605,6 +1583,7 @@ PrefixedName.prod:~TR/xml-names/#NT-PrefixedName
 関連する大域~obj:~WAPI#concept-relevant-global
 現在の大域~obj:~WAPI#current-global-object
 関連する~Realm:~WAPI#concept-relevant-realm
+複合~極小task下位~taskを実行する:~WAPI#execute-a-compound-microtask-subtask
 
 生成元:~ORIGIN#concept-origin
 不透明な生成元:~ORIGIN#concept-origin-opaque
@@ -1636,10 +1615,6 @@ PrefixedName.prod:~TR/xml-names/#NT-PrefixedName
 <!--%style -->
 <style>
 *[lang="en"] {
-	white-space: pre-line;
-}
-
-.preline {
 	white-space: pre-line;
 }
 
@@ -1947,7 +1922,7 @@ When extensions are needed, the DOM Standard can be updated accordingly, or a ne
 
 
 		<section id="_conventions">
-<h3 class="trans-note">【日本語訳に固有の表記規約】</h3>
+<h3>【この訳に固有の表記規約】</h3>
 
 <p>
 この訳では，以下の表記が用いられる：
@@ -2393,9 +2368,7 @@ Let localName be qualifiedName.
 	<li>
 ~IF［
 %名前 は `:^l (U+003A) を含む
-<span class="trans-note">【
-`PrefixedName$prod 生成規則に合致
-】</span>
+【 `PrefixedName$prod 生成規則に合致】
 ］
 ⇒
 ( %接頭辞, %局所~名 ) ~SET
@@ -2573,9 +2546,7 @@ Second, object’s own event listeners are invoked.＼
 </li>
 	<li>
 最後に、`~event$の $bubbles 属性~値が true のときにのみ，~objの各 `先祖$に対し
-<span class="trans-note">【
-`capture$evL 変数が ~F にされている
-】</span>
+【 `capture$evL 変数が ~F にされている】
 `~event~listener$が，今度は`木~順序$の逆順に呼出される。
 ◎
 And finally, and only if event’s bubbles attribute value is true, object’s ancestor event listeners are invoked again, but now in reverse tree order.
@@ -2627,7 +2598,7 @@ The debug function will be invoked twice. Each time the event’s target attribu
 		<section id="interface-event">
 <h3>2.2. ~ifc ^@Event</h3>
 
-⇒！
+！！
 [$Constructor(~DS %type, optional $EventInit %eventInitDict),
 `Exposed$=(Window,Worker)]
 interface @Event {
@@ -2663,7 +2634,7 @@ dictionary @EventInit {
   ~B @EventInit.cancelable = false;
   ~B @EventInit.composed = false;
 };
-◎
+！
 
 
 <p>
@@ -3279,7 +3250,7 @@ As events have constructors initEvent() is redundant and incapable of setting co
 		<section id="interface-customevent">
 <h3>2.3. ~ifc ^@CustomEvent</h3>
 
-⇒！
+！！
 [$Constructor(~DS %type, optional $CustomEventInit %eventInitDict),
  `Exposed$=(Window,Worker)]
 interface @CustomEvent : $Event {
@@ -3291,7 +3262,7 @@ interface @CustomEvent : $Event {
 dictionary @CustomEventInit : $EventInit {
   any @CustomEventInit.detail = null;
 };
-◎
+！
 
 <!-- ^@CustomEvent -->
 <p>
@@ -3550,7 +3521,7 @@ The CustomEvent interface can be used as starting point. However, do not introdu
 		<section id="interface-eventtarget">
 <h3>2.6. ~ifc ^@EventTarget</h3>
 
-⇒！
+！！
 [$Constructor,
  `Exposed$=(Window,Worker)]
 interface @EventTarget {
@@ -3571,7 +3542,7 @@ dictionary @@AddEventListenerOptions : $EventListenerOptions {
   boolean @passive = false;
   boolean @once = false;
 };
-◎
+！
 
 <p>
 $@EventTarget ~objは、何かが起きた時に`~event$が`配送-$される~targetを表現する。
@@ -4071,7 +4042,7 @@ In general, developers do not expect the presence of an event listener to be obs
 ~eventが $cancelable になるのは，非 $AddEventListenerOptions.passive ~listenerが 1 個~以上あるときに限る
 ］ように指定することで、軽減できる。
 例えば、非 $AddEventListenerOptions.passive $TouchEvent ~listenerは，~scrollingを阻ま~MUSTが、すべての~listenerが $AddEventListenerOptions.passive ならば、
-`~UAは^tnote
+【~UAは】
 $TouchEvent を（ $preventDefault() の~callは無視されるように）取消せなくすることで，~scrollingを`並列的$に開始できるようになる。
 なので、~eventを配送している~codeは，非 $AddEventListenerOptions.passive ~listenerの~~不在を観測でき、それを利用して配送-中の~eventの $cancelable ~propを ~F にできる。
 ◎
@@ -4104,7 +4075,7 @@ Ideally, any new event APIs are defined such that they do not need this property
 </li><li>`旧来（~listenerは投出したか？）~flag@V
 — この~flagは参照渡しであり、加えられた改変は~call元に伝播する（与えられている場合に限り）。
 また、（この手続きが間接的に呼出す）`~listenerを内部的に呼出す$ 手続きまで暗黙的に渡されるとする。
-`これは、 Indexed Database ~APIのみから利用される。原文は，この~flagの受け渡しをいちいち記述していて煩雑なので、この訳ではこの一文に集約する。^tnote
+【これは、 Indexed Database ~APIのみから利用される。原文は，この~flagの受け渡しをいちいち記述していて煩雑なので、この訳ではこの一文に集約する。】
 </li></ul>
 ◎
 To dispatch an event to a target, with an optional legacy target override flag and an optional legacyOutputDidListenersThrowFlag, run these steps: 
@@ -4962,7 +4933,7 @@ APIs that require more granular control could extend both AbortController and Ab
 		<section id="interface-abortcontroller">
 <h3 title="Interface AbortController">3.1. ~ifc ^@AbortController</h3>
 
-⇒！
+！！
 $Constructor,
  `Exposed$=(Window,Worker)]
 interface @AbortController {
@@ -4970,7 +4941,7 @@ interface @AbortController {
 
   void $abort();
 };
-◎
+！
 
 <dl class="domintro">
 	<dt>%controller  = new $AbortController()</dt>
@@ -5037,14 +5008,14 @@ The abort() method, when invoked, must signal abort on context object’s signal
 		<section id="interface-AbortSignal">
 <h3 title="Interface AbortSignal">3.2. ~ifc ^@AbortSignal</h3>
 
-<pre class="idl">
+！！
 [`Exposed$=(Window,Worker)]
 interface @AbortSignal : $EventTarget {
   readonly attribute ~B $aborted;
 
   attribute $EventHandler @onabort;
 };
-</pre>
+！
 
 <dl class="domintro">
 	<dt>%signal . $aborted</dt>
@@ -5566,9 +5537,7 @@ The document element of a document is the element whose parent is that document,
 
 <p class="note">注記：
 `~node木$の拘束から、そのような`要素$は唯一つに決まる。
-<span class="trans-note">【
-例えば`~HTML文書$ならば `html^e 要素。
-】</span>
+【例えば`~HTML文書$ならば `html^e 要素。】
 ◎
 Per the node tree constraints, there can be only one such element.
 </p>
@@ -6513,7 +6482,7 @@ For each range whose end node is parent and end offset is greater than child’s
 %nodes ~LET ［
 %node は`文書片$であるならば %node のすべての`子$ ／
 ~ELSE_ %node のみ
-］からなる `木~順序の^tnote
+］からなる 【木~順序の】
 ~list
 ◎
 Let nodes be node’s children if node is a DocumentFragment node, and a list containing solely node otherwise.
@@ -7214,7 +7183,7 @@ Web compatibility prevents the getElementById() method from being exposed on ele
 を通して実装されることを意図して定義されている（追補的な）~ifcを意味する。
 】</p>
 
-⇒！
+！！
 [`NoInterfaceObject$,
  `Exposed$=Window]
 interface @NonElementParentNode {
@@ -7222,7 +7191,7 @@ interface @NonElementParentNode {
 };
 $Document implements $NonElementParentNode;
 $DocumentFragment implements $NonElementParentNode;
-◎
+！
 
 <dl class="domintro">
 	<dt>%node . $getElementById(elementId)</dt>
@@ -7248,7 +7217,7 @@ The getElementById(elementId) method, when invoked, must return the first elemen
 			<section id="mixin-documentorshadowroot">
 <h4>4.2.5. ~mixin ^@DocumentOrShadowRoot</h4>
 
-⇒！
+！！
 [`NoInterfaceObject$,
  `Exposed$=Window]
 interface @DocumentOrShadowRoot {
@@ -7256,7 +7225,7 @@ interface @DocumentOrShadowRoot {
 
 $Document implements $DocumentOrShadowRoot;
 $ShadowRoot implements $DocumentOrShadowRoot;
-◎
+！
 
 
 <p class="note">注記：
@@ -7327,7 +7296,7 @@ Return node.
 </li>
 </ol>
 
-⇒！
+！！
 [`NoInterfaceObject$,
  `Exposed$=Window]
 interface @@ParentNode {
@@ -7345,7 +7314,7 @@ interface @@ParentNode {
 $Document implements $ParentNode;
 $DocumentFragment implements $ParentNode;
 $Element implements $ParentNode;
-◎
+！
 
 <dl class="domintro">
 	<dt>%collection = %node . $children</dt>
@@ -7510,7 +7479,7 @@ $previousElementSibling, $nextElementSibling
 Web compatibility prevents the previousElementSibling and nextElementSibling attributes from being exposed on doctypes (and therefore on ChildNode).
 </p>
 
-⇒！
+！！
 [`NoInterfaceObject$,
  `Exposed$=Window]
 interface @NonDocumentTypeChildNode {
@@ -7519,7 +7488,7 @@ interface @NonDocumentTypeChildNode {
 };
 $Element implements $NonDocumentTypeChildNode;
 $CharacterData implements $NonDocumentTypeChildNode;
-◎
+！
 
 <dl class="domintro">
 	<dt>%element = %node . $previousElementSibling</dt>
@@ -7569,7 +7538,7 @@ The nextElementSibling attribute’s getter must return the first following sibl
 			<section id="interface-childnode">
 <h4>4.2.8. ~mixin ^@ChildNode</h4>
 
-⇒！
+！！
 [`NoInterfaceObject$,
  `Exposed$=Window]
 interface @ChildNode {
@@ -7581,7 +7550,7 @@ interface @ChildNode {
 $DocumentType implements $ChildNode;
 $Element implements $ChildNode;
 $CharacterData implements $ChildNode;
-◎
+！
 
 <dl class="domintro">
 	<dt>%node . $before(…nodes)</dt>
@@ -7778,7 +7747,7 @@ Remove the context object from context object’s parent.
 			<section id="mixin-slotable">
 <h4 title="Mixin Slotable">4.2.9. ~mixin ^@Slotable</h4>
 
-⇒！
+！！
 [`NoInterfaceObject$,
  `Exposed$=Window]
 interface @Slotable {
@@ -7787,7 +7756,7 @@ interface @Slotable {
 
 $Element implements $Slotable;
 $Text implements $Slotable;
-◎
+！
 
 
 <dl class="idl-def">
@@ -7882,14 +7851,14 @@ $NodeList ~objは`~node$の`~collection$である。
 A NodeList object is a collection of nodes.
 </p>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @NodeList {
   getter $Node? $item(~UL %index);
   ~RA ~UL $length;
   iterable&lt;$Node&gt;;
 };
-◎
+！
 
 
 <dl class="domintro">
@@ -7941,7 +7910,7 @@ The item(index) method must return the indexth node in the collection. If there 
 				<section id="interface-htmlcollection">
 <h5>4.2.10.2. ~ifc ^@HTMLCollection</h5>
 
-⇒！
+！！
 [`Exposed$=Window,
  `LegacyUnenumerableNamedProperties$]
 interface @HTMLCollection {
@@ -7949,7 +7918,7 @@ interface @HTMLCollection {
   getter $Element? $item(~UL %index);
   getter $Element? $namedItem(~DS %name);
 };
-◎
+！
 
 <p>
 $HTMLCollection ~objは`要素$の`~collection$である。
@@ -8107,31 +8076,36 @@ If key is the empty string, return null.
 </li>
 			<li>
 <p>
-~RET
-此れの中の，次のいずれかを満たす`要素$のうち，`最初0$のもの
+~IF［
+此れの中に 下のいずれかを満たす`要素$はある
+］
+~RET 該当する要素のうち，`最初0$のもの：
 ◎
 Return the first element in the collection for which at least one of the following is true:
 </p>
 
 				<ul>
 					<li>
-要素の`~ID$ ~EQ %name
+`~ID$ ~EQ %name
 ◎
 it has an ID which is key;
 </li>
 					<li>
 ［
-要素は`~HTML~ns$に属する
+`~HTML~ns$に属する
 ］~AND［
-要素は［ `値$a ~EQ %name ］なる `name^A `属性o$nmを`有する$
+［ `値$a ~EQ %name ］なる `name^A `属性o$nmを`有する$
 ］
 ◎
 it is in the HTML namespace and has a name attribute whose value is key;
-◎
-or null if there is no such element.
 </li>
 				</ul>
 			</li>
+			<li>
+~RET ~NULL
+◎
+or null if there is no such element.
+</li>
 		</ol>
 	</dd>
 </dl>
@@ -8240,7 +8214,7 @@ Empty unit of related similar-origin browsing contexts' signal slot list.
 %通知-~list 内の~EACH ( $MutationObserver ~obj %MO ) に対し
 ⇒
 次の手続きを走らす
-<a href="~WAPI#execute-a-compound-microtask-subtask">複合~極小task下位~taskを実行する</a>
+`複合~極小task下位~taskを実行する$
 `HTML$r
 ：
 ◎
@@ -8323,7 +8297,7 @@ For each slot slot in signalList, in order, fire an event named slotchange, with
 0 個~以上の`登録済み~ob$からなる~list。
 </dd>
 	<dd>
-`すなわち、この~nodeにおける変異を観測している~obたち。^tnote
+【すなわち、この~nodeにおける変異を観測している~obたち。】
 </dd>
 </dl>
 ◎
@@ -8374,7 +8348,7 @@ Transient registered observers are used to track mutations within a given node�
 			<section id="interface-mutationobserver">
 <h4>4.3.1. ~ifc ^@MutationObserver</h4>
 
-⇒！
+！！
 [$Constructor($MutationCallback %callback),
  `Exposed$=Window]
 interface @MutationObserver {
@@ -8394,7 +8368,7 @@ dictionary @MutationObserverInit {
   ~B @MutationObserverInit.characterDataOldValue;
   sequence&lt;~DS&gt; @MutationObserverInit.attributeFilter;
 };
-◎
+！
 
 <!-- MutationObserver^I -->
 <p>
@@ -8850,7 +8824,7 @@ Let nodes be the inclusive ancestors of target.
 	<li>
 <p>
 %nodes 内の~EACH ( %node ) に対し
-`順序は？^tnote
+【順序は？】
 ⇒
 %node の`~ob~list$ 内の~EACH ( %登録済み~ob ) に対し：
 ◎
@@ -9071,7 +9045,7 @@ Queue a mutation observer compound microtask.
 <h4>4.3.3. ~ifc ^@MutationRecord</h4>
 
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @MutationRecord {
   ~RA ~DS $type;
@@ -9084,7 +9058,7 @@ interface @MutationRecord {
   ~RA ~DS? $attributeNamespace;
   ~RA ~DS? $oldValue;
 };
-◎
+！
 
 <dl class="domintro">
 	<dt>%record . $type</dt>
@@ -9217,7 +9191,7 @@ Registered observers in a node’s list of registered observers have a weak refe
 		<section id="interface-node">
 <h3>4.4. ~ifc ^@Node</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @Node : $EventTarget {
   ~CUS $ELEMENT_NODE = 1;
@@ -9284,7 +9258,7 @@ interface @Node : $EventTarget {
 dictionary @@GetRootNodeOptions {
   boolean @composed = false;
 };
-◎
+！
 
 <p class="note">注記：
 $@Node は抽象~ifcであり，`~node$として存在することはない。
@@ -10366,9 +10340,7 @@ Set copy’s target and data to those of node.
 			<dt>他の~node</dt>
 			<dd>
 —
-<span class="trans-note">【
-すなわち， $DocumentFragment になるが、未策定？複製される項目がない？
-】</span>
+【すなわち， $DocumentFragment になるが、未策定？複製される項目がない？】
 ◎
 —
 </dd>
@@ -10403,7 +10375,7 @@ Run any cloning steps defined for node in other applicable specifications and pa
 ］
 ⇒
 %node の~EACH ( `子$ %子 ) に対し
-`木~順序で^tnote
+【木~順序で】
 ⇒
 ( %文書, `~clone子孫^f： ~ON )
 を与える下で，
@@ -11426,7 +11398,7 @@ The comparisons for the classes must be done in an ASCII case-insensitive manner
 		<section id="interface-document">
 <h3>4.5. ~ifc ^@Document</h3>
 
-⇒！
+！！
 [$Constructor,
  `Exposed$=Window]
 interface @Document : $Node {
@@ -11475,7 +11447,7 @@ interface @XMLDocument : $Document {};
 dictionary @@ElementCreationOptions {
   DOMString @is;
 };
-◎
+！
 
 <!-- 
 ElementCreationOptions:dictdef-elementcreationoptions
@@ -12891,7 +12863,7 @@ $DOMImplementation ~objを作成して, `文書$にそれを結付け~MUST。
 User agents must create a DOMImplementation object whenever a document is created and associate it with that document.
 </p>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @DOMImplementation {
   [`NewObject$] $DocumentType $createDocumentType(~DS qualifiedName, ~DS publicId, ~DS systemId);
@@ -12900,7 +12872,7 @@ interface @DOMImplementation {
 
   ~B $hasFeature(); // <span class="comment" id="cp-useless-true" title="useless; always returns true">無用の長物 — 常に true を返す</span>
 };
-◎
+！
 
 <dl class="domintro">
 	<dt>%doctype = %document . $Document.implementation . $createDocumentType( qualifiedName, publicId, systemId )</dt>
@@ -13172,14 +13144,14 @@ hasFeature() originally would report whether the user agent claimed to support a
 		<section id="interface-documenttype">
 <h3>4.6. ~ifc ^@DocumentType</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @DocumentType : $Node {
   ~RA ~DS $name;
   ~RA ~DS $publicId;
   ~RA ~DS $systemId;
 };
-◎
+！
 
 
 <p>
@@ -13245,12 +13217,12 @@ The systemId attribute’s getter must return the context object’s system ID.
 		<section id="interface-documentfragment">
 <h3>4.7. ~ifc ^@DocumentFragment</h3>
 
-⇒！
+！！
 [$Constructor,
  `Exposed$=Window]
 interface @DocumentFragment : $Node {
 };
-◎
+！
 
 <p class="trans-note">【
 この訳では， $DocumentFragment `~node$を
@@ -13333,7 +13305,7 @@ The DocumentFragment() constructor, when invoked, must return a new DocumentFrag
 		<section id="interface-shadowroot">
 <h3>4.8. ~ifc ^@ShadowRoot</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @ShadowRoot : $DocumentFragment {
   ~RA $ShadowRootMode $mode;
@@ -13341,7 +13313,7 @@ interface @ShadowRoot : $DocumentFragment {
 };
 
 enum @ShadowRootMode { `open@l, `closed@l };
-◎
+！
 
 
 <p>
@@ -13431,7 +13403,7 @@ The host attribute’s getter must return the context object’s host.
 と称される，次に従う順序である
 ⇒
 %木 に対する深優先前順走査
-`すなわち，通常の木~順序^tnote
+【すなわち，通常の木~順序】
 に従いつつ，
 %木 において［
 `~shadow~host$である`要素$ %要素
@@ -13592,7 +13564,7 @@ For now you can find more information about this object in Shadow DOM. The DOM S
 		<section id="interface-element">
 <h3>4.9. ~ifc ^@Element</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @Element : $Node {
   ~RA ~DS? $namespaceURI;
@@ -13641,7 +13613,7 @@ interface @Element : $Node {
 dictionary @@ShadowRootInit {
   required $ShadowRootMode @mode;
 };
-◎
+！
 
 <p>
 $@Element `~node$は、単に
@@ -14164,9 +14136,7 @@ Return result.
 も持つ。
 それは、`~list$であり，
 $NamedNodeMap
-<span class="trans-note">【
-~objを返す $attributes 属性
-】</span>
+【~objを返す $attributes 属性】
 を通して公開される。
 `要素$の作成-時に明示的に与えられない限り，その`属性o~list$は`空$listとする。
 ◎
@@ -14208,7 +14178,7 @@ To change an attribute attribute from an element element to value, run these ste
 	<li>
 ~Assert：
 %要素 は %属性o を`有する$
-`この段は、この訳による補完^tnote
+【この段は、この訳による補完】
 </li>
 	<li>
 `変異~記録を待入する$( 次に与える変異~記録 )
@@ -14265,7 +14235,7 @@ To append an attribute attribute to an element element, run these steps:
 	<li>
 ~Assert：
 %要素 は %属性o を`有さない$
-`この段は、この訳による補完^tnote
+【この段は、この訳による補完】
 </li>
 	<li>
 `変異~記録を待入する$( 次に与える変異~記録 )
@@ -14326,7 +14296,7 @@ To remove an attribute attribute from an element element, run these steps:
 	<li>
 ~Assert：
 %要素 は %属性o を`有する$
-`この段は、この訳による補完^tnote
+【この段は、この訳による補完】
 </li>
 	<li>
 `変異~記録を待入する$( 次に与える変異~記録 )
@@ -14388,7 +14358,7 @@ To replace an attribute oldAttr by an attribute newAttr in an element element, r
 	<li>
 ~Assert：
 %要素 は %旧-属性o を`有する$
-`この段は、この訳による補完^tnote
+【この段は、この訳による補完】
 </li>
 	<li>
 `変異~記録を待入する$( 次に与える変異~記録 )
@@ -15673,7 +15643,7 @@ This method returns nothing because it existed before we had a chance to design 
 			<section id="interface-namednodemap">
 <h4>4.9.1 ~ifc ^@NamedNodeMap</h4>
 
-⇒！
+！！
 [`Exposed$=Window,
  `LegacyUnenumerableNamedProperties$]
 interface @NamedNodeMap {
@@ -15686,7 +15656,7 @@ interface @NamedNodeMap {
   [`CEReactions$] $Attr $removeNamedItem(~DS %qualifiedName);
   [`CEReactions$] $Attr $removeNamedItemNS(~DS? %namespace, ~DS %localName);
 };
-◎
+！
 
 <div class="p">
 <p>
@@ -15883,7 +15853,7 @@ Return attr.
 			<section id="interface-attr">
 <h4>4.9.2. ~ifc ^@Attr</h4>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @Attr : $Node {
   ~RA ~DS? $namespaceURI;
@@ -15896,14 +15866,14 @@ interface @Attr : $Node {
 
   ~RA ~B $specified; // <!--cp-useless-true-->
 };
-◎
+！
 
 <p>
 $Attr `~node$は、単に
 `属性o@
 とも称される
 — ~IDL属性と区別するため、内容~属性とも称される。
-`この訳では， “°” を付けて “属性o” と記すことにする^tnote
+【この訳では， “°” を付けて “属性o” と記すことにする】
 ◎
 Attr nodes are simply known as attributes. They are sometimes referred to as content attributes to avoid confusion with IDL attributes.
 </p>
@@ -16092,7 +16062,7 @@ The specified attribute’s getter must return true.
 		<section id="interface-characterdata">
 <h3>4.10. ~ifc ^@CharacterData</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @CharacterData : $Node {
   attribute [`TreatNullAs$=EmptyString] ~DS $data;
@@ -16103,7 +16073,7 @@ interface @CharacterData : $Node {
   void $deleteData(~UL %offset, ~UL %count);
   void $replaceData(~UL %offset, ~UL %count, ~DS %data);
 };
-◎
+！
 
 <p class="note">注記：
 $CharacterData は抽象~ifcであり，`~node$として存在するものではない。
@@ -16392,14 +16362,14 @@ The replaceData(offset, count, data) method, when invoked, must replace data wit
 		<section id="interface-text">
 <h3>4.11. ~ifc ^@Text</h3>
 
-⇒！
+！！
 [$Constructor(optional ~DS %data = ""),
  `Exposed$=Window]
 interface @Text : $CharacterData {
   [`NewObject$] $Text $splitText(~UL %offset);
   ~RA ~DS $wholeText;
 };
-◎
+！
 
 <hr>
 
@@ -16683,11 +16653,11 @@ The wholeText attribute’s getter must return a concatenation of the data of th
 		<section id="interface-cdatasection">
 <h3>4.12. ~ifc ^@CDATASection</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @CDATASection : $Text {
 };
-◎
+！
 
 <!--  -->
 
@@ -16695,12 +16665,12 @@ interface @CDATASection : $Text {
 		<section id="interface-processinginstruction">
 <h3>4.13. ~ifc ^@ProcessingInstruction</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @ProcessingInstruction : $CharacterData {
   ~RA ~DS $target;
 };
-◎
+！
 
 <div class="p">
 <p>
@@ -16731,12 +16701,12 @@ The target attribute must return the target.
 		<section id="interface-comment">
 <h3>4.14. ~ifc ^@Comment</h3>
 
-⇒！
+！！
 [$Constructor(optional ~DS %data = ""),
  `Exposed$=Window]
 interface @Comment : $CharacterData {
 };
-◎
+！
 
 <dl class="domintro">
 	<dt>var %comment = new $Comment([data = ""])</dt>
@@ -16859,7 +16829,7 @@ See the insert and remove algorithms, the normalize() method, and the replace da
 		<section id="interface-range">
 <h3>5.2. ~ifc ^@Range</h3>
 
-⇒！
+！！
 [$Constructor,
  `Exposed$=Window]
 interface @Range {
@@ -16902,7 +16872,7 @@ interface @Range {
 
   $stringifier;
 };
-◎
+！
 
 <p>
 $Range ~objは単に
@@ -17387,7 +17357,7 @@ Returns true if range’s start and end are the same, and false otherwise.
 	<dt>%container = %range . $commonAncestorContainer</dt>
 	<dd>
 %range の`始端~node$と`終端~node$の両方の`広義先祖$であるような，最も末端の~nodeを返す。
-`原文の “ancestor” （先祖）は~~厳密な記述ではない。^tnote
+【原文の “ancestor” （先祖）は~~厳密な記述ではない。】
 ◎
 Returns the node, furthest away from the document, that is an ancestor of both range’s start node and end node.
 </dd>
@@ -17447,7 +17417,7 @@ The commonAncestorContainer attribute’s getter must run these steps:
 
 <div>
 <p class="algo-head">
-`この訳では便宜のため，次を定義する：^tnote
+【この訳では便宜のため，次を定義する：】
 同じ木に関与する 2 つの~node %A, %B の（最も末端の）
 `共通の広義先祖@
 とは、次の~algoを走らせた結果である：
@@ -18332,7 +18302,7 @@ If any member of contained children is a doctype, then throw a HierarchyRequestE
 <p class="note">注記：
 `~doctype$が`部分的に包含され$ることは決してないので、部分的に包含される~nodeを気にする必要はない。
 それは 範囲o の境界点
-`始端~node／終端~node^tnote
+【始端~node／終端~node】
 にはなり得ず, 何かの先祖にもなり得ない。
 ◎
 We do not have to worry about the first or last partially contained node, because a doctype can never be partially contained. It cannot be a boundary point of a range, and it cannot be the ancestor of anything.
@@ -19284,7 +19254,7 @@ Return result.
 		<section id="interface-nodeiterator">
 <h3>6.1. ~ifc ^@NodeIterator</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @NodeIterator {
   [`SameObject$] ~RA $Node $root;
@@ -19298,7 +19268,7 @@ interface @NodeIterator {
 
   void $detach();
 };
-◎
+！
 
 <p class="note">注記：
 $NodeIterator ~objは
@@ -19646,7 +19616,7 @@ Its functionality (disabling a NodeIterator object) was removed, but the method 
 		<section id="interface-treewalker">
 <h3>6.2. ~ifc ^@TreeWalker</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @TreeWalker {
   [`SameObject$] ~RA $Node $root;
@@ -19662,7 +19632,7 @@ interface @TreeWalker {
   $Node? $previousNode();
   $Node? $nextNode();
 };
-◎
+！
 
 <p class="note">注記：
 $TreeWalker ~objは
@@ -20253,7 +20223,7 @@ If a node is following node and is not following root, set node to the first suc
 		<section id="interface-nodefilter">
 <h3>6.3. ~ifc ^@NodeFilter</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 callback interface @NodeFilter {
   // <span class="comment" title="Constants for acceptNode"
@@ -20280,7 +20250,7 @@ callback interface @NodeFilter {
 
   ~US @acceptNode($Node %node);
 };
-◎
+！
 
 <p>
 $NodeFilter ~objは、`~filter~callback$として利用できる。
@@ -20297,7 +20267,7 @@ It is typically implemented as a JavaScript function.
 
 <p class="idl-def">
 ~callbackの返値には、次の定数を利用できる（括弧内は数値）
-`各~項目の説明は、訳者による補足^tnote：
+【各~項目の説明は、訳者による補足】：
 ◎
 These constants can be used as callback return value:
 </p>
@@ -20351,7 +20321,7 @@ Yes, the name $DOMTokenList is an unfortunate legacy mishap.
 		<section id="interface-domtokenlist">
 <h3>7.1. ~ifc ^@DOMTokenList</h3>
 
-⇒！
+！！
 [`Exposed$=Window]
 interface @DOMTokenList {
   ~RA ~UL $length;
@@ -20365,7 +20335,7 @@ interface @DOMTokenList {
   [`CEReactions$] @stringifier attribute ~DS $value;
   iterable&lt;~DS&gt;;
 };
-◎
+！
 
 
 <div class="p">

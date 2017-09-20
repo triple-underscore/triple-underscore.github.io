@@ -37,7 +37,6 @@ var source_data = {
 		qdir: 'directive',
 		sdir: 'directive',
 		com: 'comment',
-		_: 'trans-note',
 	},
 
 	tag_map: {
@@ -56,10 +55,7 @@ var source_data = {
 		sdir: 'code',
 		ph: 'span',
 		com: 'span',
-		_: 'span',
 	},
-
-	rxp2: /◎[^<◎`]*|`(.+?)([$@\^])(\w*)/g,
 
 	generate: function(mapping1){
 		var st_phrase = this.st_phrase;
@@ -72,10 +68,12 @@ var source_data = {
 		var class_map = this.class_map;
 		var tag_map = this.tag_map;
 
-		E('MAIN').innerHTML = Util.replaceWords1(
-			this.html.replace(this.rxp2, create_html),
-			mapping1
-		);
+		E('MAIN').innerHTML = Util.generateSource(this, mapping1, function(source){
+			return source.replace(
+				/`(.+?)([$@\^])(\w*)/g,
+				create_html
+			);
+		});
 
 		// header id を section から補完
 		repeat('section[id]', function(e){
@@ -88,10 +86,6 @@ var source_data = {
 		return;
 
 		function create_html(match, key, indicator, klass){
-
-if(!indicator) {//◎
-	return '<span lang="en">' + match.slice(1) + '</span>';
-}
 
 var text = key;
 var href = href_data_map[klass ? (klass + '.' + key) : key] || '';
@@ -183,9 +177,6 @@ case 'dfn':
 case 'var':
 	break;
 //typedef-integer, number-value
-case '_':
-	text = '【' + key + '】';
-	break;
 default:
 	if(!classname) return match;
 //		text = key;
