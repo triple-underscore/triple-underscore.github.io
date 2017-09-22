@@ -1515,6 +1515,7 @@ CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-3/●編（Level 3）\n\
 CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-4/\n\
 CSSWILLCHANGE1=主     ~/css-will-change-ja.html\n\
 CSSWILLCHANGE1=版     ~TR/css-will-change-1/\n\
+COMPAT=主             ~/compat-ja.html\n\
 DOM=主                ~/DOM4-ja.html\n\
 DOM=編                dom.spec.whatwg.org/●LS\n\
 DOM=版                ~TR/dom/●W3C版\n\
