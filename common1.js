@@ -63,10 +63,6 @@ new function(){
 		document.addEventListener('visibilitychange', onVisibilityChange, false);
 
 		Util.ref_position.init();
-		if(PAGE_DATA.word_switch){
-			Util.word_switcher.init_toggle();
-		}
-
 		Util.DEFERRED.forEach(function(f){f();});
 		init = null;
 	}
@@ -187,7 +183,7 @@ IETFPR: 'IETF PROPOSED STANDARD'
 			add_button('索引', 'S', '_toggle_index');
 		}
 		add_button('原文', 'Z', '_toggle_source');
-		if(options.word_switch){
+		if(options.word_switch){ // TODO move to common0a.js
 			add_button('語の和英', 'X', '_toggle_words');
 		}
 
@@ -280,6 +276,7 @@ Util.toggleSource = function(target){
 	// click handler
 
 
+
 /** 語彙切替（内容生成） UI */
 
 Util.create_word_switch = function(source_data){
@@ -330,168 +327,6 @@ Util.create_word_switch = function(source_data){
 		w_switch.children[source_data.level + 1].firstChild.checked = true;
 	}
 }
-
-
-
-/** 語彙切替 （訳語 → 原語 変換）
-
-検索パタン
-	(1) 漢字+
-		動詞的／名詞的 用法は、[さしすせ]が後続しているかどうかで区別
-		例：
-			接続（する） → connection / connect（する）
-			（課題）「〜できる／〜可能」の場合も動詞的用法（例：断片化）
-
-			「動く」のような活用形は語尾も含めて変換する必要があるので
-			(3) の「漢字かな」の対象になる
-	(2) 漢字+<!--.-->
-		重複の区別／無変換指示のため、ドットの部分で検索キーを分岐
-		例：
-			指定 → specify / designate
-			概念 → notion / concept
-			取得 → fetch / retrieve / obtain
-		ドットの部分が '0' ならば無変換を指示
-	(3) 漢字+かな+<!--.-->
-		例：予約済み → reserved
-		ドットは意味を持たない
-	(5) カナ+
-	(4) 漢字+カナ+
-		例：下位プロトコル → subprotocol
-	(6) カナ+漢字+
-		例： "サービス供与" → serve, "リソース名" → resource name
-	(課題)
-		例：
-			割り当てる → allocate する
-			あてがう → assign する
-			呼び出す → invoke する
-			呼び出さない → invoke しない
-			ページ遷移（する） → navigation / navigate
-			待ち行列 → queue
-		<漢字><かな>(?=<漢字>) を複合 処理の対象にする？
-		[一-龠][ぁ-ゔ]
-
-[\u4E00-\u9FFF] : CJK [一-鿆]
-[\u30A1-\u30FC] : カナ [ァ-ー] // "・" も含まれる
-[\u3041-\u3094] : かな [ぁ-ゔ]
-
-*/
-
-Util.word_switcher = {
-	rxp: 
-/(?:(?:[\u30A1-\u30FC]+|[\u4E00-\u9FFF]+)([\u3041-\u3094]*<!--.-->)?)(?=(?:([\u30A1-\u30FC]+|[\u4E00-\u9FFF]+)|([さしすせ]|でき))?)/g,
-
-	main_id: null,
-	html: null,
-
-	convert:function(map){
-		var main = E(this.main_id);
-		if(!this.html) this.html = main.innerHTML;
-		var ignore_flag = false;
-		main.innerHTML = this.html.replace(this.rxp, function(key, hira, suffix, sa){
-			if(ignore_flag){
-				ignore_flag = false;
-				return (hira || '');
-			}
-			var val;
-			if(hira){
-				//(カナ+|漢字+)かな*<!--.-->
-				//この場合は suffix, sa を無視
-				var opt = hira.slice(-4,-3);
-				key = key.slice(0,-8);
-				if(opt === '0'){
-					return key; // 無変換
-				}
-				if(hira.length > 8){
-					val = map[key];
-				} else {
-					val = map[key + opt];
-				}
-			} else if(sa){
-				if(key.charCodeAt(0) >= 0x4E00){
-					// サ行変格
-					val = map[key + '-'];
-				}
-			} else if(suffix){
-				val = map[key + suffix];
-				if(val) { // 漢字＋カナ 複合語
-					ignore_flag = true;
-				}
-			}
-
-			val = val || map[key];
-			return val? (
-				(val.charCodeAt(0) < 128 ? ' ': '')
-				+ val + 
-				(val.charCodeAt(val.length - 1) < 128 ? ' ': '')
-			) : key;
-		});
-		Util.rebuildToc(this.main_id);
-	},
-	revert: function(){
-		if(!this.html) return;
-		E(this.main_id).innerHTML = this.html;
-		this.html = null;
-		Util.rebuildToc(this.main_id);
-	},
-
-	// 2 レベル切替用
-	init_toggle: function(){
-		var B = E('_toggle_words');
-		if(B && ( B.className === '_converted') ){
-			B.style.display = 'none';
-			return;
-		}
-
-//		if(!PAGE_DATA.word_switch) return;
-		this.main_id = PAGE_DATA.main;
-		var that = this;
-////
-		Util.CLICK_HANDLERS._toggle_words = function(){
-			Util.switchView(toggleWords2, true);
-		}
-
-		function toggleWords2(){
-			if(that.html){
-				that.revert();
-			} else {
-				that.convert(
-					Util.getMapping(PAGE_DATA.word_switch, {keep: true})
-				);
-			}
-			E('_toggle_words').className = that.html? '_converted' : '';
-		}
-	},
-
-	// 3 レベル以上用
-	num_levels: 3,
-	level:0,
-	switchWords: function(level){
-		if(isNaN(level)){
-			level = (this.level + 1);
-		}
-		level = (level & 0xF) % this.num_levels;
-		if(level === this.level) return;
-		this.level = level;
-		var mapping;
-		if(level > 0){
-			mapping = 
-				Util.getDataByLevel(
-					E('words_table').firstChild.data,
-					level - 1
-				)
-				// 恒等置換 削除
-				.replace(/^([^\n:]+)[\d\-]?:\1$/mg, '');
-			mapping = Util.get_mapping(mapping);
-		}
-		var that = this;
-		Util.switchView(function(){
-			level ?
-				that.convert(mapping) :
-				that.revert();
-		}, true);
-	}
-};
-
 
 
 /** 索引機能 初期化*/

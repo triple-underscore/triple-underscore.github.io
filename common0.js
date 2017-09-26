@@ -30,6 +30,7 @@ var Util = {
 	_COMP_: false,
 	DEFERRED: [], // 遅延実行
 	initAdditional: EMPTY_FUNC,
+	content_generated: false,
 
 	getMapping: EMPTY_FUNC,
 	get_mapping: EMPTY_FUNC,
@@ -67,8 +68,6 @@ var Util = {
 	toggleSource: EMPTY_FUNC,
 
 	indexInit: EMPTY_FUNC,
-
-	word_switcher: null,
 
 	switchView: EMPTY_FUNC,
 	ref_position: null,
@@ -367,13 +366,6 @@ Util.initAdditional = function(options){
 
 	PAGE_DATA =
 	options = options || PAGE_DATA;
-//	if(!options) options = {};
-
-	PAGE_DATA.original_id_map = Object.create(null);// TODO REMOVE
-
-	var main = E(options.main);// || document.body; //TODO main への依存を除去
-
-	var content_generated = null;
 
 	options.expanded = !!E('view_control');
 	if(options.expanded) {
@@ -383,19 +375,7 @@ Util.initAdditional = function(options){
 			e.style.display = 'none';
 		});
 	} else {
-		content_generated = E('_GENERATING'); // 内容生成ページには存在
-		if(content_generated){
-			// 内容生成完了
-			main.style.display = ''; // TODO 別箇所に移動
-			content_generated.className = '_generated';
-		} else if(options.toc){
-			// 目次構築
-			var toc_list = Util.buildTocList(main);// options.main
-			toc_list.id = '_toc_list';
-			E(options.toc).appendChild(toc_list);
-		}
-
-		window.setTimeout(navToInit, 100);
+		window.setTimeout(navToInit, 50);
 	}
 
 ////
@@ -433,7 +413,7 @@ Util.initAdditional = function(options){
 				// 生成された参照文献リンク
 				return id;
 			}
-			if(! content_generated && E(id)) return; // ブラウザに任せる
+			if(! Util.content_generated && E(id)) return; // ブラウザに任せる
 			return id;
 		}
 
@@ -585,11 +565,15 @@ Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
 		Util.create_word_switch(source_data);
 	});
 
+	var content_generated = E('_GENERATING');
+	if(content_generated){
+		content_generated.className = '_generated';
+		Util.content_generated = true;
+	}
+
+	// 内容生成完了
 	E(source_data.main || 'MAIN' ).style.display = '';
 return;
-/*
-	content_generated.className = '_generated';
-*/
 
 	function get_data(id){
 		if(id in source_data) return source_data[id];
