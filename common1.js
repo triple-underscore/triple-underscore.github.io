@@ -33,7 +33,7 @@ PAGE_DATA member
 	expanded:
 		page は展開状態で保存されている
 	ref_id_lowercase
-		小文字 id
+		参照文献の id は小文字化
 	ref_id_prefix
 		'biblio-' etc.
 */
@@ -53,12 +53,11 @@ new function(){
 		document.body.addEventListener('click', onClick, false);
 		document.body.addEventListener('dblclick', onDblClick, false);
 
-		Util.fillMisc(PAGE_DATA);
+		Util.fillMisc();
 		Util.dfnInit();
 //		Util.contextMenuInit();
 
-		var main = E(PAGE_DATA.main);// TODO main への依存を除去 -> main 要素
-		Util.altLinkInit(main);// 
+		Util.altLinkInit();
 
 		document.addEventListener('visibilitychange', onVisibilityChange, false);
 
@@ -115,9 +114,14 @@ new function(){
 }
 
 
-Util.fillMisc = function(options){//PAGE_DATA
+Util.fillMisc = function(){
+	var options = PAGE_DATA;
 	if(options.expanded) return;
 
+	// 仕様メタデータ
+	fillSpecMetadata(options);
+	// Copyright
+	fillCopyright(options);
 	// 参照文献 和訳リンク
 	COMMON_DATA.addAltRefs();
 	// ボタン類
@@ -208,7 +212,51 @@ IETFPR: 'IETF PROPOSED STANDARD'
 			controls.appendChild(b);
 		}
 	}
-	
+
+	function fillSpecMetadata(){
+		var e = E('_spec-metadata');
+		if(!e) return;
+//e.parentNode.open = true;
+		var dl = C('dl');
+		e.parentNode.insertBefore(dl, e);
+		dl.innerHTML = Util.textData(e)
+			.replace(/\n\S.+/g, '\n<dt>$&<dt>')
+			.replace(/\n[ \t]+(https?:\S+)/g, '\n<dd><a href="$1">$1</a><dd>')
+			.replace(/\n[ \t]+(.+)/g, '<dd>$1<dd>');
+	}
+
+	function fillCopyright(options){
+		var e = E('_copyright');
+		if(!e) return;
+		var info = e.getAttribute('data-year');
+		if(!info) {
+			console.log('Warning! incorrect _copyright');
+			return;
+		}
+		info = info.split(',');
+		var year = info[0];
+		var license = info[1];
+		var e1 = C('details');
+		e1.innerHTML
+= '<summary>©</summary><small lang="en-x-a0"><a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © '
++ year
++ ' <a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> (<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>, <a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>, <a href="http://www.keio.ac.jp/">Keio</a>, <a href="http://ev.buaa.edu.cn/">Beihang</a>). W3C <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, <a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and '
++ (
+license === 'use' ?
+	'<a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents">document use</a>' :
+	'<a rel="license" href="http://www.w3.org/Consortium/Legal/2015/copyright-software-and-document">permissive document license</a>'
+)
++ ' rules apply.</small>';
+		e.parentNode.replaceChild(e1, e);
+
+/*
+http://www.ercim.org/ と https://www.ercim.eu/ （ 1 箇所のみ）の違いは無視。
+", All Rights Reserved" （数カ所）は省略。
+rel="license" の有無は無視。
+https と http の違いは無視。
+*/
+
+	}
 };
 
 Util.removeAdditionalNodes = function(refresh){
@@ -890,7 +938,15 @@ Util.dfnInit = function(){
 
 
 /** 外部リンク日本語訳リンク追加 */
-Util.altLinkInit = function(root){
+Util.altLinkInit = function(){
+	var root;
+	if(PAGE_DATA.main){
+		root = E(PAGE_DATA.main);
+	}
+	if(!root){
+		root = document.getElementsByTagName('main')[0];
+	}
+	if(!root) return;
 //	COMMON_DATA.JA_BASIS[''] = ''; //
 	var ja_link = C('a');
 	this.ADDITIONAL_NODES.push(ja_link);

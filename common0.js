@@ -313,14 +313,8 @@ new function(){
 			document.body.classList.toggle('side-menu');
 		}
 		if(COMMON_DATA.init) {
-			Util.initAdditional(COMMON_DATA.init(E('view_control')), page_state);
+			Util.initAdditional( COMMON_DATA.init(E('view_control')) );
 		}
-/*
-		window.addEventListener("beforeunload", function(event) {
-			history.replaceState( Util.page_state, '' );
-		}
-*/
-
 	}
 
 	// 表示状態を DOM Storage / hidden field から読み込む
@@ -364,8 +358,7 @@ new function(){
 Util.initAdditional = function(options){
 	delete Util.initAdditional;
 
-	PAGE_DATA =
-	options = options || PAGE_DATA;
+	PAGE_DATA = options = ( options || PAGE_DATA );
 
 	options.expanded = !!E('view_control');
 	if(options.expanded) {
