@@ -18,6 +18,7 @@ function E(id){
 //	var e = document.getElementById(id);if(!e) {console.log(id);};return e;
 	return document.getElementById(id);
 }
+
 // 要素作成
 function C(tag){
 	return tag ? 
@@ -37,22 +38,29 @@ function repeat(selector, callback, root){
 	}
 }
 
+var PAGE_DATA = {}; // see common1.js for possible members
+var COMMON_DATA = Object.create(null);
+
 // 予約済みメンバ
 var Util = {
 	_COMP_: false,
 	DEFERRED: [], // 遅延実行
 	initAdditional: EMPTY_FUNC,
+	getState: EMPTY_FUNC, // 状態保存
+	setState: EMPTY_FUNC,
 
 	getMapping: EMPTY_FUNC,
 	get_mapping: EMPTY_FUNC,
 	textData: EMPTY_FUNC,
 	getDataByLevel: EMPTY_FUNC,
 	get_header: EMPTY_FUNC,
-	supplyLinkFromText: EMPTY_FUNC,
 	dump: EMPTY_FUNC,
 
+	ready: EMPTY_FUNC,
 	rebuildToc: EMPTY_FUNC,
 	buildTocList: EMPTY_FUNC,
+
+// common0a.js
 	word_switcher: null,
 
 // common1.js
@@ -165,13 +173,24 @@ Util.get_header = function(section){
 };
 
 
-var PAGE_DATA = {}; // see common1.js for possible members
+Util.getState = function(key, default_val, type){
+	if(! (key in Util.page_state) ) return default_val;
+	var val = Util.page_state[key];
+	return (type && (typeof(val) !== type))? default_val : val;
+};
 
-var COMMON_DATA = {
-	getState: function(key, default_val, type){ return default_val;},
-	setState: function(key, val){},
-	page_state_key: null,
-	init : null
+Util.setState = function(key, val){
+	var page_state = Util.page_state;
+	var old_val = page_state[key];
+	if(val === old_val) return;
+	if(val === undefined){
+		delete page_state[key];
+	} else {
+		page_state[key] = val;
+	}
+
+	history.replaceState( page_state, '' );
+	Util.saveStorage(page_state);
 };
 
 
@@ -197,33 +216,67 @@ new function(){
 	// 初期化
 	function init(){
 		document.removeEventListener('DOMContentLoaded', init, false);
-		if(COMMON_DATA.init) {
-			Util.initAdditional(COMMON_DATA.init(E('view_control')), Util.page_state);
+
+		// 利用者 表示設定
+		var page_state = (JSON && get_state()) // setup saveStorage
+		Util.page_state = page_state = history.state || page_state || Util.page_state;
+
+		var classList = document.body.classList;
+
+		if(page_state.show_original){
+			classList.toggle('show-original');
+		}
+		if(page_state.side_menu){
+			classList.toggle('side-menu');
+		}
+		if(classList.contains('_expanded')){
+			// ページは展開状態で保存されている
+			PAGE_DATA.expanded = true;
+			repeat('._hide_if_expanded', function(e){
+				e.style.display = 'none';
+			});
+		} else {
+			Util.ready();
+			classList.add('_expanded');
+		}
+		Util.initAdditional();
+	}
+
+	// 表示状態を sessionStorage から読み込む
+	function get_state(){
+		var page_state = null;
+		var storage_key = null;
+
+		storage_key = PAGE_DATA.page_state_key || window.location.pathname;
+		try {
+// sessionStorage property へのアクセスのみでも security error になることがある
+			page_state = sessionStorage.getItem(storage_key);
+			Util.saveStorage = function(data){
+				sessionStorage.setItem(storage_key, JSON.stringify(data));
+			};
+			if(! page_state || (page_state.length > 1000)) return;
+			page_state = JSON.parse(page_state);
+		} catch(e){
+			console.log(e.message + ' failed sessionStorage.getItem');
+		}
+		if(page_state instanceof Object){
+			return page_state;
 		}
 	}
 }
 
 
-Util.initAdditional = function(options){
+Util.initAdditional = function(){
 	delete Util.initAdditional;
-
-	PAGE_DATA =
-	options = options || PAGE_DATA;
-
-	options.expanded = !!E('view_control');
-	if(options.expanded) {
-		// ページは展開状態で保存されている
-		repeat('._hide_if_expanded', function(e){
-			e.style.display = 'none';
-		});
-	} else {
-		if(options.toc){
+	if(!PAGE_DATA.expanded){
+		if(PAGE_DATA.toc){
 			// 目次構築
-			var toc_list = Util.buildTocList(E(options.main));// options.main
+			var toc_list = Util.buildTocList(E(PAGE_DATA.main));
 			toc_list.id = '_toc_list';
-			E(options.toc).appendChild(toc_list);
+			E(PAGE_DATA.toc).appendChild(toc_list);
 		}
 	}
+
 	if(PAGE_DATA.word_switch){
 		Util.DEFERRED.push(function(){
 			Util.word_switcher.init_toggle();
@@ -231,7 +284,6 @@ Util.initAdditional = function(options){
 	}
 ////
 	Util._COMP_ = true;
-
 }
 
 

@@ -25,31 +25,35 @@ function repeat(selector, callback, root){
 	}
 }
 
+var PAGE_DATA = {}; // see common1.js for possible members
+var COMMON_DATA = Object.create(null);
+
 // 予約済みメンバ
 var Util = {
 	_COMP_: false,
 	DEFERRED: [], // 遅延実行
 	initAdditional: EMPTY_FUNC,
-	content_generated: false,
+	getState: EMPTY_FUNC, // 状態保存
+	setState: EMPTY_FUNC,
 
 	getMapping: EMPTY_FUNC,
 	get_mapping: EMPTY_FUNC,
 	textData: EMPTY_FUNC,
 	getDataByLevel: EMPTY_FUNC,
 	get_header: EMPTY_FUNC,
-	supplyLinkFromText: EMPTY_FUNC,
 	dump: EMPTY_FUNC,
 	del_j: EMPTY_FUNC,
 
+	ready: EMPTY_FUNC,
 	rebuildToc: EMPTY_FUNC,
 	buildTocList: EMPTY_FUNC,
 
+// common0a.js にはなし
 	switchWordsInit: EMPTY_FUNC,
 	generateSource: EMPTY_FUNC,
 	replaceWords1: EMPTY_FUNC,
 	rxp_wordsX: null,
 	rxp_words1: null,
-
 	collectParts: EMPTY_FUNC,
 	replaceParts: EMPTY_FUNC,
 
@@ -77,6 +81,7 @@ var Util = {
 
 	XXXXX: EMPTY_FUNC
 };
+
 
 
 
@@ -162,22 +167,6 @@ Util.get_header = function(section){
 	)? header : null;
 };
 
-/* 単純な text -> リンク変換 
-用法:
-	repeat(selector, Util.supplyLinkFromText);
-*/
-Util.supplyLinkFromText = function(e){
-	var text = e.firstChild;
-	if(
-		text &&
-		(text.nodeType === Node.TEXT_NODE) &&
-		/^https?:\/\//.test(text.data)
-	) {
-		var a = C('a');
-		a.href = a.textContent = text.data;
-		e.replaceChild(a, text);
-	}
-};
 
 Util.collectParts = function(parts){
 	// 既定の収集器
@@ -235,34 +224,33 @@ Util.del_j = function(){
 			e.textContent = (e.textContent.match(/[ABC\d\.]+/) || '') + ' ' + text;
 		}
 	});
+	Util.DEFERRED.push(function(){
+		repeat('details', function(e){
+			e.open = true;
+		});
+	});
 };
 
 
-var PAGE_DATA = {}; // see common1.js for possible members
 
-var COMMON_DATA = {
-	// TODO move to Util
-	getState: function(key, default_val, type){
-		if(! (key in Util.page_state) ) return default_val;
-		var val = Util.page_state[key];
-		return (type && (typeof(val) !== type))? default_val : val;
-	},
-	setState: function(key, val){
-		var page_state = Util.page_state;
-		var old_val = page_state[key];
-		if(val === old_val) return;
-		if(val === undefined){
-			delete page_state[key];
-		} else {
-			page_state[key] = val;
-		}
+Util.getState = function(key, default_val, type){
+	if(! (key in Util.page_state) ) return default_val;
+	var val = Util.page_state[key];
+	return (type && (typeof(val) !== type))? default_val : val;
+};
 
-		history.replaceState( page_state, '' );
-		Util.saveStorage(page_state);
-	},
+Util.setState = function(key, val){
+	var page_state = Util.page_state;
+	var old_val = page_state[key];
+	if(val === old_val) return;
+	if(val === undefined){
+		delete page_state[key];
+	} else {
+		page_state[key] = val;
+	}
 
-	page_state_key: null,
-	init : null
+	history.replaceState( page_state, '' );
+	Util.saveStorage(page_state);
 };
 
 
@@ -301,53 +289,48 @@ new function(){
 		document.removeEventListener('DOMContentLoaded', init, false);
 
 		// 利用者 表示設定
-
 		var page_state = (JSON && get_state()) // setup saveStorage
-		Util.page_state =
-		page_state = history.state || page_state || Util.page_state;
+		Util.page_state = page_state = history.state || page_state || Util.page_state;
+
+		var classList = document.body.classList;
 
 		if(page_state.show_original){
-			document.body.classList.toggle('show-original');
+			classList.toggle('show-original');
 		}
 		if(page_state.side_menu){
-			document.body.classList.toggle('side-menu');
+			classList.toggle('side-menu');
 		}
-		if(COMMON_DATA.init) {
-			Util.initAdditional( COMMON_DATA.init(E('view_control')) );
+		if(classList.contains('_expanded')){
+			// ページは展開状態で保存されている
+			PAGE_DATA.expanded = true;
+			repeat('._hide_if_expanded', function(e){
+//				e.parentNode.removeChild(e);
+				e.style.display = 'none';
+			});
+		} else {
+			Util.ready();
+			classList.add('_expanded');
 		}
+		Util.initAdditional();
 	}
 
-	// 表示状態を DOM Storage / hidden field から読み込む
+	// 表示状態を sessionStorage から読み込む
 	function get_state(){
 		var page_state = null;
 		var storage_key = null;
 
-		storage_key = COMMON_DATA.page_state_key || window.location.pathname;
+		storage_key = PAGE_DATA.page_state_key || window.location.pathname;
 		try {
 // sessionStorage property へのアクセスのみでも security error になることがある
 			page_state = sessionStorage.getItem(storage_key);
 			Util.saveStorage = function(data){
 				sessionStorage.setItem(storage_key, JSON.stringify(data));
 			};
-		} catch(e){
-			// おそらく 'file://' scheme — hidden field から読み取りを試行
-			console.log(e.message + ' failed sessionStorage.getItem');
-			var elem = E('_page_config');
-			if(!elem) return;
-
-			page_state = elem.value;
-			Util.saveStorage = function(data){
-				elem.value = JSON.stringify(data);
-			};
-		}
-
-		if(! page_state || (page_state.length > 1000)) return;
-		try {
+			if(! page_state || (page_state.length > 1000)) return;
 			page_state = JSON.parse(page_state);
-		} catch(e) {
-			return;
+		} catch(e){
+			console.log(e.message + ' failed sessionStorage.getItem');
 		}
-
 		if(page_state instanceof Object){
 			return page_state;
 		}
@@ -355,19 +338,9 @@ new function(){
 }
 
 
-Util.initAdditional = function(options){
+Util.initAdditional = function(){
 	delete Util.initAdditional;
-
-	PAGE_DATA = options = ( options || PAGE_DATA );
-
-	options.expanded = !!E('view_control');
-	if(options.expanded) {
-		// ページは展開状態で保存されている
-		repeat('._hide_if_expanded', function(e){
-//			e.parentNode.removeChild(e);
-			e.style.display = 'none';
-		});
-	} else {
+	if(!PAGE_DATA.expanded) {
 		window.setTimeout(navToInit, 50);
 	}
 
@@ -399,14 +372,16 @@ Util.initAdditional = function(options){
 			if(!hash) return;
 
 			var id = hash.slice(1);
-			if(id.indexOf('_xref') === 0) return; // 生成リンク
+			if(id.indexOf('_xref') === 0) return; // 生成リンク（ common1.js ）
 
 			var prefix = PAGE_DATA.ref_id_prefix;
 			if(! ( ( prefix !== undefined ) && (id.indexOf(prefix) === 0) ) ){
 				// 生成された参照文献リンク
 				return id;
 			}
-			if(! Util.content_generated && E(id)) return; // ブラウザに任せる
+			if(! PAGE_DATA.expanded && E(id)){
+				return; // ブラウザに任せる
+			}
 			return id;
 		}
 
@@ -500,6 +475,7 @@ Util.buildTocList = function(root){
 /** 語彙切替／生成 */
 
 Util.switchWordsInit = function(source_data){
+	var header = document.getElementsByTagName('header')[0];
 
 	source_data.levels = source_data.levels.split(':');
 
@@ -551,18 +527,12 @@ Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
 	}
 
 	source_data.switchWords(
-		COMMON_DATA.getState('words', source_data.level, 'number')
+		Util.getState('words', source_data.level, 'number')
 	);
 
 	Util.DEFERRED.push(function(){
 		Util.create_word_switch(source_data);
 	});
-
-	var content_generated = E('_GENERATING');
-	if(content_generated){
-		content_generated.className = '_generated';
-		Util.content_generated = true;
-	}
 
 	// 内容生成完了
 	E(source_data.main || 'MAIN' ).style.display = '';
@@ -800,7 +770,7 @@ FETCH:Fetch-ja.html\n\
 SW:https://w3c.github.io/ServiceWorker/\n\
 FILEAPI:File_API-ja.html\n\
 STREAMS:Streams-ja.html\n\
-URLSpec:URL-ja.html\n\
+URL1:URL-ja.html\n\
 MIMESNIFF:https://mimesniff.spec.whatwg.org/\n\
 WEBIDL:WebIDL-ja.html\n\
 XHR:XHR-ja.html\n\
@@ -913,6 +883,7 @@ HEcanvas:https://html.spec.whatwg.org/multipage/canvas.html\n\
 HEtables:HTML-tables-ja.html\n\
 WEBSOCKET:WebSocket-ja.html\n\
 WORKERS:Workers-ja.html\n\
+WEBSTORAGE:WebStorage-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
 PROMISES:promises-guide-ja.html\n\
 TIMELINE:performance-timeline-ja.html\n\

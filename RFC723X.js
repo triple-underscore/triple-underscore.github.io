@@ -1,5 +1,6 @@
-
-COMMON_DATA.page_state_key = '___HTTP';
+Util.ready = function(){
+	source_data.init(PAGE_DATA.rfc_num);
+}
 
 var source_data = {
 	init: function(spec_num){
@@ -16,6 +17,11 @@ var source_data = {
 		this.level = 3;
 
 		Util.switchWordsInit(source_data);
+
+		/* 展開状態で保存されたページがこの script を読み込まないようにする */
+		repeat('script[src="RFC723X.js"]', function(e){
+			e.parentNode.removeChild(e);
+		});
 	},
 
 	html: '',
@@ -839,7 +845,6 @@ HTTP1x: HTTP/1.x \n\
 close_:"<code>close</code>" \n\
 IETF-org: “IETF (iesg@ietf.org) — Internet Engineering Task Force” \n\
 共通頁:RFC723X 共通ページ\n\
-HTTP11-abbr:<abbr title="Hypertext Transfer Protocol (version 1.1)">HTTP/1.1</abbr>\n\
 Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け</h2><p class="trans-note">【この節の内容は、著作権の告知も含め，<a href="RFC723X-ja.html#status">RFC723X 共通ページ</a>に委譲。】</p></section>\n\
 ',
 

@@ -10,8 +10,12 @@ CLICK_HANDLERS
 
 /** 付帯機能 初期化
 PAGE_DATA member
+	expanded:
+		ページは展開状態で保存されている
 	spec_status:
-		ED, REC, etc.
+		ED, REC, LS, etc.
+	trans_update:
+		和訳更新日（ YYYY-MM-DD ）
 	original_url:
 		原文 URL
 	original_urls:
@@ -30,12 +34,14 @@ PAGE_DATA member
 		どの dfn の id も原文にはないならば true
 	fill_text_link: （選択子）
 		要素内容の text を URL としてリンクを作成させる
-	expanded:
-		page は展開状態で保存されている
 	ref_id_lowercase
 		参照文献の id は小文字化
 	ref_id_prefix
 		'biblio-' etc.
+	site_nav
+		他の一覧へのナビゲーション用キーワードリスト
+	nav_prev／nav_next
+		前／次のページへのリンク（ HTML 用
 */
 
 
@@ -79,8 +85,7 @@ new function(){
 		Util.toggleSource(event.target);
 	}
 	function onClick(event){
-		var that = Util;
-		var handlers = that.CLICK_HANDLERS;
+		var handlers = Util.CLICK_HANDLERS;
 		var target = event.target;
 		var handler = handlers[target.id];
 		if(handler){
@@ -92,7 +97,17 @@ new function(){
 		case 0:// IE11 event.detail == 0?
 		case 1:
 			for(var e = target; e; e = e.parentNode){
-				if(e.tagName in that.CONTAINER_TAGS) break;
+				if(e.tagName in Util.CONTAINER_TAGS){
+					if( e.tagName === 'BODY' ){
+						// 両端 click でも原文開閉（ touch 用
+						var e1 = document.elementFromPoint(
+							window.innerWidth /2, event.clientY);
+						if(e1){
+							Util.toggleSource(e1);
+						}
+					}
+					break;
+				}
 				// consider to use Element.matches()/matchesSelector()
 				var handler = handlers[e.tagName];
 				if(handler){
@@ -103,11 +118,11 @@ new function(){
 			break;
 		}
 		// default
-		that.removeAdditionalNodes();
+		Util.removeAdditionalNodes();
 
 /*
 	case 2:
-		that.toggleSource(target);
+		Util.toggleSource(target);
 		break;
 */
 	}
@@ -117,7 +132,10 @@ new function(){
 Util.fillMisc = function(){
 	var options = PAGE_DATA;
 	if(options.expanded) return;
-
+	// サイトナビ
+	fillSiteNav(options);
+	// 和訳メタデータ
+	fillTransMetadata(options);
 	// 仕様メタデータ
 	fillSpecMetadata(options);
 	// Copyright
@@ -126,37 +144,15 @@ Util.fillMisc = function(){
 	COMMON_DATA.addAltRefs();
 	// ボタン類
 	addControls(options);
-	// auto-fill url text
-	if(options.fill_text_link){
-		repeat(options.fill_text_link, Util.supplyLinkFromText);
-	}
-
-	initAside(options);
+	// 左端の帯
 	initSideway(options);
 	return;
-
-	function initAside(options){
-		var e;
-		if(e = E('_SPEC_URL')){
-			e.href = options.original_url || '';
-		}
-		if(e = E('_THIS_PAGE')){
-			e.href =
-				'https://triple-underscore.github.io/' +
-				window.location.pathname.match(/[^\/]+$/)[0];
-	//		e.textContent = 'このページ';
-		}
-		if(e = E('_CONTACT')){
-			e.innerHTML = '誤訳その他ご指摘／ご意見は<a href="https://triple-underscore.github.io/about.html">連絡先</a>まで。'
-		}
-	}
 
 	function initSideway(options){
 		var key = options.spec_status;
 		if(!key) return;
 
 		var text = {
-
 WD: 'W3C Working Draft',
 ED: 'W3C Editor’s Draft',
 EDCG: 'W3C Community Group Draft Report',
@@ -171,7 +167,7 @@ IETFPR: 'IETF PROPOSED STANDARD'
 
 		var color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', LS: 'green' }[key];
 		var div = C('div');
-		div.id = 'sideways-logo';
+		div.id = '_sideways-logo';
 		if(color) div.style.background = color;
 		div.textContent = text;
 		document.body.appendChild(div);
@@ -179,7 +175,7 @@ IETFPR: 'IETF PROPOSED STANDARD'
 
 	function addControls(options){
 		var controls = C('div');
-		controls.id = 'view_control';
+		controls.id = '_view_control';
 		// controls.onmouseover = function(GUI 作成) ... accesskey はどうする？
 		add_button('　　目次　　', 'A', '_toggle_toc');
 		if(!options.no_index){
@@ -213,13 +209,133 @@ IETFPR: 'IETF PROPOSED STANDARD'
 		}
 	}
 
-	function fillSpecMetadata(){
+	function fillSiteNav(options){
+		var nav = C('nav');
+
+		var html = ['<ul id="_site_nav">'];
+		var href;
+		if(href = findMatch(options.nav_prev)){
+			html.push('<li><a href="' + href + '">＜前</a>');
+		}
+		if(href = findMatch(options.nav_next)){
+			html.push('<li><a href="' + href + '">次＞</a>');
+		}
+		var name_map = Util.get_mapping('\n\
+infrastructure:基盤\n\
+svg:SVG\n\
+html:HTML\n\
+comms:メッセージ通信\n\
+browsers:ナビと閲覧\n\
+storage:ストレージ\n\
+uievents:イベント／UX\n\
+network:ネットワーク\n\
+http:HTTP\n\
+security:セキュリティ\n\
+performance:計時\n\
+css:CSS\n\
+css-UX:CSS UX\n\
+css-anim:アニメーションと変形\n\
+typeset:テキスト組版\n\
+layout:レイアウト一般\n\
+layouts:レイアウト個別\n\
+paint:画像-色-塗り\n\
+selector:選択子\n\
+XML:XML\n\
+'
+		);
+		var label_map = {
+___CSS: 'css,html',
+___HTML: 'html,css',
+webappsec: 'security,network',
+___TIMING: 'performance,network',
+PERFORMANCE: 'performance,network',
+___HTTP: 'http,network,security',
+'___UI-EVENTS': 'uievents,css-UX,HTML',
+		};
+		var href_map = {
+http: 'RFC723X-ja.html#index',
+		};
+		var site_nav = options.site_nav;
+		if(!site_nav){
+			site_nav = options.page_state_key ? label_map[options.page_state_key] : '';
+		}
+		if(!site_nav) site_nav = 'infrastructure';
+		site_nav.split(',').forEach(function(label){
+			var name = name_map[label];
+			if(!name) return;
+			var href = href_map[label] || ('index.html#spec-list-' + label);
+			html.push('<li><a href="' + href + '">' + name +'</a>');
+		});
+		html.push('<li><a href="index.html#page-list">すべて</a>')
+		html.push('</ul>');
+		nav.innerHTML = html.join('');
+		document.body.insertBefore(nav, document.body.firstChild);
+		
+		function findMatch(name){
+			if(!name) return;
+			if(name.slice(-5) === '.html') return name;
+			var data = COMMON_DATA.SYMBOLS;
+			if(!data) return;
+			var i = data.indexOf('\n' + name + ':' );
+			if(i < 0) return;
+			i += name.length + 2;
+			var j = data.indexOf('\n', i);
+			if(j < 0) return;
+			data = data.slice(i,j);
+			if(data.slice(-5) !== '.html') return;
+			return data;
+		}
+	}
+
+	function fillTransMetadata(options){
+		var details = E('_trans-metadata');
+		if(!details) return;
+		details.id = '_trans_metadata';
+		var summary = details.firstElementChild;
+		if(summary){
+			var summary_html = [
+'<strong>',
+'この日本語訳',
+'は非公式な文書です…</strong>',
+'',
+			];
+			var url = window.location.pathname.match(/[^\/]+$/)[0];
+			if(url) summary_html[1] =
+'<a href="https://triple-underscore.github.io/' + url + '">この日本語訳</a>';
+			if(options.trans_update) summary_html[3] =
+'（翻訳更新：<time>' + options.trans_update + '</time> ）';
+			summary.innerHTML = summary_html.join('');
+		}
+
+		if(options.original_url){
+			var e1 = E('_SPEC_URL')
+			if(e1)
+				e1.href = options.original_url;
+		}
+
+		var extra_data = '\
+<li><strong>この翻訳の正確性は保証されません。</strong>\
+<li>【 と 】で括られた部分は<span class="trans-note">【訳者による注釈】</span>です。\
+<li><a href="index.html#functions">各ページに共通の機能</a>も参照されたし（左下隅の表示切替ボタンなど）。\
+<li>誤訳その他ご指摘／ご意見は<a href="https://triple-underscore.github.io/about.html">連絡先</a>まで。\
+'
+		var ul = C('ul');
+		ul.style.fontSize = 'smaller'
+		ul.innerHTML = extra_data;
+		details.appendChild(ul);
+	}
+
+	function fillSpecMetadata(options){
 		var e = E('_spec-metadata');
 		if(!e) return;
 //e.parentNode.open = true;
 		var dl = C('dl');
 		e.parentNode.insertBefore(dl, e);
-		dl.innerHTML = Util.textData(e)
+		var data = Util.textData(e);
+		if(options.original_url){
+			data = '\nこのバージョン（原文 URL ）\n\t' + options.original_url + '\n' + data;
+		}
+		dl.innerHTML = data
 			.replace(/\n\S.+/g, '\n<dt>$&<dt>')
 			.replace(/\n[ \t]+(https?:\S+)/g, '\n<dd><a href="$1">$1</a><dd>')
 			.replace(/\n[ \t]+(.+)/g, '<dd>$1<dd>');
@@ -277,7 +393,7 @@ Util.CONTAINER_TAGS = {
 Util.CLICK_HANDLERS = {
 //	_toggle_source:
 //	_toggle_toc:
-//	view_control:
+//	_view_control:
 //	_toggle_index 用語索引 
 
 //	_toggle_words
@@ -288,7 +404,7 @@ Util.CLICK_HANDLERS = {
 Util.CLICK_HANDLERS._toggle_source = function(){
 	Util.switchView(function(){
 		var on = document.body.classList.toggle('show-original');
-		COMMON_DATA.setState('show_original', on);
+		Util.setState('show_original', on);
 	});
 };
 /** 目次表示切替 */
@@ -296,12 +412,12 @@ Util.CLICK_HANDLERS._toggle_toc = function(){
 	Util.switchView(function(){
 		var on = document.body.classList.toggle('side-menu');
 		Util.ref_position.releaseAndFix()
-		COMMON_DATA.setState('side_menu', on);
+		Util.setState('side_menu', on);
 	});
 };
 /** 全体表示 常時化切替 */
-Util.CLICK_HANDLERS.view_control = function(event){
-	var e = E('view_control');
+Util.CLICK_HANDLERS._view_control = function(event){
+	var e = E('_view_control');
 	if(event.target !== e) return;
 	e.classList.toggle('_hoverd')
 };
@@ -348,7 +464,7 @@ Util.create_word_switch = function(source_data){
 	}
 
 	check_level();
-	E('view_control').appendChild(w_switch);
+	E('_view_control').appendChild(w_switch);
 //	this.CONTROL_UI.appendChild(w_switch);
 
 	w_switch.onclick = function(event){
@@ -364,7 +480,7 @@ Util.create_word_switch = function(source_data){
 		Util.switchView(function(){
 			source_data.switchWords(level);
 		}, true);
-		COMMON_DATA.setState('words', source_data.level);
+		Util.setState('words', source_data.level);
 
 		if(auto){
 			check_level();
@@ -673,7 +789,7 @@ Util.dfnInit = function(){
 //	var dfnTargetScrollPositionY = 0;
 
 	var dfnPanel = C('div');
-		dfnPanel.id = 'dfnPanel';
+		dfnPanel.id = '_dfnPanel';
 		dfnPanel.innerHTML =
 			'<div><input type="button" value="←"/><input type="button" value="→"/><a></a><a class="_additional">(原文)</a></div><ul></ul>';
 		// a link to dfnStart
