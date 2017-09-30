@@ -340,63 +340,9 @@ new function(){
 
 Util.initAdditional = function(){
 	delete Util.initAdditional;
-	if(!PAGE_DATA.expanded) {
-		window.setTimeout(navToInit, 50);
-	}
 
 ////
 	Util._COMP_ = true;
-
-
-/** 内容生成／load 後に素片識別子のアンカーにジャンプ */
-	function navToInit(){
-		if( history.state ) return; // back/forward
-
-		var id = targetId();
-		if(!id) return;
-		var id = targetId1(id) || id;
-
-		var e = E(id);
-		if(e){
-// html.spec.whatwg.org/multipage/history.html#location-object-setter-navigate
-			window.location.hash = e.id;
-			if(! e.hasAttribute('tabIndex')){
-				e.tabIndex = 0;
-			}
-			e.focus();
-		}
-		history.replaceState( Util.page_state, '' );
-
-		function targetId(){
-			var hash = window.location.hash;
-			if(!hash) return;
-
-			var id = hash.slice(1);
-			if(id.indexOf('_xref') === 0) return; // 生成リンク（ common1.js ）
-
-			var prefix = PAGE_DATA.ref_id_prefix;
-			if(! ( ( prefix !== undefined ) && (id.indexOf(prefix) === 0) ) ){
-				// 生成された参照文献リンク
-				return id;
-			}
-			if(! PAGE_DATA.expanded && E(id)){
-				return; // ブラウザに任せる
-			}
-			return id;
-		}
-
-		function targetId1(id){
-			// 訳文id:原文id （先頭の \t も有効）
-			var e = E('_original_id_map');
-			if(!e) return;
-			var id_map_text = Util.textData(e, {keep: true});
-			id = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			var rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
-			var match = Util.textData('_original_id_map').match(rxp);
-			if(!match) return;
-			return match[1];
-		}
-	}
 }
 
 

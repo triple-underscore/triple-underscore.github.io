@@ -42,6 +42,8 @@ PAGE_DATA member
 		他の一覧へのナビゲーション用キーワードリスト
 	nav_prev／nav_next
 		前／次のページへのリンク（ HTML 用
+	original_id_map
+		訳文 id → 原文 id との対応（文字列データ
 */
 
 
@@ -59,10 +61,11 @@ new function(){
 		document.body.addEventListener('click', onClick, false);
 		document.body.addEventListener('dblclick', onDblClick, false);
 
-		Util.fillMisc();
-		Util.dfnInit();
-//		Util.contextMenuInit();
+		PAGE_DATA.original_id_map = Util.textData('_original_id_map');
 
+		Util.fillMisc();
+		navToInit();
+		Util.dfnInit();
 		Util.altLinkInit();
 
 		document.addEventListener('visibilitychange', onVisibilityChange, false);
@@ -80,6 +83,42 @@ new function(){
 			Util.removeAdditionalNodes();
 		}
 	}
+
+	function navToInit(){
+/** 内容生成後に素片識別子のアンカーへスクロールする */
+		if( history.state ){
+			return; // back/forward
+		}
+
+		var e;
+		var id = window.location.hash;
+		if(id){
+			id = id.slice(1);
+			if(id.indexOf('_xref-') === 0) return; // 生成リンク（ common1.js ）
+			id = targetId1(id) || id;
+			e = E(id);
+		}
+		if(!e) return;
+
+// html.spec.whatwg.org/multipage/history.html#location-object-setter-navigate
+		window.location.hash = e.id;
+		if(! e.hasAttribute('tabIndex')){
+			e.tabIndex = 0;
+		}
+		e.focus();
+
+		history.replaceState( Util.page_state, '' );
+
+		function targetId1(id){
+			// 訳文id:原文id （先頭の \t も有効）
+			id = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			var rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
+			var match = PAGE_DATA.original_id_map.match(rxp);
+			if(!match) return;
+			return match[1];
+		}
+	}
+
 
 	function onDblClick(event){
 		Util.toggleSource(event.target);
@@ -797,15 +836,7 @@ Util.dfnInit = function(){
 		// link to the corresponding element in the original spec
 	var dfnOriginal = dfnTarget.nextElementSibling;
 
-	var original_id_map;
-
-	new function(){
-		var e = E('_original_id_map');
-		original_id_map = e ?
-			Util.getMapping(e, {keep: true}) :
-			Object.create(null)
-		;
-	}
+	var original_id_map = Util.get_mapping(PAGE_DATA.original_id_map);
 
 	new function(){
 
