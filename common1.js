@@ -263,6 +263,7 @@ IETFPR: 'IETF PROPOSED STANDARD'
 infrastructure:基盤\n\
 svg:SVG\n\
 html:HTML\n\
+html-dom:HTML 要素\n\
 comms:メッセージ通信\n\
 browsers:ナビと閲覧\n\
 storage:ストレージ\n\
@@ -284,7 +285,7 @@ XML:XML\n\
 		);
 		var label_map = {
 ___CSS: 'css,html',
-___HTML: 'html,css',
+___HTML: 'html-dom,html,css',
 webappsec: 'security,network',
 ___TIMING: 'performance,network',
 PERFORMANCE: 'performance,network',
