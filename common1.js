@@ -273,7 +273,7 @@ http:HTTP\n\
 security:セキュリティ\n\
 performance:計時\n\
 css:CSS\n\
-css-UX:CSS UX\n\
+css-ux:CSS UX\n\
 css-anim:アニメーションと変形\n\
 typeset:テキスト組版\n\
 layout:レイアウト一般\n\
@@ -290,7 +290,7 @@ webappsec: 'security,network',
 ___TIMING: 'performance,network',
 PERFORMANCE: 'performance,network',
 ___HTTP: 'http,network,security',
-'___UI-EVENTS': 'uievents,css-UX,HTML',
+'___UI-EVENTS': 'uievents,css-ux,html',
 		};
 		var href_map = {
 http: 'RFC723X-ja.html#index',
