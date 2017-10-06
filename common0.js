@@ -25,7 +25,26 @@ function repeat(selector, callback, root){
 	}
 }
 
-var PAGE_DATA = {}; // see common1.js for possible members
+var PAGE_DATA = Object.create(null); 
+/* possible members:
+options:
+	see common1.js
+ref_normative:
+ref_informative:
+	参照文献データ
+original_id_map:
+	訳文 id → 原文 id
+link_map
+	keyword → リンク先
+spec_metadata
+	仕様メタデータ
+words_table:
+words_table1:
+	単語トークン → 単語
+
+*/
+
+// see common1.js for possible members
 var COMMON_DATA = Object.create(null);
 
 // 予約済みメンバ
@@ -47,10 +66,10 @@ var Util = {
 	ready: EMPTY_FUNC,
 	rebuildToc: EMPTY_FUNC,
 	buildTocList: EMPTY_FUNC,
+	parseSourceBlock: EMPTY_FUNC,
 
 // common0a.js にはなし
 	switchWordsInit: EMPTY_FUNC,
-	generateSource: EMPTY_FUNC,
 	replaceWords1: EMPTY_FUNC,
 	rxp_wordsX: null,
 	rxp_words1: null,
@@ -127,6 +146,28 @@ Util.textData = function(e, options){
 	}
 	return data;
 };
+
+Util.parseBlocks = function(source){
+//	var rxp = RegExp('(\n' + splitter + ').+');
+//	var source = Util.textData('_source_data');
+	var result = Object.create(null);
+	var name = '';
+	source.split(/(\n●●.*)/).forEach(function(block){
+		if(block.slice(0,3) === '\n●●'){
+			name = block.slice(3);
+			if(!name){
+				// blocks with empty name are treated as comments
+				return;
+			}
+			if(!(name in result)){
+				result[name] = '';
+			}
+		}else if(name){
+			result[name] += block;
+		}
+	});
+	return result;
+}
 
 
 /* 
@@ -281,12 +322,15 @@ new function(){
 }
 
 new function(){
-
 	document.addEventListener('DOMContentLoaded', init, false);
 
 	// 初期化
 	function init(){
 		document.removeEventListener('DOMContentLoaded', init, false);
+		Object.assign(PAGE_DATA, Util.parseBlocks(Util.textData('_source_data')));
+
+		var options =
+		PAGE_DATA.options = Util.get_mapping(PAGE_DATA.options || '');
 
 		// 利用者 表示設定
 		var page_state = (JSON && get_state()) // setup saveStorage
@@ -302,13 +346,14 @@ new function(){
 		}
 		if(classList.contains('_expanded')){
 			// ページは展開状態で保存されている
-			PAGE_DATA.expanded = true;
+			PAGE_DATA.options.expanded = true;
 			repeat('._hide_if_expanded', function(e){
 //				e.parentNode.removeChild(e);
 				e.style.display = 'none';
 			});
 		} else {
-			Util.ready();
+			Util.fillHeader()
+			Util.ready(PAGE_DATA);
 			classList.add('_expanded');
 		}
 		Util.initAdditional();
@@ -319,7 +364,7 @@ new function(){
 		var page_state = null;
 		var storage_key = null;
 
-		storage_key = PAGE_DATA.page_state_key || window.location.pathname;
+		storage_key = PAGE_DATA.options.page_state_key || window.location.pathname;
 		try {
 // sessionStorage property へのアクセスのみでも security error になることがある
 			page_state = sessionStorage.getItem(storage_key);
@@ -340,7 +385,6 @@ new function(){
 
 Util.initAdditional = function(){
 	delete Util.initAdditional;
-
 ////
 	Util._COMP_ = true;
 }
@@ -418,21 +462,110 @@ Util.buildTocList = function(root){
 }
 
 
-/** 語彙切替／生成 */
+Util.fillHeader = function(){
+	var options = PAGE_DATA.options;
+	var url = options.original_url || '';
+//	if(!url) return;
+	var isHTML = false;
+
+	var header = document.body.querySelector('header');
+	if(!header) return;
+	var hgroup = header.querySelector('hgroup');
+
+	fillLogoImage();
+	fillDate();
+	placeMetadata();
+
+	function fillDate(){
+		var date = options.spec_date;
+		if(!date) return;
+		if(!hgroup) return;
+
+		var m = date.match(/^(\d+)-0*(\d+)-0*(\d+)$/);
+		if(m){
+			date = 
+'<time datetime="' + date + '">' + m[1] + ' 年 ' + m[2] + ' 月 ' + m[3] + ' 日</time>';
+		}
+		var header_text;
+		if(isHTML) {
+			header_text = 'HTML Living Standard';
+		} else {
+			header_text = {
+WD: '作業草案',
+ED: '編集者草案',
+EDCG: 'W3C Community Group Draft Report',
+PR: '勧告案',
+CR: '勧告候補',
+REC: '勧告',
+NOTE: 'Working Group Note',
+LS: 'Living Standard',
+//IETFPR: 'IETF PROPOSED STANDARD'
+			}[options.spec_status] || '';
+		}
+
+		var html = '<h2>' + header_text + ' — ' + date + '</h2>';
+		hgroup.insertAdjacentHTML('beforeend', html);
+	}
+
+	function fillLogoImage(){
+		// logo 画像
+		var html;
+		var domain = url.match( /^https?:\/\/([\w\.\-]+)\// );
+		if(!domain) return;
+		switch(domain[1]){
+		case 'www.w3.org':
+		case 'w3c.github.io':
+		case 'drafts.csswg.org':
+			html = '<a href="https://www.w3.org/" id="_W3C">W3C</a>';
+			break;
+		case 'html.spec.whatwg.org':
+			html = '<a href="https://whatwg.org/" id="_WHATWG">WHATWG</a>';
+			isHTML = true;
+		default:
+			return;
+		}
+		header.insertAdjacentHTML('afterbegin', html);
+	}
+
+	// metadata 置き場
+	function placeMetadata(){
+		var html = 
+'<details id="_trans_metadata"><summary><strong>この日本語訳は非公式な文書です…</strong></summary></details>';
+		if(PAGE_DATA.spec_metadata){
+			html += 
+'<details id="_spec_metadata"><summary>仕様メタデータ</summary></details>';
+		}
+		if(options.copyright){
+			html += 
+'<details id="_copyright"><summary>©</summary></details>';
+		}
+		if(hgroup){
+			hgroup.insertAdjacentHTML('afterend', html);
+		} else {
+			header.insertAdjacentHTML('beforeend', html);
+		}
+	}
+}
+
+
+/** 語彙切替／ HTML 生成 */
 
 Util.switchWordsInit = function(source_data){
-	var header = document.getElementsByTagName('header')[0];
-
-	source_data.levels = source_data.levels.split(':');
+	source_data = source_data || {};
+	if(!source_data.generate) source_data.generate = Util.produce;
+	initLevels();
+	var main_id =
+	source_data.main_id = source_data.main_id || 'MAIN';
+	initHTML();
 
 	source_data.switchWords =  function(level){
-		level = Math.min(level & 0xF, this.levels.length);
+		level = Math.min(level & 0xF, this.levels.length - 1 );
 		var mapping = Util.get_mapping(
-Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
+Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
 			// 値の最後の文字が英数の場合は末尾にスペースを補填
 			.replace(/(\w)(?=\n)/g, '$1 ')
 			+ COMMON_DATA.SYMBOLS
-			+ get_data('words_table1')
+			+ ( PAGE_DATA.words_table1 || '')
 		);
 
 		var parts = this.persisted_parts;
@@ -445,7 +578,10 @@ Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
 			});
 		}
 
-		this.generate(mapping);
+		generateHTML(mapping);
+		if( source_data.populate ){
+			source_data.populate();
+		}
 
 		var parts = this.persisted_parts;
 		if(parts){
@@ -460,9 +596,7 @@ Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
 				}
 			});
 		}
-		if(this.toc_main){
-			createToc(this.toc_main);
-		}
+		createToc(this.toc_main);
 		this.level = level;
 	}
 
@@ -472,27 +606,134 @@ Util.getDataByLevel( COMMON_DATA.WORDS + get_data('words_table'), level)
 		source_data.persisted_parts = parts;
 	}
 
-	source_data.switchWords(
-		Util.getState('words', source_data.level, 'number')
-	);
+	source_data.switchWords(source_data.level);
 
 	Util.DEFERRED.push(function(){
 		Util.create_word_switch(source_data);
 	});
 
 	// 内容生成完了
-	E(source_data.main || 'MAIN' ).style.display = '';
+	E(main_id).style.display = '';
 return;
 
-	function get_data(id){
-		if(id in source_data) return source_data[id];
-		//textData
-		var e = id && E(id);
-		return (e && e.textContent) || '';
+
+	function initLevels(){
+		var levels = source_data.levels;
+		if(!levels){
+			switch(PAGE_DATA.options.page_state_key){
+			case 'CSS':
+			case 'TIMING' :
+				levels = '英語主体:英語寄り:漢字主体:カナ主体';
+				break;
+			case 'HTML' :
+			default:
+				levels = 'ほぼ英語:英語主体:漢字+英語:漢字主体:カナ主体';
+			}
+		}
+		levels = 
+		source_data.levels = levels.split(':');
+		if(levels.length === 0) levels = ['-'];
+		var level = source_data.level;
+		if(!level) {
+			level = [0,1,1,2,2,3,3,4,4,5,5][levels.length] || 0;
+		}
+		level = Util.getState('words', level, 'number')
+		source_data.level = Math.min( level & 0xF, levels.length - 1 );
+	}
+
+	function initHTML(){
+		if(PAGE_DATA.link_map){
+			source_data.link_map = Util.get_mapping(PAGE_DATA.link_map);
+			delete PAGE_DATA.link_map;
+		}
+
+		var html = E(main_id).innerHTML;
+		// 前処理：英文を抽出して placeholder に置換など
+		var en_list = source_data.en_text_list = [
+'</span>', // \uE000
+'<span lang="en">', // \uE001
+'<span class="trans-note">', // \uE002
+'<span class="block">', // \uE003
+'<span class="block preline">', // \uE004
+	// see PREMAP
+'<td>', // \uE005
+'<td class="prod">', // \uE006
+'<tr><th>', // \uE007
+'<tbody><tr><th>', // \uE008
+'</tbody></table>', // \uE009
+'<table class="propdef">', // \uE00A
+'<table class="descdef">', // \uE00B
+'<table class="eventdef">' // \uE00C
+		];
+		var nesting = '';
+		var nesting1;
+		var result;
+		var premap = Util.get_mapping(COMMON_DATA.PREMAP);
+
+		html = 
+		source_data.html = html.replace(
+		/◎([\u0080-\uFFFF]\S*|[^<◎]+)|【.*?】|⇒＃?\s*|<\/(?:li|p|dd|div|th|td)\b/g,
+		// 一-鿆ア-ン
+		// ⇒|⇒＃を中で利用するタグはこれらのみ（ ... figcaption|blockquote|pre ）
+		// U+E000.., 私用領域（ likely never be used in the specs.
+		// up to 24bit 4096 items
+
+		function f(match, cap1){
+			switch(match[0]){
+			case '◎':
+				if(match.charCodeAt(1) < 0x80){
+					// english text
+					en_list.push( cap1.trim() );
+					nesting1 = nesting;
+					nesting = '';
+					return (
+						nesting1
+						+ '\uE001'
+						+ ( String.fromCharCode(0xE000 + en_list.length - 1 ) )
+						+ '\uE000'
+					);
+				} else {
+					// PREMAP
+					cap1 = premap[cap1];
+					if(!cap1) {
+						console.log('Undefined PREMAP symbol: ' + match );
+						return '＊' + match;
+					}
+					return cap1;
+	//				return premap[cap1] || '＊';
+				}
+				
+			case '【':
+				return '\uE002' + match + '\uE000';
+				// TODO: 【\t で開始するならば <p> 用バージョン 等々
+			case '⇒':
+				nesting += '\uE000';
+				return ( match[1] === '＃' )? '\uE004' : '\uE003';
+			case '<':
+				nesting1 = nesting;
+				nesting = '';
+				return nesting1 + match;
+			}
+		});
+		if(en_list.length >= 4096 ){
+			console.log('Error: Too many lang="en" items.');
+		}
+	}
+
+	function generateHTML(words_mapping){
+		var html = source_data.html;
+		var en_list = source_data.en_text_list;
+
+		E(main_id).innerHTML = Util
+		.replaceWords1(source_data.generate(), words_mapping)
+		.replace(/[\uE000-\uEFFF]/g, function(match){
+			return en_list[match.charCodeAt(0) - 0xE000];
+		});
 	}
 
 	function createToc(id){
-		var root = E(id);
+		var root = E(id || 'MAIN0'); // default toc
+		if(!root) return;
 		var nav = E('_toc');
 		if(nav){
 			nav.textContent = '';
@@ -515,67 +756,7 @@ return;
 	}
 }
 
-Util.generateSource = function(source_data, words_mapping, createHTML){
-	var en_list = source_data.en_text_list;
-	if(!en_list){
-		// 前処理：英文を抽出して placeholder に置換など
-		source_data.en_text_list = en_list = [''];
-		var found_nesting = false;
 
-		source_data.html = source_data.html.replace(
-		/◎([^<◎]*)|【.*?】|⇒＃?\s*|<\/(li|p|dd|div|th|td)\b/g,
-		// ⇒を中で利用するタグはこれらのみ（ ... figcaption|blockquote|pre ）
-
-		// U+E000.., 私用領域（ likely never be used in the specs.
-
-		function f(match, en_text){
-			if(en_text) {
-				en_list.push( en_text.trim() );
-				found_nesting = false;
-				return String.fromCharCode(0xE000 + en_list.length - 1 )
-			}
-			switch(match[0]){
-			case '【':
-				return '<span class="trans-note">' + match + '</span>';
-				// TODO: 【\t で開始するならば <p> 用バージョン 等々
-			case '⇒':
-				found_nesting = true;
-				return match[1] === '＃' ? '\uEFFD': '\uEFFE'
-			case '<':
-				if(found_nesting) {
-					found_nesting = false;
-					return '\uEFFF' + match;
-				}
-				return match;
-				break;
-			}
-		});
-	}
-	var nesting = '';
-	return Util
-	.replaceWords1(createHTML(source_data.html), words_mapping)
-	.replace(/[\uE000-\uEFFF]/g, function(match){
-		switch(match){
-		case '\uEFFD':
-			nesting += '</span>';
-			return '：<span class="block preline">';
-		case '\uEFFE':
-			nesting += '</span>';
-			return '：<span class="block">';
-		case '\uEFFF': 
-			var result = nesting;
-			nesting = '';
-			return result;
-		default: // ◎
-			var result = en_list[match.charCodeAt(0) - 0xE000];
-			if(!result) return '';
-			// merge english text
-			var result = nesting + '<span lang="en">' + result + '</span>';
-			nesting = '';
-			return result;
-		}
-	});
-}
 
 Util.rxp_wordsX = /\b ((?:<\/[^>]*>)+)|([\u2E80-\u9FFF])(?=(<\w[^>]*>)*\w)/g;
 
@@ -641,6 +822,76 @@ Util.replaceWords1 = function(data, mapping){
 	.replace(this.rxp_wordsX, '$1$2 ');
 };
 
+COMMON_DATA.PREMAP = '\n\
+名:\uE00A\uE008名前\uE005\n\
+述:\uE00B\uE008\uE007名前\uE005\n\
+対:\uE007~For\uE005\n\
+値:\uE007<a href="css-values-ja.html#value-defs">値</a>\uE006\n\
+新値:\uE007新たに定義される値\uE006\n\
+新初:\uE007新たに定義される初期値\uE005\n\
+新算:\uE007新たに定義される算出値\uE005\n\
+初:\uE007初期値\uE005\n\
+適:\uE007適用対象\uE005\n\
+継:\uE007継承-\uE005\n\
+百:\uE007百分率\uE005\n\
+媒:\uE007媒体\uE005\n\
+算:\uE007算出値\uE005\n\
+順:\uE007正準的順序\uE005\n\
+ア:\uE007~animation\uE005\n\
+型:\uE007型\uE005\n\
+表終:\uE009\n\
+イ型:\uE00C\uE008型\uE005\n\
+界面:\uE007~interface\uE005\n\
+同期:\uE007同期？\uE005\n\
+浮上:\uE007浮上-？\uE005\n\
+標的:\uE007標的\uE005\n\
+取消:\uE007取消可？\uE005\n\
+構:\uE007Composed？\uE005\n\
+既定動作:\uE007既定~動作\uE005\n\
+文脈:\uE007文脈~情報\uE005\n\
+';
+
+/*
+	CSS propdef
+
+For:用途
+名:<table class="propdef"><tbody><tr><th>名前<td>
+述:<table class="descdef"><tbody><tr><th>名前<td>
+対:<tr><th>用途<td>
+値:<tr><th><a href="css-values-ja.html#value-defs">値</a><td class="prod">
+新値:<tr><th>新たに定義される値<td class="prod">
+新初:<tr><th>新たに定義される初期値<td>
+新算:<tr><th>新たに定義される算出値<td>
+初:<tr><th>初期値<td>
+適:<tr><th>適用対象<td>
+継:<tr><th>継承-<td>
+百:<tr><th>百分率<td>
+媒:<tr><th>媒体<td>
+算:<tr><th>算出値<td>
+順:<tr><th>正準的順序<td>
+ア:<tr><th>~animation<td>
+型:<tr><th>型<td>
+表終:</tbody></table>
+
+	UIEVENTS CSS eventdef
+イ型:<table class="eventdef"><tbody><tr><th>型<td>
+界面:<tr><th>~interface<td>
+同期:<tr><th>同期？<td>
+浮上:<tr><th>浮上-？<td>
+標的:<tr><th>標的<td>
+取消:<tr><th>取消可？<td>
+構:<tr><th>Composed？<td>
+既定動作:<tr><th>既定~動作<td>
+文脈:<tr><th>文脈~情報<td>
+
+*/
+
+
+/*
+AND:<b>∧</b>\n\
+OR:<b>∨</b>\n\
+*/
+
 COMMON_DATA.SYMBOLS = '\n\
 THROW:<b>THROW</b>\n\
 WHILE:<b>WHILE</b>\n\
@@ -689,20 +940,6 @@ UNSPECIFIED:<span class="trans-note">【…未策定】</span>\n\
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>\n\
 INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This section is non-normative.</span></p>\n\
 FINGERPRINTING:<a class="fingerprinting" href="HTML-infrastructure-ja.html#fingerprinting-vector"></a>\n\
-●名:<table class="propdef"><tbody><tr><th>名前<td>\n\
-●述:<table class="descdef"><tbody><tr><th>名前<td>\n\
-●対:<tr><th>~For<td>\n\
-●値:<tr><th><a href="css-values-ja.html#value-defs">値</a><td class="prod">\n\
-●新値:<tr><th>新たに定義される値<td class="prod">\n\
-●初:<tr><th>初期値<td>\n\
-●適:<tr><th>適用対象<td>\n\
-●継:<tr><th>継承-<td>\n\
-●百:<tr><th>百分率<td>\n\
-●媒:<tr><th>媒体<td>\n\
-●算:<tr><th>算出値<td>\n\
-●順:<tr><th>正準的順序<td>\n\
-●ア:<tr><th>~animation<td>\n\
-●表終:</tbody></table>\n\
 SPECBUGS:https://www.w3.org/Bugs/Public/show_bug.cgi\n\
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>\n\
 TR:https://www.w3.org/TR\n\

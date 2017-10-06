@@ -9,41 +9,40 @@ CLICK_HANDLERS
 /******** 付帯機能 *********/
 
 /** 付帯機能 初期化
-PAGE_DATA member
-	expanded:
-		ページは展開状態で保存されている
-	spec_status:
-		ED, REC, LS, etc.
-	trans_update:
-		和訳更新日（ YYYY-MM-DD ）
-	original_url:
-		原文 URL
-	original_urls:
-		原文 URL（複数
-	main:
-		'MAIN'
-	toc:
-		目次 id
-	alt_refs:
-		'references',
-	word_switch:
-		false
-	no_index:
-		用語索引なしならば true
-	no_original_dfn:
-		どの dfn の id も原文にはないならば true
-	fill_text_link: （選択子）
-		要素内容の text を URL としてリンクを作成させる
-	ref_id_lowercase
-		参照文献の id は小文字化
-	ref_id_prefix
-		'biblio-' etc.
-	site_nav
-		他の一覧へのナビゲーション用キーワードリスト
-	nav_prev／nav_next
-		前／次のページへのリンク（ HTML 用
-	original_id_map
-		訳文 id → 原文 id との対応（文字列データ
+
+PAGE_DATA.options member
+expanded:
+	ページは展開状態で保存されている
+spec_status:
+	ED, REC, LS, etc.
+trans_update:
+	和訳更新日（ YYYY-MM-DD ）
+original_url:
+	原文 URL
+main:
+	'MAIN'
+toc:
+	目次 id
+alt_refs:
+	'references',
+word_switch:
+	false
+no_index:
+	用語索引なしならば true
+no_original_dfn:
+	どの dfn の id も原文にはないならば true
+fill_text_link: （選択子）
+	要素内容の text を URL としてリンクを作成させる
+ref_id_lowercase
+	参照文献の id は小文字化
+ref_id_prefix
+	'biblio-' etc.
+site_nav
+	他の一覧へのナビゲーション用キーワードリスト
+nav_prev／nav_next
+	前／次のページへのリンク（ HTML 用
+original_id_map
+	訳文 id → 原文 id との対応（文字列データ
 */
 
 
@@ -61,7 +60,7 @@ new function(){
 		document.body.addEventListener('click', onClick, false);
 		document.body.addEventListener('dblclick', onDblClick, false);
 
-		PAGE_DATA.original_id_map = Util.textData('_original_id_map');
+		PAGE_DATA.original_id_map = PAGE_DATA.original_id_map || '';
 
 		Util.fillMisc();
 		navToInit();
@@ -169,7 +168,8 @@ new function(){
 
 
 Util.fillMisc = function(){
-	var options = PAGE_DATA;
+	var options = PAGE_DATA.options;
+
 	if(options.expanded) return;
 	// サイトナビ
 	fillSiteNav(options);
@@ -215,22 +215,18 @@ IETFPR: 'IETF PROPOSED STANDARD'
 	function addControls(options){
 		var controls = C('div');
 		controls.id = '_view_control';
-		// controls.onmouseover = function(GUI 作成) ... accesskey はどうする？
+
 		add_button('　　目次　　', 'A', '_toggle_toc');
 		if(!options.no_index){
 			Util.indexInit()
 			add_button('索引', 'S', '_toggle_index');
 		}
 		add_button('原文', 'Z', '_toggle_source');
-		if(options.word_switch){ // TODO move to common0a.js
-			add_button('語の和英', 'X', '_toggle_words');
-		}
 
 		var e = E('_optional_controls');//TODO
 		if(e){
 			controls.appendChild(e);
 		}
-//		controls.appendChild(Util.CONTROL_UI);
 
 		document.body.appendChild(controls);
 
@@ -280,17 +276,17 @@ layout:レイアウト一般\n\
 layouts:レイアウト個別\n\
 paint:画像-色-塗り\n\
 selector:選択子\n\
-XML:XML\n\
+xml:XML\n\
 '
 		);
 		var label_map = {
-___CSS: 'css,html',
-___HTML: 'html-dom,html,css',
-webappsec: 'security,network',
-___TIMING: 'performance,network',
+CSS: 'css,html',
+HTML: 'html-dom,html,css',
+WEBAPPSEC: 'security,network',
+TIMING: 'performance,network',
 PERFORMANCE: 'performance,network',
-___HTTP: 'http,network,security',
-'___UI-EVENTS': 'uievents,css-ux,html',
+HTTP: 'http,network,security',
+UIEVENTS: 'uievents,css-ux,html',
 		};
 		var href_map = {
 http: 'RFC723X-ja.html#index',
@@ -327,83 +323,102 @@ http: 'RFC723X-ja.html#index',
 		}
 	}
 
-	function fillTransMetadata(options){
-		var details = E('_trans-metadata');
+	function fillTransMetadata(){
+		var html = PAGE_DATA.trans_metadata || '';
+		delete PAGE_DATA.trans_metadata;
+		var details = E('_trans_metadata');
 		if(!details) return;
-		details.id = '_trans_metadata';
-		var summary = details.firstElementChild;
-		if(summary){
-			var summary_html = [
-'<strong>',
-'この日本語訳',
-'は非公式な文書です…</strong>',
-'',
-			];
-			var url = window.location.pathname.match(/[^\/]+$/)[0];
-			if(url) summary_html[1] =
-'<a href="https://triple-underscore.github.io/' + url + '">この日本語訳</a>';
-			if(options.trans_update) summary_html[3] =
-'（翻訳更新：<time>' + options.trans_update + '</time> ）';
-			summary.innerHTML = summary_html.join('');
+		if(options.trans_update){
+			var summary = details.firstElementChild;
+			if(summary){
+				summary.insertAdjacentHTML( 'beforeend',
+'（翻訳更新：<time>' + options.trans_update + '</time> ）'
+				);
+			}
 		}
 
-		if(options.original_url){
-			var e1 = E('_SPEC_URL')
-			if(e1)
-				e1.href = options.original_url;
+		if(html){
+			var url = window.location.pathname.match(/[^\/]+$/);
+			var mapping = {
+THIS_PAGE: url?
+	'<a href="https://triple-underscore.github.io/' + url[0] + '">このページ</a>' : 'このページ',
+SPEC_URL:
+	options.original_url || '',
+PUB: options.trans_1st_pub ?
+	'（公開：<time>' + options.trans_1st_pub +'</time> ）' : '',
+W3C:
+	'<a href="https://www.w3.org/">W3C</a>',
+WHATWG:
+	'<a href="https://whatwg.org/">WHATWG</a>',
+HTML5:
+	'https://html.spec.whatwg.org/multipage',
+			};
+			html = html.replace(/~(\w+)/g, function(match, key){
+				return mapping[key] || '';
+			});
 		}
 
-		var extra_data = '\
+		html += '\
+<ul style="font-size:smaller;">\
 <li><strong>この翻訳の正確性は保証されません。</strong>\
 <li>【 と 】で括られた部分は<span class="trans-note">【訳者による注釈】</span>です。\
 <li><a href="index.html#functions">各ページに共通の機能</a>も参照されたし（左下隅の表示切替ボタンなど）。\
 <li>誤訳その他ご指摘／ご意見は<a href="https://triple-underscore.github.io/about.html">連絡先</a>まで。\
-'
-		var ul = C('ul');
-		ul.style.fontSize = 'smaller'
-		ul.innerHTML = extra_data;
-		details.appendChild(ul);
+</ul>';
+		details.insertAdjacentHTML('beforeend', html);
 	}
 
-	function fillSpecMetadata(options){
-		var e = E('_spec-metadata');
-		if(!e) return;
-//e.parentNode.open = true;
-		var dl = C('dl');
-		e.parentNode.insertBefore(dl, e);
-		var data = Util.textData(e);
+	function fillSpecMetadata(){
+		var details = E('_spec_metadata');
+		var html;
+		if(!details) return;
+		var data = PAGE_DATA.spec_metadata;
+		delete PAGE_DATA.spec_metadata;
+		if(!data) return;
+
+		html = '<dl>';
 		if(options.original_url){
 			data = '\nこのバージョン（原文 URL ）\n\t' + options.original_url + '\n' + data;
 		}
-		dl.innerHTML = data
+		html += data
 			.replace(/\n\S.+/g, '\n<dt>$&<dt>')
 			.replace(/\n[ \t]+(https?:\S+)/g, '\n<dd><a href="$1">$1</a><dd>')
 			.replace(/\n[ \t]+(.+)/g, '<dd>$1<dd>');
+		html += '</dl>';
+
+		details.insertAdjacentHTML('beforeend', html);
 	}
 
-	function fillCopyright(options){
-		var e = E('_copyright');
-		if(!e) return;
-		var info = e.getAttribute('data-year');
-		if(!info) {
-			console.log('Warning! incorrect _copyright');
-			return;
-		}
+	function fillCopyright(){
+		var details = E('_copyright');
+		if(!details) return;
+
+		var info = options.copyright;
+		if(!info) return;
+
 		info = info.split(',');
 		var year = info[0];
 		var license = info[1];
-		var e1 = C('details');
-		e1.innerHTML
-= '<summary>©</summary><small lang="en-x-a0"><a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © '
-+ year
-+ ' <a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> (<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>, <a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>, <a href="http://www.keio.ac.jp/">Keio</a>, <a href="http://ev.buaa.edu.cn/">Beihang</a>). W3C <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, <a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and '
-+ (
+
+		var html = '\
+<small lang="en-x-a0">\
+<a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © \
+'
+			+ year + '\
+ <a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> \
+(<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>, \
+<a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>, \
+<a href="http://www.keio.ac.jp/">Keio</a>, <a href="http://ev.buaa.edu.cn/">Beihang</a>). \
+W3C <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, \
+<a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and \
+'
+			+ (
 license === 'use' ?
 	'<a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents">document use</a>' :
 	'<a rel="license" href="http://www.w3.org/Consortium/Legal/2015/copyright-software-and-document">permissive document license</a>'
 )
 + ' rules apply.</small>';
-		e.parentNode.replaceChild(e1, e);
+
 
 /*
 http://www.ercim.org/ と https://www.ercim.eu/ （ 1 箇所のみ）の違いは無視。
@@ -412,6 +427,7 @@ rel="license" の有無は無視。
 https と http の違いは無視。
 */
 
+		details.insertAdjacentHTML('beforeend', html);
 	}
 };
 
@@ -505,7 +521,6 @@ Util.create_word_switch = function(source_data){
 
 	check_level();
 	E('_view_control').appendChild(w_switch);
-//	this.CONTROL_UI.appendChild(w_switch);
 
 	w_switch.onclick = function(event){
 		var level = (event.target.id || '').match(/^_words_level(\w)$/);
@@ -838,6 +853,11 @@ Util.dfnInit = function(){
 	var dfnOriginal = dfnTarget.nextElementSibling;
 
 	var original_id_map = Util.get_mapping(PAGE_DATA.original_id_map);
+	var original_urls = null;
+	if(PAGE_DATA.original_urls){
+		// original_url の他に複数の原文 URL がある
+		original_urls = Util.get_mapping(PAGE_DATA.original_urls);
+	}
 
 	new function(){
 
@@ -937,17 +957,15 @@ Util.dfnInit = function(){
 
 		if(id.charAt(0) === '_') return; // 和訳固有の id
 		if(original_id_map[id] === '') return; // 和訳固有の id
-		if(!is_header && PAGE_DATA.no_original_dfn) return;
-		var original_url = PAGE_DATA.original_url;
-		var urls = PAGE_DATA.original_urls;
-		if(urls){// 複数の原文 URL に分岐
+		if(!is_header && PAGE_DATA.options.no_original_dfn) return;
+		var original_url; // 原文 URL
+		if(original_urls){
 			for(var e = E(id); e; e = e.parentNode){
-				if(urls.hasOwnProperty(e.id)){
-					original_url = urls[e.id];
-					break;
-				}
+				original_url = original_urls[e.id];
+				if(original_url) break;
 			}
 		}
+		original_url = original_url || PAGE_DATA.options.original_url;
 		if(!original_url) return;
 
 		dfnOriginal.href = original_url + '#' + (original_id_map[id] || id);
@@ -955,7 +973,7 @@ Util.dfnInit = function(){
 	}
 
 	function originalURL(id){
-		return PAGE_DATA.original_url;
+		return PAGE_DATA.options.original_url;
 	}
 
 	function dfnHide(){
@@ -1088,8 +1106,8 @@ Util.dfnInit = function(){
 /** 外部リンク日本語訳リンク追加 */
 Util.altLinkInit = function(){
 	var root;
-	if(PAGE_DATA.main){
-		root = E(PAGE_DATA.main);
+	if(PAGE_DATA.options.main){
+		root = E(PAGE_DATA.options.main);
 	}
 	if(!root){
 		root = document.getElementsByTagName('main')[0];
@@ -1137,11 +1155,10 @@ Util.contextMenuInit = function(){
 	<dd> の末尾
 加えて、参照文献の項目に id が与えられていない場合は，自動的に付加する
 
-※ 参照文献節が内容生成の対象にされている場合は再追加の必要あり
 */
 
 
-COMMON_DATA.addAltRefs = function(id){
+COMMON_DATA.addAltRefs = function(){
 	var LABELS = {
 		'主': '日本語訳',
 		'副': '日本語訳',
@@ -1155,8 +1172,8 @@ COMMON_DATA.addAltRefs = function(id){
 	var REF_DATA = this.REF_DATA;
 	var REF_KEY_MAP = Util.get_mapping(this.REF_KEY_MAP);
 
-	var ref_id_prefix = PAGE_DATA.ref_id_prefix || '';
-	var ref_id_lowercase = PAGE_DATA.ref_id_lowercase || false;
+	var ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
+	var ref_id_lowercase = PAGE_DATA.options.ref_id_lowercase || false;
 
 
 	Util.get_mapping(
@@ -1170,11 +1187,12 @@ COMMON_DATA.addAltRefs = function(id){
 
 	var add_ref_link = EMPTY_FUNC;
 	var ref_node_list;
-	if(PAGE_DATA.ref_data){
+	if(PAGE_DATA.ref_normative){
 		add_ref_link = add_ref_link2;
-		collect_entries2(PAGE_DATA.ref_data)
-	} else{
-		id = id || PAGE_DATA.alt_refs;
+		collect_entries2()
+	} else {
+		var id = PAGE_DATA.options.alt_refs;
+
 		if(id){
 			add_ref_link = add_ref_link1;
 			repeat('#' + id + ' dt', collect_entries1);
@@ -1217,13 +1235,14 @@ COMMON_DATA.addAltRefs = function(id){
 	}
 
 	if(ref_node_list){
-		ref_node_list.forEach(generateRefsHTML);
+		generateRefsHTML();
+//		ref_node_list.forEach();
 	}
 
 	// 下位 directory への和訳リンク生成防止
-	if(PAGE_DATA.original_url){
+	if(PAGE_DATA.options.original_url){
 		COMMON_DATA.JA_LINKS[
-			PAGE_DATA.original_url.replace(/^https?:\/\//,'')
+			PAGE_DATA.options.original_url.replace(/^https?:\/\//,'')
 		] = '';
 	}
 
@@ -1281,18 +1300,19 @@ COMMON_DATA.addAltRefs = function(id){
 	}
 
 	/* 素のテキストから生成（ bikeshed 用） */
-
-	function collect_entries2(selector){
-		ref_node_list = [];
-		repeat(selector, function(node){
-			var data = node.textContent;
-			data.replace(/\n\[.+\]/g, function(ref_name){
+	function collect_entries2(){
+		ref_node_list = ['normative', 'informative'];
+		ref_node_list.forEach(f);
+		
+		function f(id){
+			var ref_data = PAGE_DATA['ref_' + id];
+			if(!ref_data) return;
+			ref_data.replace(/\n\[.+\]/g, function(ref_name){
 				var key = refKey(ref_name);
 				mapping[key] = '';
 				return '';
 			});
-			ref_node_list.push({ root: node, data: data });
-		});
+		}
 	}
 
 	function add_ref_link2(key, url, label){
@@ -1302,9 +1322,37 @@ COMMON_DATA.addAltRefs = function(id){
 		mapping[key] += html;
 	}
 
-	function generateRefsHTML(item){
+	function generateRefsHTML(){
+		var refs = E('references');
+		if(!refs){
+			refs = C('section');
+			refs.id = 'references';
+			refs.insertAdjacentHTML('beforeend', '<h2>参照文献</h2>');
+			document.body.appendChild(refs);
+		}
+
+		var html_data = {
+normative: '<h3>文献（規範）</h3>',
+informative: '<h3>文献（参考）</h3>'
+		};
+
+		var source_data = PAGE_DATA;
+		['normative', 'informative'].forEach(function(id){
+			var ref_data = source_data['ref_' + id];
+			if(!ref_data) return;
+			delete source_data['ref_' + id];
+			var section = C('section');
+			section.id = id;
+			section.innerHTML = html_data[id];
+			refs.appendChild(section);
+			var dl = C('dl');
+			dl.innerHTML = refHTML(ref_data);
+			section.appendChild(dl);
+		});
+
+function refHTML(data){
 		var last_key = '';
-		var html = item.data
+		var html = data
 		.replace(/\n\[(.+)\]/g, function(match, ref_name){
 			var id = ref_id_prefix +
 				(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
@@ -1330,10 +1378,10 @@ COMMON_DATA.addAltRefs = function(id){
 			'\n<dd><a href="$1">$1</a></dd>'
 		).replace(/\n +(.+)/g, '\n<dd lang="en-x-a0">$1</dd>');
 		html += last_key;
+		return html;
+}
 
-		var dl = C('dl');
-		dl.innerHTML = html;
-		item.root.parentNode.replaceChild(dl, item.root);
+
 	}
 }
 
@@ -1428,24 +1476,24 @@ CSS3COLOR=編          ~CSSWG/css-color-3/\n\
 CSSEXCLUSIONS=主      ~/css-exclusions-ja.html\n\
 CSSEXCLUSIONS=版      ~TR/css3-exclusions/\n\
 CSSEXCLUSIONS=編      ~CSSWG/css-exclusions/\n\
-CSS3FONTS=主          ~/css-fonts-ja.html\n\
-CSS3FONTS=版          ~TR/css3-fonts/\n\
-CSS3FONTS=・          ~TR/css-fonts-3/\n\
-CSS3FONTS=編          ~CSSWG/css-fonts-3/\n\
-CSS3FONTS=・          ~CSSWG/css-fonts/\n\
+CSSFONTS3=主          ~/css-fonts-ja.html\n\
+CSSFONTS3=版          ~TR/css3-fonts/\n\
+CSSFONTS3=・          ~TR/css-fonts-3/\n\
+CSSFONTS3=編          ~CSSWG/css-fonts-3/\n\
+CSSFONTS3=・          ~CSSWG/css-fonts/\n\
 CSSFONTLOAD=主        ~/css-font-loading-ja.html\n\
 CSSFONTLOAD=版        ~TR/css-font-loading/\n\
 CSSFONTLOAD=編        ~CSSWG/css-font-loading/\n\
-CSS3IMAGES=主         ~/css-images-ja.html\n\
-CSS3IMAGES=副         ~momdo/CR-css3-images-20120417.html\n\
-CSS3IMAGES=版         ~TR/css3-images/\n\
-CSS3IMAGES=編         ~CSSWG/css-images-3/\n\
+CSSIMAGES3=主         ~/css-images-ja.html\n\
+CSSIMAGES3=副         ~momdo/CR-css3-images-20120417.html\n\
+CSSIMAGES3=版         ~TR/css3-images/\n\
+CSSIMAGES3=編         ~CSSWG/css-images-3/\n\
 CSSLOGICAL=主         ~/css-logical-ja.html\n\
 CSSLOGICAL=編         ~CSSWG/css-logical/\n\
-CSSPAGE=主            ~/css-page-ja.html\n\
-CSSPAGE=版            ~TR/css3-page/\n\
-CSSPAGE=編            ~CSSWG/css-page/\n\
-CSSPAGE=・            ~CSSWG/css-page-3/\n\
+CSSPAGE3=主            ~/css-page-ja.html\n\
+CSSPAGE3=版            ~TR/css3-page/\n\
+CSSPAGE3=編            ~CSSWG/css-page/\n\
+CSSPAGE3=・            ~CSSWG/css-page-3/\n\
 CSSOVERFLOW=主        ~/css-overflow3-ja.html\n\
 CSSOVERFLOW=版        ~TR/css-overflow-3/\n\
 CSSOVERFLOW=編        ~CSSWG/css-overflow/\n\
@@ -1458,8 +1506,8 @@ CSSSIZING=主          ~/css-sizing-ja.html\n\
 CSSSIZING=版          ~TR/css-sizing/\n\
 CSSSIZING=編          ~CSSWG/css-sizing/\n\
 CSSSIZING=・          ~CSSWG/css-sizing-3/\n\
-CSS3SPEECH=主         ~/css-speech-ja.html\n\
-CSS3SPEECH=版         ~TR/css3-speech/\n\
+	CSS3SPEECH=主         ~/css-speech-ja.html\n\
+	CSS3SPEECH=版         ~TR/css3-speech/\n\
 CSS3TEXT=主           ~/css-text-ja.html\n\
 	CSS3TEXT=主           suzukima.github.io/css-ja/css3-text/\n\
 CSS3TEXT=編           ~CSSWG/css-text-3/\n\
@@ -1777,6 +1825,7 @@ XSLT=主               ~adagio/tr_xslt10/toc.htm\n\
 XSLT=副2              ~XML/xslt10-ja.html\n\
 PROMISES=主           ~/promises-guide-ja.html\n\
 PROMISES=・           www.w3.org/2001/tag/doc/promises-guide\n\
+PRELOAD=主            ~/preload-ja.html\n\
 ';
 
 /* 廃
@@ -1833,10 +1882,10 @@ CSSINLINE3:CSSINLINE\n\
 CSS3CONDITIONAL:CSSCONDITIONAL\n\
 CSSCONDITIONAL3:CSSCONDITIONAL\n\
 CSS3EXCLUSIONS:CSSEXCLUSIONS\n\
+CSS3FONTS:CSSFONTS3\n\
 CSS3FONT:CSS3FONTS\n\
-CSSFONTS3:CSS3FONTS\n\
-CSS3PAGE:CSSPAGE\n\
-CSSPAGE3:CSSPAGE\n\
+CSSPAGE:CSSPAGE3\n\
+CSS3PAGE:CSSPAGE3\n\
 CSSSHAPES:CSSSHAPES1\n\
 CSSTEXT3:CSS3TEXT\n\
 CSSTEXT:CSS3TEXT\n\
@@ -1846,7 +1895,7 @@ CSSOM1:CSSOM\n\
 CSSOMVIEW1:CSSOMVIEW\n\
 CSSOVERFLOW3:CSSOVERFLOW\n\
 CSSPOSITION3:CSSPOSITION\n\
-CSSIMAGES3:CSS3IMAGES\n\
+CSS3IMAGES:CSSIMAGES3\n\
 CSSSIZING3:CSSSIZING\n\
 CSSSIZING4:CSSSIZING\n\
 CSS3SIZING:CSSSIZING\n\
@@ -1906,7 +1955,7 @@ TLS:RFC5246\n\
 
 COMMON_DATA.altURL = function(href){
 	if(!href) return;
-//	if(href.indexOf(PAGE_DATA.original_url) === 0) return;
+//	if(href.indexOf(PAGE_DATA.options.original_url) === 0) return;
 	href = href.match(/^https?:\/\/([^#]+)(#.*)?/);
 	if(!href) return;
 	var url = href[1];
@@ -1959,6 +2008,7 @@ element.
 		firstElementChild previousElementSibling lastElementChild
 		cloneNode appendChild
 		addEventListener removeEventListener
+		insertAdjacentHTML
 	CSSOM view:
 		scrollTop scrollHeight
 		scrollIntoView getBoundingClientRect

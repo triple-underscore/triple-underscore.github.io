@@ -36,7 +36,22 @@ function repeat(selector, callback, root){
 	}
 }
 
-var PAGE_DATA = {}; // see common1.js for possible members
+var PAGE_DATA = Object.create(null); 
+/* possible members:
+options:
+	see common1.js
+ref_normative:
+ref_informative:
+	参照文献データ
+original_id_map:
+	訳文 id → 原文 id
+spec_metadata
+	仕様メタデータ
+words_table:
+	単語対応
+
+*/
+
 var COMMON_DATA = Object.create(null);
 
 // 予約済みメンバ
@@ -57,6 +72,7 @@ var Util = {
 	ready: EMPTY_FUNC,
 	rebuildToc: EMPTY_FUNC,
 	buildTocList: EMPTY_FUNC,
+	parseSourceBlock: EMPTY_FUNC,
 
 // common0a.js
 	word_switcher: null,
@@ -131,6 +147,28 @@ Util.textData = function(e, options){
 	return data;
 };
 
+
+Util.parseBlocks = function(source){
+//	var rxp = RegExp('(\n' + splitter + ').+');
+//	var source = Util.textData('_source_data');
+	var result = Object.create(null);
+	var name = '';
+	source.split(/(\n●●.*)/).forEach(function(block){
+		if(block.slice(0,3) === '\n●●'){
+			name = block.slice(3);
+			if(!name){
+				// blocks with empty name are treated as comments
+				return;
+			}
+			if(!(name in result)){
+				result[name] = '';
+			}
+		}else if(name){
+			result[name] += block;
+		}
+	});
+	return result;
+}
 
 /* 
 'token:word1:word2:word3:...' の形式の各行を
@@ -214,6 +252,10 @@ new function(){
 	// 初期化
 	function init(){
 		document.removeEventListener('DOMContentLoaded', init, false);
+		Object.assign(PAGE_DATA, Util.parseBlocks(Util.textData('_source_data')));
+
+		var options =
+		PAGE_DATA.options = Util.get_mapping(PAGE_DATA.options || '');
 
 		// 利用者 表示設定
 		var page_state = (JSON && get_state()) // setup saveStorage
@@ -229,15 +271,21 @@ new function(){
 		}
 		if(classList.contains('_expanded')){
 			// ページは展開状態で保存されている
-			PAGE_DATA.expanded = true;
+			options.expanded = true;
 			repeat('._hide_if_expanded', function(e){
 				e.style.display = 'none';
 			});
 		} else {
 			Util.ready();
 			classList.add('_expanded');
+			if(options.toc){
+				// 目次構築
+				var toc_list = Util.buildTocList(E(options.main));
+				toc_list.id = '_toc_list';
+				E(options.toc).appendChild(toc_list);
+			}
 		}
-		Util.initAdditional();
+		Util._COMP_ = true;
 	}
 
 	// 表示状態を sessionStorage から読み込む
@@ -245,7 +293,7 @@ new function(){
 		var page_state = null;
 		var storage_key = null;
 
-		storage_key = PAGE_DATA.page_state_key || window.location.pathname;
+		storage_key = PAGE_DATA.options.page_state_key || window.location.pathname;
 		try {
 // sessionStorage property へのアクセスのみでも security error になることがある
 			page_state = sessionStorage.getItem(storage_key);
@@ -262,28 +310,6 @@ new function(){
 		}
 	}
 }
-
-
-Util.initAdditional = function(){
-	delete Util.initAdditional;
-	if(!PAGE_DATA.expanded){
-		if(PAGE_DATA.toc){
-			// 目次構築
-			var toc_list = Util.buildTocList(E(PAGE_DATA.main));
-			toc_list.id = '_toc_list';
-			E(PAGE_DATA.toc).appendChild(toc_list);
-		}
-	}
-
-	if(PAGE_DATA.word_switch){
-		Util.DEFERRED.push(function(){
-			Util.word_switcher.init_toggle();
-		});
-	}
-////
-	Util._COMP_ = true;
-}
-
 
 /** 目次構築 see common0.js
 */
@@ -446,16 +472,13 @@ Util.word_switcher = {
 
 	// 2 レベル切替用
 	init_toggle: function(){
-		var B = E('_toggle_words');
-		if(B && ( B.className === '_converted') ){
-			B.style.display = 'none';
-			return;
-		}
+		this.main_id = PAGE_DATA.options.main;
 
-//		if(!PAGE_DATA.word_switch) return;
-		this.main_id = PAGE_DATA.main;
+		E('_view_control').insertAdjacentHTML( 'beforeend', 
+'<input type="button" class="_hide_if_expanded" tabindex="1" id="_toggle_words" value="語の和英" accessKey="X" title ="アクセスキー： X">'
+		);
 		var that = this;
-////
+
 		Util.CLICK_HANDLERS._toggle_words = function(){
 			Util.switchView(toggleWords2, true);
 		}
@@ -465,7 +488,7 @@ Util.word_switcher = {
 				that.revert();
 			} else {
 				that.convert(
-					Util.getMapping(PAGE_DATA.word_switch, {keep: true})
+					Util.get_mapping(PAGE_DATA.words_table)
 				);
 			}
 			E('_toggle_words').className = that.html? '_converted' : '';
@@ -485,10 +508,7 @@ Util.word_switcher = {
 		var mapping;
 		if(level > 0){
 			mapping = 
-				Util.getDataByLevel(
-					E('words_table').firstChild.data,
-					level - 1
-				)
+				Util.getDataByLevel(PAGE_DATA.words_table, level - 1 )
 				// 恒等置換 削除
 				.replace(/^([^\n:]+)[\d\-]?:\1$/mg, '');
 			mapping = Util.get_mapping(mapping);

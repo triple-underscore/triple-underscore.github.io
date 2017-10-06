@@ -1,97 +1,100 @@
 Util.ready = function(){
-	source_data.init(PAGE_DATA.rfc_num);
+	source_data.init(PAGE_DATA.options.rfc_num);
+	Util.switchWordsInit(source_data);
 }
 
 var source_data = {
-	init: function(spec_num){
-		this.words_table1 += Util.textData('words_table1');
-		this.words_table += Util.textData('words_table');
-
-		var data = this.href_data + Util.textData('_link_map');
-		var spec_rxp = new RegExp('~' + spec_num, 'g');
-		this.href_data_map = Util.get_mapping(data.replace(spec_rxp, ''));
-		var section_map =
-		this.section_map = Util.getMapping('_section_map');
-
-		this.html = E('MAIN').innerHTML;
-		this.level = 3;
-
-		Util.switchWordsInit(source_data);
-
-		/* 展開状態で保存されたページがこの script を読み込まないようにする */
-		repeat('script[src="RFC723X.js"]', function(e){
-			e.parentNode.removeChild(e);
-		});
-	},
-
-	html: '',
 	toc_main: 'MAIN0',
-	levels: 'ほぼ英語:英語主体:漢字+英語:漢字主体:カナ主体',
+};
 
-	class_map: {
-		r: 'ref',
-		t: 'type',
-		p: 'production', // protocol element
-		P: 'token',
-		st: 'status',
-		st0: 'status',
-		ph: 'phrase',
-		wc: 'warn',
-		h: 'header',
-		m: 'method',
-		dir: 'directive',
-		qdir: 'directive',
-		sdir: 'directive',
-		com: 'comment',
-	},
+source_data.init = function(spec_num){
+	PAGE_DATA.words_table1
+	= this.words_table1 + PAGE_DATA.words_table1;
+	delete this.words_table1;
 
-	tag_map: {
-		dfn: 'dfn',
-		c: 'code',
+	PAGE_DATA.words_table
+	= this.words_table + PAGE_DATA.words_table;
+	delete this.words_table;
+
+	this.href_data_map = Util.get_mapping(
+		( this.href_data + PAGE_DATA.link_map)
+		.replace( new RegExp('~' + spec_num, 'g'), '' )
+	);
+	delete PAGE_DATA.link_map;
+
+	this.section_map = Util.get_mapping(PAGE_DATA.section_map || '');
+
+	/* 展開状態で保存されたページがこの script を読み込まないようにする */
+	repeat('script[src="RFC723X.js"]', function(e){
+		e.parentNode.removeChild(e);
+	});
+};
+
+source_data.populate = function(){
+	// header id を section から補完
+	var section_map = this.section_map;
+	repeat('section[id]', function(e){
+		var h = e.firstElementChild;
+		if(!h) return;
+		var id = section_map[e.id.replace(/^(section-|appendix-)/, '')];
+		if(id) h.id = id;
+	});
+};
+
+source_data.class_map = {
+	r: 'ref',
+	t: 'type',
+	p: 'production', // protocol element
+	P: 'token',
+	st: 'status',
+	st0: 'status',
+	ph: 'phrase',
+	wc: 'warn',
+	h: 'header',
+	m: 'method',
+	dir: 'directive',
+	qdir: 'directive',
+	sdir: 'directive',
+	com: 'comment',
+};
+
+source_data.tag_map = {
+	dfn: 'dfn',
+	c: 'code',
 //		l: 'code',
-		p: 'code',
-		P: 'code',
-		h: 'b',
-		m: 'b',
-		var: 'var',
-		st0: 'code',
-		wc: 'code',
-		dir: 'code',
-		qdir: 'code',
-		sdir: 'code',
-		ph: 'span',
-		com: 'span',
-	},
+	p: 'code',
+	P: 'code',
+	h: 'b',
+	m: 'b',
+	var: 'var',
+	st0: 'code',
+	wc: 'code',
+	dir: 'code',
+	qdir: 'code',
+	sdir: 'code',
+	ph: 'span',
+	com: 'span',
+};
 
-	generate: function(mapping1){
-		var st_phrase = this.st_phrase;
-		var st_hrefs = this.st_hrefs;
-		var header_hrefs = this.header_hrefs;
-		var section_map = this.section_map;
-		
-		var href_data_map = this.href_data_map || {};
+source_data.generate = function(){
+	var st_phrase = this.st_phrase;
+	var st_hrefs = this.st_hrefs;
+	var header_hrefs = this.header_hrefs;
+	var section_map = this.section_map;
 
-		var class_map = this.class_map;
-		var tag_map = this.tag_map;
+	var href_data_map = this.href_data_map || {};
 
-		E('MAIN').innerHTML = Util.generateSource(this, mapping1, function(source){
-			return source.replace(
-				/`(.+?)([$@\^])(\w*)/g,
-				create_html
-			);
-		});
+	var class_map = this.class_map;
+	var tag_map = this.tag_map;
 
-		// header id を section から補完
-		repeat('section[id]', function(e){
-			var h = e.firstElementChild;
-			if(!h) return;
-			var id = section_map[e.id.replace(/^(section-|appendix-)/, '')];
-			if(id) h.id = id;
-		});
+	return this.html.replace(
+		/`(.+?)([$@\^])(\w*)/g,
+		create_html
+	);
 
-		return;
+//		return;
 
-		function create_html(match, key, indicator, klass){
+	function create_html(match, key, indicator, klass){
 
 var text = key;
 var href = href_data_map[klass ? (klass + '.' + key) : key] || '';
@@ -99,9 +102,7 @@ var classname = class_map[klass];
 var tag = tag_map[klass];
 
 switch(klass){
-case '': // plain
-	if(indicator === '^') return mapping1[key];// remap
-//		href = href_data_map[key];
+case '':
 	break;
 case 'r': // ref
 	text = '[' + key + ']';
@@ -215,11 +216,11 @@ if(href){
 
 return text;
 
-		}
-	},
+	}
+};
 
 /** status phrase */
-	st_phrase: {
+source_data.st_phrase = {
 '1xx': 'Informational',
 '2xx': 'Successful',
 '3xx': 'Redirection',
@@ -268,10 +269,10 @@ return text;
 '503': 'Service Unavailable',
 '504': 'Gateway Timeout',
 '505': 'HTTP Version Not Supported',
-	},
+};
 
 /** status codes (default ~7231)*/
-	st_hrefs: {
+source_data.st_hrefs = {
 '206': '~7233',
 '214': '~7234',
 '304': '~7232',
@@ -280,10 +281,10 @@ return text;
 '407': '~7235',
 '412': '~7232',
 '416': '~7233',
-	},
+};
 
 /** warning code phrase */
-	wc_phrase: {
+source_data.wc_phrase = {
 '110': 'Response is Stale',
 '111': 'Revalidation Failed',
 '112': 'Disconnected Operation',
@@ -291,10 +292,10 @@ return text;
 '199': 'Miscellaneous Warning',
 '214': 'Transformation Applied',
 '299': 'Miscellaneous Persistent Warning',
-	},
+};
 
 /** headers */
-	header_hrefs: {
+source_data.header_hrefs ={
 'Accept': '~7231',
 'Accept-Charset': '~7231',
 'Accept-Encoding': '~7231',
@@ -344,11 +345,11 @@ return text;
 'Warning': '~7234',
 'Keep-Alive': '~7230',
 'Expires': '~7234',
-	},
+};
 
 
 /** links */
-	href_data: '\n\
+source_data.href_data = '\n\
 \n\
 	header fields \n\
 \n\
@@ -798,11 +799,11 @@ c.multipart/byteranges:~7233#internet.media.type.multipart.byteranges\n\
 	■7235\n\
 \n\
 資格証:~7235#credentials\n\
-',
+';
 
 /** words */
 
-	words_table1: '\
+source_data.words_table1 = '\
 IETF:http://tools.ietf.org/html\n\
 IANA-a:http://www.iana.org/assignments\n\
 ERRATA:http://www.rfc-editor.org/errata_search.php\n\
@@ -846,13 +847,13 @@ close_:"<code>close</code>" \n\
 IETF-org: “IETF (iesg@ietf.org) — Internet Engineering Task Force” \n\
 共通頁:RFC723X 共通ページ\n\
 Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け</h2><p class="trans-note">【この節の内容は、著作権の告知も含め，<a href="RFC723X-ja.html#status">RFC723X 共通ページ</a>に委譲。】</p></section>\n\
-',
+';
 
 /** Words 
 無状態
 */
 
-	words_table: '\n\
+source_data.words_table = '\n\
 伝え:inform し:~\n\
 伝える:inform する:~\n\
 	例:example:~\n\
@@ -2518,8 +2519,7 @@ stateless::::ステートレス\n\
 高度:advance:~\n\
 鮮度:freshness::~\n\
 所与の:given:与えられた\n\
-'
-}
+';
 
 
 /*
