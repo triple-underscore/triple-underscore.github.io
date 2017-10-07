@@ -653,8 +653,8 @@ return;
 '</span>', // \uE000
 '<span lang="en">', // \uE001
 '<span class="trans-note">', // \uE002
-'<span class="block">', // \uE003
-'<span class="block preline">', // \uE004
+'：<span class="block">', // \uE003
+'：<span class="block preline">', // \uE004
 	// see PREMAP
 '<td>', // \uE005
 '<td class="prod">', // \uE006
