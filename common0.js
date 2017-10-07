@@ -681,11 +681,11 @@ return;
 		function f(match, cap1){
 			switch(match[0]){
 			case '◎':
+				nesting1 = nesting;
+				nesting = ''; // ⇒ を終端させる
 				if(match.charCodeAt(1) < 0x80){
 					// english text
 					en_list.push( cap1.trim() );
-					nesting1 = nesting;
-					nesting = '';
 					return (
 						nesting1
 						+ '\uE001'
@@ -697,12 +697,11 @@ return;
 					cap1 = premap[cap1];
 					if(!cap1) {
 						console.log('Undefined PREMAP symbol: ' + match );
-						return '＊' + match;
+						return nesting1 + '＊' + match;
 					}
-					return cap1;
-	//				return premap[cap1] || '＊';
+					return nesting1 + cap1;
+	//				return nesting1 + ( premap[cap1] || '＊' );
 				}
-				
 			case '【':
 				return '\uE002' + match + '\uE000';
 				// TODO: 【\t で開始するならば <p> 用バージョン 等々
@@ -823,8 +822,9 @@ Util.replaceWords1 = function(data, mapping){
 };
 
 COMMON_DATA.PREMAP = '\n\
+終: \n\
 名:\uE00A\uE008名前\uE005\n\
-述:\uE00B\uE008\uE007名前\uE005\n\
+述:\uE00B\uE008名前\uE005\n\
 対:\uE007~For\uE005\n\
 値:\uE007<a href="css-values-ja.html#value-defs">値</a>\uE006\n\
 新値:\uE007新たに定義される値\uE006\n\
@@ -852,12 +852,12 @@ COMMON_DATA.PREMAP = '\n\
 ';
 
 /*
-	CSS propdef
+"終" は "⇒" の終端用
 
-For:用途
+	CSS propdef
 名:<table class="propdef"><tbody><tr><th>名前<td>
 述:<table class="descdef"><tbody><tr><th>名前<td>
-対:<tr><th>用途<td>
+対:<tr><th>~For<td>
 値:<tr><th><a href="css-values-ja.html#value-defs">値</a><td class="prod">
 新値:<tr><th>新たに定義される値<td class="prod">
 新初:<tr><th>新たに定義される初期値<td>
