@@ -78,7 +78,6 @@ var Util = {
 	ADDITIONAL_NODES: [],
 //	CONTROL_UI: C(), //追加 UI
 	CLICK_HANDLERS: {},
-	CONTAINER_TAGS: {},
 
 	removeAdditionalNodes: EMPTY_FUNC,
 	indexHide: EMPTY_FUNC,
@@ -510,6 +509,11 @@ LS: 'Living Standard',
 			html += 
 '<details id="_copyright"><summary>©</summary></details>';
 		}
+		if(true){
+			html += 
+'<details id="_index"><summary>索引など</summary></details>';
+		}
+
 		if(hgroup){
 			hgroup.insertAdjacentHTML('afterend', html);
 		} else {

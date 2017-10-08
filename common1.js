@@ -41,6 +41,9 @@ site_nav
 	他の一覧へのナビゲーション用キーワードリスト
 nav_prev／nav_next
 	前／次のページへのリンク（ HTML 用
+navs
+	巡回用
+	ラベル:選択子 （ INDEX_KEYS
 original_id_map
 	訳文 id → 原文 id との対応（文字列データ
 */
@@ -135,23 +138,35 @@ new function(){
 		case 0:// IE11 event.detail == 0?
 		case 1:
 			for(var e = target; e; e = e.parentNode){
-				if(e.tagName in Util.CONTAINER_TAGS){
-					if( e.tagName === 'BODY' ){
-						// 両端 click でも原文開閉（ touch 用
-						var e1 = document.elementFromPoint(
-							window.innerWidth /2, event.clientY);
-						if(e1){
-							Util.toggleSource(e1);
-						}
+				switch(e.tagName){
+				case 'BODY':
+					// 両端 click でも原文開閉
+					var e1 = document.elementFromPoint(
+						window.innerWidth /2, event.clientY);
+					if(e1){
+						Util.toggleSource(e1);
 					}
 					break;
+				case 'SECTION':
+				case 'PRE':
+				case 'DIV':
+				case 'DL':
+				case 'UL':
+				case 'OL':
+				case 'NAV':
+					break;
+				case 'A':
+					if(e.href) break;
+				default:
+					var handler = handlers[e.tagName];
+					if(handler){
+						handler(e);
+						return;
+					}
+					continue;
 				}
+				break;
 				// consider to use Element.matches()/matchesSelector()
-				var handler = handlers[e.tagName];
-				if(handler){
-					handler(e);
-					return;
-				}
 			}
 			break;
 		}
@@ -172,13 +187,17 @@ Util.fillMisc = function(){
 
 	if(options.expanded) return;
 	// サイトナビ
-	fillSiteNav(options);
+	fillSiteNav();
 	// 和訳メタデータ
-	fillTransMetadata(options);
+	fillTransMetadata();
 	// 仕様メタデータ
-	fillSpecMetadata(options);
+	fillSpecMetadata();
 	// Copyright
-	fillCopyright(options);
+	fillCopyright();
+	// 巡回
+	fillIndexes()
+	// 適合性
+	fillConformance();
 	// 参照文献 和訳リンク
 	COMMON_DATA.addAltRefs();
 	// ボタン類
@@ -248,7 +267,7 @@ IETFPR: 'IETF PROPOSED STANDARD'
 		}
 	}
 
-	function fillSiteNav(options){
+	function fillSiteNav(){
 		var nav = C('nav');
 
 		var html = ['<ul id="_site_nav">'];
@@ -328,10 +347,10 @@ http: 'RFC723X-ja.html#index',
 	}
 
 	function fillTransMetadata(){
-		var html = PAGE_DATA.trans_metadata || '';
-		delete PAGE_DATA.trans_metadata;
 		var details = E('_trans_metadata');
 		if(!details) return;
+		var html = PAGE_DATA.trans_metadata || '';
+		delete PAGE_DATA.trans_metadata;
 		if(options.trans_update){
 			var summary = details.firstElementChild;
 			if(summary){
@@ -374,8 +393,8 @@ HTML5:
 
 	function fillSpecMetadata(){
 		var details = E('_spec_metadata');
-		var html;
 		if(!details) return;
+		var html;
 		var data = PAGE_DATA.spec_metadata;
 		delete PAGE_DATA.spec_metadata;
 		if(!data) return;
@@ -433,6 +452,59 @@ https と http の違いは無視。
 
 		details.insertAdjacentHTML('beforeend', html);
 	}
+
+	function fillIndexes(){
+		var details = E('_index');
+		if(!details) return;
+		details.addEventListener('toggle', fill_data, false);
+
+		function fill_data(){
+			details.removeEventListener('toggle', fill_data, false);
+			var html = ['<p>'];
+			var selectors = Util.get_mapping(COMMON_DATA.INDEX_KEYS + (PAGE_DATA.navs || ''));
+			var count = 0;
+			for(var label in selectors){
+				var selector = selectors[label]
+				if(document.body.querySelector(selector)){
+					html.push(
+'<a id="_index-nav-' + (count++) + '" data-cycling="' + selector + '">' + label + '</a>', '／'
+					);
+				}
+			}
+			if(count !== 0) {
+				html[html.length - 1] =
+'<small>（クリックで巡回）</small>';
+			};
+			if(E('references')){
+				html.push(
+'<br><a href="#references">参照文献</a><br>'
+				)
+			}
+			html.push(
+'<small>用語の一覧はウィンドウ下端の切替から。</small></p>'
+			);
+			details.insertAdjacentHTML('beforeend', html.join('') );
+		}
+	}
+
+	function fillConformance(){
+		var links = {
+w3c: '<a href="w3c-common-ja.html#conformance">W3C 日本語訳 共通ページ</a>',
+css: '<a href="css-common-ja.html#conformance">CSS 日本語訳 共通ページ</a>',
+		};
+		var link = links[ (options.conformance ) || ''];
+		if(!link) return;
+		var sec = C('section');
+		sec.id = 'conformance';
+		sec.innerHTML = '\n\
+<h2 title="Conformance">適合性</h2>\n\
+<p class="trans-note">【\
+この節の内容は' + link +'に委譲。\
+】</p>\n\
+';
+		document.body.appendChild(sec);
+	}
+
 };
 
 Util.removeAdditionalNodes = function(refresh){
@@ -446,9 +518,6 @@ Util.removeAdditionalNodes = function(refresh){
 };
 
 
-Util.CONTAINER_TAGS = {
-	SECTION:1, PRE:1, DIV:1, DL:1, UL:1, OL:1, NAV:1, BODY:1, A:1
-};
 
 Util.CLICK_HANDLERS = {
 //	_toggle_source:
@@ -850,7 +919,7 @@ Util.dfnInit = function(){
 	var dfnPanel = C('div');
 		dfnPanel.id = '_dfnPanel';
 		dfnPanel.innerHTML =
-			'<div><input type="button" value="←"/><input type="button" value="→"/><a></a><a class="_additional">(原文)</a></div><ul></ul>';
+'<div><input type="button" value="  ←  "><input type="button" value="  →  "><a></a><a class="_additional">(原文)</a></div><ul></ul>';
 		// a link to dfnStart
 	var dfnTarget = dfnPanel.firstElementChild.children[2];
 		// link to the corresponding element in the original spec
@@ -947,6 +1016,7 @@ Util.dfnInit = function(){
 	var handlers = this.CLICK_HANDLERS;
 	handlers.DT =
 	handlers.DFN =
+	handlers.A =
 	handlers.H1 =
 	handlers.H2 =
 	handlers.H3 =
@@ -1035,7 +1105,6 @@ Util.dfnInit = function(){
 		}
 		if(!id) return;
 		dfnStart = dfn;
-//		dfnTarget.textContent = (is_header && dfn.title) || ('#' + id);
 		dfnTarget.textContent = dfn.title || ('#' + id);
 		dfnTarget.href = '#' + id;
 		dfnIndex = -1;
@@ -1389,6 +1458,14 @@ function refHTML(data){
 	}
 }
 
+COMMON_DATA.INDEX_KEYS ='\n\
+見出し:h2,h3,h4,h5,h6\n\
+課題:.issue\n\
+要素:.element-def\n\
+IDL:pre.idl\n\
+プロパティ:.propdef\n\
+記述子:.descdef\n\
+';
 
 /** 文献 id = 英文 URL = 和訳 URL の対応データ
 

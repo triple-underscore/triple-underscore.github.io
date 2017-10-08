@@ -79,7 +79,6 @@ var Util = {
 	ADDITIONAL_NODES: [],
 //	CONTROL_UI: C(), //追加 UI
 	CLICK_HANDLERS: {},
-	CONTAINER_TAGS: {},
 
 	removeAdditionalNodes: EMPTY_FUNC,
 	indexHide: EMPTY_FUNC,
