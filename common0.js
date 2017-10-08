@@ -55,9 +55,7 @@ var Util = {
 	getState: EMPTY_FUNC, // 状態保存
 	setState: EMPTY_FUNC,
 
-	getMapping: EMPTY_FUNC,
 	get_mapping: EMPTY_FUNC,
-	textData: EMPTY_FUNC,
 	getDataByLevel: EMPTY_FUNC,
 	get_header: EMPTY_FUNC,
 	dump: EMPTY_FUNC,
@@ -104,26 +102,7 @@ var Util = {
 
 
 
-/* 改行／コロン区切りの文字列データから連想配列を取得
-引数
-	e:
-		文字列データを内容に含む要素またはその id
-		既定では、実行後に要素は DOM から除去される
-	options:
-		keep:
-			要素を DOM に残しておく場合は true
-		map:
-			この連想配列（複製されない）にデータが追加される
-*/
-
-Util.getMapping = function(e, options){
-	options = options || {};
-	return this.get_mapping(
-		this.textData(e, options), //.replace(/\n\t.+/g, ''),
-		options.map
-	);
-};
-
+// 改行＋コロン区切りの文字列データから連想配列を取得
 Util.get_mapping = function(data, map){
 	map = map || Object.create(null);
 
@@ -134,29 +113,16 @@ Util.get_mapping = function(data, map){
 	return map;
 };
 
-Util.textData = function(e, options){
-	if(typeof(e) === 'string'){
-		e = E(e);
-		if(!e) return '';
-	}
-	var data = e.textContent;
-	options = options || {};
-	if(!options.keep) {
-		e.parentNode.removeChild(e);
-	}
-	return data;
-};
-
+// ●●区切りの文字列から有名データブロックを抽出
 Util.parseBlocks = function(source){
 //	var rxp = RegExp('(\n' + splitter + ').+');
-//	var source = Util.textData('_source_data');
 	var result = Object.create(null);
 	var name = '';
 	source.split(/(\n●●.*)/).forEach(function(block){
 		if(block.slice(0,3) === '\n●●'){
 			name = block.slice(3);
 			if(!name){
-				// blocks with empty name are treated as comments
+				// 無名ブロックはコメント
 				return;
 			}
 			if(!(name in result)){
@@ -327,7 +293,12 @@ new function(){
 	// 初期化
 	function init(){
 		document.removeEventListener('DOMContentLoaded', init, false);
-		Object.assign(PAGE_DATA, Util.parseBlocks(Util.textData('_source_data')));
+
+		var elem = E('_source_data');
+		if(elem){
+			Object.assign(PAGE_DATA, Util.parseBlocks(elem.textContent));
+			elem.parentNode.removeChild(elem);
+		}
 
 		var options =
 		PAGE_DATA.options = Util.get_mapping(PAGE_DATA.options || '');
