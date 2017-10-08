@@ -395,8 +395,17 @@ x.~script:~WAPI#concept-script
 ~scriptingは可能化されて:~WAPI#concept-n-script
 環境~設定群~obj:~WAPI#environment-settings-object
 
+~script~fetch~options:~WAPI#script-fetch-options
+sfO.暗号用~nonce:~WAPI#concept-script-fetch-options-nonce
+sfO.完全性~metadata:~WAPI#concept-script-fetch-options-integrity
+sfO.構文解析器~metadata:~WAPI#concept-script-fetch-options-parser
+sfO.資格証~mode:~WAPI#concept-script-fetch-options-credentials
+
+
 非同期に完了した:~WAPI#_asynchronously-complete
 大域~obj:~WAPI#global-object
+
+
 
 	●HTML5 
 構文解析-~error:~HTMLparsing#parse-errors
@@ -668,7 +677,8 @@ interface::::インタフェース
 	そのまま:onward
 
 	●fetch
-fetch::::
+fetch:
+options:::option 集
 fetching:::fetch 処理
 	事前~fetching:prefetching
 Content-Type:
@@ -683,7 +693,7 @@ load:
 読込まれ:load され::読み込まれ::ロードされ
 読込み:load::読み込み::ロード
 資格証:credentials::資格証明情報::クレデンシャル
-基底:base:~
+基底:base::~
 環境:environment:~
 非同一生成元:cross-origin::~::クロスオリジン
 生成元:origin::~::オリジン
@@ -2568,11 +2578,11 @@ If the script's type is "module", this encoding will be ignored.
 Let CORS setting be the current state of the element's crossorigin content attribute.
 </li>
 	<li>
-%~module~script資格証~mode ~LET %~CORS設定 に応じて［
+%~module~script資格証~mode ~LET %~CORS設定 に応じて
+⇒＃
 `No CORS$st ならば `omit^l ／
 `Anonymous$st ならば `same-origin^l ／
 `Use Credentials$st ならば `include^l
-］
 ◎
 Let module script credentials mode be determined by switching on CORS setting:
 ◎
@@ -2609,19 +2619,29 @@ If the script element has an integrity attribute, then let integrity metadata be
 Otherwise, let integrity metadata be the empty string.
 </li>
 	<li>
-%構文解析器~状態 ~LET 
-%S の`解析器挿入~flag$に応じて［
+%構文解析器~metadata ~LET 
+%S の`解析器挿入~flag$に応じて
+⇒＃
 ~ON ならば `parser-inserted^l ／
-~OFF ならば `not parser-inserted^l
-］
+~OFF ならば `not-parser-inserted^l
 ◎
-Let parser state be "parser-inserted" if the script element has been flagged as "parser-inserted", and "not parser-inserted" otherwise.
+Let parser metadata be "parser-inserted" if the script element has been flagged as "parser-inserted", and "not-parser-inserted" otherwise.
 </li>
 	<li>
-%設定群 ~LET 
+%~options ~LET 次のようにされた`~script~fetch~options$
+⇒＃
+`暗号用~nonce$sfO ~SET %暗号用~nonce,
+`完全性~metadata$sfO ~SET %完全性~metadata,
+`構文解析器~metadata$sfO ~SET %構文解析器~metadata,
+`資格証~mode$sfO ~SET %~module~script資格証~mode
+◎
+Let options be a script fetch options whose cryptographic nonce is cryptographic nonce, integrity metadata is integrity metadata, parser metadata is parser metadata, and credentials mode is module script credentials mode.
+</li>
+	<li>
+%設定群~obj ~LET 
 %文書 の `Window$I ~objの`環境~設定群~obj$
 ◎
-Let settings be the element's node document's Window object's environment settings object.
+Let settings object be the element's node document's Window object's environment settings object.
 </li>
 	<li id="script-processing-src-prepare">
 <p>
@@ -2692,36 +2712,28 @@ Switch on the script's type:
 				<dl class="switch">
 					<dt>`classic^l</dt>
 					<dd>
-次を与える下で
-`~classic~scriptを~fetchする$
-⇒
-(
+`~classic~scriptを~fetchする$(
 %~url,
-%設定群,
+%設定群~obj,
 %暗号用~nonce,
-%完全性~metadata,
-%構文解析器~状態,
+%~options,
 %~CORS設定,
 %符号化方式
 )
 ◎
-Fetch a classic script given url, settings, cryptographic nonce, integrity metadata, parser state, CORS setting, and encoding.
+Fetch a classic script given url, settings object, options, CORS setting, and encoding.
 </dd>
 
 					<dt>`module^l</dt>
 					<dd>
-次を与える下で，`~module~script~graphを~fetchする$
-⇒
-(
+`~module~script~graphを~fetchする$(
 %~url,
-%設定群,
+%設定群~obj,
 `script^l,
-%暗号用~nonce,
-%構文解析器~状態,
-%~module~script資格証~mode
+%~options
 )
 ◎
-Fetch a module script graph given url, settings, "script", cryptographic nonce, parser state, and module script credentials mode.
+Fetch a module script graph given url, settings object, "script", and options.
 </dd>
 			</dl>
 
@@ -2791,22 +2803,25 @@ If the element does not have a src content attribute, run these substeps:
 Let source text be the value of the text IDL attribute.
 </li>
 	<li>
+%基底~URL ~LET %文書 の`文書~基底~URL$
+◎
+Let base URL be the script element's node document's document base URL.
+</li>
+	<li>
 <p>
 %S の`~script種別$に応じて：
 ◎
 Switch on the script's type:
 </p>
-
 				<dl class="switch">
-
 					<dt>`classic^l</dt>
 					<dd>
 						<ol>
 							<li>
 %S の`~script$ ~SET
-`~classic~scriptを作成する$( %~source~text, %設定群 )
+`~classic~scriptを作成する$( %~source~text, %設定群~obj, %基底~URL, %~options  )
 ◎
-Let script be the result of creating a classic script using source text and settings.
+Let script be the result of creating a classic script using source text, settings object, base URL, and options.
 ◎
 Set the script's script to script.
 </li>
@@ -2824,16 +2839,12 @@ The script is ready.
 							<li>
 %~script ~LET `~module~scriptを作成する$(
 %~source~text,
-%設定群,
-%文書 の`文書~基底~URL$,
-%暗号用~nonce,
-%構文解析器~状態,
-%~module~script資格証~mode
+%設定群~obj,
+%基底~URL,
+%~options
 )
 ◎
-Let base URL be the script element's node document's document base URL.
-◎
-Let script be the result of creating a module script using source text, settings, base URL, cryptographic nonce, parser state, and module script credentials mode.
+Let script be the result of creating a module script using source text, settings object, base URL, and options.
 </li>
 							<li>
 <p>
