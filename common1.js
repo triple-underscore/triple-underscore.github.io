@@ -215,6 +215,10 @@ IETFPR: 'IETF PROPOSED STANDARD'
 	function addControls(options){
 		var controls = C('div');
 		controls.id = '_view_control';
+		var a = C('a');
+		a.href = '#top';
+		a.textContent = '先頭↑';
+		controls.appendChild(a);
 
 		add_button('　　目次　　', 'A', '_toggle_toc');
 		if(!options.no_index){
