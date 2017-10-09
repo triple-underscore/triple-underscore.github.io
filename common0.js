@@ -26,22 +26,27 @@ function repeat(selector, callback, root){
 }
 
 var PAGE_DATA = Object.create(null); 
-/* possible members:
-options:
-	see common1.js
-ref_normative:
-ref_informative:
-	参照文献データ
-original_id_map:
+/* 予約済みメンバ（ # → 詳細は common1.js ）
+options:#
+	各種オプション
+original_id_map:#
 	訳文 id → 原文 id
+original_urls:#
+	原文URL複数分岐
 link_map
 	keyword → リンク先
-spec_metadata
+spec_metadata:#
 	仕様メタデータ
 words_table:
+	単語トークン対応
 words_table1:
-	単語トークン → 単語
-
+	単語トークン対応表
+ref_normative:#
+ref_informative:#
+	参照文献データ
+ref_key_map:#
+ref_data:#
+	参照文献追加リンク用 *1 REF_DATA
 */
 
 // see common1.js for possible members
@@ -51,6 +56,7 @@ var COMMON_DATA = Object.create(null);
 var Util = {
 	_COMP_: false,
 	DEFERRED: [], // 遅延実行
+	defer: EMPTY_FUNC, // TODO
 	initAdditional: EMPTY_FUNC,
 	getState: EMPTY_FUNC, // 状態保存
 	setState: EMPTY_FUNC,
@@ -509,7 +515,7 @@ LS: 'Living Standard',
 			html += 
 '<details id="_copyright"><summary>©</summary></details>';
 		}
-		if(true){
+		if(!PAGE_DATA.options.no_index) {
 			html += 
 '<details id="_index"><summary>索引など</summary></details>';
 		}
@@ -583,9 +589,7 @@ Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
 
 	source_data.switchWords(source_data.level);
 
-	Util.DEFERRED.push(function(){
-		Util.create_word_switch(source_data);
-	});
+	Util.DEFERRED.push(create_word_switch);
 
 	// 内容生成完了
 	E(main_id).style.display = '';
@@ -669,13 +673,8 @@ return;
 					);
 				} else {
 					// PREMAP
-					cap1 = premap[cap1];
-					if(!cap1) {
-						console.log('Undefined PREMAP symbol: ' + match );
-						return nesting1 + '＊' + match;
-					}
-					return nesting1 + cap1;
-	//				return nesting1 + ( premap[cap1] || '＊' );
+//					console.assert(cap1 in premap, 'Undefined PREMAP symbol: ' + match);
+					return nesting1 + ( premap[cap1] || '＊' );
 				}
 			case '【':
 				return '\uE002' + match + '\uE000';
@@ -689,7 +688,7 @@ return;
 				return nesting1 + match;
 			}
 		});
-		if(en_list.length >= 4096 ){
+		if(en_list.length >= 0x1000 ){
 			console.log('Error: Too many lang="en" items.');
 		}
 	}
@@ -726,6 +725,56 @@ return;
 			parent.parentNode.insertBefore(nav, parent);
 		} else {
 			parent.insertBefore(nav, root);
+		}
+	}
+
+	/** 語彙切替（内容生成） UI */
+
+	function create_word_switch(){
+		var w_switch = C('span');
+
+		new function(){
+			w_switch.className = '_hide_if_expanded';
+			var html = 
+'<input type="button" id="_words_levelX" tabindex="1" accesskey="X" value="用語" title="アクセスキー： X" >';
+
+			source_data.levels.forEach(function(label, index){
+				html += 
+'<label><input type="radio" id="_words_level'
++ index
++ '" name="_words" />'
++ label
++ '</label>'
+				;
+			});
+			w_switch.innerHTML = html;
+		}
+
+		check_level();
+		E('_view_control').appendChild(w_switch);
+
+		w_switch.onclick = function(event){
+			var level = (event.target.id || '').match(/^_words_level(\w)$/);
+			if(!level) return;
+			level = parseInt(level[1]);
+			var auto = isNaN(level); // _words_levelX
+	
+			if(auto){
+				level = (source_data.level + 1 ) % source_data.levels.length;
+			}
+			if(level === source_data.level) return;
+			Util.switchView(function(){
+				source_data.switchWords(level);
+			}, true);
+			Util.setState('words', source_data.level);
+
+			if(auto){
+				check_level();
+			}
+		}
+
+		function check_level(){
+			w_switch.children[source_data.level + 1].firstChild.checked = true;
 		}
 	}
 }

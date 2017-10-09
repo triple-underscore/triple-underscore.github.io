@@ -50,34 +50,54 @@ original_id_map
 
 
 new function(){
-	var init = function(){
-		if(!Util._COMP_){
-			window.setTimeout(init, 100);
-			if(document.readyState === 'complete') {
-				// this should not happen
-				init = EMPTY_FUNC;
-			}
-			return;
+
+Util.DEFERRED.unshift(addControls);
+Util.DEFERRED.unshift(navToInit);
+
+Util.DEFERRED.push(fillMisc);
+Util.DEFERRED.push(initEvents);
+Util.DEFERRED.push(
+	function(){Util.dfnInit();},
+	function(){Util.ref_position.init();},
+	altLinkInit
+)
+
+var init = function(){
+	if(!Util._COMP_){
+		window.setTimeout(init, 100);
+		if(document.readyState === 'complete') {
+			// this should not happen
+			init = EMPTY_FUNC;
 		}
-
-		document.body.addEventListener('click', onClick, false);
-		document.body.addEventListener('dblclick', onDblClick, false);
-
-		PAGE_DATA.original_id_map = PAGE_DATA.original_id_map || '';
-
-		Util.fillMisc();
-		navToInit();
-		Util.dfnInit();
-		Util.altLinkInit();
-
-		document.addEventListener('visibilitychange', onVisibilityChange, false);
-
-		Util.ref_position.init();
-		Util.DEFERRED.forEach(function(f){f();});
-		init = null;
+		return;
 	}
 
-	window.setTimeout(init, 50);
+	PAGE_DATA.original_id_map = PAGE_DATA.original_id_map || '';
+
+	defer0();
+	init = null;
+}
+
+window.setTimeout(init, 50);
+
+function defer0(){
+	//TODO Util.defer()
+	var d = Util.DEFERRED;
+	var task = d.shift();
+	if(!task) return;
+	try {
+		task();
+	} catch(err){
+		console.log(err);
+	}
+	if(d.length === 0) return;
+	window.setTimeout(defer0, 10);//requestAnimationFrame
+}
+
+function initEvents(){
+	document.body.addEventListener('click', onClick, false);
+	document.body.addEventListener('dblclick', onDblClick, false);
+	document.addEventListener('visibilitychange', onVisibilityChange, false);
 
 	function onVisibilityChange(){
 		if(document.hidden){
@@ -86,45 +106,10 @@ new function(){
 		}
 	}
 
-	function navToInit(){
-/** 内容生成後に素片識別子のアンカーへスクロールする */
-		if( history.state ){
-			return; // back/forward
-		}
-
-		var e;
-		var id = window.location.hash;
-		if(id){
-			id = id.slice(1);
-			if(id.indexOf('_xref-') === 0) return; // 生成リンク（ common1.js ）
-			id = targetId1(id) || id;
-			e = E(id);
-		}
-		if(!e) return;
-
-// html.spec.whatwg.org/multipage/history.html#location-object-setter-navigate
-		window.location.hash = e.id;
-		if(! e.hasAttribute('tabIndex')){
-			e.tabIndex = 0;
-		}
-		e.focus();
-
-		history.replaceState( Util.page_state, '' );
-
-		function targetId1(id){
-			// 訳文id:原文id （先頭の \t も有効）
-			id = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			var rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
-			var match = PAGE_DATA.original_id_map.match(rxp);
-			if(!match) return;
-			return match[1];
-		}
-	}
-
-
 	function onDblClick(event){
 		Util.toggleSource(event.target);
 	}
+
 	function onClick(event){
 		var handlers = Util.CLICK_HANDLERS;
 		var target = event.target;
@@ -172,17 +157,100 @@ new function(){
 		}
 		// default
 		Util.removeAdditionalNodes();
-
 /*
-	case 2:
-		Util.toggleSource(target);
-		break;
+		case 2:
+			Util.toggleSource(target);
+			break;
 */
 	}
 }
 
 
-Util.fillMisc = function(){
+function navToInit(){
+/** 内容生成後に素片識別子のアンカーへスクロールする */
+	if( history.state ){
+		return; // back/forward
+	}
+
+	var e;
+	var id = window.location.hash;
+	if(id){
+		id = id.slice(1);
+		if(id.indexOf('_xref-') === 0) return; // 生成リンク（ common1.js ）
+		id = targetId1(id) || id;
+		e = E(id);
+	}
+	if(!e){
+		// 後から生成される内容（参照文献など）の id
+		Util.DEFERRED.push(function(){
+			if(id && E(id)){
+				window.location.hash = id;
+			}
+		});
+		return;
+	}
+
+// html.spec.whatwg.org/multipage/history.html#location-object-setter-navigate
+	window.location.hash = e.id;
+	if(! e.hasAttribute('tabIndex')){
+		e.tabIndex = 0;
+	}
+	e.focus();
+
+	history.replaceState( Util.page_state, '' );
+
+	function targetId1(id){
+		// 訳文id:原文id （先頭の \t も有効）
+		id = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		var rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
+		var match = PAGE_DATA.original_id_map.match(rxp);
+		if(!match) return;
+		return match[1];
+	}
+}
+
+
+// ボタン類
+function addControls(){
+	var options = PAGE_DATA.options;
+	var controls = C('div');
+	controls.id = '_view_control';
+	var a = C('a');
+	a.href = '#top';
+	a.textContent = '先頭↑';
+	controls.appendChild(a);
+
+	add_button('　　目次　　', 'A', '_toggle_toc');
+	if(!options.no_index){
+		Util.indexInit()
+		add_button('索引', 'S', '_toggle_index');
+	}
+	add_button('原文', 'Z', '_toggle_source');
+
+	var e = E('_optional_controls');//TODO
+	if(e){
+		controls.appendChild(e);
+	}
+
+	document.body.appendChild(controls);
+
+	function add_button(label, key, id){
+		var b = C('input');
+		b.type = 'button';
+		b.value = label;
+		b.id = id;
+		b.tabIndex = 1;
+		if(key){
+			b.accessKey = key;
+			b.title = 'アクセスキー： ' + key;
+		}
+		controls.appendChild(b);
+	}
+}
+
+
+// 付帯情報を生成する
+function fillMisc(){
 	var options = PAGE_DATA.options;
 
 	if(options.expanded) return;
@@ -200,8 +268,6 @@ Util.fillMisc = function(){
 	fillConformance();
 	// 参照文献 和訳リンク
 	COMMON_DATA.addAltRefs();
-	// ボタン類
-	addControls(options);
 	// 左端の帯
 	initSideway(options);
 	return;
@@ -229,42 +295,6 @@ IETFPR: 'IETF PROPOSED STANDARD'
 		if(color) div.style.background = color;
 		div.textContent = text;
 		document.body.appendChild(div);
-	}
-
-	function addControls(options){
-		var controls = C('div');
-		controls.id = '_view_control';
-		var a = C('a');
-		a.href = '#top';
-		a.textContent = '先頭↑';
-		controls.appendChild(a);
-
-		add_button('　　目次　　', 'A', '_toggle_toc');
-		if(!options.no_index){
-			Util.indexInit()
-			add_button('索引', 'S', '_toggle_index');
-		}
-		add_button('原文', 'Z', '_toggle_source');
-
-		var e = E('_optional_controls');//TODO
-		if(e){
-			controls.appendChild(e);
-		}
-
-		document.body.appendChild(controls);
-
-		function add_button(label, key, id){
-			var b = C('input');
-			b.type = 'button';
-			b.value = label;
-			b.id = id;
-			b.tabIndex = 1;
-			if(key){
-				b.accessKey = key;
-				b.title = 'アクセスキー： ' + key;
-			}
-			controls.appendChild(b);
-		}
 	}
 
 	function fillSiteNav(){
@@ -329,7 +359,7 @@ http: 'RFC723X-ja.html#index',
 		html.push('</ul>');
 		nav.innerHTML = html.join('');
 		document.body.insertBefore(nav, document.body.firstChild);
-		
+
 		function findMatch(name){
 			if(!name) return;
 			if(name.slice(-5) === '.html') return name;
@@ -504,8 +534,46 @@ css: '<a href="css-common-ja.html#conformance">CSS 日本語訳 共通ページ<
 ';
 		document.body.appendChild(sec);
 	}
-
 };
+
+/** 外部リンク日本語訳リンク追加 */
+function altLinkInit(){
+	var root;
+	if(PAGE_DATA.options.main){
+		root = E(PAGE_DATA.options.main);
+	}
+	if(!root){
+		root = document.getElementsByTagName('main')[0];
+	}
+	if(!root) return;
+//	COMMON_DATA.JA_BASIS[''] = ''; //
+	var ja_link = C('a');
+	Util.ADDITIONAL_NODES.push(ja_link);
+	ja_link.id = '_ja_link';
+	ja_link.className = '_additional';
+	ja_link.textContent = '【和訳】';
+
+	root.addEventListener('mouseover', insert_ja_link, false);
+	//focus does not bubble
+	root.addEventListener('focus', insert_ja_link, true);
+
+	function insert_ja_link(e){
+		var a = e.target;
+		if(a.tagName !== 'A'){
+			a = a.parentNode;
+			if(a.tagName !== 'A') return;
+		}
+		if(a.className === '_additional') return;
+
+		var alt_url = COMMON_DATA.altURL(a.getAttribute('href'));
+		if(!alt_url) return;
+		ja_link.href = alt_url;
+		a.parentNode.insertBefore(ja_link, a.nextSibling);
+	}
+}
+
+
+}//new function
 
 Util.removeAdditionalNodes = function(refresh){
 	this.dfnHide(refresh);
@@ -568,57 +636,6 @@ Util.toggleSource = function(target){
 };
 	// click handler
 
-
-
-/** 語彙切替（内容生成） UI */
-
-Util.create_word_switch = function(source_data){
-	var w_switch = C('span');
-
-	new function(){
-		w_switch.className = '_hide_if_expanded';
-		var html = 
-'<input type="button" id="_words_levelX" tabindex="1" accesskey="X" value="用語" title="アクセスキー： X" >';
-
-		source_data.levels.forEach(function(label, index){
-			html += 
-'<label><input type="radio" id="_words_level'
-+ index
-+ '" name="_words" />'
-+ label
-+ '</label>'
-			;
-		});
-		w_switch.innerHTML = html;
-	}
-
-	check_level();
-	E('_view_control').appendChild(w_switch);
-
-	w_switch.onclick = function(event){
-		var level = (event.target.id || '').match(/^_words_level(\w)$/);
-		if(!level) return;
-		level = parseInt(level[1]);
-		var auto = isNaN(level); // _words_levelX
-
-		if(auto){
-			level = (source_data.level + 1 ) % source_data.levels.length;
-		}
-		if(level === source_data.level) return;
-		Util.switchView(function(){
-			source_data.switchWords(level);
-		}, true);
-		Util.setState('words', source_data.level);
-
-		if(auto){
-			check_level();
-		}
-	}
-
-	function check_level(){
-		w_switch.children[source_data.level + 1].firstChild.checked = true;
-	}
-}
 
 
 /** 索引機能 初期化*/
@@ -1127,7 +1144,7 @@ Util.dfnInit = function(){
 		var lastLi;
 		var n;
 		var prefix = '#_xref-' + (dfnJumpCount++) + '-';
-		
+
 		for(var i = 0; i < L; i++){
 			var link = dfnLinks[i];
 			for(var section = link.parentNode; section;
@@ -1176,41 +1193,6 @@ Util.dfnInit = function(){
 }
 
 
-/** 外部リンク日本語訳リンク追加 */
-Util.altLinkInit = function(){
-	var root;
-	if(PAGE_DATA.options.main){
-		root = E(PAGE_DATA.options.main);
-	}
-	if(!root){
-		root = document.getElementsByTagName('main')[0];
-	}
-	if(!root) return;
-//	COMMON_DATA.JA_BASIS[''] = ''; //
-	var ja_link = C('a');
-	this.ADDITIONAL_NODES.push(ja_link);
-	ja_link.id = '_ja_link';
-	ja_link.className = '_additional';
-	ja_link.textContent = '【和訳】';
-
-	root.addEventListener('mouseover', insert_ja_link, false);
-	//focus does not bubble
-	root.addEventListener('focus', insert_ja_link, true);
-
-	function insert_ja_link(e){
-		var a = e.target;
-		if(a.tagName !== 'A'){
-			a = a.parentNode;
-			if(a.tagName !== 'A') return;
-		}
-		if(a.className === '_additional') return;
-
-		var alt_url = COMMON_DATA.altURL(a.getAttribute('href'));
-		if(!alt_url) return;
-		ja_link.href = alt_url;
-		a.parentNode.insertBefore(ja_link, a.nextSibling);
-	}
-}
 
 /* TODO
 Util.contextMenuInit = function(){
@@ -1242,8 +1224,8 @@ COMMON_DATA.addAltRefs = function(){
 	var JA_REFS = this.JA_REFS;
 	var JA_LINKS = this.JA_LINKS;
 	var JA_BASIS = this.JA_BASIS;
-	var REF_DATA = this.REF_DATA;
-	var REF_KEY_MAP = Util.get_mapping(this.REF_KEY_MAP);
+	var REF_DATA = (PAGE_DATA.ref_data || '') + this.REF_DATA;
+	var REF_KEY_MAP = Util.get_mapping(this.REF_KEY_MAP + (PAGE_DATA.ref_key_map || ''));
 
 	var ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
 	var ref_id_lowercase = PAGE_DATA.options.ref_id_lowercase || false;
@@ -1376,7 +1358,7 @@ COMMON_DATA.addAltRefs = function(){
 	function collect_entries2(){
 		ref_node_list = ['normative', 'informative'];
 		ref_node_list.forEach(f);
-		
+
 		function f(id){
 			var ref_data = PAGE_DATA['ref_' + id];
 			if(!ref_data) return;
@@ -1894,7 +1876,6 @@ WORKERS=版            ~TR/workers/\n\
 WORKERS=編            w3c.github.io/workers/\n\
 XHR=・                xhr.spec.whatwg.org/\n\
 XHR=主                ~/XHR-ja.html\n\
-XHR=版                ~TR/XMLHttpRequest/●W3C版\n\
 XML11=主              ＃w4ard.eplusx.net/translation/W3C/REC-xml11-20060816/\n\
 XML=主                ＃w4ard.eplusx.net/translation/W3C/REC-xml-20081126/\n\
 XML=・                ~TR/xml/\n\
