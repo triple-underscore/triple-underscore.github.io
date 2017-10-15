@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="common-whatwg.css" type="text/css" />
 <style type="text/css">
 
-.js-misc, .js-slot {
+.js-misc, .js-slot, .js-value {
 	color: green;
 }
 
@@ -29,7 +29,7 @@ Util.ready = function(){
 	};
 	Util.switchWordsInit(source_data);
 
-//	Util.del_j(); //checked: 171006 spec
+//	Util.del_j(); //checked: 171013 spec
 }
 
 function expand(){
@@ -40,6 +40,7 @@ function expand(){
 		et: 'event-type',
 		sc: 'scheme',
 		jA: 'abstract',
+		jv: 'js-value',
 		sl: 'js-slot',
 //		js: 'js-misc',
 		h: 'header',
@@ -59,6 +60,7 @@ function expand(){
 		et: 'code', // event type
 		h: 'code', // HTTP header
 		jA: 'span', // 抽象演算
+		jv: 'code', // JS 値
 		sl: 'span', // JS internal slot
 //		js: 'span', // JS other TODO
 		b: 'b',
@@ -145,8 +147,8 @@ return text;
 
 ●●options
 
-spec_date:2017-10-02
-trans_update:2017-10-02
+spec_date:2017-10-13
+trans_update:2017-10-15
 page_state_key:HTML
 spec_status:LS
 original_url:https://html.spec.whatwg.org/multipage/webappapis.html
@@ -464,6 +466,7 @@ i.No CORS:~HTMLurl#attr-crossorigin-none
 sC.設定群~obj:#settings-object
 sC.~record:#concept-script-record
 sC.構文解析-~error:#concept-script-parse-error
+sC.再投出-用~error:#concept-script-error-to-rethrow
 sC.~fetch~options:#concept-script-script-fetch-options
 sC.基底~URL:#concept-script-base-url
 sC.~errorは黙秘する:#muted-errors
@@ -480,11 +483,6 @@ sfO.完全性~metadata:#concept-script-fetch-options-integrity
 sfO.構文解析器~metadata:#concept-script-fetch-options-parser
 sfO.資格証~mode:#concept-script-fetch-options-credentials
 options::::option 集
-
-
-~error済み:#concept-module-script-is-errored
-~instance化済み:#concept-module-script-has-instantiated
-~instance化前の~errorを設定する:#concept-module-script-set-pre-instantiation-error
 
 ~classic~script:#classic-script
 ~classic~scriptを作成する:#creating-a-classic-script
@@ -503,6 +501,7 @@ options::::option 集
 ~module~script~graphを~fetchする:#fetch-a-module-script-tree
 子孫を~fetchする:#fetch-the-descendants-of-a-module-script
 子孫を~fetchして~instance化する:#fetch-the-descendants-of-and-instantiate-a-module-script
+最初の~errorを見出す:#finding-the-first-parse-error
 単独の~module~scriptを~fetchする:#fetch-a-single-module-script
 ~worker用~module~script~graphを~fetchする:#fetch-a-module-worker-script-tree
 ~module~script~graphを~fetchする内部手続き:#internal-module-script-graph-fetching-procedure
@@ -796,7 +795,7 @@ js.Source Text Module Record:~TC39#sec-source-text-module-records
 js.List:~TC39#sec-list-and-record-specification-type
 js.TypeError:~TC39#sec-native-error-types-used-in-this-standard-typeerror
 
-	●JS 抽象演算
+	●抽象演算
 jA.EnqueueJob:~TC39#sec-enqueuejob
 jA.FunctionBody:~TC39#prod-FunctionBody
 jA.FunctionCreate:~TC39#sec-functioncreate
@@ -815,13 +814,10 @@ jA.NormalCompletion:~TC39#sec-normalcompletion
 jA.HostImportModuleDynamically:~JSIMPORT#sec-hostimportmoduledynamically
 jA.FinishDynamicImport:~JSIMPORT#sec-finishdynamicimport
 jA.EnsureCSPDoesNotBlockStringCompilation:~CSP3#can-compile-strings
-	https://w3c.github.io/webappsec-csp/#can-compile-strings
 
 c.import():~JSIMPORT#sec-import-calls
 
 
-jA.EnsureCSPDoesNotBlockStringCompilation:~CSP3#can-compile-strings
-	https://w3c.github.io/webappsec-csp/#can-compile-strings
 
 	要素の~inline型の挙動は~CSPにより阻止されるべきか？:~CSP3#should-block-inline
 
@@ -842,6 +838,7 @@ set.付加-:~INFRA#set-append
 ~list:~INFRA#list
 集合:~INFRA#set
 ~EACH:~INFRA#list-iterate
+	~CONTINUE:~INFRA#iteration-continue
 
 ~JS文字列:~INFRA#javascript-string
 	符号単位:~INFRA#code-unit
@@ -1046,14 +1043,16 @@ option::::オプション
 options::::option 集
 	parameter::::パラメタ
 
-子孫:descendants:~
-先祖:ancestor:~
+子孫:descendants::~
+先祖:ancestor::~
+根:root::~::ルート
+子:child::~
 指定子:specifier::~
 検査-:check::~::チェック
 失敗-:fail::~
 失敗:failure::~
-成功-:succeed:~
-成功:success:~
+成功-:succeed::~
+成功:success::~
 	-:successful
 	成功しな:unsuccessful
 出自に:originate::~
@@ -1090,6 +1089,7 @@ task::::タスク
 通知待ちの:about-to-be-notified:~
 黙秘-:mute::~
 再投出-:rethrow::~
+	:re-throw
 投出-:throw::~
 例外:exception::~
 未決の:outstanding::~
@@ -1271,6 +1271,18 @@ memory::::メモリ
 race:::競合
 同時並行的:concurrency:~
 遺物:artifacts:~
+発見-:discover:~
+通達-:signal:~
+
+	わかっている:we know
+	とされている:marked as
+	~module~script:moduleScript
+	発見-済み集合:discoveredSet
+	~module~map:moduleMap
+	子~URL~list:childURLs
+	子~module~list:childModules
+	子~module:childModule
+	子~構文解析-~error:childParseError
 
 	●event
 event::::イベント
@@ -1411,6 +1423,8 @@ care::::ケア
 試みて:attempt して:~
 試みる:attempt する:~
 試みな:attempt しな:~
+試みら:attempt さ:~
+試み:attempt:~
 課-:impose:~
 達成-:achieve:~
 違反:violation:~
@@ -1855,8 +1869,6 @@ level::::レベル
 	●未分類
 真偽値:boolean::~
 access::::アクセス
-	＊
-undefined:
 comment::::コメント
 parameter::::パラメタ
 token::::トークン
@@ -2049,7 +2061,7 @@ milli::::ミリ
 	最終:final
 	次に挙がる:next
 	時点:time
-
+	この時点までに，:by now
 
 ●●trans_metadata
 <p>
@@ -2242,7 +2254,7 @@ Scripting is disabled for a node if there is no such browsing context, or if scr
 <p>
 `~script@
 は、 2 種の`構造体$に分けられる。
-いずれにせよ、各~scriptは次のものを有する：
+いずれにせよ、各~scriptは次の~itemを有する：
 ◎
 A script is one of two possible structs. All scripts have:
 </p>
@@ -2282,10 +2294,27 @@ Either a Script Record, for classic scripts; a Source Text Module Record, for mo
 A parse error
 </dt>
 	<dd>
-~JS値
-— 意味があるのは、`~record$sC ~EQ ~NULL の場合に限られる。
+~JS値。
+意味があるのは、`~record$sC ~EQ ~NULL の場合に限られ、対応する~script~source~textを構文解析できなかったことを指示する。
 ◎
-A JavaScript value, which has meaning only if the record is null.
+A JavaScript value, which has meaning only if the record is null, indicating that the corresponding script source text could not be parsed.
+</dd>
+
+	<dt>
+`再投出-用~error@sC
+◎
+An error to rethrow
+</dt>
+	<dd>
+評価を成功させなくする~errorを表現している，~JS値。
+<a href="#calling-scripts">~scriptを走らす</a>よう試みられたときには、これが再~投出されることになる。
+◎
+A JavaScript value representing an error that will prevent evaluation from succeeding. It will be re-thrown by any attempts to run the script.
+</dd>
+	<dd class="note">注記：
+この例外~値は~JS仕様により提供され，決して ~NULL にならないことはわかっているので、~errorは生じなかったことを通達するときには， ~NULL を利用することにする。
+◎
+Since this exception value is provided by the JavaScript specification, we know that it is never null, so we use null to signal that no error has occurred.
 </dd>
 
 	<dt>
@@ -2341,76 +2370,6 @@ A boolean which, if true, means that error information will not be provided for 
 も`~script$の一種であるが、追加の~itemは有さない。
 ◎
 A module script is another type of script. It has no additional items.
-</p>
-
-<p>
-`~module~script$は、その`~record$sC %R が次を満たすならば
-`~error済み@
-という
-⇒
-%R ~EQ ~NULL
-~OR
-%R . `Status^sl ~EQ `errored^l
-◎
-We say that a module script is errored if either its record is null, or its record's [[Status]] field has the value "errored".
-</p>
-
-<p>
-`~error済み$である`~module~script$ %S の
-`~error@sC
-は、［
-%S の`~record$sC ~EQ ~NULL ならば %S の`構文解析-~error$sC ／
-~ELSE_ %S の `ErrorCompletion^sl . `Value^sl
-］とする。
-◎
-When a module script is errored, we say that its error is either its parse error, when its record is null, or its record's [[ErrorCompletion]] field's [[Value]] field, otherwise.
-</p>
-
-<p>
-`~module~script$ %~script の
-`~instance化前の~errorを設定する@
-ときは、所与の %~error に対し，次を走らす：
-◎
-To set the pre-instantiation error of a module script script:
-</p>
-
-<ol>
-	<li>
-%~record ~LET %~script の`~record$sC
-◎
-Let moduleRecord be script's record.
-</li>
-	<li>
-~IF［
-%~record ~NEQ ~NULL
-］
-⇒
-%~record . `HostDefined^sl ~SET `undefined^js
-◎
-If moduleRecord is not null, set moduleRecord.[[HostDefined]] to undefined.
-</li>
-	<li>
-%~script の`~record$sC ~SET ~NULL
-◎
-Set script's record to null.
-</li>
-	<li>
-%~script の`構文解析-~error$sC ~SET %~error
-◎
-Set script's parse error to error.
-</li>
-</ol>
-
-<p>
-`~module~script$は、その`~record$sC %R が次を満たすならば
-`~instance化済み@
-であるという
-⇒
-%R ~NEQ ~NULL
-~AND
-%R . `Status^sl ~IN { `instantiated^l, `evaluated^l }
-◎
-We say that a module script has instantiated if its record is not null, and its record's [[Status]] field is either "instantiated" or "evaluated".
 </p>
 
 <hr>
@@ -3082,20 +3041,15 @@ To fetch a classic worker script given a url, a fetch client settings object, a 
 
 <ol>
 	<li>
-<p>
 %要請 ~LET 次のようにされた新たな`要請$
-</p>
-
-<ul><li>`~url$rq ~SET %~url
-</li><li>`~client$rq ~SET %~fetch~client設定群~obj
-</li><li>`行先$rq ~SET %行先
-</li><li>`~mode$rq ~SET `same-origin^l
-</li><li>`資格証~mode$rq ~SET `same-origin^l
-</li><li>`構文解析器~metadata$rq ~SET `not-parser-inserted^l
-</li><li>`~URL資格証~利用~flag$rq ~SET ~ON
-</li></ul>
-<!-- ＊not parser-inserted -->
-
+⇒＃
+`~url$rq ~SET %~url,
+`~client$rq ~SET %~fetch~client設定群~obj,
+`行先$rq ~SET %行先,
+`~mode$rq ~SET `same-origin^l,
+`資格証~mode$rq ~SET `same-origin^l,
+`構文解析器~metadata$rq ~SET `not-parser-inserted^l<!-- ＊not parser-inserted -->,
+`~URL資格証~利用~flag$rq ~SET ~ON
 ◎
 Let request be a new request whose url is url, client is fetch client settings object, destination is destination, mode is "same-origin", credentials mode is "same-origin", parser metadata is "not parser-inserted", and whose use-URL-credentials flag is set.
 </li>
@@ -3196,17 +3150,14 @@ To fetch a classic worker-imported script given a url and a settings object, run
 
 <ol>
 	<li>
-<p>
 %要請 ~LET 次のようにされた新たな`要請$
-</p>
-
-<ul><li>`~url$rq ~SET %~url
-</li><li>`~client$rq ~SET %設定群~obj
-</li><li>`行先$rq ~SET `script^l
-</li><li>`構文解析器~metadata$rq ~SET `not-parser-inserted^l
-</li><li>`同期~flag$rq ~SET ~ON
-</li><li>`~URL資格証~利用~flag$rq ~SET ~ON
-</li></ul>
+⇒＃
+`~url$rq ~SET %~url,
+`~client$rq ~SET %設定群~obj,
+`行先$rq ~SET `script^l,
+`構文解析器~metadata$rq ~SET `not-parser-inserted^l,
+`同期~flag$rq ~SET ~ON,
+`~URL資格証~利用~flag$rq ~SET ~ON
 ◎
 Let request be a new request whose url is url, client is settings object, destination is "script", parser metadata is "not parser-inserted", synchronous flag is set, and whose use-URL-credentials flag is set.
 </li>
@@ -3463,21 +3414,11 @@ Return from this algorithm, and run the following steps when fetching a single m
 			<li>
 ~IF［
 %結果 ~EQ ~NULL
-］~OR［
-%結果 は［
-`~error済み$または`~instance化済み$
-］である
 ］
 ⇒
-%結果 を結果として，`非同期に完了-$する
+~NULL を結果として，`非同期に完了-$する
 ◎
-If result is null, is errored, or has instantiated, asynchronously complete this algorithm with result, and abort these steps.
-</li>
-			<li>
-~Assert：
-( %結果 の`~record$sC ) . `Status^sl ~EQ `uninstantiated^l
-◎
-Assert: result's record's [[Status]] is "uninstantiated".
+If result is null, asynchronously complete this algorithm with null, and abort these steps.
 </li>
 			<li>
 <p>
@@ -3559,17 +3500,13 @@ If moduleMap[url] exists, asynchronously complete this algorithm with moduleMap[
 Set moduleMap[url] to "fetching".
 </li>
 	<li>
-<p>
 %要請 ~LET 次のようにされた新たな`要請$
-</p>
-
-<ul><li>`~url$rq ~SET %~url
-</li><li>`行先$rq ~SET %行先
-</li><li>`~mode$rq ~SET `cors^l
-</li><li>`~referrer$rq ~SET %~referrer
-</li><li>`~client$rq ~SET %~fetch~client設定群~obj
-</li></ul>
-
+⇒＃
+`~url$rq ~SET %~url,
+`行先$rq ~SET %行先,
+`~mode$rq ~SET `cors^l,
+`~referrer$rq ~SET %~referrer,
+`~client$rq ~SET %~fetch~client設定群~obj
 ◎
 Let request be a new request whose url is url, destination is destination, mode is "cors", referrer is referrer, and client is fetch client settings object.
 </li>
@@ -3722,18 +3659,17 @@ To fetch the descendants of a module script module script, given a destination a
 
 <ol>
 	<li>
+%~record ~LET %~module~script の`~record$sC
+◎
+↓</li>
+	<li>
 ~IF［
-%~module~script は［
-`~error済み$または`~instance化済み$
-］である
+%~record ~EQ ~NULL
 ］
 ⇒
 %~module~script を結果として，`非同期に完了-$する
 ◎
-If module script is errored or has instantiated, asynchronously complete this algorithm with module script, and abort these steps.
-</li>
-	<li>
-%~record ~LET %~module~script の`~record$sC
+If module script's record is null, then asynchronously complete this algorithm with module script and abort these steps.
 ◎
 Let record be module script's record.
 </li>
@@ -3754,7 +3690,7 @@ Let urls be a new empty list.
 	<li>
 <p>
 ~FOR
-%~record . `RequestedModules^sl 内の `~EACH$ ( 文字列 %要請されたもの ) に対し：
+%~record . `RequestedModules^sl 内の `~EACH$( 文字列 %要請されたもの ) に対し：
 ◎
 For each string requested of record.[[RequestedModules]],
 </p>
@@ -3781,12 +3717,12 @@ If visited set does not contain url, then:
 </p>
 				<ol>
 					<li>
-%~url~list に %~url を`付加-$する
+%~url を %~url~list に`付加-$する
 ◎
 Append url to urls.
 </li>
 					<li>
-%訪問済み集合 に %~url を`付加-$setする
+%~url を %訪問済み集合 に`付加-$setする
 ◎
 Append url to visited set.
 </li>
@@ -3802,7 +3738,7 @@ Let options be the descendant script fetch options for module script's fetch opt
 
 	<li>
 <p>
-%~url~list 内の `~EACH$ ( %~url ) に対し
+%~url~list 内の `~EACH$( %~url ) に対し
 ⇒
 次を与える下で，`~module~script~graphを~fetchする内部手続き$を遂行する
 ⇒＃
@@ -3821,86 +3757,33 @@ For each url in urls, perform the internal module script graph fetching procedur
 </p>
 
 <p>
-これらの`~module~script~graphを~fetchする内部手続き$の呼出たちは、互いに並列的に遂行されるべきである。
+これらの`~module~script~graphを~fetchする内部手続き$の呼出は、互いに並列的に遂行されるべきである
+— そうするかどうかに関わらず：
 ◎
 These invocations of the internal module script graph fetching procedure should be performed in parallel to each other.
 </p>
-
-<p>
-`~module~script~graphを~fetchする内部手続き$の各 呼出~すべてが`非同期に完了-$するまで待機した上で：
-◎
-Wait for all invocations of the internal module script graph fetching procedure to asynchronously complete, and＼
-</p>
 		<ol>
 			<li>
-%結果~list ~LET %~url~list と同順による，それらの結果が成す`~list$
-◎
-let results be a list of the results, corresponding to the same order they appeared in urls.＼
-</li>
-			<li>
-<p>
-%結果~list 内の~EACH( %結果 ) に対し：
-◎
-Then, for each result of results:
-</p>
-				<ol>
-					<li>
 ~IF［
-%結果 ~EQ ~NULL
+ある呼出が ~NULL を結果として`非同期に完了-$した
 ］
 ⇒
 ~NULL を結果として，`非同期に完了-$する
 ◎
-If result is null, asynchronously complete this algorithm with null, aborting these steps.
+If any of the invocations of the internal module script graph fetching procedure asynchronously complete with null, asynchronously complete this algorithm with null, aborting these steps.
 </li>
-					<li>
-<p>
-~IF［
-%結果 は`~error済み$である
-］：
-</p>
-						<ol>
-							<li>
-%~module~script の`~instance化前の~errorを設定する$( %結果 の`~error$sC )
-</li>
-							<li>
+			<li>
+~ELSE
+— したがって［
+すべての呼出が `非同期に完了-$する
+］まで待機した上で
+⇒
 %~module~script を結果として，`非同期に完了-$する
-</li>
-						</ol>
 ◎
-If result is errored, then set the pre-instantiation error for module script to result's error. Asynchronously complete this algorithm with module script, aborting these steps.
+Otherwise, wait until all of the internal module script graph fetching procedure invocations have asynchronously completed. Asynchronously complete this algorithm with module script.
 </li>
-				</ol>
-			</li>
 		</ol>
-
-<div class="note">
-<p>注記：
-すべての呼出が完了するまで待機してから，結果を順に反復することは、［
-どの［
-~fetching ／ ~instance化前の~error
-］も，開発者にとって決定的になるよう表面化する
-］ために，重要になる。
-さもなければ、~module~script~graphに複数の~errorが伴われる場合に，~debugが至極困難になるので。
-◎
-It is important to wait for all invocations to complete, and then iterate the results in order, so that any fetching or pre-instantiation errors are deterministically surfaced to the developer. Otherwise, a module script graph with multiple errors would surface a nondeterministically chosen error, making debugging quite difficult.
-</p>
-
-<p>
-観測され得ない最適化として，実装は、呼出が ~NULL または`~error済み$の`~module~script$を返したとき，それまでの呼出~すべてがすでに完了しているならば、早々に退出できる。
-しかしながら、この最適化は稀な失敗~事例のためにあるので，手間をかけるほどでもない見込みも高い。
-◎
-As an unobservable optimization, implementations can quit early if an invocation returns null or an errored module script, and all previous invocations have completed already. However, this is optimizing for the rare failure case, so likely not worth the trouble.
-</p>
-</div>
 	</li>
-	<li>
-%~module~script を結果として，`非同期に完了-$する
-— ここに達した時点で、`~module~script~graphを~fetchする内部手続き$の呼出~すべては，`~error済み$でない`~module~script$を結果として，`非同期に完了-$したことになる。
-◎
-If we've reached this point, all of the internal module script graph fetching procedure invocations have asynchronously completed, with module scripts that are not errored. Asynchronously complete this algorithm with module script.
-</li>
-
 </ol>
 
 
@@ -3927,7 +3810,9 @@ Fetch the descendants of module script, given destination and visited set.
 </li>
 	<li>
 ~RET
-— ただし、`子孫を~fetchする$が %結果 を結果として `非同期に完了-$したときには，以下を走らす：
+— ただし、［
+前~段の`子孫を~fetchする$
+］が， %結果 を結果として `非同期に完了-$したときには、以下を走らす：
 ◎
 Return from this algorithm, and run the following steps when fetching the descendants of a module script asynchronously completes with result.
 </li>
@@ -3935,25 +3820,36 @@ Return from this algorithm, and run the following steps when fetching the descen
 <p>
 ~IF［
 %結果 ~EQ ~NULL
-］~OR［
-%結果 は`~error済み$である
 ］
 ⇒
 %結果 を結果として，`非同期に完了-$する
 ◎
-If result is null or is errored, then asynchronously complete this algorithm with result.
+If result is null, then asynchronously complete this algorithm with result.
 </p>
 
 <p class="note">注記：
-この事例では，いずれかの子孫において、~fetchingに~errorが生じているか,
-構文解析に失敗しているか,
-それまでに~error済みとされている。
+この事例では， 1 個~以上の子孫において、~fetchingに~errorが生じている。
 よって、~instance化しようとは試みない。
 ◎
-In this case, there was an error fetching the descendants, or one of them failed to parse, or was previously marked as errored. We will not attempt to instantiate.
+In this case, there was an error fetching one or more of the descendants. We will not attempt to instantiate.
 </p>
 	</li>
 	<li>
+%構文解析-~error ~LET `最初の~errorを見出す$( %結果 )
+◎
+Let parse error be the result of finding the first parse error given result.
+</li>
+	<li>
+<p>
+~IF［
+%構文解析-~error ~EQ ~NULL
+］：
+◎
+If parse error is null, then:
+</p>
+
+		<ol>
+			<li>
 <p>
 ( %結果 の`~record$sC ) . `Instantiate$jA()
 を遂行する
@@ -3970,17 +3866,147 @@ Perform record.Instantiate().
 This step will recursively call Instantiate on all of the module's uninstantiated dependencies.
 </p>
 
+
 <p>
-例外が投出されても、ここでは無視する
-— それは、 %結果 の`~error$sCに格納され， %結果 で`~module~scriptを走らす$ときに報告されることになる。
+この段で例外 %E が投出されたときは
+⇒
+%結果 の`再投出-用~error$sC ~SET %E
 ◎
-If this throws an exception, ignore it for now; it is stored as result's error, and will be reported when we run result.
+If this throws an exception, set result's error to rethrow to that exception.
 </p>
+			</li>
+		</ol>
 	</li>
+	<li>
+~ELSE
+⇒
+%結果 の`再投出-用~error$sC ~SET %構文解析-~error
+◎
+Otherwise, set result's error to rethrow to parse error.
+</li>
 	<li>
 %結果 を結果として，`非同期に完了-$する
 ◎
 Asynchronously complete this algorithm with result.
+</li>
+</ol>
+
+<p>
+`最初の~errorを見出す@
+ときは、所与の
+( 根 %~module~script, %発見-済み集合 （省略時は新たな`集合$） )
+に対し，次を走らす：
+◎
+To find the first parse error given a root moduleScript and an optional discoveredSet:
+</p>
+
+<ol>
+	<li>
+%~module~map ~LET %~module~script の`設定群~obj$sCの`~module~map$enV
+◎
+Let moduleMap be moduleScript's settings object's module map.
+◎
+If discoveredSet was not given, let it be an empty set.
+</li>
+	<li>
+%~module~script を %発見-済み集合 に`付加-$setする
+<!--＊ list-append -->
+◎
+Append moduleScript to discoveredSet.
+</li>
+	<li>
+~IF［
+%~module~script の`~record$sC ~EQ ~NULL
+］
+⇒
+~RET %~module~script の`構文解析-~error$sC
+◎
+If moduleScript's record is null, then return moduleScript's parse error.
+</li>
+	<li>
+%子~指定子~list ~LET ( %~module~script の`~record$sC ) . `RequestedModules^sl
+◎
+Let childSpecifiers be the value of moduleScript's record's [[RequestedModules]] internal slot.
+</li>
+	<li>
+%子~URL~list ~LET 新たな`~list$
+◎
+Let childURLs be the list＼
+</li>
+	<li>
+<p>
+%子~指定子~list 内の~EACH( %~item ) に対し
+⇒
+次の結果を %子~URL~list に`付加-$する
+⇒
+`~module指定子を解決する$( %~module~script, %~item )
+</p>
+
+<p class="note">注記：
+どの %~item に対しても，この結果が `失敗^i になることはない
+— さもなければ， %~module~script 自身が構文解析-~errorとされている筈なので。
+</p>
+◎
+obtained by calling resolve a module specifier once for each item of childSpecifiers, given moduleScript and that item. (None of these will ever fail, as otherwise moduleScript would have been marked as itself having a parse error.)
+</li>
+	<li>
+%子~module~list ~LET 新たな`~list$
+◎
+Let childModules be the list＼
+</li>
+	<li>
+%子~URL~list  内の~EACH( %~item ) に対し
+⇒
+%~module~map[ %~item ] を %子~module~list に`付加-$する
+◎
+obtained by getting each value in moduleMap whose key is given by an item of childURLs.
+</li>
+	<li>
+<p>
+%子~module~list 内の`~EACH$( %子~module ) に対し：
+◎
+For each childModule of childModules:
+</p>
+		<ol>
+			<li>
+~Assert：
+%子~module は`~module~script$である
+（すなわち、 %子~module ~NIN { `fetching^l, ~NULL } ）
+— この時点までに、［
+~graph内の， %~module~script を根とする すべての`~module~script$
+］に対する~fetchは，成功したことになる。
+◎
+Assert: childModule is a module script (i.e., it is not "fetching" or null); by now all module scripts in the graph rooted at moduleScript will have successfully been fetched.
+</li>
+			<li>
+~IF［
+%子~module ~IN %発見-済み集合
+］
+⇒
+~CONTINUE
+◎
+If discoveredSet already contains childModule, continue.
+</li>
+			<li>
+%子~構文解析-~error ~LET `最初の~errorを見出す$( %子~module, %発見-済み集合 )
+◎
+Let childParseError be the result of finding the first parse error given childModule and discoveredSet.
+</li>
+			<li>
+~IF［
+%子~構文解析-~error ~NEQ ~NULL
+］
+⇒
+~RET %子~構文解析-~error
+◎
+If childParseError is not null, return childParseError.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET ~NULL
+◎
+Return null.
 </li>
 </ol>
 
@@ -4020,14 +4046,18 @@ If scripting is disabled for settings's responsible browsing context, then set s
 Let script be a new classic script that this algorithm will subsequently initialize.
 </li>
 	<li>
-%~script の`設定群~obj$sC ~SET %設定群
+%~script の
+⇒＃
+`設定群~obj$sC ~SET %設定群,
+`~errorは黙秘する$sC ~SET %~errorは黙秘する,
+`構文解析-~error$sC ~SET ~NULL,
+`再投出-用~error$sC ~SET ~NULL
 ◎
 Set script's settings object to settings.
-</li>
-	<li>
-%~script の`~errorは黙秘する$sC ~SET %~errorは黙秘する
 ◎
 Set script's muted errors to muted errors.
+◎
+Set script's parse error and error to rethrow to null.
 </li>
 	<li>
 <p>
@@ -4050,13 +4080,16 @@ Passing script as the last parameter here ensures result.[[HostDefined]] will be
 %結果 は ~errorたちの`~list$である
 ］：
 ◎
-If result is a List of errors, then:
+If result is a list of errors, then:
 </p>
 		<ol>
 			<li>
-%~script の`構文解析-~error$sC ~SET %結果[0]
+%~script の
+⇒＃
+`構文解析-~error$sC  ~SET %結果[0],
+`再投出-用~error$sC ~SET %結果[0]
 ◎
-Set script's parse error to result[0].
+Set script's parse error and its error to rethrow to result[0].
 </li>
 	<li>
 ~RET %~script
@@ -4066,17 +4099,15 @@ Return script.
 		</ol>
 	</li>
 	<li>
-%~script の`~record$sC ~SET %結果
+%~script の
+⇒＃
+`~record$sC ~SET %結果,
+`基底~URL$sC ~SET %基底~URL,
+`~fetch~options$sC ~SET %~options
 ◎
 Set script's record to result.
-</li>
-	<li>
-%~script の`基底~URL$sC ~SET %基底~URL
 ◎
 Set script's base URL to baseURL.
-</li>
-	<li>
-%~script の`~fetch~options$sC ~SET %~options
 ◎
 Set script's fetch options to options.
 </li>
@@ -4117,9 +4148,15 @@ If scripting is disabled for settings's responsible browsing context, then set s
 Let script be a new module script that this algorithm will subsequently initialize.
 </li>
 	<li>
-%~script の`設定群~obj$sC ~SET %設定群
+%~script の
+⇒＃
+`設定群~obj$sC ~SET %設定群,
+`構文解析-~error$sC ~SET ~NULL,
+`再投出-用~error$sC ~SET ~NULL
 ◎
 Set script's settings object to settings.
+◎
+Set script's parse error and error to rethrow to null.
 </li>
 	<li>
 <p>
@@ -4142,7 +4179,7 @@ Passing script as the last parameter here ensures result.[[HostDefined]] will be
 %結果 は ~errorたちの`~list$である
 ］：
 ◎
-If result is a List of errors, then:
+If result is a list of errors, then:
 </p>
 		<ol>
 			<li>
@@ -4206,17 +4243,15 @@ This step is essentially validating all of the requested module specifiers. We t
 </p>
 	</li>
 	<li>
-%~script の`~record$sC ~SET %結果
+%~script の
+⇒＃
+`~record$sC ~SET %結果,
+`基底~URL$sC ~SET %基底~URL,
+`~fetch~options$sC ~SET %~options
 ◎
 Set script's record to result.
-</li>
-	<li>
-%~script の`基底~URL$sC ~SET %基底~URL
 ◎
 Set script's base URL to baseURL.
-</li>
-	<li>
-%~script の`~fetch~options$sC ~SET %~options
 ◎
 Set script's fetch options to options.
 </li>
@@ -4270,16 +4305,16 @@ Let evaluationStatus be null.
 </li>
 	<li>
 ~IF［
-%~script の`構文解析-~error$sC ~NEQ ~NULL
+%~script の`再投出-用~error$sC ~NEQ ~NULL
 ］
 ⇒
 %評価~status ~SET `Completion^js{
 `Type^sl: `throw^js,
-`Value^sl: %~script の`構文解析-~error$sC,
+`Value^sl: %~script の`再投出-用~error$sC,
 `Target^sl: `empty^js
 }
 ◎
-If script's parse error is not null, then set evaluationStatus to Completion { [[Type]]: throw, [[Value]]: script's parse error, [[Target]]: empty }.
+If script's error to rethrow is not null, then set evaluationStatus to Completion { [[Type]]: throw, [[Value]]: script's error to rethrow, [[Target]]: empty }.
 </li>
 	<li>
 <p>
@@ -4302,7 +4337,7 @@ If script's parse error is not null, then set evaluationStatus to Completion { [
 `走らせた~scriptを片付ける$( %設定群 )
 </li>
 					<li>
-~RET `undefined^js
+~RET `undefined^jv
 </li>
 				</ol>
 			</li>
@@ -4369,7 +4404,7 @@ Report the exception given by evaluationStatus.[[Value]] for script.
 Clean up after running script with settings.
 </li>
 					<li>
-~RET `undefined^js
+~RET `undefined^jv
 ◎
 Return undefined.
 </li>
@@ -4444,16 +4479,16 @@ Let evaluationStatus be null.
 </li>
 	<li>
 ~IF［
-%~script は`~error済み$である
+%~script の`再投出-用~error$sC ~NEQ ~NULL
 ］
 ⇒
 %評価~status ~SET `Completion^js{
 `Type^sl: `throw^js,
-`Value^sl: %~script の`~error$sC,
+`Value^sl: %~script の`再投出-用~error$sC,
 `Target^sl: `empty^js
 }
 ◎
-If script is errored, then set evaluationStatus to Completion { [[Type]]: throw, [[Value]]: script's error, [[Target]]: empty }.
+If script's error to rethrow is not null, then set evaluationStatus to Completion { [[Type]]: throw, [[Value]]: script's error to rethrow, [[Target]]: empty }.
 </li>
 	<li>
 <p>
@@ -5853,11 +5888,11 @@ Although the JavaScript specification speaks in terms of "scripts" versus "modul
 </li><li>~NULL
 — 失敗した~fetchを表現するために利用される
 </li><li>`fetching^l
-— 【後で前 2 項のいずれかの値に確定される，】
+— 【~fetch後に前 2 項のいずれかの値に確定される，】
 仮入力~値
 </li></ul>
 ◎
-A module map is a map of URL records to values that are either a module script, null (used to represent failed fetches), or a placeholder value "fetching".\
+A module map is a map of URL records to values that are either a module script, null (used to represent failed fetches), or a placeholder value "fetching".＼
 </div>
 
 <p>
@@ -6083,9 +6118,7 @@ Let resolved module script be moduleMap[url].＼
 	<li>
 ~Assert：
 %解決-済み~module~script は`~module~script$である（すなわち，
-%解決-済み~module~script ~NIN {
-ε, ~NULL, `fetching^l
-}
+%解決-済み~module~script ~NIN { ε, ~NULL, `fetching^l }
 ）
 ◎
 (This entry must exist for us to have gotten to this point.)
@@ -6094,9 +6127,9 @@ Assert: resolved module script is a module script (i.e., is not null or "fetchin
 </li>
 	<li>
 ~Assert：
-%解決-済み~module~script は`~error済み$でない
+%解決-済み~module~script の`~record$sC ~NEQ ~NULL
 ◎
-Assert: resolved module script is not errored.
+Assert: resolved module script's record is not null.
 </li>
 	<li>
 ~RET %解決-済み~module~script の`~record$sC
@@ -6258,7 +6291,7 @@ If running the module script throws an exception, then perform FinishDynamicImpo
 %referencingScriptOrModule,
 %指定子,
 %~promise能力,
-`NormalCompletion$jA( `undefined^js )
+`NormalCompletion$jA( `undefined^jv )
 )
 を遂行する
 ◎
@@ -6267,7 +6300,7 @@ Otherwise, perform FinishDynamicImport(referencingScriptOrModule, specifier, pro
 		</ol>
 	</li>
 	<li>
-~RET `undefined^js
+~RET `undefined^jv
 ◎
 Return undefined.
 </li>
@@ -7046,10 +7079,10 @@ Remove promise from settings object's outstanding rejected promises weak set.
 
 <ul ><li>`PromiseRejectionEvent$I ~interfaceを利用する
 </li><li>名前 `rejectionhandled$et
-</li><li>~eventの各種~属性は次のように初期化する：
-	<ul><li>`promise$m ~SET %promise
-	</li><li>`reason$m ~SET %promise の `PromiseResult^sl 内部~slotの値
-	</li></ul>
+</li><li>~eventの各種~属性は次のように初期化する
+⇒＃
+`promise$m ~SET %promise,
+`reason$m ~SET %promise の `PromiseResult^sl 内部~slotの値
 </li></ul>
 
 ◎
@@ -7742,7 +7775,8 @@ if the performing a microtask checkpoint flag is false, then the user agent must
 </li>
 	<li>
 %~loop ~LET 当の`~event-loop$
-</li>
+◎
+↓</li>
 	<li>
 `極小task~checkpoint遂行-中~flag$ ~SET ~ON
 ◎
@@ -8287,7 +8321,7 @@ Let urls be an empty list.
 </li>
 	<li>
 <p>
-%入力 内の`~EACH$( %文字列 ) に対し：
+%入力 内の `~EACH$( %文字列 ) に対し：
 ◎
 For each string of input:
 </p>
@@ -8342,7 +8376,7 @@ Let encryptedURLs be an empty list.
 </li>
 			<li>
 <p>
-%~url~list 内の`~EACH$( %~url ) に対し：
+%~url~list 内の `~EACH$( %~url ) に対し：
 ◎
 For each url of urls:
 </p>
@@ -9014,13 +9048,13 @@ There are two exceptions in the platform, for historical reasons:
 <ul>
 	<li>
 大域~obj上の `onerror$hd ~handlerは、
-~T を返した場合に~eventを取消す。
+`true^jv を返した場合に~eventを取消すことになる。
 ◎
 The onerror handlers on global objects, where returning true cancels the event
 </li>
 	<li>
 `onbeforeunload$hd ~handlerは、
-~NULL でも~undefinedでもない値を返した場合に~eventを取消すことになる。
+`null^jv でも `undefined^jv でもない値を返した場合に~eventを取消すことになる。
 ◎
 The onbeforeunload handler, where returning any non-null and non-undefined value will cancel the event.
 </li>
