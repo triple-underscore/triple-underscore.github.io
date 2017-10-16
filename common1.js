@@ -87,7 +87,9 @@ var init = function(){
 
 	options = PAGE_DATA.options;
 
-	Util.DEFERRED.unshift(addControls);
+	if(!options.expanded){
+		Util.DEFERRED.unshift(addControls);
+	}
 	Util.DEFERRED.unshift(navToInit);
 
 	if(!options.expanded){
@@ -99,6 +101,7 @@ var init = function(){
 			fillIndexes, // 巡回
 			fillConformance, // 適合性
 			initSideway, // 左端の帯
+			addTopNav, // ページ先頭へのリンク
 			Util.addAltRefs // 参照文献 和訳リンク
 		);
 	}
@@ -250,10 +253,6 @@ function navToInit(){
 function addControls(){
 	var controls = C('div');
 	controls.id = '_view_control';
-	var a = C('a');
-	a.href = '#top';
-	a.textContent = '先頭↑';
-	controls.appendChild(a);
 
 	add_button('　　目次　　', 'A', '_toggle_toc');
 	if(!options.no_index){
@@ -281,6 +280,15 @@ function addControls(){
 		}
 		controls.appendChild(b);
 	}
+}
+
+function addTopNav(){
+	var a = C('a');
+	a.href = '#top';
+	a.style.cssText =
+'position:fixed; left:0; bottom:0; height:5em; background:#EEE; text-align:center; width:1.5em;'
+	a.textContent = '↑';
+	document.body.appendChild(a);
 }
 
 
