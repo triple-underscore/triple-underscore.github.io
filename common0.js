@@ -845,18 +845,18 @@ COMMON_DATA.PREMAP = '\n\
 名:\uE00A\uE008名前\uE005\n\
 述:\uE00B\uE008名前\uE005\n\
 対:\uE007~For\uE005\n\
-値:\uE007<a href="css-values-ja.html#value-defs">値</a>\uE006\n\
-新値:\uE007新たに定義される値\uE006\n\
-新初:\uE007新たに定義される初期値\uE005\n\
-新算:\uE007新たに定義される算出値\uE005\n\
-初:\uE007初期値\uE005\n\
+値:\uE007<a href="~CSSVAL#value-defs">値</a>\uE006\n\
+新値:\uE007新たに定義される<a href="~CSSVAL#value-defs">値</a>\uE006\n\
+新初:\uE007新たに定義される<a href="~CASCADE#initial-values">初期値</a>\uE005\n\
+新算:\uE007新たに定義される<a href="~CASCADE#computed">算出値</a>\uE005\n\
+初:\uE007<a href="~CASCADE#initial-values">初期値</a>\uE005\n\
 適:\uE007適用対象\uE005\n\
-継:\uE007継承-\uE005\n\
-百:\uE007百分率\uE005\n\
+継:\uE007<a href="~CASCADE#inherited-property">継承-</a>\uE005\n\
+百:\uE007<a href="~CSSVAL#percentages">百分率</a>\uE005\n\
 媒:\uE007媒体\uE005\n\
-算:\uE007算出値\uE005\n\
+算:\uE007<a href="~CASCADE#computed">算出値</a>\uE005\n\
 順:\uE007正準的順序\uE005\n\
-ア:\uE007~animation\uE005\n\
+ア:\uE007<a href="~TRANSITION#animatable-properties">~animation</a>\uE005\n\
 型:\uE007型\uE005\n\
 表終:\uE009\n\
 イ型:\uE00C\uE008型\uE005\n\
