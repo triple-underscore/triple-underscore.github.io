@@ -28,25 +28,20 @@ function repeat(selector, callback, root){
 var PAGE_DATA = Object.create(null); 
 /* 予約済みメンバ（ # → 詳細は common1.js ）
 options:#
-	各種オプション
 original_id_map:#
-	訳文 id → 原文 id
 original_urls:#
-	原文URL複数分岐
-link_map
-	keyword → リンク先
+trans_metadata:#
 spec_metadata:#
-	仕様メタデータ
+ref_normative:#
+ref_informative:#
+ref_key_map:#
+ref_data:#
+link_map:
+	keyword → リンク先
 words_table:
 	単語トークン対応
 words_table1:
 	単語トークン対応表
-ref_normative:#
-ref_informative:#
-	参照文献データ
-ref_key_map:#
-ref_data:#
-	参照文献追加リンク用 *1 REF_DATA
 */
 
 // see common1.js for possible members

@@ -1,20 +1,45 @@
 'use strict';
 
-/* TODO
-CLICK_HANDLERS
 
-*/
+/******** PAGE_DATA（付帯機能／メタデータ用） ********
+
+予約済みメンバ（ # → 詳細は common0.js ）
+
+options:
+	各種オプション
+original_id_map:
+	訳文 id → 原文 id への対応付け（文字列データ
+original_urls:
+	原文URL複数分岐
+trans_metadata:
+	和訳メタデータ
+spec_metadata:
+	仕様メタデータ
+ref_normative:
+ref_informative:
+	参照文献データ
+ref_key_map:
+ref_data:
+	参照文献追加リンク用（ REF_DATA
+
+link_map:#
+words_table:#
+words_table1:#
 
 
-/******** 付帯機能 *********/
 
-/** 付帯機能 初期化
+PAGE_DATA.options 予約済みメンバ
 
-PAGE_DATA.options member
 expanded:
 	ページは展開状態で保存されている
+spec_title:
+	仕様の原文タイトル（未利用
+trans_title:
+	仕様の和訳タイトル（未利用
 spec_status:
 	ED, REC, LS, etc.
+spec_date:
+	原文更新日（ YYYY-MM-DD ）
 trans_update:
 	和訳更新日（ YYYY-MM-DD ）
 original_url:
@@ -25,42 +50,28 @@ toc:
 	目次 id
 alt_refs:
 	'references',
-word_switch:
-	false
 no_index:
-	用語索引なしならば true
+	あるならば、用語索引なし
 no_original_dfn:
-	どの dfn の id も原文にはないならば true
+	あるならば、どの dfn の id も原文にはない
 fill_text_link: （選択子）
 	要素内容の text を URL としてリンクを作成させる
 ref_id_lowercase
-	参照文献の id は小文字化
+	参照文献の id は小文字化する
 ref_id_prefix
-	'biblio-' etc.
+	参照文献の id 接頭辞（ 'biblio-' etc.
 site_nav
 	他の一覧へのナビゲーション用キーワードリスト
 nav_prev／nav_next
 	前／次のページへのリンク（ HTML 用
 navs
-	巡回用
-	ラベル:選択子 （ INDEX_KEYS
-original_id_map
-	訳文 id → 原文 id との対応（文字列データ
+	巡回用（ INDEX_KEYS
+
 */
 
-
+/** 付帯機能 初期化／メタデータの拡充 */
 new function(){
-
-Util.DEFERRED.unshift(addControls);
-Util.DEFERRED.unshift(navToInit);
-
-Util.DEFERRED.push(fillMisc);
-Util.DEFERRED.push(initEvents);
-Util.DEFERRED.push(
-	function(){Util.dfnInit();},
-	function(){Util.ref_position.init();},
-	altLinkInit
-)
+var options;
 
 var init = function(){
 	if(!Util._COMP_){
@@ -73,6 +84,31 @@ var init = function(){
 	}
 
 	PAGE_DATA.original_id_map = PAGE_DATA.original_id_map || '';
+
+	options = PAGE_DATA.options;
+
+	Util.DEFERRED.unshift(addControls);
+	Util.DEFERRED.unshift(navToInit);
+
+	if(!options.expanded){
+		Util.DEFERRED.push(
+			fillSiteNav, // サイトナビ
+			fillTransMetadata, // 和訳メタデータ
+			fillSpecMetadata, // 仕様メタデータ
+			fillCopyright, // Copyright
+			fillIndexes, // 巡回
+			fillConformance, // 適合性
+			initSideway, // 左端の帯
+			Util.addAltRefs // 参照文献 和訳リンク
+		);
+	}
+
+	Util.DEFERRED.push(initEvents);
+	Util.DEFERRED.push(
+		function(){Util.dfnInit();},
+		function(){Util.ref_position.init();},
+		altLinkInit
+	);
 
 	defer0();
 	init = null;
@@ -212,7 +248,6 @@ function navToInit(){
 
 // ボタン類
 function addControls(){
-	var options = PAGE_DATA.options;
 	var controls = C('div');
 	controls.id = '_view_control';
 	var a = C('a');
@@ -250,33 +285,12 @@ function addControls(){
 
 
 // 付帯情報を生成する
-function fillMisc(){
-	var options = PAGE_DATA.options;
 
-	if(options.expanded) return;
-	// サイトナビ
-	fillSiteNav();
-	// 和訳メタデータ
-	fillTransMetadata();
-	// 仕様メタデータ
-	fillSpecMetadata();
-	// Copyright
-	fillCopyright();
-	// 巡回
-	fillIndexes()
-	// 適合性
-	fillConformance();
-	// 参照文献 和訳リンク
-	COMMON_DATA.addAltRefs();
-	// 左端の帯
-	initSideway(options);
-	return;
+function initSideway(){
+	var key = options.spec_status;
+	if(!key) return;
 
-	function initSideway(options){
-		var key = options.spec_status;
-		if(!key) return;
-
-		var text = {
+	var text = {
 WD: 'W3C Working Draft',
 ED: 'W3C Editor’s Draft',
 EDCG: 'W3C Community Group Draft Report',
@@ -286,29 +300,29 @@ REC: 'W3C Recommendation',
 NOTE: 'W3C Working Group Note',
 LS: 'Living Standard',
 IETFPR: 'IETF PROPOSED STANDARD'
-		}[key];
-		if(!text) return;
+	}[key];
+	if(!text) return;
 
-		var color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', LS: 'green' }[key];
-		var div = C('div');
-		div.id = '_sideways-logo';
-		if(color) div.style.background = color;
-		div.textContent = text;
-		document.body.appendChild(div);
+	var color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', LS: 'green' }[key];
+	var div = C('div');
+	div.id = '_sideways-logo';
+	if(color) div.style.background = color;
+	div.textContent = text;
+	document.body.appendChild(div);
+}
+
+function fillSiteNav(){
+	var nav = C('nav');
+
+	var html = ['<ul id="_site_nav">'];
+	var href;
+	if(href = findMatch(options.nav_prev)){
+		html.push('<li><a href="' + href + '">＜前</a>');
 	}
-
-	function fillSiteNav(){
-		var nav = C('nav');
-
-		var html = ['<ul id="_site_nav">'];
-		var href;
-		if(href = findMatch(options.nav_prev)){
-			html.push('<li><a href="' + href + '">＜前</a>');
-		}
-		if(href = findMatch(options.nav_next)){
-			html.push('<li><a href="' + href + '">次＞</a>');
-		}
-		var name_map = Util.get_mapping('\n\
+	if(href = findMatch(options.nav_next)){
+		html.push('<li><a href="' + href + '">次＞</a>');
+	}
+	var name_map = Util.get_mapping('\n\
 infrastructure:基盤\n\
 svg:SVG\n\
 html:HTML\n\
@@ -331,8 +345,8 @@ paint:画像-色-塗り\n\
 selector:選択子\n\
 xml:XML\n\
 '
-		);
-		var label_map = {
+	);
+	var label_map = {
 CSS: 'css,html',
 HTML: 'html-dom,html,css',
 WEBAPPSEC: 'security,network',
@@ -340,135 +354,135 @@ TIMING: 'performance,network',
 PERFORMANCE: 'performance,network',
 HTTP: 'http,network,security',
 UIEVENTS: 'uievents,css-ux,html',
-		};
-		var href_map = {
+	};
+	var href_map = {
 http: 'RFC723X-ja.html#index',
-		};
-		var site_nav = options.site_nav;
-		if(!site_nav){
-			site_nav = options.page_state_key ? label_map[options.page_state_key] : '';
-		}
-		if(!site_nav) site_nav = 'infrastructure';
-		site_nav.split(',').forEach(function(label){
-			var name = name_map[label];
-			if(!name) return;
-			var href = href_map[label] || ('index.html#spec-list-' + label);
-			html.push('<li><a href="' + href + '">' + name +'</a>');
-		});
-		html.push('<li><a href="index.html#page-list">すべて</a>')
-		html.push('</ul>');
-		nav.innerHTML = html.join('');
-		document.body.insertBefore(nav, document.body.firstChild);
+	};
+	var site_nav = options.site_nav;
+	if(!site_nav){
+		site_nav = options.page_state_key ? label_map[options.page_state_key] : '';
+	}
+	if(!site_nav) site_nav = 'infrastructure';
+	site_nav.split(',').forEach(function(label){
+		var name = name_map[label];
+		if(!name) return;
+		var href = href_map[label] || ('index.html#spec-list-' + label);
+		html.push('<li><a href="' + href + '">' + name +'</a>');
+	});
+	html.push('<li><a href="index.html#page-list">すべて</a>')
+	html.push('</ul>');
+	nav.innerHTML = html.join('');
+	document.body.insertBefore(nav, document.body.firstChild);
 
-		function findMatch(name){
-			if(!name) return;
-			if(name.slice(-5) === '.html') return name;
-			var data = COMMON_DATA.SYMBOLS;
-			if(!data) return;
-			var i = data.indexOf('\n' + name + ':' );
-			if(i < 0) return;
-			i += name.length + 2;
-			var j = data.indexOf('\n', i);
-			if(j < 0) return;
-			data = data.slice(i,j);
-			if(data.slice(-5) !== '.html') return;
-			return data;
+	function findMatch(name){
+		if(!name) return;
+		if(name.slice(-5) === '.html') return name;
+		var data = COMMON_DATA.SYMBOLS;
+		if(!data) return;
+		var i = data.indexOf('\n' + name + ':' );
+		if(i < 0) return;
+		i += name.length + 2;
+		var j = data.indexOf('\n', i);
+		if(j < 0) return;
+		data = data.slice(i,j);
+		if(data.slice(-5) !== '.html') return;
+		return data;
+	}
+}
+
+function fillTransMetadata(){
+	var details = E('_trans_metadata');
+	if(!details) return;
+	var html = PAGE_DATA.trans_metadata || '';
+	delete PAGE_DATA.trans_metadata;
+	if(options.trans_update){
+		var summary = details.firstElementChild;
+		if(summary){
+			summary.insertAdjacentHTML( 'beforeend',
+'（翻訳更新：<time>' + options.trans_update + '</time> ）'
+			);
 		}
 	}
 
-	function fillTransMetadata(){
-		var details = E('_trans_metadata');
-		if(!details) return;
-		var html = PAGE_DATA.trans_metadata || '';
-		delete PAGE_DATA.trans_metadata;
-		if(options.trans_update){
-			var summary = details.firstElementChild;
-			if(summary){
-				summary.insertAdjacentHTML( 'beforeend',
-'（翻訳更新：<time>' + options.trans_update + '</time> ）'
-				);
-			}
-		}
-
-		if(html){
-			var url = window.location.pathname.match(/[^\/]+$/);
-			var mapping = {
+	if(html){
+		var url = window.location.pathname.match(/[^\/]+$/);
+		var mapping = {
 THIS_PAGE: url?
-	'<a href="https://triple-underscore.github.io/' + url[0] + '">このページ</a>' : 'このページ',
+'<a href="https://triple-underscore.github.io/' + url[0] + '">このページ</a>' : 'このページ',
 SPEC_URL:
-	options.original_url || '',
+options.original_url || '',
 PUB: options.trans_1st_pub ?
-	'（公開：<time>' + options.trans_1st_pub +'</time> ）' : '',
+'（公開：<time>' + options.trans_1st_pub +'</time> ）' : '',
 W3C:
-	'<a href="https://www.w3.org/">W3C</a>',
+'<a href="https://www.w3.org/">W3C</a>',
 WHATWG:
-	'<a href="https://whatwg.org/">WHATWG</a>',
+'<a href="https://whatwg.org/">WHATWG</a>',
 HTML5:
-	'https://html.spec.whatwg.org/multipage',
-			};
-			html = html.replace(/~(\w+)/g, function(match, key){
-				return mapping[key] || '';
-			});
-		}
+'https://html.spec.whatwg.org/multipage',
+		};
+		html = html.replace(/~(\w+)/g, function(match, key){
+			return mapping[key] || '';
+		});
+	}
 
-		html += '\
+	html += '\
 <ul style="font-size:smaller;">\
 <li><strong>この翻訳の正確性は保証されません。</strong>\
 <li>【 と 】で括られた部分は<span class="trans-note">【訳者による注釈】</span>です。\
 <li><a href="index.html#functions">各ページに共通の機能</a>も参照されたし（左下隅の表示切替ボタンなど）。\
 <li>誤訳その他ご指摘／ご意見は<a href="https://triple-underscore.github.io/about.html">連絡先</a>まで。\
 </ul>';
-		details.insertAdjacentHTML('beforeend', html);
+	details.insertAdjacentHTML('beforeend', html);
+}
+
+function fillSpecMetadata(){
+	var details = E('_spec_metadata');
+	if(!details) return;
+	var html;
+	var data = PAGE_DATA.spec_metadata;
+	delete PAGE_DATA.spec_metadata;
+	if(!data) return;
+
+	html = '<dl>';
+	if(options.original_url){
+		data = '\nこのバージョン（原文 URL ）\n\t' + options.original_url + '\n' + data;
 	}
+	html += data
+		.replace(/\n\S.+/g, '\n<dt>$&<dt>')
+		.replace(/\n[ \t]+(https?:\S+)/g, '\n<dd><a href="$1">$1</a><dd>')
+		.replace(/\n[ \t]+(.+)/g, '<dd>$1<dd>');
+	html += '</dl>';
 
-	function fillSpecMetadata(){
-		var details = E('_spec_metadata');
-		if(!details) return;
-		var html;
-		var data = PAGE_DATA.spec_metadata;
-		delete PAGE_DATA.spec_metadata;
-		if(!data) return;
+	details.insertAdjacentHTML('beforeend', html);
+}
 
-		html = '<dl>';
-		if(options.original_url){
-			data = '\nこのバージョン（原文 URL ）\n\t' + options.original_url + '\n' + data;
-		}
-		html += data
-			.replace(/\n\S.+/g, '\n<dt>$&<dt>')
-			.replace(/\n[ \t]+(https?:\S+)/g, '\n<dd><a href="$1">$1</a><dd>')
-			.replace(/\n[ \t]+(.+)/g, '<dd>$1<dd>');
-		html += '</dl>';
+function fillCopyright(){
+	var details = E('_copyright');
+	if(!details) return;
 
-		details.insertAdjacentHTML('beforeend', html);
-	}
+	var info = options.copyright;
+	if(!info) return;
 
-	function fillCopyright(){
-		var details = E('_copyright');
-		if(!details) return;
+	info = info.split(',');
+	var year = info[0];
+	var license = info[1];
 
-		var info = options.copyright;
-		if(!info) return;
-
-		info = info.split(',');
-		var year = info[0];
-		var license = info[1];
-
-		var html = '\
+	var html = '\
 <small lang="en-x-a0">\
 <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © \
 '
-			+ year + '\
- <a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> \
+		+ year + '\
+<a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> \
 (<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>, \
 <a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>, \
 <a href="http://www.keio.ac.jp/">Keio</a>, <a href="http://ev.buaa.edu.cn/">Beihang</a>). \
 W3C <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, \
 <a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and \
 '
-			+ (
+		+ (
 license === 'use' ?
-	'<a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents">document use</a>' :
-	'<a rel="license" href="http://www.w3.org/Consortium/Legal/2015/copyright-software-and-document">permissive document license</a>'
+'<a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents">document use</a>' :
+'<a rel="license" href="http://www.w3.org/Consortium/Legal/2015/copyright-software-and-document">permissive document license</a>'
 )
 + ' rules apply.</small>';
 
@@ -480,67 +494,70 @@ rel="license" の有無は無視。
 https と http の違いは無視。
 */
 
-		details.insertAdjacentHTML('beforeend', html);
-	}
+	details.insertAdjacentHTML('beforeend', html);
+}
 
-	function fillIndexes(){
-		var details = E('_index');
-		if(!details) return;
+function fillIndexes(){
+	var details = E('_index');
+	if(!details) return;
+	if(details.open){
+		fill_data();
+	} else {
 		details.addEventListener('toggle', fill_data, false);
-
-		function fill_data(){
-			details.removeEventListener('toggle', fill_data, false);
-			var html = ['<p>'];
-			var selectors = Util.get_mapping(COMMON_DATA.INDEX_KEYS + (PAGE_DATA.navs || ''));
-			var count = 0;
-			for(var label in selectors){
-				var selector = selectors[label]
-				if(document.body.querySelector(selector)){
-					html.push(
-'<a id="_index-nav-' + (count++) + '" data-cycling="' + selector + '">' + label + '</a>', '／'
-					);
-				}
-			}
-			if(count !== 0) {
-				html[html.length - 1] =
-'<small>（クリックで巡回）</small>';
-			};
-			if(E('references')){
-				html.push(
-'<br><a href="#references">参照文献</a><br>'
-				)
-			}
-			html.push(
-'<small>用語の一覧はウィンドウ下端の切替から。</small></p>'
-			);
-			details.insertAdjacentHTML('beforeend', html.join('') );
-		}
 	}
 
-	function fillConformance(){
-		var links = {
+	function fill_data(){
+		details.removeEventListener('toggle', fill_data, false);
+		var html = ['<p>'];
+		var selectors = Util.get_mapping(COMMON_DATA.INDEX_KEYS + (PAGE_DATA.navs || ''));
+		var count = 0;
+		for(var label in selectors){
+			var selector = selectors[label]
+			if(document.body.querySelector(selector)){
+				html.push(
+'<a id="_index-nav-' + (count++) + '" data-cycling="' + selector + '">' + label + '</a>', '／'
+				);
+			}
+		}
+		if(count !== 0) {
+			html[html.length - 1] =
+'<small>（クリックで巡回）</small>';
+		};
+		if(E('references')){
+			html.push(
+'<br><a href="#references">参照文献</a><br>'
+			)
+		}
+		html.push(
+'<small>用語の一覧はウィンドウ下端の切替から。</small></p>'
+		);
+		details.insertAdjacentHTML('beforeend', html.join('') );
+	}
+}
+
+function fillConformance(){
+	var links = {
 w3c: '<a href="w3c-common-ja.html#conformance">W3C 日本語訳 共通ページ</a>',
 css: '<a href="css-common-ja.html#conformance">CSS 日本語訳 共通ページ</a>',
-		};
-		var link = links[ (options.conformance ) || ''];
-		if(!link) return;
-		var sec = C('section');
-		sec.id = 'conformance';
-		sec.innerHTML = '\n\
+	};
+	var link = links[ (options.conformance ) || ''];
+	if(!link) return;
+	var sec = C('section');
+	sec.id = 'conformance';
+	sec.innerHTML = '\n\
 <h2 title="Conformance">適合性</h2>\n\
 <p class="trans-note">【\
 この節の内容は' + link +'に委譲。\
 】</p>\n\
 ';
-		document.body.appendChild(sec);
-	}
-};
+	document.body.appendChild(sec);
+}
 
 /** 外部リンク日本語訳リンク追加 */
 function altLinkInit(){
 	var root;
-	if(PAGE_DATA.options.main){
-		root = E(PAGE_DATA.options.main);
+	if(options.main){
+		root = E(options.main);
 	}
 	if(!root){
 		root = document.getElementsByTagName('main')[0];
@@ -565,13 +582,41 @@ function altLinkInit(){
 		}
 		if(a.className === '_additional') return;
 
-		var alt_url = COMMON_DATA.altURL(a.getAttribute('href'));
+		var alt_url = altURL(a.getAttribute('href'));
 		if(!alt_url) return;
 		ja_link.href = alt_url;
 		a.parentNode.insertBefore(ja_link, a.nextSibling);
 	}
-}
 
+	function altURL(href){
+		if(!href) return;
+	//	if(href.indexOf(PAGE_DATA.options.original_url) === 0) return;
+		href = href.match(/^https?:\/\/([^#]+)(#.*)?/);
+		if(!href) return;
+		var url = href[1];
+		var alt_url = COMMON_DATA.JA_LINKS[url];
+		if(alt_url === '') return; // 明示的な無効化
+		if(alt_url){
+			if(alt_url.charAt(0) === '@'){
+				alt_url = COMMON_DATA.JA_REFS[alt_url.slice(1)] || '';
+				if(!alt_url) return;
+			}
+		} else {
+			// multi-page (HTML5, CSS2, SVG)
+			var slash = url.lastIndexOf('/');
+			if(slash < 0 ) return;
+			alt_url = COMMON_DATA.JA_LINKS[url.slice(0, slash + 1)];
+			if(!alt_url) return;
+			alt_url += url.slice(slash + 1);
+		}
+		var hash = href[2] || '';
+		if(alt_url.indexOf('h-hash/rfc_ja') > 0 ){ // for "studying:"
+			hash = hash.replace(/#section-/, '#Sec');
+		}
+		return alt_url + hash;
+	//	return COMMON_DATA.fillURL(alt_url) + (href[2] || '');
+	}
+}
 
 }//new function
 
@@ -1202,8 +1247,6 @@ Util.contextMenuInit = function(){
 
 /** 参照文献に日本語訳リンク追加
     外部リンク→ 日本語訳 データ構築
-引数
-	参照文献節の id
 生成内容：
 	<div class="trans-ja-refs"><a href="リンク先">'日本語訳'[番号|注釈]?</a></div>
 挿入位置：
@@ -1213,7 +1256,7 @@ Util.contextMenuInit = function(){
 */
 
 
-COMMON_DATA.addAltRefs = function(){
+Util.addAltRefs = function(){
 	var LABELS = {
 		'主': '日本語訳',
 		'副': '日本語訳',
@@ -1221,11 +1264,11 @@ COMMON_DATA.addAltRefs = function(){
 		'編': '編集者草案'
 	};
 
-	var JA_REFS = this.JA_REFS;
-	var JA_LINKS = this.JA_LINKS;
-	var JA_BASIS = this.JA_BASIS;
-	var REF_DATA = (PAGE_DATA.ref_data || '') + this.REF_DATA;
-	var REF_KEY_MAP = Util.get_mapping(this.REF_KEY_MAP + (PAGE_DATA.ref_key_map || ''));
+	var JA_REFS = COMMON_DATA.JA_REFS;
+	var JA_LINKS = COMMON_DATA.JA_LINKS;
+	var JA_BASIS = COMMON_DATA.JA_BASIS;
+	var REF_DATA = (PAGE_DATA.ref_data || '') + COMMON_DATA.REF_DATA;
+	var REF_KEY_MAP = Util.get_mapping(COMMON_DATA.REF_KEY_MAP + (PAGE_DATA.ref_key_map || ''));
 
 	var ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
 	var ref_id_lowercase = PAGE_DATA.options.ref_id_lowercase || false;
@@ -1391,52 +1434,51 @@ normative: '<h3>文献（規範）</h3>',
 informative: '<h3>文献（参考）</h3>'
 		};
 
-		var source_data = PAGE_DATA;
 		['normative', 'informative'].forEach(function(id){
-			var ref_data = source_data['ref_' + id];
+			var ref_data = PAGE_DATA['ref_' + id];
 			if(!ref_data) return;
-			delete source_data['ref_' + id];
+			delete PAGE_DATA['ref_' + id];
 			var section = C('section');
 			section.id = id;
-			section.innerHTML = html_data[id];
+			section.innerHTML = [
+				html_data[id],
+				'<dl>',
+				refHTML(ref_data),
+				'</dl>'
+			].join('\n');
 			refs.appendChild(section);
-			var dl = C('dl');
-			dl.innerHTML = refHTML(ref_data);
-			section.appendChild(dl);
 		});
 
-function refHTML(data){
-		var last_key = '';
-		var html = data
-		.replace(/\n\[(.+)\]/g, function(match, ref_name){
-			var id = ref_id_prefix +
-				(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
-
-			var last_key1 = last_key;
-			var key = refKey(ref_name);
-			var altref = mapping[key];
-			if(altref){
-				if(altref[0] !== '<'){
-					last_key = '\n<dd class="trans-ja-refs"><a href="#' + altref + '">【↑】</a></dd>'
+		function refHTML(data){
+			var last_key = '';
+			var html = data
+			.replace(/\n\[(.+)\]/g, function(match, ref_name){
+				var id = ref_id_prefix +
+					(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
+	
+				var last_key1 = last_key;
+				var key = refKey(ref_name);
+				var altref = mapping[key];
+				if(altref){
+					if(altref[0] !== '<'){
+						last_key = '\n<dd class="trans-ja-refs"><a href="#' + altref + '">【↑】</a></dd>'
+					} else {
+						last_key = '\n<dd class="trans-ja-refs">' + altref + '</dd>'
+						mapping[key] = id;
+					}
 				} else {
-					last_key = '\n<dd class="trans-ja-refs">' + altref + '</dd>'
-					mapping[key] = id;
+					last_key = '';
 				}
-			} else {
-				last_key = '';
-			}
-			return ( last_key1
-				+ '\n\n<dt id="' + id + '">[' + ref_name + ']</dt>'
-			);
-		})
-		.replace(/\s+URL: +(https?:[^\s]+)/g,
-			'\n<dd><a href="$1">$1</a></dd>'
-		).replace(/\n +(.+)/g, '\n<dd lang="en-x-a0">$1</dd>');
-		html += last_key;
-		return html;
-}
-
-
+				return ( last_key1
+					+ '\n\n<dt id="' + id + '">[' + ref_name + ']</dt>'
+				);
+			})
+			.replace(/\s+URL: +(https?:[^\s]+)/g,
+				'\n<dd><a href="$1">$1</a></dd>'
+			).replace(/\n +(.+)/g, '\n<dd lang="en-x-a0">$1</dd>');
+			html += last_key;
+			return html;
+		}
 	}
 }
 
@@ -2014,35 +2056,6 @@ TLS:RFC5246\n\
 ';
 
 /* END REF_KEY_MAP*/
-
-COMMON_DATA.altURL = function(href){
-	if(!href) return;
-//	if(href.indexOf(PAGE_DATA.options.original_url) === 0) return;
-	href = href.match(/^https?:\/\/([^#]+)(#.*)?/);
-	if(!href) return;
-	var url = href[1];
-	var alt_url = this.JA_LINKS[url];
-	if(alt_url === '') return; // 明示的な無効化
-	if(alt_url){
-		if(alt_url.charAt(0) === '@'){
-			alt_url = this.JA_REFS[alt_url.slice(1)] || '';
-			if(!alt_url) return;
-		}
-	} else {
-		// multi-page (HTML5, CSS2, SVG)
-		var slash = url.lastIndexOf('/');
-		if(slash < 0 ) return;
-		alt_url = this.JA_LINKS[url.slice(0, slash + 1)];
-		if(!alt_url) return;
-		alt_url += url.slice(slash + 1);
-	}
-	var hash = href[2] || '';
-	if(alt_url.indexOf('h-hash/rfc_ja') > 0 ){ // for "studying:"
-		hash = hash.replace(/#section-/, '#Sec');
-	}
-	return alt_url + hash;
-//	return this.fillURL(alt_url) + (href[2] || '');
-};
 
 
 /*
