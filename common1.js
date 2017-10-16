@@ -110,6 +110,7 @@ var init = function(){
 	Util.DEFERRED.push(
 		function(){Util.dfnInit();},
 		function(){Util.ref_position.init();},
+		function(){Util.toc_intersection_observer.restartObservation();},
 		altLinkInit
 	);
 
@@ -663,6 +664,7 @@ Util.CLICK_HANDLERS._toggle_toc = function(){
 		var on = document.body.classList.toggle('side-menu');
 		Util.ref_position.releaseAndFix()
 		Util.setState('side_menu', on);
+		Util.toc_intersection_observer.restartObservation();
 	});
 };
 /** 全体表示 常時化切替 */
@@ -689,6 +691,65 @@ Util.toggleSource = function(target){
 };
 	// click handler
 
+
+/** 交差観測 
+	目次内の現在表示中の節を強調
+*/
+
+Util.toc_intersection_observer = {
+	observer: null,
+	pending: -1,
+
+	restartObservation: function(){
+		if(!window.IntersectionObserver) return;
+		if(this.pending >= 0) return;
+
+		if(this.observer){
+			this.observer.disconnect();
+		}
+
+		var that = this;
+		var toc_id = PAGE_DATA.options.toc || '_toc';
+		var first_time = true;
+
+		this.pending = window.setTimeout(observe, 500);
+
+		function observe(){
+			that.pending = -1;
+			var observer = that.observer;
+			if(!observer){
+				observer =
+				that.observer = new IntersectionObserver(
+					intersected, {
+						rootMargin: '-80px 0px', // 0 でも px が要る（ Chrome
+					}
+				);
+			}
+
+			var visible = document.body.classList.contains('side-menu');
+			if(!visible) return;
+//			'#' + toc_main + ' section[id]'
+			repeat('#' + toc_id + ' a[href]', function(e){
+				var section = E(e.hash.slice(1));
+				if(!section) return; // This should not happen
+				observer.observe(section);
+			});
+		}
+
+		function intersected(entries, observer){
+			var nav = E(toc_id);
+			entries.forEach(function(entry){
+				if(first_time && !entry.isIntersecting) return;
+				var id = entry.target.id;// section
+				if(!id) return;
+				var a = nav.querySelector('[href="#' + id + '"]');
+				if(!a) return;
+				a.classList.toggle('_intersecting', entry.isIntersecting);
+			});
+			first_time = false;
+		}
+	},
+};
 
 
 /** 索引機能 初期化*/
@@ -815,6 +876,7 @@ Util.switchView = function(callback, refresh){
 
 	if(refresh){
 		Util.removeAdditionalNodes(refresh);
+		Util.toc_intersection_observer.restartObservation();
 	}
 
 	// スクロール位置を保存 -> callback -> 復帰
