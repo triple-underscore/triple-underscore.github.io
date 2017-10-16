@@ -966,7 +966,11 @@ source_data.words_table = '\n\
 見なさ:consider さ:~\n\
 見なし:consider し:~\n\
 見なす:consider する:~\n\
-見なせ:~consider でき:~\n\
+見なせ:consider でき:~\n\
+見做さ:assume さ:~\n\
+見做し:assume し:~\n\
+見做す:assume する:~\n\
+見做せ:assume でき:~\n\
 	見よ:see:~\n\
 前提:assumption:~\n\
 見出され:find され:~\n\
@@ -1003,14 +1007,6 @@ source_data.words_table = '\n\
 隠し:hide し:~\n\
 騙す:trick する:~\n\
 騙せ:trick でき:~\n\
-見なさ:consider さ:~\n\
-見なし:consider し:~\n\
-見なす:consider する:~\n\
-見なせ:consider でき:~\n\
-見做さ:assume さ:~\n\
-見做し:assume し:~\n\
-見做す:assume する:~\n\
-見做せ:assume でき:~\n\
 見積もり:estimate::~\n\
 見積もら:estimateさ::~\n\
 見積もる:estimateする::~\n\
