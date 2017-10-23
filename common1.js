@@ -532,14 +532,17 @@ function fillIndexes(){
 			html[html.length - 1] =
 '<small>（クリックで巡回）</small>';
 		};
+		if(!options.no_index){
+			html.push(
+' | <button id="_toggle_index">用語一覧</button>'
+			);
+		}
 		if(E('references')){
 			html.push(
-'<br><a href="#references">参照文献</a><br>'
+' | <a href="#references">参照文献</a>'
 			)
 		}
-		html.push(
-'<small>用語の一覧はウィンドウ下端の切替から。</small></p>'
-		);
+			html.push( '</p>' );
 		details.insertAdjacentHTML('beforeend', html.join('') );
 	}
 }
