@@ -1579,6 +1579,7 @@ referrer::::リファラ\n\
 可視性:visibility:~\n\
 合意:consensus:~\n\
 合致:match::~::マッチ\n\
+照合-:match::~::マッチ\n\
 照合:matching::~::マッチング\n\
 同じ:same:~\n\
 	一致:identical:~\n\
@@ -1879,7 +1880,6 @@ referrer::::リファラ\n\
 接尾辞:suffix:~\n\
 接続-:connect::~::コネクト\n\
 接続:connection::~::コネクション\n\
-接続法:connecting::~::コネクティング\n\
 接頭辞:prefix:~\n\
 推奨-:recommend:~\n\
 推奨:recommendation:~\n\
@@ -1994,7 +1994,6 @@ referrer::::リファラ\n\
 柔軟性:flexibility:~\n\
 根本的:fundamental:~\n\
 根本的な:fundamental:~\n\
-格納法:storing::~\n\
 格納-:store::~\n\
 記憶域:storage::~::ストレージ\n\
 蓄積:storage::~::ストレージ\n\
@@ -2019,12 +2018,11 @@ referrer::::リファラ\n\
 概観:overview:~\n\
 構文:syntax::~::シンタックス\n\
 構文解析-:parse::~::パース\n\
-構文解析処理:parsing::~::パース処理\n\
+構文解析:parsing::~::パース処理\n\
 構文解析器:parser::~::パーサ\n\
 構築0:building:構築\n\
 構成子:construct::~\n\
 構築-:construct:~\n\
-構築法:constructing:~\n\
 再構築-:reconstruct:~\n\
 再構築:reconstruction:~\n\
 構造:structure:~\n\
@@ -2055,8 +2053,7 @@ referrer::::リファラ\n\
 次元:dimension:~\n\
 正しく:correct に:~\n\
 不正:incorrect:~\n\
-不正な:incorrect:~\n\
-正しい:correct:~\n\
+正しい:correct な:~\n\
 正準:canonical::~\n\
 正準化:canonicalization::~\n\
 正確0:accurate:正確\n\
@@ -2247,7 +2244,6 @@ stateless::::ステートレス\n\
 経験的:heuristic::~::ヒューリスティック\n\
 経験的な:heuristic::~::ヒューリスティック\n\
 結合-:combine:~\n\
-結合法:combining:~\n\
 再結合:recomposition:~\n\
 組合わせ:combination:組み合わせ\n\
 組合わさ:combine さ:組み合わさ\n\
@@ -2466,7 +2462,6 @@ stateless::::ステートレス\n\
 	長さゼロ:zero-length:~\n\
 開く:open する::~\n\
 開始-:start:~\n\
-開始法:starting:~\n\
 開発-:develop:~\n\
 開発:development:~\n\
 開発者:developer:~\n\
@@ -2718,7 +2713,7 @@ through::#5
 電網
 一式:set
 時には~occasionally
-利益を代表して~on~behalf~of
+〜に利するため:on behalf of
 等々~etc.
 一つ以上はat least one
 */
