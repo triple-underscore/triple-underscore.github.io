@@ -1165,7 +1165,6 @@ log::::ログ\n\
 loop::::ループ\n\
 machine::::マシン\n\
 mail::::メール\n\
-malicious:::悪意のある\n\
 mark::::マーク\n\
 memory::::メモリ\n\
 message::::メッセージ\n\
@@ -1293,13 +1292,6 @@ zero:::ゼロ\n\
 共通する:common な:~\n\
 共通的に:common に:よく\n\
 共通的な:common な:よくある\n\
-三字の:three-letter:~\n\
-三桁の:three-digit:~\n\
-三番目の:third:~\n\
-二層:two-layer:~\n\
-二桁:two-digit:~\n\
-二番目の:second:~\n\
-二番目:second:~\n\
 上品:graceful::~\n\
 上書き:override::~\n\
 上流:upstream::~\n\
@@ -1690,9 +1682,6 @@ referrer::::リファラ\n\
 妥当でない:invalid な::~\n\
 妥当性:validity::~\n\
 媒体:media::~::メディア\n\
-	無い:present しない:~\n\
-	＊在る:present する:~\n\
-	＊存在-:present:~\n\
 在する:present する:在る\n\
 在さな:present しな:無\n\
 不在:absence:~\n\
@@ -1724,7 +1713,6 @@ referrer::::リファラ\n\
 遂行-:perform:~\n\
 遂行:performing:~\n\
 実行-:execute:~\n\
-実行済みで:enact されて:~\n\
 実装-:implement:~\n\
 実装:implementation:~\n\
 実装者:implementer:~\n\
@@ -1811,6 +1799,7 @@ referrer::::リファラ\n\
 悪化-:exacerbate:~\n\
 悪用-:exploit:~\n\
 悪用:exploitation:~\n\
+悪意的な:malicious::悪意のある\n\
 情報:information:~\n\
 意味-:mean:~\n\
 意味:meaning:~\n\
@@ -2157,7 +2146,7 @@ stateless::::ステートレス\n\
 相対的:relative::~\n\
 相当:substantial:~\n\
 	相当するもの:counterpart:~\n\
-相応しい:suitable:~\n\
+相応しい:suitable な:~\n\
 相応しく:suitable で:~\n\
 	unsuitable:~\n\
 相違-:differ:~\n\
@@ -2473,7 +2462,7 @@ stateless::::ステートレス\n\
 関係性:relationship:~\n\
 関心:interest:~\n\
 関数:function:~\n\
-関連する:relevant:~\n\
+関連する:relevant な:~\n\
 閲覧-:browse:~:::ブラウズ\n\
 閲覧:browsing:~:::ブラウジング\n\
 	防が:prevent し:~\n\
@@ -2514,208 +2503,205 @@ stateless::::ステートレス\n\
 
 
 /*
-常に:always:~\n\
-今や:now:~\n\
-両者:both:~\n\
-両:both:~\n\
-ほとんどの:most\n\
-既に:already:すでに\n\
-逆:reverse:~\n\
-近い:near:~\n\
-総:total:~\n\
-小さな:small:~\n\
-様々な:various:~\n\
-次:next:次の\n\
-残りの:remaining:~\n\
-残りの部分:remainder:~\n\
-少数の:few:~\n\
-後続の:subsequent:~\n\
-	後続-:follow:~\n\
-	前後:around:~\n\
-前者:former:~\n\
-前者の:former:~\n\
-後者:latter:~\n\
-後者の:latter:~\n\
-最初の:first:~\n\
-最後の:last:~\n\
-最後に:finally:~\n\
-最終的:eventual:~\n\
-全面的に:entire に:~\n\
-先立つ:prior:~\n\
+	●指示語
+常に:always
+今や:now
+再び:again
+すでに:already
+最後に:finally
+最終的:eventual
+先立つ:prior
 〜に先立って／先に／事前に／~~直前:prior to〜
-とりわけ:especial:~\n\
-違って、:Unlike
-意識-:be aware:~\n\
-	~logをとる:~logging\n\
-場合によっては:possibly
-	高い:high:~\n\
-	高める:increase させる:~\n\
-生じ:occur し:~\n\
-生じる:occur する:~\n\
+最早〜ない:no longer
+後続の:subsequent
+両／両者:both
+ほとんどの:most
+次:next
+残りの:remaining
+残りの部分:remainder
+少数の:few
+後続-:follow
+前後:around
+前者:former
+後者:latter
+最初:first
+最後:last
+次の:the following
+その:that
+全面的に:entire に
+一部分
+一部／部分
+個／つ:one／two／three／four／five
+2 〜:two-
+3 〜:three-
+個目／番目:first／second／third
+その:that
+ほぼ:almost
+何か:something
+多くの:many
+ほとんど／大部分の:most
+少しばかり:slightly
+最も:most
+多種多様な:variety
+何であれ:whichever
+自身:itself
+別々の:separate
+以外の:other than
+〜を超えて:beyond
+数種の:several
+全体:entire
+一部の:some
+部分:part
+等々:etc
+1 つ以上は:at least one
+よく／ことが多い:often
+時には:occasionally
+各所／他所
+沿いにある:along the chain
+逆:reverse
+近い:near
+総:total
+小さな:small
+様々な:various
+
+
+	●動詞
+高める:increase させる
+生じ:occur し
+生じる:occur する
 加えて，In addition
+予め:in advance
+括って:surround:
+挙げる:list
+望ましい:desirable
+考慮-:regard
+知-:know
+置-
+置く／場所:place
+考え:thinking／suggested
+高める:increase させる
+持-:have
+働かな:work しな
+働ける:work でき
+始-／~~開始:begin
+close
+open
+fall
+left
+play
+named
+operate:
+remain
+vary
+-:take
+:tell
+記す／表す:denote する
+保持-:held
+得られ／取得:obtain され
+remain
+与え:give
+得る:obtain
+応える:meet
+求めに応じて
+行っ
+行われ
+通して渡され:pass through
+除いて:except
+あてがう:assignする
+あてがわれ:assignされ
+securedでない:unsecured
+accountable
+actor
+agent駆動の:agent-driven
+render←rendition
+締めくくるconclude
+say
+seem
+cause
+依頼:ask
+note
+示-:show
+
+	●
+とりわけ:especial
+違って、:Unlike
+意識-:be aware
+	~logをとる:~logging
+場合によっては:possibly
+	高い:high
 言い換えれば、in other words
-しかしながら:however:~\n\
-以外のother than
+しかしながら:however
 に注意。~note~that
 〜に関する／関して:regarding／regard／with respect to
 〜に関わらず:regardless
 〜するつもりがある:willing
 〜するつもりがない:unwilling
-何であれ:whichever
 則ってin accordance with／accord with／according to
-最早〜ない:no longer
-次の:the following
-OS~operateing~system~s
-すでに:already:~\n\
-その:that:~\n\
-一部分\n\
-一部／部分\n\
-一つの:one:~\n\
-二つの:two:~\n\
-三つの:three:~\n\
-四つの:four:~\n\
-予め:in advance:~\n\
-例：:e.g.:~\n\
-再び:again:~\n\
-同様に:likewise:~\n\
-思しきもの:supposedly:\n\
-括ってsurround:\n\
-挙げる~list\n\
-〜を超えて~beyond
-おそらく:perhaps#3
+OS:operateing system
+例：:e.g.
+同様に:likewise
+思しきもの:supposedly:
+おそらく:perhaps
 しかしながら:however
 したがって:therefore
-その:that
-ほぼ:almost
 よって:hence
 代わりに:instead
-何か:something
 何故なら:because
-依然として:still
-再び:again
-多くの:many
-大部分の:most
-ほとんどの
-少しばかり:slightly
-持-:have
-数種の:several
 その時々:on occasion
-最も:most
-自身:itself
 因る:due to
-働かな:work しな:~\n\
-働ける:work でき:~\n\
-~~目的:sake:目的\n\
-おそれ:fear:~\n\
-が可能になる\n\
-し得ないincapable\n\
-一つの:one:~\n\
-三つの:three:~\n\
-二つの:two:~\n\
-五つの:five:~\n\
+~~目的:sake:目的
+おそれ:fear
+が可能になる
+し得ないincapable
 保つ
+年:year
+秒数:seconds
+等しく:equal に
+依然として:still
+
 優先される:precedence を take する
-別々の:separate:~\n\
-多種多様な:variety:~\n\
-始-／~~開始:begin:~\n\
-年:year:~\n\
-挙-:mention:~\n\
-望ましい:desirable
-考慮-:regard:~\n\
-知-:know:~\n\
-秒数:seconds:~\n\
-等しく:equal に:~\n\
-置-\n\
-置く／場所:place
-考え:thinking／suggested:~\n\
-能力を備えている~be~capable~of::\n\
-量:amount:~\n\
-類い
-高める:increase させる:~\n\
+能力を備えている:be capable of
 （〜に備わる能力）
-依頼ask
-見込みが高い:likely::\n\
+
+量:amount
+類い
+見込みが高い:likely
 ■
+
 unwise
 sequence
-close
-open
+potential
+like
+old
+readily
+respective
+sequence
 
-~fall::\n\
-~left::\n\
-~like::\n\
-~part:\n\
-~play::\n\
-~potential:\n\
-note::\n\
-~named::\n\
-~old::\n\
-operate:\n\
-~readily::\n\
-~remain::\n\
-~respective::\n\
-sequence:\n\
-vary::\n\
-~take:\n\
-~tell::\n\
-~greater::\n\
-~missing:\n\
-~long::\n\
-~held::\n\
-記す／表す:denote する:~\n\
-~lead:\n\
-得られ／取得~obtain され:~\n\
-~remain:\n\
-よく／ことが多い~often
-一般に:commonly
-与え-give
-得る:obtainする:~
-応える~meet する\n\
-求めに応じて\n\
-行っ
-行われ
-通して渡され:~pass~through
-除いて:exceptして:\n\
-accountable::#1
-actor::#1
-agent駆動の:agent-driven#1
-あてがう:assignする:~
-あてがわれ:assignされ:~
-securedでない:unsecured#1
-必要とされnecessary
-締めくくるconclude
-draw::#1
-その他の~miscellaneous::#1
-render←rendition::#1
-sameness::#1
-say::#1
-seem::#1
-through::#5
-~cause::#12
-~~望-:want::#4
-全体:entire
-一部の:some
+greater
+long
+missing
+commonly
+必要とされ:necessary
+draw
+その他の:miscellaneous
+sameness
+through
 事前動作
 受動的
 出来事
 及ぼす
-各所／他所
 宛先
-強くstrong::#1
-意図されずに:unintentional::#1
-期間:period／period of time::#1
+強くstrong
+意図されずに:unintentional
+期間:period／period of time
 源:source:ソース
-示-:show
-表~table::#1
-誤り:wrong:~#1
-部分:part:~
+表~table
+誤り:wrong
 長く／長い~long
 電網
 一式:set
-時には~occasionally
 〜に利するため:on behalf of
-等々~etc.
-一つ以上はat least one
+
 */
 
 
