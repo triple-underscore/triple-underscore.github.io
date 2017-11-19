@@ -142,8 +142,8 @@ return text;
 
 ●●options
 
-spec_date:2017-11-14
-trans_update:2017-11-10
+spec_date:2017-11-17
+trans_update:2017-11-19
 page_state_key:HTML
 spec_status:LS
 original_url:https://html.spec.whatwg.org/multipage/webappapis.html
@@ -490,6 +490,7 @@ options::::option 集
 ~module指定子を解決する:#resolve-a-module-specifier
 ~module~map:#module-map
 
+作動中の~script:#active-script
 
 ~worker用~classic~scriptを~fetchする:#fetch-a-classic-worker-script
 ~workerが~importした~classic~scriptを~fetchする:#fetch-a-classic-worker-imported-script
@@ -793,6 +794,7 @@ js.TypeError:~TC39#sec-native-error-types-used-in-this-standard-typeerror
 jA.EnqueueJob:~TC39#sec-enqueuejob
 jA.FunctionBody:~TC39#prod-FunctionBody
 jA.FunctionCreate:~TC39#sec-functioncreate
+jA.GetActiveScriptOrModule:~TC39#sec-getactivescriptormodule
 jA.HostEnsureCanCompileStrings:~TC39#sec-hostensurecancompilestrings
 jA.HostPromiseRejectionTracker:~TC39#sec-host-promise-rejection-tracker
 jA.HostResolveImportedModule:~TC39#sec-hostresolveimportedmodule
@@ -812,7 +814,7 @@ jA.HostGetImportMetaProperties:~JSIMPORTMETA#sec-hostgetimportmetaproperties
 jA.EnsureCSPDoesNotBlockStringCompilation:~CSP3#can-compile-strings
 
 c.import():~JSIMPORT#sec-import-calls
-
+c.eval():~TC39#sec-eval-x
 
 
 	要素の~inline型の挙動は~CSPにより阻止されるべきか？:~CSP3#should-block-inline
@@ -835,6 +837,8 @@ set.付加-:~INFRA#set-append
 集合:~INFRA#set
 ~EACH:~INFRA#list-iterate
 	~CONTINUE:~INFRA#iteration-continue
+~pop:~INFRA#stack-pop
+~push:~INFRA#stack-push
 
 ~JS文字列:~INFRA#javascript-string
 	符号単位:~INFRA#code-unit
@@ -1868,6 +1872,8 @@ level::::レベル
 	跡を辿る:trace
 
 	●未分類
+Function:
+ScriptOrModule:
 真偽値:boolean::~
 access::::アクセス
 comment::::コメント
@@ -2359,6 +2365,35 @@ A boolean which, if true, means that error information will not be provided for 
 ◎
 A module script is another type of script. It has no additional items.
 </p>
+
+<p>
+`作動中の~script@
+は、次の~algoにより決定される：
+◎
+The active script is determined by the following algorithm:
+</p>
+
+<ol>
+	<li>
+%~record ~LET `GetActiveScriptOrModule$jA()
+◎
+Let record be GetActiveScriptOrModule().
+</li>
+	<li>
+~IF［
+%~record ~EQ ~NULL
+］
+⇒
+~RET ~NULL
+◎
+If record is null, return null.
+</li>
+	<li>
+~RET %~record . `HostDefined^sl
+◎
+Return record.[[HostDefined]].
+</li>
+</ol>
 
 <hr>
 
@@ -4643,7 +4678,7 @@ These algorithms are not invoked by one script directly calling another, but the
 
 <p>
 `走っている~script@
-とは、`走っている~JS実行~文脈$jsの `ScriptOrModule^jA 成分の `HostDefined^sl ~field内の `script$e である。
+とは、`走っている~JS実行~文脈$jsの~ScriptOrModule成分の `HostDefined^sl ~field内の `script$e である。
 ◎
 The running script is the script in the [[HostDefined]] field in the ScriptOrModule component of the running JavaScript execution context.
 </p>
@@ -5170,9 +5205,9 @@ Remove settings from the backup incumbent settings object stack.
 ここで，
 `最上端の~scriptを有する実行~文脈@
 は、［
-`~JS実行~文脈~stack$jsの最上端の~entryが［
-非 ~NULL の `ScriptOrModule^jA 成分
-］を有するならば それ ／
+`~JS実行~文脈~stack$jsの最上端の~entry %~entry が［
+%~entry の~ScriptOrModule成分 ~NEQ ~NULL
+］を満たすならば %~entry ／
 ~ELSE_ ~NULL
 ］とする。
 ◎
@@ -5759,12 +5794,32 @@ Let job settings be some appropriate environment settings object.
 ◎
 It is not yet clear how to specify the environment settings object that should be used here. In practice, this means that the entry concept is not correctly specified while executing a job. See discussion in issue #1189.
 </p>
-
 	</li>
 	<li>
 %現任の設定群 ~LET `現任の設定群~obj$
 ◎
 Let incumbent settings be the incumbent settings object.
+</li>
+	<li>
+%作動中の~script ~LET `作動中の~script$
+◎
+Let active script be the active script.
+</li>
+	<li>
+~Assert：
+%作動中の~script ~NEQ ~NULL
+— ~JS仕様が~jobを~enqueueするのは、~scriptが作動中の間に限られるので。
+◎
+Assert: active script is not null, as jobs are only enqueued by the JavaScript specification while a script is active.
+</li>
+	<li>
+%~script実行~文脈 ~LET 次のようにされた新たな`~JS実行~文脈$js
+⇒＃
+~Function~field ~SET ~NULL,
+~Realm~field ~SET %作動中の~script の`設定群~obj$sCの`~Realm$enV,
+~ScriptOrModule成分 ~SET %作動中の~script の`~record$sC
+◎
+Let script execution context be a new JavaScript execution context, with its Function field set to null, its Realm field set to active script's settings object's Realm, and its ScriptOrModule set to active script's record.
 </li>
 	<li>
 <p>
@@ -5773,8 +5828,8 @@ Let incumbent settings be the incumbent settings object.
 Queue a microtask, on job settings's responsible event loop, to perform the following steps:
 </p>
 
-		<ol>
-			<li>
+    <ol>
+		<li>
 ~IF［
 `~scriptは走れるかどうか検査する$( %~job設定群 ) ~EQ `走るな^i 
 ］
@@ -5783,21 +5838,59 @@ Queue a microtask, on job settings's responsible event loop, to perform the foll
 ◎
 Check if we can run script with job settings. If this returns "do not run" then return.
 </li>
-			<li>
-%~job設定群 を用いて，`~scriptを走らすために準備する$
+		<li>
+<p>
+`~scriptを走らすために準備する$( %~job設定群 )
 ◎
 Prepare to run script with job settings.
-</li>
+</p>
+
+<p class="note">
+これは、当の~jobが走っている間，`入口~某$の概念に影響する。
+◎
+This affects the entry concept while the job runs.
+</p>
+			</li>
 			<li>
-%現任の設定群 を用いて，`~callbackを走らすために準備する$
+<p>
+`~callbackを走らすために準備する$( %現任の設定群 )
 ◎
 Prepare to run a callback with incumbent settings.
-</li>
+</p>
+
+<p class="note">
+これは、当の~jobが走っている間，`現任の某$の概念に影響する。
+◎
+This affects the incumbent concept while the job runs.
+</p>
+			</li>
 			<li>
-%結果 ~LET %arguments を引数たちに用いて
-%job により指定される抽象演算を遂行した結果
+<p>
+`~JS実行~文脈~stack$jsに %~script実行~文脈 を`~push$する
+◎
+Push script execution context onto the JavaScript execution context stack.
+</p>
+
+<p class="note">
+これは，
+`Promise.resolve("...").then(eval)^c の様な事例において、当の~jobが走っている間，`作動中の~script$に影響する
+— `eval()$c は特定0の`~script$を出自にしない組込みの関数であり、そこでは他に作動中の~scriptは無いので。
+◎
+This affects the active script while the job runs, in cases like Promise.resolve("...").then(eval) where there would otherwise be no active script since eval() is a built-in function that does not originate from any particular script.
+</p>
+			</li>
+			<li>
+%結果 ~LET ［
+%job により指定される抽象演算
+］( %arguments )
+を遂行した結果
 ◎
 Let result be the result of performing the abstract operation specified by job, using the elements of arguments as its arguments.
+</li>
+			<li>
+`~JS実行~文脈~stack$jsから %~script実行~文脈 を`~pop$する
+◎
+Pop script execution context from the JavaScript execution context stack.
 </li>
 			<li>
 `走らせた~callbackを片付ける$( %現任の設定群 )
@@ -5814,12 +5907,12 @@ Clean up after running script with job settings.
 %結果 は中途完了である
 ］
 ⇒
-%結果 . `Value^sl で与えられる例外を報告する
+`例外を報告する$( 当の~script, %結果 . `Value^sl )
 ◎
 If result is an abrupt completion, report the exception given by result.[[Value]].
 </li>
 		</ol>
-	</li>
+   </li>
 </ol>
 
 					</section>
@@ -7390,7 +7483,7 @@ When a user agent is to queue a task, it must add the given task to one of the t
 `文書$の~timerにより生成される各~callback ／
 `文書$上での~mouse移動により発火される各~event ／
 `文書$の構文解析器により~queueされる各~task）。
-一方で、異なる`~task源$からの`~task$は，異なる`~task~queue$に入れられてよい。
+一方で、異なる`~task源$からの`~task$は，異なる`~task~queue$内に置かれてよい。
 ◎
 Each task is defined as coming from a specific task source. All the tasks from one particular task source and destined to a particular event loop (e.g. the callbacks generated by timers of a Document, the events fired for mouse movements over that Document, the tasks queued for the parser of that Document) must always be added to the same task queue, but tasks from different task sources may be placed in different task queues.
 </p>
@@ -7722,7 +7815,9 @@ If this is a worker event loop (i.e. one running for a WorkerGlobalScope), but t
 `極小task~queue@
 を有する。
 `極小task@
-とは、元々は，`~task~queue$ではなく，`極小task~queue$に入れられた`~task$である。
+とは、元々は，［
+`~task~queue$ではなく，`極小task~queue$
+］に~queueされるものとされた`~task$である。
 `極小task$には、
 `孤立~callback極小task@,
 `複合~極小task@
@@ -7854,9 +7949,10 @@ Set the performing a microtask checkpoint flag to false.
 </ol>
 
 <p class="algo-head">
-~UAは、`複合~極小task$が走っている間に，所与の `手続き^V を走らすような
+~UAは、`複合~極小task$が走っている間に［
+所与の `手続き^V を走らすような
 `複合~極小task下位taskを実行する@
-ことが要求される場合、次を走らせ~MUST：
+］よう要求されたときは、次を走らせ~MUST：
 ◎
 If, while a compound microtask is running, the user agent is required to execute a compound microtask subtask to run a series of steps, the user agent must run the following steps:
 </p>
