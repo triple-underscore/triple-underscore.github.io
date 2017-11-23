@@ -906,11 +906,6 @@ COMMON_DATA.PREMAP = '\n\
 */
 
 
-/*
-AND:<b>∧</b>\n\
-OR:<b>∨</b>\n\
-*/
-
 COMMON_DATA.SYMBOLS = '\n\
 THROW:<b>THROW</b>\n\
 WHILE:<b>WHILE</b>\n\
@@ -931,8 +926,9 @@ MUST:なければならない\n\
 MUST_NOT:ならない\n\
 SHOULD:べき\n\
 MAY:よい\n\
-AND:, かつ\n\
-OR:, または\n\
+AND:<b>∧</b>\n\
+OR:<b>∨</b>\n\
+NOT:<b>¬</b>\n\
 EQ: <span class="op">＝</span> \n\
 NEQ: <span class="op">≠</span> \n\
 LET: :← \n\
