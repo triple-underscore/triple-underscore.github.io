@@ -65,7 +65,7 @@ function expand(){
 	var link_map = this.link_map;
 
 	return this.html.replace(
-		/%[\w\-~一-鿆]+|`(.+?)([$@\^])(\w*)/g,
+		/%[\w\-~一-鿆あ-ん]+|`(.+?)([$@\^])(\w*)/g,
 		create_html
 	);
 
@@ -145,8 +145,8 @@ return text;
 
 ●●options
 
-spec_date:2017-11-14
-trans_update:2017-10-08
+spec_date:2017-12-18
+trans_update:2017-12-18
 page_state_key:HTML
 spec_status:LS
 original_url:https://html.spec.whatwg.org/multipage/webappapis.html
@@ -295,6 +295,7 @@ V.~resize縦幅:#_resizeheight
 ~timer初期化~手続き:#timer-initialisation-steps
 ~timerの入子~level:#timer-nesting-level
 ~timer~task源:#timer-task-source
+
 ~task源:~WAPI#task-source
 ~task:~WAPI#concept-task
 関連する設定群~obj:~WAPI#relevant-settings-object
@@ -308,8 +309,17 @@ V.~resize縦幅:#_resizeheight
 例外を報告する:~WAPI#report-the-exception
 ~event-loop:~WAPI#event-loop
 enV.生成元:~WAPI#concept-settings-object-origin
-enV.~API用~基底~URL:~WAPI#api-base-url
-既定の~classic~script~fetch~options:~WAPI#default-classic-script-fetch-options
+~module~script:~WAPI#module-script
+作動中の~script:~WAPI#active-script
+~script~fetch~options:~WAPI#script-fetch-options
+sC.基底~URL:~WAPI#concept-script-base-url
+sC.~fetch~options:#concept-script-script-fetch-options
+sfO.暗号用~nonce:~WAPI#concept-script-fetch-options-nonce
+sfO.完全性~metadata:~WAPI#concept-script-fetch-options-integrity
+sfO.構文解析器~metadata:~WAPI#concept-script-fetch-options-parser
+sfO.資格証~mode:~WAPI#concept-script-fetch-options-credentials
+sfO.~referrer施策:~WAPI#concept-script-fetch-options-referrer-policy
+
 
 
 閲覧文脈:~BROWSERS#browsing-context
@@ -336,6 +346,9 @@ enV.~API用~基底~URL:~WAPI#api-base-url
 
 js.現在の~Realm~Record:~TC39#current-realm
 js.~JS~realm:~TC39#sec-code-realms
+c.eval():~TC39#sec-eval-x
+c.import():https://tc39.github.io/proposal-dynamic-import/#sec-import-calls
+
 x.呼出す:~WEBIDL#es-invoking-callback-functions
 x.~callback this 値:~WEBIDL#dfn-callback-this-value
 
@@ -436,8 +449,10 @@ obj:object:::オブジェクト
 realm:
 worker::::
 code::::コード
-classic:::::クラシック
+classic::::クラシック
+module::::モジュール
 compile::::コンパイル
+	compilation
 method::::メソッド
 
 取得子:getter:~
@@ -688,9 +703,12 @@ support::::サポート
 	指定されていない:unspecified:~
 指示-:indicate:~
 挙動:behavior:ふるまい
+挙動する:behave する:ふるまう
 最適:optimal:~
 比較的:relative に:~
 単純:simple:~
+効果:effect:~
+確保-:ensure:~
 
 	●未分類（動詞
 
@@ -730,8 +748,17 @@ support::::サポート
 追加-:add:~
 除去-:remove:~
 継続-:continue:~
+起動元:initiating::~
 
 	●未分類
+
+referrer::::リファラ
+nonce::::ナンス
+暗号用:cryptographic::~
+完全性:integrity::~
+資格証:credentials::資格証明情報::クレデンシャル
+施策:policy::~:ポリシー
+
 URL:
 基底:base::~
 fetch:
@@ -783,6 +810,7 @@ text::::テキスト
 状態:state:~
 複製:copy:~
 頁:page:::ページ
+等価:equivalent:~
 
 	order
 	now:
@@ -1047,6 +1075,8 @@ logic::::ロジック
 	元の:original
 	各:each
 	常に:always
+	介して:via
+
 
 
 ●●trans_metadata
@@ -1578,6 +1608,18 @@ If previous handle was not provided, add an entry to the list of active timers f
 Let callerRealm be the current Realm Record, and calleeRealm be method context's JavaScript realm.
 </li>
 	<li>
+%起動元~script~LET `作動中の~script$
+◎
+Let initiating script be the active script.
+</li>
+	<li>
+~Assert：
+%起動元~script ~NEQ ~NULL
+— この~algoの~call元は，常に何らかの~scriptなので。
+◎
+Assert: initiating script is not null, since this algorithm is always called from some script.
+</li>
+	<li>
 <p>
 %~task ~LET 次の下位手続きを走らす`~task$：
 ◎
@@ -1606,7 +1648,7 @@ Run the appropriate set of steps from the following list:
 ⇒
 次を与える下で %S を`呼出す$x
 ⇒＃
-引数~list： 3 個目~以降の引数（空にもなり得る）,
+引数~list： %~method引数~list の 3 個目~以降の引数（空にもなり得る）,
 `~callback this 値$x： %~method文脈~proxy
 ◎
 If the first method argument is a Function
@@ -1615,6 +1657,8 @@ If the first method argument is a Function
 			<li>
 <p>
 ~ELSE：
+◎
+Otherwise
 </p>
 				<ol>
 					<li>
@@ -1624,31 +1668,54 @@ If the first method argument is a Function
 例外が投出されたときは、~catchして
 ⇒＃
 その`例外を報告する$；
-~RET 【この ~RET は訳者による推定】
+~RET
 ◎
-Perform HostEnsureCanCompileStrings(callerRealm, calleeRealm). If this throws an exception, catch it, and report the exception.
+Perform HostEnsureCanCompileStrings(callerRealm, calleeRealm). If this throws an exception, catch it, report the exception, and abort these steps.
 </li>
 					<li>
-%設定群~obj ~LET %~method文脈 の`環境~設定群~obj$
+%設定群~obj~LET %~method文脈 の`環境~設定群~obj$
 ◎
-↑Let script source be the first method argument.
+Let script source be the first method argument.
 ◎
 Let settings object be method context's environment settings object.
 </li>
 					<li>
-%基底~URL ~LET %設定群~obj の`~API用~基底~URL$enV
+%基底~URL~LET %起動元~script の`基底~URL$sC
 ◎
-Let base URL be settings object's API base URL.
+Let base URL be initiating script's base URL.
 </li>
 					<li>
-%~script ~LET `~classic~scriptを作成する$(
+<p>
+%~fetch~options ~LET 次のようにされた`~script~fetch~options$
+⇒＃
+`暗号用~nonce$sfO ~SET %起動元~script の`~fetch~options$sC の`暗号用~nonce$sfO,
+`完全性~metadata$sfO ~SET 空~文字列,
+`構文解析器~metadata$sfO ~SET `not-parser-inserted^l,
+`資格証~mode$sfO ~SET %起動元~script の`~fetch~options$sC の`資格証~mode$sfO,
+`~referrer施策$sfO ~SET %起動元~script の`~fetch~options$sC の`~referrer施策$sfO
+◎
+Let fetch options be a script fetch options whose cryptographic nonce is initiating script's fetch options's cryptographic nonce, integrity metadata is the empty string, parser metadata is "not-parser-inserted", credentials mode is initiating script's fetch options's credentials mode, and referrer policy is initiating script's fetch options's referrer policy.
+</p>
+
+<p class="note">
+これらの~optionsによる効果は、［
+`setTimeout()$m ／ `setInterval()$m
+］が文字列を~compileするときの挙動は，
+`eval()$c によるそれと等価になることを確保する。
+すなわち、 `import()$c 介して~fetchする【される？】`~module~script$は，両~文脈において同じに挙動することになる。
+◎
+The effect of these options ensures that the string compilation done by setTimeout() and setInterval() behaves equivalently to that done by eval(). That is, module script fetches via import() will behave the same in both contexts.
+</p>
+					</li>
+					<li>
+%~script~LET `~classic~scriptを作成する$(
 %S,
 %設定群~obj,
 %基底~URL,
-`既定の~classic~script~fetch~options$
+%~fetch~options
 )
 ◎
-Let script be the result of creating a classic script given script source, settings object, base URL, and the default classic script fetch options.
+Let script be the result of creating a classic script given script source, settings object, base URL, and fetch options.
 </li>
 					<li>
 `~classic~scriptを走らす$( %~script )
