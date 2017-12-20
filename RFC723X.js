@@ -1378,7 +1378,7 @@ zero:::ゼロ\n\
 	何故なら:because:~\n\
 余分な:extra:~\n\
 作動中:active::~::アクティブ\n\
-作動中の:active::~::アクティブな\n\
+作動中の:active な::~::アクティブな\n\
 作成-:create::~\n\
 置換-:replace::~\n\
 除去-:remove::~\n\
@@ -1545,7 +1545,7 @@ referrer::::リファラ\n\
 収集-:gather:~\n\
 取消:cancel:~\n\
 取組まれ:address され:取り組まれ\n\
-取組む:address する:~\n\
+取組む:address する:取り組む\n\
 取込まれ:import され:取り込まれ\n\
 受信-:receive::~\n\
 受信:receiving::~\n\
