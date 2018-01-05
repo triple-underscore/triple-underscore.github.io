@@ -971,6 +971,7 @@ STREAMS:Streams-ja.html\n\
 URL1:URL-ja.html\n\
 MIMESNIFF:https://mimesniff.spec.whatwg.org/\n\
 FULLSCREEN:fullscreen-ja.html\n\
+NOTIFICATIONS:notifications-ja.html\n\
 WEBIDL:WebIDL-ja.html\n\
 XHR:XHR-ja.html\n\
 UIEVENTS:uievents-ja.html\n\
