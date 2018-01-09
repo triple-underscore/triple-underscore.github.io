@@ -1762,7 +1762,10 @@ CSSTRANSITIONS1=・    ~CSSWG/css3-transitions/\n\
 CSSTRANSITIONS1=主    ~/css-transitions-ja.html\n\
 CSSTRANSITIONS1=版    ~TR/css3-transitions/\n\
 CSSTRANSITIONS1=編    ~CSSWG/css-transitions/\n\
-CSSUI3=主             ~/css-ui-ja.html\n\
+CSSUI4=主             ~/css-ui-ja.html\n\
+CSSUI4=版             ~TR/css-ui-4/\n\
+CSSUI4=編             ~CSSWG/css-ui-4/\n\
+CSSUI3=主             ~/css-ui-ja.html●Level 4 日本語訳\n\
 CSSUI3=副             ~momdoG/css-ui/\n\
 CSSUI3=版             ~TR/css-ui-3/\n\
 CSSUI3=・             ~TR/css3-ui/\n\
@@ -2089,7 +2092,7 @@ CSSVALUES:CSSVAL\n\
 CSS3VAL:CSSVAL\n\
 CSSTEXTDECOR3:CSS3TEXTDECOR\n\
 CSS3UI:CSSUI3\n\
-CSSUI:CSSUI3\n\
+CSSUI:CSSUI4\n\
 CSSWRITINGMODES3:CSSWRITINGMODES\n\
 CSSWRITINGMODES4:CSSWRITINGMODES\n\
 CSS3WRITINGMODES:CSSWRITINGMODES\n\
