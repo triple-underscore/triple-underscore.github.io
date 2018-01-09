@@ -2073,7 +2073,6 @@ referrer::::リファラ\n\
 準拠-:comply::~\n\
 準拠:compliant::~\n\
 無視-:ignore::~\n\
-無視0:disregard:無視\n\
 無限:infinite:~\n\
 版:edition:~\n\
 	特に，:particularly:~\n\
