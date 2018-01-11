@@ -611,7 +611,7 @@ c.application/http:~7230#internet.media.type.application.http\n\
 	■XXXX\n\
 IETF Review:~5226#section-4.1\n\
 著作者連絡先:~723X#authors-addresses\n\
-二重引用符:~723X#p.DQUOTE\n\
+二重引用符:~723X#P.DQUOTE\n\
 	■7230\n\
 ~UA:~7230#user-agent\n\
 ~URI:~7230#uri\n\
@@ -2853,7 +2853,7 @@ sdir.s-maxage:~7234#section-5.2.2.9\n\
 	■XXXX\n\
 IETF Review:~5226#section-4.1\n\
 著作者連絡先:~723X#authors-addresses\n\
-二重引用符:~723X#p.DQUOTE\n\
+二重引用符:~723X#P.DQUOTE\n\
 	■7230\n\
 〜~UA:~7230#user-agent\n\
 ~URI:~7230#URI\n\
