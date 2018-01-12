@@ -2238,7 +2238,6 @@ stateless::::ステートレス\n\
 結果:result:~\n\
 結論:conclusion:~\n\
 統一的:uniform:~\n\
-統合:incorporate:~\n\
 統治-:govern:~\n\
 絶対:absolute::~\n\
 継承-:inherit:~\n\
