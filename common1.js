@@ -1558,10 +1558,13 @@ informative: '<h3>文献（参考）</h3>'
 COMMON_DATA.INDEX_KEYS ='\n\
 見出し:h2,h3,h4,h5,h6\n\
 課題:.issue\n\
+注記:.note\n\
+例:.example\n\
 要素:.element-def\n\
 IDL:pre.idl\n\
 プロパティ:.propdef\n\
 記述子:.descdef\n\
+ABNF:pre.ABNF\n\
 ';
 
 /** 文献 id = 英文 URL = 和訳 URL の対応データ
