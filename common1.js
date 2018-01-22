@@ -476,32 +476,43 @@ function fillCopyright(){
 	var year = info[0];
 	var license = info[1];
 
-	var html = '\
-<small lang="en-x-a0">\
-<a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © \
-'
-		+ year + ' \
-<a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> \
+	var html
+= '<small>このページは、次による原文の許諾の下で翻訳されています：<br><span lang="en-x-a0">';
+	switch( license ){
+	case 'whatwg':
+		html
++= '<a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>. Copyright © '
++ year
++ ' WHATWG (Apple, Google, Mozilla, Microsoft).';
+		break;
+	case 'use':
+	case 'permissive':
+		html
++= '<a href="http://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © '
++ year
++ ' <a href="http://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup> \
 (<a href="http://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>, \
 <a href="http://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>, \
 <a href="http://www.keio.ac.jp/">Keio</a>, <a href="http://ev.buaa.edu.cn/">Beihang</a>). \
 W3C <a href="http://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, \
 <a href="http://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and \
 '
-		+ (
-license === 'use' ?
++ ( license === 'use' ?
 '<a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents">document use</a>' :
 '<a rel="license" href="http://www.w3.org/Consortium/Legal/2015/copyright-software-and-document">permissive document license</a>'
 )
-+ ' rules apply.</small>';
-
++ ' rules apply.\
+</span></small>';
 
 /*
-http://www.ercim.org/ と https://www.ercim.eu/ （ 1 箇所のみ）の違いは無視。
+http://www.ercim.org/ と https://www.ercim.eu/ の違いは無視（ 1 箇所のみ）。
 ", All Rights Reserved" （数カ所）は省略。
 rel="license" の有無は無視。
 https と http の違いは無視。
 */
+
+		break;
+	}
 
 	details.insertAdjacentHTML('beforeend', html);
 }

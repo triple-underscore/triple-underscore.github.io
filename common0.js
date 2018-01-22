@@ -443,6 +443,10 @@ Util.fillHeader = function(){
 	if(!header) return;
 	var hgroup = header.querySelector('hgroup');
 
+	if( url.slice(0,39) === 'https://html.spec.whatwg.org/multipage/' ){
+		options.copyright = '2018,whatwg';
+	}
+
 	fillLogoImage();
 	fillDate();
 	placeMetadata();
