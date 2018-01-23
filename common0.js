@@ -1041,6 +1041,7 @@ SVG11:SVG11\n\
 SVG2:https://svgwg.org/svg2-draft\n\
 HTML5:https://html.spec.whatwg.org/multipage\n\
 HTML50:https://www.w3.org/TR/html5\n\
+ARIA1:https://w3c.github.io/aria/\n\
 BROWSERS:browsers-ja.html\n\
 WINDOW:HTML-window-ja.html\n\
 ORIGIN:HTML-origin-ja.html\n\
