@@ -1244,7 +1244,6 @@ software::::ソフトウェア\n\
 source::::ソース\n\
 源:source::~:ソース\n\
 spider::::スパイダー\n\
-明言:state:~\n\
 storage::::ストレージ\n\
 stream::::ストリーム\n\
 subset::::サブセット\n\
@@ -2310,8 +2309,6 @@ stateless::::ステートレス\n\
 解釈-:interpret:~\n\
 解釈:interpretation:~\n\
 誤解釈:misinterpret:~\n\
-言明-:assert::~\n\
-言明:assertion::~\n\
 言語:language::~\n\
 計測:measure:~\n\
 記号:symbol:~\n\
