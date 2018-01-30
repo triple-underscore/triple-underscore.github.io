@@ -2,7 +2,6 @@
 
 /* common0.js の簡略版：
 charmod-ja.html
-css-common-ja.html
 RFC6454-ja.html
 RFC6901-ja.html
 RFC6902-ja.html
