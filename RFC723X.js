@@ -716,7 +716,7 @@ IETF Review:~5226#section-4.1\n\
 内容~符号法~名:~7231#p.content-coding\n\
 言語~tag:~7231#language.tags\n\
 媒体~範囲:~7231#p.media-range\n\
-	資源の識別処理:~7231#identification\n\
+	資源の識別:~7231#identification\n\
 表現~data:~7231#representation.data\n\
 表現~header:~7231#representation.metadata\n\
 ~payload~header:#payload-headers\n\
@@ -1058,7 +1058,6 @@ redirection::::リダイレクト\n\
 間接的な:indirect:~\n\
 双方向:bidirectional::~\n\
 指図-:instruct:~\n\
-提供0-:offer:提供\n\
 拡充-:populate:~\n\
 居る:reside する:~\n\
 	再掲:restate:~:\n\
@@ -1387,7 +1386,6 @@ zero:::ゼロ\n\
 併合-:merge:~\n\
 使役-:employ:~\n\
 例外:exception:~\n\
-供給-:supply:~\n\
 依存-:depend:~\n\
 依存:dependent:~\n\
 依存関係:dependency:~\n\
@@ -1433,9 +1431,6 @@ zero:::ゼロ\n\
 元の:original:~\n\
 先行-:precede:~\n\
 入力:input:~\n\
-公共:public:~\n\
-公開-:public 化:~\n\
-公開:public:~\n\
 共有-:share:~\n\
 共有:shared:~\n\
 内側:inside:~\n\
@@ -1874,8 +1869,14 @@ referrer::::リファラ\n\
 勧告:recommendation:~\n\
 推測-:guess:~\n\
 推測:guess:~\n\
-提供-:provide:~\n\
-提供者:provider::~::プロバイダ\n\
+給-:supply:~\n\
+給せ:supply でき:~\n\
+給さな:supply しな:~\n\
+供-:provide:~\n\
+供せ:provide でき:~\n\
+供さな:provide しな:~\n\
+provider::::プロバイダ\n\
+提供-:offer:~\n\
 提案-:propose:~\n\
 提案:proposal:~\n\
 操作-:manipulate:~\n\
@@ -2015,7 +2016,6 @@ referrer::::リファラ\n\
 再構築:reconstruction:~\n\
 構造:structure:~\n\
 標準:standard::~\n\
-標準化-:standardize::~\n\
 権利:right:~\n\
 権限:authority::~\n\
 権限付与-:authorize::~\n\
@@ -2347,14 +2347,11 @@ stateless::::ステートレス\n\
 説明:explanation:~\n\
 課題:issue:~\n\
 調整:adjust:~\n\
-考査:examination:~\n\
-調査-:examine:~\n\
-調査:examining:~\n\
+識別:identification::~\n\
 識別-:identify::~\n\
-識別:identifying::~\n\
-	識別されない:unidentified:~\n\
-識別処理:identification::~\n\
-識別可能:identifyable::~\n\
+	識別-法:identifying\n\
+	識別されない:unidentified\n\
+	識別-可能:identifyable\n\
 識別子:identifier::~\n\
 警告:warning::~\n\
 警告-:warn::~\n\
@@ -2388,9 +2385,8 @@ stateless::::ステートレス\n\
 通常の:normal:~\n\
 通常は:normal では:~\n\
 	normally\n\
-通知-:signal:~\n\
-通知0-:notify:通知\n\
-通知:signal:~\n\
+通達-:signal:~\n\
+通達:signal:~\n\
 連絡-:contact:~\n\
 連絡:contact:~\n\
 連合-:federate:~\n\
@@ -2474,7 +2470,8 @@ stateless::::ステートレス\n\
 集合:set:~\n\
 露に:reveal:~\n\
 露呈-:expose:~\n\
-公開0-:expose:公開\n\
+公共:public:~\n\
+公開-:expose:~\n\
 非公式的:informal:~\n\
 非効率:inefficient:~\n\
 非同期的:asynchronous:~\n\

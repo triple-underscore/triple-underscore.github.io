@@ -848,7 +848,7 @@ COMMON_DATA.PREMAP = '\n\
 終: \n\
 名:\uE00A\uE008名前\uE005\n\
 述:\uE00B\uE008名前\uE005\n\
-対:\uE007~For\uE005\n\
+用:\uE007~For\uE005\n\
 値:\uE007<a href="~CSSVAL#value-defs">値</a>\uE006\n\
 新値:\uE007新たに定義される<a href="~CSSVAL#value-defs">値</a>\uE006\n\
 新初:\uE007新たに定義される<a href="~CASCADE#initial-values">初期値</a>\uE005\n\
