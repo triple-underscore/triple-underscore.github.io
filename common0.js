@@ -1001,7 +1001,6 @@ CSSBREAK:css-break-ja.html\n\
 CSSCOLOR:css-color-ja.html\n\
 CSSCOND:css-conditional-ja.html\n\
 CSSCOUNTER:css-counter-styles-ja.html\n\
-CSSDECOR:css-text-decor-ja.html\n\
 CSSDISP:css-display-ja.html\n\
 CSSEXCLUSION:css-exclusions-ja.html\n\
 CSSFLEX:css-flexbox-ja.html\n\
