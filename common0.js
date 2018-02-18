@@ -973,7 +973,7 @@ SW:https://w3c.github.io/ServiceWorker/\n\
 FILEAPI:File_API-ja.html\n\
 STREAMS:Streams-ja.html\n\
 URL1:URL-ja.html\n\
-MIMESNIFF:https://mimesniff.spec.whatwg.org/\n\
+MIMESNIFF:mimesniff-ja.html\n\
 FULLSCREEN:fullscreen-ja.html\n\
 NOTIFICATIONS:notifications-ja.html\n\
 WEBIDL:WebIDL-ja.html\n\
