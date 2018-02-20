@@ -1080,7 +1080,7 @@ app:application:::アプリケーション\n\
 適切:appropriate:~\n\
 適用-:apply:~\n\
 	適用すること:application\n\
-適用可能:applicable:~\n\
+	適用-可能:applicable:~\n\
 適用性:applicability:~\n\
 approach::::アプローチ\n\
 architecture::::アーキテクチャ\n\
@@ -1392,9 +1392,9 @@ zero:::ゼロ\n\
 独立:independent:~\n\
 	依存しない:independent:~\n\
 依拠-:rely:~\n\
-依拠可能:reliable:~\n\
+	依拠-可能:reliable:~\n\
 信頼性:reliability:~\n\
-依然として:still:~\n\
+	依然として:still:~\n\
 係数:factor:~\n\
 促進-:promote:~\n\
 保全-:preserve:~\n\
@@ -1427,7 +1427,7 @@ zero:::ゼロ\n\
 優先度:priority:~\n\
 優先順:precedence:~\n\
 元:original:~\n\
-元々は:originally:~\n\
+	元々は:originally:~\n\
 元の:original:~\n\
 先行-:precede:~\n\
 入力:input:~\n\
@@ -1549,7 +1549,7 @@ referrer::::リファラ\n\
 送信:sending::~\n\
 送信者:sender::~\n\
 受容-:accept:~\n\
-受容可能:acceptable:~\n\
+	受容-可能:acceptable:~\n\
 受理:accept:~\n\
 古い:older:~\n\
 可用:available:~\n\
@@ -1842,7 +1842,7 @@ referrer::::リファラ\n\
 拡張0-:expand:拡張\n\
 拡張:extension::~\n\
 	拡張し得る:extensible:~\n\
-拡張可能な:extensible::~\n\
+	拡張-可能:extensible::~\n\
 拡張性:extensibility::~\n\
 持続-:persist::~\n\
 持続性:persistence::~\n\
@@ -2301,7 +2301,7 @@ stateless::::ステートレス\n\
 規約:convention:~\n\
 視野:scope:~\n\
 観測-:observe:~\n\
-観測可能:observable:~\n\
+	観測-可能:observable:~\n\
 解決0:solve:解決\n\
 解決-:resolve::~\n\
 解決:resolution::~\n\
