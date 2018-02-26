@@ -1350,7 +1350,7 @@ zero:::ゼロ\n\
 付随-:accompany:~\n\
 代わりに:instead:~\n\
 代替:alternative:~\n\
-代替の:alternate:~\n\
+代替-:alternate:~\n\
 代用:substitute:~\n\
 	代わるもの:replacement:~\n\
 代表的な:typical:~\n\
