@@ -1020,7 +1020,6 @@ CSSPAGE:css-page-ja.html\n\
 CSSPOS:https://drafts.csswg.org/css-position-3/\n\
 CSSREGION:https://drafts.csswg.org/css-regions-1/\n\
 SELECTORS4:selectors4-ja.html\n\
-SELECTORS:selectors4-ja.html\n\
 CSSPSEUDO:css-pseudo-ja.html\n\
 CSSSTYLEATTR:css-style-attr-ja.html\n\
 CSSSYN:css-syntax-ja.html\n\
@@ -1030,7 +1029,6 @@ CSSUI:css-ui-ja.html\n\
 CSSVAL:css-values-ja.html\n\
 CSSVAR:css-variables-ja.html\n\
 CSSWM:css-writing-modes-ja.html\n\
-CSSSIZING:css-sizing-ja.html\n\
 SIZING:css-sizing-ja.html\n\
 TRANSFORM:css-transforms-ja.html\n\
 TRANSFORM2:css-transforms2-ja.html\n\
