@@ -1038,7 +1038,7 @@ TRANSITION:css-transitions-ja.html\n\
 MQ4:mediaqueries4-ja.html\n\
 SVG11:SVG11\n\
 SVG2:https://svgwg.org/svg2-draft\n\
-HTML5:https://html.spec.whatwg.org/multipage\n\
+HTMLLS:https://html.spec.whatwg.org/multipage\n\
 HTML50:https://www.w3.org/TR/html5\n\
 ARIA1:https://w3c.github.io/aria/\n\
 BROWSERS:browsers-ja.html\n\
@@ -1085,8 +1085,9 @@ HEsections:HTML-sections-ja.html\n\
 HEscripting:HTML-scripting-ja.html\n\
 HEcanvas:https://html.spec.whatwg.org/multipage/canvas.html\n\
 HEtables:HTML-tables-ja.html\n\
-WEBSOCKET:WebSocket-ja.html\n\
 WORKERS:Workers-ja.html\n\
+WORKLETS1:https://drafts.css-houdini.org/worklets/\n\
+WEBSOCKET:WebSocket-ja.html\n\
 WEBSTORAGE:WebStorage-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
 PROMISES:promises-guide-ja.html\n\

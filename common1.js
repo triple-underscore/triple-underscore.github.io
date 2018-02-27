@@ -426,7 +426,7 @@ W3C:
 '<a href="https://www.w3.org/">W3C</a>',
 WHATWG:
 '<a href="https://whatwg.org/">WHATWG</a>',
-HTML5:
+HTMLLS:
 'https://html.spec.whatwg.org/multipage',
 		};
 		html = html.replace(/~(\w+)/g, function(match, key){
@@ -1597,7 +1597,7 @@ COMMON_DATA.JA_BASIS = {
 	adagio:    '＃www.y-adagio.com/public/standards',
 	TR:        'www.w3.org/TR',
 	CSSWG:     'drafts.csswg.org',
-	HTML5:     'html.spec.whatwg.org/multipage',
+	HTMLLS:    'html.spec.whatwg.org/multipage',
 	IETF:      'tools.ietf.org/html',
 	HTTPWG:    '＃httpwg.github.io/specs',
 	suika:     'wiki.suikawiki.org',
@@ -1838,9 +1838,9 @@ HTML=副               ~momdoG/html/dev/●日本語訳( Web 開発者向け)\n\
 	HTML=・               ~TR/html/●W3C\n\
 	HTML=・               html.spec.whatwg.org/multipage/●LS\n\
 HTMLMICRODATA=主      ~momdoG/html/microdata.html\n\
-HTMLMICRODATA=・      ~HTML5/microdata.html\n\
+HTMLMICRODATA=・      ~HTMLLS/microdata.html\n\
 HTMLIANA=主           ~momdoG/html/iana.html\n\
-HTMLIANA=・           ~HTML5/iana.html\n\
+HTMLIANA=・           ~HTMLLS/iana.html\n\
 HTML401=主            ＃www.asahi-net.or.jp/~sd5a-ucd/rec-html401j/cover.html\n\
 INDEXEDDB=主          ~/IndexedDB-2nd-ja.html\n\
 INDEXEDDB=版          ~TR/IndexedDB/\n\
@@ -1986,7 +1986,6 @@ SVG=主                triple-underscore.github.io/SVG11/\n\
 TOUCHEVENTS=主        ~/touch-events-ja.html\n\
 URL=主                ~/URL-ja.html\n\
 URL=編                url.spec.whatwg.org/●LS\n\
-URL=版                www.w3.org/TR/url/●W3C版\n\
 UIEVENTS=主           ~/uievents-ja.html\n\
 UIEVENTS=版           ~TR/uievents/\n\
 UIEVENTS=編           w3c.github.io/uievents/\n\
@@ -1999,12 +1998,10 @@ WEBIDL=・             ~TR/WebIDL/\n\
 WEBSOCKETS=主         ~/WebSocket-ja.html\n\
 WEBSOCKETS=版         www.w3.org/TR/websockets/\n\
 WEBSOCKETS=編         w3c.github.io/websockets/\n\
-WEBSOCKETS=・         dev.w3.org/html5/websockets/\n\
 WEBSTORAGE=主         ~/WebStorage-ja.html\n\
 WEBSTORAGE=版         ~TR/webstorage/\n\
-WEBSTORAGE=編         ~HTML5/webstorage.html●WHATWG版\n\
-WORKERS=・            ~HTML5/workers.html\n\
-WORKERS=・            dev.w3.org/html5/workers/\n\
+WEBSTORAGE=編         ~HTMLLS/webstorage.html●WHATWG版\n\
+WORKERS=・            ~HTMLLS/workers.html\n\
 WORKERS=主            ~/Workers-ja.html\n\
 WORKERS=版            ~TR/workers/\n\
 WORKERS=編            w3c.github.io/workers/\n\
@@ -2037,7 +2034,7 @@ COMMON_DATA.REF_DATA2 = '\n\
 ~CSSWG/css21/●    ~momdoG/css2/\n\
 ~TR/SVG/●         triple-underscore.github.io/SVG11/\n\
 ~TR/SVG11/●       triple-underscore.github.io/SVG11/\n\
-	~HTML5/●          ~momdoG/html/\n\
+	~HTMLLS/●          ~momdoG/html/\n\
 ';
 
 
@@ -2141,6 +2138,7 @@ COOKIES:RFC6265\n\
 ORIGIN:RFC6454\n\
 WSP:RFC6455\n\
 WEBIDL1:WEBIDL\n\
+WORKLETS:WORKLETS1\n\
 REFERRER:REFERRERPOLICY\n\
 UPGRADE:UPGRADEINSECUREREQUESTS\n\
 TLS12:RFC5246\n\
