@@ -132,8 +132,8 @@ return text;
 
 ●●options
 
-spec_date:2018-01-05
-trans_update:2018-01-07
+spec_date:2018-02-27
+trans_update:2018-02-28
 spec_status:LS
 original_url:https://notifications.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -187,7 +187,9 @@ m.image:#dom-notification-image
 m.lang:#dom-notification-lang
 m.maxActions:#dom-notification-maxactions
 m.onclick:#dom-notification-onclick
+m.onshow:#dom-notification-onshow
 m.onerror:#dom-notification-onerror
+m.onclose:#dom-notification-onclose
 m.onnotificationclick:#dom-serviceworkerglobalscope-onnotificationclick
 m.onnotificationclose:#dom-serviceworkerglobalscope-onnotificationclose
 m.permission:#dom-notification-permission
@@ -201,7 +203,7 @@ m.tag:#dom-notification-tag
 m.timestamp:#dom-notification-timestamp
 m.title:#dom-notification-title
 m.vibrate:#dom-notification-vibrate
-m.window.focus:~HTMLinteraction#dom-window-focus
+m.focus:~HTMLinteraction#dom-window-focus
 
 mA.action:#dom-notificationaction-action
 mA.icon:#dom-notificationaction-icon
@@ -304,11 +306,10 @@ nT.動作:#actions
 通知~list:#list-of-notifications
 通知:#concept-notification
 持続的:#persistent-notification
-持続的な通知:#persistent-notification
-持続的でない通知:#non-persistent-notification
+持続的でない:#non-persistent-notification
 通知を作成する:#create-a-notification
 ~sw通知~eventを発火する:#fire-a-service-worker-notification-event-named-e
-
+~close~eventを取扱う:#handle-close-events
 
 acT.~icon資源:#action-icon-resource
 acT.名前:#action-name
@@ -317,6 +318,11 @@ acT.~icon~URL:#action-icon-url
 
 
 	●外部
+
+~list:~INFRA#list
+除去する:~INFRA#list-remove
+付加する:~INFRA#list-append
+置換する:~INFRA#list-replace
 
 現在の大域~obj:~WAPI#current-global-object
 入口~設定群~obj:~WAPI#entry-settings-object
@@ -393,7 +399,7 @@ center::::センター
 時刻印:timestamp::~
 未来:future:~
 過去:past:~
-資源:resource::~::リソース
+資源:resource::~:リソース
 milli::::ミリ
 	~milli秒単位:milliseconds
 	数秒:couple of seconds
@@ -763,9 +769,6 @@ sw:service worker
 
 	~F:unset
 	例外が投出されたときは:if this throws an exception,／If this threw an exception
-	：:run these substeps
-	~RET:and terminate these substeps
-	~RET:terminate these steps
 	~GTE:excess
 	%動作~list:frozenAction
 	~sw登録:serviceWorkerRegistration
@@ -890,7 +893,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/notifications/commits">GitHub whatwg/notifications/commits</a>
-	<a href="/commit-snapshots/9cb3856c40ad1eb54133bd8c7f75eb3fbed59322/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="/commit-snapshots/daf4b50d05209709578b43584a9597b16e3f2c3f/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/notifyapi">@notifyapi</a>
 
 Tests:
@@ -1176,7 +1179,7 @@ A badge resource is an icon representing the web application, or the category of
 	<dd>
 【通知-時に生じる振動を表す~dataを与える。】
 ◎
-A notification can have an sound URL, sound resource, vibration pattern.
+A notification can have a sound URL, sound resource, vibration pattern.
 </dd>
 </dl>
 
@@ -1265,10 +1268,12 @@ Some platforms might modify an icon resource to better match the platform’s vi
 `通知$のうち、［
 その`~sw登録$nT ~NEQ ε
 ］なるものは
-`持続的な通知@
+`持続的@
+（ `persistent^en ）
 とされ，他のものは
-`持続的でない通知@
-とされる。
+`持続的でない@
+（ `non-persistent^en ）とされる。
+【後者の用語は、単なる前者の否定なので，この訳では単に “`持続的$でない” と記すことにする。】
 ◎
 A non-persistent notification is a notification without an associated service worker registration.
 ◎
@@ -1292,7 +1297,7 @@ A notification is considered to be replaceable if there is a notification in the
 
 <hr>
 
-<p>
+<p class="algo-head">
 `通知を作成する@
 ときは、所与の
 ( %~title, %options, %~sw登録 （省略時は ε ） )
@@ -1333,7 +1338,7 @@ If a serviceWorkerRegistration was not provided and options’s actions is not e
 </p>
 
 <p class="note">注記：
-現在，`動作$nTは、`持続的な通知$に限り，~supportされている。
+現在，`動作$nTは、`持続的$な通知に限り，~supportされている。
 ◎
 Actions are only currently supported for persistent notifications.
 </p>
@@ -1551,40 +1556,41 @@ Return notification.
 
 
 <p>
-~UAは、 0 個~以上の`通知$からなる
+~UAは、 
 `通知~list@
-を保た~MUST。
+を保た~MUST
+— それは、 0 個~以上の`通知$からなる`~list$である。
 ~UAには、次の要件が課される：
 ◎
-The user agent must keep a list of notifications that consists of zero or more notifications.
+The user agent must keep a list of notifications, which is a list of zero or more notifications. 
 </p>
 
 <ul>
 	<li>
-`持続的でない通知$に対しては，作成した数秒~後には`通知を閉じる$べきである。
+`持続的$でない通知に対しては，作成した数秒~後には`通知を閉じる$べきである。
 ◎
 User agents should run the close steps for a non-persistent notification a couple of seconds after they have been created.
 </li>
 	<li>
-~platformの “通知~center” が可用であっても，`持続的でない通知$をそこに表示するべきでない。
+~platformの “通知~center” が可用であっても，`持続的$でない通知をそこに表示するべきでない。
 ◎
 User agents should not display non-persistent notification in a platform’s "notification center" (if available).
 </li>
 	<li>
 <p>
-`持続的な通知$を，`通知~list$から除去されるまでは持続化するべきである。
+`持続的$な通知を，`通知~list$から除去されるまでは持続化するべきである。
 ◎
 User agents should persist persistent notifications until they are removed from the list of notifications.
 </p>
 
 <p class="example">
-`持続的な通知$は、それを表現するいずれかの `Notification$I ~obj上で `close()$m ~methodを呼出すこともできる。
+`持続的$な通知は、それを表現するいずれかの `Notification$I ~obj上で `close()$m ~methodを呼出すこともできる。
 ◎
 A persistent notification could have the close() method invoked of one of its Notification objects.
 </p>
 	</li>
 	<li>
-~platformの “通知~center” が可用ならば，`持続的な通知$をそこに表示するべきである。
+~platformの “通知~center” が可用ならば，`持続的$な通知をそこに表示するべきである。
 ◎
 User agents should display persistent notifications in a platform’s "notification center" (if available).
 </li>
@@ -1705,7 +1711,7 @@ Developers are encouraged to only use valid language tags.
 		<section id="resources">
 <h3 title="Resources">2.5. 資源</h3>
 
-<p>
+<p class="algo-head">
 `通知を~fetchする@
 ときは、所与の
 ( `通知$ %通知 )
@@ -1718,7 +1724,7 @@ The fetch steps for a given notification notification are:
 	<li>
 【以下を簡潔に集約するため，この訳では、この段にて次に与える手続きを導入する。】
 
-<p>
+<p class="algo-head">
 この手続きの中で，
 `資源を~fetchして復号する^i
 ときは、所与の
@@ -1896,7 +1902,7 @@ Then, in parallel:
 		<section id="showing-a-notification">
 <h3 title="Showing a notification">2.6. 通知を示すとき</h3>
 
-<p>
+<p class="algo-head">
 `通知を示す@
 ときは、所与の
 ( `通知$ %通知 )
@@ -1913,7 +1919,7 @@ The show steps for a given notification notification are:
 ⇒
 `通知を置換する$( %通知 )
 ◎
-If notification is replaceable, run the replace steps for that notification and notification, and then terminate these steps.
+If notification is replaceable, then run the replace steps for that notification and notification.
 </li>
 	<li>
 ~ELSE
@@ -1922,6 +1928,16 @@ If notification is replaceable, run the replace steps for that notification and 
 ◎
 Otherwise, run the display steps for notification.
 </li>
+	<li>
+~IF［
+%通知 は`持続的$でない
+］
+⇒
+%通知 を表現している `Notification$I ~objに向けて，名前 `show^et の`~eventを発火する$
+◎
+If notification is a non-persistent notification, then fire an event named show on the Notification object representing notification.
+</li>
+
 </ol>
 
 		</section>
@@ -1944,7 +1960,7 @@ When a notification notification, or one of its actions, is activated by the use
 %通知 は`持続的$である
 ］：
 ◎
-If notification is a persistent notification, run these substeps:
+If notification is a persistent notification, then:
 </p>
 
 		<ol>
@@ -1987,7 +2003,7 @@ Then run Handle Functional Event with notification’s service worker registrati
 <p>
 次を走らす`~taskを~queueする$：
 ◎
-Otherwise, queue a task to run these substeps:
+Otherwise, queue a task to run these steps:
 </p>
 
 		<ol>
@@ -2010,11 +2026,10 @@ Let intoFocus be the result of firing an event named click on the Notification o
 
 <p class="note">注記：
 ~UAには、［
-`click^et ~event用の~event~listenerの中からも，
-`window.focus()$m が働くようにする
+`click^et ~event用の~event~listenerの中からも， `focus()$m が働くようにする
 ］ことが奨励される。
 ◎
-User agents are encouraged to make window.focus() work from within the event listener for the event named click.
+User agents are encouraged to make focus() work from within the event listener for the event named click.
 </p>
 			</li>
 			<li>
@@ -2053,7 +2068,7 @@ When a notification is closed, either by the underlying notification platform or
 </p>
 
 
-<p>
+<p class="algo-head">
 `通知を閉じる@
 ときは、所与の
 ( `通知$ %通知 )
@@ -2070,8 +2085,30 @@ The close steps for a given notification are:
 ⇒
 ~RET
 ◎
-If notification is not in the list of notifications, terminate these steps.
+If the list of notifications does not contain notification, then abort these steps.
 </li>
+	<li>
+`~close~eventを取扱う$( %通知 )
+◎
+Handle close events with notification.
+</li>
+	<li>
+`通知~list$から %通知 を`除去する$
+◎
+Remove notification from the list of notifications.
+</li>
+</ol>
+
+<p class="algo-head">
+`~close~eventを取扱う@
+ときは、所与の
+( %通知 )
+に対し，次を走らす：
+◎
+To handle close events given a notification, run these steps:
+</p>
+
+<ol>
 	<li>
 <p>
 ~IF［
@@ -2080,7 +2117,7 @@ If notification is not in the list of notifications, terminate these steps.
 %通知 は利用者により~closeされた
 ］：
 ◎
-If notification is a persistent notification and notification was closed by the user, run these substeps:
+If notification is a persistent notification and notification was closed by the user, then:
 </p>
 		<ol>
 			<li>
@@ -2098,9 +2135,13 @@ Then run Handle Functional Event with notification’s service worker registrati
 		</ol>
 	</li>
 	<li>
-`通知~list$から %通知 を除去する
+~IF［
+%通知 は`持続的$でない
+］
+⇒
+%通知 を表現している `Notification$I ~objに向けて，名前 `close^et の`~eventを発火する$
 ◎
-Remove notification from the list of notifications.
+If notification is a non-persistent notification, then fire an event named close on the Notification object representing notification.
 </li>
 </ol>
 
@@ -2110,7 +2151,7 @@ Remove notification from the list of notifications.
 <h3 title="Displaying notifications">2.9. 通知の表示-法</h3>
 
 
-<p>
+<p class="algo-head">
 `通知を表示する@
 ときは、所与の
 ( `通知$ %通知 )
@@ -2136,7 +2177,7 @@ Display notification on the device (e.g., by calling the appropriate notificatio
 Run the alert steps for notification.
 </li>
 	<li>
-`通知~list$に %通知 を付加する
+`通知~list$に %通知 を`付加する$
 ◎
 Append notification to the list of notifications.
 </li>
@@ -2148,7 +2189,7 @@ Append notification to the list of notifications.
 		<section id="replacing-a-notification">
 <h3 title="Replacing a notification">2.10. 通知の置換-法</h3>
 
-<p>
+<p class="algo-head">
 `通知を置換する@
 ときは、所与の
 ( `置換-可能$な`通知$ %新~通知 )
@@ -2177,9 +2218,14 @@ Wait for any fetches to complete and notification’s image resource icon resour
 ↓↓</p>
 		<ol>
 			<li>
-`通知~list$内で %旧~通知 を %新~通知 に置換する
+`通知~list$内の同じ位置にある %旧~通知 を %新~通知 に`置換する$
 ◎
 Replace old with new, in the same position, in the list of notifications.
+</li>
+			<li>
+`~close~eventを取扱う$( %旧~通知 )
+◎
+Handle close events with old.
 </li>
 			<li>
 ~IF［
@@ -2224,7 +2270,7 @@ Notification platforms are strongly encouraged to support native replacement. It
 		<section id="alerting-the-user">
 <h3 title="Alerting the user">2.11. 利用者への~alert法</h3>
 
-<p>
+<p class="algo-head">
 利用者に
 `通知を~alertする@
 ときは、所与の
@@ -2271,7 +2317,9 @@ interface `Notification@I : `EventTarget$I {
   static readonly attribute unsigned long `maxActions$m;
 
   attribute `EventHandler$I `onclick$m;
+  attribute `EventHandler$I `onshow$m;
   attribute `EventHandler$I `onerror$m;
+  attribute `EventHandler$I `onclose$m;
 
   readonly attribute DOMString `title$m;
   readonly attribute `NotificationDirection$I `dir$m;
@@ -2339,13 +2387,13 @@ callback `NotificationPermissionCallback@I = void (`NotificationPermission$I %pe
 
 <ul>
 	<li>
-`持続的でない通知$を表現する `Notification$I ~objは、
+`持続的$でない通知を表現する `Notification$I ~objは、
 `Notification()$m 構築子を通して作成でき、通知ごとに 1 個に限られる。
 ◎
 A non-persistent notification is represented by one Notification object and can be created through Notification's constructor.
 </li>
 	<li>
-`持続的な通知$を表現する `Notification$I ~objは、通知ごとに 0 個~以上いくつでもあり得る。
+`持続的$な通知を表現する `Notification$I ~objは、通知ごとに 0 個~以上いくつでもあり得る。
 そのような`通知$は、 `showNotification()$m ~methodを通して作成できる。
 【そのような~objたちは、 `getNotifications()$m を通して／ `~sw通知~eventを発火する$ときに作成される。】
 ◎
@@ -2363,12 +2411,15 @@ A persistent notification is represented by zero or more Notification objects an
 ［
 %N が表現している`通知$ ~IN `通知~list$
 ］~AND［
-%N には［
-`click^et ／ `error^et
-］型の`~event~listener$が~~登録されている
+%N には次に挙げるいずれかの型の`~event~listener$が~~登録されている
 ］
+⇒
+`click^et,
+`show^et,
+`close^et,
+`error^et
 ◎
-A Notification object must not be garbage collected while its corresponding notification is in the list of notifications and the Notification object in question has an event listener whose type is click or error.
+A Notification object must not be garbage collected while the list of notifications contains its corresponding notification and it has an event listener whose type is click, show, close, or error. 
 </p>
 
 
@@ -2409,7 +2460,7 @@ Let n be a new Notification object associated with notification.
 <p>
 この段は`並列的$に走らす：
 ◎
-Run these substeps in parallel:
+Run these steps in parallel:
 </p>
 		<ol>
 			<li>
@@ -2427,7 +2478,7 @@ If permission for notification’s origin is not "granted", then queue a task to
 <p>
 ~ELSE：
 ◎
-and terminate these substeps.
+and abort these steps.
 </p>
 				<ol>
 					<li>
@@ -2491,7 +2542,7 @@ Let promise be a new promise.
 <p>
 この段は`並列的$に走らす：
 ◎
-Run these substeps in parallel:
+Run these steps in parallel:
 </p>
 				<ol>
 					<li>
@@ -2523,7 +2574,7 @@ If permission is "default", ask the user whether showing notifications for the e
 <p>
 次を走らす`~taskを~queueする$：
 ◎
-Queue a task to run these subsubsteps:
+Queue a task to run these steps:
 </p>
 						<ol>
 							<li>
@@ -2601,8 +2652,14 @@ The following are the event handlers (and their corresponding event handler even
 <tr><td>`onclick@m
 <td>`click^et
 
+<tr><td>`onshow@m
+<td>`show^et
+
 <tr><td>`onerror@m
 <td>`error^et
+
+<tr><td>`onclose@m
+<td>`close^et
 
 </tbody></table>
 
@@ -2833,7 +2890,7 @@ Create a frozen array from frozenActions.
 <h4 title="Using events from a page">3.5.1. 頁からの~eventの利用-法</h4>
 
 <p>
-`持続的でない通知$を表現する `Notification$I ~objには、その存続中に~eventが配送される
+`持続的$でない通知を表現する `Notification$I ~objには、その存続中に~eventが配送される
 — 開発者は、それを利用して，自身が欲する挙動を生成できる。
 ◎
 Non-persistent Notification objects dispatch events during their lifecycle, which developers can use to generate desired behaviors.
@@ -2858,7 +2915,7 @@ var %not = new Notification("Gebrünn Gebrünn by Paul Kalkbrenner", { icon: "ne
 <h4 title="Using actions from a service worker">3.5.2. ~swからの動作の利用-法</h4>
 
 <p>
-`持続的な通知$は、
+`持続的$な通知は、
 `ServiceWorkerGlobalScope$I に向けて
 `notificationclick^et ~eventを発火する。
 ◎
@@ -3081,7 +3138,7 @@ Let notification be the result of creating a notification given title, options, 
 <p>
 この段は`並列的$に走らす：
 ◎
-Run these substeps in parallel:
+Run these steps in parallel:
 </p>
 		<ol>
 			<li>
@@ -3097,7 +3154,7 @@ If permission for notification’s origin is not "granted", then reject promise 
 <p>
 ~ELSE：
 ◎
-, and terminate these substeps.
+, and abort these steps.
 </p>
 				<ol>
 					<li>
@@ -3144,7 +3201,7 @@ Let promise be a new promise.
 <p>
 この段は`並列的$に走らす：
 ◎
-Run these substeps in parallel:
+Run these steps in parallel:
 </p>
 		<ol>
 			<li>
@@ -3219,7 +3276,7 @@ This method returns zero or more new Notification objects which might represent 
 
 <hr>
 
-<p>
+<p class="algo-head">
 `~sw通知~eventを発火する@
 ときは、所与の
 ( %~obj, %~event名, %通知, %動作 【省略時は空~文字列？】 )
