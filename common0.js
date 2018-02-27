@@ -1084,7 +1084,7 @@ HEscripting:HTML-scripting-ja.html\n\
 HEcanvas:https://html.spec.whatwg.org/multipage/canvas.html\n\
 HEtables:HTML-tables-ja.html\n\
 WORKERS:Workers-ja.html\n\
-WORKLETS1:https://drafts.css-houdini.org/worklets/\n\
+WORKLETS1:worklets-ja.html\n\
 WEBSOCKET:WebSocket-ja.html\n\
 WEBSTORAGE:WebStorage-ja.html\n\
 INDEXEDDB:IndexedDB-2nd-ja.html\n\
