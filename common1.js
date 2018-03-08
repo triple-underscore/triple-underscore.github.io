@@ -1808,6 +1808,8 @@ MEDIAQ=主             ~mitsue/css3-mediaqueries/\n\
 MEDIAQ=副             ~/mediaqueries4-ja.html●Level 4 日本語訳\n\
 MEDIAQ=副             ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/css/REC-css3-mediaqueries-20120619.html\n\
 MEDIAQ=版             ~TR/css3-mediaqueries/\n\
+MEDIAFRAG=主          ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/media/REC-media-frags-10-20120925.html\n\
+MEDIAFRAG=版          ~TR/media-frags/\n\
 COMPAT=主             ~/compat-ja.html\n\
 DOM=主                ~/DOM4-ja.html\n\
 DOM=編                dom.spec.whatwg.org/●LS\n\
@@ -2116,6 +2118,7 @@ CSS3BG:CSSBACKGROUNDS3\n\
 CSSBG:CSSBACKGROUNDS3\n\
 CSSSTYLEATTR1:CSSSTYLEATTR\n\
 MEDIAQUERIES4:MQ4\n\
+MEDIAFRAGS:MEDIAFRAG\n\
 CSS3MEDIAQUERIES:MEDIAQ\n\
 SELECTORS4:SELECTORS\n\
 SELECTORS3:SELECT\n\
