@@ -210,8 +210,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2018-03-07
-trans_update:2018-03-08
+spec_date:2018-03-09
+trans_update:2018-03-10
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -326,6 +326,7 @@ in-flight:
 分岐-:branch::~::ブランチ
 clone::::クローン
 Realm:
+realm:
 brand:
 
 鎖:chain::~::チェイン
@@ -339,7 +340,8 @@ pull::::プル
 行先:destination::~
 下層:underlying::~
 lock::::ロック
-	lock法:locking
+	~lock法:locking
+	~lock中にある:locking
 	錠
 解放-:release::~
 獲得-:acquire::~
@@ -390,6 +392,7 @@ error:::::エラー
 内部的:internal:~
 作成-:create::~
 	作成する間:during creation of
+作成:creation::~
 翻訳-:translate::~
 圧縮-:compress::~
 圧縮済みの:compressed::~
@@ -741,6 +744,7 @@ debug::::デバッグ
 	〜に注意:note／remember
 	もっとはっきりさせる:further emphasize
 	~~露わになる:manifesting
+	~~問題:matter
 
 	●仕様
 API:
@@ -1589,6 +1593,7 @@ min:~TC39#sec-algorithm-conventions
 現在の~Realm~Record:~TC39#current-realm
 大域~obj:~TC39#global-object
 組込みの~obj:~TC39#sec-ecmascript-standard-built-in-objects
+~realm:~TC39#realm
 
 ~List:#_es-List
 ~Record:#_es-record
@@ -1823,7 +1828,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/ec2a9577da18c2ce69f653a36161b35cfed61eec" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/7b8dffe8ec270bb918340e011349e2c1b5521a15" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 Tests:
@@ -3570,13 +3575,19 @@ Let promise be a new promise.
 	<li>
 <p>
 ( %reader, %writer )
-を用いて，`並列的$に、 ~this から すべての`~chunk$を読取して %dest に書込する。
+を用いて，`並列的$に
+<span class="issue">
+本当はそうでない
+— <a href="https://github.com/whatwg/streams/issues/905">#905</a>
+を見よ —
+</span>
+~this から すべての`~chunk$を読取して %dest に書込する。
 これが起こる正確な方式は、
 ( 読取器, 書込器 )
 が供する~lock法に因り，作者~codeからは観測できない。
 よって，~UAには これを柔軟に行う余地があるが、利用される正確な~algoが何であれ，次の拘束が適用される：
 ◎
-In parallel, using reader and writer, read all chunks from this and write them to dest. Due to the locking provided by the reader and writer, the exact manner in which this happens is not observable to author code, and so there is flexibility in how this is done. The following constraints apply regardless of the exact algorithm used:
+In parallel but not really; see #905, using reader and writer, read all chunks from this and write them to dest. Due to the locking provided by the reader and writer, the exact manner in which this happens is not observable to author code, and so there is flexibility in how this is done. The following constraints apply regardless of the exact algorithm used:
 </p>
 
 		<ul>
@@ -3935,6 +3946,15 @@ Otherwise, resolve promise with undefined.
 Return promise.
 </li>
 </ol>
+
+<p class="note">注記：
+ここで遂行される種々の抽象~演算では，~objが作成され（~promiseを成すものが多い）、それらの~obj用には，通例的に`~realm$を指定することが要求される。
+しかしながら，~lock中にあるので、それらの~objは 作者~codeからは観測され得ない。
+そのようなわけで、それらの作成-時に利用する`~realm$が~~問題になることはない。
+◎
+Various abstract operations performed here include object creation (often of promises), which usually would require specifying a realm for the created object. However, because of the locking, none of these objects can be observed by author code. As such, the realm used to create them does not matter.
+</p>
+
 				</section>
 				<section id="rs-tee">
 <h5>3.2.5.6. `tee()^rs</h5>
@@ -11068,33 +11088,19 @@ Let state be stream.[[state]].
 </li>
 	<li>
 ~IF
-%state ~EQ `closed^l
+%state ~IN { `closed^l, `errored^l }
 ⇒
 ~RET ~undefined で`解決される~promise$
 ◎
-If state is "closed", return a promise resolved with undefined.
-</li>
-	<li>
-~IF
-%state ~EQ `errored^l
-⇒
-~RET %stream.[[storedError]] で`却下される~promise$
-◎
-If state is "errored", return a promise rejected with stream.[[storedError]].
-</li>
-	<li>
-%error ~LET 新たな `TypeError^b
-— これは、~streamを中止するよう要請されたことを指示する
-◎
-Let error be a new TypeError indicating that the stream has been requested to abort.
+If state is "closed" or "errored", return a promise resolved with undefined.
 </li>
 	<li>
 ~IF
 %stream.[[pendingAbortRequest]] ~NEQ ~undefined
 ⇒
-~RET %error で`却下される~promise$
+~RET %stream.[[pendingAbortRequest]].[[promise]]
 ◎
-If stream.[[pendingAbortRequest]] is not undefined, return a promise rejected with error.
+If stream.[[pendingAbortRequest]] is not undefined, return stream.[[pendingAbortRequest]].[[promise]].
 </li>
 	<li>
 ~Assert：
@@ -11143,9 +11149,9 @@ Set stream.[[pendingAbortRequest]] to Record {[[promise]]: promise, [[reason]]: 
 ~IF
 %wasAlreadyErroring ~EQ ~false
 ⇒
-! `WritableStreamStartErroring$A( %stream, %error )
+! `WritableStreamStartErroring$A( %stream, %reason )
 ◎
-If wasAlreadyErroring is false, perform ! WritableStreamStartErroring(stream, error).
+If wasAlreadyErroring is false, perform ! WritableStreamStartErroring(stream, reason).
 </li>
 	<li>
 ~RET %promise
@@ -14603,15 +14609,15 @@ Return ! TransformStreamDefaultSinkWriteAlgorithm(stream, chunk).
 	</li>
 	<li>
 <p>
-%abortAlgorithm ~LET 次を走らす手続き：
+%abortAlgorithm ~LET 引数 ( %reason ) をとり，次を走らす手続き：
 ◎
-Let abortAlgorithm be the following steps:
+Let abortAlgorithm be the following steps, taking a reason argument:
 </p>
 		<ol>
 			<li>
-~RET ! `TransformStreamDefaultSinkAbortAlgorithm$A( %stream )
+~RET ! `TransformStreamDefaultSinkAbortAlgorithm$A( %stream, %reason )
 ◎
-Return ! TransformStreamDefaultSinkAbortAlgorithm(stream).
+Return ! TransformStreamDefaultSinkAbortAlgorithm(stream, reason).
 </li>
 		</ol>
 	</li>
@@ -15522,19 +15528,13 @@ Return the result of performing controller.[[transformAlgorithm]], passing chunk
 
 			</section>
 			<section id="transform-stream-default-sink-abort-algorithm">
-<h4 class="nothrow">5.6.2. `TransformStreamDefaultSinkAbortAlgorithm( stream )^A</h4>
+<h4 class="nothrow">5.6.2. `TransformStreamDefaultSinkAbortAlgorithm( stream, reason )^A</h4>
 
 <ol class="algo">
 	<li>
-%e ~LET `TypeError^b 例外
-— これは、可書~streamが中止されたことを指示する
+! `TransformStreamError$A( %stream, %reason )
 ◎
-Let e be a TypeError exception indicating that the writable stream was aborted.
-</li>
-	<li>
-! `TransformStreamError$A( %stream, %e )
-◎
-Perform ! TransformStreamError(stream, e).
+Perform ! TransformStreamError(stream, reason).
 </li>
 	<li>
 ~RET ~undefined で`解決される~promise$
