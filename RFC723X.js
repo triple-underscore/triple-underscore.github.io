@@ -1068,7 +1068,7 @@ sensitive:\n\
 subject::対象\n\
 	~~渡る:span:\n\
 access::::アクセス\n\
-accessibility::::アクセス容易性\n\
+accessibility:::access 性:アクセス性:アクセシビリティ\n\
 account::::アカウント\n\
 address::::アドレス\n\
 agent::::エージェント\n\
