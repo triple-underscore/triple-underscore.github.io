@@ -287,8 +287,8 @@ text += args.replace(/(\w+)(\s=\s\w+)?/g, '<var>$1</var>$2');
 ●●options
 
 spec_title:DOM
-spec_date:2018-03-13
-trans_update:2018-03-13
+spec_date:2018-03-14
+trans_update:2018-03-14
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -534,6 +534,7 @@ count:::::カウント
 	●event
 event::::イベント
 listener::::リスナ
+handler::::ハンドラ
 listen::::リッスン
 target:
 関係target:relatedTarget::関係 target
@@ -1213,12 +1214,12 @@ getBoundingClientRect().m:~CSSOMVIEW#dom-range-getboundingclientrect
 受動~listener内.f:#in-passive-listener-flag
 ~composed.f:#composed-flag
 
-type.evL:#_type
-callback.evL:#_callback
-capture.evL:#_capture
-passive.evL:#_passive
-once.evL:#_once
-removed.evL:#_removed
+type.evL:#event-listener-type
+callback.evL:#event-listener-callback
+capture.evL:#event-listener-capture
+passive.evL:#event-listener-passive
+once.evL:#event-listener-once
+removed.evL:#event-listener-removed
 
 item.evP:#event-path-item
 target.evP:#event-path-target
@@ -1239,7 +1240,8 @@ target.evP:#event-path-target
 ~listenerを内部的に呼出す:#concept-event-listener-inner-invoke
 初期化する:#concept-event-initialize
 ~event~listener:#concept-event-listener
-~listener~list:#_listener-list
+~event~listener~list:#eventtarget-event-listener-list
+~event~listenerを追加する:#add-an-event-listener
 	type.i:#listener-type
 	callback.i:#listener-callback
 	capture.i:#listener-capture
@@ -1595,6 +1597,7 @@ whatToShow ~bitmask:#concept-traversal-whattoshow
 除去する:~INFRA#list-remove
 挿入する:~INFRA#list-insert
 置換する:~INFRA#list-replace
+包含して:~INFRA#list-contain
 連結-:~INFRA#string-concatenate
 構造体:~INFRA#struct
 	~EACH.list:~INFRA#list-iterate
@@ -1646,6 +1649,7 @@ PrefixedName.prod:~TR/xml-names/#NT-PrefixedName
 
 ~HTML構文解析器:~HTMLparsing#html-parser
 並列的:~HTMLINFRA#in-parallel
+
 その例外を報告する:~WAPI#report-the-exception
 関連する大域~obj:~WAPI#concept-relevant-global
 現在の大域~obj:~WAPI#current-global-object
@@ -1653,6 +1657,7 @@ PrefixedName.prod:~TR/xml-names/#NT-PrefixedName
 複合~極小task下位~taskを実行する:~WAPI#execute-a-compound-microtask-subtask
 複合~極小task:~WAPI#compound-microtask
 極小taskを~queueする:~WAPI#queue-a-microtask
+~event~handler:~WAPI#event-handlers
 
 生成元:~ORIGIN#concept-origin
 不透明な生成元:~ORIGIN#concept-origin-opaque
@@ -1746,7 +1751,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/8e754b524b277b186503ed53d135b647b02d772b/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/2bdabb15de8112d9783cf393a3d6c37911149f77/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/domstandard">@domstandard</a>
 
 Tests:
@@ -3577,38 +3582,26 @@ dictionary @@AddEventListenerOptions : $EventListenerOptions {
 ！
 
 <p>
-$@EventTarget ~objは、何かが起きた時に`~event$が`配送-$される~targetを表現する。
+$@EventTarget ~objは、何かが起きた時に`~event$を`配送-$できる~targetを表現する。
 ◎
-The EventTarget object represents the target to which an event is dispatched when something has occurred.
+An EventTarget object represents a target to which an event can be dispatched when something has occurred.
 </p>
 
-<div class="p">
-<p>
-各 $EventTarget ~objには、次のものが結付けられる：
-</p>
-
-<dl class="def-list">
-	<dt>`~listener~list@</dt>
-	<dd>
-0 個~以上の`~event~listener$からなる~list
-</dd>
-</dl>
+<p>（
+各 $EventTarget ~objには、
+`~event~listener~list@
+が結付けられる
+— それは、 0 個~以上の`~event~listener$からなる`~list$であり，初期~時には空とする。
 ◎
-Each EventTarget object has an associated list of event listeners.
-</div>
-
+Each EventTarget object has an associated event listener list (a list of zero or more event listeners). It is initially the empty list. 
+</p>
 
 <p>
 `~event~listener@
-を利用すれば、特定の`~event$を観測できる。
+を利用すれば、特定の`~event$を観測できる
+— それは、次のものからなる：
 ◎
-An event listener can be used to observe a specific event.
-</p>
-
-<p>
-各`~event~listener$は、次の~fieldからなる：
-◎
-An event listener consists of these fields:
+An event listener can be used to observe a specific event and consists of:
 </p>
 
 <ul>
@@ -3620,9 +3613,9 @@ type (a string)
 </li>
 	<li>
 `callback@evL
-— $EventListener
+— ~NULL, または $EventListener ~obj
 ◎
-callback (an EventListener)
+callback (null or an EventListener object)
 </li>
 	<li>
 `capture@evL
@@ -3643,7 +3636,7 @@ passive (a boolean, initially false)
 — 真偽値,
 初期~時は ~F とする。
 ◎
-once (a boolean, initially false) 
+once (a boolean, initially false)
 </li>
 	<li>
 `removed@evL
@@ -3656,9 +3649,9 @@ removed (a boolean for bookkeeping purposes, initially false)
 
 
 <p class="note">注記：
-上の~fieldに示したように， `callback$evL は $EventListener であるが、`~event~listener$は，より広い概念である。
+`callback$evL は $EventListener ~objであるが、`~event~listener$は 上に示したように より広い概念である。
 ◎
-Although callback is an EventListener, as can be seen from the fields above, an event listener is a broader concept.
+Although callback is an EventListener object, an event listener is a broader concept as can be seen above.
 </p>
 
 <p>
@@ -3735,8 +3728,8 @@ Creates a new EventTarget object, which can be used by developers to dispatch an
 
 	<dt>%target . $addEventListener(type, callback [, options])</dt>
 	<dd>
-%target の`~listener~list$に［
-$Event.type 属性~値が %type である`~event$に対する`~event~listener$
+%target の`~event~listener~list$に［
+$Event.type 属性~値が %type である`~event$用の`~event~listener$
 ］を付加する。
 %callback 引数が，`~event$が`配送-$されたときに呼出される `callback$evL として設定される。
 ◎
@@ -3744,15 +3737,15 @@ Appends an event listener for events whose type attribute value is type. The cal
 </dd>
 	<dd>
 %options 引数は、~listener特有の~optionを設定する。
-互換性のため、これはただの真偽値もとり得る
+互換性のため、これは真偽値もとり得る
 — その場合、この~methは，正確に［
-%options の ^capture ~memberに その値が指定された
+%options の $EventListenerOptions.capture に その値が指定された
 ］かのように挙動する。
 ◎
-The options argument sets listener-specific options. For compatibility this can be just a boolean, in which case the method behaves exactly as if the value was specified as options’ capture member.
+The options argument sets listener-specific options. For compatibility this can be a boolean, in which case the method behaves exactly as if the value was specified as options’s capture.
 </dd>
 	<dd>
-%options の $EventListenerOptions.capture ~memberが［
+%options の $EventListenerOptions.capture が［
 ~T ／ ［
 ~F または不在
 ］］の場合、
@@ -3764,41 +3757,40 @@ $Event.BUBBLING_PHASE ／  $Event.CAPTURING_PHASE
 いずれにせよ、`~event$の $Event.eventPhase 属性~値が $Event.AT_TARGET のときは，
 `callback$evL は呼出される。
 ◎
-When set to true, options’ capture member prevents callback from being invoked when the event’s eventPhase attribute value is BUBBLING_PHASE. When false (or not present), callback will not be invoked when event’s eventPhase attribute value is CAPTURING_PHASE. Either way, callback will be invoked if event’s eventPhase attribute value is AT_TARGET.
+When set to true, options’s capture prevents callback from being invoked when the event’s eventPhase attribute value is BUBBLING_PHASE. When false (or not present), callback will not be invoked when event’s eventPhase attribute value is CAPTURING_PHASE. Either way, callback will be invoked if event’s eventPhase attribute value is AT_TARGET.
 </dd>
 	<dd>
-%options の $AddEventListenerOptions.passive ~memberに対する ~T は、
+%options の $AddEventListenerOptions.passive が ~T に設定されている場合、
 `callback$evL は $Event.preventDefault() を呼出しても`~event$を取消さないことを指示する。
 これは、
 <a href="#observing-event-listeners">~event~listenerの観測-法</a>
 に述べる処理能の最適化を可能化するために利用される
 ◎
-When set to true, options’ passive member indicates that the callback will not cancel the event by invoking preventDefault(). This is used to enable performance optimizations described in §2.7 Observing event listeners.
+When set to true, options’s passive indicates that the callback will not cancel the event by invoking preventDefault(). This is used to enable performance optimizations described in §2.7 Observing event listeners.
 </dd>
 
 	<dd>
-%options の $AddEventListenerOptions.once ~memberが ~T に設定されている場合、~callbackが呼出されるのは一度限りであり，その後には`~event~listener$は除去されることを指示する。
+%options の $AddEventListenerOptions.once が ~T に設定されている場合、~callbackが呼出されるのは一度限りであり，その後には`~event~listener$は除去されることを指示する。
 ◎
-When set to true, options’s once member indicates that the callback will only be invoked once after which the event listener will be removed.
+When set to true, options’s once indicates that the callback will only be invoked once after which the event listener will be removed.
 </dd>
-
 	<dd>
-`~event~listener$は、重複しない場合（
-`type$evL, `callback$evL, `capture$evL
-のいずれかが異なる場合）に限り，
-%target の`~listener~list$に付加される。
+`~event~listener$は、重複しない
+— すなわち， `type$evL, `callback$evL, `capture$evL のいずれかが異なる — 
+場合に限り，
+%target の`~event~listener~list$に付加される。
 ◎
-The event listener is appended to target’s list of event listeners and is not appended if it is a duplicate, i.e., having the same type, callback, and capture values.
+The event listener is appended to target’s event listener list and is not appended if it has the same type, callback, and capture. 
 </dd>
 
 	<dt>%target . $removeEventListener(type, callback [, options])</dt>
 	<dd>
 引数と同じ［
 `type$evL, `callback$evL, `capture$evL
-］を持つ`~event~listener$を
-%target の`~listener~list$から除去する。
+］を持つ`~event~listener$を，
+%target の`~event~listener~list$から除去する。
 ◎
-Remove the event listener in target’s list of event listeners with the same type, callback, and options.
+Removes the event listener in target’s event listener list with the same type, callback, and options.
 </dd>
 
 	<dt>%target . $dispatchEvent(event)</dt>
@@ -3907,7 +3899,79 @@ Because of the defaults stated elsewhere, the returned EventTarget's get the par
 ◎
 In the future we could allow custom get the parent algorithms. Let us know if this would be useful for your programs. For now, all author-created EventTargets do not participate in a tree structure.
 </dd>
+</dl>
 
+<p>
+`~event~listenerを追加する@
+ときは、所与の
+( $EventTarget ~obj %~target, `~event~listener$ %~listener )
+に対し，次を走らす：
+◎
+To add an event listener given an EventTarget object eventTarget and an event listener listener, run these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+%~target に`関連する大域~obj$ %G は $ServiceWorkerGlobalScope ~objである
+］~AND［
+%G に結付けられている`~sw$の`~script資源$の，`評価されたことがある~flag$ ~EQ ~ON
+］`SERVICE-WORKERS$r
+⇒
+~THROW `TypeError$E
+◎
+If eventTarget’s relevant global object is a ServiceWorkerGlobalScope object and its associated service worker’s script resource’s has ever been evaluated flag is set, then throw a TypeError. [SERVICE-WORKERS]
+</p>
+
+<p class="note">注記：
+［
+当の~swに対し許容される~event型の格納を最適化する
+］ため, および［
+~event~listenerに対する非決定的な変更を避ける
+］ため、この【手続きを利用する】~methの呼出が許容されるのは，~sw~scriptが初めて評価される間に限られる。
+◎
+To optimize storing the event types allowed for the service worker and to avoid non-deterministic changes to the event listeners, invocation of the method is allowed only during the very first evaluation of the service worker script.
+</p>
+	</li>
+	<li>
+~IF［
+%~listener の`callback$evL ~EQ ~NULL
+］
+⇒
+~RET
+◎
+If listener’s callback is null, then return.
+</li>
+	<li>
+~IF［
+%~target の`~event~listener~list$は、次を満たす`~event~listener$を`包含して$いない
+］…
+⇒
+( `type$evL, `callback$evL, `capture$evL )
+~EQ
+%~listener の ( `type$evL, `callback$evL, `capture$evL )
+◎終
+…ならば
+⇒
+%~target の`~event~listener~list$に %~listener を`付加する$
+◎
+If eventTarget’s event listener list does not contain an event listener whose type is listener’s type, callback is listener’s callback, and capture is listener’s capture, then append listener to eventTarget’s event listener list.
+</li>
+</ol>
+
+<p class="note">注記：
+［
+`~event~listenerを追加する$
+］の概念は、［
+`~event~handler$ `HTML$r が同じ `code path^en <!-- ＊ -->を利用する
+］ことを確保するためにある。
+◎
+The add an event listener concept exists to ensure event handlers use the same code path. [HTML] 
+</p>
+
+
+<dl class="idl-def">
 	<dt>@addEventListener(type, callback, options)</dt>
 	<dd>
 <p>
@@ -3915,58 +3979,14 @@ In the future we could allow custom get the parent algorithms. Let us know if th
 ◎
 The addEventListener(type, callback, options) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
-<p id="cp-ever-been-evaluated">
-~IF［
-此れに`関連する大域~obj$ %G は $ServiceWorkerGlobalScope ~objである
-］~AND［
-%G に結付けられている`~sw$の`~script資源$の，`評価されたことがある~flag$ ~EQ ~ON
-］`SERVICE-WORKERS$r
-⇒
-~THROW `TypeError$E
-◎
-If context object’s relevant global object is a ServiceWorkerGlobalScope object and its associated service worker’s script resource’s has ever been evaluated flag is set, then throw a TypeError. [SERVICE-WORKERS]
-</p>
-
-<p class="note">注記：
-当の~swに対し許容される~event型の格納を最適化するため, および
-~event~listenerに対する非決定的な変更を避けるため、この~methの呼出は，~sw~scriptが初めて評価される間にのみ許容される。
-◎
-To optimize storing the event types allowed for the service worker and to avoid non-deterministic changes to the event listeners, invocation of the method is allowed only during the very first evaluation of the service worker script.
-</p>
-			</li>
-			<li>
-~IF［
-%callback ~EQ ~NULL
-］
-⇒
-~RET
-◎
-If callback is null, then return.
-</li>
-			<li>
-( %capture, %passive, %once ) ~LET
-%options を`もっと平坦化-$した結果
+( %capture, %passive, %once ) ~LET %options を`もっと平坦化-$した結果
 ◎
 Let capture, passive, and once be the result of flattening more options.
 </li>
 			<li>
-~IF［
-此れの`~listener~list$内に［
-( `type$evL, `callback$evL, `capture$evL )
-~EQ
-( %type, %callback, %capture )
-］なる`~event~listener$は在る
-］
-⇒
-~RET
-◎
-If context object’s associated list of event listener does not contain an event listener whose type is type, callback is callback, and capture is capture, then＼
-</li>
-			<li>
-此れの`~listener~list$に 次のように設定された`~event~listener$を付加する
+`~event~listenerを追加する$( 此れ, 次のようにされた`~event~listener$ )
 ⇒＃
 `type$evL ~SET %type ,
 `callback$evL ~SET %callback ,
@@ -3974,7 +3994,7 @@ If context object’s associated list of event listener does not contain an even
 `passive$evL ~SET %passive ,
 `once$evL ~SET %once
 ◎
-append a new event listener to it, whose type is type, callback is callback, capture is capture, passive is passive, and once is once.
+Add an event listener with the context object and an event listener whose type is type, callback is callback, capture is capture, passive is passive, and once is once.
 </li>
 		</ol>
 	</dd>
@@ -3984,23 +4004,35 @@ append a new event listener to it, whose type is type, callback is callback, cap
 <p>
 被呼出時には、次を走らせ~MUST：
 ◎
-The removeEventListener(type, callback, options) method, when invoked, must, run these steps
+The removeEventListener(type, callback, options) method, when invoked, must run these steps:
 </p>
 
 		<ol>
-			<li><!--cp-ever-been-evaluated--></li>
+			<li>
+~IF［
+此れに`関連する大域~obj$ %G は $ServiceWorkerGlobalScope ~objである
+］~AND［
+%G に結付けられている`~sw$の`~script資源$の，`評価されたことがある~flag$ ~EQ ~ON
+］`SERVICE-WORKERS$r
+⇒
+~THROW `TypeError$E
+◎
+If the context object’s relevant global object is a ServiceWorkerGlobalScope object and its associated service worker’s script resource’s has ever been evaluated flag is set, then throw a TypeError. [SERVICE-WORKERS]
+</li>
 			<!--cp-let-capture-flatten-->
 			<li>
 <p>
 ~IF［
-此れの`~listener~list$内に［
+此れの`~event~listener~list$は、次を満たす`~event~listener$ %~listener を`包含して$いる
+］…
+⇒
 ( `type$evL, `callback$evL, `capture$evL )
 ~EQ
 ( %type, %callback, %capture )
-］なる`~event~listener$ %~listener は在る
-］：
+◎終
+…ならば：
 ◎
-If there is an event listener in the associated list of event listeners whose type is type, callback is callback, and capture is capture, then＼
+If the context object’s event listener list contains an event listener whose type is type, callback is callback, and capture is capture, then＼
 </p>
 				<ol>
 					<li>
@@ -4009,9 +4041,9 @@ If there is an event listener in the associated list of event listeners whose ty
 set that event listener’s removed to true and＼
 </li>
 					<li>
-%~listener を`~listener~list$から除去する
+`~event~listener~list$から %~listener を`除去する$
 ◎
-remove it from the associated list of event listeners.
+remove it from the context object’s event listener list.
 </li>
 				</ol>
 			</li>
@@ -4589,11 +4621,11 @@ Let listeners be a new list.
 </li>
 	<li>
 <p>
-%~obj の`~listener~list$内の~EACH ( `~event~listener$ %~listener ) に対し
+%~obj の`~event~listener~list$内の~EACH ( %~listener ) に対し
 ⇒
-%~listener~list に %~listener への~pointerを`付加する$
+%~listener~list に %~listener を`付加する$
 ◎
-For each event listener associated with object, append a pointer to the event listener to listeners.
+For each listener of object’s event listener list, append listener to listeners.
 </p>
 
 <p class="note">注記：
@@ -4748,9 +4780,9 @@ If event’s eventPhase attribute value is BUBBLING_PHASE and listener’s captu
 %~listener の `once$evL ~EQ ~T
 ］
 ⇒
-%~listener を %~obj の`~listener~list$から除去する
+%~obj の`~event~listener~list$から %~listener を`除去する$
 ◎
-If listener’s once is true, then remove listener from object’s associated list of event listeners.
+If listener’s once is true, then remove listener from object’s event listener list.
 </li>
 			<li>
 ~IF［
@@ -4770,7 +4802,7 @@ If listener’s passive is true, then set event’s in passive listener flag.
 引数~list « %~event »,
 `~callback this 値$ %~event の$currentTarget 属性~値
 ◎
-Call a user object’s operation with listener’s callback, "handleEvent", a list of arguments consisting of event, and event’s currentTarget attribute value as the callback this value.＼
+Call a user object’s operation with listener’s callback, "handleEvent", « event », and event’s currentTarget attribute value as the callback this value.＼
 </p>
 
 <p>
@@ -8658,7 +8690,6 @@ $observe() ~methが再び用いられるまで，
 Stops observer from observing any mutations. Until the observe() method is used again, observer’s callback will not be invoked.
 </dd>
 
-
 	<dt>%observer . $takeRecords()</dt>
 	<dd>
 `記録~queue$を空にして，空にする前の内容を返す。
@@ -8728,7 +8759,7 @@ The observe(target, options) method, when invoked, must run these steps:
 】</p>
 
 ◎
-If either options’ attributeOldValue or attributeFilter is present and options’ attributes is omitted, set options’ attributes to true.
+If either options’s attributeOldValue or attributeFilter is present and options’s attributes is omitted, then set options’s attributes to true.
 </li>
 			<li>
 ~IF［
@@ -8739,7 +8770,7 @@ If either options’ attributeOldValue or attributeFilter is present and options
 ⇒
 %options の $characterData ~SET ~T
 ◎
-If options’ characterDataOldValue is present and options’ characterData is omitted, set options’ characterData to true.
+If options’s characterDataOldValue is present and options’s characterData is omitted, then set options’s characterData to true.
 </li>
 			<li>
 <p>
@@ -8750,7 +8781,6 @@ If options’ characterDataOldValue is present and options’ characterData is o
 ~THROW `TypeError$E ：
 ◎
 ↓</p>
-
 				<ul>
 					<li>
 ［
@@ -8761,7 +8791,7 @@ $attributes ~EQ ~F
 $characterData ~EQ ~F
 ］
 ◎
-If none of options’ childList, attributes, and characterData is true, throw a TypeError.
+If none of options’s childList, attributes, and characterData is true, then throw a TypeError.
 </li>
 					<li>
 ［
@@ -8770,7 +8800,7 @@ $attributeOldValue ~EQ ~T
 $attributes ~EQ ~F
 ］
 ◎
-If options’ attributeOldValue is true and options’ attributes is false, throw a TypeError.
+If options’s attributeOldValue is true and options’s attributes is false, then throw a TypeError.
 </li>
 					<li>
 ［
@@ -8779,7 +8809,7 @@ $attributeFilter は在する
 $attributes ~EQ ~F
 ］
 ◎
-If options’ attributeFilter is present and options’ attributes is false, throw a TypeError.
+If options’s attributeFilter is present and options’s attributes is false, then throw a TypeError.
 </li>
 					<li>
 ［
@@ -8788,7 +8818,7 @@ $characterDataOldValue ~EQ ~T
 $characterData ~EQ ~F
 ］
 ◎
-If options’ characterDataOldValue is true and options’ characterData is false, throw a TypeError.
+If options’s characterDataOldValue is true and options’s characterData is false, then throw a TypeError.
 </li>
 				</ul>
 			</li>
@@ -9003,7 +9033,7 @@ If none of the following are true
 %options の $subtree ~EQ ~F
 ］
 ◎
-node is not target and options’ subtree is false
+node is not target and options’s subtree is false
 </li>
 					<li>
 ［
@@ -9012,7 +9042,7 @@ node is not target and options’ subtree is false
 %options の $attributes ~NEQ ~T
 ］
 ◎
-type is "attributes" and options’ attributes is not true
+type is "attributes" and options’s attributes is not true
 </li>
 					<li>
 次のいずれも満たされる：
@@ -9026,7 +9056,7 @@ type is "attributes" and options’ attributes is not true
 ］
 </li></ul>
 ◎
-type is "attributes", options’ attributeFilter is present, and options’ attributeFilter does not contain name or namespace is non-null
+type is "attributes", options’s attributeFilter is present, and options’s attributeFilter does not contain name or namespace is non-null
 </li>
 					<li>
 ［
@@ -9035,7 +9065,7 @@ type is "attributes", options’ attributeFilter is present, and options’ attr
 %options の $characterData ~NEQ ~T
 ］
 ◎
-type is "characterData" and options’ characterData is not true
+type is "characterData" and options’s characterData is not true
 </li>
 					<li>
 ［
@@ -9044,7 +9074,7 @@ type is "characterData" and options’ characterData is not true
 %options の $childList ~EQ ~F
 ］
 ◎
-type is "childList" and options’ childList is false
+type is "childList" and options’s childList is false
 </li>
 				</ul>
 			</li>
@@ -9068,38 +9098,45 @@ If registered observer’s observer is not in interested observers, append regis
 ~IF［
 次のいずれかが満たされる
 ］…：
+◎
+If either＼
 </p>
-
-<ul ><li>［
+				<ul>
+					<li>
+［
 %type ~EQ `attributes^l
 ］~AND［
 %options の $attributeOldValue ~EQ ~T
 ］
-</li><li>［
+◎
+type is "attributes" and options’s attributeOldValue is true, or＼
+</li>
+					<li>
+［
 %type ~EQ `characterData^l
 ］~AND［
 %options の $characterDataOldValue ~EQ ~T
 ］
-</li></ul>
-
+◎
+type is "characterData" and options’s characterDataOldValue is true,＼
+</li>
+				</ul>
 <p>
 …ならば
 ⇒
 %~ob の`旧-値$ ~SET %記録 の旧-値
-</p>
 ◎
-If either type is "attributes" and options’ attributeOldValue is true, or type is "characterData" and options’ characterDataOldValue is true, set the paired string of registered observer’s observer in interested observers to oldValue.
-</li>
+set the paired string of registered observer’s observer in interested observers to oldValue.
+</p>
+			</li>
 		</ol>
 	</li>
 	<li>
-
 <p>
 %有関係~ob集合 ~内の~EACH ( %~ob ) に対し：
 ◎
 For each observer in interested observers:
 </p>
-
 		<ol>
 			<li>
 <p>
@@ -9108,7 +9145,6 @@ For each observer in interested observers:
 ◎
 Let record be a new MutationRecord object with＼
 </p>
-
 				<ol>
 					<li>
 $type ~SET %type
