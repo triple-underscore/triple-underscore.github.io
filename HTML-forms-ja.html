@@ -133,8 +133,8 @@ return text;
 
 ●●options
 
-spec_date:2018-03-08
-trans_update:2018-03-09
+spec_date:2018-03-16
+trans_update:2018-03-17
 page_state_key:HTML
 spec_status:LS
 original_url:https://html.spec.whatwg.org/multipage/form-control-infrastructure.html
@@ -203,6 +203,7 @@ m.typeMismatch:#dom-validitystate-typemismatch
 m.valid:#dom-validitystate-valid
 m.validationMessage:#dom-cva-validationmessage
 m.validity:#dom-cva-validity
+m.value:~HEforms#dom-textarea-value
 m.valueMissing:#dom-validitystate-valuemissing
 m.willValidate:#dom-cva-willvalidate
 
@@ -365,9 +366,15 @@ tA.生の値:~HEforms#concept-textarea-raw-value
 ~formを再設定-:#concept-form-reset
 ~form所有者を再設定-:#reset-the-form-owner
 
+関連する値:#concept-textarea/input-relevant-value
+~text手入力~cursor位置:#concept-textarea/input-cursor
+選択:#concept-textarea/input-selection
 選択~方向:#selection-direction
-選択~範囲を設定-:#set-the-selection-range
+選択~範囲を設定する:#set-the-selection-range
 選択~方向を設定する:#set-the-selection-direction
+	~text選択:#concept-textarea/input-selection
+	~text手入力~cursor:#concept-textarea/input-cursor
+
 
 自動focus根:#nearest-ancestor-autofocus-scoping-root-element
 最も近い先祖の自動focus視野根~要素:#nearest-ancestor-autofocus-scoping-root-element
@@ -833,6 +840,7 @@ byte-stream:byte stream:::バイトストリーム
 正規化:normalization:~
 省略-:omit:~
 空:empty:~
+空の:empty:~
 空白:whitespace:~
 測定-:measure:~
 符号位置:code point:~
@@ -1148,6 +1156,7 @@ queue::::キュー
 追跡-:track:~
 見出され:find され:~
 参照:reference:~
+切詰める:clamp する:切り詰める
 	映し出:mirror
 	数え:count
 	空に戻す:clear
@@ -1162,6 +1171,8 @@ queue::::キュー
 	起こる:happen
 	返す:return
 	指す:point to
+	消える:away
+	過ぎて:now past
 
 	●未分類
 clobbering:
@@ -1202,6 +1213,7 @@ top-level::::トップレベル
 順序:order:~
 素の:plain:~
 無限大:infinity:~
+関連する:relevant な:~
 
 	省略時は／optionally
 	種類:kind
@@ -2911,31 +2923,151 @@ Attempts to preserve the selection. This is the default.
 </dl>
 
 <p>
-これらの~IDL~memberは、［
-`input$e 要素に対しては その`値$ ／
-`textarea$e 要素に対しては その`生の値$tA
-］に対し演算し~MUST。
+［
+これらの~APIが`適用される$すべての `input$e 要素, および `textarea$e 要素
+］は、どの時点でも（要素が`具現化されて$いなくとも），［
+`選択@,
+`~text手入力~cursor位置@
+］のどちらかは有するとする。
+初期~状態では、~controlの始端を指す~text手入力~cursor位置を有するものとされ~MUST。
 ◎
-For input elements, these methods and attributes must operate on the element's value. For textarea elements, these methods and attributes must operate on the element's raw value.
+All input elements to which these APIs apply, and all textarea elements, have either a selection or a text entry cursor position at all times (even for elements that are not being rendered). The initial state must consist of a text entry cursor at the beginning of the control.
+</p>
+
+<p class="trans-note">【
+~text手入力~cursor位置は，実質的には “始端と終端が一致する空の選択” と同じに見えるが、
+“空の選択” と “選択なし” を区別するための用語とも考えられる。
+】</p>
+
+<p>
+これらの~APIは、［
+`input$e 要素に対しては その`値$ ／
+`textarea$e 要素に対しては その`~API値$
+］に対し演算し~MUST。
+以下に与える~algoにて演算される値~文字列は、当の要素（が表現する~control）に
+`関連する値@
+と呼ばれる。
+◎
+For input elements, these APIs must operate on the element's value. For textarea elements, these APIs must operate on the element's API value. In the below algorithms, we call the value string being operated on the relevant value.
+</p>
+
+<div class="example">
+<p>
+`textarea$e 要素~用に`生の値$tAに代えて`~API値$を利用することは、文字 `000D^U `CR^smb が正規化されて消えることを意味する。
+例えば：
+◎
+The use of API value instead of raw value for textarea elements means that U+000D (CR) characters are normalized away. For example,
+</p>
+
+<pre>&lt;textarea id="demo"&gt;&lt;/textarea&gt;
+&lt;script&gt;
+ demo.value = "A\r\nB";
+ demo.setRangeText("replaced", 0, 2);
+ assert(demo.value === "replacedB");
+&lt;/script&gt;</pre>
+
+<p>
+`生の値$tA `A\r\nB^l に演算した場合、文字~並び `A\r^l が置換される結果 `replaced\nB^l になるが、`~API値$ `A\nB^l を利用するので，文字~並び `A\n^l が置換される結果 `replacedB^l になる。
+◎
+If we had operated on the raw value of "A\r\nB", then we would have replaced the characters "A\r", ending up with a result of "replaced\nB". But since we used the API value of "A\nB", we replaced the characters "A\n", giving "replacedB".
+</p>
+
+</div>
+
+<p>
+これらの~APIが適用される要素に対し，`関連する値$が変化したときは、次を走らすとする：
+◎
+Whenever the relevant value changes for an element to which these APIs apply, run these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+要素は`選択$を有する
+］：
+◎
+If the element has a selection:
+</p>
+		<ol>
+			<li>
+~IF［
+選択の始端は `関連する値$の終端を過ぎている<!-- 始端？ -->
+］
+⇒
+選択の始端 ~SET `関連する値$の終端
+◎
+If the start of the selection is now past the end of the relevant value, set it to the end of the relevant value.
+</li>
+			<li>
+~IF［
+選択の終端は `関連する値$の終端を過ぎている
+］
+⇒
+選択の終端 ~SET `関連する値$の終端
+◎
+If the end of the selection is now past the end of the relevant value, set it to the end of the relevant value.
+</li>
+			<li>
+~IF［
+~UAは空の選択を~supportしない
+］~AND［
+選択の始端, 終端とも`関連する値$の終端を指している
+］
+⇒
+選択を除去した上で，要素の`~text手入力~cursor位置$ ~SET `関連する値$の終端
+◎
+If the user agent does not support empty selection, and both the start and end of the selection are now pointing to the end of the relevant value, then instead set the element's text entry cursor position to the end of the relevant value, removing any selection.
+</li>
+		</ol>
+	</li>
+	<li>
+~ELSE（ 要素は`~text手入力~cursor位置$を有する）
+⇒
+~IF［
+`~text手入力~cursor位置$は `関連する値$の終端を過ぎている
+］
+⇒
+`~text手入力~cursor位置$ ~SET `関連する値$の終端
+◎
+Otherwise, the element must have a text entry cursor position position. If it is now past the end of the relevant value, set it to the end of the relevant value.
+</li>
+</ol>
+
+<p class="note">注記：
+上で切詰める手続きのみならず，この仕様の他所にも、`関連する値$が変化するときに，`~text手入力~cursor位置$を改変する事例がある。
+例えば `textarea$e 用の `value$m 設定子など。
+◎
+In some cases where the relevant value changes, other parts of the specification will also modify the text entry cursor position, beyond just the clamping steps above. For example, see the value setter for textarea.
+</p>
+
+<p>
+文字 `200D^U ZERO WIDTH JOINER
+などの可視でない文字であっても，文字として数えられる。
+したがって，具体例として、選択は 可視でない文字のみを含むこともあり，~text挿入~cursorは そのような文字の前後いずれかの側に配置され得る。
+◎
+Characters with no visible rendering, such as U+200D ZERO WIDTH JOINER, still count as characters. Thus, for instance, the selection can include just an invisible character, and the text insertion cursor can be placed to one side or another of such a character.
 </p>
 
 <p>
 ［
 `input$e ／ `textarea$e
-］要素において~text選択を変更するような~UI特色機能は、可能な所では，この節に述べる~DOM~APIを通して実装され~MUST
-— 例えば すべて同じ~eventが発火されるように。
+］要素において~text`選択$を変更するような~UI特色機能は、可能な所では，`選択~範囲を設定する$~algoを利用して実装され~MUST
+— 例えば すべてに同じ~eventが発火されるように。
 ◎
-Where possible, user interface features for changing the text selection in input and textarea elements must be implemented in terms of the DOM API described in this section, so that, e.g., all the same events fire.
+Where possible, user interface features for changing the text selection in input and textarea elements must be implemented using the set the selection range algorithm so that, e.g., all the same events fire.
 </p>
 
 <p>
 各［
 `input$e ／ `textarea$e
-］要素は、次のいずれかを値にとる
+］要素の`選択$は、次のいずれかを値にとる
 `選択~方向@
 を持つ
-⇒
-`forward^l, `backward^l, `none^l
+⇒＃
+`forward^l,
+`backward^l,
+`none^l
 ◎
 The selections of input and textarea elements have a selection direction, which is either "forward", "backward", or "none".＼
 </p>
@@ -2967,6 +3099,7 @@ This direction is set when the user manipulates the selection. The exact meaning
 ◎
 To set the selection direction of an element to a given direction, update the element's selection direction to the given direction, unless the direction is "none" and the platform does not support that direction; in that case, update the element's selection direction to "forward".
 </p>
+
 
 <div class="note">
 <p>注記：
@@ -3032,7 +3165,7 @@ For instance, in a user agent where &lt;input type=color&gt; is rendered as a co
 </p>
 			</li>
 			<li>
-次を与える下で`選択~範囲を設定-$する
+次を与える下で`選択~範囲を設定する$
 ⇒
 ( 0, `無限大^i )
 ◎
@@ -3063,17 +3196,17 @@ If this element is an input element, and selectionStart does not apply to this e
 </li>
 			<li>
 ~IF［
-選択がない
+此れは`選択$を有さない
 ］
 ⇒
-~RET ~text手入力~cursorを指す`~offset$
+~RET 此れに`関連する値$の中で`~text手入力~cursor位置$を指す`~offset$
 ◎
-If there is no selection, return the offset (in logical order) to the character that immediately follows the text entry cursor.
+If there is no selection, return the offset (in logical order) within the relevant value to the character that immediately follows the text entry cursor.
 </li>
 			<li>
-~RET 選択の始端を指す`~offset$
+~RET 此れに`関連する値$の中で`選択$の始端を指す`~offset$
 ◎
-Return the offset (in logical order) to the character that immediately follows the start of the selection.
+Return the offset (in logical order) within the relevant value to the character that immediately follows the start of the selection.
 </li>
 		</ol>
 	</dd>
@@ -3104,7 +3237,7 @@ Let end be the value of this element's selectionEnd attribute.
 If end is less than the given value, set end to the given value.
 </li>
 			<li>
-次を与える下で`選択~範囲を設定-$する
+次を与える下で`選択~範囲を設定する$
 ⇒
 ( 所与の値, %終端, 此れの `selectionDirection$m 属性の値 )
 ◎
@@ -3135,17 +3268,18 @@ If this element is an input element, and selectionEnd does not apply to this ele
 </li>
 			<li>
 ~IF［
-選択がない
+此れは`選択$を有さない
 ］
 ⇒
-~RET ~text手入力~cursorを指す`~offset$
+~RET 此れに`関連する値$の中で`~text手入力~cursor位置$を指す`~offset$
 ◎
-If there is no selection, return the offset (in logical order) to the character that immediately follows the text entry cursor.
+If there is no selection, return the offset (in logical order) within the relevant value to the character that immediately follows the text entry cursor.
 </li>
 			<li>
+~RET 此れに`関連する値$の中で`選択$の始端を指す`~offset$
 ~RET 選択の終端を指す`~offset$
 ◎
-Return the offset (in logical order) to the character that immediately follows the end of the selection.
+Return the offset (in logical order) within the relevant value to the character that immediately follows the end of the selection.
 </li>
 		</ol>
 	</dd>
@@ -3169,7 +3303,7 @@ The selectionEnd attribute's setter must run the following steps:
 If this element is an input element, and selectionEnd does not apply to this element, throw an "InvalidStateError" DOMException.
 </li>
 			<li>
-次を与える下で`選択~範囲を設定-$する
+次を与える下で`選択~範囲を設定する$
 ⇒
 ( 此れの `selectionStart$m 属性の値, 所与の値, 此れの `selectionDirection$m 属性の値 )
 ◎
@@ -3224,7 +3358,7 @@ The selectionDirection attribute's setter must run the following steps:
 If this element is an input element, and selectionDirection does not apply to this element, throw an "InvalidStateError" DOMException.
 </li>
 			<li>
-次を与える下で`選択~範囲を設定-$する
+次を与える下で`選択~範囲を設定する$
 ⇒
 ( 此れの `selectionStart$m 属性の値, 此れの `selectionEnd$m 属性の値, 所与の値 )
 ◎
@@ -3254,7 +3388,7 @@ The setSelectionRange(start, end, direction) method, when invoked, must run the 
 If this element is an input element, and setSelectionRange() does not apply to this element, throw an "InvalidStateError" DOMException.
 </li>
 			<li>
-次を与える下で`選択~範囲を設定-$する
+次を与える下で`選択~範囲を設定する$
 ⇒
 ( %start, %end, %direction )
 ◎
@@ -3267,8 +3401,8 @@ Set the selection range with start, end, and direction.
 
 <p class="algo-head">
 ~text~controlの
-`選択~範囲を設定-@
-するときは、所与の (
+`選択~範囲を設定する@
+ときは、所与の (
 %始端 （非負~整数, ~NULL のいずれか）,
 %終端 （非負~整数, ~NULL, `無限大^i のいずれか）,
 %方向 （文字列, 省略時は ε）
@@ -3299,7 +3433,7 @@ If start is null, let start be zero.
 If end is null, let end be zero.
 </li>
 	<li>
-%L ~LET ~text~controlの値の長さ
+%L ~LET `関連する値$の長さ
 ◎
 ↓</li>
 	<li>
@@ -3311,12 +3445,12 @@ If end is null, let end be zero.
 ◎
 ↓</li>
 	<li>
-~text~controlの選択~範囲を［
+~text~controlに`関連する値$の中で`選択$の範囲を［
 %始端 `~offset$ 〜 %終端 `~offset$
 ］に設定する
 — 範囲が空になる場合、空~選択の概念がない~UAにおいては，~cursorを %終端 `~offset$に設定する
 ◎
-Set the selection of the text control to the sequence of characters starting with the character at the startth position (in logical order) and ending with the character at the (end-1)th position. Arguments greater than the length of the value of the text control (including the special value infinity) must be treated as pointing at the end of the text control. If end is less than or equal to start then the start of the selection and the end of the selection must both be placed immediately before the character with offset end. In UAs where there is no concept of an empty selection, this must set the cursor to be just before the character with offset end.
+Set the selection of the text control to the sequence of characters within the relevant value starting with the character at the startth position (in logical order) and ending with the character at the (end-1)th position. Arguments greater than the length of the relevant value of the text control (including the special value infinity) must be treated as pointing at the end of the text control. If end is less than or equal to start then the start of the selection and the end of the selection must both be placed immediately before the character with offset end. In UAs where there is no concept of an empty selection, this must set the cursor to be just before the character with offset end.
 </li>
 	<li>
 ~IF［
@@ -3334,7 +3468,7 @@ Set the selection direction of the text control to direction.
 </li>
 	<li>
 ~IF［
-前~段までにより，~text~controlの選択は改変された（その範囲, `選択~方向$いずれにせよ）
+前~段までにより，~text~controlの`選択$は改変された（その範囲, `選択~方向$いずれにせよ）
 ］
 ⇒
 ~task源に`利用者~対話~task源$を用いる下で，次を走らす`~taskを~queueする$
@@ -3396,20 +3530,21 @@ Otherwise, let start, end have the values of the second and third arguments resp
 ⇒
 ~THROW `IndexSizeError$E
 ◎
-If start is greater than end, then throw an "IndexSizeError" DOMException and return.
+If start is greater than end, then throw an "IndexSizeError" DOMException.
 </li>
 	<li>
-%L ~LET 此れの値の長さ
-</li>
+%L ~LET 此れに`関連する値$の長さ
+◎
+↓</li>
 	<li>
 %始端 ~SET { %start, %L } の最小
 ◎
-If start is greater than the length of the value of the text control, then set it to the length of the value of the text control.
+If start is greater than the length of the relevant value of the text control, then set it to the length of the relevant value of the text control.
 </li>
 	<li>
 %終端 ~SET { %end, %L } の最小
 ◎
-If end is greater than the length of the value of the text control, then set it to the length of the value of the text control.
+If end is greater than the length of the relevant value of the text control, then set it to the length of the relevant value of the text control.
 ◎
 Let selection start be the current value of the selectionStart attribute.
 ◎
@@ -3420,16 +3555,16 @@ Let selection end be the current value of the selectionEnd attribute.
 %始端 ~LT %終端
 ］
 ⇒
-此れの値 内の［
+此れに`関連する値$から範囲［
 %始端 `~offset$ 〜 %終端 `~offset$
 ］にある文字を削除する
 ◎
-If start is less than end, delete the sequence of characters starting with the character at the startth position (in logical order) and ending with the character at the (end-1)th position.
+If start is less than end, delete the sequence of characters within the element's relevant value starting with the character at the startth position (in logical order) and ending with the character at the (end-1)th position.
 </li>
 	<li>
-此れの値 内の %始端 `~offset$に %replacement の値を挿入する
+此れに`関連する値$の %始端 `~offset$に %replacement の値を挿入する
 ◎
-Insert the value of the first argument into the text of the value of the text control, immediately before the startth character.
+Insert the value of the first argument into the text of the relevant value of the text control, immediately before the startth character.
 </li>
 	<li>
 %新~終端 ~LET %始端 + ( %replacement の長さ )
@@ -3535,7 +3670,7 @@ Otherwise: if selection end is greater than start, then set it to new end. (This
 		</dl>
 	</li>
 	<li>
-次を与える下で`選択~範囲を設定-$する
+次を与える下で`選択~範囲を設定する$
 ⇒
 ( %選択~始端, %選択~終端 )
 ◎
@@ -3559,20 +3694,6 @@ enum `SelectionMode@I {
 };
 </pre>
 
-<p>
-この~APIが`適用される$すべての要素は、どの時点でも（要素が`具現化されて$いなくとも），選択~範囲 または~text手入力~cursor位置を有するとする。
-初期~状態では、~text手入力~cursorは，~controlの~~始端にされ~MUST。
-◎
-All elements to which this API applies have either a selection or a text entry cursor position at all times (even for elements that are not being rendered). The initial state must consist of a text entry cursor at the beginning of the control.
-</p>
-
-<p>
-文字 `200D^U ZERO WIDTH JOINER
-などの可視でない文字であっても，文字として数えられる。
-したがって，具体例として、選択は 可視でない文字のみを含むこともあり，~text挿入~cursorは そのような文字の前後いずれかの側に配置され得る。
-◎
-Characters with no visible rendering, such as U+200D ZERO WIDTH JOINER, still count as characters. Thus, for instance, the selection can include just an invisible character, and the text insertion cursor can be placed to one side or another of such a character.
-</p>
 
 <hr>
 
