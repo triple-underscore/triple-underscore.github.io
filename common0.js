@@ -988,6 +988,7 @@ CSS22:https://www.w3.org/TR/CSS22\n\
 CSS21:https://www.w3.org/TR/CSS21\n\
 CSP3:CSP3-ja.html\n\
 COMPOSITING:compositing-ja.html\n\
+FILTEREFFECTS1:filter-effects-ja.html\n\
 CASCADE:css-cascade-ja.html\n\
 CSS2BOX:css22-box-ja.html\n\
 CSS2CONFORM:css-common-ja.html\n\
