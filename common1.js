@@ -1636,7 +1636,6 @@ CSS21=主              ~momdoG/css2/Overview.html\n\
 CSS21=副2             ＃hp.vector.co.jp/authors/VA022006/css/index.html\n\
 CSS21=副              ~adagio/tr_css2/toc.html●2.0 日本語訳 2\n\
 CSS21=版              ~TR/CSS2/\n\
-CSS21=・              ~TR/CSS22/\n\
 CSS21=編              ~CSSWG/css2/\n\
 CSSALIGN=主           ~/css-align-ja.html\n\
 CSSALIGN=版           ~TR/css3-align/\n\
