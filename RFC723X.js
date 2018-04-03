@@ -702,7 +702,7 @@ IETF Review:~5226#section-4.1\n\
 \n\
 	■7231\n\
 事由~句:~7231#reason-phrase\n\
-既定で~cacheableである:~7231#cacheable-by-default\n\
+既定で~cache可能である:~7231#cacheable-by-default\n\
 資源:~7231#resources\n\
 表現:~7231#representation\n\
 選定された表現:~7231#selected-representation\n\
@@ -752,7 +752,7 @@ IETF Review:~5226#section-4.1\n\
 首~資源:~7231#primary-resource\n\
 製品~識別子:~7231#product-identifier\n\
 検証子~header:~7231#response.validator\n\
-~cacheable:~7231#cacheable.methods\n\
+~cache可能:~7231#cacheable.methods\n\
 応答class:~7231#responce-class\n\
 制御~header:~7231#request.controls\n\
 指紋収集:~7231#fingerprinting\n\
@@ -1093,8 +1093,8 @@ bookmark::::ブックマーク\n\
 browser::::ブラウザ\n\
 byte::::バイト\n\
 cache::::キャッシュ\n\
-cached:::cache 済み:キャッシュ済み\n\
-cacheable:::cache 可能:キャッシュ可能\n\
+	~cache済み:cached\n\
+	~cache可能:cacheable\n\
 caching:::cache 処理:キャッシュ処理\n\
 chunk::::チャンク\n\
 chunked:::chunk 化:チャンク化\n\
@@ -1135,7 +1135,7 @@ firewall::::ファイアウォール\n\
 folder::::フォルダ\n\
 form::::フォーム\n\
 frame::::フレーム\n\
-framing::::フレーミング\n\
+	frame法:framing\n\
 gateway::::ゲートウェイ\n\
 group::::グループ\n\
 guide::::ガイド\n\
@@ -1325,7 +1325,7 @@ zero:::ゼロ\n\
 期待:expectation::~\n\
 予測-:anticipate:~\n\
 予約-:reserve::~\n\
-予約済み:reserved::~\n\
+	予約-済み:reserved::~\n\
 予見-:believe:~\n\
 	確信でき:believe する:~\n\
 事例:case:~\n\
@@ -1368,6 +1368,7 @@ zero:::ゼロ\n\
 伝送処理:transmitting::~\n\
 回送-:forward::~\n\
 回送:forwarding::~\n\
+	回送-法:forwarding\n\
 転送:transfer::~\n\
 伝送路:wire::~\n\
 送達-:deliver::~\n\
@@ -1984,12 +1985,11 @@ provider::::プロバイダ\n\
 根本的:fundamental:~\n\
 根本的な:fundamental:~\n\
 格納-:store::~\n\
+	格納-済み:stored::~\n\
+	格納-法:storing::~\n\
+格納域:store::~\n\
 記憶域:storage::~::ストレージ\n\
 蓄積:storage::~::ストレージ\n\
-格納域:store::~\n\
-格納:storing::~\n\
-	格納済みの:stored::~\n\
-格納済み:stored::~\n\
 桁:digit::~\n\
 梱包:packaging:~\n\
 検出-:detect:~\n\
@@ -2022,8 +2022,8 @@ provider::::プロバイダ\n\
 権限付与され:authorize され::権限が付与され\n\
 権限付与:authorization::~\n\
 権限的:authoritative::~\n\
-認証済み:authenticated::~\n\
 認証-:authenticate::~\n\
+	認証-済み:authenticated\n\
 認証:authentication::~\n\
 認証用の:authentication::~\n\
 策定者:author:~\n\
@@ -2123,7 +2123,7 @@ stateless::::ステートレス\n\
 発行0:making:発行\n\
 発行:publication:~\n\
 登録-:register::~\n\
-登録済みの:registered::~\n\
+	登録-済み:registered\n\
 登録:registration::~\n\
 登記簿:registry:::レジストリ\n\
 盗聴:theft:~\n\
@@ -2935,7 +2935,7 @@ IETF Review:~5226#section-4.1\n\
 ／~list演算子:~7230#section-7\n\
 ／圧縮~符号法:~7230#compression-codings\n\
 〜事由~句:~7231#reason-phrase\n\
-〜既定で~cacheableである:~7231#cacheable-by-default\n\
+〜既定で~cache可能である:~7231#cacheable-by-default\n\
 \n\
 	■7231\n\
 ／資源:~7231#resource\n\
@@ -2983,7 +2983,7 @@ IETF Review:~5226#section-4.1\n\
 〜首~資源:~7231#primary-resource\n\
 〜製品~識別子:~7231#product-identifier\n\
 ／検証子~header:~7231#validator-header\n\
-／~cacheable:~7231#cacheable\n\
+／~cache可能:~7231#cacheable\n\
 〜応答class:~7231#responce-class\n\
 ／~method:~7231#section-4\n\
 ／要請の意味論:~7231#section-4\n\
