@@ -809,7 +809,7 @@ Util.rxp_wordsX = /\b ((?:<\/[^>]*>)+)|([\u2E80-\u9FFF])(?=(<\w[^>]*>)*\w)/g;
 ，U+FF0C
 */
 Util.rxp_words1 =
-	/~([\w\-]+|[あ-ん])|(~*)([\u30A1-\u30F4ー]+|([\u4E00-\u9FFF]+\w*)(-|[あ-ん]{0,2}))/g;
+	/~([\w\-]+|[あ-ん])|(~*)(((?:[\u4E00-\u9FFF]+|[\u30A1-\u30F4ー]+)\w*)(-|[あ-ん]{0,2}))/g;
 Util.replaceWords1 = function(data, mapping){
 	return data.replace( this.rxp_words1,
 	function(t, en, til, ja, kan, hira){
@@ -818,27 +818,28 @@ Util.replaceWords1 = function(data, mapping){
 			return (en in mapping)? mapping[en] : t;
 		}
 		if(til === '~~') return ja;
-		if(!kan) return mapping[ja] || t;
 
 		var r = mapping[ja];
 		if(r) return r;
-		if(hira.length > 0){
-			if(hira === 'でき') {
-				r = mapping[kan + '-'];
-				if(r) return r + hira;
-			}
-			var hira1 = hira.charAt(0);
-			r = mapping[kan + hira1];
-			if(r) return r + hira.slice(1);
+		if(hira.length === 0){
+			return ja;
+		}
 
-			if('さしすせ'.indexOf(hira1) >= 0) {
-				r = mapping[kan + '-'];
-				if(r) return r + hira;
-			}
+		if(hira === 'でき') {
+			r = mapping[kan + '-'];
+			if(r) return r + hira;
+		}
+		var hira1 = hira[0];
+		r = mapping[kan + hira1];
+		if(r) return r + hira.slice(1);
+
+		if('さしすせ'.indexOf(hira1) >= 0) {
+			r = mapping[kan + '-'];
+			if(r) return r + hira;
 		}
 		r = mapping[kan];
 		if(r) return r + hira;
-//		return ja;
+
 		return hira === '-' ? kan : ja;
 	})
 	.replace(this.rxp_wordsX, '$1$2 ');
