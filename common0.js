@@ -956,7 +956,6 @@ LTE: <span class="op">≤</span> \n\
 GTE: <span class="op">≥</span> \n\
 IN: <span class="op">∈</span> \n\
 NIN: <span class="op">∉</span> \n\
-UNSPECIFIED:<span class="trans-note">【…未策定】</span>\n\
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>\n\
 INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This section is non-normative.</span></p>\n\
 FINGERPRINTING:<a class="fingerprinting" href="HTML-infrastructure-ja.html#fingerprinting-vector"></a>\n\
