@@ -490,21 +490,21 @@ new function(){
 	'http://w4ard.s26.xrea.com/translation/W3C/REC-xml-20081126/',
 
 'http://www.w3.org/1999/06/REC-xml-stylesheet-19990629/':
-	'https://triple-underscore.github.io/XML/xml-stylesheet-ja.html',
+	'https://triple-underscore.github.io/xml-stylesheet-ja.html',
 
 'http://www.w3.org/TR/xmlbase/':
 //	'http://www.toyfish.net/docs/xmlbase/',
-	'https://triple-underscore.github.io/XML/xml-base-ja.html',
+	'https://triple-underscore.github.io/xml-base-ja.html',
 'http://www.w3.org/TR/2009/REC-xmlbase-20090128/':
 //	'http://www.toyfish.net/docs/xmlbase/',
-	'https://triple-underscore.github.io/XML/xml-base-ja.html',
+	'https://triple-underscore.github.io/xml-base-ja.html',
 
 'http://www.w3.org/TR/2006/REC-xml-names-20060816/':
-	'https://triple-underscore.github.io/XML/xml-ns-ja.html',
+	'https://triple-underscore.github.io/xml-names-ja.html',
 'http://www.w3.org/TR/REC-xml-names/':
-	'https://triple-underscore.github.io/XML/xml-ns-ja.html',
+	'https://triple-underscore.github.io/xml-names-ja.html',
 'http://www.w3.org/TR/xml-names11/':
-	'https://triple-underscore.github.io/XML/xml-ns-ja.html?1.1'
+	'https://triple-underscore.github.io/xml-names-ja.html?1.1'
 
 	};
 	var ja_link = document.createElement('a');
