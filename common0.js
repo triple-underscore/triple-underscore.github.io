@@ -1034,6 +1034,7 @@ SIZING:css-sizing-ja.html\n\
 TRANSFORM:css-transforms-ja.html\n\
 TRANSFORM2:css-transforms2-ja.html\n\
 TRANSITION:css-transitions-ja.html\n\
+WANIM:web-animations-ja.html\n\
 MQ4:mediaqueries4-ja.html\n\
 SVG11:SVG11\n\
 SVG2:https://svgwg.org/svg2-draft\n\
