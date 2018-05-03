@@ -1069,6 +1069,7 @@ HTMLselectors:selectors-html-ja.html\n\
 HTMLxml:HTML-xhtml-ja.html\n\
 HTMLwriting:HTML-writing-ja.html\n\
 HTMLparsing:HTML-parsing-ja.html\n\
+HTMLdynamic:HTML-dynamic-markup-insertion-ja.html\n\
 HTMLobs:HTML-obsolete-ja.html\n\
 HEinteractive:HTML-interactive-elements-ja.html\n\
 HEforms:HTML-form-elements-ja.html\n\
