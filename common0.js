@@ -42,6 +42,8 @@ words_table:
 	単語トークン対応
 words_table1:
 	単語トークン対応表
+html_code_list:
+	HTML 例示コード
 */
 
 // see common1.js for possible members
@@ -74,6 +76,7 @@ var Util = {
 	rxp_words1: null,
 	collectParts: EMPTY_FUNC,
 	replaceParts: EMPTY_FUNC,
+	collectHtmlCodeList: EMPTY_FUNC,
 
 // common1.js
 	ADDITIONAL_NODES: [],
@@ -135,6 +138,35 @@ Util.parseBlocks = function(source){
 	return result;
 }
 
+/* HTML 例示コード用 */
+Util.collectHtmlCodeList = function(parts){
+	if(!parts){
+		parts = Object.create(null);
+	}
+
+	var data = PAGE_DATA.html_code_list;
+	delete PAGE_DATA.html_code_list;
+	var rxp = /■(\S+)(.*)((?:\n.+)+)/g;
+	var m;
+	while(m = rxp.exec(data)){
+		var pre = C('pre');
+		pre.className = 'html-code' + (m[2] || '');
+		var markup = m[3].trim().replace(/％/g, '');
+		if(markup.indexOf('＜') < 0 ){
+			pre.textContent = markup;
+		} else {
+			pre.innerHTML = markup
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/＜/g, '<mark>')
+				.replace(/＞/g, '</mark>')
+			;
+		}
+		parts['_ex-' + m[1]] = pre;
+	}
+	return parts;
+}
 
 /* 
 'token:word1:word2:word3:...' の形式の各行を

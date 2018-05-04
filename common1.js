@@ -42,6 +42,8 @@ spec_date:
 	原文更新日（ YYYY-MM-DD ）
 trans_update:
 	和訳更新日（ YYYY-MM-DD ）
+source_checked
+	最後に原文テキストと付き合わせた日付
 original_url:
 	原文 URL
 main:
