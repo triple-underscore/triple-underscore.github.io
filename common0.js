@@ -1090,7 +1090,7 @@ WORKERS:Workers-ja.html\n\
 WORKLETS1:worklets-ja.html\n\
 WEBSOCKET:WebSocket-ja.html\n\
 WEBSTORAGE:WebStorage-ja.html\n\
-INDEXEDDB:IndexedDB-2nd-ja.html\n\
+INDEXEDDB:IndexedDB-ja.html\n\
 PROMISES:promises-guide-ja.html\n\
 TIMELINE:performance-timeline-ja.html\n\
 HRTIME:hr-time-ja.html\n\
