@@ -50,8 +50,6 @@ main:
 	'MAIN'
 toc:
 	目次 id
-alt_refs:
-	'references',
 no_index:
 	あるならば、用語索引なし
 no_original_dfn:
@@ -1331,18 +1329,18 @@ Util.contextMenuInit = function(){
 }
 */
 
-/** 参照文献に日本語訳リンク追加
-    外部リンク→ 日本語訳 データ構築
-生成内容：
-	<div class="trans-ja-refs"><a href="リンク先">'日本語訳'[番号|注釈]?</a></div>
-挿入位置：
-	<dd> の末尾
-加えて、参照文献の項目に id が与えられていない場合は，自動的に付加する
-
+/** 参照文献
+• 外部リンク→ 日本語訳 データ構築
+• 参照文献 HTML を生成
+	<dt> に id を自動的に付与
+• 日本語訳リンク追加： 末尾 <dd> に次を挿入
+	<dd class="trans-ja-refs"><a href="リンク先">'日本語訳'[番号|注釈]?</a>...</dd>
+	
 */
 
 
 Util.addAltRefs = function(){
+
 	var LABELS = {
 		'主': '日本語訳',
 		'副': '日本語訳',
@@ -1368,21 +1366,7 @@ Util.addAltRefs = function(){
 	);
 
 	var mapping = Object.create(null);
-
-	var add_ref_link = EMPTY_FUNC;
-	var ref_node_list;
-	if(PAGE_DATA.ref_normative){
-		add_ref_link = add_ref_link2;
-		collect_entries2()
-	} else {
-		var id = PAGE_DATA.options.alt_refs;
-
-		if(id){
-			add_ref_link = add_ref_link1;
-			repeat('#' + id + ' dt', collect_entries1);
-		}
-	}
-
+	var ref_node_list = ['normative', 'informative'].filter(collect_entries);
 
 	var m;
 	var rxp = /^(\w+)=(\S)(\d*)[\t ]+(~\w*)?([^\s●]+)(●.*)?$/mg;
@@ -1418,9 +1402,8 @@ Util.addAltRefs = function(){
 		}
 	}
 
-	if(ref_node_list){
+	if(ref_node_list.length > 0){
 		generateRefsHTML();
-//		ref_node_list.forEach();
 	}
 
 	// 下位 directory への和訳リンク生成防止
@@ -1430,76 +1413,24 @@ Util.addAltRefs = function(){
 		] = '';
 	}
 
-
 //	console.log(JSON.stringify(JA_LINKS));
 	function refKey(s){
 		key = s.replace(/[^\w]/g, '').toUpperCase();
 		return REF_KEY_MAP[key] || key;
 	}
 
-	function collect_entries1(dt){
-		var text = dt.textContent;
-		if(!dt.id){
-			// dt に id を自動付与
-			text = text.slice(1, -1)// remove surrounding [,]
-			dt.id = ref_id_prefix +
-				(ref_id_lowercase ? text.toLowerCase() : text );
-		}
-		var key = refKey(text);
-		if(key in mapping){
-			// 重複は最初の出現への参照を追加
-			add_ref_link0(dt, '#' + mapping[key].id, '【↑】')
-		} else {
-			mapping[key] = dt;
-		}
+	function collect_entries(id){
+		var ref_data = PAGE_DATA['ref_' + id];
+		if(!ref_data) return false;
+		ref_data.replace(/\n\[.+\]/g, function(ref_name){
+			var key = refKey(ref_name);
+			mapping[key] = '';
+			return '';
+		});
+		return true;
 	}
 
-	function add_ref_link1(key, url, label){
-// TODO url が同じなら追加しない
-		var dt = mapping[key];
-		if(!dt) return;
-		var dd = add_ref_link0(dt, url, label);
-		if(dd !== dt){
-			mapping[key] = dd;
-		}
-	}
-
-	function add_ref_link0(dd, url, label){
-		var dd1;
-		while(dd1 = dd.nextElementSibling){
-			if(dd1.tagName !== 'DD') break;
-			dd = dd1;
-		}
-		if(dd.className !== 'trans-ja-refs'){
-			dd1 = C('dd');
-			dd1.className = 'trans-ja-refs';
-			dd.parentNode.insertBefore(dd1, dd.nextSibling);
-			dd = dd1;
-		}
-		var a = C('a');
-		a.href = url;
-		a.textContent = label;
-		dd.appendChild(a);
-		return dd;
-	}
-
-	/* 素のテキストから生成（ bikeshed 用） */
-	function collect_entries2(){
-		ref_node_list = ['normative', 'informative'];
-		ref_node_list.forEach(f);
-
-		function f(id){
-			var ref_data = PAGE_DATA['ref_' + id];
-			if(!ref_data) return;
-			ref_data.replace(/\n\[.+\]/g, function(ref_name){
-				var key = refKey(ref_name);
-				mapping[key] = '';
-				return '';
-			});
-		}
-	}
-
-	function add_ref_link2(key, url, label){
+	function add_ref_link(key, url, label){
 		var v = mapping[key];
 		if(v === undefined) return;
 		var html = '<a href="' + url + '">' + label + '</a>';
@@ -1520,7 +1451,7 @@ normative: '<h3>文献（規範）</h3>',
 informative: '<h3>文献（参考）</h3>'
 		};
 
-		['normative', 'informative'].forEach(function(id){
+		ref_node_list.forEach(function(id){
 			var ref_data = PAGE_DATA['ref_' + id];
 			if(!ref_data) return;
 			delete PAGE_DATA['ref_' + id];
