@@ -184,6 +184,9 @@ case 'dfn':
 case 'var':
 	break;
 //typedef-integer, number-value
+case 'en': // english words
+	return '<span lang="en-x-a0">' + key + '</span>'
+	break;
 default:
 	if(!classname) return match;
 //		text = key;
@@ -276,7 +279,7 @@ source_data.st_hrefs = {
 '206': '~7233',
 '214': '~7234',
 '304': '~7232',
-'308': '~7238',
+'308': '~7538',
 '401': '~7235',
 '407': '~7235',
 '412': '~7232',
@@ -631,8 +634,8 @@ IETF Review:~5226#section-4.1\n\
 ~minor~version:~7230#minor-version\n\
 ~message:~7230#http.message\n\
 ~message本体:~7230#message.body\n\
-~message本体長:~7230#message.body.length\n\
-本体長:~7230#body-length\n\
+~message本体~長さ:~7230#message.body.length\n\
+本体~長さ:~7230#body-length\n\
 ~pipeline:~7230#pipelining\n\
 ~pipeline化:~7230#pipelining\n\
 ~proxy:~7230#proxy\n\
@@ -826,6 +829,7 @@ OUGHT:べき.である\n\
 7233:RFC7233-ja.html\n\
 7234:RFC7234-ja.html\n\
 7235:RFC7235-ja.html\n\
+7538:RFC7538-ja.html\n\
 7238:http://tools.ietf.org/html/rfc7238\n\
 2045:http://tools.ietf.org/html/rfc2045\n\
 2068:http://tools.ietf.org/html/rfc2068\n\
@@ -856,8 +860,6 @@ Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け<
 source_data.words_table = '\n\
 伝え:inform し:~\n\
 伝える:inform する:~\n\
-	例:example:~\n\
-	例えば:for example:~\n\
 促す:prompt する:~\n\
 内包-:include:~\n\
 切替:switching::切り替え\n\
@@ -865,8 +867,12 @@ source_data.words_table = '\n\
 切替え:switch し::切り替え\n\
 切替えら:switch さ::切り替えら\n\
 切替える:switch する::切り替える\n\
-割当てら:allocate さ:割り当てら\n\
-割当てる:allocate する::割り当てる\n\
+割振ら:allocate さ:割り振ら\n\
+割振る:allocate する::割り振る\n\
+割当てら:assign さ:あてがわ\n\
+割当てる:assign する::あてがう\n\
+割当てて:assign して::あてがって\n\
+割当てた:assign した::あてがった\n\
 取戻せ:reclaim でき:取り戻せ\n\
 取戻され:reclaim され:取り戻され\n\
 取扱い:handling:取り扱い\n\
@@ -987,7 +993,11 @@ source_data.words_table = '\n\
 論じた:discuss した:~\n\
 論じら:discuss さ:~\n\
 論点:discussion:~\n\
-足る:enough:~\n\
+	単に:merely:~\n\
+	単位:unit:~\n\
+十分:enough:~\n\
+	足る／足りる:sufficient:~\n\
+	足らない:insufficient:~\n\
 述べ:describe し:~\n\
 述べら:describe さ:~\n\
 述べる:describe する:~\n\
@@ -1053,15 +1063,12 @@ redirection::::リダイレクト\n\
 方向:direction::~\n\
 	directional:\n\
 直接的:direct:~\n\
-	直接的に:directly:~\n\
+直に:directly:~\n\
 間接的:indirect:~\n\
 間接的な:indirect:~\n\
 双方向:bidirectional::~\n\
 指図-:instruct:~\n\
 拡充-:populate:~\n\
-居る:reside する:~\n\
-	再掲:restate:~:\n\
-時事的な:topical:~\n\
 member::::メンバ\n\
 sensible:\n\
 sensitive:\n\
@@ -1072,7 +1079,7 @@ accessibility:::access 性:アクセス性:アクセシビリティ\n\
 account::::アカウント\n\
 address::::アドレス\n\
 agent::::エージェント\n\
-algorithm::::アルゴリズム\n\
+algo:algorithm:::アルゴリズム\n\
 app-level:application-level:::アプリケーションレベル\n\
 app:application:::アプリケーション\n\
 応用:application::~::アプリケーション\n\
@@ -1135,7 +1142,7 @@ firewall::::ファイアウォール\n\
 folder::::フォルダ\n\
 form::::フォーム\n\
 frame::::フレーム\n\
-	frame法:framing\n\
+	~frame法:framing\n\
 gateway::::ゲートウェイ\n\
 group::::グループ\n\
 guide::::ガイド\n\
@@ -1146,6 +1153,7 @@ hex::16 進\n\
 hexadecimal::16 進数\n\
 host::::ホスト\n\
 hypertext::::ハイパーテキスト\n\
+	~hypertext:hypertext note\n\
 内方:inbound::~::インバウンド\n\
 外方:outbound::~::アウトバウンド\n\
 instance::::インスタンス\n\
@@ -1278,7 +1286,7 @@ zero:::ゼロ\n\
 	例えば:for example:~\n\
 	複数の:multiple:~\n\
 一定の:certain:~\n\
-一意的:unique:~\n\
+一意:unique:~\n\
 一掃-:purge:~\n\
 一時的:temporary:~\n\
 一時的な:temporary:~\n\
@@ -1297,11 +1305,9 @@ zero:::ゼロ\n\
 下層:underlying::~\n\
 下層の:underlying::~\n\
 不利:disadvantage:~\n\
-不十分:insufficient:~\n\
 不可欠:crucial:~\n\
 不定:indefinite:~\n\
 不明瞭に:obscure:~\n\
-不法な:bogus:~\n\
 不良:bad:~\n\
 不透明:opaque::~\n\
 不透明な:opaque::~\n\
@@ -1314,11 +1320,9 @@ zero:::ゼロ\n\
 中立的:neutral:~\n\
 中継-:relay::~\n\
 中継者:intermediary::~\n\
-中間:intermediation:~\n\
 首:primary::主\n\
 主体:party::~\n\
 主張:claim:~\n\
-主流に:prevalent に:~\n\
 乏しい:poor な:~\n\
 予期-:expect:~\n\
 期待-:expect:~\n\
@@ -1327,7 +1331,6 @@ zero:::ゼロ\n\
 予約-:reserve::~\n\
 	予約-済み:reserved::~\n\
 予見-:believe:~\n\
-	確信でき:believe する:~\n\
 事例:case:~\n\
 事前fetch:pre-fetch::事前 fetch:事前取得\n\
 事実:fact:~\n\
@@ -1345,21 +1348,17 @@ zero:::ゼロ\n\
 仕方:way:~\n\
 仕様:spec:~\n\
 仕組み:mechanism:~\n\
-付加:append:~\n\
+付加-:append:~\n\
 付録:Appendix:~\n\
 付随-:accompany:~\n\
 代わりに:instead:~\n\
 代替:alternative:~\n\
 代替-:alternate:~\n\
-代用:substitute:~\n\
-	代わるもの:replacement:~\n\
 代表的な:typical:~\n\
 以前:previous:~\n\
 以前の:previous:~\n\
 遊休:idle:~\n\
-遊休中の:idle:~\n\
-仮想:virtual::~\n\
-仮装-:masquerade:~\n\
+	遊休~中:idle\n\
 中継:intermediate::~\n\
 仲介の:interveneing:~\n\
 企業:corporate:~\n\
@@ -1399,17 +1398,15 @@ zero:::ゼロ\n\
 係数:factor:~\n\
 促進-:promote:~\n\
 保全-:preserve:~\n\
-保存:save:~\n\
+保存-:save:~\n\
 保守的:conservative:~\n\
 保安:security::~:セキュリティ\n\
 保安上の:security::~:セキュリティ上の\n\
 保安化:secure 化::~:セキュア化\n\
 保安的:secure::~:セキュア\n\
 穴:hole::穴:ホール\n\
-保管-:keep:~\n\
 保持-:hold:~\n\
 保証-:guarantee:~\n\
-保証:assure:~\n\
 保護-:protect:~\n\
 保護:protection:~\n\
 未保護の:unprotected:~\n\
@@ -1427,9 +1424,9 @@ zero:::ゼロ\n\
 偽:false:~\n\
 優先度:priority:~\n\
 優先順:precedence:~\n\
-元:original:~\n\
-	元々は:originally:~\n\
 元の:original:~\n\
+	元:original:~\n\
+	元々は:originally:~\n\
 先行-:precede:~\n\
 入力:input:~\n\
 共有-:share:~\n\
@@ -1445,7 +1442,6 @@ zero:::ゼロ\n\
 処理:processing:~\n\
 処理器:processor:~\n\
 処理能:performance:~\n\
-処理能力:performance:~\n\
 出力:output:~\n\
 	出現-:appear:~\n\
 出現:appearance:~\n\
@@ -1480,7 +1476,6 @@ zero:::ゼロ\n\
 再利用性:reusability:~\n\
 誤用-:misuse:~\n\
 濫用:abuse:~\n\
-	濫用:abusive:~\n\
 到着-:arrive:~\n\
 制定-:prescribe:~\n\
 制御:control::~\n\
@@ -1505,10 +1500,8 @@ zero:::ゼロ\n\
 動作-:act:~:::アクト\n\
 動作:action:~:::アクション\n\
 動的:dynamic:~\n\
-動詞:verb:~\n\
 包含-:contain:~\n\
 包括的:comprehensive:~\n\
-包装:wrap:~:::ラップ\n\
 区分-:partition:~\n\
 区切られ:delimit され::~\n\
 区切り:delimitation::~\n\
@@ -1516,18 +1509,14 @@ zero:::ゼロ\n\
 区切る:delimit する::~\n\
 区切子:delimiter::~\n\
 判別-:distinguish:~\n\
-十分:sufficient:~\n\
 協調的な:collaborative:~\n\
-	単に:merely:~\n\
-	単位:unit:~\n\
 単独の:single:~\n\
 単純:simple:~\n\
 単純に:simple に:~\n\
 単純化-:simplify:~\n\
-単語:word:~\n\
 即時:immediate:~\n\
-却下:reject::~\n\
-厳密に:strictly:~\n\
+却下-:reject::~\n\
+厳密に:strict に:~\n\
 参加-:engage:~\n\
 参加者:participant:~\n\
 referrer::::リファラ\n\
@@ -1599,7 +1588,6 @@ referrer::::リファラ\n\
 失われ:lost し:~\n\
 回復-:recover::~\n\
 回復:recovery::~\n\
-回復不能:unrecoverable::~\n\
 回答:answer:~\n\
 対処-:work around:~\n\
 対処法:workaround:~\n\
@@ -1608,13 +1596,10 @@ referrer::::リファラ\n\
 図式:diagram:~\n\
 固定的な:fixed:~\n\
 固定長:fixed-length:~\n\
-国別:national:~\n\
 圧縮-:compress::~\n\
-圧縮済み:compressed::~\n\
 圧縮:compression::~\n\
 下位型:subtype::~\n\
 型:type::~\n\
-型付け:typing:~\n\
 基底:base:~\n\
 堅牢:robust:~\n\
 堅牢性:robustness:~\n\
@@ -1625,11 +1610,9 @@ referrer::::リファラ\n\
 増加-:increase:~\n\
 増大-:increase:~\n\
 増強-:enhance:~\n\
-増強:enhance:~\n\
 壊す:breakする:~\n\
 壊れ:break され:~\n\
 壊れた:broken:~\n\
-壊れて:corrupt して:~\n\
 	変わら:changeし:~\n\
 	変わり:changeし:~\n\
 変化-:change:~\n\
@@ -1644,7 +1627,6 @@ referrer::::リファラ\n\
 外向けの:outgoing:~\n\
 多様:diverse:~\n\
 多様性:diversity:~\n\
-多量:large amount:~\n\
 大文字:uppercase::~\n\
 小文字:lowercase::~\n\
 大概は:presumably:~\n\
@@ -1720,7 +1702,6 @@ referrer::::リファラ\n\
 無害:harmless:~\n\
 容易:easy:~\n\
 容量:capacity:~\n\
-寛容な:lenient:~\n\
 対応-:correspond:~\n\
 対応0:corresponding:対応する\n\
 対応付け:mapping:~:::マッピング\n\
@@ -1746,17 +1727,16 @@ referrer::::リファラ\n\
 属性:attribute:~\n\
 層:layer::~\n\
 履歴:history::~\n\
-履行:fulfill:~\n\
+履行-:fulfill:~\n\
 巨大0:huge:巨大\n\
 巨大:large:~\n\
 帯域幅:bandwidth::~::バンド幅\n\
 帰結:consequence:~\n\
 干渉-:interfere:~\n\
-干渉:interfere:~\n\
 広範:wide:~\n\
 広範囲:extensive:~\n\
 廃用:obsolete::~\n\
-弱体化:compromise:~\n\
+弱体化-:compromise:~\n\
 強化-:enhance:~\n\
 強要-:insist:~\n\
 形:form:~\n\
@@ -1775,7 +1755,6 @@ referrer::::リファラ\n\
 待機:wait::~\n\
 後処理:post-processing:~\n\
 復帰-:revert:~\n\
-心配:fear:~\n\
 必要十分:adequate:~\n\
 必要性:needs:~\n\
 	不必要な:unnecessary:~\n\
@@ -1786,12 +1765,10 @@ referrer::::リファラ\n\
 応答:response::~::レスポンス\n\
 要請:request::~::リクエスト\n\
 要請-:request::~::リクエスト\n\
-要請修飾:request-modifying::~::リクエスト修飾\n\
 応答class:class:::クラス\n\
 応答待ちの:outstanding::~\n\
 	勧める:advise する:~\n\
 恒久的:permanent:~\n\
-悪化-:exacerbate:~\n\
 悪用-:exploit:~\n\
 悪用:exploitation:~\n\
 悪意的な:malicious::悪意のある\n\
@@ -1803,10 +1780,8 @@ referrer::::リファラ\n\
 意向:intention:~\n\
 意図-:intend:~\n\
 意図:intent:~\n\
-意図ion:intention:意図\n\
 意図的:intentional:~\n\
 慎重:careful:~\n\
-慎重に:careful に:~\n\
 慣行:convention::~\n\
 懸念:concern:~\n\
 成分:component::~\n\
@@ -1827,7 +1802,7 @@ referrer::::リファラ\n\
 手順:steps:~\n\
 技法:technique:~\n\
 技術:technology:~\n\
-抑制:reduce:~\n\
+抑制-:reduce:~\n\
 折衝-:negotiate::~::ネゴシエート\n\
 折衝:negotiation::~::ネゴシエーション\n\
 折返-:fold::~\n\
@@ -1842,7 +1817,6 @@ referrer::::リファラ\n\
 拡張-:extend::~\n\
 拡張0-:expand:拡張\n\
 拡張:extension::~\n\
-	拡張し得る:extensible:~\n\
 	拡張-可能:extensible::~\n\
 拡張性:extensibility::~\n\
 持続-:persist::~\n\
@@ -1858,7 +1832,6 @@ referrer::::リファラ\n\
 挿入-:insert:~\n\
 注入:injection::~::インジェクション\n\
 注入-:inject::~::インジェクト\n\
-排他的:mutually exclusive:~\n\
 採用-:adopt:~\n\
 採用:adoption:~\n\
 接尾辞:suffix:~\n\
@@ -1883,7 +1856,6 @@ provider::::プロバイダ\n\
 操作-:manipulate:~\n\
 操作:manipulation:~\n\
 支援-:assist:~:::アシスト\n\
-支配的な:prevailing:~\n\
 改変-:modify::~\n\
 改変子:modifier::~\n\
 改変:modification::~\n\
@@ -1915,6 +1887,7 @@ provider::::プロバイダ\n\
 文字大小:case::~\n\
 文字大小区別:case-sensitive::~\n\
 文字大小無視:case-insensitive::~\n\
+文字大小無視の:case-insensitive な::~\n\
 文書:document:~\n\
 文書化:document 化:~\n\
 文法:grammar:~\n\
@@ -1923,7 +1896,6 @@ provider::::プロバイダ\n\
 方法:how:~\n\
 方針:strategy:~\n\
 施行-:enforce:~\n\
-	族:family:~:::ファミリ\n\
 族:family::~::ファミリ\n\
 既存の:existing:~\n\
 既定:default::~::デフォルト\n\
@@ -1948,9 +1920,7 @@ provider::::プロバイダ\n\
 明確化-:clarify:~\n\
 明確化:clarification:~\n\
 明示的:explicit:~\n\
-明示的な:explicit:~\n\
 暗黙的:implicit:~\n\
-暗黙的な:implicit:~\n\
 暫定的:interim:~\n\
 更新:update::~::アップデート\n\
 更新喪失:lost update::~\n\
@@ -1972,8 +1942,6 @@ provider::::プロバイダ\n\
 未知:unknown:~\n\
 末尾:end:~\n\
 本体:body::~::ボディ\n\
-本体長:body length:body 長:~::ボディ長\n\
-本物の:real:~\n\
 本質的:essential:~\n\
 本質的でない:nonessential:~\n\
 条件:condition::~\n\
@@ -1983,7 +1951,6 @@ provider::::プロバイダ\n\
 柔軟:flexible:~\n\
 柔軟性:flexibility:~\n\
 根本的:fundamental:~\n\
-根本的な:fundamental:~\n\
 格納-:store::~\n\
 	格納-済み:stored::~\n\
 	格納-法:storing::~\n\
@@ -1991,7 +1958,6 @@ provider::::プロバイダ\n\
 記憶域:storage::~::ストレージ\n\
 蓄積:storage::~::ストレージ\n\
 桁:digit::~\n\
-梱包:packaging:~\n\
 検出-:detect:~\n\
 検出:detection:~\n\
 検分-:inspect:~\n\
@@ -2009,7 +1975,6 @@ provider::::プロバイダ\n\
 構文解析-:parse::~::パース\n\
 構文解析:parsing::~::パース処理\n\
 構文解析器:parser::~::パーサ\n\
-構築0:building:構築\n\
 構成子:construct::~\n\
 構築-:construct:~\n\
 再構築-:reconstruct:~\n\
@@ -2102,7 +2067,6 @@ stateless::::ステートレス\n\
 現在の:current:~\n\
 	現在，:currently:~\n\
 理論:theory:~\n\
-理論上は:theory 上は:~\n\
 環境:environment:~\n\
 環境設定-:configure::~\n\
 環境設定:configuration::~\n\
@@ -2112,7 +2076,6 @@ stateless::::ステートレス\n\
 生成元:origin::~::オリジン\n\
 生成規則:production::~\n\
 生産-:produce:~\n\
-用語0:terminology:用語\n\
 各種用語:terminology:~\n\
 用語:term:~\n\
 画像:image:~\n\
@@ -2129,15 +2092,14 @@ stateless::::ステートレス\n\
 盗聴:theft:~\n\
 監視-:monitor::~::モニタ\n\
 監視器:monitor::~::モニタ\n\
-監視用:monitoring::~::モニタ用\n\
 目標:goal:~\n\
 目的:purpose:~\n\
 盲目的:blind::~\n\
 近過去:recent::~\n\
 近過去の:recent::~\n\
-相互運用:interoperate::~\n\
+相互運用-:interoperate::~\n\
+	相互運用-可能:interoperable::~\n\
 相互運用上の:interoperability::~\n\
-相互運用可能:interoperable::~\n\
 相互運用性:interoperability::~\n\
 相似的:analogous:~\n\
 相対:relative::~\n\
@@ -2172,14 +2134,13 @@ stateless::::ステートレス\n\
 確立:establishing::~\n\
 示唆-:suggest:~\n\
 禁止-:forbid::~\n\
-禁制:prohibit::~\n\
+禁制-:prohibit::~\n\
 移動-:move:~\n\
 移行:transition::~\n\
 稀:rare:~\n\
 種類:kind:~\n\
 稼働-:run:~\n\
 稼働中の:running:~\n\
-稼働時:run-time:~\n\
 空:empty:~\n\
 空行:blank line::~\n\
 空白:whitespace::~\n\
@@ -2196,9 +2157,8 @@ stateless::::ステートレス\n\
 暗号用の:cryptographic::~\n\
 符号化-:encode::~::エンコード\n\
 符号化:encoding::~::エンコーディング\n\
-符号化済みの:encoded::~::エンコード済み\n\
+	符号化-済み:encoded\n\
 符号化方式:encoding::~::エンコーディング\n\
-再符号化:recode::~::再コード化\n\
 符号変換:transcoding::~::トランスコーディング\n\
 符号変換器:transcoder::~::トランスコーダ\n\
 符号法:coding::~::コーディング\n\
@@ -2229,7 +2189,6 @@ stateless::::ステートレス\n\
 経験:experience:~\n\
 経験則:heuristics::~::ヒューリスティックス\n\
 経験的:heuristic::~::ヒューリスティック\n\
-経験的な:heuristic::~::ヒューリスティック\n\
 結合-:combine:~\n\
 再結合:recomposition:~\n\
 組合わせ:combination:組み合わせ\n\
@@ -2250,9 +2209,6 @@ stateless::::ステートレス\n\
 保守:maintenance:~\n\
 網羅的:exhaustive:~\n\
 総集的:collective:~\n\
-編集0:edit:編集\n\
-編集:editing:~\n\
-編集上の:editorial:~\n\
 緩めら:relax さ:~\n\
 緩める:relax する:~\n\
 緩和策:mitigation:~\n\
@@ -2272,6 +2228,7 @@ stateless::::ステートレス\n\
 脆弱:vulnerable::~\n\
 脆弱性:vulnerability::~\n\
 自動:automatic:~\n\
+自動化-:automate:~\n\
 自動化:automated:~\n\
 自動的:automatic:~\n\
 自由:free:~\n\
@@ -2519,7 +2476,11 @@ stateless::::ステートレス\n\
 最初:first
 最後:last
 次の:the following
+この:this
 その:that
+それらの:those
+これらの:these
+すべての:all
 全面的に:entire に
 一部分
 一部／部分
@@ -2527,7 +2488,6 @@ stateless::::ステートレス\n\
 2 〜:two-
 3 〜:three-
 個目／番目:first／second／third
-その:that
 ほぼ:almost
 何か:something
 多くの:many
@@ -2555,7 +2515,10 @@ stateless::::ステートレス\n\
 総:total
 小さな:small
 様々な:various
-
+〜越しの:over
+下:below
+他の場合:otherwise
+そのような:such
 
 	●動詞
 高める:increase させる
@@ -2635,6 +2598,7 @@ OS:operateing system
 思しきもの:supposedly:
 おそらく:perhaps
 しかしながら:however
+したがって:thus
 したがって:therefore
 よって:hence
 代わりに:instead
@@ -2774,7 +2738,7 @@ h.Expires:~7234#section-5.3\n\
 '305': '~7231#section-6.4.5',
 '306': '~7231#section-6.4.6',
 '307': '~7231#section-6.4.7',
-'308': '~7238#section-3',
+'308': '~7538#section-3',
 '400': '~7231#section-6.5.1',
 '401': '~7235#section-3.1',
 '402': '~7231#section-6.5.2',
@@ -2866,7 +2830,7 @@ IETF Review:~5226#section-4.1\n\
 〜~minor~version:~7230#minor-version\n\
 ／~message:~7230#section-3\n\
 ／~message本体:~7230#message-body\n\
-／~message本体長:~7230#body-length\n\
+／~message本体~長さ:~7230#body-length\n\
 ／~pipeline:~7230#pipeline\n\
 ／~pipeline化:~7230#pipeline\n\
 〜~proxy:~7230#proxy\n\
@@ -2898,7 +2862,7 @@ IETF Review:~5226#section-4.1\n\
 ／持続的~接続:~7230#persistent-connection\n\
 〜接続~option:~7230#connection-option\n\
 〜最終~転送~符号法:~7230#final-transfer-coding\n\
-〜本体長:~7230#body-length\n\
+〜本体~長さ:~7230#body-length\n\
 〜生成:~7230#generate\n\
 〜生成-:~7230#generate\n\
 〜生成する:~7230#generate\n\
