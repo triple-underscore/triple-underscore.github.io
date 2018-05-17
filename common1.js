@@ -1532,7 +1532,7 @@ COMMON_DATA.JA_BASIS = {
 	CSSWG:     'drafts.csswg.org',
 	HTMLLS:    'html.spec.whatwg.org/multipage',
 	IETF:      'tools.ietf.org/html',
-	HTTPWG:    '＃httpwg.github.io/specs',
+	HTTPWG:    'httpwg.org/specs',
 	suika:     'wiki.suikawiki.org',
 //	default:   ''
 };

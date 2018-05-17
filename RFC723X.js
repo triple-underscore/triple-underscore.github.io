@@ -1,7 +1,7 @@
 Util.ready = function(){
 	source_data.init(PAGE_DATA.options.rfc_num);
 	Util.switchWordsInit(source_data);
-}
+};
 
 var source_data = {
 	toc_main: 'MAIN0',
@@ -106,7 +106,7 @@ case '':
 	break;
 case 'r': // ref
 	text = '[' + key + ']';
-	href = '~723X#ref-' + key;
+	if(!href) href = '~723X#ref-' + key;
 	break;
 case 'R': // ref
 	text = '[RFC' + key + ']';
@@ -185,7 +185,7 @@ case 'var':
 	break;
 //typedef-integer, number-value
 case 'en': // english words
-	return '<span lang="en-x-a0">' + key + '</span>'
+	return '<span lang="en-x-a0">' + key + '</span>';
 	break;
 default:
 	if(!classname) return match;
@@ -358,8 +358,8 @@ source_data.href_data = '\n\
 \n\
 h.MIME-Version:~7231#mime-version\n\
 h.Keep-Alive:~7230#compatibility.with.http.1.0.persistent.connections\n\
-h.Set-Cookie:~IETF/rfc6265#section-4.1\n\
-h.Cookie:~IETF/rfc6265#section-4.2\n\
+h.Set-Cookie:~6265#section-4.1\n\
+h.Cookie:~6265#section-4.2\n\
 h.Link:~IETF/rfc5988#section-5\n\
 h.Content-Transfer-Encoding:~IETF/rfc2045#section-6\n\
 	h.URI\n\
@@ -807,9 +807,29 @@ c.multipart/byteranges:~7233#internet.media.type.multipart.byteranges\n\
 /** words */
 
 source_data.words_table1 = '\
-IETF:http://tools.ietf.org/html\n\
-IANA-a:http://www.iana.org/assignments\n\
-ERRATA:http://www.rfc-editor.org/errata_search.php\n\
+IETF:https://tools.ietf.org/html\n\
+IANA-a:https://www.iana.org/assignments\n\
+ERRATA:https://www.rfc-editor.org/errata_search.php\n\
+723X:RFC723X-ja.html\n\
+7230:RFC7230-ja.html\n\
+7231:RFC7231-ja.html\n\
+7232:RFC7232-ja.html\n\
+7233:RFC7233-ja.html\n\
+7234:RFC7234-ja.html\n\
+7235:RFC7235-ja.html\n\
+7538:RFC7538-ja.html\n\
+	7238:https://tools.ietf.org/html/rfc7238\n\
+6265:RFC6265-ja.html\n\
+2045:https://tools.ietf.org/html/rfc2045\n\
+2068:https://tools.ietf.org/html/rfc2068\n\
+2616:https://tools.ietf.org/html/rfc2616\n\
+2817:https://tools.ietf.org/html/rfc2817\n\
+2818:https://tools.ietf.org/html/rfc2818\n\
+	3986:RFC3986-ja.html\n\
+3986:https://tools.ietf.org/html/rfc3986\n\
+4648:https://tools.ietf.org/html/rfc4648\n\
+5226:https://tools.ietf.org/html/rfc5226\n\
+5322:https://tools.ietf.org/html/rfc5322\n\
 \n\
 MUST0:<em class="rfc2119">ならない</em>\n\
 MUST:なければ<em class="rfc2119">ならない</em>\n\
@@ -822,26 +842,6 @@ MAY:<em class="rfc2119">よい</em>\n\
 OPTIONAL:<em class="rfc2119">任意選択</em>\n\
 OUGHT:べき.である\n\
 \n\
-723X:RFC723X-ja.html\n\
-7230:RFC7230-ja.html\n\
-7231:RFC7231-ja.html\n\
-7232:RFC7232-ja.html\n\
-7233:RFC7233-ja.html\n\
-7234:RFC7234-ja.html\n\
-7235:RFC7235-ja.html\n\
-7538:RFC7538-ja.html\n\
-7238:http://tools.ietf.org/html/rfc7238\n\
-2045:http://tools.ietf.org/html/rfc2045\n\
-2068:http://tools.ietf.org/html/rfc2068\n\
-2616:http://tools.ietf.org/html/rfc2616\n\
-2817:http://tools.ietf.org/html/rfc2817\n\
-2818:http://tools.ietf.org/html/rfc2818\n\
-	3986:RFC3986-ja.html\n\
-3986:http://tools.ietf.org/html/rfc3986\n\
-4648:http://tools.ietf.org/html/rfc4648\n\
-5226:http://tools.ietf.org/html/rfc5226\n\
-5322:http://tools.ietf.org/html/rfc5322\n\
-\n\
 HTTP09: HTTP/0.9 \n\
 HTTP10: HTTP/1.0 \n\
 HTTP11: HTTP/1.1 \n\
@@ -853,9 +853,7 @@ IETF-org: “IETF (iesg@ietf.org) — Internet Engineering Task Force” \n\
 Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け</h2><p class="trans-note">【この節の内容は、著作権の告知も含め，<a href="RFC723X-ja.html#status">RFC723X 共通ページ</a>に委譲。】</p></section>\n\
 ';
 
-/** Words 
-無状態
-*/
+/** Words */
 
 source_data.words_table = '\n\
 伝え:inform し:~\n\
@@ -890,9 +888,10 @@ source_data.words_table = '\n\
 呼出す:invoke する:呼び出す\n\
 呼出し:invoking:呼び出し\n\
 	呼出し:invocation:~\n\
-埋込まれ:embed され:~\n\
-埋込む:embed する:~\n\
-埋込み:embedded:~\n\
+埋込まれ:embed され:埋め込まれ\n\
+埋込む:embed する:埋め込む\n\
+埋込み:embedded:埋め込み\n\
+埋込ん:embed し:埋め込ん\n\
 始まる:begin する:~\n\
 孕む:involve する:~\n\
 孕まな:involve しな:~\n\
@@ -1065,7 +1064,6 @@ redirection::::リダイレクト\n\
 直接的:direct:~\n\
 直に:directly:~\n\
 間接的:indirect:~\n\
-間接的な:indirect:~\n\
 双方向:bidirectional::~\n\
 指図-:instruct:~\n\
 拡充-:populate:~\n\
@@ -1264,7 +1262,6 @@ task::::タスク\n\
 test::::テスト\n\
 text::::テキスト\n\
 	textual:~textによる／~textからなる\n\
-時間制限:timeout::~::タイムアウト\n\
 token::::トークン\n\
 tool::::ツール\n\
 traffic::::トラフィック\n\
@@ -1282,14 +1279,10 @@ zero:::ゼロ\n\
 \n\
 \n\
 	やりとり:interaction:~\n\
-	例:example:~\n\
-	例えば:for example:~\n\
-	複数の:multiple:~\n\
 一定の:certain:~\n\
 一意:unique:~\n\
 一掃-:purge:~\n\
 一時的:temporary:~\n\
-一時的な:temporary:~\n\
 汎用:generic:~\n\
 一般:general:~\n\
 一般的:general:~\n\
@@ -1310,7 +1303,6 @@ zero:::ゼロ\n\
 不明瞭に:obscure:~\n\
 不良:bad:~\n\
 不透明:opaque::~\n\
-不透明な:opaque::~\n\
 不適正:improper:~\n\
 並列的:parallel:~\n\
 中断-:interrupt:~\n\
@@ -1354,7 +1346,7 @@ zero:::ゼロ\n\
 代わりに:instead:~\n\
 代替:alternative:~\n\
 代替-:alternate:~\n\
-代表的な:typical:~\n\
+代表的:typical:~\n\
 以前:previous:~\n\
 以前の:previous:~\n\
 遊休:idle:~\n\
@@ -1394,7 +1386,6 @@ zero:::ゼロ\n\
 依拠-:rely:~\n\
 	依拠-可能:reliable:~\n\
 信頼性:reliability:~\n\
-	依然として:still:~\n\
 係数:factor:~\n\
 促進-:promote:~\n\
 保全-:preserve:~\n\
@@ -1486,13 +1477,13 @@ zero:::ゼロ\n\
 制限:limitation:~\n\
 事前条件:precondition::~\n\
 副作用:side effect:~\n\
-副次的な:secondary:~\n\
 副次的:secondary:~\n\
 割合:percentage:~\n\
 割当-:allocate:~\n\
 創出-:mint:~\n\
 効果:effect:~\n\
 効率性:efficiency:~\n\
+非効率:inefficient:~\n\
 効率的:efficient:~\n\
 効果的:effective:~\n\
 実効:effective::~\n\
@@ -1509,7 +1500,7 @@ zero:::ゼロ\n\
 区切る:delimit する::~\n\
 区切子:delimiter::~\n\
 判別-:distinguish:~\n\
-協調的な:collaborative:~\n\
+協調的:collaborative:~\n\
 単独の:single:~\n\
 単純:simple:~\n\
 単純に:simple に:~\n\
@@ -1557,8 +1548,6 @@ referrer::::リファラ\n\
 合致:match::~::マッチ\n\
 照合-:match::~::マッチ\n\
 照合:matching::~::マッチング\n\
-同じ:same:~\n\
-	一致:identical:~\n\
 同一性:identity:~\n\
 同封-:enclose::~\n\
 同意-:agree:~\n\
@@ -1567,6 +1556,7 @@ referrer::::リファラ\n\
 同時的:concurrent:~\n\
 同期-:synchronize:~\n\
 同期的:synchronous:~\n\
+非同期的:asynchronous:~\n\
 	同様に:likewise:~\n\
 同義語:synonym:~\n\
 名:name:~\n\
@@ -1576,7 +1566,7 @@ referrer::::リファラ\n\
 改善-:improve:~\n\
 含意-:imply:~\n\
 含意:implications:~\n\
-告知:advertise:~\n\
+告知-:advertise:~\n\
 命名-:name:~\n\
 命名:naming:~\n\
 品質:quality::~\n\
@@ -1617,8 +1607,9 @@ referrer::::リファラ\n\
 	変わり:changeし:~\n\
 変化-:change:~\n\
 変化:changes:~\n\
-変更s:changes:変更\n\
+変更-:change::~\n\
 変更:change::~\n\
+変更s:changes:変更\n\
 変更点:changes:~\n\
 変換-:convert:~\n\
 変換:conversion:~\n\
@@ -1641,7 +1632,7 @@ referrer::::リファラ\n\
 成功-:succeed::~\n\
 成功:success::~\n\
 成功裡:successful::~\n\
-成功裡の:successful::~\n\
+成功裡の:successful な::~\n\
 奨励-:encourage:~\n\
 	〜ないことを奨励discouraged\n\
 	立証-:verify:~\n\
@@ -1694,7 +1685,7 @@ referrer::::リファラ\n\
 実装:implementation:~\n\
 実装者:implementer:~\n\
 実際:actual:~\n\
-実際の:actual:~\n\
+実際の:actual な:~\n\
 宣言-:declare:~\n\
 宣言的:declarative:~\n\
 害:harm:~\n\
@@ -1750,9 +1741,6 @@ referrer::::リファラ\n\
 影響-:affect:~\n\
 役割:role::~::ロール\n\
 往来:round trip:~:::ラウンドトリップ\n\
-待時間:latency:待ち時間\n\
-待機-:wait::~\n\
-待機:wait::~\n\
 後処理:post-processing:~\n\
 復帰-:revert:~\n\
 必要十分:adequate:~\n\
@@ -1902,14 +1890,20 @@ provider::::プロバイダ\n\
 既定の:default::~::デフォルト\n\
 既知:known:~\n\
 既知の:known:~\n\
+未知:unknown:~\n\
+未知の:unknown:~\n\
+	時間:time:~\n\
 日付時刻:date and time::~\n\
 日時:date::~\n\
 時刻:time::~\n\
 時刻印:timestamp::~::タイムスタンプ\n\
-時間:time:~\n\
+時間制限:timeout::~::タイムアウト\n\
+待時間:latency:待ち時間\n\
+待機-:wait::~\n\
+待機:wait::~\n\
 時計:clock::~::クロック\n\
 旧式の:ancient:~\n\
-旧来の:legacy::~\n\
+旧来の:legacy な::~\n\
 早期の:early:~\n\
 昇格:upgrade::~::アップグレード\n\
 降格:downgrade::~::ダウングレード\n\
@@ -1938,8 +1932,6 @@ provider::::プロバイダ\n\
 有意義:meaningful:~\n\
 木目細かい:fine-grained:~\n\
 未定義:undefined:~\n\
-未知の:unknown:~\n\
-未知:unknown:~\n\
 末尾:end:~\n\
 本体:body::~::ボディ\n\
 本質的:essential:~\n\
@@ -2042,10 +2034,9 @@ provider::::プロバイダ\n\
 	特に，:particularly:~\n\
 	特に:specifically:~\n\
 特別:special:~\n\
-特別な:special:~\n\
 特化-:specialize:~\n\
 特定0の:particular:ある特定の\n\
-特定の:specific:~\n\
+特定の:specific な:~\n\
 特性:characteristic:~\n\
 	特徴:characteristic:~\n\
 特有:specific:~\n\
@@ -2082,9 +2073,9 @@ stateless::::ステートレス\n\
 番号:number:~\n\
 疑似:pseudo:~\n\
 発行-:publish:~\n\
+発行:publication:~\n\
 発行0-:make:発行\n\
 発行0:making:発行\n\
-発行:publication:~\n\
 登録-:register::~\n\
 	登録-済み:registered\n\
 登録:registration::~\n\
@@ -2096,7 +2087,7 @@ stateless::::ステートレス\n\
 目的:purpose:~\n\
 盲目的:blind::~\n\
 近過去:recent::~\n\
-近過去の:recent::~\n\
+近過去の:recent な::~\n\
 相互運用-:interoperate::~\n\
 	相互運用-可能:interoperable::~\n\
 相互運用上の:interoperability::~\n\
@@ -2176,7 +2167,7 @@ stateless::::ステートレス\n\
 範囲単位:range unit::~\n\
 部分範囲:subrange::~\n\
 簡潔:compact:~\n\
-精確な:precise:~\n\
+精確:precise:~\n\
 精緻化-:refine:~\n\
 精緻化:refinement:~\n\
 素片:fragment::~::フラグメント\n\
@@ -2211,8 +2202,8 @@ stateless::::ステートレス\n\
 総集的:collective:~\n\
 緩めら:relax さ:~\n\
 緩める:relax する:~\n\
-緩和策:mitigation:~\n\
-緩和-:mitigate:~\n\
+軽減策:mitigation:~\n\
+軽減-:mitigate:~\n\
 縛られ:tie され:~\n\
 署名:signature:~\n\
 義務付けな:mandate しな:~\n\
@@ -2314,7 +2305,6 @@ stateless::::ステートレス\n\
 警告-:warn::~\n\
 	負:negative:~\n\
 負荷:load:~\n\
-読込まれ:load され:~\n\
 過負荷:overload:~\n\
 	責を負う:responsible:~\n\
 責任主体:responsible party:~\n\
@@ -2339,7 +2329,7 @@ stateless::::ステートレス\n\
 通信-:communicate::~\n\
 通信:communication::~\n\
 通常:normal:~\n\
-通常の:normal:~\n\
+通常の:normal な:~\n\
 通常は:normal では:~\n\
 	normally\n\
 通達-:signal:~\n\
@@ -2360,7 +2350,7 @@ stateless::::ステートレス\n\
 運用上の:operational:~\n\
 運用者:operator:~\n\
 過去:past:~\n\
-過度の:excessive:~\n\
+過度の:excessive な:~\n\
 過程:process:~\n\
 達成-:accomplish:~\n\
 違反-:violate:~\n\
@@ -2370,8 +2360,8 @@ stateless::::ステートレス\n\
 適合:conformant:~\n\
 適合性:conformance:~\n\
 適度:reasonable:~\n\
-	理に適った:reasonable:~\n\
 見合う:reasonable な:~\n\
+	理に適った:reasonable:~\n\
 適応的:adaptive:~\n\
 適時:timely:~\n\
 適正:proper:~\n\
@@ -2430,9 +2420,6 @@ stateless::::ステートレス\n\
 公共:public:~\n\
 公開-:expose:~\n\
 非公式的:informal:~\n\
-非効率:inefficient:~\n\
-非同期的:asynchronous:~\n\
-非同期的な:asynchronous:~\n\
 非推奨:deprecated::~\n\
 非推奨に:deprecate::~\n\
 頁:page:ページ\n\
@@ -2479,8 +2466,11 @@ stateless::::ステートレス\n\
 この:this
 その:that
 それらの:those
+それらの:their
 これらの:these
+それら:they
 すべての:all
+そのような:such／:these／...
 全面的に:entire に
 一部分
 一部／部分
@@ -2488,6 +2478,8 @@ stateless::::ステートレス\n\
 2 〜:two-
 3 〜:three-
 個目／番目:first／second／third
+複数:more than one
+各:each
 ほぼ:almost
 何か:something
 多くの:many
@@ -2497,8 +2489,12 @@ stateless::::ステートレス\n\
 多種多様な:variety
 何であれ:whichever
 自身:itself
+同じ:same
+一致:identical
 別々の:separate
+他の:other
 以外の:other than
+他の場合:otherwise
 〜を超えて:beyond
 数種の:several
 全体:entire
@@ -2517,8 +2513,8 @@ stateless::::ステートレス\n\
 様々な:various
 〜越しの:over
 下:below
-他の場合:otherwise
-そのような:such
+通:through
+間:during
 
 	●動詞
 高める:increase させる
@@ -2614,10 +2610,13 @@ OS:operateing system
 秒数:seconds
 等しく:equal に
 依然として:still
-
+例えば:for example
+例:example
+例：:e.g.
 優先される:precedence を take する
 能力を備えている:be capable of
 （〜に備わる能力）
+決して:never
 
 量:amount
 類い
@@ -2804,8 +2803,8 @@ sdir.s-maxage:~7234#section-5.2.2.9\n\
 ／c.compress:~7230#section-4.2.1\n\
 ／c.deflate:~7230#section-4.2.2\n\
 ／c.gzip:~7230#section-4.2.3\n\
-／c.application/http:~7230#section-8.3.2\n\
-／c.message/http:~7230#section-8.3.1\n\
+／c.application/https:~7230#section-8.3.2\n\
+／c.message/https:~7230#section-8.3.1\n\
 ／c.multipart/byteranges:~7233#multipart/byteranges\n\
 	■XXXX\n\
 IETF Review:~5226#section-4.1\n\
