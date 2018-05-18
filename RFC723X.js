@@ -266,6 +266,7 @@ source_data.st_phrase = {
 '416': 'Range Not Satisfiable',
 '417': 'Expectation Failed',
 '426': 'Upgrade Required',
+'451': 'Unavailable For Legal Reasons', // RFC7725
 '500': 'Internal Server Error',
 '501': 'Not Implemented',
 '502': 'Bad Gateway',
@@ -989,6 +990,7 @@ source_data.words_table = '\n\
 試みら:attempt さ:~\n\
 試みる:attempt する:~\n\
 論じる:discuss する:~\n\
+論じて:discuss して:~\n\
 論じた:discuss した:~\n\
 論じら:discuss さ:~\n\
 論点:discussion:~\n\
@@ -1009,6 +1011,7 @@ source_data.words_table = '\n\
 運べる:carry できる:~\n\
 避けら:avoid さ:~\n\
 避ける:avoid する:~\n\
+避けた:avoid した:~\n\
 回避法:avoidance:~\n\
 重なっ:overlap し:~\n\
 隠す:hide する:~\n\
@@ -1370,6 +1373,7 @@ zero:::ゼロ\n\
 作動中:active::~::アクティブ\n\
 作動中の:active な::~::アクティブな\n\
 作成-:create::~\n\
+作成:creation::~\n\
 置換-:replace::~\n\
 除去-:remove::~\n\
 除去:removal::~\n\
@@ -2208,6 +2212,7 @@ stateless::::ステートレス\n\
 署名:signature:~\n\
 義務付けな:mandate しな:~\n\
 義務付ける:mandate する:~\n\
+義務付けて:mandate して:~\n\
 義務化:mandate:~\n\
 翻訳-:translate::~\n\
 転化-:translate::~\n\
@@ -2451,7 +2456,6 @@ stateless::::ステートレス\n\
 最早〜ない:no longer
 後続の:subsequent
 両／両者:both
-ほとんどの:most
 次:next
 残りの:remaining
 残りの部分:remainder
@@ -2513,6 +2517,7 @@ stateless::::ステートレス\n\
 様々な:various
 〜越しの:over
 下:below
+上:above
 通:through
 間:during
 
