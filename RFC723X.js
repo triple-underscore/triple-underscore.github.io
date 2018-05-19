@@ -859,8 +859,6 @@ Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け<
 source_data.words_table = '\n\
 伝え:inform し:~\n\
 伝える:inform する:~\n\
-促す:prompt する:~\n\
-内包-:include:~\n\
 切替:switching::切り替え\n\
 切替わる:switch する::切り替わる\n\
 切替え:switch し::切り替え\n\
@@ -872,19 +870,13 @@ source_data.words_table = '\n\
 割当てる:assign する::あてがう\n\
 割当てて:assign して::あてがって\n\
 割当てた:assign した::あてがった\n\
-取戻せ:reclaim でき:取り戻せ\n\
-取戻され:reclaim され:取り戻され\n\
-取扱い:handling:取り扱い\n\
-取扱う:handle する:取り扱う\n\
-取扱え:handle でき:取り扱え\n\
-取扱っ:handle し:取り扱っ\n\
-取扱わ:handle し:取り扱わ\n\
-取扱われ:handle され:取り扱われ\n\
 含ま:include し:~\n\
 含ませ:include させ:~\n\
 含まれ:include され:~\n\
 含む:include する:~\n\
 含めて:include して:~\n\
+内包-:include:~\n\
+除外-:exclude:~\n\
 	呼ばれ:call され:~\n\
 呼出す:invoke する:呼び出す\n\
 呼出し:invoking:呼び出し\n\
@@ -894,26 +886,9 @@ source_data.words_table = '\n\
 埋込み:embedded:埋め込み\n\
 埋込ん:embed し:埋め込ん\n\
 始まる:begin する:~\n\
-孕む:involve する:~\n\
-孕まな:involve しな:~\n\
-孕んで:involve して:~\n\
-導かれ:lead され:~\n\
-導き:lead し:~\n\
-	導く:lead する:~\n\
-扱い:treatment:~\n\
-扱う:treat する:~\n\
-扱え:treat でき:~\n\
-扱っ:treat し:~\n\
-扱わ:treat し:~\n\
-扱われ:treat され:~\n\
 指す:refer する:~\n\
 指し:refer し:~\n\
 指され:refer され:~\n\
-挙動:behavior:ふるまい\n\
-挙動する:behave する:ふるまう\n\
-改め:alter でき:~\n\
-改めら:alter さ:~\n\
-改める:alter する:~\n\
 書込み:write::書き込み\n\
 書込め:write でき::書き込め\n\
 書換え:rewrite し::書き換え\n\
@@ -931,22 +906,9 @@ source_data.words_table = '\n\
 繰返して:repeat して:繰り返して\n\
 繰返す:repeat する:繰り返す\n\
 繰返せ:repeat でき:繰り返せ\n\
-望まず:wish せず:~\n\
-望まれ:wish され:~\n\
-望む:wish する:~\n\
-望んで:wish して:~\n\
-求めて:want して:~\n\
-求まれ:want され:~\n\
-	望ましく(un)desirable\n\
-欲され:desire され:~\n\
-欲して:desire して:~\n\
-欲する:desire する:~\n\
 	止めさ:cease さ:~\n\
 	止めた:cease した:~\n\
 	残っ:remain し:~\n\
-決めた:decide した:~\n\
-決める:decide する:~\n\
-決めれ:decide でき:~\n\
 渡され:pass され:~\n\
 渡す:pass する:~\n\
 	満たさ:satisfy さ:~\n\
@@ -968,63 +930,28 @@ source_data.words_table = '\n\
 結付けら:associate さ:結び付けら\n\
 結付ける:associate する:結び付ける\n\
 結付法:associating:結び付け\n\
+落とす:drop する:~\n\
 落とさ:drop さ:~\n\
-見なさ:consider さ:~\n\
-見なし:consider し:~\n\
-見なす:consider する:~\n\
-見なせ:consider でき:~\n\
-見做さ:assume さ:~\n\
-見做し:assume し:~\n\
-見做す:assume する:~\n\
-見做せ:assume でき:~\n\
-	見よ:see:~\n\
-前提:assumption:~\n\
 見出され:find され:~\n\
 見出す:find する:~\n\
 見出せ:find でき:~\n\
 見出して:find して:~\n\
 見出させ:find させ:~\n\
-試み:attempt:~\n\
-試みた:attempt した:~\n\
-試みて:attempt して:~\n\
-試みら:attempt さ:~\n\
-試みる:attempt する:~\n\
-論じる:discuss する:~\n\
-論じて:discuss して:~\n\
-論じた:discuss した:~\n\
-論じら:discuss さ:~\n\
-論点:discussion:~\n\
 	単に:merely:~\n\
 	単位:unit:~\n\
-十分:enough:~\n\
-	足る／足りる:sufficient:~\n\
-	足らない:insufficient:~\n\
-述べ:describe し:~\n\
-述べら:describe さ:~\n\
-述べる:describe する:~\n\
-説明0:description:説明\n\
-記述:description:~\n\
-記述-:describe:~\n\
 運ばせ:carry させ::~\n\
 運ばれ:carry され::~\n\
 運ぶ:carry する::~\n\
 運べる:carry できる:~\n\
-避けら:avoid さ:~\n\
-避ける:avoid する:~\n\
-避けた:avoid した:~\n\
-回避法:avoidance:~\n\
+運んで:carry して:~\n\
 重なっ:overlap し:~\n\
 隠す:hide する:~\n\
 隠され:hide され:~\n\
 隠し:hide し:~\n\
-騙す:trick する:~\n\
-騙せ:trick でき:~\n\
 見積もり:estimate::~\n\
 見積もら:estimateさ::~\n\
 見積もる:estimateする::~\n\
-解-:understand:~\n\
-解さな:understand しな:~\n\
-解せ:understand でき:~\n\
+促す:prompt する:~\n\
 \n\
 \n\
 \n\
@@ -1048,115 +975,44 @@ URI:\n\
 UTC:\n\
 Web:\n\
 \n\
-challenge::::チャレンジ\n\
 charset:\n\
-close:\n\
-closure:\n\
-open:\n\
 overhead::::オーバーヘッド\n\
-digest::::ダイジェスト\n\
-direct:::指図\n\
-	指向ける／ダイレクト／ディレクト\n\
-redirect::::リダイレクト\n\
-redirection::::リダイレクト\n\
-指令:directive::~\n\
-	ディレクティブ\n\
-指令-:direct::~\n\
-方向:direction::~\n\
-	directional:\n\
-直接的:direct:~\n\
-直に:directly:~\n\
-間接的:indirect:~\n\
-双方向:bidirectional::~\n\
-指図-:instruct:~\n\
 拡充-:populate:~\n\
 member::::メンバ\n\
-sensible:\n\
-sensitive:\n\
 subject::対象\n\
 	~~渡る:span:\n\
 access::::アクセス\n\
 accessibility:::access 性:アクセス性:アクセシビリティ\n\
+指図-:instruct:~\n\
 account::::アカウント\n\
-address::::アドレス\n\
-agent::::エージェント\n\
-algo:algorithm:::アルゴリズム\n\
-app-level:application-level:::アプリケーションレベル\n\
-app:application:::アプリケーション\n\
-応用:application::~::アプリケーション\n\
-	応用-:apply:::\n\
-適切:appropriate:~\n\
-適用-:apply:~\n\
-	適用すること:application\n\
-	適用-可能:applicable:~\n\
-適用性:applicability:~\n\
-approach::::アプローチ\n\
-architecture::::アーキテクチャ\n\
 archive::::アーカイブ\n\
-asterisk::::アスタリスク\n\
-backslash::::バックスラッシュ\n\
-based:-based:に基づく:::ベースの\n\
-binary::::バイナリ\n\
 bookmark::::ブックマーク\n\
-browser::::ブラウザ\n\
-byte::::バイト\n\
-cache::::キャッシュ\n\
-	~cache済み:cached\n\
-	~cache可能:cacheable\n\
-caching:::cache 処理:キャッシュ処理\n\
-chunk::::チャンク\n\
-chunked:::chunk 化:チャンク化\n\
 class::::クラス\n\
 clear::::クリア\n\
-client::::クライアント\n\
-code::::コード\n\
-colon::::コロン\n\
-comma::::カンマ\n\
-	comma区切りの:comma-separated\n\
 comment::::コメント\n\
 component::::コンポーネント\n\
 computer::::コンピュータ\n\
 container:::コンテナ\n\
-cookie::::クッキー\n\
+cookie:\n\
 cost::::コスト\n\
 crash::::クラッシュ\n\
 custom::::カスタム\n\
-data::::データ\n\
 database::::データベース\n\
-decimal::10 進\n\
 dialog::::ダイアログ\n\
-domain::::ドメイン\n\
-email:\n\
 encapsulate::::カプセル化\n\
 encapsulation::::カプセル化\n\
 entry::::エントリ\n\
 error::::エラー\n\
 	~err::\n\
-escaping::::エスケープ処理\n\
-escape::::エスケープ\n\
 event::::イベント\n\
-fetch::::取得\n\
-field::::フィールド\n\
 file::::ファイル\n\
-filter::::フィルタ\n\
-firewall::::ファイアウォール\n\
+browser::::ブラウザ\n\
 folder::::フォルダ\n\
 form::::フォーム\n\
-frame::::フレーム\n\
-	~frame法:framing\n\
-gateway::::ゲートウェイ\n\
 group::::グループ\n\
 guide::::ガイド\n\
 handler::::ハンドラ\n\
-hash::::ハッシュ\n\
-header::::ヘッダ\n\
-hex::16 進\n\
-hexadecimal::16 進数\n\
-host::::ホスト\n\
-hypertext::::ハイパーテキスト\n\
 	~hypertext:hypertext note\n\
-内方:inbound::~::インバウンド\n\
-外方:outbound::~::アウトバウンド\n\
 instance::::インスタンス\n\
 interface::::インタフェース\n\
 key::::キー\n\
@@ -1175,117 +1031,191 @@ machine::::マシン\n\
 mail::::メール\n\
 mark::::マーク\n\
 memory::::メモリ\n\
-message::::メッセージ\n\
-messaging::::メッセージ処理\n\
-metadata::::メタデータ\n\
-method::::メソッド\n\
+email:\n\
 mode::::モード\n\
-model::::モデル\n\
-native::::ネイティブ\n\
-network::::ネットワーク\n\
-normative::::規範的\n\
 object::::オブジェクト\n\
-octet::::オクテット\n\
 option::::オプション\n\
-桁溢れ:overflow::~::オーバーフロー\n\
-packet::::パケット\n\
-padding::::パディング\n\
-pair::::ペア\n\
-parameter::::パラメタ\n\
-password::::パスワード\n\
-path::::パス\n\
-pathname::::パス名\n\
-pattern::::パタン\n\
-payload::::ペイロード\n\
-percent::::パーセント\n\
 句:phrase::~::フレーズ\n\
 	pipe-and-filter:パイプ＆フィルタ\n\
 pointer::::ポインタ\n\
-policy::::ポリシー\n\
-port::::ポート\n\
-portal::::ポータル\n\
-privacy::::プライバシー\n\
-私的:private:~:::プライベート\n\
-program::::プログラム\n\
-programmatic::::プログラム的\n\
-programming::::プログラミング\n\
 property::::プロパティ\n\
 	特質\n\
-proprietary::::プロプライエタリ\n\
-protocol::::プロトコル\n\
-proxy::::プロキシ\n\
 command::::コマンド\n\
-query::::クエリ\n\
-quote::::クォート\n\
-引用符:quote:::~:クォート\n\
-二重引用符:double quote::~::ダブルクォート\n\
-	括る:quote する:~::クォートする\n\
-	括られ:quote され:~::クォートされ\n\
 random::::ランダム\n\
 具現化-:render:~\n\
 具現化:rendering:~\n\
 	render::::レンダー\n\
 	rendering::::レンダリング\n\
 repository::::リポジトリ\n\
-調査研究:research::~::リサーチ\n\
-	調査\n\
 reset::::リセット\n\
-risk::::リスク\n\
-robot::::ロボット\n\
-robotic::::ロボット的\n\
-経路制御-:route::~:ルート\n\
-経路制御:routing::~:ルーティング\n\
-scalability::::スケーラビリティ\n\
 schedule::::スケジュール\n\
-scheme::::スキーム\n\
-スキーム:scheme::~\n\
 script::::スクリプト\n\
 scripting::::スクリプティング\n\
-serve::::サービス供与\n\
-server::::サーバ\n\
-server-wide::server 全般::サーバ全般\n\
-service::::サービス\n\
 session::::セッション\n\
-site::::サイト\n\
-size::::サイズ\n\
-software::::ソフトウェア\n\
 source::::ソース\n\
 源:source::~:ソース\n\
-spider::::スパイダー\n\
 storage::::ストレージ\n\
-stream::::ストリーム\n\
 subset::::サブセット\n\
-subtag::::下位タグ\n\
-support::::サポート\n\
-system::::システム\n\
 table::::テーブル\n\
-tag::::タグ\n\
 target::::ターゲット\n\
 task::::タスク\n\
 test::::テスト\n\
-text::::テキスト\n\
 	textual:~textによる／~textからなる\n\
-token::::トークン\n\
 tool::::ツール\n\
-traffic::::トラフィック\n\
-trailer::::トレイラ\n\
-transaction::::トランザクション\n\
-transport::::トランスポート\n\
-tunnel::::トンネル\n\
-version::::バージョン\n\
 major::::主:メジャー\n\
 minor::::副:マイナー\n\
 view::::ビュー\n\
-web:\n\
-zero:::ゼロ\n\
-ゼロ:zero::~\n\
 \n\
+	●指示語\n\
 \n\
-	やりとり:interaction:~\n\
+個々の:individual:~\n\
 一定の:certain:~\n\
-一意:unique:~\n\
-一掃-:purge:~\n\
+以前:previous:~\n\
+以前の:previous:~\n\
+首:primary::主\n\
 一時的:temporary:~\n\
+余分な:extra:~\n\
+一意:unique:~\n\
+今後の:later:~\n\
+単独の:single:~\n\
+全部的:full:~\n\
+全部的な:full:~\n\
+側:side:~\n\
+元の:original:~\n\
+	元:original:~\n\
+	元々は:originally:~\n\
+尾部:trailing:~\n\
+頭部:leading:~\n\
+巨大:large:~\n\
+広範:wide:~\n\
+広範囲:extensive:~\n\
+最大:maximum:~\n\
+最大化-:maximize:~\n\
+最小:minimum:~\n\
+最終:final:~\n\
+末尾:end:~\n\
+版:edition:~\n\
+特定0の:particular:ある特定の\n\
+近過去:recent::~\n\
+近過去の:recent な::~\n\
+現在の:current:~\n\
+	現在，:currently:~\n\
+自前の:own::~\n\
+	所有-:own:~\n\
+所有者:owner::~\n\
+重複:duplicate:~\n\
+類似した:similar な:~\n\
+類似する:similar である:~\n\
+類似的:similar:~\n\
+	~similarly::\n\
+節:section:~\n\
+\n\
+	●仕様\n\
+\n\
+system::::システム\n\
+model::::モデル\n\
+native::::ネイティブ\n\
+program::::プログラム\n\
+programmatic::::プログラム的\n\
+programming::::プログラミング\n\
+software::::ソフトウェア\n\
+based:-based:に基づく:::ベースの\n\
+proprietary::::プロプライエタリ\n\
+	やりとり:interaction:~\n\
+見なさ:consider さ:~\n\
+見なし:consider し:~\n\
+見なす:consider する:~\n\
+見なせ:consider でき:~\n\
+前提:assumption:~\n\
+見做さ:assume さ:~\n\
+見做し:assume し:~\n\
+見做す:assume する:~\n\
+見做せ:assume でき:~\n\
+	見よ:see:~\n\
+試み:attempt:~\n\
+試みた:attempt した:~\n\
+試みて:attempt して:~\n\
+試みら:attempt さ:~\n\
+試みる:attempt する:~\n\
+論じる:discuss する:~\n\
+論じて:discuss して:~\n\
+論じた:discuss した:~\n\
+論じら:discuss さ:~\n\
+論点:discussion:~\n\
+十分:enough:~\n\
+	足る／足りる:sufficient:~\n\
+	足らない:insufficient:~\n\
+述べ:describe し:~\n\
+述べら:describe さ:~\n\
+述べる:describe する:~\n\
+説明0:description:説明\n\
+記述:description:~\n\
+記述-:describe:~\n\
+取戻せ:reclaim でき:取り戻せ\n\
+取戻され:reclaim され:取り戻され\n\
+取扱い:handling:取り扱い\n\
+取扱う:handle する:取り扱う\n\
+取扱え:handle でき:取り扱え\n\
+取扱っ:handle し:取り扱っ\n\
+取扱わ:handle し:取り扱わ\n\
+取扱われ:handle され:取り扱われ\n\
+孕む:involve する:~\n\
+孕まな:involve しな:~\n\
+孕んで:involve して:~\n\
+導かれ:lead され:~\n\
+導き:lead し:~\n\
+	導く:lead する:~\n\
+扱い:treatment:~\n\
+扱う:treat する:~\n\
+扱え:treat でき:~\n\
+扱っ:treat し:~\n\
+扱わ:treat し:~\n\
+扱われ:treat され:~\n\
+望まず:wish せず:~\n\
+望まれ:wish され:~\n\
+望む:wish する:~\n\
+求めて:want して:~\n\
+求まれ:want され:~\n\
+	望ましく(un)desirable\n\
+欲され:desire され:~\n\
+欲して:desire して:~\n\
+欲する:desire する:~\n\
+決めた:decide した:~\n\
+決める:decide する:~\n\
+決めれ:decide でき:~\n\
+挙動:behavior:ふるまい\n\
+挙動する:behave する:ふるまう\n\
+改め:alter でき:~\n\
+改めら:alter さ:~\n\
+改める:alter する:~\n\
+避けら:avoid さ:~\n\
+避ける:avoid する:~\n\
+避けた:avoid した:~\n\
+回避法:avoidance:~\n\
+供-:provide:~\n\
+供せ:provide でき:~\n\
+供さな:provide しな:~\n\
+解-:understand:~\n\
+解さな:understand しな:~\n\
+解せ:understand でき:~\n\
+agent::::エージェント\n\
+algo:algorithm:::アルゴリズム\n\
+app-level:application-level:::アプリケーションレベル\n\
+app:application:::アプリケーション\n\
+調査研究:research::~::リサーチ\n\
+	調査\n\
+scalability::::スケーラビリティ\n\
+support::::サポート\n\
+version::::バージョン\n\
+応用:application::~::アプリケーション\n\
+	応用-:apply:::\n\
+適切:appropriate:~\n\
+適用-:apply:~\n\
+	適用すること:application\n\
+	適用-可能:applicable:~\n\
+適用性:applicability:~\n\
+approach::::アプローチ\n\
+architecture::::アーキテクチャ\n\
 汎用:generic:~\n\
 一般:general:~\n\
 一般的:general:~\n\
@@ -1294,40 +1224,9 @@ zero:::ゼロ\n\
 共通する:common な:~\n\
 共通的に:common に:よく\n\
 共通的な:common な:よくある\n\
-上品:graceful::~\n\
-上書き:override::~\n\
-上流:upstream::~\n\
-下流:downstream::~\n\
-下層:underlying::~\n\
-下層の:underlying::~\n\
-不利:disadvantage:~\n\
-不可欠:crucial:~\n\
-不定:indefinite:~\n\
-不明瞭に:obscure:~\n\
-不良:bad:~\n\
-不透明:opaque::~\n\
-不適正:improper:~\n\
-並列的:parallel:~\n\
-中断-:interrupt:~\n\
-中断:interruption:~\n\
-中核:core:~\n\
-中止-:abort:~\n\
 中立的:neutral:~\n\
-中継-:relay::~\n\
-中継者:intermediary::~\n\
-首:primary::主\n\
-主体:party::~\n\
-主張:claim:~\n\
-乏しい:poor な:~\n\
-予期-:expect:~\n\
-期待-:expect:~\n\
-期待:expectation::~\n\
-予測-:anticipate:~\n\
-予約-:reserve::~\n\
-	予約-済み:reserved::~\n\
 予見-:believe:~\n\
 事例:case:~\n\
-事前fetch:pre-fetch::事前 fetch:事前取得\n\
 事実:fact:~\n\
 理由:reason:~\n\
 理由付け:reasoning:~\n\
@@ -1336,26 +1235,708 @@ zero:::ゼロ\n\
 互換性:compatibility::~\n\
 後方:backwards::~\n\
 後方互換:backwards-compatible::~\n\
-交換:exchange:~\n\
-今後の:later:~\n\
-中間者:man-in-the-middle::~\n\
-仕方:way:~\n\
-仕様:spec:~\n\
-仕組み:mechanism:~\n\
-付加-:append:~\n\
+主張:claim:~\n\
+乏しい:poor な:~\n\
+予期-:expect:~\n\
+期待-:expect:~\n\
+期待:expectation::~\n\
+予測-:anticipate:~\n\
+上品:graceful::~\n\
+不利:disadvantage:~\n\
+不可欠:crucial:~\n\
+不明瞭に:obscure:~\n\
 付録:Appendix:~\n\
-付随-:accompany:~\n\
-代わりに:instead:~\n\
 代替:alternative:~\n\
 代替-:alternate:~\n\
 代表的:typical:~\n\
-以前:previous:~\n\
-以前の:previous:~\n\
-遊休:idle:~\n\
-	遊休~中:idle\n\
+仕方:way:~\n\
+仕様:spec:~\n\
+仕組み:mechanism:~\n\
+使役-:employ:~\n\
+例外:exception:~\n\
+依存-:depend:~\n\
+依存:dependent:~\n\
+依存関係:dependency:~\n\
+独立:independent:~\n\
+	依存しない:independent:~\n\
+依拠-:rely:~\n\
+	依拠-可能:reliable:~\n\
+信頼性:reliability:~\n\
+保守的:conservative:~\n\
+保証-:guarantee:~\n\
+最良:best:~\n\
+最適化-:optimize:~\n\
+最適化:optimization:~\n\
+適合-:conform:~\n\
+適合:conformant:~\n\
+適合性:conformance:~\n\
+適度:reasonable:~\n\
+見合う:reasonable な:~\n\
+	理に適った:reasonable:~\n\
+適応的:adaptive:~\n\
+適時:timely:~\n\
+適正:proper:~\n\
+不適正:improper:~\n\
+選好-:prefer:~\n\
+選好:preference:~\n\
+選好順:descending preference の order:選好度の高い順\n\
+有利:advantageous:~\n\
+有意:significant:~\n\
+有意度:significance:~\n\
+有意性:significance:~\n\
+有意義:meaningful:~\n\
+未定義:undefined:~\n\
+分類上の:categorization:~\n\
+判定基準:criteria:~\n\
+判断-:deem:~\n\
+別の:another:~\n\
+別個の:distinct:~\n\
+利点:advantage:~\n\
+利用:use:~\n\
+用立てる:make use する:~\n\
+利用e:usage:利用\n\
+利用者:user::~::ユーザ\n\
+有用:useful:~\n\
+再利用:reuse:~\n\
+再利用性:reusability:~\n\
+誤用-:misuse:~\n\
+濫用:abuse:~\n\
+制定-:prescribe:~\n\
+制御:control::~\n\
+制約-:restrict:~\n\
+制約:restriction:~\n\
+制限-:limit:~\n\
+上限:limit:~\n\
+制限:limitation:~\n\
+副作用:side effect:~\n\
+副次的:secondary:~\n\
+創出-:mint:~\n\
+効果:effect:~\n\
+効率性:efficiency:~\n\
+非効率:inefficient:~\n\
+効率的:efficient:~\n\
+効果的:effective:~\n\
+実効:effective::~\n\
+実効性:effectiveness:~\n\
+単純:simple:~\n\
+単純に:simple に:~\n\
+単純化-:simplify:~\n\
+包括的:comprehensive:~\n\
+参照文献:references:~\n\
+参考:informative:~\n\
+厳密に:strict に:~\n\
+合意:consensus:~\n\
+同意-:agree:~\n\
+回答:answer:~\n\
+向上-:improve:~\n\
+改善-:improve:~\n\
+含意-:imply:~\n\
+含意:implications:~\n\
+	問い:question:~\n\
+問題:problem:~\n\
+損なう:lose する:~\n\
+損失:loss:~\n\
+失われ:lost し:~\n\
+対処-:work around:~\n\
+対処法:workaround:~\n\
+堅牢:robust:~\n\
+堅牢性:robustness:~\n\
+困難:difficult:~\n\
+図:figure:~\n\
+図式:diagram:~\n\
+増強-:enhance:~\n\
+強化-:enhance:~\n\
+受容-:accept:~\n\
+	受容-可能:acceptable:~\n\
+受理:accept:~\n\
+古い:older:~\n\
+可用:available:~\n\
+可用性:availability:~\n\
+可能0:possible:可能\n\
+不可能:impossible:~\n\
+可能化-:enable:~\n\
+可能化:enable:可能に\n\
+不能化-:disable:~\n\
+	無効化-／無力化:disable:無効化\n\
+	可能性:possibility:~\n\
+同義語:synonym:~\n\
+多様:diverse:~\n\
+多様性:diversity:~\n\
+大概は:presumably:~\n\
+奨励-:encourage:~\n\
+	〜ないことを奨励discouraged\n\
+定義-:define:~\n\
+定義:definition:~\n\
+定義済みの:predefined:~\n\
+再定義-:redefine:~\n\
+実施:practice:~\n\
+実用性:practicality:~\n\
+実用的:practical:~\n\
+実装-:implement:~\n\
+実装:implementation:~\n\
+実装者:implementer:~\n\
+実際:actual:~\n\
+実際の:actual な:~\n\
+遂行-:perform:~\n\
+遂行:performing:~\n\
+将来:future:~\n\
+将来の:future:~\n\
+尊守-:honor:~\n\
+導入-:introduce:~\n\
+導入:introduction:~\n\
+序論:introduction:~\n\
+導出-:derive:~\n\
+履行-:fulfill:~\n\
+帰結:consequence:~\n\
+干渉-:interfere:~\n\
+廃用:obsolete::~\n\
+廃用に:obsolete::~\n\
+強要-:insist:~\n\
+影響:impact:~\n\
+影響-:affect:~\n\
+必要十分:adequate:~\n\
+必要性:needs:~\n\
+	不必要な:unnecessary:~\n\
+	不必要に:needlessly:~\n\
+	必要:need:~\n\
+必須:required:~\n\
+恒久的:permanent:~\n\
+情報:information:~\n\
+意味-:mean:~\n\
+意味:meaning:~\n\
+意味論:semantics::~::セマンティクス\n\
+意味論的:semantic::~::セマンティック\n\
+意向:intention:~\n\
+意図-:intend:~\n\
+意図:intent:~\n\
+意図的:intentional:~\n\
+慎重:careful:~\n\
+慣行:convention::~\n\
+懸念:concern:~\n\
+旧式の:ancient:~\n\
+旧来の:legacy な::~\n\
+早期の:early:~\n\
+明らか:obvious:~\n\
+明白:clear:~\n\
+明確化-:clarify:~\n\
+明確化:clarification:~\n\
+明示的:explicit:~\n\
+暗黙的:implicit:~\n\
+暫定的:interim:~\n\
+本質的:essential:~\n\
+本質的でない:nonessential:~\n\
+柔軟:flexible:~\n\
+柔軟性:flexibility:~\n\
+根本的:fundamental:~\n\
+木目細かい:fine-grained:~\n\
+極小:minimal:~\n\
+概して:typical に:~\n\
+概念:concept:~\n\
+概観:overview:~\n\
+標準:standard::~\n\
+権利:right:~\n\
+欠如:lack:~\n\
+欠如する:lack する:欠く\n\
+正しく:correct に:~\n\
+不正:incorrect:~\n\
+正しい:correct な:~\n\
+正確0:accurate:正確\n\
+正確:exact:~\n\
+正誤表:errata::~\n\
+歴史:history:~\n\
+歴史的:historical:~\n\
+手動:manual:~\n\
+手引き:guidance:~\n\
+手引きす:guide す:~\n\
+指針:guideline:~\n\
+手段:means:~\n\
+手続き:procedure:~\n\
+手順:steps:~\n\
+技法:technique:~\n\
+技術:technology:~\n\
+抑制-:reduce:~\n\
+抽象化-:abstract 化:~\n\
+抽象化:abstraction:~\n\
+拘束-:constrain:~\n\
+拘束:constraints:~\n\
+拡張-:extend::~\n\
+拡張0-:expand:拡張\n\
+拡張:extension::~\n\
+	拡張-可能:extensible::~\n\
+拡張性:extensibility::~\n\
+指向0:-oriented:指向\n\
+採用-:adopt:~\n\
+採用:adoption:~\n\
+推奨-:recommend:~\n\
+推奨:recommendation:~\n\
+勧告:recommendation:~\n\
+推測-:guess:~\n\
+推測:guess:~\n\
+提供-:offer:~\n\
+提案-:propose:~\n\
+提案:proposal:~\n\
+支援-:assist:~:::アシスト\n\
+故意:deliberate:~\n\
+指定-:specify:~\n\
+指定:specification:~\n\
+指定子:specifier:~\n\
+指示-:indicate:~\n\
+指示:indication:~\n\
+指示子:indicator:~\n\
+新たな:new:~\n\
+方法:how:~\n\
+方針:strategy:~\n\
+施行-:enforce:~\n\
+既存の:existing:~\n\
+既定:default::~::デフォルト\n\
+既定の:default::~::デフォルト\n\
+既知:known:~\n\
+既知の:known:~\n\
+未知:unknown:~\n\
+未知の:unknown:~\n\
+決定-:determine:~\n\
+決定:determination:~\n\
+決断:decision:~\n\
+	注記-:note:~\n\
+	注記:Note:~\n\
+深刻:serious:~\n\
+混同-:confuse:~\n\
+混同:confusion:~\n\
+準拠-:comply::~\n\
+準拠:compliant::~\n\
+	特に，:particularly:~\n\
+	特に:specifically:~\n\
+特別:special:~\n\
+特化-:specialize:~\n\
+特定の:specific な:~\n\
+特性:characteristic:~\n\
+	特徴:characteristic:~\n\
+特有:specific:~\n\
+特有の:specific な:~\n\
+特色機能:feature::~::フィーチャ\n\
+確保-:ensure:~\n\
+位置付け:status:~\n\
+状況:situation:~\n\
+状況下:circumstance:~\n\
+各種用語:terminology:~\n\
+用語:term:~\n\
+目標:goal:~\n\
+目的:purpose:~\n\
+相互運用-:interoperate::~\n\
+	相互運用-可能:interoperable::~\n\
+相互運用上の:interoperability::~\n\
+相互運用性:interoperability::~\n\
+相似的:analogous:~\n\
+相当:substantial:~\n\
+	相当するもの:counterpart:~\n\
+相応しい:suitable な:~\n\
+相応しく:suitable で:~\n\
+	unsuitable:~\n\
+任意選択の:optional::~::オプションの\n\
+省略可:optional::~::オプション\n\
+省略可能:optional::~::オプションの\n\
+示唆-:suggest:~\n\
+示唆:suggestion:~\n\
+禁止-:forbid::~\n\
+禁制-:prohibit::~\n\
+競合-:conflict:~\n\
+競合:conflict:~\n\
+簡潔:compact:~\n\
+精確:precise:~\n\
+精緻化-:refine:~\n\
+精緻化:refinement:~\n\
+終端:end:~\n\
+経験:experience:~\n\
+経験則:heuristics::~::ヒューリスティックス\n\
+経験的:heuristic::~::ヒューリスティック\n\
+結果:result:~\n\
+結論:conclusion:~\n\
+統一的:uniform:~\n\
+統治-:govern:~\n\
+網羅的:exhaustive:~\n\
+総集的:collective:~\n\
+緩めら:relax さ:~\n\
+緩める:relax する:~\n\
+義務付けな:mandate しな:~\n\
+義務付ける:mandate する:~\n\
+義務付けて:mandate して:~\n\
+義務化:mandate:~\n\
+翻訳-:translate::~\n\
+翻訳:translation::~\n\
+転化-:translate::~\n\
+考慮-:consider:~\n\
+考慮点:consideration:~\n\
+能力:capability::~\n\
+自由:free:~\n\
+	良い:good:~\n\
+草案:draft::~\n\
+衝突-:collide:~\n\
+衝突:collision:~\n\
+補助:help:~\n\
+複雑化-:complicate:~\n\
+要件:requirements:~\n\
+要求-:require:~\n\
+要約-:summarize:~\n\
+規則:rule:~\n\
+規約:convention:~\n\
+策定者:author:~\n\
+著者:author:~\n\
+機会:chance:~\n\
+	~~機会:opportunity:~\n\
+	機能:function:~\n\
+機能性:functionality:~\n\
+設置-:place:~\n\
+設置しな:place しな:課さな\n\
+設置する:place する:課す\n\
+	課す:impose する:~\n\
+設計:design::~::デザイン\n\
+許可-:permit:~\n\
+許容-:allow:~\n\
+不許可に:disallow:~\n\
+	許容されない:disallowed:~\n\
+許諾:permission:~\n\
+診断:diagnostic:~\n\
+試験:test::~::テスト\n\
+試験的:experimental:~\n\
+詳細:details:~\n\
+詳細な:detailed:~\n\
+承認-:acknowledge:~\n\
+謝辞:acknowledgement:~\n\
+認識-:recognize:~\n\
+未認識:unrecognized:認識できない\n\
+誤解:mistake:~\n\
+説明-:explain:~\n\
+説明:explanation:~\n\
+課題:issue:~\n\
+責務:responsibility:~\n\
+解釈-:interpret:~\n\
+解釈:interpretation:~\n\
+誤解釈:misinterpret:~\n\
+資質:nature:~\n\
+性向:nature:~\n\
+通例的に:usual に:~\n\
+通例的には:usual に:~\n\
+通常:normal:~\n\
+通常の:normal な:~\n\
+通常は:normal では:~\n\
+	normally\n\
+達成-:accomplish:~\n\
+違反-:violate:~\n\
+違反:violation:~\n\
+重要:important:~\n\
+開発-:develop:~\n\
+開発:development:~\n\
+開発者:developer:~\n\
+開示-:disclose:~\n\
+開示:disclosure:~\n\
+関係-:relate:~\n\
+	関係する:related:~\n\
+関係ない:unrelated:~\n\
+関係性:relationship:~\n\
+関心:interest:~\n\
+関連する:relevant な:~\n\
+防止-:prevent:~\n\
+	防が:prevent し:~\n\
+	防ぐ:prevent する:~\n\
+限度:extent:~\n\
+	除いて:except して:~\n\
+公共:public:~\n\
+公開-:expose:~\n\
+非公式的:informal:~\n\
+非推奨:deprecated::~\n\
+非推奨に:deprecate::~\n\
+順守-:obey:~\n\
+一貫性:consistency:~\n\
+整合させ:consistent にす:~\n\
+整合しな:consistent でな:~\n\
+整合でな:consistent でな:整合しな\n\
+整合な:consistent な:整合する\n\
+整合する:consistent になる:~\n\
+一貫する:consistent である:~\n\
+一貫しな:consistent でな:~\n\
+一貫して:consistent に:~\n\
+	inconsistent:\n\
+表記法:notation:~\n\
+解決0:solve:解決\n\
+解決-:resolve::~\n\
+解決:resolution::~\n\
+解決策:solution:~\n\
+英語:English:~\n\
+側面:aspect:~\n\
+偶発的:accidental:~\n\
+偽:false:~\n\
+収束-:converge:~\n\
+取組まれ:address され:取り組まれ\n\
+取組む:address する:取り組む\n\
+壊す:breakする:~\n\
+壊れ:break され:~\n\
+壊れた:broken:~\n\
+理論:theory:~\n\
+知識:knowledge:~\n\
+\n\
+	●保安\n\
+\n\
+risk::::リスク\n\
+sensible:\n\
+sensitive:\n\
+privacy::::プライバシー\n\
+私的:private:~:::プライベート\n\
+policy::::ポリシー\n\
+騙す:trick する:~\n\
+騙せ:trick でき:~\n\
+保安:security::~:セキュリティ\n\
+保安上の:security::~:セキュリティ上の\n\
+保安化:secure 化::~:セキュア化\n\
+保安的:secure::~:セキュア\n\
+穴:hole::穴:ホール\n\
+保持-:hold:~\n\
+保護-:protect:~\n\
+保護:protection:~\n\
+未保護の:unprotected:~\n\
+信用-:trust::~\n\
+	信用できない:untrusted:~\n\
+弱体化-:compromise:~\n\
+悪用-:exploit:~\n\
+悪用:exploitation:~\n\
+悪意的な:malicious::悪意のある\n\
+害:harm:~\n\
+有害:harmful:~\n\
+無害:harmless:~\n\
+権限:authority::~\n\
+権限付与-:authorize::~\n\
+権限付与され:authorize され::権限が付与され\n\
+権限付与:authorization::~\n\
+権限的:authoritative::~\n\
+認証-:authenticate::~\n\
+	認証-済み:authenticated\n\
+認証:authentication::~\n\
+認証用の:authentication::~\n\
+機密性:confidentiality::~\n\
+機密的:confidential::~\n\
+欠陥:flaw:~\n\
+汚染-:poison::~\n\
+汚染:poisoning::~\n\
+攻撃:attack::~\n\
+攻撃者:attacker::~\n\
+注入:injection::~::インジェクション\n\
+注入-:inject::~::インジェクト\n\
+特権拡大:privilege escalation:~\n\
+盗聴:theft:~\n\
+脆弱:vulnerable::~\n\
+脆弱性:vulnerability::~\n\
+軽減策:mitigation:~\n\
+軽減-:mitigate:~\n\
+署名:signature:~\n\
+防御策:defense:~\n\
+露に:reveal:~\n\
+露呈-:expose:~\n\
+中間者:man-in-the-middle::~\n\
+相関-:correlate:~\n\
+相関:correlation:~\n\
+隔離:isolate:~\n\
+追跡:trace::~::トレース\n\
+\n\
+	●HTTP／構文／data／stream\n\
+\n\
+header::::ヘッダ\n\
+hypertext::::ハイパーテキスト\n\
+metadata::::メタデータ\n\
+message::::メッセージ\n\
+messaging::::メッセージ処理\n\
+zero:::ゼロ\n\
+ゼロ:zero::~\n\
+pair::::ペア\n\
+parameter::::パラメタ\n\
+path::::パス\n\
+pathname::::パス名\n\
+pattern::::パタン\n\
+port::::ポート\n\
+query::::クエリ\n\
+scheme::::スキーム\n\
+スキーム:scheme::~\n\
+protocol::::プロトコル\n\
+binary::::バイナリ\n\
+code::::コード\n\
+data::::データ\n\
+frame::::フレーム\n\
+	~frame法:framing\n\
+packet::::パケット\n\
+padding::::パディング\n\
+payload::::ペイロード\n\
+percent::::パーセント\n\
+size::::サイズ\n\
+stream::::ストリーム\n\
+tag::::タグ\n\
+subtag::::下位タグ\n\
+text::::テキスト\n\
+token::::トークン\n\
+trailer::::トレイラ\n\
+chunked:::chunk 化:チャンク化\n\
+octet::::オクテット\n\
+hex::16 進\n\
+hexadecimal::16 進数\n\
+field::::フィールド\n\
+asterisk::::アスタリスク\n\
+backslash::::バックスラッシュ\n\
+byte::::バイト\n\
+chunk::::チャンク\n\
+本体:body::~::ボディ\n\
+colon::::コロン\n\
+comma::::カンマ\n\
+	comma区切りの:comma-separated\n\
+decimal::10 進\n\
+escaping::::エスケープ処理\n\
+escape::::エスケープ\n\
+quote::::クォート\n\
+引用符:quote:::~:クォート\n\
+二重引用符:double quote::~::ダブルクォート\n\
+	括る:quote する:~::クォートする\n\
+	括られ:quote され:~::クォートされ\n\
+不良:bad:~\n\
+区切られ:delimit され::~\n\
+区切り:delimitation::~\n\
+区切りの:-separated:~\n\
+区切る:delimit する::~\n\
+区切子:delimiter::~\n\
+合致:match::~::マッチ\n\
+照合-:match::~::マッチ\n\
+照合:matching::~::マッチング\n\
+大文字:uppercase::~\n\
+小文字:lowercase::~\n\
+文字:character::~\n\
+文字列:string::~\n\
+文字大小:case::~\n\
+文字大小区別:case-sensitive::~\n\
+文字大小無視:case-insensitive::~\n\
+文字大小無視の:case-insensitive な::~\n\
+数字:numeral:~\n\
+数的:numeric:~\n\
+整数:integer::~\n\
+実数:real number:~\n\
+	時間:time:~\n\
+桁:digit::~\n\
+構文:syntax::~::シンタックス\n\
+構文解析-:parse::~::パース\n\
+構文解析:parsing::~::パース処理\n\
+構文解析器:parser::~::パーサ\n\
+正準:canonical::~\n\
+正準化:canonicalization::~\n\
+正規化-:normalize::~\n\
+正規化:normalization::~\n\
+移行:transition::~\n\
+稀:rare:~\n\
+番号:number:~\n\
+空:empty:~\n\
+空行:blank line::~\n\
+空白:whitespace::~\n\
+素片:fragment::~::フラグメント\n\
+英字:letter::~\n\
+行0:line::行\n\
+圧縮-:compress::~\n\
+圧縮:compression::~\n\
+成分:component::~\n\
+下位成分:subcomponent::~\n\
+接尾辞:suffix:~\n\
+接頭辞:prefix:~\n\
+折返-:fold::~\n\
+折返さな:fold しな::~\n\
+折返し:folding::~\n\
+記号:symbol:~\n\
+符号化-:encode::~::エンコード\n\
+符号化:encoding::~::エンコーディング\n\
+	符号化-済み:encoded\n\
+符号化方式:encoding::~::エンコーディング\n\
+符号変換:transcoding::~::トランスコーディング\n\
+符号変換器:transcoder::~::トランスコーダ\n\
+符号法:coding::~::コーディング\n\
+復号-:decode::~::デコード\n\
+復号:decoding::~::デコーディング\n\
+暗号化-:encrypt::~\n\
+暗号化:encryption::~\n\
+暗号用の:cryptographic::~\n\
+形式変換proxy:transforming proxy::形式変換 proxy:形式変換プロキシ\n\
+形式変換-:transform::~\n\
+形式変換:transformation::~\n\
+形式:format::~::フォーマット\n\
+生成規則:production::~\n\
+生成-:generate::~\n\
+生成:generation::~\n\
+分割-:split:~\n\
+分割:splitting:~\n\
+分解-:decompose:~\n\
+分離-:separate:~\n\
+分離子:separator:~\n\
+\n\
+	●network\n\
+\n\
+address::::アドレス\n\
+challenge::::チャレンジ\n\
+digest::::ダイジェスト\n\
+hash::::ハッシュ\n\
+filter::::フィルタ\n\
+firewall::::ファイアウォール\n\
+桁溢れ:overflow::~::オーバーフロー\n\
+password::::パスワード\n\
+cache::::キャッシュ\n\
+	~cache済み:cached\n\
+	~cache可能:cacheable\n\
+caching:::cache 処理:キャッシュ処理\n\
+client::::クライアント\n\
+fetch:\n\
+事前fetch:pre-fetch::事前 fetch\n\
+gateway::::ゲートウェイ\n\
+domain::::ドメイン\n\
+host::::ホスト\n\
+内方:inbound::~::インバウンド\n\
+外方:outbound::~::アウトバウンド\n\
+network::::ネットワーク\n\
+method::::メソッド\n\
+portal::::ポータル\n\
+web:\n\
+provider::::プロバイダ\n\
+proxy::::プロキシ\n\
+serve::::サービス供与\n\
+server::::サーバ\n\
+server-wide::server 全般::サーバ全般\n\
+service::::サービス\n\
+site::::サイト\n\
+spider::::スパイダー\n\
+robot::::ロボット\n\
+robotic::::ロボット的\n\
+traffic::::トラフィック\n\
+transaction::::トランザクション\n\
+transport::::トランスポート\n\
+tunnel::::トンネル\n\
+close:\n\
+closure:\n\
+open:\n\
+連鎖:chain::~::チェイン\n\
+経路制御-:route::~:ルート\n\
+経路制御:routing::~:ルーティング\n\
+接続-:connect::~::コネクト\n\
+接続:connection::~::コネクション\n\
+direct:::指図\n\
+	指向ける／ダイレクト／ディレクト\n\
+redirect::::リダイレクト\n\
+redirection::::リダイレクト\n\
+指令:directive::~\n\
+	ディレクティブ\n\
+指令-:direct::~\n\
+方向:direction::~\n\
+	directional:\n\
+直接的:direct:~\n\
+	直に:direct に:~\n\
+間接的:indirect:~\n\
+双方向:bidirectional::~\n\
+主体:party::~\n\
+第三者主体:third-party::~::サードパーティ\n\
+責任主体:responsible party:~\n\
+上流:upstream::~\n\
+下流:downstream::~\n\
 中継:intermediate::~\n\
+中継-:relay::~\n\
+中継者:intermediary::~\n\
 介在-:intervene:~\n\
-企業:corporate:~\n\
 伝送-:transmit::~\n\
 伝送:transmission::~\n\
 伝送処理:transmitting::~\n\
@@ -1367,8 +1948,77 @@ zero:::ゼロ\n\
 送達-:deliver::~\n\
 送達:delivery::~\n\
 伝達-:convey::~\n\
-	何故なら:because:~\n\
-余分な:extra:~\n\
+分散-:balance:~\n\
+分散型の:distributed::~\n\
+到着-:arrive:~\n\
+参加-:engage:~\n\
+参加者:participant:~\n\
+referrer::::リファラ\n\
+参照:reference::~\n\
+参照元:referring:refer 元:~\n\
+受信-:receive::~\n\
+受信:receiving::~\n\
+受信者:recipient::~\n\
+受領:receipt::~\n\
+送信-:send::~\n\
+送信:sending::~\n\
+送信者:sender::~\n\
+広告-:advertise:~\n\
+広告:advertisement:~\n\
+往来:round trip:~:::ラウンドトリップ\n\
+折衝-:negotiate::~::ネゴシエート\n\
+折衝:negotiation::~::ネゴシエーション\n\
+昇格:upgrade::~::アップグレード\n\
+降格:downgrade::~::ダウングレード\n\
+生成元:origin::~::オリジン\n\
+端点:endpoint::~::エンドポイント\n\
+端点間:end-to-end::~::エンドツーエンド\n\
+隣点間:hop-by-hop::~::ホップバイホップ\n\
+通信-:communicate::~\n\
+通信:communication::~\n\
+通達-:signal:~\n\
+通達:signal:~\n\
+連絡-:contact:~\n\
+連絡:contact:~\n\
+連結-:concatenate:~\n\
+実体:entity:~\n\
+応答-:respond::~::レスポンド\n\
+応答:response::~::レスポンス\n\
+要請:request::~::リクエスト\n\
+要請-:request::~::リクエスト\n\
+応答class:class:::クラス\n\
+応答待ちの:outstanding::~\n\
+	勧める:advise する:~\n\
+所在-:locate::~\n\
+所在:location::~\n\
+経路:path:~\n\
+行先:destination:~\n\
+資源:resource::~:リソース\n\
+遠隔:remote::~::リモート\n\
+\n\
+	●未分類\n\
+\n\
+企業:corporate:~\n\
+個人:personal:~\n\
+人:human:~\n\
+一掃-:purge:~\n\
+上書き:override::~\n\
+下層:underlying::~\n\
+下層の:underlying::~\n\
+不定:indefinite:~\n\
+不透明:opaque::~\n\
+並列的:parallel:~\n\
+中断-:interrupt:~\n\
+中断:interruption:~\n\
+中核:core:~\n\
+中止-:abort:~\n\
+予約-:reserve::~\n\
+	予約-済み:reserved::~\n\
+交換:exchange:~\n\
+付加-:append:~\n\
+付随-:accompany:~\n\
+遊休:idle:~\n\
+	遊休~中:idle\n\
 作動中:active::~::アクティブ\n\
 作動中の:active な::~::アクティブな\n\
 作成-:create::~\n\
@@ -1379,54 +2029,20 @@ zero:::ゼロ\n\
 削除-:delete::~\n\
 削除:deletion::~\n\
 併合-:merge:~\n\
-使役-:employ:~\n\
-例外:exception:~\n\
-依存-:depend:~\n\
-依存:dependent:~\n\
-依存関係:dependency:~\n\
-独立:independent:~\n\
-	依存しない:independent:~\n\
-依拠-:rely:~\n\
-	依拠-可能:reliable:~\n\
-信頼性:reliability:~\n\
 係数:factor:~\n\
 促進-:promote:~\n\
 保全-:preserve:~\n\
 保存-:save:~\n\
-保守的:conservative:~\n\
-保安:security::~:セキュリティ\n\
-保安上の:security::~:セキュリティ上の\n\
-保安化:secure 化::~:セキュア化\n\
-保安的:secure::~:セキュア\n\
-穴:hole::穴:ホール\n\
-保持-:hold:~\n\
-保証-:guarantee:~\n\
-保護-:protect:~\n\
-保護:protection:~\n\
-未保護の:unprotected:~\n\
-信用-:trust::~\n\
-	信用できない:untrusted:~\n\
 修正:fix:~\n\
-個々の:individual:~\n\
-個人:personal:~\n\
-人:human:~\n\
 値:value:~\n\
-停止:stop:~\n\
-側:side:~\n\
-側面:aspect:~\n\
-偶発的:accidental:~\n\
-偽:false:~\n\
+停止-:stop:~\n\
 優先度:priority:~\n\
 優先順:precedence:~\n\
-元の:original:~\n\
-	元:original:~\n\
-	元々は:originally:~\n\
 先行-:precede:~\n\
 入力:input:~\n\
 共有-:share:~\n\
 共有:shared:~\n\
 内側:inside:~\n\
-内包-:include:~\n\
 内容:content::~\n\
 内来的:inherent:~\n\
 内部:internal:~\n\
@@ -1445,167 +2061,55 @@ zero:::ゼロ\n\
 出生日時:origination date::~\n\
 出生時:origination::~\n\
 出生時の:origination::~\n\
-分割-:split:~\n\
-分割:splitting:~\n\
 分岐:divergent:~\n\
-分散-:balance:~\n\
-分散型の:distributed::~\n\
-分解-:decompose:~\n\
-分離-:separate:~\n\
-分離子:separator:~\n\
-分類上の:categorization:~\n\
 初期:initial:~\n\
-判定基準:criteria:~\n\
-判断-:deem:~\n\
-別の:another:~\n\
-別個の:distinct:~\n\
 別名:alias::~::エイリアス\n\
-利点:advantage:~\n\
-利用:use:~\n\
-用立てる:make use する:~\n\
-利用e:usage:利用\n\
-利用者:user::~::ユーザ\n\
-有用:useful:~\n\
-再利用:reuse:~\n\
-再利用性:reusability:~\n\
-誤用-:misuse:~\n\
-濫用:abuse:~\n\
-到着-:arrive:~\n\
-制定-:prescribe:~\n\
-制御:control::~\n\
-制約-:restrict:~\n\
-制約:restriction:~\n\
-制限-:limit:~\n\
-上限:limit:~\n\
-制限:limitation:~\n\
-事前条件:precondition::~\n\
-副作用:side effect:~\n\
-副次的:secondary:~\n\
 割合:percentage:~\n\
 割当-:allocate:~\n\
-創出-:mint:~\n\
-効果:effect:~\n\
-効率性:efficiency:~\n\
-非効率:inefficient:~\n\
-効率的:efficient:~\n\
-効果的:effective:~\n\
-実効:effective::~\n\
-実効性:effectiveness:~\n\
 動作-:act:~:::アクト\n\
 動作:action:~:::アクション\n\
 動的:dynamic:~\n\
 包含-:contain:~\n\
-包括的:comprehensive:~\n\
 区分-:partition:~\n\
-区切られ:delimit され::~\n\
-区切り:delimitation::~\n\
-区切りの:-separated:~\n\
-区切る:delimit する::~\n\
-区切子:delimiter::~\n\
 判別-:distinguish:~\n\
+事前条件:precondition::~\n\
 協調的:collaborative:~\n\
-単独の:single:~\n\
-単純:simple:~\n\
-単純に:simple に:~\n\
-単純化-:simplify:~\n\
 即時:immediate:~\n\
 却下-:reject::~\n\
-厳密に:strict に:~\n\
-参加-:engage:~\n\
-参加者:participant:~\n\
-referrer::::リファラ\n\
-参照:reference::~\n\
-参照元:referring:refer 元:~\n\
-参照文献:references:~\n\
-参考:informative:~\n\
 反映-:reflect:~\n\
-収束-:converge:~\n\
 収集-:gather:~\n\
 取消:cancel:~\n\
-取組まれ:address され:取り組まれ\n\
-取組む:address する:取り組む\n\
 取込まれ:import され:取り込まれ\n\
-受信-:receive::~\n\
-受信:receiving::~\n\
-受信者:recipient::~\n\
-受領:receipt::~\n\
-送信-:send::~\n\
-送信:sending::~\n\
-送信者:sender::~\n\
-受容-:accept:~\n\
-	受容-可能:acceptable:~\n\
-受理:accept:~\n\
-古い:older:~\n\
-可用:available:~\n\
-可用性:availability:~\n\
-可能0:possible:可能\n\
-不可能:impossible:~\n\
-可能化-:enable:~\n\
-可能化:enable:可能に\n\
-不能化-:disable:~\n\
-	無効化-／無力化:disable:無効化\n\
-	可能性:possibility:~\n\
 可視:visible:~\n\
 可視性:visibility:~\n\
-合意:consensus:~\n\
-合致:match::~::マッチ\n\
-照合-:match::~::マッチ\n\
-照合:matching::~::マッチング\n\
 同一性:identity:~\n\
 同封-:enclose::~\n\
-同意-:agree:~\n\
 同時:simultaneous:~\n\
 同時性:concurrency:~\n\
 同時的:concurrent:~\n\
 同期-:synchronize:~\n\
 同期的:synchronous:~\n\
 非同期的:asynchronous:~\n\
-	同様に:likewise:~\n\
-同義語:synonym:~\n\
 名:name:~\n\
 名前:name:~\n\
 名前空間:namespace::~\n\
-向上-:improve:~\n\
-改善-:improve:~\n\
-含意-:imply:~\n\
-含意:implications:~\n\
-告知-:advertise:~\n\
 命名-:name:~\n\
 命名:naming:~\n\
 品質:quality::~\n\
 品質値:qvalue::~\n\
-	問い:question:~\n\
-問題:problem:~\n\
-損なう:lose する:~\n\
-損失:loss:~\n\
-失われ:lost し:~\n\
 回復-:recover::~\n\
-回復:recovery::~\n\
-回答:answer:~\n\
-対処-:work around:~\n\
-対処法:workaround:~\n\
-困難:difficult:~\n\
-図:figure:~\n\
-図式:diagram:~\n\
 固定的な:fixed:~\n\
 固定長:fixed-length:~\n\
-圧縮-:compress::~\n\
-圧縮:compression::~\n\
 下位型:subtype::~\n\
 型:type::~\n\
 基底:base:~\n\
-堅牢:robust:~\n\
-堅牢性:robustness:~\n\
 報告:report:~\n\
 境界:boundary::~\n\
 増分:increment:~\n\
 増分的:incremental:~\n\
 増加-:increase:~\n\
 増大-:increase:~\n\
-増強-:enhance:~\n\
-壊す:breakする:~\n\
-壊れ:break され:~\n\
-壊れた:broken:~\n\
+回復:recovery::~\n\
 	変わら:changeし:~\n\
 	変わり:changeし:~\n\
 変化-:change:~\n\
@@ -1619,11 +2123,6 @@ referrer::::リファラ\n\
 外側:outside:~\n\
 	外部:outside:~\n\
 外向けの:outgoing:~\n\
-多様:diverse:~\n\
-多様性:diversity:~\n\
-大文字:uppercase::~\n\
-小文字:lowercase::~\n\
-大概は:presumably:~\n\
 失効:expiration:~\n\
 失効-:expire:~\n\
 弱い:weak::~\n\
@@ -1636,8 +2135,6 @@ referrer::::リファラ\n\
 成功:success::~\n\
 成功裡:successful::~\n\
 成功裡の:successful な::~\n\
-奨励-:encourage:~\n\
-	〜ないことを奨励discouraged\n\
 	立証-:verify:~\n\
 	立証:verification:~\n\
 検証y-:verify:検証°\n\
@@ -1670,30 +2167,10 @@ referrer::::リファラ\n\
 完全な:complete::~\n\
 不完全:incomplete::~\n\
 不完全な:incomplete::~\n\
-全部的:full:~\n\
-全部的な:full:~\n\
 完全性:integrity::~\n\
-定義-:define:~\n\
-定義:definition:~\n\
-定義済みの:predefined:~\n\
-再定義-:redefine:~\n\
-実体:entity:~\n\
-実施:practice:~\n\
-実用性:practicality:~\n\
-実用的:practical:~\n\
-遂行-:perform:~\n\
-遂行:performing:~\n\
 実行-:execute:~\n\
-実装-:implement:~\n\
-実装:implementation:~\n\
-実装者:implementer:~\n\
-実際:actual:~\n\
-実際の:actual な:~\n\
 宣言-:declare:~\n\
 宣言的:declarative:~\n\
-害:harm:~\n\
-有害:harmful:~\n\
-無害:harmless:~\n\
 容易:easy:~\n\
 容量:capacity:~\n\
 対応-:correspond:~\n\
@@ -1703,198 +2180,48 @@ referrer::::リファラ\n\
 対話-:interact::やりとり::インタラクト\n\
 対話:interaction::やりとり::インタラクション\n\
 対話的:interactive::~::インタラクティブ\n\
-将来の:future:~\n\
-将来:future:~\n\
 未来:future:~\n\
 未来の:future:~\n\
-尊守-:honor:~\n\
-導入-:introduce:~\n\
-導入:introduction:~\n\
-序論:introduction:~\n\
-導出-:derive:~\n\
 尚早:premature:~\n\
-尾部:trailing:~\n\
-頭部:leading:~\n\
 局所的:local::~::ローカル\n\
 	局所的な\n\
 展開-:expand:~\n\
+抽出-:extract:~\n\
 属性:attribute:~\n\
 層:layer::~\n\
 履歴:history::~\n\
-履行-:fulfill:~\n\
-巨大:large:~\n\
 帯域幅:bandwidth::~::バンド幅\n\
-帰結:consequence:~\n\
-干渉-:interfere:~\n\
-広範:wide:~\n\
-広範囲:extensive:~\n\
-廃用:obsolete::~\n\
-廃用に:obsolete::~\n\
-弱体化-:compromise:~\n\
-強化-:enhance:~\n\
-強要-:insist:~\n\
 形:form:~\n\
-形式変換proxy:transforming proxy::形式変換 proxy:形式変換プロキシ\n\
-形式変換-:transform::~\n\
-形式変換:transformation::~\n\
-形式:format::~::フォーマット\n\
 形成-:form:~\n\
-影響:impact:~\n\
-影響-:affect:~\n\
 役割:role::~::ロール\n\
-往来:round trip:~:::ラウンドトリップ\n\
 後処理:post-processing:~\n\
 復帰-:revert:~\n\
-必要十分:adequate:~\n\
-必要性:needs:~\n\
-	不必要な:unnecessary:~\n\
-	不必要に:needlessly:~\n\
-	必要:need:~\n\
-必須:required:~\n\
-応答-:respond::~::レスポンド\n\
-応答:response::~::レスポンス\n\
-要請:request::~::リクエスト\n\
-要請-:request::~::リクエスト\n\
-応答class:class:::クラス\n\
-応答待ちの:outstanding::~\n\
-	勧める:advise する:~\n\
-恒久的:permanent:~\n\
-悪用-:exploit:~\n\
-悪用:exploitation:~\n\
-悪意的な:malicious::悪意のある\n\
-情報:information:~\n\
-意味-:mean:~\n\
-意味:meaning:~\n\
-意味論:semantics::~::セマンティクス\n\
-意味論的:semantic::~::セマンティック\n\
-意向:intention:~\n\
-意図-:intend:~\n\
-意図:intent:~\n\
-意図的:intentional:~\n\
-慎重:careful:~\n\
-慣行:convention::~\n\
-懸念:concern:~\n\
-成分:component::~\n\
-下位成分:subcomponent::~\n\
-所在-:locate::~\n\
-所在:location::~\n\
 所属-:belong:~\n\
 所属:belong:~\n\
-自前の:own::~\n\
-	所有-:own:~\n\
-所有者:owner::~\n\
-手動:manual:~\n\
-手引き:guidance:~\n\
-手引きす:guide す:~\n\
-指針:guideline:~\n\
-手段:means:~\n\
-手続き:procedure:~\n\
-手順:steps:~\n\
-技法:technique:~\n\
-技術:technology:~\n\
-抑制-:reduce:~\n\
-折衝-:negotiate::~::ネゴシエート\n\
-折衝:negotiation::~::ネゴシエーション\n\
-折返-:fold::~\n\
-折返さな:fold しな::~\n\
-折返し:folding::~\n\
-抽出-:extract:~\n\
-抽象化-:abstract 化:~\n\
-抽象化:abstraction:~\n\
 拒否-:refuse:~\n\
-拘束-:constrain:~\n\
-拘束:constraints:~\n\
-拡張-:extend::~\n\
-拡張0-:expand:拡張\n\
-拡張:extension::~\n\
-	拡張-可能:extensible::~\n\
-拡張性:extensibility::~\n\
 持続-:persist::~\n\
 持続性:persistence::~\n\
 持続的:persistent::~\n\
-指向0:-oriented:指向\n\
-指定子:specifier:~\n\
-指定-:specify:~\n\
-指定:specification:~\n\
-指示-:indicate:~\n\
-指示:indication:~\n\
-指示子:indicator:~\n\
 挿入-:insert:~\n\
-注入:injection::~::インジェクション\n\
-注入-:inject::~::インジェクト\n\
-採用-:adopt:~\n\
-採用:adoption:~\n\
-接尾辞:suffix:~\n\
-接続-:connect::~::コネクト\n\
-接続:connection::~::コネクション\n\
-接頭辞:prefix:~\n\
-推奨-:recommend:~\n\
-推奨:recommendation:~\n\
-勧告:recommendation:~\n\
-推測-:guess:~\n\
-推測:guess:~\n\
 給-:supply:~\n\
 給せ:supply でき:~\n\
 給さな:supply しな:~\n\
-供-:provide:~\n\
-供せ:provide でき:~\n\
-供さな:provide しな:~\n\
-provider::::プロバイダ\n\
-提供-:offer:~\n\
-提案-:propose:~\n\
-提案:proposal:~\n\
 操作-:manipulate:~\n\
 操作:manipulation:~\n\
-支援-:assist:~:::アシスト\n\
 改変-:modify::~\n\
 改変子:modifier::~\n\
 改変:modification::~\n\
 改訂-:revise::~\n\
 改訂:revision::~::リビジョン\n\
 改訂履歴:revision::~::リビジョン\n\
-攻撃:attack::~\n\
-攻撃者:attacker::~\n\
-故意:deliberate:~\n\
-数字:numeral:~\n\
-数的:numeric:~\n\
-一貫性:consistency:~\n\
-整合させ:consistent にす:~\n\
-整合しな:consistent でな:~\n\
-整合でな:consistent でな:整合しな\n\
-整合な:consistent な:整合する\n\
-整合する:consistent になる:~\n\
-一貫する:consistent である:~\n\
-一貫しな:consistent でな:~\n\
-一貫して:consistent に:~\n\
-	inconsistent:\n\
-整数:integer::~\n\
-実数:real number:~\n\
 計算-:calculate:~\n\
 	計算:calculating:~\n\
 計算:calculation:~\n\
-文字:character::~\n\
-文字列:string::~\n\
-文字大小:case::~\n\
-文字大小区別:case-sensitive::~\n\
-文字大小無視:case-insensitive::~\n\
-文字大小無視の:case-insensitive な::~\n\
 文書:document:~\n\
 文書化:document 化:~\n\
 文法:grammar:~\n\
 文脈:context::~\n\
-新たな:new:~\n\
-方法:how:~\n\
-方針:strategy:~\n\
-施行-:enforce:~\n\
 族:family::~::ファミリ\n\
-既存の:existing:~\n\
-既定:default::~::デフォルト\n\
-既定の:default::~::デフォルト\n\
-既知:known:~\n\
-既知の:known:~\n\
-未知:unknown:~\n\
-未知の:unknown:~\n\
-	時間:time:~\n\
 日付時刻:date and time::~\n\
 日時:date::~\n\
 時刻:time::~\n\
@@ -1902,56 +2229,21 @@ provider::::プロバイダ\n\
 時間制限:timeout::~::タイムアウト\n\
 待時間:latency:待ち時間\n\
 待機-:wait::~\n\
-待機:wait::~\n\
 時計:clock::~::クロック\n\
-旧式の:ancient:~\n\
-旧来の:legacy な::~\n\
-早期の:early:~\n\
-昇格:upgrade::~::アップグレード\n\
-降格:downgrade::~::ダウングレード\n\
 昇順:ascending order:~\n\
 降順:decreaseing order:~\n\
-明らか:obvious:~\n\
-明白:clear:~\n\
-明確化-:clarify:~\n\
-明確化:clarification:~\n\
-明示的:explicit:~\n\
-暗黙的:implicit:~\n\
-暫定的:interim:~\n\
 更新:update::~::アップデート\n\
 更新喪失:lost update::~\n\
-最大:maximum:~\n\
-最大化-:maximize:~\n\
-最小:minimum:~\n\
-最終:final:~\n\
-最良:best:~\n\
-最適化-:optimize:~\n\
-最適化:optimization:~\n\
-有利:advantageous:~\n\
-有意:significant:~\n\
-有意度:significance:~\n\
-有意性:significance:~\n\
-有意義:meaningful:~\n\
-木目細かい:fine-grained:~\n\
-未定義:undefined:~\n\
-末尾:end:~\n\
-本体:body::~::ボディ\n\
-本質的:essential:~\n\
-本質的でない:nonessential:~\n\
 条件:condition::~\n\
 条件付き:conditional::~\n\
 	〜でない:unconditional~\n\
 条態:condition::~\n\
-柔軟:flexible:~\n\
-柔軟性:flexibility:~\n\
-根本的:fundamental:~\n\
 格納-:store::~\n\
 	格納-済み:stored::~\n\
 	格納-法:storing::~\n\
 格納域:store::~\n\
 記憶域:storage::~::ストレージ\n\
 蓄積:storage::~::ストレージ\n\
-桁:digit::~\n\
 検出-:detect:~\n\
 検出:detection:~\n\
 検分-:inspect:~\n\
@@ -1961,90 +2253,23 @@ provider::::プロバイダ\n\
 検索:search:~\n\
 検索取得-:retrieve::~\n\
 検索取得:retrieval::~\n\
-極小:minimal:~\n\
-概して:typical に:~\n\
-概念:concept:~\n\
-概観:overview:~\n\
-構文:syntax::~::シンタックス\n\
-構文解析-:parse::~::パース\n\
-構文解析:parsing::~::パース処理\n\
-構文解析器:parser::~::パーサ\n\
 構成子:construct::~\n\
 構築-:construct:~\n\
 再構築-:reconstruct:~\n\
 再構築:reconstruction:~\n\
 構造:structure:~\n\
-標準:standard::~\n\
-権利:right:~\n\
-権限:authority::~\n\
-権限付与-:authorize::~\n\
-権限付与され:authorize され::権限が付与され\n\
-権限付与:authorization::~\n\
-権限的:authoritative::~\n\
-認証-:authenticate::~\n\
-	認証-済み:authenticated\n\
-認証:authentication::~\n\
-認証用の:authentication::~\n\
-策定者:author:~\n\
-著者:author:~\n\
-機会:chance:~\n\
-	~~機会:opportunity:~\n\
 機器:device:~:::デバイス\n\
-機密性:confidentiality::~\n\
-機密的:confidential::~\n\
-	機能:function:~\n\
-機能性:functionality:~\n\
-欠如:lack:~\n\
-欠如する:lack する:欠く\n\
-欠陥:flaw:~\n\
 次元:dimension:~\n\
-正しく:correct に:~\n\
-不正:incorrect:~\n\
-正しい:correct な:~\n\
-正準:canonical::~\n\
-正準化:canonicalization::~\n\
-正確0:accurate:正確\n\
-正確:exact:~\n\
-正規化-:normalize::~\n\
-正規化:normalization::~\n\
-正誤表:errata::~\n\
-歴史:history:~\n\
-歴史的:historical:~\n\
 段階:stage:~\n\
 比較-:compare::~\n\
 比較:comparison::~\n\
-汚染-:poison::~\n\
-汚染:poisoning::~\n\
-決定-:determine:~\n\
-決定:determination:~\n\
-決断:decision:~\n\
-	注記-:note:~\n\
-	注記:Note:~\n\
 活動:activity::~\n\
 消去-:erase:~\n\
 消費-:consume:~\n\
 消費量:consumption:~\n\
-深刻:serious:~\n\
-混同-:confuse:~\n\
-混同:confusion:~\n\
 準備-:prepare:~\n\
-準拠-:comply::~\n\
-準拠:compliant::~\n\
 無視-:ignore::~\n\
 無限:infinite:~\n\
-版:edition:~\n\
-	特に，:particularly:~\n\
-	特に:specifically:~\n\
-特別:special:~\n\
-特化-:specialize:~\n\
-特定0の:particular:ある特定の\n\
-特定の:specific な:~\n\
-特性:characteristic:~\n\
-	特徴:characteristic:~\n\
-特有:specific:~\n\
-特有の:specific な:~\n\
-特色機能:feature::~::フィーチャ\n\
-特権拡大:privilege escalation:~\n\
 状態:state::~::ステート\n\
 状態変更:state-changing::~::ステート変更\n\
 stateless::::ステートレス\n\
@@ -2054,25 +2279,12 @@ stateless::::ステートレス\n\
 状態code:status code::状態° code:状態°コード:ステータスコード\n\
 状態行:status line::状態°行::ステータス行\n\
 	状態指示〜／状態識別〜\n\
-位置付け:status:~\n\
-状況:situation:~\n\
-状況下:circumstance:~\n\
-現在の:current:~\n\
-	現在，:currently:~\n\
-理論:theory:~\n\
 環境:environment:~\n\
 環境設定-:configure::~\n\
 環境設定:configuration::~\n\
 生の:raw:~\n\
-生成-:generate::~\n\
-生成:generation::~\n\
-生成元:origin::~::オリジン\n\
-生成規則:production::~\n\
 生産-:produce:~\n\
-各種用語:terminology:~\n\
-用語:term:~\n\
 画像:image:~\n\
-番号:number:~\n\
 疑似:pseudo:~\n\
 発行-:publish:~\n\
 発行:publication:~\n\
@@ -2082,26 +2294,11 @@ stateless::::ステートレス\n\
 	登録-済み:registered\n\
 登録:registration::~\n\
 登記簿:registry:::レジストリ\n\
-盗聴:theft:~\n\
 監視-:monitor::~::モニタ\n\
 監視器:monitor::~::モニタ\n\
-目標:goal:~\n\
-目的:purpose:~\n\
 盲目的:blind::~\n\
-近過去:recent::~\n\
-近過去の:recent な::~\n\
-相互運用-:interoperate::~\n\
-	相互運用-可能:interoperable::~\n\
-相互運用上の:interoperability::~\n\
-相互運用性:interoperability::~\n\
-相似的:analogous:~\n\
 相対:relative::~\n\
 相対的:relative::~\n\
-相当:substantial:~\n\
-	相当するもの:counterpart:~\n\
-相応しい:suitable な:~\n\
-相応しく:suitable で:~\n\
-	unsuitable:~\n\
 相違-:differ:~\n\
 相違化-:differentiate:区別\n\
 相違す:differ す:異な\n\
@@ -2109,53 +2306,20 @@ stateless::::ステートレス\n\
 相違点:differences:~\n\
 相違:differences:~\n\
 	異なる:different:~\n\
-相関-:correlate:~\n\
-相関:correlation:~\n\
 省略:omit:~\n\
-任意選択の:optional::~::オプションの\n\
-省略可:optional::~::オプション\n\
-省略可能:optional::~::オプションの\n\
 瞬間:moment:~\n\
 知覚-:perceive:~\n\
-知識:knowledge:~\n\
 	短い:short:~\n\
 短縮-:shorten:~\n\
 破壊-:destroy::~\n\
 破棄-:discard::~\n\
-確保-:ensure:~\n\
 確立-:establish::~\n\
 確立:establishing::~\n\
-示唆-:suggest:~\n\
-禁止-:forbid::~\n\
-禁制-:prohibit::~\n\
 移動-:move:~\n\
-移行:transition::~\n\
-稀:rare:~\n\
 種類:kind:~\n\
 稼働-:run:~\n\
 稼働中の:running:~\n\
-空:empty:~\n\
-空行:blank line::~\n\
-空白:whitespace::~\n\
 空間:space:~\n\
-端点:endpoint::~::エンドポイント\n\
-端点間:end-to-end::~::エンドツーエンド\n\
-隣点間:hop-by-hop::~::ホップバイホップ\n\
-競合-:conflict:~\n\
-競合:conflict:~\n\
-復号-:decode::~::デコード\n\
-復号:decoding::~::デコーディング\n\
-暗号化-:encrypt::~\n\
-暗号化:encryption::~\n\
-暗号用の:cryptographic::~\n\
-符号化-:encode::~::エンコード\n\
-符号化:encoding::~::エンコーディング\n\
-	符号化-済み:encoded\n\
-符号化方式:encoding::~::エンコーディング\n\
-符号変換:transcoding::~::トランスコーディング\n\
-符号変換器:transcoder::~::トランスコーダ\n\
-符号法:coding::~::コーディング\n\
-第三者主体:third-party::~::サードパーティ\n\
 等価:equivalent:~\n\
 算出-:compute:~\n\
 算術的:arithmetic:~\n\
@@ -2163,33 +2327,18 @@ stateless::::ステートレス\n\
 管理-:manage:~\n\
 管理:management:~\n\
 変更管理者:change controller:~\n\
-節:section:~\n\
+組織:organization:~\n\
 節約-:save:~\n\
 範囲:range::~\n\
 範囲単位:range unit::~\n\
 部分範囲:subrange::~\n\
-簡潔:compact:~\n\
-精確:precise:~\n\
-精緻化-:refine:~\n\
-精緻化:refinement:~\n\
-素片:fragment::~::フラグメント\n\
 終了-:terminate:~\n\
 	終端-:terminate:~\n\
 終了:termination:~\n\
-終端:end:~\n\
-組織:organization:~\n\
-経路:path:~\n\
-経験:experience:~\n\
-経験則:heuristics::~::ヒューリスティックス\n\
-経験的:heuristic::~::ヒューリスティック\n\
 再結合-:recombine:~\n\
 結合-:combine:~\n\
 組合わせ:combination:組み合わせ\n\
 組合わさ:combine さ:組み合わさ\n\
-結果:result:~\n\
-結論:conclusion:~\n\
-統一的:uniform:~\n\
-統治-:govern:~\n\
 絶対:absolute::~\n\
 継承-:inherit:~\n\
 継承:inheritance:~\n\
@@ -2200,104 +2349,36 @@ stateless::::ステートレス\n\
 	維持し:retain し:~\n\
 保守-:maintain:~\n\
 保守:maintenance:~\n\
-網羅的:exhaustive:~\n\
-総集的:collective:~\n\
-緩めら:relax さ:~\n\
-緩める:relax する:~\n\
-軽減策:mitigation:~\n\
-軽減-:mitigate:~\n\
 縛られ:tie され:~\n\
-署名:signature:~\n\
-義務付けな:mandate しな:~\n\
-義務付ける:mandate する:~\n\
-義務付けて:mandate して:~\n\
-義務化:mandate:~\n\
-翻訳-:translate::~\n\
-転化-:translate::~\n\
-翻訳:translation::~\n\
-考慮-:consider:~\n\
-考慮点:consideration:~\n\
 背後:behind:~\n\
-能力:capability::~\n\
-脆弱:vulnerable::~\n\
-脆弱性:vulnerability::~\n\
 自動:automatic:~\n\
 自動化-:automate:~\n\
 自動化:automated:~\n\
 自動的:automatic:~\n\
-自由:free:~\n\
-	良い:good:~\n\
-英字:letter::~\n\
-英語:English:~\n\
-草案:draft::~\n\
-行0:line::行\n\
-行先:destination:~\n\
-衝突-:collide:~\n\
-衝突:collision:~\n\
 表出し:express:表し\n\
 表出され:express され:表され\n\
 表出する:express する:表す\n\
 表現-:represent::~\n\
 表現:representation::~\n\
 表示:display:~\n\
-表記法:notation:~\n\
-補助:help:~\n\
 複製:copy:~\n\
-複雑化-:complicate:~\n\
-要件:requirements:~\n\
-要求-:require:~\n\
-要約-:summarize:~\n\
 要素:element::~\n\
-規則:rule:~\n\
-規約:convention:~\n\
 視野:scope:~\n\
 観測-:observe:~\n\
 	観測-可能:observable:~\n\
-解決0:solve:解決\n\
-解決-:resolve::~\n\
-解決:resolution::~\n\
-解決策:solution:~\n\
-解釈-:interpret:~\n\
-解釈:interpretation:~\n\
-誤解釈:misinterpret:~\n\
 言語:language::~\n\
 計測:measure:~\n\
-記号:symbol:~\n\
 記憶-:remember:~\n\
 記録-:record:~\n\
 設定-:set:~\n\
 設定:setting:~\n\
-設置-:place:~\n\
-設置しな:place しな:課さな\n\
-設置する:place する:課す\n\
-	課す:impose する:~\n\
-設計:design::~::デザイン\n\
-許可-:permit:~\n\
-許容-:allow:~\n\
-不許可に:disallow:~\n\
-	許容されない:disallowed:~\n\
-許諾:permission:~\n\
-診断:diagnostic:~\n\
 評価-:evaluate:~\n\
 評価:evaluation:~\n\
-	試-:attempt:~\n\
 試行-:try:~\n\
 再試行-:retry::~\n\
 再試行:retrying::~\n\
-試験:test::~::テスト\n\
-試験的:experimental:~\n\
-詳細:details:~\n\
-詳細な:detailed:~\n\
-承認-:acknowledge:~\n\
-謝辞:acknowledgement:~\n\
-認識-:recognize:~\n\
-未認識:unrecognized:認識できない\n\
 誘発-:trigger:~\n\
-誤解:mistake:~\n\
-説明-:explain:~\n\
-説明:explanation:~\n\
-課題:issue:~\n\
-調整:adjust:~\n\
+調整-:adjust:~\n\
 識別:identification::~\n\
 識別-:identify::~\n\
 	識別-法:identifying\n\
@@ -2310,12 +2391,7 @@ stateless::::ステートレス\n\
 負荷:load:~\n\
 過負荷:overload:~\n\
 	責を負う:responsible:~\n\
-責任主体:responsible party:~\n\
-責務:responsibility:~\n\
 資格証:credentials::資格証明情報::クレデンシャル\n\
-資源:resource::~:リソース\n\
-資質:nature:~\n\
-性向:nature:~\n\
 起動-:initiate:~\n\
 起動させ:initiate し:~\n\
 超過-:exceed:~\n\
@@ -2323,25 +2399,10 @@ stateless::::ステートレス\n\
 追加-:add:~\n\
 追加:addition:~\n\
 追加の:additional:~\n\
-追跡:trace::~::トレース\n\
 透過性:transparency::~\n\
 透過的:transparent::~\n\
 逐語的:verbatim:~\n\
-通例的に:usual に:~\n\
-通例的には:usual に:~\n\
-通信-:communicate::~\n\
-通信:communication::~\n\
-通常:normal:~\n\
-通常の:normal な:~\n\
-通常は:normal では:~\n\
-	normally\n\
-通達-:signal:~\n\
-通達:signal:~\n\
-連絡-:contact:~\n\
-連絡:contact:~\n\
 連合-:federate:~\n\
-連結-:concatenate:~\n\
-連鎖:chain::~::チェイン\n\
 進捗:progress:~\n\
 進捗状況:progress:~\n\
 	遅い:slow な:~\n\
@@ -2355,23 +2416,7 @@ stateless::::ステートレス\n\
 過去:past:~\n\
 過度の:excessive な:~\n\
 過程:process:~\n\
-達成-:accomplish:~\n\
-違反-:violate:~\n\
-違反:violation:~\n\
-遠隔:remote::~::リモート\n\
-適合-:conform:~\n\
-適合:conformant:~\n\
-適合性:conformance:~\n\
-適度:reasonable:~\n\
-見合う:reasonable な:~\n\
-	理に適った:reasonable:~\n\
-適応的:adaptive:~\n\
-適時:timely:~\n\
-適正:proper:~\n\
 遭遇-:encounter:~\n\
-選好-:prefer:~\n\
-選好:preference:~\n\
-選好順:descending preference の order:選好度の高い順\n\
 選定-:select::~\n\
 選定用:selecting::~\n\
 選定:selection::~\n\
@@ -2385,59 +2430,25 @@ stateless::::ステートレス\n\
 配備-:deploy:~\n\
 配備:deployment:~\n\
 重み:weight::~\n\
-重複:duplicate:~\n\
-重要:important:~\n\
 量:amount:~\n\
 長さ:length:~\n\
 	長さゼロ:zero-length:~\n\
 開く:open する::~\n\
 開始-:start:~\n\
-開発-:develop:~\n\
-開発:development:~\n\
-開発者:developer:~\n\
-開示-:disclose:~\n\
-開示:disclosure:~\n\
-関係-:relate:~\n\
-	関係する:related:~\n\
-関係ない:unrelated:~\n\
-関係性:relationship:~\n\
-関心:interest:~\n\
 関数:function:~\n\
-関連する:relevant な:~\n\
 閲覧-:browse:~:::ブラウズ\n\
 閲覧:browsing:~:::ブラウジング\n\
-	防が:prevent し:~\n\
-	防ぐ:prevent する:~\n\
-防止-:prevent:~\n\
-防御策:defense:~\n\
-限度:extent:~\n\
-	除いて:except して:~\n\
-除外-:exclude:~\n\
 階層:hierarchy:~\n\
 階層的:hierarchical:~\n\
-隔離:isolate:~\n\
 隣接点:neighbor::~\n\
 集合:set:~\n\
-露に:reveal:~\n\
-露呈-:expose:~\n\
-公共:public:~\n\
-公開-:expose:~\n\
-非公式的:informal:~\n\
-非推奨:deprecated::~\n\
-非推奨に:deprecate::~\n\
 頁:page:ページ\n\
-順守-:obey:~\n\
 順序:order:~\n\
 領域:region:~\n\
 頻繁:frequent:~\n\
-類似した:similar な:~\n\
-類似する:similar である:~\n\
-類似的:similar:~\n\
-	~similarly::\n\
 類別:category:~\n\
 高度:advance:~\n\
 鮮度:freshness::~\n\
-所与の:given:与えられた\n\
 ';
 
 
@@ -2483,12 +2494,12 @@ stateless::::ステートレス\n\
 複数:more than one
 各:each
 ほぼ:almost
-何か:something
 多くの:many
 ほとんど／大部分の:most
 少しばかり:slightly
 最も:most
 多種多様な:variety
+様々な:variety
 何であれ:whichever
 自身:itself
 同じ:same
@@ -2500,7 +2511,9 @@ stateless::::ステートレス\n\
 〜を超えて:beyond
 数種の:several
 全体:entire
+何か:something
 一部の:some
+の一部:some of
 部分:part
 等々:etc
 1 つ以上は:at least one
@@ -2553,6 +2566,7 @@ vary
 保持-:held
 得られ／取得:obtain され
 remain
+所与の:given
 与え:give
 得る:obtain
 応える:meet
@@ -2577,10 +2591,13 @@ note
 示-:show
 
 	●
+何故なら:because
 とりわけ:especial
 違って、:Unlike
+〜に基づく:based
+べき:should
 意識-:be aware
-	~logをとる:~logging
+~logをとる:~logging
 場合によっては:possibly
 	高い:high
 言い換えれば、in other words
@@ -2593,7 +2610,7 @@ note
 則ってin accordance with／accord with／according to
 OS:operateing system
 例：:e.g.
-同様に:likewise
+同様に:likewise／:similarly
 思しきもの:supposedly:
 おそらく:perhaps
 しかしながら:however
