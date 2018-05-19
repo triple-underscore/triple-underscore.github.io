@@ -1338,7 +1338,6 @@ zero:::ゼロ\n\
 後方互換:backwards-compatible::~\n\
 交換:exchange:~\n\
 今後の:later:~\n\
-介入-:intervene:~\n\
 中間者:man-in-the-middle::~\n\
 仕方:way:~\n\
 仕様:spec:~\n\
@@ -1355,7 +1354,7 @@ zero:::ゼロ\n\
 遊休:idle:~\n\
 	遊休~中:idle\n\
 中継:intermediate::~\n\
-仲介の:interveneing:~\n\
+介在-:intervene:~\n\
 企業:corporate:~\n\
 伝送-:transmit::~\n\
 伝送:transmission::~\n\
@@ -1723,7 +1722,6 @@ referrer::::リファラ\n\
 層:layer::~\n\
 履歴:history::~\n\
 履行-:fulfill:~\n\
-巨大0:huge:巨大\n\
 巨大:large:~\n\
 帯域幅:bandwidth::~::バンド幅\n\
 帰結:consequence:~\n\
@@ -1731,6 +1729,7 @@ referrer::::リファラ\n\
 広範:wide:~\n\
 広範囲:extensive:~\n\
 廃用:obsolete::~\n\
+廃用に:obsolete::~\n\
 弱体化-:compromise:~\n\
 強化-:enhance:~\n\
 強要-:insist:~\n\
@@ -1740,7 +1739,6 @@ referrer::::リファラ\n\
 形式変換:transformation::~\n\
 形式:format::~::フォーマット\n\
 形成-:form:~\n\
-形成:form:~\n\
 影響:impact:~\n\
 影響-:affect:~\n\
 役割:role::~::ロール\n\
@@ -2184,8 +2182,8 @@ stateless::::ステートレス\n\
 経験:experience:~\n\
 経験則:heuristics::~::ヒューリスティックス\n\
 経験的:heuristic::~::ヒューリスティック\n\
+再結合-:recombine:~\n\
 結合-:combine:~\n\
-再結合:recomposition:~\n\
 組合わせ:combination:組み合わせ\n\
 組合わさ:combine さ:組み合わさ\n\
 結果:result:~\n\
