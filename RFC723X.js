@@ -1293,6 +1293,7 @@ architecture::::アーキテクチャ\n\
 別個の:distinct:~\n\
 利点:advantage:~\n\
 利用:use:~\n\
+利用-:use:~\n\
 用立てる:make use する:~\n\
 利用e:usage:利用\n\
 利用者:user::~::ユーザ\n\
@@ -2531,6 +2532,7 @@ stateless::::ステートレス\n\
 上:above
 通:through
 間:during
+時経過:over time
 
 	●動詞
 高める:increase させる
