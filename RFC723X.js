@@ -1217,6 +1217,7 @@ version::::バージョン\n\
 approach::::アプローチ\n\
 architecture::::アーキテクチャ\n\
 汎用:generic:~\n\
+汎用の:generic な:~\n\
 一般:general:~\n\
 一般的:general:~\n\
 一般用:general-purpose:~\n\
@@ -1349,7 +1350,6 @@ architecture::::アーキテクチャ\n\
 強化-:enhance:~\n\
 受容-:accept:~\n\
 	受容-可能:acceptable:~\n\
-受理:accept:~\n\
 古い:older:~\n\
 可用:available:~\n\
 可用性:availability:~\n\
@@ -1580,6 +1580,7 @@ architecture::::アーキテクチャ\n\
 要約-:summarize:~\n\
 規則:rule:~\n\
 規約:convention:~\n\
+表記規約:notational conventions:~\n\
 策定者:author:~\n\
 著者:author:~\n\
 機会:chance:~\n\
