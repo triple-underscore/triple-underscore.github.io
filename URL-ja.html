@@ -194,8 +194,8 @@ return text;
 ●●options
 
 spec_title:URL
-spec_date:2018-05-08
-trans_update:2018-05-08
+spec_date:2018-05-22
+trans_update:2018-05-24
 spec_status:LS
 original_url:https://url.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -428,6 +428,7 @@ byte.長さ:~INFRA#byte-sequence-length
 ~ASCII~tabや~ASCII改行文字:~INFRA#ascii-tab-or-newline
 ~C0制御文字:~INFRA#c0-control
 ~C0制御文字や~space:~INFRA#c0-control-or-space
+同型に復号する:~INFRA#isomorphic-decode
 空:~INFRA#list-is-empty
 	~EACH:~INFRA#list-iterate
 ~list:~INFRA#list
@@ -1022,7 +1023,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/url/commits">GitHub whatwg/url/commits</a>
-	<a href="https://url.spec.whatwg.org/commit-snapshots/acc2bf4a8e67fb13523f4ee35ff32be922eb9142/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://url.spec.whatwg.org/commit-snapshots/f0e4390bf882446445e944215524ff3877aac95a/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/urlstandard">@urlstandard</a>
 
 Tests:
@@ -6139,7 +6140,7 @@ Otherwise, append c to buffer.
 			<li>
 <p>
 ~IF［
-%~url は`特別$である
+%url は`特別$である
 ］：
 ◎
 If url is special, then:
@@ -6178,7 +6179,7 @@ If c is neither U+002F (/) nor U+005C (\), then decrease pointer by one.
 `C$V ~EQ ❝?
 ］
 ⇒＃
-%~url の`~query$url ~SET 空~文字列；
+%url の`~query$url ~SET 空~文字列；
 %state ~SET `~query$st
 ◎
 Otherwise, if state override is not given and c is U+003F (?), set url’s query to the empty string and state to query state.
@@ -6190,7 +6191,7 @@ Otherwise, if state override is not given and c is U+003F (?), set url’s query
 `C$V ~EQ ❝#
 ］
 ⇒＃
-%~url の`素片$url ~SET 空~文字列；
+%url の`素片$url ~SET 空~文字列；
 %state ~SET `素片$st
 ◎
 Otherwise, if state override is not given and c is U+0023 (#), set url’s fragment to the empty string and state to fragment state.
@@ -6514,20 +6515,6 @@ If c is not the EOF code point, UTF-8 percent encode c using the C0 control perc
 	<dd>
 		<ol>
 			<li>
-<p>
-~IF［
-`C$V ~EQ `EOF$i
-］~OR［［
-%上書state ~EQ ε
-］~AND［
-`C$V ~EQ ❝#
-］］：
-◎
-If c is the EOF code point, or state override is not given and c is U+0023 (#), then:
-</p>
-
-				<ol>
-					<li>
 ~IF［
 %url は`特別$でない
 ］~OR［
@@ -6536,68 +6523,31 @@ If c is the EOF code point, or state override is not given and c is U+0023 (#), 
 ⇒
 %符号化方式 ~SET `~UTF-8$
 ◎
-If url is not special or url’s scheme is either "ws" or "wss", set encoding to UTF-8.
-</li>
-					<li>
-%~buffer ~SET `符号化方式を用いて符号化する$( %符号化方式, %~buffer )
+If encoding is not UTF-8 and one of the following is true
+• url is not special
+• url’s scheme is "ws" or "wss"
 ◎
-Set buffer to the result of encoding buffer using encoding.
+then set encoding to UTF-8.
 </li>
-					<li>
-<p>
-%~buffer 内の~EACH ( %~byte ) に対し：
-◎
-For each byte in buffer:
-</p>
-						<ol>
-							<li>
+			<li>
 ~IF［
-%~byte ~IN {
-`00^X 〜 `20^X,
-❛",
-❛#,
-`3C^X `&lt;^smb,
-`3E^X `&gt;^smb,
-❛~ 〜 `FF^X
-}
-］
-⇒
-%url の`~query$url ~APPEND `~byteを文字列に~percent-符号化する$( %~byte )
-◎
-If byte is less than 0x21 (!), greater than 0x7E (~), or is 0x22 ("), 0x23 (#), 0x3C (&lt;), or 0x3E (&gt;), append byte, percent encoded, to url’s query.
-</li>
-							<li>
-~ELSE
-⇒
-%url の`~query$url ~APPEND %~byte を値とする~cp
-◎
-Otherwise, append a code point whose value is byte to url’s query.
-</li>
-						</ol>
-					</li>
-					<li>
-%~buffer ~SET 空~文字列
-◎
-Set buffer to the empty string.
-</li>
-					<li>
-~IF［
+%上書state ~EQ ε
+］~AND［
 `C$V ~EQ ❝#
 ］
 ⇒＃
 %url の`素片$url ~SET 空~文字列；
 %state ~SET `素片$st
 ◎
-If c is U+0023 (#), then set url’s fragment to the empty string and state to fragment state.
+If state override is not given and c is U+0023 (#), then set url’s fragment to the empty string and state to fragment state.
 </li>
-				</ol>
-			</li>
 			<li>
 <p>
-~ELSE
-：
+~ELIF［
+`C$V ~NEQ `EOF$i
+］：
 ◎
-Otherwise:
+Otherwise, if c is not the EOF code point:
 </p>
 				<ol>
 					<li>
@@ -6608,10 +6558,78 @@ If c is not a URL code point and not U+0025 (%), validation error.
 If c is U+0025 (%) and remaining does not start with two ASCII hex digits, validation error.
 </li>
 					<li>
-%~buffer ~APPEND `C$V
+%~byte列 ~LET `符号化方式を用いて符号化する$( `C$V, %符号化方式 )
 ◎
-Append c to buffer.
+Let bytes be the result of encoding c using encoding.
 </li>
+					<li>
+<p>
+~IF［
+%~byte列 の［
+1 個目, 2 個目, 最後
+］の~byte ~EQ 順に［
+`26^X `&amp;^smb, ❛#, ❛;
+］
+⇒
+%url の`~query$urlに次の結果を付加する
+⇒
+`同型に復号する$( 次を順に連結した結果 )
+⇒＃
+`%26%23^bl,
+%~byte列 から 1 個目, 2 個目, 最後の~byteを除去した結果,
+`%3B^bl
+◎
+If bytes starts with `&amp;#` and ends with 0x3B (;), then:
+• Replace `&amp;#` at the start of bytes with `%26%23`.
+• Replace 0x3B (;) at the end of bytes with `%3B`.
+• Append bytes, isomorphic decoded, to url’s query.
+</p>
+
+<p class="note">注記：
+これは、`~UTF-8$以外の`符号化方式$を用いて<a href="~ENCODING#encode">~cpを符号化する</a>ときに起こり得る。
+◎
+This can happen when encoding code points using a non-UTF-8 encoding.
+</p>
+					</li>
+					<li>
+<p>
+~ELSE
+⇒
+%~byte列 内の~EACH( %~byte ) に対し：
+◎
+Otherwise, for each byte in bytes:
+</p>
+
+						<ol>
+							<li>
+~IF［
+%~byte ~LT ❛!
+］~OR［
+%~byte ~GT ❛~
+］~OR［
+%~byte ~IN { ❛", ❛#, `3C^X `&lt;^smb, `3E^X `&gt;^smb }
+］
+⇒
+%url の`~query$urlに次の結果を付加する
+⇒
+`~byteを文字列に~percent-符号化する$( %~byte )
+◎
+If one of the following is true
+• byte is less than 0x21 (!)
+• byte is greater than 0x7E (~)
+• byte is 0x22 ("), 0x23 (#), 0x3C (&lt;), or 0x3E (&gt;)
+◎
+then append byte, percent encoded, to url’s query.
+</li>
+							<li>
+~ELSE
+⇒
+%url の`~query$urlに %~byte を値とする~cpを付加する
+◎
+Otherwise, append a code point whose value is byte to url’s query.
+</li>
+						</ol>
+					</li>
 				</ol>
 			</li>
 		</ol>
@@ -6839,7 +6857,7 @@ If url’s cannot-be-a-base-URL flag is set, append url’s path[0] to output.
 	<li>
 ~ELSE
 ⇒
-%~url の`~path$url内の~EACH ( %文字列 ) に対し
+%url の`~path$url内の~EACH ( %文字列 ) に対し
 ⇒
 %出力 ~APPEND ❝/
 ~APPEND %文字列
