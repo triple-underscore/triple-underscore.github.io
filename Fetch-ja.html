@@ -240,8 +240,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2018-05-24
-trans_update:2018-05-25
+spec_date:2018-05-28
+trans_update:2018-05-29
 	source_checked:180517
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -696,6 +696,8 @@ rq.生成元:#concept-request-origin
 rq.~keepalive~flag:#request-keepalive-flag
 rq.~done~flag:#done-flag
 rq.~reload~navi~flag:#concept-request-reload-navigation-flag
+rq.~tainted生成元~flag:#concept-request-tainted-origin
+要請の生成元を直列化する:#serializing-a-request-origin
 要請を~cloneする:#concept-request-clone
 
 ~scriptに類する:#request-destination-script-like
@@ -783,7 +785,7 @@ i.中止~flag:#concept-fetch-terminate
 ~methodも合致している~cache~entry:#concept-cache-match-method
 ~header名も合致している~cache~entry:#concept-cache-match-header
 
-cc.生成元:#concept-cache-origin
+cc.直列化-済み生成元:#concept-cache-origin
 cc.~url:#concept-cache-url
 cc.資格証の有無:#concept-cache-credentials
 cc.寿命:#concept-cache-max-age
@@ -921,6 +923,7 @@ Bd.~dataを梱包する:#concept-body-package-data
 位置~変数:~INFRA#string-position-variable
 符号位置~並びを収集する:~INFRA#collect-a-sequence-of-code-points
 ~forgiving-base64復号する:~INFRA#forgiving-base64-decode
+同型に符号化する:~INFRA#isomorphic-encode
 同型に復号する:~INFRA#isomorphic-decode
 前後の~ASCII空白~列を剥ぐ:~INFRA#strip-leading-and-trailing-ascii-whitespace
 構造体:~INFRA#struct
@@ -1362,6 +1365,7 @@ CSP:
 CORS:
 CORB:
 tainting:
+tainted:
 nonce::::ナンス
 session::::セッション
 intranet::::イントラネット
@@ -2194,7 +2198,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/78a8dcd9de92a34e1f16e9728784b77a033a654d/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/efe088f656a79af08d98d904e4c5550dc3edc403/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -4102,9 +4106,8 @@ A request has an associated origin, which is "client" or an origin. Unless state
 	<dd class="note">注記：
 `client^l は、`~fetching$の間に`生成元$に変化する。
 この値は、各種~標準が，`要請$の`生成元$rqを設定せずに~fetchingを簡便に利用できるようにするためにある。
-`要請$の`生成元$rqも~redirectの間に変化し得る
 ◎
-"client" is changed to an origin during fetching. It provides a convenient way for standards to not have to set request’s origin. Request’s origin can be changed during redirects too.
+"client" is changed to an origin during fetching. It provides a convenient way for standards to not have to set request’s origin.
 </dd>
 
 	<dt>`~referrer@rq（ `client^l ）</dt>
@@ -4492,6 +4495,24 @@ A request has associated parser metadata which is the empty string, "parser-inse
 A request’s cryptographic nonce metadata and parser metadata are generally populated from attributes and flags on the HTML element responsible for creating a request. They are used by various algorithms in Content Security Policy to determine whether requests or responses are to be blocked in a given context. [CSP]
 </dd>
 
+	<dt>`~reload~navi~flag@rq（ ~OFF ）</dt>
+	<dd>
+~flag値。
+◎
+A request has an associated reload-navigation flag. Unless stated otherwise, it is unset.
+</dd>
+	<dd class="note">注記：
+この~flagは、~HTMLの~navigate~algoにより排他的に利用される。
+`HTML$r
+◎
+This flag is for exclusive use by HTML’s navigate algorithm. [HTML]
+</dd>
+	<dt>`~tainted生成元~flag@rq（ ~OFF ）</dt>
+	<dd>
+~flag値。
+◎
+A request has an associated tainted origin flag. Unless stated otherwise, it is unset.
+</dd>
 
 	<dt>`~url~list@rq（ « `要請$の`~url$rqの複製 » ）</dt>
 	<dd>
@@ -4536,25 +4557,13 @@ A request has an associated response tainting, which is "basic", "cors", or "opa
 ◎
 A request has an associated done flag. Unless stated otherwise, it is unset.
 </dd>
-
-	<dt>`~reload~navi~flag@rq（ ~OFF ）</dt>
-	<dd>
-~flag値。
-◎
-A request has an associated reload-navigation flag. Unless stated otherwise, it is unset.
-</dd>
-	<dd class="note">注記：
-この~flagは、~HTMLの~navigate~algoにより排他的に利用される。
-`HTML$r
-◎
-This flag is for exclusive use by HTML’s navigate algorithm. [HTML]
-</dd>
 </dl>
 
 <hr>
 
 <p class="note">注記：
 `要請$の［
+`~tainted生成元~flag$rq,
 `~url~list$rq,
 `現在の~url$rq,
 `~redirect数$rq,
@@ -4562,7 +4571,7 @@ This flag is for exclusive use by HTML’s navigate algorithm. [HTML]
 `~done~flag$rq
 ］は，`~fetch$ ~algoの内部状態管理に利用される。
 ◎
-A request’s url list, current url, redirect count, response tainting, and done flag are used as bookkeeping details by the fetch algorithm.
+A request’s tainted origin flag, url list, current url, redirect count, response tainting, and done flag are used as bookkeeping details by the fetch algorithm.
 </p>
 
 <hr>
@@ -4635,6 +4644,36 @@ A navigation request is a request whose destination is "document".
 ◎
 See handle fetch for usage of these terms. [SW]
 </p>
+
+<hr>
+
+<p class="algo-head">
+`要請の生成元を直列化する@
+ときは、所与の
+( `要請$ %要請 )
+に対し，次を走らす：
+◎
+Serializing a request origin, given a request request, is to run these steps:
+</p>
+<ol>
+	<li>
+~IF［
+%要請 の`~tainted生成元~flag$rq ~EQ ~ON
+］
+⇒
+~RET `null^bl
+◎
+If request’s tainted origin flag is set, then return `null`.
+</li>
+	<li>
+~RET
+`同型に符号化する$( `生成元を直列化する$( %要請 の`生成元$rq ) )
+◎
+Return request’s origin, serialized and isomorphic encoded.
+</li>
+</ol>
+
+<hr>
 
 <p class="algo-head">
 `要請を~cloneする@
@@ -8981,15 +9020,17 @@ Increase request’s redirect count by one.
 ~IF［
 %要請 の`~mode$rq ~EQ `cors^l
 ］~AND［
+%所在 は`資格証を含む$url
+］~AND［［
+%要請 の`~tainted生成元~flag$rq ~EQ ~ON
+］~OR［
 ( %要請 の`生成元$rq, %所在 の`生成元$url )
 は，`同一生成元$<em>でない</em>
-］~AND［
-%所在 は`資格証を含む$url
-］
+］］
 ⇒
 ~RET `~network~error$
 ◎
-If request’s mode is "cors", request’s origin is not same origin with actualResponse’s location URL’s origin, and actualResponse’s location URL includes credentials, then return a network error.
+If request’s mode is "cors", actualResponse’s location URL includes credentials, and either request’s tainted origin flag is set or request’s origin is not same origin with actualResponse’s location URL’s origin, then return a network error.
 </li>
 	<li>
 <p>
@@ -9025,15 +9066,16 @@ If actualResponse’s status is not 303, request’s body is non-null, and reque
 </li>
 	<li>
 ~IF［
-%~CORS~flag ~EQ ~ON
-］~AND［
 ( %所在 の`生成元$url, %要請 の`現在の~url$rqの`生成元$rq )
-は，`同一生成元$<em>でない</em>
+は，`同一生成元$でない
+］~AND［
+( %要請 の`生成元$url, %要請 の`現在の~url$rqの`生成元$rq )
+は，`同一生成元$でない
 ］
 ⇒
-%要請 の`生成元$rq ~SET 一意かつ`不透明な生成元$
+%要請 の`~tainted生成元~flag$rq ~SET ~ON
 ◎
-If CORS flag is set and actualResponse’s location URL’s origin is not same origin with request’s current url’s origin, then set request’s origin to a unique opaque origin.
+If actualResponse’s location URL’s origin is not same origin with request’s current url’s origin and request’s origin is not same origin with request’s current url’s origin, then set request’s tainted origin flag.
 </li>
 	<li>
 ~IF［［
@@ -9395,12 +9437,10 @@ If httpRequest’s referrer is a URL, then append `Referer`/httpRequest’s refe
 ］
 ⇒
 %~http要請 の`~header~list$rqに`~headerを付加する$(
-`Origin$h / 次の結果
+`Origin$h / `要請の生成元を直列化する$( %~http要請 )
 )
-⇒
-`~UTF-8符号化する$( `生成元を直列化する$( %~http要請 の`生成元$rq ) )
 ◎
-If the CORS flag is set, httpRequest’s method is neither `GET` nor `HEAD`, or httpRequest’s mode is "websocket", then append `Origin`/httpRequest’s origin, serialized and UTF-8 encoded, to httpRequest’s header list.
+If the CORS flag is set, httpRequest’s method is neither `GET` nor `HEAD`, or httpRequest’s mode is "websocket", then append `Origin`/the result of serializing a request origin with httpRequest, to httpRequest’s header list.
 </li>
 			<li>
 ~IF［
@@ -10774,9 +10814,10 @@ To perform a CORS-preflight fetch using request, run these steps:
 `行先$rq ~SET %要請 の`行先$rq,
 `生成元$rq ~SET %要請 の`生成元$rq,
 `~referrer$rq ~SET %要請 の`~referrer$rq,
-`~referrer施策$rq ~SET %要請 の`~referrer施策$rq
+`~referrer施策$rq ~SET %要請 の`~referrer施策$rq,
+`~tainted生成元~flag$rq ~SET %要請 の`~tainted生成元~flag$rq
 ◎
-Let preflight be a new request whose method is `OPTIONS`, url is request’s current url, initiator is request’s initiator, destination is request’s destination, origin is request’s origin, referrer is request’s referrer, and referrer policy is request’s referrer policy.
+Let preflight be a new request whose method is `OPTIONS`, url is request’s current url, initiator is request’s initiator, destination is request’s destination, origin is request’s origin, referrer is request’s referrer, referrer policy is request’s referrer policy, and tainted origin flag is request’s tainted origin flag.
 </p>
 
 <p class="note">注記：
@@ -11074,19 +11115,17 @@ Otherwise, return a network error.
 <h3 title="CORS-preflight cache">4.8. ~CORS予行~cache</h3>
 
 
+<div class="p">
 <p>
 `~CORS予行~cache@
 は，いくつかの~entryからなり、その各~entryは，次の~fieldを有するものとして与えられる：
-◎
-A CORS-preflight cache consists of a collection of entries where each entry has these fields:
 </p>
 
-<div>
 
 <dl class="def-list">
-	<dt>`生成元@cc</dt>
+	<dt>`直列化-済み生成元@cc</dt>
 	<dd>
-`生成元$。
+`~byte列$。
 </dd>
 
 	<dt>`~url@cc</dt>
@@ -11125,17 +11164,13 @@ A CORS-preflight cache consists of a collection of entries where each entry has 
 
 
 ◎
-origin (an origin)
-◎
-url (a URL)
-◎
-max-age (a number of seconds)
-◎
-credentials (a boolean)
-◎
-method (null, `*`, or a method)
-◎
-header name (null, `*`, or a header name)
+A CORS-preflight cache consists of a collection of entries where each entry has these fields:
+• serialized origin (a byte sequence)
+• url (a URL)
+• max-age (a number of seconds)
+• credentials (a boolean)
+• method (null, `*`, or a method)
+• header name (null, `*`, or a header name) 
 </div>
 
 <p class="trans-note">【
@@ -11156,7 +11191,7 @@ Entries must be removed after the seconds specified in the max-age field have pa
 ( %要請, %寿命, %~method, %~header名 )
 に対し，次のように設定された~entryを`~CORS予行~cache$内に作成する
 ⇒＃
-`生成元$cc ~SET %要請 の`生成元$rq,
+`直列化-済み生成元$cc ~SET `要請の生成元を直列化する$( %要請 ),
 `~url$cc ~SET %要請 の`現在の~url$rq,
 `寿命$cc ~SET %寿命,
 `資格証の有無$cc ~SET ［%要請 の`資格証~mode$rq ~EQ `include^l ならば `有り^i ／ ~ELSE_ `無し^i ］,
@@ -11165,8 +11200,8 @@ Entries must be removed after the seconds specified in the max-age field have pa
 ◎
 To create a new entry in the CORS-preflight cache, given request, max-age, method, and headerName, do so as follows:
 ◎
-origin
-• request’s origin
+serialized origin 
+• The result of serializing a request origin with request 
 url
 • request’s current url
 max-age
@@ -11188,12 +11223,12 @@ header name
 `~CORS予行~cache$から，次を満たす~entryたちを除去する
 ⇒
 ［
-~entryの`生成元$cc ~EQ %要請 の`生成元$rq
+~entryの`直列化-済み生成元$cc ~EQ `要請の生成元を直列化する$( %要請 )
 ］~AND［
 ~entryの`~url$cc ~EQ %要請 の`現在の~url$rq
 ］
 ◎
-To clear cache entries, given a request, remove any entries in the CORS-preflight cache whose origin is request’s origin and whose url is request’s current url.
+To clear cache entries, given a request, remove any entries in the CORS-preflight cache whose serialized origin is the result of serializing a request origin with request and whose url is request’s current url.
 </p>
 
 
@@ -11207,8 +11242,10 @@ There is a cache match for request if＼
 
 <ul >
 	<li>
-`生成元$cc ~EQ %要請 の`生成元$rq
+`直列化-済み生成元$cc ~EQ `要請の生成元を直列化する$( %要請 )
 ◎
+serialized origin is the result of serializing a request origin with request,
+
 origin is request’s origin,＼
 </li>
 	<li>
@@ -11229,7 +11266,7 @@ url is request’s current url,＼
 ◎
 and one of
 • credentials is true
-• credentials is false and request’s credentials mode is not "include"
+• credentials is false and request’s credentials mode is not "include".
 is true.
 </li>
 </ul>
@@ -11361,12 +11398,12 @@ If request’s credentials mode is not "include" and origin is `*`, return succe
 </li>
 	<li>
 ~IF ［
-`~UTF-8符号化する$( `生成元を直列化する$( %要請 の`生成元$rq ) ) ~NEQ %生成元
+`要請の生成元を直列化する$( %要請 ) ~NEQ %生成元
 ］
 ⇒
 ~RET `失敗^i
 ◎
-If request’s origin, serialized and UTF-8 encoded, is not origin, return failure.
+If the result of serializing a request origin with request is not origin, then return failure.
 </li>
 	<li>
 ~IF［
@@ -15678,6 +15715,7 @@ Clement Pellerin,
 Collin Jackson,
 Daniel Robertson,
 Daniel Veditz,
+David Benjamin,
 David Håsäther,
 David Orchard,
 Dean Jackson,
