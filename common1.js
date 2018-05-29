@@ -1666,6 +1666,9 @@ CSSPAGE3=編            ~CSSWG/css-page/\n\
 CSSPAGE3=・            ~CSSWG/css-page-3/\n\
 CSSPOSITION=編        ~CSSWG/css-position/\n\
 CSSPOSITION=版        ~TR/css3-positioning/\n\
+CSSRUBY1=主          ~/css-ruby-ja.html\n\
+CSSRUBY1=版          ~TR/css-ruby-1/\n\
+CSSRUBY1=編          ~CSSWG/css-ruby-1/\n\
 CSSSHAPES1=主          ~/css-shapes-ja.html\n\
 CSSSHAPES1=版          ~TR/css-shapes-1/\n\
 CSSSHAPES1=編          ~CSSWG/css-shapes-1/\n\
@@ -2026,6 +2029,8 @@ CSS3FONT:CSS3FONTS\n\
 CSSPAGE:CSSPAGE3\n\
 CSS3PAGE:CSSPAGE3\n\
 CSSSHAPES:CSSSHAPES1\n\
+CSSRUBY:CSSRUBY1\n\
+CSS3RUBY:CSSRUBY1\n\
 CSSTEXT3:CSS3TEXT\n\
 CSSTEXT:CSS3TEXT\n\
 CSSTIMING1:CSSTIMING\n\

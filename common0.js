@@ -1051,6 +1051,7 @@ CSSOVERFLOW:https://drafts.csswg.org/css-overflow-4/\n\
 CSSOVERFLOW3:css-overflow3-ja.html\n\
 CSSPAGE:css-page-ja.html\n\
 CSSPOS:https://drafts.csswg.org/css-position-3/\n\
+CSSRUBY:css-ruby-ja.html\n\
 CSSREGION:https://drafts.csswg.org/css-regions-1/\n\
 SELECTORS4:selectors4-ja.html\n\
 CSSPSEUDO:css-pseudo-ja.html\n\
