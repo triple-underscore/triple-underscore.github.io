@@ -241,7 +241,7 @@ return (
 
 spec_title:Fetch
 spec_date:2018-05-29
-trans_update:2018-05-29
+trans_update:2018-05-30
 	source_checked:180517
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -308,6 +308,7 @@ h.Last-Modified:~7232#section-2.2
 h.Location:~7231#section-7.1.2
 h.Pragma:~7234#section-5.4
 h.Proxy-Authenticate:~7235#section-4.3
+h.Range:~7233#section-3.1
 h.Referer:~7231#section-5.5.2
 h.TE:~7230#section-4.3
 h.Trailer:~7230#section-4.4
@@ -346,7 +347,6 @@ Strict-Transport-Security
 	h.MIME-Version:~7231#appendix-A.1
 	h.Max-Forwards:~7231#section-5.1.2
 	h.Proxy-Authorization:~7235#section-4.4
-	h.Range:~7233#section-3.1
 	h.Retry-After:~7231#section-7.1.3
 	h.Server:~7231#section-7.4.2
 	h.Warning:~7234#section-5.5
@@ -481,6 +481,7 @@ I.HeadersInit:#typedefdef-headersinit
 	m.integrity:#dom-request-integrity
 	m.keepalive:#dom-request-keepalive
 	m.isReloadNavigation:#dom-request-isreloadnavigation
+	m.isHistoryNavigation:#dom-request-ishistorynavigation
 	m.signal:#dom-request-signal
 	m.clone:#dom-request-clone
 
@@ -635,6 +636,7 @@ hd.結合-済みの値:#concept-header-value-combined
 禁止~header名:#forbidden-header-name
 禁止~応答~header名:#forbidden-response-header-name
 ~CORS安全な応答~header名:#cors-safelisted-response-header-name
+特権的~no-cors要請~header名:#privileged-no-cors-request-header-name
 
 既定の User-Agent 値:#default-user-agent-value
 	●~method
@@ -696,12 +698,14 @@ rq.生成元:#concept-request-origin
 rq.~keepalive~flag:#request-keepalive-flag
 rq.~done~flag:#done-flag
 rq.~reload~navi~flag:#concept-request-reload-navigation-flag
+rq.履歴~navi~flag:#concept-request-history-navigation-flag
 rq.~tainted生成元~flag:#concept-request-tainted-origin
 要請の生成元を直列化する:#serializing-a-request-origin
 要請を~cloneする:#concept-request-clone
 
 ~scriptに類する:#request-destination-script-like
 要請~用の本体を伝送する:#concept-request-transmit-body
+範囲~headerを追加する:#concept-request-add-range-header
 
 ~sandboxed-storage-area-URLs~flag:#sandboxed-storage-area-urls-flag
 局所~URLのみ~flag:#local-urls-only-flag
@@ -727,6 +731,7 @@ rs.~cache状態:#concept-response-cache-state
 rs.~HTTPS状態:#concept-response-https-state
 rs.~CSP~list:#concept-response-csp-list
 rs.~CORSに公開される~header名~list:#concept-response-cors-exposed-header-name-list
+rs.範囲が要請された~flag:#concept-response-range-requested-flag
 rs.所在~URL:#concept-response-location-url
 応答を~cloneする:#concept-response-clone
 
@@ -743,7 +748,7 @@ fg.終了させる:#concept-fetch-group-terminate
 
 絞込み応答:#concept-filtered-response
 不透明redirect絞込み応答:#concept-filtered-response-opaque-redirect
-内的~応答:#concept-internal-response
+内部~応答:#concept-internal-response
 基本~絞込み応答:#concept-filtered-response-basic
 ~CORS絞込み応答:#concept-filtered-response-cors
 不透明な絞込み応答:#concept-filtered-response-opaque
@@ -811,6 +816,8 @@ cc.~method:#concept-cache-method
 ~fetchingは，不良~portに因り阻止されるべきか？:#block-bad-port
 
 	●他
+整数を直列化する:#serialize-an-integer
+
 行先の素:#concept-potential-destination
 行先に翻訳する:#concept-potential-destination-translate
 
@@ -875,6 +882,7 @@ Hl.~header~list:#concept-headers-header-list
 Hl.付加する:#concept-headers-append
 Hl.~guard:#concept-headers-guard
 Hl.埋める:#concept-headers-fill
+特権的~no-cors要請~headerを除去する:#concept-headers-remove-privileged-no-cors-request-headers
 
 Rq.要請:#concept-request-request
 Rq.~Headers:#request-headers
@@ -931,7 +939,6 @@ Bd.~dataを梱包する:#concept-body-package-data
 中止されたときは:~INFRA#if-aborted
 
 enc.~UTF-8:~ENCODING#utf-8
-~UTF-8復号器:~ENCODING#utf-8-decoder
 ~UTF-8符号化する:~ENCODING#utf-8-encode
 ~UTF-8復号する:~ENCODING#utf-8-decode
 
@@ -1126,15 +1133,12 @@ enqueue::::エンキュー
 文脈:context::~
 絞込み:filtered::絞り込み::フィルタ済み
 	はじく:filter out
-内的:internal::内部
-内部:internal:~
-
+内部:internal::~
 source::::ソース
 源:source::~::ソース
 status::::ステータス
 ok:
 web:
-現在の:current::~
 処理-:process::~
 処理:processing::~
 処理器:processor::~
@@ -1221,10 +1225,14 @@ token::::トークン
 位置:position:~
 変数:variable:~
 剥ぐ:strip する:~
+妥当:valid:~
+	妥当でない:invalid
+整数:integer:~
 	頭部:leading
 	尾部:trailing
 	-:end
 	順に連結-:prepend
+	10 進数:decimal number
 
 	●URL
 基底:base::~
@@ -1356,7 +1364,9 @@ trailer::::トレイラ
 追従-:follow:~
 	“最終”:final
 転送-:transfer:~
-
+履歴:history::~
+範囲:range::~
+	範囲~付き:ranged
 
 	●HTTPS／保安／認証／CSP／CORS／MIX
 Fetch:
@@ -1393,7 +1403,6 @@ inflight:::伝送中の
 予行:preflight::~::プリフライト
 	予行なしの:non-preflighted
 	CORS-preflight
-無毒化-:sanitize::~
 random::::ランダム
 hash::::ハッシュ
 弱い:weak:~
@@ -1428,7 +1437,7 @@ side-channel:side channel:::サイドチャネル
 攻撃者:attacker:~
 信用-:trust:~
 騙す:trick する:~
-深刻な:serious:~
+深刻:serious:~
 承認-:acknowledge:~
 悪用:exploits:~
 悪用-:exploit:~
@@ -1436,7 +1445,12 @@ side-channel:side channel:::サイドチャネル
 防御:defense:~
 隔離-:isolate:~
 	疑わしい:dubious
-
+no-cors:
+特権的:privileged::~
+	特権的でない:unprivileged
+無毒化-:sanitize::~
+	無毒化-:sanitise
+私的:private::~
 
 
 	●stream/js/IDL/promise/primitives
@@ -1548,6 +1562,8 @@ hook::::フック
 設定子:setter:~
 設定-:set:~
 	設定しておく:set up:~
+	~SET ~OFF:unset
+	~SET ~ON:set
 	end-of-stream:stream 終端
 member::::メンバ
 例外:exception:~
@@ -1588,7 +1604,6 @@ algo:algorithm:::アルゴリズム
 一貫した:consistent な:~
 	一貫性をとる／備える:consistent
 課題:issue:~
-仕様:spec:~
 目的:purpose:~
 標準:standard:~
 	標準~化-:standardize
@@ -1605,7 +1620,6 @@ algo:algorithm:::アルゴリズム
 不用意:accidental:~
 特定0の:particular:ある特定の
 	~~特有のもの:particulars
-特別:special:~
 可用:available:~
 仕組み:mechanism:~
 正確:exact:~
@@ -1631,6 +1645,7 @@ option::::オプション
 選択余地:options:選択の余地
 追加の:additional:~
 共通する:common な:~
+共通して:common に:~
 直に:direct に:~
 直接的:direct:~
 曖昧:vague:~
@@ -1649,7 +1664,7 @@ option::::オプション
 一般論:general:~
 代表的な:typical:~
 community::::コミュニティ
-歴史的な:historical:~
+歴史的:historical:~
 仕方:way:~
 旧来の:legacy:~
 遺物:artefact:~
@@ -1683,6 +1698,9 @@ community::::コミュニティ
 手動:manual:~
 	manually
 自動的:automatic:~
+論理的:logical:~
+伝統的:traditional:~
+多用途の:versatile な:~
 	すなわち:Namely,
 	しかしながら，:however
 	したがって:therefore
@@ -1693,7 +1711,7 @@ community::::コミュニティ
 	比較的:relatively
 	低~level:low-level
 	高~levelから見れば At a high level,
-	現時点では:currently
+	まだ／現時点では:currently
 	全般に渡り:Throughout
 	それなりに／~~相応に:fairly
 	世代ごとに:to the next.
@@ -1735,6 +1753,8 @@ community::::コミュニティ
 	例:example
 	例：:e.g.,
 	例えば:for example
+	-:a.k.a
+	[INFRA]:Infra
 
 	●仕様（動詞
 support::::サポート
@@ -1756,8 +1776,13 @@ opt-in::::オプトイン
 拡張:extension:~
 除外-:exclude:~
 結付けら:associate さ:結び付けら
+結付けて:associate して:結び付けて
 結付き:association:結び付き
 	結付きを断つ:disassociate する
+仕様:spec:~
+指定-:specify:~
+特別:special:~
+特化-:specialize:~
 決定-:determine:~
 決定:determination:~
 拘束-:constrain:~
@@ -1809,6 +1834,7 @@ opt-in::::オプトイン
 確保-:ensure:~
 決める:decide する:~
 組合わせ:combination:組み合わせ
+組合せる:combine する:組み合わせる
 検証0-:verify:検証
 適用-:apply:~
 制御:control:~
@@ -1817,7 +1843,6 @@ opt-in::::オプトイン
 観測-:observe:~
 	観測-可能にならないこと:non-observability
 	観測-可能:observable
-特化-:specialize:~
 最小化-:minimize:~
 解-:understand:~
 考慮-:consider:~
@@ -1835,6 +1860,7 @@ opt-in::::オプトイン
 望まな:wish しな:~
 述べる:describe する:~
 記述:description:~
+記述的:descriptive:~
 遭遇-:encounter:~
 予測-:predict:~
 	予測-可能:predictable
@@ -1857,10 +1883,19 @@ opt-in::::オプトイン
 保つ:keep する:~
 保って:keep して:~
 	し続け:kept
+bug::::バグ
+考査:review:~
+目指す:aim する:~
+helper:
+参照:reference:~
+参照-:reference:~
+	探-:seek
+	されたし:please
+	解く:solve する:~
 	見よ:see
 	壊れた:broken
 	統一化-:unified 
-	対処:deals with
+	対処-:deal with
 	取って代わる／置き換える:supplants
 	書き下ろされ:written down
 	助け:help
@@ -1909,6 +1944,7 @@ access::::アクセス
 変換-:convert:~
 作成-:create:~
 作成時の:creation:~
+	作成-時:creation
 更新:update:~
 格納-:store:~
 	格納-済み:stored
@@ -1932,6 +1968,7 @@ access::::アクセス
 拡充-:populate:~
 改変:modification:~
 改変-:modify:~
+	改変されてない:unmodified
 予約-:reserve:~
 	予約-済み:reserved
 配備-:deploy:~
@@ -1942,6 +1979,7 @@ access::::アクセス
 包含-:contain:~
 	~IN:contain
 実行:execution:~
+実行-:execute:~
 割振る:allocate する:割り振る
 割当てる:assign する:あてがう
 下層の:underlying:~
@@ -1951,6 +1989,9 @@ access::::アクセス
 出力:output:~
 進捗:progression:~
 漸進的:progressive:~
+維持-:retain:~
+保全-:preserve:~
+	表す:denote
 	外で残存:outlive
 	得-:obtain
 	-:mark
@@ -1982,12 +2023,13 @@ JSON:
 id:
 item::::アイテム
 forward::最新
+media::::メディア
 event::::イベント
 listener::::リスナ
 callback:
 architecture::::アーキテクチャ
 memory::::メモリ
-stylesheet::::スタイルシート
+stylesheet:style sheet:::スタイルシート
 level::::レベル
 pair::::ペア
 size::::サイズ
@@ -2031,6 +2073,7 @@ garbage::::ガーベジ
 達-:reach:~
 頁:page:::ページ
 
+	前後~頁への:a.k.a. back-foward navigation
 	〜:range
 	~OFF:unset
 	~~構成-:structure
@@ -2043,13 +2086,22 @@ garbage::::ガーベジ
 
 	~CORSなし要請:noCorsResponse
 	~CORBで無毒化した要請:corbSanitizedResponse
+	内部~応答:internalResponse
+	範囲~値:rangeValue
+	~header名:headerName
+	~http要請:httpRequest
+	init:init
 
 	●指示語
 元の:original:~
+現在の:current::~
 	節:section
 	常に:always
 	以前の:previous
+	以前に:previously
 	後に:subsequently
+	後で:later
+	過去の:earlier
 	いくつかの:several
 	これらの:these
 	この:this
@@ -2084,12 +2136,25 @@ garbage::::ガーベジ
 	残りわずかしかない:there’s only a few bytes of
 	最小限:minimally
 	すべての`符号位置~並びを収集する$:the remainder of
+	始端:first
+	終端:last
+	始端, 終端も含む:inclusive
 	最初の:first
 	最後の:last
 	~~最後に:finally
 	もっぱら:solely
 	以外の:excluding
 	前:before
+	一体としての:whole
+	他のもの:others
+	他の:other
+	他の場合:otherwise
+	複数の:multiple
+	1 個の:one
+	更なる:further
+	最短の:shortest possible
+	数／回数／いくつかの:number of
+	何らかの:any of
 
 ●●
 [WSP-Compression]
@@ -2198,7 +2263,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/efe088f656a79af08d98d904e4c5550dc3edc403/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/ffbaefb5c4f68b9d619e9db6491fd665a30a2ffb/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -2239,9 +2304,9 @@ Fetch 標準は、要請（ `request^en ）, 応答（ `response^en ）, およ�
 この 2 つを束ねる処理-
 — ~fetching（ “資源~取得処理” ） —
 を定義する。
-<span lang="en">
+◎
 The Fetch standard defines requests, responses, and the process that binds them: fetching.
-</span></p>
+</p>
 
 <p class="trans-note">【
 “`fetch^en”
@@ -2523,6 +2588,21 @@ Queue a task to run an operation on request’s client’s responsible event loo
 To queue a fetch-request-done task, given a request, queue a fetch task on request to process request end-of-body for request.
 </p>
 
+<p class="algo-head">
+`整数を直列化する@
+ときは、所与の整数を最短の 10 進数で表現する文字列を返す。
+◎
+To serialize an integer, represent it as a string of the shortest possible decimal number.
+</p>
+
+<p class="XXX">
+これは、 `INFRA$r にて もっと記述的な~algoに置換されることになる。
+<a href="https://github.com/whatwg/infra/issues/201">infra/201</a>
+を見よ。
+◎
+This will be replaced by a more descriptive algorithm in Infra. See infra/201.
+</p>
+
 		<section id="url">
 <h3 title="URL">2.1. ~URL</h3>
 
@@ -2797,7 +2877,7 @@ A header list (list) contains a name (name) if list contains a header whose name
 この条件は、原文では
 “`~header~list$は %名前 を
 `包含する@hd”
-という形で記されているが、この訳（および，この仕様を参照している訳）では，この用語 “包含する” は利用せず，もっぱら`名前に持つ~header$を用いて等価に記すことにする。
+という形で記されているが、この訳（および，この仕様を参照している和訳）では，この用語 “包含する” は利用せず，もっぱら`名前に持つ~header$を用いて等価に記すことにする。
 】</p>
 
 <p class="algo-head">
@@ -3176,6 +3256,46 @@ There are limited exceptions to the `Content-Type` header safelist, as documente
 ◎
 A CORS non-wildcard request-header name is a byte-case-insensitive match for `Authorization`.
 </p>
+
+<p>
+`特権的~no-cors要請~header名@
+は、［
+次に挙げるいずれかの`名前$hdに`~byte大小無視$で合致する`名前$hd
+］である：
+◎
+A privileged no-cors request-header name is a header name that is a byte-case-insensitive match for one of
+</p>
+
+<ul><li>`Range$h
+</li></ul>
+
+<div class="note">
+
+<p>注記：
+これらは、特権的~APIにより設定され得る~headerであり，それを結付けている要請~objが複製される場合には 保全されるが、その要請が特権的でない~APIにより改変された場合には 除去されることになる。
+◎
+These are headers that can be set by privileged APIs, and will be preserved if their associated request object is copied, but will be removed if the request is modified by unprivilaged APIs.
+</p>
+
+<p>
+`Range$h ~headerは，［
+<a href="~HTMLlinks#downloading-hyperlinks">~downloadする</a> ／
+<a href="~HEmedia#concept-media-load-resource">~mediaを~fetchする</a>
+］ときに共通して利用されるが、どちらも，どう利用するかまだ指定していない。
+<a href="https://github.com/whatwg/html/pull/2814">html/2914</a>
+がこれを解くことを目指す。
+◎
+`Range` headers are commonly used by downloads and media fetches, although neither of these currently specify how. html/2914 aims to solve this.
+</p>
+
+<p>
+特定0の要請に`範囲~headerを追加する$ために，~helperが供される。【？】
+◎
+A helper is provided to add a range header to a particular request.
+</p>
+
+</div>
+
 
 <p>
 所与の`~CORSに公開される~header名~list$rs
@@ -4507,6 +4627,20 @@ A request has an associated reload-navigation flag. Unless stated otherwise, it 
 ◎
 This flag is for exclusive use by HTML’s navigate algorithm. [HTML]
 </dd>
+
+	<dt>`履歴~navi~flag@rq（ ~OFF ）</dt>
+	<dd>
+~flag値。
+◎
+A request has an associated history-navigation flag. Unless stated otherwise, it is unset.
+</dd>
+	<dd class="note">注記：
+この~flagは、~HTMLの~navigate~algoにより排他的に利用される。
+`HTML$r
+◎
+This flag is for exclusive use by HTML’s navigate algorithm. [HTML]
+</dd>
+
 	<dt>`~tainted生成元~flag@rq（ ~OFF ）</dt>
 	<dd>
 ~flag値。
@@ -4858,16 +4992,74 @@ Otherwise, terminate the ongoing fetch.
 		</ol>
 	</li>
 	<li>
-<p>
 前~段が`中止されたときは$、この並列的な段も中止する
 ◎
 If aborted, then abort these in-parallel steps.
+</li>
+</ol>
+
+
+<hr>
+
+<p class="algo-head">
+`範囲~headerを追加する@
+ときは、所与の
+( `要請$ %要請, 整数 %始端, 整数 %終端 （省略時は ε ）)
+に対し，次を走らす：
+◎
+To add a range header to a request request, with an integer first, and an optional integer last, run these steps:
+</p>
+
+<ol>
+	<li>
+%範囲~値 ~LET `bytes ^bl
+◎
+Let rangeValue be `bytes `.
+</li>
+	<li>
+%範囲~値 に次の結果を付加する
+⇒
+`同型に符号化する$( `整数を直列化する$( %始端 ) )
+◎
+Serialize and isomorphic encode first, and append the result to rangeValue.
+</li>
+	<li>
+%範囲~値 に `2D^X （ `-^bl ）を付加する
+◎
+Append 0x2D (-) to rangeValue.
+</li>
+	<li>
+~IF［
+%終端 ~NEQ ε
+］
+⇒
+%範囲~値 に次の結果を付加する
+⇒
+`同型に符号化する$( `整数を直列化する$( %終端 ) )
+◎
+If last is given, then serialize and isomorphic encode it, and append the result to rangeValue.
+</li>
+	<li>
+%要請 の`~header~list$rqに`~headerを付加する$( `Range$h / %範囲~値 )
+◎
+Append `Range`/rangeValue to request’s header list.
+</li>
+</ol>
+
+<p class="note">注記：
+範囲~headerが表す~byte範囲は、始端, 終端も含む。
+( %始端, %終端 ) ~EQ ( 0, 500 ) ならば 501 個の~byteからなる範囲になる。
+◎
+A range header denotes an inclusive byte range. There a range header where first is 0 and last is 500, is a range of 501 bytes.
 </p>
 
 
-	</li>
-</ol>
-
+<p class="note">注記：
+複数の応答を 1 個の論理的な資源に組合せる特色機能は、歴史的に保安~bugの源になる。
+部分的~応答に対処する特色機能に対する保安~考査を探されたし。
+◎
+Features that combine multiple responses into one logical resource are historically a source of security bugs. Please seek security review for features that deal with partial responses.
+</p>
 
 			</section>
 			<section id="responses">
@@ -5045,6 +5237,21 @@ A response has an associated CORS-exposed header-name list (a list of zero or mo
 A response will typically get its CORS-exposed header-name list set by extracting header values from the `Access-Control-Expose-Headers` header. This list is used by a CORS filtered response to determine which headers to expose.
 </dd>
 
+	<dt>`範囲が要請された~flag@rs （ ~OFF ）</dt>
+	<dd>
+~flag値。
+◎
+A response has an associated range-requested flag, which is initially unset.
+</dd>
+	<dd class="note">注記：
+これは、［
+過去の範囲~付き要請からの部分的~応答が，範囲~要請を発行していなかった~APIに供される
+］ことを防止することを確保するために利用される。
+この~flagの用途については、その攻撃の詳細な記述を見よ。
+◎
+This is used to ensure to prevent a partial response from an earlier ranged request being provided to an API that didn’t make a range request. See the flag’s usage for a detailed description of the attack.
+</dd>
+
 	<dt>`所在~URL@rs （ ~NULL †）</dt>
 	<dd>
 次のいずれか
@@ -5118,7 +5325,7 @@ A network error is a response whose status is always 0, status message is always
 `絞込み応答@
 とは、`~network~error$でないような ある`応答$を，その一部分に制限して公開する~viewである。
 その応答を指して，`絞込み応答$の
-`内的~応答@
+`内部~応答@
 という。
 ◎
 A filtered response is a limited view on a response that is not a network error. This response is referred to as the filtered response’s associated internal response.
@@ -5128,7 +5335,7 @@ A filtered response is a limited view on a response that is not a network error.
 `~fetch$ ~algoは、~APIが不用意に情報を漏洩させなくするために，その種の~viewを返す。
 旧来の理由から，情報を公開させる必要がある場合
 — 例：画像~dataを復号器に渡すときなど —
-は、結付けられている`内的~応答$を利用できる。
+は、結付けられている`内部~応答$を利用できる。
 それは、仕様の内部~algoからのみ “~access可能” であり，決して`絞込み応答$自身にはならない。
 ◎
 The fetch algorithm returns such a view to ensure APIs do not accidentally leak information. If the information needs to be exposed for legacy reasons, e.g., to feed image data to a decoder, the associated internal response can be used, which is only "accessible" to internal specification algorithms and is never a filtered response itself.
@@ -5141,7 +5348,7 @@ The fetch algorithm returns such a view to ensure APIs do not accidentally leak 
 </p>
 
 <ul ><li>`種別$rs ~EQ `basic^l
-</li><li>`~header~list$rsは、`内的~応答$の`~header~list$rsから［
+</li><li>`~header~list$rsは、`内部~応答$の`~header~list$rsから［
 `名前$hdが`禁止~応答~header名$である`~header$
 ］は除外したものである
 </li></ul>
@@ -5158,7 +5365,7 @@ A basic filtered response is a filtered response whose type is "basic" and heade
 </p>
 
 <ul ><li>`種別$rs ~EQ `cors^l
-</li><li>`~header~list$rsは、`内的~応答$の`~CORSに公開される~header名~list$rsから［
+</li><li>`~header~list$rsは、`内部~応答$の`~CORSに公開される~header名~list$rsから［
 `名前$hdが`~CORS安全な応答~header名$でない，`~header$
 ］は除外したものである
 </li><li>`~trailer$rsは空である
@@ -5220,7 +5427,7 @@ Exposing the url list for opaque-redirect filtered responses is harmless since n
 `不透明な絞込み応答$, `不透明redirect絞込み応答$
 ］と`~network~error$とは，ほとんど判別できない。
 新たな~APIを導入する際には、情報を漏洩させなくするため，仕様の内部~algoには
-`内的~応答$を利用しないこと。
+`内部~応答$を利用しないこと。
 ◎
 In other words, an opaque filtered response and an opaque-redirect filtered response are nearly indistinguishable from a network error. When introducing new APIs, do not use the internal response for internal specification algorithms as that will leak information.
 </p>
@@ -5251,7 +5458,7 @@ To clone a response response, run these steps:
 ⇒
 ~RET 次のようにされた絞込み応答
 ⇒＃
-`内的~応答$ ~SET `応答を~cloneする$( %応答 の`内的~応答$ )；
+`内部~応答$ ~SET `応答を~cloneする$( %応答 の`内部~応答$ )；
 他の部分は %応答 と同一
 ◎
 If response is a filtered response, then return a new identical filtered response whose internal response is a clone of response’s internal response.
@@ -5712,7 +5919,7 @@ http://www-archive.mozilla.org/projects/netlib/PortBanning.html
 
 		</section>
 		<section id="should-response-to-request-be-blocked-due-to-mime-type?">
-<h3 title="Should response to request be blocked due to its MIME type?">2.7. %要請 に対する %内的~応答 は，~MIME型に因り阻止されるべきか？</h3>
+<h3 title="Should response to request be blocked due to its MIME type?">2.7. %要請 に対する %内部~応答 は，~MIME型に因り阻止されるべきか？</h3>
 
 <p>
 次の手続きを走らす：
@@ -8022,7 +8229,7 @@ One of the headerNames can still be `*` at this point, but will only match a hea
 			<li>
 <p>
 %応答 ~SET
-%応答 を`内的~応答$とする`絞込み応答$であって，
+%応答 を`内部~応答$とする`絞込み応答$であって，
 %要請 の`応答~tainting$rqに応じて 次で与えられるもの：
 ◎
 Set response to the following filtered response with response as its internal response, depending on request’s response tainting:
@@ -8054,9 +8261,9 @@ opaque filtered response
 		</ol>
 	</li>
 	<li>
-%内的~応答 ~LET ［
+%内部~応答 ~LET ［
 %応答 は`~network~error$ならば %応答 ／
-~ELSE_ %応答 の`内的~応答$
+~ELSE_ %応答 の`内部~応答$
 ］
 ◎
 Let internalResponse be response, if response is a network error, and response’s internal response otherwise.
@@ -8064,10 +8271,10 @@ Let internalResponse be response, if response is a network error, and response�
 	<li>
 <p>
 ~IF［
-%内的~応答 の`~url~list$rsは空である
+%内部~応答 の`~url~list$rsは空である
 ］
 ⇒
-%内的~応答 の`~url~list$rs ~SET %要請 の`~url~list$rqの複製
+%内部~応答 の`~url~list$rs ~SET %要請 の`~url~list$rqの複製
 ◎
 If internalResponse’s url list is empty, then set it to a copy of request’s url list.
 </p>
@@ -8084,7 +8291,7 @@ A response’s url list will typically be empty at this point, unless it came fr
 </p>
 	</li>
 	<li>
-%内的~応答 の`~CSP~listを設定する$
+%内部~応答 の`~CSP~listを設定する$
 `CSP$r
 ◎
 Set internalResponse’s CSP list. [CSP]
@@ -8102,24 +8309,24 @@ If response is not a network error and any of the following algorithms returns b
 
 		<ul>
 			<li>
-<a href="~MIXED-CONTENT#should-block-response">%要請 に対する %内的~応答 は，混在~内容として阻止されるべきか？</a>
+<a href="~MIXED-CONTENT#should-block-response">%要請 に対する %内部~応答 は，混在~内容として阻止されるべきか？</a>
 `MIX$r
 ◎
 should internalResponse to request be blocked as mixed content [MIX]
 </li>
 			<li>
-<a href="~CSP3#should-block-response">%要請 に対する %内的~応答 は，~CSPにより阻止されるべきか？</a>
+<a href="~CSP3#should-block-response">%要請 に対する %内部~応答 は，~CSPにより阻止されるべきか？</a>
 `CSP$r
 ◎
 should internalResponse to request be blocked by Content Security Policy [CSP]
 </li>
 			<li>
-<a href="#should-response-to-request-be-blocked-due-to-mime-type?">%要請 に対する %内的~応答 は，~MIME型に因り阻止されるべきか？</a>
+<a href="#should-response-to-request-be-blocked-due-to-mime-type?">%要請 に対する %内部~応答 は，~MIME型に因り阻止されるべきか？</a>
 ◎
 should internalResponse to request be blocked due to its MIME type
 </li>
 			<li>
-<a href="#should-response-to-request-be-blocked-due-to-nosniff?">%要請 に対する %内的~応答 は， nosniff に因り阻止されるべきか？</a>
+<a href="#should-response-to-request-be-blocked-due-to-nosniff?">%要請 に対する %内部~応答 は， nosniff に因り阻止されるべきか？</a>
 ◎
 should internalResponse to request be blocked due to nosniff
 </li>
@@ -8128,10 +8335,63 @@ should internalResponse to request be blocked due to nosniff
 <p>
 …ならば
 ⇒
-( %応答, %内的~応答 ) ~SET ( `~network~error$, `~network~error$ )
+( %応答, %内部~応答 ) ~SET ( `~network~error$, `~network~error$ )
 <!-- ＊同一の個？ -->
 ◎
 ↑</p>
+
+	</li>
+
+	<li>
+<p>
+~IF［
+%応答 の`種別$rs ~EQ `opaque^l
+］~AND［
+%内部~応答 の`~status$rs ~EQ `206$st
+］~AND［
+%内部~応答 の`範囲が要請された~flag$rs ~EQ ~ON
+］~AND［
+%要請 の`~header~list$rq内に［
+`Range$h を`名前に持つ~header$
+］は無い
+］
+⇒＃
+%応答 ~SET `~network~error$；
+%内部~応答 ~SET `~network~error$
+◎
+If response’s type is "opaque", internalResponse’s status is 206, internalResponse’s range-requested flag is set, and request’s header list does not contain `Range`, then set response and internalResponse to a network error.
+</p>
+
+<div class="note">
+
+<p>注記：
+伝統的に，~APIは、範囲が要請されなかった場合でも範囲~付き応答を受容する。
+この段は、［
+過去の範囲~付き要請からの部分的~応答
+］が，範囲~要請を発行しなかった~APIに供されることを防止する。
+◎
+Traditionally, APIs accept a ranged response even if a range was not requested. This prevents a partial response from an earlier ranged request being provided to an API that did not make a range request.
+</p>
+
+<details>
+<summary>
+この段は、次のような攻撃を防止する：
+◎
+Further details
+◎
+The above steps prevent the following attack attack:
+</summary>
+
+<p>
+~media要素を利用して，非同一生成元~HTML資源のある範囲が要請されたとする。
+これは妥当でない~mediaになるが、応答の~cloneへの参照は，~sw内に維持され得る。
+これは、後で~script要素の~fetchに対する応答として利用され得る。
+部分的~応答が妥当な~JSであった場合（一体としての資源はそうでなくとも）、それを実行すると私的~dataが漏洩されることになる。
+◎
+A media element is used to request a range of a cross-origin HTML resource. Although this is invalid media, a reference to a clone of the response can be retained in a service worker. This can later be used as the response to a script element’s fetch. If the partial response is valid JavaScript (even though the whole resource is not), executing it would leak private data.
+</p>
+</details>
+</div>
 
 	</li>
 	<li>
@@ -8141,11 +8401,11 @@ should internalResponse to request be blocked due to nosniff
 ］~AND［［
 %要請 の`~method$rq ~IN { `HEAD$hm, `CONNECT$hm }
 ］~OR［
-%内的~応答 の`~status$rs
+%内部~応答 の`~status$rs
 は `~null本体~status$である
 ］］
 ⇒
-%内的~応答 の`本体$rs ~SET ~NULL
+%内部~応答 の`本体$rs ~SET ~NULL
 — 以降、本体への~enqueueはすべて~~無視する
 ◎
 If response is not a network error and either request’s method is `HEAD` or `CONNECT`, or internalResponse’s status is a null body status, set internalResponse’s body to null and disregard any enqueuing toward it (if any).
@@ -8182,7 +8442,7 @@ Wait for response’s body.
 `応答は~metadata~listに合致するか？$( %応答, %要請 の`完全性~metadata$rq ) ~EQ ~F
 ］
 ⇒
-( %応答, %内的~応答 ) ~SET ( `~network~error$, `~network~error$ )
+( %応答, %内部~応答 ) ~SET ( `~network~error$, `~network~error$ )
 ◎
 If response’s body’s stream has not errored, and response does not match request’s integrity metadata, set response and internalResponse to a network error. [SRI]
 </li>
@@ -8190,7 +8450,7 @@ If response’s body’s stream has not errored, and response does not match req
 
 <p class="note">注記：
 これは %応答 上で演算する
-— この~algoは %内的~応答 を観測するように想定されていないので。
+— この~algoは %内部~応答 を観測するように想定されていないので。
 それを許容すると、攻撃者が~hashを神託機械†（ `oracle^en ）として利用できるようになる。
 <span class="trans-note">【†
 — 参考：
@@ -8210,7 +8470,7 @@ This operates on response as this algorithm is not supposed to observe internalR
 ］：
 </p>
 
-<ol ><li>`本体を待機する$( %内的~応答 の`本体$rs )
+<ol ><li>`本体を待機する$( %内部~応答 の`本体$rs )
 </li><li>~RET %応答
 </li></ol>
 
@@ -8259,7 +8519,7 @@ Otherwise, in parallel, wait for request’s body, and then queue a fetch-reques
 Queue a fetch task on request to process response for response.
 </li>
 	<li>
-`本体を待機する$( %内的~応答 の`本体$rs )
+`本体を待機する$( %内部~応答 の`本体$rs )
 ◎
 Wait for internalResponse’s body.
 </li>
@@ -8274,7 +8534,7 @@ Queue a fetch task on request to process response end-of-body for response.
 次のいずれかが生じるまで待機する
 ⇒
 進行中の~fetchは`終了され$た ／
-%内的~応答 の`~trailer$rsはすべて得られた
+%内部~応答 の`~trailer$rsはすべて得られた
 <span class="note">
 `HTTP$r <a href="~7230#section-4.1.2">4.1.2 節</a> を見よ。
 </span>
@@ -8286,7 +8546,7 @@ Wait for either internalResponse’s trailer, if any, or for the ongoing fetch t
 進行中の~fetchは`終了され$た
 ］
 ⇒
-%内的~応答 の`~trailerは失敗した~flag$rs ~SET ~ON
+%内部~応答 の`~trailerは失敗した~flag$rs ~SET ~ON
 ◎
 If the ongoing fetch is terminated, then set internalResponse’s trailer failed flag.
 </li>
@@ -8638,7 +8898,7 @@ Transmit body for request.
 					<li>
 %実-応答 ~SET ［
 %応答 は`絞込み応答$でないならば %応答 ／
-~ELSE_ %応答 の`内的~応答$
+~ELSE_ %応答 の`内部~応答$
 ］
 ◎
 Set actualResponse to response, if response is not a filtered response, and to response’s internal response otherwise.
@@ -8909,7 +9169,7 @@ Set response to a network error.
 
 					<dt>`manual^l</dt>
 					<dd>
-%応答 ~SET `内的~応答$が %実-応答 にされた，`不透明redirect絞込み応答$
+%応答 ~SET `内部~応答$が %実-応答 にされた，`不透明redirect絞込み応答$
 ◎
 Set response to an opaque-redirect filtered response whose internal response is actualResponse.
 </dd>
@@ -8965,7 +9225,7 @@ To perform an HTTP-redirect fetch using request and response, with an optional C
 	<li>
 %実-応答 ~LET ［
 %応答 は`絞込み応答$でないならば %応答 ／
-~ELSE_ %応答 の`内的~応答$
+~ELSE_ %応答 の`内部~応答$
 ］
 ◎
 Let actualResponse be response, if response is not a filtered response, and response’s internal response otherwise.
@@ -9321,9 +9581,9 @@ If httpRequest’s body is null and httpRequest’s method is `POST` or `PUT`, t
 %~http要請 の`本体$rqの`~source$bd ~NEQ ~NULL
 ］
 ⇒
-%Content-Length値 ~SET `~UTF-8符号化する$( %~http要請 の`本体$rqの`総~byte数$bd )
+%Content-Length値 ~SET `同型に符号化する$( `整数を直列化する$( %~http要請 の`本体$rqの`総~byte数$bd ) )
 ◎
-If httpRequest’s body is non-null and httpRequest’s body’s source is non-null, then set contentLengthValue to httpRequest’s body’s total bytes, UTF-8 encoded.
+If httpRequest’s body is non-null and httpRequest’s body’s source is non-null, then set contentLengthValue to httpRequest’s body’s total bytes, serialized and isomorphic encoded.
 </li>
 			<li>
 ~IF［
@@ -9423,9 +9683,9 @@ The above limit ensures that requests that are allowed to outlive the environmen
 `Referer$h / 次の結果
 )
 ⇒
-`~UTF-8符号化する$( `~URLを直列化する$( %~http要請 の`~referrer$rq ) )
+`同型に符号化する$( `~URLを直列化する$( %~http要請 の`~referrer$rq ) )
 ◎
-If httpRequest’s referrer is a URL, then append `Referer`/httpRequest’s referrer, serialized and UTF-8 encoded, to httpRequest’s header list.
+If httpRequest’s referrer is a URL, then append `Referer`/httpRequest’s referrer, serialized and isomorphic encoded, to httpRequest’s header list.
 </li>
 			<li>
 ~IF［
@@ -9925,6 +10185,17 @@ If forwardResponse is a network error, this effectively caches the network error
 		</ol>
 	</li>
 	<li>
+~IF［
+%~http要請 の`~header~list$rq内に［
+`Range$h を`名前に持つ~header$
+］は在る
+］
+⇒
+%応答 の`範囲が要請された~flag$rs ~SET ~ON
+◎
+If httpRequest’s header list contains `Range`, then set response’s range-requested flag.
+</li>
+	<li>
 <p>
 ~IF［
 %応答 の`~status$rs ~EQ `401$st 【Unauthorized】
@@ -10362,7 +10633,7 @@ Return a network error.
 	<li>
 <p>
 %策 ~LET ~obj
-— ~UAは、どのような~objを選んでもよい。
+— ~UAは、どのような~objを選んでも~MAY。
 ◎
 Let strategy be an object. The user agent may choose any object.
 </p>
@@ -10484,7 +10755,7 @@ Delete `Content-Encoding` from response’s header list if one of the following 
 </div>
 
 <p class="note">注記：
-この段は、壊れた Apache 環境設定のための対処である。
+この段は、壊れた Apache 環境設定に対処する。
 <!-- ＊ -->
 ~HTTPにて定義されるのが理想だが。
 <!-- https://wiki.whatwg.org/wiki/HTTP -->
@@ -10878,9 +11149,11 @@ This intentionally does not use combine, as 0x20 following 0x2C is not the way t
 	</li>
 	<li>
 %応答 ~LET
+( %~CORS~flag ~SET ~ON )
+を与える下で，
 %予行 を用いて`~HTTP~network-or-cache~fetch$を遂行した結果
 ◎
-Let response be the result of performing an HTTP-network-or-cache fetch using preflight.
+Let response be the result of performing an HTTP-network-or-cache fetch using preflight with the CORS flag set.
 </li>
 	<li>
 <p>
@@ -11118,9 +11391,9 @@ Otherwise, return a network error.
 <div class="p">
 <p>
 `~CORS予行~cache@
-は，いくつかの~entryからなり、その各~entryは，次の~fieldを有するものとして与えられる：
+は， 0 個以上の~entryからなる
+— その各~entryは，次の~fieldを有する：
 </p>
-
 
 <dl class="def-list">
 	<dt>`直列化-済み生成元@cc</dt>
@@ -11140,7 +11413,10 @@ Otherwise, return a network error.
 
 	<dt>`資格証の有無@cc</dt>
 	<dd>
-真偽値。
+次のいずれか
+⇒＃
+`有り^i,
+`無し^i
 </dd>
 
 	<dt>`~method@cc</dt>
@@ -11180,7 +11456,7 @@ A CORS-preflight cache consists of a collection of entries where each entry has 
 
 <p>
 各~entryは、`~CORS予行~cache$に~~追加された時点から，その`寿命$cc~fieldに指定された秒数が経過するまでに、除去され~MUST。
-経過する前に除去されてもよい。
+経過する前に除去されても~MAY。
 ◎
 Entries must be removed after the seconds specified in the max-age field have passed since storing the entry. Entries may be removed before that moment arrives.
 </p>
@@ -11244,9 +11520,7 @@ There is a cache match for request if＼
 	<li>
 `直列化-済み生成元$cc ~EQ `要請の生成元を直列化する$( %要請 )
 ◎
-serialized origin is the result of serializing a request origin with request,
-
-origin is request’s origin,＼
+serialized origin is the result of serializing a request origin with request,＼
 </li>
 	<li>
 `~url$cc ~EQ %要請 の`現在の~url$rq
@@ -11643,13 +11917,6 @@ A Headers object has an associated header list (a header list), which is initial
 ◎
 A Headers object also has an associated guard, which is "immutable", "request", "request-no-cors", "response" or "none".
 </dd>
-	<dd class="note">注記：
-`immutable^l は~sw用に在る。
-`SW$r
-◎
-"immutable" exists for service workers. [SW]
-</dd>
-
 </dl>
 
 <p>
@@ -11698,7 +11965,6 @@ A Headers object also has an associated guard, which is "immutable", "request", 
 <p>
 %~guard に応じて：
 </p>
-
 		<dl class="switch">
 			<dt>`immutable^l</dt>
 			<dd>
@@ -11721,7 +11987,7 @@ A Headers object also has an associated guard, which is "immutable", "request", 
 は`~CORS安全な要請~header$でない
 ］
 ⇒
-~RET `不合格^i
+~RET `場合によっては合格^i
 </dd>
 
 			<dt>`response^l</dt>
@@ -11742,7 +12008,7 @@ A Headers object also has an associated guard, which is "immutable", "request", 
 If name is not a name( or value is not a value)?, then throw a TypeError.
 If guard is "immutable", then throw a TypeError.
 Otherwise, if guard is request and name is a forbidden header name, return.
-Otherwise, if guard is "request-no-cors" and name/(value|`invalid`) is not a CORS-safelisted request-header, return.
+Otherwise, if guard is "request-no-cors" and name/(value|`invalid`) is not a CORS-safelisted request-header, return. ／ Otherwise, if guard is "request-no-cors", name/`invalid` is not a CORS-safelisted request-header, and name is not a privileged no-cors request-header name, then return.
 Otherwise, if guard is "response" and name is a forbidden response-header name, return.
 -->
 
@@ -11765,12 +12031,10 @@ Normalize value.
 </li>
 	<li>
 ~IF［
-`~guardで検査する$( %name, %value, %headers の`~guard$Hl ) ~EQ `合格^i
+`~guardで検査する$( %name, %value, %headers の`~guard$Hl ) ~NEQ `合格^i
 ］
 ⇒
-%headers の`~header~list$Hlに`~headerを付加する$(
-%name / %value
-)
+~RET
 ◎
 If name is not a name or value is not a value, then throw a TypeError.
 ◎
@@ -11778,11 +12042,25 @@ If guard is "immutable", then throw a TypeError.
 ◎
 Otherwise, if guard is "request" and name is a forbidden header name, return.
 ◎
-Otherwise, if guard is "request-no-cors" and name/value is not a CORS-safelisted request-header, return.
+Otherwise, if guard is "request-no-cors" and name/value is not a CORS-safelisted request-header, then return.
 ◎
 Otherwise, if guard is "response" and name is a forbidden response-header name, return.
+</li>
+	<li>
+%headers の`~header~list$Hlに`~headerを付加する$(
+%name / %value
+)
 ◎
 Append name/value to header list.
+</li>
+	<li>
+~IF［
+%headers の`~guard$Hl ~EQ `request-no-cors^l
+］
+⇒
+%headers から`特権的~no-cors要請~headerを除去する$
+◎
+If headers’s guard is "request-no-cors", then remove privileged no-cors request headers from headers.
 </li>
 </ol>
 
@@ -11846,6 +12124,34 @@ Otherwise, object is a record, then for each key → value in object, append key
 </li>
 </ol>
 
+<p class="algo-head">
+`Headres$I ~obj %headers から
+`特権的~no-cors要請~headerを除去する@
+ときは、次を走らす：
+◎
+To remove privileged no-cors request headers from a Headers object (headers), run these steps:
+</p>
+
+<ol>
+	<li>
+`特権的~no-cors要請~header名$を成す
+~EACH( %~header名 )
+に対し
+⇒
+%headers の`~header~list$Hlから`~headerを削除する$( %~header名 )
+◎
+For each headerName of privileged no-cors request-header names:
+• Delete headerName from headers’s header list.
+</li>
+</ol>
+
+<p class="note">注記：
+これは、 %headers が特権的でない~codeにより改変されたときに~callされる。
+◎
+This is called when headers are modified by unprivileged code.
+</p>
+
+
 <dl class="idl-def">
 	<dt>`Headers(init)@m</dt>
 	<dd>
@@ -11900,12 +12206,24 @@ The delete(name) method, when invoked, must run these steps:
 		<ol>
 			<li>
 <p>
+`~guardで検査する$( %name, `invalid^bl, 此れの`~guard$Hl ) の結果に応じて
+</p>
+				<ul class="switch">
+					<li>
+`不合格^i
+⇒
+~RET
+</li>
+					<li>
+`場合によっては合格^i
+⇒
 ~IF［
-`~guardで検査する$( %name, `invalid^bl, 此れの`~guard$Hl ) ~EQ `合格^i
+%name は`特権的~no-cors要請~header名$でない
 ］
 ⇒
-此れの`~header~list$Hlから`~headerを削除する$( %name )
-</p>
+~RET
+</li>
+				</ul>
 
 <p class="note">注記：
 `invalid^bl を利用するのは、 `delete()^m の引数に %value が渡されないためである。
@@ -11918,13 +12236,36 @@ If guard is "immutable", then throw a TypeError.
 ◎
 Otherwise, if guard is "request" and name is a forbidden header name, return.
 ◎
-Otherwise, if guard is "request-no-cors" and name/`invalid` is not a CORS-safelisted request-header, then return.
+Otherwise, if guard is "request-no-cors", name/`invalid` is not a CORS-safelisted request-header, and name is not a privileged no-cors request-header name, then return.
 ◎
 `invalid` is used because delete() is not passed a value as argument.
 ◎
 Otherwise, if guard is "response" and name is a forbidden response-header name, return.
+</li>
+			<li>
+~IF［
+`~header~list$Hl内に［
+%name を`名前に持つ~header$
+］は無い
+］
+⇒
+~RET
+◎
+If header list does not contain name, then return.
+</li>
+			<li>
+此れの`~header~list$Hlから`~headerを削除する$( %name )
 ◎
 Delete name from header list.
+</li>
+			<li>
+~IF［
+此れの`~guard$Hl ~EQ `request-no-cors^l
+］
+⇒
+此れから`特権的~no-cors要請~headerを除去する$
+◎
+If guard is "request-no-cors", then remove privileged no-cors request headers from the context object.
 </li>
 		</ol>
 	</dd>
@@ -12014,12 +12355,10 @@ Normalize value.
 </li>
 			<li>
 ~IF［
-`~guardで検査する$( %name, %value, 此れの`~guard$Hl ) ~EQ `合格^i
+`~guardで検査する$( %name, %value, 此れの`~guard$Hl ) ~NEQ `合格^i
 ］
 ⇒
-此れの`~header~list$Hl内で`~headerを設定する$(
-%name / %value
-)
+~RET
 ◎
 If name is not a name or value is not a value, then throw a TypeError.
 ◎
@@ -12027,11 +12366,25 @@ If guard is "immutable", then throw a TypeError.
 ◎
 Otherwise, if guard is "request" and name is a forbidden header name, return.
 ◎
-Otherwise, if guard is "request-no-cors" and name/value is not a CORS-safelisted request-header, return.
+Otherwise, if guard is "request-no-cors" and name/value is not a CORS-safelisted request-header, then return.
 ◎
 Otherwise, if guard is "response" and name is a forbidden response-header name, return.
+</li>
+			<li>
+此れの`~header~list$Hl内で`~headerを設定する$(
+%name / %value
+)
 ◎
 Set name/value in header list.
+</li>
+			<li>
+~IF［
+`~guard$Hl ~EQ `request-no-cors^l
+］
+⇒
+此れから`特権的~no-cors要請~headerを除去する$
+◎
+If guard is "request-no-cors", then remove privileged no-cors request headers from the context object.
 </li>
 		</ol>
 	</dd>
@@ -12742,6 +13095,7 @@ interface `Request@I {
   readonly attribute `DOMString$I `integrity$m;
   readonly attribute boolean `keepalive$m;
   readonly attribute boolean `isReloadNavigation$m;
+  readonly attribute boolean `isHistoryNavigation$m;
   readonly attribute `AbortSignal$I `signal$m;
 
   [NewObject] `Request$I `clone$m();
@@ -13091,7 +13445,7 @@ Returns the redirect mode associated with request, which is a string indicating 
 いくつかの~hashからなる。
 `SRI$r
 ◎
-Returns request’s subresource integrity metadata, which is a cryptographic hash of the resource being fetched. Its value consist of multiple hashes separated by whitespace. [SRI]
+Returns request’s subresource integrity metadata, which is a cryptographic hash of the resource being fetched. Its value consists of multiple hashes separated by whitespace. [SRI]
 </dd>
 
 	<dt>%request . `keepalive$m</dt>
@@ -13110,6 +13464,15 @@ Returns a boolean indicating whether or not request can outlive the global in wh
 ］を指示する，真偽値を返す。
 ◎
 Returns a boolean indicating whether or not request is for a reload navigation.
+</dd>
+
+	<dt>%request . `isHistoryNavigation$m</dt>
+	<dd>
+%request が［
+（前後~頁への）履歴~navi用かどうか
+］を指示する，真偽値を返す。
+◎
+Returns a boolean indicating whether or not request is for a history navigation (a.k.a. back-foward navigation).
 </dd>
 
 	<dt>%request . `signal$m</dt>
@@ -13291,9 +13654,45 @@ If init’s window member is present, set window to "no-window".
 `~redirect~mode$rq ~SET %要請 の`~redirect~mode$rq,
 `完全性~metadata$rq ~SET %要請 の`完全性~metadata$rq,
 `~keepalive~flag$rq ~SET %要請 の`~keepalive~flag$rq,
-`~reload~navi~flag$rq ~SET %要請 の`~reload~navi~flag$rq
+`~reload~navi~flag$rq ~SET %要請 の`~reload~navi~flag$rq,
+`履歴~navi~flag$rq ~SET %要請 の`履歴~navi~flag$rq
 ◎
-Set request to a new request whose url is request’s current url, method is request’s method, header list is a copy of request’s header list, unsafe-request flag is set, client is current settings object, window is window, origin is "client", referrer is request’s referrer, referrer policy is request’s referrer policy, mode is request’s mode, credentials mode is request’s credentials mode, cache mode is request’s cache mode, redirect mode is request’s redirect mode, integrity metadata is request’s integrity metadata, keepalive flag is request’s keepalive flag, and reload-navigation flag is request’s reload-navigation flag.
+Set request to a new request with the following properties:
+◎
+url
+• request’s current url.
+method
+• request’s method.
+header list
+• A copy of request’s header list.
+unsafe-request flag
+• Set.
+client
+• Current settings object.
+window
+• window.
+origin
+• "client".
+referrer
+• request’s referrer.
+referrer policy
+• request’s referrer policy.
+mode
+• request’s mode.
+credentials mode
+• request’s credentials mode.
+cache mode
+• request’s cache mode.
+redirect mode
+• request’s redirect mode.
+integrity metadata
+• request’s integrity metadata.
+keepalive flag
+• request’s keepalive flag.
+reload-navigation flag
+• request’s reload-navigation flag.
+history-navigation flag
+• request’s history-navigation flag.
 </li>
 	<li>
 <p>
@@ -13317,20 +13716,21 @@ If any of init’s members are present, then:
 If request’s mode is "navigate", then set it to "same-origin".
 </li>
 			<li>
-%要請 の`~reload~navi~flag$rq ~SET ~OFF
+%要請 の
+⇒＃
+`~reload~navi~flag$rq ~SET ~OFF,
+`履歴~navi~flag$rq ~SET ~OFF,
+`~referrer$rq ~SET `client^l,
+`~referrer施策$rq ~SET 空~文字列
 ◎
 Unset request’s reload-navigation flag.
-</li>
-			<li>
-%要請 の`~referrer$rq ~SET `client^l
+◎
+Unset request’s history-navigation flag.
 ◎
 Set request’s referrer to "client"
-</li>
-			<li>
-%要請 の`~referrer施策$rq ~SET 空~文字列
 ◎
 Set request’s referrer policy to the empty string.
-			</li>
+</li>
 		</ol>
 
 <p class="note">注記：
@@ -13341,7 +13741,7 @@ Set request’s referrer policy to the empty string.
 これが行われないと、元の~sourceを信用する~serviceは，悪用されかねない
 — そこまで行き着くことは まず無さそうだが。
 ◎
-This is done to ensure that when a service worker "redirects" a request, e.g., from an image in a cross-origin stylesheet, and makes modifications, it no longer appears to come from the original source (i.e., the cross-origin stylesheet), but instead from the service worker that "redirected" the request. This is important as the original source might not even be able to generate the same kind of requests as the service worker. Services that trust the original source could therefore be exploited were this not done, although that is somewhat farfetched.
+This is done to ensure that when a service worker "redirects" a request, e.g., from an image in a cross-origin style sheet, and makes modifications, it no longer appears to come from the original source (i.e., the cross-origin style sheet), but instead from the service worker that "redirected" the request. This is important as the original source might not even be able to generate the same kind of requests as the service worker. Services that trust the original source could therefore be exploited were this not done, although that is somewhat farfetched.
 </p>
 
 	</li>
@@ -13604,11 +14004,6 @@ Let r be a new Request object associated with request.
 ◎
 ↑</li>
 	<li>
-%R の`~Headers$Rq ~SET `新たな~Headers$( `request^l, %要請 の`~header~list$rq )
-◎
-Set r’s headers to a new Headers object, whose header list is request’s header list, and guard is "request".
-</li>
-	<li>
 <p>
 ~IF［
 %通達 ~NEQ ~NULL
@@ -13619,12 +14014,34 @@ Set r’s headers to a new Headers object, whose header list is request’s head
 If signal is not null, then make r’s signal follow signal.
 </li>
 	<li>
+%R の`~Headers$Rq ~SET `新たな~Headers$( `request^l, %要請 の`~header~list$rq )
+◎
+Set r’s headers to a new Headers object, whose header list is request’s header list, and guard is "request".
+</li>
+	<li>
+<p>
+~IF［
+%init 内に何らかの~memberは在する
+<!-- ＊any of？ -->
+］：
+◎
+If any of init’s members are present, then:
+</p>
+
+<p class="note">注記：
+%headers は，この~mode【 %~mode？ 】では許容されない~headerを包含するかもしれないので、この段で無毒化される。
+他の場合、それは以前に無毒化されたか，特権的~APIによる作成-時から改変されてない。
+◎
+The headers are sanitised as they might contain headers that are not allowed by this mode. Otherwise, they were previously sanitised or are unmodified since creation by a privileged API.
+</p>
+		<ol>
+			<li>
 %headers ~LET %R の`~Headers$Rqの複製
-— `~header~list$Hl も含めて複製する
+— `~header~list$Hlも含めて複製する
 ◎
 Let headers be a copy of r’s headers and its associated header list.
 </li>
-	<li>
+			<li>
 ~IF［
 %init に `headers$RqI ~memberは`在する$idl
 ］
@@ -13633,12 +14050,12 @@ Let headers be a copy of r’s headers and its associated header list.
 ◎
 If init’s headers member is present, set headers to init’s headers member.
 </li>
-	<li>
+			<li>
 %R の`~Headers$Rqの`~header~list$Hlを空にする
 ◎
 Empty r’s headers’s header list.
 </li>
-	<li>
+			<li>
 <p>
 ~IF［
 %R の`要請$Rqの`~mode$rq ~EQ `no-cors^l
@@ -13646,9 +14063,8 @@ Empty r’s headers’s header list.
 ◎
 If r’s request’s mode is "no-cors", then:
 </p>
-
-		<ol>
-			<li>
+				<ol>
+					<li>
 ~IF［
 %R の`要請$Rqの`~method$rqは `~CORS安全な~method$でない
 ］
@@ -13657,14 +14073,14 @@ If r’s request’s mode is "no-cors", then:
 ◎
 If r’s request’s method is not a CORS-safelisted method, then throw a TypeError.
 </li>
-			<li>
-%R の `~Headers$Rqの`~guard$Hl  ~SET `request-no-cors^l
+					<li>
+%R の`~Headers$Rqの`~guard$Hl  ~SET `request-no-cors^l
 ◎
 Set r’s headers’s guard to "request-no-cors".
 </li>
-		</ol>
-	</li>
-	<li>
+				</ol>
+			</li>
+			<li>
 ~IF［
 %headers は `Headers$I ~objである
 ］
@@ -13679,13 +14095,15 @@ Set r’s headers’s guard to "request-no-cors".
 ◎
 If headers is a Headers object, then for each header in its header list, append header’s name/header’s value to r’s Headers object.
 </li>
-	<li>
+			<li>
 ~ELSE
 ⇒
-%R の `~Headers$Rqを %headers で`埋める$Hl
+%R の`~Headers$Rqを %headers で`埋める$Hl
 ◎
 Otherwise, fill r’s Headers object with headers.
 </li>
+		</ol>
+	</li>
 	<li>
 %入力~本体 ~LET［
 %input は `Request$I ~objであるならば %input の`要請$Rqの`本体$rq ／
@@ -14012,6 +14430,18 @@ The keepalive attribute’s getter must return true if request’s keepalive fla
 The isReloadNavigation attribute’s getter, when invoked, must return true if the context object’s request’s reload-navigation flag is set, and false otherwise.
 </dd>
 
+	<dt>`isHistoryNavigation@m</dt>
+	<dd>
+取得子は、次を返さ~MUST
+⇒
+此れの`要請$Rqの`履歴~navi~flag$rqに応じて
+⇒＃
+~ON ならば ~T ／
+~OFF ならば ~F
+◎
+The isHistoryNavigation attribute’s getter, when invoked, must return true if the context object’s request’s history-navigation flag is set, and false otherwise.
+</dd>
+
 	<dt>`signal@m</dt>
 	<dd>
 取得子は、次を返さ~MUST
@@ -14057,9 +14487,14 @@ Let clonedRequest be the result of cloning context object’s request.
 Set clonedRequestObject’s request to clonedRequest.
 </li>
 			<li>
-%~Request~objの~clone の`~Headers$Rq ~SET `新たな~Headers$( 此れの`~Headers$Rqの`~guard$Hl, %要請の~clone の`~header~list$rq )
+%~Request~objの~clone の`~Headers$Rq ~SET `新たな~Headers$( 此れの`~Headers$Rqの`~guard$Hl, %要請の~clone の`~header~list$Hl )
 ◎
-Set clonedRequestObject’s headers to a new Headers object whose header list is set to clonedRequest’s header list, and guard is context object’s headers' guard.
+Set clonedRequestObject’s headers to a new Headers object with the following properties:
+◎
+header list
+• clonedRequest’s header list.
+guard
+• context object’s headers’s guard.
 </li>
 			<li>
 `通達に追従させる$( %~Request~objの~clone の`通達$Rq, 此れの`通達$Rq )
@@ -14384,9 +14819,9 @@ Set r’s response’s status to status.
 `Location$h / 次の結果
 )
 ⇒
-`~UTF-8符号化する$( `~URLを直列化する$( %解析済み~URL ) )
+`同型に符号化する$( `~URLを直列化する$( %解析済み~URL ) )
 ◎
-Set `Location` to parsedURL, serialized and UTF-8 encoded, in r’s response’s header list.
+Set `Location` to parsedURL, serialized and isomorphic encoded, in r’s response’s header list.
 </li>
 			<li>
 ~RET %R
@@ -14530,7 +14965,7 @@ Let clonedResponse be the result of cloning context object’s response.
 ◎
 Set clonedResponseObject’s response to clonedResponse.
 ◎
-Set clonedResponseObject’s headers to a new Headers object whose header list is set to clonedResponse’s header list, and guard is context object’s headers' guard.
+Set clonedResponseObject’s headers to a new Headers object whose header list is set to clonedResponse’s header list, and guard is the context object’s headers’s guard.
 </li>
 			<li>
 此れの`~trailer~promise$Rsの`充足-時には$
@@ -15553,7 +15988,7 @@ For the purposes of fetching, there is an API layer (HTML’s img, CSS' backgrou
 <p>
 ~redirect（`応答$のうち，［
 その`~status$rs, または
-その`内的~応答$の`~status$rs
+その`内部~応答$の`~status$rs
 ］が `~redirect~status$であるもの）は、~APIには公開されない。
 仮に~redirectを公開したなら，~XSS攻撃を通して情報が漏洩されることになる。
 ◎
