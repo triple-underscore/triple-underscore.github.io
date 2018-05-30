@@ -1847,7 +1847,7 @@ quote::::クォート\n\
 符号化-:encode::~::エンコード\n\
 符号化:encoding::~::エンコーディング\n\
 	符号化-済み:encoded\n\
-符号化方式:encoding::~::エンコーディング\n\
+符号化法:encoding::~::エンコーディング\n\
 符号変換:transcoding::~::トランスコーディング\n\
 符号変換器:transcoder::~::トランスコーダ\n\
 符号法:coding::~::コーディング\n\
