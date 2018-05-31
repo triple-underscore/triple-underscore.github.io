@@ -240,6 +240,9 @@ Util.del_j = function(){
 	repeat('.trans-note', function(e){
 		e.parentNode.removeChild(e);
 	});
+	repeat('details', function(e){
+		e.open = true;
+	});
 
 	repeat('*[lang="en"]', function(en){
 		var p = en.parentNode;
@@ -1016,6 +1019,7 @@ RFC7231:RFC7231-ja.html\n\
 RFC7232:RFC7232-ja.html\n\
 RFC7234:RFC7234-ja.html\n\
 CSSWG:https://drafts.csswg.org\n\
+CSSissue:https://github.com/w3c/csswg-drafts/issues\n\
 CSS22:https://www.w3.org/TR/CSS22\n\
 CSS21:https://www.w3.org/TR/CSS21\n\
 CSP3:CSP3-ja.html\n\
