@@ -2079,7 +2079,6 @@ referrer::::リファラ\n\
 即時:immediate:~\n\
 却下-:reject::~\n\
 反映-:reflect:~\n\
-収集-:gather:~\n\
 取消:cancel:~\n\
 取込まれ:import され:取り込まれ\n\
 可視:visible:~\n\
