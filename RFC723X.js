@@ -1497,7 +1497,7 @@ architecture::::アーキテクチャ\n\
 未知の:unknown:~\n\
 決定-:determine:~\n\
 決定:determination:~\n\
-決断:decision:~\n\
+裁定:decision:~\n\
 	注記-:note:~\n\
 	注記:Note:~\n\
 深刻:serious:~\n\
