@@ -1411,7 +1411,7 @@ architecture::::アーキテクチャ\n\
 意図-:intend:~\n\
 意図:intent:~\n\
 意図的:intentional:~\n\
-慎重:careful:~\n\
+注意深く:careful に:~\n\
 慣行:convention::~\n\
 懸念:concern:~\n\
 旧式の:ancient:~\n\
