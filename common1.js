@@ -73,15 +73,7 @@ navs
 new function(){
 var options;
 
-var init = function(){
-	if(!Util._COMP_){
-		window.setTimeout(init, 100);
-		if(document.readyState === 'complete') {
-			// this should not happen
-			init = EMPTY_FUNC;
-		}
-		return;
-	}
+Util._COMP_.then(function(){
 
 	PAGE_DATA.original_id_map = PAGE_DATA.original_id_map || '';
 
@@ -115,10 +107,8 @@ var init = function(){
 	);
 
 	defer0();
-	init = null;
-}
+});
 
-window.setTimeout(init, 50);
 
 function defer0(){
 	//TODO Util.defer()

@@ -53,7 +53,7 @@ var COMMON_DATA = Object.create(null);
 
 // 予約済みメンバ
 var Util = {
-	_COMP_: false,
+	_COMP_: null,
 	DEFERRED: [], // 遅延実行
 	initAdditional: EMPTY_FUNC,
 	getState: EMPTY_FUNC, // 状態保存
@@ -209,7 +209,13 @@ new function(){
 }
 
 new function(){
-	document.addEventListener('DOMContentLoaded', init, false);
+	Util._COMP_ = new Promise(function(resolve){
+		document.addEventListener('DOMContentLoaded', function(){
+			init();
+			resolve();
+		}, false);
+	});
+
 	// 初期化
 	function init(){
 		document.removeEventListener('DOMContentLoaded', init, false);
@@ -251,7 +257,6 @@ new function(){
 				E(options.toc).appendChild(toc_list);
 			}
 		}
-		Util._COMP_ = true;
 	}
 
 	// 表示状態を sessionStorage から読み込む

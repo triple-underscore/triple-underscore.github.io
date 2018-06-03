@@ -51,7 +51,7 @@ var COMMON_DATA = Object.create(null);
 
 // 予約済みメンバ
 var Util = {
-	_COMP_: false,
+	_COMP_: null,
 	DEFERRED: [], // 遅延実行
 	defer: EMPTY_FUNC, // TODO
 	initAdditional: EMPTY_FUNC,
@@ -323,7 +323,12 @@ new function(){
 }
 
 new function(){
-	document.addEventListener('DOMContentLoaded', init, false);
+	Util._COMP_ = new Promise(function(resolve){
+		document.addEventListener('DOMContentLoaded', function(){
+			init();
+			resolve();
+		}, false);
+	});
 
 	// 初期化
 	function init(){
@@ -386,13 +391,6 @@ new function(){
 			return page_state;
 		}
 	}
-}
-
-
-Util.initAdditional = function(){
-	delete Util.initAdditional;
-////
-	Util._COMP_ = true;
 }
 
 
