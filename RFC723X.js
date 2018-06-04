@@ -3,7 +3,7 @@ Util.ready = function(){
 	Util.switchWordsInit(source_data);
 };
 
-var source_data = {
+const source_data = {
 	toc_main: 'MAIN0',
 };
 
@@ -32,11 +32,11 @@ source_data.init = function(spec_num){
 
 source_data.populate = function(){
 	// header id を section から補完
-	var section_map = this.section_map;
+	const section_map = this.section_map;
 	repeat('section[id]', function(e){
-		var h = e.firstElementChild;
+		const h = e.firstElementChild;
 		if(!h) return;
-		var id = section_map[e.id.replace(/^(section-|appendix-)/, '')];
+		const id = section_map[e.id.replace(/^(section-|appendix-)/, '')];
 		if(id) h.id = id;
 	});
 };
@@ -77,15 +77,15 @@ source_data.tag_map = {
 };
 
 source_data.generate = function(){
-	var st_phrase = this.st_phrase;
-	var st_hrefs = this.st_hrefs;
-	var header_hrefs = this.header_hrefs;
-	var section_map = this.section_map;
+	const st_phrase = this.st_phrase;
+	const st_hrefs = this.st_hrefs;
+	const header_hrefs = this.header_hrefs;
+	const section_map = this.section_map;
 
-	var href_data_map = this.href_data_map || {};
+	const href_data_map = this.href_data_map || {};
 
-	var class_map = this.class_map;
-	var tag_map = this.tag_map;
+	const class_map = this.class_map;
+	const tag_map = this.tag_map;
 
 	return this.html.replace(
 		/`(.+?)([$@\^])(\w*)/g,
@@ -96,10 +96,10 @@ source_data.generate = function(){
 
 	function create_html(match, key, indicator, klass){
 
-var text = key;
-var href = href_data_map[klass ? (klass + '.' + key) : key] || '';
-var classname = class_map[klass];
-var tag = tag_map[klass];
+let text = key;
+let href = href_data_map[klass ? (klass + '.' + key) : key] || '';
+let classname = class_map[klass];
+let tag = tag_map[klass];
 
 switch(klass){
 case '':

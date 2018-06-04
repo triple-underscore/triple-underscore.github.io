@@ -3,7 +3,7 @@
 
 // 要素取得
 function E(id){
-//	var e = document.getElementById(id);if(!e) {console.log(id);};return e;
+//	const e = document.getElementById(id);if(!e) {console.log(id);};return e;
 	return document.getElementById(id);
 }
 // 要素作成
@@ -18,14 +18,14 @@ function EMPTY_FUNC(){}
 // セレクタ対象の要素を反復処理
 function repeat(selector, callback, root){
 	if(!root) root = document
-	var elements = root.querySelectorAll(selector);
-	var L = elements.length;
-	for(var i = 0; i < L; i++){
+	const elements = root.querySelectorAll(selector);
+	const L = elements.length;
+	for(let i = 0; i < L; i++){
 		callback(elements[i]);
 	}
 }
 
-var PAGE_DATA = Object.create(null); 
+const PAGE_DATA = Object.create(null); 
 /* 予約済みメンバ（ # → 詳細は common1.js ）
 options:#
 original_id_map:#
@@ -47,10 +47,10 @@ html_code_list:
 */
 
 // see common1.js for possible members
-var COMMON_DATA = Object.create(null);
+const COMMON_DATA = Object.create(null);
 
 // 予約済みメンバ
-var Util = {
+const Util = {
 	_COMP_: null,
 	DEFERRED: [], // 遅延実行
 	defer: EMPTY_FUNC, // TODO
@@ -109,7 +109,8 @@ var Util = {
 Util.get_mapping = function(data, map){
 	map = map || Object.create(null);
 
-	var rxp = /\n(\S.*?):(.*)/g, m;
+	const rxp = /\n(\S.*?):(.*)/g;
+	let m;
 	while(m = rxp.exec(data)){
 		map[m[1]] = m[2];
 	}
@@ -118,9 +119,9 @@ Util.get_mapping = function(data, map){
 
 // ●●区切りの文字列から有名データブロックを抽出
 Util.parseBlocks = function(source){
-//	var rxp = RegExp('(\n' + splitter + ').+');
-	var result = Object.create(null);
-	var name = '';
+//	const rxp = RegExp('(\n' + splitter + ').+');
+	const result = Object.create(null);
+	let name = '';
 	source.split(/(\n●●.*)/).forEach(function(block){
 		if(block.slice(0,3) === '\n●●'){
 			name = block.slice(3);
@@ -144,14 +145,14 @@ Util.collectHtmlCodeList = function(parts){
 		parts = Object.create(null);
 	}
 
-	var data = PAGE_DATA.html_code_list;
+	const data = PAGE_DATA.html_code_list;
 	delete PAGE_DATA.html_code_list;
-	var rxp = /■(\S+)(.*)((?:\n.+)+)/g;
-	var m;
+	const rxp = /■(\S+)(.*)((?:\n.+)+)/g;
+	let m;
 	while(m = rxp.exec(data)){
-		var pre = C('pre');
+		const pre = C('pre');
 		pre.className = 'html-code' + (m[2] || '');
-		var markup = m[3].trim().replace(/％/g, '');
+		const markup = m[3].trim().replace(/％/g, '');
 		if(markup.indexOf('＜') < 0 ){
 			pre.textContent = markup;
 		} else {
@@ -200,7 +201,7 @@ Util.getDataByLevel = function(data, level){
 
 // 節見出しを取得
 Util.get_header = function(section){
-	var header = section && section.firstElementChild;
+	const header = section && section.firstElementChild;
 	return (
 		header && /^H\d$/.test(header.tagName)
 	)? header : null;
@@ -218,14 +219,14 @@ Util.dump = function(s){
 	if(s instanceof Array){
 		s = s.join('\n');
 	} else if(s instanceof Object){
-		var ss = [];
-		for(var p in s){
+		const ss = [];
+		for(let p in s){
 			ss.push(p + ': ' + s[p]);
 		}
 		s = ss.join('\n');
 	}
 
-	var area = C('textarea');
+	const area = C('textarea');
 	area.cols = 200;
 	area.rows = 100;
 	area.value = s;
@@ -235,7 +236,7 @@ Util.dump = function(s){
 
 // 訳文消去（ diff 比較用）
 Util.del_j = function(){
-	var parent;
+	let parent;
 
 	repeat('.trans-note', function(e){
 		e.parentNode.removeChild(e);
@@ -245,9 +246,9 @@ Util.del_j = function(){
 	});
 
 	repeat('*[lang="en"]', function(en){
-		var p = en.parentNode;
+		const p = en.parentNode;
 		if(en.tagName === 'SPAN'){
-			var en1 = C('P');
+			const en1 = C('P');
 			p.insertBefore(en1, en);
 			en1.appendChild(en);
 			en = en1;
@@ -261,7 +262,7 @@ Util.del_j = function(){
 		}
 	});
 	repeat('h2,h3,h4,h5', function(e){
-		var text = e.title;
+		const text = e.title;
 		if(text){
 			e.textContent = (e.textContent.match(/[ABC\d\.]+/) || '') + ' ' + text;
 		}
@@ -277,13 +278,13 @@ Util.del_j = function(){
 
 Util.getState = function(key, default_val, type){
 	if(! (key in Util.page_state) ) return default_val;
-	var val = Util.page_state[key];
+	const val = Util.page_state[key];
 	return (type && (typeof(val) !== type))? default_val : val;
 };
 
 Util.setState = function(key, val){
-	var page_state = Util.page_state;
-	var old_val = page_state[key];
+	const page_state = Util.page_state;
+	const old_val = page_state[key];
 	if(val === old_val) return;
 	if(val === undefined){
 		delete page_state[key];
@@ -303,7 +304,7 @@ new function(){
 
 /*
 	try {
-		var opts = Object.defineProperty({}, 'passive', {
+		const opts = Object.defineProperty({}, 'passive', {
 			get: function() { Util.supportsListenerOptions = true;}
 		});
 		window.addEventListener("test", null, opts);
@@ -313,10 +314,10 @@ new function(){
 
 new function(){
 	// meta with viewport for mbile (ideally, should be set by CSS, not meta tag)
-	var head = document.head || document.getElementsByTagName('head')[0];
+	const head = document.head || document.getElementsByTagName('head')[0];
 	if(!head) return;
-//	var w = screen.width;...
-	var meta = C('meta');
+//	const w = screen.width;...
+	const meta = C('meta');
 	meta.setAttribute('name', 'viewport');
 	meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no');
 	head.appendChild(meta);
@@ -334,20 +335,20 @@ new function(){
 	function init(){
 		document.removeEventListener('DOMContentLoaded', init, false);
 
-		var elem = E('_source_data');
+		const elem = E('_source_data');
 		if(elem){
 			Object.assign(PAGE_DATA, Util.parseBlocks(elem.textContent));
 			elem.parentNode.removeChild(elem);
 		}
 
-		var options =
+		const options =
 		PAGE_DATA.options = Util.get_mapping(PAGE_DATA.options || '');
 
 		// 利用者 表示設定
-		var page_state = (JSON && get_state()) // setup saveStorage
+		let page_state = (JSON && get_state()) // setup saveStorage
 		Util.page_state = page_state = history.state || page_state || Util.page_state;
 
-		var classList = document.body.classList;
+		const classList = document.body.classList;
 
 		if(page_state.show_original){
 			classList.toggle('show-original');
@@ -372,8 +373,8 @@ new function(){
 
 	// 表示状態を sessionStorage から読み込む
 	function get_state(){
-		var page_state = null;
-		var storage_key = null;
+		let page_state = null;
+		let storage_key = null;
 
 		storage_key = PAGE_DATA.options.page_state_key || window.location.pathname;
 		try {
@@ -414,9 +415,9 @@ section の入れ子階層を反映する，入れ子 ol による目次を得�
 
 Util.rebuildToc = function(main_id, list_id){
 	list_id = list_id || '_toc_list';
-	var toc_list = E(list_id), main = E(main_id);
+	const toc_list = E(list_id), main = E(main_id);
 	if(toc_list && main) {
-		var new_list = Util.buildTocList(main);
+		const new_list = Util.buildTocList(main);
 		new_list.id = list_id;
 		toc_list.parentNode.replaceChild(new_list, toc_list);
 	}
@@ -424,8 +425,8 @@ Util.rebuildToc = function(main_id, list_id){
 }
 
 Util.buildTocList = function(root){
-	var range = document.createRange();
-	var toc = buildToc(root);
+	const range = document.createRange();
+	const toc = buildToc(root);
 	if(toc) { // a 要素の入れ子を除去
 		repeat('a a', function(e){
 			range.selectNodeContents(e);
@@ -438,25 +439,25 @@ Util.buildTocList = function(root){
 	return toc;
 
 	function buildToc(root){
-		var list = null;
-		for(var section = root.firstElementChild; 
+		let list = null;
+		for(let section = root.firstElementChild; 
 			section;
 			section = section.nextElementSibling
 		){
 			if('SECTION' !== section.tagName) continue;
-			var header = Util.get_header(section);
+			const header = Util.get_header(section);
 			if(!header) continue;
-			var id = section.id || header.id;
+			const id = section.id || header.id;
 			if(!id) continue;
-			var a = C('a');
+			const a = C('a');
 			a.href = '#' + id;
 			range.selectNodeContents(header);
 			a.appendChild(range.cloneContents());
 
-			var li = C('li');
+			const li = C('li');
 			li.appendChild(a);
 
-			var child_list = buildToc(section);
+			const child_list = buildToc(section);
 			if(child_list) li.appendChild(child_list);
 			if(!list) list = C('ol');
 			list.appendChild(li);
@@ -467,14 +468,14 @@ Util.buildTocList = function(root){
 
 
 Util.fillHeader = function(){
-	var options = PAGE_DATA.options;
-	var url = options.original_url || '';
+	const options = PAGE_DATA.options;
+	const url = options.original_url || '';
 //	if(!url) return;
-	var isHTML = false;
+	let isHTML = false;
 
-	var header = document.body.querySelector('header');
+	const header = document.body.querySelector('header');
 	if(!header) return;
-	var hgroup = header.querySelector('hgroup');
+	const hgroup = header.querySelector('hgroup');
 
 	if( url.slice(0,39) === 'https://html.spec.whatwg.org/multipage/' ){
 		options.copyright = '2018,whatwg';
@@ -485,16 +486,16 @@ Util.fillHeader = function(){
 	placeMetadata();
 
 	function fillDate(){
-		var date = options.spec_date;
+		let date = options.spec_date;
 		if(!date) return;
 		if(!hgroup) return;
 
-		var m = date.match(/^(\d+)-0*(\d+)-0*(\d+)$/);
+		const m = date.match(/^(\d+)-0*(\d+)-0*(\d+)$/);
 		if(m){
 			date = 
 '<time datetime="' + date + '">' + m[1] + ' 年 ' + m[2] + ' 月 ' + m[3] + ' 日</time>';
 		}
-		var header_text;
+		let header_text;
 		if(isHTML) {
 			header_text = 'HTML Living Standard';
 		} else {
@@ -511,14 +512,14 @@ LS: 'Living Standard',
 			}[options.spec_status] || '';
 		}
 
-		var html = '<h2>' + header_text + ' — ' + date + '</h2>';
+		const html = '<h2>' + header_text + ' — ' + date + '</h2>';
 		hgroup.insertAdjacentHTML('beforeend', html);
 	}
 
 	function fillLogoImage(){
 		// logo 画像
-		var html;
-		var domain = url.match( /^https?:\/\/([\w\.\-]+)\// );
+		let html;
+		const domain = url.match( /^https?:\/\/([\w\.\-]+)\// );
 		if(!domain) return;
 		switch(domain[1]){
 		case 'www.w3.org':
@@ -537,7 +538,7 @@ LS: 'Living Standard',
 
 	// metadata 置き場
 	function placeMetadata(){
-		var html = 
+		let html = 
 '<details id="_trans_metadata"><summary><strong>この日本語訳は非公式な文書です…</strong></summary></details>';
 		if(PAGE_DATA.spec_metadata){
 			html += 
@@ -567,13 +568,13 @@ Util.switchWordsInit = function(source_data){
 	source_data = source_data || {};
 	if(!source_data.generate) source_data.generate = Util.produce;
 	initLevels();
-	var main_id =
+	const main_id =
 	source_data.main_id = source_data.main_id || 'MAIN';
 	initHTML();
 
 	source_data.switchWords =  function(level){
 		level = Math.min(level & 0xF, this.levels.length - 1 );
-		var mapping = Util.get_mapping(
+		const mapping = Util.get_mapping(
 Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
 			// 値の最後の文字が英数の場合は末尾にスペースを補填
 			.replace(/(\w)(?=\n)/g, '$1 ')
@@ -581,10 +582,10 @@ Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
 			+ ( PAGE_DATA.words_table1 || '')
 		);
 
-		var parts = this.persisted_parts;
+		let parts = this.persisted_parts;
 		if(parts){
 			Object.keys(parts).forEach(function(id){
-				var e = parts[id];
+				const e = parts[id];
 				if(e.parentNode){
 					e.parentNode.removeChild(e);
 				}
@@ -596,12 +597,12 @@ Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
 			source_data.populate();
 		}
 
-		var parts = this.persisted_parts;
+		parts = this.persisted_parts;
 		if(parts){
 //			console.log(parts);
 			Object.keys(parts).forEach(function(id){
-				var part = parts[id];
-				var e = E(id);
+				const part = parts[id];
+				const e = E(id);
 				if(e) {
 					e.parentNode.replaceChild(part, e);
 				} else {
@@ -614,7 +615,7 @@ Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
 	}
 
 	if(source_data.collectParts){
-		var parts = source_data.persisted_parts || Object.create(null);
+		const parts = source_data.persisted_parts || Object.create(null);
 		source_data.collectParts(parts);
 		source_data.persisted_parts = parts;
 	}
@@ -629,7 +630,7 @@ return;
 
 
 	function initLevels(){
-		var levels = source_data.levels;
+		let levels = source_data.levels;
 		if(!levels){
 			switch(PAGE_DATA.options.page_state_key){
 			case 'CSS':
@@ -644,7 +645,7 @@ return;
 		levels = 
 		source_data.levels = levels.split(':');
 		if(levels.length === 0) levels = ['-'];
-		var level = source_data.level;
+		let level = source_data.level;
 		if(!level) {
 			level = [0,1,1,2,2,3,3,4,4,5,5][levels.length] || 0;
 		}
@@ -658,9 +659,9 @@ return;
 			delete PAGE_DATA.link_map;
 		}
 
-		var html = E(main_id).innerHTML;
+		let html = E(main_id).innerHTML;
 		// 前処理：英文を抽出して placeholder に置換など
-		var en_list = source_data.en_text_list = [
+		const en_list = source_data.en_text_list = [
 '</span>', // \uE000
 '<span lang="en">', // \uE001
 '<span class="trans-note">', // \uE002
@@ -676,10 +677,10 @@ return;
 '<table class="descdef">', // \uE00B
 '<table class="eventdef">' // \uE00C
 		];
-		var nesting = '';
-		var nesting1;
-		var result;
-		var premap = Util.get_mapping(COMMON_DATA.PREMAP);
+		let nesting = '';
+		let nesting1;
+		let result;
+		const premap = Util.get_mapping(COMMON_DATA.PREMAP);
 
 		html = 
 		source_data.html = html.replace(
@@ -726,8 +727,7 @@ return;
 	}
 
 	function generateHTML(words_mapping){
-		var html = source_data.html;
-		var en_list = source_data.en_text_list;
+		const en_list = source_data.en_text_list;
 
 		E(main_id).innerHTML = Util
 		.replaceWords1(source_data.generate(), words_mapping)
@@ -737,9 +737,9 @@ return;
 	}
 
 	function createToc(id){
-		var root = E(id || 'MAIN0'); // default toc
+		const root = E(id || 'MAIN0'); // default toc
 		if(!root) return;
-		var nav = E('_toc');
+		let nav = E('_toc');
 		if(nav){
 			nav.textContent = '';
 		} else {
@@ -747,12 +747,12 @@ return;
 			nav.className = 'toc';
 			nav.id = '_toc';
 		}
-		var h2 = C('h2');
+		const h2 = C('h2');
 		h2.textContent = '目次';
 		nav.appendChild(h2);
 		nav.appendChild(Util.buildTocList(root));
 
-		var parent = root.parentNode;
+		const parent = root.parentNode;
 		if(parent.tagName === 'MAIN'){
 			parent.parentNode.insertBefore(nav, parent);
 		} else {
@@ -763,11 +763,11 @@ return;
 	/** 語彙切替（内容生成） UI */
 
 	function create_word_switch(){
-		var w_switch = C('span');
+		const w_switch = C('span');
 
 		new function(){
 			w_switch.className = '_hide_if_expanded';
-			var html = 
+			let html = 
 '<input type="button" id="_words_levelX" tabindex="1" accesskey="X" value="用語" title="アクセスキー： X" >';
 
 			source_data.levels.forEach(function(label, index){
@@ -786,11 +786,11 @@ return;
 		E('_view_control').appendChild(w_switch);
 
 		w_switch.onclick = function(event){
-			var level = (event.target.id || '').match(/^_words_level(\w)$/);
+			let level = (event.target.id || '').match(/^_words_level(\w)$/);
 			if(!level) return;
 			level = parseInt(level[1]);
-			var auto = isNaN(level); // _words_levelX
-	
+			const auto = isNaN(level); // _words_levelX
+
 			if(auto){
 				level = (source_data.level + 1 ) % source_data.levels.length;
 			}
@@ -852,7 +852,7 @@ Util.replaceWords1 = function(data, mapping){
 		}
 		if(til === '~~') return ja;
 
-		var r = mapping[ja];
+		let r = mapping[ja];
 		if(r) return r;
 		if(hira.length === 0){
 			return ja;
@@ -862,7 +862,7 @@ Util.replaceWords1 = function(data, mapping){
 			r = mapping[kan + '-'];
 			if(r) return r + hira;
 		}
-		var hira1 = hira[0];
+		const hira1 = hira[0];
 		r = mapping[kan + hira1];
 		if(r) return r + hira.slice(1);
 

@@ -71,7 +71,7 @@ navs
 
 /** 付帯機能 初期化／メタデータの拡充 */
 new function(){
-var options;
+let options;
 
 Util._COMP_.then(function(){
 
@@ -112,8 +112,8 @@ Util._COMP_.then(function(){
 
 function defer0(){
 	//TODO Util.defer()
-	var d = Util.DEFERRED;
-	var task = d.shift();
+	const d = Util.DEFERRED;
+	const task = d.shift();
 	if(!task) return;
 	try {
 		task();
@@ -141,8 +141,8 @@ function initEvents(){
 	}
 
 	function onClick(event){
-		var handlers = Util.CLICK_HANDLERS;
-		var target = event.target;
+		const handlers = Util.CLICK_HANDLERS;
+		const target = event.target;
 		var handler = handlers[target.id];
 		if(handler){
 			handler(event);
@@ -152,11 +152,11 @@ function initEvents(){
 		switch(event.detail){
 		case 0:// IE11 event.detail == 0?
 		case 1:
-			for(var e = target; e; e = e.parentNode){
+			for(let e = target; e; e = e.parentNode){
 				switch(e.tagName){
 				case 'BODY':
 					// 両端 click でも原文開閉
-					var e1 = document.elementFromPoint(
+					const e1 = document.elementFromPoint(
 						window.innerWidth /2, event.clientY);
 					if(e1){
 						Util.toggleSource(e1);
@@ -202,8 +202,8 @@ function navToInit(){
 		return; // back/forward
 	}
 
-	var e;
-	var id = window.location.hash;
+	let e;
+	let id = window.location.hash;
 	if(id){
 		id = id.slice(1);
 		if(id.indexOf('_xref-') === 0) return; // 生成リンク（ common1.js ）
@@ -232,8 +232,8 @@ function navToInit(){
 	function targetId1(id){
 		// 訳文id:原文id （先頭の \t も有効）
 		id = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-		var rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
-		var match = PAGE_DATA.original_id_map.match(rxp);
+		const rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
+		const match = PAGE_DATA.original_id_map.match(rxp);
 		if(!match) return;
 		return match[1];
 	}
@@ -242,7 +242,7 @@ function navToInit(){
 
 // ボタン類
 function addControls(){
-	var controls = C('div');
+	const controls = C('div');
 	controls.id = '_view_control';
 
 	add_button('　　目次　　', 'A', '_toggle_toc');
@@ -252,7 +252,7 @@ function addControls(){
 	}
 	add_button('原文', 'Z', '_toggle_source');
 
-	var e = E('_optional_controls');//TODO
+	const e = E('_optional_controls');//TODO
 	if(e){
 		controls.appendChild(e);
 	}
@@ -260,7 +260,7 @@ function addControls(){
 	document.body.appendChild(controls);
 
 	function add_button(label, key, id){
-		var b = C('input');
+		const b = C('input');
 		b.type = 'button';
 		b.value = label;
 		b.id = id;
@@ -274,7 +274,7 @@ function addControls(){
 }
 
 function addTopNav(){
-	var a = C('a');
+	const a = C('a');
 	a.href = '#top';
 	a.style.cssText =
 'position:fixed; left:0; bottom:0; height:5em; background:#EEE; text-align:center; width:1.5em;'
@@ -286,10 +286,10 @@ function addTopNav(){
 // 付帯情報を生成する
 
 function initSideway(){
-	var key = options.spec_status;
+	const key = options.spec_status;
 	if(!key) return;
 
-	var text = {
+	const text = {
 WD: 'W3C Working Draft',
 ED: 'W3C Editor’s Draft',
 EDCG: 'W3C Community Group Draft Report',
@@ -302,8 +302,8 @@ IETFPR: 'IETF PROPOSED STANDARD'
 	}[key];
 	if(!text) return;
 
-	var color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', LS: 'green' }[key];
-	var div = C('div');
+	const color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', LS: 'green' }[key];
+	const div = C('div');
 	div.id = '_sideways-logo';
 	if(color) div.style.background = color;
 	div.textContent = text;
@@ -311,17 +311,17 @@ IETFPR: 'IETF PROPOSED STANDARD'
 }
 
 function fillSiteNav(){
-	var nav = C('nav');
+	const nav = C('nav');
 
-	var html = ['<ul id="_site_nav">'];
-	var href;
+	const html = ['<ul id="_site_nav">'];
+	let href;
 	if(href = findMatch(options.nav_prev)){
 		html.push('<li><a href="' + href + '">＜前</a>');
 	}
 	if(href = findMatch(options.nav_next)){
 		html.push('<li><a href="' + href + '">次＞</a>');
 	}
-	var name_map = Util.get_mapping('\n\
+	const name_map = Util.get_mapping('\n\
 infrastructure:基盤\n\
 svg:SVG\n\
 html:HTML\n\
@@ -345,7 +345,7 @@ selector:選択子\n\
 xml:XML\n\
 '
 	);
-	var label_map = {
+	const label_map = {
 CSS: 'css,html',
 HTML: 'html-dom,html,css',
 WEBAPPSEC: 'security,network',
@@ -354,18 +354,18 @@ PERFORMANCE: 'performance,network',
 HTTP: 'http,network,security',
 UIEVENTS: 'uievents,css-ux,html',
 	};
-	var href_map = {
+	const href_map = {
 http: 'RFC723X-ja.html#index',
 	};
-	var site_nav = options.site_nav;
+	let site_nav = options.site_nav;
 	if(!site_nav){
 		site_nav = options.page_state_key ? label_map[options.page_state_key] : '';
 	}
 	if(!site_nav) site_nav = 'infrastructure';
 	site_nav.split(',').forEach(function(label){
-		var name = name_map[label];
+		const name = name_map[label];
 		if(!name) return;
-		var href = href_map[label] || ('index.html#spec-list-' + label);
+		const href = href_map[label] || ('index.html#spec-list-' + label);
 		html.push('<li><a href="' + href + '">' + name +'</a>');
 	});
 	html.push('<li><a href="index.html#page-list">すべて</a>')
@@ -376,12 +376,12 @@ http: 'RFC723X-ja.html#index',
 	function findMatch(name){
 		if(!name) return;
 		if(name.slice(-5) === '.html') return name;
-		var data = COMMON_DATA.SYMBOLS;
+		let data = COMMON_DATA.SYMBOLS;
 		if(!data) return;
-		var i = data.indexOf('\n' + name + ':' );
+		let i = data.indexOf('\n' + name + ':' );
 		if(i < 0) return;
 		i += name.length + 2;
-		var j = data.indexOf('\n', i);
+		const j = data.indexOf('\n', i);
 		if(j < 0) return;
 		data = data.slice(i,j);
 		if(data.slice(-5) !== '.html') return;
@@ -390,12 +390,12 @@ http: 'RFC723X-ja.html#index',
 }
 
 function fillTransMetadata(){
-	var details = E('_trans_metadata');
+	const details = E('_trans_metadata');
 	if(!details) return;
-	var html = PAGE_DATA.trans_metadata || '';
+	let html = PAGE_DATA.trans_metadata || '';
 	delete PAGE_DATA.trans_metadata;
 	if(options.trans_update){
-		var summary = details.firstElementChild;
+		const summary = details.firstElementChild;
 		if(summary){
 			summary.insertAdjacentHTML( 'beforeend',
 '（翻訳更新：<time>' + options.trans_update + '</time> ）'
@@ -404,8 +404,8 @@ function fillTransMetadata(){
 	}
 
 	if(html){
-		var url = window.location.pathname.match(/[^\/]+$/);
-		var mapping = {
+		const url = window.location.pathname.match(/[^\/]+$/);
+		const mapping = {
 THIS_PAGE: url?
 '<a href="https://triple-underscore.github.io/' + url[0] + '">このページ</a>' : 'このページ',
 SPEC_URL:
@@ -435,10 +435,10 @@ HTMLLS:
 }
 
 function fillSpecMetadata(){
-	var details = E('_spec_metadata');
+	const details = E('_spec_metadata');
 	if(!details) return;
-	var html;
-	var data = PAGE_DATA.spec_metadata;
+	let html;
+	let data = PAGE_DATA.spec_metadata;
 	delete PAGE_DATA.spec_metadata;
 	if(!data) return;
 
@@ -456,17 +456,17 @@ function fillSpecMetadata(){
 }
 
 function fillCopyright(){
-	var details = E('_copyright');
+	const details = E('_copyright');
 	if(!details) return;
 
-	var info = options.copyright;
+	let info = options.copyright;
 	if(!info) return;
 
 	info = info.split(',');
-	var year = info[0];
-	var license = info[1];
+	const year = info[0];
+	const license = info[1];
 
-	var html
+	let html
 = '<small>このページは、次による原文の許諾の下で翻訳されています：<br><span lang="en-x-a0">';
 	switch( license ){
 	case 'whatwg':
@@ -508,7 +508,7 @@ https と http の違いは無視。
 }
 
 function fillIndexes(){
-	var details = E('_index');
+	const details = E('_index');
 	if(!details) return;
 	if(details.open){
 		fill_data();
@@ -518,11 +518,11 @@ function fillIndexes(){
 
 	function fill_data(){
 		details.removeEventListener('toggle', fill_data, false);
-		var html = ['<p>'];
-		var selectors = Util.get_mapping(COMMON_DATA.INDEX_KEYS + (PAGE_DATA.navs || ''));
-		var count = 0;
-		for(var label in selectors){
-			var selector = selectors[label]
+		const html = ['<p>'];
+		const selectors = Util.get_mapping(COMMON_DATA.INDEX_KEYS + (PAGE_DATA.navs || ''));
+		let count = 0;
+		for(let label in selectors){
+			const selector = selectors[label]
 			if(document.body.querySelector(selector)){
 				html.push(
 '<a id="_index-nav-' + (count++) + '" data-cycling="' + selector + '">' + label + '</a>', '／'
@@ -549,13 +549,13 @@ function fillIndexes(){
 }
 
 function fillConformance(){
-	var links = {
+	const links = {
 w3c: '<a href="w3c-common-ja.html#conformance">W3C 日本語訳 共通ページ</a>',
 css: '<a href="css-common-ja.html#conformance">CSS 日本語訳 共通ページ</a>',
 	};
-	var link = links[ (options.conformance ) || ''];
+	const link = links[ (options.conformance ) || ''];
 	if(!link) return;
-	var sec = C('section');
+	const sec = C('section');
 	sec.id = 'conformance';
 	sec.innerHTML = '\n\
 <h2 title="Conformance">適合性</h2>\n\
@@ -568,16 +568,13 @@ css: '<a href="css-common-ja.html#conformance">CSS 日本語訳 共通ページ<
 
 /** 外部リンク日本語訳リンク追加 */
 function altLinkInit(){
-	var root;
-	if(options.main){
-		root = E(options.main);
-	}
-	if(!root){
-		root = document.getElementsByTagName('main')[0];
-	}
+	const root = (options.main) ?
+		E(options.main) :
+		document.getElementsByTagName('main')[0];
+
 	if(!root) return;
 //	COMMON_DATA.JA_BASIS[''] = ''; //
-	var ja_link = C('a');
+	const ja_link = C('a');
 	Util.ADDITIONAL_NODES.push(ja_link);
 	ja_link.id = '_ja_link';
 	ja_link.className = '_additional';
@@ -588,14 +585,14 @@ function altLinkInit(){
 	root.addEventListener('focus', insert_ja_link, true);
 
 	function insert_ja_link(e){
-		var a = e.target;
+		let a = e.target;
 		if(a.tagName !== 'A'){
 			a = a.parentNode;
 			if(a.tagName !== 'A') return;
 		}
 		if(a.className === '_additional') return;
 
-		var alt_url = altURL(a.getAttribute('href'));
+		const alt_url = altURL(a.getAttribute('href'));
 		if(!alt_url) return;
 		ja_link.href = alt_url;
 		a.parentNode.insertBefore(ja_link, a.nextSibling);
@@ -606,8 +603,8 @@ function altLinkInit(){
 	//	if(href.indexOf(PAGE_DATA.options.original_url) === 0) return;
 		href = href.match(/^https?:\/\/([^#]+)(#.*)?/);
 		if(!href) return;
-		var url = href[1];
-		var alt_url = COMMON_DATA.JA_LINKS[url];
+		const url = href[1];
+		let alt_url = COMMON_DATA.JA_LINKS[url];
 		if(alt_url === '') return; // 明示的な無効化
 		if(alt_url){
 			if(alt_url.charAt(0) === '@'){
@@ -616,16 +613,13 @@ function altLinkInit(){
 			}
 		} else {
 			// multi-page (HTML5, CSS2, SVG)
-			var slash = url.lastIndexOf('/');
+			const slash = url.lastIndexOf('/');
 			if(slash < 0 ) return;
 			alt_url = COMMON_DATA.JA_LINKS[url.slice(0, slash + 1)];
 			if(!alt_url) return;
 			alt_url += url.slice(slash + 1);
 		}
-		var hash = href[2] || '';
-		if(alt_url.indexOf('h-hash/rfc_ja') > 0 ){ // for "studying:"
-			hash = hash.replace(/#section-/, '#Sec');
-		}
+		const hash = href[2] || '';
 		return alt_url + hash;
 	//	return COMMON_DATA.fillURL(alt_url) + (href[2] || '');
 	}
@@ -658,14 +652,14 @@ Util.CLICK_HANDLERS = {
 /** 原文表示切替 */
 Util.CLICK_HANDLERS._toggle_source = function(){
 	Util.switchView(function(){
-		var on = document.body.classList.toggle('show-original');
+		const on = document.body.classList.toggle('show-original');
 		Util.setState('show_original', on);
 	});
 };
 /** 目次表示切替 */
 Util.CLICK_HANDLERS._toggle_toc = function(){
 	Util.switchView(function(){
-		var on = document.body.classList.toggle('side-menu');
+		const on = document.body.classList.toggle('side-menu');
 		Util.ref_position.releaseAndFix()
 		Util.setState('side_menu', on);
 		Util.toc_intersection_observer.restartObservation();
@@ -673,7 +667,7 @@ Util.CLICK_HANDLERS._toggle_toc = function(){
 };
 /** 全体表示 常時化切替 */
 Util.CLICK_HANDLERS._view_control = function(event){
-	var e = E('_view_control');
+	const e = E('_view_control');
 	if(event.target !== e) return;
 	e.classList.toggle('_hoverd')
 };
@@ -684,9 +678,9 @@ Util.CLICK_HANDLERS._view_control = function(event){
 /** 原文表示開閉（個別）*/
 Util.toggleSource = function(target){
 	if(target.lang === 'en') return;
-	for(var e = target; e; e = e.parentNode){
+	for(let e = target; e; e = e.parentNode){
 		if(e.tagName === 'SECTION') return;
-		var c = e.lastElementChild;
+		const c = e.lastElementChild;
 		if(c && c.lang === 'en'){
 			e.classList.toggle('show-original');
 			return;
@@ -712,15 +706,15 @@ Util.toc_intersection_observer = {
 			this.observer.disconnect();
 		}
 
-		var that = this;
-		var toc_id = PAGE_DATA.options.toc || '_toc';
-		var first_time = true;
+		const that = this;
+		const toc_id = PAGE_DATA.options.toc || '_toc';
+		let first_time = true;
 
 		this.pending = window.setTimeout(observe, 500);
 
 		function observe(){
 			that.pending = -1;
-			var observer = that.observer;
+			let observer = that.observer;
 			if(!observer){
 				observer =
 				that.observer = new IntersectionObserver(
@@ -730,23 +724,23 @@ Util.toc_intersection_observer = {
 				);
 			}
 
-			var visible = document.body.classList.contains('side-menu');
+			const visible = document.body.classList.contains('side-menu');
 			if(!visible) return;
 //			'#' + toc_main + ' section[id]'
 			repeat('#' + toc_id + ' a[href]', function(e){
-				var section = E(e.hash.slice(1));
+				const section = E(e.hash.slice(1));
 				if(!section) return; // This should not happen
 				observer.observe(section);
 			});
 		}
 
 		function intersected(entries, observer){
-			var nav = E(toc_id);
+			const nav = E(toc_id);
 			entries.forEach(function(entry){
 				if(first_time && !entry.isIntersecting) return;
-				var id = entry.target.id;// section
+				const id = entry.target.id;// section
 				if(!id) return;
-				var a = nav.querySelector('[href="#' + id + '"]');
+				const a = nav.querySelector('[href="#' + id + '"]');
 				if(!a) return;
 				a.classList.toggle('_intersecting', entry.isIntersecting);
 			});
@@ -759,10 +753,10 @@ Util.toc_intersection_observer = {
 /** 索引機能 初期化*/
 Util.indexInit = function(){
 
-	var list = null;        // 文書順の索引項目（ DOM node ）リスト
-	var sorted = true;      // true 字句順 / false 文書順
-	var scroll_top = 0;     // 最後のスクロール位置
-	var index_node = init(); // 索引コンテナ node
+	let list = null;        // 文書順の索引項目（ DOM node ）リスト
+	let sorted = true;      // true 字句順 / false 文書順
+	let scroll_top = 0;     // 最後のスクロール位置
+	const index_node = init(); // 索引コンテナ node
 
 	index_node.onclick = function(event){
 		if(event.target === index_node.firstChild){ //button
@@ -782,7 +776,7 @@ return;
 
 	function init(){
 		// 索引コンテナ, 切替ボタン, 一覧 Box
-		var index_node = C('div');
+		const index_node = C('div');
 		index_node.className = '_additional'; // for CSS
 		index_node.id = '_index_table'; // for CSS ：子要素はすべて display:block
 		index_node.appendChild(C('button'));// 表示順序 切替ボタン
@@ -792,8 +786,8 @@ return;
 
 	function indexHide(refresh){
 		if(!list) return;
-		var parent = index_node.parentNode;
-		var list_box = index_node.lastChild;
+		const parent = index_node.parentNode;
+		const list_box = index_node.lastChild;
 		if(parent){
 			scroll_top = list_box.scrollTop;
 		}
@@ -809,13 +803,13 @@ return;
 
 	function show_index(sort){
 		sort = sort? true : false;
-		var list_box = index_node.lastChild;
+		const list_box = index_node.lastChild;
 
 		if(!list || (sorted !== sort)) {
 			list_box.textContent = '';
 			if(!list) list = collect();
-			var list1 = list;
-			var button = index_node.firstChild;
+			let list1 = list;
+			const button = index_node.firstChild;
 			if(sort){
 				button.textContent = '出現順に切替';
 				list1 = list.slice(0);
@@ -833,19 +827,19 @@ return;
 	}
 
 	function collect(){
-		var list = [];
+		const list = [];
 		repeat('main dfn[id], main dt[id]', add_item);
 		return list;
 
 		function add_item(dfn){
-			var text = dfn.textContent.trim();
+			const text = dfn.textContent.trim();
 			if(!text) return;
-			var id = dfn.id;
-			var a = C('a');
+			const id = dfn.id;
+			const a = C('a');
 
 			a.href = '#' + id;
-			var e = dfn.firstElementChild;
-			var childE = e
+			const e = dfn.firstElementChild;
+			const childE = e
 				&& (e === dfn.firstChild)
 				&& (e === dfn.lastChild)
 				&& (e.tagName !== 'A');
@@ -857,7 +851,7 @@ return;
 			if(dfn.className){
 				a.className = dfn.className;
 			} else if(!childE){
-				var tag = dfn.parentNode.tagName;
+				const tag = dfn.parentNode.tagName;
 				if( (tag === 'PRE') || (tag === 'CODE') ){
 					a.className = 'code';
 				}
@@ -884,7 +878,7 @@ Util.switchView = function(callback, refresh){
 	}
 
 	// スクロール位置を保存 -> callback -> 復帰
-	var pos = this.ref_position.current(refresh);
+	const pos = this.ref_position.current(refresh);
 	callback();
 	this.ref_position.restore(pos);
 };
@@ -897,15 +891,15 @@ Util.ref_position = {
 		if(!document.elementFromPoint) {// 低精度 fallback
 			return {ratio: document.body.scrollTop / document.body.scrollHeight };
 		}
-		var H = window.innerHeight || 800;
-		var W = (document.body.clientWidth || 800);
-		var h = 999999, e = null;
-		for(var y = 0; y < H ; y += H / 10 ){
-			var x = W / 2 + W * (Math.random() - 0.5) * 0.7;
-			var e1 = document.elementFromPoint(x, y);
+		const H = window.innerHeight || 800;
+		const W = (document.body.clientWidth || 800);
+		let h = 999999, e = null;
+		for(let y = 0; y < H ; y += H / 10 ){
+			let x = W / 2 + W * (Math.random() - 0.5) * 0.7;
+			const e1 = document.elementFromPoint(x, y);
 		// offsetParent: body / display:none / position:fixed に対しては null
 			if(!e1 || (e1 === e) || !e1.offsetParent) continue;
-			var h1 = e1.offsetHeight;
+			const h1 = e1.offsetHeight;
 			if(h1 < h){
 				e = e1;
 				h = h1;
@@ -936,9 +930,9 @@ Util.ref_position = {
 
 	// reflow 後に scroll 位置を基準位置に復帰
 	restore: function(pos){
-		var e;
+		let e;
 		if(pos.id){ //refreshed
-			var e = (pos.id && E(pos.id)) || document.body;
+			e = (pos.id && E(pos.id)) || document.body;
 			window.scrollBy(0, this.offsetY(e) + pos.ratio * e.offsetHeight);
 		} else if(pos.element){
 			e = pos.element;
@@ -950,7 +944,7 @@ Util.ref_position = {
 				}
 				e = e.previousElementSibling;
 			}
-			var h = this.offsetY(e);
+			const h = this.offsetY(e);
 			window.scrollBy(0, h - pos.y_offset);
 		} else if(pos.ratio){
 			// 低精度 fallback
@@ -966,7 +960,7 @@ Util.ref_position = {
 
 	// 要素のウィンドウ内での表示位置 y を得る
 	offsetY: function(e){
-		var y = 0;
+		let y = 0;
 		while(e){
 			y += e.offsetTop;
 			e = e.offsetParent;
@@ -978,7 +972,7 @@ Util.ref_position = {
 	//	resize 時の reflow 頻度を抑えるため、body の width を固定
 	//	resize 操作を終える度, または目次切り替えの度に更新する：
 	releaseAndFix: function(){
-		var body = document.body;
+		const body = document.body;
 		body.style.width = '';
 		body.style.width = window.getComputedStyle(body).width;
 	},
@@ -990,9 +984,9 @@ Util.ref_position = {
 */
 
 	init: function(){
-		var ref_position = this;
-		var reflow_timer = 0;
-		var pos = null;
+		const ref_position = this;
+		let reflow_timer = 0;
+		let pos = null;
 
 		if(!document.elementFromPoint) return;
 
@@ -1043,25 +1037,25 @@ id 付きの dfn, dt, H2 〜 H6 タグの参照元リンクの一覧, 原文リ�
 
 Util.dfnInit = function(){
 		// current target (the clicked element)
-	var dfnStart = null;
+	let dfnStart = null;
 		// all the source anchors targeting to dfnStart in the document
-	var dfnLinks = null;
+	let dfnLinks = null;
 		// links to dfnLinks
-	var dfnIndecies = null;
-	var dfnJumpCount = 0;
-	var dfnIndex = -1;
-//	var dfnTargetScrollPositionY = 0;
+	let dfnIndecies = null;
+	let dfnJumpCount = 0;
+	let dfnIndex = -1;
+//	let dfnTargetScrollPositionY = 0;
 
-	var dfnPanel = C('div');
+	const dfnPanel = C('div');
 		dfnPanel.id = '_dfnPanel';
 		dfnPanel.innerHTML =
 '<div><input type="button" value="  ←  "><input type="button" value="  →  "><a></a><a class="_additional">(原文)</a></div><ul></ul>';
 		// a link to dfnStart
-	var dfnTarget = dfnPanel.firstElementChild.children[2];
+	const dfnTarget = dfnPanel.firstElementChild.children[2];
 		// link to the corresponding element in the original spec
-	var dfnOriginal = dfnTarget.nextElementSibling;
+	const dfnOriginal = dfnTarget.nextElementSibling;
 
-	var original_id_map = Util.get_mapping(PAGE_DATA.original_id_map);
+	const original_id_map = Util.get_mapping(PAGE_DATA.original_id_map);
 	var original_urls = null;
 	if(PAGE_DATA.original_urls){
 		// original_url の他に複数の原文 URL がある
@@ -1070,7 +1064,7 @@ Util.dfnInit = function(){
 
 	new function(){
 
-		var b = dfnTarget.previousElementSibling;
+		let b = dfnTarget.previousElementSibling;
 		b.onclick = function(event){navBy( 1, event);}
 		b = b.previousElementSibling;
 		b.onclick = function(event){navBy(-1, event);}
@@ -1090,7 +1084,7 @@ Util.dfnInit = function(){
 				dfnHide();
 				break;
 			case "ArrowLeft":
-				var index = dfnLinks.length + 1;
+				const index = dfnLinks.length + 1;
 				navBy(-1, event);
 				break;
 			case "ArrowRight":
@@ -1104,39 +1098,39 @@ Util.dfnInit = function(){
 		function dfnJump(event){
 			if(!dfnStart) return;
 			//event.newURL may not be supported (e.g. IE9)
-			var hash = window.location.hash;
-			var num = hash.match(/_xref-\d+-(\d+)/);
+			const hash = window.location.hash;
+			const num = hash.match(/_xref-\d+-(\d+)/);
 			if(!num) return;
 			dfnJump0(parseInt(num[1], 10));
 		}
 
 		function navBy(d, event){
-			var L = dfnLinks.length + 1;
-			var index = (dfnIndex + d + L) % L;
+			const L = dfnLinks.length + 1;
+			const index = (dfnIndex + d + L) % L;
 			event.preventDefault();
 			event.stopPropagation();
 			dfnJump0(index);
-			var ul = dfnPanel.lastElementChild;
+			const ul = dfnPanel.lastElementChild;
 			if(ul.scrollHeight <= ul.clientHeight) return;
 			// auto scroll
-			var emp = em_panel.current;
+			const emp = em_panel.current;
 			if(!emp) return;
-			var r1 = ul.getBoundingClientRect();
-			var r2 = emp.getBoundingClientRect();
+			const r1 = ul.getBoundingClientRect();
+			const r2 = emp.getBoundingClientRect();
 			if(r2.top < r1.top || r2.bottom > r1.bottom ){
 				emp.scrollIntoView();
 			}
 		}
 	}
 
-	var em_external = Object.create(null);
-	var em_panel = Object.create(null);
+	const em_external = Object.create(null);
+	const em_panel = Object.create(null);
 	em_external.emphasize = 
 	em_panel.emphasize = 
 	function(e){
 		// emphasize only one of
 		e = e || null;
-		var e0 = this.current || null;
+		const e0 = this.current || null;
 		if(e0 === e) return;
 		if(e0){
 			e0.classList.toggle('highlight');
@@ -1149,7 +1143,7 @@ Util.dfnInit = function(){
 
 	this.dfnHide = dfnHide;
 
-	var handlers = this.CLICK_HANDLERS;
+	const handlers = this.CLICK_HANDLERS;
 	handlers.DT =
 	handlers.DFN =
 	handlers.A =
@@ -1168,9 +1162,9 @@ Util.dfnInit = function(){
 		if(id.charAt(0) === '_') return; // 和訳固有の id
 		if(original_id_map[id] === '') return; // 和訳固有の id
 		if(!is_header && PAGE_DATA.options.no_original_dfn) return;
-		var original_url; // 原文 URL
+		let original_url; // 原文 URL
 		if(original_urls){
-			for(var e = E(id); e; e = e.parentNode){
+			for(let e = E(id); e; e = e.parentNode){
 				original_url = original_urls[e.id];
 				if(original_url) break;
 			}
@@ -1200,8 +1194,8 @@ Util.dfnInit = function(){
 
 	function dfnJump0(index){
 // dfnLinks.item() throws an exception in Safari, if the index arg is out of the range
-		var a = dfnLinks[index];
-		var emp;
+		let a = dfnLinks[index];
+		let emp;
 		if(a) {
 			emp = dfnIndecies[index];
 		} else {
@@ -1234,8 +1228,8 @@ Util.dfnInit = function(){
 	function dfnShow(dfn){
 		Util.removeAdditionalNodes();
 		if(dfn === dfnStart) return;
-		var id = dfn.id;
-		var is_header = /^H\d$/.test(dfn.tagName);
+		let id = dfn.id;
+		const is_header = /^H\d$/.test(dfn.tagName);
 		if(!id && is_header){
 			id = dfn.parentNode.id;
 		}
@@ -1253,29 +1247,29 @@ Util.dfnInit = function(){
 		dfnLinks = document.querySelectorAll(
 			dfn.getAttribute('data-cycling') || 'a[href="#' + id + '"]'
 		);
-		var L = dfnLinks.length;
+		const L = dfnLinks.length;
 
-		var ul = dfnPanel.lastElementChild;
+		const ul = dfnPanel.lastElementChild;
 		ul.textContent = '';
 		ul.className = L ? '' : 'empty';
 
-		var lastSection;
-		var lastLi;
-		var n;
-		var prefix = '#_xref-' + (dfnJumpCount++) + '-';
+		let lastSection;
+		let lastLi;
+		let n;
+		const prefix = '#_xref-' + (dfnJumpCount++) + '-';
 
-		for(var i = 0; i < L; i++){
-			var link = dfnLinks[i];
-			for(var section = link.parentNode; section;
-				section = section.parentNode){
+		for(let i = 0; i < L; i++){
+			const link = dfnLinks[i];
+			let section = link.parentNode;
+			while(section){
 				if(section.tagName === 'SECTION' ||
 					section.tagName === 'NAV' ) break;
+				section = section.parentNode;
 			}
-
-			var a = C('a');
+			const a = C('a');
 			if (section !== lastSection) {
 				lastSection = section;
-				var header = Util.get_header(section);
+				const header = Util.get_header(section);
 				n = 1;
 				lastLi = C('li');
 				ul.appendChild(lastLi);
@@ -1298,8 +1292,8 @@ Util.dfnInit = function(){
 		dfnPanel.focus();
 
 		if(dfnPanel.getBoundingClientRect){
-			var r = dfnPanel.getBoundingClientRect();
-			var w = document.body.clientWidth; // exclude scroll bar
+			const r = dfnPanel.getBoundingClientRect();
+			const w = document.body.clientWidth; // exclude scroll bar
 			if(r.right > w) {
 				if(r.width > w){
 					dfnPanel.style.left = 0;
@@ -1331,21 +1325,21 @@ Util.contextMenuInit = function(){
 
 Util.addAltRefs = function(){
 
-	var LABELS = {
+	const LABELS = {
 		'主': '日本語訳',
 		'副': '日本語訳',
 		'版': '最新発行版',
 		'編': '編集者草案'
 	};
 
-	var JA_REFS = COMMON_DATA.JA_REFS;
-	var JA_LINKS = COMMON_DATA.JA_LINKS;
-	var JA_BASIS = COMMON_DATA.JA_BASIS;
-	var REF_DATA = (PAGE_DATA.ref_data || '') + COMMON_DATA.REF_DATA;
-	var REF_KEY_MAP = Util.get_mapping(COMMON_DATA.REF_KEY_MAP + (PAGE_DATA.ref_key_map || ''));
+	const JA_REFS = COMMON_DATA.JA_REFS;
+	const JA_LINKS = COMMON_DATA.JA_LINKS;
+	const JA_BASIS = COMMON_DATA.JA_BASIS;
+	const REF_DATA = (PAGE_DATA.ref_data || '') + COMMON_DATA.REF_DATA;
+	const REF_KEY_MAP = Util.get_mapping(COMMON_DATA.REF_KEY_MAP + (PAGE_DATA.ref_key_map || ''));
 
-	var ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
-	var ref_id_lowercase = PAGE_DATA.options.ref_id_lowercase || false;
+	const ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
+	const ref_id_lowercase = PAGE_DATA.options.ref_id_lowercase || false;
 
 
 	Util.get_mapping(
@@ -1355,26 +1349,26 @@ Util.addAltRefs = function(){
 		JA_LINKS
 	);
 
-	var mapping = Object.create(null);
-	var ref_node_list = ['normative', 'informative'].filter(collect_entries);
+	const mapping = Object.create(null);
+	const ref_node_list = ['normative', 'informative'].filter(collect_entries);
 
-	var m;
-	var rxp = /^(\w+)=(\S)(\d*)[\t ]+(~\w*)?([^\s●]+)(●.*)?$/mg;
+	let m;
+	const rxp = /^(\w+)=(\S)(\d*)[\t ]+(~\w*)?([^\s●]+)(●.*)?$/mg;
 	while(m = rxp.exec(REF_DATA)){
-		var key = m[1];
-		var mark = m[2];
-		var label_index = m[3] || '';
-		var prefix = m[4];
-		var is_local = prefix === '~';
-		var url0 = m[5];
-		var label = ( m[6]? m[6].slice(1): LABELS[mark] ) + label_index;
-		var url = url0;
+		const key = m[1];
+		const mark = m[2];
+		const label_index = m[3] || '';
+		let prefix = m[4];
+		const is_local = prefix === '~';
+		const url0 = m[5];
+		const label = ( m[6]? m[6].slice(1): LABELS[mark] ) + label_index;
+		let url = url0;
 		if(prefix){
 			prefix = prefix.slice(1);
 //			if(! prefix in JA_BASIS) throw prefix;
 			url = JA_BASIS[prefix] + url0;
 		}
-		var url1 = ( url[0] === '＃' ) ?
+		const url1 = ( url[0] === '＃' ) ?
 			( 'http://' + url.slice(1)) :
 			( 'https://' + url);
 		switch(mark){
@@ -1405,15 +1399,15 @@ Util.addAltRefs = function(){
 
 //	console.log(JSON.stringify(JA_LINKS));
 	function refKey(s){
-		key = s.replace(/[^\w]/g, '').toUpperCase();
+		const key = s.replace(/[^\w]/g, '').toUpperCase();
 		return REF_KEY_MAP[key] || key;
 	}
 
 	function collect_entries(id){
-		var ref_data = PAGE_DATA['ref_' + id];
+		const ref_data = PAGE_DATA['ref_' + id];
 		if(!ref_data) return false;
 		ref_data.replace(/\n\[.+\]/g, function(ref_name){
-			var key = refKey(ref_name);
+			const key = refKey(ref_name);
 			mapping[key] = '';
 			return '';
 		});
@@ -1421,14 +1415,14 @@ Util.addAltRefs = function(){
 	}
 
 	function add_ref_link(key, url, label){
-		var v = mapping[key];
+		const v = mapping[key];
 		if(v === undefined) return;
-		var html = '<a href="' + url + '">' + label + '</a>';
+		const html = '<a href="' + url + '">' + label + '</a>';
 		mapping[key] += html;
 	}
 
 	function generateRefsHTML(){
-		var refs = E('references');
+		let refs = E('references');
 		if(!refs){
 			refs = C('section');
 			refs.id = 'references';
@@ -1436,16 +1430,16 @@ Util.addAltRefs = function(){
 			document.body.appendChild(refs);
 		}
 
-		var html_data = {
+		const html_data = {
 normative: '<h3>文献（規範）</h3>',
 informative: '<h3>文献（参考）</h3>'
 		};
 
 		ref_node_list.forEach(function(id){
-			var ref_data = PAGE_DATA['ref_' + id];
+			const ref_data = PAGE_DATA['ref_' + id];
 			if(!ref_data) return;
 			delete PAGE_DATA['ref_' + id];
-			var section = C('section');
+			const section = C('section');
 			section.id = id;
 			section.innerHTML = [
 				html_data[id],
@@ -1457,15 +1451,14 @@ informative: '<h3>文献（参考）</h3>'
 		});
 
 		function refHTML(data){
-			var last_key = '';
-			var html = data
+			let last_key = '';
+			let html = data
 			.replace(/\n\[(.+)\]/g, function(match, ref_name){
-				var id = ref_id_prefix +
+				const id = ref_id_prefix +
 					(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
-	
-				var last_key1 = last_key;
-				var key = refKey(ref_name);
-				var altref = mapping[key];
+				const last_key1 = last_key;
+				const key = refKey(ref_name);
+				const altref = mapping[key];
 				if(altref){
 					if(altref[0] !== '<'){
 						last_key = '\n<dd class="trans-ja-refs"><a href="#' + altref + '">【↑】</a></dd>'

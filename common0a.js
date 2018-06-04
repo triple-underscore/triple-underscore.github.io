@@ -10,7 +10,7 @@ w3c-common-ja.html
 
 // 要素取得
 function E(id){
-//	var e = document.getElementById(id);if(!e) {console.log(id);};return e;
+//	const e = document.getElementById(id);if(!e) {console.log(id);};return e;
 	return document.getElementById(id);
 }
 
@@ -26,14 +26,14 @@ function EMPTY_FUNC(){}
 // セレクタ対象の要素を反復処理
 function repeat(selector, callback, root){
 	if(!root) root = document
-	var elements = root.querySelectorAll(selector);
-	var L = elements.length;
-	for(var i = 0; i < L; i++){
+	const elements = root.querySelectorAll(selector);
+	const L = elements.length;
+	for(let i = 0; i < L; i++){
 		callback(elements[i]);
 	}
 }
 
-var PAGE_DATA = Object.create(null); 
+const PAGE_DATA = Object.create(null); 
 /* possible members:
 options:
 	see common1.js
@@ -49,10 +49,10 @@ words_table:
 
 */
 
-var COMMON_DATA = Object.create(null);
+const COMMON_DATA = Object.create(null);
 
 // 予約済みメンバ
-var Util = {
+const Util = {
 	_COMP_: null,
 	DEFERRED: [], // 遅延実行
 	initAdditional: EMPTY_FUNC,
@@ -102,7 +102,8 @@ var Util = {
 Util.get_mapping = function(data, map){
 	map = map || Object.create(null);
 
-	var rxp = /\n(\S.*?):(.*)/g, m;
+	const rxp = /\n(\S.*?):(.*)/g
+	let m;
 	while(m = rxp.exec(data)){
 		map[m[1]] = m[2];
 	}
@@ -111,9 +112,9 @@ Util.get_mapping = function(data, map){
 
 // ●●区切りの文字列から有名データブロックを抽出
 Util.parseBlocks = function(source){
-//	var rxp = RegExp('(\n' + splitter + ').+');
-	var result = Object.create(null);
-	var name = '';
+//	const rxp = RegExp('(\n' + splitter + ').+');
+	const result = Object.create(null);
+	let name = '';
 	source.split(/(\n●●.*)/).forEach(function(block){
 		if(block.slice(0,3) === '\n●●'){
 			name = block.slice(3);
@@ -163,7 +164,7 @@ Util.getDataByLevel = function(data, level){
 
 // 節見出しを取得
 Util.get_header = function(section){
-	var header = section && section.firstElementChild;
+	const header = section && section.firstElementChild;
 	return (
 		header && /^H\d$/.test(header.tagName)
 	)? header : null;
@@ -172,13 +173,13 @@ Util.get_header = function(section){
 
 Util.getState = function(key, default_val, type){
 	if(! (key in Util.page_state) ) return default_val;
-	var val = Util.page_state[key];
+	const val = Util.page_state[key];
 	return (type && (typeof(val) !== type))? default_val : val;
 };
 
 Util.setState = function(key, val){
-	var page_state = Util.page_state;
-	var old_val = page_state[key];
+	const page_state = Util.page_state;
+	const old_val = page_state[key];
 	if(val === old_val) return;
 	if(val === undefined){
 		delete page_state[key];
@@ -199,10 +200,10 @@ new function(){
 
 new function(){
 	// meta with viewport for mbile (ideally, should be set by CSS, not meta tag)
-	var head = document.head || document.getElementsByTagName('head')[0];
+	const head = document.head || document.getElementsByTagName('head')[0];
 	if(!head) return;
-//	var w = screen.width;...
-	var meta = C('meta');
+//	const w = screen.width;...
+	const meta = C('meta');
 	meta.setAttribute('name', 'viewport');
 	meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no');
 	head.appendChild(meta);
@@ -220,20 +221,20 @@ new function(){
 	function init(){
 		document.removeEventListener('DOMContentLoaded', init, false);
 
-		var elem = E('_source_data');
+		const elem = E('_source_data');
 		if(elem){
 			Object.assign(PAGE_DATA, Util.parseBlocks(elem.textContent));
 			elem.parentNode.removeChild(elem);
 		}
 
-		var options =
+		const options =
 		PAGE_DATA.options = Util.get_mapping(PAGE_DATA.options || '');
 
 		// 利用者 表示設定
-		var page_state = (JSON && get_state()) // setup saveStorage
+		let page_state = (JSON && get_state()) // setup saveStorage
 		Util.page_state = page_state = history.state || page_state || Util.page_state;
 
-		var classList = document.body.classList;
+		const classList = document.body.classList;
 
 		if(page_state.show_original){
 			classList.toggle('show-original');
@@ -252,7 +253,7 @@ new function(){
 			classList.add('_expanded');
 			if(options.toc){
 				// 目次構築
-				var toc_list = Util.buildTocList(E(options.main));
+				const toc_list = Util.buildTocList(E(options.main));
 				toc_list.id = '_toc_list';
 				E(options.toc).appendChild(toc_list);
 			}
@@ -261,8 +262,8 @@ new function(){
 
 	// 表示状態を sessionStorage から読み込む
 	function get_state(){
-		var page_state = null;
-		var storage_key = null;
+		let page_state = null;
+		let storage_key = null;
 
 		storage_key = PAGE_DATA.options.page_state_key || window.location.pathname;
 		try {
@@ -287,9 +288,9 @@ new function(){
 
 Util.rebuildToc = function(main_id, list_id){
 	list_id = list_id || '_toc_list';
-	var toc_list = E(list_id), main = E(main_id);
+	const toc_list = E(list_id), main = E(main_id);
 	if(toc_list && main) {
-		var new_list = Util.buildTocList(main);
+		const new_list = Util.buildTocList(main);
 		new_list.id = list_id;
 		toc_list.parentNode.replaceChild(new_list, toc_list);
 	}
@@ -297,8 +298,8 @@ Util.rebuildToc = function(main_id, list_id){
 }
 
 Util.buildTocList = function(root){
-	var range = document.createRange();
-	var toc = buildToc(root);
+	const range = document.createRange();
+	const toc = buildToc(root);
 	if(toc) { // a 要素の入れ子を除去
 		repeat('a a', function(e){
 			range.selectNodeContents(e);
@@ -311,25 +312,25 @@ Util.buildTocList = function(root){
 	return toc;
 
 	function buildToc(root){
-		var list = null;
-		for(var section = root.firstElementChild; 
+		let list = null;
+		for(let section = root.firstElementChild; 
 			section;
 			section = section.nextElementSibling
 		){
 			if('SECTION' !== section.tagName) continue;
-			var header = Util.get_header(section);
+			const header = Util.get_header(section);
 			if(!header) continue;
-			var id = section.id || header.id;
+			const id = section.id || header.id;
 			if(!id) continue;
-			var a = C('a');
+			const a = C('a');
 			a.href = '#' + id;
 			range.selectNodeContents(header);
 			a.appendChild(range.cloneContents());
 
-			var li = C('li');
+			const li = C('li');
 			li.appendChild(a);
 
-			var child_list = buildToc(section);
+			const child_list = buildToc(section);
 			if(child_list) li.appendChild(child_list);
 			if(!list) list = C('ol');
 			list.appendChild(li);
@@ -391,19 +392,19 @@ Util.word_switcher = {
 	html: null,
 
 	convert:function(map){
-		var main = E(this.main_id);
+		const main = E(this.main_id);
 		if(!this.html) this.html = main.innerHTML;
-		var ignore_flag = false;
+		let ignore_flag = false;
 		main.innerHTML = this.html.replace(this.rxp, function(key, hira, suffix, sa){
 			if(ignore_flag){
 				ignore_flag = false;
 				return (hira || '');
 			}
-			var val;
+			let val;
 			if(hira){
 				//(カナ+|漢字+)かな*<!--.-->
 				//この場合は suffix, sa を無視
-				var opt = hira.slice(-4,-3);
+				let opt = hira.slice(-4,-3);
 				key = key.slice(0,-8);
 				if(opt === '0'){
 					return key; // 無変換
@@ -448,7 +449,7 @@ Util.word_switcher = {
 		E('_view_control').insertAdjacentHTML( 'beforeend', 
 '<input type="button" class="_hide_if_expanded" tabindex="1" id="_toggle_words" value="語の和英" accessKey="X" title ="アクセスキー： X">'
 		);
-		var that = this;
+		const that = this;
 
 		Util.CLICK_HANDLERS._toggle_words = function(){
 			Util.switchView(toggleWords2, true);
@@ -476,7 +477,7 @@ Util.word_switcher = {
 		level = (level & 0xF) % this.num_levels;
 		if(level === this.level) return;
 		this.level = level;
-		var mapping;
+		let mapping;
 		if(level > 0){
 			mapping = 
 				Util.getDataByLevel(PAGE_DATA.words_table, level - 1 )
@@ -484,7 +485,7 @@ Util.word_switcher = {
 				.replace(/^([^\n:]+)[\d\-]?:\1$/mg, '');
 			mapping = Util.get_mapping(mapping);
 		}
-		var that = this;
+		const that = this;
 		Util.switchView(function(){
 			level ?
 				that.convert(mapping) :
