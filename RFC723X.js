@@ -1593,10 +1593,10 @@ architecture::::アーキテクチャ\n\
 	課す:impose する:~\n\
 設計:design::~::デザイン\n\
 許可-:permit:~\n\
+許可:permission:~\n\
 許容-:allow:~\n\
 不許可に:disallow:~\n\
 	許容されない:disallowed:~\n\
-許諾:permission:~\n\
 診断:diagnostic:~\n\
 試験:test::~::テスト\n\
 試験的:experimental:~\n\
