@@ -646,9 +646,6 @@ IETF Review:~5226#section-4.1\n\
 ~target~URI:~7230#target-URI\n\
 ~target資源:~7230#target-resource\n\
 ~trailer:~7230#trailer\n\
-	＊#trailer-part\n\
-	~trailer~field:~7230#section-4.1.2\n\
-~trailer~field:~7230#trailer-field\n\
 ~tunnel:~7230#tunnel\n\
 ~version:~7230#http.version\n\
 ~protocol~version:~7230#http.version\n\
@@ -2860,9 +2857,6 @@ IETF Review:~5226#section-4.1\n\
 〜~target~URI:~7230#target-URI\n\
 〜~target資源:~7230#target-resource\n\
 〜~trailer:~7230#trailer\n\
-	＊#trailer-part\n\
-	~trailer~field:~7230#section-4.1.2\n\
-〜~trailer~field:~7230#trailer-field\n\
 〜~tunnel:~7230#tunnel\n\
 ／~version:~7230#version\n\
 ／~protocol~version:~7230#version\n\
