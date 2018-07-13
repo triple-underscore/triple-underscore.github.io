@@ -334,13 +334,14 @@ network:ネットワーク\n\
 http:HTTP\n\
 security:セキュリティ\n\
 performance:計時\n\
+graphics:グラフィックス\n\
+paint:画像-色-塗り\n\
 css:CSS\n\
 css-ux:CSS UX\n\
-css-anim:アニメーションと変形\n\
+css-anim:アニメーション\n\
 typeset:テキスト組版\n\
 layout:レイアウト一般\n\
 layouts:レイアウト個別\n\
-paint:画像-色-塗り\n\
 selector:選択子\n\
 xml:XML\n\
 '
