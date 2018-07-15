@@ -1131,6 +1131,7 @@ INDEXEDDB:IndexedDB-ja.html\n\
 PROMISES:promises-guide-ja.html\n\
 TIMELINE:performance-timeline-ja.html\n\
 HRTIME:hr-time-ja.html\n\
+FEATUREPOLICY:feature-policy-ja.html\n\
 REFERRER-POLICY:webappsec-referrer-policy-ja.html\n\
 MIXED-CONTENT:webappsec-mixed-content-ja.html\n\
 SECURE-CONTEXT:webappsec-secure-contexts-ja.html\n\
