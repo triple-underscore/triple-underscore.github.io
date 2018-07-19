@@ -1024,6 +1024,7 @@ CSS21:https://www.w3.org/TR/CSS21\n\
 CSP3:CSP3-ja.html\n\
 COMPOSITING:compositing-ja.html\n\
 FILTEREFFECTS1:filter-effects-ja.html\n\
+MASKING1:css-masking-ja.html\n\
 CASCADE:css-cascade-ja.html\n\
 CSS2BOX:css22-box-ja.html\n\
 CSS2CONFORM:css-common-ja.html\n\
@@ -1056,7 +1057,6 @@ CSSPAGE:css-page-ja.html\n\
 CSSPOS:https://drafts.csswg.org/css-position-3/\n\
 CSSRUBY:css-ruby-ja.html\n\
 CSSREGION:https://drafts.csswg.org/css-regions-1/\n\
-SELECTORS4:selectors4-ja.html\n\
 CSSPSEUDO:css-pseudo-ja.html\n\
 CSSSTYLEATTR:css-style-attr-ja.html\n\
 CSSSYN:css-syntax-ja.html\n\
@@ -1067,6 +1067,7 @@ CSSUI:css-ui-ja.html\n\
 CSSVAL:css-values-ja.html\n\
 CSSVAR:css-variables-ja.html\n\
 CSSWM:css-writing-modes-ja.html\n\
+SELECTORS4:selectors4-ja.html\n\
 SIZING:css-sizing-ja.html\n\
 TRANSFORM:css-transforms-ja.html\n\
 TRANSFORM2:css-transforms2-ja.html\n\
