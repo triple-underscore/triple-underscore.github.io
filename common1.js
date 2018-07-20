@@ -1632,6 +1632,9 @@ CSSIMAGES3=版         ~TR/css3-images/\n\
 CSSIMAGES3=編         ~CSSWG/css-images-3/\n\
 CSSLOGICAL=主         ~/css-logical-ja.html\n\
 CSSLOGICAL=編         ~CSSWG/css-logical/\n\
+CSSMASKING=主         ~/css-masking-ja.html\n\
+CSSMASKING=編         ~CSSWG/css-masking-1/\n\
+CSSMASKING=版         ~TR/css-masking-1/\n\
 CSSMULTICOL=主        ~/css-multicol-ja.html\n\
 CSSMULTICOL=編        ~CSSWG/css-multicol-1/\n\
 CSSMULTICOL=版        ~TR/css-multicol-1/\n\
@@ -1996,6 +1999,7 @@ CSS3SYN:CSSSYNTAX\n\
 CSSSYNTAX3:CSSSYNTAX\n\
 CSS3FLEXBOX:CSSFLEX\n\
 CSSFLEXBOX1:CSSFLEX\n\
+CSSMASKING1:CSSMASKING\n\
 CSSMULTICOL1:CSSMULTICOL\n\
 CSS3COL:CSSMULTICOL\n\
 CSS3MULTICOL:CSSMULTICOL\n\
