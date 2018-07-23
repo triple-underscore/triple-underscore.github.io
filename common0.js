@@ -878,35 +878,35 @@ Util.replaceWords1 = function(data, mapping){
 	.replace(this.rxp_wordsX, '$1$2 ');
 };
 
-COMMON_DATA.PREMAP = '\n\
-終: \n\
-名:\uE00A\uE008名前\uE005\n\
-述:\uE00B\uE008名前\uE005\n\
-用:\uE007~For\uE005\n\
-値:\uE007<a href="~CSSVAL#value-defs">値</a>\uE006\n\
-新値:\uE007新たに定義される<a href="~CSSVAL#value-defs">値</a>\uE006\n\
-新初:\uE007新たに定義される<a href="~CASCADE#initial-values">初期値</a>\uE005\n\
-新算:\uE007新たに定義される<a href="~CASCADE#computed">算出値</a>\uE005\n\
-初:\uE007<a href="~CASCADE#initial-values">初期値</a>\uE005\n\
-適:\uE007適用対象\uE005\n\
-継:\uE007<a href="~CASCADE#inherited-property">継承-</a>\uE005\n\
-百:\uE007<a href="~CSSVAL#percentages">百分率</a>\uE005\n\
-媒:\uE007媒体\uE005\n\
-算:\uE007<a href="~CASCADE#computed">算出値</a>\uE005\n\
-順:\uE007正準的順序\uE005\n\
-ア:\uE007<a href="~TRANSITION#animatable-properties">~animation</a>\uE005\n\
-型:\uE007型\uE005\n\
-表終:\uE009\n\
-イ型:\uE00C\uE008型\uE005\n\
-界面:\uE007~interface\uE005\n\
-同期:\uE007同期？\uE005\n\
-浮上:\uE007浮上-？\uE005\n\
-標的:\uE007標的\uE005\n\
-取消:\uE007取消~可？\uE005\n\
-構:\uE007Composed？\uE005\n\
-既定動作:\uE007既定~動作\uE005\n\
-文脈:\uE007文脈~情報\uE005\n\
-';
+COMMON_DATA.PREMAP = `
+終: 
+名:\uE00A\uE008名前\uE005
+述:\uE00B\uE008名前\uE005
+用:\uE007~For\uE005
+値:\uE007<a href="~CSSVAL#value-defs">値</a>\uE006
+新値:\uE007新たに定義される<a href="~CSSVAL#value-defs">値</a>\uE006
+新初:\uE007新たに定義される<a href="~CASCADE#initial-values">初期値</a>\uE005
+新算:\uE007新たに定義される<a href="~CASCADE#computed">算出値</a>\uE005
+初:\uE007<a href="~CASCADE#initial-values">初期値</a>\uE005
+適:\uE007適用対象\uE005
+継:\uE007<a href="~CASCADE#inherited-property">継承-</a>\uE005
+百:\uE007<a href="~CSSVAL#percentages">百分率</a>\uE005
+媒:\uE007媒体\uE005
+算:\uE007<a href="~CASCADE#computed">算出値</a>\uE005
+順:\uE007正準的順序\uE005
+ア:\uE007<a href="~TRANSITION#animatable-properties">~animation</a>\uE005
+型:\uE007型\uE005
+表終:\uE009
+イ型:\uE00C\uE008型\uE005
+界面:\uE007~interface\uE005
+同期:\uE007同期？\uE005
+浮上:\uE007浮上-？\uE005
+標的:\uE007標的\uE005
+取消:\uE007取消~可？\uE005
+構:\uE007Composed？\uE005
+既定動作:\uE007既定~動作\uE005
+文脈:\uE007文脈~情報\uE005
+`;
 
 /*
 "終" は "⇒" の終端用
@@ -944,199 +944,199 @@ COMMON_DATA.PREMAP = '\n\
 */
 
 
-COMMON_DATA.SYMBOLS = '\n\
-THROW:<b>THROW</b>\n\
-WHILE:<b>WHILE</b>\n\
-RET:<b>RETURN</b>\n\
-IF:<b>IF</b>\n\
-ELSE:<b>ELSE</b>\n\
-ELIF:<b>ELSE IF</b>\n\
-ELSE_:他の場合は\n\
-OTHER:その他\n\
-FOR: \n\
-EACH:<b>各</b>\n\
-GOTO:<b>GOTO</b>\n\
-BREAK:<b>BREAK</b>\n\
-CONTINUE:<b>CONTINUE</b>\n\
-此れ:<b>これ°</b>\n\
-Assert:<b>Assert</b>\n\
-MUST:なければならない\n\
-MUST_NOT:ならない\n\
-SHOULD:べき\n\
-MAY:よい\n\
-AND:<b>∧</b>\n\
-OR:<b>∨</b>\n\
-NOT:<b>¬</b>\n\
-EQ: <span class="op">＝</span> \n\
-NEQ: <span class="op">≠</span> \n\
-LET: :← \n\
-SET: ← \n\
-F:false\n\
-T:true\n\
-ON:ON\n\
-OFF:OFF\n\
-NULL: null \n\
-PLUS: <span class="op">+</span> \n\
-MINUS: <span class="op">−</span> \n\
-MUL: <span class="op">×</span> \n\
-DIV: <span class="op">÷</span> \n\
-MOD: <span class="op">%</span> \n\
-DECBY: <span class="op">−=</span> \n\
-INCBY: <span class="op">+=</span> \n\
-GT: <span class="op">&gt;</span> \n\
-LT: <span class="op">&lt;</span> \n\
-LTE: <span class="op">≤</span> \n\
-GTE: <span class="op">≥</span> \n\
-IN: <span class="op">∈</span> \n\
-NIN: <span class="op">∉</span> \n\
-SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>\n\
-INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This section is non-normative.</span></p>\n\
-FINGERPRINTING:<a class="fingerprinting" href="HTML-infrastructure-ja.html#fingerprinting-vector"></a>\n\
-SPECBUGS:https://www.w3.org/Bugs/Public/show_bug.cgi\n\
-CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>\n\
-TR:https://www.w3.org/TR\n\
-IETF:https://tools.ietf.org/html\n\
-TC39:https://tc39.github.io/ecma262/\n\
-INFRA:infra-ja.html\n\
-DOM4:DOM4-ja.html\n\
-DOM-Parsing:DOM-Parsing-ja.html\n\
-ENCODING:Encoding-ja.html\n\
-FETCH:Fetch-ja.html\n\
-SW:https://w3c.github.io/ServiceWorker/\n\
-FILEAPI:File_API-ja.html\n\
-STREAMS:Streams-ja.html\n\
-URL1:URL-ja.html\n\
-MIMESNIFF:mimesniff-ja.html\n\
-FULLSCREEN:fullscreen-ja.html\n\
-NOTIFICATIONS:notifications-ja.html\n\
-WEBIDL:WebIDL-ja.html\n\
-XHR:XHR-ja.html\n\
-UIEVENTS:uievents-ja.html\n\
-RFC7230:RFC7230-ja.html\n\
-RFC7231:RFC7231-ja.html\n\
-RFC7232:RFC7232-ja.html\n\
-RFC7234:RFC7234-ja.html\n\
-CSSWG:https://drafts.csswg.org\n\
-CSSissue:https://github.com/w3c/csswg-drafts/issues\n\
-	CSS22:https://www.w3.org/TR/CSS22\n\
-CSS22:https://drafts.csswg.org/css2\n\
-CSS21:https://www.w3.org/TR/CSS21\n\
-CSP3:CSP3-ja.html\n\
-COMPOSITING:compositing-ja.html\n\
-FILTEREFFECTS1:filter-effects-ja.html\n\
-MASKING1:css-masking-ja.html\n\
-CASCADE:css-cascade-ja.html\n\
-CSS2BOX:css22-box-ja.html\n\
-CSS2CONFORM:css-common-ja.html\n\
-CSS2VISUDET:css22-visudet-ja.html\n\
-CSS2VISUFX:css22-visufx-ja.html\n\
-CSS2VISUREN:css22-visuren-ja.html\n\
-CSSALIGN:css-align-ja.html\n\
-CSSANIM:css-animations-ja.html\n\
-CSSBG:css-backgrounds-ja.html\n\
-CSSBREAK:css-break-ja.html\n\
-CSSCOLOR:css-color-ja.html\n\
-CSSCOND:css-conditional-ja.html\n\
-CSSCOUNTER:css-counter-styles-ja.html\n\
-CSSDISP:css-display-ja.html\n\
-CSSEXCLUSION:css-exclusions-ja.html\n\
-CSSFLEX:css-flexbox-ja.html\n\
-CSSFONT:css-fonts-ja.html\n\
-CSSGRID:css-grid-ja.html\n\
-CSSIMAGE:css-images-ja.html\n\
-CSSIMAGE4:css-images4-ja.html\n\
-CSSINLINE:css-inline-ja.html\n\
-CSSLOGICAL:css-logical-ja.html\n\
-CSSMCOL:css-multicol-ja.html\n\
-CSSNS:css-namespaces-ja.html\n\
-CSSOM1:cssom-ja.html\n\
-CSSOMVIEW:cssom-view-ja.html\n\
-CSSOVERFLOW:https://drafts.csswg.org/css-overflow-4/\n\
-CSSOVERFLOW3:css-overflow3-ja.html\n\
-CSSPAGE:css-page-ja.html\n\
-CSSPOS:https://drafts.csswg.org/css-position-3/\n\
-CSSRUBY:css-ruby-ja.html\n\
-CSSREGION:https://drafts.csswg.org/css-regions-1/\n\
-CSSPSEUDO:css-pseudo-ja.html\n\
-CSSSTYLEATTR:css-style-attr-ja.html\n\
-CSSSYN:css-syntax-ja.html\n\
-CSSTEXT:css-text-ja.html\n\
-CSSTEXTDECOR:css-text-decor-ja.html\n\
-CSSTIMING:css-timing-ja.html\n\
-CSSUI:css-ui-ja.html\n\
-CSSVAL:css-values-ja.html\n\
-CSSVAR:css-variables-ja.html\n\
-CSSWM:css-writing-modes-ja.html\n\
-SELECTORS4:selectors4-ja.html\n\
-SIZING:css-sizing-ja.html\n\
-TRANSFORM:css-transforms-ja.html\n\
-TRANSFORM2:css-transforms2-ja.html\n\
-TRANSITION:css-transitions-ja.html\n\
-WANIM:web-animations-ja.html\n\
-MQ4:mediaqueries4-ja.html\n\
-SVG11:SVG11\n\
-SVG2:https://svgwg.org/svg2-draft\n\
-HTMLLS:https://html.spec.whatwg.org/multipage\n\
-HTML50:https://www.w3.org/TR/html5\n\
-ARIA1:https://w3c.github.io/aria/\n\
-BROWSERS:browsers-ja.html\n\
-WINDOW:HTML-window-ja.html\n\
-ORIGIN:HTML-origin-ja.html\n\
-HISTORY:HTML-history-ja.html\n\
-NAVI:HTML-navigation-ja.html\n\
-WAPI:webappapis-ja.html\n\
-HTMLGAPI:HTML-global-api-ja.html\n\
-HTMLINFRA:HTML-infrastructure-ja.html\n\
-HTMLdep:HTML-dependencies-ja.html\n\
-HTMLcms:HTML-common-microsyntaxes-ja.html\n\
-HTMLcdom:HTML-common-dom-interfaces-ja.html\n\
-HTMLurl:HTML-urls-and-fetching-ja.html\n\
-HTMLcloning:HTML-structured-data-ja.html\n\
-HTMLcomms:HTML-comms-ja.html\n\
-HTMLsse:HTML-server-sent-events-ja.html\n\
-HTMLdnd:HTML-dnd-ja.html\n\
-HTMLdom:HTML-dom-ja.html\n\
-HTMLforms:HTML-forms-ja.html\n\
-HTMLautofill:HTML-autofill-ja.html\n\
-HTMLindex:HTML-index-ja.html\n\
-HTMLlinks:HTML-links-ja.html\n\
-HTMLnavigator:HTML-navigator-ja.html\n\
-HTMLinteraction:HTML-interaction-ja.html\n\
-HTMLrendering:HTML-rendering-ja.html\n\
-HTMLselectors:selectors-html-ja.html\n\
-HTMLxml:HTML-xhtml-ja.html\n\
-HTMLwriting:HTML-writing-ja.html\n\
-HTMLparsing:HTML-parsing-ja.html\n\
-HTMLdynamic:HTML-dynamic-markup-insertion-ja.html\n\
-HTMLobs:HTML-obsolete-ja.html\n\
-HEinteractive:HTML-interactive-elements-ja.html\n\
-HEforms:HTML-form-elements-ja.html\n\
-HEinput:HTML-input-ja.html\n\
-HEmetadata:HTML-metadata-ja.html\n\
-HEgrouping:HTML-grouping-ja.html\n\
-HEedits:HTML-edits-ja.html\n\
-HEimages:HTML-images-ja.html\n\
-HEembed:HTML-embed-ja.html\n\
-HEmedia:HTML-media-ja.html\n\
-HEcustom:HTML-custom-ja.html\n\
-HEtextlevel:HTML-text-level-ja.html\n\
-HEsections:HTML-sections-ja.html\n\
-HEscripting:HTML-scripting-ja.html\n\
-HEcanvas:https://html.spec.whatwg.org/multipage/canvas.html\n\
-HEtables:HTML-tables-ja.html\n\
-WORKERS:Workers-ja.html\n\
-WORKLETS1:worklets-ja.html\n\
-WEBSOCKET:WebSocket-ja.html\n\
-WEBSTORAGE:WebStorage-ja.html\n\
-INDEXEDDB:IndexedDB-ja.html\n\
-PROMISES:promises-guide-ja.html\n\
-TIMELINE:performance-timeline-ja.html\n\
-HRTIME:hr-time-ja.html\n\
-FEATUREPOLICY:feature-policy-ja.html\n\
-REFERRER-POLICY:webappsec-referrer-policy-ja.html\n\
-MIXED-CONTENT:webappsec-mixed-content-ja.html\n\
-SECURE-CONTEXT:webappsec-secure-contexts-ja.html\n\
-\n';
+COMMON_DATA.SYMBOLS = `
+THROW:<b>THROW</b>
+WHILE:<b>WHILE</b>
+RET:<b>RETURN</b>
+IF:<b>IF</b>
+ELSE:<b>ELSE</b>
+ELIF:<b>ELSE IF</b>
+ELSE_:他の場合は
+OTHER:その他
+FOR: 
+EACH:<b>各</b>
+GOTO:<b>GOTO</b>
+BREAK:<b>BREAK</b>
+CONTINUE:<b>CONTINUE</b>
+此れ:<b>これ°</b>
+Assert:<b>Assert</b>
+MUST:なければならない
+MUST_NOT:ならない
+SHOULD:べき
+MAY:よい
+AND:<b>∧</b>
+OR:<b>∨</b>
+NOT:<b>¬</b>
+EQ: <span class="op">＝</span> 
+NEQ: <span class="op">≠</span> 
+LET: :← 
+SET: ← 
+F:false
+T:true
+ON:ON
+OFF:OFF
+NULL: null 
+PLUS: <span class="op">+</span> 
+MINUS: <span class="op">−</span> 
+MUL: <span class="op">×</span> 
+DIV: <span class="op">÷</span> 
+MOD: <span class="op">%</span> 
+DECBY: <span class="op">−=</span> 
+INCBY: <span class="op">+=</span> 
+GT: <span class="op">&gt;</span> 
+LT: <span class="op">&lt;</span> 
+LTE: <span class="op">≤</span> 
+GTE: <span class="op">≥</span> 
+IN: <span class="op">∈</span> 
+NIN: <span class="op">∉</span> 
+SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>
+INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This section is non-normative.</span></p>
+FINGERPRINTING:<a class="fingerprinting" href="HTML-infrastructure-ja.html#fingerprinting-vector"></a>
+SPECBUGS:https://www.w3.org/Bugs/Public/show_bug.cgi
+CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
+TR:https://www.w3.org/TR
+IETF:https://tools.ietf.org/html
+TC39:https://tc39.github.io/ecma262/
+INFRA:infra-ja.html
+DOM4:DOM4-ja.html
+DOM-Parsing:DOM-Parsing-ja.html
+ENCODING:Encoding-ja.html
+FETCH:Fetch-ja.html
+SW:https://w3c.github.io/ServiceWorker/
+FILEAPI:File_API-ja.html
+STREAMS:Streams-ja.html
+URL1:URL-ja.html
+MIMESNIFF:mimesniff-ja.html
+FULLSCREEN:fullscreen-ja.html
+NOTIFICATIONS:notifications-ja.html
+WEBIDL:WebIDL-ja.html
+XHR:XHR-ja.html
+UIEVENTS:uievents-ja.html
+RFC7230:RFC7230-ja.html
+RFC7231:RFC7231-ja.html
+RFC7232:RFC7232-ja.html
+RFC7234:RFC7234-ja.html
+CSSWG:https://drafts.csswg.org
+CSSissue:https://github.com/w3c/csswg-drafts/issues
+	CSS22:https://www.w3.org/TR/CSS22
+CSS22:https://drafts.csswg.org/css2
+CSS21:https://www.w3.org/TR/CSS21
+CSP3:CSP3-ja.html
+COMPOSITING:compositing-ja.html
+FILTEREFFECTS1:filter-effects-ja.html
+MASKING1:css-masking-ja.html
+CASCADE:css-cascade-ja.html
+CSS2BOX:css22-box-ja.html
+CSS2CONFORM:css-common-ja.html
+CSS2VISUDET:css22-visudet-ja.html
+CSS2VISUFX:css22-visufx-ja.html
+CSS2VISUREN:css22-visuren-ja.html
+CSSALIGN:css-align-ja.html
+CSSANIM:css-animations-ja.html
+CSSBG:css-backgrounds-ja.html
+CSSBREAK:css-break-ja.html
+CSSCOLOR:css-color-ja.html
+CSSCOND:css-conditional-ja.html
+CSSCOUNTER:css-counter-styles-ja.html
+CSSDISP:css-display-ja.html
+CSSEXCLUSION:css-exclusions-ja.html
+CSSFLEX:css-flexbox-ja.html
+CSSFONT:css-fonts-ja.html
+CSSGRID:css-grid-ja.html
+CSSIMAGE:css-images-ja.html
+CSSIMAGE4:css-images4-ja.html
+CSSINLINE:css-inline-ja.html
+CSSLOGICAL:css-logical-ja.html
+CSSMCOL:css-multicol-ja.html
+CSSNS:css-namespaces-ja.html
+CSSOM1:cssom-ja.html
+CSSOMVIEW:cssom-view-ja.html
+CSSOVERFLOW:https://drafts.csswg.org/css-overflow-4/
+CSSOVERFLOW3:css-overflow3-ja.html
+CSSPAGE:css-page-ja.html
+CSSPOS:https://drafts.csswg.org/css-position-3/
+CSSRUBY:css-ruby-ja.html
+CSSREGION:https://drafts.csswg.org/css-regions-1/
+CSSPSEUDO:css-pseudo-ja.html
+CSSSTYLEATTR:css-style-attr-ja.html
+CSSSYN:css-syntax-ja.html
+CSSTEXT:css-text-ja.html
+CSSTEXTDECOR:css-text-decor-ja.html
+CSSTIMING:css-timing-ja.html
+CSSUI:css-ui-ja.html
+CSSVAL:css-values-ja.html
+CSSVAR:css-variables-ja.html
+CSSWM:css-writing-modes-ja.html
+SELECTORS4:selectors4-ja.html
+SIZING:css-sizing-ja.html
+TRANSFORM:css-transforms-ja.html
+TRANSFORM2:css-transforms2-ja.html
+TRANSITION:css-transitions-ja.html
+WANIM:web-animations-ja.html
+MQ4:mediaqueries4-ja.html
+SVG11:SVG11
+SVG2:https://svgwg.org/svg2-draft
+HTMLLS:https://html.spec.whatwg.org/multipage
+HTML50:https://www.w3.org/TR/html5
+ARIA1:https://w3c.github.io/aria/
+BROWSERS:browsers-ja.html
+WINDOW:HTML-window-ja.html
+ORIGIN:HTML-origin-ja.html
+HISTORY:HTML-history-ja.html
+NAVI:HTML-navigation-ja.html
+WAPI:webappapis-ja.html
+HTMLGAPI:HTML-global-api-ja.html
+HTMLINFRA:HTML-infrastructure-ja.html
+HTMLdep:HTML-dependencies-ja.html
+HTMLcms:HTML-common-microsyntaxes-ja.html
+HTMLcdom:HTML-common-dom-interfaces-ja.html
+HTMLurl:HTML-urls-and-fetching-ja.html
+HTMLcloning:HTML-structured-data-ja.html
+HTMLcomms:HTML-comms-ja.html
+HTMLsse:HTML-server-sent-events-ja.html
+HTMLdnd:HTML-dnd-ja.html
+HTMLdom:HTML-dom-ja.html
+HTMLforms:HTML-forms-ja.html
+HTMLautofill:HTML-autofill-ja.html
+HTMLindex:HTML-index-ja.html
+HTMLlinks:HTML-links-ja.html
+HTMLnavigator:HTML-navigator-ja.html
+HTMLinteraction:HTML-interaction-ja.html
+HTMLrendering:HTML-rendering-ja.html
+HTMLselectors:selectors-html-ja.html
+HTMLxml:HTML-xhtml-ja.html
+HTMLwriting:HTML-writing-ja.html
+HTMLparsing:HTML-parsing-ja.html
+HTMLdynamic:HTML-dynamic-markup-insertion-ja.html
+HTMLobs:HTML-obsolete-ja.html
+HEinteractive:HTML-interactive-elements-ja.html
+HEforms:HTML-form-elements-ja.html
+HEinput:HTML-input-ja.html
+HEmetadata:HTML-metadata-ja.html
+HEgrouping:HTML-grouping-ja.html
+HEedits:HTML-edits-ja.html
+HEimages:HTML-images-ja.html
+HEembed:HTML-embed-ja.html
+HEmedia:HTML-media-ja.html
+HEcustom:HTML-custom-ja.html
+HEtextlevel:HTML-text-level-ja.html
+HEsections:HTML-sections-ja.html
+HEscripting:HTML-scripting-ja.html
+HEcanvas:https://html.spec.whatwg.org/multipage/canvas.html
+HEtables:HTML-tables-ja.html
+WORKERS:Workers-ja.html
+WORKLETS1:worklets-ja.html
+WEBSOCKET:WebSocket-ja.html
+WEBSTORAGE:WebStorage-ja.html
+INDEXEDDB:IndexedDB-ja.html
+PROMISES:promises-guide-ja.html
+TIMELINE:performance-timeline-ja.html
+HRTIME:hr-time-ja.html
+FEATUREPOLICY:feature-policy-ja.html
+REFERRER-POLICY:webappsec-referrer-policy-ja.html
+MIXED-CONTENT:webappsec-mixed-content-ja.html
+SECURE-CONTEXT:webappsec-secure-contexts-ja.html
+`;
 
 /** 語彙 */
 COMMON_DATA.WORDS = '';
