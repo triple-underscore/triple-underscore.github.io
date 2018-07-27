@@ -1017,6 +1017,7 @@ RFC7231:RFC7231-ja.html
 RFC7232:RFC7232-ja.html
 RFC7234:RFC7234-ja.html
 HTTPweblink:http-web-linking-ja.html
+HTTPcookie:RFC6265-ja.html
 CSSWG:https://drafts.csswg.org
 CSSissue:https://github.com/w3c/csswg-drafts/issues
 	CSS22:https://www.w3.org/TR/CSS22

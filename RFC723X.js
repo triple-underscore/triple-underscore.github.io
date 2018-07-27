@@ -355,8 +355,8 @@ source_data.href_data = `
 
 h.MIME-Version:~7231#mime-version
 h.Keep-Alive:~7230#compatibility.with.http.1.0.persistent.connections
-h.Set-Cookie:~6265#section-4.1
-h.Cookie:~6265#section-4.2
+h.Set-Cookie:~HTTPcookie#section-4.1
+h.Cookie:~HTTPcookie#section-4.2
 h.Link:~HTTPweblink#section-3
 	h.Link:~IETF/rfc5988#section-5
 h.Content-Transfer-Encoding:~IETF/rfc2045#section-6
@@ -814,7 +814,6 @@ ERRATA:https://www.rfc-editor.org/errata_search.php
 7235:RFC7235-ja.html
 7538:RFC7538-ja.html
 	7238:https://tools.ietf.org/html/rfc7238
-6265:RFC6265-ja.html
 2045:https://tools.ietf.org/html/rfc2045
 2068:https://tools.ietf.org/html/rfc2068
 2616:https://tools.ietf.org/html/rfc2616
