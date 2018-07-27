@@ -357,7 +357,8 @@ h.MIME-Version:~7231#mime-version
 h.Keep-Alive:~7230#compatibility.with.http.1.0.persistent.connections
 h.Set-Cookie:~6265#section-4.1
 h.Cookie:~6265#section-4.2
-h.Link:~IETF/rfc5988#section-5
+h.Link:~HTTPweblink#section-3
+	h.Link:~IETF/rfc5988#section-5
 h.Content-Transfer-Encoding:~IETF/rfc2045#section-6
 	h.URI
 	h.Alternates:rfc2295#section-8.3
@@ -1167,6 +1168,7 @@ proprietary::::プロプライエタリ
 望まず:wish せず:~
 望まれ:wish され:~
 望む:wish する:~
+望まな:wish しな:~
 求めて:want して:~
 求まれ:want され:~
 	望ましく(un)desirable
@@ -1432,8 +1434,9 @@ architecture::::アーキテクチャ
 欠如:lack:~
 欠如する:lack する:欠く
 正しく:correct に:~
-不正:incorrect:~
 正しい:correct な:~
+正した:correct した:~
+不正:incorrect:~
 正確0:accurate:正確
 正確:exact:~
 正誤表:errata::~
