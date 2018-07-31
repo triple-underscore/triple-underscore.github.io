@@ -215,8 +215,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2018-07-17
-trans_update:2018-07-18
+spec_date:2018-07-31
+trans_update:2018-08-01
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -1885,7 +1885,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/51227372cc84846bdcf68312724c4cac6a4b9e58" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/cb89a78549cb3a64bdb4396ba68e6d7c0d51a34a" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 Tests:
@@ -6934,11 +6934,21 @@ The following are additional internal methods implemented by each ReadableStream
 Perform ! ResetQueue(this).
 </li>
 	<li>
-~RET 次を遂行した結果
+%result ~LET 次を遂行した結果
 ⇒
 ~this.[[cancelAlgorithm]]( %reason )
 ◎
-Return the result of performing this.[[cancelAlgorithm]], passing reason.
+Let result be the result of performing this.[[cancelAlgorithm]], passing reason.
+</li>
+	<li>
+! `ReadableStreamDefaultControllerClearAlgorithms$A( ~this )
+◎
+Perform ! ReadableStreamDefaultControllerClearAlgorithms(this).
+</li>
+	<li>
+~RET %result
+◎
+Return result.
 </li>
 </ol>
 
@@ -6968,16 +6978,28 @@ If this.[[queue]] is not empty,
 Let chunk be ! DequeueValue(this).
 </li>
 			<li>
+<p>
 ~IF［
 ~this.[[closeRequested]] ~EQ ~true
 ］~AND［
 ~this.[[queue]] は空である
 ］
-⇒
+◎
+If this.[[closeRequested]] is true and this.[[queue]] is empty,
+</p>
+				<ol>
+					<li>
+! `ReadableStreamDefaultControllerClearAlgorithms$A( ~this )
+◎
+Perform ! ReadableStreamDefaultControllerClearAlgorithms(this).
+</li>
+					<li>
 ! `ReadableStreamClose$A( %stream )
 ◎
-If this.[[closeRequested]] is true and this.[[queue]] is empty, perform ! ReadableStreamClose(stream).
+Perform ! ReadableStreamClose(stream).
 </li>
+				</ol>
+			</li>
 			<li>
 ~ELSE
 ⇒
@@ -7231,8 +7253,48 @@ Return false.
 </ol>
 
 			</section>
+
+			<section id="readable-stream-default-controller-clear-algorithms">
+<h4 class="nothrow">3.9.4. `ReadableStreamDefaultControllerClearAlgorithms( controller )^A</h4>
+
+<p>
+この抽象~演算は、~streamが~closeされるか~errorして，各種~algoが それ以上~実行されなくなったときに~callされる。
+これは、各種~algoへの参照を除去することにより，`下層~源$（ `ReadableStream$C ~obj）自身が
+— まだ参照されていても —
+~garbage収集されることを許可する。
+◎
+This abstract operation is called once the stream is closed or errored and the algorithms will not be executed any more. By removing the algorithm references it permits the underlying source object to be garbage collected even if the ReadableStream itself is still referenced.
+</p>
+
+<p class="note">注記：
+この~algoの結果は，現在は観測-可能でないが、~JSに
+<a href="https://github.com/tc39/proposal-weakrefs/">弱い参照</a>が追加されたなら，そうなり得る。
+追加されなくとも、実装は，類似する手続きを含めたいと求めるであろう。
+◎
+The results of this algorithm are not currently observable, but could become so if JavaScript eventually adds weak references. But even without that factor, implementations will likely want to include similar steps.
+</p>
+
+<ol class="algo">
+	<li>
+%controller.[[pullAlgorithm]] ~SET ~undefined
+◎
+Set controller.[[pullAlgorithm]] to undefined.
+</li>
+	<li>
+%controller.[[cancelAlgorithm]] ~SET ~undefined
+◎
+Set controller.[[cancelAlgorithm]] to undefined.
+</li>
+	<li>
+%controller.[[strategySizeAlgorithm]] ~SET ~undefined
+◎
+Set controller.[[strategySizeAlgorithm]] to undefined.
+</li>
+</ol>
+
+			</section>
 			<section id="readable-stream-default-controller-close">
-<h4 class="nothrow">3.9.4. `ReadableStreamDefaultControllerClose( controller )^A</h4>
+<h4 class="nothrow">3.9.5. `ReadableStreamDefaultControllerClose( controller )^A</h4>
 
 <p>
 他の仕様は、可読~streamを~closeしたいと望むなら，この抽象~演算を~callできる
@@ -7265,19 +7327,31 @@ Assert: ! ReadableStreamDefaultControllerCanCloseOrEnqueue(controller) is true.
 Set controller.[[closeRequested]] to true.
 </li>
 	<li>
+<p>
 ~IF［
 %controller.[[queue]] は空である
-］
-⇒
+］：
+◎
+If controller.[[queue]] is empty,
+</p>
+		<ol>
+			<li>
+! `ReadableStreamDefaultControllerClearAlgorithms$A( %controller )
+◎
+Perform ! ReadableStreamDefaultControllerClearAlgorithms(controller).
+</li>
+			<li>
 ! `ReadableStreamClose$A( %stream )
 ◎
-If controller.[[queue]] is empty, perform ! ReadableStreamClose(stream).
+Perform ! ReadableStreamClose(stream).
 </li>
+		</ol>
+	</li>
 </ol>
 
 			</section>
 			<section id="readable-stream-default-controller-enqueue">
-<h4 class="throws">3.9.5. `ReadableStreamDefaultControllerEnqueue( controller, chunk )^A</h4>
+<h4 class="throws">3.9.6. `ReadableStreamDefaultControllerEnqueue( controller, chunk )^A</h4>
 
 <p>
 他の仕様は、可読~stream内に`~chunk$たちを~enqueueしたいと望むなら，この抽象~演算を~callできる
@@ -7391,7 +7465,7 @@ Perform ! ReadableStreamDefaultControllerCallPullIfNeeded(controller).
 
 			</section>
 			<section id="readable-stream-default-controller-error">
-<h4 class="nothrow">3.9.6. `ReadableStreamDefaultControllerError( controller, e )^A</h4>
+<h4 class="nothrow">3.9.7. `ReadableStreamDefaultControllerError( controller, e )^A</h4>
 
 <p>
 他の仕様は、可読~streamを~error状態へ移行させたいと望むなら，この抽象~演算を~callできる
@@ -7425,6 +7499,11 @@ If stream.[[state]] is not "readable", return.
 Perform ! ResetQueue(controller).
 </li>
 	<li>
+! `ReadableStreamDefaultControllerClearAlgorithms$A( %controller )
+◎
+Perform ! ReadableStreamDefaultControllerClearAlgorithms(controller).
+</li>
+	<li>
 ! `ReadableStreamError$A( %stream, %e )
 ◎
 Perform ! ReadableStreamError(stream, e).
@@ -7433,7 +7512,7 @@ Perform ! ReadableStreamError(stream, e).
 
 			</section>
 			<section id="readable-stream-default-controller-get-desired-size">
-<h4 class="nothrow">3.9.7. `ReadableStreamDefaultControllerGetDesiredSize( controller )^A</h4>
+<h4 class="nothrow">3.9.8. `ReadableStreamDefaultControllerGetDesiredSize( controller )^A</h4>
 
 <p>
 他の仕様は、この`~streamの内部~queueの残り~size$を決定したいと望むなら，この抽象~演算を~callできる
@@ -7483,7 +7562,7 @@ Return controller.[[strategyHWM]] − controller.[[queueTotalSize]].
 
 			</section>
 			<section id="readable-stream-default-controller-has-backpressure">
-<h4 class="nothrow">3.9.8. `ReadableStreamDefaultControllerHasBackpressure( controller )^A</h4>
+<h4 class="nothrow">3.9.9. `ReadableStreamDefaultControllerHasBackpressure( controller )^A</h4>
 
 <p class="note">注記：
 この抽象~演算は、 `TransformStream^C の実装に利用される。
@@ -7511,7 +7590,7 @@ Otherwise, return true.
 
 			</section>
 			<section id="readable-stream-default-controller-can-close-or-enqueue">
-<h4 class="nothrow">3.9.9. `ReadableStreamDefaultControllerCanCloseOrEnqueue( controller )^A</h4>
+<h4 class="nothrow">3.9.10. `ReadableStreamDefaultControllerCanCloseOrEnqueue( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -7558,7 +7637,7 @@ The case where stream.[[closeRequested]] is false, but stream.[[state]] is not "
 
 			</section>
 			<section id="set-up-readable-stream-default-controller">
-<h4 class="throws">3.9.10. `SetUpReadableStreamDefaultController( stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, highWaterMark, sizeAlgorithm )^A</h4>
+<h4 class="throws">3.9.11. `SetUpReadableStreamDefaultController( stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, highWaterMark, sizeAlgorithm )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -7676,7 +7755,7 @@ Perform ! ReadableStreamDefaultControllerError(controller, r).
 
 			</section>
 			<section id="set-up-readable-stream-default-controller-from-underlying-source">
-<h4 class="throws">3.9.11. `SetUpReadableStreamDefaultControllerFromUnderlyingSource( stream, underlyingSource, highWaterMark, sizeAlgorithm )^A</h4>
+<h4 class="throws">3.9.12. `SetUpReadableStreamDefaultControllerFromUnderlyingSource( stream, underlyingSource, highWaterMark, sizeAlgorithm )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -8244,11 +8323,21 @@ Set firstDescriptor.[[bytesFilled]] to 0.
 Perform ! ResetQueue(this).
 </li>
 	<li>
-~RET 次を遂行した結果
+%result ~LET 次を遂行した結果
 ⇒
 ~this.[[cancelAlgorithm]]( %reason )
 ◎
-Return the result of performing this.[[cancelAlgorithm]], passing in reason.
+Let result be the result of performing this.[[cancelAlgorithm]], passing in reason.
+</li>
+	<li>
+! `ReadableByteStreamControllerClearAlgorithms$A( ~this )
+◎
+Perform ! ReadableByteStreamControllerClearAlgorithms(this).
+</li>
+	<li>
+~RET %result
+◎
+Return result.
 </li>
 </ol>
 
@@ -8779,8 +8868,43 @@ Perform ! ReadableByteStreamControllerError(controller, e).
 </ol>
 
 			</section>
+			<section id="readable-byte-stream-controller-clear-algorithms">
+<h4 class="throws">3.12.4. `ReadableByteStreamControllerClearAlgorithms( controller )^A</h4>
+
+<p>
+この抽象~演算は、~streamが~closeされるか~errorして，各種~algoが それ以上~実行されなくなったときに~callされる。
+これは、各種~algoへの参照を除去することにより，`下層~源$（ `ReadableStream$C ~obj）自身が
+— まだ参照されていても —
+~garbage収集されることを許可する。
+◎
+This abstract operation is called once the stream is closed or errored and the algorithms will not be executed any more. By removing the algorithm references it permits the underlying source object to be garbage collected even if the ReadableStream itself is still referenced.
+</p>
+
+
+<p class="note">注記：
+この~algoの結果は，現在は観測-可能でないが、~JSに
+<a href="https://github.com/tc39/proposal-weakrefs/">弱い参照</a>が追加されたなら，そうなり得る。
+追加されなくとも、実装は，類似する手続きを含めたいと求めるであろう。
+◎
+The results of this algorithm are not currently observable, but could become so if JavaScript eventually adds weak references. But even without that factor, implementations will likely want to include similar steps.
+</p>
+
+<ol class="algo">
+	<li>
+%controller.[[pullAlgorithm]] ~SET ~undefined
+◎
+Set controller.[[pullAlgorithm]] to undefined.
+</li>
+	<li>
+%controller.[[cancelAlgorithm]] ~SET ~undefined
+◎
+Set controller.[[cancelAlgorithm]] to undefined.
+</li>
+</ol>
+
+			</section>
 			<section id="readable-byte-stream-controller-clear-pending-pull-intos">
-<h4 class="nothrow">3.12.4. `ReadableByteStreamControllerClearPendingPullIntos( controller )^A</h4>
+<h4 class="nothrow">3.12.5. `ReadableByteStreamControllerClearPendingPullIntos( controller )^A</h4>
 
 
 <ol class="algo">
@@ -8798,7 +8922,7 @@ Set controller.[[pendingPullIntos]] to a new empty List.
 
 			</section>
 			<section id="readable-byte-stream-controller-close">
-<h4 class="throws">3.12.5. `ReadableByteStreamControllerClose( controller )^A</h4>
+<h4 class="throws">3.12.6. `ReadableByteStreamControllerClose( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -8882,6 +9006,11 @@ Throw e.
 		</ol>
 	</li>
 	<li>
+! `ReadableByteStreamControllerClearAlgorithms$A( %controller )
+◎
+Perform ! ReadableByteStreamControllerClearAlgorithms(controller).
+</li>
+	<li>
 ! `ReadableStreamClose$A( %stream )
 ◎
 Perform ! ReadableStreamClose(stream).
@@ -8890,7 +9019,7 @@ Perform ! ReadableStreamClose(stream).
 
 			</section>
 			<section id="readable-byte-stream-controller-commit-pull-into-descriptor">
-<h4 class="nothrow">3.12.6. `ReadableByteStreamControllerCommitPullIntoDescriptor( stream, pullIntoDescriptor )^A</h4>
+<h4 class="nothrow">3.12.7. `ReadableByteStreamControllerCommitPullIntoDescriptor( stream, pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -8973,7 +9102,7 @@ Perform ! ReadableStreamFulfillReadIntoRequest(stream, filledView, done).
 
 			</section>
 			<section id="readable-byte-stream-controller-convert-pull-into-descriptor">
-<h4 class="nothrow">3.12.7. `ReadableByteStreamControllerConvertPullIntoDescriptor( pullIntoDescriptor )^A</h4>
+<h4 class="nothrow">3.12.8. `ReadableByteStreamControllerConvertPullIntoDescriptor( pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9008,7 +9137,7 @@ Return ! Construct(pullIntoDescriptor.[[ctor]], « pullIntoDescriptor.[[buffer]]
 
 			</section>
 			<section id="readable-byte-stream-controller-enqueue">
-<h4 class="nothrow">3.12.8. `ReadableByteStreamControllerEnqueue( controller, chunk )^A</h4>
+<h4 class="nothrow">3.12.9. `ReadableByteStreamControllerEnqueue( controller, chunk )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9152,7 +9281,7 @@ Perform ! ReadableByteStreamControllerCallPullIfNeeded(controller).
 
 			</section>
 			<section id="readable-byte-stream-controller-enqueue-chunk-to-queue">
-<h4 class="nothrow">3.12.9. `ReadableByteStreamControllerEnqueueChunkToQueue( controller, buffer, byteOffset, byteLength )^A</h4>
+<h4 class="nothrow">3.12.10. `ReadableByteStreamControllerEnqueueChunkToQueue( controller, buffer, byteOffset, byteLength )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9175,7 +9304,7 @@ Add byteLength to controller.[[queueTotalSize]].
 
 			</section>
 			<section id="readable-byte-stream-controller-error">
-<h4 class="nothrow">3.12.10. `ReadableByteStreamControllerError( controller, e )^A</h4>
+<h4 class="nothrow">3.12.11. `ReadableByteStreamControllerError( controller, e )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9203,6 +9332,11 @@ Perform ! ReadableByteStreamControllerClearPendingPullIntos(controller).
 Perform ! ResetQueue(controller).
 </li>
 	<li>
+! `ReadableByteStreamControllerClearAlgorithms$A( %controller )
+◎
+Perform ! ReadableByteStreamControllerClearAlgorithms(controller).
+</li>
+	<li>
 ! `ReadableStreamError$A( %stream, %e )
 ◎
 Perform ! ReadableStreamError(stream, e).
@@ -9211,7 +9345,7 @@ Perform ! ReadableStreamError(stream, e).
 
 			</section>
 			<section id="readable-byte-stream-controller-fill-head-pull-into-descriptor">
-<h4 class="nothrow">3.12.11. `ReadableByteStreamControllerFillHeadPullIntoDescriptor( controller, size, pullIntoDescriptor )^A</h4>
+<h4 class="nothrow">3.12.12. `ReadableByteStreamControllerFillHeadPullIntoDescriptor( controller, size, pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9237,7 +9371,7 @@ Set pullIntoDescriptor.[[bytesFilled]] to pullIntoDescriptor.[[bytesFilled]] + s
 
 			</section>
 			<section id="readable-byte-stream-controller-fill-pull-into-descriptor-from-queue">
-<h4 class="nothrow">3.12.12. `ReadableByteStreamControllerFillPullIntoDescriptorFromQueue( controller, pullIntoDescriptor )^A</h4>
+<h4 class="nothrow">3.12.13. `ReadableByteStreamControllerFillPullIntoDescriptorFromQueue( controller, pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9427,7 +9561,7 @@ Return ready.
 
 			</section>
 			<section id="readable-byte-stream-controller-get-desired-size">
-<h4 class="nothrow">3.12.13. `ReadableByteStreamControllerGetDesiredSize( controller )^A</h4>
+<h4 class="nothrow">3.12.14. `ReadableByteStreamControllerGetDesiredSize( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9468,7 +9602,7 @@ Return controller.[[strategyHWM]] − controller.[[queueTotalSize]].
 
 			</section>
 			<section id="readable-byte-stream-controller-handle-queue-drain">
-<h4 class="nothrow">3.12.14. `ReadableByteStreamControllerHandleQueueDrain( controller )^A</h4>
+<h4 class="nothrow">3.12.15. `ReadableByteStreamControllerHandleQueueDrain( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9488,6 +9622,11 @@ Assert: controller.[[controlledReadableByteStream]].[[state]] is "readable".
 If controller.[[queueTotalSize]] is 0 and controller.[[closeRequested]] is true,
 </p>
 		<ol>
+			<li>
+! `ReadableByteStreamControllerClearAlgorithms$A( %controller )
+◎
+Perform ! ReadableByteStreamControllerClearAlgorithms(controller).
+</li>
 			<li>
 ! `ReadableStreamClose$A( %controller.[[controlledReadableByteStream]] )
 ◎
@@ -9513,7 +9652,7 @@ Perform ! ReadableByteStreamControllerCallPullIfNeeded(controller).
 
 			</section>
 			<section id="readable-byte-stream-controller-invalidate-byob-request">
-<h4 class="nothrow">3.12.15. `ReadableByteStreamControllerInvalidateBYOBRequest( controller )^A</h4>
+<h4 class="nothrow">3.12.16. `ReadableByteStreamControllerInvalidateBYOBRequest( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9544,7 +9683,7 @@ Set controller.[[byobRequest]] to undefined.
 
 			</section>
 			<section id="readable-byte-stream-controller-process-pull-into-descriptors-using-queue">
-<h4 class="nothrow">3.12.16. `ReadableByteStreamControllerProcessPullIntoDescriptorsUsingQueue( controller )^A</h4>
+<h4 class="nothrow">3.12.17. `ReadableByteStreamControllerProcessPullIntoDescriptorsUsingQueue( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9601,7 +9740,7 @@ Perform ! ReadableByteStreamControllerCommitPullIntoDescriptor(controller.[[cont
 
 			</section>
 			<section id="readable-byte-stream-controller-pull-into">
-<h4 class="nothrow">3.12.17. `ReadableByteStreamControllerPullInto( controller, view, forAuthorCode )^A</h4>
+<h4 class="nothrow">3.12.18. `ReadableByteStreamControllerPullInto( controller, view, forAuthorCode )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9804,7 +9943,7 @@ Return promise.
 
 			</section>
 			<section id="readable-byte-stream-controller-respond">
-<h4 class="throws">3.12.18. `ReadableByteStreamControllerRespond( controller, bytesWritten )^A</h4>
+<h4 class="throws">3.12.19. `ReadableByteStreamControllerRespond( controller, bytesWritten )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9839,7 +9978,7 @@ Perform ? ReadableByteStreamControllerRespondInternal(controller, bytesWritten).
 
 			</section>
 			<section id="readable-byte-stream-controller-respond-in-closed-state">
-<h4 class="nothrow">3.12.19. `ReadableByteStreamControllerRespondInClosedState( controller, firstDescriptor )^A</h4>
+<h4 class="nothrow">3.12.20. `ReadableByteStreamControllerRespondInClosedState( controller, firstDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9896,7 +10035,7 @@ Perform ! ReadableByteStreamControllerCommitPullIntoDescriptor(stream, pullIntoD
 
 			</section>
 			<section id="readable-byte-stream-controller-respond-in-readable-state">
-<h4 class="throws">3.12.20. `ReadableByteStreamControllerRespondInReadableState( controller, bytesWritten, pullIntoDescriptor )^A</h4>
+<h4 class="throws">3.12.21. `ReadableByteStreamControllerRespondInReadableState( controller, bytesWritten, pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9988,7 +10127,7 @@ Perform ! ReadableByteStreamControllerProcessPullIntoDescriptorsUsingQueue(contr
 
 			</section>
 			<section id="readable-byte-stream-controller-respond-internal">
-<h4 class="throws">3.12.21. `ReadableByteStreamControllerRespondInternal( controller, bytesWritten )^A</h4>
+<h4 class="throws">3.12.22. `ReadableByteStreamControllerRespondInternal( controller, bytesWritten )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10055,7 +10194,7 @@ Perform ! ReadableByteStreamControllerCallPullIfNeeded(controller).
 
 			</section>
 			<section id="readable-byte-stream-controller-respond-with-new-view">
-<h4 class="throws">3.12.22. `ReadableByteStreamControllerRespondWithNewView( controller, view )^A</h4>
+<h4 class="throws">3.12.23. `ReadableByteStreamControllerRespondWithNewView( controller, view )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10101,7 +10240,7 @@ Perform ? ReadableByteStreamControllerRespondInternal(controller, view.[[ByteLen
 
 			</section>
 			<section id="readable-byte-stream-controller-shift-pending-pull-into">
-<h4 class="nothrow">3.12.23. `ReadableByteStreamControllerShiftPendingPullInto( controller )^A</h4>
+<h4 class="nothrow">3.12.24. `ReadableByteStreamControllerShiftPendingPullInto( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10129,7 +10268,7 @@ Return descriptor.
 
 			</section>
 			<section id="readable-byte-stream-controller-should-call-pull">
-<h4 class="nothrow">3.12.24. `ReadableByteStreamControllerShouldCallPull( controller )^A</h4>
+<h4 class="nothrow">3.12.25. `ReadableByteStreamControllerShouldCallPull( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10216,7 +10355,7 @@ Return false.
 
 			</section>
 			<section id="set-up-readable-byte-stream-controller">
-<h4 class="throws">3.12.25. `SetUpReadableByteStreamController( stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, highWaterMark, autoAllocateChunkSize )^A</h4>
+<h4 class="throws">3.12.26. `SetUpReadableByteStreamController( stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, highWaterMark, autoAllocateChunkSize )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10365,7 +10504,7 @@ Perform ! ReadableByteStreamControllerError(controller, r).
 
 			</section>
 			<section id="set-up-readable-byte-stream-controller-from-underlying-source">
-<h4 class="throws">3.12.26. `SetUpReadableByteStreamControllerFromUnderlyingSource( stream, underlyingByteSource, highWaterMark )^A</h4>
+<h4 class="throws">3.12.27. `SetUpReadableByteStreamControllerFromUnderlyingSource( stream, underlyingByteSource, highWaterMark )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10449,7 +10588,7 @@ Perform ? SetUpReadableByteStreamController(stream, controller, startAlgorithm, 
 
 			</section>
 			<section id="set-up-readable-stream-byob-request">
-<h4 class="nothrow">3.12.27. `SetUpReadableStreamBYOBRequest(request, controller, view )^A</h4>
+<h4 class="nothrow">3.12.28. `SetUpReadableStreamBYOBRequest(request, controller, view )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -13868,8 +14007,8 @@ Perform ? SetUpWritableStreamDefaultController(stream, controller, startAlgorith
 <h4 class="nothrow">4.8.4. `WritableStreamDefaultControllerClearAlgorithms( controller )^A</h4>
 
 <p>
-この抽象~演算は，~streamが~closeされるか~errorしたときに~callされ、各種~algoへの参照を除去することにより，それ以降は それらが実行されないようにする。
-その結果、`下層~槽$（ `WritableStream$C ~obj）自身が
+この抽象~演算は、~streamが~closeされるか~errorして，各種~algoが それ以上~実行されなくなったときに~callされる。
+これは、各種~algoへの参照を除去することにより，`下層~槽$（ `WritableStream$C ~obj）自身が
 — まだ参照されていても —
 ~garbage収集されることを許可する。
 ◎
@@ -13907,6 +14046,11 @@ Set controller.[[closeAlgorithm]] to undefined.
 %controller.[[abortAlgorithm]] ~SET ~undefined
 ◎
 Set controller.[[abortAlgorithm]] to undefined.
+</li>
+	<li>
+%controller.[[strategySizeAlgorithm]] ~SET ~undefined
+◎
+Set controller.[[strategySizeAlgorithm]] to undefined.
 </li>
 </ol>
 
@@ -15763,8 +15907,8 @@ Perform ! SetUpTransformStreamDefaultController(stream, controller, transformAlg
 <h4 class="nothrow">5.5.4. `TransformStreamDefaultControllerClearAlgorithms( controller )^A</h4>
 
 <p>
-この抽象~演算は，~streamが~closeされるか~errorしたときに~callされ、各種~algoへの参照を除去することにより，それ以降は それらが実行されないようにする。
-その結果、`形式変換器$（ `TransformStream$C ~obj）自身が
+この抽象~演算は、~streamが~closeされるか~errorして，各種~algoが それ以上~実行されなくなったときに~callされる。
+これは、各種~algoへの参照を除去することにより，`形式変換器$（ `TransformStream$C ~obj）自身が
 — まだ参照されていても —
 ~garbage収集されることを許可する。
 ◎
