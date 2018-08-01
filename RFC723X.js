@@ -812,7 +812,7 @@ ERRATA:https://www.rfc-editor.org/errata_search.php
 7233:RFC7233-ja.html
 7234:RFC7234-ja.html
 7235:RFC7235-ja.html
-7538:RFC7538-ja.html
+7538:http-status-code-308-ja.html
 	7238:https://tools.ietf.org/html/rfc7238
 2045:https://tools.ietf.org/html/rfc2045
 2068:https://tools.ietf.org/html/rfc2068
