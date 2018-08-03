@@ -1892,7 +1892,7 @@ portal::::ポータル
 web:
 provider::::プロバイダ
 proxy::::プロキシ
-serve::::サービス供与
+serve::::サーブ
 server::::サーバ
 server-wide::server 全般::サーバ全般
 service::::サービス
