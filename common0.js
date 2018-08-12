@@ -1020,6 +1020,7 @@ HTTPweblink:http-web-linking-ja.html
 HTTPcookie:http-cookie-ja.html
 CSSWG:https://drafts.csswg.org
 CSSissue:https://github.com/w3c/csswg-drafts/issues
+HTMLissue:https://github.com/whatwg/html/issues
 	CSS22:https://www.w3.org/TR/CSS22
 CSS22:https://drafts.csswg.org/css2
 CSS21:https://www.w3.org/TR/CSS21
