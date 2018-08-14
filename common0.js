@@ -1080,6 +1080,7 @@ WANIM:web-animations-ja.html
 MQ4:mediaqueries4-ja.html
 SVG11:SVG11
 SVG2:https://svgwg.org/svg2-draft
+SVGrender:svg-render-ja.html
 HTMLLS:https://html.spec.whatwg.org/multipage
 HTML50:https://www.w3.org/TR/html5
 ARIA1:https://w3c.github.io/aria/
