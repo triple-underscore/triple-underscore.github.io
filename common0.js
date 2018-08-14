@@ -885,15 +885,15 @@ COMMON_DATA.PREMAP = `
 用:\uE007~For\uE005
 値:\uE007<a href="~CSSVAL#value-defs">値</a>\uE006
 新値:\uE007新たに定義される<a href="~CSSVAL#value-defs">値</a>\uE006
-新初:\uE007新たに定義される<a href="~CASCADE#initial-values">初期値</a>\uE005
-新算:\uE007新たに定義される<a href="~CASCADE#computed">算出値</a>\uE005
-初:\uE007<a href="~CASCADE#initial-values">初期値</a>\uE005
+新初:\uE007新たに定義される<a href="~CASCADE#initial-values">初期~値</a>\uE005
+新算:\uE007新たに定義される<a href="~CASCADE#computed">算出d値</a>\uE005
+初:\uE007<a href="~CASCADE#initial-values">初期~値</a>\uE005
 適:\uE007適用対象\uE005
 継:\uE007<a href="~CASCADE#inherited-property">継承-</a>\uE005
 百:\uE007<a href="~CSSVAL#percentages">百分率</a>\uE005
 媒:\uE007媒体\uE005
-算:\uE007<a href="~CASCADE#computed">算出値</a>\uE005
-順:\uE007正準的順序\uE005
+算:\uE007<a href="~CASCADE#computed">算出d値</a>\uE005
+順:\uE007正準的~順序\uE005
 ア:\uE007<a href="~TRANSITION#animatable-properties">~animation</a>\uE005
 型:\uE007型\uE005
 表終:\uE009
@@ -917,15 +917,15 @@ COMMON_DATA.PREMAP = `
 対:<tr><th>~For<td>
 値:<tr><th><a href="css-values-ja.html#value-defs">値</a><td class="prod">
 新値:<tr><th>新たに定義される値<td class="prod">
-新初:<tr><th>新たに定義される初期値<td>
-新算:<tr><th>新たに定義される算出値<td>
-初:<tr><th>初期値<td>
+新初:<tr><th>新たに定義される初期~値<td>
+新算:<tr><th>新たに定義される算出d値<td>
+初:<tr><th>初期~値<td>
 適:<tr><th>適用対象<td>
 継:<tr><th>継承-<td>
 百:<tr><th>百分率<td>
 媒:<tr><th>媒体<td>
-算:<tr><th>算出値<td>
-順:<tr><th>正準的順序<td>
+算:<tr><th>算出d値<td>
+順:<tr><th>正準的~順序<td>
 ア:<tr><th>~animation<td>
 型:<tr><th>型<td>
 表終:</tbody></table>
