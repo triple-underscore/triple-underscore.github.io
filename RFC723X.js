@@ -876,7 +876,7 @@ source_data.words_table = `
 	呼出し:invocation:~
 埋込まれ:embed され:埋め込まれ
 埋込む:embed する:埋め込む
-埋込み:embedded:埋め込み
+埋込d:embedded:埋め込み
 埋込ん:embed し:埋め込ん
 始まる:begin する:~
 指す:refer する:~
