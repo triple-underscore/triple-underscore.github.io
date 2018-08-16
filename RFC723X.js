@@ -8,6 +8,40 @@ const source_data = {
 };
 
 source_data.init = function(spec_num){
+	PAGE_DATA.class_map = `
+r:ref
+t:type
+p:production
+P:token
+st:status
+st0:status
+ph:phrase
+wc:warn
+h:header
+m:method
+dir:directive
+qdir:directive
+sdir:directive
+com:comment
+` + PAGE_DATA.class_map;
+
+	PAGE_DATA.tag_map = `
+dfn:dfn
+c:code
+p:code
+P:code
+h:code
+m:code
+var:var
+st0:code
+wc:code
+dir:code
+qdir:code
+sdir:code
+ph:span
+com:span
+` + PAGE_DATA.tag_map;
+
 	PAGE_DATA.words_table1
 	= this.words_table1 + PAGE_DATA.words_table1;
 	delete this.words_table1;
@@ -41,40 +75,6 @@ source_data.populate = function(){
 	});
 };
 
-source_data.class_map = {
-	r: 'ref',
-	t: 'type',
-	p: 'production', // protocol element
-	P: 'token',
-	st: 'status',
-	st0: 'status',
-	ph: 'phrase',
-	wc: 'warn',
-	h: 'header',
-	m: 'method',
-	dir: 'directive',
-	qdir: 'directive',
-	sdir: 'directive',
-	com: 'comment',
-};
-
-source_data.tag_map = {
-	dfn: 'dfn',
-	c: 'code',
-//		l: 'code',
-	p: 'code',
-	P: 'code',
-	h: 'code',
-	m: 'code',
-	var: 'var',
-	st0: 'code',
-	wc: 'code',
-	dir: 'code',
-	qdir: 'code',
-	sdir: 'code',
-	ph: 'span',
-	com: 'span',
-};
 
 source_data.generate = function(){
 	const st_phrase = this.st_phrase;

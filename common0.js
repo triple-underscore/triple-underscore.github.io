@@ -36,6 +36,10 @@ ref_normative:#
 ref_informative:#
 ref_key_map:#
 ref_data:#
+class_map:
+	指示子 → class 名
+tag_map:
+	指示子 → tag 名
 link_map:
 	keyword → リンク先
 words_table:
@@ -654,10 +658,12 @@ return;
 	}
 
 	function initHTML(){
-		if(PAGE_DATA.link_map){
-			source_data.link_map = Util.get_mapping(PAGE_DATA.link_map);
-			delete PAGE_DATA.link_map;
-		}
+		source_data.class_map = Util.get_mapping(PAGE_DATA.class_map || '');
+		source_data.tag_map = Util.get_mapping(PAGE_DATA.tag_map || '');
+		source_data.link_map = Util.get_mapping(PAGE_DATA.link_map || '');
+		delete PAGE_DATA.class_map;
+		delete PAGE_DATA.tag_map;
+		delete PAGE_DATA.link_map;
 
 		let html = E(main_id).innerHTML;
 		// 前処理：英文を抽出して placeholder に置換など
