@@ -26,28 +26,25 @@ function repeat(selector, callback, root){
 }
 
 const PAGE_DATA = Object.create(null); 
-/* 予約済みメンバ（ # → 詳細は common1.js ）
-options:#
-original_id_map:#
-original_urls:#
-trans_metadata:#
-spec_metadata:#
-ref_normative:#
-ref_informative:#
-ref_key_map:#
-ref_data:#
-class_map:
-	指示子 → class 名
-tag_map:
-	指示子 → tag 名
-link_map:
-	keyword → リンク先
-words_table:
-	単語トークン対応
-words_table1:
-	単語トークン対応表
-html_code_list:
-	HTML 例示コード
+/* 予約済みメンバ
+• 付帯情報用（ 詳細は common1.js ）
+options
+original_id_map
+original_urls
+trans_metadata
+spec_metadata
+ref_normative
+ref_informative
+ref_key_map
+ref_data
+
+• 本文 html 生成用
+words_table: 単語トークン置換表
+words_table1: 単語トークン置換表（固定）
+class_map: class 名 対応表
+tag_map: tag 名 対応表
+link_map: リンク先 対応表
+html_code_list: HTML 例示コード
 */
 
 // see common1.js for possible members
@@ -566,25 +563,45 @@ LS: 'Living Standard',
 }
 
 
-/** 語彙切替／ HTML 生成 */
+/** 語彙切替／ HTML 生成 
+source_data メンバ：
+.main_id: 生成した HTML コードはこの id の要素の innerHTML になる（省略時は 'MAIN' ）
+.html: 単語置換前の HTML 生コード
+.generate(): ページが定義する .html 生成関数
+.populate(): DOM 構築後に呼ばれる
+.persisted_parts: HTML 再生成（用語切り替え）時にも DOM に保たれる部品
+.collectParts(): persisted_parts 生成用
+.switchWords: HTML 生成処理の本体
+.en_text_list: 原文データ／静的置換データ
+.level: 用語切り替えレベル
+.levels: 最大 level 数
+.class_map: 指示子 → class 名
+.tag_map: 指示子 → tag 名
+.link_map: keyword → リンク先
+.word_map: 後から変更可能な単語置換マップ
+*/
 
 Util.switchWordsInit = function(source_data){
 	source_data = source_data || {};
-	if(!source_data.generate) source_data.generate = Util.produce;
 	initLevels();
 	const main_id =
 	source_data.main_id = source_data.main_id || 'MAIN';
+
 	initHTML();
 
 	source_data.switchWords =  function(level){
 		level = Math.min(level & 0xF, this.levels.length - 1 );
+
 		const mapping = Util.get_mapping(
-Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
+			Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
 			// 値の最後の文字が英数の場合は末尾にスペースを補填
 			.replace(/(\w)(?=\n)/g, '$1 ')
 			+ COMMON_DATA.SYMBOLS
 			+ ( PAGE_DATA.words_table1 || '')
 		);
+		if(this.word_map){
+			Object.assign(mapping, this.word_map);
+		}
 
 		let parts = this.persisted_parts;
 		if(parts){
