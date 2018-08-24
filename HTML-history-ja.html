@@ -117,9 +117,9 @@ return text;
 
 ●●options
 
-spec_date:2018-08-17
-trans_update:2018-05-27
-source_checked:170608
+spec_date:2018-08-24
+trans_update:2018-08-25
+source_checked:180824
 page_state_key:HTML
 spec_status:LS
 original_url:https://html.spec.whatwg.org/multipage/history.html
@@ -848,6 +848,7 @@ doc.破棄-:#discard-a-document
 ~session履歴~走査~queue:#session-history-traversal-queue
 ~session履歴~event-loop:#session-history-event-loop
 履歴を前／後に走査する:#traverse-the-history-by-a-delta
+~URLと履歴を更新する:#url-and-history-update-steps
 
 Loc.対応する閲覧文脈:#_concept-location-bc
 Loc.関連する文書:#relevant-document
@@ -1752,6 +1753,144 @@ When the user navigates through a browsing context, e.g. using a browser's back 
 
 <hr id="history-1"> 
 
+<p>
+`~URLと履歴を更新する@
+手続きは、所与の
+(
+`文書$ %文書,
+`~URL$ %新~URL,
+`直列形の状態$ %直列形の~data （省略時は ε ）,
+文字列 %~title （省略時は ε ）,
+%状態~push~flag ~IN { `~pushする^i, ε } （省略時は ε ）
+)
+に対し，次を走らす：
+◎
+The URL and history update steps, given a Document object document, a URL newURL, an optional serialized state serializedData, and an optional string title, optionally with a state push flag, are:
+</p>
+
+<ol>
+	<li>
+%履歴 ~LET %文書 が`属する閲覧文脈$の`~session履歴$
+◎
+Let browsingContext be document's browsing context.
+	</li><li>
+%現~entry ~LET %履歴 の`現在の~entry$
+◎
+↓</li>
+	<li>
+%更新する~entry ~LET %現~entry
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%状態~push~flag ~NEQ ε
+］：
+◎
+If the state push flag is set, then:
+</p>
+		<ol>
+			<li>
+<p>
+%履歴 内に %現~entry より後に~entryがあれば，それらすべてを除去する
+◎
+Remove all the entries in browsingContext's session history after the current entry. If the current entry is the last entry in the session history, then no entries are removed.
+</p>
+
+<p class="note">注記：
+これは、~UAの~UIに
+<a href="#history-notes">影響するとは限らない</a>。
+◎
+This doesn't necessarily have to affect the user agent's user interface.
+</p>
+			</li>
+			<li>
+`~top-level閲覧文脈$の`文書~族$内の~EACH ( `文書$ %D ) に対し
+⇒
+`履歴~走査~task源$から~queueされた`~task$のうち， %D に結付けられているものすべてを除去する
+◎
+Remove any tasks queued by the history traversal task source that are associated with any Document objects in the top-level browsing context's document family.
+</li>
+			<li>
+適切になるなら、~UAが持続化しようと望む状態を反映するように，
+%現~entry を更新する
+— この~entryは、`持続的な利用者~状態を伴う$ものとされる。
+◎
+If appropriate, update the current entry to reflect any state that the user agent wishes to persist. The entry is then said to be an entry with persisted user state.
+</li>
+			<li>
+%更新する~entry ~SET 新たな`~session履歴~entry$
+◎
+↓</li>
+			<li>
+%更新する~entry を %履歴 の中で %現~entry の後に追加する
+◎
+Add a session history entry entry to the session history, after the current entry, with
+</li>
+			<li>
+%更新する~entry の`~scroll復旧~mode$ ~SET %現~entry の`~scroll復旧~mode$
+◎
+•↓ newURL as the URL;
+• the scroll restoration mode of the current entry in the session history as the scroll restoration mode;
+•↓ serializedData as the serialized state, if it is given;
+•↓ title as the title, if it is given.
+</li>
+			<li>
+%履歴 の`現在の~entry$ ~SET %更新する~entry
+◎
+Update the current entry to be this newly added entry.
+</li>
+		</ol>
+	</li>
+	<li>
+~ELIF［
+%更新する~entry は非 `GET^h 要請を表現する（例： それは `POST^h 提出の結果であった）
+］
+⇒
+%更新する~entry を `GET^h 要請を表現するものに更新する
+◎
+Otherwise, update the current entry in browsingContext's session history so that:
+•↓ newURL is the entry's new URL;
+•↓ serializedData is the entry's new serialized state, if it is given; otherwise, the current entry's current serialized state is kept;
+•↓ title is the entry's new title, if it is given; otherwise, the entry does not have a title;
+• it represents a GET request, if it currently represents a non-GET request (e.g. it was the result of a POST submission).
+</li>
+	<li>
+%更新する~entry の`~URL$ ~SET %新~URL
+◎
+↑</li>
+	<li>
+~IF［
+%直列形の~data ~NEQ ε
+］
+⇒
+%更新する~entry の`直列形の状態$ ~SET %直列形の~data
+◎
+↑</li>
+	<li>
+%更新する~entry の~title ~SET %~title
+（ %~title ~EQ ε ならば, ~entryに~titleは無い）
+◎
+↑</li>
+
+	<li>
+<p>
+%文書 の`~URL$doc ~SET %新~URL
+◎
+Set document's URL to newURL.
+</p>
+
+<p class="note">注記：
+これは，［
+`閲覧文脈$の`~navi$ ／ `履歴の走査$
+］ではないので、
+`hashchange$et ~eventは発火されない。
+◎
+Since this is neither a navigation of the browsing context nor a history traversal, it does not cause a hashchange event to be fired.
+</p>
+	</li>
+</ol>
+
 <dl class="idl-def">
 	<dt>`pushState(data, title, url)@m</dt>
 	<dt>`replaceState(data, title, url)@m</dt>
@@ -1774,13 +1913,13 @@ The replaceState(data, title, url) method updates the state object, title, and o
 When either of these methods is invoked, the user agent must run the following steps:
 </p>
 
-<ol>
-	<li>
+		<ol>
+			<li>
 %文書 ~LET 此れを結付けている`文書$
 ◎
 Let document be the unique Document object this History object is associated with.
 </li>
-	<li>
+			<li>
 ~IF［
 %文書 は`全部的に作動中$でない
 ］
@@ -1789,7 +1928,7 @@ Let document be the unique Document object this History object is associated wit
 ◎
 If document is not fully active, throw a "SecurityError" DOMException.
 </li>
-	<li>
+			<li>
 <p>
 ~UAの任意選択で
 ⇒
@@ -1806,52 +1945,52 @@ If document is not fully active, throw a "SecurityError" DOMException.
 ◎
 Optionally, return. (For example, the user agent might disallow calls to these methods that are invoked on a timer, or from event listeners that are not triggered in response to a clear user action, or that are invoked in rapid succession.)
 </li>
-	<li>
+			<li>
 %宛先~Realm ~LET 此れに`関連する~Realm$
 ◎
 Let targetRealm be this History object's relevant Realm.
 </li>
-	<li>
+			<li>
 %直列形の~data ~LET `StructuredSerializeForStorage$jA( %data )
 （例外投出あり）
 ◎
 Let serializedData be StructuredSerializeForStorage(data). Rethrow any exceptions.
 </li>
-	<li>
-%新~URL ~LET ε
+			<li>
+%新~URL ~LET %文書 が`属する閲覧文脈$の`~session履歴$内の`現在の~entry$の`~URL$
 ◎
-↓</li>
-	<li>
+Let newURL be the URL of the current entry in browsingContext's session history.
+</li>
+			<li>
 <p>
 ~IF［
 %url ~NEQ ~NULL
 ］：
 ◎
-If the third argument is not null, run these substeps:
+If url is not null, then:
 </p>
-
-		<ol>
-			<li>
-%新~URL ~SET %url を，此れに`関連する設定群~obj$に`相対的に構文解析-$した`結果の~URL~record$
+				<ol>
+					<li>
+%新~URL ~SET %url を此れに`関連する設定群~obj$に`相対的に構文解析-$した結果
 ◎
-Parse the value of the third argument, relative to the relevant settings object of this History object.
+Parse url, relative to the relevant settings object of this History object.
 </li>
-			<li>
+					<li>
 ~IF［
 %新~URL ~EQ `失敗^i
 ］
 ⇒
 ~THROW `SecurityError$E
 ◎
-If that fails, throw a "SecurityError" DOMException.
+If that fails, then throw a "SecurityError" DOMException.
 ◎
-Let new URL be the resulting URL record.
+Set newURL to the resulting URL record.
 </li>
-			<li>
+					<li>
 %文書~URL ~LET %文書 の`~URL$doc
 ◎
 ↓</li>
-			<li>
+					<li>
 <p>
 ~IF［
 次のいずれかが満たされる
@@ -1861,22 +2000,22 @@ Let new URL be the resulting URL record.
 ：
 ◎
 ↓</p>
-				<ul>
-					<li>
+						<ul>
+							<li>
 ［
 %新~URL, %文書~URL
 ］の［
 `~path$url, `~query$url, `素片$url
 ］以外のある成分が相違する
 ◎
-Compare new URL to document's URL. If any component of these two URL records differ other than the path, query, and fragment components, then throw a "SecurityError" DOMException.
+Compare newURL to document's URL. If any component of these two URL records differ other than the path, query, and fragment components, then throw a "SecurityError" DOMException.
 </li>
-					<li>
+							<li>
 <p>
 次の両者が満たされる：
 </p>
 
-<ul ><li>
+<ul><li>
 ( %新~URL の`生成元$url, %文書 の`生成元$ )
 は`同一生成元$でない
 </li><li>［
@@ -1890,156 +2029,47 @@ Compare new URL to document's URL. If any component of these two URL records dif
 （これは、~sandbox化された内容が 同一生成元~上の他の頁を偽装することを防止する。）
 </p>
 ◎
-If the origin of new URL is not same origin with the origin of document, and either the path or query components of the two URL records compared in the previous step differ, throw a "SecurityError" DOMException.(This prevents sandboxed content from spoofing other pages on the same origin.)
+If the origin of newURL is not same origin with the origin of document, and either the path or query components of the two URL records compared in the previous step differ, throw a "SecurityError" DOMException. (This prevents sandboxed content from spoofing other pages on the same origin.)
 </li>
-				</ul>
-			</li>
-		</ol>
-	</li>
-	<li>
-%履歴 ~LET %文書 が`属する閲覧文脈$の`~session履歴$
-◎
-↓</li>
-	<li>
-%現~entry ~LET %履歴 内の`現在の~entry$
-◎
-↓</li>
-	<li>
-~IF［
-%url ~EQ ~NULL
-］
-⇒
-%新~URL ~SET %現~entry の`~URL$
-◎
-If the third argument is null, then let new URL be the URL of the current entry.
-</li>
-	<li>
-<p>
-~IF［
-呼出された~methodは `pushState()$m である
-］：
-◎
-If the method invoked was the pushState() method:
-</p>
-		<ol>
-			<li>
-<p>
-%履歴 内に %現~entry より後に~entryがあれば，それらすべてを除去する
-◎
-Remove all the entries in the browsing context's session history after the current entry. If the current entry is the last entry in the session history, then no entries are removed.
-</p>
-
-<p class="note">注記：
-これは、~UAの~UIに
-<a href="#history-notes">影響するとは限らない</a>。
-◎
-This doesn't necessarily have to affect the user agent's user interface.
-</p>
+						</ul>
+					</li>
+				</ol>
 			</li>
 			<li>
-`~top-level閲覧文脈$の`文書~族$内の~EACH ( 文書 %D ) に対し
-⇒
-`履歴~走査~task源$から~queueされた`~task$のうち，
-%D に結付けられているものすべてを除去する
-◎
-Remove any tasks queued by the history traversal task source that are associated with any Document objects in the top-level browsing context's document family.
-</li>
-			<li>
-適切になるなら、~UAが持続化しようと望む状態を反映するように，
-%現~entry を更新する
-— この~entryは、`持続的な利用者~状態を伴う$ものとされる。
-◎
-If appropriate, update the current entry to reflect any state that the user agent wishes to persist. The entry is then said to be an entry with persisted user state.
-</li>
-			<li>
-%新~entry ~LET 新たな~entry
+%状態~push~flag ~LET 呼出された~methodに応じて
+⇒＃
+`pushState()^m ならば `~pushする^i ／
+`replaceState()^m ならば ε
 ◎
 ↓</li>
 			<li>
-%新~entry の~scroll復旧~mode ~SET %現~entry の`~scroll復旧~mode$
+`~URLと履歴を更新する$( %文書, %新~URL, %直列形の~data, %title, %状態~push~flag )
 ◎
-↓</li>
-			<li>
-%新~entry を %履歴 の中の %現~entry の後に追加する
-◎
-↓</li>
-			<li>
-%履歴 の`現在の~entry$ ~SET %新~entry
-◎
-↓↓Add a session history entry entry to the session history, after the current entry, with serializedData as the serialized state, the given title as the title, new URL as the URL of the entry, and the scroll restoration mode of the current entry in the session history as the scroll restoration mode.
+Run the URL and history update steps given document, newURL, serializedData, and title, with the state push flag set if the method invoked was the pushState() method.
 </li>
 			<li>
-%現~entry ~SET %新~entry
-◎
-Update the current entry to be this newly added entry.
-</li>
-		</ol>
-	</li>
-	<li>
-<p>
-%現~entry を次のように更新する：
-</p>
-
-<ul ><li>`直列形の状態$ ~SET %直列形の~data
-</li><li>~title ~SET %title
-</li><li>`~URL$ ~SET %新~URL
-</li></ul>
-
-◎
-Otherwise, if the method invoked was the replaceState() method:
-◎
-Update the current entry in the session history so that serializedData is the entry's new serialized state, the given title is the new title, and new URL is the entry's new URL.
-</li>
-	<li>
-~IF［
-%現~entry は非 `GET^h 要請を表現する（例：
-それは `POST^h 提出の結果であった）
-］
-⇒
-%現~entry を `GET^h 要請を表現するものに更新する
-◎
-If the current entry in the session history represents a non-GET request (e.g. it was the result of a POST submission) then update it to instead represent a GET request.
-</li>
-	<li>
-<p>
-%文書 の`~URL$doc ~SET %新~URL
-◎
-Set document's URL to new URL.
-</p>
-
-<p class="note">注記：
-これは，［
-`閲覧文脈$の`~navi$ ／ `履歴の走査$
-］ではないので、
-`hashchange$et ~eventは発火されない。
-◎
-Since this is neither a navigation of the browsing context nor a history traversal, it does not cause a hashchange event to be fired.
-</p>
-	</li>
-	<li>
-%state ~SET
-`StructuredDeserialize$jA( %直列形の~data, %宛先~Realm )
+%状態 ~SET `StructuredDeserialize$jA( %直列形の~data, %宛先~Realm )
 ⇒
 例外が投出されたときは、~catchして
 ⇒
-%state ~SET ~NULL （例外は無視する）
+%状態 ~SET ~NULL （例外は無視する）
 ◎
 Let state be StructuredDeserialize(serializedData, targetRealm). If this throws an exception, catch it, ignore the exception, and set state to null.
 </li>
-	<li>
-此れの `state$m 属性 ~SET %state
+			<li>
+此れの `state$m 属性 ~SET %状態
 ◎
 Set history.state to state.
 </li>
-	<li>
+			<li>
 %現~entry の`文書$の`最近の~entry$ ~SET %現~entry
 ◎
 Set the current entry's Document object's latest entry to the current entry.
 </li>
-</ol>
-
+		</ol>
 	</dd>
 </dl>
+
 
 <p class="note">注記：
 %title は、もっぱら助言的でしかない。
@@ -3551,7 +3581,8 @@ If this Location object's relevant Document's origin is not same origin-domain w
 </li>
 			<li>
 %B ~LET 此れに`対応する閲覧文脈$Loc
-</li>
+◎
+↓</li>
 			<li>
 <p>
 ~IF［
@@ -3685,4 +3716,5 @@ The details of how the ancestorOrigins attribute works are still controversial a
 			</section>
 		</section>
 </main>
+
 
