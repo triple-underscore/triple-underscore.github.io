@@ -44,6 +44,7 @@ words_table1: 単語トークン置換表（固定）
 class_map: class 名 対応表
 tag_map: tag 名 対応表
 link_map: リンク先 対応表
+abbr_url: ページ URL 略称コード（ "INFRA" 等）
 html_code_list: HTML 例示コード
 */
 
@@ -586,6 +587,7 @@ Util.switchWordsInit = function(source_data){
 	initLevels();
 	const main_id =
 	source_data.main_id = source_data.main_id || 'MAIN';
+	const abbr_url = (PAGE_DATA.options.abbr_url || '' );
 
 	initHTML();
 
@@ -593,12 +595,14 @@ Util.switchWordsInit = function(source_data){
 		level = Math.min(level & 0xF, this.levels.length - 1 );
 
 		const mapping = Util.get_mapping(
-			Util.getDataByLevel( COMMON_DATA.WORDS + PAGE_DATA.words_table, level)
+			Util.getDataByLevel( COMMON_DATA.words_table + PAGE_DATA.words_table, level)
 			// 値の最後の文字が英数の場合は末尾にスペースを補填
 			.replace(/(\w)(?=\n)/g, '$1 ')
-			+ COMMON_DATA.SYMBOLS
+			+ COMMON_DATA.words_table1
+			+ ( abbr_url? ( '\n' + abbr_url + ':\n' ) : '' )
 			+ ( PAGE_DATA.words_table1 || '')
 		);
+
 		if(this.word_map){
 			Object.assign(mapping, this.word_map);
 		}
@@ -675,12 +679,26 @@ return;
 	}
 
 	function initHTML(){
-		source_data.class_map = Util.get_mapping(PAGE_DATA.class_map || '');
-		source_data.tag_map = Util.get_mapping(PAGE_DATA.tag_map || '');
-		source_data.link_map = Util.get_mapping(PAGE_DATA.link_map || '');
+		source_data.class_map = Util.get_mapping(
+			COMMON_DATA.class_map + (PAGE_DATA.class_map || '')
+		);
+		source_data.tag_map = Util.get_mapping(
+			COMMON_DATA.tag_map + (PAGE_DATA.tag_map || '')
+		);
 		delete PAGE_DATA.class_map;
 		delete PAGE_DATA.tag_map;
+		delete COMMON_DATA.class_map;
+		delete COMMON_DATA.tag_map;
+
+		let link_map = COMMON_DATA.link_map + (PAGE_DATA.link_map || '');
+		if( /^[\w\-]+$/.test( abbr_url ) ){
+			link_map = link_map.replace(
+				new RegExp(':~' + abbr_url + '(#|\n)', 'g'), ':$1'
+			);
+		}
+		source_data.link_map = Util.get_mapping(link_map);
 		delete PAGE_DATA.link_map;
+		delete COMMON_DATA.link_map;
 
 		let html = E(main_id).innerHTML;
 		// 前処理：英文を抽出して placeholder に置換など
@@ -966,8 +984,11 @@ COMMON_DATA.PREMAP = `
 
 */
 
-
-COMMON_DATA.SYMBOLS = `
+COMMON_DATA.class_map = '';
+COMMON_DATA.tag_map = '';
+COMMON_DATA.link_map = '';
+COMMON_DATA.words_table = '';
+COMMON_DATA.words_table1 = `
 THROW:<b>THROW</b>
 WHILE:<b>WHILE</b>
 RET:<b>RETURN</b>
@@ -1166,6 +1187,4 @@ MIXED-CONTENT:webappsec-mixed-content-ja.html
 SECURE-CONTEXT:webappsec-secure-contexts-ja.html
 `;
 
-/** 語彙 */
-COMMON_DATA.WORDS = '';
 
