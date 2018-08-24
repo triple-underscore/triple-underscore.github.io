@@ -377,7 +377,7 @@ http: 'RFC723X-ja.html#index',
 	function findMatch(name){
 		if(!name) return;
 		if(name.slice(-5) === '.html') return name;
-		let data = COMMON_DATA.SYMBOLS;
+		let data = COMMON_DATA.words_table1;
 		if(!data) return;
 		let i = data.indexOf('\n' + name + ':' );
 		if(i < 0) return;
