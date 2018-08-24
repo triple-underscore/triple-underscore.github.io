@@ -1,68 +1,19 @@
-Util.ready = function(){
-	source_data.init(PAGE_DATA.options.rfc_num);
-	Util.switchWordsInit(source_data);
-};
-
 const source_data = {
 	toc_main: 'MAIN0',
+	init: EMPTY_FUNC,
 };
 
-source_data.init = function(spec_num){
-	PAGE_DATA.class_map = `
-r:ref
-t:type
-p:production
-P:token
-st:status
-st0:status
-ph:phrase
-wc:warn
-h:header
-m:method
-dir:directive
-qdir:directive
-sdir:directive
-com:comment
-` + PAGE_DATA.class_map;
-
-	PAGE_DATA.tag_map = `
-dfn:dfn
-c:code
-p:code
-P:code
-h:code
-m:code
-var:var
-st0:code
-wc:code
-dir:code
-qdir:code
-sdir:code
-ph:span
-com:span
-` + PAGE_DATA.tag_map;
-
-	PAGE_DATA.words_table1
-	= this.words_table1 + PAGE_DATA.words_table1;
-	delete this.words_table1;
-
-	PAGE_DATA.words_table
-	= this.words_table + PAGE_DATA.words_table;
-	delete this.words_table;
-
-	this.href_data_map = Util.get_mapping(
-		( this.href_data + PAGE_DATA.link_map)
-		.replace( new RegExp('~' + spec_num, 'g'), '' )
-	);
-	delete PAGE_DATA.link_map;
-
-	this.section_map = Util.get_mapping(PAGE_DATA.section_map || '');
+Util.ready = function(){
+	source_data.section_map = Util.get_mapping(PAGE_DATA.section_map || '');
+	source_data.init();
+	Util.switchWordsInit(source_data);
 
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
 	repeat('script[src="RFC723X.js"]', function(e){
 		e.parentNode.removeChild(e);
 	});
 };
+
 
 source_data.populate = function(){
 	// header id を section から補完
@@ -78,11 +29,9 @@ source_data.populate = function(){
 
 source_data.generate = function(){
 	const st_phrase = this.st_phrase;
-	const st_hrefs = this.st_hrefs;
-	const header_hrefs = this.header_hrefs;
 	const section_map = this.section_map;
 
-	const href_data_map = this.href_data_map || {};
+	const link_map = this.link_map || {};
 
 	const class_map = this.class_map;
 	const tag_map = this.tag_map;
@@ -92,21 +41,19 @@ source_data.generate = function(){
 		create_html
 	);
 
-//		return;
-
 	function create_html(match, key, indicator, klass){
 
 let text = key;
-let href = href_data_map[klass ? (klass + '.' + key) : key] || '';
-let classname = class_map[klass];
-let tag = tag_map[klass];
+let href = '';
+const tag = tag_map[klass];
 
 switch(klass){
 case '':
 	break;
 case 'r': // ref
 	text = '[' + key + ']';
-	if(!href) href = '~723X#ref-' + key;
+	href = '~723X#ref-' + key;
+//	if(!href) href = '~723X#ref-' + key;
 	break;
 case 'R': // ref
 	text = '[RFC' + key + ']';
@@ -118,7 +65,7 @@ case 'RFC': // ref
 	break;
 case 'rfc': // ref
 	href = key.match(/^(\d+)-([\d\.]+)$/);
-	if(!href) {href='#'; console.log(key);break;}
+//	if(!href) {href='#'; console.log(key);break;}
 	key = href[1];
 	text = `RFC ${key}, ${href[2]} ~~節`;
 	href = ((key.slice(0,2) === '72') ? '~' : '~IETF/rfc') + key +
@@ -128,89 +75,42 @@ case 'sec': // 節（同一頁内）
 	href = '#' + section_map[key];// || ('#section-' + key);
 	text = key + ' ~~節';
 	break;
-case 'P':
-//	href = 'RFC723X-ABNF-ja.html#p.' + key;
-	href += '#P.' + key;
-	break;
-case 'p':
-	href += '#p.' + key;
-	break;
 case 'st': // status code
 	text = `<code class="status">${key}</code> <span class="phrase">(${st_phrase[key]})</span>`;
+	break;
 case 'st0':
-	href = (st_hrefs[key] || '~7231') + '#status.' + key;
+	klass = 'st';
 	break;
-case 'wc': // warn code
-	if(!href) href = '~7234#warn.' + key;
-	break;
-case 'dir': // directive
-	break;
-case 'qdir': // request cache control directive
-	if(!href) href = '~7234#cache-request-directive.' + key;
-	break;
-case 'sdir': // response cache control directive
-	if(!href) href = '~7234#cache-response-directive.' + key;
-	break;
-case 'c': //
-	break;
-/*
-case 'l': // literal
-	text = '"<code>' + key + '</code>"';
-	break;
-*/
-case 'h': // header
-	if(!href) href = header_hrefs[key] + '#header.' + key.toLowerCase();
-	break;
-case 'm': // method
-	if(!href) href = '~7231#' + key;
-	break;
-case 'ph': // bare phrase
-	break;
-case 'com': // comments in code block
-	break;
-case 'dfn':
-/*	href = href_data_map[key];
-	if(href) {
-		return (
-'<dfn id="_' + href.slice(1) + '_" data-cycling="a[href=\'' + href + '\']">'
-+ text + '</dfn>'
-		);
-	}
-*/
-	break;
-case 'var':
-	break;
-//typedef-integer, number-value
 case 'en': // english words
 	return `<span lang="en-x-a0">${key}</span>`;
 	break;
-default:
-	if(!classname) return match;
-//		text = key;
 }
 
+let classname = class_map[klass];
 if(tag) {
 	classname = classname ? ' class="' + classname + '"' : '';
 	text = `<${tag}${classname}>${text}</${tag}>`;
 }
 
-if(href){
+
+if(indicator !== '^'){
+	href = link_map[klass ? (klass + '.' + key) : key] || href;
+	if(!href){
+		console.log(match); // check error
+		return match;
+	}
+
 	switch(indicator){
-	case '^':
-		break;
 	case '$':
-		text = `<a href="${href}">${text}</a>`;
+		text = '<a href="' + href + '">' + text + '</a>';
 		break;
 	case '@':
-//		href = href_data_map[key] || href;
-		text = `<dfn id="${href.slice(1)}">${text}</dfn>`;
+		text = '<dfn id="' + href.slice(1) + '">' + text + '</dfn>';
 		break;
 	default:
 		console.log(match);
 		return match;
 	}
-} else if(indicator !== '^'){
-	console.log(match); // check error
 }
 
 return text;
@@ -271,87 +171,111 @@ source_data.st_phrase = {
 '505': 'HTTP Version Not Supported',
 };
 
-/** status codes (default ~7231)*/
-source_data.st_hrefs = {
-'206': '~7233',
-'214': '~7234',
-'304': '~7232',
-'308': '~7538',
-'401': '~7235',
-'407': '~7235',
-'412': '~7232',
-'416': '~7233',
-};
+/** warning code / phrase
+→ RFC7234 
+*/
 
-/** warning code phrase */
-source_data.wc_phrase = {
-'110': 'Response is Stale',
-'111': 'Revalidation Failed',
-'112': 'Disconnected Operation',
-'113': 'Heuristic Expiration',
-'199': 'Miscellaneous Warning',
-'214': 'Transformation Applied',
-'299': 'Miscellaneous Persistent Warning',
-};
+/** class/tag mapping */
+COMMON_DATA.class_map = `
+r:ref
+t:type
+p:production
+P:token
+st:status
+st0:status
+ph:phrase
+wc:warn
+h:header
+m:method
+dir:directive
+qdir:directive
+sdir:directive
+com:comment
+`;
 
-/** headers */
-source_data.header_hrefs ={
-'Accept': '~7231',
-'Accept-Charset': '~7231',
-'Accept-Encoding': '~7231',
-'Accept-Language': '~7231',
-'Age': '~7234',
-'Allow': '~7231',
-'Content-Encoding': '~7231',
-'Content-Language': '~7231',
-'Content-Location': '~7231',
-'Content-Type': '~7231',
-'Date': '~7231',
-'Expect': '~7231',
-'From': '~7231',
-'Location': '~7231',
-'Max-Forwards': '~7231',
-'MIME-Version': '~7231',
-'Referer': '~7231',
-'Retry-After': '~7231',
-'Server': '~7231',
-'User-Agent': '~7231',
-'Vary': '~7231',
-'Transfer-Encoding': '~7230',
-'Content-Length': '~7230',
-'TE': '~7230',
-'Trailer': '~7230',
-'Host': '~7230',
-'Via': '~7230',
-'Connection': '~7230',
-'Upgrade': '~7230',
-'Close': '~7230',
-'ETag': '~7232',
-'Last-Modified': '~7232',
-'If-Match': '~7232',
-'If-None-Match': '~7232',
-'If-Modified-Since': '~7232',
-'If-Unmodified-Since': '~7232',
-'If-Range': '~7233',
-'Range': '~7233',
-'Accept-Ranges': '~7233',
-'Content-Range': '~7233',
-'Cache-Control': '~7234',
-'Pragma': '~7234',
-'Authorization': '~7235',
-'Proxy-Authorization': '~7235',
-'WWW-Authenticate': '~7235',
-'Proxy-Authenticate': '~7235',
-'Warning': '~7234',
-'Keep-Alive': '~7230',
-'Expires': '~7234',
-};
-
+COMMON_DATA.tag_map = `
+dfn:dfn
+c:code
+p:code
+P:code
+h:code
+m:code
+var:var
+st0:code
+wc:code
+dir:code
+qdir:code
+sdir:code
+ph:span
+com:span
+`;
 
 /** links */
-source_data.href_data = `
+COMMON_DATA.link_map = `
+
+	request methods
+
+m.GET:~7231#GET
+m.HEAD:~7231#HEAD
+m.POST:~7231#POST
+m.PUT:~7231#PUT
+m.DELETE:~7231#DELETE
+m.CONNECT:~7231#CONNECT
+m.OPTIONS:~7231#OPTIONS
+m.TRACE:~7231#TRACE
+m.PATCH:~IETF/rfc5789#section-2
 
 	header fields 
+
+h.Accept:~7231#header.accept
+h.Accept-Charset:~7231#header.accept-charset
+h.Accept-Encoding:~7231#header.accept-encoding
+h.Accept-Language:~7231#header.accept-language
+h.Age:~7234#header.age
+h.Allow:~7231#header.allow
+h.Content-Encoding:~7231#header.content-encoding
+h.Content-Language:~7231#header.content-language
+h.Content-Location:~7231#header.content-location
+h.Content-Type:~7231#header.content-type
+h.Date:~7231#header.Date
+h.Expect:~7231#header.expect
+h.From:~7231#header.from
+h.Location:~7231#header.location
+h.Max-Forwards:~7231#header.max-forwards
+h.MIME-Version:~7231#header.mime-version
+h.Referer:~7231#header.referer
+h.Retry-After:~7231#header.retry-after
+h.Server:~7231#header.server
+h.User-Agent:~7231#header.user-agent
+h.Vary:~7231#header.vary
+h.Transfer-Encoding:~7230#header.transfer-encoding
+h.Content-Length:~7230#header.content-length
+h.TE:~7230#header.te
+h.Trailer:~7230#header.trailer
+h.Host:~7230#header.host
+h.Via:~7230#header.via
+h.Connection:~7230#header.connection
+h.Upgrade:~7230#header.upgrade
+h.Close:~7230#header.close
+h.ETag:~7232#header.etag
+h.Last-Modified:~7232#header.last-modified
+h.If-Match:~7232#header.if-match
+h.If-None-Match:~7232#header.if-none-match
+h.If-Modified-Since:~7232#header.if-modified-since
+h.If-Unmodified-Since:~7232#header.if-unmodified-since
+h.If-Range:~7233#header.if-range
+h.Range:~7233#header.range
+h.Accept-Ranges:~7233#header.accept-ranges
+h.Content-Range:~7233#header.content-range
+h.Cache-Control:~7234#header.cache-control
+h.Pragma:~7234#header.pragma
+h.Authorization:~7235#header.authorization
+h.Proxy-Authorization:~7235#header.proxy-authorization
+h.WWW-Authenticate:~7235#header.www-authenticate
+h.Proxy-Authenticate:~7235#header.proxy-authenticate
+h.Warning:~7234#header.warning
+h.Keep-Alive:~7230#header.keep-alive
+h.Expires:~7234#header.expires
 
 h.MIME-Version:~7231#mime-version
 h.Keep-Alive:~7230#compatibility.with.http.1.0.persistent.connections
@@ -363,252 +287,296 @@ h.Content-Transfer-Encoding:~IETF/rfc2045#section-6
 	h.URI
 	h.Alternates:rfc2295#section-8.3
 
-	request methods
+	status codes
 
-m.PATCH:~IETF/rfc5789#section-2
-
-	warning codes
-
-wc.1xx:~7234#warn.1xx
-wc.2xx:~7234#warn.2xx
-
-	directives
-
-qdir.stale-if-error:~5861#section-4
-sdir.stale-if-error:~5861#section-4
-sdir.stale-while-revalidate:~5861#section-3
+st.1xx:~7231#status.1xx
+st.2xx:~7231#status.2xx
+st.3xx:~7231#status.3xx
+st.4xx:~7231#status.4xx
+st.5xx:~7231#status.5xx
+st.100:~7231#status.100
+st.101:~7231#status.101
+st.200:~7231#status.200
+st.201:~7231#status.201
+st.202:~7231#status.202
+st.203:~7231#status.203
+st.204:~7231#status.204
+st.205:~7231#status.205
+st.206:~7233#status.206
+st.214:~7234#status.214
+st.300:~7231#status.300
+st.301:~7231#status.301
+st.302:~7231#status.302
+st.303:~7231#status.303
+st.304:~7232#status.304
+st.305:~7231#status.305
+st.306:~7231#status.306
+st.307:~7231#status.307
+st.308:~7538#status.308
+st.400:~7231#status.400
+st.401:~7235#status.401
+st.402:~7231#status.402
+st.403:~7231#status.403
+st.404:~7231#status.404
+st.405:~7231#status.405
+st.406:~7231#status.406
+st.407:~7235#status.407
+st.408:~7231#status.408
+st.409:~7231#status.409
+st.410:~7231#status.410
+st.411:~7231#status.411
+st.412:~7232#status.412
+st.413:~7231#status.413
+st.414:~7231#status.414
+st.415:~7231#status.415
+st.416:~7233#status.416
+st.417:~7231#status.417
+st.426:~7231#status.426
+st.500:~7231#status.500
+st.501:~7231#status.501
+st.502:~7231#status.502
+st.503:~7231#status.503
+st.504:~7231#status.504
+st.505:~7231#status.505
 
 	protocol elements
 
-P.ALPHA:~723X
-P.CR:~723X
-P.CRLF:~723X
-P.CTL:~723X
-P.DIGIT:~723X
-P.DQUOTE:~723X
-P.HEXDIG:~723X
-P.HTAB:~723X
-P.LF:~723X
-P.OCTET:~723X
-P.SP:~723X
-P.VCHAR:~723X
-p.Accept:~7231
-p.Accept-Charset:~7231
-p.Accept-Encoding:~7231
-p.Accept-Language:~7231
-p.Accept-Ranges:~7233
-p.Age:~7234
-p.Allow:~7231
-p.Authorization:~7235
-p.BWS:~7230
-p.Cache-Control:~7234
-p.Connection:~7230
-p.Content-Encoding:~7231
-p.Content-Language:~7231
-p.Content-Length:~7230
-p.Content-Location:~7231
-p.Content-Range:~7233
-p.Content-Type:~7231
-p.Date:~7231
-p.ETag:~7232
-p.Expect:~7231
-p.Expires:~7234
-p.From:~7231
-p.GMT:~7231
-p.HTTP-date:~7231
-p.HTTP-message:~7230
-p.HTTP-name:~7230
-p.HTTP-version:~7230
-p.Host:~7230
-p.IMF-fixdate:~7231
-p.If-Match:~7232
-p.If-Modified-Since:~7232
-p.If-None-Match:~7232
-p.If-Range:~7233
-p.If-Unmodified-Since:~7232
-p.Last-Modified:~7232
-p.Location:~7231
-p.Max-Forwards:~7231
-p.OWS:~7230
-p.Pragma:~7234
-p.Proxy-Authenticate:~7235
-p.Proxy-Authorization:~7235
-p.RWS:~7230
-p.Range:~7233
-p.Referer:~7231
-p.Retry-After:~7231
-p.Server:~7231
-p.TE:~7230
-p.Trailer:~7230
-p.Transfer-Encoding:~7230
-p.URI-reference:~7230
-p.Upgrade:~7230
-p.User-Agent:~7231
-p.Vary:~7231
-p.Via:~7230
-p.WWW-Authenticate:~7235
-p.Warning:~7234
-p.absolute-URI:~7230
-p.absolute-form:~7230
-p.absolute-path:~7230
-p.accept-ext:~7231
-p.accept-params:~7231
-p.acceptable-ranges:~7233
-p.asctime-date:~7231
-p.asterisk-form:~7230
-p.auth-param:~7235
-p.auth-scheme:~7235
-p.authority:~7230
-p.authority-form:~7230
-p.byte-content-range:~7233
-p.byte-range:~7233
-p.byte-range-resp:~7233
-p.byte-range-set:~7233
-p.byte-range-spec:~7233
-p.byte-ranges-specifier:~7233
-p.bytes-unit:~7233
-p.cache-directive:~7234
-p.challenge:~7235
-p.charset:~7231
-p.chunk:~7230
-p.chunk-data:~7230
-p.chunk-ext:~7230
-p.chunk-ext-name:~7230
-p.chunk-ext-val:~7230
-p.chunk-size:~7230
-p.chunked-body:~7230
-p.codings:~7231
-p.comment:~7230
-p.complete-length:~7233
-p.connection-option:~7230
-p.content-coding:~7231
-p.credentials:~7235
-p.ctext:~7230
-p.date1:~7231
-p.date2:~7231
-p.date3:~7231
-p.day:~7231
-p.day-name:~7231
-p.day-name-l:~7231
-p.delay-seconds:~7231
-p.delta-seconds:~7234
-p.entity-tag:~7232
+P.ALPHA:~723X#P.ALPHA
+P.CR:~723X#P.CR
+P.CRLF:~723X#P.CRLF
+P.CTL:~723X#P.CTL
+P.DIGIT:~723X#P.DIGIT
+P.DQUOTE:~723X#P.DQUOTE
+P.HEXDIG:~723X#P.HEXDIG
+P.HTAB:~723X#P.HTAB
+P.LF:~723X#P.LF
+P.OCTET:~723X#P.OCTET
+P.SP:~723X#P.SP
+P.VCHAR:~723X#P.VCHAR
+	TODO
+	P.CHAR = %x01-7F
+	P.NUL:
+
+
+p.Accept:~7231#p.Accept
+p.Accept-Charset:~7231#p.Accept-Charset
+p.Accept-Encoding:~7231#p.Accept-Encoding
+p.Accept-Language:~7231#p.Accept-Language
+p.Accept-Ranges:~7233#p.Accept-Ranges
+p.Age:~7234#p.Age
+p.Allow:~7231#p.Allow
+p.Authorization:~7235#p.Authorization
+p.BWS:~7230#p.BWS
+p.Cache-Control:~7234#p.Cache-Control
+p.Connection:~7230#p.Connection
+p.Content-Encoding:~7231#p.Content-Encoding
+p.Content-Language:~7231#p.Content-Language
+p.Content-Length:~7230#p.Content-Length
+p.Content-Location:~7231#p.Content-Location
+p.Content-Range:~7233#p.Content-Range
+p.Content-Type:~7231#p.Content-Type
+p.Date:~7231#p.Date
+p.ETag:~7232#p.ETag
+p.Expect:~7231#p.Expect
+p.Expires:~7234#p.Expires
+p.From:~7231#p.From
+p.GMT:~7231#p.GMT
+
+p.HTTP-date:~7231#p.HTTP-date
+p.HTTP-message:~7230#p.HTTP-message
+p.HTTP-name:~7230#p.HTTP-name
+p.HTTP-version:~7230#p.HTTP-version
+p.Host:~7230#p.Host
+p.IMF-fixdate:~7231#p.IMF-fixdate
+p.If-Match:~7232#p.If-Match
+p.If-Modified-Since:~7232#p.If-Modified-Since
+p.If-None-Match:~7232#p.If-None-Match
+p.If-Range:~7233#p.If-Range
+p.If-Unmodified-Since:~7232#p.If-Unmodified-Since
+p.Last-Modified:~7232#p.Last-Modified
+p.Location:~7231#p.Location
+p.Max-Forwards:~7231#p.Max-Forwards
+p.OWS:~7230#p.OWS
+p.Pragma:~7234#p.Pragma
+p.Proxy-Authenticate:~7235#p.Proxy-Authenticate
+p.Proxy-Authorization:~7235#p.Proxy-Authorization
+p.RWS:~7230#p.RWS
+p.Range:~7233#p.Range
+p.Referer:~7231#p.Referer
+p.Retry-After:~7231#p.Retry-After
+p.Server:~7231#p.Server
+p.TE:~7230#p.TE
+p.Trailer:~7230#p.Trailer
+p.Transfer-Encoding:~7230#p.Transfer-Encoding
+p.URI-reference:~7230#p.URI-reference
+p.Upgrade:~7230#p.Upgrade
+p.User-Agent:~7231#p.User-Agent
+p.Vary:~7231#p.Vary
+p.Via:~7230#p.Via
+p.WWW-Authenticate:~7235#p.WWW-Authenticate
+p.Warning:~7234#p.Warning
+p.absolute-URI:~7230#p.absolute-URI
+p.absolute-form:~7230#p.absolute-form
+p.absolute-path:~7230#p.absolute-path
+p.accept-ext:~7231#p.accept-ext
+p.accept-params:~7231#p.accept-params
+p.acceptable-ranges:~7233#p.acceptable-ranges
+p.asctime-date:~7231#p.asctime-date
+p.asterisk-form:~7230#p.asterisk-form
+p.auth-param:~7235#p.auth-param
+p.auth-scheme:~7235#p.auth-scheme
+p.authority:~7230#p.authority
+p.authority-form:~7230#p.authority-form
+p.byte-content-range:~7233#p.byte-content-range
+p.byte-range:~7233#p.byte-range
+p.byte-range-resp:~7233#p.byte-range-resp
+p.byte-range-set:~7233#p.byte-range-set
+p.byte-range-spec:~7233#p.byte-range-spec
+p.byte-ranges-specifier:~7233#p.byte-ranges-specifier
+p.bytes-unit:~7233#p.bytes-unit
+p.cache-directive:~7234#p.cache-directive
+p.challenge:~7235#p.challenge
+p.charset:~7231#p.charset
+p.chunk:~7230#p.chunk
+p.chunk-data:~7230#p.chunk-data
+p.chunk-ext:~7230#p.chunk-ext
+p.chunk-ext-name:~7230#p.chunk-ext-name
+p.chunk-ext-val:~7230#p.chunk-ext-val
+p.chunk-size:~7230#p.chunk-size
+p.chunked-body:~7230#p.chunked-body
+p.codings:~7231#p.codings
+p.comment:~7230#p.comment
+p.complete-length:~7233#p.complete-length
+p.connection-option:~7230#p.connection-option
+p.content-coding:~7231#p.content-coding
+p.credentials:~7235#p.credentials
+p.ctext:~7230#p.ctext
+p.date1:~7231#p.date1
+p.date2:~7231#p.date2
+p.date3:~7231#p.date3
+p.day:~7231#p.day
+p.day-name:~7231#p.day-name
+p.day-name-l:~7231#p.day-name-l
+p.delay-seconds:~7231#p.delay-seconds
+p.delta-seconds:~7234#p.delta-seconds
+p.entity-tag:~7232#p.entity-tag
 	p.entity-tag:~7233
-p.etagc:~7232
-p.extension-pragma:~7234
-p.field-content:~7230
-p.field-name:~7230
-p.field-value:~7230
-p.field-vchar:~7230
-p.first-byte-pos:~7233
-p.fragment:~7230
-p.header-field:~7230
-p.hour:~7231
-p.http-URI:~7230
-p.https-URI:~7230
-p.language-range:~7231
-p.language-tag:~7231
-p.last-byte-pos:~7233
-p.last-chunk:~7230
-p.mailbox:~7231
-p.media-range:~7231
-p.media-type:~7231
-p.message-body:~7230
-p.method:~7230
+p.etagc:~7232#p.etagc
+p.extension-pragma:~7234#p.extension-pragma
+p.field-content:~7230#p.field-content
+p.field-name:~7230#p.field-name
+p.field-value:~7230#p.field-value
+p.field-vchar:~7230#p.field-vchar
+p.first-byte-pos:~7233#p.first-byte-pos
+p.fragment:~7230#p.fragment
+p.header-field:~7230#p.header-field
+p.hour:~7231#p.hour
+p.http-URI:~7230#p.http-URI
+p.https-URI:~7230#p.https-URI
+p.language-range:~7231#p.language-range
+p.language-tag:~7231#p.language-tag
+p.last-byte-pos:~7233#p.last-byte-pos
+p.last-chunk:~7230#p.last-chunk
+p.mailbox:~7231#p.mailbox
+p.media-range:~7231#p.media-range
+p.media-type:~7231#p.media-type
+p.message-body:~7230#p.message-body
+p.method:~7230#p.method
 	p.method:~7231
-p.minute:~7231
-p.month:~7231
-p.obs-date:~7231
-p.obs-fold:~7230
-p.obs-text:~7230
+p.minute:~7231#p.minute
+p.month:~7231#p.month
+p.obs-date:~7231#p.obs-date
+p.obs-fold:~7230#p.obs-fold
+p.obs-text:~7230#p.obs-text
 	p.obs-text:~7232
-p.opaque-tag:~7232
-p.origin-form:~7230
-p.other-content-range:~7233
-p.other-range-resp:~7233
-p.other-range-set:~7233
-p.other-range-unit:~7233
-p.other-ranges-specifier:~7233
-p.parameter:~7231
-p.partial-URI:~7230
+p.opaque-tag:~7232#p.opaque-tag
+p.origin-form:~7230#p.origin-form
+p.other-content-range:~7233#p.other-content-range
+p.other-range-resp:~7233#p.other-range-resp
+p.other-range-set:~7233#p.other-range-set
+p.other-range-unit:~7233#p.other-range-unit
+p.other-ranges-specifier:~7233#p.other-ranges-specifier
+p.parameter:~7231#p.parameter
+p.partial-URI:~7230#p.partial-URI
 	p.partial-URI:~7231
-p.path-abempty:~7230
-p.path:~7230
-p.port:~7230
+p.path-abempty:~7230#p.path-abempty
+p.path:~7230#p.path
+p.port:~7230#p.port
 	p.port:~7234
-p.pragma-directive:~7234
-p.product:~7231
-p.product-version:~7231
-p.protocol:~7230
-p.protocol-name:~7230
-p.protocol-version:~7230
-p.pseudonym:~7230
+p.pragma-directive:~7234#p.pragma-directive
+p.product:~7231#p.product
+p.product-version:~7231#p.product-version
+p.protocol:~7230#p.protocol
+p.protocol-name:~7230#p.protocol-name
+p.protocol-version:~7230#p.protocol-version
+p.pseudonym:~7230#p.pseudonym
 	p.pseudonym:~7234
-p.qdtext:~7230
-p.query:~7230
-p.quoted-pair:~7230
-p.quoted-string:~7230
+p.qdtext:~7230#p.qdtext
+p.query:~7230#p.query
+p.quoted-pair:~7230#p.quoted-pair
+p.quoted-string:~7230#p.quoted-string
 	p.quoted-string:~7231
 	p.quoted-string:~7234
 	p.quoted-string:~7235
-p.qvalue:~7231
-p.range-unit:~7233
-p.rank:~7230
-p.reason-phrase:~7230
-p.received-by:~7230
-p.received-protocol:~7230
-p.relative-part:~7230
-p.request-line:~7230
-p.request-target:~7230
-p.rfc850-date:~7231
-p.scheme:~7230
-p.second:~7231
-p.segment:~7230
-p.start-line:~7230
-p.status-code:~7230
-p.status-line:~7230
-p.subtype:~7231
-p.suffix-byte-range-spec:~7233
-p.suffix-length:~7233
-p.t-codings:~7230
-p.t-ranking:~7230
-p.tchar:~7230
-p.time-of-day:~7231
-p.token:~7230
+p.qvalue:~7231#p.qvalue
+p.range-unit:~7233#p.range-unit
+p.rank:~7230#p.rank
+p.reason-phrase:~7230#p.reason-phrase
+p.received-by:~7230#p.received-by
+p.received-protocol:~7230#p.received-protocol
+p.relative-part:~7230#p.relative-part
+p.request-line:~7230#p.request-line
+p.request-target:~7230#p.request-target
+p.rfc850-date:~7231#p.rfc850-date
+p.scheme:~7230#p.scheme
+p.second:~7231#p.second
+p.segment:~7230#p.segment
+p.start-line:~7230#p.start-line
+p.status-code:~7230#p.status-code
+p.status-line:~7230#p.status-line
+p.subtype:~7231#p.subtype
+p.suffix-byte-range-spec:~7233#p.suffix-byte-range-spec
+p.suffix-length:~7233#p.suffix-length
+p.t-codings:~7230#p.t-codings
+p.t-ranking:~7230#p.t-ranking
+p.tchar:~7230#p.tchar
+p.time-of-day:~7231#p.time-of-day
+p.token:~7230#p.token
 	p.token:~7231
 	p.token:~7233
 	p.token:~7234
 	p.token:~7235
-p.token68:~7235
-p.trailer-part:~7230
-p.transfer-coding:~7230
-p.transfer-extension:~7230
-p.transfer-parameter:~7230
-p.type:~7231
-p.unsatisfied-range:~7233
-p.uri-host:~7230
-p.userinfo:~7230
-p.host:~7230
+p.token68:~7235#p.token68
+p.trailer-part:~7230#p.trailer-part
+p.transfer-coding:~7230#p.transfer-coding
+p.transfer-extension:~7230#p.transfer-extension
+p.transfer-parameter:~7230#p.transfer-parameter
+p.type:~7231#p.type
+p.unsatisfied-range:~7233#p.unsatisfied-range
+p.uri-host:~7230#p.uri-host
+p.userinfo:~7230#p.userinfo
+p.host:~7230#p.host
 	p.uri-host:~7234
-p.warn-agent:~7234
-p.warn-code:~7234
-p.warn-date:~7234
-p.warn-text:~7234
-p.warning-value:~7234
-p.weak:~7232
-p.weight:~7231
-p.year:~7231
+p.warn-agent:~7234#p.warn-agent
+p.warn-code:~7234#p.warn-code
+p.warn-date:~7234#p.warn-date
+p.warn-text:~7234#p.warn-text
+p.warning-value:~7234#p.warning-value
+p.weak:~7232#p.weak
+p.weight:~7231#p.weight
+p.year:~7231#p.year
 	p.reserved:~7231
 
 
 
-	＊
+	others
 c.chunked:~7230#chunked.encoding
 c.compress:~7230#compress.coding
 c.deflate:~7230#deflate.coding
 c.gzip:~7230#gzip.coding
 c.message/http:~7230#internet.media.type.message.http
 c.application/http:~7230#internet.media.type.application.http
+
 	■XXXX
 IETF Review:~5226#section-4.1
 著作者連絡先:~723X#authors-addresses
@@ -799,10 +767,11 @@ c.multipart/byteranges:~7233#internet.media.type.multipart.byteranges
 資格証:~7235#credentials
 `;
 
-/** words */
 
-source_data.words_table1 = `
-IETF:https://tools.ietf.org/html
+/** Words */
+
+
+COMMON_DATA.words_table1 += `
 IANA-a:https://www.iana.org/assignments
 ERRATA:https://www.rfc-editor.org/errata_search.php
 723X:RFC723X-ja.html
@@ -812,6 +781,7 @@ ERRATA:https://www.rfc-editor.org/errata_search.php
 7233:RFC7233-ja.html
 7234:RFC7234-ja.html
 7235:RFC7235-ja.html
+723Xabnf:RFC723X-ABNF-ja.html
 7538:http-status-code-308-ja.html
 	7238:https://tools.ietf.org/html/rfc7238
 2045:https://tools.ietf.org/html/rfc2045
@@ -839,7 +809,6 @@ OUGHT:べき.である
 HTTP09: HTTP/0.9 
 HTTP10: HTTP/1.0 
 HTTP11: HTTP/1.1 
-HTTP1x: HTTP/1.x 
 100cont:<code>100-continue</code>
 close_:"<code>close</code>" 
 IETF-org: “IETF (iesg@ietf.org) — Internet Engineering Task Force” 
@@ -847,9 +816,8 @@ IETF-org: “IETF (iesg@ietf.org) — Internet Engineering Task Force”
 Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け</h2><p class="trans-note">【この節の内容は、著作権の告知も含め，<a href="RFC723X-ja.html#status">RFC723X 共通ページ</a>に委譲。】</p></section>
 `;
 
-/** Words */
 
-source_data.words_table = `
+COMMON_DATA.words_table = `
 伝え:inform し:~
 伝える:inform する:~
 切替:switching::切り替え
@@ -2680,332 +2648,332 @@ through
 
 
 /*
-h.Accept:~7231#section-5.3.2\n\
-h.Accept-Charset:~7231#section-5.3.3\n\
-h.Accept-Encoding:~7231#section-5.3.4\n\
-h.Accept-Language:~7231#section-5.3.5\n\
-h.Age:~7234#section-5.1\n\
-h.Allow:~7231#section-7.4.1\n\
-h.Content-Encoding:~7231#section-3.1.2.2\n\
-h.Content-Language:~7231#section-3.1.3.2\n\
-h.Content-Location:~7231#section-3.1.4.2\n\
-h.Content-Type:~7231#section-3.1.1.5\n\
-h.Date:~7231#section-7.1.1.2\n\
-h.Expect:~7231#section-5.1.1\n\
-h.From:~7231#section-5.5.1\n\
-h.Location:~7231#section-7.1.2\n\
-h.Max-Forwards:~7231#section-5.1.2\n\
-h.MIME-Version:~7231#appendix-A.1\n\
-h.Referer:~7231#section-5.5.2\n\
-h.Retry-After:~7231#section-7.1.3\n\
-h.Server:~7231#section-7.4.2\n\
-h.User-Agent:~7231#section-5.5.3\n\
-h.Vary:~7231#section-7.1.4\n\
-h.Transfer-Encoding:~7230#section-3.3.1\n\
-h.Content-Length:~7230#section-3.3.2\n\
-h.TE:~7230#section-4.3\n\
-h.Trailer:~7230#section-4.4\n\
-h.Host:~7230#section-5.4\n\
-h.Via:~7230#section-5.7.1\n\
-h.Connection:~7230#section-6.1\n\
-h.Upgrade:~7230#section-6.7\n\
-h.Close:~7230#section-8.1\n\
-h.ETag:~7232#section-2.3\n\
-h.Last-Modified:~7232#section-2.2\n\
-h.If-Match:~7232#section-3.1\n\
-h.If-None-Match:~7232#section-3.2\n\
-h.If-Modified-Since:~7232#section-3.3\n\
-h.If-Unmodified-Since:~7232#section-3.4\n\
-h.If-Range:~7233#section-3.2\n\
-h.Range:~7233#section-3.1\n\
-h.Accept-Ranges:~7233#section-2.3\n\
-h.Content-Range:~7233#section-4.2\n\
-h.Cache-Control:~7234#section-5.2\n\
-h.Pragma:~7234#section-5.4\n\
-h.Authorization:~7235#section-4.2\n\
-h.Proxy-Authorization:~7235#section-4.4\n\
-h.WWW-Authenticate:~7235#section-4.1\n\
-h.Proxy-Authenticate:~7235#section-4.3\n\
-h.Warning:~7234#section-5.5\n\
-h.Keep-Alive:~7230#appendix-A.1.2\n\
-h.Expires:~7234#section-5.3\n\
+h.Accept:~7231#section-5.3.2
+h.Accept-Charset:~7231#section-5.3.3
+h.Accept-Encoding:~7231#section-5.3.4
+h.Accept-Language:~7231#section-5.3.5
+h.Age:~7234#section-5.1
+h.Allow:~7231#section-7.4.1
+h.Content-Encoding:~7231#section-3.1.2.2
+h.Content-Language:~7231#section-3.1.3.2
+h.Content-Location:~7231#section-3.1.4.2
+h.Content-Type:~7231#section-3.1.1.5
+h.Date:~7231#section-7.1.1.2
+h.Expect:~7231#section-5.1.1
+h.From:~7231#section-5.5.1
+h.Location:~7231#section-7.1.2
+h.Max-Forwards:~7231#section-5.1.2
+h.MIME-Version:~7231#appendix-A.1
+h.Referer:~7231#section-5.5.2
+h.Retry-After:~7231#section-7.1.3
+h.Server:~7231#section-7.4.2
+h.User-Agent:~7231#section-5.5.3
+h.Vary:~7231#section-7.1.4
+h.Transfer-Encoding:~7230#section-3.3.1
+h.Content-Length:~7230#section-3.3.2
+h.TE:~7230#section-4.3
+h.Trailer:~7230#section-4.4
+h.Host:~7230#section-5.4
+h.Via:~7230#section-5.7.1
+h.Connection:~7230#section-6.1
+h.Upgrade:~7230#section-6.7
+h.Close:~7230#section-8.1
+h.ETag:~7232#section-2.3
+h.Last-Modified:~7232#section-2.2
+h.If-Match:~7232#section-3.1
+h.If-None-Match:~7232#section-3.2
+h.If-Modified-Since:~7232#section-3.3
+h.If-Unmodified-Since:~7232#section-3.4
+h.If-Range:~7233#section-3.2
+h.Range:~7233#section-3.1
+h.Accept-Ranges:~7233#section-2.3
+h.Content-Range:~7233#section-4.2
+h.Cache-Control:~7234#section-5.2
+h.Pragma:~7234#section-5.4
+h.Authorization:~7235#section-4.2
+h.Proxy-Authorization:~7235#section-4.4
+h.WWW-Authenticate:~7235#section-4.1
+h.Proxy-Authenticate:~7235#section-4.3
+h.Warning:~7234#section-5.5
+h.Keep-Alive:~7230#appendix-A.1.2
+h.Expires:~7234#section-5.3
 
-	st_hrefs: {
-'1xx': '~7231#section-6.2',
-'2xx': '~7231#section-6.3',
-'3xx': '~7231#section-6.4',
-'4xx': '~7231#section-6.5',
-'5xx': '~7231#section-6.6',
-'100': '~7231#section-6.2.1',
-'101': '~7231#section-6.2.2',
-'200': '~7231#section-6.3.1',
-'201': '~7231#section-6.3.2',
-'202': '~7231#section-6.3.3',
-'203': '~7231#section-6.3.4',
-'204': '~7231#section-6.3.5',
-'205': '~7231#section-6.3.6',
-'206': '~7233#section-4.1',
-'214': '~7234#section-5.5',
-'300': '~7231#section-6.4.1',
-'301': '~7231#section-6.4.2',
-'302': '~7231#section-6.4.3',
-'303': '~7231#section-6.4.4',
-'304': '~7232#section-4.1',
-'305': '~7231#section-6.4.5',
-'306': '~7231#section-6.4.6',
-'307': '~7231#section-6.4.7',
-'308': '~7538#section-3',
-'400': '~7231#section-6.5.1',
-'401': '~7235#section-3.1',
-'402': '~7231#section-6.5.2',
-'403': '~7231#section-6.5.3',
-'404': '~7231#section-6.5.4',
-'405': '~7231#section-6.5.5',
-'406': '~7231#section-6.5.6',
-'407': '~7235#section-3.2',
-'408': '~7231#section-6.5.7',
-'409': '~7231#section-6.5.8',
-'410': '~7231#section-6.5.9',
-'411': '~7231#section-6.5.10',
-'412': '~7232#section-4.2',
-'413': '~7231#section-6.5.11',
-'414': '~7231#section-6.5.12',
-'415': '~7231#section-6.5.13',
-'416': '~7233#section-4.4',
-'417': '~7231#section-6.5.14',
-'426': '~7231#section-6.5.15',
-'500': '~7231#section-6.6.1',
-'501': '~7231#section-6.6.2',
-'502': '~7231#section-6.6.3',
-'503': '~7231#section-6.6.4',
-'504': '~7231#section-6.6.5',
-'505': '~7231#section-6.6.6'
+	status code
+st.1xx:~7231#section-6.2
+st.2xx:~7231#section-6.3
+st.3xx:~7231#section-6.4
+st.4xx:~7231#section-6.5
+st.5xx:~7231#section-6.6
+st.100:~7231#section-6.2.1
+st.101:~7231#section-6.2.2
+st.200:~7231#section-6.3.1
+st.201:~7231#section-6.3.2
+st.202:~7231#section-6.3.3
+st.203:~7231#section-6.3.4
+st.204:~7231#section-6.3.5
+st.205:~7231#section-6.3.6
+st.206:~7233#section-4.1
+st.214:~7234#section-5.5
+st.300:~7231#section-6.4.1
+st.301:~7231#section-6.4.2
+st.302:~7231#section-6.4.3
+st.303:~7231#section-6.4.4
+st.304:~7232#section-4.1
+st.305:~7231#section-6.4.5
+st.306:~7231#section-6.4.6
+st.307:~7231#section-6.4.7
+st.308:~7538#section-3
+st.400:~7231#section-6.5.1
+st.401:~7235#section-3.1
+st.402:~7231#section-6.5.2
+st.403:~7231#section-6.5.3
+st.404:~7231#section-6.5.4
+st.405:~7231#section-6.5.5
+st.406:~7231#section-6.5.6
+st.407:~7235#section-3.2
+st.408:~7231#section-6.5.7
+st.409:~7231#section-6.5.8
+st.410:~7231#section-6.5.9
+st.411:~7231#section-6.5.10
+st.412:~7232#section-4.2
+st.413:~7231#section-6.5.11
+st.414:~7231#section-6.5.12
+st.415:~7231#section-6.5.13
+st.416:~7233#section-4.4
+st.417:~7231#section-6.5.14
+st.426:~7231#section-6.5.15
+st.500:~7231#section-6.6.1
+st.501:~7231#section-6.6.2
+st.502:~7231#section-6.6.3
+st.503:~7231#section-6.6.4
+st.504:~7231#section-6.6.5
+st.505:~7231#section-6.6.6
 
-m.CONNECT:~7231#section-4.3.6\n\
-m.DELETE:~7231#section-4.3.5\n\
-m.GET:~7231#section-4.3.1\n\
-m.HEAD:~7231#section-4.3.2\n\
-m.OPTIONS:~7231#section-4.3.7\n\
-m.POST:~7231#section-4.3.3\n\
-m.PUT:~7231#section-4.3.4\n\
-m.TRACE:~7231#section-4.3.8\n\
+m.CONNECT:~7231#section-4.3.6
+m.DELETE:~7231#section-4.3.5
+m.GET:~7231#section-4.3.1
+m.HEAD:~7231#section-4.3.2
+m.OPTIONS:~7231#section-4.3.7
+m.POST:~7231#section-4.3.3
+m.PUT:~7231#section-4.3.4
+m.TRACE:~7231#section-4.3.8
 
-wc.110:~7234#section-5.5.1\n\
-wc.111:~7234#section-5.5.2\n\
-wc.112:~7234#section-5.5.3\n\
-wc.113:~7234#section-5.5.4\n\
-wc.199:~7234#section-5.5.5\n\
-wc.214:~7234#section-5.5.6\n\
-wc.299:~7234#section-5.5.7\n\
+wc.110:~7234#section-5.5.1
+wc.111:~7234#section-5.5.2
+wc.112:~7234#section-5.5.3
+wc.113:~7234#section-5.5.4
+wc.199:~7234#section-5.5.5
+wc.214:~7234#section-5.5.6
+wc.299:~7234#section-5.5.7
 
-qdir.max-age:~7234#section-5.2.1.1\n\
-sdir.max-age:~7234#section-5.2.2.8\n\
-qdir.max-stale:~7234#section-5.2.1.2\n\
-qdir.min-fresh:~7234#section-5.2.1.3\n\
-sdir.must-revalidate:~7234#section-5.2.2.1\n\
-qdir.no-cache:~7234#section-5.2.1.4\n\
-sdir.no-cache:~7234#section-5.2.2.2\n\
-qdir.no-store:~7234#section-5.2.1.5\n\
-sdir.no-store:~7234#section-5.2.2.3\n\
-qdir.no-transform:~7234#section-5.2.1.6\n\
-sdir.no-transform:~7234#section-5.2.2.4\n\
-qdir.only-if-cached:~7234#section-5.2.1.7\n\
-sdir.private:~7234#section-5.2.2.6\n\
-sdir.proxy-revalidate:~7234#section-5.2.2.7\n\
-sdir.public:~7234#section-5.2.2.5\n\
-sdir.s-maxage:~7234#section-5.2.2.9\n\
+qdir.max-age:~7234#section-5.2.1.1
+sdir.max-age:~7234#section-5.2.2.8
+qdir.max-stale:~7234#section-5.2.1.2
+qdir.min-fresh:~7234#section-5.2.1.3
+sdir.must-revalidate:~7234#section-5.2.2.1
+qdir.no-cache:~7234#section-5.2.1.4
+sdir.no-cache:~7234#section-5.2.2.2
+qdir.no-store:~7234#section-5.2.1.5
+sdir.no-store:~7234#section-5.2.2.3
+qdir.no-transform:~7234#section-5.2.1.6
+sdir.no-transform:~7234#section-5.2.2.4
+qdir.only-if-cached:~7234#section-5.2.1.7
+sdir.private:~7234#section-5.2.2.6
+sdir.proxy-revalidate:~7234#section-5.2.2.7
+sdir.public:~7234#section-5.2.2.5
+sdir.s-maxage:~7234#section-5.2.2.9
 
 
-／c.chunked:~7230#section-4.1\n\
-／c.compress:~7230#section-4.2.1\n\
-／c.deflate:~7230#section-4.2.2\n\
-／c.gzip:~7230#section-4.2.3\n\
-／c.application/https:~7230#section-8.3.2\n\
-／c.message/https:~7230#section-8.3.1\n\
-／c.multipart/byteranges:~7233#multipart/byteranges\n\
-	■XXXX\n\
-IETF Review:~5226#section-4.1\n\
-著作者連絡先:~723X#authors-addresses\n\
-二重引用符:~723X#P.DQUOTE\n\
-	■7230\n\
-〜~UA:~7230#user-agent\n\
-~URI:~7230#URI\n\
-〜~stateless:~7230#stateless\n\
-／~chunked:~7230#chunked-transfer-coding\n\
-／~chunked転送~符号法:~7230#chunked-transfer-coding\n\
-／~chunk拡張:~7230#chunk-extension\n\
-〜~client:~7230#client\n\
-〜~gateway:~7230#gateway\n\
-／~header:~7230#section-3.2\n\
-〜~header値:~7230#header-value\n\
-〜~header名:~7230#header-name\n\
-〜~header節:~7230#header-section\n\
-〜~major:~7230#major-version\n\
-〜~major~version:~7230#major-version\n\
-〜~minor:~7230#minor-version\n\
-〜~minor~version:~7230#minor-version\n\
-／~message:~7230#section-3\n\
-／~message本体:~7230#message-body\n\
-／~message本体~長さ:~7230#body-length\n\
-／~pipeline:~7230#pipeline\n\
-／~pipeline化:~7230#pipeline\n\
-〜~proxy:~7230#proxy\n\
-〜~server:~7230#server\n\
-／	~status行0:~7230#status-line\n\
-〜~target~URI:~7230#target-URI\n\
-〜~target資源:~7230#target-resource\n\
-〜~trailer:~7230#trailer\n\
-〜~tunnel:~7230#tunnel\n\
-／~version:~7230#version\n\
-／~protocol~version:~7230#version\n\
-〜~version番号:~7230#version-number\n\
-〜上流:~7230#upstream\n\
-〜下流:~7230#downstream\n\
-不完全:~7230#incomplete\n\
-完全:~7230#incomplete\n\
-〜中継者:~7230#intermediary\n\
-〜内方:~7230#inbound\n\
-〜受信者:~7230#recipient\n\
-〜外方:~7230#outbound\n\
-／実効~要請~URI:~7230#effective-request-URI\n\
-／形式変換-:~7230#transform\n\
-／形式変換:~7230#transform\n\
-〜応答:~7230#response\n\
-／応答~分割:~7230#response-splitting\n\
-／持続的~接続:~7230#persistent-connection\n\
-〜接続~option:~7230#connection-option\n\
-〜最終~転送~符号法:~7230#final-transfer-coding\n\
-〜本体~長さ:~7230#body-length\n\
-〜生成:~7230#generate\n\
-〜生成-:~7230#generate\n\
-〜生成する:~7230#generate\n\
-〜生成され:~7230#generate\n\
-〜生成し:~7230#generate\n\
-〜生成元~server:~7230#origin-server\n\
-／空白:~7230#linear-whitespace\n\
-	線形空白:~7230#section-3.2.3\n\
-〜端点:~7230#endpoint\n\
-〜端点間:~7230#end-to-end\n\
-〜端点間~header:~7230#end-to-end-header\n\
-〜結合-:~7230#combine-headers\n\
-	要請:~7230#request\n\
-〜要請:~7231#request\n\
-〜~HTTP要請:~7231#request\n\
-／要請~target:~7230#request-target\n\
-／要請~密入:~7230#request-smuggling\n\
-／転送~符号法:~7230#transfer-coding\n\
-〜転送~符号法~名:~7230#p.transfer-coding\n\
-〜送信者:~7230#sender\n\
-〜連鎖:~7230#chain\n\
-〜隣点間:~7230#hop-by-hop\n\
-〜隣点間~header:~7230#hop-by-hop-header\n\
-〜~payload本体:~7230#payload-body\n\
-〜~payload:~7230#payload-body\n\
-〜形式変換proxy:~7230#transforming-proxy\n\
-〜相対~参照:~7230#p.relative-part\n\
-	~3986#section-4.2\n\
-〜素片:~7230#p.fragment\n\
-〜素片~識別子:~7230#p.fragment\n\
-／絶対~形:~7230#section-5.3.2\n\
-〜~close_接続~option:~7230#close-connection-option\n\
-〜~HTTP11:~7230#version-1.1\n\
-／~list演算子:~7230#section-7\n\
-／圧縮~符号法:~7230#compression-codings\n\
-〜事由~句:~7231#reason-phrase\n\
-〜既定で~cache可能である:~7231#cacheable-by-default\n\
-\n\
-	■7231\n\
-／資源:~7231#resource\n\
-〜表現:~7231#representation\n\
-〜選定された表現:~7231#selected-representation\n\
-／~metadata:~7231#section-3.1\n\
-／表現~metadata:~7231#section-3.1\n\
-／媒体~型:~7231#media-type\n\
-／~charset:~7231#section-3.1.1.2\n\
-／内容~符号法:~7231#content-coding\n\
-〜内容~符号法~名:~7231#p.content-coding\n\
-言語~tag:~7231#language-tag\n\
-〜媒体~型~parameter:~7231#p.parameter\n\
-〜媒体~範囲:~7231#p.media-range\n\
-	資源の識別処理:~7231#section-3.1.4\n\
-／表現~data:~7231#representation-data\n\
-／表現~header:~7231#representation-header\n\
-〜~payload~header:#payload-headers\n\
-〜内容~折衝:~7231#content-negotiation\n\
-／~proactive折衝:~7231#proactive-negotiation\n\
-／~reactive折衝:~7231#reactive-negotiation\n\
-／要請~method:~7231#section-4\n\
-／冪等~method:~7231#idempotent-mehtod\n\
-／冪等:~7231#idempotent-mehtod\n\
-／安全~method:~7231#safe-mehtod\n\
-／安全:~7231#safe-mehtod\n\
-／安全な:~7231#safe-mehtod\n\
-／要請~header:~7231#request-header\n\
-〜~server-wide:~7231#server-wide\n\
-／~proactive折衝~header:~7231#section-5.3\n\
-	条件付き要請~header:~7231#section-5.2\n\
-	＊条件付き要請~header:~7232#section-3\n\
-〜~100cont 期待:~7231#100-continue\n\
-／品質~値:~7231#qvalue\n\
-／品質値:~7231#qvalue\n\
-／	~status-code:~7231#status-code\n\
-／状態code:~7231#status-code\n\
-／応答~状態code:~7231#status-code\n\
-／応答~header:~7231#responce-header\n\
-／制御~data:~7231#control-data\n\
-〜~messageの出生日時:~7231#origination-date\n\
-	日時~形式:~7231#section-7.1.1.1\n\
-／日時:~7231#section-7.1.1\n\
-〜時計:~7231#clock\n\
-〜首~資源:~7231#primary-resource\n\
-〜製品~識別子:~7231#product-identifier\n\
-／検証子~header:~7231#validator-header\n\
-／~cache可能:~7231#cacheable\n\
-〜応答class:~7231#responce-class\n\
-／~method:~7231#section-4\n\
-／要請の意味論:~7231#section-4\n\
-／制御~header:~7231#section-5.1\n\
-／指紋収集:~7231#section-9.7\n\
-	＊条件付き~header:~7231#section-5.2\n\
-〜選定用~header:~7231#selecting-header\n\
-\n\
-	■7232\n\
-／条件付き~header:~7232#conditional-request-header\n\
-／条件付き要請~header:~7232#conditional-request-header\n\
-／事前条件~header:~7232#conditional-request-header\n\
-〜条件付き:~7232#conditional-request\n\
-〜条件付き要請:~7232#conditional-request\n\
-／検証子:~7232#validator\n\
-〜強い検証子:~7232#strong-validator\n\
-〜弱い検証子:~7232#weak-validator\n\
-〜強い比較:~7232#strong-comparison\n\
-〜弱い比較:~7232#weak-comparison\n\
-〜評価-:~7232#section-5\n\
-／改変~日時:~7232#section-2.2\n\
-〜条件付きに:~7232#make-conditional\n\
-／事前条件:~7231#preconditions\n\
-	事前条件:~7232#preconditions\n\
-\n\
-	■7233\n\
-\n\
-／範囲単位:~7233#p.range-unit\n\
-／範囲~要請:~7233#section-3\n\
-／部分的~要請:~7233#section-3\n\
-／部分的~応答:~7233#partial-responce\n\
-〜部分的:~7233#partial-responce\n\
-\n\
-	■7234\n\
-\n\
-／鮮度~情報:~7234#section-4.2.1\n\
-〜~cache:~7234#cache\n\
-／~cache検証:~7234#section-4.3\n\
-／~cache検証~要請:~7234#section-4.3.1\n\
-〜共有~cache:~7234#shared-cache\n\
-〜私用~cache:~7234#private-cache\n\
-〜~cache制御~指令:~7234#cache-directive\n\
-〜警告~text:~7234#warning-text\n\
-\n\
-	■7235\n\
-\n\
-〜資格証:~7235#credentials\n\
+／c.chunked:~7230#section-4.1
+／c.compress:~7230#section-4.2.1
+／c.deflate:~7230#section-4.2.2
+／c.gzip:~7230#section-4.2.3
+／c.application/https:~7230#section-8.3.2
+／c.message/https:~7230#section-8.3.1
+／c.multipart/byteranges:~7233#multipart/byteranges
+	■XXXX
+IETF Review:~5226#section-4.1
+著作者連絡先:~723X#authors-addresses
+二重引用符:~723X#P.DQUOTE
+	■7230
+〜~UA:~7230#user-agent
+~URI:~7230#URI
+〜~stateless:~7230#stateless
+／~chunked:~7230#chunked-transfer-coding
+／~chunked転送~符号法:~7230#chunked-transfer-coding
+／~chunk拡張:~7230#chunk-extension
+〜~client:~7230#client
+〜~gateway:~7230#gateway
+／~header:~7230#section-3.2
+〜~header値:~7230#header-value
+〜~header名:~7230#header-name
+〜~header節:~7230#header-section
+〜~major:~7230#major-version
+〜~major~version:~7230#major-version
+〜~minor:~7230#minor-version
+〜~minor~version:~7230#minor-version
+／~message:~7230#section-3
+／~message本体:~7230#message-body
+／~message本体~長さ:~7230#body-length
+／~pipeline:~7230#pipeline
+／~pipeline化:~7230#pipeline
+〜~proxy:~7230#proxy
+〜~server:~7230#server
+／	~status行0:~7230#status-line
+〜~target~URI:~7230#target-URI
+〜~target資源:~7230#target-resource
+〜~trailer:~7230#trailer
+〜~tunnel:~7230#tunnel
+／~version:~7230#version
+／~protocol~version:~7230#version
+〜~version番号:~7230#version-number
+〜上流:~7230#upstream
+〜下流:~7230#downstream
+不完全:~7230#incomplete
+完全:~7230#incomplete
+〜中継者:~7230#intermediary
+〜内方:~7230#inbound
+〜受信者:~7230#recipient
+〜外方:~7230#outbound
+／実効~要請~URI:~7230#effective-request-URI
+／形式変換-:~7230#transform
+／形式変換:~7230#transform
+〜応答:~7230#response
+／応答~分割:~7230#response-splitting
+／持続的~接続:~7230#persistent-connection
+〜接続~option:~7230#connection-option
+〜最終~転送~符号法:~7230#final-transfer-coding
+〜本体~長さ:~7230#body-length
+〜生成:~7230#generate
+〜生成-:~7230#generate
+〜生成する:~7230#generate
+〜生成され:~7230#generate
+〜生成し:~7230#generate
+〜生成元~server:~7230#origin-server
+／空白:~7230#linear-whitespace
+	線形空白:~7230#section-3.2.3
+〜端点:~7230#endpoint
+〜端点間:~7230#end-to-end
+〜端点間~header:~7230#end-to-end-header
+〜結合-:~7230#combine-headers
+	要請:~7230#request
+〜要請:~7231#request
+〜~HTTP要請:~7231#request
+／要請~target:~7230#request-target
+／要請~密入:~7230#request-smuggling
+／転送~符号法:~7230#transfer-coding
+〜転送~符号法~名:~7230#p.transfer-coding
+〜送信者:~7230#sender
+〜連鎖:~7230#chain
+〜隣点間:~7230#hop-by-hop
+〜隣点間~header:~7230#hop-by-hop-header
+〜~payload本体:~7230#payload-body
+〜~payload:~7230#payload-body
+〜形式変換proxy:~7230#transforming-proxy
+〜相対~参照:~7230#p.relative-part
+	~3986#section-4.2
+〜素片:~7230#p.fragment
+〜素片~識別子:~7230#p.fragment
+／絶対~形:~7230#section-5.3.2
+〜~close_接続~option:~7230#close-connection-option
+〜~HTTP11:~7230#version-1.1
+／~list演算子:~7230#section-7
+／圧縮~符号法:~7230#compression-codings
+〜事由~句:~7231#reason-phrase
+〜既定で~cache可能である:~7231#cacheable-by-default
+
+	■7231
+／資源:~7231#resource
+〜表現:~7231#representation
+〜選定された表現:~7231#selected-representation
+／~metadata:~7231#section-3.1
+／表現~metadata:~7231#section-3.1
+／媒体~型:~7231#media-type
+／~charset:~7231#section-3.1.1.2
+／内容~符号法:~7231#content-coding
+〜内容~符号法~名:~7231#p.content-coding
+言語~tag:~7231#language-tag
+〜媒体~型~parameter:~7231#p.parameter
+〜媒体~範囲:~7231#p.media-range
+	資源の識別処理:~7231#section-3.1.4
+／表現~data:~7231#representation-data
+／表現~header:~7231#representation-header
+〜~payload~header:#payload-headers
+〜内容~折衝:~7231#content-negotiation
+／~proactive折衝:~7231#proactive-negotiation
+／~reactive折衝:~7231#reactive-negotiation
+／要請~method:~7231#section-4
+／冪等~method:~7231#idempotent-mehtod
+／冪等:~7231#idempotent-mehtod
+／安全~method:~7231#safe-mehtod
+／安全:~7231#safe-mehtod
+／安全な:~7231#safe-mehtod
+／要請~header:~7231#request-header
+〜~server-wide:~7231#server-wide
+／~proactive折衝~header:~7231#section-5.3
+	条件付き要請~header:~7231#section-5.2
+	＊条件付き要請~header:~7232#section-3
+〜~100cont 期待:~7231#100-continue
+／品質~値:~7231#qvalue
+／品質値:~7231#qvalue
+／	~status-code:~7231#status-code
+／状態code:~7231#status-code
+／応答~状態code:~7231#status-code
+／応答~header:~7231#responce-header
+／制御~data:~7231#control-data
+〜~messageの出生日時:~7231#origination-date
+	日時~形式:~7231#section-7.1.1.1
+／日時:~7231#section-7.1.1
+〜時計:~7231#clock
+〜首~資源:~7231#primary-resource
+〜製品~識別子:~7231#product-identifier
+／検証子~header:~7231#validator-header
+／~cache可能:~7231#cacheable
+〜応答class:~7231#responce-class
+／~method:~7231#section-4
+／要請の意味論:~7231#section-4
+／制御~header:~7231#section-5.1
+／指紋収集:~7231#section-9.7
+	＊条件付き~header:~7231#section-5.2
+〜選定用~header:~7231#selecting-header
+
+	■7232
+／条件付き~header:~7232#conditional-request-header
+／条件付き要請~header:~7232#conditional-request-header
+／事前条件~header:~7232#conditional-request-header
+〜条件付き:~7232#conditional-request
+〜条件付き要請:~7232#conditional-request
+／検証子:~7232#validator
+〜強い検証子:~7232#strong-validator
+〜弱い検証子:~7232#weak-validator
+〜強い比較:~7232#strong-comparison
+〜弱い比較:~7232#weak-comparison
+〜評価-:~7232#section-5
+／改変~日時:~7232#section-2.2
+〜条件付きに:~7232#make-conditional
+／事前条件:~7231#preconditions
+	事前条件:~7232#preconditions
+
+	■7233
+
+／範囲単位:~7233#p.range-unit
+／範囲~要請:~7233#section-3
+／部分的~要請:~7233#section-3
+／部分的~応答:~7233#partial-responce
+〜部分的:~7233#partial-responce
+
+	■7234
+
+／鮮度~情報:~7234#section-4.2.1
+〜~cache:~7234#cache
+／~cache検証:~7234#section-4.3
+／~cache検証~要請:~7234#section-4.3.1
+〜共有~cache:~7234#shared-cache
+〜私用~cache:~7234#private-cache
+〜~cache制御~指令:~7234#cache-directive
+〜警告~text:~7234#warning-text
+
+	■7235
+
+〜資格証:~7235#credentials
 */
