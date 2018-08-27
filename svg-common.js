@@ -487,6 +487,7 @@ member::::メンバ
 変更-:change:~
 変更:change:~
 属性:attribute::~
+attrdef:<p>Attribute definitions:</p>:<p>attribute 定義：</p>:<p>属性定義：</p>
 挿入-:insert::~
 改変-:modify::~
 改称-:rename:~
@@ -903,6 +904,8 @@ system::::システム
 特徴:characteristic:~
 一意:unique:~
 明瞭:clear:~
+類似する:similar な:~
+	同様に:similarly
 
 	決して:never
 	例:example
@@ -914,7 +917,6 @@ system::::システム
 	したがって:therefore
 	したがって:thus
 	べき:should
-	同様に:similarly
 	因る:due to
 
 	●仕様（動詞
@@ -1085,6 +1087,16 @@ test::::テスト
 追加:addition:~
 追加的な:additional な:追加の
 追加的に:additional に:追加で
+	加えて:in addition
+参照-:reference::~
+参照:reference::~
+参照先の:referenced::~
+参照ng:referencing::参照
+
+	対応-:correspond
+	現れる:appear
+	示す:show
+	起こる:happen
 
 	●未分類
 script::::スクリプト
@@ -1124,6 +1136,7 @@ scripting::::スクリプト処理
 	すべての:all
 	一部の:some
 	~~任意の:any
+	〜以上:or more
 	ほとんどの:most
 	その:that
 	前の:previous
@@ -1159,5 +1172,7 @@ scripting::::スクリプト処理
 	残りの:remaining
 	上:above
 	両／両者:both
+	一部／一部を成す:part of
+
 
 `
