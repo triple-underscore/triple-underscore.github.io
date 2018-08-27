@@ -402,15 +402,15 @@ t.paint:~SVGpainting#SpecifyingPaint
 
 `
 
-
+// ●PREMAP
 COMMON_DATA.PREMAP += `
-要素名:<table class="definition-table"><tbody><tr><th>名前<td>
+要素名:<table class="elemdef"><tbody><tr><th>名前<td>
 分類:<tr><th>分類<td>
 内容:<tr><th>内容~model<td>
 属性:<tr><th>属性<td>
 界面:<tr><th>~DOM~interface<td>
 
-名値初ア:<table class="attrdef"><thead><tr><th>名前<th>値<th>初期~値<th>~animate可？</thead><tbody><tr><td>
+名値初ア:<table class="attrdef"><thead><tr><th>名前<th>値<th>初期~値<th>~animate可能？</thead><tbody><tr><td>
 欄:<td>
 
 `
@@ -421,12 +421,13 @@ COMMON_DATA.words_table1 += `
 	SVGintro:https://svgwg.org/svg2-draft/intro.html
 SVGconform:https://svgwg.org/svg2-draft/conform.html
 SVGrender:svg-render-ja.html
-	https://svgwg.org/svg2-draft/render.html
+	~SVG2/render.html
 SVGtypes:https://svgwg.org/svg2-draft/types.html
 SVGstruct:https://svgwg.org/svg2-draft/struct.html
-SVGstyling:https://svgwg.org/svg2-draft/styling.html
+SVGstyling:svg-styling-ja.html
+	~SVG2/styling.html
 SVGgeometry:svg-geometry-ja.html
-	https://svgwg.org/svg2-draft/geometry.html
+	~SVG2/geometry.html
 SVGcoords:https://svgwg.org/svg2-draft/coords.html
 SVGpaths:https://svgwg.org/svg2-draft/paths.html
 SVGshapes:https://svgwg.org/svg2-draft/shapes.html
