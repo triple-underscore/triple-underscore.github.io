@@ -425,7 +425,8 @@ SVGrender:svg-render-ja.html
 SVGtypes:https://svgwg.org/svg2-draft/types.html
 SVGstruct:https://svgwg.org/svg2-draft/struct.html
 SVGstyling:https://svgwg.org/svg2-draft/styling.html
-SVGgeometry:https://svgwg.org/svg2-draft/geometry.html
+SVGgeometry:svg-geometry-ja.html
+	https://svgwg.org/svg2-draft/geometry.html
 SVGcoords:https://svgwg.org/svg2-draft/coords.html
 SVGpaths:https://svgwg.org/svg2-draft/paths.html
 SVGshapes:https://svgwg.org/svg2-draft/shapes.html
