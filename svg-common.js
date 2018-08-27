@@ -227,26 +227,6 @@ e.filter:~FILTEREFFECTS1#FilterElement
 
 	●p
 
-	font:
-	font-family:
-	font-feature-settings:
-	
-	font-kerning:
-	font-size-adjust:
-	font-size:
-	font-stretch:
-	font-style:
-	font-synthesis:
-	font-variant:
-	font-variant-caps:
-	font-variant-east-asian:
-	font-variant-ligatures:
-	font-variant-numeric:
-	font-variant-position:
-	font-weight:
-
-
-
 p.alignment-baseline:~SVGtext#AlignmentBaselineProperty
 p.baseline-shift:~SVGtext#BaselineShiftProperty
 p.clip-path:~MASKING1#propdef-clip-path
