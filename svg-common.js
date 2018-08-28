@@ -506,7 +506,8 @@ SMIL:
 XML:
 2D:
 3D:
-
+Web:
+web:
 
 	●データ／型／演算
 class:
@@ -556,6 +557,7 @@ space:
 keyword::::キーワード
 token::::トークン
 markup::::マークアップ
+code::::コード
 構文解析-:parse::~::パース
 文字:character::~
 文字列:string::~
@@ -710,6 +712,7 @@ span:
 位置:position::~
 位置決め:positioning::~
 方位:orientation::~
+直線:straight line::~
 曲線:curve::~
 真円:circle::~
 真円の:circular な::~
@@ -860,6 +863,7 @@ URL:
 link::::リンク
 inline::::インライン
 source::::ソース
+page::::ページ
 資源:resource::~:リソース
 multimedia::::マルチメディア
 file::::ファイル
@@ -867,6 +871,7 @@ address::::アドレス
 page::::ページ
 埋込まれ:embed され::埋め込まれ
 埋込む:embed する::埋め込む
+埋込んで:embed::埋め込んで
 埋込d:embedded::埋め込み
 読込む:load する::読み込む::ロードする
 読込まれ:load され::読み込まれ::ロードされ
@@ -948,10 +953,17 @@ system::::システム
 明瞭:clear:~
 類似する:similar な:~
 	同様に:similarly
+互換:compatible:~
+互換性:compatibility:~
+アリ:possible:可能
+情報:information:~
+自立的:standalone:~
+多彩:rich:~
 
 	決して:never
 	例:example
 	例えば:for example
+	例：:e.g.,
 	場合によっては:possibly
 	すなわち:i.e.,
 	具体例として:for instance
@@ -983,6 +995,7 @@ test::::テスト
 利用-:use:~
 	利用して:using
 利用者:user:~
+有用:useful:~
 制御-:control:~
 制約:restriction:~
 制限-:limit:~
@@ -1021,6 +1034,7 @@ test::::テスト
 挙動:behavior:ふるまい
 挙動する:behave する:ふるまう
 採用-:adopt:~
+推奨-:recommend:~
 推奨:recommendation:~
 改めら:alter さ:~
 改善-:improve:~
@@ -1031,6 +1045,7 @@ test::::テスト
 期待-:expect:~
 標準:standard:~
 標準の:standard な:~
+正しく:correct に:~
 正した:correct した:~
 決定-:determine:~
 注釈:annotation:~
@@ -1069,6 +1084,7 @@ test::::テスト
 適合:conforming:~
 適合性:conformance:~
 適用-:apply:~
+応用:application:~
 関係-:relate:~
 阻止-:block:::~
 非推奨に:deprecate:~
@@ -1089,6 +1105,8 @@ test::::テスト
 見做して:assume して:~
 代替-:alternate:~
 代替:alternative:~
+組入れる:incorporate する:組み入れる
+解-:understand:~
 
 	則って:according
 	則って:in accordance with
@@ -1122,6 +1140,7 @@ test::::テスト
 計算:calculation::~
 関与-:participate::~
 アテガう:assign する:あてがう
+アテガえる:assign できる:あてがえる
 対応付け:mapping::~
 対応付けら:map さ::~
 対応付ける:map する::~
@@ -1130,6 +1149,7 @@ test::::テスト
 追加的な:additional な:追加の
 追加的に:additional に:追加で
 	加えて:in addition
+	加えて:additionally
 参照-:reference::~
 参照:reference::~
 参照先の:referenced::~
@@ -1215,6 +1235,7 @@ scripting::::スクリプト処理
 	上:above
 	両／両者:both
 	一部／一部を成す:part of
+	介:via
 
 
 `
