@@ -193,8 +193,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2018-08-24
-trans_update:2018-08-25
+spec_date:2018-08-27
+trans_update:2018-08-28
 source_checked:180517
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -876,6 +876,7 @@ RS.取消す:#concept-cancel-readablestream
 	●Fetch API
 ~fetchを中止する:#abort-fetch
 本体と内容~型を抽出する:#concept-bodyinit-extract
+本体と内容~型を安全に抽出する:#bodyinit-safely-extract
 
 ~guardで検査する:#_check-name-and-value-with-guard
 新たな~Headers:#_new-headers
@@ -1922,6 +1923,7 @@ helper:
 検分-:inspect:~
 請われ:ask され:~
 請う:ask する:~
+保証-:guarantee:~
 	探-:seek
 	されたし:please
 	解く:solve する:~
@@ -2094,6 +2096,7 @@ slash::::スラッシュ
 	nosniff:
 	所与の:given
 	秒数:seconds
+	-:subset
 
 	~CORSなし要請:noCorsResponse
 	~CORBで無毒化した要請:corbSanitizedResponse
@@ -2292,7 +2295,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/4321ab66c7ecc73793229939eaaeb811333e6cab/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/1bda54532c11b51963796ad77f783e5d8e136ea8/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -9744,18 +9747,16 @@ then set request’s method to `GET` and request’s body to null.
 ］
 ⇒
 %要請 の`本体$rq ~SET ［
-`本体と内容~型を抽出する$( %要請 の`本体$rqの`~source$bd )
+`本体と内容~型を安全に抽出する$( %要請 の`本体$rqの`~source$bd )
 ］の結果の`本体$
 ◎
-If request’s body is non-null, then set request’s body to the first part of extracting request’s body’s source.
+If request’s body is non-null, then set request’s body to the first return value of safely extracting request’s body’s source.
 </p>
 
 <p class="note">注記：
 `~source$bdが ~NULL でないことは、すでに検査~済み。
-また、`本体と内容~型を抽出する$ときに例外が投出されることはない
-— 前に同じ`~source$bdで~callされているので。
 ◎
-request’s body’s source’s nullity has already been checked. The extracting operation cannot throw as it was called for the same source before.
+request’s body’s source’s nullity has already been checked.
 </p>
 	</li>
 	<li>
@@ -10671,21 +10672,12 @@ If request’s body is non-null, then:
 If request’s body’s source is null, then return a network error.
 </li>
 					<li>
-<p>
 %要請 の`本体$rq ~SET ［
-`本体と内容~型を抽出する$( %要請 の`本体$rqの`~source$bd )
+`本体と内容~型を安全に抽出する$( %要請 の`本体$rqの`~source$bd )
 ］の結果の`本体$
 ◎
 Set request’s body to the first part of extracting request’s body’s source.
-</p>
-
-<p class="note">注記：
-`本体と内容~型を抽出する$ときに例外が投出されることはない
-— 前に同じ`~source$bdで~callされているので。
-◎
-The extracting operation cannot throw as it was called for the same source before.
-</p>
-					</li>
+</li>
 				</ol>
 			</li>
 			<li>
@@ -12867,6 +12859,49 @@ typedef (
 
 
 <p class="algo-head">
+`本体と内容~型を安全に抽出する@
+ときは、所与の
+( %~obj )
+に対し，次を走らす
+— この手続きは
+( `本体$, `Content-Type$h `値$hd )
+の組を返す：
+◎
+To safely extract a body and a `Content-Type` value from object, run these steps:
+</p>
+
+<ol>
+	<li>
+~IF［
+%~obj は`~ReadableStream$~objである
+］
+⇒
+~Assert：
+%~obj は次を満たしていない
+⇒
+［
+`妨げられている$RS
+］~OR［
+`~lockされている$RS
+］
+◎
+If object is a ReadableStream object, then:
+• Assert: object is neither disturbed nor locked.
+</li>
+	<li>
+~RET `本体と内容~型を抽出する$( %~obj )
+◎
+Return the results of extracting object.
+</li>
+</ol>
+
+<p class="note">注記：
+`本体と内容~型を安全に抽出する$演算は、例外を投出しないことが保証される，`本体と内容~型を抽出する$演算である。
+◎
+The safely extract operation is a subset of the extract operation that is guaranteed to not throw an exception.
+</p>
+
+<p class="algo-head">
 `本体と内容~型を抽出する@
 ときは、所与の
 ( %~obj, %~keepalive~flag （省略時は ~OFF ）)
@@ -13041,24 +13076,31 @@ Set source to object.
 
 			<dt>`ReadableStream$I</dt>
 			<dd>
-%~stream ~SET %~obj
-◎
-Set stream to object.
-</dd>
-
-		</dl>
-	</li>
-	<li>
+				<ol>
+					<li>
 ~IF［
 %~keepalive~flag ~EQ ~ON
-］~AND［
-%~obj は `ReadableStream$I 型である
+］~OR［
+%~obj は`妨げられている$Bd
+］~OR［
+%~obj は`~lockされている$Bd
 ］
 ⇒
 ~THROW `TypeError$E
 ◎
-If keepalive flag is set and object’s type is a ReadableStream object, then throw a TypeError.
+If the keepalive flag is set, then throw a TypeError.
+◎
+If object is disturbed or locked, then throw a TypeError. 
 </li>
+					<li>
+%~stream ~SET %~obj
+◎
+Set stream to object.
+</li>
+				</ol>
+			</dd>
+		</dl>
+	</li>
 	<li>
 <p>
 ~IF［
@@ -14668,12 +14710,12 @@ If inputBody is body and input is disturbed or locked, then throw a TypeError.
 	<li>
 <p>
 ~IF［
-%入力~本体 ~NEQ ~NULL
-］~AND［
 %入力~本体 ~EQ %本体
+］~AND［
+%入力~本体 ~NEQ ~NULL
 ］：
 ◎
-If inputBody is non-null and inputBody is body, then:
+If inputBody is body and inputBody is non-null, then:
 </p>
 		<ol>
 			<li>
@@ -14689,10 +14731,10 @@ Let rs bs a ReadableStream object from which one can read the exactly same data 
 と
 <a href="~STREAMS#pipe-chains">~pipe法</a>
 が精確に定義されたなら，より精確に指定されることになる。
-<a href="https://github.com/whatwg/fetch/issues/463">この課題</a>
+<a href="https://github.com/whatwg/fetch/issues/463">issue #463</a>
 を見よ。
 ◎
-This will be specified more precisely once transform stream and piping are precisely defined. See the issue.
+This will be specified more precisely once transform stream and piping are precisely defined. See issue #463.
 </p>
 
 <p class="note">注記：
