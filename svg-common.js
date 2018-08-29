@@ -102,6 +102,7 @@ return text;
 /** class/tag mapping */
 COMMON_DATA.class_map += `
 e:element
+eH:element
 a:attr
 p:property
 v:value
@@ -120,6 +121,7 @@ m:code
 p:code
 v:code
 e:code
+eH:code
 a:code
 c:code
 et:code
@@ -391,8 +393,14 @@ t.number:~CSSVAL#number-value
 t.paint:~SVGpainting#SpecifyingPaint
 
 
+	●#Terms
+	■conform
+~UA:~SVGconform#TermUserAgent
+~SVG~UA:~SVGconform#TermUserAgent
+~SVG~viewer:~SVGconform#TermSVGViewer
+適合~SVG~viewer:~SVGconform#ConformingSVGViewers
 
-	●#Term render
+	■render
 描画~木:~SVGrender#TermRenderingTree
 描画される要素:~SVGrender#TermRenderedElement
 描画されない要素:~SVGrender#TermNonRenderedElement
@@ -401,10 +409,8 @@ t.paint:~SVGpainting#SpecifyingPaint
 描画-可能な要素:~SVGrender#TermRenderableElement
 積層~文脈:~SVGrender#TermStackingContext
 
-	●#Term struct
+	■struct
 ~SVG文書片:~SVGstruct#TermSVGDocumentFragment
-中核~属性:~SVGstruct#TermCoreAttribute
-条件付き処理~属性:~SVGstruct#TermConditionalProcessingAttribute
 対応している要素:~SVGstruct#TermCorrespondingElement
 ~graphics要素:~SVGstruct#TermGraphicsElement
 ~instance根:~SVGstruct#TermInstanceRoot
@@ -413,20 +419,29 @@ t.paint:~SVGpainting#SpecifyingPaint
 最外縁の~svg要素:~SVGstruct#TermOutermostSVGElement
 容器~要素:~SVGstruct#TermContainerElement
 ~use-要素~shadow木:~SVGstruct#TermUseElementShadowTree
-
 未知の要素:~SVGstruct#UnknownElement
+構造的に外部の要素:~SVGstruct#TermStructurallyExternalElement
+記述的~要素:~SVGstruct#TermDescriptiveElement
+~graphicを参照する要素:~SVGstruct#TermGraphicsReferencingElement
+中核~属性:~SVGstruct#TermCoreAttribute
+条件付き処理~属性:~SVGstruct#TermConditionalProcessingAttribute
+~ARIA属性:~SVGstruct#TermARIAAttribute
 
-	●#Term 他
-反映する:~SVGtypes#TermReflect
-無効な値:~SVGtypes#TermInvalidValue
-
+	■painting
+~fill:~SVGpainting#TermFill
+~stroke:~SVGpainting#TermStroke
 塗り:~SVGpainting#TermPaint
 塗り~server要素:~SVGpainting#TermPaintServerElement
 ~stroke:~SVGpainting#TermStroke
 ~fill:~SVGpainting#TermFill
 文脈~要素:~SVGpainting#TermContextElement
 
+	■#Term 他
+反映する:~SVGtypes#TermReflect
+無効な値:~SVGtypes#TermInvalidValue
+
 図形:~SVGshapes#TermShapeElement
+図形~要素:~SVGshapes#TermShapeElement
 基本~図形:~SVGshapes#TermBasicShapeElement
 
 幾何~prop:~SVGgeometry#geometry-properties
@@ -440,6 +455,16 @@ t.paint:~SVGpainting#SpecifyingPaint
 
 ~animation要素:~SVGanim#TermAnimationElement
 
+~graphic的~event属性:~SVGinteract#EventAttributes
+~address可能~文字:~SVGtext#TermAddressableCharacter
+
+画像~描画~用の矩形:~SVGembedded#TermImageRenderingRectangle
+位置決め矩形:~SVGembedded#TermPositioningRectangle
+
+	■用語（外部
+
+大域~event属性:~WAPI#globaleventhandlers
+文書~要素~event属性:~WAPI#documentandelementeventhandlers
 
 `
 
@@ -493,6 +518,7 @@ COMMON_DATA.words_table += `
 CSS:
 DOM:
 HTML:
+MathML:
 SVG:
 SVG-2:SVG 2
 SVG-11:SVG 1.1
@@ -500,14 +526,18 @@ ARIA:
 IDL:
 WebIDL:Web IDL
 	WebIDL:WebIDL
-WOFF:
 DTD:
 SMIL:
 XML:
+XHTML:
+XLink:
 2D:
 3D:
 Web:
 web:
+API:
+attrdef:<p>Attribute definitions:</p>:<p>attribute 定義：</p>:<p>属性定義：</p>
+
 
 	●データ／型／演算
 class:
@@ -517,11 +547,9 @@ list::::リスト
 member::::メンバ
 作成-:create::~
 値:value::~
-出力:output::~
 初期:initial::~
 初期化-:initialize::~
 	初期化-:initialise
-取得-:get::~
 名:name::~
 名前:name::~
 型:type::~
@@ -530,7 +558,6 @@ member::::メンバ
 変更-:change:~
 変更:change:~
 属性:attribute::~
-attrdef:<p>Attribute definitions:</p>:<p>attribute 定義：</p>:<p>属性定義：</p>
 挿入-:insert::~
 改変-:modify::~
 改称-:rename:~
@@ -540,16 +567,18 @@ attrdef:<p>Attribute definitions:</p>:<p>attribute 定義：</p>:<p>属性定義
 種別:type::~
 空:empty:~
 範囲:range::~
-置換-:replace:~
 clone::::クローン
 複製:copy::~
+取得-:get::~
 設定-:set::~
 設定:setting::~
-辞書:dictionary::~::ディクショナリ
-配列:array::~
 除去-:remove:~
 除去:removal:~
+置換-:replace::~
+辞書:dictionary::~::ディクショナリ
+配列:array::~
 集合:set::~
+整数:integer::~
 
 
 	●構文
@@ -559,6 +588,9 @@ token::::トークン
 markup::::マークアップ
 code::::コード
 構文解析-:parse::~::パース
+構文解析器:parser::~::パーサ
+直列化-:serialize::~::シリアル化
+直列化:serialization::~::シリアル化
 文字:character::~
 文字列:string::~
 形式:format::~
@@ -592,6 +624,8 @@ method::::メソッド
 mixin:
 nullable:::null 可能
 error::::エラー
+入力:input::~
+出力:output::~
 失敗-:fail:~
 生成-:generate::~
 生産-:produce::~
@@ -609,6 +643,8 @@ error::::エラー
 変換-:convert:~
 完全:complete:~
 開始-:start::~
+評価-:evaluate::~
+識別-:identify::~
 
 
 	●構造
@@ -620,6 +656,7 @@ obj:object:::オブジェクト
 group::::グループ
 	~group化する:grouping
 host::::ホスト
+svg:
 木:tree::~
 根:root::~
 子:child::~
@@ -638,6 +675,7 @@ host::::ホスト
 要素:element::~
 親:parent::~
 構造化-:structure::~
+構造的:structural::~
 構造:structure::~
 構造的:structural::~
 入子に:nest:入れ子に
@@ -669,6 +707,7 @@ span:
 重合しな:overlap しな::重なり合わな
 
 限界:bounding::~
+限界域:bounds::~
 領域:region::~
 交差-:intersect::~
 交差:intersection::~
@@ -722,12 +761,14 @@ span:
 軸:axis::~
 
 	●塗り／色／効果
+RGB:
 RGBA:
 buffer::::バッファ
 raster::::ラスター
 	~raster化-:rasterize
 bitmap::::ビットマップ
 alpha::::アルファ
+channel::::チャネル
 canvas::::キャンバス
 fill::::フィル
 stroke::::ストローク
@@ -788,6 +829,7 @@ green:
 層:layer::~::レイヤ
 積層-:stack::~
 積層:stacking::~
+画素:pixel::~
 
 	● CSS
 prop:property:::プロパティ
@@ -801,7 +843,9 @@ cascade::::カスケード
 宣言的:declarative::~
 指定d:specifid:指定
 算出d:computed::算出
+算出:computation::~
 算出-:compute::~
+置換d:replaced::置換
 疑似要素:pseudo-element::~
 疑似類:pseudo-class::疑似 class:疑似クラス
 使用:used::~
@@ -813,11 +857,12 @@ cascade::::カスケード
 内在的:intrinsic::~
 百分率:percentage::~
 絶対:absolute::~
+絶対的:absolute::~
 相対:relative::~
 相対的:relative::~
 長さ:length:~
 	単位:unit::~
-
+整形-:format::~
 box::::ボックス
 lay-out:lay out:::レイアウト
 layout::::レイアウト
@@ -842,6 +887,7 @@ scroll::::スクロール
 scrollbar::::スクロールバー
 呈示-:present::~
 呈示:presentation::~
+呈示hint:presentational hint::呈示 hint:呈示ヒント
 静的:static::~
 動的:dynamic::~
 音声:audio::~
@@ -859,10 +905,19 @@ scrollbar::::スクロールバー
 
 	●資源
 URL:
+WOFF:
+CORS:
+JPEG:
+PNG:
+MIME:
+fetch:
+download::::ダウンロード
 媒体:media::~::メディア
 link::::リンク
+linking:::リンク法
 inline::::インライン
 source::::ソース
+secure::::セキュア
 page::::ページ
 資源:resource::~:リソース
 multimedia::::マルチメディア
@@ -871,11 +926,13 @@ address::::アドレス
 page::::ページ
 埋込まれ:embed され::埋め込まれ
 埋込む:embed する::埋め込む
-埋込んで:embed::埋め込んで
+埋込んで:embed して::埋め込んで
 埋込d:embedded::埋め込み
+読込み:loading::読み込み::ローディング
 読込む:load する::読み込む::ロードする
 読込まれ:load され::読み込まれ::ロードされ
 読込んで:load して::読み込んで::ロードして
+動画:video::~::ビデオ
 
 	●仕様
 
@@ -958,7 +1015,12 @@ system::::システム
 アリ:possible:可能
 情報:information:~
 自立的:standalone:~
+	自立的:stand-alone
 多彩:rich:~
+能力:capability:~
+適正:proper:~
+手動:manual:~
+安全:safe:~
 
 	決して:never
 	例:example
@@ -974,9 +1036,10 @@ system::::システム
 	因る:due to
 
 	●仕様（動詞
-
+browser::::ブラウザ
 support::::サポート
 test::::テスト
+fallback::::フォールバック
 上書き:override:~
 不正:incorrect:~
 並行して:parallel に:~
@@ -1025,6 +1088,7 @@ test::::テスト
 拡張:extension:~
 拡張性:extensibility:~
 指定-:specify:~
+特定の:specific:~
 特有の:specific な:~
 特有な:-specific な:特有の
 仕様:spec:~
@@ -1043,6 +1107,7 @@ test::::テスト
 暗黙的:implicit:~
 更新-:update:~
 期待-:expect:~
+予期-:expect:~
 標準:standard:~
 標準の:standard な:~
 正しく:correct に:~
@@ -1071,6 +1136,7 @@ test::::テスト
 解釈-:interpret:~
 言及:mention:~
 記述:description:~
+記述的:descriptive:~
 許容-:allow:~
 説明-:explain:~
 論じら:discuss さ:~
@@ -1107,6 +1173,15 @@ test::::テスト
 代替:alternative:~
 組入れる:incorporate する:組み入れる
 解-:understand:~
+不能化-:disable:~
+設計-:design:~
+認識-:recognize:~
+避ける:avoid:~
+導入-:introduce:~
+指示-:indicate:~
+受容-:accept:~
+検査-:check:~
+防止-:prevent:~
 
 	則って:according
 	則って:in accordance with
@@ -1153,8 +1228,8 @@ test::::テスト
 参照-:reference::~
 参照:reference::~
 参照先の:referenced::~
+参照元の:referencing::~
 参照ng:referencing::参照
-
 	対応-:correspond
 	現れる:appear
 	示す:show
@@ -1175,6 +1250,7 @@ scripting::::スクリプト処理
 大域:global::~::グローバル
 局所:local::~::ローカル
 選定-:select:~
+選定:selection:~
 
 
 	●指示語／機能語
@@ -1184,6 +1260,8 @@ scripting::::スクリプト処理
 自前の:own:~
 単独の:single:~
 外部:external:~
+外部の:external な:~
+特定0の:particular:ある特定の
 
 	個:one／:two／:three／:four／:five／...
 	個目:first／:second／:third／:fourth／:fifth／...
@@ -1204,11 +1282,11 @@ scripting::::スクリプト処理
 	前の:previous
 	そのような:such
 	その他:others
+	他の:other
 	それら:they
 	それらを:them
 	自身:itself／:themselves
 	など:such as
-	他の:other
 	代わりに:instead
 	依然として:still
 	個々の:individual
