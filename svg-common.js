@@ -507,7 +507,8 @@ SVGcoords:https://svgwg.org/svg2-draft/coords.html
 SVGpaths:https://svgwg.org/svg2-draft/paths.html
 SVGshapes:https://svgwg.org/svg2-draft/shapes.html
 SVGtext:https://svgwg.org/svg2-draft/text.html
-SVGembedded:https://svgwg.org/svg2-draft/embedded.html
+SVGembedded:svg-embedded-ja.html
+	~SVG2/embedded.html
 SVGpainting:https://svgwg.org/svg2-draft/painting.html
 SVGpservers:https://svgwg.org/svg2-draft/pservers.html
 SVGinteract:https://svgwg.org/svg2-draft/interact.html
