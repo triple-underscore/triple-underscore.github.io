@@ -2,6 +2,7 @@
 
 const source_data = {
 	toc_main: 'MAIN',
+	collectParts: Util.collectParts,
 	init: EMPTY_FUNC,
 };
 
@@ -62,6 +63,12 @@ case 'l': // literal
 case 'sec':
 	text = '§ ' + text;
 	break;
+case 'viewAs':
+	return `<p><a href="~SVG2/images/${key}">~viewAs</a></p>`
+	break;
+case 'dgm':
+	return '<a id="_dgm-' + key + '">＊</a>';
+	break;
 case 'en': // english words
 	return '<span lang="en-x-a0">' + key + '</span>'
 	break;
@@ -113,6 +120,7 @@ ps:pseudo
 pe:pseudo
 css:css
 f:func
+xl:ex-label
 `
 
 COMMON_DATA.tag_map += `
@@ -131,6 +139,7 @@ pe:code
 t:var
 css:code
 V:var
+xl:i
 `
 
 // ●link
@@ -518,6 +527,7 @@ COMMON_DATA.words_table += `
 CSS:
 DOM:
 HTML:
+	~HTML:HTML5
 MathML:
 SVG:
 SVG-2:SVG 2
@@ -537,7 +547,7 @@ Web:
 web:
 API:
 attrdef:<p>Attribute definitions:</p>:<p>attribute 定義：</p>:<p>属性定義：</p>
-
+viewAs:View this example as SVG (SVG-enabled browsers only):この例を SVG で見る（要ブラウザ対応）
 
 	●データ／型／演算
 class:
@@ -572,6 +582,7 @@ clone::::クローン
 取得-:get::~
 設定-:set::~
 設定:setting::~
+設定群:settings::~
 除去-:remove:~
 除去:removal:~
 置換-:replace::~
@@ -645,6 +656,8 @@ error::::エラー
 開始-:start::~
 評価-:evaluate::~
 識別-:identify::~
+呼出す:invoke する:呼び出す
+呼出され:invoke され:呼び出され
 
 
 	●構造
@@ -685,13 +698,14 @@ svg:
 並替られ:reorder され::並び替えられ
 名前空間:namespace::~
 外来の:foreign::~
-
+包装-:wrap:~
 下位-:sub-:~
 部位:portion:~
 内縁:inner::~
 外縁:outer::~
-最外縁の:outermost:~
+最外縁の:outermost::~
 最外縁:outermost::~
+最内縁の:innermost::~
 
 	●幾何
 幾何:geometry::~
@@ -732,6 +746,7 @@ span:
 原点:origin::~
 座標:coordinate::~
 座標系:coordinate system::~
+利用元:user::~
 図形:shape::~
 寸法:dimension::~
 次元:dimension::~
@@ -759,6 +774,7 @@ span:
 矩形の:rectangular な::~
 空間:space::~
 軸:axis::~
+無限:infinite:~
 
 	●塗り／色／効果
 RGB:
@@ -779,6 +795,7 @@ gradient:
 graphic::::グラフィック
 graphics::::グラフィックス
 	~graphic的:graphical
+grayscale::::グレイスケール
 marker::::マーカ
 mask::::マスク
 masking::::マスク法
@@ -935,7 +952,6 @@ page::::ページ
 動画:video::~::ビデオ
 
 	●仕様
-
 UA:user agent:UA
 algo:algorithm:::アルゴリズム
 level::::レベル
@@ -965,6 +981,7 @@ system::::システム
 実際:actual:~
 実際の:actual な:~
 将来:future:~
+将来の:future:~
 役割:role::~
 後方互換:backwards-compatible:~
 後方互換性:backwards compatibility:~
@@ -992,6 +1009,7 @@ system::::システム
 通常は:normal では:~
 	normally
 通常通り:as normal に:通常どおり
+通例的:usual:~
 道具:tool:~
 関連する:relevant な:~
 自動的:automatic:~
@@ -1021,6 +1039,9 @@ system::::システム
 適正:proper:~
 手動:manual:~
 安全:safe:~
+基本的:basic:~
+複階的:complex:~
+概観:overview:~
 
 	決して:never
 	例:example
@@ -1034,6 +1055,16 @@ system::::システム
 	したがって:thus
 	べき:should
 	因る:due to
+	特に:in particular
+	に注意:note／note that
+	が:although
+	であっても:even if
+	と違って:unlike
+	少なくとも:at least
+	など:such as
+	様に:like
+	するためには:in order to
+	少し:slightly
 
 	●仕様（動詞
 browser::::ブラウザ
@@ -1060,6 +1091,7 @@ fallback::::フォールバック
 利用者:user:~
 有用:useful:~
 制御-:control:~
+制御:control:~
 制約:restriction:~
 制限-:limit:~
 制限:limitation:~
@@ -1150,6 +1182,7 @@ fallback::::フォールバック
 適合:conforming:~
 適合性:conformance:~
 適用-:apply:~
+	適用-可能:applicable
 応用:application:~
 関係-:relate:~
 阻止-:block:::~
@@ -1234,6 +1267,7 @@ fallback::::フォールバック
 	現れる:appear
 	示す:show
 	起こる:happen
+	生じ:occur
 
 	●未分類
 script::::スクリプト
@@ -1263,6 +1297,7 @@ scripting::::スクリプト処理
 外部の:external な:~
 特定0の:particular:ある特定の
 
+	0 :zero
 	個:one／:two／:three／:four／:five／...
 	個目:first／:second／:third／:fourth／:fifth／...
 	〜の代わりに:instead
@@ -1270,19 +1305,24 @@ scripting::::スクリプト処理
 	今や:now
 	すでに:already
 	常に:always
+	ほぼ:almost
+	ここ:here
 	この:this
 	これらの:these
 	それらの:their
 	すべての:all
+	全体:entire
 	一部の:some
 	~~任意の:any
+	任意の:arbitrary
 	〜以上:or more
 	ほとんどの:most
 	その:that
-	前の:previous
+	以前の／前の:previous
 	そのような:such
 	その他:others
 	他の:other
+	以外の:other than
 	それら:they
 	それらを:them
 	自身:itself／:themselves
@@ -1291,6 +1331,7 @@ scripting::::スクリプト処理
 	依然として:still
 	個々の:individual
 	別の:another
+	別々の:separate
 	別個の:distinct
 	単独の:single
 	各:each
@@ -1308,12 +1349,13 @@ scripting::::スクリプト処理
 	等々:etc
 	結果:result
 	複数の:multiple
-	通:through
+	通して:through
 	残りの:remaining
 	上:above
 	両／両者:both
 	一部／一部を成す:part of
 	介:via
+	超えて:beyond
 
 
 `
