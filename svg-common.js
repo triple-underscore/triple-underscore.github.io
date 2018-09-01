@@ -484,6 +484,7 @@ COMMON_DATA.PREMAP += `
 内容:<tr><th>内容~model<td>
 属性:<tr><th>属性<td>
 界面:<tr><th>~DOM~interface<td>
+ア:\uE007<a href="~SVGanim#Animatable">~animate可？</a>\uE005
 
 名値初ア:<table class="attrdef"><thead><tr><th>名前<th>値<th>初期~値<th>~animate可能？</thead><tbody><tr><td>
 欄:<td>
