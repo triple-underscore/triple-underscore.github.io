@@ -60,6 +60,9 @@ case 'at': // at-rule
 case 'l': // literal
 	text = '"<code class="literal">' + text + '</code>"';
 	break;
+case 'U': // 
+	text = 'U+' + key;
+	break;
 case 'sec':
 	text = '§ ' + text;
 	break;
@@ -69,10 +72,27 @@ case 'viewAs':
 case 'dgm':
 	return '<a id="_dgm-' + key + '">＊</a>';
 	break;
+case 'refer':
+	text = '~~参照先';
+	href = key;
+	break;
+case 'ACTION':
+	text = 'ACTION-' + key;
+	href = 'http://www.w3.org/Graphics/SVG/WG/track/actions/' + key;
+	break;
 case 'en': // english words
 	return '<span lang="en-x-a0">' + key + '</span>'
 	break;
 default:
+	if(classname === 'dom'){
+		classname = '';
+		const n = text.indexOf('(');
+		if(n > 0){
+			key = text.slice(0, n);
+			text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
+		}
+		break;
+	}
 }
 
 if(tag) {
@@ -146,6 +166,9 @@ xl:i
 COMMON_DATA.link_map += `
 
 	●IDL
+I.Document:~DOM4#document
+I.Window:~WINDOW#window
+I.Element:~DOM4#element
 
 I.GetSVGDocument:~SVGstruct#InterfaceGetSVGDocument
 I.SVGAElement:~SVGlinking#InterfaceSVGAElement
@@ -401,6 +424,8 @@ t.length-percentage:~CSSVAL#typedef-length-percentage
 t.number:~CSSVAL#number-value
 t.paint:~SVGpainting#SpecifyingPaint
 
+t.URL:~SVGtypes#attribute-url
+
 
 	●#Terms
 	■conform
@@ -420,6 +445,7 @@ t.paint:~SVGpainting#SpecifyingPaint
 
 	■struct
 ~SVG文書片:~SVGstruct#TermSVGDocumentFragment
+~SVG要素:~SVGstruct#TermSVGElements
 対応している要素:~SVGstruct#TermCorrespondingElement
 ~graphics要素:~SVGstruct#TermGraphicsElement
 ~instance根:~SVGstruct#TermInstanceRoot
@@ -456,6 +482,12 @@ t.paint:~SVGpainting#SpecifyingPaint
 幾何~prop:~SVGgeometry#geometry-properties
 
 ~SVG表示域:~SVGcoords#TermSVGViewport
+限界~box:~SVGcoords#TermBoundingBox
+
+接触判定:~SVGinteract#TermHitTesting
+~focus可能:~SVGinteract#TermFocusable
+~event属性:~SVGinteract#TermEventAttribute
+~graphic的~event属性:~SVGinteract#EventAttributes
 
 ~prop:~SVGstyling#TermProperty
 呈示~属性:~SVGstyling#TermPresentationAttribute
@@ -463,17 +495,24 @@ t.paint:~SVGpainting#SpecifyingPaint
 ~text内容~要素:~SVGtext#TermTextContentElement
 
 ~animation要素:~SVGanim#TermAnimationElement
+~animation~event属性:~SVGanim#TermAnimationEventAttribute
 
-~graphic的~event属性:~SVGinteract#EventAttributes
 ~address可能~文字:~SVGtext#TermAddressableCharacter
 
 画像~描画~用の矩形:~SVGembedded#TermImageRenderingRectangle
 位置決め矩形:~SVGembedded#TermPositioningRectangle
 
+	■用語
+非推奨にされた~XLink属性:~SVGlinking#XLinkRefAttrs
+~URL参照~属性:~SVGlinking#linkRefAttrs
+~URL参照:~SVGlinking#URLReference
+~UA~stylesheet:~SVGstyling#UAStyleSheet
+
 	■用語（外部
 
 大域~event属性:~WAPI#globaleventhandlers
 文書~要素~event属性:~WAPI#documentandelementeventhandlers
+~CORS設定群~属性:~HTMLurl#cors-settings-attribute
 
 `
 
@@ -520,6 +559,8 @@ SVGanim:https://svgwg.org/specs/animations/
 xml_space:xml:space
 xlink_href:xlink:href
 xlink_title:xlink:title
+use-:<code class="element">use</code>-
+svg: <code class="element">svg</code> 
 
 `
 
@@ -612,6 +653,7 @@ code::::コード
 形成-:form::~
 合致-:match::~
 内包-:include::~
+内包:inclusion::~
 構文:syntax:~
 空白:whitespace::~
 文法:grammar:~
@@ -637,6 +679,7 @@ method::::メソッド
 mixin:
 nullable:::null 可能
 error::::エラー
+構築子:constructor::~::コンストラクタ
 入力:input::~
 出力:output::~
 失敗-:fail:~
@@ -648,10 +691,11 @@ error::::エラー
 例外:exception::~
 投出:throw::~
 発火-:fire::~
-誘発-:trigger:~
+関数:function::~
+誘発-:trigger::~
 読専:read-only::~
 引数:argument::~
-状態:state:~
+状態:state::~
 破棄-:discard:~
 変換-:convert:~
 完全:complete:~
@@ -660,6 +704,22 @@ error::::エラー
 識別-:identify::~
 呼出す:invoke する:呼び出す
 呼出され:invoke され:呼び出され
+呼出した:invoke した:呼び出した
+実行-:execute:~
+実行:execution:~
+走らす:run する:~
+走らせ:run し:~
+走って:run して:~
+起動-:initiate:~
+環境:environment:~
+即時に:immediate に:~
+中止-:abort::~
+停止-:stop::~
+完遂-:finish::~
+反復-:iterate::~
+反復:iteration::~
+繰返され:repeat され:繰り返され
+繰返す:repeat する:繰り返す
 
 
 	●構造
@@ -731,6 +791,7 @@ span:
 外側:outside::~
 区画:area::~
 外形線:outline::~
+内域:interior::~
 
 切取られ:clip され::切り取られ
 切抜かれ:clip され::切り抜かれ
@@ -743,6 +804,8 @@ span:
 変形n:transformation::変形
 拡縮-:scale::~
 拡縮率:scale::~
+並進-:translate::~
+並進:translation::~
 
 平面:plane::~
 原点:origin::~
@@ -777,6 +840,7 @@ span:
 空間:space::~
 軸:axis::~
 無限:infinite:~
+接触判定:hit-testing::~
 
 	●塗り／色／効果
 RGB:
@@ -833,6 +897,7 @@ green:
 描く:draw する::~
 描ける:draw できる::~
 描かれ:draw され::~
+絵図:drawing:~
 描画-:render::~
 描画:rendering::~
 	描画-可能:renderable
@@ -888,6 +953,7 @@ layout::::レイアウト
 包含塊:containing block::包含 block:包含ブロック
 
 	●呈示／UI
+UI:
 border::::ボーダー
 animate::::アニメート
 	~animate化:animated
@@ -912,6 +978,7 @@ scrollbar::::スクロールバー
 音声:audio::~
 装置:device::~
 可視:visible::~
+可視の:visible な::~
 可視性:visibility::~
 視覚的:visual::~
 表示-:display::~
@@ -921,6 +988,9 @@ scrollbar::::スクロールバー
 対話:interaction::~
 対話性:interactivity::~
 対話的:interactive::~
+隠され:hide され::~
+隠す:hide する::~
+
 
 	●資源
 URL:
@@ -1017,6 +1087,8 @@ system::::システム
 自動的:automatic:~
 違法:illegal::~
 共通の:common な:~
+共通的に:common に:よく
+共通的な:common な:よくある
 詳細:details:~
 詳細な:detailed:~
 可用:available:~
@@ -1044,6 +1116,14 @@ system::::システム
 基本的:basic:~
 複階的:complex:~
 概観:overview:~
+相応しい:suitable な:~
+望む:wish する:~
+望まれ:wish され:~
+求める:want する:~
+求めら:want さ:~
+容易:easy:~
+	より容易に:easier
+恣意的:arbitrary:~
 
 	決して:never
 	例:example
@@ -1102,6 +1182,8 @@ fallback::::フォールバック
 参考:informative:~
 取扱い:handling:取り扱い
 取扱う:handle する:取り扱う
+取扱われ:handle され:取り扱われ
+取扱って:handle して:取り扱って
 含意-:imply:~
 変更点:changes:~
 孕む:involve する:~
@@ -1125,6 +1207,7 @@ fallback::::フォールバック
 特定の:specific:~
 特有の:specific な:~
 特有な:-specific な:特有の
+特有:specific:~
 仕様:spec:~
 特定的:specifical:具体的
 特別:special:~
@@ -1137,6 +1220,7 @@ fallback::::フォールバック
 改めら:alter さ:~
 改善-:improve:~
 明確化-:clarify:~
+明確化:clarification:~
 明示的:explicit:~
 暗黙的:implicit:~
 更新-:update:~
@@ -1187,7 +1271,9 @@ fallback::::フォールバック
 	適用-可能:applicable
 応用:application:~
 関係-:relate:~
-阻止-:block:::~
+関係:relation:~
+関係性:relationship:~
+阻止-:block::~
 非推奨に:deprecate:~
 既知:known:~
 既知の:known な:~
@@ -1214,9 +1300,15 @@ fallback::::フォールバック
 避ける:avoid:~
 導入-:introduce:~
 指示-:indicate:~
+指示:indication:~
 受容-:accept:~
 検査-:check:~
 防止-:prevent:~
+試みる:attempt する:~
+試みて:attempt して:~
+裁定-:decide:~
+裁定:decision:~
+検分-:inspect:~
 
 	則って:according
 	則って:in accordance with
@@ -1251,6 +1343,9 @@ fallback::::フォールバック
 関与-:participate::~
 アテガう:assign する:あてがう
 アテガえる:assign できる:あてがえる
+アテガわれ:assign され:あてがわれ
+アテガって:assign して:あてがって
+アテガおう:assign しよう:あてがおう
 対応付け:mapping::~
 対応付けら:map さ::~
 対応付ける:map する::~
@@ -1265,6 +1360,11 @@ fallback::::フォールバック
 参照先の:referenced::~
 参照元の:referencing::~
 参照ng:referencing::参照
+結付けら:associate さ:結び付けら
+結付けて:associate して:結び付けて
+登録-:register::~
+登録:registration::~
+
 	対応-:correspond
 	現れる:appear
 	示す:show
@@ -1276,6 +1376,9 @@ script::::スクリプト
 scripting::::スクリプト処理
 
 時列線:timeline::~
+時刻:time::~
+時機:timing::~
+遷移:transition::~
 等価:equivalent::~
 精確:precise::~
 既定の:default::~::デフォルト
@@ -1284,6 +1387,7 @@ scripting::::スクリプト処理
 単位:unit:~
 別名:alias:~
 大域:global::~::グローバル
+大域的:global::~::グローバル
 局所:local::~::ローカル
 選定-:select:~
 選定:selection:~
