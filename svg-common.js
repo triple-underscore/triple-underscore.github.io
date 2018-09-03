@@ -551,7 +551,8 @@ SVGembedded:svg-embedded-ja.html
 	~SVG2/embedded.html
 SVGpainting:https://svgwg.org/svg2-draft/painting.html
 SVGpservers:https://svgwg.org/svg2-draft/pservers.html
-SVGinteract:https://svgwg.org/svg2-draft/interact.html
+SVGinteract:svg-interact-ja.html
+	~SVG2/interact.html
 SVGlinking:https://svgwg.org/svg2-draft/linking.html
 
 SVGanim:https://svgwg.org/specs/animations/
@@ -589,7 +590,7 @@ XLink:
 Web:
 web:
 API:
-attrdef:<p>Attribute definitions</p>:<p>attribute 定義：</p>:<p>属性~定義：</p>
+attrdef:<p>Attribute definitions</p>:<p>attribute 定義：</p>:<p>属性定義：</p>
 viewAs:View this example as SVG (SVG-enabled browsers only):この例を SVG で見る（要ブラウザ対応）
 
 	●データ／型／演算
