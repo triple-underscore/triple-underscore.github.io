@@ -589,7 +589,7 @@ XLink:
 Web:
 web:
 API:
-attrdef:<p>Attribute definitions:</p>:<p>attribute 定義：</p>:<p>属性定義：</p>
+attrdef:<p>Attribute definitions</p>:<p>attribute 定義：</p>:<p>属性~定義：</p>
 viewAs:View this example as SVG (SVG-enabled browsers only):この例を SVG で見る（要ブラウザ対応）
 
 	●データ／型／演算
@@ -1101,7 +1101,7 @@ system::::システム
 一意:unique:~
 明瞭:clear:~
 類似する:similar な:~
-	同様に:similarly
+	同様に:similarly／:similar
 互換:compatible:~
 互換性:compatibility:~
 アリ:possible:可能
@@ -1138,6 +1138,7 @@ system::::システム
 	べき:should
 	因る:due to
 	特に:in particular
+	特に:particularly
 	に注意:note／note that
 	が:although
 	であっても:even if
@@ -1147,6 +1148,11 @@ system::::システム
 	様に:like
 	するためには:in order to
 	少し:slightly
+	に関して:with respect to
+	方法:how to
+	同様に:likewise
+	呼応して:in response to
+	させる:cause
 
 	●仕様（動詞
 browser::::ブラウザ
@@ -1402,8 +1408,10 @@ scripting::::スクリプト処理
 外部:external:~
 外部の:external な:~
 特定0の:particular:ある特定の
+全部的:full:~
 
 	0 :zero
+	もの:one
 	個:one／:two／:three／:four／:five／...
 	個目:first／:second／:third／:fourth／:fifth／...
 	〜の代わりに:instead
@@ -1412,19 +1420,22 @@ scripting::::スクリプト処理
 	すでに:already
 	常に:always
 	ほぼ:almost
+	ほとんどの:most
+	まで:at most
 	ここ:here
 	この:this
 	これらの:these
 	それらの:their
 	すべての:all
 	全体:entire
+	何らかの:some
 	一部の:some
 	~~任意の:any
 	任意の:arbitrary
 	〜以上:or more
-	ほとんどの:most
 	その:that
 	以前の／前の:previous
+	それまで:previously
 	そのような:such
 	その他:others
 	他の:other
@@ -1445,6 +1456,7 @@ scripting::::スクリプト処理
 	多い:often
 	多くの:many
 	対応:correspond
+	前:before
 	後:after
 	所与の:given
 	最初の:first
@@ -1455,13 +1467,18 @@ scripting::::スクリプト処理
 	等々:etc
 	結果:result
 	複数の:multiple
+	複数の:more than one
 	通して:through
 	残りの:remaining
 	上:above
+	下:below
 	両／両者:both
 	一部／一部を成す:part of
 	介:via
 	超えて:beyond
+	当の:in question
+	他所:elsewhere
+	間:during
 
 
 `
