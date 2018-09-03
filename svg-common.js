@@ -60,6 +60,13 @@ case 'at': // at-rule
 case 'l': // literal
 	text = '"<code class="literal">' + text + '</code>"';
 	break;
+case 'e':
+	if(indicator === '@'){
+		// SVG 要素は id が href 参照と異なる
+		klass = ':';
+		href = "#elementdef-" + key;
+	}
+	break;
 case 'U': // 
 	text = 'U+' + key;
 	break;
