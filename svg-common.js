@@ -1125,6 +1125,7 @@ system::::システム
 容易:easy:~
 	より容易に:easier
 恣意的:arbitrary:~
+補足的:supplemental:~
 
 	決して:never
 	例:example
