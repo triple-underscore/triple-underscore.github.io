@@ -944,7 +944,6 @@ cascade::::カスケード
 継承-:inherit::~
 継承:inheritance::~
 適用対象:applies to:~
-	媒体:media:::~:メディア
 視覚的:visual::~
 内在的:intrinsic::~
 百分率:percentage::~
@@ -1009,7 +1008,6 @@ PNG:
 MIME:
 fetch:
 download::::ダウンロード
-媒体:media::~::メディア
 link::::リンク
 linking:::リンク法
 inline::::インライン
@@ -1017,6 +1015,7 @@ source::::ソース
 secure::::セキュア
 page::::ページ
 資源:resource::~:リソース
+媒体:media::~::メディア
 multimedia::::マルチメディア
 file::::ファイル
 address::::アドレス
@@ -1379,6 +1378,10 @@ fallback::::フォールバック
 結付けて:associate して:結び付けて
 登録-:register::~
 登録:registration::~
+組合する:combine する:組み合せる
+組合され:combine され:組み合され
+組合して:combine して:組み合せて
+組合わせ:combination:組み合せ
 
 	対応-:correspond
 	現れる:appear
