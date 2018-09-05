@@ -167,6 +167,7 @@ t:var
 css:code
 V:var
 xl:i
+i:i
 `
 
 // ●link
@@ -437,9 +438,31 @@ t.URL:~SVGtypes#attribute-url
 	●#Terms
 	■conform
 ~UA:~SVGconform#TermUserAgent
-~SVG~UA:~SVGconform#TermUserAgent
+~SVG~UA:~SVGconform#TermSVGUserAgent
+~SVG著作~tool:~SVGconform#TermSVGAuthoringTool
+~SVG~server:~SVGconform#TermSVGServer
+~SVG生成器:~SVGconform#TermSVGGenerator
+~SVG解釈器:~SVGconform#TermSVGInterpreter
 ~SVG~viewer:~SVGconform#TermSVGViewer
+
+
+処理~mode:~SVGconform#processing-modes
+~animate化~mode:~SVGconform#animated-mode
+動的~対話的~mode:~SVGconform#dynamic-interactive-mode
+動的~対話的~処理~mode:~SVGconform#dynamic-interactive-mode
+~secure~animate化~mode:~SVGconform#secure-animated-mode
+~secure静的~mode:~SVGconform#secure-static-mode
+静的~mode:~SVGconform#static-mode
+
+適合~SVG~DOM部分木:~SVGconform#ConformingSVGDOMSubtrees
+適合~SVG生成器:~SVGconform#ConformingSVGGenerators
+適合~SVG解釈器:~SVGconform#ConformingSVGInterpreters
+適合~SVG~markup素片:~SVGconform#ConformingSVGFragments
+適合~SVG自立的~file:~SVGconform#ConformingSVGStandAloneFiles
 適合~SVG~viewer:~SVGconform#ConformingSVGViewers
+適合~XML互換~SVG~markup素片:~SVGconform#ConformingSVGXMLFragments
+適合~高品質~SVG~viewer:~SVGconform#ConformingHighQualitySVGViewers
+
 
 	■render
 描画~木:~SVGrender#TermRenderingTree
@@ -451,6 +474,7 @@ t.URL:~SVGtypes#attribute-url
 積層~文脈:~SVGrender#TermStackingContext
 
 	■struct
+~SVG名前空間:~SVGstruct#Namespace
 ~SVG文書片:~SVGstruct#TermSVGDocumentFragment
 ~SVG要素:~SVGstruct#TermSVGElements
 対応している要素:~SVGstruct#TermCorrespondingElement
@@ -509,6 +533,10 @@ t.URL:~SVGtypes#attribute-url
 画像~描画~用の矩形:~SVGembedded#TermImageRenderingRectangle
 位置決め矩形:~SVGembedded#TermPositioningRectangle
 
+同一-文書~URL参照:~SVGlinking#TermSameDocumentURL
+外部~資源:~SVGlinking#TermExternalReference
+~data~URL参照:~SVGlinking#TermDataURL
+
 	■用語
 非推奨にされた~XLink属性:~SVGlinking#XLinkRefAttrs
 ~URL参照~属性:~SVGlinking#linkRefAttrs
@@ -541,7 +569,8 @@ COMMON_DATA.PREMAP += `
 
 COMMON_DATA.words_table1 += `
 	SVGintro:https://svgwg.org/svg2-draft/intro.html
-SVGconform:https://svgwg.org/svg2-draft/conform.html
+SVGconform:svg-conform-ja.html
+	~SVG2/conform.html
 SVGrender:svg-render-ja.html
 	~SVG2/render.html
 SVGtypes:https://svgwg.org/svg2-draft/types.html
@@ -580,6 +609,7 @@ DOM:
 HTML:
 	~HTML:HTML5
 MathML:
+ECMAScript:
 SVG:
 SVG-2:SVG 2
 SVG-11:SVG 1.1
@@ -587,6 +617,9 @@ ARIA:
 IDL:
 WebIDL:Web IDL
 	WebIDL:WebIDL
+JS:JavaScript
+HTTP:
+Unicode:
 DTD:
 SMIL:
 XML:
@@ -641,18 +674,23 @@ clone::::クローン
 配列:array::~
 集合:set::~
 整数:integer::~
+公式:formula:~
 
 
 	●構文
+ID:
 space:
 keyword::::キーワード
 token::::トークン
 markup::::マークアップ
 code::::コード
 構文解析-:parse::~::パース
+構文解析:parsing::~::パース処理
 構文解析器:parser::~::パーサ
 直列化-:serialize::~::シリアル化
 直列化:serialization::~::シリアル化
+符号化-:encode::~::エンコード
+符号化法:encoding::~::エンコーディング
 文字:character::~
 文字列:string::~
 形式:format::~
@@ -670,6 +708,9 @@ code::::コード
 	妥当でない:invalid
 妥当性:validity::~
 無効:invalid::~
+構成子:constructs::~
+生成-:generate::~
+生成:generation::~
 
 
 	●処理／IDL／event
@@ -706,6 +747,8 @@ error::::エラー
 状態:state::~
 破棄-:discard:~
 変換-:convert:~
+変換:conversion:~
+完了-:complete:~
 完全:complete:~
 開始-:start::~
 評価-:evaluate::~
@@ -713,6 +756,7 @@ error::::エラー
 呼出す:invoke する:呼び出す
 呼出され:invoke され:呼び出され
 呼出した:invoke した:呼び出した
+呼出:invocation:呼び出し
 実行-:execute:~
 実行:execution:~
 走らす:run する:~
@@ -728,6 +772,7 @@ error::::エラー
 反復:iteration::~
 繰返され:repeat され:繰り返され
 繰返す:repeat する:繰り返す
+並列的:parallel::~
 
 
 	●構造
@@ -778,6 +823,7 @@ svg:
 最内縁の:innermost::~
 
 	●幾何
+CTM:
 幾何:geometry::~
 幾何的:geometric::~
 path::::パス
@@ -809,7 +855,9 @@ span:
 
 変形:transform::~
 変形-:transform::~
-変形n:transformation::変形
+変形n:transformation::変換
+行列:matrix::~
+
 拡縮-:scale::~
 拡縮率:scale::~
 並進-:translate::~
@@ -851,8 +899,10 @@ span:
 接触判定:hit-testing::~
 
 	●塗り／色／効果
+sRGB:
 RGB:
 RGBA:
+ICC:
 buffer::::バッファ
 raster::::ラスター
 	~raster化-:rasterize
@@ -879,6 +929,7 @@ pattern::::パタン
 overflow::::過フロー
 server::::サーバ
 screen::::スクリーン
+	~screen上の:onscreen
 symbol::::シンボル
 text::::テキスト
 glyph::::グリフ
@@ -906,6 +957,8 @@ green:
 描ける:draw できる::~
 描かれ:draw され::~
 絵図:drawing:~
+具現化-:render::~
+具現化:rendering::~
 描画-:render::~
 描画:rendering::~
 	描画-可能:renderable
@@ -922,6 +975,7 @@ green:
 積層-:stack::~
 積層:stacking::~
 画素:pixel::~
+解像度:resolution::~
 
 	● CSS
 prop:property:::プロパティ
@@ -964,6 +1018,7 @@ UI:
 border::::ボーダー
 animate::::アニメート
 	~animate化:animated
+	非~animate化:non-animated
 animation::::アニメーション
 pointer::::ポインタ
 access::::アクセス
@@ -977,6 +1032,13 @@ focus::::フォーカス
 	~focus可能:focusable
 scroll::::スクロール
 scrollbar::::スクロールバー
+navi:navigation:::ナビ
+hyperlink::::ハイパーリンク
+zoom::::ズーム
+	~zoom法:zooming
+pan::::パン
+	~pan法:panning
+辿り:traversal::~
 呈示-:present::~
 呈示:presentation::~
 呈示hint:presentational hint::呈示 hint:呈示ヒント
@@ -997,16 +1059,25 @@ scrollbar::::スクロールバー
 対話的:interactive::~
 隠され:hide され::~
 隠す:hide する::~
-
+選択-:select::~
+選択:selection::~
+閲覧文脈:browsing context::~
+作動化-:activate::~::アクティブ化
+作動化:activation::~::アクティブ化
+動作-:act::~::アクト
+動作:action::~::アクション
 
 	●資源
 URL:
+URI:
 WOFF:
+OpenType:
 CORS:
 JPEG:
 PNG:
 MIME:
 fetch:
+	~fetch法:fetching
 download::::ダウンロード
 link::::リンク
 linking:::リンク法
@@ -1014,6 +1085,8 @@ inline::::インライン
 source::::ソース
 secure::::セキュア
 page::::ページ
+client:::クライアント
+serve::::サーブ
 資源:resource::~:リソース
 媒体:media::~::メディア
 multimedia::::マルチメディア
@@ -1033,15 +1106,21 @@ page::::ページ
 	●仕様
 UA:user agent:UA
 algo:algorithm:::アルゴリズム
+app:application:::アプリ
+応用:application:~
 level::::レベル
 metadata::::メタデータ
 model::::モデル
 module::::モジュール
 option::::オプション
+platform::::プラットフォーム
 risk::::リスク
 custom::::カスタム
 version::::バージョン
 system::::システム
+program::::プログラム
+	~program的:programmatical
+tool::::ツール
 一様:uniform:~
 不良:bad:~
 中核:core:~
@@ -1052,6 +1131,8 @@ system::::システム
 判定基準:criteria:~
 単純:simple:~
 品質:quality:~
+高品質:high-quality::~
+	〜品質:-quality
 基本:basic:~
 基礎的:fundamental:~
 実施:practice:~
@@ -1132,6 +1213,12 @@ system::::システム
 	より容易に:easier
 恣意的:arbitrary:~
 補足的:supplemental:~
+一般:general:~
+一般的:general:~
+指針:guideline:~
+方式:manner:~
+状況下:circumstances:~
+帰結:consequence:~
 
 	決して:never
 	例:example
@@ -1172,6 +1259,7 @@ fallback::::フォールバック
 並行して:parallel に:~
 付録:appendix:~
 供-:provide:~
+供さな:provide しな:~
 依存-:depend:~
 依拠-:rely:~
 保全-:preserve:~
@@ -1182,13 +1270,16 @@ fallback::::フォールバック
 処理-:process:~
 処理:processing:~
 処理能:performance:~
+利用:use:~
 利用-:use:~
 	利用して:using
 利用者:user:~
 有用:useful:~
 制御-:control:~
 制御:control:~
+制約-:restrict:~
 制約:restriction:~
+制約的:restrictive:~
 制限-:limit:~
 制限:limitation:~
 勧告:Recommendation:~
@@ -1214,6 +1305,7 @@ fallback::::フォールバック
 意味:meaning:~
 意図-:intend:~
 拘束-:constrain:~
+拘束:constraint:~
 拡張-:extend:~
 拡張:extension:~
 拡張性:extensibility:~
@@ -1232,16 +1324,19 @@ fallback::::フォールバック
 推奨-:recommend:~
 推奨:recommendation:~
 改めら:alter さ:~
+改めな:alter しな:~
 改善-:improve:~
 明確化-:clarify:~
 明確化:clarification:~
 明示的:explicit:~
 暗黙的:implicit:~
+更新:update:~
 更新-:update:~
 期待-:expect:~
 予期-:expect:~
 標準:standard:~
 標準の:standard な:~
+正しい:correct な:~
 正しく:correct に:~
 正した:correct した:~
 決定-:determine:~
@@ -1254,6 +1349,7 @@ fallback::::フォールバック
 移動-:move:~
 組込みの:built-in:~
 統合-:integrate:~
+統合:integration:~
 統治-:govern:~
 義務:mandatory:~
 考慮-:consider:~
@@ -1266,10 +1362,12 @@ fallback::::フォールバック
 解決-:resolve:~
 解決:resolution:~
 解釈-:interpret:~
+解釈:interpretation:~
 言及:mention:~
 記述:description:~
 記述的:descriptive:~
 許容-:allow:~
+	許容されない:disallowed
 説明-:explain:~
 論じら:discuss さ:~
 論点:discussion:~
@@ -1309,6 +1407,7 @@ fallback::::フォールバック
 組入れる:incorporate する:組み入れる
 解-:understand:~
 不能化-:disable:~
+可能化-:enable:~
 設計-:design:~
 認識-:recognize:~
 避ける:avoid:~
@@ -1318,15 +1417,23 @@ fallback::::フォールバック
 受容-:accept:~
 検査-:check:~
 防止-:prevent:~
+試み:attempt:~
 試みる:attempt する:~
 試みて:attempt して:~
 裁定-:decide:~
 裁定:decision:~
 検分-:inspect:~
+要旨-:outline:~
+包摂-:encompass:~
+固守-:adhere:~
+奨励-:encourage:~
+見出せる:find できる:~
+見出され:find され:~
+許可-:permit:~
 
 	則って:according
 	則って:in accordance with
-	〜に基づく:based
+	〜に基づく:based／:-based
 	扱う:treat
 	見よ:see
 	関わらず:regardless
@@ -1412,9 +1519,10 @@ scripting::::スクリプト処理
 
 
 	●指示語／機能語
+
 元の:original:~
 現在の:current:~
-	現在:currently
+	現時点／現在:currently
 自前の:own:~
 単独の:single:~
 外部:external:~
@@ -1422,6 +1530,7 @@ scripting::::スクリプト処理
 特定0の:particular:ある特定の
 全部的:full:~
 
+	一定の:certain
 	0 :zero
 	もの:one
 	個:one／:two／:three／:four／:five／...
@@ -1432,7 +1541,7 @@ scripting::::スクリプト処理
 	すでに:already
 	常に:always
 	ほぼ:almost
-	ほとんどの:most
+	ほとんどの／最も:most
 	まで:at most
 	ここ:here
 	この:this
@@ -1484,8 +1593,9 @@ scripting::::スクリプト処理
 	残りの:remaining
 	上:above
 	下:below
+	左:left
 	両／両者:both
-	一部／一部を成す:part of
+	一部／一部を成す／成す部分:part of
 	介:via
 	超えて:beyond
 	当の:in question
