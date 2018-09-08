@@ -248,15 +248,37 @@ I.SVGUseElement:~SVGstruct#InterfaceSVGUseElement
 I.SVGUseElementShadowRoot:~SVGstruct#InterfaceSVGUseElementShadowRoot
 I.SVGViewElement:~SVGlinking#InterfaceSVGViewElement
 I.SVGZoomAndPan:~SVGtypes#InterfaceSVGZoomAndPan
+
+I.Animation:~WANIMAPI#the-animation-interface
+	~TR/web-animations-1/#the-animation-interface
+I.Animatable:~WANIMAPI#animatable
+	~SVGanim#Animatable
 I.ShadowAnimation:~SVGstruct#InterfaceShadowAnimation
-
-
-I.Document:~DOM4#document
-I.Window:~WINDOW#window
-I.Element:~DOM4#element
+I.DOMMatrix:~GEOMETRY#dommatrix
+	~TR/geometry-1/#dom-dommatrix
+I.DOMMatrixReadOnly:~GEOMETRY#dommatrixreadonly
+	~TR/geometry-1/#dom-dommatrixreadonly
+I.DOMPoint:~GEOMETRY#dompoint
+	~TR/geometry-1/#dom-dompoint
+I.DOMPointInit:~GEOMETRY#dictdef-dompointinit
+I.DOMPointReadOnly:~GEOMETRY#dompointreadonly
+	~TR/geometry-1/#dom-dompointreadonly
+I.DOMRect:~GEOMETRY#domrect
+	~TR/geometry-1/#dom-domrect
+I.DOMRectReadOnly:~GEOMETRY#domrectreadonly
+	~TR/geometry-1/#dom-domrectreadonly
 I.DOMTokenList:~DOM4#interface-domtokenlist
-I.LinkStyle:~CSSOM1#the-linkstyle-interface
+I.Document:~DOM4#document
+I.DocumentAndElementEventHandlers:~WAPI#documentandelementeventhandlers
+I.Element:~DOM4#element
+I.GlobalEventHandlers:~WAPI#globaleventhandlers
 I.HTMLHyperlinkElementUtils:~HTMLlinks#htmlhyperlinkelementutils
+I.HTMLOrSVGElement:~HTMLdom#htmlorsvgelement
+I.LinkStyle:~CSSOM1#the-linkstyle-interface
+I.NodeList:~DOM4#interface-nodelist
+I.ShadowRoot:~DOM4#interface-shadowroot
+I.Window:~WINDOW#window
+I.WindowEventHandlers:~WAPI#windoweventhandlers
 
 	●e
 e.a:~SVGlinking#AElement
@@ -609,7 +631,9 @@ SVGlinking:svg-linking-ja.html
 	~SVG2/linking.html
 
 SVGanim:https://svgwg.org/specs/animations/
-
+GEOMETRY:geometry-ja.html
+	GEOMETRY:https://www.w3.org/TR/geometry-1/
+	GEOMETRY:https://www.w3.org/TR/2014/WD-geometry-1-20140522/
 xml_space:xml:space
 xlink_href:xlink:href
 xlink_title:xlink:title
