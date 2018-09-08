@@ -147,6 +147,7 @@ ps:pseudo
 pe:pseudo
 css:css
 f:func
+P:production
 xl:ex-label
 `
 
@@ -165,6 +166,7 @@ ps:code
 pe:code
 t:var
 css:code
+P:var
 V:var
 xl:i
 i:i
@@ -174,9 +176,6 @@ i:i
 COMMON_DATA.link_map += `
 
 	●IDL
-I.Document:~DOM4#document
-I.Window:~WINDOW#window
-I.Element:~DOM4#element
 
 I.GetSVGDocument:~SVGstruct#InterfaceGetSVGDocument
 I.SVGAElement:~SVGlinking#InterfaceSVGAElement
@@ -252,7 +251,12 @@ I.SVGZoomAndPan:~SVGtypes#InterfaceSVGZoomAndPan
 I.ShadowAnimation:~SVGstruct#InterfaceShadowAnimation
 
 
+I.Document:~DOM4#document
+I.Window:~WINDOW#window
+I.Element:~DOM4#element
+I.DOMTokenList:~DOM4#interface-domtokenlist
 I.LinkStyle:~CSSOM1#the-linkstyle-interface
+I.HTMLHyperlinkElementUtils:~HTMLlinks#htmlhyperlinkelementutils
 
 	●e
 e.a:~SVGlinking#AElement
@@ -370,6 +374,7 @@ p.inline-size:~SVGtext#InlineSizeProperty
 p.letter-spacing:~CSSTEXT#propdef-letter-spacing
 p.lighting-color:~FILTEREFFECTS1#propdef-lighting-color
 p.isolation:~COMPOSITING#isolation
+p.marker:~SVGpainting#MarkerProperty
 p.marker-end:~SVGpainting#MarkerEndProperty
 p.marker-mid:~SVGpainting#MarkerMidProperty
 p.marker-start:~SVGpainting#MarkerStartProperty
@@ -431,6 +436,7 @@ t.length:~CSSVAL#length-value
 t.length-percentage:~CSSVAL#typedef-length-percentage
 t.number:~CSSVAL#number-value
 t.paint:~SVGpainting#SpecifyingPaint
+t.url:~CSSVAL#url-value
 
 t.URL:~SVGtypes#attribute-url
 
@@ -502,6 +508,16 @@ t.URL:~SVGtypes#attribute-url
 ~fill:~SVGpainting#TermFill
 文脈~要素:~SVGpainting#TermContextElement
 
+	■linking
+同一-文書~URL参照:~SVGlinking#TermSameDocumentURL
+外部~資源:~SVGlinking#TermExternalReference
+~data~URL参照:~SVGlinking#TermDataURL
+~URL参照:~SVGlinking#TermURLReference
+未解決の参照:~SVGlinking#TermUnresolvedReference
+素片~識別子~付き~URL参照:~SVGlinking#TermURLReferenceWithFragmentIdentifier
+無効な参照:~SVGlinking#TermInvalidReference
+無効な循環-参照:~SVGlinking#TermCircularReference
+
 	■#Term 他
 反映する:~SVGtypes#TermReflect
 無効な値:~SVGtypes#TermInvalidValue
@@ -533,14 +549,13 @@ t.URL:~SVGtypes#attribute-url
 画像~描画~用の矩形:~SVGembedded#TermImageRenderingRectangle
 位置決め矩形:~SVGembedded#TermPositioningRectangle
 
-同一-文書~URL参照:~SVGlinking#TermSameDocumentURL
-外部~資源:~SVGlinking#TermExternalReference
-~data~URL参照:~SVGlinking#TermDataURL
+
+
 
 	■用語
 非推奨にされた~XLink属性:~SVGlinking#XLinkRefAttrs
 ~URL参照~属性:~SVGlinking#linkRefAttrs
-~URL参照:~SVGlinking#URLReference
+	~URL参照:~SVGlinking#URLReference → ~SVGlinking#TermURLReference
 ~UA~stylesheet:~SVGstyling#UAStyleSheet
 
 	■用語（外部
@@ -562,6 +577,7 @@ COMMON_DATA.PREMAP += `
 
 名値初ア:<table class="attrdef"><thead><tr><th>名前<th>値<th>初期~値<th>~animate可能？</thead><tbody><tr><td>
 欄:<td>
+行:<tr><td>
 
 `
 
@@ -589,7 +605,8 @@ SVGpainting:https://svgwg.org/svg2-draft/painting.html
 SVGpservers:https://svgwg.org/svg2-draft/pservers.html
 SVGinteract:svg-interact-ja.html
 	~SVG2/interact.html
-SVGlinking:https://svgwg.org/svg2-draft/linking.html
+SVGlinking:svg-linking-ja.html
+	~SVG2/linking.html
 
 SVGanim:https://svgwg.org/specs/animations/
 
@@ -654,6 +671,7 @@ member::::メンバ
 属性:attribute::~
 挿入-:insert::~
 改変-:modify::~
+改変:modification::~
 改称-:rename:~
 新たな:new:~
 演算-:operate::~
@@ -711,6 +729,9 @@ code::::コード
 構成子:constructs::~
 生成-:generate::~
 生成:generation::~
+生成器:generator::~::ジェネレータ
+解釈器:interpreter::~::インタープリタ
+生成規則:production::~
 
 
 	●処理／IDL／event
@@ -728,6 +749,7 @@ method::::メソッド
 mixin:
 nullable:::null 可能
 error::::エラー
+構築-:construct::~
 構築子:constructor::~::コンストラクタ
 入力:input::~
 出力:output::~
@@ -735,6 +757,7 @@ error::::エラー
 生成-:generate::~
 生産-:produce::~
 変異:mutation::~
+変異不能:immutable::~
 同期-:synchronize::~
 	同期-:synchronise::~
 例外:exception::~
@@ -773,6 +796,8 @@ error::::エラー
 繰返され:repeat され:繰り返され
 繰返す:repeat する:繰り返す
 並列的:parallel::~
+設定子:setter::~
+取得子:getter::~
 
 
 	●構造
@@ -790,7 +815,8 @@ svg:
 子:child::~
 先祖:ancestor::~
 子孫:descendant::~
-素片:fragment::~
+	子孫:descendent
+素片:fragment::~::フラグメント
 文書:document::~
 文書片:document fragment::~
 視野:scope::~
@@ -1020,6 +1046,10 @@ animate::::アニメート
 	~animate化:animated
 	非~animate化:non-animated
 animation::::アニメーション
+click::::クリック
+mouse::::マウス
+window::::ウィンドウ
+frame::::フレーム
 pointer::::ポインタ
 access::::アクセス
 accessibility:::access 性:アクセス性:アクセシビリティ
@@ -1032,8 +1062,6 @@ focus::::フォーカス
 	~focus可能:focusable
 scroll::::スクロール
 scrollbar::::スクロールバー
-navi:navigation:::ナビ
-hyperlink::::ハイパーリンク
 zoom::::ズーム
 	~zoom法:zooming
 pan::::パン
@@ -1064,6 +1092,7 @@ pan::::パン
 閲覧文脈:browsing context::~
 作動化-:activate::~::アクティブ化
 作動化:activation::~::アクティブ化
+作動中の:active な::~::アクティブな
 動作-:act::~::アクト
 動作:action::~::アクション
 
@@ -1082,11 +1111,23 @@ download::::ダウンロード
 link::::リンク
 linking:::リンク法
 inline::::インライン
+navi:navigation:::ナビ
+navigate::::ナビゲート
+	navigate法:navigating
+network::::ネットワーク
+protocol::::プロトコル
+scheme::::スキーム
 source::::ソース
 secure::::セキュア
+security::::セキュリティ
 page::::ページ
 client:::クライアント
 serve::::サーブ
+同一-:same-:~
+要請:request::~::リクエスト
+応答:response::~::レスポンス
+本体:body::~::ボディ
+遠隔:remote::~::リモート
 資源:resource::~:リソース
 媒体:media::~::メディア
 multimedia::::マルチメディア
@@ -1101,6 +1142,7 @@ page::::ページ
 読込む:load する::読み込む::ロードする
 読込まれ:load され::読み込まれ::ロードされ
 読込んで:load して::読み込んで::ロードして
+再読込する:reload する::読み込み直す::リロードする
 動画:video::~::ビデオ
 
 	●仕様
@@ -1130,6 +1172,7 @@ tool::::ツール
 付録:Appendix:~
 判定基準:criteria:~
 単純:simple:~
+	単純に:simply
 品質:quality:~
 高品質:high-quality::~
 	〜品質:-quality
@@ -1167,6 +1210,7 @@ tool::::ツール
 通常:normal:~
 通常の:normal な:~
 通常は:normal では:~
+通常には:normal には:通常は
 	normally
 通常通り:as normal に:通常どおり
 通例的:usual:~
@@ -1182,6 +1226,7 @@ tool::::ツール
 可用:available:~
 意味論:semantics:~
 適切:appropriate:~
+不適切:inappropriate:~
 側面:aspect:~
 言語:language:~
 歴史的:historical:~
@@ -1214,11 +1259,13 @@ tool::::ツール
 恣意的:arbitrary:~
 補足的:supplemental:~
 一般:general:~
+一般化-:generalize:~
 一般的:general:~
 指針:guideline:~
 方式:manner:~
 状況下:circumstances:~
 帰結:consequence:~
+汎用の:generic な:~
 
 	決して:never
 	例:example
@@ -1231,6 +1278,7 @@ tool::::ツール
 	したがって:therefore
 	したがって:thus
 	べき:should
+	ものとする:shall
 	因る:due to
 	特に:in particular
 	特に:particularly
@@ -1310,7 +1358,10 @@ fallback::::フォールバック
 拡張:extension:~
 拡張性:extensibility:~
 指定-:specify:~
-特定の:specific:~
+指定:specification:~
+	指定されていない:unspecified
+	指定-法:specifying
+特定の:specific な:~
 特有の:specific な:~
 特有な:-specific な:特有の
 特有:specific:~
@@ -1325,6 +1376,7 @@ fallback::::フォールバック
 推奨:recommendation:~
 改めら:alter さ:~
 改めな:alter しな:~
+改める:alter する:~
 改善-:improve:~
 明確化-:clarify:~
 明確化:clarification:~
@@ -1377,7 +1429,9 @@ fallback::::フォールバック
 述べた:describe した:~
 遂行-:perform:~
 適合-:conform:~
+	適合する:are conformant
 適合:conforming:~
+不適合:non-conforming:~
 適合性:conformance:~
 適用-:apply:~
 	適用-可能:applicable
@@ -1394,6 +1448,7 @@ fallback::::フォールバック
 確保-:ensure:~
 給-:supply:~
 公開-:expose:~
+調整-:adjust:~
 調整:adjustment:~
 指名-:designate:~
 存在-:exist:~
@@ -1420,6 +1475,7 @@ fallback::::フォールバック
 試み:attempt:~
 試みる:attempt する:~
 試みて:attempt して:~
+試みな:attempt しな:~
 裁定-:decide:~
 裁定:decision:~
 検分-:inspect:~
@@ -1430,6 +1486,11 @@ fallback::::フォールバック
 見出せる:find できる:~
 見出され:find され:~
 許可-:permit:~
+観測-:observe:~
+欲され:desire され:~
+表出され:express され:表され
+設置-:place:~
+著作:authoring:~
 
 	則って:according
 	則って:in accordance with
@@ -1444,6 +1505,7 @@ fallback::::フォールバック
 	除く／除いて／...:except
 	従う:follow
 	次のような:as follows
+	次に従って:as follows
 	次の:the following
 
 	●未分類（動詞
@@ -1495,6 +1557,7 @@ fallback::::フォールバック
 	示す:show
 	起こる:happen
 	生じ:occur
+	在る:present
 
 	●未分類
 script::::スクリプト
@@ -1514,12 +1577,12 @@ scripting::::スクリプト処理
 大域:global::~::グローバル
 大域的:global::~::グローバル
 局所:local::~::ローカル
+局所的:local::~::ローカル
 選定-:select:~
 選定:selection:~
 
 
 	●指示語／機能語
-
 元の:original:~
 現在の:current:~
 	現時点／現在:currently
@@ -1556,6 +1619,7 @@ scripting::::スクリプト処理
 	〜以上:or more
 	その:that
 	以前の／前の:previous
+	それまでの:previous
 	それまで:previously
 	そのような:such
 	その他:others
@@ -1595,12 +1659,17 @@ scripting::::スクリプト処理
 	下:below
 	左:left
 	両／両者:both
+	後者:latter
 	一部／一部を成す／成す部分:part of
 	介:via
 	超えて:beyond
 	当の:in question
 	他所:elsewhere
 	間:during
+	からなる:consist
+	更なる:further
+	最も近い:nearest
+	何か:something
 
 
 `
