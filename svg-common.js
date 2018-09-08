@@ -395,6 +395,7 @@ p.image-rendering:~SVGpainting#ImageRenderingProperty
 p.inline-size:~SVGtext#InlineSizeProperty
 p.letter-spacing:~CSSTEXT#propdef-letter-spacing
 p.lighting-color:~FILTEREFFECTS1#propdef-lighting-color
+p.line-height:~SVGtext#LineHeightProperty
 p.isolation:~COMPOSITING#isolation
 p.marker:~SVGpainting#MarkerProperty
 p.marker-end:~SVGpainting#MarkerEndProperty
@@ -451,7 +452,7 @@ p.writing-mode:~SVGtext#WritingModeProperty
 p.x:~SVGgeometry#XProperty
 p.y:~SVGgeometry#YProperty
 
-
+	●t
 t.angle:~CSSVAL#angle-value
 t.integer:~CSSVAL#integer-value
 t.length:~CSSVAL#length-value
@@ -459,6 +460,12 @@ t.length-percentage:~CSSVAL#typedef-length-percentage
 t.number:~CSSVAL#number-value
 t.paint:~SVGpainting#SpecifyingPaint
 t.url:~CSSVAL#url-value
+t.percentage:~CSSVAL#percentages
+t.color:~CSSVAL#colors
+t.alpha-value:~CSSCOLOR#typedef-alpha-value
+t.marker-ref:~SVGpainting#DataTypeMarkerRef
+t.dasharray:~SVGpainting#DataTypeDasharray
+t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 
 t.URL:~SVGtypes#attribute-url
 
@@ -552,6 +559,8 @@ t.URL:~SVGtypes#attribute-url
 
 ~SVG表示域:~SVGcoords#TermSVGViewport
 限界~box:~SVGcoords#TermBoundingBox
+
+~gradient要素:~SVGpservers#TermGradientElement
 
 接触判定:~SVGinteract#TermHitTesting
 ~focus可能:~SVGinteract#TermFocusable
