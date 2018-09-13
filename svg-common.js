@@ -606,9 +606,10 @@ COMMON_DATA.PREMAP += `
 界面:<tr><th>~DOM~interface<td>
 ア:\uE007<a href="~SVGanim#Animatable">~animate可？</a>\uE005
 
-名値初ア:<table class="attrdef"><thead><tr><th>名前<th>値<th>初期~値<th>~animate可能？</thead><tbody><tr><td>
-欄:<td>
-行:<tr><td>
+属名:<table class="attrdef"><tbody><tr><th colspan="2">
+属値:<tr><th>値<td>
+属初:<tr><th>初期~値<td>
+属ア:<tr><th>~animate可？<td>
 
 `
 
@@ -1143,6 +1144,7 @@ fetch:
 download::::ダウンロード
 link::::リンク
 linking:::リンク法
+hyperlink::::ハイパーリンク
 inline::::インライン
 navi:navigation:::ナビ
 navigate::::ナビゲート
