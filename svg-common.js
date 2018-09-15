@@ -325,32 +325,32 @@ e.use:~SVGstruct#UseElement
 e.video:~SVGembedded#HTMLElements
 e.view:~SVGlinking#ViewElement
 
-e.feBlend:~FILTEREFFECTS1#feBlendElement
-e.feColorMatrix:~FILTEREFFECTS1#feColorMatrixElement
-e.feComponentTransfer:~FILTEREFFECTS1#feComponentTransferElement
-e.feComposite:~FILTEREFFECTS1#feCompositeElement
-e.feConvolveMatrix:~FILTEREFFECTS1#feConvolveMatrixElement
-e.feDiffuseLighting:~FILTEREFFECTS1#feDiffuseLightingElement
-e.feDisplacementMap:~FILTEREFFECTS1#feDisplacementMapElement
-e.feDistantLight:~FILTEREFFECTS1#feDistantLightElement
-e.feDropShadow:~FILTEREFFECTS1#feDropShadowElement
-e.feFlood:~FILTEREFFECTS1#feFloodElement
-e.feFuncA:~FILTEREFFECTS1#feFuncAElement
-e.feFuncB:~FILTEREFFECTS1#feFuncBElement
-e.feFuncG:~FILTEREFFECTS1#feFuncGElement
-e.feFuncR:~FILTEREFFECTS1#feFuncRElement
-e.feGaussianBlur:~FILTEREFFECTS1#feGaussianBlurElement
-e.feImage:~FILTEREFFECTS1#feImageElement
-e.feMerge:~FILTEREFFECTS1#feMergeElement
-e.feMergeNode:~FILTEREFFECTS1#elementdef-femergenode
-e.feMorphology:~FILTEREFFECTS1#feMorphologyElement
-e.feOffset:~FILTEREFFECTS1#feOffsetElement
-e.fePointLight:~FILTEREFFECTS1#fePointLightElement
-e.feSpecularLighting:~FILTEREFFECTS1#feSpecularLightingElement
-e.feSpotLight:~FILTEREFFECTS1#feSpotLightElement
-e.feTile:~FILTEREFFECTS1#feTileElement
-e.feTurbulence:~FILTEREFFECTS1#feTurbulenceElement
-e.filter:~FILTEREFFECTS1#FilterElement
+e.feBlend:~FILTERS#feBlendElement
+e.feColorMatrix:~FILTERS#feColorMatrixElement
+e.feComponentTransfer:~FILTERS#feComponentTransferElement
+e.feComposite:~FILTERS#feCompositeElement
+e.feConvolveMatrix:~FILTERS#feConvolveMatrixElement
+e.feDiffuseLighting:~FILTERS#feDiffuseLightingElement
+e.feDisplacementMap:~FILTERS#feDisplacementMapElement
+e.feDistantLight:~FILTERS#feDistantLightElement
+e.feDropShadow:~FILTERS#feDropShadowElement
+e.feFlood:~FILTERS#feFloodElement
+e.feFuncA:~FILTERS#feFuncAElement
+e.feFuncB:~FILTERS#feFuncBElement
+e.feFuncG:~FILTERS#feFuncGElement
+e.feFuncR:~FILTERS#feFuncRElement
+e.feGaussianBlur:~FILTERS#feGaussianBlurElement
+e.feImage:~FILTERS#feImageElement
+e.feMerge:~FILTERS#feMergeElement
+e.feMergeNode:~FILTERS#elementdef-femergenode
+e.feMorphology:~FILTERS#feMorphologyElement
+e.feOffset:~FILTERS#feOffsetElement
+e.fePointLight:~FILTERS#fePointLightElement
+e.feSpecularLighting:~FILTERS#feSpecularLightingElement
+e.feSpotLight:~FILTERS#feSpotLightElement
+e.feTile:~FILTERS#feTileElement
+e.feTurbulence:~FILTERS#feTurbulenceElement
+e.filter:~FILTERS#FilterElement
 
 
 
@@ -361,7 +361,7 @@ p.baseline-shift:~SVGtext#BaselineShiftProperty
 p.clip-path:~MASKING1#propdef-clip-path
 p.clip-rule:~MASKING1#propdef-clip-rule
 p.clip:~MASKING1#propdef-clip
-p.color-interpolation-filters:~FILTEREFFECTS1#propdef-color-interpolation-filters
+p.color-interpolation-filters:~FILTERS#propdef-color-interpolation-filters
 p.color-interpolation:~SVGpainting#ColorInterpolationProperty
 p.color-rendering:~SVGpainting#ColorRenderingProperty
 p.color:~SVGpainting#ColorProperty
@@ -375,9 +375,9 @@ p.dominant-baseline:~SVGtext#DominantBaselineProperty
 p.fill-opacity:~SVGpainting#FillOpacityProperty
 p.fill-rule:~SVGpainting#FillRuleProperty
 p.fill:~SVGpainting#FillProperty
-p.filter:~FILTEREFFECTS1#propdef-filter
-p.flood-color:~FILTEREFFECTS1#propdef-flood-color
-p.flood-opacity:~FILTEREFFECTS1#propdef-flood-opacity
+p.filter:~FILTERS#propdef-filter
+p.flood-color:~FILTERS#propdef-flood-color
+p.flood-opacity:~FILTERS#propdef-flood-opacity
 p.font:~CSSFONT#propdef-font
 p.font-feature-settings:~CSSFONT#propdef-font-feature-settings
 p.font-kerning:~CSSFONT#propdef-font-kerning
@@ -394,7 +394,7 @@ p.height:~SVGgeometry#Sizing
 p.image-rendering:~SVGpainting#ImageRenderingProperty
 p.inline-size:~SVGtext#InlineSizeProperty
 p.letter-spacing:~CSSTEXT#propdef-letter-spacing
-p.lighting-color:~FILTEREFFECTS1#propdef-lighting-color
+p.lighting-color:~FILTERS#propdef-lighting-color
 p.line-height:~SVGtext#LineHeightProperty
 p.isolation:~COMPOSITING#isolation
 p.marker:~SVGpainting#MarkerProperty
@@ -619,29 +619,23 @@ COMMON_DATA.words_table1 += `
 	SVGintro:https://svgwg.org/svg2-draft/intro.html
 SVGconform:svg-conform-ja.html
 	~SVG2/conform.html
-SVGrender:svg-render-ja.html
-	~SVG2/render.html
+	~SVG2/render.html→common0.js
 SVGtypes:https://svgwg.org/svg2-draft/types.html
 SVGstruct:https://svgwg.org/svg2-draft/struct.html
-SVGstyling:svg-styling-ja.html
-	~SVG2/styling.html
-SVGgeometry:svg-geometry-ja.html
-	~SVG2/geometry.html
+	~SVG2/styling.html→common0.js
+	~SVG2/geometry.html→common0.js
 SVGcoords:https://svgwg.org/svg2-draft/coords.html
 SVGpaths:https://svgwg.org/svg2-draft/paths.html
 SVGshapes:https://svgwg.org/svg2-draft/shapes.html
 SVGtext:https://svgwg.org/svg2-draft/text.html
-SVGembedded:svg-embedded-ja.html
-	~SVG2/embedded.html
+	~SVG2/embedded.html→common0.js
 SVGpainting:https://svgwg.org/svg2-draft/painting.html
 SVGpservers:https://svgwg.org/svg2-draft/pservers.html
-SVGinteract:svg-interact-ja.html
-	~SVG2/interact.html
-SVGlinking:svg-linking-ja.html
-	~SVG2/linking.html
+	~SVG2/interact.html→common0.js
+	~SVG2/linking.html→common0.js
 
 SVGanim:https://svgwg.org/specs/animations/
-GEOMETRY:geometry-ja.html
+	GEOMETRY→common0.js
 	GEOMETRY:https://www.w3.org/TR/geometry-1/
 	GEOMETRY:https://www.w3.org/TR/2014/WD-geometry-1-20140522/
 xml_space:xml:space

@@ -1070,7 +1070,7 @@ CSS22:https://drafts.csswg.org/css2
 CSS21:https://www.w3.org/TR/CSS21
 CSP3:CSP3-ja.html
 COMPOSITING:compositing-ja.html
-FILTEREFFECTS1:filter-effects-ja.html
+FILTERS:filter-effects-ja.html
 MASKING1:css-masking-ja.html
 CASCADE:css-cascade-ja.html
 CSSBOX:css-box-ja.html
@@ -1117,6 +1117,7 @@ CSSVAR:css-variables-ja.html
 CSSWM:css-writing-modes-ja.html
 SELECTORS4:selectors4-ja.html
 SIZING:css-sizing-ja.html
+GEOMETRY:geometry-ja.html
 TRANSFORM:css-transforms-ja.html
 TRANSFORM2:css-transforms2-ja.html
 TRANSITION:css-transitions-ja.html
@@ -1125,6 +1126,11 @@ MQ4:mediaqueries4-ja.html
 SVG11:SVG11
 SVG2:https://svgwg.org/svg2-draft
 SVGrender:svg-render-ja.html
+SVGstyling:svg-styling-ja.html
+SVGembedded:svg-embedded-ja.html
+SVGinteract:svg-interact-ja.html
+SVGgeometry:svg-geometry-ja.html
+SVGlinking:svg-linking-ja.html
 HTMLLS:https://html.spec.whatwg.org/multipage
 HTML50:https://www.w3.org/TR/html5
 ARIA1:https://w3c.github.io/aria/
