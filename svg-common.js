@@ -453,16 +453,17 @@ p.x:~SVGgeometry#XProperty
 p.y:~SVGgeometry#YProperty
 
 	●t
-t.angle:~CSSVAL#angle-value
+t.number:~CSSVAL#number-value
 t.integer:~CSSVAL#integer-value
 t.length:~CSSVAL#length-value
+t.percentage:~CSSVAL#percentage-value
+	t.percentage:~CSSVAL#percentages
+t.angle:~CSSVAL#angle-value
 t.length-percentage:~CSSVAL#typedef-length-percentage
-t.number:~CSSVAL#number-value
-t.paint:~SVGpainting#SpecifyingPaint
 t.url:~CSSVAL#url-value
-t.percentage:~CSSVAL#percentages
 t.color:~CSSVAL#colors
 t.alpha-value:~CSSCOLOR#typedef-alpha-value
+t.paint:~SVGpainting#SpecifyingPaint
 t.marker-ref:~SVGpainting#DataTypeMarkerRef
 t.dasharray:~SVGpainting#DataTypeDasharray
 t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
@@ -604,7 +605,7 @@ COMMON_DATA.PREMAP += `
 内容:<tr><th>内容~model<td>
 属性:<tr><th>属性<td>
 界面:<tr><th>~DOM~interface<td>
-ア:\uE007<a href="~SVGanim#Animatable">~animate可？</a>\uE005
+あ:\uE007<a href="~SVGanim#Animatable">~animate可？</a>\uE005
 
 属名:<table class="attrdef"><tbody><tr><th colspan="2">
 属値:<tr><th>値<td>
