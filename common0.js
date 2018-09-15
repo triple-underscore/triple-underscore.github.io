@@ -1099,7 +1099,7 @@ CSSMCOL:css-multicol-ja.html
 CSSNS:css-namespaces-ja.html
 CSSOM1:cssom-ja.html
 CSSOMVIEW:cssom-view-ja.html
-CSSOVERFLOW:https://drafts.csswg.org/css-overflow-4/
+CSSOVERFLOW4:https://drafts.csswg.org/css-overflow-4/
 CSSOVERFLOW3:css-overflow3-ja.html
 CSSPAGE:css-page-ja.html
 CSSPOS:https://drafts.csswg.org/css-position-3/
