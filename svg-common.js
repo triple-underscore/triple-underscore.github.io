@@ -1153,7 +1153,7 @@ security::::セキュリティ
 page::::ページ
 client:::クライアント
 serve::::サーブ
-同一-:same-:~
+同一-:same-::~
 要請:request::~::リクエスト
 応答:response::~::レスポンス
 本体:body::~::ボディ
