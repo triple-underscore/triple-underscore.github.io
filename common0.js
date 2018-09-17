@@ -650,7 +650,8 @@ Util.switchWordsInit = function(source_data){
 	Util.DEFERRED.push(create_word_switch);
 
 	// 内容生成完了
-	E(main_id).style.display = '';
+	E(main_id).hidden = false;
+	E(main_id).style.display = ''; //TODO 削除
 return;
 
 
