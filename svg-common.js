@@ -911,6 +911,7 @@ span:
 変形:transform::~
 変形-:transform::~
 変形n:transformation::変換
+座標系変換:transformation::~
 行列:matrix::~
 
 拡縮-:scale::~
@@ -1216,9 +1217,8 @@ tool::::ツール
 将来:future:~
 将来の:future:~
 役割:role::~
-後方互換:backwards-compatible:~
+後方互換:backwards compatible:~
 後方互換性:backwards compatibility:~
-手引き:guidance:~
 手法:method:~
 手続き:steps:~
 旧来の:legacy な:~
@@ -1495,7 +1495,7 @@ fallback::::フォールバック
 可能化-:enable:~
 設計-:design:~
 認識-:recognize:~
-避ける:avoid:~
+避ける:avoid する:~
 導入-:introduce:~
 指示-:indicate:~
 指示:indication:~
