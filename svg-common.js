@@ -468,7 +468,7 @@ t.marker-ref:~SVGpainting#DataTypeMarkerRef
 t.dasharray:~SVGpainting#DataTypeDasharray
 t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 
-t.URL:~SVGtypes#attribute-url
+~URLt:~SVGtypes#attribute-url
 
 
 	●#Terms
@@ -504,7 +504,7 @@ t.URL:~SVGtypes#attribute-url
 描画~木:~SVGrender#TermRenderingTree
 描画される要素:~SVGrender#TermRenderedElement
 描画されない要素:~SVGrender#TermNonRenderedElement
-再~利用される~graphic:~SVGrender#TermReusedGraphics
+再利用される~graphic:~SVGrender#TermReusedGraphics
 決して描画されない要素:~SVGrender#TermNeverRenderedElement
 描画-可能な要素:~SVGrender#TermRenderableElement
 積層~文脈:~SVGrender#TermStackingContext
@@ -645,6 +645,7 @@ xlink_href:xlink:href
 xlink_title:xlink:title
 use-:<code class="element">use</code>-
 svg: <code class="element">svg</code> 
+URLt:[URL]
 
 `
 
@@ -1344,7 +1345,6 @@ fallback::::フォールバック
 保全-:preserve:~
 保守-:maintain:~
 先送り:defer:~
-再利用:reuse:~
 再構成-:rearrange:~
 処理-:process:~
 処理:processing:~
@@ -1352,6 +1352,8 @@ fallback::::フォールバック
 利用:use:~
 利用-:use:~
 	利用して:using
+再利用:reuse:~
+再利用-:re-use:~
 利用者:user:~
 有用:useful:~
 制御-:control:~
