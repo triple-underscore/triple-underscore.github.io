@@ -15,6 +15,11 @@ i.i {
 	
 }
 
+code > dfn {
+	/* for idl */
+	color: black;
+}
+
 var {
 	font-family: serif0, serif;
 }
@@ -79,13 +84,13 @@ div.trans-note {
 
 
 Util.ready = function(){
-	var ifc_names = PAGE_DATA.ifc_names
+	const ifc_names = PAGE_DATA.ifc_names
 	.replace(/^\w+$/mg, function(name){
 		return name + ':#' + name.toLowerCase();
 	});
 	delete PAGE_DATA.ifc_names;
 
-	var source_data = {
+	const source_data = {
 		ifc_names: Util.get_mapping(ifc_names),
 		toc_main: 'MAIN0',
 		generate: expand,
@@ -98,17 +103,18 @@ Util.ready = function(){
 	repeat('dl.idl-def > dt', function(e){
 		e.parentNode.replaceChild(C('p'), e)
 	});
-	Util.del_j(); // checked: 180329 spec
+	Util.del_j(); //
 */
 }
 
 function populate(){
 // 要素複製
-	var visited = Object.create(null), node, e;
+	const visited = Object.create(null);
+	let node, e;
 	// Opera requires optional args, null, null
-	var it = document.createNodeIterator(E('MAIN'), NodeFilter.SHOW_COMMENT, null, null);
-	while(node = it.nextNode()){
-		var id = node.data;
+	const itr = document.createNodeIterator(E('MAIN'), NodeFilter.SHOW_COMMENT, null, null);
+	while(node = itr.nextNode()){
+		const id = node.data;
 		if(id.slice(0,3) !== 'cp-') continue;
 		e = visited[id];
 		if(!e) {
@@ -127,92 +133,76 @@ function populate(){
 
 function expand(){
 
-	var link_map = this.link_map;
-	var ifc_names = this.ifc_names;
+	const class_map = this.class_map;
+	const tag_map = this.tag_map;
+	const link_map = this.link_map;
+	const ifc_names = this.ifc_names;
 
-	var in_idl = false;
-	var context_ifc = ''; // prefix 省略時の既定 interface 名
+	let in_idl = false;
+	let context_ifc = ''; // prefix 省略時の既定 interface 名
 
 	return this.html.replace(
-		/%[\w\-~一-鿆あ-ん？]+|([\^@$]@?)([\w\.]+)(\([ \w,\[\]=…]*\))?|`(.+?)([\^@$])(\w*)|！+/g,
+		/%[\w\-~一-鿆あ-ん？]+|([\^@$]@?)([\w\.]+)(\([ \w,\[\]=…]*\))?|`(.+?)([\^@$])(\w*)|！+\n?/g,
 		create_html
 	);
 
-	function create_html(match, ind0, key, args, text, ind2, suffix){
+	function create_html(match, ind0, key, args, text, ind2, klass){
 		if(text){
-			var href;
-			var key = text;
-			suffix = suffix || '';
-			switch(suffix){
+			let href;
+			key = text;
+
+			klass = klass || '';
+			switch(klass){
 			case 'r':
-				return (
-'<a href="#biblio-' + text.toLowerCase() + '">[' +  text  + ']</a>'
-				);
-				break;
-			case 'b': // 
-				return '<b>' + text + '</b>';
-				break;
-			case 'i': // 
-				text = '<i>' + text + '</i>';
+				text = `[${text}]`;
+				href = `#biblio-${text.toLowerCase()}`;
 				break;
 			case 'l': // literal
-				text = '"<code class="literal">' + text + '</code>"';
-				break;
-			case 'E':
-				text = '<code class="error">' + text + '</code>';
-				break;
-			case 'e': // element tag
-				text = '<code class="element">' + text + '</code>';
-				break;
-			case 'A': // attr name
-				text = '<code class="attr">' + text + '</code>';
-				break;
-			case 'et': // event type
-				text = '<code class="event-type">' + text + '</code>';
-				break;
-			case 'prod': // 生成規則
-				text = '<code class="production">' + text + '</code>';
-				break;
-			case 'm': // idl member (external)
-			case 'c': // codes
-				text = '<code>' + text + '</code>';
-				break;
-			case 'V': // var
-				text = '<var>' + text + '</var>';
+				text = `"<code class="literal">${text}</code>"`;
 				break;
 			case 'f': // flags
-				text = '<i class="flag">' + text + '~flag</i>';
+				text = `${text}~flag`;
+				break;
+			case 'mC': // IDL 内の構築子
+				href = `#dom-${text.toLowerCase()}-${text.toLowerCase()}`;
+				text = 'Constructor';
 				break;
 			case 'bpex':
 				return bpGenerate(text);
 				break;
-			case 'cite':
-				return '<cite>' + text + '</cite>';
-				break;
 			case 'en': // english words
-				return '<span lang="en-x-a0">' + key + '</span>'
-				break;
-			default:
+				return `<span lang="en-x-a0">${text}</span>`
 				break;
 			}
+
+			const tag = tag_map[klass];
+			if(tag){
+				const classname = class_map[klass];
+				text = classname ? (
+					`<${tag} class="${classname}">${text}</${tag}>`
+				):(
+					`<${tag}>${text}</${tag}>`
+				);
+			}
+
 			if(ind2 === '^'){
 				return text;
 			}
-			href = link_map[suffix ? key + '.' + suffix : key];
+			href = link_map[klass ? klass + '.' + key : key] || href;
 			if(!href){
 				console.log(text);
 				return match;
 			}
 			switch(ind2){
 			case '$': 
-				return '<a href="' + href + '">' + text + '</a>';
+				return `<a href="${href}">${text}</a>`;
 			case '@':
-				return '<dfn id="' + href.slice(1) + '">' + text + '</dfn>';
+				return `<dfn id="${href.slice(1)}">${text}</dfn>`;
 			}
 			return match;
 		} else if(key){
 			// idl contructs
-			var text = key, href;
+			let text = key, href;
 			if(!args && ( key in ifc_names ) ){
 				href = ifc_names[key];
 				if(ind0.length > 1){
@@ -220,40 +210,36 @@ function expand(){
 					context_ifc = key;//.toLowerCase();
 				}
 			} else {
-				var ifc = context_ifc;
-				var dot = key.indexOf('.');
+				let ifc = context_ifc;
+				const dot = key.indexOf('.');
 				if(dot >=0 ){
 					ifc = key.slice(0, dot);
 					key = text = key.slice(dot + 1); //text
 				}
-				href = (
-					'#dom-' + ifc + '-' + (
-						(key === 'Constructor') ? ifc : key
-					)
-				).toLowerCase();
+				href = `#dom-${ifc}-${key}`.toLowerCase();
 				if(args){
-text += args.replace(/(\w+)(\s=\s\w+)?/g, '<var>$1</var>$2');
+					text += args.replace(/(\w+)(\s=\s\w+)?/g, '<var>$1</var>$2');
 				}
 			}
 			if(!in_idl){
-				text = '<code>' + text + '</code>';
+				text = `<code>${text}</code>`;
 			}
 
 			switch(ind0[0]){
 			case '^':
 				return text;
 			case '$':
-				return '<a href="' + href + '" >' + text + '</a>';
+				return `<a href="${href}">${text}</a>`;
 			case '@':
-				return '<dfn id="' + href.slice(1) + '" >' + text + '</dfn>';
+				return `<dfn id="${href.slice(1)}">${text}</dfn>`;
 			}
 		} else {
 			switch(match[0]){
 			case '%':
-				return '<var>' + match.slice(1) + '</var>';
+				return `<var>${match.slice(1)}</var>`;
 			case '！':
-				in_idl = (match !== '！' );//！\n
-				return in_idl ? '<pre class="idl">' : '</pre>';
+				in_idl = (match[1] === '！' );
+				return in_idl ? '<pre class="idl"><code>' : '</code></pre>';
 			default: // 
 				return match;
 			}
@@ -266,11 +252,11 @@ text += args.replace(/(\w+)(\s=\s\w+)?/g, '<var>$1</var>$2');
 		+ str.replace(/([\|\[\]\(\)])(\w?)/g, function(match, t, w){
 			switch(t) {
 			case '|':
-				return w ? '<span class="m">|<br>' + w + '</span>' : '|';
+				return w ? `<span class="m">|<br>${w}</span>` : '|';
 			case '(':
-				return w ? '<i class="' + w + '">' : '<i>';
+				return w ? `<i class="${w}">` : '<i>';
 			case '[':
-				return w ? '<b class="' + w + '">' : '<b>';
+				return w ? `<b class="${w}">` : '<b>';
 			case ')':
 				return '</i>';
 			case ']':
@@ -292,6 +278,7 @@ text += args.replace(/(\w+)(\s=\s\w+)?/g, '<var>$1</var>$2');
 spec_title:DOM
 spec_date:2018-09-18
 trans_update:2018-09-19
+source_checked:180329
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -300,6 +287,28 @@ site_nav:infrastructure,uievents,html,selector
 copyright:2018,whatwg
 trans_1st_pub:2012-01-28
 
+●●class_map
+E:error
+e:element
+A:attr
+et:event-type
+prod:production
+f:flag
+
+●●tag_map
+b:b
+i:i
+f:i
+E:code
+e:code
+A:code
+et:code
+prod:code
+m:code
+c:code
+V:var
+f:i
+cite:cite
 
 ●●words_table1
 
@@ -335,8 +344,7 @@ XML:
 XMLNS:
 ID:
 DOM:
-Unicode:
-	●node tree
+	●構造／node tree
 木:tree::~:ツリー
 部分木:subtree::~:部分ツリー:サブツリー
 node::::ノード
@@ -372,17 +380,42 @@ doctype:
 接続-:connect:~
 	~~孤立する:alone
 
-	●動詞
-走らす:run する:~
-走らせ:run し:~
-	走り終えた
-実行-:execute:~
-遂行-:perform:~
-
+構造:structure:~
+順序:order:~
+	全順序:linear
+有順序:ordered:~
+階層的:hierarchical:~
+構成子:construct:~
+内容:content:~
+包含-:contain:~
 先行-:precede::~
 後続-:follow::~
 関与-:participate:~
 	のpartを成す／関与する
+
+	●data 型 ／ data 操作
+属性:attribute::~
+値:value::~
+数値:numeric value::~
+真偽値:boolean::~
+整数:integer::~
+options::option 集::オプション集
+list::::リスト
+size::::サイズ
+queue::::キュー
+	~queue済み:queued
+enqueue::::エンキュー
+map::::マップ
+tuple:::組::タプル
+集合:set::~
+構造体:struct::~
+型:type:~
+種別:type:~
+辞書:dictionary::~::ディクショナリ
+識別子:identifier:~
+定数:constant:~
+prop:property:::プロパティ
+
 受入-:adopt::~
 前挿入-:pre-insert:~
 挿入-:insert:挿入
@@ -404,29 +437,33 @@ doctype:
 移動-:move:~
 追加-:add:追加
 	追加:addition:~
-反映-:reflect:~
-検証-:validate:~
-	validation
-無効化-:invalidate:~
-妥当:valid:~
-抽出-:extract:~
-選択-:select:~
-選択:selecting:~
-
-連結-:concatenate:~
-連結:concatenation:~
+初期化-:initialize:~
+	初期化-済み:initialized
+初期化:initializing:~
+初期:initial:~
+	初期~時:initially
+作成-:create:~
+	作成:creation
+静的:static::~
+live:
+代入:assignment:~
+構築-:construct:~
+	構築-法:constructing
+消去-:clear::~::クリア
+変換-:convert:~
+比較:comparison:~
+比較-:compare:~
+列挙-:enumerate:~
+格納-:store:~
+	格納-法:storing
 複製:copy::~
-符号化法:encoding:~:::エンコーディング
-	符号化:encode:~:::エンコード
-	復号:decode:~:::デコード
 clone::::クローン
 	子も~cloneする:clone children
 整列-:sort:~
-内容:content:~
-遭遇-:encounter:~
+抽出-:extract:~
 
 
-	●IDL ／ js ／ data 型
+	●IDL ／ js ／
 IDL:
 JS:JavaScript
 Realm:
@@ -440,77 +477,26 @@ mixin:
 ifc:interface:::インタフェース
 catch:
 	::::キャッチ
-obj:object::::オブジェクト
 worker:
 worklet:
-
+obj:object::::オブジェクト
 下位class:subclass::下位 class:下位クラス
 取得子:getter::~::ゲッタ
 設定子:setter::~::セッタ
 反復器:iterator::~::イテレータ
-演算-:operate:~
-演算:operation:~
-属性:attribute::~
-
-値:value::~
-真偽値:boolean::~
-数値:numeric value::~
-
-引数:argument::~
-	引数:parameter
-返値:return value::返り値
-返され:return され:~
-返す:return する:~
-返さ:return し:~
-返し:return し:~
-
-呼出す:invoke する:呼び出す
-呼出-:invoke:呼び出
-	呼出され／呼出して／呼出した
-呼出:invocation:呼び出し
-被呼出時:被 invoke 時:~
-callback:
-	::::コールバック
-	呼戻
-call:
-	::::コール
 index:
-options::option 集::オプション集
-list::::リスト
-size::::サイズ
-queue::::キュー
-	~queue済み:queued
-enqueue::::エンキュー
-map::::マップ
-tuple:::組::タプル
-集合:set::~
-構造体:struct::~
+
 文字列化-:stringify:~
 文字列化の:stringification:~
 構築子:constructor::~::コンストラクタ
-型:type:~
-種別:type:~
-
 例外:exception::~
 投出:throw::~
 	再投出:re-throw::再 throw:再投出
-辞書:dictionary::~::ディクショナリ
 継承-:inherit:~
 派生:derived:~
-初期化-:initialize:~
-	初期化-済み:initialized
-初期化:initializing:~
-初期:initial:~
-	初期~時:initially
+
 関数:function::~
-識別子:identifier:~
-定数:constant:~
 抽象:abstract::~
-作成-:create:~
-作成:creation:~
-prop:property:::プロパティ
-静的:static::~
-live:
 利用元:user::~::ユーザ
 
 	在る:present する:在る
@@ -541,17 +527,91 @@ class::::クラス
 classes:::class 列::クラス列
 
 連続的:contiguous::~
-count:::::カウント
 符号位置:code point:~
-
 
 構文解析-:parse::~::パース
 構文解析器:parser::~::パーサ
 直列化-:serialize::~::シリアル化
-直列化:serialization::~::シリアル化
+	直列化-:serialization
 直列化器:serializer::~::シリアライザ
 
-	●event
+符号化法:encoding:~:::エンコーディング
+	符号化:encode:~:::エンコード
+	復号:decode:~:::デコード
+連結-:concatenate:~
+
+
+	●一般処理
+走らす:run する:~
+走らせ:run し:~
+	走り終えた
+実行-:execute:~
+遂行-:perform:~
+条件:condition:~
+演算-:operate:~
+演算:operation:~
+引数:argument::~
+	引数:parameter
+返値:return value::返り値
+返され:return され:~
+返す:return する:~
+返さ:return し:~
+返し:return し:~
+呼出す:invoke する:呼び出す
+呼出-:invoke:呼び出
+	呼出され／呼出して／呼出した
+呼出:invocation:呼び出し
+被呼出時:被 invoke 時:~
+callback:
+	::::コールバック
+	呼戻
+call:
+	::::コール
+複合:compound::~
+task::::タスク
+	下位~task
+小task:microtask::小 task:小タスク
+並列的:parallel:~
+評価-:evaluate::~
+
+作動化:activation::~::アクティブ化
+作動化の:activation::~::アクティブ化
+動作:action:~
+活動:activity:~
+
+	抑止-:suppress:~
+試行-:try:~
+可能化-:enable:~
+不能化-:disable:~
+不能化:disabling:~
+検査-:check:~
+検査:check:~
+進行中の:ongoing:~
+到達-:reach:~
+阻む:block する:~:::ブロックする
+阻まな:block しな:~:::ブロックしな
+完了-:complete:~
+完了:completion:~
+起動-:initiate:~
+	起動するもの:initiator
+失敗:failure:~
+失敗-:fail:~
+成功:success:~
+同期:synchronous::~
+非同期:asynchronous::~
+変数:variable:~
+入力:input:~
+即時:immediate:~
+続行-:proceed:~
+追跡-:track:~
+反映-:reflect:~
+検証-:validate:~
+	validation
+無効化-:invalidate:~
+妥当:valid:~
+遭遇-:encounter:~
+
+	■event
 event::::イベント
 listener::::リスナ
 handler::::ハンドラ
@@ -569,6 +629,10 @@ item::::アイテム
 受動:passive::~
 composed:
 	＊構成経路:composed::
+相:phase::~::フェイズ
+合成:synthetic::~
+
+誘発-:trigger::~
 取消:cancel::~::キャンセル
 取消d:canceled::取消::キャンセル
 取消せ:cancel でき::~::キャンセルでき
@@ -579,35 +643,39 @@ composed:
 伝播即停止:stop immediate propagation::~
 伝播停止:stop propagation::~
 停止-:stop:~
-相:phase::~::フェイズ
-合成:synthetic::~
 
-task::::タスク
-	下位~task
-小task:microtask::小 task:小タスク
-並列的:parallel:~
-
+	■中止
+中止-:abort::~
+	中止-済み:aborted
+	中止-法:aborting
 通達-:signal::~
 通達:signal::~
 	通達-時:signaling
 	通達-法:signaling
-複合:compound::~
-作動化:activation::~::アクティブ化
-作動化の:activation::~::アクティブ化
-
-	●中止
-中止-:abort::~
-	中止-済み:aborted
-	中止-法:aborting
 promise:
 	~promiseを返す:promise-returning
 応答-:respond:~
 却下-:reject::~
 解決-::resolve::~
-即時:immediate:~
 未決着の:unsettled::~
 注視-:watch:~
-続行-:proceed:~
+追従-:flollw:~
+再帰的:recursive:~
+
+	■計時
+時計:clock:~
+時刻:time:~
+時間差:time:~
+時刻印:timestamp:~
+	現在時:now
+	差分:offset
+時刻起点:time origin:~
+	マイクロ秒:microseconds
+	ミリ秒数:milliseconds
+分解能:resolution:~
+高分解能な:high resolution:高分解能な
+	までの細かさ:minimum
+	生じ:occur／occurrence／
 
 	●名前空間
 局所:local::~::ローカル
@@ -679,7 +747,6 @@ offset:::::オフセット
 始端:start::~
 終端:end::~
 元の:original:~
-包含-:contain:~
 部分的:partial:~
 中身:内容
 交わる:intersect する:~
@@ -688,6 +755,8 @@ offset:::::オフセット
 畳む:collapse する:~
 	基準点:this point
 	この点:other point
+選択-:select:~
+選択:selecting:~
 
 	●collection
 走査-:traverse::~::トラバース
@@ -699,7 +768,6 @@ whatToShow:
 	濾過器
 	濾過する
 選択子:selector::~::セレクタ
-評価-:evaluate::~
 
 視野根:scoping root::~::スコーピングルート
 視野:scope::~::スコープ
@@ -722,7 +790,6 @@ platform::::プラットフォーム
 community:::コミュニティ
 model::::モデル
 console::::コンソール
-proprietary::::プロプライエタリ
 option::::オプション
 version::::バージョン
 仕様:spec:~
@@ -771,7 +838,6 @@ log::::ログ
 共通的に:common に:よく
 共通の:common::~
 一貫する:consistent になる:~
-一貫させ:consistent にす:~
 特定の:specific:~
 特有の:-specific な:~
 	特に:specific／specifically
@@ -800,7 +866,6 @@ log::::ログ
 有用:useful:~
 	無用の長物:useless
 詳細:details:~
-一義的:unambiguous:~
 program::::プログラム
 強く:strong に:~
 可用:available:~
@@ -816,6 +881,11 @@ program::::プログラム
 環境設定:configurations:~
 事例:case:~
 相似的:analogous:~
+用語:term:~
+簡便:convenient:~
+	簡便:convenience
+アリ:possible:可能
+	アリな限り:as much as possible
 
 	●仕様（動詞
 portable::可搬::ポータブル
@@ -889,7 +959,6 @@ hook::::フック
 計画-:plan:~
 策定者:author:~
 作者:author:~
-推奨-:recommend:~
 推奨:recommendation:~
 望み:wishes:~
 望む:wish する:~
@@ -905,6 +974,7 @@ hook::::フック
 働く:work する:~
 	働き続けられる:don’t stop working
 言及-:mention:~
+主張-:claim:~
 
 	相互運用可能:interoperable:~
 	助力:help:~
@@ -912,65 +982,35 @@ hook::::フック
 
 
 	●未分類（動詞
-	抑止-:suppress:~
-試行-:try:~
-可能化-:enable:~
-不能化-:disable:~
-不能化:disabling:~
-代入-:assign:~
-代入:assignment:~
-消去-:clear::~::クリア
-変換-:convert:~
-検査-:check:~
-検査:check:~
-構築-:construct:~
-	構築-法:constructing
-構成子:construct:~
-比較:comparison:~
-比較-:compare:~
 決定-:determine:~
 非決定的:non-deterministic:~
-経過-:pass:~
 表現-:represent:~
-追跡-:track:~
 公開-:expose:~
-進行中の:ongoing:~
 重複:duplicate:~
-到達-:reach:~
-阻む:block する:~:::ブロックする
-阻まな:block しな:~:::ブロックしな
-動作:action:~
-活動:activity:~
 関係-:relate:~
 関係性:relationship:~
 添付けら:attach さ:添え付けら
 上書き:override:~
 共有-:share:~
-入力:input:~
+
 名:name:~
 名前:name:~
 改称-:rename:~
-完了-:complete:~
-完了:completion:~
+
 	所与の:given
-追従-:flollw:~
-列挙-:enumerate:~
-格納-:store:~
-	格納-法:storing
-起動-:initiate:~
-	起動するもの:initiator
+割振られ:allocate され:割り振られ
 	渡-:pass
 
 	●未分類
+void:
+
 thread::::スレッド
 	別~thread:cross-thread
 snapshot:
 	Checkbox
 	Radio
 関連する:relevant な:~
-失敗:failure:~
-失敗-:fail:~
-成功:success:~
+
 疑似類:pseudo-class::疑似 class:疑似クラス
 状態:state::~
 brand:
@@ -1003,12 +1043,8 @@ touch:
 view::::ビュー
 wheel:
 一意:unique:~
-同期:synchronous::~
-非同期:asynchronous::~
-変数:variable:~
 実体参照:entity reference::~
-整数:integer:~
-文脈:context:~
+
 方向:direction:~
 既定:default:~:::デフォルト
 既定の:default:~:::デフォルト
@@ -1017,42 +1053,20 @@ wheel:
 基準:reference:~
 参照:reference:~
 
-時計:clock:~
-時刻:time:~
-時間差:time:~
-時刻印:timestamp:~
-	現在時:now
-	差分:offset
-時刻起点:time origin:~
-	マイクロ秒:microseconds
-	ミリ秒数:milliseconds
-分解能:resolution:~
-高分解能な:high resolution:高分解能な
-	までの細かさ:minimum
-	生じ:occur／occurrence／
-換算-:translate:~
-調整-:adjust:~
-精度:precision:~
-
-順序:order:~
-	全順序:linear
-有順序:ordered:~
-条件:condition:~
-
-構造:structure:~
 正確:exact:~
 不正確:inaccurate:~
 精確:precise:~
+
+環境:environment:~
 閲覧文脈:browsing context::~
 生成元:origin::~::オリジン
 不透明な:opaque::~
+文脈:context:~
+
 画像:image:~
 相対的:relative:~
 等価:equivalent:~
 同等:equal:~
-階層的:hierarchical:~
-環境:environment:~
-再帰的:recursive:~
 	一致する:identical
 	起点:reference
 
@@ -1305,21 +1319,19 @@ DOMException:~WEBIDL#idl-DOMException
 
 ●●link_map
 
+e.script:~HEscripting#the-script-element
+e.input:~HEinput#the-input-element
+e.title:~HEmetadata#the-title-element
+e.html:~HEmetadata#the-html-element
+e.head:~HEmetadata#the-head-element
+e.body:~HEsections#the-body-element
+e.template:~HEscripting#the-template-element
+e.slot:~HEscripting#the-slot-element
+e.input:~HEinput#the-input-element
+e.area:~HEimages#the-area-element
 
-
-script.e:~HEscripting#the-script-element
-input.e:~HEinput#the-input-element
-title.e:~HEmetadata#the-title-element
-html.e:~HEmetadata#the-html-element
-head.e:~HEmetadata#the-head-element
-body.e:~HEsections#the-body-element
-template.e:~HEscripting#the-template-element
-slot.e:~HEscripting#the-slot-element
-input.e:~HEinput#the-input-element
-area.e:~HEimages#the-area-element
-
-open.l:#dom-shadowrootmode-open
-closed.l:#dom-shadowrootmode-closed
+l.open:#dom-shadowrootmode-open
+l.closed:#dom-shadowrootmode-closed
 
 CEReactions:~HEcustom#cereactions
 Exposed:~WEBIDL#Exposed
@@ -1332,54 +1344,54 @@ TreatNullAs:~WEBIDL#TreatNullAs
 PutForwards:~WEBIDL#PutForwards
 Replaceable:~WEBIDL#Replaceable
 
-TypeError.E:~WEBIDL#exceptiondef-typeerror
-AbortError.E:~WEBIDL#aborterror
-HierarchyRequestError.E:~WEBIDL#hierarchyrequesterror
-InUseAttributeError.E:~WEBIDL#inuseattributeerror
-IndexSizeError.E:~WEBIDL#indexsizeerror
-InvalidCharacterError.E:~WEBIDL#invalidcharactererror
-InvalidNodeTypeError.E:~WEBIDL#invalidnodetypeerror
-InvalidStateError.E:~WEBIDL#invalidstateerror
-NamespaceError.E:~WEBIDL#namespaceerror
-NotFoundError.E:~WEBIDL#notfounderror
-NotSupportedError.E:~WEBIDL#notsupportederror
-SyntaxError.E:~WEBIDL#syntaxerror
-WrongDocumentError.E:~WEBIDL#wrongdocumenterror
+E.TypeError:~WEBIDL#exceptiondef-typeerror
+E.AbortError:~WEBIDL#aborterror
+E.HierarchyRequestError:~WEBIDL#hierarchyrequesterror
+E.InUseAttributeError:~WEBIDL#inuseattributeerror
+E.IndexSizeError:~WEBIDL#indexsizeerror
+E.InvalidCharacterError:~WEBIDL#invalidcharactererror
+E.InvalidNodeTypeError:~WEBIDL#invalidnodetypeerror
+E.InvalidStateError:~WEBIDL#invalidstateerror
+E.NamespaceError:~WEBIDL#namespaceerror
+E.NotFoundError:~WEBIDL#notfounderror
+E.NotSupportedError:~WEBIDL#notsupportederror
+E.SyntaxError:~WEBIDL#syntaxerror
+E.WrongDocumentError:~WEBIDL#wrongdocumenterror
 
-click().m:~HTMLinteraction#dom-click
-detail.m:~UIEVENTS#dom-uievent-detail
-event.m:#dom-window-event
-insertAdjacentHTML().m:~DOM-Parsing#dom-element-insertadjacenthtml
-createContextualFragment().m:~DOM-Parsing#dfn-createcontextualfragment-fragment
-getClientRects().m:~CSSOMVIEW#dom-range-getclientrects
-getBoundingClientRect().m:~CSSOMVIEW#dom-range-getboundingclientrect
+m.click():~HTMLinteraction#dom-click
+m.detail:~UIEVENTS#dom-uievent-detail
+m.event:#dom-window-event
+m.insertAdjacentHTML():~DOM-Parsing#dom-element-insertadjacenthtml
+m.createContextualFragment():~DOM-Parsing#dfn-createcontextualfragment-fragment
+m.getClientRects():~CSSOMVIEW#dom-range-getclientrects
+m.getBoundingClientRect():~CSSOMVIEW#dom-range-getboundingclientrect
 
 最初のもの？:#_first_obj
 最後のもの？:#_last_obj
 最後0:#_last_obj
-旧来の（~listenerは投出したか？）~flag.V:#_legacyOutputDidListenersThrowFlag
+V.旧来の（~listenerは投出したか？）~flag:#_legacyOutputDidListenersThrowFlag
 
 文脈~obj:#context-object
 	＊投出:#concept-throw
 適用-可能な仕様:#other-applicable-specifications
-閲覧文脈~群.V:#_unit-of-related-similar-origin-browsing-contexts
+V.閲覧文脈~群:#_unit-of-related-similar-origin-browsing-contexts
 
 	●event
-初期化-済み.f:#initialized-flag
-伝播即停止.f:#stop-immediate-propagation-flag
-伝播停止.f:#stop-propagation-flag
-取消d.f:#canceled-flag
-配送-.f:#dispatch-flag
-受動~listener内.f:#in-passive-listener-flag
-~composed.f:#composed-flag
+f.初期化-済み:#initialized-flag
+f.伝播即停止:#stop-immediate-propagation-flag
+f.伝播停止:#stop-propagation-flag
+f.取消d:#canceled-flag
+f.配送-:#dispatch-flag
+f.受動~listener内:#in-passive-listener-flag
+f.~composed:#composed-flag
 
-~item.evP:#event-path-item
-~shadow木~内？.evP:#event-path-item-in-shadow-tree
-~target.evP:#event-path-target
-~touch~target~list.evP:#event-path-touch-target-list
-関係d~target.evP:#event-path-relatedtarget
-~closed木の根？.evP:#event-path-root-of-closed-tree
-~slotは~closed木~内？.evP:#event-path-slot-in-closed-tree
+evP.~item:#event-path-item
+evP.~shadow木~内？:#event-path-item-in-shadow-tree
+evP.~target:#event-path-target
+evP.~touch~target~list:#event-path-touch-target-list
+evP.関係d~target:#event-path-relatedtarget
+evP.~closed木の根？:#event-path-root-of-closed-tree
+evP.~slotは~closed木~内？:#event-path-slot-in-closed-tree
 
 ~event:#concept-event
 ~eventを作成する:#concept-event-create
@@ -1404,12 +1416,12 @@ getBoundingClientRect().m:~CSSOMVIEW#dom-range-getboundingclientrect
 ~event~listener~list:#eventtarget-event-listener-list
 ~event~listener:#concept-event-listener
 
-type.evL:#event-listener-type
-callback.evL:#event-listener-callback
-capture.evL:#event-listener-capture
-passive.evL:#event-listener-passive
-once.evL:#event-listener-once
-removed.evL:#event-listener-removed
+evL.type:#event-listener-type
+evL.callback:#event-listener-callback
+evL.capture:#event-listener-capture
+evL.passive:#event-listener-passive
+evL.once:#event-listener-once
+evL.removed:#event-listener-removed
 
 平坦化-:#concept-flatten-options
 もっと平坦化-:#event-flatten-more
@@ -1425,9 +1437,9 @@ removed.evL:#event-listener-removed
 現在の~event:#window-current-event
 
 	●abort
-通達.aB:#abortcontroller-signal
-中止する~algoたち.aB:#abortsignal-abort-algorithms
-中止-済み~flag.aB:#abortsignal-aborted-flag
+aB.通達:#abortcontroller-signal
+aB.中止する~algoたち:#abortsignal-abort-algorithms
+aB.中止-済み~flag:#abortsignal-aborted-flag
 中止-を通達する:#abortsignal-signal-abort
 通達に~algoを追加する:#abortsignal-add
 通達から~algoを除去する:#abortsignal-remove
@@ -1491,7 +1503,7 @@ removed.evL:#event-listener-removed
 
 長さ:#concept-node-length
 ~node文書:#concept-node-document
-空.node:#concept-node-empty
+node.空:#concept-node-empty
 同等:#concept-node-equals
 
 文書片:#_concept-documentfragment
@@ -1507,7 +1519,7 @@ removed.evL:#event-listener-removed
 ~shadow木:#concept-shadow-tree
 ~shadow~host:#element-shadow-host
 ~shadow根:#concept-shadow-root
-~mode.sR:#shadowroot-mode
+sR.~mode:#shadowroot-mode
 ~shadowも含む子孫:#concept-shadow-including-descendant
 ~shadowも含む広義子孫:#concept-shadow-including-inclusive-descendant
 ~shadowも含む先祖:#concept-shadow-including-ancestor
@@ -1524,8 +1536,8 @@ removed.evL:#event-listener-removed
 ~slotable:#concept-slotable
 ~slot名:#slot-name
 ~slotable名:#slotable-name
-	＊名前.sL:#slot-name
-	＊名前.sB:#slotable-name
+	＊sL.名前:#slot-name
+	＊sB.名前:#slotable-name
 ~slotable用に~slotを見出す:#find-a-slot
 ~slot用に~slotableたちを見出す:#find-slotables
 ~slot用に平坦化された~slotableたちを見出す:#find-flattened-slotables
@@ -1540,12 +1552,12 @@ removed.evL:#event-listener-removed
 
 	●文書／文書片／名前空間
 文書:#concept-document
-符号化法.doc:#concept-document-encoding
-内容~型.doc:#concept-document-content-type
-~URL.doc:#concept-document-url
-種別.doc:#concept-document-type
-生成元.doc:#concept-document-origin
-~mode.doc:#concept-document-mode
+doc.符号化法:#concept-document-encoding
+doc.内容~型:#concept-document-content-type
+doc.~URL:#concept-document-url
+doc.種別:#concept-document-type
+doc.生成元:#concept-document-origin
+doc.~mode:#concept-document-mode
 
 文書~基底~URL:~HTMLurl#document-base-url
 結付けられている文書:~WINDOW#concept-document-window
@@ -1555,9 +1567,9 @@ removed.evL:#event-listener-removed
 過去互換~mode:#concept-document-quirks
 ~doctype:#concept-doctype
 ~doctype名:#concept-doctype-name
-名前.dT:#concept-doctype-name
-~publicID.dT:#concept-doctype-publicid
-~systemID.dT:#concept-doctype-systemid
+dT.名前:#concept-doctype-name
+dT.~publicID:#concept-doctype-publicid
+dT.~systemID:#concept-doctype-systemid
 
 
 ~HTML文書:#html-document
@@ -1582,7 +1594,7 @@ removed.evL:#event-listener-removed
 ~ASCII大文字~化する:~INFRA#ascii-uppercase
 ~ASCII空白:~INFRA#ascii-whitespace
 ~ASCII空白で分割する:~INFRA#split-on-ascii-whitespace
-長さ.jStr:~INFRA#javascript-string-length
+jStr.長さ:~INFRA#javascript-string-length
 
 大小区別:~HTMLINFRA#case-sensitive
 
@@ -1603,7 +1615,7 @@ removed.evL:#event-listener-removed
 文書~要素:#document-element
 要素:#concept-element
 局所~名:#concept-element-local-name
-~shadow根.elm:#concept-element-shadow-root
+elm.~shadow根:#concept-element-shadow-root
 有修飾~名:#concept-element-qualified-name
 ~HTML大文字~化~有修飾~名:#element-html-uppercased-qualified-name
 ~ns接頭辞:#concept-element-namespace-prefix
@@ -1631,17 +1643,17 @@ removed.evL:#event-listener-removed
 属性oを~nsと局所~名により除去する:#concept-element-attributes-remove-by-namespace
 
 属性o:#concept-attribute
-属性o.nm:#concept-named-attribute
+nm.属性o:#concept-named-attribute
 属性o変更-時の手続き:#concept-element-attributes-change-ext
 属する要素:#concept-attribute-element
-有修飾~名.a:#concept-attribute-qualified-name
-値.a:#concept-attribute-value
-~ns.a:#concept-attribute-namespace
-~ns接頭辞.a:#concept-attribute-namespace-prefix
-局所~名.a:#concept-attribute-local-name
+a.有修飾~名:#concept-attribute-qualified-name
+a.値:#concept-attribute-value
+a.~ns:#concept-attribute-namespace
+a.~ns接頭辞:#concept-attribute-namespace-prefix
+a.局所~名:#concept-attribute-local-name
 
-要素.nm:#concept-namednodemap-element
-属性o~list.nm:#concept-namednodemap-attribute
+nm.要素:#concept-namednodemap-element
+nm.属性o~list:#concept-namednodemap-attribute
 ~classes:#concept-class
 ~classesに含む要素の~list:#concept-getelementsbyclassname
 有修飾~名に持つ要素の~list:#concept-getelementsbytagname
@@ -1658,9 +1670,9 @@ removed.evL:#event-listener-removed
 ~custom要素~定義:#concept-element-custom-element-definition
 ~is0値:#concept-element-is-value
 
-名前.cD:~HEcustom#concept-custom-element-definition-name
-局所~名.cD:~HEcustom#concept-custom-element-definition-local-name
-構築子.cD:~HEcustom#concept-custom-element-definition-constructor
+cD.名前:~HEcustom#concept-custom-element-definition-name
+cD.局所~名:~HEcustom#concept-custom-element-definition-local-name
+cD.構築子:~HEcustom#concept-custom-element-definition-constructor
 妥当な~custom要素~名:~HEcustom#valid-custom-element-name
 ~custom要素~構築子:~HEcustom#custom-element-constructor
 ~custom要素~callback反応を~enqueueする:~HEcustom#enqueue-a-custom-element-callback-reaction
@@ -1677,11 +1689,11 @@ removed.evL:#event-listener-removed
 属性~変異~記録を~queueする:#queue-an-attribute-mutation-record
 ~nodeたちを~nodeに変換する:#converting-nodes-into-a-node
 
-~callback.mo:#concept-mo-callback
-~node~list.mo:#mutationobserver-node-list
-記録~queue.mo:#concept-mo-queue
+mo.~callback:#concept-mo-callback
+mo.~node~list:#mutationobserver-node-list
+mo.記録~queue:#concept-mo-queue
 
-変異~ob 複合~小task~queue済み.f:#mutation-observer-compound-microtask-queued-flag
+f.変異~ob 複合~小task~queue済み:#mutation-observer-compound-microtask-queued-flag
 変異~ob 複合~小taskを~queueする:#queue-a-mutation-observer-compound-microtask
 変異~obに通知する:#notify-mutation-observers
 
@@ -1689,29 +1701,29 @@ removed.evL:#event-listener-removed
 一時~登録-済み~ob:#transient-registered-observer
 変異~ob~list:#mutation-observer-list
 登録-済み~ob~list:#registered-observer-list
-	抑止ob.f:#_suppress-observers-flag
-~ob.ob:#registered-observer-observer
-~options.ob:#registered-observer-options
-~source.ob:#transient-registered-observer-source
+
+ob.~ob:#registered-observer-observer
+ob.~options:#registered-observer-options
+ob.~source:#transient-registered-observer-source
 
 
 	●範囲
 範囲o:#concept-range
 ~live範囲o:#concept-live-range
-根.rg:#concept-range-root
-中身を抽出-.rg:#concept-range-extract
-中身を~clone.rg:#concept-range-clone
-中身に挿入-.rg:#concept-range-insert
-中身として選択-.rg:#concept-range-select
-中身.rg:#_concept-range-content
+rg.根:#concept-range-root
+rg.中身を抽出-:#concept-range-extract
+rg.中身を~clone:#concept-range-clone
+rg.中身に挿入-:#concept-range-insert
+rg.中身として選択-:#concept-range-select
+rg.中身:#_concept-range-content
 
 境界点:#concept-range-bp
-~node.bp:#boundary-point-node
-~offset.bp:#concept-range-bp-offset
+bp.~node:#boundary-point-node
+bp.~offset:#concept-range-bp-offset
 
-より前.i:#concept-range-bp-before
-より後.i:#concept-range-bp-after
-に等しい.i:#concept-range-bp-equal
+i.より前:#concept-range-bp-before
+i.より後:#concept-range-bp-after
+i.に等しい:#concept-range-bp-equal
 
 終端~node:#concept-range-end-node
 終端~offset:#concept-range-end-offset
@@ -1728,13 +1740,14 @@ removed.evL:#event-listener-removed
 部分的に包含され:#partially-contained
 
 	●token list
-~token集合:#concept-dtl-tokens
-~supportする~token集合.dtl:#concept-supported-tokens
-更新~手続き:#concept-dtl-update
-直列化-手続き:#concept-dtl-serialize
+
+tL.~token集合:#concept-dtl-tokens
+tL.~supportする~token集合:#concept-supported-tokens
+tL.要素:#_dtl-element
+tL.属性oの局所~名:#_dtl-localname
+tL.更新~手続き:#concept-dtl-update
+tL.直列化-手続き:#concept-dtl-serialize
 ~tokenを検証する:#concept-domtokenlist-validation
-要素.dtl:#_dtl-element
-属性oの局所~名.dtl:#_dtl-localname
 ~tokenを検査する:#_dtl-check-token
 
 	●collection／node iterator／tree walker
@@ -1744,16 +1757,16 @@ removed.evL:#event-listener-removed
 静的:#concept-collection-static
 ~collection:#concept-collection
 
-~filter.cL:#_collection-filter
-根.cL:#_collection-root
+cL.~filter:#_collection-filter
+cL.根:#_collection-root
 
-作動中~flag.tV:#concept-traversal-active
-~filter~callback.tV:#concept-traversal-filter
-根.tV:#concept-traversal-root
-~whatToShow.tV:#concept-traversal-whattoshow
-現-~node.tV:#treewalker-current
-起点.tV:#nodeiterator-reference
-起点の直前？.tV:#nodeiterator-pointer-before-reference
+tV.作動中~flag:#concept-traversal-active
+tV.~filter~callback:#concept-traversal-filter
+tV.根:#concept-traversal-root
+tV.~whatToShow:#concept-traversal-whattoshow
+tV.現-~node:#treewalker-current
+tV.起点:#nodeiterator-reference
+tV.起点の直前？:#nodeiterator-pointer-before-reference
 
 走査器の中で~nodeを~filterにかける:#concept-node-filter
 子たちを走査する:#concept-traverse-children
@@ -1762,12 +1775,12 @@ removed.evL:#event-listener-removed
 走査-:#concept-nodeiterator-traverse
 
 	●PI
-~target.pI:#concept-pi-target
+pI.~target:#concept-pi-target
 
 	●INFRA
 有順序~集合:~INFRA#ordered-set
-付加する.set:~INFRA#set-append
-置換する.set:~INFRA#set-replace
+set.付加する:~INFRA#set-append
+set.置換する:~INFRA#set-replace
 ~list:~INFRA#list
 空:~INFRA#list-is-empty
 空にする:~INFRA#list-empty
@@ -1785,11 +1798,11 @@ removed.evL:#event-listener-removed
 ~map:~INFRA#ordered-map
 構造体:~INFRA#struct
 ~tuple:~INFRA#tuple
-	~EACH.list:~INFRA#list-iterate
-	~CONTINUE.list:~INFRA#iteration-continue
-	包含-.list:~INFRA#list-contain
-	~IN.list:~INFRA#list-contain
-	~NIN.list:~INFRA#list-contain
+	list.~EACH:~INFRA#list-iterate
+	list.~CONTINUE:~INFRA#iteration-continue
+	list.包含-:~INFRA#list-contain
+	list.~IN:~INFRA#list-contain
+	list.~NIN:~INFRA#list-contain
 
 	●選択子
 視野の下で選択子を照合する:#scope-match-a-selectors-string
@@ -1825,12 +1838,12 @@ removed.evL:#event-listener-removed
 
 utf-8:~ENCODING#utf-8
 符号化法:~ENCODING#encoding
-名前.enc:~ENCODING#name
+enc.名前:~ENCODING#name
 
-Char.prod:~TR/xml/#NT-Char
-Name.prod:~TR/xml/#NT-Name
-QName.prod:~TR/xml-names/#NT-QName
-PrefixedName.prod:~TR/xml-names/#NT-PrefixedName
+prod.Char:~TR/xml/#NT-Char
+prod.Name:~TR/xml/#NT-Name
+prod.QName:~TR/xml-names/#NT-QName
+prod.PrefixedName:~TR/xml-names/#NT-PrefixedName
 
 ~HTML構文解析器:~HTMLparsing#html-parser
 並列的:~HTMLINFRA#in-parallel
@@ -1839,7 +1852,7 @@ PrefixedName.prod:~TR/xml-names/#NT-PrefixedName
 関連する大域~obj:~WAPI#concept-relevant-global
 現在の大域~obj:~WAPI#current-global-object
 関連する~Realm:~WAPI#concept-relevant-realm
-大域~obj.rM:~WAPI#concept-realm-global
+rM.大域~obj:~WAPI#concept-realm-global
 複合~小task下位~taskを実行する:~WAPI#execute-a-compound-microtask-subtask
 複合~小task:~WAPI#compound-microtask
 小taskを~queueする:~WAPI#queue-a-microtask
@@ -2022,7 +2035,7 @@ By consolidating DOM Level 3 Core [DOM-Level-3-Core], Element Traversal [ELEMENT
 
 		<ul>
 			<li>
-可能な所では~JS ecosystem に合わせ，
+アリな所では~JS ecosystem に合わせ，
 ◎
 Aligning them with the JavaScript ecosystem where possible.
 </li>
@@ -2032,7 +2045,7 @@ Aligning them with the JavaScript ecosystem where possible.
 Aligning them with existing implementations.
 </li>
 			<li>
-可能な限り単純~化する。
+アリな限り単純~化する。
 ◎
 Simplifying them as much as possible.
 </li>
@@ -2802,7 +2815,7 @@ The debug function will be invoked twice. Each time the event’s target attribu
 <h3>2.2. ~ifc ^@Event</h3>
 
 ！！
-[$Constructor(~DS %type, optional $EventInit %eventInitDict),
+[`Event$mC(~DS %type, optional $EventInit %eventInitDict),
  `Exposed$=(Window,Worker,AudioWorklet)]
 interface @Event {
   ~RA ~DS $type;
@@ -3555,7 +3568,7 @@ Web developers are strongly encouraged to instead rely on the Event object passe
 <h3>2.4. ~ifc ^@CustomEvent</h3>
 
 ！！
-[$Constructor(~DS %type, optional $CustomEventInit %eventInitDict),
+[`CustomEvent$mC(~DS %type, optional $CustomEventInit %eventInitDict),
  `Exposed$=(Window,Worker)]
 interface @CustomEvent : $Event {
   ~RA any $detail;
@@ -3861,7 +3874,7 @@ The CustomEvent interface can be used as starting point. However, do not introdu
 <h3>2.7. ~ifc ^@EventTarget</h3>
 
 ！！
-[$Constructor,
+[`EventTarget$mC,
  `Exposed$=(Window,Worker,AudioWorklet)]
 interface @EventTarget {
   void $addEventListener(~DS %type, $EventListener? %callback, optional ($AddEventListenerOptions or ~B) %options);
@@ -5063,7 +5076,7 @@ Let found be the result of running inner invoke with event, listeners, and legac
 %~event の $isTrusted 属性 ~EQ ~T
 ］~AND［
 %~event の $type 属性~値は［
-下の表のいずれかの行の 1 列目の文字列
+下の表の 1 列目に挙げるいずれかの文字列
 ］に `~ASCII大小無視$で合致する
 ］…：
 ◎
@@ -5097,11 +5110,11 @@ If event’s type attribute value is a match for any of the strings in the first
 </p>
 		<ol>
 			<li>
-%元~event型 ~LET %~event の $type 属性~値
+%元の~event型 ~LET %~event の $type 属性~値
 ◎
 ↑</li>
 			<li>
-%~event の $type 属性~値 ~SET 同じ行の 2 列目の文字列
+%~event の $type 属性 ~SET 合致した行の 2 列目に与える文字列
 ◎
 ↑</li>
 			<li>
@@ -5110,7 +5123,7 @@ If event’s type attribute value is a match for any of the strings in the first
 Inner invoke with event, listeners, and legacyOutputDidListenersThrowFlag if given.
 </li>
 			<li>
-%~event の $type 属性~値 ~SET %元~event型
+%~event の $type 属性 ~SET %元の~event型
 ◎
 Set event’s type attribute value to originalEventType.
 </li>
@@ -5326,7 +5339,9 @@ Return found.
 <ul ><li>%旧来の~targetを上書きする~flag ~IN { `~targetを上書きする^i, ε }（省略時は ε ）
 </li><li>%~event構築子 （省略時は $@Event のそれ）
 </li><li>%記述
-— ~eventの各種~IDL属性を どう初期化するか，についての記述 （省略時は何もしない）
+— ［
+~eventの各種~IDL属性を どう初期化するか
+］についての記述（省略時は何もしない）
 </li></ul>
 
 ◎
@@ -5554,7 +5569,7 @@ APIs that require more granular control could extend both AbortController and Ab
 <h3 title="Interface AbortController">3.1. ~ifc ^@AbortController</h3>
 
 ！！
-$Constructor,
+`AbortController$mC,
  `Exposed$=(Window,Worker)]
 interface @AbortController {
   [`SameObject$] readonly attribute $AbortSignal $signal;
@@ -5967,7 +5982,7 @@ Return p.
 </div>
 
 <p>
-~promiseを利用していない~APIであっても、可能な限り，上述を固守するべきである。
+~promiseを利用していない~APIであっても、アリな限り，上述を固守するべきである。
 ◎
 APIs not using promises should still adhere to the above as much as possible.
 </p>
@@ -8933,7 +8948,7 @@ Transient registered observers are used to track mutations within a given node�
 <h4>4.3.1. ~ifc ^@MutationObserver</h4>
 
 ！！
-[$Constructor($MutationCallback %callback),
+[`MutationObserver$mC($MutationCallback %callback),
  `Exposed$=Window]
 interface @MutationObserver {
   void $observe($Node %target, optional $MutationObserverInit %options);
@@ -11696,7 +11711,7 @@ Return true if defaultNamespace is the same as namespace, and false otherwise.
 The insertBefore(node, child) method, when invoked, must return the result of pre-inserting node into context object before child.
 </dd>
 	<dd class="trans-note">【
-~HTMLの `br^e のような空~要素であっても（あるいは `script^e 要素であっても）、子~nodeを挿入でき, 木の一部を成すことになる。
+~HTMLの `br^e のような~void要素であっても（あるいは `script^e 要素であっても）、子~nodeを挿入でき, 木の一部を成すことになる。
 次の $appendChild() も同様。
 】</dd>
 
@@ -11948,7 +11963,7 @@ The comparisons for the classes must be done in an ASCII case-insensitive manner
 <h3>4.5. ~ifc ^@Document</h3>
 
 ！！
-[$Constructor,
+[`Document$mC,
  `Exposed$=Window]
 interface @Document : $Node {
   [`SameObject$] ~RA $DOMImplementation $implementation;
@@ -12081,7 +12096,7 @@ Unless stated otherwise, a document’s encoding is the utf-8 encoding, content 
 </li></ul>
 
 <p>
-一部の~APIの挙動は、この 2 種のいずれであるかにより，影響される。
+一部の~APIの挙動は、この 2 種のどちらなのかにより，影響される。
 </p>
 ◎
 A document is said to be an XML document if its type is "xml", and an HTML document otherwise. Whether a document is an HTML document or an XML document affects the behavior of certain APIs.
@@ -12119,9 +12134,9 @@ The mode is only ever changed from the default for documents created by the HTML
 </p>
 
 <p class="note">注記：
-`非過去互換~mode$ は 元々 “標準~mode” と称され，
+`非過去互換~mode$ は 元々は “標準~mode” と称され，
 `限定的互換~mode$ は かつては “ほぼ標準~mode” と称されていた。
-それらは今や標準により定義されたので（また、それらの元々の名称が的外れであることから Ian Hickson が否決したので）、改称された。
+それらは今や標準により定義されたので（また、それらの元々の名称が~~的外れであることから Ian Hickson が~~否決したので）、改称された。
 ◎
 No-quirks mode was originally known as "standards mode" and limited-quirks mode was once known as "almost standards mode". They have been renamed because their details are now defined by standards. (And because Ian Hickson vetoed their original names on the basis that they are nonsensical.)
 </p>
@@ -12207,10 +12222,6 @@ Returns document’s encoding.
 Returns document’s content type.
 </dd>
 </dl>
-
-
-
-
 
 <dl class="idl-def">
 	<dt>@Document()</dt>
@@ -13644,10 +13655,10 @@ The hasFeature() method, when invoked, must return true.
 	</dd>
 	<dd class="note">注記：
 $hasFeature()
-は元々、~UAが所与の~DOM特色機能の~supportを~~言明しているかどうかを報告するものであったが、経験から，単に欲される［
+は元々、~UAが所与の~DOM特色機能の~supportを主張しているかどうかを報告するものであったが、経験から，単に欲される［
 ~obj／属性／~meth
-］が存在するかどうか検査する用途にはほど遠いことが~~判明している。
-そのようなわけで，それは最早~利用されないが、古い~pageが働き続けられるようにするために存続している（単に ~T を返す）。
+］が存在するかどうか検査する用途には ほど遠いことが~~判明している。
+そのようなわけで，それは最早~利用されないが、古い~pageが働き続けられるよう存続している（単に ~T を返す）。
 ◎
 hasFeature() originally would report whether the user agent claimed to support a given DOM feature, but experience proved it was not nearly as reliable or granular as simply checking whether the desired objects, attributes, or methods existed. As such, it is no longer to be used, but continues to exist (and simply returns true) so that old pages don’t stop working.
 </dd>
@@ -13732,7 +13743,7 @@ The systemId attribute’s getter must return the context object’s system ID.
 <h3>4.7. ~ifc ^@DocumentFragment</h3>
 
 ！！
-[$Constructor,
+[`DocumentFragment$mC,
  `Exposed$=Window]
 interface @DocumentFragment : $Node {
 };
@@ -14498,7 +14509,7 @@ If result does not implement the HTMLElement interface, then throw a TypeError.
 <div class="note">
 <p>注記：
 これは、［
-当の~objが~HTML要素~構築子により割り当てられること
+当の~objが~HTML要素~構築子により割振られること
 ］を確保するための，~brand検査である。
 より精確に知りたければ、
 <a href="https://github.com/heycam/webidl/issues/97">webidl #97</a>
@@ -15441,12 +15452,12 @@ The className attribute must reflect the "class" content attribute.
 	<dd>
 取得子は、次のようにされた $DOMTokenList を返さ~MUST
 ⇒＃
-`要素$dtl ~SET 此れ,
-`属性oの局所~名$dtl ~SET ^class
+`要素$tL ~SET 此れ,
+`属性oの局所~名$tL ~SET ^class
 ◎
 ↓</dd>
 	<dd>
-この属性が返す $DOMTokenList ~objの`~token集合$は、`要素$の
+この属性が返す $DOMTokenList ~objの`~token集合$tLは、`要素$の
 `~classes@
 とも称される。
 ◎
@@ -17151,7 +17162,7 @@ The replaceData(offset, count, data) method, when invoked, must replace data wit
 <h3>4.11. ~ifc ^@Text</h3>
 
 ！！
-[$Constructor(optional ~DS %data = ""),
+[`CharacterData$mC(optional ~DS %data = ""),
  `Exposed$=Window]
 interface @Text : $CharacterData {
   [`NewObject$] $Text $splitText(~UL %offset);
@@ -17494,7 +17505,7 @@ The target attribute must return the target.
 <h3>4.14. ~ifc ^@Comment</h3>
 
 ！！
-[$Constructor(optional ~DS %data = ""),
+[`CharacterData$mC(optional ~DS %data = ""),
  `Exposed$=Window]
 interface @Comment : $CharacterData {
 };
@@ -17668,7 +17679,7 @@ A correct boundary point’s offset will be between 0 and the boundary point’s
 <div class="trans-note">
 <p>【
 ~HTMLや~XMLの~source~textの中では，境界点は、すべての~text~data（`文字~data~node$）を “仮想の” 開始~tag, 終了~tag で括り,
-すべての空~要素は 開始／終了 ~tagの組に置換した上で，すべての［
+すべての空~要素（~HTMLの~void要素も含む）は 開始／終了 ~tagの組に置換した上で、すべての［
 ~tag, および
 文字~dataを成す`符号単位$たち
 ］それぞれを点に見立てて，~sourceに現れる順に一列に並べたときの，隣接する任意の 2 つの点の隙間を指すものと見なせる。
@@ -18001,7 +18012,7 @@ A future version of the StaticRange interface will provide a non-throwing constr
 <h3>5.5. ~ifc ^@Range</h3>
 
 ！！
-[$Constructor,
+[`Range$mC,
  `Exposed$=Window]
 interface @Range : $AbstractRange {
   ~RA $Node $commonAncestorContainer;
@@ -19104,7 +19115,7 @@ Let common ancestor be original start node.
 While common ancestor is not an inclusive ancestor of original end node, set common ancestor to its own parent.
 </li>
 	<li id="cp-let-1st-pcc-null">
-%最初の部分的に包含されている子 ~LET ~NULL
+%部分的に包含されている最初の子 ~LET ~NULL
 ◎
 Let first partially contained child be null.
 </li>
@@ -19113,7 +19124,7 @@ Let first partially contained child be null.
 %元の始端~node は %元の終端~node の`広義先祖$でない
 ］
 ⇒
-%最初の部分的に包含されている子 ~SET
+%部分的に包含されている最初の子 ~SET
 %範囲o に`部分的に包含され$ている［
 %共通の広義先祖 の`子$
 ］のうち，最初のもの
@@ -19121,7 +19132,7 @@ Let first partially contained child be null.
 If original start node is not an inclusive ancestor of original end node, set first partially contained child to the first child of common ancestor that is partially contained in range.
 </li>
 	<li id="cp-let-last-pcc-null">
-%最後の部分的に包含されている子 ~LET ~NULL
+%部分的に包含されている最後の子 ~LET ~NULL
 ◎
 Let last partially contained child be null.
 </li>
@@ -19131,7 +19142,7 @@ Let last partially contained child be null.
 %元の終端~node は %元の始端~node の`広義先祖$でない
 ］
 ⇒
-%最後の部分的に包含されている子 ~SET
+%部分的に包含されている最後の子 ~SET
 %範囲o に`部分的に包含され$ている［
 %共通の広義先祖 の`子$
 ］のうち，最後のもの
@@ -19184,7 +19195,7 @@ We do not have to worry about the first or last partially contained node, becaus
 ~ELSE
 ⇒＃
 %新-~node ~LET %共通の広義先祖；
-%新-~offset ~LET %最初の部分的に包含されている子 の`指数$ ~PLUS 1
+%新-~offset ~LET %部分的に包含されている最初の子 の`指数$ ~PLUS 1
 </p>
 
 <p class="trans-note">【
@@ -19202,14 +19213,14 @@ Otherwise:
 
 <p id="cp-if-1st-pcc-is-cdata">
 ~IF［
-%最初の部分的に包含されている子 は`文字~data~node$である
+%部分的に包含されている最初の子 は`文字~data~node$である
 ］：
 ◎
 If first partially contained child is a Text, ProcessingInstruction, or Comment node:
 </p>
 
 <p class="note" id="cp-if-1st-pcc-is-cdata-note">
-この事例では， %最初の部分的に包含されている子 は %元の始端~node である。
+この事例では， %部分的に包含されている最初の子 は %元の始端~node である。
 ◎
 In this case, first partially contained child is original start node.
 </p>
@@ -19233,14 +19244,14 @@ Replace data with node original start node, offset original start offset, count 
 
 <p id="cp-elseif-1st-pcc-not-null">
 ~ELIF［
-%最初の部分的に包含されている子 ~NEQ ~NULL
+%部分的に包含されている最初の子 ~NEQ ~NULL
 ］：
 ◎
 Otherwise, if first partially contained child is not null:
 </p>
 		<ol>
 			<li id="cp-let-clone-1st-pcc">
-%clone ~LET `~nodeを~cloneする$( %最初の部分的に包含されている子 )
+%clone ~LET `~nodeを~cloneする$( %部分的に包含されている最初の子 )
 ◎
 Let clone be a clone of first partially contained child.
 </li>
@@ -19249,7 +19260,7 @@ Let clone be a clone of first partially contained child.
 %下位~範囲o ~LET 次のように設定された 新たな`~live範囲o$
 ⇒＃
 `始端$ ~SET `境界点$( %元の始端~node, %元の始端~offset ),
-`終端$ ~SET `境界点$( %最初の部分的に包含されている子, %最初の部分的に包含されている子 の`長さ$ )
+`終端$ ~SET `境界点$( %部分的に包含されている最初の子, %部分的に包含されている最初の子 の`長さ$ )
 ◎
 Let subrange be a new live range whose start is (original start node, original start offset) and whose end is (first partially contained child, first partially contained child’s length).
 </li>
@@ -19275,14 +19286,14 @@ For each contained child in contained children, append contained child to fragme
 	<li>
 <p id="cp-if-last-pcc">
 ~IF［
-%最後の部分的に包含されている子 は`文字~data~node$である
+%部分的に包含されている最後の子 は`文字~data~node$である
 ］：
 ◎
 If last partially contained child is a Text, ProcessingInstruction, or Comment node:
 </p>
 
 <p class="note" id="cp-if-last-pcc-note">注記：
-この事例では， %最後の部分的に包含されている子 は %元の始端~node である。
+この事例では， %部分的に包含されている最後の子 は %元の始端~node である。
 ◎
 In this case, last partially contained child is original end node.
 </p>
@@ -19309,14 +19320,14 @@ Replace data with node original end node, offset 0, count original end offset, a
 	<li>
 <p id="cp-elif-pcc-not-null">
 ~ELIF［
-%最後の部分的に包含されている子 ~NEQ ~NULL
+%部分的に包含されている最後の子 ~NEQ ~NULL
 ］：
 ◎
 Otherwise, if last partially contained child is not null:
 </p>
 		<ol>
 			<li id="cp-let-clone-last-pcc">
-%clone ~LET `~nodeを~cloneする$( %最後の部分的に包含されている子 )
+%clone ~LET `~nodeを~cloneする$( %部分的に包含されている最後の子 )
 ◎
 Let clone be a clone of last partially contained child.
 </li>
@@ -19324,7 +19335,7 @@ Let clone be a clone of last partially contained child.
 			<li id="cp-let-subrange2">
 %下位~範囲o ~LET 次のように設定された 新たな`~live範囲o$
 ⇒＃
-`始端$ ~SET `境界点$( %最後の部分的に包含されている子, 0 ),
+`始端$ ~SET `境界点$( %部分的に包含されている最後の子, 0 ),
 `終端$ ~SET `境界点$( %元の終端~node, %元の終端~offset )
 ◎
 Let subrange be a new live range whose start is (last partially contained child, 0) and whose end is (original end node, original end offset).
@@ -20163,7 +20174,7 @@ NodeIterator objects can be created using the createNodeIterator() method on Doc
 
 	<dt>`起点@tV</dt>
 	<dd>
-`~node$
+`~node$。
 </dd>
 
 	<dt>`起点の直前？@tV</dt>
@@ -20174,7 +20185,7 @@ NodeIterator objects can be created using the createNodeIterator() method on Doc
 概念的には，これと`起点$tVの組により、［
 `反復器で走査する$ときに どの~nodeから探索し始めるか
 ］を指す，~pointerが表現される。
-`起点$tV （初期~時には先頭の~nodeである`根$tVにされる）が “現在の” ~nodeを表し、`起点の直前？$tV （初期~時には ~T にされる）に従って、~pointerは，現在の~nodeの “直前” （ ~T ）または “直後” （ ~F ）を指す（すなわち、初期~時の~pointerは`根$tVの直前を指している）。
+`起点$tV （初期~時には先頭の~nodeである`根$tVにされる）が “現在の” ~nodeを表し、`起点の直前？$tV （初期~時には ~T にされる）に応じて、~pointerは，現在の~nodeの “直前” （ ~T ）か “直後” （ ~F ）を指す（したがって、初期~時の~pointerは`根$tVの直前を指す）。
 】</dd>
 
 </dl>
@@ -21250,17 +21261,17 @@ interface @DOMTokenList {
 </p>
 
 <dl class="def-list">
-	<dt>`~token集合@</dt>
+	<dt>`~token集合@tL</dt>
 	<dd>
 一連の~tokenからなる`有順序~集合$
 — 初期~時は空とする。
 </dd>
 
-	<dt>`要素@dtl</dt>
+	<dt>`要素@tL</dt>
 	<dd>
 `要素$。
 </dd>
-	<dt>`属性oの局所~名@dtl</dt>
+	<dt>`属性oの局所~名@tL</dt>
 	<dd>
 `属性o$の`局所~名$a。
 </dd>
@@ -21274,7 +21285,7 @@ A DOMTokenList object also has an associated element and an attribute’s local 
 
 <p>
 `適用-可能な仕様$は、個々の`局所~名$aに対し，それが
-`~supportする~token集合@dtl
+`~supportする~token集合@tL
 を $DOMTokenList 用に定義しても~MAY
 — これは、一連の~tokenからなる集合であり，特に指定されない限り ε （未定義）とする。
 ◎
@@ -21293,7 +21304,7 @@ A DOMTokenList object’s validation steps for a given token are:
 
 <ul>
 	<li>
-%~token集合 ~LET %O の`属性oの局所~名$dtlが`~supportする~token集合$dtl
+%~token集合 ~LET %O の`属性oの局所~名$tLが`~supportする~token集合$tL
 ◎
 ↓</li>
 	<li>
@@ -21328,7 +21339,7 @@ Return false.
 所与の $DOMTokenList ~obj %O 対し，
 ( %要素, %名前 )
 は
-( %O の`要素$dtl, %O の`属性oの局所~名$dtl )
+( %O の`要素$tL, %O の`属性oの局所~名$tL )
 とするとき：
 ◎
 ↓</p>
@@ -21337,7 +21348,7 @@ Return false.
 	<li>
 <p>
 %O の
-`更新~手続き@
+`更新~手続き@tL
 は、次を走らす：
 ◎
 A DOMTokenList object’s update steps are:
@@ -21347,7 +21358,7 @@ A DOMTokenList object’s update steps are:
 ~IF［
 %要素 の`属性o~list$は空である
 ］~AND［
-%O の`~token集合$は空である
+%O の`~token集合$tLは空である
 ］
 ⇒
 ~RET
@@ -21356,7 +21367,7 @@ If the associated element does not have an associated attribute and token set is
 </li>
 			<li>
 %要素 の`属性o値を設定する$( %名前, ［
-%O の`~token集合$を`有順序~集合 直列化器$にかけた結果
+%O の`~token集合$tLを`有順序~集合 直列化器$にかけた結果
 ］ )
 ◎
 Set an attribute value for the associated element using associated attribute’s local name and the result of running the ordered set serializer for token set.
@@ -21365,7 +21376,7 @@ Set an attribute value for the associated element using associated attribute’s
 	</li>
 	<li>
 %O の
-`直列化-手続き@
+`直列化-手続き@tL
 は、次の結果を返す
 ⇒
 %要素 の`属性o値を取得する$( %名前 )
@@ -21393,12 +21404,12 @@ A DOMTokenList object has these attribute change steps for its associated elemen
 %値 ~EQ ~NULL
 ］
 ⇒
-%O の`~token集合$を`空にする$
+%O の`~token集合$tLを`空にする$
 </li>
 					 <li>
 ~ELSE
 ⇒
-%O の`~token集合$ ~SET %値 を`有順序~集合 構文解析器$にかけた結果
+%O の`~token集合$tL ~SET %値 を`有順序~集合 構文解析器$にかけた結果
 </li>
 				</ol>
 ◎
@@ -21570,14 +21581,14 @@ Throws an "InvalidCharacterError" DOMException if one of the arguments contains 
 
 	<dt>%tokenlist . $supports(token)</dt>
 	<dd>
-`属性oの局所~名$dtlが`~supportする~token集合$dtlに %token が含まれて［
+`属性oの局所~名$tLが`~supportする~token集合$tLに %token が含まれて［
 いれば ~T ／ いなければ ~F
 ］を返す。
 ◎
 Returns true if token is in the associated attribute’s supported tokens. Returns false otherwise.
 </dd>
 	<dd>
-`~supportする~token集合$dtlが定義されていない場合、
+`~supportする~token集合$tLが定義されていない場合、
 `TypeError$E が投出される。
 ◎
 Throws a TypeError if the associated attribute has no supported tokens defined.
@@ -21585,7 +21596,7 @@ Throws a TypeError if the associated attribute has no supported tokens defined.
 
 	<dt>%tokenlist . $value</dt>
 	<dd>
-結付けられている`~token集合$を文字列として返す。
+結付けられている`~token集合$tLを文字列として返す。
 ◎
 Returns the associated set as string.
 </dd>
@@ -21602,7 +21613,7 @@ Can be set, to change the associated attribute.
 	<dt>@length</dt>
 	<dd>
 取得子は、［
-此れの`~token集合$の`~size$
+此れの`~token集合$tLの`~size$
 ］を返さ~MUST。
 ◎
 The length attribute' getter must return context object’s token set’s size.
@@ -21612,7 +21623,7 @@ The length attribute' getter must return context object’s token set’s size.
 <p>
 $DOMTokenList ~obj %O が`~supportする~prop~index$は、
 0 以上［
-%O の`~token集合$の`~size$
+%O の`~token集合$tLの`~size$
 ］未満とする。
 ◎
 The object’s supported property indices are the numbers in the range zero to object’s token set’s size minus one, unless token set is empty, in which case there are no supported property indices.
@@ -21637,7 +21648,7 @@ The item(index) method, when invoked, must run these steps:
 If index is equal to or greater than context object’s token set’s size, then return null.
 </li>
 			<li>
-~RET 此れの`~token集合$[ %index ]
+~RET 此れの`~token集合$tL[ %index ]
 ◎
 Return context object’s token set[index].
 </li>
@@ -21683,7 +21694,7 @@ Return context object’s token set[index].
 ~ELSE_ ~F
 ］を返さ~MUST
 ⇒
-%token ~IN 此れの`~token集合$
+%token ~IN 此れの`~token集合$tL
 ◎
 The contains(token) method, when invoked, must return true if context object’s token set[token] exists, and false otherwise.
 </dd>
@@ -21708,12 +21719,12 @@ For each token in tokens:
 			<li>
 %tokens 内の~EACH ( %token ) に対し
 ⇒
-此れの`~token集合$に %token を`付加する$set
+此れの`~token集合$tLに %token を`付加する$set
 ◎
 For each token in tokens, append token to context object’s token set.
 </li>
 			<li id="cp-update-TL">
-此れの`更新~手続き$を走らす
+此れの`更新~手続き$tLを走らす
 ◎
 Run the update steps.
 </li>
@@ -21735,7 +21746,7 @@ The remove(tokens…) method, when invoked, must run these steps:
 			<li>
 %tokens 内の各 %token に対し
 ⇒
-此れの`~token集合$から %token を`除去する$
+此れの`~token集合$tLから %token を`除去する$
 ◎
 For each token in tokens, remove token from context object’s token set.
 </li>
@@ -21761,7 +21772,7 @@ If token contains any ASCII whitespace, then throw an "InvalidCharacterError" DO
 			<li>
 <p>
 ~IF［
-%token ~IN 此れの`~token集合$
+%token ~IN 此れの`~token集合$tL
 ］：
 ◎
 If context object’s token set[token] exists, then:
@@ -21775,8 +21786,8 @@ If context object’s token set[token] exists, then:
 %force ~EQ ~F
 ］：
 </p>
-<ol ><li>此れの`~token集合$から %token を`除去する$
-</li><li>此れの`更新~手続き$を走らす
+<ol ><li>此れの`~token集合$tLから %token を`除去する$
+</li><li>此れの`更新~手続き$tLを走らす
 </li><li>~RET ~F
 </li></ol>
 ◎
@@ -21798,8 +21809,8 @@ Return true.
 ］：
 </p>
 
-<ol ><li>此れの`~token集合$に %token を`付加する$set
-</li><li>此れの`更新~手続き$を走らす
+<ol ><li>此れの`~token集合$tLに %token を`付加する$set
+</li><li>此れの`更新~手続き$tLを走らす
 </li><li>~RET ~T
 </li></ol>
 
@@ -21814,7 +21825,7 @@ Return false.
 		</ol>
 	</dd>
 	<dd class="note">注記：
-~web互換性のため、 $toggle() に対しては，`更新~手続き$を常に走らすとは限らない。
+~web互換性のため、 $toggle() に対しては，`更新~手続き$tLを常に走らすとは限らない。
 ◎
 The update steps are not always run for toggle() for web compatibility.
 </dd>
@@ -21851,7 +21862,7 @@ If either token or newToken contains any ASCII whitespace, then throw an "Invali
 </li>
 			<li>
 ~IF［
-%token ~NIN 此れの`~token集合$
+%token ~NIN 此れの`~token集合$tL
 ］
 ⇒
 ~RET ~F
@@ -21859,7 +21870,7 @@ If either token or newToken contains any ASCII whitespace, then throw an "Invali
 If context object’s token set does not contain token, then return false.
 </li>
 			<li>
-此れの`~token集合$内で %token を %newToken に`置換する$setする
+此れの`~token集合$tL内で %token を %newToken に`置換する$setする
 ◎
 Replace token in context object’s token set with newToken.
 </li>
@@ -21872,7 +21883,7 @@ Return true.
 		</ol>
 	</dd>
 	<dd class="note">注記：
-~web互換性のため、 $replace() に対しては，`更新~手続き$を常に走らすとは限らない。
+~web互換性のため、 $replace() に対しては，`更新~手続き$tLを常に走らすとは限らない。
 ◎
 The update steps are not always run for replace() for web compatibility.
 </dd>
@@ -21894,14 +21905,14 @@ The supports(token) method, when invoked, must run these steps:
 
 	<dt>@value</dt>
 	<dd>
-取得子は、此れの`直列化-手続き$を走らせた結果を返さ~MUST。
+取得子は、此れの`直列化-手続き$tLを走らせた結果を返さ~MUST。
 ◎
 The value attribute must return the result of running context object’s serialize steps.
 </dd>
 	<dd>
 設定子は、次を走らせ~MUST
 ⇒
-此れの`要素$dtlの`属性o値を設定する$( 此れの`属性oの局所~名$dtl, 所与の値 )
+此れの`要素$tLの`属性o値を設定する$( 此れの`属性oの局所~名$tL, 所与の値 )
 ◎
 Setting the value attribute must set an attribute value for the associated element using associated attribute’s local name and the given value.
 </dd>
@@ -22408,27 +22419,24 @@ Copyright © 2018 WHATWG (Apple, Google, Mozilla, Microsoft). This work is licen
 探求-:explore:~
 編集:editing:~
 事実:fact
-~~言明:claim
 ほど遠い:not nearly as reliable or granular
 ~~判明:proved
 ~~根拠を示す:showing
 編集者:editors
 ~~制御:key off
 便宜のため:For convenience 
-簡便:convenience
 区別:avoid confusion
 非負:non-negative
 のふるまいに揃える:align with
 移行:moving
-用語:term:~
 用途
-依然として:still:
+依然として:still
 存続-:continues to exist
 発生:occurrence
 次に起きる出来事:what happens next
 ~~無視:not pay attention
 序論:introduction to
-理由:mishap／because 
+理由:mishap／because
 注意:Note that／notice that
 賢く:wise に
 記述
@@ -22452,8 +22460,6 @@ hairy
 	何もしない:no-op／:empty
 論を交わしたければ:discussion
 ~F に:clear
-割り当てられる:allocate
-ごく限られた~~状況:very specific circumstances.
 直面:in the face of
 呼応して:in response to
 尊守され:enshrined
@@ -22464,8 +22470,6 @@ hairy
 満たす:meet／
 気にする:worry about
 あるとする:hypothetical
-可能:possible／
-可能な限り:as much as possible
 例:example
 選べ:chose
 ~~伝える:convey
