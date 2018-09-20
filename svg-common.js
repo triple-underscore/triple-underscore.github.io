@@ -520,6 +520,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 要素~instance:~SVGstruct#TermElementInstance
 最外縁の~svg要素:~SVGstruct#TermOutermostSVGElement
 容器~要素:~SVGstruct#TermContainerElement
+~use要素の~shadow木:~SVGstruct#TermUseElementShadowTree
 ~use-要素~shadow木:~SVGstruct#TermUseElementShadowTree
 未知の要素:~SVGstruct#UnknownElement
 構造的に外部の要素:~SVGstruct#TermStructurallyExternalElement
@@ -643,7 +644,7 @@ SVGanim:https://svgwg.org/specs/animations/
 xml_space:xml:space
 xlink_href:xlink:href
 xlink_title:xlink:title
-use-:<code class="element">use</code>-
+use: <code class="element">use</code> 
 svg: <code class="element">svg</code> 
 URLt:[URL]
 
