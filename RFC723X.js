@@ -191,6 +191,7 @@ dir:directive
 qdir:directive
 sdir:directive
 com:comment
+2119:rfc2119
 `;
 
 COMMON_DATA.tag_map = `
@@ -208,6 +209,7 @@ qdir:code
 sdir:code
 ph:span
 com:span
+2119:em
 `;
 
 /** links */
@@ -795,15 +797,9 @@ ERRATA:https://www.rfc-editor.org/errata_search.php
 5226:https://tools.ietf.org/html/rfc5226
 5322:https://tools.ietf.org/html/rfc5322
 
-MUST0:<em class="rfc2119">ならない</em>
-MUST:なければ<em class="rfc2119">ならない</em>
-MUST_NOT:ては<em class="rfc2119">ならない</em>
-REQUIRED:<em class="rfc2119">要求される</em>
-SHOULD:<em class="rfc2119">べき</em>である
-SHOULD_NOT:<em class="rfc2119">べき</em>でない
-RECOMMENDED:<em class="rfc2119">推奨される</em>
-MAY:<em class="rfc2119">よい</em>
-OPTIONAL:<em class="rfc2119">任意選択</em>
+ナラナイ:<em class="rfc2119">ならない</em>
+ベキ:<em class="rfc2119">べき</em>
+ヨイ:<em class="rfc2119">よい</em>
 OUGHT:べき.である
 
 HTTP09: HTTP/0.9 

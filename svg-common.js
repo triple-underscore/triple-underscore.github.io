@@ -26,7 +26,7 @@ source_data.generate = function(){
 	const link_map = this.link_map;
 
 	return this.html.replace(
-		/%[\w\-~一-鿆]+|`(.+?)([$@\^])(\w*)/g,
+		/%[\w\-~一-鿆あ-ん]+|`(.+?)([$@\^])(\w*)/g,
 		create_html
 	);
 
