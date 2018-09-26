@@ -689,6 +689,7 @@ item::::アイテム
 list::::リスト
 member::::メンバ
 作成-:create::~
+作成:creation::~
 値:value::~
 初期:initial::~
 初期化-:initialize::~
@@ -1028,7 +1029,7 @@ green:
 混色-:blend::~
 混色:blending::~
 組成-:composite::~
-組成:compositing::組成
+組成:compositing::~
 画像:image::~
 層:layer::~::レイヤ
 積層-:stack::~
@@ -1193,6 +1194,7 @@ platform::::プラットフォーム
 risk::::リスク
 custom::::カスタム
 version::::バージョン
+software::::ソフトウェア
 system::::システム
 program::::プログラム
 	~program的:programmatical
@@ -1378,6 +1380,7 @@ fallback::::フォールバック
 定義:definition:~
 実装-:implement:~
 実装:implementation:~
+実装者:implementor:~
 寄与-:contribute:~
 尊重-:respect:~
 序論:introduction:~
@@ -1475,6 +1478,7 @@ fallback::::フォールバック
 関係性:relationship:~
 阻止-:block::~
 非推奨に:deprecate:~
+廃用に:obsolete:~
 既知:known:~
 既知の:known な:~
 未知の:unknown:~
@@ -1517,6 +1521,7 @@ fallback::::フォールバック
 包摂-:encompass:~
 固守-:adhere:~
 奨励-:encourage:~
+見出す:find する:~
 見出せる:find できる:~
 見出され:find され:~
 許可-:permit:~
@@ -1577,6 +1582,7 @@ fallback::::フォールバック
 参照先の:referenced::~
 参照元の:referencing::~
 参照ng:referencing::参照
+域外参照:cross-references::~
 結付けら:associate さ:結び付けら
 結付けて:associate して:結び付けて
 登録-:register::~
