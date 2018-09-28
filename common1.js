@@ -1539,15 +1539,16 @@ ARIAHTML=・           w3c.github.io/html-aria/
 ATOM=主               ＃momdo.s35.xrea.com/web-html-test/spec/rfc4287j.html
 ATOM=副               ＃www.futomi.com/lecture/japanese/rfc4287.html
 COMPOSITING1=主       ~/compositing-ja.html
-COMPOSITING1=版       ~TR/compositing-1/
-COMPOSITING1=編       dev.w3.org/fxtf/compositing-1/
+	COMPOSITING1=版       ~TR/compositing-1/
+	COMPOSITING1=編       dev.w3.org/fxtf/compositing-1/
+CHARMOD=主            ~/charmod-ja.html
 CORS=副               ~/Fetch-ja.html●Fetch 日本語訳
 CSP3=主               ~/CSP3-ja.html
 CSP3=副2              hashedhyphen.github.io/webappsec-specjp/csp/index.html
 CSP3=編               w3c.github.io/webappsec-csp/
 CSP2=主               ~/CSP-ja.html
-CSP2=版               ~TR/CSP2/
-CSP2=編               w3c.github.io/webappsec/specs/content-security-policy/
+	CSP2=版               ~TR/CSP2/
+	CSP2=編               w3c.github.io/webappsec/specs/content-security-policy/
 CSP1=主               ~/CSP10-ja.html
 CSP1=版               ~TR/CSP/
 CSS1=主               ＃www.doraneko.org/webauth/css1/19961217/Overview.html
@@ -1558,191 +1559,178 @@ CSS21=副              ~adagio/tr_css2/toc.html●2.0 日本語訳 2
 CSS21=版              ~TR/CSS2/
 CSS21=編              ~CSSWG/css2/
 CSSALIGN=主           ~/css-align-ja.html
-CSSALIGN=版           ~TR/css-align-3/
-CSSALIGN=編           ~CSSWG/css-align-3/
+	CSSALIGN=版           ~TR/css-align-3/
+	CSSALIGN=編           ~CSSWG/css-align-3/
 CSSALIGN=・           ~CSSWG/css-align/
-CSSANIMATIONS1=版     ~TR/css3-animations/
 CSSANIMATIONS1=主     ~/css-animations-ja.html
-CSSANIMATIONS1=編     ~CSSWG/css-animations-1/
+	CSSANIMATIONS1=版     ~TR/css-animations-1/
+	CSSANIMATIONS1=編     ~CSSWG/css-animations-1/
 CSSANIMATIONS1=・     ~CSSWG/css-animations/
 CSSBACKGROUNDS3=主    ~/css-backgrounds-ja.html
 CSSBACKGROUNDS3=副2   ~mitsue/css3-background/
-CSSBACKGROUNDS3=版    ~TR/css3-background/
-CSSBACKGROUNDS3=編    ~CSSWG/css-backgrounds-3/
-CSSBACKGROUNDS3=・    ~CSSWG/css3-background/
+	CSSBACKGROUNDS3=版    ~TR/css-background-3/
+	CSSBACKGROUNDS3=編    ~CSSWG/css-backgrounds/
+	CSSBACKGROUNDS3=・    ~CSSWG/css-backgrounds-3/
+CSSBOX3=主            ~/css-box-ja.html
 CSSBREAK3=主          ~/css-break-ja.html
-CSSBREAK3=版          ~TR/css-break-3/
-CSSBREAK3=編          ~CSSWG/css-break-3/
+	CSSBREAK3=版          ~TR/css-break-3/
+	CSSBREAK3=編          ~CSSWG/css-break-3/
 CSSBREAK3=・          ~CSSWG/css-break/
-CSSCASCADE=主         ~/css-cascade-ja.html
-CSSCASCADE=版         ~TR/css-cascade-3/
-CSSCASCADE=編         ~CSSWG/css-cascade-4/
-CSSCASCADE=・         ~TR/css3-cascade/
-CSSCASCADE=・         ~TR/css-cascade-4/
-CSSCASCADE=・         ~CSSWG/css-cascade-3/
-	CSSCASCADE3=・         ~CSSWG/css-cascade/
-CSSCOLOR=主           ~/css-color-ja.html
-CSSCOLOR=編           ~CSSWG/css-color/
-CSS3COLOR=主          ~mitsue/css3-color/
-CSS3COLOR=副          ~/css-color-ja.html●Level 4 日本語訳
-CSS3COLOR=版          ~TR/css3-color/
-CSSCOUNTERSTYLES=主   ~/css-counter-styles-ja.html
-CSSCOUNTERSTYLES=編   ~CSSWG/css-counter-styles/
-CSSCOUNTERSTYLES=版   ~TR/css-counter-styles-3/
-CSS3COLOR=編          ~CSSWG/css-color-3/
+CSSCASCADE4=主         ~/css-cascade-ja.html
+	CSSCASCADE4=版         ~TR/css-cascade-4/
+	CSSCASCADE4=編         ~CSSWG/css-cascade-4/
+CSSCASCADE3=主         ~/css-cascade-ja.html●Level 4 日本語訳
+	CSSCASCADE3=版         ~TR/css-cascade-3/
+	CSSCASCADE3=編         ~CSSWG/css-cascade/
+CSSCOLOR4=主          ~/css-color-ja.html
+	CSSCOLOR4=編          ~CSSWG/css-color-4/
+CSSCOLOR3=主          ~mitsue/css3-color-4/
+CSSCOLOR3=副          ~/css-color-ja.html●Level 4 日本語訳
+	CSSCOLOR3=版          ~TR/css-color-3/
+	CSSCOLOR3=編          ~CSSWG/css-color-3/
+CSSCOUNTERSTYLES3=主  ~/css-counter-styles-ja.html
+	CSSCOUNTERSTYLES3=版  ~TR/css-counter-styles-3/
+	CSSCOUNTERSTYLES3=編  ~CSSWG/css-counter-styles/
 CSSCONDITIONAL=主     ~/css-conditional-ja.html
-CSSCONDITIONAL=版     ~TR/css3-conditional/
-CSSCONDITIONAL=・     ~TR/css-conditional/
-CSSCONDITIONAL=編     ~CSSWG/css-conditional-3/
+	CSSCONDITIONAL=版     ~TR/css3-conditional/
+	CSSCONDITIONAL=編     ~CSSWG/css-conditional-3/
+	CSSCONDITIONAL=・     ~TR/css-conditional/
 CSSCONDITIONAL=・     ~CSSWG/css-conditional/
 CSSCONTAIN1=主        ~/css-contain-ja.html
-CSSCONTAIN1=版        ~TR/css-contain-1/
-CSSCONTAIN1=編        ~CSSWG/css-contain-1/
+	CSSCONTAIN1=版        ~TR/css-contain-1/
+	CSSCONTAIN1=編        ~CSSWG/css-contain-1/
 CSSDEVICEADAPT=主     ~momdoG/css-device-adapt-1/
 CSSDEVICEADAPT=版     ~TR/css-device-adapt-1/
-CSSDEVICEADAPT=編     ~CSSWG/css-device-adapt/
 CSSDEVICEADAPT=・     ~TR/css-device-adapt/
+CSSDEVICEADAPT=編     ~CSSWG/css-device-adapt/
 CSSDEVICEADAPT=・     ~CSSWG/css-device-adapt-1/
-CSSDISPLAY=主         ~/css-display-ja.html
-CSSDISPLAY=版         ~TR/css-display-3/
-CSSDISPLAY=編         ~CSSWG/css-display-3/
-CSSDISPLAY=・         ~CSSWG/css-display/
-CSSDISPLAY=・         ~TR/css-display/
+CSSDISPLAY3=主         ~/css-display-ja.html
+	CSSDISPLAY3=版         ~TR/css-display-3/
+	CSSDISPLAY3=編         ~CSSWG/css-display-3/
 CSSEXCLUSIONS=主      ~/css-exclusions-ja.html
-CSSEXCLUSIONS=版      ~TR/css3-exclusions/
-CSSEXCLUSIONS=編      ~CSSWG/css-exclusions/
-CSSFLEX=主            ~/css-flexbox-ja.html
-CSSFLEX=版            ~TR/css-flexbox-1/
-CSSFLEX=・            ~TR/css3-flexbox/
-CSSFLEX=編            ~CSSWG/css-flexbox-1/
+	CSSEXCLUSIONS=版      ~TR/css3-exclusions/
+	CSSEXCLUSIONS=編      ~CSSWG/css-exclusions/
+CSSFLEXBOX1=主            ~/css-flexbox-ja.html
+	CSSFLEXBOX1=版            ~TR/css-flexbox-1/
+	CSSFLEXBOX1=編            ~CSSWG/css-flexbox-1/
 CSSFONTS3=主          ~/css-fonts-ja.html
-CSSFONTS3=版          ~TR/css3-fonts/
-CSSFONTS3=・          ~TR/css-fonts-3/
-CSSFONTS3=編          ~CSSWG/css-fonts-3/
-CSSFONTS3=・          ~CSSWG/css-fonts/
+	CSSFONTS3=版          ~TR/css-fonts-3/
+	CSSFONTS3=編          ~CSSWG/css-fonts-3/
 CSSFONTLOAD=主        ~/css-font-loading-ja.html
-CSSFONTLOAD=版        ~TR/css-font-loading/
-CSSFONTLOAD=編        ~CSSWG/css-font-loading/
-CSSGRID=主            ~/css-grid-ja.html
-CSSGRID=版            ~TR/css-grid-1/
-CSSGRID=編            ~CSSWG/css-grid-1/
-CSSINLINE=主          ~/css-inline-ja.html
-CSSINLINE=版          ~TR/css-inline/
-CSSINLINE=編          ~CSSWG/css-inline/
+	CSSFONTLOAD=版        ~TR/css-font-loading/
+	CSSFONTLOAD=編        ~CSSWG/css-font-loading/
+CSSGRID1=主            ~/css-grid-ja.html
+	CSSGRID1=版            ~TR/css-grid-1/
+	CSSGRID1=編            ~CSSWG/css-grid-1/
+CSSINLINE3=主         ~/css-inline-ja.html
+	CSSINLINE3=版         ~TR/css-inline/
+	CSSINLINE3=編         ~CSSWG/css-inline/
 CSSIMAGES3=主         ~/css-images-ja.html
 CSSIMAGES3=副         ~momdo/CR-css3-images-20120417.html
-CSSIMAGES3=版         ~TR/css3-images/
-CSSIMAGES3=編         ~CSSWG/css-images-3/
+	CSSIMAGES3=版         ~TR/css3-images/
+	CSSIMAGES3=編         ~CSSWG/css-images-3/
 CSSLOGICAL=主         ~/css-logical-ja.html
-CSSLOGICAL=編         ~CSSWG/css-logical/
+	CSSLOGICAL=編         ~CSSWG/css-logical/
 CSSMASKING=主         ~/css-masking-ja.html
-CSSMASKING=編         ~CSSWG/css-masking-1/
-CSSMASKING=版         ~TR/css-masking-1/
-CSSMULTICOL=主        ~/css-multicol-ja.html
-CSSMULTICOL=編        ~CSSWG/css-multicol-1/
-CSSMULTICOL=版        ~TR/css-multicol-1/
-CSSMULTICOL=・        ~TR/css3-multicol/
-CSSNAMESPACES=主      ~/css-namespaces-ja.html
-CSSNAMESPACES=副2     ~mitsue/css3-namespace/
-CSSNAMESPACES=副3     ~momdo/REC-css-namespaces-3-20140320.html
-CSSNAMESPACES=版      ~TR/css3-namespace/
-CSSNAMESPACES=編      ~CSSWG/css3-namespace/
-CSSOVERFLOW=主        ~/css-overflow3-ja.html
-CSSOVERFLOW=版        ~TR/css-overflow-3/
-CSSOVERFLOW=編        ~CSSWG/css-overflow/
-CSSPAGE3=主            ~/css-page-ja.html
-CSSPAGE3=版            ~TR/css3-page/
-CSSPAGE3=編            ~CSSWG/css-page/
-CSSPAGE3=・            ~CSSWG/css-page-3/
-CSSPOSITION=編        ~CSSWG/css-position/
-CSSPOSITION=版        ~TR/css3-positioning/
-CSSRUBY1=主          ~/css-ruby-ja.html
-CSSRUBY1=版          ~TR/css-ruby-1/
-CSSRUBY1=編          ~CSSWG/css-ruby-1/
-CSSSHAPES1=主          ~/css-shapes-ja.html
-CSSSHAPES1=版          ~TR/css-shapes-1/
-CSSSHAPES1=編          ~CSSWG/css-shapes-1/
-CSSSIZING=主          ~/css-sizing-ja.html
-CSSSIZING=版          ~TR/css-sizing/
-CSSSIZING=編          ~CSSWG/css-sizing/
-CSSSIZING=・          ~CSSWG/css-sizing-3/
-	CSS3SPEECH=主         ~/css-speech-ja.html
-	CSS3SPEECH=版         ~TR/css3-speech/
-CSSOM=主              ~/cssom-ja.html
-CSSOM=版              ~TR/cssom/
-CSSOM=編              ~CSSWG/cssom/
-CSSOMVIEW=主          ~/cssom-view-ja.html
-CSSOMVIEW=版          ~TR/cssom-view/
-CSSOMVIEW=編          ~CSSWG/cssom-view/
+	CSSMASKING=版         ~TR/css-masking-1/
+	CSSMASKING=編         ~CSSWG/css-masking-1/
+CSSMULTICOL1=主        ~/css-multicol-ja.html
+	CSSMULTICOL1=編        ~CSSWG/css-multicol-1/
+	CSSMULTICOL1=版        ~TR/css-multicol-1/
+CSSNAMESPACES3=主     ~/css-namespaces-ja.html
+CSSNAMESPACES3=副2    ~mitsue/css3-namespace/
+CSSNAMESPACES3=副3    ~momdo/REC-css-namespaces-3-20140320.html
+	CSSNAMESPACES3=版     ~TR/css3-namespace/
+	CSSNAMESPACES3=編     ~CSSWG/css3-namespace/
+CSSOVERFLOW3=主       ~/css-overflow3-ja.html
+	CSSOVERFLOW3=版       ~TR/css-overflow-3/
+	CSSOVERFLOW3=編       ~CSSWG/css-overflow/
+CSSPAGE3=主           ~/css-page-ja.html
+	CSSPAGE3=版           ~TR/css3-page/
+	CSSPAGE3=編           ~CSSWG/css-page/
+	CSSPAGE3=・           ~CSSWG/css-page-3/
+	CSSPOSITION=編        ~CSSWG/css-position/
+	CSSPOSITION=版        ~TR/css3-positioning/
+CSSRUBY1=主           ~/css-ruby-ja.html
+	CSSRUBY1=版           ~TR/css-ruby-1/
+	CSSRUBY1=編           ~CSSWG/css-ruby-1/
+CSSSHAPES1=主         ~/css-shapes-ja.html
+	CSSSHAPES1=版         ~TR/css-shapes-1/
+	CSSSHAPES1=編         ~CSSWG/css-shapes-1/
+CSSSIZING3=主         ~/css-sizing-ja.html
+	CSSSIZING3=版         ~TR/css-sizing-3/
+	CSSSIZING3=編         ~CSSWG/css-sizing-3/
+	CSSSPEECH1=主         ~/css-speech-ja.html
+	CSSSPEECH1=版         ~TR/css3-speech/
+CSSOM1=主             ~/cssom-ja.html
+	CSSOM1=版             ~TR/cssom/
+	CSSOM1=編             ~CSSWG/cssom/
+CSSOMVIEW1=主         ~/cssom-view-ja.html
+	CSSOMVIEW1=版         ~TR/cssom-view/
+	CSSOMVIEW1=編         ~CSSWG/cssom-view/
 CSSPSEUDO4=主         ~/css-pseudo-ja.html
 CSSSCOPING1=主        ~/css-scoping-ja.html
-CSSSTYLEATTR=主       ~/css-style-attr-ja.html
-CSSSTYLEATTR=副2      ~mitsue/css-style-attr/
-CSSSTYLEATTR=版       ~TR/css-style-attr/
-CSSSYNTAX=・          ~CSSWG/css-syntax/
-CSSSYNTAX=主          ~/css-syntax-ja.html
-CSSSYNTAX=版          ~TR/css3-syntax/
-CSSSYNTAX=編          ~CSSWG/css-syntax-3/
-CSSSYNTAX=・          ~TR/css-syntax-3/
-CSS3TEXT=主           ~/css-text-ja.html
-	CSS3TEXT=主           suzukima.github.io/css-ja/css3-text/
-CSS3TEXT=編           ~CSSWG/css-text-3/
-CSS3TEXT=版           ~TR/css-text-3/
-CSS3TEXTDECOR=主      ~/css-text-decor-ja.html
-CSS3TEXTDECOR=副2     ~momdoG/css-text-decor-3/
-CSS3TEXTDECOR=編      ~CSSWG/css-text-decor-3/
-CSS3TEXTDECOR=版      ~TR/css-text-decor-3/
+CSSSTYLEATTR1=主      ~/css-style-attr-ja.html
+CSSSTYLEATTR1=副2     ~mitsue/css-style-attr/
+	CSSSTYLEATTR1=版      ~TR/css-style-attr/
+CSSSYNTAX3=主          ~/css-syntax-ja.html
+	CSSSYNTAX3=版          ~TR/css-syntax-3/
+	CSSSYNTAX3=編          ~CSSWG/css-syntax-3/
+CSSTEXT3=主           ~/css-text-ja.html
+CSSTEXT3=副2          suzukima.github.io/css-ja/css3-text/
+	CSSTEXT3=編           ~CSSWG/css-text-3/
+	CSSTEXT3=版           ~TR/css-text-3/
+CSSTEXTDECOR3=主      ~/css-text-decor-ja.html
+CSSTEXTDECOR3=副2     ~momdoG/css-text-decor-3/
+	CSSTEXTDECOR3=編      ~CSSWG/css-text-decor-3/
+	CSSTEXTDECOR3=版      ~TR/css-text-decor-3/
 CSSTIMING=主          ~/css-timing-ja.html
 CSSTIMING=編          ~CSSWG/css-timing/
-CSSTRANSFORMS1=・     ~CSSWG/css-transforms/
 CSSTRANSFORMS1=主     ~/css-transforms-ja.html
-CSSTRANSFORMS1=副     ~/css-transforms2-ja.html●Level 2 日本語訳
-CSSTRANSFORMS1=版     ~TR/css3-transforms/
-CSSTRANSFORMS1=編     ~CSSWG/css-transforms-1/
-CSSTRANSFORMS1=・     ~CSSWG/css-transforms/
-CSSTRANSITIONS1=・    ~CSSWG/css3-transitions/
+	CSSTRANSFORMS1=・     ~CSSWG/css-transforms/
+	CSSTRANSFORMS1=版     ~TR/css3-transforms/
+	CSSTRANSFORMS1=編     ~CSSWG/css-transforms-1/
+	CSSTRANSFORMS1=・     ~CSSWG/css-transforms/
+CSSTRANSFORMS2=主     ~/css-transforms2-ja.html
 CSSTRANSITIONS1=主    ~/css-transitions-ja.html
-CSSTRANSITIONS1=版    ~TR/css3-transitions/
-CSSTRANSITIONS1=編    ~CSSWG/css-transitions/
+	CSSTRANSITIONS1=版    ~TR/css-transitions-1/
+	CSSTRANSITIONS1=編    ~CSSWG/css-transitions-1/
 CSSUI4=主             ~/css-ui-ja.html
-CSSUI4=版             ~TR/css-ui-4/
-CSSUI4=編             ~CSSWG/css-ui-4/
-CSSUI3=主             ~/css-ui-ja.html●Level 4 日本語訳
-CSSUI3=副             ~momdoG/css-ui/
-CSSUI3=版             ~TR/css-ui-3/
-CSSUI3=・             ~TR/css3-ui/
-CSSUI3=編             ~CSSWG/css-ui-3/
+	CSSUI4=版             ~TR/css-ui-4/
+	CSSUI4=編             ~CSSWG/css-ui-4/
+CSSUI3=主             ~momdoG/css-ui/
+CSSUI3=副             ~/css-ui-ja.html●Level 4 日本語訳
+	CSSUI3=版             ~TR/css-ui-3/
+	CSSUI3=・             ~TR/css3-ui/
+	CSSUI3=編             ~CSSWG/css-ui-3/
 CSSVALUES4=主         ~/css-values-ja.html
-CSSVAL=主             ~/css-values-ja.html●Level 4 日本語訳
-CSSVAL=副2            ~momdoG/css3-values/
-CSSVAL=版             ~TR/css3-values/
-CSSVAL=・             ~TR/css-values/
-CSSVAL=編             ~CSSWG/css-values/
-CSSVAL=・             ~CSSWG/css-values-3/
-	CSSVAL=・            ~CSSWG/css-values/
+CSSVALUES3=主         ~momdoG/css3-values/
+CSSVALUES3=副2        ~/css-values-ja.html●Level 4 日本語訳
+	CSSVALUES3=版         ~TR/css-values-3/
+	CSSVALUES3=編         ~CSSWG/css-values-3/
 CSSVARIABLES=主       ~/css-variables-ja.html
-CSSVARIABLES=編       ~CSSWG/css-variables/
-CSSVARIABLES=版       ~TR/css-variables-1/
+	CSSVARIABLES=編       ~CSSWG/css-variables-1/
+	CSSVARIABLES=版       ~TR/css-variables-1/
 CSSWILLCHANGE1=主     ~/css-will-change-ja.html
-CSSWILLCHANGE1=版     ~TR/css-will-change-1/
-CSSWRITINGMODES=・    ~CSSWG/css-writing-modes/
-CSSWRITINGMODES=主    ~/css-writing-modes-ja.html
-CSSWRITINGMODES=副2   ＃suzukima.github.io/css-ja/css3-writing-modes/
-CSSWRITINGMODES=版    ~TR/css-writing-modes-3/
-CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-3/●編（Level 3）
-CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-4/
-MQ4=主                ~/mediaqueries4-ja.html
-MQ4=編                ~CSSWG/mediaqueries-4/
-MQ4=版                ~TR/mediaqueries-4/
+	CSSWILLCHANGE1=版     ~TR/css-will-change-1/
+CSSWRITINGMODES4=主   ~/css-writing-modes-ja.html
+	CSSWRITINGMODES=版    ~CSSWG/css-writing-modes-4/
+	CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-4/
+CSSWRITINGMODES3=主   ＃suzukima.github.io/css-ja/css3-writing-modes/
+CSSWRITINGMODES3=副   ~/css-writing-modes-ja.html●Level 4 日本語訳
+	CSSWRITINGMODES=版    ~TR/css-writing-modes-3/
+	CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-3/●編（Level 3）
+MEDIAQUERIES4=主      ~/mediaqueries4-ja.html
+	MEDIAQUERIES4=編      ~CSSWG/mediaqueries-4/
+	MEDIAQUERIES4=版      ~TR/mediaqueries-4/
+MEDIAQUERIES3=主      ~mitsue/css3-mediaqueries/
+MEDIAQUERIES3=副      ~/mediaqueries4-ja.html●Level 4 日本語訳
+MEDIAQUERIES3=副2     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/css/REC-css3-mediaqueries-20120619.html
 FILTEREFFECTS1=主     ~/filter-effects-ja.html
-FILTEREFFECTS1=編     drafts.fxtf.org/filter-effects-1/
-FILTEREFFECTS1=版     ~TR/filter-effects-1/
-MEDIAQ=主             ~mitsue/css3-mediaqueries/
-MEDIAQ=副             ~/mediaqueries4-ja.html●Level 4 日本語訳
-MEDIAQ=副             ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/css/REC-css3-mediaqueries-20120619.html
-MEDIAQ=版             ~TR/css3-mediaqueries/
+	FILTEREFFECTS1=編     drafts.fxtf.org/filter-effects-1/
+	FILTEREFFECTS1=版     ~TR/filter-effects-1/
 MEDIAFRAG=主          ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/media/REC-media-frags-10-20120925.html
-MEDIAFRAG=版          ~TR/media-frags/
+MEDIAFRAG=・          ~TR/media-frags/
 COMPAT=主             ~/compat-ja.html
 DOM=主                ~/DOM4-ja.html
 DOM=編                dom.spec.whatwg.org/●LS
@@ -1779,34 +1767,33 @@ HTMLIANA=主           ~momdoG/html/iana.html
 HTMLIANA=・           ~HTMLLS/iana.html
 HTML401=主            ＃www.asahi-net.or.jp/~sd5a-ucd/rec-html401j/cover.html
 INDEXEDDB=主          ~/IndexedDB-ja.html
-INDEXEDDB=版          ~TR/IndexedDB/
-INDEXEDDB=編          w3c.github.io/IndexedDB/
+	INDEXEDDB=版          ~TR/IndexedDB/
+	INDEXEDDB=編          w3c.github.io/IndexedDB/
 JLREQ=主              ~TR/jlreq/ja/
 JLREQ=副              w3c.github.io/jlreq/ja/●日本語訳(編集者草案)
 JLREQ=編              w3c.github.io/jlreq/
 INFRA=主              ~/infra-ja.html
 MIX=主                ~/webappsec-mixed-content-ja.html
-MIX=版                ~TR/mixed-content/
-MIX=編                w3c.github.io/webappsec-mixed-content/
+	MIX=版                ~TR/mixed-content/
+	MIX=編                w3c.github.io/webappsec-mixed-content/
 HRTIME2=主            ~/hr-time-ja.html
-HRTIME2=版            ~TR/hr-time-2/
-HRTIME2=編            w3c.github.io/hr-time/
+	HRTIME2=版            ~TR/hr-time-2/
+	HRTIME2=編            w3c.github.io/hr-time/
 NAVIGATIONTIMING2=主  ~/navigation-timing-ja.html
-NAVIGATIONTIMING2=版  ~TR/navigation-timing-2/
-NETSCAPE=主           ＃www.futomi.com/lecture/cookie/specification.html
+	NAVIGATIONTIMING2=版  ~TR/navigation-timing-2/
 PAGEVISIBILITY=主     ~/page-visibility-ja.html
-PAGEVISIBILITY=版     ~TR/page-visibility-2/
+	PAGEVISIBILITY=版     ~TR/page-visibility-2/
 	PAGEVISIBILITY=・     ~TR/page-visibility/
 PERFORMANCETIMELINE2=主    ~/performance-timeline-ja.html
-PERFORMANCETIMELINE2=版    ~TR/performance-timeline-2/
-PERFORMANCETIMELINE2=編    w3c.github.io/performance-timeline/
+	PERFORMANCETIMELINE2=版    ~TR/performance-timeline-2/
+	PERFORMANCETIMELINE2=編    w3c.github.io/performance-timeline/
 USERTIMING2=主        ~/user-timing-ja.html
-USERTIMING2=版        ~TR/user-timing-2/
+	USERTIMING2=版        ~TR/user-timing-2/
 RESOURCETIMING=主     ~/resource-timing-ja.html
-RESOURCETIMING=版     ~TR/resource-timing/
-RESOURCETIMING=編     w3c.github.io/resource-timing/
+	RESOURCETIMING=版     ~TR/resource-timing/
+	RESOURCETIMING=編     w3c.github.io/resource-timing/
 BEACON=主             ~/beacon-ja.html
-BEACON=版             ~TR/beacon/
+	BEACON=版             ~TR/beacon/
 RESOURCEHINTS=主      ~/resource-hints-ja.html
 REFERRERPOLICY=主     ~/webappsec-referrer-policy-ja.html
 PERMISSIONS=主        ~/webappsec-permissions-ja.html
@@ -1892,28 +1879,26 @@ RFC7235=主            ~/RFC7235-ja.html
 RFC7235=・            ~IETF/rfc7235
 RFC7235=・            ~HTTPWG/rfc7235.html
 RFC7301=主            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
-SELECT=主             ~mitsue/css3-selectors/
-SELECT=副2            ＃zng.info/specs/css3-selectors.html
-SELECT=副3            ~/selectors4-ja.html●Level 4 日本語訳
-SELECT=版             ~TR/css3-selectors/
-SELECT=編             ~CSSWG/selectors-3/
-SELECT=・             ~TR/selectors/
-SELECTORS=・          ~CSSWG/selectors/
-SELECTORS=主          ~/selectors4-ja.html
-SELECTORS=副2         ~mitsue/css3-selectors/●Level 3 日本語訳
-SELECTORS=版          ~TR/selectors4/
-SELECTORS=編          ~CSSWG/selectors4/
+SELECTORS4=・         ~CSSWG/selectors/
+SELECTORS4=主         ~/selectors4-ja.html
+	SELECTORS4=版         ~TR/selectors4/
+	SELECTORS4=編         ~CSSWG/selectors4/
+SELECTORS3=主         ~mitsue/css3-selectors/
+SELECTORS3=副2        ＃zng.info/specs/css3-selectors.html
+SELECTORS3=副3        ~/selectors4-ja.html●Level 4 日本語訳
+	SELECTORS3=版         ~TR/css-selectors-3/
+	SELECTORS3=編         ~CSSWG/selectors-3/
 SELECTORSAPI=主       ~mitsue/selectors-api/●Level 1 日本語訳
 SECURECONTEXTS=主     ~/webappsec-secure-contexts-ja.html
 SECURECONTEXTS=副     hashedhyphen.github.io/webappsec-specjp/secure-contexts/index.html
-SECURECONTEXTS=版     ~TR/secure-contexts/
-SECURECONTEXTS=編     w3c.github.io/webappsec-secure-contexts/
+	SECURECONTEXTS=版     ~TR/secure-contexts/
+	SECURECONTEXTS=編     w3c.github.io/webappsec-secure-contexts/
 SRI=主                ~/webappsec-subresource-integrity-ja.html
-SRI=版                www.w3.org/TR/SRI/
-SRI=編                w3c.github.io/webappsec-subresource-integrity/
+	SRI=版                ~TR/SRI/
+	SRI=編                w3c.github.io/webappsec-subresource-integrity/
 UPGRADEINSECUREREQUESTS=主 ~/webappsec-upgrade-insecure-requests-ja.html
-UPGRADEINSECUREREQUESTS=版 ~TR/upgrade-insecure-requests/
-UPGRADEINSECUREREQUESTS=編 w3c.github.io/webappsec-upgrade-insecure-requests/
+	UPGRADEINSECUREREQUESTS=版 ~TR/upgrade-insecure-requests/
+	UPGRADEINSECUREREQUESTS=編 w3c.github.io/webappsec-upgrade-insecure-requests/
 SSML=主               ＃www.asahi-net.or.jp/~ax2s-kmtn/ref/accessibility/REC-speech-synthesis11-20100907.html
 SSML=・               ~TR/speech-synthesis11/
 STREAMS=主            ~/Streams-ja.html
@@ -1925,29 +1910,31 @@ TOUCHEVENTS=主        ~/touch-events-ja.html
 URL=主                ~/URL-ja.html
 URL=編                url.spec.whatwg.org/●LS
 UIEVENTS=主           ~/uievents-ja.html
-UIEVENTS=版           ~TR/uievents/
-UIEVENTS=編           w3c.github.io/uievents/
+	UIEVENTS=版           ~TR/uievents/
+	UIEVENTS=編           w3c.github.io/uievents/
 WCAG20=主             ＃waic.jp/docs/WCAG20/Overview.html
 WCAG20=・             ~TR/WCAG20/
+WEBANIMATIONS1=主     ~/web-animations-ja.html
+	WEBANIMATIONS1=版     ~TR/web-animations-1/
+	WEBANIMATIONS1=編     ~CSSWG/web-animations-1/
 WEBIDL=主             ~/WebIDL-ja.html
-WEBIDL=版             ~TR/WebIDL-1/
-WEBIDL=編             heycam.github.io/webidl/
-WEBIDL=・             ~TR/WebIDL/
+	WEBIDL=版             ~TR/WebIDL-1/
+	WEBIDL=編             heycam.github.io/webidl/
+	WEBIDL=・             ~TR/WebIDL/
 WEBSOCKETS=主         ~/WebSocket-ja.html
-WEBSOCKETS=版         www.w3.org/TR/websockets/
-WEBSOCKETS=編         w3c.github.io/websockets/
+	WEBSOCKETS=版         ~TR/websockets/
 WEBSTORAGE=主         ~/WebStorage-ja.html
-WEBSTORAGE=版         ~TR/webstorage/
-WEBSTORAGE=編         ~HTMLLS/webstorage.html●WHATWG版
-WORKERS=・            ~HTMLLS/workers.html
+	WEBSTORAGE=版         ~TR/webstorage/
+	WEBSTORAGE=編         ~HTMLLS/webstorage.html●WHATWG版
 WORKERS=主            ~/Workers-ja.html
-WORKERS=版            ~TR/workers/
-WORKERS=編            w3c.github.io/workers/
+	WORKERS=・            ~HTMLLS/workers.html
+	WORKERS=版            ~TR/workers/
+	WORKERS=編            w3c.github.io/workers/
 WORKLETS1=主          ~/worklets-ja.html
-WORKLETS1=版          ~TR/worklets-1/
-WORKLETS1=編          drafts.css-houdini.org/worklets/
-XHR=・                xhr.spec.whatwg.org/
+	WORKLETS1=版          ~TR/worklets-1/
+	WORKLETS1=編          drafts.css-houdini.org/worklets/
 XHR=主                ~/XHR-ja.html
+	XHR=・                xhr.spec.whatwg.org/
 XML11=主              ＃w4ard.eplusx.net/translation/W3C/REC-xml11-20060816/
 XML=主                ＃w4ard.eplusx.net/translation/W3C/REC-xml-20081126/
 XML=・                ~TR/xml/
@@ -1964,6 +1951,8 @@ PRELOAD=主            ~/preload-ja.html
 
 /* 廃
 CSS21=副              www.swlab.it.okayama-u.ac.jp/man/rec-css2/cover.html●2.0 日本語訳
+NETSCAPE=主           ＃www.futomi.com/lecture/cookie/specification.html
+WEBSOCKETS=編         w3c.github.io/websockets/
 
 */
 
@@ -1995,72 +1984,65 @@ CSS22:CSS21
 COMPOSITING:COMPOSITING1
 CSSALIGN3:CSSALIGN
 CSS3ANIMATIONS:CSSANIMATIONS1
+CSS3BACKGROUND:CSSBACKGROUNDS3
+CSS3BOX:CSSBOX3
+CSSBG:CSSBACKGROUNDS3
+CSS3BG:CSSBACKGROUNDS3
 CSS3BREAK:CSSBREAK3
-CSS3CASCADE:CSSCASCADE
-CSSCASCADE3:CSSCASCADE
-CSSCASCADE4:CSSCASCADE
-	CSS3PAGE:CSSCASCADE
-CSS3SYN:CSSSYNTAX
-CSSSYNTAX3:CSSSYNTAX
-CSS3FLEXBOX:CSSFLEX
-CSSFLEXBOX1:CSSFLEX
-CSSMASKING1:CSSMASKING
-CSSMULTICOL1:CSSMULTICOL
-CSS3COL:CSSMULTICOL
-CSS3MULTICOL:CSSMULTICOL
-CSSCOLOR3:CSS3COLOR
-CSSCOLOR4:CSSCOLOR
-CSSCOUNTERSTYLES3:CSSCOUNTERSTYLES
-CSSGRID1:CSSGRID
-CSS3GRIDLAYOUT:CSSGRID
-CSSINLINE3:CSSINLINE
+CSS3CASCADE:CSSCASCADE3
+CSSCASCADE:CSSCASCADE4
+CSS3COLOR:CSSCOLOR3
+CSSCOLOR:CSSCOLOR4
 CSS3CONDITIONAL:CSSCONDITIONAL
 CSSCONDITIONAL3:CSSCONDITIONAL
+CSSCOUNTERSTYLES:CSSCOUNTERSTYLES3
+CSSDISPLAY:CSSDISPLAY3
+CSS3DISPLAY:CSSDISPLAY3
 CSS3EXCLUSIONS:CSSEXCLUSIONS
+CSS3FLEXBOX:CSSFLEXBOX1
+CSS3FONT:CSSFONTS3
 CSS3FONTS:CSSFONTS3
-CSS3FONT:CSS3FONTS
+CSSGRID:CSSGRID1
+CSS3GRIDLAYOUT:CSSGRID1
+CSSINLINE:CSSINLINE3
+CSSMASKING1:CSSMASKING
+CSSMULTICOL:CSSMULTICOL1
+CSS3IMAGES:CSSIMAGES3
+CSS3MULTICOL:CSSMULTICOL1
+CSS3NAMESPACE:CSSNAMESPACES3
+CSSNAMESPACES:CSSNAMESPACES3
+CSSOVERFLOW:CSSOVERFLOW3
 CSSPAGE:CSSPAGE3
 CSS3PAGE:CSSPAGE3
-CSSSHAPES:CSSSHAPES1
-CSSRUBY:CSSRUBY1
 CSS3RUBY:CSSRUBY1
-CSSTEXT3:CSS3TEXT
-CSSTEXT:CSS3TEXT
+CSSRUBY:CSSRUBY1
+CSSSHAPES:CSSSHAPES1
+CSSSIZING:CSSSIZING3
+CSS3SIZING:CSSSIZING3
+CSSSTYLEATTR:CSSSTYLEATTR1
+CSS3SYN:CSSSYNTAX3
+CSS3SYNTAX:CSSSYNTAX3
+CSSSYNTAX:CSSSYNTAX3
+CSSTEXT:CSSTEXT3
+CSS3TEXT:CSSTEXT3
+CSS3TEXTDECOR:CSSTEXTDECOR3
 CSSTIMING1:CSSTIMING
-CSSVARIABLES1:CSSVARIABLES
-CSSOM1:CSSOM
-CSSOMVIEW1:CSSOMVIEW
-CSSOVERFLOW3:CSSOVERFLOW
-CSSPOSITION3:CSSPOSITION
-CSS3IMAGES:CSSIMAGES3
-CSSSIZING3:CSSSIZING
-CSSSIZING4:CSSSIZING
-CSS3SIZING:CSSSIZING
 CSS3TRANSFORMS:CSSTRANSFORMS1
 CSS3TRANSITIONS:CSSTRANSITIONS1
-CSSDISPLAY3:CSSDISPLAY
-CSS3DISPLAY:CSSDISPLAY
-CSSVALUES3:CSSVAL
-CSSVALUES:CSSVAL
-CSS3VAL:CSSVAL
-CSSTEXTDECOR3:CSS3TEXTDECOR
-CSS3UI:CSSUI3
 CSSUI:CSSUI4
-CSSWRITINGMODES3:CSSWRITINGMODES
-CSSWRITINGMODES4:CSSWRITINGMODES
-CSS3WRITINGMODES:CSSWRITINGMODES
-CSS3NAMESPACE:CSSNAMESPACES
-CSSNAMESPACES3:CSSNAMESPACES
-CSS3BACKGROUND:CSSBACKGROUNDS3
-CSS3BG:CSSBACKGROUNDS3
-CSSBG:CSSBACKGROUNDS3
-CSSSTYLEATTR1:CSSSTYLEATTR
-MEDIAQUERIES4:MQ4
+CSSVALUES:CSSVALUES3
+CSSVARIABLES1:CSSVARIABLES
+CSS3UI:CSSUI3
+CSS3VALUES:CSSVALUES3
+CSS3VAL:CSSVALUES3
+CSS3WRITINGMODES:CSSWRITINGMODES3
+CSSOM:CSSOM1
+CSSOMVIEW:CSSOMVIEW1
+MEDIAQ:MEDIAQUERIES4
+CSS3MEDIAQUERIES:MEDIAQUERIES3
 MEDIAFRAGS:MEDIAFRAG
-CSS3MEDIAQUERIES:MEDIAQ
-SELECTORS4:SELECTORS
-SELECTORS3:SELECT
-CSS3SELECTORS:SELECT
+SELECT:SELECTORS3
+CSS3SELECTORS:SELECTORS3
 URLAPISPECIFICATION:URL
 XMLHTTPREQUEST:XHR
 HTML5:HTML
