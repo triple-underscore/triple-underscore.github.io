@@ -1131,6 +1131,7 @@ MQ4:mediaqueries4-ja.html
 SVG11:SVG11
 SVG2:https://svgwg.org/svg2-draft
 SVGrender:svg-render-ja.html
+SVGstruct:svg-struct-ja.html
 SVGstyling:svg-styling-ja.html
 SVGembedded:svg-embedded-ja.html
 SVGinteract:svg-interact-ja.html

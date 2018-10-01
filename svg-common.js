@@ -545,24 +545,32 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 
 	■struct
 ~SVG名前空間:~SVGstruct#Namespace
-~SVG文書片:~SVGstruct#TermSVGDocumentFragment
 ~SVG要素:~SVGstruct#TermSVGElements
-対応している要素:~SVGstruct#TermCorrespondingElement
 ~graphics要素:~SVGstruct#TermGraphicsElement
-~instance根:~SVGstruct#TermInstanceRoot
-~instance:~SVGstruct#TermElementInstance
-要素~instance:~SVGstruct#TermElementInstance
-最外縁の~svg要素:~SVGstruct#TermOutermostSVGElement
 容器~要素:~SVGstruct#TermContainerElement
-~use要素の~shadow木:~SVGstruct#TermUseElementShadowTree
-~use-要素~shadow木:~SVGstruct#TermUseElementShadowTree
 未知の要素:~SVGstruct#UnknownElement
+構造的~要素:~SVGstruct#TermStructuralElement
 構造的に外部の要素:~SVGstruct#TermStructurallyExternalElement
 記述的~要素:~SVGstruct#TermDescriptiveElement
 ~graphicを参照する要素:~SVGstruct#TermGraphicsReferencingElement
 中核~属性:~SVGstruct#TermCoreAttribute
 条件付き処理~属性:~SVGstruct#TermConditionalProcessingAttribute
 ~ARIA属性:~SVGstruct#TermARIAAttribute
+
+最外縁の~svg要素:~SVGstruct#TermOutermostSVGElement
+~SVG文書片:~SVGstruct#TermSVGDocumentFragment
+現在の~SVG文書片:#TermCurrentSVGDocumentFragment
+~use要素の~shadow木:~SVGstruct#TermUseElementShadowTree
+~use-要素~shadow木:~SVGstruct#TermUseElementShadowTree
+~instance根:~SVGstruct#TermInstanceRoot
+~instance:~SVGstruct#TermElementInstance
+要素~instance:~SVGstruct#TermElementInstance
+対応している要素:~SVGstruct#TermCorrespondingElement
+対応している~use要素:~SVGstruct#TermCorrespondingUseElement
+参照先の~graphic:~SVGstruct#TermReferencedDocumentSubtree
+参照先の文書~部分木:~SVGstruct#TermReferencedDocumentSubtree
+参照先の要素:~SVGstruct#TermReferencedElement
+
 
 	■painting
 ~fill:~SVGpainting#TermFill
@@ -586,6 +594,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 	■#Term 他
 反映する:~SVGtypes#TermReflect
 無効な値:~SVGtypes#TermInvalidValue
+初期~値:~SVGtypes#TermInitialValue
 
 図形:~SVGshapes#TermShapeElement
 図形~要素:~SVGshapes#TermShapeElement
@@ -658,7 +667,8 @@ SVGconform:svg-conform-ja.html
 	~SVG2/conform.html
 	~SVG2/render.html→common0.js
 SVGtypes:https://svgwg.org/svg2-draft/types.html
-SVGstruct:https://svgwg.org/svg2-draft/struct.html
+SVGstruct:svg-struct-ja.html
+	~SVG2/struct.html→common0.js
 	~SVG2/styling.html→common0.js
 	~SVG2/geometry.html→common0.js
 SVGcoords:https://svgwg.org/svg2-draft/coords.html
