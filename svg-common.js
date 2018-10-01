@@ -25,6 +25,9 @@ source_data.generate = function(){
 
 	const link_map = this.link_map;
 
+	let context_ifc0 = '#';
+	let context_ifc1 = '#';
+
 	return this.html.replace(
 		/%[\w\-~一-鿆あ-ん]+|`(.+?)([$@\^])(\w*)/g,
 		create_html
@@ -37,7 +40,7 @@ if(!indicator) {//%
 
 let text = key;
 let href = '';
-let classname = class_map[klass];
+let classname = class_map[klass] || '';
 let tag = tag_map[klass];
 
 switch(klass){
@@ -83,6 +86,17 @@ case 'refer':
 	text = '~~参照先';
 	href = key;
 	break;
+case 'I0':
+	context_ifc0 = '#__svg__' + key + '__';
+	klass = 'I';
+	break;
+case 'I1':
+	href = link_map['I.' + key];
+	if(href){
+		context_ifc1 = href.slice(0, href.indexOf('#')) + '#__svg__' + key + '__';
+	}
+	klass = 'I';
+	break;
 case 'ACTION':
 	text = 'ACTION-' + key;
 	href = 'http://www.w3.org/Graphics/SVG/WG/track/actions/' + key;
@@ -91,14 +105,18 @@ case 'en': // english words
 	return '<span lang="en-x-a0">' + key + '</span>'
 	break;
 default:
-	if(classname === 'dom'){
-		classname = '';
+	if(classname.slice(0, 3) === 'dom'){
 		const n = text.indexOf('(');
 		if(n > 0){
 			key = text.slice(0, n);
 			text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
 		}
-		break;
+		if(classname === 'dom0'){
+			href = context_ifc0 + key;
+		} else if(classname === 'dom1'){
+			href = context_ifc1 + key;
+		}
+		classname = '';
 	}
 }
 
@@ -109,7 +127,7 @@ if(tag) {
 
 
 if(indicator !== '^'){
-	href = link_map[klass ? (klass + '.' + key) : key] || href;
+	href = href || link_map[klass ? (klass + '.' + key) : key];
 	if(!href){
 		console.log(match); // check error
 		return match;
@@ -153,6 +171,7 @@ xl:ex-label
 
 COMMON_DATA.tag_map += `
 I:code
+I0:code
 m:code
 p:code
 v:code
@@ -164,6 +183,8 @@ et:code
 at:code
 ps:code
 pe:code
+dfn:dfn
+b:b
 t:var
 css:code
 P:var
@@ -352,6 +373,19 @@ e.feTile:~FILTERS#feTileElement
 e.feTurbulence:~FILTERS#feTurbulenceElement
 e.filter:~FILTERS#FilterElement
 
+	HTML 要素
+eH.a:~HEtextlevel#the-a-element
+eH.audio:~HEmedia#the-audio-element
+eH.base:~HEmetadata#the-base-element
+eH.canvas:~HEcanvas#the-canvas-element
+eH.iframe:~HEembed#the-iframe-element
+eH.link:~HEmetadata#the-link-element
+eH.meta:~HEmetadata#the-meta-element
+eH.script:~HEscripting#the-script-element
+eH.source:~HEimages#the-source-element
+eH.style:~HEmetadata#the-style-element
+eH.track:~HEmedia#the-track-element
+eH.video:~HEmedia#the-video-element
 
 
 	●p
@@ -703,6 +737,7 @@ member::::メンバ
 変更:change:~
 属性:attribute::~
 挿入-:insert::~
+挿入:insertion::~
 改変-:modify::~
 改変:modification::~
 改称-:rename:~
@@ -720,6 +755,7 @@ clone::::クローン
 設定群:settings::~
 除去-:remove:~
 除去:removal:~
+付加-:append::~
 置換-:replace::~
 辞書:dictionary::~::ディクショナリ
 配列:array::~
@@ -734,7 +770,10 @@ space:
 keyword::::キーワード
 token::::トークン
 markup::::マークアップ
+mark-up:mark up:::マークアップ
 code::::コード
+comma::::カンマ
+escape::::エスケープ
 構文解析-:parse::~::パース
 構文解析:parsing::~::パース処理
 構文解析器:parser::~::パーサ
@@ -812,7 +851,9 @@ error::::エラー
 呼出す:invoke する:呼び出す
 呼出され:invoke され:呼び出され
 呼出した:invoke した:呼び出した
+呼出して:invoke して:呼び出して
 呼出:invocation:呼び出し
+被呼出時:被 invoke 時:~
 実行-:execute:~
 実行:execution:~
 走らす:run する:~
@@ -1016,6 +1057,7 @@ green:
 描く:draw する::~
 描ける:draw できる::~
 描かれ:draw され::~
+描かせ:draw させ:~
 絵図:drawing:~
 具現化-:render::~
 具現化:rendering::~
@@ -1121,6 +1163,8 @@ pan::::パン
 対話的:interactive::~
 隠され:hide され::~
 隠す:hide する::~
+隠せば:hide すれば::~
+隠して:hide して::~
 選択-:select::~
 選択:selection::~
 閲覧文脈:browsing context::~
@@ -1301,6 +1345,7 @@ tool::::ツール
 状況下:circumstances:~
 帰結:consequence:~
 汎用の:generic な:~
+汎用:generic:~
 
 	決して:never
 	例:example
@@ -1422,6 +1467,7 @@ fallback::::フォールバック
 更新:update:~
 更新-:update:~
 期待-:expect:~
+期待:expectation:~
 予期-:expect:~
 標準:standard:~
 標準の:standard な:~
@@ -1447,6 +1493,7 @@ fallback::::フォールバック
 要求-:require:~
 要約-:summarize:~
 見なさ:consider さ:~
+見なす:consider する:~
 規範的:normative:~
 解決-:resolve:~
 解決:resolution:~
@@ -1459,6 +1506,7 @@ fallback::::フォールバック
 	許容されない:disallowed
 説明-:explain:~
 論じら:discuss さ:~
+論じる:discuss する:~
 論点:discussion:~
 警告:warning:~
 述べら:describe さ:~
@@ -1565,6 +1613,7 @@ fallback::::フォールバック
 関与-:participate::~
 アテガう:assign する:あてがう
 アテガえる:assign できる:あてがえる
+アテガえな:assign できな::あてがえな
 アテガわれ:assign され:あてがわれ
 アテガって:assign して:あてがって
 アテガおう:assign しよう:あてがおう
@@ -1602,6 +1651,7 @@ fallback::::フォールバック
 	●未分類
 script::::スクリプト
 scripting::::スクリプト処理
+ナシ:none:なし
 
 時列線:timeline::~
 時刻:time::~
@@ -1632,6 +1682,7 @@ scripting::::スクリプト処理
 外部の:external な:~
 特定0の:particular:ある特定の
 全部的:full:~
+部分的:partial:~
 
 	一定の:certain
 	0 :zero
@@ -1678,6 +1729,7 @@ scripting::::スクリプト処理
 	単独の:single
 	各:each
 	同じ:same
+	一致:identical
 	多い:often
 	多くの:many
 	対応:correspond
@@ -1710,6 +1762,10 @@ scripting::::スクリプト処理
 	更なる:further
 	最も近い:nearest
 	何か:something
+	どこでも:anywhere
+	まったく:at all
+	一緒:together
+	様々な:various
 
 
 `
