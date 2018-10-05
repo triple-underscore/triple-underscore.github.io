@@ -1115,7 +1115,7 @@ CSSSTYLEATTR:css-style-attr-ja.html
 CSSSYN:css-syntax-ja.html
 CSSTEXT:css-text-ja.html
 CSSTEXTDECOR:css-text-decor-ja.html
-CSSTIMING:css-timing-ja.html
+CSSTIMING:css-easing-ja.html
 CSSUI:css-ui-ja.html
 CSSVAL:css-values-ja.html
 CSSVAR:css-variables-ja.html
