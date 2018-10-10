@@ -1684,8 +1684,8 @@ CSSTEXTDECOR3=主      ~/css-text-decor-ja.html
 CSSTEXTDECOR3=副2     ~momdoG/css-text-decor-3/
 	CSSTEXTDECOR3=編      ~CSSWG/css-text-decor-3/
 	CSSTEXTDECOR3=版      ~TR/css-text-decor-3/
-CSSEASING=主          ~/css-easing-ja.html
-CSSTIMING=主          ~/css-easing-ja.html
+CSSEASING1=主          ~/css-easing-ja.html
+CSSTIMING1=主          ~/css-easing-ja.html
 CSSTRANSFORMS1=主     ~/css-transforms-ja.html
 	CSSTRANSFORMS1=・     ~CSSWG/css-transforms/
 	CSSTRANSFORMS1=版     ~TR/css3-transforms/
@@ -2026,7 +2026,7 @@ CSSSYNTAX:CSSSYNTAX3
 CSSTEXT:CSSTEXT3
 CSS3TEXT:CSSTEXT3
 CSS3TEXTDECOR:CSSTEXTDECOR3
-CSSTIMING1:CSSTIMING
+CSSEASING:CSSEASING1
 CSS3TRANSFORMS:CSSTRANSFORMS1
 CSS3TRANSITIONS:CSSTRANSITIONS1
 CSSUI:CSSUI4
