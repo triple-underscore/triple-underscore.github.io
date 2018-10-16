@@ -543,6 +543,13 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 描画-可能な要素:~SVGrender#TermRenderableElement
 積層~文脈:~SVGrender#TermStackingContext
 
+	■types
+反映する:~SVGtypes#TermReflect
+無効な値:~SVGtypes#TermInvalidValue
+初期~値:~SVGtypes#TermInitialValue
+直列化し直す:~SVGtypes#TermReserialize
+~list~interface:~SVGtypes#TermListInterface
+
 	■struct
 ~SVG名前空間:~SVGstruct#Namespace
 ~SVG要素:~SVGstruct#TermSVGElements
@@ -571,14 +578,23 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 参照先の文書~部分木:~SVGstruct#TermReferencedDocumentSubtree
 参照先の要素:~SVGstruct#TermReferencedElement
 
+	■coords
+~canvas:~SVGcoords#TermCanvas
+~SVG表示域:~SVGcoords#TermSVGViewport
+初期~表示域:~SVGcoords#TermInitialViewport
+表示域~座標系:~SVGcoords#TermViewportCoordinateSystem
+利用元~単位:~SVGcoords#TermUserUnits
+限界~box:~SVGcoords#TermBoundingBox
+~obj限界~box:~SVGcoords#TermObjectBoundingBox
+~stroke限界~box:~SVGcoords#TermStrokeBoundingBox
+装飾d限界~box:~SVGcoords#TermDecoratedBoundingBox
 
 	■painting
 ~fill:~SVGpainting#TermFill
 ~stroke:~SVGpainting#TermStroke
+~stroke図形:~SVGpainting#TermStrokeShape
 塗り:~SVGpainting#TermPaint
 塗り~server要素:~SVGpainting#TermPaintServerElement
-~stroke:~SVGpainting#TermStroke
-~fill:~SVGpainting#TermFill
 文脈~要素:~SVGpainting#TermContextElement
 
 	■linking
@@ -592,18 +608,14 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 無効な循環-参照:~SVGlinking#TermCircularReference
 
 	■#Term 他
-反映する:~SVGtypes#TermReflect
-無効な値:~SVGtypes#TermInvalidValue
-初期~値:~SVGtypes#TermInitialValue
+~path区分:~SVGpaths#TermPathSegment
+等価な~path:~SVGpaths#TermEquivalentPath
 
 図形:~SVGshapes#TermShapeElement
 図形~要素:~SVGshapes#TermShapeElement
 基本~図形:~SVGshapes#TermBasicShapeElement
 
 幾何~prop:~SVGgeometry#geometry-properties
-
-~SVG表示域:~SVGcoords#TermSVGViewport
-限界~box:~SVGcoords#TermBoundingBox
 
 ~gradient要素:~SVGpservers#TermGradientElement
 
@@ -937,6 +949,7 @@ CTM:
 幾何的:geometric::~
 path::::パス
 下位path:subpath:::下位パス
+区分:segment::~
 size::::サイズ
 sizing::::サイズ法
 offset::::オフセット
@@ -944,7 +957,6 @@ vector::::ベクター
 span:
 重合して:overlap して::重なり合って
 重合しな:overlap しな::重なり合わな
-
 限界:bounding::~
 限界域:bounds::~
 領域:region::~
@@ -970,8 +982,13 @@ span:
 
 拡縮-:scale::~
 拡縮率:scale::~
+拡縮:scaling::~
+	拡縮-可能:scalable
 並進-:translate::~
 並進:translation::~
+回転-:rotate::~
+回転:rotation::~
+斜傾:skew::~
 
 平面:plane::~
 原点:origin::~
@@ -996,6 +1013,7 @@ span:
 位置-:position::~
 位置:position::~
 位置決め:positioning::~
+方位-:orient::~
 方位:orientation::~
 直線:straight line::~
 曲線:curve::~
@@ -1087,6 +1105,7 @@ green:
 積層:stacking::~
 画素:pixel::~
 解像度:resolution::~
+装飾d:decorated::装飾
 
 	● CSS
 prop:property:::プロパティ
@@ -1393,6 +1412,7 @@ browser::::ブラウザ
 support::::サポート
 test::::テスト
 fallback::::フォールバック
+feedback::::フィードバック
 上書き:override:~
 不正:incorrect:~
 並行して:parallel に:~
@@ -1430,6 +1450,7 @@ fallback::::フォールバック
 取扱われ:handle され:取り扱われ
 取扱って:handle して:取り扱って
 含意-:imply:~
+含意:implications:~
 変更点:changes:~
 孕む:involve する:~
 定義-:define:~
@@ -1508,6 +1529,8 @@ fallback::::フォールバック
 規範的:normative:~
 解決-:resolve:~
 解決:resolution:~
+未解決:unresolved::~
+未解決の:unresolved::~
 解釈-:interpret:~
 解釈:interpretation:~
 言及:mention:~
@@ -1573,6 +1596,7 @@ fallback::::フォールバック
 試み:attempt:~
 試みる:attempt する:~
 試みて:attempt して:~
+試みた:attempt した
 試みな:attempt しな:~
 裁定-:decide:~
 裁定:decision:~
