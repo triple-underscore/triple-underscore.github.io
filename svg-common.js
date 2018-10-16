@@ -667,11 +667,10 @@ SVGconform:svg-conform-ja.html
 	~SVG2/conform.html
 	~SVG2/render.html→common0.js
 SVGtypes:https://svgwg.org/svg2-draft/types.html
-SVGstruct:svg-struct-ja.html
 	~SVG2/struct.html→common0.js
 	~SVG2/styling.html→common0.js
 	~SVG2/geometry.html→common0.js
-SVGcoords:https://svgwg.org/svg2-draft/coords.html
+	~SVG2/coords.html→common0.js
 SVGpaths:https://svgwg.org/svg2-draft/paths.html
 SVGshapes:https://svgwg.org/svg2-draft/shapes.html
 SVGtext:https://svgwg.org/svg2-draft/text.html
@@ -1181,6 +1180,7 @@ pan::::パン
 作動化-:activate::~::アクティブ化
 作動化:activation::~::アクティブ化
 作動中の:active な::~::アクティブな
+作動中:active::~::アクティブ
 動作-:act::~::アクト
 動作:action::~::アクション
 
@@ -1308,6 +1308,7 @@ tool::::ツール
 自動的:automatic:~
 違法:illegal::~
 共通の:common な:~
+共通しな:common でな:~
 共通的に:common に:よく
 共通的な:common な:よくある
 詳細:details:~
@@ -1530,6 +1531,7 @@ fallback::::フォールバック
 適合性:conformance:~
 適用-:apply:~
 	適用-可能:applicable
+適用:application:~
 応用:application:~
 関係-:relate:~
 関係:relation:~
