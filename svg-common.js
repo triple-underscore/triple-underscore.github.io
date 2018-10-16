@@ -1111,7 +1111,6 @@ cascade::::カスケード
 継承:inheritance::~
 適用対象:applies to:~
 視覚的:visual::~
-内在:intrinsic::~
 内在的:intrinsic::~
 百分率:percentage::~
 絶対:absolute::~
