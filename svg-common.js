@@ -167,11 +167,17 @@ css:css
 f:func
 P:production
 xl:ex-label
+u:unit
+U:code-point
+op:op
+E:error
 `
 
 COMMON_DATA.tag_map += `
 I:code
 I0:code
+I1:code
+E:code
 m:code
 p:code
 v:code
@@ -186,11 +192,16 @@ pe:code
 dfn:dfn
 b:b
 t:var
+u:code
 css:code
 P:var
 V:var
 xl:i
+U:span
+op:span
 i:i
+em:em
+cite:cite
 `
 
 // ●link
