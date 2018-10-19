@@ -702,7 +702,6 @@ SVGtypes:https://svgwg.org/svg2-draft/types.html
 	~SVG2/geometry.html→common0.js
 	~SVG2/coords.html→common0.js
 	~SVG2/paths.html→common0.js
-SVGpaths:svg-path-ja.html
 SVGshapes:https://svgwg.org/svg2-draft/shapes.html
 SVGtext:https://svgwg.org/svg2-draft/text.html
 	~SVG2/embedded.html→common0.js
