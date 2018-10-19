@@ -209,6 +209,8 @@ COMMON_DATA.link_map += `
 
 	●IDL
 
+E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
+
 I.GetSVGDocument:~SVGstruct#InterfaceGetSVGDocument
 I.SVGAElement:~SVGlinking#InterfaceSVGAElement
 I.SVGAngle:~SVGtypes#InterfaceSVGAngle
@@ -938,7 +940,8 @@ svg:
 構造的:structural::~
 構造:structure::~
 構造的:structural::~
-入子に:nest:入れ子に
+入子に:nest::入れ子に
+入子の:nested::入れ子の
 部分木:subtree::~
 隔離-:isolate::~
 順序:order::~
@@ -1664,6 +1667,7 @@ feedback::::フィードバック
 アテガわれ:assign され:あてがわれ
 アテガって:assign して:あてがって
 アテガおう:assign しよう:あてがおう
+アテガわな:assign しな:あてがわな
 対応付け:mapping::~
 対応付けら:map さ::~
 対応付ける:map する::~
