@@ -602,6 +602,13 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~stroke限界~box:~SVGcoords#TermStrokeBoundingBox
 装飾d限界~box:~SVGcoords#TermDecoratedBoundingBox
 
+	■path
+区分を完了して~pathを閉じる:~SVGpaths#TermSegment-CompletingClosePath
+等価な~path:~SVGpaths#TermEquivalentPath
+初期~点:~SVGpaths#TermInitialPoint
+~pathの方向:~SVGpaths#TermPathDirection
+~path区分:~SVGpaths#TermPathSegment
+
 	■painting
 ~fill:~SVGpainting#TermFill
 ~stroke:~SVGpainting#TermStroke
@@ -621,8 +628,6 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 無効な循環-参照:~SVGlinking#TermCircularReference
 
 	■#Term 他
-~path区分:~SVGpaths#TermPathSegment
-等価な~path:~SVGpaths#TermEquivalentPath
 
 図形:~SVGshapes#TermShapeElement
 図形~要素:~SVGshapes#TermShapeElement
@@ -696,7 +701,8 @@ SVGtypes:https://svgwg.org/svg2-draft/types.html
 	~SVG2/styling.html→common0.js
 	~SVG2/geometry.html→common0.js
 	~SVG2/coords.html→common0.js
-SVGpaths:https://svgwg.org/svg2-draft/paths.html
+	~SVG2/paths.html→common0.js
+SVGpaths:svg-path-ja.html
 SVGshapes:https://svgwg.org/svg2-draft/shapes.html
 SVGtext:https://svgwg.org/svg2-draft/text.html
 	~SVG2/embedded.html→common0.js
@@ -756,6 +762,8 @@ data::::データ
 item::::アイテム
 list::::リスト
 member::::メンバ
+pair::::ペア
+entry::::エントリ
 作成-:create::~
 作成:creation::~
 値:value::~
@@ -1015,6 +1023,7 @@ span:
 距離:distance::~
 中心:center::~
 半径:radius::~
+	半径:radii
 始端:start::~
 終端:end::~
 縦方向:vertical::~
@@ -1098,7 +1107,8 @@ green:
 描く:draw する::~
 描ける:draw できる::~
 描かれ:draw され::~
-描かせ:draw させ:~
+描かせ:draw させ::~
+描いて:draw して::~
 絵図:drawing:~
 具現化-:render::~
 具現化:rendering::~
@@ -1390,6 +1400,7 @@ tool::::ツール
 帰結:consequence:~
 汎用の:generic な:~
 汎用:generic:~
+注釈文:prose:~
 
 	決して:never
 	例:example
@@ -1480,6 +1491,7 @@ feedback::::フィードバック
 意味-:mean:~
 意味:meaning:~
 意図-:intend:~
+意図:intent:~
 拘束-:constrain:~
 拘束:constraint:~
 拡張-:extend:~
@@ -1634,6 +1646,7 @@ feedback::::フィードバック
 	〜に基づく:based／:-based
 	扱う:treat
 	見よ:see
+	見よ:refer to
 	関わらず:regardless
 	必要:need
 	扱う:treat
@@ -1721,6 +1734,7 @@ scripting::::スクリプト処理
 局所的:local::~::ローカル
 選定-:select:~
 選定:selection:~
+内部的:internal:~
 
 
 	●指示語／機能語
@@ -1817,6 +1831,7 @@ scripting::::スクリプト処理
 	まったく:at all
 	一緒:together
 	様々な:various
+	各種:various
 
 
 `

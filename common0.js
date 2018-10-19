@@ -1133,6 +1133,7 @@ SVG2:https://svgwg.org/svg2-draft
 SVGrender:svg-render-ja.html
 SVGstruct:svg-struct-ja.html
 SVGcoords:svg-coords-ja.html
+SVGpaths:svg-paths-ja.html
 SVGstyling:svg-styling-ja.html
 SVGembedded:svg-embedded-ja.html
 SVGinteract:svg-interact-ja.html
