@@ -1040,9 +1040,9 @@ span:
 直線:straight line::~
 曲線:curve::~
 真円:circle::~
-真円の:circular な::~
+真円な:circular な::真円の
 矩形:rectangle::~
-矩形の:rectangular な::~
+矩形な:rectangular な::矩形の
 空間:space::~
 軸:axis::~
 無限:infinite:~
