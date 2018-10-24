@@ -702,7 +702,7 @@ SVGtypes:https://svgwg.org/svg2-draft/types.html
 	~SVG2/geometry.html→common0.js
 	~SVG2/coords.html→common0.js
 	~SVG2/paths.html→common0.js
-SVGshapes:https://svgwg.org/svg2-draft/shapes.html
+	~SVG2/shapes.html→common0.js
 SVGtext:https://svgwg.org/svg2-draft/text.html
 	~SVG2/embedded.html→common0.js
 SVGpainting:https://svgwg.org/svg2-draft/painting.html
@@ -1620,6 +1620,7 @@ feedback::::フィードバック
 防止-:prevent:~
 試み:attempt:~
 試みる:attempt する:~
+試みら:attempt さ:~
 試みて:attempt して:~
 試みた:attempt した
 試みな:attempt しな:~
