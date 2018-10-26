@@ -1,8 +1,7 @@
 'use strict';
 
 /* common0.js の簡略版：
-charmod-ja.html
-w3c-common-ja.html
+charmod-ja.html のみ
 */
 
 // 要素取得
