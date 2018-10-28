@@ -1558,10 +1558,9 @@ CSS21=副2             ＃hp.vector.co.jp/authors/VA022006/css/index.html
 CSS21=副              ~adagio/tr_css2/toc.html●2.0 日本語訳 2
 CSS21=版              ~TR/CSS2/
 CSS21=編              ~CSSWG/css2/
-CSSALIGN=主           ~/css-align-ja.html
-	CSSALIGN=版           ~TR/css-align-3/
-	CSSALIGN=編           ~CSSWG/css-align-3/
-CSSALIGN=・           ~CSSWG/css-align/
+CSSALIGN3=主           ~/css-align-ja.html
+	CSSALIGN3=版           ~TR/css-align-3/
+	CSSALIGN3=編           ~CSSWG/css-align-3/
 CSSANIMATIONS1=主     ~/css-animations-ja.html
 	CSSANIMATIONS1=版     ~TR/css-animations-1/
 	CSSANIMATIONS1=編     ~CSSWG/css-animations-1/
@@ -1591,11 +1590,10 @@ CSSCOLOR3=副          ~/css-color-ja.html●Level 4 日本語訳
 CSSCOUNTERSTYLES3=主  ~/css-counter-styles-ja.html
 	CSSCOUNTERSTYLES3=版  ~TR/css-counter-styles-3/
 	CSSCOUNTERSTYLES3=編  ~CSSWG/css-counter-styles/
-CSSCONDITIONAL=主     ~/css-conditional-ja.html
-	CSSCONDITIONAL=版     ~TR/css3-conditional/
-	CSSCONDITIONAL=編     ~CSSWG/css-conditional-3/
-	CSSCONDITIONAL=・     ~TR/css-conditional/
-CSSCONDITIONAL=・     ~CSSWG/css-conditional/
+CSSCONDITIONAL3=主     ~/css-conditional-ja.html
+	CSSCONDITIONAL3=版     ~TR/css3-conditional/
+	CSSCONDITIONAL3=編     ~CSSWG/css-conditional-3/
+	CSSCONDITIONAL3=・     ~TR/css-conditional/
 CSSCONTAIN1=主        ~/css-contain-ja.html
 	CSSCONTAIN1=版        ~TR/css-contain-1/
 	CSSCONTAIN1=編        ~CSSWG/css-contain-1/
@@ -1616,6 +1614,7 @@ CSSFLEXBOX1=主            ~/css-flexbox-ja.html
 CSSFONTS3=主          ~/css-fonts-ja.html
 	CSSFONTS3=版          ~TR/css-fonts-3/
 	CSSFONTS3=編          ~CSSWG/css-fonts-3/
+CSSFONTS4=主          ~/css-fonts4-ja.html
 CSSFONTLOAD=主        ~/css-font-loading-ja.html
 	CSSFONTLOAD=版        ~TR/css-font-loading/
 	CSSFONTLOAD=編        ~CSSWG/css-font-loading/
@@ -1629,9 +1628,9 @@ CSSIMAGES3=主         ~/css-images-ja.html
 CSSIMAGES3=副         ~momdo/CR-css3-images-20120417.html
 	CSSIMAGES3=版         ~TR/css3-images/
 	CSSIMAGES3=編         ~CSSWG/css-images-3/
-CSSLOGICAL=主         ~/css-logical-ja.html
-	CSSLOGICAL=編         ~CSSWG/css-logical/
-CSSMASKING=主         ~/css-masking-ja.html
+CSSLOGICAL1=主         ~/css-logical-ja.html
+	CSSLOGICAL1=編         ~CSSWG/css-logical/
+CSSMASKING1=主         ~/css-masking-ja.html
 	CSSMASKING=版         ~TR/css-masking-1/
 	CSSMASKING=編         ~CSSWG/css-masking-1/
 CSSMULTICOL1=主        ~/css-multicol-ja.html
@@ -1706,9 +1705,9 @@ CSSVALUES3=主         ~momdoG/css3-values/
 CSSVALUES3=副2        ~/css-values-ja.html●Level 4 日本語訳
 	CSSVALUES3=版         ~TR/css-values-3/
 	CSSVALUES3=編         ~CSSWG/css-values-3/
-CSSVARIABLES=主       ~/css-variables-ja.html
-	CSSVARIABLES=編       ~CSSWG/css-variables-1/
-	CSSVARIABLES=版       ~TR/css-variables-1/
+CSSVARIABLES1=主       ~/css-variables-ja.html
+	CSSVARIABLES1=編       ~CSSWG/css-variables-1/
+	CSSVARIABLES1=版       ~TR/css-variables-1/
 CSSWILLCHANGE1=主     ~/css-will-change-ja.html
 	CSSWILLCHANGE1=版     ~TR/css-will-change-1/
 CSSWRITINGMODES4=主   ~/css-writing-modes-ja.html
@@ -1978,7 +1977,7 @@ CSP:CSP3
 CSS2:CSS21
 CSS22:CSS21
 COMPOSITING:COMPOSITING1
-CSSALIGN3:CSSALIGN
+	CSSALIGN:CSSALIGN3
 CSS3ANIMATIONS:CSSANIMATIONS1
 CSS3BACKGROUND:CSSBACKGROUNDS3
 CSS3BOX:CSSBOX3
@@ -1989,8 +1988,8 @@ CSS3CASCADE:CSSCASCADE3
 CSSCASCADE:CSSCASCADE4
 CSS3COLOR:CSSCOLOR3
 CSSCOLOR:CSSCOLOR4
-CSS3CONDITIONAL:CSSCONDITIONAL
-CSSCONDITIONAL3:CSSCONDITIONAL
+CSS3CONDITIONAL:CSSCONDITIONAL3
+CSSCONDITIONAL:CSSCONDITIONAL3
 CSSCOUNTERSTYLES:CSSCOUNTERSTYLES3
 CSSDISPLAY:CSSDISPLAY3
 CSS3DISPLAY:CSSDISPLAY3
@@ -2001,7 +2000,8 @@ CSS3FONTS:CSSFONTS3
 CSSGRID:CSSGRID1
 CSS3GRIDLAYOUT:CSSGRID1
 CSSINLINE:CSSINLINE3
-CSSMASKING1:CSSMASKING
+CSSLOGICAL:CSSLOGICAL1
+CSSMASKING:CSSMASKING1
 CSSMULTICOL:CSSMULTICOL1
 CSS3IMAGES:CSSIMAGES3
 CSS3MULTICOL:CSSMULTICOL1
@@ -2027,7 +2027,7 @@ CSS3TRANSFORMS:CSSTRANSFORMS1
 CSS3TRANSITIONS:CSSTRANSITIONS1
 CSSUI:CSSUI4
 CSSVALUES:CSSVALUES3
-CSSVARIABLES1:CSSVARIABLES
+CSSVARIABLES:CSSVARIABLES1
 CSS3UI:CSSUI3
 CSS3VALUES:CSSVALUES3
 CSS3VAL:CSSVALUES3
