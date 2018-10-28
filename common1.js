@@ -1667,6 +1667,7 @@ CSSOMVIEW1=主         ~/cssom-view-ja.html
 	CSSOMVIEW1=編         ~CSSWG/cssom-view/
 CSSPSEUDO4=主         ~/css-pseudo-ja.html
 CSSSCOPING1=主        ~/css-scoping-ja.html
+CSSSCROLLSNAP1=主     ~/css-scroll-snap-ja.html
 CSSSTYLEATTR1=主      ~/css-style-attr-ja.html
 CSSSTYLEATTR1=副2     ~mitsue/css-style-attr/
 	CSSSTYLEATTR1=版      ~TR/css-style-attr/
@@ -2035,6 +2036,7 @@ CSS3WRITINGMODES:CSSWRITINGMODES3
 CSSOM:CSSOM1
 CSSOMVIEW:CSSOMVIEW1
 MEDIAQ:MEDIAQUERIES4
+MEDIAQUERIES:MEDIAQUERIES4
 CSS3MEDIAQUERIES:MEDIAQUERIES3
 MEDIAFRAGS:MEDIAFRAG
 SELECT:SELECTORS3
