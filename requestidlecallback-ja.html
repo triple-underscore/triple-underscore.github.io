@@ -158,8 +158,8 @@ return text;
 ●●options
 
 spec_title:Cooperative Scheduling of Background Tasks
-spec_date:2018-10-18
-trans_update:2018-10-20
+spec_date:2018-10-24
+trans_update:2018-10-29
 source_checked:170815
 page_state_key:TIMING
 original_url:https://w3c.github.io/requestidlecallback/
@@ -251,22 +251,13 @@ m.hidden:~PAGE-VISIBILITY#dom-document-hidden
 	~privacyと保安:~HRTIME#privacy-security
 
 ~task源:~WAPI#task-source
-~task~queue:~WAPI#task-queue
-小task~queue:~WAPI#microtask-queue
 ~event~loop:~WAPI#event-loop
-~event~loopを回す:~WAPI#spin-the-event-loop
-	#spinning-the-event-loop
+	~event~loop処理~model:~WAPI#event-loop-processing-model
 ~taskを~queueする:~WAPI#queue-a-task
 ~task:~WAPI#concept-task
 ~errorを報告する:~WAPI#report-the-error
 
-閲覧文脈:~BROWSERS#browsing-context
-全部的に作動中:~BROWSERS#fully-active
-
-	結付けている~window:~WINDOW#concept-document-window
-	結付けられている文書:~WINDOW#concept-document-window
 作動中の~timerの~list:~HTMLGAPI#list-of-active-timers
-作動中の文書:~BROWSERS#active-document
 
 
 ●●words_table1
@@ -381,7 +372,6 @@ mark:::マーク
 実行時:runtime:~
 
 task:::タスク
-小task:microtask::小 task:小タスク
 queue::::キュー
 
 負荷:load:~
@@ -450,8 +440,6 @@ queue::::キュー
 並列的:parallel:~
 走らす:run する:~
 走る:run する:~
-未終了の:outstanding:~
-状態:state:~
 真偽:boolean:~
 	間引くthrottle〜rather than continuously
 	~~静止quiescence:::
@@ -532,7 +520,6 @@ support:::サポート
 作者:author:~
 	例:example:~
 	例えば:for example:~
-全部的:full:~
 依拠-:rely:~
 	依然として:still:~
 知識:knowledge:~
@@ -649,8 +636,6 @@ markup:::マークアップ
 保持-:hold:~
 拡充-:populate:~
 超過-:exceed:~
-反映-:reflect:~
-
 	返-:return
 	空にする:clear
 	追加の:additional
@@ -687,8 +672,6 @@ IDL:
 節電:low-power:~
 部分的:partial:~
 長さ:length:~
-閲覧文脈:browsing context:~
-
 
 音声:audio:~
 順序:order:~
@@ -1758,9 +1741,13 @@ The invoke idle callback timeout algorithm sets timeout to true to specify that 
 
 <p class="algo-head">
 `遊休~期間を開始する@
-ときは、所与の %window に対し，次を走らす：
+~algoは，［
+<a href="~WAPI#event-loop-processing-model">~event~loop処理~model</a>において，~event~loopは他でもない遊休~中にあるものと決定されたとき
+］に~callされ、所与の
+( %window )
+に対し，次を走らす：
 ◎
-The start an idle period algorithm:
+The start an idle period algorithm, which is called by the event loop processing model when it determines that the event loop is otherwise idle:
 </p>
 
 <ol>
@@ -1770,50 +1757,25 @@ The start an idle period algorithm:
 Let last_deadline be the last idle period deadline associated with window
 </li>
 	<li>
-%~event~loop ~LET %window 【が属する閲覧文脈】に結付けられている`~event~loop$
-◎
-Let event_loop be the event loop associated with window
-</li>
-	<li>
 ~IF［
 現在時刻 ~LT %最後の刻限
 ］
 ⇒
-現在時刻 ~GTE  %最後の刻限 になるまで，`~event~loopを回す$
+~RET
 ◎
-If last_deadline is greater than the current time:
-• Spin the event loop until the current time is greater than or equal to last_deadline.
+If last_deadline is greater than the current time, return from this algorithm.
 </li>
 	<li>
 <p>
-%~event~loop が有する［
-`~task~queue$,  `小task~queue$
-］すべてが空になるまで，`~event~loopを回す$
+~UAの任意選択で
+⇒
+~IF［
+遊休~期間は遅延するべきと決定された
+］
+⇒
+~RET
 ◎
-Spin the event loop until all the task queues and the microtask queue associated with event_loop are empty.
-</p>
-
-<p class="note">注記：
-~UAには、［［
-%~event~loop が結付けられていて, かつ
-自身が描画しようと意図する，すべての`閲覧文脈$
-］それぞれにて`全部的に作動中$の文書
-］における未終了の更新
-］があれば、それらの現在の状態を反映するために，描画と`閲覧文脈$を更新することが期待される（すなわち、
-<a href="~WAPI#event-loop-processing-model" >~event~loop処理~model</a>
-の
-<a href="~WAPI#update-the-rendering">描画を更新する</a>
-段）。
-すなわち，~animationにおける現在の~frame用の描画~更新は、この段を終えた時点で，すべて完了することになる。
-◎
-The expectation is that the user agent will update the rendering and browsing context to reflect the current state of any outstanding updates for all fully active Document objects associated event_loop (i.e., step 7 of event loop processing model) for any browsing context the user agent intends to render. I.e., during animations all rendering updates for the current frame will be completed after this step.
-</p>
-	</li>
-	<li>
-<p>
-任意選択で、~UAが定義する時間だけ更に待機する
-◎
-Optionally, wait a further user-agent defined length of time.
+Optionally, if the user agent determines the idle period should be delayed, return from this algorithm.
 </p>
 
 <p class="note">注記：
@@ -1826,7 +1788,7 @@ Optionally, wait a further user-agent defined length of time.
 — 例えば、一回の遊休~期間を毎 10 秒ごとに制限するなど。
 `page-visibility$r
 ◎
-This is intended to allow user agents to delay the start of idle periods as needed to optimise the power usage of the device. For example, if the Document's hidden attribute ([page-visibility]) is true then the user agent can throttle idle period generation, for example limiting the Document to one idle period every 10 seconds to optimize for power usage.
+This is intended to allow user agents to delay the start of idle periods as needed to optimise the power usage of the device. For example, if the `Document`'s hidden attribute ([page-visibility]) is `true` then the user agent can throttle idle period generation, for example limiting the Document to one idle period every 10 seconds to optimize for power usage.
 </p>
 	</li>
 	<li>
@@ -1837,19 +1799,14 @@ Let now be the current time.
 	<li>
 <p>
 %刻限 ~LET ~UAがその時点までは遊休~中であり続けるものと予期する，時列線~上のある時点
-◎
-Let deadline be a time in the future until which the browser expects to remain idle.＼
-</p>
-
-<p>
-~UAは、［
+— ~UAは、［
 ~callbackが %今 から %刻限 までの期間~全体にわたって稼働するとしても，時間に厳しい~taskは遅延されない
 ］ように， %刻限 を選ぶべきである。
 そのようなわけで、次のうちの最小に設定するべきである：
 ◎
+Let deadline be a time in the future until which the browser expects to remain idle.
 The user agent SHOULD choose deadline to ensure that no time-critical tasks will be delayed even if a callback runs for the whole time period from now to deadline. As such, it should be set to the minimum of:＼
 </p>
-
 		<ul>
 			<li>
 ［［
@@ -2108,9 +2065,6 @@ When an idle callback is scheduled the user agent provides an estimate of how lo
 To mitigate cache and statistical fingerprinting attacks, the resolution of the time estimates returned by the IdleDeadline interface should be set to the same 5 microsecond minimum as the Performance interface defined in [HR-TIME].
 </p>
 	</section>
-
-</main></div><!-- id="MAIN"／MAIN0 -->
-
 	<section id="acknowledgements" class="appendix">
 <h2 title="Acknowledgments">謝辞</h2>
 
@@ -2124,3 +2078,5 @@ The editors would like to thank the following people for contributing to this sp
 Sami Kyostila, Alex Clarke, Boris Zbarsky, Marcos Caceres, Jonas Sicking, Robert O'Callahan, David Baron, Todd Reifsteck, Tobin Titus, Elliott Sprehn, Tetsuharu OHZEKI, Lon Ingram, Domenic Denicola, Philippe Le Hegaret and Anne van Kesteren 
 </p>
 	</section>
+
+</main></div>
