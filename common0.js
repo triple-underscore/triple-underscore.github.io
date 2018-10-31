@@ -1005,10 +1005,6 @@ BREAK:<b>BREAK</b>
 CONTINUE:<b>CONTINUE</b>
 此れ:<b>これ°</b>
 Assert:<b>Assert</b>
-MUST:なければならない
-MUST_NOT:ならない
-SHOULD:べき
-MAY:よい
 ナラナイ:ならない
 モノトスル:ものとする
 ベキ:べき
