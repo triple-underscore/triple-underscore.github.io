@@ -121,9 +121,6 @@ case 'm': // IDL member
 	}
 	href = '#dom-' + href.toLowerCase();
 	break;
-case 'et': // event-types
-	href = '#_event-' + key;
-	break;
 case 'E': // exceptions
 	href = '#_' + key;
 	break;
@@ -179,8 +176,8 @@ return (quote ? quote + text + quote : text);
 ●●options
 
 spec_title:Indexed Database API 3.0
-spec_date:2018-10-30
-trans_update:2018-11-01
+spec_date:2018-11-03
+trans_update:2018-11-03
 source_checked:180503
 original_url:https://w3c.github.io/IndexedDB/
 spec_status:ED
@@ -331,10 +328,16 @@ l.readonly:#dom-idbtransactionmode-readonly
 l.readwrite:#dom-idbtransactionmode-readwrite
 l.versionchange:#dom-idbtransactionmode-versionchange
 
-et.blocked:#request-blocked
-阻まれ:#request-blocked
-et.upgradeneeded:#request-upgradeneeded
-
+et.upgradeneeded:#eventdef-request-upgradeneeded
+et.versionchange:#eventdef-connection-versionchange
+et.blocked:#eventdef-request-blocked
+阻まれ:#eventdef-request-blocked
+et.success:#eventdef-request-success
+et.error:#eventdef-request-error
+et.complete:#eventdef-transaction-complete
+et.abort:#eventdef-transaction-abort
+et.close:#_eventdef-connection-close
+	et.close:~HTMLindex#event-close
 
 	●js
 ~Record:~TC39#sec-list-and-record-specification-type
@@ -422,8 +425,6 @@ i.~close済み:#connection-closed
 i.~close待ち:#connection-close
 ~close:#connection-closed
 
-~version変更~event:#connection-version-change-event
-
 接続~queue:#request-connection-queue
 
 	●transaction
@@ -444,7 +445,7 @@ tx.~error:#transaction-error
 開始-:#transaction-start
 中止-:#transaction-abort
 ~commit:#transaction-commit
-終了-:#transaction-finish
+完遂-:#transaction-finish
 実行-:#_transaction-execute
 昇格~tx:#upgrade-transaction
 稼働して:#_transaction-running
@@ -522,8 +523,8 @@ Cs.値:#cursor-value
 Cs.値取得済~flag:#cursor-got-value-flag
 Cs.実効~保管庫:#cursor-effective-object-store
 Cs.実効~key:#cursor-effective-key
+Cs.要請:#cursor-request
 Cs.~key~only~flag:#cursor-key-only-flag
-Cs.要請:#_cursor-request
 
 
 
@@ -792,7 +793,7 @@ thread::::スレッド
 作動中:active::~::アクティブ
 	作動中でなくなる:deactivate
 
-終了-:finish::~
+完遂-:finish::~
 完了-:complete::~
 中止-:abort::~
 開始-:start::~
@@ -2294,15 +2295,15 @@ db.version will be 3.
 — 互いの読取り／書込みが衝突しないことは、~txにより確保される。
 新たな~clientが（ `upgradeneeded$et ~eventを介して）当の~dbを昇格したいと求めた場合、他のすべての~clientが その~dbの現在の~versionへの接続を~closeするまでは，それを行えない。
 ◎
-A single database can be used by multiple clients (pages and workers) simultaneously — transactions ensure they don’t clash while reading and writing. If a new client wants to upgrade the database (via the "upgradeneeded" event), it cannot do so until all other clients close their connection to the current version of the database.
+A single database can be used by multiple clients (pages and workers) simultaneously — transactions ensure they don’t clash while reading and writing. If a new client wants to upgrade the database (via the upgradeneeded event), it cannot do so until all other clients close their connection to the current version of the database.
 </p>
 
 <p>
-`~version変更~event$を~listenすれば、~clientは，新たな~clientが昇格-時に阻まれるのを避けれる。
+`versionchange$et ~eventを~listenすれば、~clientは，新たな~clientが昇格-時に阻まれるのを避けれる。
 これは、別の~clientが当の~dbを昇格したいと求めているときに発火される。
 その昇格を継続できるようにするためには、 `versionchange$et ~eventに対し，この~clientによる~dbへの`接続$が最終的に~closeされるような何かを行って反応する。
 ◎
-To avoid blocking a new client from upgrading, clients can listen for the version change event. This fires when another client is wanting to upgrade the database. To allow this to continue, react to the "versionchange" event by doing something that ultimately closes this client’s connection to the database.
+To avoid blocking a new client from upgrading, clients can listen for the versionchange event. This fires when another client is wanting to upgrade the database. To allow this to continue, react to the versionchange event by doing something that ultimately closes this client’s connection to the database.
 </p>
 
 <p>
@@ -2900,7 +2901,7 @@ This is not affected by changes to the Document's domain.
 A connection has a version, which is set when the connection is created. It remains constant for the lifetime of the connection unless an upgrade is aborted, in which case it is set to the previous version of the database. Once the connection is closed the version does not change.
 </dd>
 	<dd class="trans-note">【
-より詳細には、 %接続↗ の`昇格~tx$dbが`終了-$して以降は変化しない。
+より詳細には、 %接続↗ の`昇格~tx$dbが`完遂-$して以降は変化しない。
 】</dd>
 
 	<dt>`状態@Cn</dt>
@@ -2944,7 +2945,8 @@ If the execution context where the connection was created is destroyed (for exam
 ◎
 The connection can also be closed explicitly using the steps to close a database connection. When the connection is closed the close pending flag is always set if it hasn’t already been.
 </li>
-			<li id="_exceptional-close">
+			<li>
+<p>
 %接続 は、例外的な状況でも~UAにより~closeされてよい／され得る
 — 例えば、~file~systemへの~accessを失ったとき, ~permission変更, 当の生成元に対する蓄積が消去されたことに因り。
 これが生じた場合、~UAは次を入力に
@@ -2954,7 +2956,15 @@ The connection can also be closed explicitly using the steps to close a database
 %強制~flag ~SET ~ON
 ◎
 A connection may be closed by a user agent in exceptional circumstances, for example due to loss of access to the file system, a permission change, or clearing of the origin’s storage. If this occurs the user agent must run the steps to close a database connection with the connection and with the forced flag set.
-</li>
+</p>
+
+<p>
+`close@et
+~eventは、そのような例外的な状況において当の`接続$に向けて発火される。
+【この段落は、この訳による補完。原文における `close^et の<a href="~HTMLindex#event-close">参照先（ HTML 仕様）</a>の記述は、全く関係ないので。】
+</p>
+
+			</li>
 		</ul>
 	</dd>
 
@@ -2975,13 +2985,11 @@ A connection’s get the parent algorithm returns null.
 </p>
 
 <p>
-`~version変更~event@
-（
 `versionchange@et
-）は、`~db$を昇格する／削除するよう試みたとき，その~dbを~openしている各 `接続$（それを試みている当の`接続$は除く）に向けて発火される。
+~eventは、`~db$を昇格する／削除するよう試みたとき，その~dbを~openしている各 `接続$（それを試みている当の`接続$は除く）に向けて発火される。
 これは、昇格／削除-を続行できるようにするために，`接続$を~closeする~~機会を与える。
 ◎
-A version change event will be fired at an open connection if an attempt is made to upgrade or delete the database. This gives the connection the opportunity to close to allow the upgrade or delete to proceed.
+A versionchange will be fired at an open connection if an attempt is made to upgrade or delete the database. This gives the connection the opportunity to close to allow the upgrade or delete to proceed.
 </p>
 
 			</section>
@@ -4630,7 +4638,7 @@ Once the transaction has been started the implementation can start executing the
 </li>
 	<li>
 <strong>中止する</strong>：
-`~tx$は、`終了-$する前に，いつでも
+`~tx$は、`完遂-$する前に，いつでも
 `中止-@
 され得る／できる
 — ~txが`作動中$であろうと，まだ`開始-$されていなくても。
@@ -4706,14 +4714,14 @@ If such an error occurs, the implementation must abort the transaction by follow
 	<li>
 
 <p>
-<strong>終了-</strong>：
+<strong>完遂-</strong>：
 `~tx$は、それが［
 `~commit$された, または
 `中止-$された†
 ］時点で，
-`終了-@
+`完遂-@
 したとされる。
-`~tx$を終了できない場合
+`~tx$を完遂できない場合
 — 例えば、実装が~crashした, あるいは
 利用者が~txを取消すような何らかの明示的な動作をとったことに因り —
 実装は、~txを`中止-$するモノトスル††。
@@ -4728,6 +4736,20 @@ When a transaction is committed or aborted, it is said to be finished. If a tran
 】</p>
 	</li>
 </ol>
+
+<p>
+`complete@et
+~eventは、成功裡に`~commit$された`~tx$に向けて発火される。
+◎
+An event with type complete is fired at a transaction that has successfully committed.
+</p>
+
+<p>
+`abort@et
+~eventは、`中止-$された`~tx$に向けて発火される。
+◎
+An event with type abort is fired at a transaction that has aborted.
+</p>
 
 <p>
 `~tx$の開始~時機は、以下に挙げる拘束により定義される：
@@ -4748,7 +4770,7 @@ Any number of read-only transactions are allowed to run concurrently, even if th
 
 <p>
 実装がこれを確保する仕方はいくつもある。
-例えば，`~readwrite~tx$に対し、視野が重なる`~readonly~tx$が他にあるときは，それらが`終了-$するまで`開始-$を遅らすこともできる。
+例えば，`~readwrite~tx$に対し、視野が重なる`~readonly~tx$が他にあるときは，それらが`完遂-$するまで`開始-$を遅らすこともできる。
 あるいは，`~readonly~tx$に対しては、その開始-時点での`保管庫$の~snapshotを常に見るようにする方法もある。
 ◎
 There are a number of ways that an implementation can ensure this. The implementation could prevent any read/write transaction, whose scope overlaps the scope of the read-only transaction, from starting until the read-only transaction finishes. Or the implementation could allow the read-only transaction to see a snapshot of the contents of the object stores which is taken when the read-only transaction started.
@@ -4776,14 +4798,14 @@ The implementation must also ensure that if the read/write transaction completes
 	<li>
 複数の`~readwrite~tx$が同じ保管庫に~accessしようと試みた（すなわち，それらの`視野$が重なっている）場合、先に`作成-$された~txが保管庫への~accessを先に取得すること。
 前 2 項による要件に因り、これは［
-その~txが`終了-$するまで，保管庫に~accessできるのはその~txに限られる
+その~txが`完遂-$するまで，保管庫に~accessできるのはその~txに限られる
 ］ことも意味する。
 ◎
 If multiple read/write transactions are attempting to access the same object store (i.e. if they have overlapping scope), the transaction that was created first must be the transaction which gets access to the object store first. Due to the requirements in the previous paragraph, this also means that it is the only transaction which has access to the object store until the transaction is finished.
 </li>
 	<li>
 `~readwrite~tx$ %A の後に`作成-$された，~tx %B は、 %A  と`視野$が重なる`保管庫$ %O があるならば， %A により書込された %O への変更を見ること。
-前~項による要件に因り，これは、 %A が`終了-$するまで，［
+前~項による要件に因り，これは、 %A が`完遂-$するまで，［
 %B は， %A の`視野$に入る どの`保管庫$にも~accessできない
 ］ことを意味する。
 ◎
@@ -4908,7 +4930,7 @@ An upgrade transaction enables the creation, renaming, and deletion of object st
 ］は，唯一に限られることを確保する。
 同じ`~db$への他のすべての`接続$が~closeされるまでは、
 `upgradeneeded$et ~eventは発火されず，したがって`昇格~tx$も開始されない。
-これは、以前のすべての~txが`終了-$されることを確保する。
+これは、以前のすべての~txが`完遂-$されることを確保する。
 `昇格~tx$が稼働している限り、同じ`~db$への他の`接続$を~openしようとする試みは遅延され、同じ`接続$を利用するために
 <a href="#dom-idbdatabase-transaction">`transaction()^m</a>
 を~callして追加の~txを開始しようとする試みに対しては、例外が投出されることになる。
@@ -5030,7 +5052,9 @@ A request has a transaction which is initially null. This will be set when a req
 %要請 の`~error$は ε に設定される。
 </li>
 			<li>
-%要請 に向けて `success$et ~eventが発火される。
+%要請 に向けて
+`success@et
+~eventが発火される。
 </li>
 		</ol>
 	</li>
@@ -5045,7 +5069,9 @@ A request has a transaction which is initially null. This will be set when a req
 %要請 の`~error$は %結果 に設定される。
 </li>
 			<li>
-%要請 に向けて `error$et ~eventが発火される。
+%要請 に向けて
+`error@et
+~eventが発火される。
 </li>
 		</ol>
 	</li>
@@ -5095,10 +5121,11 @@ An open request is a special type of request used when opening a connection or d
 ［
 `success$et, `error$et
 ］~eventに加え，進捗を指示する［
-`blocked@et, `upgradeneeded@et
+`blocked@et,
+`upgradeneeded@et
 ］~eventも発火され得る。
 ◎
-In addition to success and error events, blocked and upgradeneeded may be fired at an open request to indicate progress.
+In addition to success and error events, blocked and upgradeneeded events may be fired at an open request to indicate progress.
 </li>
 	<li>
 その`~source$は常に ε である。
@@ -5108,7 +5135,7 @@ The source of an open request is always null.
 	<li>
 その`設置先~tx$は、 `upgradeneeded$et ~eventが発火されない限り， ε にされる。
 <!-- 
-その~txが終了したときも ε に戻される
+その~txが完遂したときも ε に戻される
  -->
 ◎
 The transaction of an open request is null unless an upgradeneeded event has been fired.
@@ -5420,12 +5447,6 @@ A cursor is used to iterate over a range of records in an index or an object sto
 </p>
 
 <dl class="def-list">
-	<dt>`要請@Cs</dt>
-	<dd>
-~cursorを作成させた`要請$。
-【この項目は、この訳による補完。】
-</dd>
-
 	<dt>`~tx@Cs</dt>
 	<dd>
 ~cursorの`~source$Csが`専属する$`~tx$。
@@ -5652,6 +5673,13 @@ A cursor has a got value flag. When this flag unset, the cursor is either in the
 ］。
 ◎
 If the source of a cursor is an object store, the effective object store of the cursor is that object store and the effective key of the cursor is the cursor’s position. If the source of a cursor is an index, the effective object store of the cursor is that index’s referenced object store and the effective key is the cursor’s object store position.
+</dd>
+
+	<dt>`要請@Cs</dt>
+	<dd>
+~cursorを~openするときに利用された`要請$。
+◎
+A cursor has a request, which is the request used to open the cursor.
 </dd>
 
 	<dt>`~key~only~flag@Cs</dt>
@@ -6311,7 +6339,7 @@ The mutating operation was attempted in a read-only transaction.
 
 <tr><td>`TransactionInactiveError@E
 <td>
-現在 `作動中$でない／すでに`終了-$した~txに対し，要請が設置された。
+現在 `作動中$でない／すでに`完遂-$した~txに対し，要請が設置された。
 ◎
 A request was placed against a transaction which is currently not active, or which is finished.
 
@@ -6586,7 +6614,7 @@ The onerror attribute is the event handler for the error event.
 `blocked$et, `upgradeneeded$et
 ］~eventを~listenできるように拡張された~interfaceを利用する。
 ◎
-Methods on IDBDatabase that return a open request use an extended interface to allow listening to the blocked event and upgradeneeded event.
+Methods on IDBDatabase that return a open request use an extended interface to allow listening to the blocked and upgradeneeded events.
 </p>
 
 <pre class="idl">
@@ -6718,17 +6746,17 @@ The return value of this algorithm is not always used.
 
 		</section>
 		<section id="_event-types">
-<h3>【 各種~event型 】</h3>
+<h3>【 各種~event型の一覧 】</h3>
 
 <p>
-便宜のため、この訳では，この仕様にて利用される各種~event型を以下に要約する：
+便宜のため、この訳では，この仕様が利用する各種~event型を以下に要約する。
 </p>
 
 <p>
-この仕様の~eventの発火-先は、［
-`要請$／`~tx$／`接続$
-］のいずれかである。
-~eventは、`親~標的を取得する$~algoを通して，複数の~objに伝播する場合もあることに注意。
+これらの~eventは、［
+`要請$, `~tx$, `接続$
+］のいずれかに向けて発火される。
+~eventは、`親~標的を取得する$~algoを通して，複数の~objに伝播する場合もある。
 親~標的は、［
 `~open要請$に対しては ~NULL ／
 他の`要請$に対しては その`設置先~tx$ ／
@@ -6737,53 +6765,39 @@ The return value of this algorithm is not always used.
 ］になる。
 </p>
 
-<dl class="def-list">
-	<dt>`success@et</dt>
-	<dd>
-`要請$が成功したときに，その要請に向けて発火される。
-</dd>
+<table><thead><tr><th>~event
+<th>発火-時機と標的
+</thead><tbody>
 
-	<dt>`error@et</dt>
-	<dd>
-何らかの~errorにより`要請$が失敗したときに，その要請に向けて発火される。
-</dd>
+<tr><td>`success$et
+<td>`要請$が成功したとき，その要請に向けて発火される。
 
-	<dt>`versionchange$et</dt>
-	<dd>
-`~version変更~event$の記述を見よ。
-</dd>
+<tr><td>`error$et
+<td>何らかの~errorにより`要請$が失敗したとき，その要請に向けて発火される。
 
-	<dt>`abort@et</dt>
-	<dd>
-`~tx$が~errorまたは `abort()^m により`中止-$されたときに，その~txに向けて発火される。
-</dd>
+<tr><td>`versionchange$et
+<td>`~db$を昇格-（または削除-）しようとしたとき，同じ~dbを~openしている他の`接続$に向けて発火される。
 
-	<dt>`close@et</dt>
-	<dd>
-`接続$が
-<a href="#_exceptional-close" >例外的な状況で~closeされた</a>
-ときに，その接続に向けて発火される。
-</dd>
+<tr><td>`abort$et
+<td>
+`~tx$が~errorまたは `abort()^m により`中止-$されたとき，その~txに向けて発火される。
 
-	<dt>`complete@et</dt>
-	<dd>
-`~tx$が`~commit$されたときに，その~txに向けて発火される。
-</dd>
+<tr><td>`close$et
+<td>`接続$が例外的な状況で~closeされたとき，その接続に向けて発火される。
 
-	<dt>`blocked$et</dt>
-	<dd>
-他の`接続$がまだ `~close済み$i でないために，［
-`~dbを~open$する ／
-`~dbを削除-$する
+<tr><td>`complete$et
+<td>`~tx$が`~commit$されたとき，その~txに向けて発火される。
+
+<tr><td>`blocked$et
+<td>他の`接続$がまだ `~close済み$i でないために，［
+`~dbを~open$する ／ `~dbを削除-$する
 ］`要請$が阻まれたとき、その要請に向けて発火される。
-</dd>
 
-	<dt>`upgradeneeded$et</dt>
-	<dd>
-`~db$を~openしたとき`昇格~tx$が生じたときに，その`~open要請$に向けて発火される。
-</dd>
+<tr><td>`upgradeneeded$et
+<td>`~db$を~openした際に`昇格~tx$が生じたとき，その`~open要請$に向けて発火される。
 
-</dl>
+</tbody></table>
+
 
 		</section>
 		<section id="factory-interface">
@@ -6925,7 +6939,6 @@ This API is intended for web applications to introspect the use of databases, fo
 ◎
 The open(name, version) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 ~IF［
@@ -7018,7 +7031,11 @@ Queue a task to run these steps:
 `cancelable$m 属性 ~SET ~T
 </li></ol>
 ◎
-If result is an error, set request’s result to undefined, set request’s error to result, set request’s done flag, and fire an event named error at request with its bubbles and cancelable attributes initialized to true.
+If result is an error, then run these steps:
+• Set request’s result to undefined.
+• Set request’s error to result.
+• Set request’s done flag.
+• Fire an event named error at request with its bubbles and cancelable attributes initialized to true.
 </li>
 							<li>
 <div class="p">
@@ -7029,21 +7046,20 @@ If result is an error, set request’s result to undefined, set request’s erro
 </li><li>%要請 に向けて，名前 `success$et の`~eventを発火する$
 </li></ol>
 
-<p>
-上の`~dbを~open$する手続きが`昇格~txを稼働-$させた場合、
-`success$et ~eventの発火は，その昇格~txが完了した後に行うモノトスル。†
-</p>
 ◎
-Otherwise, set request’s result to result, set request’s done flag, and fire an event named success at request. If the steps above resulted in an upgrade transaction being run, then firing the "success" event must be done after the upgrade transaction completes.
+Otherwise, run these steps:
+• Set request’s result to result.
+• Set request’s done flag.
+• Fire an event named success at request.
 </div>
 
 <p class="note">注記：
-†最後の要件は、別の~versionへの昇格が起こりつつある場合に，最初に`接続$上に `success$et ~eventを発火して、~scriptが［
+上の`~dbを~open$する手続きが`昇格~txを稼働-$させた場合、この段は その昇格~txが`完遂-$した後に走ることになる。
+これは、別の~versionへの昇格が起こりつつある場合に，最初に`接続$上に `success$et ~eventを発火して、~scriptが［
 `versionchange$et ~event用の~listenerを登録する機会
-］を得られるようにするためにある。
-【？】
+］を得られることを確保する【？】。
 ◎
-The last requirement is to ensure that in case another version upgrade is about to happen, the success event is fired on the connection first so that the script gets a chance to register a listener for the versionchange event.
+If the steps above resulted in an upgrade transaction being run, these steps will run after that transaction finishes. This ensures that in the case where another version upgrade is about to happen, the success event is fired on the connection first so that the script gets a chance to register a listener for the versionchange event.
 </p>
 
 <p class="note">注記：
@@ -7349,8 +7365,6 @@ The IDBDatabase interface represents a connection to a database.
 </li>
 </ul>
 
-
-
 <p>
 `IDBDatabase$I ~objを~garbage収集するときは、その前に，それが表現する`接続$を`~close$するモノトスル。
 </p>
@@ -7504,7 +7518,6 @@ As long as the connection is open, this is the same as the connected database’
 ◎
 The createObjectStore(name, options) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 %~tx ~LET 此れ↗の`昇格~tx$db
@@ -7664,7 +7677,6 @@ In some implementations it is possible for the implementation to run into proble
 ◎
 The deleteObjectStore(name) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 %~tx ~LET 此れ↗の`昇格~tx$db
@@ -8057,7 +8069,7 @@ Returns true if the store has a key generator, and false otherwise.
 The name attribute’s getter must return this object store handle’s name.
 </dd>
 	<dd class="note">注記：
-この属性は、此れが`専属する$~txが`終了-$されるまでは，此れ↗の`名前$Osと同じ値を返し、それ以降も同じ`値を保持し続ける$。
+この属性は、此れが`専属する$~txが`完遂-$するまでは，此れ↗の`名前$Osと同じ値を返し、それ以降も同じ`値を保持し続ける$。
 <!-- details -->
 ◎
 Is this the same as the object store's name?
@@ -8155,7 +8167,7 @@ The returned value is not the same instance that was used when the object store 
 The indexNames attribute’s getter must return a DOMStringList associated with a sorted list of the names of indexes in this object store handle's index set.
 </dd>
 	<dd class="note">注記：
-この属性は、此れが`専属する$~txが`終了-$されるまでは，此れ↗に専属する`索引$たちの名前からなる~listと同じ値を返し、それ以降も同じ`値を保持し続ける$。
+この属性は、此れが`専属する$~txが`完遂-$するまでは，此れ↗に専属する`索引$たちの名前からなる~listと同じ値を返し、それ以降も同じ`値を保持し続ける$。
 <!-- deitails -->
 ◎
 Is this the same as object store's list of index names?
@@ -8765,7 +8777,6 @@ This method produces the same result if a record with the given key doesn’t ex
 ◎
 The getKey(query) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 `CheckState$( 此れ ) ？
@@ -9049,9 +9060,19 @@ Let range be the result of running the steps to convert a value to a key range w
 Let cursor be a new cursor with transaction set to transaction, an undefined position, direction set to direction, got value flag unset, and undefined key and value. The source of cursor is store. The range of cursor is range.
 </li>
 			<li>
-~RET 此れ上で %演算 を`非同期に実行する新たな要請$
+%要請 ~LET 此れ上で %演算 を`非同期に実行する新たな要請$
 ◎
-Run the steps to asynchronously execute a request and return the IDBRequest created by these steps. The steps are run with this object store handle as source and the steps to iterate a cursor as operation, using the current Realm as targetRealm, and cursor.
+Let request be the result of running the steps to asynchronously execute a request with this object store handle as source and the steps to iterate a cursor as operation, using the current Realm as targetRealm, and cursor.
+</li>
+			<li>
+此れの`要請$Cs ~SET %要請
+◎
+Set cursor’s request to request.
+</li>
+			<li>
+~RET %要請
+◎
+Return request.
 </li>
 		</ol>
 	</dd>
@@ -9071,7 +9092,6 @@ The query parameter may be a key or an IDBKeyRange to use as the cursor’s rang
 ◎
 The openKeyCursor(query, direction) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 `CheckState$( 此れ ) ？
@@ -9101,9 +9121,19 @@ Let range be the result of running the steps to convert a value to a key range w
 Let cursor be a new cursor with transaction set to transaction, an undefined position, direction set to direction, got value flag unset, and undefined key and value. The source of cursor is store. The range of cursor is range. The key only flag of cursor is set.
 </li>
 			<li>
-~RET 此れ上で %演算 を`非同期に実行する新たな要請$
+%要請 ~LET 此れ上で %演算 を`非同期に実行する新たな要請$
 ◎
-Run the steps to asynchronously execute a request and return the IDBRequest created by these steps. The steps are run with this object store handle as source and the steps to iterate a cursor as operation, using the current Realm as targetRealm, and cursor.
+Let request be the result of running the steps to asynchronously execute a request with this object store handle as source and the steps to iterate a cursor as operation, using the current Realm as targetRealm, and cursor.
+</li>
+			<li>
+此れの`要請$Cs ~SET %要請
+◎
+Set cursor’s request to request.
+</li>
+			<li>
+~RET %要請
+◎
+Return request.
 </li>
 		</ol>
 	</dd>
@@ -9171,7 +9201,6 @@ Throws an "InvalidStateError" DOMException if not called within an upgrade trans
 ◎
 The createIndex(name, keyPath, options) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 `CheckState$( 此れ, `versionchange^l ) ？
@@ -9356,7 +9385,6 @@ At the point where createIndex() called, neither of the requests have executed. 
 ◎
 The index(name) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 ~IF［
@@ -9373,7 +9401,7 @@ If store has been deleted, throw an "InvalidStateError" DOMException.
 </li>
 			<li>
 ~IF
-此れが`専属する$`~tx$は すでに`終了-$した
+此れが`専属する$`~tx$は`完遂-$した
 ⇒
 ~THROW `InvalidStateError$E
 ◎
@@ -9426,7 +9454,6 @@ The returned IDBIndex instance is specific to this IDBObjectStore instance. If t
 ◎
 The deleteIndex(name) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 `CheckState$( 此れ, `versionchange^l ) ？
@@ -9606,7 +9633,7 @@ Returns true if the index’s unique flag is set.
 The name attribute’s getter must return this index handle’s name.
 </dd>
 	<dd class="note">注記：
-此れが`専属する$~txが`終了-$されない限り、返される値は此れ↗の`名前$Ixと同じになり、それ以降も同じ`値を保持し続ける$。
+此れが`専属する$~txが`完遂-$していない限り、返される値は此れ↗の`名前$Ixと同じになり、それ以降も同じ`値を保持し続ける$。
 <!-- deitails -->
 ◎
 Is this the same as the index's name?
@@ -10158,11 +10185,21 @@ Let range be the result of running the steps to convert a value to a key range w
 ◎
 ↓</li>
 			<li>
-~RET 此れ上で %演算 を`非同期に実行する新たな要請$
+%要請 ~LET 此れ上で %演算 を`非同期に実行する新たな要請$
 ◎
 Let cursor be a new cursor with transaction set to transaction, an undefined position, direction set to direction, got value flag unset, and undefined key and value. The source of cursor is index. The range of cursor is range.
 ◎
-Run the steps to asynchronously execute a request and return the IDBRequest created by these steps. The steps are run with this index handle as source and the steps to iterate a cursor as operation, using the current Realm as targetRealm, and cursor.
+Let request be the result of running the steps to asynchronously execute a request with this index handle as source and the steps to iterate a cursor as operation, using the current Realm as targetRealm, and cursor.
+</li>
+			<li>
+此れの`要請$Cs ~SET %要請
+◎
+Set cursor’s request to request.
+</li>
+			<li>
+~RET %要請
+◎
+Return request.
 </li>
 		</ol>
 	</dd>
@@ -10211,9 +10248,19 @@ Let range be the result of running the steps to convert a value to a key range w
 Let cursor be a new cursor with transaction set to transaction, an undefined position, direction set to direction, got value flag unset, and undefined key and value. The source of cursor is index. The range of cursor is range. The key only flag of cursor is set.
 </li>
 			<li>
-~RET 此れ上で %演算 を`非同期に実行する新たな要請$
+%要請 ~LET 此れ上で %演算 を`非同期に実行する新たな要請$
 ◎
-Run the steps to asynchronously execute a request and return the IDBRequest created by these steps. The steps are run with this index handle as source and the steps to iterate a cursor as operation, using the current Realm as targetRealm, and cursor.
+Let request be the result of running the steps to asynchronously execute a request with this index handle as source and the steps to iterate a cursor as operation, using the current Realm as targetRealm, and cursor.
+</li>
+			<li>
+此れの`要請$Cs ~SET %要請
+◎
+Set cursor’s request to request.
+</li>
+			<li>
+~RET %要請
+◎
+Return request.
 </li>
 		</ol>
 	</dd>
@@ -10491,7 +10538,6 @@ Create and return a new key range with lower bound set to null, lower open flag 
 ◎
 The bound(lower, upper, lowerOpen, upperOpen) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 %lowerKey ~LET `Key$( %lower ) ？
@@ -10829,17 +10875,17 @@ If this cursor’s got value flag is unset, indicating that the cursor is being 
 			<li>
 此れの`値取得済~flag$Cs ~SET ~OFF
 ◎
-Unset the got value flag on the cursor.
+Unset this cursor's got value flag.
 </li>
 			<li>
 %要請 ~SET 此れの`要請$Cs
 ◎
-Let request be the request created when this cursor was created.
+Let request be this cursor's request.
 </li>
 			<li>
 %要請 の`~done~flag$ ~SET ~OFF
 ◎
-Unset the done flag on request.
+Unset request’s done flag.
 </li>
 			<li>
 %演算 ~SET 次を入力に
@@ -10937,17 +10983,17 @@ If key is greater than or equal to this cursor’s position and this cursor’s 
 			<li>
 此れの`値取得済~flag$Cs ~SET ~OFF
 ◎
-Unset the got value flag on the cursor.
+Unset this cursor's got value flag.
 </li>
 			<li>
 %要請 ~SET 此れの`要請$Cs
 ◎
-Let request be the request created when this cursor was created.
+Let request be this cursor's request.
 </li>
 			<li>
 %要請 の`~done~flag$ ~SET ~OFF
 ◎
-Unset the done flag on request.
+Unset request’s done flag.
 </li>
 			<li>
 %演算 ~SET 次を入力に
@@ -10979,7 +11025,6 @@ Calling this method more than once before new cursor data has been loaded - for 
 ◎
 The continuePrimaryKey(key, primaryKey) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 `CheckState$( 此れ ) ？
@@ -11065,17 +11110,17 @@ If key is equal to this cursor’s position and primaryKey is greater than or eq
 			<li>
 此れの`値取得済~flag$Cs ~SET ~OFF
 ◎
-Unset the got value flag on the cursor.
+Unset this cursor's got value flag.
 </li>
 			<li>
 %要請 ~SET 此れの`要請$Cs
 ◎
-Let request be the request created when this cursor was created.
+Let request be this cursor's request.
 </li>
 			<li>
 %要請 の`~done~flag$ ~SET ~OFF
 ◎
-Unset the done flag on request.
+Unset request’s done flag.
 </li>
 			<li>
 %演算 ~SET 次を入力に
@@ -11162,7 +11207,6 @@ If successful, request’s result will be undefined.
 ◎
 The update(value) method, when invoked, must run these steps:
 </p>
-
 		<ol>
 			<li>
 `CheckState$( 此れ, `readwrite^l ) ？
@@ -11439,7 +11483,6 @@ If the transaction was aborted, returns the error (a DOMException) providing the
 ◎
 The objectStoreNames attribute’s getter must run these steps:
 </p>
-
 		<ol>
 			<li>
 %保管庫~集合 ~LET ［
@@ -11546,7 +11589,7 @@ The objectStore(name) method, when invoked, must run these steps:
 		<ol>
 			<li>
 ~IF［
-此れはすでに`終了-$した
+此れは`完遂-$している
 ］
 ⇒
 ~THROW `InvalidStateError$E
@@ -11606,7 +11649,7 @@ The abort() method, when invoked, must run these steps:
 		<ol>
 			<li>
 ~IF［
-此れはすでに`終了-$した
+此れは`完遂-$している
 ］
 ⇒
 ~THROW `InvalidStateError$E
@@ -11758,7 +11801,6 @@ The value is serialized when stored. Treating it as a copy here allows other alg
 	<li>
 %cursor ~LET 次の様にされた，新たな`~cursor$
 ⇒＃
-`要請$Cs ~SET この手続きを`演算$として呼出した`要請$,
 `~source$Cs ~SET %source,
 `範囲$Cs ~SET %範囲,
 `方向$Cs ~SET %方向,
@@ -12220,7 +12262,7 @@ Run the steps to run an upgrade transaction using connection, version and reques
 </p>
 
 <p class="trans-note">【
-`昇格~tx$が`終了-$するまで待機した上で
+`昇格~tx$が`完遂-$するまで待機した上で
 】</p>
 				<ul>
 					<li>
@@ -12290,11 +12332,11 @@ The steps to close a database connection are as follows. These steps take two ar
 	<li>
 %接続 の`状態$Cn ~SET `~close待ち$i
 ◎
-Set the close pending flag of connection.
+Set connection’s close pending flag.
 </li>
 	<li>
 `~txたち^V ~LET ［
-%接続 に`専属する$`~tx$であって, `終了-$していないもの
+%接続 に`専属する$`~tx$であって, `完遂-$していないもの
 ］からなる集合
 ◎
 ↓</li>
@@ -12316,7 +12358,7 @@ Set the close pending flag of connection.
 If the forced flag is set, then for each transaction created using connection run the steps to abort a transaction with transaction and newly created "AbortError" DOMException.
 </li>
 	<li>
-`~txたち^V 内の すべての~txが`終了-$するまで待機する
+`~txたち^V 内の すべての~txが`完遂-$するまで待機する
 ◎
 Wait for all transactions created using connection to complete.＼
 </li>
@@ -12343,7 +12385,7 @@ If the forced flag is set, then fire an event named close at connection.
 I/O ~errorが生じたとき。
 明示的に `close()$m を~callした場合には、この~eventは<em>発火されない</em>。
 ◎
-The "close" event only fires if the connection closes abnormally, e.g. if the origin’s storage is cleared, or there is corruption or an I/O error. If close() is called explicitly the event does not fire.
+The close event only fires if the connection closes abnormally, e.g. if the origin’s storage is cleared, or there is corruption or an I/O error. If close() is called explicitly the event does not fire.
 </p>
 	</li>
 </ol>
@@ -12569,7 +12611,7 @@ Fire an event named complete at transaction.
 この~event用の~event~handlerから例外が投出されても、~db変更の書込みは~eventの配送-前に終わるので，~txは~commitされる。
 `complete$et ~eventが発火されるのは、~txが成功裡に書込されてから限られる。
 ◎
-Even if an exception is thrown from one of the event handlers of this event, the transaction is still committed since writing the database changes happens before the event takes places. Only after the transaction has been successfully written is the "complete" event fired.
+Even if an exception is thrown from one of the event handlers of this event, the transaction is still committed since writing the database changes happens before the event takes places. Only after the transaction has been successfully written is the complete event fired.
 </p>
 			</li>
 			<li>
@@ -12589,7 +12631,7 @@ If transaction is an upgrade transaction, then let request be the request associ
 
 <p class="trans-note">【
 `~readonly~tx$に対してもこの手続は呼出されるのかどうか？
-はっきりしない（呼出された方が~txの`終了-$時も検出し易いが）。
+はっきりしない（呼出された方が~txの`完遂-$時も検出し易いが）。
 】</p>
 
 		</section>
@@ -12674,7 +12716,6 @@ If error is not null, set transaction’s error to error.
 ◎
 For each request in transaction’s request list with done flag unset,＼
 </p>
-
 		<ol>
 			<li>
 %要請 を`非同期に実行する$手続きを中止する
@@ -12692,17 +12733,17 @@ queue a task to run these steps:
 					<li>
 %要請 の`~done~flag$ ~SET ~ON
 ◎
-Set the done flag on request.
+Set request’s done flag.
 </li>
 					<li>
 %要請 の`結果$ ~SET ε
 ◎
-Set the result of request to undefined.
+Set request’s result to undefined.
 </li>
 					<li>
 %要請 の`~error$ ~SET `Error$( `AbortError$E )
 ◎
-Set the error of request to a newly created "AbortError" DOMException.
+Set request’s error to a newly created "AbortError" DOMException.
 </li>
 					<li>
 %要請 に向けて，名前 `error$et の`~eventを発火する$
@@ -12730,7 +12771,6 @@ This does not always result in any error events being fired. For example if a tr
 ◎
 Queue a task to run these steps:
 </p>
-
 		<ol>
 			<li>
 ~IF［
@@ -12759,9 +12799,9 @@ If transaction is an upgrade transaction, then:
 </p>
 				<ol>
 					<li>
-%要請 ~LET %~tx を`設置先~tx$とする`要請$（すなわち、`昇格~txを稼働-$する手続きに渡された %要請 ）
+%要請 ~LET %~tx を`設置先~tx$とする`~open要請$（すなわち、`昇格~txを稼働-$する手続きに渡された %要請 ）
 ◎
-Let request be the request associated with transaction.
+Let request be the open request associated with transaction.
 </li>
 					<li>
 %要請 の`設置先~tx$ ~SET ε
@@ -12886,7 +12926,6 @@ This only reverts the changes done by this request, not any other changes made b
 ◎
 Queue a task to run these steps:
 </p>
-
 		<ol>
 			<li>
 <p>
@@ -12911,9 +12950,9 @@ If result is an error, then:
 					<li>
 %要請 の`~error$ ~SET %結果
 ◎
-Set the result of request to undefined.
+Set request’s result to undefined.
 ◎
-Set the error of request to result.
+Set request’s error to result.
 </li>
 					<li>
 %要請 に向けて`~error~eventを発火する$
@@ -12932,9 +12971,9 @@ Otherwise:
 					<li>
 %要請 の`結果$ ~SET %結果
 ◎
-Set the result of request to result.
+Set request’s result to result.
 ◎
-Set the error of request to undefined.
+Set request’s error to undefined.
 </li>
 					<li>
 %要請 に向けて`~success~eventを発火する$
@@ -13003,7 +13042,7 @@ Start transaction.
 </p>
 
 <p class="note">注記：
-この`~tx$が`終了-$するまで，他の`接続$は %~db を~openできないことに注意。
+この`~tx$が`完遂-$するまで，他の`接続$は %~db を~openできないことに注意。
 ◎
 Note that until this transaction is finished, no other connections can be opened to the same database.
 </p>
@@ -13018,7 +13057,7 @@ Let old version be db’s version.
 —
 この変更は，`~tx$の一部と見なされ、~txが`中止-$された場合には復帰される。
 ◎
-Set the version of db to version. This change is considered part of the transaction, and so if the transaction is aborted, this change is reverted.
+Set db’s version to version. This change is considered part of the transaction, and so if the transaction is aborted, this change is reverted.
 </li>
 	<li>
 <p>
@@ -13026,7 +13065,6 @@ Set the version of db to version. This change is considered part of the transact
 ◎
 Queue a task to run these steps:
 </p>
-
 		<ol>
 			<li>
 %要請 の`結果$ ~SET %接続
@@ -13041,7 +13079,7 @@ Set request’s transaction to transaction.
 			<li>
 %要請 の`~done~flag$ ~SET ~OFF
 ◎
-Set the done flag on the request.
+Set request’s done flag.
 </li>
 			<li>
 %~tx の`作動中~flag$ ~SET ~ON
@@ -13074,7 +13112,7 @@ If didThrow is set, run the steps to abort a transaction with the error property
 	</li>
 	<li>
 <p>
-%~tx が`終了-$するまで待機する
+%~tx が`完遂-$するまで待機する
 ◎
 Wait for transaction to finish.
 </p>
@@ -13175,7 +13213,6 @@ This reverts the value of objectStoreNames returned by the IDBDatabase object.
 ◎
 For each object store handle handle associated with transaction, including those for object stores that were created or deleted during transaction:
 </p>
-
 		<ol>
 			<li>
 ~IF［
@@ -13624,7 +13661,6 @@ Store a record in store containing key as its key and ! StructuredSerializeForSt
 ◎
 For each index which reference store:
 </p>
-
 		<ol>
 			<li>
 %~key集合 ~LET
@@ -14741,7 +14777,6 @@ Let identifiers be the result of strictly splitting keyPath on U+002E FULL STOP 
 ◎
 For each identifier in identifiers, jump to the appropriate step below:
 </p>
-
 		<ol>
 			<li>
 <p>
