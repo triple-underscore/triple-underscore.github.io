@@ -55,6 +55,11 @@ case 't':
 case 'l':
 	text = '"<code class="literal">' + text + '</code>"'
 	break;
+case 'U':
+	text = 'U+' + key;
+	break;
+case 'smb': //
+	text = '(<span class="char-symbol">' + text + '</span>)'
 case 'en':
 	return '<span lang="en-x-a0">' + key + '</span>'
 	break;
@@ -129,6 +134,7 @@ e:element
 a:attr
 v:value
 t:type
+U:code-point
 
 ●●tag_map
 I:code
@@ -145,6 +151,7 @@ v:code
 c:code
 em:em
 mk:mark
+U:span
 
 ●●original_id_map
 
@@ -201,17 +208,38 @@ host:::ホスト
 	●構文
 space:
 comma:::カンマ
-	区切りの:-separated
+DOMToken:
+	COLON
+	COMMA
+pair:::ペア
 token:::トークン
 構文:syntax::~
+小構文:microsyntax::~
 構文解析-:parse::~:パース
+構文解析:parsing::~:パース
+未解析の:unparsed::未パースの
+	で区切られた／区切りの:-separated
+符号位置:code point::~
+	並び:sequence
+収集-:collect::~
 名:name::~
 名前:name::~
 命名-:name::~
 文字列:string::~
+文字:character::~
+位置:position:~
+変数:variable:~
+入力:input::~
+妥当:valid::~
+
 tagname:::タグ名
 wild-card:::ワイルドカード
 
+	-:initially
+	空~文字列:empty
+	~INCBY:Consume the U+003A COLON character.
+	-:This skips past any leading delimiters
+	~EQ ε:If the end of the input has been reached
 
 	●CSS
 CSS:
@@ -464,7 +492,8 @@ text:::テキスト
 全部的:full:~
 自前の:own:~
 
-	最初の:first:~
+	最初の:first
+	次の:second
 	最終的に:eventually
 	1 個の:one
 	代わりに:instead
@@ -511,6 +540,8 @@ text:::テキスト
 	その他:anything else
 	-:nothing
 	どこか:anywhere
+	何個か:a number of
+	結果:result
 
 
 ●●words_table1
@@ -559,11 +590,16 @@ map.存在-:~INFRA#map-exists
 有順序~集合:~INFRA#ordered-set
 set.付加する:~INFRA#set-append
 
+位置~変数:~INFRA#string-position-variable
+符号位置~並びを収集する:~INFRA#collect-a-sequence-of-code-points
+
 ~shadow~host:~DOM4#element-shadow-host
 ~shadow根:~DOM4#concept-shadow-root
 ~shadow木:~DOM4#concept-shadow-tree
 tL.要素:~DOM4#_dtl-element
 tL.属性の局所~名:~DOM4#_dtl-localname
+
+
 
 ●●ref_normative
 
@@ -1215,7 +1251,197 @@ The token set of this particular DOMTokenList object are also known as the eleme
 Define this as a superglobal in the DOM spec. Issue(w3c/csswg-drafts#2414): Define IDL for structured setting and getting of `exportparts`. &lt;https://github.com/w3c/csswg-drafts/issues/2414&gt;
 </p>
 
+	</section>
+	<section id="parsing">
+<h2 title="Microsyntaxes for parsing">5. 構文解析~用の小構文</h2>
 
+		<section id="parsing-mapping">
+<h3 title="Rules for parsing part mappings">5.1. ~part対応関係を構文解析する規則</h3>
+
+<p>
+`妥当な~part対応関係^は、文字 `003A^U `COLON^smb で区切られた~DOMTokenの~pairであって，他の文字（例：~space文字）は含まないものである。
+各~DOMTokenは、文字［
+`003A^U `COLON^smb ／ `002C^U `COMMA^smb
+］を包含してはナラナイ。
+◎
+A valid part mapping is a pair of DOMTokens separated by a U+003A COLON charater, with no other characters (e.g. no space characters). The DOMTokens must not contain U+003A COLON or U+002C COMMA characters.
+</p>
+
+<p class="trans-note">【
+~spaceは `0020^U 以外の空白（改行や `TAB^smb ）も含むかどうかは言及されていない。
+定義されていない用語~DOMTokenは、明らかに制御~文字なども含むべきでないと思われるが，言及されていない。
+】</p>
+
+<p>
+~part対応関係を構文解析する規則は、所与の
+( 文字列 %入力 )
+に対し，次に従う：
+◎
+The rules for parsing a part mapping are as follows:
+• Let input be the string being parsed.
+</p>
+
+<ol>
+	<li>
+%位置 ~LET %位置 ~LET %入力 の先頭の文字を指している`位置~変数$
+◎
+Let position be a pointer into input, initially pointing at the start of the string.
+</li>
+	<li>
+%入力 内の %位置 から文字 { ~space, `003A^U `COLON^smb } からなる`符号位置~並びを収集する$
+◎
+Collect a sequence of code points that are space characters or U+003A COLON characters. This skips past any leading delimiters.
+</li>
+	<li>
+%最初の~token ~LET %入力 内の %位置 から
+{ ~space, `003A^U `COLON^smb }
+以外の`符号位置~並びを収集する$
+◎
+Collect a sequence of code points that are not space characters or U+003A COLON characters, and let first token be the result.
+</li>
+	<li>
+~IF［
+%最初の~token ~EQ 空~文字列
+］
+⇒
+~RET `~error^i
+◎
+If first token is empty then return error.
+</li>
+	<li>
+%入力 内の %位置 から~space文字からなる`符号位置~並びを収集する$
+◎
+Collect a sequence of code points that are space characters.
+</li>
+	<li>
+~IF［
+%位置↗ ~EQ ε
+］
+⇒
+~RET ~pair( %最初の~token, %最初の~token )
+◎
+If the end of the input has been reached, return the pair first token, first token
+</li>
+	<li>
+~IF［
+%位置↗ ~NEQ `003A^U `COLON^smb
+］
+⇒
+~RET `~error^i
+◎
+If character at position is not a U+003A COLON character, return error.
+</li>
+	<li>
+%位置 ~INCBY 1
+◎
+Consume the U+003A COLON character.
+</li>
+	<li>
+%入力 内の %位置 から~spaceからなる`符号位置~並びを収集する$
+◎
+Collect a sequence of code points that are space characters.
+</li>
+	<li>
+%次の~token ~LET %入力 内の %位置 から
+{ ~space, `003A^U `COLON^smb }
+以外の`符号位置~並びを収集する$
+◎
+Collect a sequence of code points that are not space characters or U+003A COLON characters. and let second token be the result.
+</li>
+	<li>
+~IF［
+%次の~token ~EQ 空~文字列
+］
+⇒
+~RET `~error^i
+◎
+If second token is empty then return error.
+</li>
+	<li>
+~RET 
+~pair( %最初の~token, %次の~token )
+◎
+Return the pair first token, second token.
+</li>
+</ol>
+
+		</section>
+		<section id="parsing-mapping-list">
+<h3 title="Rules for parsing a list of part mappings">5.2. ~part対応関係が成す~listを構文解析する規則</h3>
+
+<p>
+`妥当な~part対応関係~list^は、文字 `002C^U `COMMA^smb で区切られた何個かの妥当な~part対応関係からなり，他の文字（例：~space文字）は含まないものである。
+◎
+A valid list of part mappings is a number of valid part mappings separated by a U+002C COMMA charater, with no other characters (e.g. no space characters).
+</p>
+
+<p>
+~part対応関係が成す~listを構文解析する規則は、所与の
+( 文字列 %入力 )
+に対し，次に従う：
+◎
+The rules for parsing a list of part mappings are as follow:
+• Let input be the string being parsed.
+</p>
+
+<ol>
+	<li>
+%位置 ~LET %位置 ~LET %入力 の先頭の文字を指している`位置~変数$
+◎
+Let position be a pointer into input, initially pointing at the start of the string.
+</li>
+	<li>
+%対応関係~list ~LET 空~list
+◎
+Let mappings be an initially empty list of pairs of DOMTokens. This list will be the result of this algorithm.
+</li>
+	<li>
+%入力 内の %位置 から
+{ ~space, `002C^U `COMMA^smb, `003A^U `COLON^smb }
+からなる`符号位置~並びを収集する$
+◎
+Collect a sequence of code points that are space characters, U+002C COMMA or U+003A COLON characters. This skips past any leading delimiters.
+</li>
+	<li>
+<p>
+~WHILE［
+%位置↗ ~NEQ ε
+］：
+◎
+While position is not past the end of input:
+</p>
+		<ol>
+			<li>
+%未解析の対応関係 ~LET %入力 内の %位置 から
+`002C^U `COMMA^smb 以外の`符号位置~並びを収集する$
+◎
+Collect a sequence of code points that are not U+002C COMMA characters, and let unparsed mapping be the result.
+</li>
+			<li>
+%対応関係 ~LET ~part対応関係を構文解析する規則を利用して %未解析の対応関係 を構文解析した結果
+◎
+Let mapping be the result of parsing unparsed mapping using the rules for parsing part mappings.
+</li>
+			<li>
+~IF［
+%対応関係 ~NEQ `~error^i
+］
+⇒
+%対応関係~list に %対応関係 を付加する
+◎
+If mapping is an error, continue.
+◎
+Append mapping to mappings.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET %対応関係~list
+◎
+↑↑</li>
+</ol>
+
+		</section>
 	</section>
 </main></div>
 
