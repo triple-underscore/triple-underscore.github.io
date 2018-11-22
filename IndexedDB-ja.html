@@ -76,10 +76,9 @@ function expand(){
 	const link_map = this.link_map;
 
 	let idl_ifc = '';
-	let context_key ='';
 
 	return this.html.replace(
-		/%[\w~一-鿆]+|`(.+?)([$@!\^])(\w*)/g,
+		/%[\w~一-鿆あ-ん]+|`(.+?)([$@!\^])(\w*)/g,
 		create_html
 	);
 
@@ -156,7 +155,6 @@ if(indicator !== '^'){
 		text = '<a href="' + href + '">' + text + '</a>';
 		break;
 	case '@':
-		context_key = klass ? (klass + '.' + key) : key;
 		text = '<dfn id="' + href.slice(1) + '">' + text + '</dfn>';
 		break;
 	}
@@ -176,8 +174,8 @@ return (quote ? quote + text + quote : text);
 ●●options
 
 spec_title:Indexed Database API 3.0
-spec_date:2018-11-03
-trans_update:2018-11-03
+spec_date:2018-11-20
+trans_update:2018-11-23
 source_checked:180503
 original_url:https://w3c.github.io/IndexedDB/
 spec_status:ED
@@ -628,6 +626,8 @@ Compare:#compare-two-keys
 
 却下される新たな~promise:~PROMISES#a-promise-rejected-with
 新たな~promise:~PROMISES#a-new-promise
+却下する:~PROMISES#reject-promise
+解決する:~PROMISES#resolve-promise
 
 ~taskを~queueする:~WAPI#queue-a-task
 ~event~handler~IDL属性:~WAPI#event-handler-idl-attributes
@@ -644,6 +644,7 @@ Compare:#compare-two-keys
 
 区切子で厳密に分割する:~INFRA#strictly-split
 ~list:~INFRA#list
+集合:~INFRA#ordered-set
 付加する:~INFRA#list-append
 
 
@@ -1349,6 +1350,8 @@ hook::::フック
 勧告:Recommendation:~
 標準:standard:~
 版:edition:~
+理由:reason:~
+
 	ゆえに:To this end
 	~~厳密にrigorous
 	強い影響力を及ぼした:extremely influential in:
@@ -1879,7 +1882,7 @@ ES:ECMAScript
 [ECMA-262]
     ECMAScript Language Specification. URL: https://tc39.github.io/ecma262/ 
 [FileAPI]
-    Marijn Kruisselbrink. File API. 26 October 2017. WD. URL: https://www.w3.org/TR/FileAPI/ 
+    Marijn Kruisselbrink; Arun Ranganathan. File API. 6 November 2018. WD. URL: https://www.w3.org/TR/FileAPI/ 
 [HTML]
     Anne van Kesteren; et al. HTML Standard. Living Standard. URL: https://html.spec.whatwg.org/multipage/ 
 [INFRA]
@@ -2477,7 +2480,7 @@ The user will only see the above message if another client fails to disconnect f
 そうなったとしても、 %O↗ が持つ~propを反映するような，
 %O が持つ~IDL属性には、その
 `値を保持し続ける@
-ものもある。
+とされるものもある。
 そのような属性は、［
 %O↗ を~access先とする別の~objを通して %O↗ に変更が加えられた
 ］としても，元の属性~値を保つ。
@@ -4761,8 +4764,9 @@ The following constraints define when a transaction can be started:
 `~readonly~tx$は、同時並行的にいくつでも
 — 互いの`視野$が重なっていようが —
 稼働することが許容される。
-`~readonly~tx$に対しては、稼働している限り，実装が，
-その~txにより作成された`要請$を通して返す~dataは、一定であり続けるモノトスル。
+`~readonly~tx$に対しては
+— 稼働している限り —
+実装が その~txにより作成された`要請$を通して返す~dataは，一定であり続けるモノトスル。
 すなわち，同じ~data片を読取する 2 つの要請は、~dataが見出されるかどうかも含め，同じ結果を得るモノトスル。
 ◎
 Any number of read-only transactions are allowed to run concurrently, even if the transaction’s scope overlap and include the same object stores. As long as a read-only transaction is running, the data that the implementation returns through requests created with that transaction must remain constant. That is, two requests to read the same piece of data must yield the same result both for the case when data is found and the result is that data, and for the case when data is not found and a lack of data is indicated.
@@ -7221,9 +7225,9 @@ Let origin be the origin of the global scope used to access this IDBFactory.
 %生成元 は`不透明な生成元$である
 ］
 ⇒
-~RET `NotSupportedError$E で`却下される新たな~promise$
+~RET `SecurityError$E で`却下される新たな~promise$
 ◎
-If origin is an opaque origin, then return a new promise rejected with a "NotSupportedError" DOMException.
+If origin is an opaque origin, then return a new promise rejected with a "SecurityError" DOMException.
 </li>
 			<li>
 %p ~LET `新たな~promise$
@@ -7238,12 +7242,24 @@ Run these steps in parallel:
 </p>
 				<ol>
 					<li>
-%~db~list ~LET 新たな`~list$
+%~dbたち ~LET %生成元 に`専属する$`~db$たちからなる`集合$
+⇒
+~IF［
+何らかの理由でこれを決定できない
+］
+⇒＃
+適切な~error（例： `UnknownError$E 例外）で %p を`却下する$；
+~RET
 ◎
-Let databases be a new list.
+Let databases be the set of databases in origin. If this cannot be determined for any reason, then reject p with an appropriate error (e.g. an "UnknownError" DOMException) and terminate these steps.
 </li>
 					<li>
-%生成元 に`専属する$
+%~db~list ~LET 新たな`~list$
+◎
+Let result be a new list.
+</li>
+					<li>
+%~dbたち を成す
 ~EACH( `~db$ %~db )
 に対し
 ⇒
@@ -7254,17 +7270,20 @@ Let databases be a new list.
 `name^m ~member ~SET %~db の`名前$db,
 `version^m ~member ~SET %~db の `~version$db
 ◎
-For each database db in origin:
+For each db of databases:
 • Let info be a new IDBDatabaseInfo dictionary.
 • Set info’s name dictionary member to db’s name.
 • Set info’s version dictionary member to db’s version.
-• Append info to databases.
+• Append info to result.
 </li>
 					<li>
-%~db~list で %p を解決する
+%~db~list で %p を`解決する$
 ◎
-Resolve p with databases.
+Resolve p with result.
 </li>
+
+【 %~dbたち の順序は定義されていないので、結果の順序も定義されないことになる。】
+
 				</ol>
 			</li>
 			<li>
@@ -12195,13 +12214,13 @@ If db’s version is less than version, then:
 			<li>
 `接続たち^V ~LET ［
 %~db を`~access先$とする`接続$のうち %新~接続 でないもの
-］からなる集合
+］からなる`集合$
 ◎
 Let openConnections be the set of all connections, except connection, associated with db.
 </li>
 			<li>
 <p>
-`接続たち^V 内の
+`接続たち^V を成す
 ~EACH( %接続 )
 に対し
 ⇒
@@ -12213,7 +12232,7 @@ Let openConnections be the set of all connections, except connection, associated
 ⇒
 %接続 に向けて`~version変更~eventを発火する$( `versionchange$et, %~db の`~version$db, %~version )
 ◎
-For each entry in openConnections that does not have its close pending flag set, queue a task to fire a version change event named versionchange at entry with db’s version and version.
+For each entry of openConnections that does not have its close pending flag set, queue a task to fire a version change event named versionchange at entry with db’s version and version.
 </p>
 
 <p class="note" id="_note-open-steps">注記：
@@ -12345,7 +12364,7 @@ Set connection’s close pending flag.
 %強制~flag ~EQ ~ON
 ］
 ⇒
-`~txたち^V 内の
+`~txたち^V を成す
 ~EACH( `~tx$ %~tx )
 に対し
 ⇒
@@ -12464,13 +12483,13 @@ Otherwise, return 0 (zero).
 %~db を`~access先$とする`接続$
 ］のうち［
 `状態$Cn ~NEQ `~close済み$i
-］を満たすものからなる集合
+］を満たすものからなる`集合$
 ◎
 Let openConnections be the set of all connections associated with db.
 </li>
 	<li>
 <p>
-`接続たち^V 内の
+`接続たち^V を成す
 ~EACH( %接続 )
 に対し
 ⇒
@@ -12482,7 +12501,7 @@ Let openConnections be the set of all connections associated with db.
 ⇒
 %接続 に向けて`~version変更~eventを発火する$( `versionchange$et, %~db の`~version$db, ~NULL )
 ◎
-For each entry in openConnections that does not have its close pending flag set, queue a task to fire a version change event named versionchange at entry with db’s version and null.
+For each entry of openConnections that does not have its close pending flag set, queue a task to fire a version change event named versionchange at entry with db’s version and null.
 </p>
 
 <p class="note">注記：
@@ -12518,7 +12537,7 @@ If any of the connections in openConnections are still not closed, queue a task 
 Wait until all connections in openConnections are closed.
 </li>
 	<li>
-%~version ~LET %~dbの `~version$db
+%~version ~LET %~db の`~version$db
 ◎
 Let version be db’s version.
 </li>
@@ -12708,15 +12727,22 @@ If error is not null, set transaction’s error to error.
 </li>
 	<li>
 <p>
-%~tx の`要請~list$内の［
-`~done~flag$ ~EQ ~OFF
-］を満たす
+%~tx の`要請~list$を成す
 ~EACH( `要請$ %要請 )
-に対し，順に：
+に対し：
 ◎
-For each request in transaction’s request list with done flag unset,＼
+For each request of transaction’s request list＼
 </p>
 		<ol>
+			<li>
+~IF［
+`~done~flag$ ~EQ ~ON
+］
+⇒
+~CONTINUE
+◎
+with done flag unset,＼
+</li>
 			<li>
 %要請 を`非同期に実行する$手続きを中止する
 ◎
@@ -13659,7 +13685,7 @@ Store a record in store containing key as its key and ! StructuredSerializeForSt
 ~EACH( `索引$ %索引 )
 に対し：
 ◎
-For each index which reference store:
+For each index which references store:
 </p>
 		<ol>
 			<li>
@@ -13697,7 +13723,7 @@ If index’s multiEntry flag is set and index key is an array key, and if index 
 			</li>
 			<li>
 <p>
-%~key集合 内の
+%~key集合 を成す
 ~EACH( %索引~key )
 に対し
 ⇒
@@ -13733,7 +13759,7 @@ Return key.
 </ol>
 		</section>
 		<section id="_retrieval-operations">
-<h3 title="(Object Store|Index) Retrieval Operations">6.2〜3. 保管庫／索引から検索取得する演算</h3>
+<h3 title="(Object Store|Index) Retrieval Operations">6.2.／6.3. 保管庫／索引から検索取得する演算</h3>
 
 <!-- Object Store Retrieval Operations -->
 <!-- Index Retrieval Operations -->
@@ -13741,7 +13767,7 @@ Return key.
 <a id="index-retrieval-operation"></a>
 
 <p class="trans-note">【
-この訳では、原文の 6.2, 6.3 節の各種~演算を，（下の %取得演算 の）~parameter化により まとめて定義する。
+この訳では、原文の 6.2, 6.3 節に定義される各種~演算を，（下の %取得演算 の）~parameter化により まとめて定義する。
 】【
 入力として下に与えられる %取得演算 には `StructuredDeserialize$jA() を孕むものもあるが、上位節の冒頭に記されたように，その演算から例外が投出されることはない。
 】</p>
@@ -13814,25 +13840,25 @@ The steps to retrieve multiple (values|keys|referenced values) from an (object s
 ］を満たす`~record$のうち，［
 %count ~IN { ε, 0 } ならば すべての~record ／
 ~ELSE_ 最初から %count 個までの~record
-］からなる~list
+］からなる`~list$
 ◎
 If count is not given or is 0 (zero), let count be infinity.
 ◎
 Let records be a list containing the first count records in (store|index)’s list of records whose key is in range.
 </li>
 	<li>
-%~list ~LET 新たな空~list
+%~list ~LET 新たな空`~list$
 ◎
 Let list be an empty list.
 </li>
 	<li>
-%~record~list 内の
+%~record~list を成す
 ~EACH( %~record )
 に対し
 ⇒
 %~list に %取得演算( %~record ) を付加する
 ◎
-For each record in records: (
+For each record of records: (
 • Let serialized be record’s (referenced value|value).
 • Let entry be ! StructuredDeserialize(serialized, targetRealm).
 )|(
@@ -13862,7 +13888,7 @@ The steps to retrieve multiple values from an object store with targetRealm, sto
 • If count is not given or is 0 (zero), let count be infinity.
 • Let records be a list containing the first count records in store’s list of records whose key is in range.
 • Let list be an empty list.
-• For each record in records:
+• For each record of records:
 •• Let serialized be record’s value.
 •• Let entry be ! StructuredDeserialize(serialized, targetRealm).
 •• Append entry to list.
@@ -13879,7 +13905,7 @@ The steps to retrieve multiple keys from an object store with store, range and o
 • If count is not given or is 0 (zero), let count be infinity.
 • Let records be a list containing the first count records in store’s list of records whose key is in range.
 • Let list be an empty list.
-• For each record in records:
+• For each record of records:
 •• Let entry be the result of running the steps to convert a key to a value with record’s key.
 •• Append entry to list.
 • Return list converted to a sequence&lt;any&gt;.
@@ -13898,7 +13924,7 @@ The steps to retrieve multiple referenced values from an index with targetRealm,
 • If count is not given or is 0 (zero), let count be infinity.
 • Let records be a list containing the first count records in index’s list of records whose key is in range.
 • Let list be an empty list.
-• For each record in records:
+• For each record of records:
 •• Let serialized be record’s referenced value.
 •• Let entry be ! StructuredDeserialize(serialized, targetRealm).
 •• Append entry to list.
@@ -13917,7 +13943,7 @@ The steps to retrieve multiple values from an index with index, range and option
 • If count is not given or is 0 (zero), let count be infinity.
 • Let records be a list containing the first count records in index’s list of records whose key is in range.
 • Let list be an empty list.
-• For each record in records:
+• For each record of records:
 •• Let entry be the result of running the steps to convert a key to a value with record’s value.
 •• Append entry to list.
 • Return list converted to a sequence&lt;any&gt;.
@@ -14242,7 +14268,7 @@ If count is not given, let count be 1.
 %方向 ~IN { `nextunique^l, `prevunique^l }
 ］
 ⇒
-%~record~list 内の
+%~record~list を成す
 ~EACH( ~keyが重複している一群の~record )
 に対し
 ⇒
@@ -14671,7 +14697,7 @@ The steps to evaluate a key path on a value with value and keyPath are as follow
 	<li>
 <p>
 ~IF［
-%keyPath は文字列の~listである
+%keyPath は文字列の`~list$である
 ］：
 ◎
 If keyPath is a list of strings, then:
@@ -14690,11 +14716,11 @@ Let i be 0.
 </li>
 			<li>
 <p>
-%keyPath 内の
+%keyPath を成す
 ~EACH( %item )
 に対し：
 ◎
-For each item in keyPath:
+For each item of keyPath:
 </p>
 				<ol>
 					<li>
@@ -14771,11 +14797,11 @@ Let identifiers be the result of strictly splitting keyPath on U+002E FULL STOP 
 </li>
 	<li>
 <p>
-%識別子~list 内の
+%識別子~list を成す
 ~EACH( %識別子 )
 に対し
 ◎
-For each identifier in identifiers, jump to the appropriate step below:
+For each identifier of identifiers, jump to the appropriate step below:
 </p>
 		<ol>
 			<li>
@@ -14974,13 +15000,13 @@ Assert: identifiers is not empty.
 </li>
 	<li>
 <p>
-%識別子~list 内の最後の要素を除く
+%識別子~list を成す最後の要素を除く
 ~EACH( %識別子 )
 に対し：
 ◎
 Remove the last member of identifiers.
 ◎
-For each remaining identifier in identifiers, if any:
+For each remaining identifier of identifiers, if any:
 </p>
 		<ol>
 			<li>
@@ -15067,11 +15093,11 @@ Let last be the last member of identifiers and remove it from the list.
 </li>
 	<li>
 <p>
-%識別子~list 内の最後の要素を除く
+%識別子~list を成す最後の要素を除く
 ~EACH( %識別子 )
 に対し：
 ◎
-For each remaining identifier in identifiers:
+For each remaining identifier of identifiers:
 </p>
 		<ol>
 			<li>
