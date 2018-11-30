@@ -196,9 +196,9 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2018-11-28
+spec_date:2018-11-29
 trans_update:2018-11-30
-source_checked:180517
+source_checked:181128
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -629,7 +629,6 @@ hd.包含する:#header-list-contains
 
 hd.名前:#concept-header-name
 hd.値:#concept-header-value
-結合-済み~header値:#concept-header-value-combined
 値を正規化する:#concept-header-value-normalize
 ~headerから値を抽出する:#extract-header-values
 値を抽出-:#extract-header-values
@@ -1214,7 +1213,6 @@ prop:property:::プロパティ
 追加-:add:~
 削除-:delete::~
 結合-:combine::~
-	結合-済み:combined
 置換-:replace::~
 生成-:generate::~
 変換-:convert::~
@@ -2362,7 +2360,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/80d26b6d7a9089dbd18bb7de2ed2a60849824b02/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/8324d0a8192ce4b48de512d714726fe06fb92851/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -3174,9 +3172,13 @@ To get a name name from a header list list, run these steps:
 If list does not contain name, then return null.
 </li>
 	<li>
-~RET `結合-済み~header値$( %~list, %名前 )
+~RET %~list 内の［
+%名前 を`名前に持つ~header$
+］すべての`値$hdを互いに［
+`2C^X `20^X
+］並びで区切って順に連結した結果
 ◎
-Return the combined value with name and list.
+Return the values of all headers in list whose name is a byte-case-insensitive match for name, separated from each other by 0x2C 0x20, in order.
 </li>
 </ol>
 
@@ -3577,9 +3579,15 @@ For each name in names:
 </p>
 		<ol>
 			<li>
-%値 ~LET `結合-済み~header値$( %~header~list, %名前 )
+%値 ~LET `~header~listから値を取得する$( %~header~list, %名前 )
 ◎
-Let value be the combined value with name and list.
+Let value be the result of getting name from list.
+</li>
+			<li>
+~Assert：
+%値 ~NEQ ~NULL
+◎
+Assert: value is not null.
 </li>
 			<li>
 %結果~list に 次のようにされた~pairを`付加する$
@@ -3684,20 +3692,6 @@ The definition of value is not defined in terms of an HTTP token production as i
 ］を成す`~HTTP空白~byte$並びを除去した結果を返す。
 ◎
 To normalize a potentialValue, remove any leading and trailing HTTP whitespace bytes from potentialValue.
-</p>
-
-<p class="algo-head">
-`結合-済み~header値@
-は、所与の
-( `~header~list$ %~header~list, `名前$hd %名前 )
-に対し，
-%~header~list 内の［
-%名前 を`名前に持つ~header$
-］すべての`値$hdを互いに［
-`2C^X `20^X
-］並びで区切って順に連結した結果を返す。
-◎
-A combined value, given a name name and header list list, is the values of all headers in list whose name is a byte-case-insensitive match for name, separated from each other by 0x2C 0x20, in order.
 </p>
 
 <hr>
@@ -8368,9 +8362,9 @@ While redirects that carry a `Cross-Origin-Resource-Policy` header are checked, 
 	</li>
 	<li>
 <p>
-%施策 ~LET `結合-済み~header値$( %応答 の`~header~list$rs内, `Cross-Origin-Resource-Policy$h )
+%施策 ~LET `~header~listから値を取得する$( %応答 の`~header~list$rs, `Cross-Origin-Resource-Policy$h )
 ◎
-Let policy be the combined value with `Cross-Origin-Resource-Policy` and response’s header list.
+Let policy be the result of getting `Cross-Origin-Resource-Policy` from response’s header list.
 </p>
 
 
@@ -13168,23 +13162,27 @@ Normalize value.
 </p>
 				<ol>
 					<li>
-%結合-済みの値 ~LET ［
-%headers の`~header~list$Hl内に［
-%name を`名前に持つ~header$
-］は無いならば %value 
-<!-- result of getting name from -->
-／
-~ELSE_ 次を順に連結した結果
+%一時的な値 ~LET `~header~listから値を取得する$( %headers の`~header~list$Hl, %name )
+</li>
+					<li>
+~IF［
+%一時的な値 ~EQ ~NULL
 ］
+⇒
+%一時的な値 ~SET %value
+</li>
+					<li>
+~ELSE
+⇒
+%一時的な値 に次を順に付加する
 ⇒＃
-`結合-済み~header値$( %headers の`~header~list$Hl, %name ),
 `2C^X,
 `20^X,
 %value
 </li>
 					<li>
 ~IF［
-( %name / %結合-済みの値 )
+( %name / %一時的~値 )
 は`~CORSなしで安全とされる要請~header$でない
 ］
 ⇒
@@ -13443,21 +13441,10 @@ The get(name) method, when invoked, must run these steps:
 If name is not a name, then throw a TypeError.
 </li>
 			<li>
-~IF［
-此れの`~header~list$Hl内に［
-%name を`名前に持つ~header$
-］は無い
-］
-⇒
-~RET ~NULL
+~RET `~header~listから値を取得する$( 此れの`~header~list$Hl, %name )
 ◎
-If the context object’s header list does not contain name, then return null.
+Return the result of getting name from the context object’s header list.
 </li>
-			<li>
-~RET `結合-済み~header値$( 此れの`~header~list$Hl, %name )
-◎
-Return the combined value with name and the context object’s header list.
-↑</li>
 		</ol>
 	</dd>
 
