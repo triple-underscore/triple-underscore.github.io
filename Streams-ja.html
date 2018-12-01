@@ -176,8 +176,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2018-11-07
-trans_update:2018-11-12
+spec_date:2018-11-30
+trans_update:2018-12-01
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -703,7 +703,6 @@ parameter::::パラメタ
 	渡-:pass:~
 	渡され／渡して
 	渡す:pass する:~
-	受け渡す:pass through
 	通過:pass through
 	遡って:back through
 	引き続き~call:call through
@@ -1058,7 +1057,6 @@ support::::サポート
 許可-:permit:~
 特化-:specialize:~
 	specialization
-debug::::デバッグ
 迂回-:bypass:~
 解釈-:interpret:~
 導出-:derive:~
@@ -1098,9 +1096,7 @@ debug::::デバッグ
 裁定-:decide:~
 
 	対処-:deal with
-	特別に許可されない:not permitted 〜 special-cased 
 	別法として:alternatively
-	~~関知しない:agnostic
 	請われ:ask され
 	もたらす:introduce
 	外から見える:noticeable
@@ -1904,7 +1900,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/46c3b89dd3aff28b2fc381dd1d397c12b4fb8a16" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/a6f36b626ac6731c9fe1748b738f0a2e7a3d2287" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 Tests:
@@ -3386,7 +3382,7 @@ Note how the first thing it does is obtain a reader, and from then on it uses th
 
 				</section>
 				<section id="rs-pipe-through">
-<h5>3.2.5.4. `pipeThrough({ writable, readable }, options)^rs</h5>
+<h5>3.2.5.4. `pipeThrough({ writable, readable }, { preventClose, preventAbort, preventCancel, signal } = {})^rs</h5>
 
 <div class="note">
 
@@ -3402,62 +3398,98 @@ The pipeThrough method provides a convenient, chainable way of piping this reada
 </p>
 
 <p>
-一般に，~streamが~pipeされている間は、他の消費器が読取器を獲得できないように，~streamは`~lock$される。
+~streamが~pipeされている間は、他の消費器が読取器を獲得できないように，~streamは`~lock$される。
 ◎
-Piping a stream will generally lock it for the duration of the pipe, preventing any other consumer from acquiring a reader.
-</p>
-
-<p>
-この~methodは、その ~this 値が `ReadableStream$C ~objであることを要求しない点で，意図的に汎化してある。
-また、その［
-%writable ／ %readable
-］引数が［
-`WritableStream$C ／ `ReadableStream$C
-］の~instanceであることも要求しない。
-◎
-This method is intentionally generic; it does not require that its this value be a ReadableStream object. It also does not require that its writable argument be a WritableStream instance, or that its readable argument be a ReadableStream instance.
+Piping a stream will lock it for the duration of the pipe, preventing any other consumer from acquiring a reader.
 </p>
 
 </div>
 
 <ol class="algo">
 	<li>
-<p>
 ~IF［
-%writable ~EQ ~undefined
-］~OR［
-%readable ~EQ ~undefined
+! `IsReadableStream$A( ~this ) ~EQ ~false
 ］
 ⇒
 ~THROW `TypeError^b
 ◎
-If writable is undefined or readable is undefined, throw a TypeError exception indicating that undefined values are not permitted.
-</p>
-
-<p class="note">
-~errorを~debugし易くするため、ここでの ~undefined 値は，特別に許可されない
-— さもなければ、 `rs.pipeThrough(writable, readable)^m は何もせず黙することになるので。
-他の受け渡す値については、 `pipeThrough()$rs は~~関知しない。
-◎
-undefined is special-cased here to make it easier to debug errors such as rs.pipeThrough(writable, readable) which otherwise would silently do nothing. pipeThrough() is otherwise agnostic about the values that it passes through.
-</p>
-	</li>
-	<li>
-%promise ~LET
-? `Invoke$A( ~this, `pipeTo^l, « %writable, %options » )
-◎
-Let promise be ? Invoke(this, "pipeTo", « writable, options »).
+If ! IsReadableStream(this) is false, throw a TypeError exception.
 </li>
 	<li>
 ~IF［
-`Type$A( %promise ) ~EQ `Object^b
-］~AND［
-%promise は [[PromiseIsHandled]] 内部~slotを持つ
+! `IsWritableStream$A( %writable ) ~EQ ~false
 ］
 ⇒
+~THROW `TypeError^b
+◎
+If ! IsWritableStream(writable) is false, throw a TypeError exception.
+</li>
+	<li>
+~IF［
+! `IsReadableStream$A( %readable ) ~EQ ~false
+］
+⇒
+~THROW `TypeError^b
+◎
+If ! IsReadableStream(readable) is false, throw a TypeError exception.
+</li>
+	<li>
+%preventClose ~SET
+! `ToBoolean$A( %preventClose )
+◎
+Set preventClose to ! ToBoolean(preventClose),＼
+</li>
+	<li>
+%preventAbort ~SET
+! `ToBoolean$A( %preventAbort )
+◎
+set preventAbort to ! ToBoolean(preventAbort), and＼
+</li>
+	<li>
+%preventCancel ~SET
+! `ToBoolean$A( %preventCancel )
+◎
+set preventCancel to ! ToBoolean(preventCancel).
+</li>
+	<li>
+~IF［
+%signal ~NEQ ~undefined
+］~AND［
+%signal は `AbortSignal$I ~interfaceの~instanceではない
+］
+⇒
+~THROW `TypeError^b
+◎
+If signal is not undefined, and signal is not an instance of the AbortSignal interface, throw a TypeError exception.
+</li>
+	<li>
+~IF［
+! `IsReadableStreamLocked$A( ~this ) ~EQ ~true
+］
+⇒
+~THROW `TypeError^b
+◎
+If ! IsReadableStreamLocked(this) is true, throw a TypeError exception.
+</li>
+	<li>
+~IF［
+! `IsWritableStreamLocked$A( %writable ) ~EQ ~true
+］
+⇒
+~THROW `TypeError^b
+◎
+If ! IsWritableStreamLocked(writable) is true, throw a TypeError exception.
+</li>
+	<li>
+%promise ~LET
+! `ReadableStreamPipeTo$A( ~this, %writable, %preventClose, %preventAbort, %preventCancel, %signal )
+◎
+Let promise be ! ReadableStreamPipeTo(this, writable, preventClose, preventAbort, preventCancel, signal).
+</li>
+	<li>
 %promise.[[PromiseIsHandled]] ~SET ~true
 ◎
-If Type(promise) is Object and promise has a [[PromiseIsHandled]] internal slot, set promise.[[PromiseIsHandled]] to true.
+Set promise.[[PromiseIsHandled]] to true.
 </li>
 	<li>
 ~RET %readable
@@ -3483,7 +3515,6 @@ A typical example of constructing pipe chain using pipeThrough(transform, option
 </pre>
 
 </div>
-
 
 				</section>
 				<section id="rs-pipe-to">
@@ -3584,7 +3615,6 @@ The signal option can be set to an AbortSignal to allow aborting an ongoing pipe
 
 </div>
 
-
 <ol class="algo">
 	<li>
 ~IF［
@@ -3652,542 +3682,12 @@ If ! IsReadableStreamLocked(this) is true, return a promise rejected with a Type
 If ! IsWritableStreamLocked(dest) is true, return a promise rejected with a TypeError exception.
 </li>
 	<li>
-~IF［
-! `IsReadableByteStreamController$A( ~this.[[readableStreamController]] ) ~EQ ~true
-］
-⇒
-%reader ~LET ~UAの裁量で，次のいずれかを遂行した結果
-⇒＃
-! `AcquireReadableStreamBYOBReader$A( ~this ) ／
-! `AcquireReadableStreamDefaultReader$A( ~this )
-◎
-If ! IsReadableByteStreamController(this.[[readableStreamController]]) is true, let reader be either ! AcquireReadableStreamBYOBReader(this) or ! AcquireReadableStreamDefaultReader(this), at the user agent’s discretion.
-</li>
-	<li>
-~ELSE
-⇒
-%reader ~LET
-! `AcquireReadableStreamDefaultReader$A( ~this )
-◎
-Otherwise, let reader be ! AcquireReadableStreamDefaultReader(this).
-</li>
-	<li>
-%writer ~LET
-! `AcquireWritableStreamDefaultWriter$A( %dest )
-◎
-Let writer be ! AcquireWritableStreamDefaultWriter(dest).
-</li>
-	<li>
-%shuttingDown ~LET ~false
-◎
-Let shuttingDown be false.
-</li>
-	<li>
-%promise ~LET `新たな~promise$
-◎
-Let promise be a new promise.
-</li>
-	<li>
-<p>
-~IF［
-%signal ~NEQ ~undefined
-］：
-◎
-If signal is not undefined,
-</p>
-		<ol>
-			<li>
-<p>
-%abortAlgorithm ~LET 次を走らす手続き：
-◎
-Let abortAlgorithm be the following steps:
-</p>
-				<ol>
-					<li>
-%error ~LET 新たな `AbortError$E 例外
-◎
-Let error be a new "AbortError" DOMException.
-</li>
-					<li>
-%actions ~LET 新たな`有順序~集合$
-◎
-Let actions be an empty ordered set.
-</li>
-					<li>
-<p>
-~IF［
-%preventAbort ~EQ ~false
-］
-⇒
-%actions に次を走らす動作を`付加する$set：
-◎
-If preventAbort is false, append the following action to actions:
-</p>
-						<ol>
-							<li>
-~IF［
-%dest.[[ %state ]] ~EQ `writable^l
-］
-⇒
-~RET ! `WritableStreamAbort$A( %dest, %error )
-◎
-If dest.[[state]] is "writable", return ! WritableStreamAbort(dest, error).
-</li>
-							<li>
-~RET ~undefined で`解決される~promise$
-◎
-Otherwise, return a promise resolved with undefined.
-</li>
-						</ol>
-					</li>
-					<li>
-<p>
-~IF［
-%preventCancel ~EQ ~false
-］
-⇒
-%actions に次を走らす動作を`付加する$set：
-◎
-If preventCancel is false, append the following action action to actions:
-</p>
-						<ol>
-							<li>
-~IF［
-`this^b.[[ %state ]] ~EQ `readable^l
-］
-⇒
 ~RET
-! `ReadableStreamCancel$A( `this^b, %error )
+! `ReadableStreamPipeTo$A( ~this, %dest, %preventClose, %preventAbort, %preventCancel, %signal )
 ◎
-If this.[[state]] is "readable", return ! ReadableStreamCancel(this, error).
-</li>
-							<li>
-~RET ~undefined で`解決される~promise$
-◎
-Otherwise, return a promise resolved with undefined.
-</li>
-						</ol>
-					</li>
-					<li>
-`~shutdownする$( %error, %actions 内の動作`すべてを待機する$動作 )
-◎
-Shutdown with an action consisting of waiting for all of the actions in actions, and with error.
-</li>
-				</ol>
-			</li>
-			<li>
-~IF［
-%signal の`中止-済み~flag$aB ~EQ ~ON
-］
-⇒＃
-%abortAlgorithm を遂行する；
-~RET %promise
-◎
-If signal’s aborted flag is set, perform abortAlgorithm and return promise.
-</li>
-			<li>
-`通達に~algoを追加する$( %signal, %abortAlgorithm )
-◎
-Add abortAlgorithm to signal.
-</li>
-		</ol>
-	</li>
-	<li>
-<p>
-( %reader, %writer )
-を用いて，`並列的$に
-<span class="issue">
-本当はそうでない
-— <a href="https://github.com/whatwg/streams/issues/905">#905</a>
-を見よ —
-</span>
-~this から すべての`~chunk$を読取して %dest に書込する。
-これが起こる正確な方式は、
-( 読取器, 書込器 )
-が供する~lock法に因り，作者~codeからは観測できない。
-よって，~UAには これを柔軟に行う余地があるが、利用される正確な~algoが何であれ，次の拘束が適用される：
-◎
-In parallel but not really; see #905, using reader and writer, read all chunks from this and write them to dest. Due to the locking provided by the reader and writer, the exact manner in which this happens is not observable to author code, and so there is flexibility in how this is done. The following constraints apply regardless of the exact algorithm used:
-</p>
-
-		<ul>
-			<li>
-`~public~APIは利用しないモノトスル^strong：
-— ［
-読取り／書込み
-］の間, および
-以下に挙げる演算を遂行している間は、何かを改変-可能な~JSの［
-読取器, 書込器, ~stream~API
-］（すなわち，適切な~prototype上の各種~method）は、利用しないモノトスル
-— ~streamは，直に操作するモノトスル。
-◎
-Public API must not be used: while reading or writing, or performing any of the operations below, the JavaScript-modifiable reader, writer, and stream APIs (i.e. methods on the appropriate prototypes) must not be used. Instead, the streams must be manipulated directly.
-</li>
-			<li>
-<p>
-`背圧は施行するモノトスル^strong
-— ~UAは：
-◎
-Backpressure must be enforced:
-</p>
-				<ul>
-					<li>
-`WritableStreamDefaultWriterGetDesiredSize$A( %writer ) の結果が［
-0 以下, または `null^b
-］になる間は、 %reader から読取しないモノトスル
-◎
-While WritableStreamDefaultWriterGetDesiredSize(writer) is ≤ 0 or is null, the user agent must not read from reader.
-</li>
-					<li>
-%reader が`~BYOB読取器$である場合
-⇒
-%reader から読取する~chunkの~sizeを決定するときには，
-`WritableStreamDefaultWriterGetDesiredSize$A( %writer )
-を利用するべきである。
-◎
-If reader is a BYOB reader, WritableStreamDefaultWriterGetDesiredSize(writer) should be used to determine the size of the chunks read from reader.
-</li>
-					<li>
-<p>
-読取や書込は、背圧~合図~以外の理由で遅延されるべきでない。
-◎
-Reads or writes should not be delayed for reasons other than these backpressure signals.
-</p>
-
-<p class="example" id="example-bad-backpressure">
-次回の 読取／書込 演算を続行する前に，各 書込が成功裡に完了するのを待機するような実装は、この推奨に違反する。
-そのような実装では、 %dest の`内部~queue$は，常に高々 1 個の`~chunk$しか包含せず，役立たずになるので。
-◎
-An implementation that waits for each write to successfully complete before proceeding to the next read/write operation violates this recommendation. In doing so, such an implementation makes the internal queue of dest useless, as it ensures dest always contains at most one queued chunk.
-</p>
-					</li>
-				</ul>
-			</li>
-			<li>
-`~shutdownは、活動を停止させるモノトスル^strong
-— %shuttingDown が ~true になって以降は、~UAは，それ以上 %reader からの読取を起動しないモノトスル。
-また、以下に述べるように，すでに読取された~chunkの書込のみを遂行するモノトスル。
-特に，~UAは、［
-読取／書込
-］を遂行する前に，以下の条件を検査するモノトスル
-— それらは、即時に~shutdownに至らせることもあるので。
-◎
-Shutdown must stop activity: if shuttingDown becomes true, the user agent must not initiate further reads from reader, and must only perform writes of already-read chunks, as described below. In particular, the user agent must check the below conditions before performing any reads or writes, since they might lead to immediate shutdown.
-</li>
-			<li>
-<p>
-`~error／~close状態は伝播するモノトスル^strong
-— 次に挙げる条件は順に適用されるモノトスル：
-◎
-Error and close states must be propagated: the following conditions must be applied in order.
-</p>
-				<ol>
-					<li>
-<p>
-`~errorは前方へ伝播するモノトスル^strong
-— ~this.[[state]] ~EQ `errored^l のとき, または そうなったときは：
-◎
-Errors must be propagated forward: if this.[[state]] is or becomes "errored", then
-</p>
-						<ol>
-							<li>
-~IF［
-%preventAbort ~EQ ~false
-］
-⇒
-`~shutdownする$( ~this.[[storedError]], 次を行う動作 )
-⇒
-! `WritableStreamAbort$A( %dest, ~this.[[storedError]] )
-◎
-If preventAbort is false, shutdown with an action of ! WritableStreamAbort(dest, this.[[storedError]]) and with this.[[storedError]].
-</li>
-							<li>
-~ELSE
-⇒
-`~shutdownする$( ~this.[[storedError]], ε )
-◎
-Otherwise, shutdown with this.[[storedError]].
-</li>
-						</ol>
-					</li>
-					<li>
-<p>
-`~errorは後方へ伝播するモノトスル^strong
-— %dest.[[state]] ~EQ `errored^l のとき, または そうなったときは：
-◎
-Errors must be propagated backward: if dest.[[state]] is or becomes "errored", then
-</p>
-						<ol>
-							<li>
-~IF［
-%preventCancel ~EQ ~false
-］
-⇒
-`~shutdownする$( %dest.[[storedError]], 次を行う動作 )
-⇒
-! `ReadableStreamCancel$A( ~this, %dest.[[storedError]] )
-
-◎
-If preventCancel is false, shutdown with an action of ! ReadableStreamCancel(this, dest.[[storedError]]) and with dest.[[storedError]].
-</li>
-							<li>
-~ELSE
-⇒
-`~shutdownする$( %dest.[[storedError]], ε )
-◎
-Otherwise, shutdown with dest.[[storedError]].
-</li>
-						</ol>
-					</li>
-					<li>
-<p>
-`~closingは前方へ伝播するモノトスル^strong
-— ~this.[[state]] ~EQ `closed^l のとき, または そうなったときは：
-◎
-Closing must be propagated forward: if this.[[state]] is or becomes "closed", then
-</p>
-						<ol>
-							<li>
-~IF［
-%preventClose ~EQ ~false
-］
-⇒
-`~shutdownする$( ε, 次を行う動作 )
-⇒
-! `WritableStreamDefaultWriterCloseWithErrorPropagation$A( %writer )
-◎
-If preventClose is false, shutdown with an action of ! WritableStreamDefaultWriterCloseWithErrorPropagation(writer).
-</li>
-							<li>
-~ELSE
-⇒
-`~shutdownする$( ε, ε )
-◎
-Otherwise, shutdown.
-</li>
-						</ol>
-					</li>
-					<li>
-<p>
-`~closingは後方へ伝播するモノトスル^strong
-—
-［
-! `WritableStreamCloseQueuedOrInFlight$A( %dest ) ~EQ ~true
-］~OR［
-%dest.[[state]] ~EQ `closed^l
-］のときは：
-◎
-Closing must be propagated backward: if ! WritableStreamCloseQueuedOrInFlight(dest) is true or dest.[[state]] is "closed", then
-</p>
-						<ol>
-							<li>
-~Assert：
-［
-読取した／書込した
-］`~chunk$はない
-◎
-Assert: no chunks have been read or written.
-</li>
-							<li>
-%destClosed ~LET 新たな `TypeError^b
-◎
-Let destClosed be a new TypeError.
-</li>
-							<li>
-~IF［
-%preventCancel ~EQ ~false
-］
-⇒
-`~shutdownする$( %destClosed, 次を行う動作 )
-⇒
-! `ReadableStreamCancel$A( ~this, %destClosed )
-◎
-If preventCancel is false, shutdown with an action of ! ReadableStreamCancel(this, destClosed) and with destClosed.
-</li>
-							<li>
-~ELSE
-⇒
-`~shutdownする$( %destClosed, ε )
-◎
-Otherwise, shutdown with destClosed.
-</li>
-						</ol>
-					</li>
-				</ol>
-			</li>
-
-			<li>
-<p id="rs-pipeTo-shutdown">
-上のいずれかの要件／手続きにより，
-`~shutdownする@
-よう請われたときは、所与の
-( %error, %action )
-に対し，次の下位手続きを遂行する：
-◎
-Shutdown with an action: if any of the above requirements ask to shutdown with an action action, optionally with an error originalError, then:
-</p>
-				<ol>
-					<li>
-~IF［
-%shuttingDown ~EQ ~true
-］
-⇒
-~RET
-◎
-If shuttingDown is true, abort these substeps.
-</li>
-					<li>
-%shuttingDown ~SET ~true
-◎
-Set shuttingDown to true.
-</li>
-					<li>
-<p>
-~IF［
-%dest.[[state]] ~EQ `writable^l
-］~AND［
-! `WritableStreamCloseQueuedOrInFlight$A( %dest ) ~EQ ~false
-］：
-◎
-If dest.[[state]] is "writable" and ! WritableStreamCloseQueuedOrInFlight(dest) is false,
-</p>
-						<ol>
-							<li>
-~IF［
-読取されたがまだ書込されていない`~chunk$はある
-］
-⇒
-それらを %dest に書込する
-◎
-If any chunks have been read but not yet written, write them to dest.
-</li>
-							<li>
-読取されたすべての`~chunk$が書込されるまで（すなわち，対応する~promiseは決着するまで）待機する
-◎
-Wait until every chunk that has been read has been written (i.e. the corresponding promises have settled).
-</li>
-						</ol>
-					</li>
-					<li>
-<p>
-~IF［
-%action ~EQ ε
-］：
-</p>
-						<ol>
-							<li>
-`完結する$( %error )
-</li>
-							<li>
-~RET
-</li>
-						</ol>
-◎
-↓↓</li>
-					<li>
-<p>
-%p ~LET %action を遂行した結果：
-◎
-Let p be the result of performing action.
-</p>
-						<ul>
-							<li>
-%p の`充足-時$には
-⇒
-`完結する$( %error )
-◎
-Upon fulfillment of p, finalize, passing along originalError if it was given.
-</li>
-							<li>
-事由 %newError による %p の`却下-時$には
-⇒
-`完結する$( %newError )
-◎
-Upon rejection of p with reason newError, finalize with newError.
-</li>
-						</ul>
-					</li>
-				</ol>
-
-<div class="p">
-<p class="trans-note">【
-この手続きは、原文では， 2 つに分けて記されているが（ %action ~EQ ε の場合と 非 ε の場合）、表記の都合により この訳では一つに集約している。
-】
-</p>
-◎
-Shutdown: if any of the above requirements or steps ask to shutdown, optionally with an error error, then:
-• If shuttingDown is true, abort these substeps.
-• Set shuttingDown to true.
-• If dest.[[state]] is "writable" and ! WritableStreamCloseQueuedOrInFlight(dest) is false,
-•• If any chunks have been read but not yet written, write them to dest.
-•• Wait until every chunk that has been read has been written (i.e. the corresponding promises have settled).
-• Finalize, passing along error if it was given.
-</div>
-
-			</li>
-			<li>
-<p>
-`完結する@
-下位手続きは、所与の
-( %error )
-に対し，次を遂行する：
-◎
-Finalize: both forms of shutdown will eventually ask to finalize, optionally with an error error, which means to perform the following steps:
-</p>
-				<ol>
-					<li>
-! `WritableStreamDefaultWriterRelease$A( %writer )
-◎
-Perform ! WritableStreamDefaultWriterRelease(writer).
-</li>
-					<li>
-! `ReadableStreamReaderGenericRelease$A( %reader )
-◎
-Perform ! ReadableStreamReaderGenericRelease(reader).
-</li>
-					<li>
-~IF［
-%signal ~NEQ ~undefined
-］
-⇒
-`通達から~algoを除去する$( %signal, %abortAlgorithm )
-◎
-If signal is not undefined, remove abortAlgorithm from signal.
-</li>
-					<li>
-~IF［
-%error ~NEQ ε
-］
-⇒
-%error で %promise を`却下する$
-◎
-If error was given, reject promise with error.
-</li>
-					<li>
-~ELSE
-⇒
-~undefined で %promise を`解決する$
-◎
-Otherwise, resolve promise with undefined.
-</li>
-					</ol>
-				</li>
-			</ul>
-		</li>
-	<li>
-~RET %promise 
-◎
-Return promise.
+Return ! ReadableStreamPipeTo(this, dest, preventClose, preventAbort, preventCancel, signal).
 </li>
 </ol>
-
-<p class="note">注記：
-ここで遂行される種々の抽象~演算では，~objが作成され（~promiseを成すものが多い）、それらの~obj用には，通例的に`~realm$を指定することが要求される。
-しかしながら，~lock中にあるので、それらの~objは 作者~codeからは観測され得ない。
-そのようなわけで、それらの作成-時に利用する`~realm$が~~問題になることはない。
-◎
-Various abstract operations performed here include object creation (often of promises), which usually would require specifying a realm for the created object. However, because of the locking, none of these objects can be observed by author code. As such, the realm used to create them does not matter.
-</p>
 
 				</section>
 				<section id="rs-tee">
@@ -4220,8 +3720,7 @@ Note that the chunks seen in each branch will be the same object. If the chunks 
 </div>
 
 <ol class="algo">
-
-<li>
+	<li>
 ~IF［
 ! `IsReadableStream$A( ~this ) ~EQ ~false
 ］
@@ -4230,13 +3729,13 @@ Note that the chunks seen in each branch will be the same object. If the chunks 
 ◎
 If ! IsReadableStream(this) is false, throw a TypeError exception.
 </li>
-<li>
+	<li>
 %branches ~LET
 ? `ReadableStreamTee$A( ~this, ~false )
 ◎
 Let branches be ? ReadableStreamTee(this, false).
 </li>
-<li>
+	<li>
 ~RET
 ! `CreateArrayFromList$A( %branches )
 ◎
@@ -5032,6 +4531,592 @@ Set closedOrErrored to true.
 Return « branch1, branch2 ».
 </li>
 </ol>
+
+			</section>
+			<section id="readable-stream-pipe-to">
+<h4 class="nothrow">3.3.10. `ReadableStreamPipeTo( source, dest, preventClose, preventAbort, preventCancel, signal )^A</h4>
+
+<ol>
+	<li>
+~Assert：
+! `IsReadableStream$A( %source ) ~EQ ~true
+◎
+Assert: ! IsReadableStream(source) is true.
+</li>
+	<li>
+~Assert： 
+! `IsWritableStream$A( %dest ) ~EQ ~true
+◎
+Assert: ! IsWritableStream(dest) is true.
+</li>
+	<li>
+~Assert
+⇒＃
+`Type$A( %preventClose ) ~EQ `Boolean^b,
+`Type$A( %preventAbort ) ~EQ `Boolean^b,
+`Type$A( %preventCancel ) ~EQ `Boolean^b,
+◎
+Assert: Type(preventClose) is Boolean, Type(preventAbort) is Boolean, and Type(preventCancel) is Boolean.
+</li>
+	<li>
+~Assert：
+［
+%signal ~EQ ~undefined
+］~OR［
+%signal は `AbortSignal$I ~interfaceの~instanceである
+］
+◎
+Assert: signal is undefined or signal is an instance of the AbortSignal interface.
+</li>
+	<li>
+~Assert：
+! `IsReadableStreamLocked$A( %source ) ~EQ ~false
+◎
+Assert: ! IsReadableStreamLocked(source) is false.
+</li>
+	<li>
+~Assert：
+! `IsWritableStreamLocked$A( %dest ) ~EQ ~false
+◎
+Assert: ! IsWritableStreamLocked(dest) is false.
+</li>
+	<li>
+~IF［
+! `IsReadableByteStreamController$A( %source.[[readableStreamController]] ) ~EQ ~true
+］
+⇒
+%reader ~LET ~UAの裁量で，次のいずれかを遂行した結果
+⇒＃
+! `AcquireReadableStreamBYOBReader$A( %source ) ／
+! `AcquireReadableStreamDefaultReader$A( %source )
+◎
+If ! IsReadableByteStreamController(source.[[readableStreamController]]) is true, let reader be either ! AcquireReadableStreamBYOBReader(source) or ! AcquireReadableStreamDefaultReader(source), at the user agent’s discretion.
+</li>
+	<li>
+~ELSE
+⇒
+%reader ~LET
+! `AcquireReadableStreamDefaultReader$A( %source )
+◎
+Otherwise, let reader be ! AcquireReadableStreamDefaultReader(source).
+</li>
+	<li>
+%writer ~LET
+! `AcquireWritableStreamDefaultWriter$A( %dest )
+◎
+Let writer be ! AcquireWritableStreamDefaultWriter(dest).
+</li>
+	<li>
+%shuttingDown ~LET ~false
+◎
+Let shuttingDown be false.
+</li>
+	<li>
+%promise ~LET `新たな~promise$
+◎
+Let promise be a new promise.
+</li>
+	<li>
+<p>
+~IF［
+%signal ~NEQ ~undefined
+］：
+◎
+If signal is not undefined,
+</p>
+		<ol>
+			<li>
+<p>
+%abortAlgorithm ~LET 次を走らす手続き：
+◎
+Let abortAlgorithm be the following steps:
+</p>
+				<ol>
+					<li>
+%error ~LET 新たな `AbortError$E 例外
+◎
+Let error be a new "AbortError" DOMException.
+</li>
+					<li>
+%actions ~LET 新たな`有順序~集合$
+◎
+Let actions be an empty ordered set.
+</li>
+					<li>
+<p>
+~IF［
+%preventAbort ~EQ ~false
+］
+⇒
+%actions に次を走らす動作を`付加する$set：
+◎
+If preventAbort is false, append the following action to actions:
+</p>
+						<ol>
+							<li>
+~IF［
+%dest.[[ %state ]] ~EQ `writable^l
+］
+⇒
+~RET ! `WritableStreamAbort$A( %dest, %error )
+◎
+If dest.[[state]] is "writable", return ! WritableStreamAbort(dest, error).
+</li>
+							<li>
+~RET ~undefined で`解決される~promise$
+◎
+Otherwise, return a promise resolved with undefined.
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
+~IF［
+%preventCancel ~EQ ~false
+］
+⇒
+%actions に次を走らす動作を`付加する$set：
+◎
+If preventCancel is false, append the following action action to actions:
+</p>
+						<ol>
+							<li>
+~IF［
+%source.[[ %state ]] ~EQ `readable^l
+］
+⇒
+~RET
+! `ReadableStreamCancel$A( %source, %error )
+◎
+If source.[[state]] is "readable", return ! ReadableStreamCancel(source, error).
+</li>
+							<li>
+~RET ~undefined で`解決される~promise$
+◎
+Otherwise, return a promise resolved with undefined.
+</li>
+						</ol>
+					</li>
+					<li>
+`~shutdownする$( %error, %actions 内の動作`すべてを待機する$動作 )
+◎
+Shutdown with an action consisting of waiting for all of the actions in actions, and with error.
+</li>
+				</ol>
+			</li>
+			<li>
+~IF［
+%signal の`中止-済み~flag$aB ~EQ ~ON
+］
+⇒＃
+%abortAlgorithm を遂行する；
+~RET %promise
+◎
+If signal’s aborted flag is set, perform abortAlgorithm and return promise.
+</li>
+			<li>
+`通達に~algoを追加する$( %signal, %abortAlgorithm )
+◎
+Add abortAlgorithm to signal.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+( %reader, %writer )
+を用いて，`並列的$に
+<span class="issue">
+本当はそうでない
+— <a href="https://github.com/whatwg/streams/issues/905">#905</a>
+を見よ —
+</span>
+%source から すべての`~chunk$を読取して %dest に書込する。
+これが起こる正確な方式は、
+( 読取器, 書込器 )
+が供する~lock法に因り，作者~codeからは観測できない。
+よって，~UAには これを柔軟に行う余地があるが、利用される正確な~algoが何であれ，次の拘束が適用される：
+◎
+In parallel but not really; see #905, using reader and writer, read all chunks from source and write them to dest. Due to the locking provided by the reader and writer, the exact manner in which this happens is not observable to author code, and so there is flexibility in how this is done. The following constraints apply regardless of the exact algorithm used:
+</p>
+		<ul>
+			<li>
+`~public~APIは利用しないモノトスル^strong：
+— ［
+読取り／書込み
+］の間, および
+以下に挙げる演算を遂行している間は、何かを改変-可能な~JSの［
+読取器, 書込器, ~stream~API
+］（すなわち，適切な~prototype上の各種~method）は、利用しないモノトスル
+— ~streamは，直に操作するモノトスル。
+◎
+Public API must not be used: while reading or writing, or performing any of the operations below, the JavaScript-modifiable reader, writer, and stream APIs (i.e. methods on the appropriate prototypes) must not be used. Instead, the streams must be manipulated directly.
+</li>
+			<li>
+<p>
+`背圧は施行するモノトスル^strong
+— ~UAは：
+◎
+Backpressure must be enforced:
+</p>
+				<ul>
+					<li>
+`WritableStreamDefaultWriterGetDesiredSize$A( %writer ) の結果が［
+0 以下, または `null^b
+］になる間は、 %reader から読取しないモノトスル
+◎
+While WritableStreamDefaultWriterGetDesiredSize(writer) is ≤ 0 or is null, the user agent must not read from reader.
+</li>
+					<li>
+%reader が`~BYOB読取器$である場合
+⇒
+%reader から読取する~chunkの~sizeを決定するときには，
+`WritableStreamDefaultWriterGetDesiredSize$A( %writer )
+を利用するべきである。
+◎
+If reader is a BYOB reader, WritableStreamDefaultWriterGetDesiredSize(writer) should be used to determine the size of the chunks read from reader.
+</li>
+					<li>
+<p>
+読取や書込は、背圧~合図~以外の理由で遅延されるべきでない。
+◎
+Reads or writes should not be delayed for reasons other than these backpressure signals.
+</p>
+
+<p class="example" id="example-bad-backpressure">
+次回の 読取／書込 演算を続行する前に，各 書込が成功裡に完了するのを待機するような実装は、この推奨に違反する。
+そのような実装では、 %dest の`内部~queue$は，常に高々 1 個の`~chunk$しか包含せず，役立たずになるので。
+◎
+An implementation that waits for each write to successfully complete before proceeding to the next read/write operation violates this recommendation. In doing so, such an implementation makes the internal queue of dest useless, as it ensures dest always contains at most one queued chunk.
+</p>
+					</li>
+				</ul>
+			</li>
+			<li>
+`~shutdownは、活動を停止させるモノトスル^strong
+— %shuttingDown が ~true になって以降は、~UAは，それ以上 %reader からの読取を起動しないモノトスル。
+また、以下に述べるように，すでに読取された~chunkの書込のみを遂行するモノトスル。
+特に，~UAは、［
+読取／書込
+］を遂行する前に，以下の条件を検査するモノトスル
+— それらは、即時に~shutdownに至らせることもあるので。
+◎
+Shutdown must stop activity: if shuttingDown becomes true, the user agent must not initiate further reads from reader, and must only perform writes of already-read chunks, as described below. In particular, the user agent must check the below conditions before performing any reads or writes, since they might lead to immediate shutdown.
+</li>
+			<li>
+<p>
+`~error／~close状態は伝播するモノトスル^strong
+— 次に挙げる条件は順に適用されるモノトスル：
+◎
+Error and close states must be propagated: the following conditions must be applied in order.
+</p>
+				<ol>
+					<li>
+<p>
+`~errorは前方へ伝播するモノトスル^strong
+— %source.[[state]] ~EQ `errored^l のとき, または そうなったときは：
+◎
+Errors must be propagated forward: if source.[[state]] is or becomes "errored", then
+
+Errors must be propagated forward: if source.[[state]] is or becomes "errored", then
+</p>
+						<ol>
+							<li>
+~IF［
+%preventAbort ~EQ ~false
+］
+⇒
+`~shutdownする$( %source.[[storedError]], 次を行う動作 )
+⇒
+! `WritableStreamAbort$A( %dest, %source.[[storedError]] )
+◎
+If preventAbort is false, shutdown with an action of ! WritableStreamAbort(dest, source.[[storedError]]) and with source.[[storedError]].
+</li>
+							<li>
+~ELSE
+⇒
+`~shutdownする$( %source.[[storedError]], ε )
+◎
+Otherwise, shutdown with source.[[storedError]].
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
+`~errorは後方へ伝播するモノトスル^strong
+— %dest.[[state]] ~EQ `errored^l のとき, または そうなったときは：
+◎
+Errors must be propagated backward: if dest.[[state]] is or becomes "errored", then
+</p>
+						<ol>
+							<li>
+~IF［
+%preventCancel ~EQ ~false
+］
+⇒
+`~shutdownする$( %dest.[[storedError]], 次を行う動作 )
+⇒
+! `ReadableStreamCancel$A( %source, %dest.[[storedError]] )
+
+◎
+If preventCancel is false, shutdown with an action of ! ReadableStreamCancel(source, dest.[[storedError]]) and with dest.[[storedError]].
+</li>
+							<li>
+~ELSE
+⇒
+`~shutdownする$( %dest.[[storedError]], ε )
+◎
+Otherwise, shutdown with dest.[[storedError]].
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
+`~closingは前方へ伝播するモノトスル^strong
+— %source.[[state]] ~EQ `closed^l のとき, または そうなったときは：
+◎
+Closing must be propagated forward: if source.[[state]] is or becomes "closed", then
+</p>
+						<ol>
+							<li>
+~IF［
+%preventClose ~EQ ~false
+］
+⇒
+`~shutdownする$( ε, 次を行う動作 )
+⇒
+! `WritableStreamDefaultWriterCloseWithErrorPropagation$A( %writer )
+◎
+If preventClose is false, shutdown with an action of ! WritableStreamDefaultWriterCloseWithErrorPropagation(writer).
+</li>
+							<li>
+~ELSE
+⇒
+`~shutdownする$( ε, ε )
+◎
+Otherwise, shutdown.
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
+`~closingは後方へ伝播するモノトスル^strong
+—
+［
+! `WritableStreamCloseQueuedOrInFlight$A( %dest ) ~EQ ~true
+］~OR［
+%dest.[[state]] ~EQ `closed^l
+］のときは：
+◎
+Closing must be propagated backward: if ! WritableStreamCloseQueuedOrInFlight(dest) is true or dest.[[state]] is "closed", then
+</p>
+						<ol>
+							<li>
+~Assert：
+［
+読取した／書込した
+］`~chunk$はない
+◎
+Assert: no chunks have been read or written.
+</li>
+							<li>
+%destClosed ~LET 新たな `TypeError^b
+◎
+Let destClosed be a new TypeError.
+</li>
+							<li>
+~IF［
+%preventCancel ~EQ ~false
+］
+⇒
+`~shutdownする$( %destClosed, 次を行う動作 )
+⇒
+! `ReadableStreamCancel$A( %source, %destClosed )
+◎
+If preventCancel is false, shutdown with an action of ! ReadableStreamCancel(source, destClosed) and with destClosed.
+</li>
+							<li>
+~ELSE
+⇒
+`~shutdownする$( %destClosed, ε )
+◎
+Otherwise, shutdown with destClosed.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+			<li>
+<p id="rs-pipeTo-shutdown">
+上のいずれかの要件／手続きにより，
+`~shutdownする@
+よう請われたときは、所与の
+( %error, %action )
+に対し，次の下位手続きを遂行する：
+◎
+Shutdown with an action: if any of the above requirements ask to shutdown with an action action, optionally with an error originalError, then:
+</p>
+				<ol>
+					<li>
+~IF［
+%shuttingDown ~EQ ~true
+］
+⇒
+~RET
+◎
+If shuttingDown is true, abort these substeps.
+</li>
+					<li>
+%shuttingDown ~SET ~true
+◎
+Set shuttingDown to true.
+</li>
+					<li>
+<p>
+~IF［
+%dest.[[state]] ~EQ `writable^l
+］~AND［
+! `WritableStreamCloseQueuedOrInFlight$A( %dest ) ~EQ ~false
+］：
+◎
+If dest.[[state]] is "writable" and ! WritableStreamCloseQueuedOrInFlight(dest) is false,
+</p>
+						<ol>
+							<li>
+~IF［
+読取されたがまだ書込されていない`~chunk$はある
+］
+⇒
+それらを %dest に書込する
+◎
+If any chunks have been read but not yet written, write them to dest.
+</li>
+							<li>
+読取されたすべての`~chunk$が書込されるまで（すなわち，対応する~promiseは決着するまで）待機する
+◎
+Wait until every chunk that has been read has been written (i.e. the corresponding promises have settled).
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
+~IF［
+%action ~EQ ε
+］：
+</p>
+						<ol>
+							<li>
+`完結する$( %error )
+</li>
+							<li>
+~RET
+</li>
+						</ol>
+◎
+↓↓</li>
+					<li>
+<p>
+%p ~LET %action を遂行した結果：
+◎
+Let p be the result of performing action.
+</p>
+						<ul>
+							<li>
+%p の`充足-時$には
+⇒
+`完結する$( %error )
+◎
+Upon fulfillment of p, finalize, passing along originalError if it was given.
+</li>
+							<li>
+事由 %newError による %p の`却下-時$には
+⇒
+`完結する$( %newError )
+◎
+Upon rejection of p with reason newError, finalize with newError.
+</li>
+						</ul>
+					</li>
+				</ol>
+
+<div class="p">
+<p class="trans-note">【
+この手続きは、原文では， 2 つに分けて記されているが（ %action ~EQ ε の場合と 非 ε の場合）、表記の都合により この訳では一つに集約している。
+】
+</p>
+◎
+Shutdown: if any of the above requirements or steps ask to shutdown, optionally with an error error, then:
+• If shuttingDown is true, abort these substeps.
+• Set shuttingDown to true.
+• If dest.[[state]] is "writable" and ! WritableStreamCloseQueuedOrInFlight(dest) is false,
+•• If any chunks have been read but not yet written, write them to dest.
+•• Wait until every chunk that has been read has been written (i.e. the corresponding promises have settled).
+• Finalize, passing along error if it was given.
+</div>
+			</li>
+			<li>
+<p>
+`完結する@
+下位手続きは、所与の
+( %error )
+に対し，次を遂行する：
+◎
+Finalize: both forms of shutdown will eventually ask to finalize, optionally with an error error, which means to perform the following steps:
+</p>
+				<ol>
+					<li>
+! `WritableStreamDefaultWriterRelease$A( %writer )
+◎
+Perform ! WritableStreamDefaultWriterRelease(writer).
+</li>
+					<li>
+! `ReadableStreamReaderGenericRelease$A( %reader )
+◎
+Perform ! ReadableStreamReaderGenericRelease(reader).
+</li>
+					<li>
+~IF［
+%signal ~NEQ ~undefined
+］
+⇒
+`通達から~algoを除去する$( %signal, %abortAlgorithm )
+◎
+If signal is not undefined, remove abortAlgorithm from signal.
+</li>
+					<li>
+~IF［
+%error ~NEQ ε
+］
+⇒
+%error で %promise を`却下する$
+◎
+If error was given, reject promise with error.
+</li>
+					<li>
+~ELSE
+⇒
+~undefined で %promise を`解決する$
+◎
+Otherwise, resolve promise with undefined.
+</li>
+				</ol>
+			</li>
+		</ul>
+	</li>
+	<li>
+~RET %promise 
+◎
+Return promise.
+</li>
+</ol>
+
+
+<p class="note">注記：
+ここで遂行される種々の抽象~演算では，~objが作成され（~promiseを成すものが多い）、それらの~obj用には，通例的に`~realm$を指定することが要求される。
+しかしながら，~lock中にあるので、それらの~objは 作者~codeからは観測され得ない。
+そのようなわけで、それらの作成-時に利用する`~realm$が~~問題になることはない。
+◎
+Various abstract operations performed here include object creation (often of promises), which usually would require specifying a realm for the created object. However, because of the locking, none of these objects can be observed by author code. As such, the realm used to create them does not matter.
+</p>
 
 			</section>
 		</section>
@@ -15554,7 +15639,7 @@ This operation works correctly when one or both sides are already errored. As a 
 	<li>
 ! `TransformStreamDefaultControllerClearAlgorithms$A( %stream.[[transformStreamController]])
 ◎
-Perform ! TransformStreamDefaultControllerClearAlgorithms(stream.[[transformStreamController]]);
+Perform ! TransformStreamDefaultControllerClearAlgorithms(stream.[[transformStreamController]]).
 </li>
 	<li>
 ! `WritableStreamDefaultControllerErrorIfNeeded$A( %stream.[[writable]].[[writableStreamController]], %e )
