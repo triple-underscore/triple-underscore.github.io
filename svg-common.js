@@ -680,7 +680,6 @@ COMMON_DATA.PREMAP += `
 属性:<tr><th>属性<td>
 幾何:<tr><th>幾何~prop<td>
 界面:<tr><th>~DOM~interface<td>
-あ:\uE007<a href="~SVGanim#Animatable">~animate可？</a>\uE005
 
 属名:<table class="attrdef"><tbody><tr><th colspan="2">
 属値:<tr><th>値<td>
@@ -1720,6 +1719,7 @@ scripting::::スクリプト処理
 時列線:timeline::~
 時刻:time::~
 時機:timing::~
+離散的:discrete::~
 遷移:transition::~
 等価:equivalent::~
 精確:precise::~
