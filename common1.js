@@ -556,7 +556,7 @@ function fillIndexes(){
 function fillConformance(){
 	const links = {
 w3c: '<a href="w3c-common-ja.html#conformance">W3C 日本語訳 共通ページ</a>',
-css: '<a href="css-common-ja.html#conformance">CSS 日本語訳 共通ページ</a>',
+css: '<a href="css-snapshot-ja.html#conformance">CSS Snapshot ページ</a>',
 	};
 	const link = links[ (options.conformance ) || ''];
 	if(!link) return;
@@ -564,7 +564,7 @@ css: '<a href="css-common-ja.html#conformance">CSS 日本語訳 共通ページ<
 	sec.id = 'conformance';
 	sec.innerHTML = `
 <h2 title="Conformance">適合性</h2>
-<p class="trans-note">【この節の内容は${link}に委譲。】</p>
+<p class="trans-note">【この節の内容は ${link}に委譲。】</p>
 `;
 	document.body.appendChild(sec);
 }
