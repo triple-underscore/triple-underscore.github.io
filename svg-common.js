@@ -433,7 +433,7 @@ p.font-size-adjust:~CSSFONT#propdef-font-size-adjust
 p.font-size:~CSSFONT#propdef-font-size
 p.font-stretch:~CSSFONT#propdef-font-stretch
 p.font-style:~CSSFONT#propdef-font-style
-p.font-variant:~SVGtext#FontVariantProperty
+p.font-variant:~CSSFONT#propdef-font-variant
 p.font-weight:~CSSFONT#propdef-font-weight
 p.glyph-orientation-horizontal:~SVGtext#GlyphOrientationHorizontalProperty
 p.glyph-orientation-vertical:~SVGtext#GlyphOrientationVerticalProperty
