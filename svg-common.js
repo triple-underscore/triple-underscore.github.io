@@ -713,6 +713,8 @@ SVGanim:https://svgwg.org/specs/animations/
 	GEOMETRY→common0.js
 	GEOMETRY:https://www.w3.org/TR/geometry-1/
 	GEOMETRY:https://www.w3.org/TR/2014/WD-geometry-1-20140522/
+
+ARIA11:https://www.w3.org/TR/wai-aria-1.1/
 xml_space:xml:space
 xlink_href:xlink:href
 xlink_title:xlink:title
@@ -1621,7 +1623,7 @@ feedback::::フィードバック
 試みる:attempt する:~
 試みら:attempt さ:~
 試みて:attempt して:~
-試みた:attempt した
+試みた:attempt した:~
 試みな:attempt しな:~
 裁定-:decide:~
 裁定:decision:~
@@ -1637,6 +1639,7 @@ feedback::::フィードバック
 観測-:observe:~
 欲され:desire され:~
 表出され:express され:表され
+表出する:express する:表す
 設置-:place:~
 著作:authoring:~
 
