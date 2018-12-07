@@ -708,6 +708,14 @@ SVGpainting:https://svgwg.org/svg2-draft/painting.html
 SVGpservers:https://svgwg.org/svg2-draft/pservers.html
 	~SVG2/interact.html→common0.js
 	~SVG2/linking.html→common0.js
+SVGmisc:svg-misc-ja.html
+	~SVG2/Overview.html
+	~SVG2/implnote.html
+	~SVG2/access.html
+	~SVG2/animate.html
+	~SVG2/mimereg.html
+
+
 
 SVGanim:https://svgwg.org/specs/animations/
 	GEOMETRY→common0.js
@@ -1261,6 +1269,7 @@ serve::::サーブ
 本体:body::~::ボディ
 遠隔:remote::~::リモート
 資源:resource::~:リソース
+media::::メディア
 媒体:media::~::メディア
 multimedia::::マルチメディア
 file::::ファイル
