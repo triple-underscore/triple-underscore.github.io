@@ -581,7 +581,6 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~SVG文書片:~SVGstruct#TermSVGDocumentFragment
 現在の~SVG文書片:#TermCurrentSVGDocumentFragment
 ~use要素の~shadow木:~SVGstruct#TermUseElementShadowTree
-~use-要素~shadow木:~SVGstruct#TermUseElementShadowTree
 ~instance根:~SVGstruct#TermInstanceRoot
 ~instance:~SVGstruct#TermElementInstance
 要素~instance:~SVGstruct#TermElementInstance
@@ -705,7 +704,7 @@ SVGtypes:https://svgwg.org/svg2-draft/types.html
 SVGtext:https://svgwg.org/svg2-draft/text.html
 	~SVG2/embedded.html→common0.js
 SVGpainting:https://svgwg.org/svg2-draft/painting.html
-SVGpservers:https://svgwg.org/svg2-draft/pservers.html
+	~SVG2/pservers.html→common0.js
 	~SVG2/interact.html→common0.js
 	~SVG2/linking.html→common0.js
 SVGmisc:svg-misc-ja.html
@@ -1117,6 +1116,9 @@ green:
 描かれ:draw され::~
 描かせ:draw させ::~
 描いて:draw して::~
+描き:drawing::~
+描直す:redraw する::描き直す
+描直し:redraw::描き直し
 絵図:drawing:~
 具現化-:render::~
 具現化:rendering::~
@@ -1346,6 +1348,7 @@ tool::::ツール
 目的:purpose:~
 直に:direct に:~
 直接的:direct:~
+間接的:indirect:~
 能:ability:~
 課題:issue:~
 通常:normal:~
@@ -1410,6 +1413,7 @@ tool::::ツール
 汎用の:generic な:~
 汎用:generic:~
 注釈文:prose:~
+概して:typical に:~
 
 	決して:never
 	例:example
@@ -1644,6 +1648,7 @@ feedback::::フィードバック
 見出す:find する:~
 見出せる:find できる:~
 見出され:find され:~
+見出して:find して:~
 許可-:permit:~
 観測-:observe:~
 欲され:desire され:~
@@ -1651,10 +1656,19 @@ feedback::::フィードバック
 表出する:express する:表す
 設置-:place:~
 著作:authoring:~
+受持つ:cover する:受け持つ
+落とす:drop する:~
+落とし:drop し:~
+落とさ:drop さ:~
+言明-:state:~
+言明:statement:~
+相違-:differ:~
+相違:difference:~
 
 	則って:according
 	則って:in accordance with
 	〜に基づく:based／:-based
+	織り込:take 〜 into account
 	扱う:treat
 	見よ:see
 	見よ:refer to
@@ -1667,7 +1681,7 @@ feedback::::フィードバック
 	従う:follow
 	次のような:as follows
 	次に従って:as follows
-	次の:the following
+	次の／次に挙げる:the following
 
 	●未分類（動詞
 表現-:represent:~

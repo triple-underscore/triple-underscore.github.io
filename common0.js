@@ -1131,6 +1131,7 @@ SVGrender:svg-render-ja.html
 SVGstruct:svg-struct-ja.html
 SVGcoords:svg-coords-ja.html
 SVGpaths:svg-paths-ja.html
+SVGpservers:svg-pservers-ja.html
 SVGshapes:svg-shapes-ja.html
 SVGstyling:svg-styling-ja.html
 SVGembedded:svg-embedded-ja.html
