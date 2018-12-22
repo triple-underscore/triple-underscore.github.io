@@ -1037,7 +1037,6 @@ NIN: <span class="op">∉</span>
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>
 INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This section is non-normative.</span></p>
 FINGERPRINTING:<a class="fingerprinting" href="HTML-infrastructure-ja.html#fingerprinting-vector"></a>
-SPECBUGS:https://www.w3.org/Bugs/Public/show_bug.cgi
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
 TR:https://www.w3.org/TR
 IETF:https://tools.ietf.org/html
