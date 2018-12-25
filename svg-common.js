@@ -510,10 +510,12 @@ t.length-percentage:~CSSVAL#typedef-length-percentage
 t.url:~CSSVAL#url-value
 t.color:~CSSVAL#colors
 t.alpha-value:~CSSCOLOR#typedef-alpha-value
-t.paint:~SVGpainting#SpecifyingPaint
+t.paint:~SVGpainting#DataTypePaint
+	t.paint:~SVGpainting#SpecifyingPaint
 t.marker-ref:~SVGpainting#DataTypeMarkerRef
 t.dasharray:~SVGpainting#DataTypeDasharray
 t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
+
 
 ~URLt:~SVGtypes#attribute-url
 
@@ -560,6 +562,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 反映する:~SVGtypes#TermReflect
 無効な値:~SVGtypes#TermInvalidValue
 初期~値:~SVGtypes#TermInitialValue
+数量-型の値:~SVGtypes#TermNumericTypeValue
 直列化し直す:~SVGtypes#TermReserialize
 ~list~interface:~SVGtypes#TermListInterface
 
@@ -600,6 +603,8 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~obj限界~box:~SVGcoords#TermObjectBoundingBox
 ~stroke限界~box:~SVGcoords#TermStrokeBoundingBox
 装飾d限界~box:~SVGcoords#TermDecoratedBoundingBox
+最も遠い先祖の~SVG表示域:~SVGcoords#TermFurthestAncestorSVGViewport
+正規化-済み対角線長さ:~SVGcoords#_normalized-diagonal
 
 	■path
 区分を完了して~pathを閉じる:~SVGpaths#TermSegment-CompletingClosePath
@@ -664,7 +669,11 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~UA~stylesheet:~SVGstyling#UAStyleSheet
 
 	■用語（外部
-
+加法的でない:~CSSVAL#not-additive
+違法な値:~CSS22/syndata.html#illegalvalues
+	https://www.w3.org/TR/2011/REC-CSS2-20110607/syndata.html#illegalvalues
+既定の~sizing~algo:~CSSIMAGE#default-sizing-algorithm
+	~CSSIMAGE#default-sizing
 大域~event属性:~WAPI#globaleventhandlers
 文書~要素~event属性:~WAPI#documentandelementeventhandlers
 ~CORS設定群~属性:~HTMLurl#cors-settings-attribute
@@ -789,7 +798,6 @@ entry::::エントリ
 挿入:insertion::~
 改変-:modify::~
 改変:modification::~
-改称-:rename:~
 新たな:new:~
 演算-:operate::~
 演算:operation::~
@@ -811,6 +819,8 @@ clone::::クローン
 集合:set::~
 整数:integer::~
 公式:formula:~
+数量-:numeric:~
+数量的:numerical:~
 
 
 	●構文
@@ -975,6 +985,7 @@ svg:
 	●幾何
 CTM:
 幾何:geometry::~
+幾何-:geometric::~
 幾何的:geometric::~
 path::::パス
 下位path:subpath:::下位パス
@@ -1107,6 +1118,8 @@ green:
 塗られ:paint され::塗られ
 塗り:paint::~
 塗る:paint する::~
+塗れる:paint できる::~
+塗らな:paint しな::~
 塗ng:painting::塗り
 前景:foreground::~
 後景:backdrop::~
@@ -1116,6 +1129,7 @@ green:
 描かれ:draw され::~
 描かせ:draw させ::~
 描いて:draw して::~
+描かな:draw しな::~
 描き:drawing::~
 描直す:redraw する::描き直す
 描直し:redraw::描き直し
@@ -1450,6 +1464,7 @@ browser::::ブラウザ
 support::::サポート
 test::::テスト
 fallback::::フォールバック
+fall-back:fall back:::フォールバック
 feedback::::フィードバック
 上書き:override:~
 不正:incorrect:~
@@ -1664,6 +1679,7 @@ feedback::::フィードバック
 言明:statement:~
 相違-:differ:~
 相違:difference:~
+改称-:rename:~
 
 	則って:according
 	則って:in accordance with
