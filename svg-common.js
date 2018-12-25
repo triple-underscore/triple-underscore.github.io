@@ -712,7 +712,7 @@ SVGtypes:https://svgwg.org/svg2-draft/types.html
 	~SVG2/shapes.html→common0.js
 SVGtext:https://svgwg.org/svg2-draft/text.html
 	~SVG2/embedded.html→common0.js
-SVGpainting:https://svgwg.org/svg2-draft/painting.html
+	~SVG/painting.html→common0.js
 	~SVG2/pservers.html→common0.js
 	~SVG2/interact.html→common0.js
 	~SVG2/linking.html→common0.js
