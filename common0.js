@@ -1090,6 +1090,7 @@ CSSDISP:css-display-ja.html
 CSSEXCLUSION:css-exclusions-ja.html
 CSSFLEX:css-flexbox-ja.html
 CSSFONT:css-fonts-ja.html
+CSSFONT4:css-fonts4-ja.html
 CSSGRID:css-grid-ja.html
 CSSIMAGE:css-images-ja.html
 CSSIMAGE4:css-images4-ja.html
@@ -1131,6 +1132,7 @@ SVGstruct:svg-struct-ja.html
 SVGcoords:svg-coords-ja.html
 SVGpaths:svg-paths-ja.html
 SVGpservers:svg-pservers-ja.html
+SVGpainting:svg-painting-ja.html
 SVGshapes:svg-shapes-ja.html
 SVGstyling:svg-styling-ja.html
 SVGembedded:svg-embedded-ja.html
