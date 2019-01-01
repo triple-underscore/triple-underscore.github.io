@@ -1665,6 +1665,7 @@ CSSOM1=主             ~/cssom-ja.html
 CSSOMVIEW1=主         ~/cssom-view-ja.html
 	CSSOMVIEW1=版         ~TR/cssom-view/
 	CSSOMVIEW1=編         ~CSSWG/cssom-view/
+CSSPAINTAPI1=主       ~/css-paint-api-ja.html
 CSSPSEUDO4=主         ~/css-pseudo-ja.html
 CSSSCOPING1=主        ~/css-scoping-ja.html
 CSSSCROLLSNAP1=主     ~/css-scroll-snap-ja.html
