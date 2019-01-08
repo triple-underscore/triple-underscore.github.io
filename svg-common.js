@@ -292,6 +292,7 @@ I.DOMMatrix:~GEOMETRY#dommatrix
 	~TR/geometry-1/#dom-dommatrix
 I.DOMMatrixReadOnly:~GEOMETRY#dommatrixreadonly
 	~TR/geometry-1/#dom-dommatrixreadonly
+I.DOMMatrix2DInit:~GEOMETRY#dictdef-dommatrix2dinit
 I.DOMPoint:~GEOMETRY#dompoint
 	~TR/geometry-1/#dom-dompoint
 I.DOMPointInit:~GEOMETRY#dictdef-dompointinit
@@ -729,6 +730,7 @@ SVGanim:https://svgwg.org/specs/animations/
 	GEOMETRY→common0.js
 	GEOMETRY:https://www.w3.org/TR/geometry-1/
 	GEOMETRY:https://www.w3.org/TR/2014/WD-geometry-1-20140522/
+	GEOMETRY:https://www.w3.org/TR/2014/CR-geometry-1-20141125/
 
 ARIA11:https://www.w3.org/TR/wai-aria-1.1/
 xml_space:xml:space
