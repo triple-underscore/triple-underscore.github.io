@@ -1576,6 +1576,7 @@ CSSBREAK3=主          ~/css-break-ja.html
 	CSSBREAK3=版          ~TR/css-break-3/
 	CSSBREAK3=編          ~CSSWG/css-break-3/
 CSSBREAK3=・          ~CSSWG/css-break/
+CSSBREAK4=主          ~/css-break-ja.html●Level 3 日本語訳
 CSSCASCADE4=主         ~/css-cascade-ja.html
 	CSSCASCADE4=版         ~TR/css-cascade-4/
 	CSSCASCADE4=編         ~CSSWG/css-cascade-4/
