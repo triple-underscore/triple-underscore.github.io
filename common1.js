@@ -1790,6 +1790,7 @@ PERFORMANCETIMELINE2=主    ~/performance-timeline-ja.html
 	PERFORMANCETIMELINE2=編    w3c.github.io/performance-timeline/
 USERTIMING2=主        ~/user-timing-ja.html
 	USERTIMING2=版        ~TR/user-timing-2/
+RESOURCETIMING2=主     ~/resource-timing-ja.html
 RESOURCETIMING=主     ~/resource-timing-ja.html
 	RESOURCETIMING=版     ~TR/resource-timing/
 	RESOURCETIMING=編     w3c.github.io/resource-timing/
