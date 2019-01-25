@@ -724,8 +724,6 @@ SVGmisc:svg-misc-ja.html
 	~SVG2/animate.html
 	~SVG2/mimereg.html
 
-
-
 SVGanim:https://svgwg.org/specs/animations/
 	GEOMETRY→common0.js
 	GEOMETRY:https://www.w3.org/TR/geometry-1/
@@ -733,6 +731,7 @@ SVGanim:https://svgwg.org/specs/animations/
 	GEOMETRY:https://www.w3.org/TR/2014/CR-geometry-1-20141125/
 
 ARIA11:https://www.w3.org/TR/wai-aria-1.1/
+SVGissue:https://github.com/w3c/svgwg/issues
 xml_space:xml:space
 xlink_href:xlink:href
 xlink_title:xlink:title
