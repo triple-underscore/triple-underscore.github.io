@@ -624,7 +624,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 
 	■linking
 同一-文書~URL参照:~SVGlinking#TermSameDocumentURL
-外部~資源:~SVGlinking#TermExternalReference
+外部~資源~参照:~SVGlinking#TermExternalReference
 ~data~URL参照:~SVGlinking#TermDataURL
 ~URL参照:~SVGlinking#TermURLReference
 未解決の参照:~SVGlinking#TermUnresolvedReference
