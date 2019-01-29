@@ -334,9 +334,8 @@ network:ネットワーク
 http:HTTP
 security:セキュリティ
 performance:計時
-graphics:変形
 transform:変形
-paint:画像-色-塗り
+paint:塗り
 css:CSS
 css-ux:CSS UX
 css-anim:アニメーション
