@@ -210,6 +210,7 @@ COMMON_DATA.link_map += `
 	●IDL
 
 E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
+E.IndexSizeError:~WEBIDL#indexsizeerror
 
 I.GetSVGDocument:~SVGstruct#InterfaceGetSVGDocument
 I.SVGAElement:~SVGlinking#InterfaceSVGAElement
@@ -460,9 +461,12 @@ p.property:~SVGstyling#TermProperty
 p.r:~SVGgeometry#RProperty
 p.rx:~SVGgeometry#RxProperty
 p.ry:~SVGgeometry#RyProperty
-p.shape-inside:~SVGtext#TextShapeInside
+p.shape-inside:~SVGtext#ShapeInsideProperty
+p.shape-image-threshold:~SVGtext#TextShapeImageThreshold
+p.shape-margin:~SVGtext#ShapeMarginProperty
+p.shape-padding:~SVGtext#TextShapePadding
 p.shape-rendering:~SVGpainting#ShapeRenderingProperty
-p.shape-subtract:~SVGtext#TextShapeSubtract
+p.shape-subtract:~SVGtext#ShapesubtractProperty
 p.stop-color:~SVGpservers#StopColorProperty
 p.stop-opacity:~SVGpservers#StopOpacityProperty
 p.stroke-dasharray:~SVGpainting#StrokeDasharrayProperty
@@ -477,9 +481,7 @@ p.text-align-last:~CSSTEXT#propdef-text-align-last
 p.text-align:~CSSTEXT#propdef-text-align
 p.text-anchor:~SVGtext#TextAnchorProperty
 p.text-decoration-color:~SVGtext#TextDecorationProperties
-p.text-decoration-fill:~SVGtext#TextDecorationFillProperty
 p.text-decoration-line:~SVGtext#TextDecorationProperties
-p.text-decoration-stroke:~SVGtext#TextDecorationStrokeProperty
 p.text-decoration-style:~SVGtext#TextDecorationProperties
 p.text-decoration:~SVGtext#TextDecorationProperties
 p.text-indent:~CSSTEXT#propdef-text-indent
@@ -655,12 +657,8 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~animation要素:~SVGanim#TermAnimationElement
 ~animation~event属性:~SVGanim#TermAnimationEventAttribute
 
-~address可能~文字:~SVGtext#TermAddressableCharacter
-
 画像~描画~用の矩形:~SVGembedded#TermImageRenderingRectangle
 位置決め矩形:~SVGembedded#TermPositioningRectangle
-
-
 
 
 	■用語
@@ -711,7 +709,7 @@ SVGtypes:https://svgwg.org/svg2-draft/types.html
 	~SVG2/coords.html→common0.js
 	~SVG2/paths.html→common0.js
 	~SVG2/shapes.html→common0.js
-SVGtext:https://svgwg.org/svg2-draft/text.html
+	~SVG2/text.html→common0.js
 	~SVG2/embedded.html→common0.js
 	~SVG/painting.html→common0.js
 	~SVG2/pservers.html→common0.js
@@ -971,7 +969,6 @@ svg:
 部分木:subtree::~
 隔離-:isolate::~
 順序:order::~
-並替られ:reorder され::並び替えられ
 名前空間:namespace::~
 外来の:foreign::~
 包装-:wrap:~
@@ -1386,6 +1383,7 @@ tool::::ツール
 詳細な:detailed:~
 可用:available:~
 意味論:semantics:~
+意味論上の:semantic な:~
 適切:appropriate:~
 不適切:inappropriate:~
 側面:aspect:~
@@ -1418,7 +1416,6 @@ tool::::ツール
 容易:easy:~
 	より容易に:easier
 恣意的:arbitrary:~
-補足的:supplemental:~
 一般:general:~
 一般化-:generalize:~
 一般的:general:~
@@ -1473,6 +1470,7 @@ feedback::::フィードバック
 並行して:parallel に:~
 付録:appendix:~
 供-:provide:~
+供せ:provide でき:~
 供さな:provide しな:~
 依存-:depend:~
 依拠-:rely:~
@@ -1504,12 +1502,15 @@ feedback::::フィードバック
 取扱う:handle する:取り扱う
 取扱われ:handle され:取り扱われ
 取扱って:handle して:取り扱って
+取扱わな:handle しな:取り扱わな
+取扱える:handle できる:取り扱える
 含意-:imply:~
 含意:implications:~
 変更点:changes:~
 孕む:involve する:~
 定義-:define:~
 定義:definition:~
+定義済みの:predefined:~
 実装-:implement:~
 実装:implementation:~
 実装者:implementor:~
@@ -1548,6 +1549,7 @@ feedback::::フィードバック
 改めな:alter しな:~
 改める:alter する:~
 改善-:improve:~
+改善:improvement:~
 明確化-:clarify:~
 明確化:clarification:~
 明示的:explicit:~
@@ -1582,6 +1584,7 @@ feedback::::フィードバック
 要約-:summarize:~
 見なさ:consider さ:~
 見なす:consider する:~
+見なせ:consider でき:~
 規範的:normative:~
 解決-:resolve:~
 解決:resolution:~
@@ -1595,6 +1598,7 @@ feedback::::フィードバック
 許容-:allow:~
 	許容されない:disallowed
 説明-:explain:~
+説明:explanation:~
 論じら:discuss さ:~
 論じる:discuss する:~
 論点:discussion:~
@@ -1602,6 +1606,8 @@ feedback::::フィードバック
 述べら:describe さ:~
 述べる:describe する:~
 述べた:describe した:~
+述べて:describe して:~
+述べれ:describe でき:~
 遂行-:perform:~
 適合-:conform:~
 	適合する:are conformant
@@ -1655,6 +1661,7 @@ feedback::::フィードバック
 試みて:attempt して:~
 試みた:attempt した:~
 試みな:attempt しな:~
+試みれ:attempt でき:~
 裁定-:decide:~
 裁定:decision:~
 検分-:inspect:~
@@ -1671,9 +1678,11 @@ feedback::::フィードバック
 欲され:desire され:~
 表出され:express され:表され
 表出する:express する:表す
+表出した:express した:表した
 設置-:place:~
 著作:authoring:~
 受持つ:cover する:受け持つ
+受持って:cover して:受け持って
 落とす:drop する:~
 落とし:drop し:~
 落とさ:drop さ:~
@@ -1682,6 +1691,8 @@ feedback::::フィードバック
 相違-:differ:~
 相違:difference:~
 改称-:rename:~
+補足-:supplement:~
+補足的:supplemental:~
 
 	則って:according
 	則って:in accordance with
