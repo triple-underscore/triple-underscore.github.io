@@ -1141,7 +1141,6 @@ SVGpservers:svg-pservers-ja.html
 SVGinteract:svg-interact-ja.html
 SVGlinking:svg-linking-ja.html
 HTMLLS:https://html.spec.whatwg.org/multipage
-HTML50:https://www.w3.org/TR/html5
 ARIA1:https://w3c.github.io/aria/
 BROWSERS:browsers-ja.html
 WINDOW:HTML-window-ja.html
