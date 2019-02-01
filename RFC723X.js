@@ -1634,6 +1634,9 @@ architecture::::アーキテクチャ
 壊れた:broken:~
 理論:theory:~
 知識:knowledge:~
+直に:direct に:~
+直接的:direct:~
+間接的:indirect:~
 
 	●保安
 
@@ -1788,6 +1791,7 @@ quote::::クォート
 稀:rare:~
 番号:number:~
 空:empty:~
+空の:empty な:~
 空行:blank line::~
 空白:whitespace::~
 素片:fragment::~::フラグメント
@@ -1885,9 +1889,6 @@ redirection::::リダイレクト
 指令-:direct::~
 方向:direction::~
 	directional:
-直接的:direct:~
-	直に:direct に:~
-間接的:indirect:~
 双方向:bidirectional::~
 主体:party::~
 第三者主体:third-party::~::サードパーティ
@@ -2295,10 +2296,9 @@ stateless::::ステートレス
 終了-:terminate:~
 	終端-:terminate:~
 終了:termination:~
-再結合-:recombine:~
 結合-:combine:~
-組合わせ:combination:組み合わせ
-組合わさ:combine さ:組み合わさ
+組合わせ:combination:組み合せ
+組合され:combine され:組み合され
 絶対:absolute::~
 継承-:inherit:~
 継承:inheritance:~
@@ -2358,6 +2358,7 @@ stateless::::ステートレス
 近似:approximation:~
 追加-:add:~
 追加:addition:~
+追加的な:additional:~
 追加の:additional:~
 透過性:transparency::~
 透過的:transparent::~

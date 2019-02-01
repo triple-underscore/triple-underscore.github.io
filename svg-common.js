@@ -802,6 +802,7 @@ entry::::エントリ
 演算:operation::~
 種別:type::~
 空:empty:~
+空の:empty な:~
 範囲:range::~
 clone::::クローン
 複製:copy::~
@@ -1754,9 +1755,9 @@ feedback::::フィードバック
 結付けて:associate して:結び付けて
 登録-:register::~
 登録:registration::~
-組合する:combine する:組み合せる
+組合せる:combine する:組み合せる
 組合され:combine され:組み合され
-組合して:combine して:組み合せて
+組合せて:combine して:組み合せて
 組合わせ:combination:組み合せ
 
 	対応-:correspond
