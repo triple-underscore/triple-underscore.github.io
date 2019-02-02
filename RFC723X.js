@@ -1138,12 +1138,8 @@ proprietary::::プロプライエタリ
 欲され:desire され:~
 欲して:desire して:~
 欲する:desire する:~
-決めた:decide した:~
-決める:decide する:~
-決めれ:decide でき:~
 挙動:behavior:ふるまい
 挙動する:behave する:ふるまう
-改め:alter でき:~
 改めら:alter さ:~
 改める:alter する:~
 避けら:avoid さ:~
@@ -1435,7 +1431,7 @@ architecture::::アーキテクチャ
 提供-:offer:~
 提案-:propose:~
 提案:proposal:~
-支援-:assist:~:::アシスト
+支援-:assist:~
 故意:deliberate:~
 指定-:specify:~
 指定:specification:~
@@ -1456,6 +1452,7 @@ architecture::::アーキテクチャ
 未知の:unknown:~
 決定-:determine:~
 決定:determination:~
+裁定-:decide:~
 裁定:decision:~
 	注記-:note:~
 	注記:Note:~
