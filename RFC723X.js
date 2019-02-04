@@ -906,8 +906,8 @@ COMMON_DATA.words_table = `
 隠され:hide され:~
 隠し:hide し:~
 見積もり:estimate::~
-見積もら:estimateさ::~
-見積もる:estimateする::~
+見積もら:estimate さ::~
+見積もる:estimate する::~
 促す:prompt する:~
 
 
@@ -1634,6 +1634,44 @@ architecture::::アーキテクチャ
 直に:direct に:~
 直接的:direct:~
 間接的:indirect:~
+追加的な:additional な:追加の
+透過性:transparency::~
+透過的:transparent::~
+高度:advance:~
+類別:category:~
+逐語的:verbatim:~
+調整-:adjust:~
+維持-:retain:~
+維持させ:sustain し:~
+	維持し:retain し:~
+保守-:maintain:~
+保守:maintenance:~
+縛られ:tie され:~
+背後:behind:~
+自動:automatic:~
+自動化-:automate:~
+自動化:automated:~
+自動的:automatic:~
+表出し:express:表し
+表出され:express され:表され
+表出する:express する:表す
+表現-:represent::~
+表現:representation::~
+協調的:collaborative:~
+相違-:differ:~
+相違化-:differentiate:区別
+相違す:differ す:異な
+	相違し:differ し:異なり
+相違点:differences:~
+相違:differences:~
+	異なる:different:~
+管理-:manage:~
+管理:management:~
+変更管理者:change controller:~
+運用-:operate:~
+運用:operation:~
+運用上の:operational:~
+運用者:operator:~
 
 	●保安
 
@@ -2032,7 +2070,6 @@ referrer::::リファラ
 区分-:partition:~
 判別-:distinguish:~
 事前条件:precondition::~
-協調的:collaborative:~
 即時:immediate:~
 却下-:reject::~
 反映-:reflect:~
@@ -2117,14 +2154,11 @@ referrer::::リファラ
 存在e-:exist:存在
 存在e:existence:存在
 安全:safe::~
-安全な:safe::~
 	安全でない:unsafe:~
 完了-:complete::~
 完了:completion::~
 完全:complete::~
-完全な:complete::~
 不完全:incomplete::~
-不完全な:incomplete::~
 完全性:integrity::~
 実行-:execute:~
 宣言-:declare:~
@@ -2257,13 +2291,6 @@ stateless::::ステートレス
 盲目的:blind::~
 相対:relative::~
 相対的:relative::~
-相違-:differ:~
-相違化-:differentiate:区別
-相違す:differ す:異な
-	相違し:differ し:異なり
-相違点:differences:~
-相違:differences:~
-	異なる:different:~
 省略:omit:~
 瞬間:moment:~
 知覚-:perceive:~
@@ -2282,9 +2309,6 @@ stateless::::ステートレス
 算出-:compute:~
 算術的:arithmetic:~
 算術:arithmetic:~
-管理-:manage:~
-管理:management:~
-変更管理者:change controller:~
 組織:organization:~
 節約-:save:~
 範囲:range::~
@@ -2301,22 +2325,6 @@ stateless::::ステートレス
 継承:inheritance:~
 継続-:continue:~
 続行-:proceed:~
-維持-:retain:~
-維持させ:sustain し:~
-	維持し:retain し:~
-保守-:maintain:~
-保守:maintenance:~
-縛られ:tie され:~
-背後:behind:~
-自動:automatic:~
-自動化-:automate:~
-自動化:automated:~
-自動的:automatic:~
-表出し:express:表し
-表出され:express され:表され
-表出する:express する:表す
-表現-:represent::~
-表現:representation::~
 表示:display:~
 複製:copy:~
 要素:element::~
@@ -2335,7 +2343,6 @@ stateless::::ステートレス
 再試行-:retry::~
 再試行:retrying::~
 誘発-:trigger:~
-調整-:adjust:~
 識別:identification::~
 識別-:identify::~
 	識別-法:identifying
@@ -2355,11 +2362,6 @@ stateless::::ステートレス
 近似:approximation:~
 追加-:add:~
 追加:addition:~
-追加的な:additional:~
-追加の:additional:~
-透過性:transparency::~
-透過的:transparent::~
-逐語的:verbatim:~
 連合-:federate:~
 進捗:progress:~
 進捗状況:progress:~
@@ -2367,10 +2369,6 @@ stateless::::ステートレス
 遅延:delay::~
 演算:operation:~
 演算子:operator:~
-運用-:operate:~
-運用:operation:~
-運用上の:operational:~
-運用者:operator:~
 過去:past:~
 過度の:excessive な:~
 過程:process:~
@@ -2404,8 +2402,6 @@ stateless::::ステートレス
 順序:order:~
 領域:region:~
 頻繁:frequent:~
-類別:category:~
-高度:advance:~
 鮮度:freshness::~
 `;
 
