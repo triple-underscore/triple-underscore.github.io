@@ -1528,7 +1528,7 @@ feedback::::フィードバック
 拘束:constraint:~
 拡張-:extend:~
 拡張:extension:~
-拡張性:extensibility:~
+拡張能:extensibility:~
 指定-:specify:~
 指定:specification:~
 	指定されていない:unspecified

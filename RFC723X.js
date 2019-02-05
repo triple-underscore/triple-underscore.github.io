@@ -939,7 +939,7 @@ member::::メンバ
 subject::対象
 	~~渡る:span:
 access::::アクセス
-accessibility:::access 性:アクセス性:アクセシビリティ
+accessibility:::access 能:アクセス能:アクセシビリティ
 指図-:instruct:~
 account::::アカウント
 archive::::アーカイブ
@@ -1167,7 +1167,7 @@ version::::バージョン
 適用-:apply:~
 	適用すること:application
 	適用-可能:applicable:~
-適用性:applicability:~
+適用能:applicability:~
 approach::::アプローチ
 architecture::::アーキテクチャ
 汎用:generic:~
@@ -1419,7 +1419,7 @@ architecture::::アーキテクチャ
 拡張0-:expand:拡張
 拡張:extension::~
 	拡張-可能:extensible::~
-拡張性:extensibility::~
+拡張能:extensibility::~
 指向0:-oriented:指向
 採用-:adopt:~
 採用:adoption:~
@@ -1481,8 +1481,7 @@ architecture::::アーキテクチャ
 目的:purpose:~
 相互運用-:interoperate::~
 	相互運用-可能:interoperable::~
-相互運用上の:interoperability::~
-相互運用性:interoperability::~
+相互運用能:interoperability::~
 相似的:analogous:~
 相当:substantial:~
 	相当するもの:counterpart:~
