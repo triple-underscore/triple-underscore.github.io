@@ -1479,9 +1479,9 @@ architecture::::アーキテクチャ
 用語:term:~
 目標:goal:~
 目的:purpose:~
-相互運用-:interoperate::~
-	相互運用-可能:interoperable::~
-相互運用能:interoperability::~
+相互運用-:interoperate:~
+	相互運用-可能:interoperable
+相互運用能:interoperability:~
 相似的:analogous:~
 相当:substantial:~
 	相当するもの:counterpart:~
