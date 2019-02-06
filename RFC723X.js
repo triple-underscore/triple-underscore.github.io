@@ -612,7 +612,7 @@ IETF Review:~5226#section-4.1
 ~pipeline化:~7230#pipelining
 ~proxy:~7230#proxy
 ~server:~7230#server
-	~status行0:~7230#status.line
+	~status行l:~7230#status.line
 状態行:~7230#status.line
 ~target~URI:~7230#target-URI
 ~target資源:~7230#target-resource
@@ -1109,7 +1109,7 @@ proprietary::::プロプライエタリ
 述べ:describe し:~
 述べら:describe さ:~
 述べる:describe する:~
-説明0:description:説明
+説明d:description:説明
 記述:description:~
 記述-:describe:~
 取戻せ:reclaim でき:取り戻せ
@@ -1311,7 +1311,7 @@ architecture::::アーキテクチャ
 古い:older:~
 可用:available:~
 可用性:availability:~
-可能0:possible:可能
+アリ:possible:可能
 不可能:impossible:~
 可能化-:enable:~
 可能化:enable:可能に
@@ -1358,7 +1358,6 @@ architecture::::アーキテクチャ
 	不必要な:unnecessary:~
 	不必要に:needlessly:~
 	必要:need:~
-必須:required:~
 恒久的:permanent:~
 情報:information:~
 意味-:mean:~
@@ -1400,7 +1399,7 @@ architecture::::アーキテクチャ
 正しい:correct な:~
 正した:correct した:~
 不正:incorrect:~
-正確0:accurate:正確
+正確a:accurate:正確
 正確:exact:~
 正誤表:errata::~
 歴史:history:~
@@ -1422,9 +1421,8 @@ architecture::::アーキテクチャ
 拡張-:extend::~
 拡張0-:expand:拡張
 拡張:extension::~
-	拡張-可能:extensible::~
-拡張能:extensibility::~
-指向0:-oriented:指向
+	拡張-可能:extensible
+拡張能:extensibility:~
 採用-:adopt:~
 採用:adoption:~
 推奨-:recommend:~
@@ -1492,9 +1490,9 @@ architecture::::アーキテクチャ
 相応しい:suitable な:~
 相応しく:suitable で:~
 	unsuitable:~
-任意選択の:optional::~::オプションの
+任意選択の:optional な::~::オプションの
 省略可:optional::~::オプション
-省略可能:optional::~::オプションの
+省略可能な:optional な::~::オプションの
 示唆-:suggest:~
 示唆:suggestion:~
 禁止-:forbid::~
@@ -1618,7 +1616,6 @@ architecture::::アーキテクチャ
 一貫して:consistent に:~
 	inconsistent:
 表記法:notation:~
-解決0:solve:解決
 解決-:resolve::~
 解決:resolution::~
 解決策:solution:~
@@ -1834,7 +1831,7 @@ quote::::クォート
 空白:whitespace::~
 素片:fragment::~::フラグメント
 英字:letter::~
-行0:line::行
+行l:line::行
 圧縮-:compress::~
 圧縮:compression::~
 成分:component::~
@@ -2169,7 +2166,7 @@ referrer::::リファラ
 容易:easy:~
 容量:capacity:~
 対応-:correspond:~
-対応0:corresponding:対応する
+対応ng:corresponding:対応する
 対応付け:mapping:~:::マッピング
 対応関係:mapping:~:::マッピング
 対話-:interact::やりとり::インタラクト
@@ -2270,7 +2267,7 @@ referrer::::リファラ
 stateless::::ステートレス
 	無状態の:stateless な:::ステートレスな
 	状態を持たない
-状態0:status::状態°::ステータス
+状態s:status::状態°::ステータス
 状態code:status code::状態° code:状態°コード:ステータスコード
 状態行:status line::状態°行::ステータス行
 	状態指示〜／状態識別〜
@@ -2283,8 +2280,8 @@ stateless::::ステートレス
 疑似:pseudo:~
 発行-:publish:~
 発行:publication:~
-発行0-:make:発行
-発行0:making:発行
+発行m-:make:発行
+発行m:making:発行
 登録-:register::~
 	登録-済み:registered
 登録:registration::~
@@ -2812,7 +2809,7 @@ IETF Review:~5226#section-4.1
 ／~pipeline化:~7230#pipeline
 〜~proxy:~7230#proxy
 〜~server:~7230#server
-／	~status行0:~7230#status-line
+／	~status行l:~7230#status-line
 〜~target~URI:~7230#target-URI
 〜~target資源:~7230#target-resource
 〜~trailer:~7230#trailer
