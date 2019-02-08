@@ -125,6 +125,9 @@ case 'cqs':
 		text = key + text.slice(i).replace(/([^~])\b([A-Za-z]\w*)/g, '$1<var>$2</var>');
 	}
 	break;
+case 'jI':
+	text = '%' + key + '%';
+	break;
 case 'en': // english words
 	return '<span lang="en-x-a0">' + key + '</span>'
 	break;
@@ -168,13 +171,13 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2018-12-09
-trans_update:2018-12-12
+spec_date:2019-02-06
+trans_update:2019-02-08
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
 ref_id_prefix:biblio-
 ref_id_lowercase:true
-copyright:2018,whatwg
+copyright:2019,whatwg
 trans_1st_pub:2015-01-19
 
 
@@ -187,6 +190,7 @@ C:interface
 e:element
 et:event-type
 E:error
+jI:js-intrinsic
 
 ●●tag_map
 b:b
@@ -220,10 +224,12 @@ et:code
 E:code
 strong:strong
 em:em
+jI:code
 
 ●●original_id_map
 
 readable-stream-default-controller-has-backpressure:rs-default-controller-has-backpressure
+is-readable-stream-async-iterator:is-readable-stream-asynciterator
 
 call:
 construct:
@@ -260,13 +266,9 @@ undefined:<b class="es">undefined</b>
 true:<b class="es">true</b>
 false:<b class="es">false</b>
 
-ArrayBuffer:%ArrayBuffer%
-Uint8Array:%Uint8Array%
-ObjectPrototype:%ObjectPrototype%
-DataView:%DataView%
-
 WritableStream:<code>WritableStream</code> 
 ReadableStreamTee:<span class="abstract">ReadableStreamTee</span> 
+asyncIterator:@@asyncIterator
 
 ●●words_table
 
@@ -497,9 +499,10 @@ promise-calling:
 promise:
 	用の~promise:promise-for-
 非同期的:asynchronous::~
+非同期:async::~
 同期的:synchronous::~
 同期-:synchronize::~
-同期:sync:~
+同期:sync::~
 事由:reason::~
 却下-:reject::~
 却下:rejection::~
@@ -594,6 +597,8 @@ prototype::::プロトタイプ
 改変-:modify::~
 	改変-可能:modifiable
 改変:modification::~
+普通の:ordinary::~
+反復子:iterator::~::イテレータ
 
 	●処理一般
 call:
@@ -688,6 +693,7 @@ parameter::::パラメタ
 冪等:idempotent::~
 移行-:move::~
 入力:input:~
+初期:initial:~
 
 	渡-:pass:~
 	渡され／渡して
@@ -854,6 +860,7 @@ security::::セキュリティ
 直接的:direct:~
 	直の:direct な:~
 導入-:introduce:~
+別名:alias:~
 
 	切り離され:decouple
 	対照的:in contrast:~
@@ -1610,10 +1617,14 @@ mapper:
 
 	●ES6
 c.Array.prototype.map:~TC39#sec-array.prototype.map
-~ArrayBuffer:~TC39#sec-arraybuffer-constructor
-~Uint8Array:~TC39#sec-typedarray-objects
-~ObjectPrototype:~TC39#sec-properties-of-the-object-prototype-object
 b.TypeError:~TC39#sec-native-error-types-used-in-this-standard-typeerror
+
+jI.ArrayBuffer:~TC39#sec-arraybuffer-constructor
+jI.Uint8Array:~TC39#sec-typedarray-objects
+jI.DataView:~TC39#sec-dataview-constructor
+jI.ObjectPrototype:~TC39#sec-properties-of-the-object-prototype-object
+jI.AsyncIteratorPrototype:~TC39#sec-asynciteratorprototype
+
 
 min:~TC39#sec-algorithm-conventions
 有型~配列:~TC39#sec-typedarray-objects
@@ -1649,10 +1660,12 @@ E.AbortError:~WEBIDL#aborterror
 I.Response:~FETCH#response
 I.WebSocket:~WEBSOCKET#websocket
 I.ArrayBuffer:~TC39#sec-arraybuffer-objects
+I.AsyncIterator:~TC39#sec-asynciterator-interface
 I.Uint8Array:~TC39#sec-typedarray-objects
 I.DataView:~TC39#sec-dataview-objects
 I.AbortSignal:~DOM4#abortsignal
 I.AbortController:~DOM4#abortcontroller
+I.ReadableStreamAsyncIteratorPrototype:#rs-asynciterator-prototype
 
 m.fetch:~FETCH#dom-global-fetch
 
@@ -1684,9 +1697,11 @@ rs.constructor:#rs-constructor
 rs.locked:#rs-locked
 rs.cancel:#rs-cancel
 rs.getReader:#rs-get-reader
+rs.getIterator:#rs-get-iterator
 rs.pipeThrough:#rs-pipe-through
 rs.pipeTo:#rs-pipe-to
 rs.tee:#rs-tee
+rs.~asyncIterator:#rs-asynciterator
 
 rsdc.ReadableStreamDefaultController:#rs-default-controller-constructor
 rsdc.constructor:#rs-default-controller-constructor
@@ -2733,9 +2748,12 @@ class ReadableStream {
 
   `cancel(reason)$rs
   `getReader()$rs
+  `getIterator({ preventCancel } = {})$rs
   `pipeThrough({ writable, readable }, options)$rs
   `pipeTo(dest, { preventClose, preventAbort, preventCancel, signal } = {})$rs
   `tee()$rs
+
+  [`~asyncIterator$rs]({ %preventCancel } = {})
 }
 </pre>
 
@@ -3200,8 +3218,62 @@ Return ! ReadableStreamCancel(this, reason).
 </ol>
 
 				</section>
+				<section id="rs-get-iterator">
+<h5>3.2.5.3. `getIterator({ preventCancel } = {})^rs</h5>
+
+<div class="note">
+
+<p>
+`getIterator()^rs ~methodは、~streamを消費するために利用できる，非同期な反復子を返す。
+この反復子~objの `return()^rs ~methodは、既定では，当の~streamを`取消す$ことになり，読取器も解放することになる。
+◎
+The getIterator method returns an async iterator which can be used to consume the stream. The return() method of this iterator object will, by default, cancel the stream; it will also release the reader.
+</p>
+
+</div>
+
+<ol class="algo">
+	<li>
+~IF
+! `IsReadableStream$A( ~this~this ) ~EQ ~false
+⇒
+~THROW `TypeError^b
+◎
+If ! IsReadableStream(this) is false, throw a TypeError exception.
+</li>
+	<li>
+%reader ~LET
+? `AcquireReadableStreamDefaultReader$A( ~this )
+◎
+Let reader be ? AcquireReadableStreamDefaultReader(this).
+</li>
+	<li>
+%iterator ~LET
+! `ObjectCreate$A( `ReadableStreamAsyncIteratorPrototype$I )
+◎
+Let iterator be ! ObjectCreate(ReadableStreamAsyncIteratorPrototype).
+</li>
+	<li>
+%iterator.[[asyncIteratorReader]] ~SET %reader 
+◎
+Set iterator.[[asyncIteratorReader]] to reader.
+</li>
+	<li>
+%iterator.[[preventCancel]] ~SET
+! `ToBoolean$A( %preventCancel )
+◎
+Set iterator.[[preventCancel]] to ! ToBoolean(preventCancel).
+</li>
+	<li>
+~RET %iterator
+◎
+Return iterator.
+</li>
+</ol>
+
+				</section>
 				<section id="rs-get-reader">
-<h5>3.2.5.3. `getReader({ mode } = {})^rs</h5>
+<h5>3.2.5.4. `getReader({ mode } = {})^rs</h5>
 
 <div class="note">
 
@@ -3331,7 +3403,7 @@ Note how the first thing it does is obtain a reader, and from then on it uses th
 
 				</section>
 				<section id="rs-pipe-through">
-<h5>3.2.5.4. `pipeThrough({ writable, readable }, { preventClose, preventAbort, preventCancel, signal } = {})^rs</h5>
+<h5>3.2.5.5. `pipeThrough({ writable, readable }, { preventClose, preventAbort, preventCancel, signal } = {})^rs</h5>
 
 <div class="note">
 
@@ -3467,7 +3539,7 @@ A typical example of constructing pipe chain using pipeThrough(transform, option
 
 				</section>
 				<section id="rs-pipe-to">
-<h5>3.2.5.5. `pipeTo(dest, { preventClose, preventAbort, preventCancel, signal } = {})^rs</h5>
+<h5>3.2.5.6. `pipeTo(dest, { preventClose, preventAbort, preventCancel, signal } = {})^rs</h5>
 
 <div class="note">
 
@@ -3640,7 +3712,7 @@ Return ! ReadableStreamPipeTo(this, dest, preventClose, preventAbort, preventCan
 
 				</section>
 				<section id="rs-tee">
-<h5>3.2.5.6. `tee()^rs</h5>
+<h5>3.2.5.7. `tee()^rs</h5>
 
 <div class="note">
 
@@ -3725,10 +3797,234 @@ Promise.all([
 </div>
 
 				</section>
+				<section id="rs-asynciterator">
+<h5>3.2.5.8. `[~asyncIterator]({ preventCancel } = {})^rs</h5>
+
+
+<p class="note">注記：
+`~asyncIterator^rs ~methodは、
+`getIterator()$rs の別名である。
+◎
+The @@asyncIterator method is an alias of getIterator().
+</p>
+
+<p>
+`~asyncIterator^rs ~methodの初期~値は、
+`getIterator()$rs ~methodの初期~値と同じ関数~objとする。
+◎
+The initial value of the @@asyncIterator method is the same function object as the initial value of the getIterator() method.
+</p>
+
+				</section>
+			</section>
+		</section>
+		<section id="rs-asynciterator-prototype">
+<h3>3.3. `ReadableStreamAsyncIteratorPrototype^I</h3>
+
+<p>
+`ReadableStreamAsyncIteratorPrototype$I は、普通の~objであり，
+`getIterator()$rs にて それが返す~objを構築するために利用される。
+`ReadableStreamAsyncIteratorPrototype$I の~instanceは、~JS仕様による `AsyncIterator$I 抽象~interfaceを実装する。
+`ECMASCRIPT$r
+◎
+ReadableStreamAsyncIteratorPrototype is an ordinary object that is used by getIterator() to construct the objects it returns. Instances of ReadableStreamAsyncIteratorPrototype implement the AsyncIterator abstract interface from the JavaScript specification. [ECMASCRIPT]
+</p>
+
+<p>
+`ReadableStreamAsyncIteratorPrototype$I ~objの [[Prototype]] 内部~slotは、
+`AsyncIteratorPrototype$jI に設定されるモノトスル。
+◎
+The ReadableStreamAsyncIteratorPrototype object must have its [[Prototype]] internal slot set to %AsyncIteratorPrototype%.
+</p>
+
+			<section id="default-reader-asynciterator-prototype-internal-slots">
+<h4>3.3.1. 内部~slot</h4>
+
+<p>
+`getIterator()$rs により作成され，~prototypeとして `ReadableStreamAsyncIteratorPrototype$I を利用している各~objは、次の一覧に述べる各種 内部~slotを伴って作成される：
+◎
+Objects created by getIterator(), using ReadableStreamAsyncIteratorPrototype as their prototype, are created with the internal slots described in the following table:
+</p>
+
+<table class="slot-def">
+<thead><tr><th title="Internal Slot">内部~slot
+<th title="Description(non-normative)">説明0（`参考^em）
+</thead><tbody>
+
+<tr><td>[[asyncIteratorReader]]
+<td>
+`ReadableStreamDefaultReader$C ~instance。
+◎
+A ReadableStreamDefaultReader instance
+
+<tr><td>[[preventCancel]]
+<td>
+次を指示する真偽~値
+⇒
+当の非同期な反復子の `return()^rs ~methodが~callされたとき，~streamを`取消す$ことになるかどうか
+◎
+A boolean value indicating if the stream will be canceled when the async iterator’s return() method is called
+
+</tbody></table>
+
+			</section>
+			<section id="rs-asynciterator-prototype-next">
+<h4>3.3.2. `next()^rs</h4>
+
+<ol class="algo">
+	<li>
+~IF
+! `IsReadableStreamAsyncIterator$A( ~this) ~EQ ~false
+⇒
+~RET `TypeError^b 例外で`却下される~promise$
+◎
+If ! IsReadableStreamAsyncIterator(this) is false, return a promise rejected with a TypeError exception.
+</li>
+	<li>
+%reader ~LET ~this.[[asyncIteratorReader]]
+◎
+Let reader be this.[[asyncIteratorReader]].
+</li>
+	<li>
+~IF %reader.[[ownerReadableStream]] ~EQ `undefined^b
+⇒
+~RET `TypeError^b 例外で`却下される~promise$
+◎
+If reader.[[ownerReadableStream]] is undefined, return a promise rejected with a TypeError exception.
+</li>
+
+<li>
+	<p>
+~RET ［
+引数 ( %reader ) で~callされたとき，次の手続きを遂行する充足~handler
+］で［
+! `ReadableStreamDefaultReaderRead$A( %reader )
+］の結果を`変形-$した結果：
+◎
+Return the result of transforming ! ReadableStreamDefaultReaderRead(reader) with a fulfillment handler which takes the argument result and performs the following steps:
+</p>
+		<ol>
+			<li>
+~Assert：
+`Type$A( %result ) ~EQ `Object^b
+◎
+Assert: Type(result) is Object.
+</li>
+			<li>
+%value ~LET
+? `Get$A( %result, `value^l )
+◎
+Let value be ? Get(result, "value").
+</li>
+			<li>
+%done ~LET
+? `Get$A( %result, `done^l )
+◎
+Let done be ? Get(result, "done").
+</li>
+			<li>
+~Assert：
+`Type$A( %done ) ~EQ `Boolean^b
+◎
+Assert: Type(done) is Boolean.
+</li>
+			<li>
+~IF %done ~EQ ~true
+⇒
+! `ReadableStreamReaderGenericRelease$A( %reader )
+◎
+If done is true, perform ! ReadableStreamReaderGenericRelease(reader).
+</li>
+			<li>
+~RET
+! `ReadableStreamCreateReadResult$A( %value, %done, ~true )
+◎
+Return ! ReadableStreamCreateReadResult(value, done, true).
+</li>
+		</ol>
+	</li>
+</ol>
+
+			</section>
+			<section id="rs-asynciterator-prototype-return">
+<h4>3.3.3. `return( value )^rs</h4>
+
+<ol class="algo">
+	<li>
+~IF
+! `IsReadableStreamAsyncIterator$A( ~this ) ~EQ ~false
+⇒
+~RET `TypeError^b 例外で`却下される~promise$
+◎
+If ! IsReadableStreamAsyncIterator(this) is false, return a promise rejected with a TypeError exception.
+</li>
+	<li>
+%reader ~LET ~this.[[asyncIteratorReader]]
+◎
+Let reader be this.[[asyncIteratorReader]].
+</li>
+	<li>
+~IF
+%reader.[[ownerReadableStream]] ~EQ `undefined^b
+⇒
+~RET `TypeError^b 例外で`却下される~promise$
+◎
+If reader.[[ownerReadableStream]] is undefined, return a promise rejected with a TypeError exception.
+</li>
+	<li>
+~IF
+%reader.[[readRequests]] ~EQ ~not空
+⇒
+~RET `TypeError^b 例外で`却下される~promise$
+◎
+If reader.[[readRequests]] is not empty, return a promise rejected with a TypeError exception.
+</li>
+	<li>
+<p>
+~IF
+~this.[[preventCancel]] ~EQ ~false
+：
+◎
+If this.[[preventCancel]] is false, then:
+</p>
+		<ol>
+			<li>
+%result ~LET
+! `ReadableStreamReaderGenericCancel$A( %reader, %value )
+◎
+Let result be ! ReadableStreamReaderGenericCancel(reader, value).
+</li>
+			<li>
+! `ReadableStreamReaderGenericRelease$A( %reader )
+◎
+Perform ! ReadableStreamReaderGenericRelease(reader).
+</li>
+			<li>
+~RET 次の手続きを遂行する充足~handlerで %result を`変形-$した結果：
+⇒
+! `ReadableStreamCreateReadResult$A( %value, ~true, ~true )
+◎
+Return the result of transforming result by a fulfillment handler that returns ! ReadableStreamCreateReadResult(value, true, true).
+</li>
+		</ol>
+	</li>
+	<li>
+! `ReadableStreamReaderGenericRelease$A( %reader )
+◎
+Perform ! ReadableStreamReaderGenericRelease(reader).
+</li>
+	<li>
+~RET `解決される~promise$
+! `ReadableStreamCreateReadResult$A( %value, ~true, ~true )
+◎
+Return a promise resolved with ! ReadableStreamCreateReadResult(value, true, true).
+</li>
+</ol>
+
 			</section>
 		</section>
 		<section id="rs-abstract-ops">
-<h3 title="General readable stream abstract operations">3.3.一般用の可読~stream抽象~演算</h3>
+<h3 title="General readable stream abstract operations">3.4.一般用の可読~stream抽象~演算</h3>
 
 <p>
 以下の抽象~演算は、この仕様を成す大部分と違って，他の仕様からも 一般に有用になるよう意味されている
@@ -3738,7 +4034,7 @@ The following abstract operations, unlike most in this specification, are meant 
 </p>
 
 			<section id="acquire-readable-stream-byob-reader">
-<h4 class="throws">3.3.1. `AcquireReadableStreamBYOBReader( stream )^A</h4>
+<h4 class="throws">3.4.1. `AcquireReadableStreamBYOBReader( stream )^A</h4>
 
 <p>
 この抽象~演算は、所与の~streamから`~BYOB読取器$を獲得したいと望むような，他の仕様から~callされる用途に意味されている。
@@ -3757,7 +4053,7 @@ Return ? Construct(ReadableStreamBYOBReader, « stream »).
 
 			</section>
 			<section id="acquire-readable-stream-default-reader">
-<h4 class="throws">3.3.2. `AcquireReadableStreamDefaultReader( stream )^A</h4>
+<h4 class="throws">3.4.2. `AcquireReadableStreamDefaultReader( stream )^A</h4>
 
 <p>
 この抽象~演算は、所与の~streamから`既定の読取器$を獲得したいと望むような，他の仕様から~callされる用途に意味されている。
@@ -3776,7 +4072,7 @@ Return ? Construct(ReadableStreamDefaultReader, « stream »).
 
 			</section>
 			<section id="create-readable-stream">
-<h4 data-export="" class="throws">3.3.3. `CreateReadableStream( startAlgorithm, pullAlgorithm, cancelAlgorithm [, highWaterMark [, sizeAlgorithm ] ] )^A</h4>
+<h4 data-export="" class="throws">3.4.3. `CreateReadableStream( startAlgorithm, pullAlgorithm, cancelAlgorithm [, highWaterMark [, sizeAlgorithm ] ] )^A</h4>
 
 <div class="p">
 
@@ -3862,7 +4158,7 @@ Return stream.
 
 			</section>
 			<section id="create-readable-byte-stream">
-<h4 data-export="" class="throws">3.3.4. `CreateReadableByteStream( startAlgorithm, pullAlgorithm, cancelAlgorithm [, highWaterMark [, autoAllocateChunkSize ] ] )^A</h4>
+<h4 data-export="" class="throws">3.4.4. `CreateReadableByteStream( startAlgorithm, pullAlgorithm, cancelAlgorithm [, highWaterMark [, autoAllocateChunkSize ] ] )^A</h4>
 
 <div class="p">
 
@@ -3970,7 +4266,7 @@ Return stream.
 
 			</section>
 			<section id="initialize-readable-stream">
-<h4 class="nothrow">3.3.5. `InitializeReadableStream( stream )^A</h4>
+<h4 class="nothrow">3.4.5. `InitializeReadableStream( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -3991,12 +4287,12 @@ Set stream.[[disturbed]] to false.
 
 			</section>
 			<section id="is-readable-stream">
-<h4 class="nothrow">3.3.6. `IsReadableStream( x )^A</h4>
+<h4 class="nothrow">3.4.6. `IsReadableStream( x )^A</h4>
 
 <ol class="algo">
 	<li>
 ~IF［
-`Type$A(%x) ~NEQ `Object^b
+`Type$A( %x ) ~NEQ `Object^b
 ］
 ⇒
 ~RET ~false
@@ -4021,7 +4317,7 @@ Return true.
 
 			</section>
 			<section id="is-readable-stream-disturbed">
-<h4 class="nothrow">3.3.7. `IsReadableStreamDisturbed( stream )^A</h4>
+<h4 class="nothrow">3.4.7. `IsReadableStreamDisturbed( stream )^A</h4>
 
 <p>
 この抽象~演算は、［
@@ -4047,7 +4343,7 @@ Return stream.[[disturbed]].
 
 			</section>
 			<section id="is-readable-stream-locked">
-<h4 class="nothrow">3.3.8. `IsReadableStreamLocked( stream )^A</h4>
+<h4 class="nothrow">3.4.8. `IsReadableStreamLocked( stream )^A</h4>
 
 <p>
 この抽象~演算は、［
@@ -4081,8 +4377,35 @@ Return true.
 </ol>
 
 			</section>
+			<section id="is-readable-stream-async-iterator">
+<h4 class="nothrow">3.4.9. `IsReadableStreamAsyncIterator( x )^A</h4>
+
+<ol class="algo">
+	<li>
+~IF
+`Type$A( %x ) ~NEQ `Object^b
+⇒
+~RET ~false
+◎
+If Type(x) is not Object, return false.
+</li>
+	<li>
+~IF
+%x は [[asyncIteratorReader]] 内部~slotを持たない
+⇒
+~RET ~false
+◎
+If x does not have a [[asyncIteratorReader]] internal slot, return false.
+</li>
+	<li>
+~RET ~true
+◎
+Return true.
+</li>
+</ol>
+			</section>
 			<section id="readable-stream-tee">
-<h4 class="throws">3.3.9. `ReadableStreamTee( stream, cloneForBranch2 )^A</h4>
+<h4 class="throws">3.4.10. `ReadableStreamTee( stream, cloneForBranch2 )^A</h4>
 
 <p>
 この抽象~演算は、所与の可読~streamを`二叉化-$したいと望むような，他の仕様から~callされる用途に意味されている。
@@ -4478,7 +4801,7 @@ Return « branch1, branch2 ».
 
 			</section>
 			<section id="readable-stream-pipe-to">
-<h4 class="nothrow">3.3.10. `ReadableStreamPipeTo( source, dest, preventClose, preventAbort, preventCancel, signal )^A</h4>
+<h4 class="nothrow">3.4.11. `ReadableStreamPipeTo( source, dest, preventClose, preventAbort, preventCancel, signal )^A</h4>
 
 <ol>
 	<li>
@@ -5064,7 +5387,7 @@ Various abstract operations performed here include object creation (often of pro
 			</section>
 		</section>
 		<section id="rs-abstract-ops-used-by-controllers">
-<h3 title="The interface between readable streams and controllers">3.4. 可読~streamと制御器との間の~interface</h3>
+<h3 title="The interface between readable streams and controllers">3.5. 可読~streamと制御器との間の~interface</h3>
 
 <p>
 仕様の~~構成においては、多様になり得る~logicを成す大部分を 2 種の制御器~class［
@@ -5125,7 +5448,7 @@ The rest of this section concerns abstract operations that go in the other direc
 </p>
 
 			<section id="readable-stream-add-read-into-request">
-<h4 class="nothrow">3.4.1. `ReadableStreamAddReadIntoRequest( stream, forAuthorCode )^A</h4>
+<h4 class="nothrow">3.5.1. `ReadableStreamAddReadIntoRequest( stream, forAuthorCode )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5164,7 +5487,7 @@ Return promise.
 
 			</section>
 			<section id="readable-stream-add-read-request">
-<h4 class="nothrow">3.4.2. `ReadableStreamAddReadRequest( stream, forAuthorCode )^A</h4>
+<h4 class="nothrow">3.5.2. `ReadableStreamAddReadRequest( stream, forAuthorCode )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5203,7 +5526,7 @@ Return promise.
 
 			</section>
 			<section id="readable-stream-cancel">
-<h4 class="nothrow">3.4.3. `ReadableStreamCancel( stream, reason )^A</h4>
+<h4 class="nothrow">3.5.3. `ReadableStreamCancel( stream, reason )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5250,7 +5573,7 @@ Return the result of transforming sourceCancelPromise with a fulfillment handler
 
 			</section>
 			<section id="readable-stream-close">
-<h4 class="nothrow">3.4.4. `ReadableStreamClose( stream )^A</h4>
+<h4 class="nothrow">3.5.4. `ReadableStreamClose( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5338,7 +5661,7 @@ The case where stream.[[state]] is "closed", but stream.[[closeRequested]] is fa
 
 			</section>
 			<section id="readable-stream-create-read-result">
-<h4 class="nothrow">3.4.5. `ReadableStreamCreateReadResult( value , done , forAuthorCode )^A</h4>
+<h4 class="nothrow">3.5.5. `ReadableStreamCreateReadResult( value , done , forAuthorCode )^A</h4>
 
 <div class="note" id="rs-read-result-for-author-code">
 
@@ -5394,13 +5717,13 @@ Let prototype be null.
 %forAuthorCode ~EQ ~true
 ］
 ⇒
-%prototype ~SET `~ObjectPrototype$
+%prototype ~SET `ObjectPrototype$jI
 ◎
 If forAuthorCode is true, set prototype to %ObjectPrototype%.
 </li>
 	<li>
 ~Assert：
-`Type$Ax( %done ) ~EQ `Boolean^b
+`Type$A( %done ) ~EQ `Boolean^b
 ◎
 Assert: Type(done) is Boolean.
 </li>
@@ -5430,7 +5753,7 @@ Return obj.
 
 			</section>
 			<section id="readable-stream-error">
-<h4 class="nothrow">3.4.6. `ReadableStreamError( stream, e )^A</h4>
+<h4 class="nothrow">3.5.6. `ReadableStreamError( stream, e )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5550,7 +5873,7 @@ Set reader.[[closedPromise]].[[PromiseIsHandled]] to true.
 
 			</section>
 			<section id="readable-stream-fulfill-read-into-request">
-<h4 class="nothrow">3.4.7. `ReadableStreamFulfillReadIntoRequest( stream, chunk, done )^A</h4>
+<h4 class="nothrow">3.5.7. `ReadableStreamFulfillReadIntoRequest( stream, chunk, done )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5581,7 +5904,7 @@ Resolve readIntoRequest.[[promise]] with ! ReadableStreamCreateReadResult(chunk,
 
 			</section>
 			<section id="readable-stream-fulfill-read-request">
-<h4 class="nothrow">3.4.8. `ReadableStreamFulfillReadRequest( stream, chunk, done )^A</h4>
+<h4 class="nothrow">3.5.8. `ReadableStreamFulfillReadRequest( stream, chunk, done )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5610,7 +5933,7 @@ Resolve readRequest.[[promise]] with ! ReadableStreamCreateReadResult(chunk, don
 
 			</section>
 			<section id="readable-stream-get-num-read-into-requests">
-<h4 class="nothrow">3.4.9. `ReadableStreamGetNumReadIntoRequests( stream )^A</h4>
+<h4 class="nothrow">3.5.9. `ReadableStreamGetNumReadIntoRequests( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5622,7 +5945,7 @@ Return the number of elements in stream.[[reader]].[[readIntoRequests]].
 
 			</section>
 			<section id="readable-stream-get-num-read-requests">
-<h4 class="nothrow">3.4.10. `ReadableStreamGetNumReadRequests( stream )^A</h4>
+<h4 class="nothrow">3.5.10. `ReadableStreamGetNumReadRequests( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5634,7 +5957,7 @@ Return the number of elements in stream.[[reader]].[[readRequests]].
 
 			</section>
 			<section id="readable-stream-has-byob-reader">
-<h4 class="nothrow">3.4.11. `ReadableStreamHasBYOBReader( stream )^A</h4>
+<h4 class="nothrow">3.5.11. `ReadableStreamHasBYOBReader( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5669,7 +5992,7 @@ Return true.
 
 			</section>
 			<section id="readable-stream-has-default-reader">
-<h4 class="nothrow">3.4.12. `ReadableStreamHasDefaultReader( stream )^A</h4>
+<h4 class="nothrow">3.5.12. `ReadableStreamHasDefaultReader( stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -5705,7 +6028,7 @@ Return true.
 			</section>
 		</section>
 		<section id="default-reader-class">
-<h3 title="Class ReadableStreamDefaultReader">3.5. `ReadableStreamDefaultReader^C ~class</h3>
+<h3 title="Class ReadableStreamDefaultReader">3.6. `ReadableStreamDefaultReader^C ~class</h3>
 
 <p>
 `ReadableStreamDefaultReader$C ~classは、［
@@ -5716,7 +6039,7 @@ The ReadableStreamDefaultReader class represents a default reader designed to be
 </p>
 
 			<section id="default-reader-class-definition">
-<h4 title="Class definition">3.5.1. ~class定義</h4>
+<h4 title="Class definition">3.6.1. ~class定義</h4>
 
 ~INFORMATIVE
 
@@ -5741,7 +6064,7 @@ class ReadableStreamDefaultReader {
 
 			</section>
 			<section id="default-reader-internal-slots">
-<h4 title="Internal slots">3.5.2. 内部~slot</h4>
+<h4 title="Internal slots">3.6.2. 内部~slot</h4>
 
 <p>
 `ReadableStreamDefaultReader$C の各~instanceは、次の一覧に述べる各種 内部~slotを伴って作成される：
@@ -5781,7 +6104,7 @@ A List of promises returned by calls to the reader’s read() method that have n
 
 			</section>
 			<section id="default-reader-constructor">
-<h4>3.5.3. `new ReadableStreamDefaultReader(stream)^dr</h4>
+<h4>3.6.3. `new ReadableStreamDefaultReader(stream)^dr</h4>
 
 <div class="note">
 
@@ -5828,10 +6151,10 @@ Set this.[[readRequests]] to a new empty List.
 
 			</section>
 			<section id="default-reader-prototype">
-<h4 title="Properties of the ReadableStreamDefaultReader prototype">3.5.4. `ReadableStreamDefaultReader^C ~prototypeの各種~prop</h4>
+<h4 title="Properties of the ReadableStreamDefaultReader prototype">3.6.4. `ReadableStreamDefaultReader^C ~prototypeの各種~prop</h4>
 
 				<section id="default-reader-closed">
-<h5>3.5.4.1. `get closed^dr</h5>
+<h5>3.6.4.1. `get closed^dr</h5>
 
 <div class="note">
 
@@ -5866,7 +6189,7 @@ Return this.[[closedPromise]].
 
 				</section>
 				<section id="default-reader-cancel">
-<h5>3.5.4.2. `cancel(reason)^dr</h5>
+<h5>3.6.4.2. `cancel(reason)^dr</h5>
 
 <div class="note">
 
@@ -5907,7 +6230,7 @@ Return ! ReadableStreamReaderGenericCancel(this, reason).
 
 				</section>
 				<section id="default-reader-read">
-<h5>3.5.4.3. `read()^dr</h5>
+<h5>3.6.4.3. `read()^dr</h5>
 
 <div class="note">
 
@@ -5979,7 +6302,7 @@ Return ! ReadableStreamDefaultReaderRead(this, true).
 
 				</section>
 				<section id="default-reader-release-lock">
-<h5>3.5.4.4. `releaseLock()^dr</h5>
+<h5>3.6.4.4. `releaseLock()^dr</h5>
 
 <div class="note">
 
@@ -6044,7 +6367,7 @@ Perform ! ReadableStreamReaderGenericRelease(this).
 			</section>
 		</section>
 		<section id="byob-reader-class">
-<h3 title="Class ReadableStreamBYOBReader">3.6. `ReadableStreamBYOBReader^C ~class</h3>
+<h3 title="Class ReadableStreamBYOBReader">3.7. `ReadableStreamBYOBReader^C ~class</h3>
 
 <p>
 `ReadableStreamBYOBReader$C ~classは、［
@@ -6055,7 +6378,7 @@ The ReadableStreamBYOBReader class represents a BYOB reader designed to be vende
 </p>
 
 			<section id="byob-reader-class-definition">
-<h4 title="Class definition">3.6.1. ~class定義</h4>
+<h4 title="Class definition">3.7.1. ~class定義</h4>
 
 ~INFORMATIVE
 
@@ -6080,7 +6403,7 @@ class ReadableStreamBYOBReader {
 
 			</section>
 			<section id="byob-reader-internal-slots">
-<h4 title="Internal slots">3.6.2. 内部~slot</h4>
+<h4 title="Internal slots">3.7.2. 内部~slot</h4>
 
 <p>
 `ReadableStreamBYOBReader$C
@@ -6121,7 +6444,7 @@ A List of promises returned by calls to the reader’s read(view) method that ha
 
 			</section>
 			<section id="byob-reader-constructor">
-<h4>3.6.3. `new ReadableStreamBYOBReader(stream)^byob</h4>
+<h4>3.7.3. `new ReadableStreamBYOBReader(stream)^byob</h4>
 
 <div class="note">
 
@@ -6177,10 +6500,10 @@ Set this.[[readIntoRequests]] to a new empty List.
 
 			</section>
 			<section id="byob-reader-prototype">
-<h4 title="Properties of the ReadableStreamBYOBReader prototype">3.6.4. `ReadableStreamBYOBReader^C ~prototypeの各種~prop</h4>
+<h4 title="Properties of the ReadableStreamBYOBReader prototype">3.7.4. `ReadableStreamBYOBReader^C ~prototypeの各種~prop</h4>
 
 				<section id="byob-reader-closed">
-<h5>3.6.4.1. `get closed^byob</h5>
+<h5>3.7.4.1. `get closed^byob</h5>
 
 <div class="note">
 
@@ -6215,7 +6538,7 @@ Return this.[[closedPromise]].
 
 				</section>
 				<section id="byob-reader-cancel">
-<h5>3.6.4.2. `cancel(reason)^byob</h5>
+<h5>3.7.4.2. `cancel(reason)^byob</h5>
 
 <div class="note">
 
@@ -6256,7 +6579,7 @@ Return ! ReadableStreamReaderGenericCancel(this, reason).
 
 				</section>
 				<section id="byob-reader-read">
-<h5>3.6.4.3. `read(view)^byob</h5>
+<h5>3.7.4.3. `read(view)^byob</h5>
 
 <div class="note">
 
@@ -6362,7 +6685,7 @@ Return ! ReadableStreamBYOBReaderRead(this, view, true).
 
 				</section>
 				<section id="byob-reader-release-lock">
-<h5>3.6.4.4. `releaseLock()^byob</h5>
+<h5>3.7.4.4. `releaseLock()^byob</h5>
 
 <div class="note">
 
@@ -6427,10 +6750,10 @@ Perform ! ReadableStreamReaderGenericRelease(this).
 			</section>
 		</section>
 		<section id="rs-reader-abstract-ops">
-<h3 title="Readable stream reader abstract operations">3.7. 可読~stream読取器~用の抽象~演算</h3>
+<h3 title="Readable stream reader abstract operations">3.8. 可読~stream読取器~用の抽象~演算</h3>
 
 			<section id="is-readable-stream-default-reader">
-<h4 class="nothrow">3.7.1. `IsReadableStreamDefaultReader( x )^A</h4>
+<h4 class="nothrow">3.8.1. `IsReadableStreamDefaultReader( x )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -6460,7 +6783,7 @@ Return true.
 
 			</section>
 			<section id="is-readable-stream-byob-reader">
-<h4 class="nothrow">3.7.2. `IsReadableStreamBYOBReader( x )^A</h4>
+<h4 class="nothrow">3.8.2. `IsReadableStreamBYOBReader( x )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -6490,7 +6813,7 @@ Return true.
 
 			</section>
 			<section id="readable-stream-reader-generic-cancel">
-<h4 class="nothrow">3.7.3. `ReadableStreamReaderGenericCancel( reader, reason )^A</h4>
+<h4 class="nothrow">3.8.3. `ReadableStreamReaderGenericCancel( reader, reason )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -6514,7 +6837,7 @@ Return ! ReadableStreamCancel(stream, reason).
 
 			</section>
 			<section id="readable-stream-reader-generic-initialize">
-<h4 class="nothrow">3.7.4. `ReadableStreamReaderGenericInitialize( reader, stream )^A</h4>
+<h4 class="nothrow">3.8.4. `ReadableStreamReaderGenericInitialize( reader, stream )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -6589,7 +6912,7 @@ Set reader.[[closedPromise]].[[PromiseIsHandled]] to true.
 
 			</section>
 			<section id="readable-stream-reader-generic-release">
-<h4 class="nothrow">3.7.5. `ReadableStreamReaderGenericRelease( reader )^A</h4>
+<h4 class="nothrow">3.8.5. `ReadableStreamReaderGenericRelease( reader )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -6640,7 +6963,7 @@ Set reader.[[ownerReadableStream]] to undefined.
 
 			</section>
 			<section id="readable-stream-byob-reader-read">
-<h4 class="nothrow">3.7.6. `ReadableStreamBYOBReaderRead( reader, view [, forAuthorCode ] )^A</h4>
+<h4 class="nothrow">3.8.6. `ReadableStreamBYOBReaderRead( reader, view [, forAuthorCode ] )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -6687,7 +7010,7 @@ Return ! ReadableByteStreamControllerPullInto(stream.[[readableStreamController]
 
 			</section>
 			<section id="readable-stream-default-reader-read">
-<h4 class="nothrow">3.7.7. `ReadableStreamDefaultReaderRead( reader [, forAuthorCode ] )^A</h4>
+<h4 class="nothrow">3.8.7. `ReadableStreamDefaultReaderRead( reader [, forAuthorCode ] )^A</h4>
 
 <p class="note">注記：
 他の仕様は、 %forAuthorCode を 既定の値 ~false のままにしておくべきである
@@ -6761,7 +7084,7 @@ Return ! stream.[[readableStreamController]].[[PullSteps]](forAuthorCode).
 			</section>
 		</section>
 		<section id="rs-default-controller-class">
-<h3 title="Class ReadableStreamDefaultController">3.8. `ReadableStreamDefaultController^C ~class</h3>
+<h3 title="Class ReadableStreamDefaultController">3.9. `ReadableStreamDefaultController^C ~class</h3>
 
 <p>
 `ReadableStreamDefaultController$C ~classは、
@@ -6772,7 +7095,7 @@ The ReadableStreamDefaultController class has methods that allow control of a Re
 </p>
 
 			<section id="rs-default-controller-class-definition">
-<h4 title="Class definition">3.8.1. ~class定義</h4>
+<h4 title="Class definition">3.9.1. ~class定義</h4>
 
 ~INFORMATIVE
 
@@ -6801,7 +7124,7 @@ always throws
 
 			</section>
 			<section id="rs-default-controller-internal-slots">
-<h4 title="Internal slots">3.8.2. 内部~slot</h4>
+<h4 title="Internal slots">3.9.2. 内部~slot</h4>
 
 <p>
 `ReadableStreamDefaultController$C の各~instanceは、次の一覧に述べる各種 内部~slotを伴って作成される：
@@ -6899,7 +7222,7 @@ An algorithm to calculate the size of enqueued chunks, as part of the stream’s
 
 			</section>
 			<section id="rs-default-controller-constructor">
-<h4>3.8.3. `new ReadableStreamDefaultController()^rsdc</h4>
+<h4>3.9.3. `new ReadableStreamDefaultController()^rsdc</h4>
 
 <div class="note">
 
@@ -6922,10 +7245,10 @@ Throw a TypeError.
 
 			</section>
 			<section id="rs-default-controller-prototype">
-<h4 title="Properties of the ReadableStreamDefaultController prototype">3.8.4. `ReadableStreamDefaultController^C ~prototypeの各種~prop</h4>
+<h4 title="Properties of the ReadableStreamDefaultController prototype">3.9.4. `ReadableStreamDefaultController^C ~prototypeの各種~prop</h4>
 
 				<section id="rs-default-controller-desired-size">
-<h5>3.8.4.1. `get desiredSize^rsdc</h5>
+<h5>3.9.4.1. `get desiredSize^rsdc</h5>
 
 <div class="note">
 
@@ -6960,7 +7283,7 @@ Return ! ReadableStreamDefaultControllerGetDesiredSize(this).
 
 				</section>
 				<section id="rs-default-controller-close">
-<h5>3.8.4.2. `close()^rsdc</h5>
+<h5>3.9.4.2. `close()^rsdc</h5>
 
 <div class="note">
 
@@ -7001,7 +7324,7 @@ Perform ! ReadableStreamDefaultControllerClose(this).
 
 				</section>
 				<section id="rs-default-controller-enqueue">
-<h5>3.8.4.3. `enqueue(chunk)^rsdc</h5>
+<h5>3.9.4.3. `enqueue(chunk)^rsdc</h5>
 
 <div class="note">
 
@@ -7042,7 +7365,7 @@ Return ? ReadableStreamDefaultControllerEnqueue(this, chunk).
 
 				</section>
 				<section id="rs-default-controller-error">
-<h5>3.8.4.4. `error(e)^rsdc</h5>
+<h5>3.9.4.4. `error(e)^rsdc</h5>
 
 <div class="note">
 
@@ -7075,7 +7398,7 @@ Perform ! ReadableStreamDefaultControllerError(this, e).
 				</section>
 			</section>
 			<section id="rs-default-controller-internal-methods">
-<h4 title="Readable stream default controller internal methods">3.8.5. 可読~streamの既定の制御器の各種 内部~method</h4>
+<h4 title="Readable stream default controller internal methods">3.9.5. 可読~streamの既定の制御器の各種 内部~method</h4>
 
 <p>
 以下のものは、各 `ReadableStreamDefaultController$C ~instanceにより実装される，追加的な内部~methodである。
@@ -7088,7 +7411,7 @@ The following are additional internal methods implemented by each ReadableStream
 </p>
 
 				<section id="rs-default-controller-private-cancel">
-<h5>3.8.5.1. `[[CancelSteps]]$( %reason )</h5>
+<h5>3.9.5.1. `[[CancelSteps]]$( %reason )</h5>
 
 <ol class="algo">
 	<li>
@@ -7117,7 +7440,7 @@ Return result.
 
 				</section>
 				<section id="rs-default-controller-private-pull">
-<h5>3.8.5.2. `[[PullSteps]]$( %forAuthorCode )</h5>
+<h5>3.9.5.2. `[[PullSteps]]$( %forAuthorCode )</h5>
 
 <ol class="algo">
 	<li>
@@ -7201,10 +7524,10 @@ Return pendingPromise.
 			</section>
 		</section>
 		<section id="rs-default-controller-abstract-ops">
-<h3 title="Readable stream default controller abstract operations">3.9. 可読~streamの既定の制御器の抽象~演算</h3>
+<h3 title="Readable stream default controller abstract operations">3.10. 可読~streamの既定の制御器の抽象~演算</h3>
 
 			<section id="is-readable-stream-default-controller">
-<h4 class="nothrow">3.9.1. `IsReadableStreamDefaultController( x )^A</h4>
+<h4 class="nothrow">3.10.1. `IsReadableStreamDefaultController( x )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -7234,7 +7557,7 @@ Return true.
 
 			</section>
 			<section id="readable-stream-default-controller-call-pull-if-needed">
-<h4 class="nothrow">3.9.2. `ReadableStreamDefaultControllerCallPullIfNeeded( controller )^A</h4>
+<h4 class="nothrow">3.10.2. `ReadableStreamDefaultControllerCallPullIfNeeded( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -7348,7 +7671,7 @@ Perform ! ReadableStreamDefaultControllerError(controller, e).
 
 			</section>
 			<section id="readable-stream-default-controller-should-call-pull">
-<h4 class="nothrow">3.9.3. `ReadableStreamDefaultControllerShouldCallPull( controller )^A</h4>
+<h4 class="nothrow">3.10.3. `ReadableStreamDefaultControllerShouldCallPull( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -7416,7 +7739,7 @@ Return false.
 			</section>
 
 			<section id="readable-stream-default-controller-clear-algorithms">
-<h4 class="nothrow">3.9.4. `ReadableStreamDefaultControllerClearAlgorithms( controller )^A</h4>
+<h4 class="nothrow">3.10.4. `ReadableStreamDefaultControllerClearAlgorithms( controller )^A</h4>
 
 <p>
 この抽象~演算は、~streamが~closeされるか~errorして，各種~algoが それ以上~実行されなくなったときに~callされる。
@@ -7455,7 +7778,7 @@ Set controller.[[strategySizeAlgorithm]] to undefined.
 
 			</section>
 			<section id="readable-stream-default-controller-close">
-<h4 class="nothrow">3.9.5. `ReadableStreamDefaultControllerClose( controller )^A</h4>
+<h4 class="nothrow">3.10.5. `ReadableStreamDefaultControllerClose( controller )^A</h4>
 
 <p>
 他の仕様は、可読~streamを~closeしたいと望むなら，この抽象~演算を~callできる
@@ -7510,7 +7833,7 @@ Perform ! ReadableStreamClose(stream).
 
 			</section>
 			<section id="readable-stream-default-controller-enqueue">
-<h4 class="throws">3.9.6. `ReadableStreamDefaultControllerEnqueue( controller, chunk )^A</h4>
+<h4 class="throws">3.10.6. `ReadableStreamDefaultControllerEnqueue( controller, chunk )^A</h4>
 
 <p>
 他の仕様は、可読~stream内に`~chunk$たちを~enqueueしたいと望むなら，この抽象~演算を~callできる
@@ -7624,7 +7947,7 @@ Perform ! ReadableStreamDefaultControllerCallPullIfNeeded(controller).
 
 			</section>
 			<section id="readable-stream-default-controller-error">
-<h4 class="nothrow">3.9.7. `ReadableStreamDefaultControllerError( controller, e )^A</h4>
+<h4 class="nothrow">3.10.7. `ReadableStreamDefaultControllerError( controller, e )^A</h4>
 
 <p>
 他の仕様は、可読~streamを~error状態へ移行させたいと望むなら，この抽象~演算を~callできる
@@ -7670,7 +7993,7 @@ Perform ! ReadableStreamError(stream, e).
 
 			</section>
 			<section id="readable-stream-default-controller-get-desired-size">
-<h4 class="nothrow">3.9.8. `ReadableStreamDefaultControllerGetDesiredSize( controller )^A</h4>
+<h4 class="nothrow">3.10.8. `ReadableStreamDefaultControllerGetDesiredSize( controller )^A</h4>
 
 <p>
 他の仕様は、この`~streamの内部~queueの残り~size$を決定したいと望むなら，この抽象~演算を~callできる
@@ -7720,7 +8043,7 @@ Return controller.[[strategyHWM]] − controller.[[queueTotalSize]].
 
 			</section>
 			<section id="readable-stream-default-controller-has-backpressure">
-<h4 class="nothrow">3.9.9. `ReadableStreamDefaultControllerHasBackpressure( controller )^A</h4>
+<h4 class="nothrow">3.10.9. `ReadableStreamDefaultControllerHasBackpressure( controller )^A</h4>
 
 <p class="note">注記：
 この抽象~演算は、 `TransformStream^C の実装に利用される。
@@ -7747,7 +8070,7 @@ Otherwise, return true.
 
 			</section>
 			<section id="readable-stream-default-controller-can-close-or-enqueue">
-<h4 class="nothrow">3.9.10. `ReadableStreamDefaultControllerCanCloseOrEnqueue( controller )^A</h4>
+<h4 class="nothrow">3.10.10. `ReadableStreamDefaultControllerCanCloseOrEnqueue( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -7793,7 +8116,7 @@ The case where stream.[[closeRequested]] is false, but stream.[[state]] is not "
 
 			</section>
 			<section id="set-up-readable-stream-default-controller">
-<h4 class="throws">3.9.11. `SetUpReadableStreamDefaultController( stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, highWaterMark, sizeAlgorithm )^A</h4>
+<h4 class="throws">3.10.11. `SetUpReadableStreamDefaultController( stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, highWaterMark, sizeAlgorithm )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -7909,7 +8232,7 @@ Perform ! ReadableStreamDefaultControllerError(controller, r).
 
 			</section>
 			<section id="set-up-readable-stream-default-controller-from-underlying-source">
-<h4 class="throws">3.9.12. `SetUpReadableStreamDefaultControllerFromUnderlyingSource( stream, underlyingSource, highWaterMark, sizeAlgorithm )^A</h4>
+<h4 class="throws">3.10.12. `SetUpReadableStreamDefaultControllerFromUnderlyingSource( stream, underlyingSource, highWaterMark, sizeAlgorithm )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -7959,7 +8282,7 @@ Perform ? SetUpReadableStreamDefaultController(stream, controller, startAlgorith
 			</section>
 		</section>
 		<section id="rbs-controller-class">
-<h3 title="Class ReadableByteStreamController">3.10. `ReadableByteStreamController^C ~class</h3>
+<h3 title="Class ReadableByteStreamController">3.11. `ReadableByteStreamController^C ~class</h3>
 
 <p>
 `ReadableByteStreamController$C ~classは、
@@ -7971,7 +8294,7 @@ The ReadableByteStreamController class has methods that allow control of a Reada
 </p>
 
 			<section id="rbs-controller-class-definition">
-<h4 title="Class definition">3.10.1. ~class定義</h4>
+<h4 title="Class definition">3.11.1. ~class定義</h4>
 
 ~INFORMATIVE
 
@@ -8001,7 +8324,7 @@ always throws
 
 			</section>
 			<section id="rbs-controller-internal-slots">
-<h4 title="Internal slots">3.10.2. 内部~slot</h4>
+<h4 title="Internal slots">3.11.2. 内部~slot</h4>
 
 <p>
 `ReadableByteStreamController$C
@@ -8133,7 +8456,7 @@ This might be cleaned up in a future spec refactoring.
 
 			</section>
 			<section id="rbs-controller-constructor">
-<h4>3.10.3. `new ReadableByteStreamController()^rbsc</h4>
+<h4>3.11.3. `new ReadableByteStreamController()^rbsc</h4>
 
 <div class="note">
 
@@ -8156,10 +8479,10 @@ Throw a TypeError exception.
 
 			</section>
 			<section id="rbs-controller-prototype">
-<h4 title="Properties of the ReadableByteStreamController prototype">3.10.4. `ReadableByteStreamController^C ~prototypeの各種~prop</h4>
+<h4 title="Properties of the ReadableByteStreamController prototype">3.11.4. `ReadableByteStreamController^C ~prototypeの各種~prop</h4>
 
 				<section id="rbs-controller-byob-request">
-<h5>3.10.4.1. `get byobRequest^rbsc</h5>
+<h5>3.11.4.1. `get byobRequest^rbsc</h5>
 
 <div class="note">
 
@@ -8199,7 +8522,7 @@ Let firstDescriptor be the first element of this.[[pendingPullIntos]].
 </li>
 			<li>
 %view ~LET
-! `Construct$A( `~Uint8Array$,
+! `Construct$A( `Uint8Array$jI,
 « %firstDescriptor.[[buffer]],
 ( %firstDescriptor.[[byteOffset]] + %firstDescriptor.[[bytesFilled]] ),
 ( %firstDescriptor.[[byteLength]] − %firstDescriptor.[[bytesFilled]] ) »
@@ -8233,7 +8556,7 @@ Return this.[[byobRequest]].
 
 				</section>
 				<section id="rbs-controller-desired-size">
-<h5>3.10.4.2. `get desiredSize^rbsc</h5>
+<h5>3.11.4.2. `get desiredSize^rbsc</h5>
 
 <div class="note">
 
@@ -8268,7 +8591,7 @@ Return ! ReadableByteStreamControllerGetDesiredSize(this).
 
 				</section>
 				<section id="rbs-controller-close">
-<h5>3.10.4.3. `close()^rbsc</h5>
+<h5>3.11.4.3. `close()^rbsc</h5>
 
 <div class="note">
 
@@ -8318,7 +8641,7 @@ Perform ? ReadableByteStreamControllerClose(this).
 
 				</section>
 				<section id="rbs-controller-enqueue">
-<h5>3.10.4.4. `enqueue(chunk)^rbsc</h5>
+<h5>3.11.4.4. `enqueue(chunk)^rbsc</h5>
 
 <div class="note">
 
@@ -8395,7 +8718,7 @@ Return ! ReadableByteStreamControllerEnqueue(this, chunk).
 
 				</section>
 				<section id="rbs-controller-error">
-<h5>3.10.4.5. `error(e)^rbsc</h5>
+<h5>3.11.4.5. `error(e)^rbsc</h5>
 
 <div class="note">
 
@@ -8428,7 +8751,7 @@ Perform ! ReadableByteStreamControllerError(this, e).
 				</section>
 			</section>
 			<section id="rbs-controller-internal-methods">
-<h4 title="Readable stream BYOB controller internal methods">3.10.5. 可読 ~streamの~BYOB制御器の各種 内部~method</h4>
+<h4 title="Readable stream BYOB controller internal methods">3.11.5. 可読 ~streamの~BYOB制御器の各種 内部~method</h4>
 
 <p>
 以下のものは、各 `ReadableByteStreamController$C ~instanceにより実装される，追加的な内部~methodである。
@@ -8441,7 +8764,7 @@ The following are additional internal methods implemented by each ReadableByteSt
 </p>
 
 				<section id="rbs-controller-private-cancel">
-<h5>3.10.5.1. `[[CancelSteps]]$( %reason )</h5>
+<h5>3.11.5.1. `[[CancelSteps]]$( %reason )</h5>
 
 <ol class="algo">
 	<li>
@@ -8491,7 +8814,7 @@ Return result.
 
 				</section>
 				<section id="rbs-controller-private-pull">
-<h5>3.10.5.2. `[[PullSteps]]$( %forAuthorCode )</h5>
+<h5>3.11.5.2. `[[PullSteps]]$( %forAuthorCode )</h5>
 
 <ol class="algo">
 	<li>
@@ -8543,7 +8866,7 @@ Perform ! ReadableByteStreamControllerHandleQueueDrain(this).
 </li>
 			<li>
 %view ~LET
-! `Construct$A( `~Uint8Array$, « %entry.[[buffer]], %entry.[[byteOffset]], %entry.[[byteLength]] » )
+! `Construct$A( `Uint8Array$jI, « %entry.[[buffer]], %entry.[[byteOffset]], %entry.[[byteLength]] » )
 ◎
 Let view be ! Construct(%Uint8Array%, « entry.[[buffer]], entry.[[byteOffset]], entry.[[byteLength]] »).
 </li>
@@ -8571,7 +8894,7 @@ If autoAllocateChunkSize is not undefined,
 </p>
 		<ol>
 			<li>
-%buffer ~LET `Construct$A( `~ArrayBuffer$, « %autoAllocateChunkSize » )
+%buffer ~LET `Construct$A( `ArrayBuffer$jI, « %autoAllocateChunkSize » )
 ◎
 Let buffer be Construct(%ArrayBuffer%, « autoAllocateChunkSize »).
 </li>
@@ -8592,7 +8915,7 @@ If buffer is an abrupt completion, return a promise rejected with buffer.[[Value
 [[byteLength]]: %autoAllocateChunkSize,
 [[bytesFilled]]: `0^b,
 [[elementSize]]: `1^b,
-[[ctor]]: `~Uint8Array$,
+[[ctor]]: `Uint8Array$jI,
 [[readerType]]: `default^l
 </span>
 }
@@ -8628,7 +8951,7 @@ Return promise.
 			</section>
 		</section>
 		<section id="rs-byob-request-class">
-<h3 title="Class ReadableStreamBYOBRequest">3.11. `ReadableStreamBYOBRequest^C ~class</h3>
+<h3 title="Class ReadableStreamBYOBRequest">3.12. `ReadableStreamBYOBRequest^C ~class</h3>
 
 <p>
 `ReadableStreamBYOBRequest$C ~classは、
@@ -8640,7 +8963,7 @@ The ReadableStreamBYOBRequest class represents a pull into request in a Readable
 </p>
 
 			<section id="rs-byob-request-class-definition">
-<h4 title="Class definition">3.11.1. ~class定義</h4>
+<h4 title="Class definition">3.12.1. ~class定義</h4>
 
 ~INFORMATIVE
 
@@ -8664,7 +8987,7 @@ class ReadableStreamBYOBRequest {
 
 			</section>
 			<section id="rs-byob-request-internal-slots">
-<h4 title="Internal slots">3.11.2. 内部~slot</h4>
+<h4 title="Internal slots">3.12.2. 内部~slot</h4>
 
 <p>
 `ReadableStreamBYOBRequest$C の各~instanceは、次の一覧に述べる各種 内部~slotを伴って作成される：
@@ -8693,7 +9016,7 @@ A typed array representing the destination region to which the controller can wr
 
 			</section>
 			<section id="rs-byob-request-constructor">
-<h4>3.11.3. `new ReadableStreamBYOBRequest()^m</h4>
+<h4>3.12.3. `new ReadableStreamBYOBRequest()^m</h4>
 
 <ol class="algo">
 	<li>
@@ -8705,10 +9028,10 @@ Throw a TypeError exception.
 
 			</section>
 			<section id="rs-byob-request-prototype">
-<h4 title="Properties of the ReadableStreamBYOBRequest prototype">3.11.4. `ReadableStreamBYOBRequest^C ~prototypeの各種~prop</h4>
+<h4 title="Properties of the ReadableStreamBYOBRequest prototype">3.12.4. `ReadableStreamBYOBRequest^C ~prototypeの各種~prop</h4>
 
 				<section id="rs-byob-request-view">
-<h5>3.11.4.1. `get view^m</h5>
+<h5>3.12.4.1. `get view^m</h5>
 
 <ol class="algo">
 	<li>
@@ -8729,7 +9052,7 @@ Return this.[[view]].
 
 				</section>
 				<section id="rs-byob-request-respond">
-<h5>3.11.4.2. `respond(bytesWritten)^m</h5>
+<h5>3.12.4.2. `respond(bytesWritten)^m</h5>
 
 <ol class="algo">
 	<li>
@@ -8769,7 +9092,7 @@ Return ? ReadableByteStreamControllerRespond(this.[[associatedReadableByteStream
 
 				</section>
 				<section id="rs-byob-request-respond-with-new-view">
-<h5>3.11.4.3. `respondWithNewView(view)^m</h5>
+<h5>3.12.4.3. `respondWithNewView(view)^m</h5>
 
 <ol class="algo">
 	<li>
@@ -8829,10 +9152,10 @@ Return ? ReadableByteStreamControllerRespondWithNewView(this.[[associatedReadabl
 			</section>
 		</section>
 		<section id="rbs-controller-abstract-ops">
-<h3 title="Readable stream BYOB controller abstract operations">3.12. 可読~streamの~BYOB制御器~用の抽象~演算</h3>
+<h3 title="Readable stream BYOB controller abstract operations">3.13. 可読~streamの~BYOB制御器~用の抽象~演算</h3>
 
 			<section id="is-readable-stream-byob-request">
-<h4 class="nothrow">3.12.1. `IsReadableStreamBYOBRequest( x )^A</h4>
+<h4 class="nothrow">3.13.1. `IsReadableStreamBYOBRequest( x )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -8862,7 +9185,7 @@ Return true.
 
 			</section>
 			<section id="is-readable-byte-stream-controller">
-<h4 class="nothrow">3.12.2. `IsReadableByteStreamController( x )^A</h4>
+<h4 class="nothrow">3.13.2. `IsReadableByteStreamController( x )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -8892,7 +9215,7 @@ Return true.
 
 			</section>
 			<section id="readable-byte-stream-controller-call-pull-if-needed">
-<h4 class="nothrow">3.12.3. `ReadableByteStreamControllerCallPullIfNeeded( controller )^A</h4>
+<h4 class="nothrow">3.13.3. `ReadableByteStreamControllerCallPullIfNeeded( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9008,7 +9331,7 @@ Perform ! ReadableByteStreamControllerError(controller, e).
 
 			</section>
 			<section id="readable-byte-stream-controller-clear-algorithms">
-<h4 class="throws">3.12.4. `ReadableByteStreamControllerClearAlgorithms( controller )^A</h4>
+<h4 class="throws">3.13.4. `ReadableByteStreamControllerClearAlgorithms( controller )^A</h4>
 
 <p>
 この抽象~演算は、~streamが~closeされるか~errorして，各種~algoが それ以上~実行されなくなったときに~callされる。
@@ -9042,7 +9365,7 @@ Set controller.[[cancelAlgorithm]] to undefined.
 
 			</section>
 			<section id="readable-byte-stream-controller-clear-pending-pull-intos">
-<h4 class="nothrow">3.12.5. `ReadableByteStreamControllerClearPendingPullIntos( controller )^A</h4>
+<h4 class="nothrow">3.13.5. `ReadableByteStreamControllerClearPendingPullIntos( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9059,7 +9382,7 @@ Set controller.[[pendingPullIntos]] to a new empty List.
 
 			</section>
 			<section id="readable-byte-stream-controller-close">
-<h4 class="throws">3.12.6. `ReadableByteStreamControllerClose( controller )^A</h4>
+<h4 class="throws">3.13.6. `ReadableByteStreamControllerClose( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9156,7 +9479,7 @@ Perform ! ReadableStreamClose(stream).
 
 			</section>
 			<section id="readable-byte-stream-controller-commit-pull-into-descriptor">
-<h4 class="nothrow">3.12.7. `ReadableByteStreamControllerCommitPullIntoDescriptor( stream, pullIntoDescriptor )^A</h4>
+<h4 class="nothrow">3.13.7. `ReadableByteStreamControllerCommitPullIntoDescriptor( stream, pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9239,7 +9562,7 @@ Perform ! ReadableStreamFulfillReadIntoRequest(stream, filledView, done).
 
 			</section>
 			<section id="readable-byte-stream-controller-convert-pull-into-descriptor">
-<h4 class="nothrow">3.12.8. `ReadableByteStreamControllerConvertPullIntoDescriptor( pullIntoDescriptor )^A</h4>
+<h4 class="nothrow">3.13.8. `ReadableByteStreamControllerConvertPullIntoDescriptor( pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9274,7 +9597,7 @@ Return ! Construct(pullIntoDescriptor.[[ctor]], « pullIntoDescriptor.[[buffer]]
 
 			</section>
 			<section id="readable-byte-stream-controller-enqueue">
-<h4 class="nothrow">3.12.9. `ReadableByteStreamControllerEnqueue( controller, chunk )^A</h4>
+<h4 class="nothrow">3.13.9. `ReadableByteStreamControllerEnqueue( controller, chunk )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9355,7 +9678,7 @@ Assert: controller.[[queue]] is empty.
 </li>
 					<li>
 %transferredView ~LET
-! `Construct$A( `~Uint8Array$, « %transferredBuffer, %byteOffset, %byteLength » )
+! `Construct$A( `Uint8Array$jI, « %transferredBuffer, %byteOffset, %byteLength » )
 ◎
 Let transferredView be ! Construct(%Uint8Array%, « transferredBuffer, byteOffset, byteLength »).
 </li>
@@ -9418,7 +9741,7 @@ Perform ! ReadableByteStreamControllerCallPullIfNeeded(controller).
 
 			</section>
 			<section id="readable-byte-stream-controller-enqueue-chunk-to-queue">
-<h4 class="nothrow">3.12.10. `ReadableByteStreamControllerEnqueueChunkToQueue( controller, buffer, byteOffset, byteLength )^A</h4>
+<h4 class="nothrow">3.13.10. `ReadableByteStreamControllerEnqueueChunkToQueue( controller, buffer, byteOffset, byteLength )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9441,7 +9764,7 @@ Add byteLength to controller.[[queueTotalSize]].
 
 			</section>
 			<section id="readable-byte-stream-controller-error">
-<h4 class="nothrow">3.12.11. `ReadableByteStreamControllerError( controller, e )^A</h4>
+<h4 class="nothrow">3.13.11. `ReadableByteStreamControllerError( controller, e )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9482,7 +9805,7 @@ Perform ! ReadableStreamError(stream, e).
 
 			</section>
 			<section id="readable-byte-stream-controller-fill-head-pull-into-descriptor">
-<h4 class="nothrow">3.12.12. `ReadableByteStreamControllerFillHeadPullIntoDescriptor( controller, size, pullIntoDescriptor )^A</h4>
+<h4 class="nothrow">3.13.12. `ReadableByteStreamControllerFillHeadPullIntoDescriptor( controller, size, pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9508,7 +9831,7 @@ Set pullIntoDescriptor.[[bytesFilled]] to pullIntoDescriptor.[[bytesFilled]] + s
 
 			</section>
 			<section id="readable-byte-stream-controller-fill-pull-into-descriptor-from-queue">
-<h4 class="nothrow">3.12.13. `ReadableByteStreamControllerFillPullIntoDescriptorFromQueue( controller, pullIntoDescriptor )^A</h4>
+<h4 class="nothrow">3.13.13. `ReadableByteStreamControllerFillPullIntoDescriptorFromQueue( controller, pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9698,7 +10021,7 @@ Return ready.
 
 			</section>
 			<section id="readable-byte-stream-controller-get-desired-size">
-<h4 class="nothrow">3.12.14. `ReadableByteStreamControllerGetDesiredSize( controller )^A</h4>
+<h4 class="nothrow">3.13.14. `ReadableByteStreamControllerGetDesiredSize( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9739,7 +10062,7 @@ Return controller.[[strategyHWM]] − controller.[[queueTotalSize]].
 
 			</section>
 			<section id="readable-byte-stream-controller-handle-queue-drain">
-<h4 class="nothrow">3.12.15. `ReadableByteStreamControllerHandleQueueDrain( controller )^A</h4>
+<h4 class="nothrow">3.13.15. `ReadableByteStreamControllerHandleQueueDrain( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9789,7 +10112,7 @@ Perform ! ReadableByteStreamControllerCallPullIfNeeded(controller).
 
 			</section>
 			<section id="readable-byte-stream-controller-invalidate-byob-request">
-<h4 class="nothrow">3.12.16. `ReadableByteStreamControllerInvalidateBYOBRequest( controller )^A</h4>
+<h4 class="nothrow">3.13.16. `ReadableByteStreamControllerInvalidateBYOBRequest( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9820,7 +10143,7 @@ Set controller.[[byobRequest]] to undefined.
 
 			</section>
 			<section id="readable-byte-stream-controller-process-pull-into-descriptors-using-queue">
-<h4 class="nothrow">3.12.17. `ReadableByteStreamControllerProcessPullIntoDescriptorsUsingQueue( controller )^A</h4>
+<h4 class="nothrow">3.13.17. `ReadableByteStreamControllerProcessPullIntoDescriptorsUsingQueue( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9877,7 +10200,7 @@ Perform ! ReadableByteStreamControllerCommitPullIntoDescriptor(controller.[[cont
 
 			</section>
 			<section id="readable-byte-stream-controller-pull-into">
-<h4 class="nothrow">3.12.18. `ReadableByteStreamControllerPullInto( controller, view, forAuthorCode )^A</h4>
+<h4 class="nothrow">3.13.18. `ReadableByteStreamControllerPullInto( controller, view, forAuthorCode )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -9891,7 +10214,7 @@ Let stream be controller.[[controlledReadableByteStream]].
 Let elementSize be 1.
 </li>
 	<li>
-%ctor ~LET ~DataView
+%ctor ~LET `DataView$jI
 ◎
 Let ctor be %DataView%.
 </li>
@@ -10080,7 +10403,7 @@ Return promise.
 
 			</section>
 			<section id="readable-byte-stream-controller-respond">
-<h4 class="throws">3.12.19. `ReadableByteStreamControllerRespond( controller, bytesWritten )^A</h4>
+<h4 class="throws">3.13.19. `ReadableByteStreamControllerRespond( controller, bytesWritten )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10115,7 +10438,7 @@ Perform ? ReadableByteStreamControllerRespondInternal(controller, bytesWritten).
 
 			</section>
 			<section id="readable-byte-stream-controller-respond-in-closed-state">
-<h4 class="nothrow">3.12.20. `ReadableByteStreamControllerRespondInClosedState( controller, firstDescriptor )^A</h4>
+<h4 class="nothrow">3.13.20. `ReadableByteStreamControllerRespondInClosedState( controller, firstDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10172,7 +10495,7 @@ Perform ! ReadableByteStreamControllerCommitPullIntoDescriptor(stream, pullIntoD
 
 			</section>
 			<section id="readable-byte-stream-controller-respond-in-readable-state">
-<h4 class="throws">3.12.21. `ReadableByteStreamControllerRespondInReadableState( controller, bytesWritten, pullIntoDescriptor )^A</h4>
+<h4 class="throws">3.13.21. `ReadableByteStreamControllerRespondInReadableState( controller, bytesWritten, pullIntoDescriptor )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10227,7 +10550,7 @@ Let end be pullIntoDescriptor.[[byteOffset]] + pullIntoDescriptor.[[bytesFilled]
 </li>
 			<li>
 %remainder ~LET
-? `CloneArrayBuffer$A( %pullIntoDescriptor.[[buffer]], ( %end − %remainderSize ), %remainderSize, `~ArrayBuffer$ )
+? `CloneArrayBuffer$A( %pullIntoDescriptor.[[buffer]], ( %end − %remainderSize ), %remainderSize, `ArrayBuffer$jI )
 ◎
 Let remainder be ? CloneArrayBuffer(pullIntoDescriptor.[[buffer]], end − remainderSize, remainderSize, %ArrayBuffer%).
 </li>
@@ -10264,7 +10587,7 @@ Perform ! ReadableByteStreamControllerProcessPullIntoDescriptorsUsingQueue(contr
 
 			</section>
 			<section id="readable-byte-stream-controller-respond-internal">
-<h4 class="throws">3.12.22. `ReadableByteStreamControllerRespondInternal( controller, bytesWritten )^A</h4>
+<h4 class="throws">3.13.22. `ReadableByteStreamControllerRespondInternal( controller, bytesWritten )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10331,7 +10654,7 @@ Perform ! ReadableByteStreamControllerCallPullIfNeeded(controller).
 
 			</section>
 			<section id="readable-byte-stream-controller-respond-with-new-view">
-<h4 class="throws">3.12.23. `ReadableByteStreamControllerRespondWithNewView( controller, view )^A</h4>
+<h4 class="throws">3.13.23. `ReadableByteStreamControllerRespondWithNewView( controller, view )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10377,7 +10700,7 @@ Perform ? ReadableByteStreamControllerRespondInternal(controller, view.[[ByteLen
 
 			</section>
 			<section id="readable-byte-stream-controller-shift-pending-pull-into">
-<h4 class="nothrow">3.12.24. `ReadableByteStreamControllerShiftPendingPullInto( controller )^A</h4>
+<h4 class="nothrow">3.13.24. `ReadableByteStreamControllerShiftPendingPullInto( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10405,7 +10728,7 @@ Return descriptor.
 
 			</section>
 			<section id="readable-byte-stream-controller-should-call-pull">
-<h4 class="nothrow">3.12.25. `ReadableByteStreamControllerShouldCallPull( controller )^A</h4>
+<h4 class="nothrow">3.13.25. `ReadableByteStreamControllerShouldCallPull( controller )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10492,7 +10815,7 @@ Return false.
 
 			</section>
 			<section id="set-up-readable-byte-stream-controller">
-<h4 class="throws">3.12.26. `SetUpReadableByteStreamController( stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, highWaterMark, autoAllocateChunkSize )^A</h4>
+<h4 class="throws">3.13.26. `SetUpReadableByteStreamController( stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, highWaterMark, autoAllocateChunkSize )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10639,7 +10962,7 @@ Perform ! ReadableByteStreamControllerError(controller, r).
 
 			</section>
 			<section id="set-up-readable-byte-stream-controller-from-underlying-source">
-<h4 class="throws">3.12.27. `SetUpReadableByteStreamControllerFromUnderlyingSource( stream, underlyingByteSource, highWaterMark )^A</h4>
+<h4 class="throws">3.13.27. `SetUpReadableByteStreamControllerFromUnderlyingSource( stream, underlyingByteSource, highWaterMark )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -10723,7 +11046,7 @@ Perform ? SetUpReadableByteStreamController(stream, controller, startAlgorithm, 
 
 			</section>
 			<section id="set-up-readable-stream-byob-request">
-<h4 class="nothrow">3.12.28. `SetUpReadableStreamBYOBRequest(request, controller, view )^A</h4>
+<h4 class="nothrow">3.13.28. `SetUpReadableStreamBYOBRequest(request, controller, view )^A</h4>
 
 <ol class="algo">
 	<li>
@@ -18382,7 +18705,7 @@ We prefix section headings with new to indicate they are defining constructors; 
 `= {}^c
 が利用される。
 これは、 ~undefined は（引数が供されなかった場合の暗黙的 ~undefined も含め），~algoの開始-前に［
-`ObjectCreate$A( `~ObjectPrototype$ ) により新たな~objが作成された
+`ObjectCreate$A( `ObjectPrototype$jI ) により新たな~objが作成された
 ］かのように扱われることを意味する。
 （この~objは，さらに分割代入されることもある
 — 下の分割代入の表記規約と組合されたときには。）
@@ -18611,6 +18934,7 @@ Forbes Lindesay,
 Forrest Norvell,
 Gary Blackwood,
 Gorgi Kosev,
+Gus Caplan,
 <span lang="zh">贺师俊</span> (hax),
 Isaac Schlueter,
 isonmad,
@@ -18651,7 +18975,7 @@ This standard is written by Adam Rice (<a href="https://google.com">Google</a>, 
 </p>
 
 <p>
-Copyright © 2018 WHATWG (Apple, Google, Mozilla, Microsoft). This work is licensed under a <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">Creative Commons Attribution
+Copyright © 2019 WHATWG (Apple, Google, Mozilla, Microsoft). This work is licensed under a <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">Creative Commons Attribution
 4.0 International License</a>.
 </p>
 
@@ -18659,4 +18983,5 @@ Copyright © 2018 WHATWG (Apple, Google, Mozilla, Microsoft). This work is licen
 
 	</section>
 
-</main></div><!-- MAIN -->
+</main></div>
+
