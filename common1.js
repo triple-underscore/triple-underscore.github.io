@@ -739,6 +739,7 @@ Util.toc_intersection_observer = {
 
 		function intersected(entries, observer){
 			const nav = E(toc_id);
+			let last_elem;
 			entries.forEach(function(entry){
 				if(first_time && !entry.isIntersecting) return;
 				const id = entry.target.id;// section
@@ -746,8 +747,14 @@ Util.toc_intersection_observer = {
 				const a = nav.querySelector('[href="#' + id + '"]');
 				if(!a) return;
 				a.classList.toggle('_intersecting', entry.isIntersecting);
+				if(entry.isIntersecting) {
+					last_elem = a;
+				}
 			});
 			first_time = false;
+			if(last_elem) {
+				last_elem.scrollIntoView({block: 'nearest'});
+			}
 		}
 	},
 };
