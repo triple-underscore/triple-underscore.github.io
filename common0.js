@@ -1005,6 +1005,8 @@ BREAK:<b>BREAK</b>
 CONTINUE:<b>CONTINUE</b>
 此れ:<b>これ°</b>
 Assert:<b>Assert</b>
+ABRUPT:<b>?</b>
+NOABRUPT:<b>!</b>
 ナラナイ:ならない
 モノトスル:ものとする
 ベキ:べき
