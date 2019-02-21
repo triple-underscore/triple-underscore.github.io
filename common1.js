@@ -1820,7 +1820,6 @@ RFC2119=副4           ~ipa/RFC2119JA.html
 RFC2397=・            ~IETF/rfc2397
 RFC2397=主            ＃d.hatena.ne.jp/tily/20071103/p1
 HTTP=主               ~/RFC723X-ja.html
-HTTP=副2              ~suika/n/HTTP%2F1.1
 RFC2616=主            ~/RFC2616-ja.html
 RFC2616=副            ~/RFC723X-ja.html
 RFC2616=・            ~IETF/rfc2616
