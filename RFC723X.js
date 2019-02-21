@@ -1697,7 +1697,7 @@ policy::::ポリシー
 弱体化-:compromise:~
 悪用-:exploit:~
 悪用:exploitation:~
-悪意的な:malicious::悪意のある
+悪意的:malicious::~
 害:harm:~
 有害:harmful:~
 無害:harmless:~
