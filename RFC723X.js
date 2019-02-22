@@ -1507,7 +1507,6 @@ architecture::::アーキテクチャ
 経験:experience:~
 経験則:heuristics::~::ヒューリスティックス
 経験的:heuristic::~::ヒューリスティック
-結果:result:~
 結論:conclusion:~
 統一的:uniform:~
 統治-:govern:~
@@ -2401,13 +2400,13 @@ stateless::::ステートレス
 頁:page:ページ
 順序:order:~
 領域:region:~
-頻繁:frequent:~
 鮮度:freshness::~
 `;
 
 
 /*
 	●指示語
+結果:result
 常に:always
 今や:now
 再び:again
@@ -2472,6 +2471,7 @@ stateless::::ステートレス
 等々:etc
 1 つ以上は:at least one
 よく／ことが多い:often
+多い:frequently
 時には:occasionally
 各所／他所
 沿いにある:along the chain
