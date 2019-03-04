@@ -670,8 +670,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 
 	■用語（外部
 加法的でない:~CSSVAL#not-additive
-違法な値:~CSS22/syndata.html#illegalvalues
-	https://www.w3.org/TR/2011/REC-CSS2-20110607/syndata.html#illegalvalues
+無視する:~CSSSYN#css-ignored
 既定の~sizing~algo:~CSSIMAGE#default-sizing-algorithm
 	~CSSIMAGE#default-sizing
 大域~event属性:~WAPI#globaleventhandlers
@@ -1376,7 +1375,6 @@ tool::::ツール
 道具:tool:~
 関連する:relevant な:~
 自動的:automatic:~
-違法:illegal::~
 共通の:common な:~
 共通しな:common でな:~
 共通的に:common に:よく
