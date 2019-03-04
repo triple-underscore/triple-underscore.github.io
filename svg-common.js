@@ -211,6 +211,7 @@ COMMON_DATA.link_map += `
 
 E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
 E.IndexSizeError:~WEBIDL#indexsizeerror
+E.TypeError:~WEBIDL#exceptiondef-typeerror
 
 I.GetSVGDocument:~SVGstruct#InterfaceGetSVGDocument
 I.SVGAElement:~SVGlinking#InterfaceSVGAElement
