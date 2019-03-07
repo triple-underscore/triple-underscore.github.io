@@ -113,8 +113,8 @@ return text;
 
 ●●options
 
-spec_date:2019-02-26
-trans_update:2019-02-23
+spec_date:2019-03-07
+trans_update:2019-03-08
 source_checked:181011
 page_state_key:HTML
 spec_status:LS
@@ -202,6 +202,7 @@ session::::セッション
 
 	●型／構造／操作
 IDL:
+DOM:
 list::::リスト
 集合:set::~
 index:
@@ -311,6 +312,7 @@ queue::::キュー
 返す:return する:~
 返して:return して:~
 評価-:evaluate:~
+操作:manipulation:~
 
 	●環境 ／ 閲覧
 window:
@@ -387,6 +389,7 @@ pointing::::ポインタ指示
 閉じら:close さ::~
 閉じれ:close でき::~
 	閉じるとき~closing:
+閉中:is closing::閉じかけ
 開く:open する::~
 開いた:open した::~
 開いて:open して::~
@@ -698,6 +701,7 @@ sl.GetOwnProperty:~HTMLWPROXY#windowproxy-getownproperty
 開いた閲覧文脈:~BROWSERS#opener-browsing-context
 閲覧文脈~名:~BROWSERS#browsing-context-name
 名前:~BROWSERS#browsing-context-name
+閉中~flag:~BROWSERS#is-closing
 属する閲覧文脈:~BROWSERS#concept-document-bc
 ~top-level閲覧文脈:~BROWSERS#top-level-browsing-context
 閲覧文脈~容器:~BROWSERS#browsing-context-container
@@ -788,6 +792,7 @@ relem.大域~obj:~WAPI#concept-realm-global
 ~task:~WAPI#concept-task
 ~taskを~queueする:~WAPI#queue-a-task
 ~task源:~WAPI#task-source
+~DOM操作~task源:~WAPI#dom-manipulation-task-source
 ~event-loop:~WAPI#event-loop
 環境:~WAPI#environment
 enV.~id:~WAPI#concept-environment-id
@@ -1022,8 +1027,7 @@ The Window object's browsing context is the Window object's associated Document'
 	<dt>`frames@m</dt>
 	<dt>`self@m</dt>
 	<dd>
-これらの属性の取得子は、此れに`対応する閲覧文脈$の `WindowProxy$I ~objを返すモノトスル。
-<!-- ＊ ε？ -->
+これらの属性の取得子は、いずれも，此れに`対応する閲覧文脈$の `WindowProxy$I ~objを返すモノトスル。
 ◎
 The window, frames, and self IDL attributes, on getting, must all return this Window object's browsing context's WindowProxy object.
 </dd>
@@ -1621,7 +1625,7 @@ Return false if parsed is 0, and true otherwise.
 ~NULL ならば 空~文字列 ／
 ~ELSE_ %B の`名前$
 ◎
-The name attribute's getter, when invoked, must run these steps:
+The name attribute's getter must run these steps:
 • If this Window object's browsing context is null, then return the empty string.
 • Return this Window object's browsing context's name.
 </dd>
@@ -1632,7 +1636,7 @@ The name attribute's getter, when invoked, must run these steps:
 ⇒
 %B の`名前$ ~SET 所与の値
 ◎
-The name attribute's setter, when invoked, must run these steps:
+The name attribute's setter must run these steps:
 • If this Window object's browsing context is null, then return.
 • Set this Window object's browsing context's name to the given value.
 </dd>
@@ -1647,33 +1651,64 @@ The name gets reset when the browsing context is navigated to another origin.
 	<dt>`close()@m</dt>
 	<dd>
 <p>
-被呼出時には、次を走らすベキである：
+被呼出時には、次を走らすモノトスル：
+◎
+The close() method must run these steps:
 </p>
 		<ol>
 			<li>
-%A ~LET 此れに`対応する閲覧文脈$
+%B ~LET 此れに`対応する閲覧文脈$
+◎
+Let current be this Window object's browsing context.
 </li>
 			<li>
-%B ~LET `現任の設定群~obj$により指定される`担当の閲覧文脈$enV
-</li>
-			<li>
-~IF［
-%A は`~scriptから閉じれる$
-］~AND［
-%B は %A に`近しい$
-］~AND［
-%B は %A を`~navigateすることは許容されて$いる
+［
+%B ~EQ ~NULL
+］~OR［
+%B の`閉中~flag$ ~EQ ~T
 ］
 ⇒
-`閲覧文脈を閉じる$( %A )
-</li>
-		</ol>
+~RET
 ◎
-The close() method on Window objects should, if all the following conditions are met, close the browsing context A:
-• The corresponding browsing context A is script-closable.
-• The responsible browsing context specified by the incumbent settings object is familiar with the browsing context A.
-• The responsible browsing context specified by the incumbent settings object is allowed to navigate the browsing context A.
-</dd>
+If current is null or its is closing is true, then return.
+</li>
+			<li>
+%A ~LET `現任の設定群~obj$の`担当の閲覧文脈$enV
+◎
+↓</li>
+			<li>
+<p>
+~IF［
+%B は`~scriptから閉じれる$
+］~AND［
+%A は %B に`近しい$
+］~AND［
+%A には %B を`~navigateすることは許容されて$いる
+］：
+◎
+If all the following are true
+• current is script-closable
+• the incumbent settings object's responsible browsing context is familiar with current
+• the incumbent settings object's responsible browsing context is allowed to navigate current
+then:
+</p>
+				<ol>
+					<li>
+%B の`閉中~flag$ ~SET ~T
+◎
+Set current's is closing to true.
+</li>
+					<li>
+`~DOM操作~task源$から，次を走らす`~taskを~queueする$
+⇒
+`閲覧文脈を閉じる$( %B )
+◎
+Queue a task on the DOM manipulation task source to close current.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</dd>
 	<dd>
 <p>
 次のいずれかを満たす`閲覧文脈$は、
@@ -1699,11 +1734,17 @@ A browsing context is script-closable if it is an auxiliary browsing context tha
 	<dt>`closed@m</dt>
 	<dd>
 取得子は、［
-此れに`対応する閲覧文脈$はすでに`破棄-$されたならば ~T ／
+此れに`対応する閲覧文脈$ %B が次を満たすならば ~T ／
 ~ELSE_ ~F
-］を返すモノトスル。
+］を返すモノトスル
+⇒
+［
+%B ~EQ ~NULL
+］~OR［
+%B の`閉中~flag$ ~EQ ~T
+］
 ◎
-The closed attribute on Window objects must return true if the Window object's browsing context has been discarded, and false otherwise.
+The closed attribute's getter must return true if this Window object's browsing context is null or its is closing is true, and false otherwise.
 </dd>
 
 	<dt>`stop()@m</dt>
@@ -1712,7 +1753,7 @@ The closed attribute on Window objects must return true if the Window object's b
 ⇒
 `文書の読込みを停止する$( 此れに`結付けられている文書$ )
 ◎
-The stop() method on Window objects must stop document loading given this Window object's associated Document.
+The stop() method must stop document loading given this Window object's associated Document.
 </dd>
 </dl>
 
