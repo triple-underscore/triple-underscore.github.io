@@ -267,7 +267,7 @@ function addControls(){
 		b.tabIndex = 1;
 		if(key){
 			b.accessKey = key;
-			b.title = 'アクセスキー： ' + key;
+			b.title = `アクセスキー： ${key}`;
 		}
 		controls.appendChild(b);
 	}
@@ -366,8 +366,8 @@ http: 'RFC723X-ja.html#index',
 	site_nav.split(',').forEach(function(label){
 		const name = name_map[label];
 		if(!name) return;
-		const href = href_map[label] || ('index.html#spec-list-' + label);
-		html.push('<li><a href="' + href + '">' + name +'</a>');
+		const href = href_map[label] || `index.html#spec-list-${label}`;
+		html.push( `<li><a href="${href}">${name}</a>` );
 	});
 	html.push('<li><a href="index.html#page-list">すべて</a>')
 	html.push('</ul>');
@@ -379,7 +379,7 @@ http: 'RFC723X-ja.html#index',
 		if(name.slice(-5) === '.html') return name;
 		let data = COMMON_DATA.words_table1;
 		if(!data) return;
-		let i = data.indexOf('\n' + name + ':' );
+		let i = data.indexOf(`\n${name}:` );
 		if(i < 0) return;
 		i += name.length + 2;
 		const j = data.indexOf('\n', i);
@@ -393,71 +393,70 @@ http: 'RFC723X-ja.html#index',
 function fillTransMetadata(){
 	const details = E('_trans_metadata');
 	if(!details) return;
-	let html = PAGE_DATA.trans_metadata || '';
-	delete PAGE_DATA.trans_metadata;
 	if(options.trans_update){
 		const summary = details.firstElementChild;
 		if(summary){
 			summary.insertAdjacentHTML( 'beforeend',
-'（翻訳更新：<time>' + options.trans_update + '</time> ）'
+`（翻訳更新：<time>${options.trans_update}</time> ）`
 			);
 		}
 	}
 
-	if(html){
-		const url = window.location.pathname.match(/[^\/]+$/);
-		const mapping = {
+	let html = `
+${PAGE_DATA.trans_metadata || ''}
+<ul style="font-size:smaller;">
+~COMMITS
+<li><strong>この翻訳の正確性は保証されません。</strong>
+<li>【 と 】で括られた部分は<span class="trans-note">【訳者による注釈】</span>です。
+<li><a href="index.html#functions">各ページに共通の機能</a>も参照されたし（左下隅の表示切替ボタンなど）。
+<li>誤訳その他ご指摘／ご意見は<a href="https://triple-underscore.github.io/about.html">連絡先</a>まで。
+</ul>`
+	;
+	delete PAGE_DATA.trans_metadata;
+
+	const url = window.location.pathname.match(/[^\/]+$/);
+	const mapping = {
 THIS_PAGE: url?
-'<a href="https://triple-underscore.github.io/' + url[0] + '">このページ</a>' : 'このページ',
+`<a href="https://triple-underscore.github.io/${url[0]}">このページ</a>` : 'このページ',
 SPEC_URL:
 options.original_url || '',
 PUB: options.trans_1st_pub ?
-'（公開：<time>' + options.trans_1st_pub +'</time> ）' : '',
+`（公開：<time>${options.trans_1st_pub}</time> ）` : '',
 W3C:
 '<a href="https://www.w3.org/">W3C</a>',
 WHATWG:
 '<a href="https://whatwg.org/">WHATWG</a>',
 HTMLLS:
 'https://html.spec.whatwg.org/multipage',
-		};
-		html = html.replace(/~(\w+)/g, function(match, key){
-			return mapping[key] || '';
-		});
-	}
+COMMITS: url?
+`<li><a href="https://github.com/triple-underscore/triple-underscore.github.io/commits/master/${url[0]}">更新履歴</a>` : '',
+	};
+	html = html.replace(/~(\w+)/g, function(match, key){
+		return mapping[key] || '';
+	});
 
-	html += `
-<ul style="font-size:smaller;">
-<li><strong>この翻訳の正確性は保証されません。</strong>
-<li>【 と 】で括られた部分は<span class="trans-note">【訳者による注釈】</span>です。
-<li><a href="index.html#functions">各ページに共通の機能</a>も参照されたし（左下隅の表示切替ボタンなど）。
-<li>誤訳その他ご指摘／ご意見は<a href="https://triple-underscore.github.io/about.html">連絡先</a>まで。
-</ul>
-`;
 	details.insertAdjacentHTML('beforeend', html);
 }
 
 function fillSpecMetadata(){
 	const details = E('_spec_metadata');
 	if(!details) return;
-	let html;
 	let data = PAGE_DATA.spec_metadata;
 	delete PAGE_DATA.spec_metadata;
 	if(!data) return;
 
-	html = '<dl>';
 	if(options.original_url){
 		data = `
 このバージョン（原文 URL ）
 	${options.original_url}
 ${data}`
 	}
-	html += data
+	data = data
 		.replace(/\n\S.+/g, '\n<dt>$&<dt>')
 		.replace(/\n[ \t]+(https?:\S+)/g, '\n<dd><a href="$1">$1</a><dd>')
 		.replace(/\n[ \t]+(.+)/g, '<dd>$1<dd>');
-	html += '</dl>';
 
-	details.insertAdjacentHTML('beforeend', html);
+	details.insertAdjacentHTML('beforeend', `<dl>${data}</dl>`);
 }
 
 function fillCopyright(){
@@ -729,8 +728,8 @@ Util.toc_intersection_observer = {
 
 			const visible = document.body.classList.contains('side-menu');
 			if(!visible) return;
-//			'#' + toc_main + ' section[id]'
-			repeat('#' + toc_id + ' a[href]', function(e){
+//			`#${toc_main} section[id]`
+			repeat(`#${toc_id} a[href]`, function(e){
 				const section = E(e.hash.slice(1));
 				if(!section) return; // This should not happen
 				observer.observe(section);
@@ -744,7 +743,7 @@ Util.toc_intersection_observer = {
 				if(first_time && !entry.isIntersecting) return;
 				const id = entry.target.id;// section
 				if(!id) return;
-				const a = nav.querySelector('[href="#' + id + '"]');
+				const a = nav.querySelector(`[href="#${id}"]`);
 				if(!a) return;
 				a.classList.toggle('_intersecting', entry.isIntersecting);
 				if(entry.isIntersecting) {
@@ -847,7 +846,7 @@ return;
 			const id = dfn.id;
 			const a = C('a');
 
-			a.href = '#' + id;
+			a.href = `#${id}`;
 			const e = dfn.firstElementChild;
 			const childE = e
 				&& (e === dfn.firstChild)
@@ -1182,7 +1181,7 @@ Util.dfnInit = function(){
 		original_url = original_url || PAGE_DATA.options.original_url;
 		if(!original_url) return;
 
-		dfnOriginal.href = original_url + '#' + (original_id_map[id] || id);
+		dfnOriginal.href = `${original_url}#${(original_id_map[id] || id)}`;
 		dfnOriginal.style.display = '';
 	}
 
@@ -1245,8 +1244,8 @@ Util.dfnInit = function(){
 		}
 		if(!id) return;
 		dfnStart = dfn;
-		dfnTarget.textContent = dfn.title || ('#' + id);
-		dfnTarget.href = '#' + id;
+		dfnTarget.textContent = dfn.title || `#${id}`;
+		dfnTarget.href = `#${id}`;
 		dfnIndex = -1;
 //		dfnTargetScrollPositionY = window.scrollY;
 
@@ -1255,7 +1254,7 @@ Util.dfnInit = function(){
 		// 合致するものが無ければ空の NodeList
 		dfnIndecies = [];
 		dfnLinks = document.querySelectorAll(
-			dfn.getAttribute('data-cycling') || 'a[href="#' + id + '"]'
+			dfn.getAttribute('data-cycling') || `a[href="#${id}"]`
 		);
 		const L = dfnLinks.length;
 
@@ -1266,7 +1265,7 @@ Util.dfnInit = function(){
 		let lastSection;
 		let lastLi;
 		let n;
-		const prefix = '#_xref-' + (dfnJumpCount++) + '-';
+		const prefix = `#_xref-${dfnJumpCount++}-`;
 
 		for(let i = 0; i < L; i++){
 			const link = dfnLinks[i];
@@ -1379,11 +1378,10 @@ Util.addAltRefs = function(){
 			url = JA_BASIS[prefix] + url0;
 		}
 		const url1 = ( url[0] === '＃' ) ?
-			( 'http://' + url.slice(1)) :
-			( 'https://' + url);
+			`http://${url.slice(1)}` : `https://${url}`;
 		switch(mark){
 			case '主':
-				JA_REFS[key] = is_local? ( '.' + url0 ) : url1;
+				JA_REFS[key] = is_local? ( `.${url0}` ) : url1;
 			case '副':
 				add_ref_link(key, url1, label);
 				break;
@@ -1392,7 +1390,7 @@ Util.addAltRefs = function(){
 			case '編':
 				add_ref_link(key, url1, label);
 			default:
-				if(!(url in JA_LINKS)) JA_LINKS[url] = '@' + key;
+				if(!(url in JA_LINKS)) JA_LINKS[url] = `@${key}`;
 		}
 	}
 
@@ -1414,7 +1412,7 @@ Util.addAltRefs = function(){
 	}
 
 	function collect_entries(id){
-		const ref_data = PAGE_DATA['ref_' + id];
+		const ref_data = PAGE_DATA[`ref_${id}`];
 		if(!ref_data) return false;
 		ref_data.replace(/\n\[.+\]/g, function(ref_name){
 			const key = refKey(ref_name);
@@ -1427,7 +1425,7 @@ Util.addAltRefs = function(){
 	function add_ref_link(key, url, label){
 		const v = mapping[key];
 		if(v === undefined) return;
-		const html = '<a href="' + url + '">' + label + '</a>';
+		const html = `<a href="${url}">${label}</a>`;
 		mapping[key] += html;
 	}
 
@@ -1446,17 +1444,17 @@ informative: '<h3>文献（参考）</h3>'
 		};
 
 		ref_node_list.forEach(function(id){
-			const ref_data = PAGE_DATA['ref_' + id];
+			const ref_data = PAGE_DATA[`ref_${id}`];
 			if(!ref_data) return;
-			delete PAGE_DATA['ref_' + id];
+			delete PAGE_DATA[`ref_${id}`];
 			const section = C('section');
 			section.id = id;
-			section.innerHTML = [
-				html_data[id],
-				'<dl>',
-				refHTML(ref_data),
-				'</dl>'
-			].join('\n');
+			section.innerHTML = `
+${html_data[id]}
+<dl>
+${refHTML(ref_data)}
+</dl>
+`;
 			refs.appendChild(section);
 		});
 
@@ -1471,21 +1469,27 @@ informative: '<h3>文献（参考）</h3>'
 				const altref = mapping[key];
 				if(altref){
 					if(altref[0] !== '<'){
-						last_key = '\n<dd class="trans-ja-refs"><a href="#' + altref + '">【↑】</a></dd>'
+						last_key = 
+`\n<dd class="trans-ja-refs"><a href="#${altref}">【↑】</a></dd>`;
 					} else {
-						last_key = '\n<dd class="trans-ja-refs">' + altref + '</dd>'
+						last_key = 
+`\n<dd class="trans-ja-refs">${altref}</dd>`;
 						mapping[key] = id;
 					}
 				} else {
 					last_key = '';
 				}
-				return ( last_key1
-					+ '\n\n<dt id="' + id + '">[' + ref_name + ']</dt>'
+				return (
+`${last_key1}\n\n<dt id="${id}">[${ref_name}]</dt>`
 				);
 			})
-			.replace(/\s+URL: +(https?:[^\s]+)/g,
+			.replace(
+				/\s+URL: +(https?:[^\s]+)/g,
 				'\n<dd><a href="$1">$1</a></dd>'
-			).replace(/\n +(.+)/g, '\n<dd lang="en-x-a0">$1</dd>');
+			).replace(
+				/\n +(.+)/g,
+				'\n<dd lang="en-x-a0">$1</dd>'
+			);
 			html += last_key;
 			return html;
 		}

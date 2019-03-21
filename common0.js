@@ -223,7 +223,7 @@ Util.dump = function(s){
 	} else if(s instanceof Object){
 		const ss = [];
 		for(let p in s){
-			ss.push(p + ': ' + s[p]);
+			ss.push( `${p}: ${s[p]}` );
 		}
 		s = ss.join('\n');
 	}
@@ -266,7 +266,7 @@ Util.del_j = function(){
 	repeat('h2,h3,h4,h5', function(e){
 		const text = e.title;
 		if(text){
-			e.textContent = (e.textContent.match(/[ABC\d\.]+/) || '') + ' ' + text;
+			e.textContent = `${e.textContent.match(/[ABC\d\.]+/) || ''} ${text}`;
 		}
 	});
 	Util.DEFERRED.push(function(){
@@ -495,7 +495,7 @@ Util.fillHeader = function(){
 		const m = date.match(/^(\d+)-0*(\d+)-0*(\d+)$/);
 		if(m){
 			date = 
-'<time datetime="' + date + '">' + m[1] + ' 年 ' + m[2] + ' 月 ' + m[3] + ' 日</time>';
+`<time datetime="${date}">${m[1]} 年 ${m[2]} 月 ${m[3]} 日</time>`;
 		}
 		let header_text;
 		if(isHTML) {
@@ -514,7 +514,7 @@ LS: 'Living Standard',
 			}[options.spec_status] || '';
 		}
 
-		const html = '<h2>' + header_text + ' — ' + date + '</h2>';
+		const html = `<h2>${header_text} — ${date}</h2>`;
 		hgroup.insertAdjacentHTML('beforeend', html);
 	}
 
@@ -599,7 +599,7 @@ Util.switchWordsInit = function(source_data){
 			// 値の最後の文字が英数の場合は末尾にスペースを補填
 			.replace(/(\w)(?=\n)/g, '$1 ')
 			+ COMMON_DATA.words_table1
-			+ ( abbr_url? ( '\n' + abbr_url + ':\n' ) : '' )
+			+ ( abbr_url? `\n${abbr_url}:\n` : '' )
 			+ ( PAGE_DATA.words_table1 || '')
 		);
 
@@ -631,7 +631,7 @@ Util.switchWordsInit = function(source_data){
 				if(e) {
 					e.parentNode.replaceChild(part, e);
 				} else {
-					console.log('replaceParts: place holder not found for id=' + id );
+					console.log( `replaceParts: place holder not found for id=${id}` );
 				}
 			});
 		}
@@ -694,7 +694,7 @@ return;
 		let link_map = COMMON_DATA.link_map + (PAGE_DATA.link_map || '');
 		if( /^[\w\-]+$/.test( abbr_url ) ){
 			link_map = link_map.replace(
-				new RegExp(':~' + abbr_url + '(#|\n)', 'g'), ':$1'
+				new RegExp( `:~${abbr_url}(#|\n)`, 'g'), ':$1'
 			);
 		}
 		source_data.link_map = Util.get_mapping(link_map);
@@ -741,10 +741,7 @@ return;
 					// english text
 					en_list.push( cap1.trim() );
 					return (
-						nesting1
-						+ '\uE001'
-						+ ( String.fromCharCode(0xE000 + en_list.length - 1 ) )
-						+ '\uE000'
+`${nesting1}\uE001${String.fromCharCode( 0xE000 + en_list.length - 1 )}\uE000`
 					);
 				} else {
 					// PREMAP
@@ -752,7 +749,9 @@ return;
 					return nesting1 + ( premap[cap1] || '＊' );
 				}
 			case '【':
-				return '\uE002' + match + '\uE000';
+				return (match[0] === '!' ) ?
+					'' // 編集用コメント
+					: `\uE002${match}\uE000`;
 				// TODO: 【\t で開始するならば <p> 用バージョン 等々
 			case '⇒':
 				nesting += '\uE000';
@@ -814,11 +813,7 @@ return;
 
 			source_data.levels.forEach(function(label, index){
 				html += 
-'<label><input type="radio" id="_words_level'
-+ index
-+ '" name="_words" />'
-+ label
-+ '</label>'
+`<label><input type="radio" id="_words_level${index}" name="_words" />${label}</label>`
 				;
 			});
 			w_switch.innerHTML = html;
