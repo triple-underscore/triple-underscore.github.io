@@ -749,7 +749,7 @@ return;
 					return nesting1 + ( premap[cap1] || '＊' );
 				}
 			case '【':
-				return (match[0] === '!' ) ?
+				return (match[1] === '！' ) ?
 					'' // 編集用コメント
 					: `\uE002${match}\uE000`;
 				// TODO: 【\t で開始するならば <p> 用バージョン 等々
