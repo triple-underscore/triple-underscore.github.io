@@ -110,7 +110,7 @@ return text;
 
 ●●options
 
-spec_date:2019-03-30
+spec_date:2019-04-05
 trans_update:2019-04-06
 source_checked:181009
 page_state_key:HTML
@@ -619,11 +619,6 @@ rej.取扱済みでない:#concept-promise-rejection-nothandled
 小task~queue:#microtask-queue
 小task~checkpoint遂行-中~flag:#performing-a-microtask-checkpoint
 小task~checkpointを遂行する:#perform-a-microtask-checkpoint
-孤立~callback小task:#solitary-callback-microtask
-複合~小task:#compound-microtask
-複合~小task下位task:#compound-microtask-subtask
-複合~小task下位taskを実行する:#execute-a-compound-microtask-subtask
-~callbackを包装する:#execute-a-compound-microtask-subtask
 安定~状態を待受ける:#await-a-stable-state
 静止-:#pause
 
@@ -1225,10 +1220,8 @@ options::::option 集
 	cleanup
 片付ける:clean up する::~
 強制終了:killing::~
-複合:compound:~
 構成-:compound:~
-孤立:solitary::~
-	単生
+
 走るな:do not run:~
 走れ:run:~
 走る:run する:~
@@ -1248,7 +1241,6 @@ options::::option 集
 標的:target:::ターゲット
 task::::タスク
 	%~task:oldestTask
-下位task:subtask::下位 task:下位タスク
 小task:microtask::小 task:小タスク
 源:source::~::ソース
 通知-:notify:~
@@ -1281,7 +1273,6 @@ task::::タスク
 process:
 処理-:process:~
 処理:processing:~
-包装-:wrap:~
 反復-:iterate:~
 回す:spin する::~
 	spinning
@@ -1980,7 +1971,6 @@ debug::::デバッグ
 	採らず:take しない
 	結果になる／ことになる:end up
 	受け持つ:takes care
-	手間をかける:take extra care
 	結局:end result
 	~~空にする~clear する
 	はっきり:clear
@@ -8703,19 +8693,8 @@ Set event loop end to be the current high resolution time.
 とは、元々は，［
 `~task~queue$ではなく，`小task~queue$
 ］に~queueされるものとされた`~task$である。
-`小task$には、
-`孤立~callback小task@,
-`複合~小task@
-の 2 種類がある。
 ◎
-Each event loop has a microtask queue. A microtask is a task that is originally to be queued on the microtask queue rather than a task queue. There are two kinds of microtasks: solitary callback microtasks, and compound microtasks.
-</p>
-
-<p class="note">注記：
-この仕様は、`孤立~callback小task$のみを定義する。
-`複合~小task$を利用する各~仕様は、`~event-loopを回す$~algoを取扱うために，`~callbackを包装する$手間をかける必要がある。
-◎
-This specification only has solitary callback microtasks. Specifications that use compound microtasks have to take extra care to wrap callbacks to handle spinning the event loop.
+Each event loop has a microtask queue. A microtask is a task that is originally to be queued on the microtask queue rather than a task queue.
 </p>
 
 <p class="algo-head">
@@ -8834,52 +8813,6 @@ Set the performing a microtask checkpoint flag to false.
 </li>
 </ol>
 
-<p class="algo-head">
-~UAは、`複合~小task$が走っている間に［
-所与の %手続き を走らすような
-`複合~小task下位taskを実行する@
-］よう要求されたときは、次を走らすモノトスル：
-◎
-If, while a compound microtask is running, the user agent is required to execute a compound microtask subtask to run a series of steps, the user agent must run the following steps:
-</p>
-
-<ol>
-	<li>
-%~loop ~LET 当の`~event-loop$
-◎
-↓</li>
-	<li>
-%親 ~LET %~loop の`現在~走っている~task$
-（現在~走っている`複合~小task$）。
-◎
-Let parent be the event loop's currently running task (the currently running compound microtask).
-</li>
-	<li>
-%下位task ~LET
-`小task~task源$を`~task源$とする， %手続き を走らす新たな`~task$
-— この`小task$を指して，
-`複合~小task下位task@
-という。
-◎
-Let subtask be a new task that consists of running the given series of steps. The task source of such a microtask is the microtask task source. This is a compound microtask subtask.
-</li>
-	<li>
-%~loop の`現在~走っている~task$ ~SET %下位task
-◎
-Set the event loop's currently running task to subtask.
-</li>
-	<li>
-%下位task を走らす
-◎
-Run subtask.
-</li>
-	<li>
-%~loop の`現在~走っている~task$ ~SET %親
-◎
-Set the event loop's currently running task back to parent.
-</li>
-</ol>
-
 <hr>
 
 <p class="algo-head">
@@ -8926,24 +8859,16 @@ When an algorithm says to spin the event loop until a condition goal is met, the
 
 <ol>
 	<li>
-<p>
 %~task ~LET 当の`~event-loop$の`現在~走っている~task$
 ◎
 Let task be the event loop's currently running task.
-</p>
-
-<p class="note">注記：
-これは、`小task$の場合もある
-— その事例では、`孤立~callback小task$になる。
-これは、［
-`複合~小task下位task$ ／
-`小task$でない定例の`~task$
-］の場合もある。
-これが`複合~小task$になることは、`ない^em。
+</li>
+	<li>
+~Assert：
+%~task は`~task$または`小task$である
 ◎
-This might be a microtask, in which case it is a solitary callback microtask. It could also be a compound microtask subtask, or a regular task that is not a microtask. It will not be a compound microtask.
-</p>
-	</li>
+Assert: task is a task or a microtask.
+</li>
 	<li>
 %~task源 ~LET %~task の`~task源$
 ◎
@@ -8961,10 +8886,20 @@ Let old stack be a copy of the JavaScript execution context stack.
 Empty the JavaScript execution context stack.
 </li>
 	<li>
+<p>
 `小task~checkpointを遂行する$
 ◎
 Perform a microtask checkpoint.
-</li>
+</p>
+
+<p class="note">注記：
+%~task が`小task$である場合、［
+`小task~checkpoint遂行-中~flag$ ~EQ ~ON
+］に因り，この段は何もしない。
+◎
+If task is a microtask this step will be a no-op due to the performing a microtask checkpoint flag being set.
+</p>
+	</li>
 	<li>
 <p>
 %~task を停止して，それを呼出した~algoを何であれ再開できるようにする一方で、この手続きは
@@ -8974,27 +8909,14 @@ Perform a microtask checkpoint.
 Stop task, allowing whatever algorithm that invoked it to resume, but continue these steps in parallel.
 </p>
 
-<div class="note">
-<p>注記：
-これは、次のいずれかの~algoを継続させる：
-</p>
-<ul>
-	<li>
-`~event-loop$の~main手続き
-【<a href="#event-loop-processing-model">処理~model節</a>】
-</li>
-	<li>
+<p class="note">注記：
+これは、次のいずれかの~algoを継続させる
+⇒＃
+`~event-loop$の~main手続き【<a href="#event-loop-processing-model">処理~model節</a>】,
 `小task~checkpointを遂行する$
-</li>
-	<li>
-`複合~小task下位taskを実行する$
-</li>
-</ul>
-
 ◎
-This causes one of the following algorithms to continue: the event loop's main set of steps, the perform a microtask checkpoint algorithm, or the execute a compound microtask subtask algorithm.
-</div>
-
+This causes the event loop's main set of steps or the perform a microtask checkpoint algorithm to continue.
+</p>
 	</li>
 	<li>
 %目標 が満たされるまで待機する
