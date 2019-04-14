@@ -596,8 +596,8 @@ Util.switchWordsInit = function(source_data){
 
 		const mapping = Util.get_mapping(
 			Util.getDataByLevel( COMMON_DATA.words_table + PAGE_DATA.words_table, level)
-			// 値の最後の文字が英数の場合は末尾にスペースを補填
-			.replace(/(\w)(?=\n)/g, '$1 ')
+			// 値の最後が英数＋0個以上のかなで終わる所は英数の末尾にスペースを補填
+			.replace(/(\w)([あ-ん]*)(?=\n)/g, '$1 $2')
 			+ COMMON_DATA.words_table1
 			+ ( abbr_url? `\n${abbr_url}:\n` : '' )
 			+ ( PAGE_DATA.words_table1 || '')
@@ -878,42 +878,41 @@ Util.rxp_wordsX = /\b ((?:<\/[^>]*>)+)|([\u2E80-\u9FFF])(?=(<\w[^>]*>)*\w)/g;
 。U+3002
 ，U+FF0C
 */
+
 Util.rxp_words1 =
-	/~([\w\-]+|[あ-ん])|(~*)(((?:[\u4E00-\u9FFF]+|[\u30A1-\u30F4ー]+)\w*)(-|[あ-ん]{0,2}))/g;
+	/(?:~([\w\-]+|[あ-ん])|~*([\u4E00-\u9FFF]+\w*|[\u30A1-\u30F4ー]+\w*))(-|[あ-ん]{0,2})/g;
 Util.replaceWords1 = function(data, mapping){
+
 	return data.replace( this.rxp_words1,
-	function(t, en, til, ja, kan, hira){
+	function(t, en, word, hira){
+//		hira = hira || '';
 		if(en){
-			if(en[0] > '~') return en;
-			return (en in mapping)? mapping[en] : t;
+			if(en[0] > '~') return en + hira;
+			word = en;
 		}
-		if(til === '~~') return ja;
+		if(t[1] === '~'){
+			return word + hira;
+		}
 
-		let r = mapping[ja];
+		let r = mapping[word + hira];
 		if(r) return r;
-		if(hira.length === 0){
-			return ja;
+		if(hira){
+			r = mapping[word + hira[0]];
+			if(r){
+				return r + hira.slice(1);
+			}
+			if( (hira === 'でき' ) || ('さしすせ'.indexOf(hira[0]) >= 0) ) {
+				r = mapping[word + '-'];
+				if(r) return r + hira;
+			}
 		}
-
-		if(hira === 'でき') {
-			r = mapping[kan + '-'];
-			if(r) return r + hira;
-		}
-		const hira1 = hira[0];
-		r = mapping[kan + hira1];
-		if(r) return r + hira.slice(1);
-
-		if('さしすせ'.indexOf(hira1) >= 0) {
-			r = mapping[kan + '-'];
-			if(r) return r + hira;
-		}
-		r = mapping[kan];
-		if(r) return r + hira;
-
-		return hira === '-' ? kan : ja;
+		r = mapping[word];
+		if(!r && en) return t;
+		return ( r || word ) + ( ( hira === '-' ) ? '' : hira );
 	})
 	.replace(this.rxp_wordsX, '$1$2 ');
 };
+
 
 COMMON_DATA.PREMAP = `
 終: 
