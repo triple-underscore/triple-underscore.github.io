@@ -35,7 +35,7 @@ source_data.generate = function(){
 
 	function create_html(match, key, indicator, klass){
 if(!indicator) {//%
-	return '<var>' + match.slice(1) + '</var>';
+	return `<var>${match.slice(1)}</var>`;
 }
 
 let text = key;
@@ -45,64 +45,65 @@ let tag = tag_map[klass];
 
 switch(klass){
 case 'r': // ref
-	text = '[' + key + ']';
-	href = 'svg-refs.html#ref-' + key.toLowerCase();
+	text = `[${key}]`;
+	href = `svg-refs.html#ref-${key.toLowerCase()}`;
 	break;
 case 't': // type
-	text = '&lt;' + text + '&gt;';
+	text = `&lt;${text}&gt;`;
 	break;
 case 'ps': // pseudo-class
-	text = ':' + text;
+	text = `:${text}`;
 	break;
 case 'pe': // pseudo-element
-	text = '::' + text;
+	text = `::${text}`;
 	break;
 case 'at': // at-rule
-	text = '@' + text;
+	text = `@${text}`;
 	break;
 case 'l': // literal
-	text = '"<code class="literal">' + text + '</code>"';
+	text = `"<code class="literal">${text}</code>"`;
 	break;
 case 'e':
 	if(indicator === '@'){
 		// SVG 要素は id が href 参照と異なる
 		klass = ':';
-		href = "#elementdef-" + key;
+		tag = 'code';
+		href = `#elementdef-${key}`;
 	}
 	break;
 case 'U': // 
-	text = 'U+' + key;
+	text = `U+${key}`;
 	break;
 case 'sec':
-	text = '§ ' + text;
+	text = `§ ${text}`;
 	break;
 case 'viewAs':
 	return `<p><a href="~SVG2/images/${key}">~viewAs</a></p>`
 	break;
 case 'dgm':
-	return '<a id="_dgm-' + key + '">＊</a>';
+	return `<a id="_dgm-${key}">＊</a>`;
 	break;
 case 'refer':
 	text = '~~参照先';
 	href = key;
 	break;
 case 'I0':
-	context_ifc0 = '#__svg__' + key + '__';
+	context_ifc0 = `#__svg__${key}__`;
 	klass = 'I';
 	break;
 case 'I1':
-	href = link_map['I.' + key];
+	href = link_map[`I.${key}`];
 	if(href){
-		context_ifc1 = href.slice(0, href.indexOf('#')) + '#__svg__' + key + '__';
+		context_ifc1 = `${href.slice(0, href.indexOf('#'))}#__svg__${key}__`;
 	}
 	klass = 'I';
 	break;
 case 'ACTION':
-	text = 'ACTION-' + key;
-	href = 'http://www.w3.org/Graphics/SVG/WG/track/actions/' + key;
+	text = `ACTION-${key}`;
+	href = `http://www.w3.org/Graphics/SVG/WG/track/actions/${key}`;
 	break;
 case 'en': // english words
-	return '<span lang="en-x-a0">' + key + '</span>'
+	return `<span lang="en-x-a0">${key}</span>`;
 	break;
 default:
 	if(classname.slice(0, 3) === 'dom'){
@@ -121,13 +122,12 @@ default:
 }
 
 if(tag) {
-	classname = classname ? ' class="' + classname + '"' : '';
+	classname = classname ? ` class="${classname}"` : '';
 	text = `<${tag}${classname}>${text}</${tag}>`;
 }
 
-
 if(indicator !== '^'){
-	href = href || link_map[klass ? (klass + '.' + key) : key];
+	href = link_map[ klass ? `${klass}.${key}` : key ] || href;
 	if(!href){
 		console.log(match); // check error
 		return match;
@@ -455,6 +455,7 @@ p.mask:~MASKING1#propdef-mask
 p.object-fit:~CSSIMAGE#propdef-object-fit
 p.object-position:~CSSIMAGE#propdef-object-position
 p.opacity:~SVGrender#ObjectAndGroupOpacityProperties
+t.~opacity-prop:~SVGrender#ObjectAndGroupOpacityProperties
 p.overflow:~SVGrender#OverflowAndClipProperties
 p.paint-order:~SVGpainting#PaintOrderProperty
 p.pointer-events:~SVGinteract#PointerEventsProperty
@@ -736,6 +737,7 @@ xlink_title:xlink:title
 use: <code class="element">use</code> 
 svg: <code class="element">svg</code> 
 URLt:[URL]
+opacity-prop:'<code class="property">opacity</code>'
 
 `
 
