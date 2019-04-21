@@ -1744,33 +1744,28 @@ MEDIAFRAG=主          ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/media/REC-medi
 MEDIAFRAG=・          ~TR/media-frags/
 COMPAT=主             ~/compat-ja.html
 DOM=主                ~/DOM4-ja.html
-DOM=編                dom.spec.whatwg.org/●LS
-DOM=版                ~TR/dom/●W3C版
-DOM=・                ~TR/domcore/
+	DOM=編                dom.spec.whatwg.org/●LS
 DOMPARSING=主         ~/DOM-Parsing-ja.html
-DOMPARSING=編         w3c.github.io/DOM-Parsing/
-DOMPARSING=版         ~TR/DOM-Parsing/
+	DOMPARSING=編         w3c.github.io/DOM-Parsing/
+	DOMPARSING=版         ~TR/DOM-Parsing/
 DOMLEVEL2STYLE=主     ~adagio/tr_dom2_style/expanded-toc.html
-ECMASCRIPT=主         ＃tsofthome.appspot.com/ecmascript.html●第五版 訳
 ENCODING=主           ~/Encoding-ja.html
-ENCODING=・           encoding.spec.whatwg.org/
+	ENCODING=・           encoding.spec.whatwg.org/
 FETCH=主              ~/Fetch-ja.html
 FETCH=・              fetch.spec.whatwg.org/
 FILEAPI=主            ~/File_API-ja.html
-FILEAPI=版            ~TR/FileAPI/
-FILEAPI=編            w3c.github.io/FileAPI/
-FILEAPI=・            dev.w3.org/2006/webapi/FileAPI/
+	FILEAPI=版            ~TR/FileAPI/
+	FILEAPI=編            w3c.github.io/FileAPI/
 FULLSCREEN=主         ~/fullscreen-ja.html
-FULLSCREEN=・         fullscreen.spec.whatwg.org/
+	FULLSCREEN=・         fullscreen.spec.whatwg.org/
 NOTIFICATIONS=主      ~/notifications-ja.html
-NOTIFICATIONS=・      notifications.spec.whatwg.org/
+	NOTIFICATIONS=・      notifications.spec.whatwg.org/
 GEOMETRY1=主          ~/geometry-ja.html
 GEOLOCATIONAPI=主     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-API-20161108.html
 GEOLOCATIONAPI=版     ~TR/geolocation-API/
 HTML=副               ~/index.html#spec-list-html●日本語訳(このサイト, WHATWG 版)
 HTML=副               ~momdoG/html/●日本語(部分)訳(WHATWG 版)
 HTML=副               ~momdoG/html/dev/●日本語訳( Web 開発者向け)
-	HTML=・               ~TR/html/●W3C
 	HTML=・               html.spec.whatwg.org/multipage/●LS
 HTMLMICRODATA=主      ~momdoG/html/microdata.html
 HTMLMICRODATA=・      ~HTMLLS/microdata.html
@@ -1916,12 +1911,14 @@ SVG2=主               triple-underscore.github.io/index.html#spec-list-svg
 SVG=主                triple-underscore.github.io/SVG11/
 TOUCHEVENTS=主        ~/touch-events-ja.html
 URL=主                ~/URL-ja.html
-URL=編                url.spec.whatwg.org/●LS
+	URL=編                url.spec.whatwg.org/●LS
 UIEVENTS=主           ~/uievents-ja.html
 	UIEVENTS=版           ~TR/uievents/
 	UIEVENTS=編           w3c.github.io/uievents/
-WCAG20=主             ＃waic.jp/docs/WCAG20/Overview.html
+WCAG20=主             waic.jp/docs/WCAG20/Overview.html
 WCAG20=・             ~TR/WCAG20/
+WCAG21=主             waic.github.io/wcag21/guidelines/
+WCAG21=・             ~TR/WCAG21/
 WEBANIMATIONS1=主     ~/web-animations-ja.html
 	WEBANIMATIONS1=版     ~TR/web-animations-1/
 	WEBANIMATIONS1=編     ~CSSWG/web-animations-1/
@@ -1956,13 +1953,6 @@ PROMISES=主           ~/promises-guide-ja.html
 PROMISES=・           www.w3.org/2001/tag/doc/promises-guide
 PRELOAD=主            ~/preload-ja.html
 `;
-
-/* 廃
-CSS21=副              www.swlab.it.okayama-u.ac.jp/man/rec-css2/cover.html●2.0 日本語訳
-NETSCAPE=主           ＃www.futomi.com/lecture/cookie/specification.html
-WEBSOCKETS=編         w3c.github.io/websockets/
-
-*/
 
 COMMON_DATA.REF_DATA2 = `
 ~TR/CSS22/●       ~momdoG/css2/
