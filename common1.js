@@ -1642,6 +1642,7 @@ CSSIMAGES3=副         ~momdo/CR-css3-images-20120417.html
 	CSSIMAGES3=編         ~CSSWG/css-images-3/
 CSSLOGICAL1=主         ~/css-logical-ja.html
 	CSSLOGICAL1=編         ~CSSWG/css-logical/
+CSSLISTS3=主           ~/css-lists-ja.html
 CSSMASKING1=主         ~/css-masking-ja.html
 	CSSMASKING=版         ~TR/css-masking-1/
 	CSSMASKING=編         ~CSSWG/css-masking-1/

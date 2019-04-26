@@ -1092,6 +1092,7 @@ CSSGRID:css-grid-ja.html
 CSSIMAGE:css-images-ja.html
 CSSIMAGE4:css-images4-ja.html
 CSSINLINE:css-inline-ja.html
+CSSLIST:css-lists-ja.html
 CSSLOGICAL:css-logical-ja.html
 CSSMCOL:css-multicol-ja.html
 CSSNS:css-namespaces-ja.html

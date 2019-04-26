@@ -1,0 +1,3539 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<title>CSS Lists and Counters Module Level 3 （日本語訳）</title>
+
+<link rel="stylesheet" href="common.css" type="text/css" />
+<link rel="stylesheet" href="common-css.css" type="text/css" />
+<style>
+
+#counter-nesting-example .ol { background: rgba(0,0,0,.1); margin: .5em 0; padding: .2em .5em; }
+#counter-nesting-example .li > .ol { margin: 0 0 0 1em; }
+#counter-nesting-example .li { list-style: none; margin-left: 1em;}
+
+/*
+#counter-nesting-example .li {
+	counter-increment: item;
+}
+#counter-nesting-example .ol {
+	counter-reset: item;
+}
+
+#counter-nesting-example .li::before {
+	content: "(" counters(item, "-") ")";
+	color: green;
+}
+#counter-nesting-example .ol::before {
+	content: "(" counters(item, "-") ")";
+	color: green;
+}
+
+*/
+
+pre.ex-rendering {
+	padding: 0;
+	border: solid silver 1px;
+	background: white;
+	width: fit-content;
+}
+
+.ex-marker-side {
+	max-width: 12em;
+}
+.ex-marker-side > div {
+	white-space: nowrap;
+}
+.ex-marker-side > div > span {
+	direction: rtl;
+	unicode-bidi: unicode-override;
+}
+
+
+.ex-counter-tree {
+	/* 
+	font-size: 80%;
+	writing-mode: vertical-rl;
+	*/
+}
+.ex-counter-tree * {
+	display: block;
+	border-left: groove #EEE 1em;
+}
+.ex-counter-tree *::before {
+	content: "(" counters(N, ".") ") = ";
+	/* display: block; */
+	color: red;
+}
+.ex-counter-tree .x-reset {
+	counter-reset: N 1;
+}
+.ex-counter-tree .x-increment {
+	counter-increment: N;
+}
+.ex-counter-tree .x-set {
+	counter-set: N 10;
+}
+.ex-counter-tree .x-none {
+	display: none;
+}
+</style>
+
+
+<script src="common0.js" ></script>
+<script src="common1.js" async></script>
+
+<script>
+
+Util.ready = function(){
+	let counter_tree = C('div');
+	counter_tree.className = 'ex-counter-tree';
+	counter_tree.onclick = populate;
+
+	let source_data = {
+		persisted_parts: {
+			'ex-counter-tree': counter_tree,
+		},
+		generate: expand,
+		populate: populate,
+	};
+	Util.switchWordsInit(source_data);
+	return;
+
+	function populate(){
+		counter_tree.innerHTML = create_counter_tree(20);
+	}
+
+	function create_counter_tree(n){
+		const tree = [[]]; // tree[0] が root node
+		for(let i = 0; i < n; i++ ){ // >
+			tree.push(rnd(i));
+		}
+		for(let i = 1; i < tree.length; i++){ // >
+			let node = [];
+			tree[tree[i]].push(node);
+			tree[i] = node;
+		}
+		const tree_str = JSON
+			.stringify(tree[0])
+// 例：[[[[[],[[]],[[],[]],[],[]]]],[[],[],[]],[],[[]],[[]]]
+			.replace(/[^\[\]]/g, '')
+// 例：[[[[[][[]][[][]][][]]]][[][][]][][[]][[]]]
+			.slice(1,-1)
+// 例：[[[[][[]][[][]][][]]]][[][][]][][[]][[]]
+			;
+
+		const counters = [];
+		let level = 0;
+		let none_level = Infinity;
+		const length = [0];
+		const created = [false];
+		return tree_str.replace(/[\[\]]/g, r1);
+
+		function r1(t){
+			if(t === ']'){
+				level--;
+				if( none_level === level){ none_level = Infinity; }
+				counters.length = length[level]; // inherited length
+				return '</div>\n';
+			}
+			let len = counters.length;
+			let text = '';
+			let classes = '';
+
+			const flags = 0x3; // reset(0x1) | increment(0x2) // set(0x4)
+			const c = rnd(8) & flags;
+
+			if(level > none_level){
+				// display: none の子孫
+			} else if( level > 0 && rnd(7) === 1 ){
+				// display: none
+				classes = 'x-none';
+				none_level = level;
+			} else if( c === 0){
+				text = `(${counters.join('.')})`;
+			} else {
+				let c0 = [];
+				if( ( len === 0 ) || ( (c & 0x1) && !created[level] ) ){
+					created[level] = true;
+					counters.push(0);
+					length[level] = ++len;
+				}
+				if(c & 0x1){ // reset
+					counters[len - 1] = 0x1;
+					c0.push('reset');
+				}
+				if(c & 0x2){ // increment
+					counters[len - 1] += 0x1;
+					c0.push('increment');
+				}
+				if(c & 0x4){ // set
+					counters[len - 1] = 0x0A;
+					c0.push('set');
+				}
+
+				const c1 = c0.join(' ');
+				classes = c1.replace(/\w+/g, 'x-$&');
+				text = `(${counters.join('.')}) ${c1}`
+			}
+
+			level++;
+			created[level] = false;
+			length[level] = len; // record current length
+			classes = classes? ` class="${classes}"` : '';
+			return `\n<div${classes}>${text}`;
+		}
+
+		function rnd(i){
+			return Math.floor(Math.random() * i );
+		}
+	}
+}
+
+function expand(){
+	const class_map = this.class_map;
+	const tag_map = this.tag_map;
+	const link_map = this.link_map;
+
+	let context_prop = '';
+
+	return this.html.replace(
+		/%[\w\-~一-鿆あ-ん]+|`(.*?)([$@^])(\w*)/g,
+		create_html
+	);
+
+
+	function create_html(match, key, indicator, klass){
+if(!indicator) {
+	return `<var>${match.slice(1)}</var>`;
+}
+
+let text = key;
+let href = '';
+
+switch(klass){
+case 'r':
+	text = `[${key}]`;
+	href = `#biblio-${key.toLowerCase()}`;
+	break;
+case 'p':
+	if( indicator === '@') {
+		context_prop = `#valdef-${key}-`;
+	}
+	break;
+case 'pe': 
+	text = `::${key}`;
+	break;
+case 't':
+	text = `&lt;${key}&gt;`;
+	href= `#typedef-${key}`;
+	break;
+case 'tp':
+	text = `&lt;'<code class="property">${key}</code>'&gt;`;
+	klass = 'p';
+	break;
+case 'vt':
+	text = `&lt;${key}&gt;`;
+	href = context_prop + key;
+	break;
+case 'v':
+	if(key === 'none') {
+		href = context_prop + key;
+	}
+	break;
+case 'f':
+	text = `${key}()`;
+	break;
+case 'dgm':
+	return `<a id="_dgm-${key}"></a>`;
+	break;
+case 'issue': // css values
+	href = `~CSSissue/${key}`;
+	text = `issue#${key}`;
+	break;
+}
+
+
+let tag = tag_map[klass];
+if(tag) {
+	let classname = class_map[klass];
+	classname = classname ? ` class="${classname}"` : '';
+	text = `<${tag}${classname}>${text}</${tag}>`;
+}
+
+if(indicator !== '^'){
+	href = link_map[ klass ? `${klass}.${key}` : key ] || href;
+	if(!href){
+		console.log(match); // check error
+		return match;
+	}
+
+	switch(indicator){
+	case '$':
+		text = `<a href="${href}">${text}</a>`;
+		break;
+	case '@':
+		text = `<dfn id="${href.slice(1)}">${text}</dfn>`;
+		break;
+	default:
+		console.log(match);
+		return match;
+	}
+}
+
+return text;
+
+	}
+}
+</script>
+
+<script type="text/plain" id="_source_data">
+
+
+●●options
+
+spec_date:2019-04-12
+trans_update:2019-04-26
+source_checked:190410
+page_state_key:CSS
+original_url:https://drafts.csswg.org/css-lists-3/
+	abbr_url:CSSLIST
+spec_status:ED
+ref_id_prefix:biblio-
+ref_id_lowercase:true
+conformance:css
+copyright:2019,permissive
+trans_1st_pub:2019-04-26
+
+
+●●class_map
+r:ref
+p:property
+d:descriptor
+css:css
+pe:pseudo
+f:func
+e:element
+a:attr
+v:value
+v2:value
+t:type
+vt:type
+
+●●tag_map
+p:code
+d:code
+t:var
+vt:var
+css:code
+pe:code
+e:code
+a:code
+f:code
+v:code
+v2:code
+c:code
+i:i
+
+●●original_id_map
+
+
+●●link_map
+
+
+	●prop
+p.list-style-image:#propdef-list-style-image
+p.list-style-type:#propdef-list-style-type
+p.list-style-position:#propdef-list-style-position
+p.list-style:#propdef-list-style
+p.marker-side:#propdef-marker-side
+p.counter-reset:#propdef-counter-reset
+p.counter-set:#propdef-counter-set
+p.counter-increment:#propdef-counter-increment
+p.counter-*:#counter-properties
+	~counter~prop:#auto-numbering
+p.content:~CSSWG/css-content-3/#propdef-content
+p.display:~CSSDISP#propdef-display
+p.position:~CSSPOS#propdef-position
+p.visibility:~CSS2VISUFX#propdef-visibility
+p.overflow:~CSSOVERFLOW3#propdef-overflow
+p.order:~CSSFLEX#propdef-order
+
+	●疑似要素
+pe.marker:~CSSPSEUDO#selectordef-marker
+pe.after:~CSSPSEUDO#selectordef-after
+pe.before:~CSSPSEUDO#selectordef-before
+
+	●値型
+t.counter:#typedef-counter
+t.counter-prefix:#typedef-counter-prefix
+t.counter-suffix:#typedef-counter-suffix
+
+t.counter-style:~CSSCOUNTER#typedef-counter-style
+t.custom-ident:~CSSVAL#identifier-value
+
+t.image:~CSSIMAGE#typedef-image
+t.integer:~CSSVAL#integer-value
+t.string:~CSSVAL#string-value
+
+vt.integer:#valdef-counter-reset-custom-ident-integer
+vt.custom-ident:#valdef-counter-reset-custom-ident-integer
+	vt.image:#valdef-list-style-image-image
+	vt.counter-style:#valdef-list-style-type-counter-style
+	vt.string:#valdef-list-style-type-string
+
+
+d.suffix:~CSSCOUNTER#descdef-counter-style-suffix
+d.prefix:~CSSCOUNTER#descdef-counter-style-prefix
+
+	●値
+
+v.outside:#list-style-position-outside
+v.inside:#valdef-list-style-position-inside
+v.list-item:#valdef-counter-increment-list-item
+v.list-container:#valdef-marker-side-list-container
+v.match-self:#valdef-marker-side-match-self
+v.match-parent:#valdef-marker-side-match-parent
+
+	v.none:#valdef-counter-reset-none
+	v.none:#valdef-list-style-image-none
+	v.none:#valdef-list-style-type-none
+	v.none:#valdef-counter-set-counter-increment-none
+
+v2.normal:~CSSCONTENT#valdef-content-normal
+v2.none:~CSSCONTENT#valdef-content-none
+v2.list-item:~CSSDISP#valdef-display-list-item
+v.inline:~CSSDISP#valdef-display-inline
+v.visible:~CSSOVERFLOW3#valdef-overflow-visible
+	v.none:~CSSDISP#valdef-display-none
+
+v.upper-roman:~CSSCOUNTER#upper-roman
+v.lower-alpha:~CSSCOUNTER#lower-alpha
+v.decimal:~CSSCOUNTER#decimal
+
+
+
+	<custom-ident> <integer>?:#valdef-counter-reset-custom-ident-integer
+	<custom-ident> <integer>?:#valdef-counter-set-counter-increment-custom-ident-integer
+
+
+	●func
+
+f.calc:~CSSVAL#funcdef-calc
+f.counter:#funcdef-counter
+t.counter():#funcdef-counter
+f.counters:#funcdef-counters
+t.counters():#funcdef-counters
+f.toggle:~CSSVAL#funcdef-toggle
+
+	●HTML 要素
+e.li:~HEgrouping#the-li-element
+e.ol:~HEgrouping#the-ol-element
+e.ul:~HEgrouping#the-ul-element
+
+
+	●用語
+~marker:#marker
+~marker~box:#marker
+~marker画像:#marker-image
+~marker文字列:#marker-string
+
+~list~item:#list-item
+	＊既定の内容:#default-contents
+~counter:#counter
+新たな~counterを作成する:#create-a-new-counter
+
+~counter列:#_counter-values
+継承-:#_inherit
+
+ex-counter-tree:#ex-counter-tree
+
+
+	●用語外部
+行l~box:~CSS2VISUREN#line-box
+
+表示型:~CSSDISP#display-type
+首要~box:~CSSDISP#principal-box
+塊~box:~CSSDISP#block-box
+塊:~CSSDISP#block
+行内:~CSSDISP#inline
+行内level:~CSSDISP#inline-level
+行内~始端:~CSSWM#inline-start
+行内~box:~CSSDISP#inline-box
+匿名:~CSSDISP#css-anonymous
+置換され:~CSSDISP#replaced-element
+~text連なり:~CSSDISP#css-text-run
+塊~容器:~CSSDISP#block-container
+
+出自の要素:~SELECTORS4#originating-element
+
+書字mode:~CSSWM#writing-mode
+
+~counter~style:~CSSCOUNTER#counter-style
+~counter表現を生成-:~CSSCOUNTER#generate-a-counter
+妥当な画像:~CSSIMAGE4#invalid-image
+~custom~prop:~CSSVAR#custom-property
+
+
+●●words_table1
+
+CSSCONTENT:https://drafts.csswg.org/css-content-3/
+HTMLSEMANTICS:https://html.spec.whatwg.org/multipage/semantics.html
+
+none0:none
+
+
+●●words_table
+
+
+
+	●構造
+group:::グループ
+item:::アイテム
+level:::レベル
+list:::リスト
+pair:::ペア
+obj:object::オブジェクト
+逆順の:reversed:~
+有順序:ordered:~
+無順序:unordered:~
+順序:order:~
+構築-:construct:~
+	構築法:constructing
+構造:structure:~
+根:root::~:ルート
+木:tree::~
+同胞:sibling::~
+子:child::~
+	子たち:children
+子孫:descendant::~
+要素:element::~
+親:parent::~
+外側:outside:~
+	~self-nesting:self-nesting
+入子に:nest::入れ子に
+入子の:nested::入れ子の
+入子ng:nesting::入れ子
+内容:content::~
+包含-:contain::~
+容器:container::コンテナ
+出自の:originating:~
+結付けら:associate さ:~
+	先行-:precede:~
+	後続-:follow:~
+埋込まれ:embed され:埋め込まれ
+空:empty:~
+空の:empty な:~
+
+	●layout
+lay-out:lay out::レイアウト
+layout:::レイアウト
+size:::サイズ
+浮動体:float::~
+塊:block::ブロック
+行内:inline::~:インライン
+行l:line::行
+表示型:display type::~
+位置:position:~
+位置決め:positioning:~
+始端:start:~
+終端:end:~
+縦幅:height::~
+配置-:place:~
+配置:placement:~
+整列-:align::~
+整列:alignment::~
+包装-:wrap::~
+	包装する要素:wrapper element around
+首要:principal::主要
+側:side:~
+書字mode:writing mode::書字モード
+整形-:format:~
+見出し:heading:~
+
+	●counter／marker
+丸括弧:parentheses:~
+交替的:alternate:~
+付番-:number:~
+付番:numbering:~
+	付番された:numbered
+増分:increment:~
+	incrementing
+	増分:increase
+丸:circle:~
+加算-:add:~
+
+挿入-:insert:~
+操作-:manipulate:~
+	操作-法:manipulating
+
+	●塗り／描画
+ベタ:filled:~
+描画-:render:~
+描画:rendering:~
+可視:visible:~
+
+	●CSS
+CSS:
+CSS-2:CSS2
+animation:::アニメーション
+	cascade:::カスケード
+略式:shorthand:~
+
+初期:initial:~
+継承-:inherit:~
+継承:inheritance:~
+	継承されない:Non-inherited
+	継承-法:inheriting
+指定d:specified:指定
+算出d:computed:算出
+使用:used:~
+正準的:canonical:~
+文法:grammar:~
+適用対象:applies to:~
+百分率:percentage:~
+名前:name:~
+離散的:discrete::~
+
+prop:property:プロパティ
+
+作成-:create:~
+作成:creation:~
+	作成-法:creating
+値:value:~
+宣言-:declare:~
+	宣言-法:declaring
+属性:attribute:~
+引数:argument:~
+数量的:numerical:~
+数量-:numeric:~
+整数:integer:~
+文字列:string:~
+文書:document:~
+文書化-:document:~
+文書化:documentation:~
+方向性:directionality:~
+	方向:direction:~
+既定の:default:~
+既定:default:~
+	“星印”:"star" character
+最大:maximum:~
+最小:minimum:~
+構文:syntax:~
+段落:paragraph:~
+	深さ:deep
+	深さ:depth
+生成-:generate:~
+	生成-法:generating
+画像:image:~
+確立-:establish:~
+疑似要素:pseudo-element:~
+型:type:~
+算出-:compute:~
+識別子:identifier:~
+置換-:replace:~
+表現-:represent:~
+表現:representation:~
+規則:rule:~
+言語:language:~
+計算-:calculate:~
+設定-:set:~
+	設定しておく:set up
+	設定し直す:reset:~
+詳細度:specificity:~
+転送-:transfer:~
+
+	返す:return する:~
+追加-:add:~
+連結:concatenate:~
+選択子:selector:~
+
+関数:function:~
+
+隠す:hide する:~
+隠して:hide して:~
+
+	揃う:line up
+	揃う:align
+	時:time:~
+
+塗ng:painting:塗り
+印刷:printing:~
+keyword:::キーワード
+視覚的:visual::~
+媒体:media::~:メディア
+
+class:::クラス
+序数:ordinal::~
+側溝:gutter:~
+border:::ボーダー
+box:::ボックス
+bullet:::ビュレット
+cascade:::カスケード
+	~cascade法:cascading
+counter:::カウンタ
+prop:property::プロパティ
+style:::スタイル
+	~style付け:styling
+stylesheet:style sheet::スタイルシート
+隣接する:adjacentな:~
+marker:::マーカ
+記号:symbol:~
+変形:transform:~
+埋めら:fill さ:~
+埋める:fill する:~
+挿入点:insertion point:~
+	多段に:stacking up
+scroll:::スクロール
+呈示-:present:~
+呈示:presentation:~
+呈示hint:presentational hint::呈示ヒント
+
+	●仕様
+model:::モデル
+hook:::フック
+host:::ホスト
+利用-:use:~
+利用:use:~
+	利用して:using
+	利用-事例:use-cases
+単純:simple:~
+制御-:control:~
+制限-:limit:~
+期待-:expect:~
+期待:expectation:~
+仕方:way:~
+仕様:spec:~
+UA:user agent:UA
+module:::モジュール
+support:::サポート
+system:::システム
+作者:author:~
+供-:provide:~
+働かな:work しな:~
+働く:work する:~
+冗長:verbose:~
+効果:effect:~
+原則:principle:~
+取扱い:handling:取り扱い
+受容-:accept:~
+アリ:possible:可能
+変更点:changes:~
+多義性:ambiguity:~
+多義的:ambiguous:~
+妥当:valid:~
+存在-:exist:~
+定義-:define:~
+	定義されない:undefined
+	defining
+定義:definition:~
+定義済みの:predefined:~
+実装-:implement:~
+実装:implementation:~
+実際の:actual な:~
+将来:future:~
+導入-:introduce:~
+有用:useful:~
+	役立った:useful
+復帰させ:revertする:~
+情報:information:~
+意図-:intend:~
+手動:manual:~
+抑止-:suppress:~
+拡張-:extend:~
+拡張:extension:~
+指定-:specify:~
+指示-:indicate:~
+挙動:behavior:ふるまい
+改めな:alter しな:~
+	早期段階:early-stage:~
+明示的:explicit:~
+暗黙的:implicit:~
+有意:significant:~
+概念:concept:~
+直に:direct に:~
+相違:difference:~
+省略-:omit:~
+	省略されたもの:omissions
+確保-:ensure:~
+解決-:resolve:~
+関係-:relate:~
+指名:designate:~
+見本:sample:~
+機能性:functionality:~
+	欲-:desire:~
+決定-:determine:~
+無視-:ignore:~
+特別:special:~
+特定の:specific な:~
+特有の:specificな:~
+特定的には:specifical には:具体的には
+特色機能:feature:~
+独立:independent:~
+考える:consider する:~
+草案:draft:~
+自動的:automatic:~
+精確:precise:~
+許容-:allow:~
+許容:allowance:~
+説明-:explain:~
+	述べる:describe する:~
+	起-:happen:~
+通例的:usual:~
+通常:normal:~
+通常の:normal な:~
+	通常の:as normal
+	通常に:normally
+適用-:apply:~
+事例:case:~
+完全:complete:~
+容易:easy:~
+影響-:affect:~
+改善:improvement:~
+改称-:rename:~
+明確化-:clarify:~
+	いくつか明確化-:made some clarifications
+暗黙の:implied:~
+条件:condition:~
+欲され:desire され:~
+正確:exact:~
+注釈文:prose:~
+発行版:publication:~
+編集上の:editorial な:~
+能:ability:~
+要求-:require:~
+落とし:drop し:~
+見做され:assume され:~
+見做す:assume する:~
+適度:reasonable:~
+規定-:dictate:~
+尊重-:respect:~
+意味論:semantics:~
+要件:requirement:~
+課題:issue:~
+論点:discussion:~
+一般:general:~
+示唆-:suggestion:~
+確約-:assure:~
+前処理器:preprocessor::~:プリプロセッサ
+custom:::カスタム
+相互作用:interaction:~
+競合-:conflict:~
+慣行:conventions:~
+
+	見よ:see
+	言い表す:word
+	~~課された:inflict
+	定かでない:really sure
+	例:example
+	応じて:depend
+	得-:obtain
+	必要:need
+	必要とされ:necessary
+	比して:compare して
+	似た:similar
+	よく似る:very similar
+	則って:according
+	基づく／基づいて:based
+	代わりに:instead
+	あいにく:unfortunately
+	もっと良く:better
+	変えない:remain unchanged
+	任意の:arbitrary
+	加えて:additionally
+	-:notation
+	-:Alternately
+	注意:care
+	:come
+	表す:denote
+	示す:illustrate
+	方々:people
+	されたし:please
+	なり得る:potentially
+	~note
+	従う:follow
+	~~切る:turn off
+	手による:wrote
+	面倒を見る:takes care of
+	一貫して:consistent に
+	今日では:today
+	別法もある:Alternatively, 〜 could
+	ごく:very
+	ちょっとぶかっこう:*little bit* clumsy
+	限られて:limit
+	整備-:tightened up
+	書き直し:rewrote
+	様に:like
+	上手く:well
+	支持する:in favor of
+	うのみに書き写しただけ:handwavey nonsense
+	真の:real な
+	築き上げ:built up
+	助けになる:help
+	取り込:pull
+	-:method
+
+
+	●未分類
+algo:algorithm::アルゴリズム
+error:::エラー
+space:::スペース
+text:::テキスト
+markup:::マークアップ
+下層の:underlying:~
+等価:equivalent:~
+参照-:reference:~
+素の:plain:~
+対応付け:mapping:~
+アテガう:assign する:あてがう
+アテガわれ:assign され:あてがわれ
+合致-:match:~
+同期-:synchronize:~
+変更-:change:~
+所在:location:~
+反映-:reflect:~
+改変-:modify:~
+直列化:serialization::~:シリアル化
+HTML:
+出力:output:~
+
+	数える:count
+	置く:lie
+	空間:space
+	0:zero
+	固定され:fixed with respect to
+	~~階層的:tiered
+	変わる:vary
+
+	●指示語
+現在の:current:~
+	現在:currently
+自前の:own:~
+
+	章:chapter
+	節:section
+	超え:beyond
+	何か:something
+	依然として:still
+	保-:keep:~
+	現れる:appear
+	少し:bit
+	少数の:few
+	常に:always
+	後:after
+	後の:later
+	新たな:new
+	新たに:newly
+	方法:how
+	最初の:first
+	最後の:last
+	真の:real
+	次:next
+	次の:the following
+	示-:show
+	様々な:various
+	等々:etc
+	結果:result
+	結果の:resulting
+	自身:itself
+	三行:3 lines
+	複数の／複数個:multiple
+	異なる:different
+	通:through
+	全体を通して:throughout
+	いくつかの:several
+	ここ:here
+	この:this
+	これらの:these
+	しかしながら，:however
+	したがって:thus
+	すでに:already
+	すべての:all
+	その:that
+	そのような:such
+	それら:they
+	それらの:their
+	どこでも:anywhere
+	べき:should
+	まるごと:entirely
+	もの:thing
+	~CSSの中でも:among other things
+	別の:another
+	一緒に:together
+	つ:two／:three
+	1 個の:single
+	個:two／:three-
+	個目:first／:second／:third
+	上の:above
+	所与の:given:与えられた
+	与-:give
+	両者:both
+	主な:main
+	今や:now
+	介:via
+	他の:other
+	他の場合:otherwise
+	以前の／前にある:previous
+	前:before
+	助:help
+	十分:suffice
+	単純に:simply
+	単に:simply
+	-:outside
+	合間:between
+	各:each
+	同じ:same
+	含-:include
+	因り:due
+	一定:fixed
+	多い:often
+	多くの:many
+	大部分:most
+	先頭:beginning
+	別々:separate
+	直前の:immediately preceding
+	直:immediate
+	一体としての:as a whole
+	一連の:successive／in sequence
+	より新たな:newer
+	旧:old
+	いない部分がある:fully
+	ほぼ:mostly
+	個別:individual
+	先頭に:prefixed
+	末尾に:followed
+	同時に:at the same time
+	両側に／-:around
+	~~地点:spot
+	方の:whichever of
+
+	●counter
+	-:turns 〜 into
+	-:recall
+	-:In other words
+	-:worry about
+	-:treat する
+	-:unlike
+	-:Regardless
+	-:possibly
+	-:refer 
+	-:recall:::
+	-:immediately set
+	-:involve
+	-:collection
+	-:innermost
+	-:fragment
+	-:existing
+	-:produce
+	-:uniquely
+	-:impossible
+	-:situation
+	-:complex
+	-:prevent
+	-:creator
+
+
+●●ref_normative
+
+[CSS-CONTENT-3]
+    Elika Etemad; Dave Cramer. CSS Generated Content Module Level 3. 2 June 2016. WD. URL: https://www.w3.org/TR/css-content-3/ 
+[CSS-COUNTER-STYLES-3]
+    Tab Atkins Jr.. CSS Counter Styles Level 3. 14 December 2017. CR. URL: https://www.w3.org/TR/css-counter-styles-3/ 
+[CSS-DISPLAY-3]
+    Tab Atkins Jr.; Elika Etemad. CSS Display Module Level 3. 28 August 2018. CR. URL: https://www.w3.org/TR/css-display-3/ 
+[CSS-FLEXBOX-1]
+    Tab Atkins Jr.; et al. CSS Flexible Box Layout Module Level 1. 19 November 2018. CR. URL: https://www.w3.org/TR/css-flexbox-1/ 
+[CSS-IMAGES-4]
+    Tab Atkins Jr.; Elika Etemad; Lea Verou. CSS Image Values and Replaced Content Module Level 4. 13 April 2017. WD. URL: https://www.w3.org/TR/css-images-4/ 
+[CSS-OVERFLOW-3]
+    David Baron; Elika Etemad; Florian Rivoal. CSS Overflow Module Level 3. 31 July 2018. WD. URL: https://www.w3.org/TR/css-overflow-3/ 
+[CSS-POSITION-3]
+    Rossen Atanassov; Arron Eicholz. CSS Positioned Layout Module Level 3. 17 May 2016. WD. URL: https://www.w3.org/TR/css-position-3/ 
+[CSS-PSEUDO-4]
+    Daniel Glazman; Elika Etemad; Alan Stearns. CSS Pseudo-Elements Module Level 4. 25 February 2019. WD. URL: https://www.w3.org/TR/css-pseudo-4/ 
+[CSS-VALUES-3]
+    Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 3. 31 January 2019. CR. URL: https://www.w3.org/TR/css-values-3/ 
+[CSS-VALUES-4]
+    Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 4. 31 January 2019. WD. URL: https://www.w3.org/TR/css-values-4/ 
+[CSS-VARIABLES-1]
+    Tab Atkins Jr.. CSS Custom Properties for Cascading Variables Module Level 1. 3 December 2015. CR. URL: https://www.w3.org/TR/css-variables-1/ 
+[CSS-WRITING-MODES-4]
+    Elika Etemad; Koji Ishii. CSS Writing Modes Level 4. 24 May 2018. CR. URL: https://www.w3.org/TR/css-writing-modes-4/ 
+[CSS21]
+    Bert Bos; et al. Cascading Style Sheets Level 2 Revision 1 (CSS 2.1) Specification. 7 June 2011. REC. URL: https://www.w3.org/TR/CSS2/ 
+[CSS3-IMAGES]
+    Elika Etemad; Tab Atkins Jr.. CSS Image Values and Replaced Content Module Level 3. 17 April 2012. CR. URL: https://www.w3.org/TR/css3-images/ 
+[RFC2119]
+    S. Bradner. Key words for use in RFCs to Indicate Requirement Levels. March 1997. Best Current Practice. URL: https://tools.ietf.org/html/rfc2119 
+[SELECTORS-4]
+    Elika Etemad; Tab Atkins Jr.. Selectors Level 4. 21 November 2018. WD. URL: https://www.w3.org/TR/selectors-4/ 
+
+●●ref_informative
+
+[HTML]
+    Anne van Kesteren; et al. HTML Standard. Living Standard. URL: https://html.spec.whatwg.org/multipage/ 
+
+
+●●spec_metadata
+
+
+最新発行バージョン
+	https://www.w3.org/TR/css-lists-3/
+編集者草案
+	https://drafts.csswg.org/css-lists-3/
+以前のバージョン
+	https://www.w3.org/TR/2014/WD-css-lists-3-20140320/
+	https://www.w3.org/TR/2011/WD-css3-lists-20110524/
+
+最新の課題
+	<a href="https://www.w3.org/Bugs/Public/buglist.cgi?product=CSS&amp;component=Lists%20and%20Counters&amp;resolution=---">Bugzilla</a>
+
+編集
+	<a href="http://xanthir.com/contact/">Tab Atkins</a> (Google)
+
+前任編集者
+	<a href="mailto:ian@hixie.ch">Ian Hickson</a> (Google)
+	<a href="mailto:tantekc@microsoft.com">Tantek Çelı̇k</a> (Formerly of Microsoft)
+
+Suggest an Edit for this Spec:
+	<a href="https://github.com/w3c/csswg-drafts/blob/master/css-lists-3/Overview.bs">GitHub Editor</a>
+
+Contributors:
+	Simon Montagu, AOL-TW/Netscape, <a href="mailto:smontagu@netscape.com">smontagu@netscape.com</a>
+	Daniel Yacob, <a href="mailto:yacob@geez.org">yacob@geez.org</a>
+	Christopher Hoess, <a href="mailto:choess@stwing.upenn.edu">choess@stwing.upenn.edu</a>
+	Daniel Glazman, AOL-TW/Netscape, <a href="mailto:glazman@netscape.com">glazman@netscape.com</a>
+
+
+●●trans_metadata
+<p>
+~THIS_PAGEは、~W3Cにより作業草案として公開された
+<a href="~SPEC_URL">CSS Lists and Counters Module Level 3</a>
+を日本語に翻訳したものです。
+~PUB
+</p>
+
+</script>
+
+
+</head>
+<body>
+
+
+<header>
+	<hgroup>
+<h1>CSS Lists and Counters Module Level 3 日本語訳</h1>
+	</hgroup>
+
+</header>
+
+<div id="MAIN" hidden>
+
+	<section id="abstract">
+<h2 title="Abstract">要約</h2>
+
+<p>
+この草案は、~listの~style付けに関係する~CSS~level 3 の特色機能を包含する。
+それは、~CSS~level 2 `CSS21$r の機能性を含み，それを拡張する。
+~level 2 に比して主な拡張は、
+~list~markerを表現する疑似要素, および
+~markerを位置させるある新たな仕方である。
+◎
+This draft contains the features of CSS level 3 relating to list styling. It includes and extends the functionality of CSS level 2 [CSS21]. The main extensions compared to level 2 are a pseudo-element representing the list marker, and some new ways to position markers.
+</p>
+
+~CSSisaLANG
+
+	</section>
+	<section id="status">
+<h2 title="Status of this document">この文書の位置付け</h2>
+
+<p>
+これは編集者草案の公開の複製です…
+<span class="trans-note">【
+以下，この節の他の内容は
+<a href="css-common-ja.html#status">CSS 日本語訳 共通ページ</a>
+に委譲
+】</span></p>
+	</section>
+
+<nav class="toc" id="contents">
+<h2 title="Table of Contents">目次</h2>
+<ol id="_toc_list0"></ol></nav>
+
+
+<main id="MAIN0">
+
+	<section id="intro">
+<h2 title="Introduction">1. 序論</h2>
+
+<div class="p">
+<p>
+この仕様は、次のものを定義する：
+</p>
+<ul>
+	<li>
+`marker$pe 疑似要素。
+</li>
+	<li>
+~markerを生成するための`表示型$ `list-item$v2 。
+</li>
+	<li>
+~markerの配置と~style付けを制御するためのいくつかの~prop。
+</li>
+</ul>
+
+◎
+This specification defines the ::marker pseudo-element, the list-item display type that generates markers, and several properties controlling the placement and styling of markers.
+</div>
+
+<p>
+また、`~counter$も定義する。
+それは、特別な数量的~objであり，~markerの既定の内容を生成するために利用されることが多い。
+◎
+It also defines counters, which are special numerical objects often used to generate the default contents of markers.
+</p>
+
+<div class="example">
+<p>
+付番された各~list~itemに対し、~marker（ `marker$pe ）を利用して，両側に丸括弧を追加する方法を，次に例示する：
+◎
+For instance, the following example illustrates how markers can be used to add parentheses around each numbered list item:
+</p>
+
+<pre class="lang-html">
+&lt;style&gt;
+li::marker { content: "(" counter(list-item, lower-roman) ")"; }
+li { display: list-item; }
+&lt;/style&gt;
+&lt;ol&gt;
+  &lt;li&gt;これは一個目の~item。
+  &lt;li&gt;これは二個目の~item。
+  &lt;li&gt;これは三個目の~item。
+&lt;/ol&gt;
+</pre>
+<!-- 
+  &lt;li&gt;This is the first item.
+  &lt;li&gt;This is the second item.
+  &lt;li&gt;This is the third item.
+-->
+<p>
+これは、次の様に呈示されるべきである：
+◎
+It should produce something like this:
+</p>
+
+<pre class="ex-rendering">
+  (i) これは一個目の~item。
+ (ii) これは二個目の~item。
+(iii) これは三個目の~item。
+</pre>
+
+<p class="note">注記：
+この例は、~HTMLにて通例的に必要とされるものより ずっと冗長である
+— ~UAの既定の~stylesheetは，必要とされる~style付けの大部分について面倒を見るので。
+◎
+Note: Note that this example is far more verbose than is usually needed in HTML, as the UA default style sheet takes care of most of the necessary styling.
+</p>
+
+</div>
+
+<p>
+子孫~選択子と子~選択子を用いれば、~listが埋込まれた深さに応じて，異なる型の~markerを指定することもアリになる。
+◎
+With descendant selectors and child selectors, it’s possible to specify different marker types depending on the depth of embedded lists.
+</p>
+
+
+	</section>
+	<section id="declaring-a-list-item">
+<h2 title="Declaring a List Item">2. ~list~itemの宣言-法</h2>
+
+<p>
+`~list~item@
+とは、 `display$p ~propが `list-item$v2 に設定された要素である。
+各`~list~item$は、他の要素にはない `marker$pe 疑似要素を生成する。
+加えて，`~list~item$は、暗黙の名前 `list-item$v の`~counter$を自動的に増分する（
+<a href="#list-item-counter">§ 暗黙的な `list-item^v ~counter</a>
+を見よ）。
+◎
+A list item is any element with its display property set to list-item. List items generate ::marker pseudo-elements; no other elements do. Additionally, list items automatically increment an implied list-item counter (see §4.2 The Implicit list-item Counter).
+</p>
+
+	</section>
+	<section id="markers">
+<h2 title="Markers">3. ~marker</h2>
+
+<p>
+`~marker@
+（~marker~box）は、`~list~item$`表示型$を定義する特色機能であり、~list内の各 `~list~item$の先頭を表す助けになる記号や序数を与える。
+~CSS~layout~modelにおいては、`~marker$は，各`~list~item$に結付けられた`~marker~box$により表現される。
+この`~marker$の内容は、当の`~list~item$上の［
+`list-style-type$p, `list-style-image$p
+］~propで, および
+`marker$pe 疑似要素に【適用-可能な】各種~propをアテガうことにより，制御できる。
+◎
+The defining feature of the list item display type is its marker, a symbol or ordinal that helps denote the beginning of each list item in a list. In the CSS layout model, list item markers are represented by a marker box associated with each list item. The contents of this marker can be controlled with the list-style-type and list-style-image properties on the list item and by assigning properties to its ::marker pseudo-element.
+</p>
+
+		<section id="marker-pseudo">
+<h3 title="The ::marker Pseudo-Element">3.1. `marker^pe 疑似要素</h3>
+
+<p>
+`~marker~box$は、`~list~item$の `marker$pe 疑似要素により，`~list~item$の最初の子として生成される
+— 要素~上に `before$pe 疑似要素も存在するならば，その前に。
+それは、
+<a href="#content-property">§ ~marker内容の生成-法</a>
+にて定義されるように内容で埋められる。
+◎
+The marker box is generated by the ::marker pseudo-element of a list item as the list item’s first child, before the ::before pseudo-element (if it exists on the element). It is filled with content as defined in §3.2 Generating Marker Contents.
+</p>
+
+<p>
+`~marker$は、`~list~item$用に限り存在する。
+他の要素~上では、 `marker$pe 疑似要素の `content$p ~propは `none$v2 に算出されるモノトスル
+— それは、~markerの作成を抑止する。
+◎
+Marker boxes only exist for list items: on any other element, the ::marker pseudo-element’s content property must compute to none, which suppresses its creation.
+</p>
+
+<p>
+`marker$pe 疑似要素に利用できる~propは限られている
+— この~listは、 `CSS-PSEUDO-4$r の
+<a href="~CSSPSEUDO#marker-pseudo">§ ~list~marker</a>
+にて定義される。
+◎
+Only a limited set of properties can be used on the ::marker pseudo-element. This list is defined in CSS Pseudo-Elements 4 §4.2 List Markers: the ::marker pseudo-element.
+</p>
+
+
+<div class="example">
+<p>
+この例では、~markerを利用して，
+“Note” と指名されている段落を付番する：
+◎
+In this example, markers are used to number paragraphs that are designated as "notes":
+</p>
+
+<pre class="lang-css">
+&lt;style&gt;
+p { margin-left: 12 em; }
+p.note {
+  display: list-item;
+  counter-increment: note-counter;
+}
+p.note::marker {
+  content: "Note " counter(note-counter) ":";
+}
+&lt;/style&gt;
+&lt;p&gt;これは文書~内の最初の段落。
+&lt;p class="note"&gt;これはとても短い段落。
+&lt;p&gt;ここが末尾。
+</pre>
+
+<!-- 
+<p>This is the first paragraph in this document.
+<p class="note">This is a very short document.
+<p>This is the end.
+-->
+<p>
+次の様に描画されるべきである：
+◎
+It should render something like this:
+</p>
+
+<pre class="ex-rendering">
+          これは文書~内の最初の段落。
+
+Note 1:   これはとても短い段落。
+
+          ここが末尾。
+</pre>
+
+</div>
+
+<div class="example">
+<p>
+`marker$pe 疑似要素を利用すれば、~listの~markerを~list~item自身の~textとは独立に~styleできる：
+◎
+By using the ::marker pseudo-element, a list’s markers can be styled independently from the text of the list item itself:
+</p>
+
+<pre class="lang-html">
+&lt;style&gt;
+p { margin-left: 8em } /* <span class="comment">
+~counter用に空間を作る
+◎
+Make space for counters
+</span> */
+li { list-style-type: lower-roman; }
+li::marker { color: blue; font-weight:bold; }
+&lt;/style&gt;
+&lt;p&gt;これは先行する長い段落 ...
+&lt;ol&gt;
+  &lt;li&gt;これは一個目の~item
+  &lt;li&gt;これは二個目の~item
+  &lt;li&gt;これは三個目の~item
+&lt;/ol&gt;
+&lt;p&gt;これは後続する長い段落 ...
+</pre>
+<!-- 
+<p>This is a long preceding paragraph ...
+<li>This is the first item.
+<li>This is the second item.
+<li>This is the third item.
+<p>This is a long following paragraph ...
+-->
+<p>
+前掲の文書は、次の様に描画されるべきである：
+◎
+The preceding document should render something like this:
+</p>
+
+<pre class="ex-rendering">
+       これは先行する長い段落 ...
+
+  <span style="color:blue;font-weight:bold;">i.</span>   これは一個目の~item
+ <span style="color:blue;font-weight:bold;">ii.</span>   これは二個目の~item
+<span style="color:blue;font-weight:bold;">iii.</span>   これは三個目の~item
+
+       これは後続する長い段落 ...
+</pre>
+
+<p>
+以前までは、~markerを~styleする仕方は，継承を通す他になかった。
+欲される~marker~styleを~list~itemにあてがった上で、~list~itemの実際の内容を要素で包装して，その要素~上で~~元の~styleに復帰させる必要があった。
+◎
+Previously the only way to style a marker was through inheritance; one had to put the desired marker styling on the list item, and then revert that on a wrapper element around the list item’s actual contents.
+</p>
+
+</div>
+
+		</section>
+		<section id="content-property">
+<h3 title="Generating Marker Contents">3.2. ~marker内容の生成-法</h3>
+
+<p>
+`~marker~box$の内容は、次に挙げる条件のうち最初に満たされるものにより決定される：
+◎
+The contents of a marker box are determined by the first of these conditions that is true:
+</p>
+
+<dl class="switch">
+	<dt>
+`marker$pe 自身の `content$p は `normal$v2 でない場合：
+◎
+content on the ::marker itself is not normal
+</dt>
+	<dd>
+内容は
+— `before$pe に対するとき正確に同じに —
+`content$p ~propに定義されるように決定される。
+◎
+The contents of the marker box are determined as defined by the content property, exactly as for ::before.
+</dd>
+
+	<dt>
+`出自の要素$上の `list-style-image$p が`~marker画像$を定義する場合：
+◎
+list-style-image on the originating element defines a marker image
+</dt>
+	<dd>
+<p>
+内容は、次の順の並びからなる：
+</p>
+		<ul>
+			<li>
+指定された`~marker画像$を表現している，`匿名$かつ`行内$の`置換され$る要素
+</li>
+			<li>
+1 個の~space（ U+0020 SPACE ）のみからなる`~text連なり$
+</li>
+		</ul>
+◎
+The 'marker box contains an anonymous inline replaced element representing the specified marker image, followed by a text run consisting of a single space (U+0020 SPACE).
+</dd>
+
+	<dt>
+`出自の要素$上の `list-style-type$p が`~marker文字列$を定義する場合：
+◎
+list-style-type on the originating element defines a marker string
+</dt>
+	<dd>
+内容は、指定された`~marker文字列$からなる`~text連なり$になる。
+◎
+The marker box contains a text run consisting of the specified marker string.
+</dd>
+
+	<dt>
+他の場合：
+◎
+otherwise
+</dt>
+	<dd>
+内容は無い
+— `marker$pe は~boxを生成しない。
+◎
+The marker box has no contents and ::marker does not generate a box.
+</dd>
+</dl>
+
+		</section>
+		<section id="image-markers">
+<h3 title="Image Markers: the list-style-image property">3.3. 画像~marker： `list-style-image^p ~prop</h3>
+
+◎名 `list-style-image@p
+◎値 `image$vt | `none$v
+◎初 `none^v
+◎適 `~list~item$
+◎継 される
+◎百 受容しない
+◎算 `image$t の算出d値／ `none$v
+◎順 文法に従う
+◎ア 離散的
+◎表終
+
+<p>
+`~marker画像@
+を指定する。
+それは、`~list~item$の`~marker$を埋めるときに
+— ~list~itemの `content$p が `normal$v2 のときに限り —
+利用される。
+各種 値は、次に従う：
+◎
+Specifies the marker image, which is used to fill the list item’s marker when its content is normal. The values are as follows:
+</p>
+
+<dl class="valdef">
+	<dt id="valdef-list-style-image-image">`image$t</dt>
+	<dd>
+`image$t が`妥当な画像$を表現する場合、それが要素の`~marker画像$を指定する。
+他の場合、要素には`~marker画像$は無い。
+◎
+If the &lt;image&gt; represents a valid image, specifies the element’s marker image as the &lt;image&gt;. Otherwise, the element has no marker image.
+</dd>
+
+	<dt>`none@v</dt>
+	<dd>
+要素には`~marker画像$は無い。
+◎
+The element has no marker image.
+</dd>
+</dl>
+
+<div class="example">
+<p>
+各~list~itemの先頭に，画像 "`ellipse.png^c" による~markerを設定する例：
+◎
+The following example sets the marker at the beginning of each list item to be the image "ellipse.png".
+</p>
+
+<pre class="lang-css">
+li { list-style-image: url("http://www.example.com/ellipse.png") }
+</pre>
+
+</div>
+		</section>
+		<section id="text-markers">
+<h3 title="Text-based Markers: the list-style-type property">3.4. ~textに基づく~marker： `list-style-type^p ~prop</h3>
+
+◎名 `list-style-type@p
+◎値 `counter-style$vt | `string$vt | `none$v
+◎初 `disc^v
+◎適 `~list~item$
+◎継 される
+◎百 受容しない
+◎算 指定d値
+◎順 文法に従う
+◎ア 離散的
+◎表終
+
+<p>
+`~marker文字列@
+を指定する。
+それは、`~list~item$の`~marker$を埋めるときに
+— ~list~itemの `content$p が `normal$v2 , かつ`~marker画像$は無いときに限り —
+利用される。
+各種 値は、次に従う：
+◎
+Specifies the marker string, which is used to fill the list item’s marker when its content value is normal and there is no marker image. The values are as follows:
+</p>
+
+<dl class="valdef">
+	<dt id="valdef-list-style-type-counter-style">`counter-style$t</dt>
+	<dd>
+要素の`~marker文字列$を［
+指定された `counter-style$t を利用して表現される `list-item$v ~counterの値
+］として指定する
+◎
+Specifies the element’s marker string as the value of the list-item counter represented using the specified &lt;counter-style&gt;.
+</dd>
+	<dd>
+特定的には，`~marker文字列$は、［
+指定された `counter-style$t を利用して
+`list-item$v ~counter値~用の`~counter表現を生成-$した結果
+］の先頭に `counter-style$t の `prefix$d を,
+末尾に `counter-style$t の `suffix$d を付け加えたものになる。
+指定された `counter-style$t が存在しない場合、 `decimal$v と見做される。
+◎
+Specifically, the marker string is the result of generating a counter representation of the list-item counter value using the specified &lt;counter-style&gt;, prefixed by the prefix of the &lt;counter-style&gt;, and followed by the suffix of the &lt;counter-style&gt;. If the specified &lt;counter-style&gt; does not exist, decimal is assumed.
+</dd>
+
+	<dt id="valdef-list-style-type-string">`string$t</dt>
+	<dd>
+要素の`~marker文字列$は、指定された `string$t になる。
+◎
+The element’s marker string is the specified &lt;string&gt;.
+</dd>
+
+	<dt>`none@v</dt>
+	<dd>
+要素には`~marker文字列$は無い。
+◎
+The element has no marker string.
+</dd>
+</dl>
+
+<div class="example">
+<p>
+~markerを様々な値に設定する方法を，次の例に示す：
+◎
+The following examples illustrate how to set markers to various values:
+</p>
+
+<pre class="lang-css">
+ul { list-style-type: "★"; }
+/* <span class="comment">
+~markerを “星印” に設定する
+◎
+Sets the marker to a "star" character
+</span> */
+
+p.note {
+  display: list-item;
+  list-style-type: "注記：";
+  list-style-position: inside;
+}
+/* <span class="comment">
+注記~段落に，文字列 "注記：" による~markerを与える
+◎
+Gives note paragraphs a marker consisting of the string "Note: "
+</span> */
+
+ol { list-style-type: upper-roman; }
+/* <span class="comment">
+すべての有順序~listは、`~counter~style$として `upper-roman$v を利用するよう設定する
+`CSS-COUNTER-STYLES$r 
+◎
+Sets all ordered lists to use the upper-roman counter-style (defined in the Counter Styles specification [[CSS-COUNTER-STYLES]])
+</span> */
+
+ul { list-style-type: symbols(repeating '○' '●'); }
+/* <span class="comment">
+すべての無順序~list~itemの~markerに［
+~~中空の丸, ベタの丸
+］を交替的に設定する。
+◎
+Sets all unordered list items to alternate between empty and filled circles for their markers.
+</span> */
+
+ul { list-style-type: none; }
+/* <span class="comment">
+~markerをまるごと抑止する
+— `list-style-image^p に`妥当な画像$が指定されていない限り。
+◎
+Suppresses the marker entirely, unless list-style-image is specified with a valid image.
+</span> */
+</pre>
+
+</div>
+
+
+		</section>
+		<section id="list-style-position-property">
+<h3 title="Positioning Markers: The list-style-position property">3.5. ~markerの位置決め： `list-style-position^p ~prop</h3>
+
+◎名 `list-style-position@p
+◎値 `inside$v | `outside$v
+◎初 `outside$v
+◎適 `~list~item$
+◎継 される
+◎百 受容しない
+◎算 指定された~keyword（ただし注釈文を見よ）
+◎順 文法に従う
+◎ア 離散的
+◎表終
+
+<p>
+この~propは、［
+`marker$pe を行内に描画するか，`~list~item$のすぐ外側に位置するか
+］を規定する。
+各種 値は、次に従う：
+◎
+This property dictates whether the ::marker is rendered inline, or positioned just outside of the list item. The values are as follows:
+</p>
+
+<dl class="valdef">
+	<dt>`inside@v</dt>
+	<dd>
+特別な効果はない（ `marker$pe は、`~list~item$の内容の始端にある行内~要素になる）。
+◎
+No special effect. (The ::marker is an inline element at the start of the list item’s contents.) 
+</dd>
+
+	<dt>`outside@v</dt>
+	<dd>
+`~list~item$は`塊~容器$である場合：
+~marker~boxは、`塊~box$を成す`首要~box$の外側に置かれる。
+しかしながら，浮動体に隣接する~list~item~markerの位置は、定義されない。
+~CSSは、~marker~boxの［
+精確な所在 ／ 塗ng順序
+］は指定しないが、［［
+`marker-side$p が指示する~box
+］の`書字mode$を利用して，~boxの`行内~始端$側に配置する
+］ことを要求する。
+~marker~boxは、`首要~box$の~borderに固定され，首要~boxの内容ともに~scrollすることはない。
+~UAは、当の要素の `overflow$p が `visible$v 以外ならば，~markerを隠してもヨイ（この許容は、将来に変更され得る）。
+~marker~boxの~sizeや内容は、［
+`首要~box$や その最初の`行l~box$
+］の縦幅に影響したり，一部の事例では新たな行l~boxを作成させることもある
+— この相互作用もまた、定義されない。
+◎
+If the list item is a block container: the marker box is outside the principal block box; however, the position of the list-item marker adjacent to floats is undefined. CSS does not specify the precise location of the marker box or its position in the painting order, but does require that it be placed on the inline-start side of the box, using the writing mode of the box indicated by marker-side. The marker box is fixed with respect to the principal block box’s border and does not scroll with the principal box’s content. A UA may hide the marker if the element’s overflow is other than visible. (This allowance may change in the future.) The size or contents of the marker box may affect the height of the principal block box and/or the height of its first line box, and in some cases may cause the creation of a new line box; this interaction is also not defined.
+</dd>
+	<dd class="issue">
+これは，~CSS-2をうのみに書き写しただけであり、真の定義が必要である。
+◎
+This is handwavey nonsense from CSS2, and needs a real definition.
+</dd>
+	<dd>
+`~list~item$は`行内~box$である場合：
+この値は `inside$v と等価になる。
+◎
+If the list item is an inline box: this value is equivalent to inside.
+</dd>
+	<dd class="issue">
+別法として、~markerを，行内~boxを成す首要~boxの前にある同胞として~lay-outする~~案もある。
+◎
+Alternatively, outside could lay out the marker as a previous sibling of the principal inline box.
+</dd>
+</dl>
+
+<div class="example">
+<p>
+例えば：
+◎
+For example:
+</p>
+
+<pre class="lang-html">
+&lt;style&gt;
+  ul.compact { list-style: inside; }
+  ul         { list-style: outside; }
+&lt;/style&gt;
+&lt;ul class=compact&gt;
+  &lt;li&gt;一個目の "inside" ~list~item
+  &lt;li&gt;二個目の "inside" ~list~item
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;ul&gt;
+  &lt;li&gt;一個目の "outside" ~list~item
+  &lt;li&gt;二個目の "outside" ~list~item
+&lt;/ul&gt;
+</pre>
+<!-- 
+<ul class=compact>
+  <li>first "inside" list item comes first
+  <li>second "inside" list item comes first
+</ul>
+<hr>
+<ul>
+  <li>first "outside" list item comes first
+  <li>second "outside" list item comes first
+</ul>
+-->
+
+<p>
+上の例は、次のように整形されるであろう：
+◎
+The above example may be formatted as:
+</p>
+
+<pre class="ex-rendering">
+  * 一個目の "inside" ~list~item
+  * 二個目の "inside" ~list~item
+
+========================
+
+* 一個目の "outside" ~list~item
+* 二個目の "outside" ~list~item
+</pre>
+
+<!-- 
+  * first "inside" list
+  item comes first
+  * second "inside" list
+  item comes second
+
+========================
+
+* first "outside" list
+  item comes first
+* second "outside" list
+  item comes second
+  -->
+</div>
+
+		</section>
+		<section id="list-style-property">
+<h3 title="Styling Markers: the list-style shorthand property">3.6. ~markerの~style付け： `list-style^p 略式~prop</h3>
+
+
+◎名 `list-style@p
+◎値
+`list-style-position$tp || `list-style-image$tp || `list-style-type$tp
+◎初 個々の~propを見よ
+◎適 `~list~item$
+◎継 個々の~propを見よ
+◎百 個々の~propを見よ
+◎算 個々の~propを見よ
+◎順 文法に従う
+◎ア 個々の~propを見よ
+◎表終
+
+<p>
+`list-style$p ~propは、 3 種の~prop［
+`list-style-type$p,
+`list-style-image$p,
+`list-style-position$p
+］を，~stylesheetの同じ所でまとめて設定する略式である。
+◎
+The list-style property is a shorthand notation for setting the three properties list-style-type, list-style-image, and list-style-position at the same place in the style sheet.
+</p>
+
+<div class="example">
+<p>
+例えば：
+◎
+For example:
+</p>
+
+<pre class="lang-css">
+UL { list-style: upper-roman inside }  /* <span class="comment">
+すべての `UL^e
+◎
+Any UL
+</span> */
+UL UL { list-style: circle outside } /* <span class="comment">
+`UL^e の子孫である，すべての `UL^e
+◎
+Any UL child of a UL
+</span> */
+</pre>
+   </div>
+
+<p>
+略式における値 `none^v の利用は、多義的にもなり得る
+— `none^v は、 `list-style-image$p, `list-style-type$p どちらにも妥当な値なので。
+この多義性を解決するため、略式における値 `none^v は，［
+2 つの~propのうち，この略式で `none^v 以外が設定されていない方の~prop
+］に適用するモノトスル。
+◎
+Using a value of none in the shorthand is potentially ambiguous, as none is a valid value for both list-style-image and list-style-type. To resolve this ambiguity, a value of none in the shorthand must be applied to whichever of the two properties aren’t otherwise set by the shorthand.
+</p>
+
+<div class="example">
+
+<pre class="lang-css">
+list-style: none disc;
+/* <span class="comment">
+画像を `none^v, 型を `disc^v に設定する。
+◎
+Sets the image to "none" and the type to "disc".
+</span> */
+
+list-style: none url(bullet.png);
+/* <span class="comment">
+画像を `url(bullet.png)^v, 型を `none^v に設定する。
+◎
+Sets the image to "url(bullet.png)" and the type to "none".
+</span> */
+
+list-style: none;
+/* <span class="comment">
+画像, 型の両方とも `none^v に設定する。
+◎
+Sets both image and type to "none".
+</span> */
+
+list-style: none disc url(bullet.png);
+/* <span class="comment">
+構文~error
+◎
+Syntax error
+</span> */
+</pre>
+   </div>
+
+<div class="example">
+<p>
+作者は、~list~item要素（例：~HTMLにおける `li$e ）に `list-style$p 情報を直に指定できるが、そうするときは注意するべきである。
+次の規則を考える：
+◎
+Although authors may specify list-style information directly on list item elements (e.g., li in HTML), they should do so with care. Consider the following rules:
+</p>
+
+<pre class="lang-css">
+ol.alpha li { list-style: lower-alpha; }
+ul li       { list-style: disc; }
+</pre>
+
+<p>
+上の規則は、期待されるように働かない。
+`ul$e を
+`ol class=alpha^e
+の中に入子にした場合、最初の規則の詳細度が高いので，
+`ul$e の各~list~itemは `lower-alpha^v ~styleを利用するようになる。
+次のようにすれば、意図されるように働く：
+◎
+The above won’t work as expected. If you nest a ul into an ol class=alpha, the first rule’s specificity will make the ul’s list items use the lower-alpha style.
+</p>
+
+<pre class="lang-css">
+ol.alpha &gt; li { list-style: lower-alpha; }
+ul &gt; li       { list-style: disc; }
+</pre>
+
+<p>
+次のようにすれば、もっと良く働く：
+◎
+These work as intended.
+</p>
+
+<pre class="lang-css">
+ol.alpha { list-style: lower-alpha; }
+ul       { list-style: disc; }
+</pre>
+
+<p>
+これらの `list-style$p 値は、継承により，~list~itemたちへ転送されることになるので。
+◎
+These are even better, since inheritance will transfer the list-style value to the list items.
+</p>
+
+</div>
+
+
+		</section>
+		<section id="marker-side">
+<h3 title="The marker-side property">3.7. `marker-side^p ~prop</h3>
+
+◎名 `marker-side@p
+◎値 `match-self$v | `match-parent$v
+◎初 `match-self^v
+◎適 `~list~item$
+◎継 される
+◎百 受容しない
+◎算 指定された~keyword
+◎順 文法に従う
+◎ア 離散的
+◎表終
+
+
+<p>
+`marker-side$p ~propは、 `marker$pe が［
+~list~item自身（すなわち，`出自の要素$）, ~list容器（すなわち，`出自の要素$の親）
+］どちらの方向性に基づいて位置するかを指定する。
+前者の事例では、~markerの位置は，同じ~list内の各~list~itemごとに個別にアテガわれた方向性に基づいて変わり得る。
+後者の事例では、一体としての~listにアテガわれた方向性により決定され，すべての~itemは同じ側に整列することになる。
+◎
+The marker-side property specifies whether the ::marker is positioned based on the directionality of the list item itself (i.e. its originating element) or the directionality of the list container (i.e. the originating element’s parent). In the first case, the position of the marker can vary across items in the same list, based on the directionality assigned to each list item individually; in the second case they will all align on the same side, as determined by the directionality assigned to the list as a whole.
+</p>
+
+<dl class="valdef">
+	<dt>`match-self@v</dt>
+	<dd>
+`marker$pe 疑似要素は、その`出自の要素$の方向性を利用して位置される。
+◎
+The ::marker pseudo-element is positioned using the directionality of the ::marker’s originating element. 
+</dd>
+
+	<dt>`match-parent@v</dt>
+	<dd>
+`marker$pe 疑似要素は、その`出自の要素$の親~要素の方向性を利用して位置される。
+◎
+The ::marker pseudo-element is positioned using the directionality of the ::marker’s originating element’s parent element.
+</dd>
+</dl>
+
+<div class="example">
+
+<p>
+［
+要素 ／ `marker$pe 疑似要素
+］は、既定では，その~list~itemの方向性に則って自身を位置する。
+しかしながら，同じ~group内の~list~itemたちの方向性がまちまちな場合（例えば、~HTMLの `ol^e 内に 異なる `dir^a 属性~値を伴う複数個の `li^e がある場合）、すべての~markerを同じ側に整列した方が有用なこともある
+— 作者が、すべての~markerが置かれる “側溝” をその側に作るよう指定することで、~markerが可視になるのを確約できるよう。
+◎
+By default, elements or ::marker pseudo-elements position themselves according to their list item’s directionality. However, if the list item is grouped with several other list items which may have different directionality (for example, multiple &lt;li&gt;s with different "dir" attributes in an &lt;ol&gt; in HTML), it is sometimes more useful to have all the markers line up on one side, so the author can specify a single "gutter" on that side and be assured that all the markers will lie in that gutter and be visible.
+</p>
+
+<p>
+下に示す両~描画とも，次の~HTML例から生成されているが、~list上の `marker-side$p 値に限り相違がある：
+◎
+Both of the following example renderings are generated from the following HTML, with the only difference being the value of marker-side on the list:
+</p>
+
+<pre class="lang-html">
+&lt;ul&gt;
+  &lt;li&gt;左横書きの内容
+  &lt;li&gt;&lt;bdo dir="rtl"&gt;右横書きの内容&lt;/bdo&gt;
+  &lt;li&gt;左横書きの内容
+  &lt;li&gt;&lt;bdo dir="rtl"&gt;右横書きの内容&lt;/bdo&gt;
+&lt;/ul&gt;
+</pre>
+<!-- 
+<ul>
+  <li>english one
+  <li dir=rtl>OWT WERBEH
+  <li>english three
+  <li dir=rtl>RUOF WERBEH
+</ul>
+-->
+<table class="data">
+<thead><tr><th>`match-self$v
+</th><th>`match-parent$v
+</th></tr></thead><tbody>
+<tr>
+<td style="border-right: thin solid">
+
+<figure><div class="ex-marker-side">
+<div>• 左横書きの内容</div>
+<div>　　　　<bdo dir="rtl">右横書きの内容</bdo> •</div>
+<div>• 左横書きの内容</div>
+<div>　　　　<bdo dir="rtl">右横書きの内容</bdo> •</div>
+</div></figure>
+
+<!-- 
+<pre class="ex-rendering">
+* english one
+     OWT WERBEH *
+* english three
+    RUOF WERBEH *</pre>
+ -->
+
+</td><td>
+
+<figure><div class="ex-marker-side">
+<div>• 左横書きの内容</div>
+<div>•　　　　<bdo dir="rtl">右横書きの内容</bdo></div>
+<div>• 左横書きの内容</div>
+<div>•　　　　<bdo dir="rtl">右横書きの内容</bdo></div>
+</div></figure>
+
+<!-- 
+
+<pre class="ex-rendering">
+* english one
+*    OWT WERBEH
+* english three
+*   RUOF WERBEH</pre>
+ -->
+
+</tbody></table>
+
+</div>
+
+		</section>
+	</section>
+	<section id="auto-numbering">
+<h2 title="Automatic Numbering With Counters">4. ~counterによる自動的な付番</h2>
+
+<p class="trans-note">【
+この訳では、`~counter列$という用語を導入して、この節以下の内容を原文と等価な~modelを表現するように，かなり書き換えている
+— 特に
+<a href="#counter-properties">§ ~counterの操作-法</a>,
+<a href="#creating-counters">§ ~counter列の作成-法と継承-法</a>
+。
+原文の用語
+— “入子の~counter”, “~counterの継承” —
+そのままでは、難解／不明瞭になるので。
+】</p>
+
+<p>
+`~counter@
+は、~CSSの中でも特別な概念であり，~CSSにて~list~itemを自動的に付番するときに利用される。
+どの要素も、 0 個以上の`~counter$を持つ。
+各`~counter$は、その名前（文字列）と対応する`~counter列$からなる。
+`~counter列@
+は、 0 個~以上の~counter値（整数）からなる~listであり，同じ名前の入子にされた~counter値たちを表現する（末尾ほど深い）。
+`~counter$は、~prop値に似た仕方で文書~木を通して継承される：
+各~要素は、［
+`counter-increment$p,
+`counter-set$p,
+`counter-reset$p
+］~propを通して，文書~順で直前の要素から`継承-$した`~counter列$を操作したり，新たな名前の~counterを作成する。
+その結果は、［
+`counter$f ／ `counters$f
+］関数から利用される。
+◎
+A counter is a special concept used, among other things, to automatically number list items in CSS. Every element has a collection of zero or more counters, which are inherited through the document tree in a way similar to inherited property values. They are created and manipulated with the counter-increment, counter-set and counter-reset properties, and used with the counter() and counters() functions. Counters have a name, an integer value, a creator element, and possibly another counter nested inside themselves.
+</p>
+
+<p class="issue">
+この節は、~CSS-2と同期していない部分がある。
+~CSS~level 2 における
+<a href="~CSS22/generate.html#counters">自動的な~counterと付番</a>
+を参照されたし：
+ここでの［
+~CSS-2と競合するもの／~CSS-2から省略されたもの
+］は、~CSS-2に指定された挙動を支持するように解決されるベキである。
+◎
+This section is not fully synchronized with CSS2. Please reference Automatic Counters and Numbering in CSS Level 2: any conflicts or omissions here should be resolved in favor of the behavior specified in CSS2.
+</p>
+
+		<section id="counter-properties">
+<h3 title="Manipulating Counters: the counter-increment, counter-set and counter-reset properties">4.1. ~counterの操作-法： `counter-increment^p, `counter-set^p, `counter-reset^p ~prop</h3>
+
+◎名 `counter-reset@p, `counter-set@p, `counter-increment@p
+◎値 [ `custom-ident$vt `integer$vt? ]+ | `none$v
+◎初 `none$v
+◎適 すべての要素
+◎継 されない
+◎百 受容しない
+◎算 ~keyword `none^v ／
+各~itemが識別子と整数の~pairである~list
+◎
+the keyword none or a list, each item an identifier paired with an integer
+◎順 文法に従う
+◎ア 離散的
+◎表終
+
+
+<div>
+
+<p>
+~UAには、視覚的でないものも含む すべての媒体に対し，これらの~propを~supportすることが期待される。
+</p>
+
+<p>
+これらの~propは、要素~上の`~counter列$を操作する。
+各種 値は、次のように定義される：
+</p>
+
+<dl class="valdef">
+	<dt>`none@v</dt>
+	<dd>
+要素は、自身が`継承-$した どの`~counter列$も改めない。
+</dd>
+
+	<dt id="valdef-counter-set-counter-increment-custom-ident-integer"></dt>
+	<dt id="valdef-counter-reset-custom-ident-integer">`custom-ident$t `integer$t?</dt>
+	<dd>
+<p>
+要素は、自身が`継承-$した［
+名前 `custom-ident$vt の`~counter列$ %L
+］を操作する。
+それに先立って， %L が空ならば %L に 0 を追加した上で、供された `integer$vt 値を %K とするとき：
+</p>
+		<ul>
+			<li>
+`counter-reset$p ~propは、
+%L の最後の値を %K （省略時は 0 ）に設定し直すか，場合によっては %L の末尾に %K を追加する。
+</li>
+			<li>
+`counter-increment$p ~propは、
+%L の最後の値に %K （省略時は 1 ）を加算する。
+</li>
+			<li>
+`counter-set$p ~propは、
+%L の最後の値を %K （省略時は 0 ）に設定する。
+</li>
+		</ul>
+<p>
+正確な詳細は、
+<a href="#creating-counters">§ ~counter列の作成-法と継承-法</a>
+に述べる。
+</p>
+
+	</dd>
+	<dd>
+`~counter列$を成す各~値がとり得る［
+最大／最小
+］には、実装に特有の制限-があり得る。
+増分†により，~counter値がこの制限-を超える場合、その増分を無視して，~counter値を変えないモノトスル。
+【† %K が負ならば “減分” になる。】
+</dd>
+</dl>
+
+◎
+User Agents are expected to support this property on all media, including non-visual ones.
+◎
+The counter-reset property creates new counters on an element. Its values are defined as follows:
+◎
+none
+• This element does not create any new counters.
+◎
+&lt;custom-ident&gt; &lt;integer&gt;?
+• The element creates one or more new counters. Each &lt;custom-ident&gt; names a new counter to be created.
+• If an &lt;integer&gt; is provided after an &lt;custom-ident&gt;, the starting value of the new counter is that integer. Otherwise, the starting value of the new counter is 0.
+• Implementations may have implementation-specific limits on the maximum or minimum value of a counter. If an increment would push the counter’s value beyond these limits, the increment must be ignored, and the counter’s value remain unchanged.
+◎
+Name: 	counter-set
+Value: 	[ &lt;custom-ident&gt; &lt;integer&gt;? ]+ | none
+Initial: 	none
+Applies to: 	all elements
+Inherited: 	no
+Percentages: 	n/a
+Computed value: 	the keyword none or a list, each item an identifier paired with an integer
+Canonical order: 	per grammar
+Animation type: 	by computed value type
+◎
+User Agents are expected to support this property on all media, including non-visual ones.
+◎
+Name: 	counter-increment
+Value: 	[ &lt;custom-ident&gt; &lt;integer&gt;? ]+ | none
+Initial: 	none
+Applies to: 	all elements
+Inherited: 	no
+Percentages: 	n/a
+Computed value: 	the keyword none or a list, each item an identifier paired with an integer
+Canonical order: 	per grammar
+Animation type: 	by computed value type
+◎
+User Agents are expected to support this property on all media, including non-visual ones.
+◎
+The counter-set and counter-increment properties manipulate the value of existing counters. They only create new counters if there is no counter of the given name on the element yet. Their values are defined as follows:
+◎
+none
+• This element does not alter the value of any counters.
+◎
+&lt;custom-ident&gt; &lt;integer&gt;?
+• The element alters the value of one or more counters on it. If there is not currently a counter of the given name on the element, the element creates a new counter of the given name with a starting value of 0 (though it may then immediately set or increment that value to something different).
+• If an &lt;integer&gt; is provided after an &lt;custom-ident&gt;, it sets the innermost counter of the given name’s value to that integer (for counter-set) or increments the value of the innermost counter of the given name by that integer (for counter-increment). Otherwise, the innermost counter of the given name’s value is set to 0 (for counter-set) or incremented by 1 (for counter-increment).
+</div>
+
+
+<div class="example">
+
+<p>
+次の例に、各 章／節を
+"第 1 章. ", "1.1 節. ", "1.2 節. ",
+等々のように付番する仕方を示す。
+◎
+This example shows a way to number chapters and sections with "Chapter 1", "1.1", "1.2", etc.
+</p>
+
+<pre class="lang-css">
+h1::before {
+    content: "第 " counter(章) " 章. ";
+    counter-increment: 章;  /* <span class="comment">
+章 に  1 を加算する
+◎
+Add 1 to chapter
+</span> */
+    counter-reset: 節;      /* <span class="comment">
+節 を 0 に設定する
+◎
+Set section to 0
+</span> */
+}
+h2::before {
+    content: counter(章) "." counter(節) " 節. ";
+    counter-increment: 節;
+}
+</pre>
+</div>
+
+<p>
+`~counter列$は、他から（例えば， `content$p ~propから）利用されるに先立って，構築するモノトスル。
+`~counter列$は、次の順序で操作される（<a href="#creating-counters">詳細</a>）
+⇒＃
+`継承-$する,
+設定し直す（ `counter-reset^p ）,
+増分する（ `counter-increment^p ）,
+設定する（ `counter-set^p ）
+◎
+Inheriting counters must be done before resetting counters, which must be done before incrementing counters, which must be done before setting counters, which must be done before using counters (for example, in the content property).
+</p>
+
+
+<div class="note">
+<p>注記：
+各種 `counter-*$p ~propは、~cascade法による通常の規則に従う。
+したがって、例えば次の~stylesheetは：
+◎
+The counter properties follow the cascading rules as normal. Thus, due to cascading, the following style sheet:
+</p>
+
+<pre class="lang-css">
+h1 { counter-reset: section -1 }
+h1 { counter-reset: imagenum 99 }
+</pre>
+
+<p>
+`imagenum^v のみを設定し直すことになる。
+両~counterとも設定し直すためには、一緒に指定される必要がある：
+◎
+will only reset imagenum. To reset both counters, they have to be specified together:
+</p>
+
+<pre class="lang-css">
+H1 { counter-reset: section -1 imagenum 99 }
+</pre>
+
+<p>
+同じ原則は、［
+`counter-set$p,
+`counter-increment$p
+］~propにも適用される。
+◎
+The same principles apply to the counter-set and counter-increment properties.
+</p>
+</div>
+
+		</section>
+		<section id="list-item-counter">
+<h3 title="The Implicit list-item Counter">4.2. 暗黙的な `list-item^v ~counter</h3>
+
+<p>
+`~list~item$は、特別な`~counter$
+`list-item@v
+を自動的に増分する。
+`counter-increment$p ~propが
+`list-item$v `~counter$用に
+明示的に異なる増分を指定しない限り、各`~list~item$ごとに
+`~counter$が通常に増分されると同時に 1 増分するモノトスル。
+（これによる各種 `counter-*^p ~propの算出d値に対する効果は無い。）
+◎
+List items automatically increment a special list-item counter. Unless the counter-increment property explicitly specifies a different increment for the list-item counter, it must be incremented by 1 on every list item, at the same time that counters are normally incremented. (This has no effect on the computed values of the counter-* properties.)
+</p>
+
+<div class="example">
+
+<p>
+次の例では、~listは 2 ずつ数えるよう改変されている：
+◎
+In the following example, the list is modified to count by twos:
+</p>
+
+
+<pre class="lang-css">
+ol.evens { counter-increment: list-item 2; }
+</pre>
+
+
+<p>
+~listが 3 個の~itemからなるなら、次のように描画されることになる：
+◎
+A three-item list would be rendered as
+</p>
+
+<pre class="ex-rendering">
+2. First Item
+4. Second Item
+6. Third Item
+</pre>
+</div>
+
+<p class="issue">
+もっと定義が要る。
+旧
+<a href="~CSSissue/2464#issuecomment-375492907">WG 論点</a>,
+より新たな
+<a href="~CSSissue/3686">課題~論点</a>
+を見よ。
+◎
+More definition. See old WG discussions and newer issue discussion.
+</p>
+
+<p>
+~UAと~host言語は、［
+~UA~stylesheet内の~list~itemの~style付け／
+呈示hint~styleの対応付け
+］を設定しておくときに，
+`list-item$v ~counter値が~host言語の意味論により規定される下層の数量-値を反映することを確保するベキである。
+<span class="issue">
+この要件をどう言い表すべきか定かでないが、次の例が働くものと期待される。
+</span>
+◎
+UAs and host languages should ensure that the list-item counter values reflect the underlying numeric value dictated by host language semantics when setting up list item styling in their UA style sheet and presentational hint style mappings. Not really sure how to word this requirement, but the following example is expected to work.
+</p>
+
+<div class="example">
+
+<p>
+次の例では、 `content$p ~propを利用して `list-item$v ~counterの中へ~hookする~~階層的な付番を作成する
+— したがって~HTMLを通して~~課された付番~変更
+【すなわち， `value^a, `start^a, `reversed^a 属性】
+があれば それを尊重する：
+◎
+In the following example, the content property is used to create tiered numbering that hooks into the list-item counter, and thus respects any numbering changes inflicted through HTML:
+</p>
+
+
+<pre class="lang-css">
+ol::marker { content: counters(list-item,'.') '.'; }
+</pre>
+
+<p>
+この規則を利用している入子の~listは、次の様に描画されることになる：
+◎
+Nested lists using this rule would be rendered like
+</p>
+
+<pre class="ex-rendering">
+1. 一個目の第一~level~item
+5. 二個目の第一~level~item（ value=5 ）
+   5.3. 一個目の第二~level~item（~listの start=3 ）
+   5.4. 二個目の第二~level~item（~listの start=3 ）
+        5.4.4. reversed ~list内の一個目の第三~level~item
+        5.4.3. reversed ~list内の二個目の第三~level~item
+        5.4.2. reversed ~list内の三個目の第三~level~item
+        5.4.1. reversed ~list内の四個目の第三~level~item
+   5.5. 三個目の第二~level~item（~listの start=3 ）
+6. 三個目の第一~level~item
+</pre>
+
+<p>
+次のような~markupが与えられたときには：
+◎
+given markup such as
+</p>
+
+<pre class="lang-html">
+&lt;ol&gt;
+  &lt;li&gt;一個目の第一~level~item
+  &lt;li value=5&gt;二個目の第一~level~item（ value=5 ）
+    &lt;ol start=3&gt;
+      &lt;li&gt;一個目の第二~level~item（~listの start=3 ）
+      &lt;li&gt;二個目の第二~level~item（~listの start=3 ）
+         &lt;ol reversed&gt;
+           &lt;li&gt;reversed ~list内の一個目の第三~level~item
+           &lt;li&gt;reversed ~list内の二個目の第三~level~item
+           &lt;li&gt;reversed ~list内の三個目の第三~level~item
+           &lt;li&gt;reversed ~list内の四個目の第三~level~item
+         &lt;/ol&gt;
+      &lt;li&gt;三個目の第二~level~item（~listの start=3 ）
+  &lt;li&gt;三個目の第一~level~item
+&lt;/ol&gt;
+&lt;ol&gt;
+</pre>
+
+<!-- 
+
+
+
+1. First top-level item
+5. Second top-level item, value=5
+   5.3. First second-level item, list start=3
+   5.4. Second second-level item, list start=3
+        5.4.4. First third-level item in reversed list
+        5.4.3. Second third-level item in reversed list
+        5.4.2. Third third-level item in reversed list
+        5.4.1. Fourth third-level item in reversed list
+   5.5. Third second-level item, list start=3
+6. Third top-level item
+
+<ol>
+  <li>First top-level item
+  <li value=5>Second top-level item, value=5
+    <ol start=3>
+      <li>First second-level item, list start=3
+      <li>Second second-level item, list start=3
+         <ol reversed>
+           <li>First third-level item in reversed list
+           <li>Second third-level item in reversed list
+           <li>Third third-level item in reversed list
+           <li>Fourth third-level item in reversed list
+         </ol>
+      <li>Third second-level item, list start=3
+  <li>Third top-level item
+</ol>
+<ol>
+
+ -->
+</div>
+
+		</section>
+		<section id="creating-counters">
+<h3 title="Creating and Inheriting Counters">4.3. ~counter列の作成-法と継承-法</h3>
+
+<div class="p">
+
+<p>
+要素~上の名前 %N の`~counter列$は、以下に与える~algoにより，文書~順序に基づいて帰納的に計算される：
+</p>
+
+<p class="trans-note">【
+すなわち、要素に先行するすべての要素~上の`~counter列$は算出-済みと見做す下で以下を適用する。
+この~algoの目的においては、どの要素にも名前 %N の`~counter列$があるものと見做されるが、結果が空~listならば，要素, それに先行するどの要素も名前 %N の`~counter$を “作成していない” ことを意味する。
+】【
+この節の内容は、原文から全面的に書き換えている。
+】</p>
+
+<ol>
+	<li>
+%L ~LET 空~list
+</li>
+	<li>
+<p>
+（~counter列を
+`継承-@
+する）
+</p>
+
+<p>
+~IF［
+要素は文書の根~要素でない
+］：
+</p>
+		<ol>
+			<li>
+%L ~SET ［
+木~順序で要素の直前の要素
+］の名前 %N の`~counter列$の複製
+</li>
+			<li>
+%L の長さを ［
+要素に前の同胞があるならば その要素 ／
+他の場合は 要素の親
+］上の名前 %N の`~counter列$の長さに切り詰める
+</li>
+		</ol>
+
+<p class="trans-note">【
+1 項目が、原文における “~counter値たちの継承” に対応する。
+2 項目が、原文における “~counterの集合の継承” に対応する
+— この訳では、~counter列の “<em>長さ</em> の継承” として表現しているが。
+】【
+実際に長さが切り詰められるのは、要素の前の同胞が子を持つ（要素の直前の要素は、要素の親でも前の同胞でもない）場合に限られる。
+】【
+実装は，~counter列を実際に複製する必要はないであろう
+— その計算は，要素ごとに一度限りなので。
+しかしながら、その長さは後続する要素~用に記録しておく必要がある。
+】</p>
+	</li>
+	<li>
+~IF［
+要素は~boxを生成しない
+］
+⇒
+~RET %L
+（<a href="#counters-without-boxes">§ ~boxを生成しない要素における~counter</a>を見よ）
+</li>
+	<li>
+( %reset, %increment, %set ) ~LET ( ~NULL, ~NULL, ~NULL )
+</li>
+	<li>
+~IF［
+要素~上の `counter-reset$p 値にて `custom-ident$vt として %N は与えられてる
+］
+⇒
+%reset ~SET ［
+対応する `integer$vt は省略されていなければ その整数 ／
+~ELSE_ 0
+］
+</li>
+	<li>
+~IF［
+要素~上の `counter-increment$p 値にて `custom-ident$vt として %N は与えられてる
+］
+⇒
+%increment ~SET ［
+対応する `integer$vt は省略されていなければ その整数 ／
+~ELSE_ 1
+］
+</li>
+	<li>
+~IF［
+要素~上の `counter-set$p 値にて `custom-ident$vt として %N は与えられてる
+］
+⇒
+%set ~SET ［
+対応する `integer$vt は省略されていなければ その整数 ／
+~ELSE_ 0
+］
+</li>
+	<li>
+~IF［
+%reset ~EQ ~NULL
+］~AND［
+%set ~EQ ~NULL
+］~AND［
+%increment ~EQ ~NULL
+］
+⇒
+~RET %L
+</li>
+	<li id="create-a-new-counter">
+<p>
+（新たな~counter値を “入子にする” ／ 新たな~counterを “作成する”）：
+</p>
+
+<p>
+~IF［
+次のいずれかが満たされる
+］…：
+</p>
+		<ul>
+			<li>
+%L は空である
+</li>
+			<li>
+［
+%reset ~NEQ ~NULL
+］~AND［
+要素に先行するどの同胞も， %L に “値を追加して” いない
+］
+</li>
+		</ul>
+<p>
+…ならば
+⇒
+%L の末尾に値 0 を追加する
+— この要素は %L に “値を追加した” とされる
+</p>
+	</li>
+	<li>
+~IF［
+%reset ~NEQ ~NULL
+］
+⇒
+%L の最後の値 ~SET %reset
+</li>
+	<li>
+~IF［
+%increment ~NEQ ~NULL
+］
+⇒
+%L の最後の値 ~INCBY %increment
+</li>
+	<li>
+~IF［
+%set ~NEQ ~NULL
+］
+⇒
+%L の最後の値 ~SET %set
+</li>
+	<li>
+~RET %L
+</li>
+</ol>
+
+◎
+Every element has a (possibly empty) set of counters. Like many other CSS values, an element can inherit counters from another element. However, unlike other CSS values, the method that counters are inherited is somewhat complex. A counter and its value are inherited separately, possibly from different elements.
+◎
+If an element has a previous sibling, it must inherit all of the sibling’s counters. Otherwise, if the element has a parent, it must inherit all of the parent’s counters. Otherwise, the element must have an empty set of counters.
+◎
+The element then inherits counter values from the immediately preceding element in document order. This must be done by examining the set of counters that the immediately preceding element has, and, for every counter that exists in both the element’s set and the preceding element’s set, giving the element’s counter the same value. (If an element is the first element in the document, and thus has no immediately preceding element, it also doesn’t have a parent or a previous sibling, and thus no counters to begin with.)
+◎
+Take the following code as an example:
+
+&lt;ul style='counter-reset: example 0;'&gt;
+  &lt;li id='foo' style='counter-increment: example;'&gt;
+    foo
+    &lt;div id='bar' style='counter-increment: example;'&gt;bar&lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li id='baz'&gt;
+    baz
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+Recall that "in document order" turns a document tree into an ordered list, where an element comes before its children, and its children come before its next sibling. In other words, for a language like HTML, its the order in which the parser encounters start tags as it reads the document.
+
+In here, the ul element establishes a new counter named "example", and sets its value to 0. The "foo" element, being the first child of the ul, inherits this counter. Its parent is also its immediately preceding element in document order, so it inherits the value 0 with it, and then immediately increments the value to 1.
+
+The same happens with the "bar" element. It inherits the "example" counter from "foo", and inherits the value 1 from it as well and increments it to 2.
+
+However, the "baz" element is a bit different. It inherits the "example" counter from the "foo" element, its previous sibling. However, rather than inheriting the value 1 from "foo" along with the counter, in inherits the value 2 from "bar", the previous element in document order.
+
+This behavior allows a single counter to be used throughout a document, continuously incrementing, without the author having to worry about the nested structure of their document.
+
+◎
+Elements can create additional counters on themselves, which can then be passed onto siblings or children. To create a new counter, specify an element that’s creating it, a name, and a starting value. The effect depends on what other counters of that name exist on the element:
+• If no counters of that name exist on the element, create a new counter with that name on the element.
+• Otherwise, if a counter of that name exists on the element, and it was created by a preceding sibling, replace the innermost counter of that name on the element with a newly-created counter with that name.
+• Otherwise, create a new counter with that name and nest it inside of the innermost counter with that name.
+◎
+Regardless, the value of the new counter is set to the provided starting value.
+</div>
+
+<div class="example">
+
+<p>
+次の図式に、要素~木に上の~algoを適用した結果の挙動を例示する
+（図式のどこでも，クリックすれば、木~構造をランダムに組み替えることができる）：
+</p>
+
+`ex-counter-tree@
+
+<p>
+この図式の見方は：
+</p>
+
+<ul>
+	<li>
+図式を成す各~行が 1 個の要素に対応し，入子ng~levelに応じて字下げされている。
+</li>
+	<li>
+行頭に赤く呈示される括弧で括られた整数~列は、利用-中の~UAが実際に要素にあてがっている，ある名前の`~counter列$を表す。
+この呈示には、 `counters$f 関数の出力が利用されている。
+その定義により、空の`~counter列$は 1 個の 0 からなる~counter列と扱われ、この図式では "(0)" と呈示されることに注意。
+</li>
+	<li>
+その次に “=” を挟んで示される，括弧で括られた整数~列は、この節に与えた~algoから導出される`~counter列$を表す。
+~UAがそれに正確に従うならば、前項の整数~列は
+— "(0)" は "()" に等価になることを除いて —
+この整数~列と一致するべきである。
+【しかしながら、一致しない~UAがある（下に示す）。】
+</li>
+	<li>
+<p>
+行末に示される文字列［
+"reset" ／ "increment"
+］は、当の要素に，~counter列を操作する［
+`counter-reset$p ／ `counter-increment$p
+］~propが（同じ名前の~class名を通して）あてがわれていることを表す：
+</p>
+		<ul>
+			<li>
+`counter-reset$p が設定する~counter値は、常に 1 である。
+（ 1 にしている理由は、`~counter列$が空のときに呈示される "(0)" と区別するため）
+</li>
+			<li>
+`counter-increment$p による増分は、常に 1 （既定~値）である。
+</li>
+		</ul>
+
+<p>
+ここでは、 `counter-set$p については扱っていない
+— 現時点では、~supportする~UAがないように見受けられるので。
+</p>
+
+	</li>
+</ul>
+
+<p>
+この図式に利用されている~styleは（
+`#root^css は図式を成す要素~木の根の id ／
+%N は~counterの名前
+）：
+</p>
+
+<pre class="lang-css">
+#root * {
+  display: block;
+  border-left: groove #EEE 1em;
+}
+#root *::before {
+  content: "(" counters(%N, ".") ") = ";
+  color: red;
+}
+#root *.reset     { counter-reset: %N 1; }
+#root *.increment { counter-increment: %N; }
+</pre>
+
+</div>
+
+<div class="trans-note">
+
+<p>【
+現時点では、~counter列が空のまま， 2 階~以上~入子にされた場合に一致しない~UAがある。
+】</p>
+
+<p>
+具体的には、次の~HTML片が与えられたとき（~textは、期待される~counter列を指示する）：
+</p>
+
+<pre class="lang-html">
+&lt;div id="root"&gt;
+  &lt;div&gt;()
+    &lt;div&gt;()
+      &lt;div class="reset"&gt;(1)&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div&gt;()
+    &lt;div&gt;()
+      &lt;div class="increment"&gt;(1)&lt;/div&gt;
+      &lt;div class="reset"&gt;(1)&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div&gt;()&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</pre>
+
+<p>
+この~HTML片を，上に与えた~styleの下で利用中の~UAで呈示した結果
+— ※ を付与した箇所は、一致しないかもしれない：
+</p>
+
+<div class="ex-counter-tree">
+	<div>()
+		<div>()
+			<div class="x-reset">(1) ※</div>
+		</div>
+	</div>
+	<div>()
+		<div>()
+			<div class="x-increment">(1)</div>
+			<div class="x-reset">(1) ※</div>
+		</div>
+		<div>() ※</div>
+	</div>
+</div>
+
+<p>
+（上の~HTMLから `#root^css 直下の要素を剥がしたときは、期待される挙動になるので，上の呈示の説明がつかない）
+</p>
+
+<div class="ex-counter-tree">
+	<div>()
+		<div class="x-reset">(1) ※</div>
+	</div>
+	<div>()
+		<div class="x-increment">(1)</div>
+		<div class="x-reset">(1) ※</div>
+	</div>
+	<div>() ※</div>
+</div>
+
+</div>
+
+
+		</section>
+		<section id="nested-counters">
+<h3 title="Nested Counters">4.4. 入子の~counter</h3>
+
+<p>
+前~節に述べた `~counter列$の挙動により、~HTMLにおける~listの様な入子の構造をそのまま反映する付番も容易になる。
+後の節で説明されるように、要素~上の所与の名前の`~counter列$ %L に対し：
+`counter$f 関数は %L の最後の値のみを利用する一方で，
+`counters$f 関数は %L 内のすべての値を利用する。
+◎
+Counters are "self-nesting"; creating a new counter in an element which already has a counter with the same name simply creates a new counter of the same name, nested inside the existing counter. This is important for situations like lists in HTML, where lists can be nested inside lists to arbitrary depth. It would be impossible to define uniquely named counters for each level. As explained in a later section, the counter() function only uses the innermost counter of a given name on the element, but the counters() function uses all counters of a given name that contain the element.
+</p>
+
+<div class="example">
+<p>
+入子の~list~itemたちを付番するには，次のもので十分になる。
+その結果は、［
+`LI^e 要素~上に
+<code class="css">`display^p: `list-item^v; `list-style$p: `inside^v</code>
+を設定したとき
+］の付番とよく似る：
+◎
+Thus, the following suffices to number nested list items. The result is very similar to that of setting display:list-item and list-style: inside on the LI element:
+</p>
+
+<pre class="lang-css">
+ol { counter-reset: item }
+li { display: block }
+li::before { content: counter(item) ". "; counter-increment: item }
+</pre>
+
+<p>
+この例では、 `ol$e は名前 `item^css の`~counter列$に新たな値 0 を追加し、そのすべての子 `li^e は，同じ`~counter列$を継承しつつ，（追加された）最後の値に 1 を加算することになる。
+◎
+In this example, an ol will create a counter, and all children of the ol will refer to that counter.
+</p>
+
+<p>
+上の~stylesheetの下では、次の~HTML片は，各~要素に指示される名前 "`item^v" の`~counter列$（括弧で括って示される）を利用することになる。
+◎
+If we denote the nth instance of the "item" counter by item[n], then the following HTML fragment will use the indicated counters. (We assume the style sheet as given in the example above).
+</p>
+
+<!-- 
+<div class="ol">
+
+ -->
+<div id="counter-nesting-example">
+ <div class="ol">`ol^e ： [0] （追加）
+  <div class="li">`li^e： [1]</div>
+  <div class="li">`li^e： [2]
+   <div class="ol">`ol^e ： [2, 0] （追加）
+    <div class="li">`li^e： [2, 1]</div>
+    <div class="li">`li^e： [2, 2]</div>
+    <div class="li">`li^e： [2, 3]
+     <div class="ol">`ol^e ： [2, 3, 0] （追加）
+      <div class="li">`li^e： [2, 3, 1]</div>
+     </div>
+    </div>
+    <div class="li">`li^e： [2, 4]
+     <div class="ol">`ol^e ： [2, 4, 0] （追加）
+      <div class="li">`li^e： [2, 4, 1]</div>
+     </div>
+    </div>
+    <div class="li">`li^e： [2, 5]</div>
+   </div>
+  </div>
+  <div class="li">`li^e： [3]</div>
+  <div class="li">`li^e： [4]</div>
+ </div>
+ <div class="ol">`ol^e ： [0] （先行する同胞で追加されているので、追加しない）
+  <div class="li">`li^e： [1]</div>
+  <div class="li">`li^e： [2]</div>
+ </div>
+</div>
+
+<!-- 
+
+ol item[0] is created, set to 0
+li item[0] is incremented to 1
+li item[0] is incremented to 2
+ol item[1] is created, set to 0, nested in item[0]
+li item[1] is incremented to 1
+li item[1] is incremented to 2
+li item[1] is incremented to 3
+ol item[2] is created, set to 0, nested in item[1]
+li item[2] is incremented to 1
+li item[1] is incremented to 4
+ol item[3] is created, set to 0, nested in item[1]
+li item[3] is incremented to 1
+li item[1] is incremented to 5
+li item[0] is incremented to 3
+li item[0] is incremented to 4
+ol item[4] is created, set to 0
+li item[4] is incremented to 1
+li item[4] is incremented to 2
+-->
+
+
+</div>
+
+
+		</section>
+		<section id="counters-without-boxes">
+<h3 title="Counters in elements that do not generate boxes">4.5. ~boxを生成しない要素における~counter</h3>
+
+<p>
+~boxを生成しない要素（例：
+`display$p が
+<a href="~CSSDISP#valdef-display-none">`none^v</a>
+に設定された要素 ／
+`content$p が `none$v2 に設定された疑似要素）は、`~counter列$を［
+設定する ／ 設定し直す ／ 増分する
+］ことはできない。
+`counter-*$p ~propは、そのような要素でも依然として妥当であるが，それらによる効果はないモノトスル。
+◎
+An element that does not generate a box (for example, an element with display set to none, or a pseudo-element with content set to none) cannot set, reset, or increment a counter. The counter properties are still valid on such an element, but they must have no effect.
+</p>
+
+<div class="example">
+<p>
+例えば次の~stylesheetでは、 `secret^css ~classのどの `H2^e も， `count2^v を増分しなくなる。
+◎
+For example, with the following style sheet, H2s with class "secret" do not increment count2.
+</p>
+
+<pre class="lang-css">
+h2 { counter-increment: count2; }
+h2.secret { display: none; }
+</pre>
+
+</div>
+
+<p>
+`visibility$p を `hidden^v に設定するなどの，要素を “隠す” だけのものは、要素に~boxを生成させるので，このことは適用されない。
+◎
+Other methods of "hiding" elements, such as setting visibility to hidden, still cause the element to generate a box, and so do not apply here.
+</p>
+
+
+		</section>
+		<section id="counter-functions">
+<h3 title="Outputting Counters: the counter() and counters() functions">4.6. ~counterの出力-法： `counter^f, `counters^f 関数</h3>
+
+<p>
+~counterそれ自体は可視~効果を伴わないが、それらの値は［
+`counter$f ／ `counters$f
+］関数で利用できる
+— それは、文字列や画像としての~counter値を表現する。
+これらの構文は：
+◎
+Counters have no visible effect by themselves, but their values can be used with the counter() and counters() functions, which represent the counter values as strings or images. Their syntax is:
+</p>
+
+<pre class="prod">
+`counter@t
+    = `counter()$t | `counters()$t
+`counter@f
+    = counter( `custom-ident$t, [ `counter-style$t | `none^v ]? )
+`counters@f
+    = counters( `custom-ident$t, `string$t, [ `counter-style$t | `none^v ]? )
+</pre>
+
+<p>
+両~関数のいずれも、最初の `custom-ident$t 引数が~counterの名前を表現し，最後の `counter-style$t 引数が省略された場合の既定は `decimal$v になる。
+◎
+For both functions, the first argument represents the name of a counter, and if the last argument is omitted it defaults to decimal.
+</p>
+
+<p>
+`counter$f 関数の使用~値は、次に従って得られる：
+◎
+The used value of counter() is obtained as follows:
+</p>
+
+<ol>
+	<li>
+( %N, %style ) ~LET 関数の ( 1 個目, 2 個目 ) の引数
+◎
+↓</li>
+	<li>
+~IF［
+%style ~EQ `none^v
+］
+⇒
+~RET 空~文字列
+◎
+If the second argument to the function is none, the function represents the empty string.
+</li>
+	<li>
+%数 ~LET 要素~上の名前 %N の`~counter列$が［
+空でなければ その最後の値 ／
+~ELSE_ 0
+］
+◎
+↓</li>
+	<li>
+~RET %style を利用して %数 用の`~counter表現を生成-$した結果
+◎
+Otherwise, the function represents the string returned when one generates a counter representation for the value of the innermost counter of that name on the element (or 0 if the element has no counter of that name) using the &lt;counter-style&gt; specified by the second argument.
+</li>
+</ol>
+
+<div class="example">
+
+<pre class="lang-css">
+H1::before        { content: counter(章, upper-latin) ". " }
+/* <span class="comment">
+"A. A History of Discontent"
+の様な見出しを生成する。
+◎
+Generates headings like "A. A History of Discontent"
+</span> */
+
+H2::before        { content: counter(節, upper-roman) " - " }
+/* <span class="comment">
+"II - The Discontent Part"
+の様な見出しを生成する。
+◎
+Generates headings like "II - The Discontent Part"
+</span> */
+
+BLOCKQUOTE::after { content: " [" counter(引用, decimal) "]" }
+/* <span class="comment">
+"... [3]"
+で終端する様な引用~塊を生成する
+◎
+Generates blockquotes that end like "... [3]"
+</span> */
+
+DIV.note::before  { content: counter(notecntr, disc) " " }
+/* <span class="comment">
+単純に，どの `div.note^css の前にも~bulletを生成する
+◎
+Simply generates a bullet before every div.note
+</span> */
+
+P::before         { content: counter(p, none) }
+/* <span class="comment">
+何も挿入しない
+◎
+inserts nothing
+</span> */
+</pre>
+   </div>
+
+<p>
+`counters$f 関数の使用~値は、次に従って得られる：
+◎
+The used value of counters() is obtained as follows:
+</p>
+
+<ol>
+	<li>
+( %N, %区切り, %style ) ~LET 関数の ( 1 個目, 2 個目, 3 個目 ) の引数
+◎
+↓</li>
+	<li>
+~IF［
+%style ~EQ `none^v
+］
+⇒
+~RET 空~文字列
+◎
+If the third argument to the function is none, the function represents the empty string.
+</li>
+	<li>
+%L ~LET 要素~上の名前 %N の`~counter列$
+◎
+↓</li>
+	<li>
+~IF［
+%L は空である
+］
+⇒
+%L ~SET 0 のみからなる~list
+◎
+Otherwise, if the element has no counters of that name, the function represents the string returned when one generates a counter representation for 0 using the &lt;counter-style&gt; specified by the third argument.
+</li>
+	<li>
+~RET ［
+%style を利用して%L 内の各~counter値~用の`~counter表現を生成-$した結果
+］からなる各~文字列を，順に %区切り で~~区切って一つの文字列に連結した結果
+◎
+Otherwise, if the element has a single counter of that name, the function represents the string returned when one generates a counter representation for that counter’s value using the &lt;counter-style&gt; specified by the third argument.
+◎
+Otherwise, generate a counter representation for the values of all counters of the given name on the element using the &lt;counter-style&gt; specified by the third argument. Sort the resulting strings by the nesting depth of the counters they were generated from, with the outermost counter first and the innermost last. Join the list into a single string, inserting the &lt;string&gt; specified by the second argument between each item in the list. The function represents the string thus produced.
+</li>
+</ol>
+
+<div class="example">
+<p>
+`counters$f 関数の単純な利用を次の例に示す：
+◎
+The following example shows a simple use of the counters() function:
+</p>
+
+<pre class="lang-html">
+&lt;ul&gt;
+  &lt;li&gt;一&lt;/li&gt;
+  &lt;li&gt;二
+    &lt;ul&gt;
+      &lt;li&gt;入子の一&lt;/li&gt;
+      &lt;li&gt;入子の二&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;三&lt;/li&gt;
+&lt;/ul&gt;
+&lt;style&gt;
+li::marker { content: '(' counters(list-item,'.') ') '; }
+&lt;/style&gt;
+</pre>
+
+<p>
+前掲の文書は、次の様に描画されるべきである：
+◎
+The preceding document should render something like this:
+</p>
+
+<pre class="ex-rendering">
+(1) 一
+(2) 二
+   (2.1) 入子の一
+   (2.2) 入子の二
+(3) 三
+</pre>
+
+<!-- 
+(1) one
+(2) two
+   (2.1) nested one
+   (2.2) nested two
+(3) three
+-->
+
+</div>
+
+<div class="example">
+<p>
+各`~counter列$は後続の同胞に継承されるので、それらは入子の関係にない見出しと下位~見出しを付番するときにも利用できる。
+あいにく， `counters$f には、これを利用できない
+— 同胞からの `counter-*$p ~propは、`~counter列$の長さを変えないので。
+が、代わりに複数の~counter名を用いて手動で連結すれば可能になる：
+◎
+Because counters inherit to siblings as well, they can be used to number headings and subheadings, which aren’t nested within each other. Unfortunately, this prevents the use of counters() as counters from siblings don’t nest, but one can create multiple counters and manually concatenate them instead:
+</p>
+
+<pre class="lang-html">
+&lt;h1&gt;一個目の H1&lt;/h1&gt;
+...
+&lt;h2&gt;H1 の中の一個目の H2&lt;/h2&gt;
+...
+&lt;h2&gt;H1 の中の二個目の H2&lt;/h2&gt;
+...
+&lt;h3&gt;H2 の中の一個目の H3&lt;/h3&gt;
+...
+&lt;h1&gt;二個目の H1&lt;/h1&gt;
+...
+&lt;h2&gt;一個目の H2&lt;/h2&gt;
+...
+&lt;style&gt;
+body { counter-reset: h1 h2 h3; }
+h1   { counter-increment: h1; counter-reset: h2 h3;}
+h2   { counter-increment: h2; counter-reset:    h3; }
+h3   { counter-increment: h3; }
+h1::before { content: counter(h1,upper-alpha) '. '; }
+h2::before { content: counter(h1,upper-alpha) '.'
+                      counter(h2,decimal) '. '; }
+h3::before { content: counter(h1,upper-alpha) '.'
+                      counter(h2,decimal) '.'
+                      counter(h3,lower-roman) '. '; }
+&lt;/style&gt;
+</pre>
+<!-- 
+<h1>First H1</h1>
+...
+<h2>First H2 in H1</h2>
+...
+<h2>Second H2 in H1</h2>
+...
+<h3>First H3 in H2</h3>
+...
+<h1>Second H1</h1>
+...
+<h2>First H2 in H1</h2>
+...
+-->
+<p>
+前掲の文書は、次の様に描画されるべきである：
+◎
+The preceding document should render something like this:
+</p>
+
+<pre class="ex-rendering">
+A. 一個目の H1
+...
+A.1. H1 の中の一個目の H2
+...
+A.2. H1 の中の二個目の H2
+...
+A.2.i. H2 の中の一個目の H3
+...
+B. 二個目の H1
+...
+B.1. H1 の中の一個目の H2
+...
+</pre>
+
+<!-- 
+A First H1
+...
+A.1 First H2 in H1
+...
+A.2 Second H2 in H1
+...
+A.2.i First H3 in H2
+...
+B Second H1
+...
+B.1 First H2 in H1
+...
+-->
+</div>
+
+<div class="issue">
+<p>
+~counterは、印刷~marker以外のものにもときどき有用になる。
+それは一般に，一連の要素を付番する能を供し、他の~propを参照するときにも有用になり得る。
+例えば `order$p を利用して，要素を他の 2 つの特定の要素の合間に置くためには、現在では，欲される挿入点の前／後にある要素ごとに `order$p を明示的に与えることが要求される。
+どの `order$p 値にも~counterを設定できれば、より容易に，要素を 任意の他の 2 つの合間の~~地点に挿入できる。
+◎
+Counters are sometimes useful for things other than printing markers. In general, they provide the ability to number elements in sequence, which can be useful for other properties to reference. For example, using order to put an element between two other specific elements currently requires you to explicitly put order on every element before and/or after the desired insertion point. If you can set the order value of everything to a counter, tho, you can more easily insert an element into an arbitrary spot between two others.
+</p>
+
+<p>
+他にも、入子にされた, あるいは同胞の要素たちに，互いに少しずつ異なる変形を与える利用-事例がある。
+今日、これを適度な仕方で行うためには，前処理器を利用する必要があるが、~counterを使えば “素の” ~CSSでも上手く働くようになる。
+◎
+Other use-cases involve nested or sibling elements with transforms that are meant to be slightly different from each other. Today you have to use a preprocessor to do this in a reasonable way, but a counter would make it work well in "plain" CSS.
+</p>
+
+<p>
+（入子にされた事例については、今日では，`~custom~prop$と多段に入子にされた `calc$f を利用すれば，一連の値を築き上げれるが、これはちょっとぶかっこうになる。また、同胞に対しては働かない。）
+◎
+(You can built up successive values in the nested case today by using custom properties and stacking up nested calc()s, but this is a *little bit* clumsy, and doesn’t work for siblings.)
+</p>
+
+<p>
+有名~counterの値を文字列ではなく整数として返す
+<code class="css">counter-value(`custom-ident$t)</code>
+関数の追加が示唆されている。
+◎
+Suggestion is to add a counter-value(&lt;ident&gt;) function, which returns the value of the named counter as an integer, rather than returning a string.
+</p>
+
+<p>
+`1026$issue
+を見よ。
+◎
+See Issue 1026.
+</p>
+
+</div>
+
+
+		</section>
+	</section>
+	<section id="ua-stylesheet">
+<h2 title="Sample style sheet for HTML">5. ~HTML用の見本~stylesheet</h2>
+
+~INFORMATIVE
+
+<p><em>
+~HTML自身は、~HTML~listに適用される，実際の既定の~propたちを定義する。
+</em>
+【参照：<a href="~HTMLrendering#lists">~HTMLが規定する~list用の~UA~stylesheet</a>】
+◎
+HTML itself defines the actual default properties that apply to HTML lists.
+</p>
+
+<pre class="lang-css">
+/* <span class="comment">
+~list~itemたちを設定しておく
+◎
+Set up list items
+</span> */
+li {
+  display: list-item;
+  /* <span class="comment">
+`counter-increment^p: `list-item^v;
+( `display^p: `list-item^v によりimplyされる）
+◎
+counter-increment: list-item; (implied by display: list-item)
+</span> */
+}
+
+/* <span class="comment">
+`list-item^v ~counterを設定し直すように， `ol^e と `ul^e を設定しておく
+◎
+Set up ol and ul so that they reset the list-item counter
+</span> */
+ol, ul {
+  counter-reset: list-item;
+}
+
+/* <span class="comment">
+有順序~listに対する既定の~list~style型
+◎
+Default list style types for ordered lists
+</span> */
+ol {
+  list-style-type: decimal;
+}
+
+/* <span class="comment">
+無順序~listに対する 深さ 3 までの既定の~list~style型
+◎
+Default list style types for unordered lists up to 3 deep
+</span> */
+ul { list-style-type: disc; }
+ul ul { list-style-type: square; }
+ul ul ul { list-style-type: circle; }
+/* <span class="comment">
+あるいは、 `CSS-VALUES-3$r を~supportするならば、上の 3 行を次に置換する
+<span class="trans-note">【
+現在のその仕様では、 `cycle^f ではなく， `toggle$f
+】</span>
+：
+◎
+Alternately, if Values &amp; Units Level 3 is supported, replace the above three lines with:
+</span> */
+ul { list-style-type: disc; }
+ul ul { list-style-type: cycle(disc, square, circle); }
+
+/* <span class="comment">
+`ol^e ／ `ul^e 要素~上の `type^a 属性 
+◎
+The type attribute on ol and ul elements
+</span> */
+ul[type="disc"] { list-style-type: disc; }
+ul[type="circle"] { list-style-type: circle; }
+ul[type="square"] { list-style-type: square; }
+ol[type="1"] { list-style-type: decimal; }
+ol[type="a"] { list-style-type: lower-alpha; }
+ol[type="A"] { list-style-type: upper-alpha; }
+ol[type="i"] { list-style-type: lower-roman; }
+ol[type="I"] { list-style-type: upper-roman; }
+
+/* <span class="comment">
+`ol^e 要素~上の `start^a 属性
+
+◎
+The start attribute on ol elements
+</span> */
+ol[start] {
+  counter-reset: list-item calc(attr(start integer, 1) - 1);
+}
+
+/* <span class="comment">
+`li^e 要素~上の `value^a 属性
+◎
+The value attribute on li elements
+</span> */
+li[value] {
+  counter-set: list-item attr(value integer, 1);
+  counter-increment: none; /* <span class="comment">
+既定の増分を~~切る
+◎
+Turn off default increase
+</span> */
+}
+
+/* <span class="comment">
+逆順の~listの取扱い
+◎
+Handling reversed lists
+</span> */
+ol[reversed] {
+  counter-reset: list-item calc(attr(start integer, %magic) + 1);
+  /* <span class="comment">
+ここでの %magic は、子 `li^e 要素の個数。
+◎
+Where **magic** is the number of child &lt;li&gt; elements.
+</span> */
+}
+ol[reversed] > li {
+  counter-increment: list-item -1;
+}
+
+/* <span class="comment">
+~box~model規則
+◎
+Box Model Rules
+</span> */
+ol, ul {
+  display: block;
+  margin: 1em 0;
+  marker-side: list-container;
+}
+
+ol:dir(ltr), ul:dir(ltr) {
+  padding-left: 40px;
+}
+ol:dir(rtl), ul:dir(rtl) {
+  padding-right: 40px;
+}
+
+ol ol, ol ul, ul ul, ul ol {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+li {
+  text-align: match-parent;
+}
+
+li::marker {
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+</pre>
+
+	</section>
+	<section id="acknowledgments">
+<h2 title="Acknowledgments">謝辞</h2>
+
+<p>
+次の方々に。
+彼らの手による文書化は、付番~systemを定義するときにとても役立った：
+</p>
+
+<div lang="en-x-a0">
+The following people and documentation they wrote were very useful for defining the numbering systems: Alexander Savenkov, Arron Eicholz, Aryeh Gregor, Frank Tang, Jonathan Rosenne, Karl Ove Hufthammer, Musheg Arakelyan, Nariné Renard Karapetyan, Randall Bart, Richard Ishida, Simon Montagu (Mozilla, smontagu@smontagu.org)
+</div>
+
+
+	</section>
+	<section id="changes">
+<h2 title="Changes">変更点</h2>
+
+<p>
+この節では、以前の発行版からの変更点を文書化する。
+◎
+This section documents the changes since previous publications.
+</p>
+
+		<section id="changes-20140320">
+<h2 title="Changes since the 20 March 2014 WD">2014年 3月 20日 WD からの変更点</h2>
+
+<ul>
+	<li>
+~counter名には `custom-ident$t を一貫して利用するようにした。
+◎
+Use &lt;custom-ident&gt; consistently for counter names.
+</li>
+	<li>
+`position$p を落とした（~markerの位置決めは、今や，~CSS-2と同じく ほぼ定義されない）。
+◎
+Dropped position: marker (marker positioning is now mostly undefined, as in CSS2).
+</li>
+	<li>
+~marker用の節を完全に書き直した：
+それを整備し，現在の期待に揃うようにし，編集上の改善を施した。
+◎
+Completely rewrote chapter on markers to tighten it up, align with current expectations, and make editorial improvements.
+</li>
+	<li>
+`list-item$v ~counter定義を自前の節の中に取り込み，いくつか例を追加し，いくつか明確化した。
+◎
+Pulled the list-item counter definition into its own section, added examples, and made some clarifications.
+</li>
+	<li>
+`marker-side$p の値を［
+~box／~text
+］整列における慣行に合致するよう改称した。
+◎
+Renamed values of marker-side to match conventions from box/text alignment.
+</li>
+	<li>
+`counter-set$p は `counter-increment$p より後に適用するものと定義した
+— より前ではなく。
+（ `3810$issue ）
+◎
+Defined that counter-set is applied after counter-increment rather than before. (Issue 3810)
+</li>
+	<li>
+`list-style$p 直列化の正準的な順序を
+— `list-style-type$p が最後になるよう —
+確立した。
+（ `2624$issue ）
+◎
+Established the canonical order of list-style serialization to put &lt;'list-style-type'&gt; last. (Issue 2624)
+</li>
+</ul>
+
+		</section>
+		<section id="changes-from-css2">
+<h2 title="Changes From CSS Level 2">~CSS~level 2 からの変更点</h2>
+
+<p>
+序論~節にて述べたように、この~moduleには，
+CSS2.1 に比して有意な変更点がある：
+◎
+As described in the introduction section, there are significant changes in this module when compared to CSS2.1.
+</p>
+
+<ul>
+	<li>
+~list~markerに直に~styleできるようにするため、
+`marker$pe 疑似要素が導入された。
+◎
+The ::marker pseudo-element has been introduced to allow styling of the list marker directly.
+</li>
+	<li>
+`list-style-type$p は、今や，
+`string$t, および
+`css-counter-styles-3$r により拡張された `counter-style$t 値を受容する。
+◎
+list-style-type now accepts a &lt;string&gt; as well as the extended &lt;counter-style&gt; values from [css-counter-styles-3]..
+</li>
+	<li>
+定義済みの~counter識別子として `list-item^v が導入された。
+◎
+The list-item predefined counter identifier has been introduced.
+</li>
+	<li>
+`counter-set$p ~propが追加された。
+◎
+The counter-set property has been added.
+</li>
+	<li>
+`css-display-3$r に導入された`行内level$の`~list~item$を許容した。
+◎
+Allowed for inline-level list items, as introduced in [css-display-3]. 
+</ul>
+
+		</section>
+	</section>
+</main></div>
