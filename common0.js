@@ -1193,7 +1193,10 @@ INDEXEDDB:IndexedDB-ja.html
 PROMISES:promises-guide-ja.html
 TIMELINE:performance-timeline-ja.html
 HRTIME:hr-time-ja.html
+NAV-TIMING:navigation-timing-ja.html
+RESOURCE-TIMING:resource-timing-ja.html
 PAGE-VISIBILITY:page-visibility-ja.html
+RESOURCE-HINTS:resource-hints-ja.html
 FEATUREPOLICY:feature-policy-ja.html
 REFERRER-POLICY:webappsec-referrer-policy-ja.html
 MIXED-CONTENT:webappsec-mixed-content-ja.html
