@@ -919,10 +919,11 @@ Util.ref_position = {
 			/*
 表示切替後の基準位置となる要素は id を持つもののみを対象にする
 精度が落ちる代わりにページ内容が置換される場合にも対応する
-	課題
-			SVG 画像が object タグで埋め込まれている場合は切替後の表示位置がずれる
 */
-			while(!e.id && e.offsetParent){
+			while(
+				(!e.id && e.offsetParent )
+				|| (e.offsetHeight === 0 ) /* 例：tbody */
+			){
 				e = e.parentNode;
 			}
 			return {
