@@ -1104,6 +1104,7 @@ CSSPAGE:css-page-ja.html
 CSSPOS:https://drafts.csswg.org/css-position-3/
 CSSRUBY:css-ruby-ja.html
 CSSREGION:https://drafts.csswg.org/css-regions-1/
+CSSSCOPING:css-scoping-ja.html
 CSSSCROLLSNAP:css-scroll-snap-ja.html
 CSSSHAPES:css-shapes-ja.html
 CSSSNAPSHOT:css-snapshot-ja.html
