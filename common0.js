@@ -991,13 +991,12 @@ IF:<b>IF</b>
 ELSE:<b>ELSE</b>
 ELIF:<b>ELSE IF</b>
 ELSE_:他の場合は
-OTHER:その他
-FOR: 
 EACH:<b>各</b>
 GOTO:<b>GOTO</b>
 BREAK:<b>BREAK</b>
 CONTINUE:<b>CONTINUE</b>
 此れ:<b>これ°</b>
+コレ:<b>これ°</b>
 Assert:<b>Assert</b>
 ABRUPT:<b>?</b>
 NOABRUPT:<b>!</b>
@@ -1082,6 +1081,7 @@ CSSBG:css-backgrounds-ja.html
 CSSBREAK:css-break-ja.html
 CSSCOLOR:css-color-ja.html
 CSSCOND:css-conditional-ja.html
+CSSCONTAIN:css-contain-ja.html
 CSSCOUNTER:css-counter-styles-ja.html
 CSSDISP:css-display-ja.html
 CSSEXCLUSION:css-exclusions-ja.html
@@ -1104,6 +1104,8 @@ CSSPAGE:css-page-ja.html
 CSSPOS:https://drafts.csswg.org/css-position-3/
 CSSRUBY:css-ruby-ja.html
 CSSREGION:https://drafts.csswg.org/css-regions-1/
+CSSSCROLLSNAP:css-scroll-snap-ja.html
+CSSSHAPES:css-shapes-ja.html
 CSSSNAPSHOT:css-snapshot-ja.html
 CSSPSEUDO:css-pseudo-ja.html
 CSSSTYLEATTR:css-style-attr-ja.html
@@ -1114,6 +1116,7 @@ CSSEASING:css-easing-ja.html
 CSSUI:css-ui-ja.html
 CSSVAL:css-values-ja.html
 CSSVAR:css-variables-ja.html
+CSSWILLCHANGE:css-will-change-ja.html
 CSSWM:css-writing-modes-ja.html
 SELECTORS4:selectors4-ja.html
 SIZING:css-sizing-ja.html
