@@ -532,6 +532,7 @@ LS: 'Living Standard',
 		case 'html.spec.whatwg.org':
 			html = '<a href="https://whatwg.org/" id="_WHATWG">WHATWG</a>';
 			isHTML = true;
+			break;
 		default:
 			return;
 		}
