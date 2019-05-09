@@ -279,7 +279,6 @@ I.SVGTransform:~SVGcoords#InterfaceSVGTransform
 I.SVGTransformList:~SVGcoords#InterfaceSVGTransformList
 I.SVGURIReference:~SVGtypes#InterfaceSVGURIReference
 I.SVGUnitTypes:~SVGtypes#InterfaceSVGUnitTypes
-I.SVGUnknownElement:~SVGstruct#InterfaceSVGUnknownElement
 I.SVGUseElement:~SVGstruct#InterfaceSVGUseElement
 I.SVGUseElementShadowRoot:~SVGstruct#InterfaceSVGUseElementShadowRoot
 I.SVGViewElement:~SVGlinking#InterfaceSVGViewElement
@@ -322,8 +321,6 @@ e.a:~SVGlinking#AElement
 e.animate:~SVGanim#AnimateElement
 e.animateMotion:~SVGanim#AnimateMotionElement
 e.animateTransform:~SVGanim#AnimateTransformElement
-e.audio:~SVGembedded#HTMLElements
-e.canvas:~SVGembedded#HTMLElements
 e.circle:~SVGshapes#CircleElement
 e.clipPath:~MASKING1#ClipPathElement
 e.defs:~SVGstruct#DefsElement
@@ -332,7 +329,6 @@ e.discard:~SVGanim#DiscardElement
 e.ellipse:~SVGshapes#EllipseElement
 e.foreignObject:~SVGembedded#ForeignObjectElement
 e.g:~SVGstruct#GElement
-e.iframe:~SVGembedded#HTMLElements
 e.image:~SVGembedded#ImageElement
 e.line:~SVGshapes#LineElement
 e.linearGradient:~SVGpservers#LinearGradientElement
@@ -357,10 +353,19 @@ e.text:~SVGtext#TextElement
 e.textPath:~SVGtext#TextPathElement
 e.title:~SVGstruct#TitleElement
 e.tspan:~SVGtext#TextElement
-e.unknown:~SVGstruct#UnknownElement
 e.use:~SVGstruct#UseElement
-e.video:~SVGembedded#HTMLElements
 e.view:~SVGlinking#ViewElement
+
+e.unknown:~SVGchanges#UnknownElement
+	~SVGstruct#UnknownElement
+e.audio:~SVGchanges#HTMLElements
+	~SVGembedded#HTMLElements
+e.canvas:~SVGchanges#HTMLElements
+	~SVGembedded#HTMLElements
+e.iframe:~SVGchanges#HTMLElements
+	~SVGembedded#HTMLElements
+e.video:~SVGchanges#HTMLElements
+	~SVGembedded#HTMLElements
 
 e.feBlend:~FILTERS#feBlendElement
 e.feColorMatrix:~FILTERS#feColorMatrixElement
@@ -576,7 +581,6 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~SVG要素:~SVGstruct#TermSVGElements
 ~graphics要素:~SVGstruct#TermGraphicsElement
 容器~要素:~SVGstruct#TermContainerElement
-未知の要素:~SVGstruct#UnknownElement
 構造的~要素:~SVGstruct#TermStructuralElement
 構造的に外部の要素:~SVGstruct#TermStructurallyExternalElement
 記述的~要素:~SVGstruct#TermDescriptiveElement
@@ -669,6 +673,9 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 	~URL参照:~SVGlinking#URLReference → ~SVGlinking#TermURLReference
 ~UA~stylesheet:~SVGstyling#UAStyleSheet
 
+未知の要素:~SVGchanges#UnknownElement
+	~SVGstruct#UnknownElement
+
 	■用語（外部
 加法的でない:~CSSVAL#not-additive
 無視する:~CSSSYN#css-ignored
@@ -718,6 +725,7 @@ SVGtypes:https://svgwg.org/svg2-draft/types.html
 	~SVG2/linking.html→common0.js
 SVGmisc:svg-misc-ja.html
 	~SVG2/Overview.html
+SVGchanges:svg-changes-ja.html
 	~SVG2/implnote.html
 	~SVG2/access.html
 	~SVG2/animate.html
