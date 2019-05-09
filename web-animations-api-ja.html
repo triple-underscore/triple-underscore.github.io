@@ -173,8 +173,8 @@ return text;
 <script type="text/plain" id="_source_data">
 
 ●●options
-spec_date:2019-02-14
-trans_update:2019-02-16
+spec_date:2019-05-08
+trans_update:2019-05-09
 source_checked:180709
 original_url:https://drafts.csswg.org/web-animations-1/
 	abbr_url:WANIMAPI
@@ -203,6 +203,7 @@ jv:js-value
 jc:js-type
 jA:abstract
 op:op
+u:unit
 css:css
 
 ●●tag_map
@@ -220,6 +221,7 @@ m:code
 m0:code
 m1:code
 v:code
+u:code
 e:code
 a:code
 jA:span
@@ -258,6 +260,9 @@ unrestricted double:~WEBIDL#idl-unrestricted-double
 DOMString:~WEBIDL#idl-DOMString
 object:~WEBIDL#idl-object
 
+E.InvalidStateError:~WEBIDL#invalidstateerror
+E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
+	I.DOMException:~WEBIDL#idl-DOMException
 
 I.AnimationEffect:#animationeffect
 I.EffectTiming:#dictdef-effecttiming
@@ -268,6 +273,7 @@ I.ComputedEffectTiming:#dictdef-computedeffecttiming
 I.Animatable:#animatable
 I.Animation:#animation
 I.AnimationPlayState:#enumdef-animationplaystate
+I.AnimationReplaceState:#enumdef-animationreplacestate
 I.AnimationPlaybackEvent:#animationplaybackevent
 I.AnimationPlaybackEventInit:#dictdef-animationplaybackeventinit
 I.AnimationTimeline:#animationtimeline
@@ -319,17 +325,21 @@ I.Window:~WINDOW#window
 	currentTime:#dom-animation-currenttime
 	playbackRate:#dom-animation-playbackrate
 	playState:#dom-animation-playstate
+	replaceState:#dom-animation-replacestate
 	pending:#dom-animation-pending
 	ready:#dom-animation-ready
 	finished:#dom-animation-finished
 	oncancel:#dom-animation-oncancel
 	onfinish:#dom-animation-onfinish
+	onremove:#dom-animation-onremove
 	cancel:#dom-animation-cancel
 	finish:#dom-animation-finish
 	play:#dom-animation-play
 	pause:#dom-animation-pause
 	updatePlaybackRate:#dom-animation-updateplaybackrate
 	reverse:#dom-animation-reverse
+	persist:#dom-animation-persist
+	commitStyles:#dom-animation-commitstyles
 
 
 	■AnimationPlayState
@@ -337,6 +347,11 @@ I.Window:~WINDOW#window
 	running:#dom-animationplaystate-running
 	paused:#dom-animationplaystate-paused
 	finished:#dom-animationplaystate-finished
+
+	■AnimationReplaceState
+	active:#dom-animationreplacestate-active
+	removed:#dom-animationreplacestate-removed
+	persisted:#dom-animationreplacestate-persisted
 
 	■AnimationEffect
 	getTiming:#dom-animationeffect-gettiming
@@ -472,9 +487,11 @@ m.requestAnimationFrame:~HTMLGAPI#dom-animationframeprovider-requestanimationfra
 
 	●code CSS 他
 et.cancel:~WANIM#cancel-event
+et.remove:~WANIM#remove-event
 et.finish:~WANIM#finish-event
 et.transitionend:~TRANSITION#transitionend
 
+p.display:~CSSDISP#propdef-display
 p.float:~CSS2VISUREN#propdef-float
 p.offset:https://drafts.fxtf.org/motion-1/#propdef-offset
 
@@ -487,6 +504,8 @@ r.CSSOM:~WANIM#biblio-cssom
 r.DOM:~WANIM#biblio-dom
 r.WEBIDL:~WANIM#biblio-webidl
 r.css-pseudo-4:~WANIM#biblio-css-pseudo-4
+r.CSS-STYLE-ATTR:~WANIM#biblio-css-style-attr
+r.HTML:~WANIM#biblio-html
 
 
 	●用語
@@ -497,7 +516,12 @@ r.css-pseudo-4:~WANIM#biblio-css-pseudo-4
 完了~recordを検査する:#check-the-completion-record
 ~keyframeに類する~objを処理する:#process-a-keyframe-like-object
 
+算出d~styleを~commitする:#commit-computed-styles
+関連する~animation:#relevant-animation
+
+
 組成-演算~型:~WANIM#composite-operation
+組成d値:~WANIM#composited-value
 
 累積-型:~WANIM#composite-operation-accumulate
 置換-型:~WANIM#composite-operation-replace
@@ -529,7 +553,6 @@ An.時列線:~WANIM#_animation-timeline
 	An.作動中:~WANIM#_animation-timeline-is-active
 	時列線~時刻:~WANIM#_animation-timeline-time
 
-
 欠落~keyframe~offsetを算出する:~WANIM#compute-missing-keyframe-offsets
 算出d~keyframe~offset:~WANIM#computed-keyframe-offset
 
@@ -556,12 +579,18 @@ tL.現-時刻:~WANIM#timeline-current-time
 延伸~mode:~WANIM#fill-mode
 
 再生-状態:~WANIM#play-state
+置換-状態:~WANIM#replace-state
 
 
 i.完遂d:~WANIM#finished-play-state
 i.遊休中:~WANIM#idle-play-state
 i.静止中:~WANIM#paused-play-state
 i.稼働中:~WANIM#running-play-state
+
+i.作動中:~WANIM#active-replace-state
+i.除去-済み:~WANIM#removed-replace-state
+i.持続化:~WANIM#persisted-replace-state
+
 
 i.効果~中:~WANIM#in-effect
 i.現在の:~WANIM#current
@@ -608,17 +637,21 @@ i.現在の:~WANIM#current
 
 ~target効果:~WANIM#target-effect
 ~target要素:~WANIM#target-element
+~target~prop:~WANIM#target-property
 下層~値:~WANIM#underlying-value
 
 ~animationを更新して~eventを送信する:~WANIM#update-animations-and-send-events
 
-
 sec.~keyframes引数の処理-法:#processing-a-keyframes-argument
+sec.~modelの~live性:#model-liveness
 sec.~animationの現-時刻の設定-法:~WANIM#setting-the-current-time-of-an-animation
 sec.計時~model:~WANIM#timing-model
+sec.~animationの置換-法:~WANIM#replacing-animations
+	sec.効果~stackの結果の計算-法:~WANIM#calculating-the-result-of-an-effect-stack
+sec.置換された~animationの除去-法:~WANIM#removing-replaced-animations
+
 	sec.新たな~KeyframeEffect~objの作成-法:#creating-a-new-keyframeeffect-object
 	sec.効果~stack:~WANIM#the-effect-stack
-
 
 	●補完
 属する文書:~WANIM#timeline-associated-with-a-document
@@ -626,25 +659,35 @@ sec.計時~model:~WANIM#timing-model
 時列線~現-時刻:~WANIM#_animation-timeline-time
 
 
-●外部
+	●外部（CSS
 ~style変化~event:~TRANSITION#style-change-event
 変化前~style:~TRANSITION#before-change-style
 変化後~style:~TRANSITION#after-change-style
 
-結付けられている文書:~BROWSERS#concept-document-window
-現在の大域~obj:~WAPI#current-global-object
-~animation~frame~callbackたちを走らす:~HTMLGAPI#run-the-animation-frame-callbacks
-
-~event~loop処理~model:~WAPI#event-loop-processing-model
-関連する~Realm:~WAPI#concept-relevant-realm
-
 ~CSS~prop名から~IDL属性~名を得る:~CSSOM1#css-property-to-idl-attribute
 ~IDL属性~名から~CSS~prop名を得る:~CSSOM1#idl-attribute-to-css-property
 ~CSS値を直列化する:~CSSOM1#serialize-a-css-value
+~CSS宣言~block:~CSSOM1#css-declaration-block
+宣言~list:~CSSOM1#cssstyledeclaration-declarations
+読専~flag:~CSSOM1#cssstyledeclaration-readonly-flag
+所有者~node:~CSSOM1#cssstyledeclaration-owner-node
+~CSS宣言を設定する:~CSSOM1#set-a-css-declaration
+~style属性を更新する:~CSSOM1#update-style-attribute-for
+
+
+則って構文解析-:~CSSSYN#css-parse-something-according-to-a-css-grammar
+~style属性:~CSSSTYLEATTR#style-attribute
+
+	●外部
+
+集合:~INFRA#ordered-set
 
 ~node文書:~DOM4#concept-node-document
 ~eventを構築する:~DOM4#constructing-events
 子孫:~DOM4#concept-tree-descendant
+属性~list:~DOM4#concept-element-attribute
+	属性を有する:~DOM4#concept-element-attribute-has
+接続されて:~DOM4#connected
 
 ~realm:~ES6#sec-code-realms
 現在の~realm:~ES6#sec-execution-contexts
@@ -663,8 +706,12 @@ sec.計時~model:~WANIM#timing-model
 	~WEBIDL#DOMString-to-es
 	~WEBIDL#es-to-DOMString
 
-則って構文解析-:~CSSSYN#css-parse-something-according-to-a-css-grammar
-
+具現化され:~BROWSERS#being-rendered
+結付けられている文書:~BROWSERS#concept-document-window
+現在の大域~obj:~WAPI#current-global-object
+~event~loop処理~model:~WAPI#event-loop-processing-model
+関連する~Realm:~WAPI#concept-relevant-realm
+~animation~frame~callbackたちを走らす:~HTMLGAPI#run-the-animation-frame-callbacks
 
 
 ●●
@@ -713,6 +760,8 @@ milli-:::ミリ
 	延伸する:-filling
 範囲:range:::~
 
+	時点:at the time
+
 	●変形
 loose:
 easing:
@@ -740,10 +789,12 @@ offset:
 累積-:accumulate:::~
 	累積:accumulation:::~
 組成-:composite:::~
+組成d:composited:::組成
 組成:composition:::~
 結合-:combine:::~
 計算-:calculate:::~
 計算:calculation:::~
+	計算し直す:recalculating
 等価:equivalent:::~
 加算-:add:::~
 	加算:addition:::~
@@ -776,21 +827,20 @@ animation:
 
 稼働中:running:::~
 
-継目無く:seamless に:::~
+継目無く:seamlessに:::~
 逆転-:reverse:::~
 逆方向:reverse direction:::~
 
-繰返す:repeat する::繰り返す
-繰返され:repeat され::繰り返され
+繰返す:repeatする::繰り返す
+繰返され:repeatされ::繰り返され
 繰返しの:repeating::繰り返しの
-	何度も:repeatedly
 
 再生-:play:::~
 再生:playback:::~
 	再生中の:in-flight
 再開-:resume:::~
-始まる:begin する:::~
-始める:begin する:::~
+始まる:beginする:::~
+始める:beginする:::~
 	〜から:beginning
 反転-:invert::~
 
@@ -798,9 +848,9 @@ animation:
 効果:effect:::~
 作動:active:::~:アクティブ
 作動中:active:::~:アクティブ
+持続化:persisted:::~
 反復:iteration:::~
-取消す:cancel する:::取り消す
-変化-:change::~
+取消す:cancelする:::取り消す
 変更-:change::~
 変更:change::~
 変化-:change::~
@@ -817,8 +867,13 @@ schedule::::スケジュール
 交替-:alternate
 進行-:proceed:~
 加減速:easing:~
+維持-:retain::~
 
 	●CSS／呈示／UI
+box::::ボックス
+layout::::レイアウト
+inline::::インライン
+使用:used::~
 算出-:compute::~
 算出d:computed::算出
 prop:property:::プロパティ
@@ -826,6 +881,8 @@ prop:property:::プロパティ
 略式:shorthand:~
 下位prop:sub-property::下位プロパティ
 	下位prop:longhand／:longhand sub-properties
+論理:logical::~
+物理:physical::~
 位置:position:~
 宣言:declaration:~
 宣言的:declarative:~
@@ -836,8 +893,10 @@ prop:property:::プロパティ
 長さ:length:~
 色:color:~
 疑似要素:pseudo-element:~
+単位:unit::~
+変数:variable::~
 
-	●IDL／データ型／データ操作
+	●IDL／構造／型／操作
 WebIDL:
 Realm:
 realm:
@@ -862,7 +921,6 @@ pair::::ペア
 record::::レコード
 stack::::スタック
 queue::::キュー
-flag::::フラグ
 index:
 group::::グループ
 連列:sequence::~
@@ -877,6 +935,7 @@ callback::::
 真偽値:boolean::~
 記述子:descriptor::~
 
+level::::レベル
 node::::ノード
 文書:document::~
 	文書:doc
@@ -884,8 +943,15 @@ node::::ノード
 親:parent::~
 子:child::~
 子孫:descendant::~
+	要素でも, その子孫でも:not part of a  〜 subtree
 包含-:contain::~
 内容:content::~
+所有者:owner::~
+接続-:connect::~
+結付ける:associateする:結び付ける
+結付けら:associateさ:結び付けら
+	対応-:correspond
+	対応関係:correspondance
 
 値:value::~
 名:name::~
@@ -909,14 +975,15 @@ node::::ノード
 作成-:create:~
 除去-:remove:~
 複製-:copy:~
+複製:copy:~
 併合-:merge:~
 
 	●一般処理／操作
-cancel:
+flag::::フラグ
+読専:readonly::~
 event::::イベント
 handler::::ハンドラ
 promise:
-	~obj形:object-form
 	~promise:Promise object
 call:
 mode::::モード
@@ -930,8 +997,9 @@ fallback::::フォールバック
 loop::::ループ
 達-:reach::~
 task::::タスク
+commit:
 被呼出時:被 invoke 時:~
-呼出して:invoke して:呼び出して
+呼出して:invokeして:呼び出して
 例外:exception::~
 引数:argument::~
 消費-:consume::~
@@ -949,9 +1017,9 @@ process::::プロセス
 処理:processing::~
 処理待ち:pending::~
 実行-:execute::~
-走る:run する:~
-走らす:run する:~
-走らせ:run し:~
+走る:runする:~
+走らす:runする:~
+走らせ:runし:~
 失敗-:fail::~
 失敗:failure::~
 同期-:synchronize::~
@@ -968,8 +1036,8 @@ process::::プロセス
 	初期~時には:initially
 初期化-:initialize:~
 順序:order::~
-アテがう:assign する:あてがう
-アテがわ:assign さ:あてがわ
+アテがう:assignする:あてがう
+アテがわ:assignさ:あてがわ
 	アテがわれ:assignment
 待機-:wait::~
 発火-:fire::~
@@ -988,13 +1056,18 @@ option::::オプション
 	投出:raise
 送信-:send::~
 公開-:expose::~
-在する:present する:在る
+在する:presentする:在る
 	のみ在する:not present
 誘発-:trigger::~
 永遠:forever:~
 準備-:prepare:~
+返す:returnする:~
+返され:returnされ:~
+書込む:writeする::書き込む
+	し続ける:continues to
 
 	●構文
+block::::ブロック
 文:statement:~
 構文解析-:parse::~::パース
 	構文解析-法:parsing
@@ -1007,12 +1080,14 @@ escape::::エスケープ
 	~escape法:escaping
 構文:syntax::~::シンタックス
 符号位置:codepoint::~::コードポイント
-	項:term
 形:form:~
+	〜形:-form
 式:expression::~
 形式:format::~
 文字列:string::~
 markup::::マークアップ
+展開-:expand::~
+	項:term
 
 	^jc:Boolean
 	^en:run-to-completion
@@ -1042,7 +1117,7 @@ approach::::アプローチ
 手続き:procedure:~
 	~~手続き:steps
 抽象:abstract:~
-一貫して:consistent に:~
+一貫して:consistentに:~
 事例:case:~
 仕方:way:~
 仕様:spec:~
@@ -1055,26 +1130,27 @@ approach::::アプローチ
 意味論:semantics:~
 有意:significant:~
 条件:condition:~
-概して:typical に:~
+概して:typicalに:~
 用法:useage:~
 目的:purpose:~
-直に:direct に:~
-相応しい:suitable な:~
+直に:directに:~
+相応しい:suitableな:~
 特別:special:~
-特定の:specific な:~
+特定の:specificな:~
 特有:specific:~
-特有の:specific な:~
-特定の:specific な:~
+特有の:specificな:~
+特定の:specificな:~
 状況:situation:~
 適切:appropriate:~
 重要:important:~
-関連する:relevant な:~
+関連する:relevantな:~
 不変則:invariant:~
 規範的:normative:~
 アリ:possible:可能
 理由:reason:~
 一般:general:~
 状況下:circumstances:~
+実際の:actualな:~
 
 	例:example
 	例えば:for example
@@ -1092,15 +1168,15 @@ approach::::アプローチ
 	概ね:roughly
 	べき:should
 	後継:subsequent
-	際限なく:unbounded fashion
 	一方で:However
 	備える:measure
-	抜け道:loophole
 	ついでに:incidentally
 	-:we
 	-:instruction
 	-:as-is
 	:such that
+	に関し:with regards to
+	論の最中:under discussion
 
 ●仕様（動詞
 support::::サポート
@@ -1111,7 +1187,7 @@ support::::サポート
 	依存しない:independent
 独立:independent:~
 依拠-:rely:~
-共通する:common になる:~
+共通する:commonになる:~
 利用-:use:~
 奨励-:encourage:~
 定義-:define:~
@@ -1123,21 +1199,22 @@ support::::サポート
 有用:useful:~
 検分-:inspect:~
 検査-:check:~
-組入れら:incorporate さ:組み入れら
+組入れら:incorporateさ:組み入れら
 導入-:introduce:~
 	合致する:conform:~
 要件:requirement:~
 要求-:require:~
-見做せる:assume できる:~
+見做せる:assumeできる:~
+見做され:assumeされ:~
 	いてもよい:however, are permitted
 許容-:allow:~
 関係-:relate:~
 
 相違-:differ:~
 	differences
-築く:build する:~
+築く:buildする:~
 	-:build up する:築き上げる
-築かれ:build され:~
+築かれ:buildされ:~
 簡便:convenient:~
 環境設定:configuration:~
 影響-:affect:~
@@ -1148,10 +1225,9 @@ support::::サポート
 挙動:behavior:ふるまい
 遂行-:perform:~
 適用-:apply:~
-避ける:avoid する:~
-述べた:describe した:~
-述べる:describe する:~
-改訂-:revise:~
+避ける:avoidする:~
+述べた:describeした:~
+述べる:describeする:~
 後継:subsequent:~
 
 前方互換性:forwards-compatibility:~
@@ -1166,30 +1242,30 @@ support::::サポート
 解釈:interpretation:~
 認識-:recognize:~
 警告:warning:~
-試みる:attempt する:~
+試みる:attemptする:~
 強調-:highlight:~
 取扱い:handling:取り扱い
 	〜の取扱い:〜-handling
 含意-:imply:~
-築かれ:build され:~
+築かれ:buildされ:~
 短絡-:shortcut:~
 駆動-:drive:~
 診断-:diagnose:~
-表出でき:express でき:表せ
-表出され:express され:表され
+表出でき:expressでき:表せ
+表出され:expressされ:表され
 	では表出できない:not able to be expressed with
 受容-:accept:~
-追加的な:additional な:追加の
+追加的な:additionalな:追加の
 無視-:ignore::~
-結付ける:associate する:結び付ける
-結付けら:associate さ:結び付けら
 上書き:override::~
 観測-:observe::~
 	観測-可能:observable
 給-:supply:~
-考える:consider する:~
+考える:considerする:~
 言明-:state:~
 精緻化-:refine:~
+保守-:maintain:~
+拡げる:expandする::~
 
 	注意:note:~
 	見よ:see
@@ -1212,29 +1288,25 @@ support::::サポート
 	~~反映:occur／:happen
 合致-:match::~
 表現-:represent::~
-維持-:retain::~
 追加-:add::~
 追加:addition:~
-展開-:expand::~
-拡げる:expand する::~
 	類の:kind
-読取った:read した::読み取った
+読取った:readした::読み取った
 通信-:communicate::~
-組合され:combine され::組み合され
-使用:used::~
+組合され:combineされ::組み合され
+忠実性:fidelty:~
+	~~適用可能な:capable of
 
 	現れる:appear:~
 	生じ:occur
 	示す:show
 	示す:illustrate
 	表す:express
-	対応-:correspond:~
 	与-:give
 	保つ:keep
 	含-:include
 	含めて:including
 	起こる:happen
-	返す:return
 	渡-:pass:~
 	渡して:passing
 	生じた:cause
@@ -1258,7 +1330,6 @@ script::::スクリプト
 source::::ソース
 browser::::ブラウザ
 comment::::コメント
-block::::ブロック
 fade::::フェード
 style::::スタイル
 web::::
@@ -1273,9 +1344,11 @@ audio:
 音響:sound::~
 変種:variant:~
 差分:delta:~
-記憶域:memory::~::メモリ
+応答-:respond:~
+資源:resource::~::リソース
+文脈:context::~
+
 	昇順:increasing order
-	対応関係:correspondance
 	間隔〜~~決定:spaced
 	-:successively
 	になる:become
@@ -1292,11 +1365,12 @@ audio:
 	行:line
 	節:section
 	点:point
-
-	次t~item:nextItem
+	など:such as
 	~NULL でない:non-null
 	~LT:fewer
 	閉区間 [0, 1]:between 0.0 and 1.0 inclusive
+	次t~item:nextItem
+	部分的な効果~stack:partialEffectStack
 
 ●指示語
 現-:current::~
@@ -1342,7 +1416,6 @@ audio:
 	個目／回目:third／:second
 	0:zero
 	前回の／~previous:#2
-	以前までは:previously
 	2 度にわたり／2 周:twice
 	回:time
 	1 個~以下:at most one
@@ -1352,6 +1425,9 @@ audio:
 	単独の／1 回の:single
 	〜未満 less than
 	〜以上の:greater than or equal to
+	~GTE:greater than or equal
+	~GTE:as many items as
+	~GT:has more items than
 	0:zero
 	〜数:the number of
 	0 回から数える:beginning with zero for the first iteration
@@ -1364,15 +1440,12 @@ audio:
 	1 つ以上は:at least one
 	回数:number of times
 	一部:part of
-	~GTE:as many items as
-	~GT:has more items than
 	離れた所でも:apart from
 	後で:later
 	別々の:separate
 	異なる:different
 	結果:result
 	結果の:resulting
-	古い:old
 	後で:later
 	他の:further
 	より先に:prior to
@@ -1382,6 +1455,7 @@ audio:
 	ここでは:here
 	全体にかけて:across the whole span of
 	あるいは:otherwise
+	でなかったなら:otherwise
 	かかる:take
 	それらが〜~~同時に:whole set of changes 〜together 
 	同時に:at the same time
@@ -1567,20 +1641,23 @@ interface `Animation@I : `EventTarget$I {
              attribute `double$?                  `currentTime$m;
              attribute `double$                   `playbackRate$m;
     readonly attribute `AnimationPlayState$I       `playState$m;
+    readonly attribute `AnimationReplaceState$I    `replaceState$m;
     readonly attribute `boolean$                  `pending$m;
     readonly attribute Promise&lt;`Animation$I&gt;       `ready$m;
     readonly attribute Promise&lt;`Animation$I&gt;       `finished$m;
              attribute `EventHandler$I             `onfinish$m;
              attribute `EventHandler$I             `oncancel$m;
+             attribute `EventHandler$I             `onremove$m;
     void `cancel$m();
     void `finish$m();
     void `play$m();
     void `pause$m();
     void `updatePlaybackRate$m(`double$ %playbackRate);
     void `reverse$m();
+    void `persist$m();
+    void `commitStyles$m();
 };
 </pre>
-
 
 <dl class="idl-def">
 	<dt>`Animation(effect, timeline)@m
@@ -1766,6 +1843,16 @@ playState, of type AnimationPlayState, readonly
 The play state of this animation.
 </dd>
 
+	<dt>`replaceState@m
+◎
+replaceState, of type AnimationReplaceState, readonly 
+</dt>
+	<dd>
+取得子は、此れの`置換-状態$に対応する `AnimationReplaceState$I 値を返す。
+◎
+The replace state of this animation.
+</dd>
+
 	<dt>`pending@m
 ◎
 pending, of type boolean, readonly
@@ -1824,6 +1911,17 @@ oncancel, of type EventHandler
 ◎
 The event handler for the cancel event.
 </dd>
+
+	<dt>`onremove@m
+◎
+onremove, of type EventHandler
+</dt>
+	<dd>
+`remove$et ~event用の~event~handler。
+◎
+The event handler for the remove event.
+</dd>
+
 	<dt>`cancel()@m
 ◎
 void cancel()
@@ -1941,7 +2039,220 @@ using the reverse an animation procedure for this object.＼
 As with play(), this method unpauses the animation and, if the animation has already finished playing in the reversed direction, seeks to the start of the target effect.
 </dd>
 
+	<dt>`persist()@m</dt>
+	<dd>
+被呼出時には、次を走らす
+⇒
+この~animationの`置換-状態$ ~SET `持続化$i
+◎
+Sets this animation’s replace state to persisted.
+</dd>
+
+	<dt>`commitStyles()@m</dt>
+	<dd>
+この~animationの`~animation効果$により生産された現在の`効果~値$を，対応している`~target要素$の~inline~style【`~style属性$】に書込む。
+◎
+Writes the current effect values produced by this animation’s animation effects to their corresponding target elements' inline style＼
+</dd>
+	<dd>
+被呼出時には、次を走らす
+⇒
+`算出d~styleを~commitする$( 此れ )
+◎
+using the commit computed styles procedure.
+</dd>
+	<dd>
+この~interface上に定義される他のほとんどの~methodと違って、この~methodを~callすると，`~style変化~event$を`誘発する^em（`~modelの~live性$secを見よ）。
+◎
+Unlike most other methods defined on this interface, calling this method does trigger a style change event (see §6.14 Model liveness).
+</dd>
+	<dd class="note">
+<p>注記：
+`算出d~styleを~commitする$~~手続きは［
+この~animationが`除去-済み$iであっても，それ用の`効果~値$を含む
+］ので、この~methodは［
+置換された後にも，実際の~animationを維持することなく~animationの効果を維持する
+］ために有用になる（`置換された~animationの除去-法$secを見よ）。
+◎
+Since the procedure to commit computed styles includes the effect values for the animation even if it is removed, this method is useful for retaining the effect of an animation after it has been replaced (see §5.6.2 Removing replaced animations) without retaining the actual animation.
+</p>
+
+<p>
+~commitされる値は、この~methodが~callされた時点における，`~animation効果$により生産された`算出d値^emであることに注意。
+これらの値は算出d値【言い換えれば、確定的な値】なので、~live~animationが生産する値のように，文脈に対する変更を反映することはない
+— ［
+~CSS変数の変化に対し応答する／
+`font-size^p の算出d値の変化に基づいて `em^u 単位を計算し直す
+］など。
+◎
+Note that the values committed are the computed values produced by the animation effects at the time when this method is called. Since these values are computed values, they do not reflect to changes to context such as responding to changes to CSS variables or recalculating em units based on changes to the computed font-size in the way the values produced by a live animation would.
+</p>
+
+<p>
+`persist()$m ~methodを利用すれば、当の~animationが置換された後に（`~animationの置換-法$secを見よ），延伸している~animationの結果が成す全部的な忠実性を維持できるが、当の~animationが資源を消費し続けることにもなることに注意。
+◎
+In order to retain full fidelty of a filling animation’s result after it has been replaced (see §5.6 Replacing animations), the persist() method may be used, but note that doing so will mean the animation continues to consume resources.
+</p>
+	</dd>
 </dl>
+
+<div class="algorithm">
+
+<p>
+`算出d~styleを~commitする@
+ときは、所与の
+( `~animation$ %~animation )
+に対し：
+◎
+To commit computed styles for an animation, animation:
+</p>
+
+<ol>
+	<li>
+<p>
+%~targetたち ~LET 
+%~animation の`~target効果$【！~animation効果】たち†の`~target要素$からなる`集合$
+</p>
+
+<p class="trans-note">【†
+原文には、各~animationには複数個の`~animation効果$があり得るかのように記されているが、そのような記述は他所にはなく，よくわからない。
+】</p>
+◎
+Let targets be the set of all target elements for animation effects associated with animation.
+</li>
+	<li>
+<p>
+%~targetたち を成す
+~EACH( %~target )
+に対し：
+◎
+For each target in targets:
+</p>
+		<ol>
+			<li>
+~IF［
+%~target は，`~style属性$ `CSS-STYLE-ATTR$r を~~適用可能な要素でない（例：疑似要素, 文書~形式において~style属性は定義されていない要素）
+］
+⇒
+~THROW `NoModificationAllowedError$E
+◎
+If target is not an element capable of having a style attribute [CSS-STYLE-ATTR] (for example, it is a pseudo-element or is an element in a document format for which style attributes are not defined) throw a "NoModificationAllowedError" DOMException and abort these steps.
+</li>
+			<li>
+<p>
+~IF［
+処理待ち~style変化を適用した後， %~target は`具現化され$ない
+］
+⇒
+~THROW `InvalidStateError$E
+◎
+If, after applying any pending style changes, target is not being rendered, throw an "InvalidStateError" DOMException and abort these steps.
+</p>
+
+<p class="issue">
+`HTML$r による “`具現化され$る” の定義は、
+`display$p に関して依然として
+<a href="~HTMLissue/1837">論の最中</a>
+にある。
+この手続きの目的においては、要素は［
+`display^p が `contents^v でなかったなら~layout~boxが結付けられる（すなわち，`接続されて$いて， `display^p が `none^v にされた要素でも, その子孫でもない）
+］ならば、具現化されるものと見做される。
+◎
+The definition of being rendered [HTML] with regards to display: contents is still under discussion. For the purpose of this procedure, we assume that an element with display: contents that otherwise would have associated layout boxes (i.e. it is connected and not part of a display: none subtree) is being rendered.
+</p>
+			</li>
+			<li>
+%~inline~style ~LET ［
+%~target の`属性~list$内に`~style属性$が在るならば それに対応している`~CSS宣言~block$ ／
+~ELSE_ 次のようにされた新たな`~CSS宣言~block$
+］
+⇒＃
+`宣言~list$ ~SET 空
+`読専~flag$ ~SET ~OFF
+`所有者~node$ ~SET %~target
+◎
+Let inline style be the result of getting the CSS declaration block corresponding to target’s style attribute. If target does not have a style attribute, let inline style be a new empty CSS declaration block with the readonly flag unset and owner node set to target.
+</li>
+			<li>
+%~targetにされた~propたち ~LET 次を満たす~prop %~prop が成す`集合$
+⇒
+［
+%~prop は
+ `physical longhand^en 【<a href="~CSSLOGICAL">論理~prop</a>でない下位prop】である
+］~AND［
+次を満たす~animation効果 %効果 がある
+］
+⇒
+［
+%~prop は %効果 の`~target~prop$である
+］~AND［
+%効果 を`~targetにしている~animation$ ~EQ %~animation
+］~AND［
+%効果 の`~target要素$ ~EQ %~target
+］
+◎
+Let targeted properties be the set of physical longhand properties that are a target property for at least one animation effect associated with animation whose target element is target.
+</li>
+			<li>
+<p>
+%~targetにされた~propたち を成す
+~EACH( %~prop )
+に対し：
+◎
+For each property, property, in targeted properties:
+</p>
+				<ol>
+					<li>
+%部分的な効果~stack ~LET %~target 上の %~prop 用の`効果~stack$の複製
+◎
+Let partialEffectStack be a copy of the effect stack for property on target.
+</li>
+					<li>
+~IF［
+%~animation の`置換-状態$ ~EQ `除去-済み$i
+］
+⇒
+%部分的な効果~stack に次を満たす`~animation効果$ %効果 すべてを追加する
+⇒
+［
+%効果 を`~targetにしている~animation$ ~EQ %~animation
+］~AND［
+%効果 の`~target要素$ ~EQ %~target
+］~AND［
+%~prop は %効果 の`~target~prop$である
+］
+◎
+If animation’s replace state is removed, add all animation effects associated with animation whose target element is target and which include property as a target property to partialEffectStack.
+</li>
+					<li>
+%部分的な効果~stack から，次を満たす`~animation効果$をすべて除去する
+⇒
+それを`~targetにしている~animation$は、`組成-順序$において %~animation より後
+◎
+Remove from partialEffectStack any animation effects whose associated animation has a higher composite order than animation.
+</li>
+					<li>
+%効果~値 ~LET `組成d値$( %部分的な効果~stack, %~target 上の %~prop の算出d値 )
+【！`効果~stackの結果の計算-法$sec】
+◎
+Let effect value be the result of calculating the result of partialEffectStack for property using target’s computed style (see §5.4.3 Calculating the result of an effect stack).
+</li>
+					<li>
+`~CSS宣言を設定する$( %~inline~style, %~prop, %効果~値 )
+◎
+Set a CSS declaration property for effect value in inline style.
+</li>
+				</ol>
+			</li>
+			<li>
+%~inline~style 用の`~style属性を更新する$
+◎
+Update style attribute for inline style.
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
 
 			<section id="the-animationplaystate-enumeration">
 <h4 title="The AnimationPlayState enumeration">6.4.1. `AnimationPlayState^I 列挙</h4>
@@ -1950,6 +2261,10 @@ As with play(), this method unpauses the animation and, if the animation has alr
 <pre class="idl">
 enum `AnimationPlayState@I { `idle$l, `running$l, `paused$l, `finished$l };
 </pre>
+
+<p class="trans-note">【
+この列挙は、~animationの`再生-状態$を表現する値を与える。
+】</p>
 
 <dl class="idl-def">
 	<dt>`idle@l</dt>
@@ -1978,6 +2293,41 @@ Corresponds to the paused play state.
 `完遂d$iに対応する。
 ◎
 Corresponds to the finished play state.
+</dd>
+</dl>
+
+			</section>
+			<section id="the-animationreplacestate-enumeration">
+<h4 title="The AnimationReplaceState enumeration">6.4.2. `AnimationReplaceState^I 列挙</h4>
+
+<pre class="idl">
+enum `AnimationReplaceState@I { `active$l, `removed$l, `persisted$l };
+</pre>
+
+<p class="trans-note">【
+この列挙は、~animationの`置換-状態$を表現する値を与える。
+】</p>
+
+<dl class="idl-def">
+	<dt>`active@l</dt>
+	<dd>
+`作動中$iに対応する。
+◎
+Corresponds to the active replace state.
+</dd>
+
+	<dt>`removed@l</dt>
+	<dd>
+`除去-済み$iに対応する。
+◎
+Corresponds to the removed replace state.
+</dd>
+
+	<dt>`persisted@l</dt>
+	<dd>
+`持続化$iに対応する。
+◎
+Corresponds to the persisted replace state.
 </dd>
 </dl>
 
@@ -2339,7 +2689,7 @@ The timing function used to scale the time to produce easing effects.
 文字列の構文は、 `easing-function$t 生成規則により定義される。
 `CSS-EASING-1$r
 ◎
-The syntax of the string is defined by the &lt;timing-function&gt; production [CSS-EASING-1].
+The syntax of the string is defined by the &lt;easing-function&gt; production [CSS-EASING-1].
 </dd>
 </dl>
 
@@ -2437,8 +2787,8 @@ Even iterations are played in the reverse direction from the order they are spec
 			<section id="updating-animationeffect-timing">
 <h4 title="Updating the timing of an AnimationEffect">6.5.4. `AnimationEffect^I の計時の更新-法</h4>
 
-
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `~animation効果の計時~propを更新する@
 ときは、所与の
 ( %効果, ［
@@ -2518,7 +2868,7 @@ If the iterations member of input is present, and less than zero or is the value
 ◎
 If the duration member of input is present, and less than zero or is the value NaN, throw a TypeError and abort this procedure.
 ◎
-If the easing member of input is present but cannot be parsed using the &lt;timing-function&gt; production [CSS-EASING-1], throw a TypeError and abort this procedure.
+If the easing member of input is present but cannot be parsed using the &lt;easing-function&gt; production [CSS-EASING-1], throw a TypeError and abort this procedure.
 </li>
 	<li>
 上の表 A の~EACH( %行 ) に対し
@@ -2542,8 +2892,7 @@ Assign each member present in input to the corresponding timing property of effe
 • easing → timing function
 </li>
 </ol>
-
-
+</div>
 
 			</section>
 			<section id="the-computedeffecttiming-dictionary">
@@ -3078,8 +3427,8 @@ Set the offset, computedOffset, easing, and composite members of output keyframe
  -->
 					<li>
 <p>
-%~keyframe 内に指定された
-~EACH( ~animation~property-value~pair %宣言 )
+%~keyframe 内に指定された ~animation用の
+~EACH( ~prop ( 名/値 ) ~pairが成す %宣言 )
 に対し：
 ◎
 For each animation property-value pair specified on keyframe, declaration, perform the following steps:
@@ -3271,7 +3620,8 @@ Having created a KeyframeEffect, it can be played by adding it to an Animation a
 			<section id="property-name-conversion">
 <h4 title="Property names and IDL names">6.6.2. ~prop名と~IDL名</h4>
 
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `~animation~prop名から~IDL属性~名を得る@
 ときは、所与の
 ( 文字列 %~prop名 )
@@ -3315,9 +3665,11 @@ If property refers to the CSS offset property, return the string "cssOffset".
 Otherwise, return the result of applying the CSS property to IDL attribute algorithm [CSSOM] to property.
 </li>
 </ol>
+</div>
 
 
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `~IDL属性~名から~animation~prop名を得る@
 ときは、所与の
 ( 文字列 %属性~名 )
@@ -3361,8 +3713,7 @@ If attribute is the string "cssOffset", then return an animation property repres
 Otherwise, return the result of applying the IDL attribute to CSS property algorithm [CSSOM] to attribute.
 </li>
 </ol>
-
-
+</div>
 
 			</section>
 			<section id="processing-a-keyframes-argument">
@@ -3748,7 +4099,8 @@ For each method that takes a keyframes argument, the procedure to process a keyf
 First we define two supporting definitions.
 </p>
 
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `完了~recordを検査する@
 ときは、所与の
 ( ~ES演算を~callして得られた`完了~record$ %結果 )
@@ -3784,8 +4136,10 @@ What should we do if the [[type]] is break, continue, or return? Can it be?
 Replace result with the value contained in the [[value]] field of result.
 </li>
 </ol>
+</div>
 
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `~keyframeに類する~objを処理する@
 手続きは、所与の
 ( ~ES~obj %~keyframe入力, %~listを許容する~flag ~IN { `~listを許容する^i, ε }（省略時は ε ）)
@@ -3953,8 +4307,10 @@ Add a property to to keyframe output with normalized property name as the proper
 Return keyframe output.
 </li>
 </ol>
+</div>
 
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `~keyframes引数を処理する@
 手続きは、所与の
 ( ~nullableな~ES~obj %~obj )
@@ -4317,9 +4673,8 @@ For each property-value pair in frame,＼
 </p>
 				<ol>
 					<li>
-<!-- ＊ -->
 ~IF［
-%~prop名 ~IN { `composite^l, `easing^l, `offset^l }
+【！＊】%~prop名 ~IN { `composite^l, `easing^l, `offset^l }
 ］
 ⇒
 ~CONTINUE
@@ -4422,8 +4777,7 @@ This final step is required in order to provide consistent behavior such that a 
 
 </div></li>
 </ol>
-
-
+</div>
 
 			</section>
 			<section id="the-keyframeeffectoptions-dictionary">
@@ -4711,14 +5065,46 @@ options
 sequence&lt;Animation&gt; getAnimations()
 </dt>
 	<dd>
-此れを`~target要素$とする `Animation$I ~objのうち，その`~target効果$は［
-`現在の$i／`効果~中$i
-］であるものからなる~listを返す。
+<p>
+被呼出時には、次を満たす`~animation$を表現する `Animation$I ~objからなる集合を返す
+⇒
+［
+`関連する~animation$である
+］~AND［
+その`~target効果$ %効果 ~NEQ ~NULL
+］~AND［
+%効果 の`~target要素$ ~EQ 此れ
+］
 ◎
-Returns the set of Animation objects whose target effect is current or in effect and contains at least one animation effect whose target element is this object.
+Returns the set of relevant Animation objects that contain at least one animation effect whose target element is this object.
 </dd>
 	<dd>
-返される~listは、それらの効果が~targetにしている此れ上の各~propの`効果~stack$にて述べた`組成-順序$を利用して~sortされる。
+<p>
+`~animation$は次をいずれも満たすならば
+`関連する~animation@
+であるとされる：
+◎
+An animation is relevant if:
+</p>
+		<ul>
+			<li>
+その`~target効果$は［
+`現在の$i／`効果~中$i
+］である
+◎
+Its target effect is current or in effect, and
+</li>
+			<li>
+その`置換-状態$ ~NEQ `除去-済み$i
+◎
+Its replace state is not removed.
+</li>
+		</ul>
+	</dd>
+	<dd>
+返される~listは、［
+それらの効果が~targetにしている此れ上の各~propの`効果~stack$
+］にて述べた`組成-順序$を利用して~sortされる。
 ◎
 The returned list is sorted using the composite order described for the associated animations of effects in §5.5.2 The effect stack.
 </dd>
@@ -4778,49 +5164,34 @@ The DocumentTimeline object representing the default document timeline.
 sequence&lt;Animation&gt; getAnimations()
 </dt>
 	<dd>
-被呼出時には、
-`Animation$I ~objのうち，その`~target効果$は次を満たすものからなる集合を返す
+被呼出時には、次を満たす`~animation$を表現する `Animation$I ~objからなる集合を返す
 ⇒
-［［
-`現在の$i／`効果~中$i
-］である
+［
+`関連する~animation$である
 ］~AND［
-`~target要素$は此れの`子孫$である
+その`~target効果$ %効果 ~NEQ ~NULL
+］~AND［
+%効果 の`~target要素$は此れの`子孫$である
 ］
 ◎
-Returns the set of Animation objects that have an associated target effect which is current or in effect and whose target element is a descendant of the document.
+Returns the set of relevant Animation objects that have an associated target effect whose target element is a descendant of the document.
 </dd>
 	<dd>
-返される~listは、それらの効果が~targetにしている要素~上の各~propの`効果~stack$にて述べた`組成-順序$を利用して~sortされる。
+返される~listは、［
+それらの効果が~targetにしている要素~上の各~propの`効果~stack$
+］にて述べた`組成-順序$を利用して~sortされる。
 ◎
 The returned list is sorted using the composite order described for the associated animations of effects in §5.5.2 The effect stack.
 </dd>
 	<dd>
-この~methodを~callすると，文書に対し`~style変化~event$を誘発する。
+この~methodを~callすると，この文書に対し`~style変化~event$を誘発する。
 その結果，返される~listは、まだ処理-待ちにある ~animationに対する~style変更
 — ~animationに関係する~style~prop【各種 `animation-*^p, `transition-*^p など】に対する変更など —
 があれば，それらを`適用した後^emの状態を反映する。
 ◎
 Calling this method triggers a style change event for the document. As a result, the returned list reflects the state after applying any pending style changes to animation such as changes to animation-related style properties that have yet to be processed.
 </dd>
-	<dd class="issue">
-［
-この~method, `Animatable$I ~interface~mixin上の `getAnimations()$m1
-］の両者とも，前方へ延伸する［
-`~animation効果$, それらの`~animation$
-］を維持することを要求するので、前方へ延伸する~animationを何度も生産する文書は，際限なく記憶域を消費することになる。
-この定義は、［
-改訂する（以前までは，これらの~methodは、~animationのうち，`~target効果$が`現在の$iであるものしか返さなかった）
-］か［
-そのような条件の下では、古い~animationを破棄するような，実装~用の抜け道を供する
-］必要があろう。
-`2054$issue
-◎
-Both this method and getAnimations() on the Animatable interface mixin require retaining forwards-filling animation effects and their animations such that a document that repeatedly produces forwards-filling animations will consume memory in an unbounded fashion. We may need to revise this definition (previously these methods only returned animations whose target effect was current) or provide a loophole for implementations to discard old animations in such conditions. &lt;https://github.com/w3c/csswg-drafts/issues/2054&gt;
-</dd>
 </dl>
-
-
 
 		</section>
 		<section id="extensions-to-the-element-interface">
@@ -5221,3 +5592,5 @@ In this case, calling animate() will not trigger a style change event. As a resu
 		</section>
 	</section>
 </main></div>
+
+
