@@ -356,17 +356,6 @@ e.tspan:~SVGtext#TextElement
 e.use:~SVGstruct#UseElement
 e.view:~SVGlinking#ViewElement
 
-e.unknown:~SVGchanges#UnknownElement
-	~SVGstruct#UnknownElement
-e.audio:~SVGchanges#HTMLElements
-	~SVGembedded#HTMLElements
-e.canvas:~SVGchanges#HTMLElements
-	~SVGembedded#HTMLElements
-e.iframe:~SVGchanges#HTMLElements
-	~SVGembedded#HTMLElements
-e.video:~SVGchanges#HTMLElements
-	~SVGembedded#HTMLElements
-
 e.feBlend:~FILTERS#feBlendElement
 e.feColorMatrix:~FILTERS#feColorMatrixElement
 e.feComponentTransfer:~FILTERS#feComponentTransferElement
@@ -396,18 +385,13 @@ e.filter:~FILTERS#FilterElement
 
 	HTML 要素
 eH.a:~HEtextlevel#the-a-element
-eH.audio:~HEmedia#the-audio-element
 eH.base:~HEmetadata#the-base-element
-eH.canvas:~HEcanvas#the-canvas-element
-eH.iframe:~HEembed#the-iframe-element
 eH.link:~HEmetadata#the-link-element
 eH.meta:~HEmetadata#the-meta-element
 eH.script:~HEscripting#the-script-element
 eH.source:~HEimages#the-source-element
 eH.style:~HEmetadata#the-style-element
 eH.track:~HEmedia#the-track-element
-eH.video:~HEmedia#the-video-element
-
 
 	●p
 
@@ -672,9 +656,6 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~URL参照~属性:~SVGlinking#linkRefAttrs
 	~URL参照:~SVGlinking#URLReference → ~SVGlinking#TermURLReference
 ~UA~stylesheet:~SVGstyling#UAStyleSheet
-
-未知の要素:~SVGchanges#UnknownElement
-	~SVGstruct#UnknownElement
 
 	■用語（外部
 加法的でない:~CSSVAL#not-additive
