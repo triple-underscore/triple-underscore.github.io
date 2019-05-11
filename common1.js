@@ -1507,6 +1507,7 @@ IDL:pre.idl
 プロパティ:.propdef
 記述子:.descdef
 ABNF:pre.ABNF
+訳注:.trans-note
 `;
 
 /** 文献 id = 英文 URL = 和訳 URL の対応データ
