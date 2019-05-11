@@ -339,6 +339,7 @@ paint:塗り
 css:CSS
 css-ux:CSS UX
 css-anim:アニメーション
+cssom:CSSOM
 typeset:テキスト組版
 layout:レイアウト一般
 layouts:レイアウト個別
