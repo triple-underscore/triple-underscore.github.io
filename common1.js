@@ -1683,6 +1683,7 @@ CSSOMVIEW1=主         ~/cssom-view-ja.html
 CSSPAINTAPI1=主       ~/css-paint-api-ja.html
 CSSPSEUDO4=主         ~/css-pseudo-ja.html
 CSSSCOPING1=主        ~/css-scoping-ja.html
+CSSSHADOWPARTS1=主    ~/css-shadow-parts-ja.html
 CSSSCROLLSNAP1=主     ~/css-scroll-snap-ja.html
 CSSSTYLEATTR1=主      ~/css-style-attr-ja.html
 CSSSTYLEATTR1=副2     ~mitsue/css-style-attr/
