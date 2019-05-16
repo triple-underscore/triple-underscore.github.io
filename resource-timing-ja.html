@@ -130,8 +130,8 @@ return text;
 
 ●●options
 
-spec_date:2019-04-24
-trans_update:2019-05-03
+spec_date:2019-05-16
+trans_update:2019-05-17
 source_checked: 170318
 page_state_key:TIMING
 original_url:https://w3c.github.io/resource-timing/
@@ -283,6 +283,7 @@ i.最終~記録-:#dfn-step-final-record
 非同一-生成元:#dfn-cross-origin
 現-文書:#dfn-current-document
 現-時刻:#dfn-current-time
+応答~終止~時刻を取得する:#dfn-get-response-end-time
 
 計時~許可検査:#dfn-timing-allow-check
 
@@ -592,6 +593,7 @@ data:::データ
 要素:element::~
 内容:content::~
 除去-:remove::~
+取得-:get::~
 取得子:getter::~
 作成-:create::~
 作成:creation::~
@@ -1324,7 +1326,6 @@ All resource Requests fetched by a non-null client MUST be included as Performan
 ◎
 The rest of this section is non-normative.
 </p>
-
 
 <p>
 例：
@@ -2129,10 +2130,18 @@ For fetches composed of multiple requests (e.g. preflights, authentication chall
 
 	<dt>`responseEnd@m</dt>
 	<dd>
-<p>
-取得子は、次を走らすモノトスル：
+取得子は、次の結果を返すモノトスル
+⇒
+`応答~終止~時刻を取得する$
 ◎
-On getting, the responseEnd attribute MUST return as follows:
+On getting, the responseEnd attribute MUST return the result of running the algorithm to get response end time.
+</dd>
+	<dd class="algorithm">
+<p>
+`応答~終止~時刻を取得する@
+ときは、次を走らすモノトスル：
+◎
+When requested to run the get response end time algorithm, the user agent must run the following steps:
 </p>
 		<ol>
 			<li>
@@ -2140,27 +2149,35 @@ On getting, the responseEnd attribute MUST return as follows:
 ~UAは~network~errorにより~fetchを中止した
 ］
 ⇒
-~RET 中止した時刻
+~RET 中止した直前の時刻
 ◎
-↓</li>
+If the fetch was aborted due to a network error, return the time immediately before the user agent aborts the fetch.
+</li>
 			<li>
 <p>
 ~RET 次のうち，早い方の時刻
 </p>
-
-<ul><li>~UAが［［
+				<ul>
+					<li>
+~UAが［
 `局所~cache等$, または~server
-］から資源の最後の~byteを受信した
-］直後の時刻
-</li><li>~transport接続が~closeされる直前の時刻
-</li></ul>
-
+］から，資源の最後の~byteを受信した直後の時刻
+</li>
+					<li>
+~transport接続が~closeされる直前の時刻
+</li>
+				</ul>
 ◎
-The time immediately after the user agent receives the last byte of the response or immediately before the transport connection is closed, whichever comes first. The resource here can be received either from relevant application caches, local resources, or from the server.
-◎
-The time immediately before the user agent aborts the fetch due to a network error.
+Otherwise, return the time immediately after the user agent receives the last byte of the response or immediately before the transport connection is closed, whichever comes first. The resource here can be received either from relevant application caches, local resources, or from the server.
 </li>
 		</ol>
+
+<p class="trans-note">【
+この手続きは、
+<a href="https://wicg.github.io/element-timing/">Element Timing API</a>
+からも利用される。
+】</p>
+
 	</dd>
 
 	<dt>`transferSize@m</dt>
@@ -2483,6 +2500,7 @@ The attribute onresourcetimingbufferfull is the event handler for the resourceti
 </dd>
 </dl>
 
+<div class="algorithm">
 <p>
 `資源~計時~entryを追加でき@
 るとは、次が満たされることをいう
@@ -2493,8 +2511,10 @@ To check if can add resource timing entry, run the following steps:
 • If resource timing buffer current size is smaller than resource timing buffer size limit, return true.
 • Return false.
 </p>
+</div>
 
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `処理能~entry~bufferに~entryを追加する@
 ときは、所与の
 ( `処理能~entry~buffer$ %~buffer, `PerformanceResourceTiming$I ~obj %~entry )
@@ -2564,8 +2584,10 @@ Add new entry to the resource timing secondary buffer.
 Increase resource timing secondary buffer current size by 1.
 </li>
 </ol>
+</div>
 
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `副buffer内の~entryを移動する@
 ときは、次を走らす：
 ◎
@@ -2618,8 +2640,10 @@ Decrement resource timing secondary buffer current size by 1.
 ~RET %移動した
 </li>
 </ol>
+</div>
 
-<p class="algo-head">
+<div class="algorithm">
+<p>
 `~buffer満杯~eventを発火する@
 ときは、次を走らす：
 ◎
@@ -2682,6 +2706,7 @@ Set resource timing buffer full event pending flag to false.
 ◎
 This means that if the resourcetimingbufferfull event handler does not add more room in the buffer than it adds resources to it, excess entries will be dropped from the buffer. Developers should make sure that resourcetimingbufferfull event handlers call clearResourceTimings or extend the buffer sufficiently (by calling setResourceTimingBufferSize).
 </p>
+</div>
 
 		</section>
 		<section id="sec-cross-origin-resources">
@@ -2746,10 +2771,10 @@ Timing-Allow-Origin = 1#( `origin-or-null$P / `wildcard$P )
 The sender may generate multiple Timing-Allow-Origin header fields. The recipient may combine multiple Timing-Allow-Origin header fields by appending each subsequent field value to the combined field value in order, separated by a comma.
 </p>
 
+<div class="algorithm">
 <p>
 `計時~許可検査@
 は、所与の資源の計時~情報が`現-文書$と共有し得るかどうかを検査する：
-：
 ◎
 The timing allow check algorithm, which checks whether a resource's timing information can be shared with the current document, is as follows:
 </p>
@@ -2798,6 +2823,7 @@ For each request in the resource fetch redirection-chain:
 Return pass.
 </li>
 </ol>
+</div>
 
 <p class="note">注記：
 上の定義は、~CORS処理を伴う `Timing-Allow-Origin$h の処理とは，全部的には揃っていない。
