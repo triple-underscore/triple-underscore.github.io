@@ -1346,7 +1346,7 @@ tool::::ツール
 概念:concept:~
 概念的:conceptual:~
 正確:exact:~
-特色機能:feature:~
+特能:feature::~
 状況:situation:~
 理由:reason:~
 用語:term:~

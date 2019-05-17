@@ -1472,7 +1472,7 @@ architecture::::アーキテクチャ
 	特徴:characteristic:~
 特有:specific:~
 特有の:specific な:~
-特色機能:feature::~::フィーチャ
+特能:feature::~::フィーチャ
 確保-:ensure:~
 位置付け:status:~
 状況:situation:~
