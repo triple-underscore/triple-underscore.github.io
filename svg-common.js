@@ -556,9 +556,16 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 反映する:~SVGtypes#TermReflect
 無効な値:~SVGtypes#TermInvalidValue
 初期~値:~SVGtypes#TermInitialValue
-数量-型の値:~SVGtypes#TermNumericTypeValue
-直列化し直す:~SVGtypes#TermReserialize
+数量-型~値:~SVGtypes#TermNumericTypeValue
 ~list~interface:~SVGtypes#TermListInterface
+
+基底~値:~SVGtypes#_base-value
+関連する要素:~SVGtypes#_relevant-element
+読専~flag:~SVGtypes#_read-only-flag
+必要なら内容~属性を直列化し直す:~SVGtypes#_reserialize-reflected-attribute
+反映を継承する:~SVGtypes#_inherit-reflected
+反映先の属性:~SVGtypes:#_reflected-attribute
+
 
 	■struct
 ~SVG名前空間:~SVGstruct#Namespace
@@ -691,7 +698,7 @@ COMMON_DATA.words_table1 += `
 SVGconform:svg-conform-ja.html
 	~SVG2/conform.html
 	~SVG2/render.html→common0.js
-SVGtypes:https://svgwg.org/svg2-draft/types.html
+	~SVG2/types.html→common0.js
 	~SVG2/struct.html→common0.js
 	~SVG2/styling.html→common0.js
 	~SVG2/geometry.html→common0.js
@@ -776,6 +783,7 @@ entry::::エントリ
 初期:initial::~
 初期化-:initialize::~
 	初期化-:initialise
+初期化:initialization::~
 名:name::~
 名前:name::~
 型:type::~
@@ -1710,6 +1718,7 @@ feedback::::フィードバック
 導出-:derive:~
 反映-:reflect:~
 反映:reflection:~
+反映先の:reflected:~
 共有-:share:~
 共用:shared:~
 伝播-:propagate::~
