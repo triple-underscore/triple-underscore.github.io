@@ -1101,6 +1101,7 @@ CSSOM1:cssom-ja.html
 CSSOMVIEW:cssom-view-ja.html
 CSSOVERFLOW4:https://drafts.csswg.org/css-overflow-4/
 CSSOVERFLOW3:css-overflow3-ja.html
+CSSPV1:css-properties-values-api-ja.html
 CSSPAGE:css-page-ja.html
 CSSPOS:https://drafts.csswg.org/css-position-3/
 CSSRUBY:css-ruby-ja.html
@@ -1114,6 +1115,7 @@ CSSSTYLEATTR:css-style-attr-ja.html
 CSSSYN:css-syntax-ja.html
 CSSTEXT:css-text-ja.html
 CSSTEXTDECOR:css-text-decor-ja.html
+CSSTOM1:css-typed-om-ja.html
 CSSEASING:css-easing-ja.html
 CSSUI:css-ui-ja.html
 CSSVAL:css-values-ja.html
