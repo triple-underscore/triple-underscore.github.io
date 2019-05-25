@@ -1808,6 +1808,7 @@ BEACON=主             ~/beacon-ja.html
 	BEACON=版             ~TR/beacon/
 RESOURCEHINTS=主      ~/resource-hints-ja.html
 REFERRERPOLICY=主     ~/webappsec-referrer-policy-ja.html
+REPORTING=主          ~/reporting1-ja.html
 PERMISSIONS=主        ~/webappsec-permissions-ja.html
 RFC1034=主            ＃srgia.com/docs/rfc1034j.html
 RFC1123=主            ＃hp.vector.co.jp/authors/VA002682/rfc1123j.htm
