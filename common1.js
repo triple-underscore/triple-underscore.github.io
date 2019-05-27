@@ -326,6 +326,7 @@ infrastructure:基盤
 svg:SVG
 html:HTML
 html-dom:HTML 要素
+html-syntax:HTML 構文
 comms:メッセージ通信
 browsers:ナビと閲覧
 storage:ストレージ
