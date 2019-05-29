@@ -402,7 +402,6 @@ p.clip-rule:~MASKING1#propdef-clip-rule
 p.clip:~MASKING1#propdef-clip
 p.color-interpolation-filters:~FILTERS#propdef-color-interpolation-filters
 p.color-interpolation:~SVGpainting#ColorInterpolationProperty
-p.color-rendering:~SVGpainting#ColorRenderingProperty
 p.color:~SVGpainting#ColorProperty
 p.cursor:~CSSUI#propdef-cursor
 p.cx:~SVGgeometry#CxProperty
