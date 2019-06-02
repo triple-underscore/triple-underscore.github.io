@@ -1042,7 +1042,7 @@ DOM4:DOM4-ja.html
 DOM-Parsing:DOM-Parsing-ja.html
 ENCODING:Encoding-ja.html
 FETCH:Fetch-ja.html
-SW:https://w3c.github.io/ServiceWorker/
+SW1:service-workers-ja.html
 FILEAPI:File_API-ja.html
 STREAMS:Streams-ja.html
 URL1:URL-ja.html

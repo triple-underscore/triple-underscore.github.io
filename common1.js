@@ -1916,6 +1916,7 @@ STREAMS=・            streams.spec.whatwg.org/
 STREAMS=・            github.com/whatwg/streams
 SVG2=主               triple-underscore.github.io/index.html#spec-list-svg
 SVG=主                triple-underscore.github.io/SVG11/
+SW1=主                ~/service-workers-ja.html
 TOUCHEVENTS=主        ~/touch-events-ja.html
 URL=主                ~/URL-ja.html
 	URL=編                url.spec.whatwg.org/●LS
@@ -2074,6 +2075,9 @@ WSP:RFC6455
 WEBIDL1:WEBIDL
 WORKLETS:WORKLETS1
 REFERRER:REFERRERPOLICY
+SW:SW1
+SERVICEWORKERS:SW1
+SERVICEWORKERS1:SW1
 UPGRADE:UPGRADEINSECUREREQUESTS
 TLS12:RFC5246
 TLS:RFC5246
