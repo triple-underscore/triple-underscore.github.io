@@ -643,7 +643,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 接触判定:~SVGinteract#TermHitTesting
 ~focus可能:~SVGinteract#TermFocusable
 ~event属性:~SVGinteract#TermEventAttribute
-~graphic的~event属性:~SVGinteract#EventAttributes
+~graphicな~event属性:~SVGinteract#EventAttributes
 
 ~prop:~SVGstyling#TermProperty
 呈示~属性:~SVGstyling#TermPresentationAttribute
@@ -1085,7 +1085,7 @@ filter::::フィルタ
 gradient:
 graphic::::グラフィック
 graphics::::グラフィックス
-	~graphic的:graphical
+graphicな:graphical:::グラフィックな
 grayscale::::グレイスケール
 marker::::マーカ
 mask::::マスク
