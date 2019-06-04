@@ -440,6 +440,7 @@ p.marker-end:~SVGpainting#MarkerEndProperty
 p.marker-mid:~SVGpainting#MarkerMidProperty
 p.marker-start:~SVGpainting#MarkerStartProperty
 p.mask:~MASKING1#propdef-mask
+p.mask-type:~MASKING1#propdef-mask-type
 p.object-fit:~CSSIMAGE#propdef-object-fit
 p.object-position:~CSSIMAGE#propdef-object-position
 p.opacity:~SVGrender#ObjectAndGroupOpacityProperties
