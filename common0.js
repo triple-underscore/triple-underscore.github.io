@@ -936,7 +936,7 @@ COMMON_DATA.PREMAP = `
 表終:\uE009
 イ型:\uE00C\uE008型\uE005
 界面:\uE007~interface\uE005
-同期:\uE007同期？\uE005
+同期:\uE007~~同期？\uE005
 浮上:\uE007浮上-？\uE005
 標的:\uE007標的\uE005
 取消:\uE007取消~可？\uE005
@@ -1031,6 +1031,8 @@ GTE: <span class="op">≥</span>
 IN: <span class="op">∈</span> 
 NIN: <span class="op">∉</span> 
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>
+ABSTRACT:<h2 title="Abstract">要約</h2>
+STATUSofTHIS:<h2 title="Status of this Document">この文書の位置付け</h2>
 INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This section is non-normative.</span></p>
 FINGERPRINTING:<a class="fingerprinting" href="HTML-infrastructure-ja.html#fingerprinting-vector"></a>
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>

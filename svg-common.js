@@ -533,7 +533,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~secure静的~mode:~SVGconform#secure-static-mode
 静的~mode:~SVGconform#static-mode
 
-適合~SVG~DOM部分木:~SVGconform#ConformingSVGDOMSubtrees
+適合~SVG~DOM下位tree:~SVGconform#ConformingSVGDOMSubtrees
 適合~SVG生成器:~SVGconform#ConformingSVGGenerators
 適合~SVG解釈器:~SVGconform#ConformingSVGInterpreters
 適合~SVG~markup素片:~SVGconform#ConformingSVGFragments
@@ -544,7 +544,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 
 
 	■render
-描画~木:~SVGrender#TermRenderingTree
+描画~tree:~SVGrender#TermRenderingTree
 描画される要素:~SVGrender#TermRenderedElement
 描画されない要素:~SVGrender#TermNonRenderedElement
 再利用される~graphic:~SVGrender#TermReusedGraphics
@@ -560,7 +560,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~list~interface:~SVGtypes#TermListInterface
 
 基底~値:~SVGtypes#_base-value
-関連する要素:~SVGtypes#_relevant-element
+関連な要素:~SVGtypes#_relevant-element
 読専~flag:~SVGtypes#_read-only-flag
 必要なら内容~属性を直列化し直す:~SVGtypes#_reserialize-reflected-attribute
 反映を継承する:~SVGtypes#_inherit-reflected
@@ -572,7 +572,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 ~SVG要素:~SVGstruct#TermSVGElements
 ~graphics要素:~SVGstruct#TermGraphicsElement
 容器~要素:~SVGstruct#TermContainerElement
-構造的~要素:~SVGstruct#TermStructuralElement
+構造上の要素:~SVGstruct#TermStructuralElement
 構造的に外部の要素:~SVGstruct#TermStructurallyExternalElement
 記述的~要素:~SVGstruct#TermDescriptiveElement
 ~graphicを参照する要素:~SVGstruct#TermGraphicsReferencingElement
@@ -583,14 +583,14 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 最外縁の~svg要素:~SVGstruct#TermOutermostSVGElement
 ~SVG文書片:~SVGstruct#TermSVGDocumentFragment
 現在の~SVG文書片:#TermCurrentSVGDocumentFragment
-~use要素の~shadow木:~SVGstruct#TermUseElementShadowTree
+~use要素の~shadow~tree:~SVGstruct#TermUseElementShadowTree
 ~instance根:~SVGstruct#TermInstanceRoot
 ~instance:~SVGstruct#TermElementInstance
 要素~instance:~SVGstruct#TermElementInstance
 対応している要素:~SVGstruct#TermCorrespondingElement
 対応している~use要素:~SVGstruct#TermCorrespondingUseElement
 参照先の~graphic:~SVGstruct#TermReferencedDocumentSubtree
-参照先の文書~部分木:~SVGstruct#TermReferencedDocumentSubtree
+参照先の文書~下位tree:~SVGstruct#TermReferencedDocumentSubtree
 参照先の要素:~SVGstruct#TermReferencedElement
 
 	■coords
@@ -801,7 +801,7 @@ entry::::エントリ
 演算:operation::~
 種別:type::~
 空:empty:~
-空の:empty な:~
+空の:emptyな:~
 範囲:range::~
 clone::::クローン
 複製:copy::~
@@ -906,27 +906,27 @@ error::::エラー
 開始-:start::~
 評価-:evaluate::~
 識別-:identify::~
-呼出す:invoke する:呼び出す
-呼出され:invoke され:呼び出され
-呼出した:invoke した:呼び出した
-呼出して:invoke して:呼び出して
+呼出す:invokeする:呼び出す
+呼出され:invokeされ:呼び出され
+呼出した:invokeした:呼び出した
+呼出して:invokeして:呼び出して
 呼出:invocation:呼び出し
 被呼出時:被 invoke 時:~
 実行-:execute:~
 実行:execution:~
-走らす:run する:~
-走らせ:run し:~
-走って:run して:~
+走らす:runする:~
+走らせ:runし:~
+走って:runして:~
 起動-:initiate:~
 環境:environment:~
-即時に:immediate に:~
+即時に:immediateに:~
 中止-:abort::~
 停止-:stop::~
 完遂-:finish::~
 反復-:iterate::~
 反復:iteration::~
-繰返され:repeat され:繰り返され
-繰返す:repeat する:繰り返す
+繰返され:repeatされ:繰り返され
+繰返す:repeatする:繰り返す
 並列的:parallel::~
 設定子:setter::~
 取得子:getter::~
@@ -942,7 +942,8 @@ group::::グループ
 	~group化する:grouping
 host::::ホスト
 svg:
-木:tree::~
+tree::::ツリー
+下位tree:subtree:::下位ツリー:サブツリー
 根:root::~
 子:child::~
 先祖:ancestor::~
@@ -962,11 +963,10 @@ svg:
 親:parent::~
 構造化-:structure::~
 構造的:structural::~
+構造上の:structural::~
 構造:structure::~
-構造的:structural::~
 入子に:nest::入れ子に
 入子の:nested::入れ子の
-部分木:subtree::~
 隔離-:isolate::~
 順序:order::~
 名前空間:namespace::~
@@ -993,8 +993,8 @@ sizing::::サイズ法
 offset::::オフセット
 vector::::ベクター
 span:
-重合して:overlap して::重なり合って
-重合しな:overlap しな::重なり合わな
+重合して:overlapして::重なり合って
+重合しな:overlapしな::重なり合わな
 限界:bounding::~
 限界域:bounds::~
 領域:region::~
@@ -1006,11 +1006,11 @@ span:
 外形線:outline::~
 内域:interior::~
 
-切取られ:clip され::切り取られ
-切取った:clip した::切り取った
-切抜かれ:clip され::切り抜かれ
+切取られ:clipされ::切り取られ
+切取った:clipした::切り取った
+切抜かれ:clipされ::切り抜かれ
 切抜き:clipping::切り抜き
-切抜く:clip する::切り抜く
+切抜く:clipする::切り抜く
 境界:boundary::~
 
 変形:transform::~
@@ -1058,9 +1058,9 @@ span:
 直線:straight line::~
 曲線:curve::~
 真円:circle::~
-真円な:circular な::真円の
+真円な:circularな::真円の
 矩形:rectangle::~
-矩形な:rectangular な::矩形の
+矩形な:rectangularな::矩形の
 空間:space::~
 軸:axis::~
 無限:infinite:~
@@ -1114,23 +1114,23 @@ green:
 不透明:opaque::~
 不透明度:opacity::~
 透明:transparent::~
-塗られ:paint され::塗られ
+塗られ:paintされ::塗られ
 塗り:paint::~
-塗る:paint する::~
-塗れる:paint できる::~
-塗らな:paint しな::~
+塗る:paintする::~
+塗れる:paintできる::~
+塗らな:paintしな::~
 塗ng:painting::塗り
 前景:foreground::~
 後景:backdrop::~
-遮る:obscure する:~
-描く:draw する::~
-描ける:draw できる::~
-描かれ:draw され::~
-描かせ:draw させ::~
-描いて:draw して::~
-描かな:draw しな::~
+遮る:obscureする:~
+描く:drawする::~
+描ける:drawできる::~
+描かれ:drawされ::~
+描かせ:drawさせ::~
+描いて:drawして::~
+描かな:drawしな::~
 描き:drawing::~
-描直す:redraw する::描き直す
+描直す:redrawする::描き直す
 描直し:redraw::描き直し
 絵図:drawing:~
 具現化-:render::~
@@ -1226,7 +1226,7 @@ pan::::パン
 音声:audio::~
 装置:device::~
 可視:visible::~
-可視の:visible な::~
+可視の:visibleな::~
 可視性:visibility::~
 視覚的:visual::~
 表示-:display::~
@@ -1236,16 +1236,16 @@ pan::::パン
 対話:interaction::~
 対話性:interactivity::~
 対話的:interactive::~
-隠され:hide され::~
-隠す:hide する::~
-隠せば:hide すれば::~
-隠して:hide して::~
+隠され:hideされ::~
+隠す:hideする::~
+隠せば:hideすれば::~
+隠して:hideして::~
 選択-:select::~
 選択:selection::~
 閲覧文脈:browsing context::~
 作動化-:activate::~::アクティブ化
 作動化:activation::~::アクティブ化
-作動中の:active な::~::アクティブな
+作動中の:activeな::~::アクティブな
 作動中:active::~::アクティブ
 動作-:act::~::アクト
 動作:action::~::アクション
@@ -1290,15 +1290,15 @@ multimedia::::マルチメディア
 file::::ファイル
 address::::アドレス
 page::::ページ
-埋込まれ:embed され::埋め込まれ
-埋込む:embed する::埋め込む
-埋込んで:embed して::埋め込んで
+埋込まれ:embedされ::埋め込まれ
+埋込む:embedする::埋め込む
+埋込んで:embedして::埋め込んで
 埋込d:embedded::埋め込み
 読込み:loading::読み込み::ローディング
-読込む:load する::読み込む::ロードする
-読込まれ:load され::読み込まれ::ロードされ
-読込んで:load して::読み込んで::ロードして
-再読込する:reload する::読み込み直す::リロードする
+読込む:loadする::読み込む::ロードする
+読込まれ:loadされ::読み込まれ::ロードされ
+読込んで:loadして::読み込んで::ロードして
+再読込する:reloadする::読み込み直す::リロードする
 動画:video::~::ビデオ
 
 	●仕様
@@ -1336,18 +1336,16 @@ tool::::ツール
 基本:basic:~
 基礎的:fundamental:~
 実施:practice:~
-実用上の:practical な:~
+実用上の:practicalな:~
 実質的:effective:~
 実際:actual:~
-実際の:actual な:~
+実際の:actualな:~
 将来:future:~
 将来の:future:~
 役割:role::~
-後方互換:backwards compatible:~
-後方互換性:backwards compatibility:~
 手法:method:~
 手続き:steps:~
-旧来の:legacy な:~
+旧来の:legacyな:~
 有意:significant:~
 条件:condition:~
 条件付き:conditional:~
@@ -1359,30 +1357,31 @@ tool::::ツール
 理由:reason:~
 用語:term:~
 目的:purpose:~
-直に:direct に:~
+直に:directに:~
 直接的:direct:~
 間接的:indirect:~
 能:ability:~
 課題:issue:~
 通常:normal:~
-通常の:normal な:~
-通常は:normal では:~
-通常には:normal には:通常は
-	normally
-通常通り:as normal に:通常どおり
+通常の:normalな:~
+通常通り:as normalに:通常どおり
+通常に:normalに:通常どおり
+通常は:normalには:~
+通例の:usualな:~
 通例的:usual:~
 道具:tool:~
-関連する:relevant な:~
+関連な:relevantな:関連する
+関連する:relevantになる:~
 自動的:automatic:~
-共通の:common な:~
-共通しな:common でな:~
-共通的に:common に:よく
-共通的な:common な:よくある
+共通の:commonな:~
+共通しな:commonでな:~
+共通的に:commonに:よく
+共通的な:commonな:よくある
 詳細:details:~
 詳細な:detailed:~
 可用:available:~
 意味論:semantics:~
-意味論上の:semantic な:~
+意味論上の:semanticな:~
 適切:appropriate:~
 不適切:inappropriate:~
 側面:aspect:~
@@ -1391,8 +1390,9 @@ tool::::ツール
 特徴:characteristic:~
 一意:unique:~
 明瞭:clear:~
-類似する:similar な:~
+類似する:similarな:~
 	同様に:similarly／:similar
+後方-:backward:~
 互換:compatible:~
 互換性:compatibility:~
 アリ:possible:可能
@@ -1407,11 +1407,11 @@ tool::::ツール
 基本的:basic:~
 複階的:complex:~
 概観:overview:~
-相応しい:suitable な:~
-望む:wish する:~
-望まれ:wish され:~
-求める:want する:~
-求めら:want さ:~
+相応しい:suitableな:~
+望む:wishする:~
+望まれ:wishされ:~
+求める:wantする:~
+求めら:wantさ:~
 容易:easy:~
 	より容易に:easier
 恣意的:arbitrary:~
@@ -1422,10 +1422,10 @@ tool::::ツール
 方式:manner:~
 状況下:circumstances:~
 帰結:consequence:~
-汎用の:generic な:~
+汎用の:genericな:~
 汎用:generic:~
 注釈文:prose:~
-概して:typical に:~
+概して:typicalに:~
 
 	決して:never
 	例:example
@@ -1466,11 +1466,11 @@ fall-back:fall back:::フォールバック
 feedback::::フィードバック
 上書き:override:~
 不正:incorrect:~
-並行して:parallel に:~
+並行して:parallelに:~
 付録:appendix:~
 供-:provide:~
-供せ:provide でき:~
-供さな:provide しな:~
+供せ:provideでき:~
+供さな:provideしな:~
 依存-:depend:~
 依拠-:rely:~
 保全-:preserve:~
@@ -1498,15 +1498,15 @@ feedback::::フィードバック
 勧告候補:Candidate Recommendation:~
 参考:informative:~
 取扱い:handling:取り扱い
-取扱う:handle する:取り扱う
-取扱われ:handle され:取り扱われ
-取扱って:handle して:取り扱って
-取扱わな:handle しな:取り扱わな
-取扱える:handle できる:取り扱える
+取扱う:handleする:取り扱う
+取扱われ:handleされ:取り扱われ
+取扱って:handleして:取り扱って
+取扱わな:handleしな:取り扱わな
+取扱える:handleできる:取り扱える
 含意-:imply:~
 含意:implications:~
 変更点:changes:~
-孕む:involve する:~
+孕む:involveする:~
 定義-:define:~
 定義:definition:~
 定義済みの:predefined:~
@@ -1531,22 +1531,20 @@ feedback::::フィードバック
 指定:specification:~
 	指定されていない:unspecified
 	指定-法:specifying
-特定の:specific な:~
-特有の:specific な:~
-特有な:-specific な:特有の
-特有:specific:~
 仕様:spec:~
+特有:specific:~
+特定の:specificな:~
 特定的:specifical:具体的
 特別:special:~
 指示書き:instructions:~
 挙動:behavior:ふるまい
-挙動する:behave する:ふるまう
+挙動する:behaveする:ふるまう
 採用-:adopt:~
 推奨-:recommend:~
 推奨:recommendation:~
-改めら:alter さ:~
-改めな:alter しな:~
-改める:alter する:~
+改めら:alterさ:~
+改めな:alterしな:~
+改める:alterする:~
 改善-:improve:~
 改善:improvement:~
 明確化-:clarify:~
@@ -1559,10 +1557,10 @@ feedback::::フィードバック
 期待:expectation:~
 予期-:expect:~
 標準:standard:~
-標準の:standard な:~
-正しい:correct な:~
-正しく:correct に:~
-正した:correct した:~
+標準の:standardな:~
+正しい:correctな:~
+正しく:correctに:~
+正した:correctした:~
 決定-:determine:~
 注釈:annotation:~
 無視-:ignore:~
@@ -1581,9 +1579,9 @@ feedback::::フィードバック
 要旨-:outline:~
 要求-:require:~
 要約-:summarize:~
-見なさ:consider さ:~
-見なす:consider する:~
-見なせ:consider でき:~
+見なさ:considerさ:~
+見なす:considerする:~
+見なせ:considerでき:~
 規範的:normative:~
 解決-:resolve:~
 解決:resolution:~
@@ -1598,15 +1596,15 @@ feedback::::フィードバック
 	許容されない:disallowed
 説明-:explain:~
 説明:explanation:~
-論じら:discuss さ:~
-論じる:discuss する:~
+論じら:discussさ:~
+論じる:discussする:~
 論点:discussion:~
 警告:warning:~
-述べら:describe さ:~
-述べる:describe する:~
-述べた:describe した:~
-述べて:describe して:~
-述べれ:describe でき:~
+述べら:describeさ:~
+述べる:describeする:~
+述べた:describeした:~
+述べて:describeして:~
+述べれ:describeでき:~
 遂行-:perform:~
 適合-:conform:~
 	適合する:are conformant
@@ -1624,8 +1622,7 @@ feedback::::フィードバック
 非推奨に:deprecate:~
 廃用に:obsolete:~
 既知:known:~
-既知の:known な:~
-未知の:unknown:~
+未知:unknown:~
 作者:author:~
 確保-:ensure:~
 給-:supply:~
@@ -1636,18 +1633,18 @@ feedback::::フィードバック
 存在-:exist:~
 既存の:existing:~
 分類:category:~
-見做され:assume され:~
-見做す:assume する:~
-見做して:assume して:~
+見做され:assumeされ:~
+見做す:assumeする:~
+見做して:assumeして:~
 代替-:alternate:~
 代替:alternative:~
-組入れる:incorporate する:組み入れる
+組入れる:incorporateする:組み入れる
 解-:understand:~
 不能化-:disable:~
 可能化-:enable:~
 設計-:design:~
 認識-:recognize:~
-避ける:avoid する:~
+避ける:avoidする:~
 導入-:introduce:~
 指示-:indicate:~
 指示:indication:~
@@ -1655,12 +1652,12 @@ feedback::::フィードバック
 検査-:check:~
 防止-:prevent:~
 試み:attempt:~
-試みる:attempt する:~
-試みら:attempt さ:~
-試みて:attempt して:~
-試みた:attempt した:~
-試みな:attempt しな:~
-試みれ:attempt でき:~
+試みる:attemptする:~
+試みら:attemptさ:~
+試みて:attemptして:~
+試みた:attemptした:~
+試みな:attemptしな:~
+試みれ:attemptでき:~
 裁定-:decide:~
 裁定:decision:~
 検分-:inspect:~
@@ -1668,23 +1665,23 @@ feedback::::フィードバック
 包摂-:encompass:~
 固守-:adhere:~
 奨励-:encourage:~
-見出す:find する:~
-見出せる:find できる:~
-見出され:find され:~
-見出して:find して:~
+見出す:findする:~
+見出せる:findできる:~
+見出され:findされ:~
+見出して:findして:~
 許可-:permit:~
 観測-:observe:~
-欲され:desire され:~
-表出され:express され:表され
-表出する:express する:表す
-表出した:express した:表した
+欲され:desireされ:~
+表出され:expressされ:表され
+表出する:expressする:表す
+表出した:expressした:表した
 設置-:place:~
 著作:authoring:~
-受持つ:cover する:受け持つ
-受持って:cover して:受け持って
-落とす:drop する:~
-落とし:drop し:~
-落とさ:drop さ:~
+受持つ:coverする:受け持つ
+受持って:coverして:受け持って
+落とす:dropする:~
+落とし:dropし:~
+落とさ:dropさ:~
 言明-:state:~
 言明:statement:~
 相違-:differ:~
@@ -1728,20 +1725,20 @@ feedback::::フィードバック
 計算-:calculate::~
 計算:calculation::~
 関与-:participate::~
-アテガう:assign する:あてがう
-アテガえる:assign できる:あてがえる
-アテガえな:assign できな::あてがえな
-アテガわれ:assign され:あてがわれ
-アテガって:assign して:あてがって
-アテガおう:assign しよう:あてがおう
-アテガわな:assign しな:あてがわな
+アテガう:assignする:あてがう
+アテガえる:assignできる:あてがえる
+アテガえな:assignできな::あてがえな
+アテガわれ:assignされ:あてがわれ
+アテガって:assignして:あてがって
+アテガおう:assignしよう:あてがおう
+アテガわな:assignしな:あてがわな
 対応付け:mapping::~
-対応付けら:map さ::~
-対応付ける:map する::~
+対応付けら:mapさ::~
+対応付ける:mapする::~
 追加-:add:~
 追加:addition:~
-追加的な:additional な:追加の
-追加的に:additional に:追加で
+追加的な:additionalな:追加の
+追加的に:additionalに:追加で
 	加えて:in addition
 	加えて:additionally
 参照-:reference::~
@@ -1750,14 +1747,14 @@ feedback::::フィードバック
 参照元の:referencing::~
 参照ng:referencing::参照
 域外参照:cross-references::~
-結付けら:associate さ:結び付けら
-結付けて:associate して:結び付けて
+結付けら:associateさ:結び付けら
+結付けて:associateして:結び付けて
 登録-:register::~
 登録:registration::~
-組合せる:combine する:組み合せる
-組合され:combine され:組み合され
-組合せて:combine して:組み合せて
-組合わせ:combination:組み合せ
+組合せる:combineする:組み合せる
+組合され:combineされ:組み合され
+組合せて:combineして:組み合せて
+組合n:combination:組み合せ
 
 	対応-:correspond
 	現れる:appear
@@ -1799,7 +1796,7 @@ scripting::::スクリプト処理
 自前の:own:~
 単独の:single:~
 外部:external:~
-外部の:external な:~
+外部の:externalな:~
 特定0の:particular:ある特定の
 全部的:full:~
 部分的:partial:~
