@@ -2392,7 +2392,7 @@ stateless::::ステートレス
 階層的:hierarchical:~
 隣接点:neighbor::~
 集合:set:~
-頁:page:ページ
+page::::ページ
 順序:order:~
 領域:region:~
 鮮度:freshness::~
