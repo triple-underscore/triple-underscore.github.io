@@ -1204,6 +1204,7 @@ MIXED-CONTENT:webappsec-mixed-content-ja.html
 SECURE-CONTEXT:webappsec-secure-contexts-ja.html
 `;
 
+/* どの仕様にも高確率／高頻度で現れる語彙 */
 
 COMMON_DATA.words_table = `
 
@@ -1247,6 +1248,13 @@ OS:operating system:OS
 外部の:externalな:~
 内側:inside:~
 外側:outside:~
+内縁:inner:~
+外縁:outer:~
+直に:directに:~
+直な:directな:直の
+直接的:direct:~
+間接的:indirect:~
+	ナシ:none:なし
 
 ●未分類
 block::::ブロック
@@ -1255,7 +1263,7 @@ worker:
 Realm:
 realm:
 title::::タイトル
-
+page::::ページ
 匿名:anonymous:~
 行先:destination:~
 関数:function:~
@@ -1271,8 +1279,6 @@ size::::サイズ
 sizing::::サイズ法
 空間:space:~
 次元:dimension:~
-内縁:inner:~
-外縁:outer:~
 境界:boundary:~
 絶対:absolute:~
 絶対的:absolute:~
@@ -1290,88 +1296,18 @@ sizing::::サイズ法
 
 ●仕様レベル
 
-app:application:::アプリ
-browser::::ブラウザ
-support::::サポート
-page::::ページ
-model::::モデル
-level::::レベル
-version::::バージョン
-module::::モジュール
-custom::::カスタム
-platform::::プラットフォーム
-system::::システム
-risk::::リスク
-feedback::::フィードバック
-option::::オプション
-tool::::ツール
-test::::テスト
-program::::プログラム
-programming::::プログラミング
-approach::::アプローチ
-vendor::::ベンダ
-native::::ネイティブ
-software::::ソフトウェア
-hardware::::ハードウェア
-computer::::コンピュータ
-bug::::バグ
-debug::::デバッグ
-logic::::ロジック
-community::::コミュニティ
-cost::::コスト
-care::::ケア
-architecture::::アーキテクチャ
-library::::ライブラリ
-plugin::::プラグイン
-console::::コンソール
-
 作者:author:~
-策定者:author:~
-著作-:author:~
-著作:authoring:~
-編集者:editor:~
-編集上の:editorialな:~
-開発者:developer:~
-実装:implementation:~
-実装-:implement:~
-実装者:implementer:~
 利用-:use:~
 利用:use:~
 再利用-:reuse:~
 再利用:reuse:~
-利用元:user:~
-利用元:user:~
-利用事例:use case:~:::ユースケース
 利用者:user:~:::ユーザ
-
-仕様:spec:~
-指定-:specify:~
-指定:specification:~
-指定d:specified:指定
-
-特定に:specificに:特定的に
-特定な:specificな:特定的な
-特定の:specificな:~
-特定的な:specificalな:~
-特定的に:specificalに:特に
-特定的には:specificalには:具体的には
-特有:specific:~
-指定子:specifier:~
-
-特別:special:~
-特化-:specialize:~
-特殊:special:~
-
-指示-:indicate:~
-指示:indication:~
-指示子:indicator:~
-
-一般:general:~
-一般の:generalな:~
-一般的:general:~
-汎用:generic:~
-汎用の:genericな:~
-汎用的:generic:~
+利用元:user:~
+有用:useful:~
+開発者:developer:~
+実装:implementation:~
+実装-:implement:~
+実装者:implementer:~
 
 通常:normal:~
 通常の:normalな:~
@@ -1386,24 +1322,27 @@ console::::コンソール
 通例的:usual:~
 通例の:usualな:~
 通例通り:as usualに:通例どおり
+概して:typicalに:~
+代表的:typical:~
+典型的:typical:~
+定例の:regularな:~
 
+	●規約／表記
+編集者:editor:~
+編集上の:editorialな:~
+情報:information:~
+導入-:introduce:~
+序論:introduction:~
+概観:overview:~
+論じる:discussする:~
+論じら:discussさ:~
+論じて:discussして:~
+論じた:discussした:~
+論点:discussion:~
+論:discussion:~
 用語:term:~
 各種用語:terminology:~
-概念:concept:~
-概念的:conceptual:~
-観念:notion:概念
-定義-:define:~
-定義:definition:~
-定義な:-defined:~
-未定義:undefined:~
-未定義の:undefinedな:~
-定義済み:predefined:~
-定義済みの:predefinedな:~
-
-決定:determination:~
-決定-:determine:~
-裁定-:decide:~
-裁定:decision:~
+語彙:vocabulary:~
 
 述べな:describeしな:~
 述べれ:describeでき:~
@@ -1413,55 +1352,57 @@ console::::コンソール
 述べる:describeする:~
 記述-:describe:~
 記述:description:~
+解釈-:interpret:~
+解釈:interpretation:~
+明確化-:clarify:~
+明確化:clarification:~
+表出-:express:~
+	表出-:express:表
+	表出でき:expressでき:表せ
+	表出する:expressする:表す
+言明-:state:~
+言明:statement:~
+説明-:explain:~
+説明:explanation:~
+要約:summary:~
+要約-:summarize:~
+表明-:assert:~
+表明:assertion:~
+規約:convention:~
+表記規約:convensions:~
+記法:notation:~
+注釈-:annotate:~
+注釈:annotation:~
+注釈文:prose:~
+混同-:confuse:~
+混同:confusion:~
+解-:understand:~
+解せ:understandでき:~
+解され:understandされ:~
+解さな:understandしな:~
+解せる:understandできる:~
+解せな:understandできな:~
+理解-:understand:~
+多義的:ambiguous:~
+一義的:unambiguous:~
+一義化-:disambiguate:~
+一義化:disambiguation:~
+多義性:ambiguity:~
+言及-:mention:~
+言及:mention:~
+詳細:details:~
+詳細な:detailed:~
+詳細に:in detailに:~
+付録:Appendix:~
+	付録:appendix
+図式:diagram:~
+見本:sample:~
+明瞭:clear:~
+不明瞭:unclear:~
+可読性:readability:~
 
-取扱わず:handleせず:取り扱わず
-取扱えな:handleできな:取り扱えな
-取扱え:handleでき:取り扱え
-取扱わせ:handleさせ:取り扱わせ
-取扱わな:handleしな:取り扱わな
-取扱っ:handleし:取り扱っ
-取扱われ:handleされ:取り扱われ
-取扱える:handleできる:取り扱える
-取扱う:handleする:取り扱う
-取扱い:handling:取り扱い
-
-挙動:behavior:ふるまい
-挙動する:behaveする:ふるまう
-挙動し:behaveし:ふるまわ
-挙動でき:behaveでき:ふるまえ
-挙動させ:behaveさせ:ふるまわせ
-挙動して:behaveして:ふるまって
-挙動した:behaveした:ふるまった
-
-試み:attempt:~
-試みて:attemptして:~
-試みた:attemptした:~
-試みな:attemptしな:~
-試みる:attemptする:~
-試みら:attemptさ:~
-試みれ:attemptでき:~
-試行-:try:~
-
-見出す:findする:~
-見出され:findされ:~
-見出せ:findでき:~
-見出しな:findしな:~
-見出した:findした:~
-見出して:findして:~
-見出さな:findしな:~
-
-避ける:avoidする:~
-避けら:avoidさ:~
-避けた:avoidした:~
-避けて:avoidして:~
-避けれ:avoidでき:~
-	避けれ:avoidでき:避けられ
-	避けつ:avoidしつ:~
-
-供せ:provideでき:~
-供さな:provideしな:~
-供-:provide:~
-提供-:offer:~
+表現-:represent:~
+表現:representation:~
 
 見なさ:considerさ:~
 見なす:considerする:~
@@ -1481,8 +1422,86 @@ console::::コンソール
 見做して:assumeして:~
 前提:assumption:~
 
-解釈-:interpret:~
-解釈:interpretation:~
+	●設計
+architecture::::アーキテクチャ
+approach::::アプローチ
+community::::コミュニティ
+cost::::コスト
+feedback::::フィードバック
+module::::モジュール
+model::::モデル
+risk::::リスク
+問題:problem:~
+課題:issue:~
+一般:general:~
+一般の:generalな:~
+一般的:general:~
+汎用:generic:~
+汎用の:genericな:~
+汎用的:generic:~
+
+策定者:author:~
+著作-:author:~
+著作:authoring:~
+仕様:spec:~
+指定-:specify:~
+指定:specification:~
+指定d:specified:指定
+特定に:specificに:特定的に
+特定な:specificな:特定的な
+特定の:specificな:~
+特定的な:specificalな:~
+特定的に:specificalに:特に
+特定的には:specificalには:具体的には
+特有:specific:~
+指定子:specifier:~
+
+特別:special:~
+特化-:specialize:~
+特殊:special:~
+
+指示-:indicate:~
+指示:indication:~
+指示子:indicator:~
+
+概念:concept:~
+概念的:conceptual:~
+観念:notion:概念
+抽象-:abstract:~
+抽象的:abstract:~
+定義-:define:~
+定義:definition:~
+定義な:-defined:~
+未定義:undefined:~
+未定義の:undefinedな:~
+定義済み:predefined:~
+定義済みの:predefinedな:~
+裁定-:decide:~
+裁定:decision:~
+設計-:design:~
+設計:design:~
+精査-:examine:~
+考査-:review:~
+考査:review:~
+仕組み:mechanism:~
+取組む:addressする:取り組む
+取組んで:addressして:取り組んで
+取組んだ:addressした:取り組んだ
+取組もう:addressしよう:取り組もう
+取組まれ:addressされ:取り組まれ
+取組まな:addressしな:取り組まな
+取組める:addressできる:取り組める
+精緻化-:refine:~
+提案:proposal:~
+提案-:propose:~
+案:idea:~
+示唆-:suggest:~
+示唆:suggestion:~
+動機:motivation:~
+目的:purpose:~
+目標:goal:~
+	目指して:aimして:~
+	目指す:aimする:~
 
 意味論:semantics:~
 意味論上の:semanticな:~
@@ -1491,11 +1510,16 @@ console::::コンソール
 意味され:meanされ:意図され
 意味-:mean:~
 有意義:meaningful:~
+有意:significant:~
 意図-:intend:~
 意図:intent:~
 意図的:intentional:~
-	意向:intention:意図
 	意向:intention:~
+明示的:explicit:~
+暗黙的:implicit:~
+暗黙の:implied:~
+含意-:imply:~
+含意:implication:~
 
 求める:wantする:~
 求めな:wantしな:~
@@ -1515,15 +1539,13 @@ console::::コンソール
 望んだ:wishした:~
 望んで:wishして:~
 
-示唆-:suggest:~
-示唆:suggestion:~
-
-明確化-:clarify:~
-明確化:clarification:~
-表出-:express:~
-	表出-:express:表
-	表出でき:expressでき:表せ
-	表出する:expressする:表す
+挙動:behavior:ふるまい
+挙動する:behaveする:ふるまう
+挙動し:behaveし:ふるまわ
+挙動でき:behaveでき:ふるまえ
+挙動させ:behaveさせ:ふるまわせ
+挙動して:behaveして:ふるまって
+挙動した:behaveした:ふるまった
 働く:workする:~
 働ける:workできる:~
 働いて:workして:~
@@ -1531,7 +1553,144 @@ console::::コンソール
 働かな:workしな:~
 作業:work:~
 作業-:work:~
+要因:factor:~
+懸念-:concern:~
+懸念:concern:~
+困難:difficult:~
+困難さ:difficulty:~
+複階的:complex:~
+複階性:complexity:複雑さ
 
+直感的:intuitive:~
+本質的:essential:~
+手法:method:~
+原則:principle:~
+資質:nature:~
+自然:natural:~
+不変則:invariant:~
+特徴:characteristics:~
+重要:important:~
+重要度:importance:~
+
+受持てる:coverできる:受け持てる
+受持たす:coverさせる:受け持たす
+受持っ:coverし:受け持っ
+受持たな:coverしな:受け持たな
+受持つ:coverする:受け持つ
+包摂-:encompass:~
+中核:core:~
+中核の:coreな:~
+予約-:reserve:~
+
+	●拡張／互換
+version::::バージョン
+level::::レベル
+bug::::バグ
+debug::::デバッグ
+test::::テスト
+console::::コンソール
+相互運用能:interoperability:~
+相互運用可能:interoperable:~
+互換:compatible:~
+非互換:incompatible:~
+互換性:compatibility:~
+非互換性:incompatibility:~
+後方-:backward:~
+前方-:forward:~
+過去互換:quirks:~
+非推奨に:deprecate:~
+非推奨d:deprecated:~
+
+開発-:develop:~
+開発:development:~
+改善:improvement:~
+改善-:improve:~
+向上-:improve:~
+統合-:integrate:~
+統合:integration:~
+組入れて:incorporateして:組み入れて
+組入れた:incorporateした:組み入れた
+組入れら:incorporateさ:組み入れら
+組入れる:incorporateする:組み入れる
+
+落とす:dropする:~
+落とさ:dropさ:~
+落とせ:dropでき:~
+落とし:dropし:~
+
+改訂-:revise:~
+改訂:revision:~
+改訂版:revision:~
+廃用:obsolete:~
+廃用に:obsolete:~
+履歴:history:~
+歴史:history:~
+歴史的:historical:~
+変更点:changes:~
+発行版:publication:~
+正誤表:errata:~
+謝辞:acknowledgment:~
+
+将来:future:~
+	将来の:future:~
+未来:future:~
+	未来の:future:~
+旧来:legacy:~
+旧来の:legacyな:~
+伝統的:traditional:~
+相違-:differ:~
+相違:difference:~
+相違点:differences:~
+相互作用-:interact:~
+相互作用:interaction:~
+保守-:maintain:~
+保守:maintenance:~
+
+追加的に:additionalに:追加で
+追加的な:additionalな:追加の
+機能性:functionality:~
+	機能的:functional:~
+	機能上の:functional:~
+拡張-:extend:~
+拡張:extension:~
+拡張能:extensibility:~
+能:ability:~
+能力:capability:~
+	能力:capabilities:~
+特能:feature::~
+可用:available:~
+公開-:expose:~
+公開:exposure:~
+供せ:provideでき:~
+供さな:provideしな:~
+供-:provide:~
+提供-:offer:~
+
+アリ:possible:可能
+	可能性:possibility:~
+	不可能:impossible:~
+改める:alterする:~
+改めれ:alterでき:~
+改めな:alterしな
+改めら:alterさ:~
+改めな:alterしな:~
+改めて:alterして:~
+改めた:alterした:~
+
+
+	●適合性
+
+標準:standard:~
+標準の:standardな:~
+	標準~化:standardize／:standardization
+草案:draft:~
+編集者草案:Editor’s Draft:~
+作業草案:Working Draft:~
+勧告候補:Candidate Recommendation:~
+勧告案:Proposed Recommendation:~
+勧告:Recommendation:~
+
+規則:rule:~
 強制-:force:~
 許容-:allow:~
 許可-:permit:~
@@ -1540,40 +1699,58 @@ console::::コンソール
 否認-:deny:~
 禁止:forbidden:~
 禁止-:forbid:~
+抑止:suppression:~
+抑止-:suppress:~
+抑制-:reduce:~
+制限-:limit:~
+制約-:restrict:~
+制約:restriction:~
+制約的:restrictive:~
+拘束-:constrain:~
+拘束:constraint:~
+違反-:violate:~
+違反:violation:~
+防止-:prevent:~
+要求-:require:~
+要件:requirements:~
+期待-:expect:~
+期待:expectation:~
+予期-:expect:~
+予期:expectation:~
+任意選択:optional:~
+任意選択の:optionalな:~
+任意選択で:optionalに:~
+奨励-:encourage:~
+忌避-:discourage:~
+推奨:recommendation:~
+推奨-:recommend:~
+認可-:approve:~
+督促-:urge:~
+尊守-:honor:~
+固守-:adhere:~
+順守-:obey:~
+規範的:normative:~
+厳密:strict:~
+確保-:ensure:~
+保証:guarantee:~
+保証-:guarantee:~
 
-設計-:design:~
-設計:design:~
-
-取組む:addressする:取り組む
-取組んで:addressして:取り組んで
-取組んだ:addressした:取り組んだ
-取組もう:addressしよう:取り組もう
-取組まれ:addressされ:取り組まれ
-取組まな:addressしな:取り組まな
-取組める:addressできる:取り組める
-論じる:discussする:~
-論じら:discussさ:~
-論じて:discussして:~
-論じた:discussした:~
-論点:discussion:~
-論:discussion:~
-問題:problem:~
-課題:issue:~
-序論:introduction:~
-提案:proposal:~
-提案-:propose:~
+指針:guideline:~
+助言的:advisory:助言
+	助言:advice:~
+公式的:official:~
+正式:formal:~
+非正式:informal:略式的
+	正式でない:informal
+判定基準:criteria:~
+	判定基準:criterion
 
 強く:strongに:~
 強い:strongな:~
 	強いられ
 	強いる
 
-既定:default:~:::デフォルト
-既定の:default:~:::デフォルト
-
-拡張-:extend:~
-拡張:extension:~
-拡張能:extensibility:~
+故意的な:willful:故意による
 適用-:apply:~
 適用:application:~
 適用能:applicability:~
@@ -1606,309 +1783,80 @@ console::::コンソール
 	inconsistent:
 整合性:consistency:~
 
-標準:standard:~
-標準の:standardな:~
-	標準~化:standardize／:standardization
-要求-:require:~
-要件:requirements:~
-期待-:expect:~
-期待:expectation:~
-予期-:expect:~
-予期:expectation:~
-任意選択:optional:~
-任意選択の:optionalな:~
-任意選択で:optionalに:~
-奨励-:encourage:~
-忌避-:discourage:~
-推奨:recommendation:~
-推奨-:recommend:~
-草案:draft:~
-編集者草案:Editor’s Draft:~
-作業草案:Working Draft:~
-勧告候補:Candidate Recommendation:~
-勧告案:Proposed Recommendation:~
-勧告:Recommendation:~
-互換:compatible:~
-非互換:incompatible:~
-互換性:compatibility:~
-非互換性:incompatibility:~
-後方-:backward:~
-前方-:forward:~
-過去互換:quirks:~
-尊守-:honor:~
-固守-:adhere:~
-順守-:obey:~
-非推奨に:deprecate:~
-非推奨d:deprecated:~
-判定基準:criterion:~
-判定基準:criteria:~
-抑止:suppression:~
-抑止-:suppress:~
-抑制-:reduce:~
-制限-:limit:~
-制約-:restrict:~
-制約:restriction:~
-制約的:restrictive:~
-拘束-:constrain:~
-拘束:constraint:~
-改訂-:revise:~
-改訂:revision:~
-改訂版:revision:~
-廃用:obsolete:~
-廃用に:obsolete:~
-有意:significant:~
-違反:violation:~
-違反-:violate:~
-防止-:prevent:~
-言明-:state:~
-言明:statement:~
-規約:convention:~
-表記規約:convensions:~
-注釈-:annotate:~
-注釈:annotation:~
-注釈文:prose:~
 
-表現-:represent:~
-表現:representation:~
+	●実施
+computer::::コンピュータ
+native::::ネイティブ
+app:application:::アプリ
+platform::::プラットフォーム
+vendor::::ベンダ
+system::::システム
+browser::::ブラウザ
+software::::ソフトウェア
+hardware::::ハードウェア
+support::::サポート
+library::::ライブラリ
+plugin::::プラグイン
+tool::::ツール
 
-事例:case:~
+義務付けら:mandateさ:~
+義務付けな:mandateしな:~
+義務付ける:mandateする:~
+義務付けて:mandateして:~
 
-効果:effect:~
-効果的:effective:~
-実質的:effective:~
-効率的:efficient:~
-効率性:efficiency:~
-影響-:affect:~
-影響i:impact:影響
-波及-:influence:~
-実際:actual:~
-実際の:actualな:~
-労:effort:~
+取扱わず:handleせず:取り扱わず
+取扱えな:handleできな:取り扱えな
+取扱え:handleでき:取り扱え
+取扱わせ:handleさせ:取り扱わせ
+取扱わな:handleしな:取り扱わな
+取扱っ:handleし:取り扱っ
+取扱われ:handleされ:取り扱われ
+取扱える:handleできる:取り扱える
+取扱う:handleする:取り扱う
+取扱い:handling:取り扱い
 
-方式:manner:~
-仕方:way:~
+試み:attempt:~
+試みて:attemptして:~
+試みた:attemptした:~
+試みな:attemptしな:~
+試みる:attemptする:~
+試みら:attemptさ:~
+試みれ:attemptでき:~
+試行-:try:~
 
-依存-:depend:~
-独立:independent:~
+避ける:avoidする:~
+避けら:avoidさ:~
+避けた:avoidした:~
+避けて:avoidして:~
+避けれ:avoidでき:~
+	避けれ:avoidでき:避けられ
+	避けつ:avoidしつ:~
 
-詳細:details:~
-詳細な:detailed:~
-詳細に:in detailに:~
-
-情報:information:~
-
-明示的:explicit:~
-暗黙的:implicit:~
-暗黙の:implied:~
-含意-:imply:~
-含意:implication:~
-
-追加的に:additionalに:追加で
-追加的な:additionalな:追加の
-
-能:ability:~
-能力:capability:~
-	能力:capabilities:~
-特能:feature::~
-アリ:possible:可能
-	可能性:possibility:~
-	不可能:impossible:~
-機能性:functionality:~
-	機能的:functional:~
-	機能上の:functional:~
-
-規則:rule:~
-規範的:normative:~
-無視-:ignore:~
-目的:purpose:~
-導入-:introduce:~
-単純:simple:~
-受容-:accept:~
-正確:exact:~
-正確a:accurate:正確
-精確:precise:~
-
-妥当:valid:~
-妥当性:validity:~
-無効:invalid:~
-
-基本的:basic:~
-基本:basic:~
-基底:base:~
-
-状況:situation:~
-状況下:circumstances:~
-
-環境:environment:~
-言語:language:~
-自動的:automatic:~
-
-登録-:register:~
-登録:registration:~
-未登録に:unregister:~
-
-
-選好-:prefer:~
-選好:preference:~
-選好d:preferred:選好
-確保-:ensure:~
-
-可用:available:~
-
-将来:future:~
-	将来の:future:~
-未来:future:~
-	未来の:future:~
-公開-:expose:~
-公開:exposure:~
-直に:directに:~
-直な:directな:直の
-直接的:direct:~
-間接的:indirect:~
-
-仕組み:mechanism:~
-
-概して:typicalに:~
-代表的:typical:~
-典型的:typical:~
-
-理由:reason:~
-事由:reason:~
-
-存在-:exist:~
-存在:existence:~
-既存の:existing:~
-
-有用:useful:~
-
-変更点:changes:~
-旧来:legacy:~
-旧来の:legacyな:~
-
-相違-:differ:~
-相違:difference:~
-相違点:differences:~
-
-相互作用-:interact:~
-相互作用:interaction:~
-保守-:maintain:~
-保守:maintenance:~
-依拠-:rely:~
+施行-:enforce:~
+実施:practice:~
+実践:practice:~
+実用的:practical:~
 調整-:adjust:~
 調整:adjustment:~
 最適:optimal:~
 最適化-:optimize:~
 最適化:optimization:~
-
-重要:important:~
-重要度:importance:~
-
-既知:known:~
-未知:unknown:~
-知識:knowledge:~
-
 処理能:performance:~
 	高処理能:performant:~
-
-完全:complete:~
-不完全:incomplete:~
-
-孕む:involveする:~
-孕まれ:involveされ:~
-孕んで:involveして:~
-孕まな:involveしな:~
-孕み:involveし:~
-
-副作用:side-effect:~
-
-保証:guarantee:~
-保証-:guarantee:~
-
-代替-:alternate:~
-代替:alternative:~
-
-選定-:select:~
-選定:selection:~
-
-正準的:canonical:~
-実施:practice:~
-実践:practice:~
-実用的:practical:~
-
-歴史的:historical:~
-歴史:history:~
-
-容易:easy:~
-
-認識:recognition:~
-認識-:recognize:~
-
-判別-:distinguish:~
-
-除外:exclusion:~
-除外-:exclude:~
-
-改善:improvement:~
-改善-:improve:~
-向上-:improve:~
-
-側面:aspect:~
-
-説明-:explain:~
-説明:explanation:~
-
-要約:summary:~
-要約-:summarize:~
-手段:means:~
-懸念-:concern:~
-懸念:concern:~
-
-相応しく:suitableに:~
-相応しい:suitableな:~
-相応でな:suitableでな:相応しくな
-環境設定:configuration:~
-環境設定-:configure:~
-混同-:confuse:~
-混同:confusion:~
-導出-:derive:~
-統合-:integrate:~
-統合:integration:~
-注意深く:carefulに:~
-注意深い:carefulな:~
-困難:difficult:~
-困難さ:difficulty:~
-
-開発-:develope:~
-開発:development:~
-開発-:develop:~
-
-組入れて:incorporateして:組み入れて
-組入れた:incorporateした:組み入れた
-組入れら:incorporateさ:組み入れら
-組入れる:incorporateする:組み入れる
-
-複階的:complex:~
-複階性:complexity:複雑さ
-
-明瞭:clear:~
-不明瞭:unclear:~
-
-施行-:enforce:~
-改める:alterする:~
-改めれ:alterでき:~
-改めな:alterしな
-改めら:alterさ:~
-改めな:alterしな:~
-改めて:alterして:~
-改めた:alterした:~
-
-記法:notation:~
-付録:Appendix:~
-	付録:appendix
-図式:diagram:~
-見本:sample:~
-	見本:sample:~:サンプル
-
+事例:case:~
+利用事例:use case:~:::ユースケース
+基盤:infrastructure:~:::インフラ
+	規定-:dictate:~
+強力:powerful:~
+体験:experience:~
+経験:experience:~
+試験的:experimental:~
+試験-:experiment:~
+試験:experiment:~
+実験:experiment:~
+便宜性:facility:~
+経験則:heuristics:~
+	経験的:heuristic:~
 技法:technique:~
 技術:technology:~
 技術-:technical:~
@@ -1916,172 +1864,150 @@ console::::コンソール
 技術用の:technicalな:~
 形上では:technicalには:形の上では
 
-手動:manual:~
-手動で:manualに:~
+環境:environment:~
+環境設定:configuration:~
+環境設定-:configure:~
+局面:scenario:~
+状況:situation:~
+状況下:circumstances:~
 
-解-:understand:~
-解せ:understandでき:~
-解され:understandされ:~
-解さな:understandしな:~
-解せる:understandできる:~
-解せな:understandできな:~
-
-理解-:understand:~
-
-経験則:heuristic:~
-	経験則:heuristics:~:ヒューリスティックス
-管理-:manage:~
-管理:management:~
-
-目標:goal:~
-
-相互運用能:interoperability:~
-相互運用可能:interoperable:~
-
-受持てる:coverできる:受け持てる
-受持たす:coverさせる:受け持たす
-受持っ:coverし:受け持っ
-受持たな:coverしな:受け持たな
-受持つ:coverする:受け持つ
-
-履歴:history:~
-
-包摂-:encompass:~
+効果:effect:~
+効果的:effective:~
+実質的:effective:~
+効率的:efficient:~
+効率性:efficiency:~
+副作用:side-effect:~
+影響-:affect:~
+影響i:impact:影響
+波及-:influence:~
+実際:actual:~
+実際の:actualな:~
 
 最善:best:~
 最良:best:~
 不良:bad:~
-
-抽象-:abstract:~
-抽象的:abstract:~
-
-多義的:ambiguous:~
-一義的:unambiguous:~
-一義化-:disambiguate:~
-一義化:disambiguation:~
-多義性:ambiguity:~
-
-公式的:official:~
-正式:formal:~
-非正式:informal:略式的
-
-伝統的:traditional:~
-純粋:pure:~
-組込みの:built-in:組み込みの
-
-局面:scenario:~
-
+便益:benefit:~
 便利:convenience:~
 簡便:convenient:~
 援助-:aid:~
 援助:aid:~
-本質的:essential:~
-落とす:dropする:~
-落とさ:dropさ:~
-落とせ:dropでき:~
-落とし:dropし:~
-厳密:strict:~
-指針:guideline:~
-便益:benefit:~
-要因:factor:~
+方式:manner:~
+仕方:way:~
 
-概観:overview:~
-手法:method:~
-干渉:interference:~
-干渉-:interfere:~
-
-定例の:regular:~
-定例の:regularな:~
-
-可読性:readability:~
-原則:principle:~
-助言的:advisory:~
-
-予約-:reserve:~
-
-資質:nature:~
-自然:natural:~
-
-相似的:analogous:~
-予測-:predict:~
-自覚-:aware:~
-
-検分-:inspect:~
-検分:inspection:~
-精査-:examine:~
-考査-:review:~
-考査:review:~
-
-中核:core:~
-中核の:coreな:~
-予見-:believe:~
-主張-:claim:~
-判断-:deem:~
-統治-:govern:~
-
-発見-:discover:~
-恣意的:arbitrary:~
-
-使役-:employ:~
-
-義務付けら:mandateさ:~
-義務付けな:mandateしな:~
-義務付ける:mandateする:~
-義務付けて:mandateして:~
-表明-:assert:~
-表明:assertion:~
-認可-:approve:~
-督促-:urge:~
-依頼-:ask:~
-
-保全-:preserve:~
-
-直感的:intuitive:~
-動機:motivation:~
-
-精緻化-:refine:~
+	●仕様（未分類
+logic::::ロジック
+custom::::カスタム
+option::::オプション
+program::::プログラム
+programming::::プログラミング
 
 拡充-:populate:~
+検分-:inspect:~
+検分:inspection:~
+決定-:determine:~
+決定:determination:~
+受容-:accept:~
+選定-:select:~
+選定:selection:~
+認識:recognition:~
+認識-:recognize:~
+判断-:deem:~
+判別-:distinguish:~
+除外:exclusion:~
+除外-:exclude:~
 
-特徴:characteristic:~
-特徴:characteristics:~
+既定:default:~:::デフォルト
+既定の:default:~:::デフォルト
+理由:reason:~
+事由:reason:~
+基本的:basic:~
+基本:basic:~
+基底:base:~
+単純:simple:~
 
+存在-:exist:~
+存在:existence:~
+既存の:existing:~
+
+選好-:prefer:~
+選好:preference:~
+選好d:preferred:選好
+
+労:effort:~
+依存-:depend:~
+独立:independent:~
+無視-:ignore:~
+妥当:valid:~
+妥当性:validity:~
+無効:invalid:~
+
+正確:exact:~
+正確a:accurate:正確
+精確:precise:~
+
+言語:language:~
+自動的:automatic:~
+登録-:register:~
+登録:registration:~
+未登録に:unregister:~
+
+既知:known:~
+未知:unknown:~
+知識:knowledge:~
+完全:complete:~
+不完全:incomplete:~
+容易:easy:~
+
+孕む:involveする:~
+孕まれ:involveされ:~
+孕んで:involveして:~
+孕まな:involveしな:~
+孕み:involveし:~
+
+見出す:findする:~
+見出され:findされ:~
+見出せ:findでき:~
+見出さな:findしな:~
+見出した:findした:~
+見出して:findして:~
+
+代替-:alternate:~
+代替:alternative:~
+相似的:analogous:~
+干渉:interference:~
+干渉-:interfere:~
+予測-:predict:~
+自覚-:aware:~
+予見-:believe:~
+主張-:claim:~
+統治-:govern:~
+使役-:employ:~
+依頼-:ask:~
+保全-:preserve:~
+発見-:discover:~
+恣意的:arbitrary:~
 帰結:consequence:~
-基盤:infrastructure:~:::インフラ
-
-不変則:invariants:~
-不変則:invariant:~
-
 駆動な:-driven:駆動の
 駆動-:drive:~
-
-言及-:mention:~
-言及:mention:~
-	規定-:dictate:~
-強力:powerful:~
-
+導出-:derive:~
+正準的:canonical:~
+側面:aspect:~
+手段:means:~
+相応しく:suitableに:~
+相応しい:suitableな:~
+相応でな:suitableでな:相応しくな
+care::::ケア
+注意深く:carefulに:~
+注意深い:carefulな:~
+手動:manual:~
+手動で:manualに:~
+管理-:manage:~
+管理:management:~
+純粋:pure:~
+組込みの:built-in:組み込みの
 国際的:international:~
-国際-:international:11
+国際-:international:~
 
-語彙:vocabularies:~
-語彙:vocabulary:~
-
-経験:experience:~
-試験的:experimental:~
-試験-:experiment:~
-試験:experiment:~
-実験:experiment:~
-体験:experience:~
-	目指して:aimして:~
-	目指す:aimする:~
-便宜性:facility:~
-
-発行版:publication:~
-正誤表:errata:~
-
-案:idea:~
-故意的な:willful:故意による
-謝辞:acknowledgment:~
 
 ●制御／処理
 algo:algorithm:::アルゴリズム
@@ -2217,15 +2143,14 @@ catch:
 
 即時:immediate:~
 並列的:parallel:~
-
-同期c:sync:~
-非同期c:async:~
-同期-:synchronize:~
-同期:synchronous:~
-同期的:synchronous:~
-非同期:asynchronous:~
-非同期的:asynchronous:~
-同期法:synchronization:~
+同期c:sync::~
+非同期c:async::~
+同期-:synchronize::~
+同期:synchronous::~
+同期的:synchronous::~
+非同期:asynchronous::~
+非同期的:asynchronous::~
+同期法:synchronization::~
 阻む:blockする::~::ブロックする
 阻まれ:blockされ::~::ブロックされ
 阻まな:blockしな::~::ブロックしな
@@ -2238,9 +2163,9 @@ catch:
 充足:fulfillment:~
 失敗-:fail:~
 失敗:failure:~
-成功裡:successful:~
 成功:success:~
 成功-:succeed:~
+成功裡:successful:~
 
 継続-:continue:~
 継続:continuation:~
@@ -2254,8 +2179,8 @@ catch:
 処理n:process:処理
 処理器:processor:~:::プロセッサ
 
-検証:validation:~
 検証-:validate:~
+検証:validation:~
 検証y-:verify:検証
 検証y:verification:検証
 検査-:check:~
@@ -2265,10 +2190,10 @@ catch:
 検出:detection:~
 報告:report::~::レポート
 報告-:report::~::レポート
-通知:notification:~
 通知-:notify:~
-通達:signal:~
+通知:notification:~
 通達-:signal:~
+通達:signal:~
 記録-:record:~
 記録:record:~
 受取る:receiveする:受け取る
@@ -2354,6 +2279,7 @@ counter::::カウンタ
 garbage::::ガーベジ
 
 ●構造／関係／IDL
+依拠-:rely:~
 関係-:relate:~
 関係:relation:~
 関係性:relationship:~
@@ -2433,7 +2359,6 @@ cluster::::クラスタ
 列挙-:enumerate::~
 列挙d:enumerated::列挙
 
-index:インデックス
 index:
 instance::::インスタンス
 
@@ -2500,10 +2425,8 @@ class::::クラス
 構造上の:structuralな::~
 
 構成子:constructs:~
-構築子:constructor::~
 構築子:constructor::~::コンストラクタ
 構築-:construct::~::コンストラクト
-構築:construction::~
 構築:construction::~::コンストラクション
 
 下層:underlying:~
@@ -2577,7 +2500,6 @@ query::::クエリ
 取得子:getter::~
 設定-:set::~
 設定:setting::~
-	設定ng:setting:~
 設定子:setter::~
 設定群:settings::~
 再設定-:reset::~
@@ -2649,7 +2571,6 @@ sort::::ソート
 符号化-:encode::~::エンコード
 符号化法:encoding::~::エンコーディング
 復号-:decode::~::デコード
-復号-:decode::~::デコード
 復号器:decoder::~::デコーダ
 
 読込n:load::読み込み::ロード
@@ -2690,8 +2611,6 @@ comment::::コメント
 合致-:match::~::マッチ
 照合-:match::~::マッチ
 照合:matching::~::マッチング
-照合:matching::~::マッチング
-
 宣言-:declare::~
 宣言:declaration::~
 宣言的:declarative::~
@@ -2730,7 +2649,6 @@ file::::ファイル
 可視:visible:~
 可視性:visibility:~
 不可視:invisible:~
-
 表示域:viewport::~::ビューポート
 
 	合成-:synthesize:~
@@ -2887,7 +2805,7 @@ session::::セッション
 信用:trust::~
 信用-:trust::~
 
-●CSS 一般
+●CSS 全般
 
 style::::スタイル
 stylesheet:style sheet:::スタイルシート
@@ -2984,7 +2902,6 @@ offset::::オフセット
 のみ:only
 の一部:part of
 の一部:some of
-べき:should
 ほとんどの:most
 ほぼ:almost
 または:or
@@ -3033,8 +2950,6 @@ offset::::オフセット
 前者:former
 十分:enough
 単独の:single
-単純~化-:simplify
-単純に:simply
 各:each
 合間:between
 同じ:same
@@ -3060,9 +2975,7 @@ offset::::オフセット
 様々な:various
 様な:like
 様に:like
-次に挙げる:the following
-次の:following
-次の:the following
+次の／次に挙げる:the following
 残りの:remaining
 現:current
 現在:currently
@@ -3192,5 +3105,8 @@ offset::::オフセット
 足る:sufficient
 関わらず:regardless
 限り:only
+ベキ:should
+単純~化-:simplify
+単純に:simply
 
 */
