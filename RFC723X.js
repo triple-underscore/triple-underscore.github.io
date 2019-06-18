@@ -928,7 +928,6 @@ mail::::メール
 mark::::マーク
 memory::::メモリ
 email:
-object::::オブジェクト
 句:phrase::~::フレーズ
 	pipe-and-filter:パイプ＆フィルタ
 pointer::::ポインタ
@@ -952,7 +951,6 @@ view::::ビュー
 
 	●指示語
 
-個々の:individual:~
 一定の:certain:~
 以前:previous:~
 以前の:previous:~
@@ -975,7 +973,6 @@ view::::ビュー
 版:edition:~
 近過去:recent::~
 近過去の:recentな::~
-
 
 重複:duplicate:~
 類似した:similarな:~
@@ -1017,7 +1014,6 @@ scalability::::スケーラビリティ
 中立的:neutral:~
 事実:fact:~
 理由付け:reasoning:~
-主張:claim:~
 乏しい:poorな:~
 予測-:anticipate:~
 上品:graceful::~
@@ -1101,7 +1097,7 @@ scalability::::スケーラビリティ
 早期の:early:~
 明らか:obvious:~
 暫定的:interim:~
-本質的でない:nonessential:~
+	本質的でない:nonessential
 柔軟:flexible:~
 柔軟性:flexibility:~
 根本的:fundamental:~
@@ -1165,9 +1161,7 @@ scalability::::スケーラビリティ
 設置しな:placeしな:課さな
 設置する:placeする:課す
 不許可に:disallow:~
-
 診断:diagnostic:~
-	試験:test::~::テスト
 承認-:acknowledge:~
 謝辞:acknowledgement:~
 未認識:unrecognized:認識できない
@@ -1178,8 +1172,6 @@ scalability::::スケーラビリティ
 達成-:accomplish:~
 開示-:disclose:~
 開示:disclosure:~
-
-関係ない:unrelated:~
 関心:interest:~
 限度:extent:~
 公共:public:~
@@ -1294,8 +1286,8 @@ escape::::エスケープ
 quote::::クォート
 引用符:quote:::~:クォート
 二重引用符:double quote::~::ダブルクォート
-::クォートする
-::クォートされ
+	::クォートする
+	::クォートされ
 区切られ:delimitされ::~
 区切り:delimitation::~
 区切りの:-separated:~
@@ -1467,7 +1459,6 @@ referrer::::リファラ
 割当-:allocate:~
 区分-:partition:~
 事前条件:precondition::~
-取消:cancel:~
 取込まれ:importされ:取り込まれ
 同一性:identity:~
 同封-:enclose::~
@@ -1493,8 +1484,6 @@ referrer::::リファラ
 弱さ:weakness::~
 強い:strongな::~
 強さ:strength::~
-成功裡の:successfulな::~
-
 検証y-:verify::検証°
 検証y:verification::検証°
 検証子:validator::~
@@ -1515,8 +1504,6 @@ referrer::::リファラ
 対応-:correspond:~
 対応ng:corresponding:対応する
 対応関係:mapping:~:::マッピング
-対話-:interact::やりとり::インタラクト
-対話:interaction::やりとり::インタラクション
 尚早:premature:~
 	局所的な
 展開-:expand:~
@@ -1592,7 +1579,7 @@ stateless::::ステートレス
 知覚-:perceive:~
 
 短縮-:shorten:~
-確立:establishing::~
+確立:establishing:~
 種類:kind:~
 稼働-:run:~
 稼働中の:running:~
