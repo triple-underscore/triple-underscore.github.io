@@ -613,7 +613,7 @@ IETF Review:~5226#section-4.1
 ~proxy:~7230#proxy
 ~server:~7230#server
 	~status行l:~7230#status.line
-状態行:~7230#status.line
+状態s行l:~7230#status.line
 ~target~URI:~7230#target-URI
 ~target資源:~7230#target-resource
 ~trailer:~7230#trailer
@@ -712,9 +712,8 @@ IETF Review:~5226#section-4.1
 品質~値:~7231#quality.values
 品質値:~7231#quality.values
 	~status-code:~7231#status.codes
-状態code:~7231#status.codes
-	応答~status-code:~7231#status.codes
-応答~状態code:~7231#status.codes
+状態s~code:~7231#status.codes
+応答~状態s~code:~7231#status.codes
 応答~header:~7231#response.header.fields
 制御~data:~7231#response.control.data
 ~messageの出生日時:~7231#origination-date
@@ -1560,9 +1559,6 @@ referrer::::リファラ
 stateless::::ステートレス
 	無状態の:statelessな:::ステートレスな
 	状態を持たない
-状態code:status code::状態° code:状態°コード:ステータスコード
-状態行:status line::状態°行::ステータス行
-	状態指示〜／状態識別〜
 生の:raw:~
 疑似:pseudo:~
 発行-:publish:~
@@ -2066,8 +2062,8 @@ IETF Review:~5226#section-4.1
 ／品質~値:~7231#qvalue
 ／品質値:~7231#qvalue
 ／	~status-code:~7231#status-code
-／状態code:~7231#status-code
-／応答~状態code:~7231#status-code
+／状態s~code:~7231#status-code
+／応答~状態s~code:~7231#status-code
 ／応答~header:~7231#responce-header
 ／制御~data:~7231#control-data
 〜~messageの出生日時:~7231#origination-date
