@@ -1239,7 +1239,6 @@ policy::::ポリシー
 欠陥:flaw:~
 汚染-:poison::~
 汚染:poisoning::~
-攻撃者:attacker::~
 特権拡大:privilege escalation:~
 盗聴:theft:~
 脆弱:vulnerable::~
@@ -1426,7 +1425,6 @@ referrer::::リファラ
 人:human:~
 一掃-:purge:~
 不定:indefinite:~
-不透明:opaque::~
 中断:interruption:~
 
 交換:exchange:~
@@ -1509,7 +1507,6 @@ referrer::::リファラ
 層:layer::~
 帯域幅:bandwidth::~::バンド幅
 形:form:~
-形成-:form:~
 役割:role::~::ロール
 後処理:post-processing:~
 復帰-:revert:~

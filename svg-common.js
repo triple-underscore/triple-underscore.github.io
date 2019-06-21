@@ -760,18 +760,15 @@ attrdef:<p>Attribute definitions</p>:<p>attribute 定義：</p>:<p>属性定義�
 viewAs:View this example as SVG (SVG-enabled browsers only):この例を SVG で見る（要ブラウザ対応）
 
 	●データ／型／演算
-	初期化-:initialise
 公式:formula:~
 数量-:numeric:~
 数量的:numerical:~
-
 
 	●構文
 space:
 comma::::カンマ
 escape::::エスケープ
 展開-:expand::~
-形成-:form::~
 内包-:include::~
 内包:inclusion::~
 	妥当でない:invalid
@@ -907,9 +904,7 @@ green:
 色停:color stop::~
 黒:black::~
 白:white::~
-不透明:opaque::~
 不透明度:opacity::~
-透明:transparent::~
 塗られ:paintされ::塗られ
 塗り:paint::~
 塗る:paintする::~
@@ -929,8 +924,6 @@ green:
 描直す:redrawする::描き直す
 描直し:redraw::描き直し
 絵図:drawing:~
-	描画-可能:renderable
-	描画され:rendered
 	描画されない:non-rendered
 原始filter:filter primitive:::原始フィルタ
 混色-:blend::~
@@ -956,16 +949,10 @@ pointer::::ポインタ
 accessibility:::access 性:アクセス性:アクセシビリティ
 view::::ビュー
 viewer::::ビューア
-focus::::フォーカス
-	~focus可能:focusable
 zoom::::ズーム
-	~zoom法:zooming
 pan::::パン
-	~pan法:panning
 辿り:traversal::~
 呈示hint:presentational hint::呈示 hint:呈示ヒント
-可視の:visibleな::~
-対話:interaction::~
 隠され:hideされ::~
 隠す:hideする::~
 隠せば:hideすれば::~
@@ -1005,9 +992,6 @@ multimedia::::マルチメディア
 自立的:standalone:~
 	自立的:stand-alone
 多彩:rich:~
-	より容易に:easier
-一般化-:generalize:~
-
 	具体例として:for instance
 	ものとする:shall
 	に注意:note／note that
@@ -1042,10 +1026,7 @@ multimedia::::マルチメディア
 補足的:supplemental:~
 
 	指定されていない:unspecified
-	指定-法:specifying
-	許容されない:disallowed
 	適合する:are conformant
-	適用-可能:applicable
 	見よ:refer to
 	足る:sufficient
 
