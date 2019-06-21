@@ -928,7 +928,7 @@ COMMON_DATA.PREMAP = `
 表終:\uE009
 イ型:\uE00C\uE008型\uE005
 界面:\uE007~interface\uE005
-同期:\uE007~~同期？\uE005
+同期:\uE007同期c？\uE005
 浮上:\uE007浮上-？\uE005
 標的:\uE007標的\uE005
 取消:\uE007取消~可？\uE005
@@ -1264,6 +1264,8 @@ Realm:
 realm:
 title::::タイトル
 page::::ページ
+hint::::ヒント
+channel::::チャネル
 匿名:anonymous:~
 行先:destination:~
 関数:function:~
@@ -1293,6 +1295,9 @@ sizing::::サイズ法
 確立-:establish:~
 省略-:omit:~
 保持-:hold:~
+形成-:form:~
+不透明:opaque::~
+透明:transparent::~
 
 ●仕様レベル
 
@@ -1300,6 +1305,7 @@ sizing::::サイズ法
 利用-:use:~
 利用:use:~
 再利用-:reuse:~
+	再利用:re-use
 再利用:reuse:~
 利用者:user:~:::ユーザ
 利用元:user:~
@@ -1447,6 +1453,7 @@ risk::::リスク
 指定-:specify:~
 指定:specification:~
 指定d:specified:指定
+指定通り:as specified:指定どおり
 特定に:specificに:特定的に
 特定な:specificな:特定的な
 特定の:specificな:~
@@ -1454,6 +1461,7 @@ risk::::リスク
 特定的に:specificalに:特に
 特定的には:specificalには:具体的には
 特有:specific:~
+	に特有:-specific
 指定子:specifier:~
 
 特別:special:~
@@ -1468,12 +1476,14 @@ risk::::リスク
 概念的:conceptual:~
 観念:notion:概念
 抽象-:abstract:~
+	抽象-化:abstraction
 抽象的:abstract:~
 定義-:define:~
 定義:definition:~
 定義な:-defined:~
 未定義:undefined:~
 未定義の:undefinedな:~
+	定義されない:undefined
 定義済み:predefined:~
 定義済みの:predefinedな:~
 裁定-:decide:~
@@ -1592,15 +1602,17 @@ console::::コンソール
 相互運用能:interoperability:~
 相互運用可能:interoperable:~
 互換:compatible:~
-非互換:incompatible:~
 互換性:compatibility:~
-非互換性:incompatibility:~
+	非互換:incompatible
+	非互換:breaking
+	互換でない:incompatible
+	非互換性:incompatibility
 後方-:backward:~
 前方-:forward:~
 過去互換:quirks:~
 非推奨に:deprecate:~
 非推奨d:deprecated:~
-
+	取って代わ:supersede
 開発-:develop:~
 開発:development:~
 改善:improvement:~
@@ -1682,7 +1694,6 @@ console::::コンソール
 
 標準:standard:~
 標準の:standardな:~
-	標準~化:standardize／:standardization
 草案:draft:~
 編集者草案:Editor’s Draft:~
 作業草案:Working Draft:~
@@ -1693,6 +1704,7 @@ console::::コンソール
 規則:rule:~
 強制-:force:~
 許容-:allow:~
+	許容しない:disallow
 許可-:permit:~
 許可:permission:~
 是認-:grant:~
@@ -1721,6 +1733,7 @@ console::::コンソール
 任意選択の:optionalな:~
 任意選択で:optionalに:~
 奨励-:encourage:~
+	しないことが奨励-:discourage
 忌避-:discourage:~
 推奨:recommendation:~
 推奨-:recommend:~
@@ -1730,6 +1743,7 @@ console::::コンソール
 固守-:adhere:~
 順守-:obey:~
 規範的:normative:~
+	規範的でない:non-normative
 厳密:strict:~
 確保-:ensure:~
 保証:guarantee:~
@@ -1795,8 +1809,10 @@ browser::::ブラウザ
 software::::ソフトウェア
 hardware::::ハードウェア
 support::::サポート
+	~supportされない:unsupported
 library::::ライブラリ
 plugin::::プラグイン
+	~plugin:plug-in
 tool::::ツール
 
 義務付けら:mandateさ:~
@@ -1893,10 +1909,13 @@ tool::::ツール
 援助:aid:~
 方式:manner:~
 仕方:way:~
+労:effort:~
 
 	●仕様（未分類
 logic::::ロジック
 custom::::カスタム
+	~custom化:customize
+	~custom化:customizations
 option::::オプション
 program::::プログラム
 programming::::プログラミング
@@ -1924,7 +1943,10 @@ programming::::プログラミング
 基本:basic:~
 基底:base:~
 単純:simple:~
-
+	単純~化-:simplify
+	単純~化:simplification
+	単純に:simply
+	より単純な:simpler
 存在-:exist:~
 存在:existence:~
 既存の:existing:~
@@ -1932,15 +1954,11 @@ programming::::プログラミング
 選好-:prefer:~
 選好:preference:~
 選好d:preferred:選好
-
-労:effort:~
-依存-:depend:~
-独立:independent:~
 無視-:ignore:~
 妥当:valid:~
 妥当性:validity:~
 無効:invalid:~
-
+	妥当でない:invalid
 正確:exact:~
 正確a:accurate:正確
 精確:precise:~
@@ -1974,8 +1992,8 @@ programming::::プログラミング
 代替-:alternate:~
 代替:alternative:~
 相似的:analogous:~
-干渉:interference:~
 干渉-:interfere:~
+干渉:interference:~
 予測-:predict:~
 自覚-:aware:~
 予見-:believe:~
@@ -2094,7 +2112,7 @@ listener::::リスナ
 初期化-:initialize:~
 初期化:initialization:~
 	初期化:initializing
-
+	初期~時には:initially
 mode::::モード
 flag::::フラグ
 parameter::::パラメタ
@@ -2143,8 +2161,8 @@ catch:
 
 即時:immediate:~
 並列的:parallel:~
-同期c:sync::~
-非同期c:async::~
+同期c:sync::同期
+非同期c:async::非同期
 同期-:synchronize::~
 同期:synchronous::~
 同期的:synchronous::~
@@ -2166,6 +2184,7 @@ catch:
 成功:success:~
 成功-:succeed:~
 成功裡:successful:~
+	成功した:successful
 
 継続-:continue:~
 継続:continuation:~
@@ -2279,7 +2298,15 @@ counter::::カウンタ
 garbage::::ガーベジ
 
 ●構造／関係／IDL
+
 依拠-:rely:~
+依存-:depend:~
+	依存して:depending on(upon)
+	に依存する:is dependent on／:is independent of
+	に依存する:-dependent
+依存関係:dependency:~
+独立:independent:~
+	に依存しない:independent
 関係-:relate:~
 関係:relation:~
 関係性:relationship:~
@@ -2287,6 +2314,7 @@ garbage::::ガーベジ
 関連な:relevantな:関連する
 関連する:relevantになる:~
 関連しな:relevantでな:~
+	関連しない:irrelevant
 結付けれ:associateでき:結び付けれ
 結付き:association:結び付き
 結付け:association:結び付け
@@ -2328,7 +2356,7 @@ item::::アイテム
 queue::::キュー
 entry::::エントリ
 group::::グループ
-key::::キー
+key:
 member::::メンバ
 map::::マップ
 top-level::::トップレベル
@@ -2360,8 +2388,8 @@ cluster::::クラスタ
 列挙d:enumerated::列挙
 
 index:
+有index:indexed::有 index
 instance::::インスタンス
-
 tree::::ツリー
 下位tree:subtree:::下位ツリー:サブツリー
 根:root::~::ルート
@@ -2499,11 +2527,13 @@ query::::クエリ
 取得-:get::~
 取得子:getter::~
 設定-:set::~
+	設定しておく:set up／setup
 設定:setting::~
 設定子:setter::~
 設定群:settings::~
 再設定-:reset::~
 再設定:reset::~
+	設定し直:reset
 置換-:replace::~
 置換d:replaced::置換
 置換:replacement::~
@@ -2665,8 +2695,9 @@ file::::ファイル
 UI:
 	UI:user interface:UI
 accessibility:::access 能:アクセス能:アクセシビリティ
-	window:ウィンドウ
+	window::::ウィンドウ
 form::::フォーム
+focus::::フォーカス
 screen::::スクリーン
 scrollbar::::スクロールバー
 scroll::::スクロール
@@ -2675,12 +2706,14 @@ click::::クリック
 label::::ラベル
 button::::ボタン
 mouse::::マウス
+Key:key:::キー
 keyboard::::キーボード
 view::::ビュー
 
 外観:appearance:~
 手入力-:enter:~
 手入力:entry:~
+対話:interaction::~::インタラクション
 対話的:interactive::~::インタラクティブ
 対話性:interactivity::~::インタラクティブ性
 ヤリトリ-:interact::やりとり
@@ -2799,6 +2832,7 @@ session::::セッション
 偽装:spoofing::~
 資格証:credentials::資格証明情報::クレデンシャル
 攻撃:attack::~
+攻撃者:attacker::~
 保護-:protect::~
 保護:protection::~
 脆弱性:vulnerability::~
@@ -2811,6 +2845,7 @@ style::::スタイル
 stylesheet:style sheet:::スタイルシート
 cascade::::カスケード
 prop:property:::プロパティ
+at-rule:::at-規則
 記述子:descriptor::~
 略式:shorthand::~
 
@@ -2866,151 +2901,243 @@ offset::::オフセット
 
 /*
 
-●●その他の定訳（指示語
+●●その他の定訳
 
-0:zero
-1 個の:single
-〜の中:within
-いくつかの:several
-いつ:when
-かつ:and
-からなる:consists of
-ここ:here
+	●定訳（語彙レベル
+FOO化-:FOOize
+FOO化:FOOzation
+FOO-法:FOOing
+非FOO:non-FOO
+FOOでない:non-FOO
+非FOO:inFOO
+FOOでない:inFOO
+FOOなしの:FOOless
+非:non
+FOO-可能:FOOable
+FOO-不能:unFOOable
+FOO-不能:inFOOable／imFOOable
+可FOO:FOOable
+よりFOO:FOOer
+最もFOO:FOOest
+再Foo:reFoo
+FOOし直す:reFoo
+再びFooする:reFooする
+Foo間:inter-Foo
+過FOO:overFOO
+
+	●定訳（文法レベル
+〜内／にて／において:in
+〜用:for 〜
+〜の中:within 〜
+〜の中へ:into 〜
+〜を介して:via 〜
+〜を通して:through 〜
+〜を超え:beyond 〜
+〜越し:over 〜
+〜に対し:to／on／for 〜
+〜上:on 〜
+〜から:from 〜
+〜過ぎ:too 〜
+〜の場合:if 〜
+〜を伴う:with 〜
+〜で:with 〜
+〜により:by 〜
+〜と同じく:as with 〜
+どう:how
+
+	●定訳（対象
+どれ:which
+方の:whichever of
+どの〜:any
 この:this
 これらの:these
-しか:only
-すでに:already
-すべての:all
-そこ:there
 その:that
-そのような:such
-その他:others
 それら:they
 それらの:their
 それらの:those
 それらを:them
-どこ:where
-どこで:where
-どこでも:anywhere
-どこへ:whom
-どの:which
-どれだけ／どう:how
-など:such as
-において:in
-にて:in
-のいずれか:one of
-のみ:only
-の一部:part of
-の一部:some of
-ほとんどの:most
-ほぼ:almost
-または:or
-まで:until
-まるごと:entirely
-もっと:more
+そのような:such
 もの:one
 もの:thing
-もはや:no longer
-より:more
-一緒:together
-一致:identical
-一連の:series of
-一部の:some
-上:above
-下:below
-与-:give
-両:both
-両者:both
-互いに:each other
-今や:now
-介:via
-他が〜されない限り unless otherwise 〜
+何か:something
+すべての／すべて:all
+のみ／限り／しか〜ない:only
 他の:other
 他の場合:otherwise
-他所:elsewhere
-代わりに:instead
-以上:or more
-以上の:or more
 以外の:other than
-何か:something
-何であれ:whatever
-何らかの:some
-依然として:still
-個:one／:two／:three...
-個々の:individual
-個数:number of
-元々:originally
-全体:entire
-内:in
-再び:again
-別々:separate
+その他:others
+前者:former
+後者:latter
 別々の:separate
 別の:another
-前:before
-前者:former
-十分:enough
-単独の:single
-各:each
-合間:between
-同じ:same
-向けて:toward
-回:time
-多い:often
-多くの:many
-少なくとも:at least
-少数の:a few
-少数の:few
-尾部の:trailing
-常に:always
+両者／両:both
+ほとんどの:most
 当の:in question
-後:after
-後者:latter
-所与の:given
-挙げられ:listed
-新たに:newly
-最も:most
-最も:〜est
-最初:first
-最後:last
-様々な:various
-様な:like
-様に:like
+当の:the
+最初の:the first
+最後の:the last
+頭部の:leading
+尾部の:trailing
 次の／次に挙げる:the following
 残りの:remaining
-現:current
-現在:currently
-現時点:currently
-用:for
-異なる:different
-目:first／:second／:third／...
-等々:and so forth
-等々:and so on
-等々:etc.
-節:section
-結果:result
-結果の:resulting
-自前の:own
+一部の:some
+何らかの:some
+一定の:certain
+ある種の:certain
+まるごと:entirely
+全体:entire
+一連の:series of
+一緒:together
+後続の:subsequent
+後続-:follow
+
+同じ:same
+一致:identical
+別個の:distinct
+各:each
+個々の:individual
 自身:itself
 自身:themselves
+自前の:own
+互いに:each other
+の一部:part of
+の一部:some of
+
+何であれ:whatever
+何:what
+ある／いくつか:some
+どの〜も:any
+元の:original
+いずれか:one of
+様々な:various
+種々の:various
+類の:sort of
+など:such as
+等々:and so forth／:and so on／:etc.
+
+いくぶん:somewhat
+より／もっと／方が:more
+最も:most
+最も:〜est
+向けて:toward
+ほぼ:almost
+からなる:consists of
+様に／様な:like
+
+	●定訳（所在
+どこで:／どこ:where
+ここ:here
+そこ:there
+どこでも:anywhere
+他所:elsewhere
+周囲の:surrounding
+周り:around
+上:above
+下:below
+前:before
+後:after
+合間／間:between
+隣接する:adjacent な
+
+	●定訳（量
+どれだけ／どう:how
+いくつかの:several
+〜以上:〜or more
+単独の／1 個の:single
+0:zero
+個:one／:two／:three...
+何個かの／いくつかの:a number of
+総数／〜数／〜の個数:the number of 〜
+いくつでも／任意個数の／0 個以上の:any number of
+何個:number of
+多数の／数多くの／多くの:many
+少なくとも／〜以上:at least
+以下:or less
+以下:less than or equal to
+未満:less than
+〜以下:〜or less
+以上:greater than or equal to
+回:time／:times
+少数の:a few
+少数の:few
+目:first／:second／:third／...
 複数の:more than one
+複数の:two or more
 複数の:multiple
-超えて:beyond
-超える:beyond
-越しに:over
-通して:through
-間:between
+
+	●定訳（時間
+いつ:when
+常に:always
+現:current
+現時点／現在:currently
+同時に:simultaneous
 間:during
-限り:only
+間:between
+すでに:already
+もはや:no longer
+最早:no longer
+まで:until
+今や:now
+再び:again
+再度:again
+まだ:yet
+依然として:still
+先立って:prior to
+後で／後に:later
+まず／先ず:first
+それまで／以前の:previous／:previously
+早期:early／:earlier
+より早い:earlier
+時機:timing
+いつでも:at any time
+時点:at the time
+この時点:at this point
+
+●その他の定訳（仕様レベル
+かつ:and
+または:or
+与え:give
+所与の:given
+挙げられ:listed
+結果:result
+結果の:resulting
+結果の:resultant
 除いて:except
 除く:except
-非:non
-頭部の:leading
-類の:sort of
-
-●●その他の定訳（仕様レベル
-
-〜-化:tion
-〜-法:〜ing
+に基づく:-based
+し続ける:continue to
+含む:include
+含め:including
+呼ばれ:called
+在る:present
+対応-:correspond
+対応-:corresponding
+得る:obtain
+選ぶ:choose
+生じ:occur
+用立てる:make use of
+知る:know
+示す:show
+示され:shown
+織り込む:account
+織り込まれ:taken into account
+要約:abstract
+見よ:see
+見受けられ:seem
+起こる:happen
+扱う:treat
+渡す:pass
+所与の:given
+与えられた:given
+導き:lead
+変わる:vary
+〜に関係する:〜-related
+〜に注意:note that
+注記:Note
+新たに:newly
+異なる:different
+節:section
+十分:enough
 〜と違って:unlike
 〜に基づいて:based on
 〜に基づく:-based
@@ -3019,94 +3146,83 @@ offset::::オフセット
 あいにく:unfortunately
 とりわけ:especially
 あり続ける:remain
-ある種の:certain
 いたかのように:as if
 されたし:please
 しかしながら，:however
 したがって:therefore
 したがって:thus
-し続ける:continue to
+そのようなわけで:As such
 すなわち:i.e.,
 すなわち、:that is
-するため:in order to
 するためには:in order to
 であっても:even if
 になる:becomes
-に加えて:in addition to
+加えて:in addition,
+加えて:Additionally,
+〜に加えて:in addition to〜
 に呼応して:in response to
-の様な:-like
 もっぱら:solely
+良い:good
 方が良い／より良く／より良い:better
-一例として:for instance
-一定の:certain
-きちんと〜され:well-〜ed
-上手く:well
-所与の:given
-与えられた:given
-他方:on the other hand,
+他が〜されない限り unless otherwise 〜
+多い:often
+元々:originally
+代わりに:instead
+例：:e.g.,
 例:example
 例えば:for example
-例：:e.g.,
-利用-可能:usable
-則って:according to
-則って:according to
+一例として:for instance
+きちんと〜され:well-〜ed
+上手く:well
+他方:on the other hand,
+則って:according to 〜
 則って:accordingly
 則って:in accordance with
 則って:in accordance to
-加えて:in addition,
-加えて:additionally,
-〜可能／〜不能:〜able
-可能でない:unable
+様に／様な:like
+の様な:-like
 同様に:likewise
 同様に:similarly
 同様の:similar
-含む:include
-含め:including
-呼ばれ:called
-呼応して:in response to
 因り／因る／因っ:due to
-在る:present
 場合によっては:possibly
-対応-:correspond
-対応-:corresponding
 少し／少しばかり:slightly
-得る:obtain
 必要:need
 必要とされ:necessary
 必要に応じて:as necessary
-扱う:treat
+必要なら:if necessary
+とは限らない:necessarily
+必ずしも〜ない:necessarily
+不必要に:unnecessarily
+不必要な:unnecessary
 方法:how to
 更なる:further
 概ね:roughly
-様に／様な:like
-正確に:exactly
 決して:never
-〜に注意:note that
-注記:Note
-渡-:pass
 特に:in particular
 特に:particular
 特に:particularly
-生じ:occur
-用立てる:make use
-知る:know
-示す／示され:shown
-等し:equal
-等しく:equally
-織り込む:account
-織り込まれ:taken into account
-要約:abstract
-見よ:see
-見受けられ:seem
 言い回し:wording
 言い換えれば:in other words
 諸々の:miscellaneous
-起こる:happen
 足る:sufficient
 関わらず:regardless
-限り:only
-ベキ:should
-単純~化-:simplify
-単純に:simply
-
+〜に関する:regarding／:with regards to
+〜に関し:with respect to
+概ね:roughly
+たぶん:perhaps
+おそらく:probably
+諸々の:miscellaneous
+さもなければ:otherwise
+あいにく:unfortunately
+正確に:exactly
+等しい:equal
+等しく:equally
+難しい／し難い:hard
+困難:difficult
+対照的に:in constrast
+対照的に:by contrast
+歓迎:welcome
+指定通り:as specified:指定どおり
+〜に利する:on behalf of 〜
 */
