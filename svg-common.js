@@ -939,7 +939,8 @@ green:
 
 	● CSS
 内在的:intrinsic::~
-
+下位prop:sub-property:::下位プロパティ
+	下位prop:longhand／subproperties／sub-properties
 
 	●呈示／UI
 	~animate化:animated
