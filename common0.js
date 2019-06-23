@@ -1320,9 +1320,10 @@ sizing::::サイズ法
 通常は:normalには:~
 通常に:normalに:通常どおり
 通常通り:as normalに:通常どおり
+共通:common:~
 共通の:commonな:~
-共通な:commonな:~
-共通する:commonになる:~
+共通して:commonに:共通して
+共通する:commonになる:共通する
 共通的な:commonな:よくある
 共通的に:commonに:よく
 通例的:usual:~
