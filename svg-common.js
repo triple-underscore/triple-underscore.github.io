@@ -391,7 +391,6 @@ eH.meta:~HEmetadata#the-meta-element
 eH.script:~HEscripting#the-script-element
 eH.source:~HEimages#the-source-element
 eH.style:~HEmetadata#the-style-element
-eH.track:~HEmedia#the-track-element
 
 	●p
 
@@ -444,11 +443,9 @@ p.mask-type:~MASKING1#propdef-mask-type
 p.object-fit:~CSSIMAGE#propdef-object-fit
 p.object-position:~CSSIMAGE#propdef-object-position
 p.opacity:~SVGrender#ObjectAndGroupOpacityProperties
-t.~opacity-prop:~SVGrender#ObjectAndGroupOpacityProperties
 p.overflow:~SVGrender#OverflowAndClipProperties
 p.paint-order:~SVGpainting#PaintOrderProperty
 p.pointer-events:~SVGinteract#PointerEventsProperty
-p.property:~SVGstyling#TermProperty
 p.r:~SVGgeometry#RProperty
 p.rx:~SVGgeometry#RxProperty
 p.ry:~SVGgeometry#RyProperty
@@ -494,6 +491,8 @@ p.x:~SVGgeometry#XProperty
 p.y:~SVGgeometry#YProperty
 
 	●t
+t.~opacity-prop:~SVGrender#ObjectAndGroupOpacityProperties
+
 t.number:~CSSVAL#number-value
 t.integer:~CSSVAL#integer-value
 t.length:~CSSVAL#length-value
