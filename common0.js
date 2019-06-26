@@ -1240,7 +1240,7 @@ OS:operating system:OS
 自前の:own:~
 単独の:single:~
 現在の:current:~
-	元の:original:~
+元の:original:~
 内部:internal:~
 内部の:internalな:~
 内部的:internal:~
@@ -1255,6 +1255,7 @@ OS:operating system:OS
 直接的:direct:~
 間接的:indirect:~
 	ナシ:none:なし
+subject::対象
 
 ●未分類
 block::::ブロック
@@ -1662,6 +1663,7 @@ console::::コンソール
 追加的に:additionalに:追加で
 追加的な:additionalな:追加の
 機能性:functionality:~
+	機能:function:~
 	機能的:functional:~
 	機能上の:functional:~
 拡張-:extend:~
@@ -1750,7 +1752,7 @@ console::::コンソール
 保証:guarantee:~
 保証-:guarantee:~
 
-指針:guideline:~
+指針:guideline:~:::ガイドライン
 助言的:advisory:助言
 	助言:advice:~
 公式的:official:~
@@ -2005,6 +2007,8 @@ programming::::プログラミング
 保全-:preserve:~
 発見-:discover:~
 恣意的:arbitrary:~
+任意な:arbitraryな:任意の
+任意に:arbitraryに:~
 帰結:consequence:~
 駆動な:-driven:駆動の
 駆動-:drive:~
@@ -2027,6 +2031,10 @@ care::::ケア
 国際的:international:~
 国際-:international:~
 
+	貢献-:contribute
+	貢献:contribution
+	貢献者:contributor
+	謝意／感謝:thank
 
 ●制御／処理
 algo:algorithm:::アルゴリズム
@@ -2866,6 +2874,7 @@ animation::::アニメーション
 
 font::::フォント
 graphic::::グラフィック
+graphicな:graphical:::グラフィックな
 canvas::::キャンバス
 layout::::レイアウト
 lay-out:lay out:::レイアウト
@@ -2983,6 +2992,8 @@ Foo間:inter-Foo
 残りの:remaining
 一部の:some
 何らかの:some
+の一部:some of
+ある／いくつか:some
 一定の:certain
 ある種の:certain
 まるごと:entirely
@@ -2994,19 +3005,18 @@ Foo間:inter-Foo
 
 同じ:same
 一致:identical
-別個の:distinct
+別個:distinct
 各:each
 個々の:individual
 自身:itself
 自身:themselves
 自前の:own
 互いに:each other
-の一部:part of
-の一部:some of
+の一部／一部を成す／成す部分:part of
+異なる:different
 
 何であれ:whatever
 何:what
-ある／いくつか:some
 どの〜も:any
 元の:original
 いずれか:one of
@@ -3015,15 +3025,18 @@ Foo間:inter-Foo
 類の:sort of
 など:such as
 等々:and so forth／:and so on／:etc.
+新たに:newly
+からなる:consists of
+様に／様な:like
 
+向けて:toward
 いくぶん:somewhat
 より／もっと／方が:more
 最も:most
 最も:〜est
-向けて:toward
 ほぼ:almost
-からなる:consists of
-様に／様な:like
+が:although
+が:but
 
 	●定訳（所在
 どこで:／どこ:where
@@ -3086,7 +3099,7 @@ Foo間:inter-Foo
 先立って:prior to
 後で／後に:later
 まず／先ず:first
-それまで／以前の:previous／:previously
+それまで／以前の／前の:previous／:previously
 早期:early／:earlier
 より早い:earlier
 時機:timing
@@ -3135,8 +3148,6 @@ Foo間:inter-Foo
 〜に関係する:〜-related
 〜に注意:note that
 注記:Note
-新たに:newly
-異なる:different
 節:section
 十分:enough
 〜と違って:unlike
@@ -3164,10 +3175,10 @@ Foo間:inter-Foo
 に呼応して:in response to
 もっぱら:solely
 良い:good
-方が良い／より良く／より良い:better
+方が良い／より良く／より良い／もっと良い:better
 他が〜されない限り unless otherwise 〜
 多い:often
-元々:originally
+元々／元から:originally
 代わりに:instead
 例：:e.g.,
 例:example
@@ -3226,4 +3237,5 @@ Foo間:inter-Foo
 歓迎:welcome
 指定通り:as specified:指定どおり
 〜に利する:on behalf of 〜
+
 */

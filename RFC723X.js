@@ -950,15 +950,10 @@ view::::ビュー
 
 	●指示語
 
-一定の:certain:~
-以前:previous:~
-以前の:previous:~
 首:primary::主
 一時的:temporary:~
 余分な:extra:~
-今後の:later:~
 側:side:~
-元の:original:~
 尾部:trailing:~
 頭部:leading:~
 巨大:large:~
@@ -977,7 +972,6 @@ view::::ビュー
 類似した:similarな:~
 類似する:similarである:~
 類似的:similar:~
-	~similarly::
 節:section:~
 
 	●仕様
@@ -1033,8 +1027,6 @@ scalability::::スケーラビリティ
 有意度:significance:~
 有意性:significance:~
 分類上の:categorization:~
-別の:another:~
-別個の:distinct:~
 利点:advantage:~
 用立てる:make useする:~
 利用e:usage:利用
@@ -1629,6 +1621,13 @@ stateless::::ステートレス
 領域:region:~
 鮮度:freshness::~
 
+	別の:another:~
+	別個の:distinct:~
+	一定の:certain:~
+	今後の:later:~
+	以前:previous:~
+	以前の:previous:~
+
 ●●
 
 `;
@@ -1642,23 +1641,16 @@ stateless::::ステートレス
 〜に先立って／先に／事前に／~~直前:prior to〜
 後続の:subsequent
 次:next
-残りの:remaining
 残りの部分:remainder
-後続-:follow
 前後:around
 全面的に:entire に
 一部分
 一部／部分
-ほぼ:almost
 大部分の:most
-少しばかり:slightly
 多種多様な:variety
 何であれ:whichever
-一致:identical
-〜を超えて:beyond
 数種の:several
 部分:part
-1 つ以上は:at least one
 よく:often
 多い:frequently
 時には:occasionally
@@ -1672,18 +1664,13 @@ stateless::::ステートレス
 
 	●動詞
 高める:increase させる
-加えて，In addition
 予め:in advance
 括って:surround:
-挙げる:list
-望ましい:desirable
 考慮-:regard
-知-:know
 置-
 置く／場所:place
 考え:thinking／suggested
 高める:increase させる
-持-:have
 始-／~~開始:begin
 close
 open
@@ -1705,7 +1692,6 @@ remain
 行っ
 行われ
 通して渡され:pass through
-除いて:except
 あてがう:assignする
 あてがわれ:assignされ
 securedでない:unsecured
@@ -1717,13 +1703,10 @@ render←rendition
 say
 seem
 cause
-依頼:ask
 note
-示-:show
 
 	●
 何故なら:because
-とりわけ:especial
 意識-:be aware
 ~logをとる:~logging
 	高い:high
@@ -1732,20 +1715,15 @@ note
 〜に関わらず:regardless
 〜するつもりがある:willing
 〜するつもりがない:unwilling
-則ってin accordance with／accord with／according to
-同様に:likewise／:similarly
 思しきもの:supposedly:
-おそらく:perhaps
 よって:hence
-代わりに:instead
 その時々:on occasion
 ~~目的:sake:目的
 おそれ:fear
-し得ないincapable
+し得ない:incapable
 保つ
 年:year
 秒数:seconds
-等しく:equal に
 優先される:precedence を take する
 能力を備えている:be capable of
 （〜に備わる能力）

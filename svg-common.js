@@ -883,7 +883,6 @@ filter::::フィルタ
 	~filter法:filtering
 gradient:
 graphics::::グラフィックス
-graphicな:graphical:::グラフィックな
 grayscale::::グレイスケール
 marker::::マーカ
 mask::::マスク
@@ -988,16 +987,11 @@ multimedia::::マルチメディア
 道具:tool:~
 共通しな:commonでな:~
 類似する:similarな:~
-	同様に:similarly／:similar
+	同様に:similar
 自立的:standalone:~
 	自立的:stand-alone
 多彩:rich:~
-	具体例として:for instance
 	ものとする:shall
-	に注意:note／note that
-	が:although
-	少し:slightly
-	に関して:with respect to
 	させる:cause
 
 	●仕様（動詞
@@ -1053,19 +1047,8 @@ multimedia::::マルチメディア
 
 	●指示語／機能語
 元の:original:~
-	現時点／現在:currently
-	ほぼ:almost
 	まで:at most
-	~~任意の:any
-	任意の:arbitrary
-	以前の／前の:previous
-	それまでの:previous
-	それまで:previously
-	別個の:distinct
-	一致:identical
 	章:chapter
-	複数の:more than one
-	残りの:remaining
 	左:left
 	一部／一部を成す／成す部分:part of
 	最も近い:nearest
