@@ -188,8 +188,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2019-06-18
-trans_update:2019-05-04
+spec_date:2019-06-27
+trans_update:2019-06-28
 source_checked:181128
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -602,6 +602,8 @@ at.import:~CASCADE#at-ruledef-import
 ~header~listから値を取得して復号して分割する:#concept-header-list-get-decode-split
 ~header~listから~MIME型を抽出する:#concept-header-extract-mime-type
 
+要請~Origin~headerを付加する:#append-a-request-origin-header
+
 	●~header
 ~header:#concept-header
 新たな~header:#_new-header
@@ -1007,8 +1009,10 @@ enV.生成元:~WAPI#concept-settings-object-origin
 
 生成元:~ORIGIN#concept-origin
 同一-生成元:~ORIGIN#same-origin
+成分組~生成元:~ORIGIN#concept-origin-tuple
 不透明な生成元:~ORIGIN#concept-origin-opaque
 生成元を直列化する:~ORIGIN#ascii-serialisation-of-an-origin
+o.~scheme:~ORIGIN#concept-origin-scheme
 
 並列的:~HTMLINFRA#in-parallel
 ~mp_form_data境界~文字列:~HTMLforms#multipart/form-data-boundary-string
@@ -1120,6 +1124,7 @@ null:
 multimap:
 	( ~key: 値 ):key-value
 	value:
+成分組:tuple::~
 	組:tuple
 名値:name-value:: ( 名, 値 ) 
 消去-:clear::~::クリア
@@ -1281,12 +1286,14 @@ FTP:
 	“最終”:final
 	範囲~付き:ranged
 	~cache制御:cache-control
+	~fetch側:fetcher
 
 	●HTTPS／保安／認証／CSP／CORS／MIX
 Fetch:
 TLS:
 	~CORSなし:no-CORS:
 CORB:
+Origin:
 tainting:
 tainted:
 nonce::::ナンス
@@ -1443,6 +1450,7 @@ side-channel:side channel:::サイドチャネル
 
 	●仕様（動詞
 opt-in::::オプトイン
+	~opt-in:opt-into
 末端利用者:end user:~:::エンドユーザ
 給-:supply:~
 想定-:suppose:~
@@ -1582,26 +1590,28 @@ slash::::スラッシュ
 	秒数:seconds
 	-:subset
 
-	~CORSなし要請:noCorsResponse
-	~CORBで無毒化した要請:corbSanitizedResponse
-	内部~応答:internalResponse
-	範囲~値:rangeValue
-	~header名:headerName
-	~http要請:httpRequest
-	再検証-要請:revalidateRequest
-	再検証中~flag:revalidatingFlag
-	格納-済み応答:storedResponse
-	init:init
-	非安全な名前たち:unsafeNames
-	非安全になり得る名前たち:potentiallyUnsafeNames
-	安全な値の合計~size:safelistValueSize
-	最初の~token:firstToken
-	初期~値:initialValue
-	~MIME型:mimeType
-	開始-位置:positionStart
-	一時的~MIME型:temporaryMimeType
+	●変数
+	%~CORSなし要請:noCorsResponse
+	%~CORBで無毒化した要請:corbSanitizedResponse
+	%内部~応答:internalResponse
+	%範囲~値:rangeValue
+	%~header名:headerName
+	%~http要請:httpRequest
+	%再検証-要請:revalidateRequest
+	%再検証中~flag:revalidatingFlag
+	%格納-済み応答:storedResponse
+	%init:init
+	%非安全な名前たち:unsafeNames
+	%非安全になり得る名前たち:potentiallyUnsafeNames
+	%安全な値の合計~size:safelistValueSize
+	%最初の~token:firstToken
+	%初期~値:initialValue
+	%~MIME型:mimeType
+	%開始-位置:positionStart
+	%一時的~MIME型:temporaryMimeType
 	-:quoteOrBackslash
-	値~list:values
+	%値~list:values
+	%直列形の生成元:serializedOrigin
 
 	●指示語
 
@@ -1747,7 +1757,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/4dcfe90b45350c5d73d00c86154ae492656d7be5/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/cc80ec58d24668413b7a3c7160d9b4d83ace7b20/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -6657,6 +6667,112 @@ origin               = `~scheme$url "://" `~host$url [ ":" `~port$url ]</pre>
 This supplants the `Origin` header. [ORIGIN]
 </p>
 
+<hr>
+
+<div class="algorithm">
+<p>
+`要請~Origin~headerを付加する@
+ときは、所与の
+( `要請$ %要請, %~CORS~flag ~IN { `~CORSあり^i, ε } )
+に対し，次の手続きを走らす：
+◎
+To append a request `Origin` header, given a request request with an optional CORS flag, run these steps:
+</p>
+
+<ol>
+	<li>
+%直列形の生成元 ~LET `要請の生成元を直列化する$( %要請 )
+◎
+Let serializedOrigin be the result of serializing a request origin with request.
+</li>
+	<li>
+~IF［
+%~CORS~flag ~NEQ ε
+］~OR［
+%要請 の`~mode$rq ~EQ `websocket^l
+］
+⇒＃
+%要請 の`~header~list$rqに`~headerを付加する$( `Origin^h / %直列形の生成元 )；
+~RET
+◎
+If the CORS flag is set or request’s mode is "websocket", then append `Origin`/serializedOrigin to request’s header list.
+</li>
+	<li>
+~IF［
+%要請 の`~method$rq ~IN { `GET$hm, `HEAD$hm }
+］
+⇒
+~RET
+◎
+Otherwise, if request’s method is neither `GET` nor `HEAD`, then:
+</li>
+	<li>
+<p>
+%要請 の`~referrer施策$rqに応じて：
+◎
+Switch on request’s referrer policy:
+</p>
+		<dl class="switch">
+			<dt>`no-referrer^l</dt>
+			<dd>
+%直列形の生成元 ~SET `null^bl
+◎
+Set serializedOrigin to `null`.
+</dd>
+
+			<dt>`no-referrer-when-downgrade^l</dt>
+			<dt>`strict-origin^l</dt>
+			<dt>`strict-origin-when-cross-origin^l</dt>
+			<dd>
+~IF［
+%要請 の`生成元$rqは`成分組~生成元$である
+］~AND［
+%要請 の＊`生成元$rqの`~scheme$o【！ its %~scheme】
+~EQ `https^l
+］~AND［
+%要請 の`現在の~URL$rqの＊`~scheme$url【！%~scheme】 ~NEQ `https^l
+］
+⇒
+%直列形の生成元 ~SET `null^bl
+◎
+If request’s origin is a tuple origin, its scheme is "https", and request’s current URL’s scheme is not "https", then set serializedOrigin to `null`.
+</dd>
+
+			<dt>`same-origin^l</dt>
+			<dd>
+~IF［
+( %要請 の`生成元$rq, %要請 の`現在の~URL$rqの`生成元$url )
+は`同一-生成元$でない
+］
+⇒
+%直列形の生成元 ~SET `null^bl
+◎
+If request’s origin is not same origin with request’s current URL’s origin, then set serializedOrigin to `null`.
+</dd>
+
+			<dt>その他</dt>
+			<dd>
+何もしない
+◎
+Do nothing.
+</dd>
+		</dl>
+	</li>
+	<li>
+%要請 の`~header~list$rqに`~headerを付加する$( `Origin^h / %直列形の生成元 )
+◎
+Append `Origin`/serializedOrigin to request’s header list.
+</li>
+</ol>
+
+<p class="note">注記：
+`要請$の`~referrer施策$rqは、すべての~fetchに織り込まれる
+— ~fetch側が明示的に自身の`生成元$を~serverと共有するよう（例えば`~CORS~protocol$の利用を介して）~opt-inしていなくとも。
+◎
+A request’s referrer policy is taken into account for all fetches where the fetcher did not explicitly opt into sharing their origin with the server, e.g., via using the CORS protocol.
+</p>
+</div>
+
 		</section>
 		<section id="http-cors-protocol">
 <h3 title="CORS protocol">3.2. ~CORS~protocol</h3>
@@ -10188,19 +10304,9 @@ The above limit ensures that requests that are allowed to outlive the environmen
 If httpRequest’s referrer is a URL, then append `Referer`/httpRequest’s referrer, serialized and isomorphic encoded, to httpRequest’s header list.
 </li>
 			<li>
-~IF［
-%~CORS~flag ~NEQ ε
-］~OR［
-%~http要請 の`~method$rq ~NIN { `GET$hm, `HEAD$hm }
-］~OR［
-%~http要請 の`~mode$rq ~EQ `websocket^l
-］
-⇒
-%~http要請 の`~header~list$rqに`~headerを付加する$(
-`Origin$h / `要請の生成元を直列化する$( %~http要請 )
-)
+`要請~Origin~headerを付加する$( %~http要請, %~CORS~flag )
 ◎
-If the CORS flag is set, httpRequest’s method is neither `GET` nor `HEAD`, or httpRequest’s mode is "websocket", then append `Origin`/the result of serializing a request origin with httpRequest, to httpRequest’s header list.
+Append a request `Origin` header for httpRequest with the CORS flag if set.
 </li>
 			<li>
 ~IF［
