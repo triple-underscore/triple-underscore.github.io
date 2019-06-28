@@ -1834,6 +1834,13 @@ tool::::ツール
 取扱う:handleする:取り扱う
 取扱い:handling:取り扱い
 
+扱う:treatする:~
+扱われ:treatされ:~
+扱わな:treatしな:~
+扱っ:treatし:~
+扱え:treatでき:~
+	扱い:treatment:~
+
 試み:attempt:~
 試みて:attemptして:~
 試みた:attemptした:~
@@ -2030,6 +2037,7 @@ care::::ケア
 組込みの:built-in:組み込みの
 国際的:international:~
 国際-:international:~
+	国際-化:internationalization／:internationalized
 
 	貢献-:contribute
 	貢献:contribution
@@ -3139,7 +3147,6 @@ Foo間:inter-Foo
 見よ:see
 見受けられ:seem
 起こる:happen
-扱う:treat
 渡す:pass
 所与の:given
 与えられた:given
