@@ -987,11 +987,6 @@ proprietary::::プロプライエタリ
 導き:leadし:~
 
 扱い:treatment:~
-扱う:treatする:~
-扱え:treatでき:~
-扱っ:treatし:~
-扱わ:treatし:~
-扱われ:treatされ:~
 望まず:wishせず:~
 回避法:avoidance:~
 agent::::エージェント
