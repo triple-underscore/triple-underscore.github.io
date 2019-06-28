@@ -1021,6 +1021,7 @@ LTE: <span class="op">≤</span>
 GTE: <span class="op">≥</span> 
 IN: <span class="op">∈</span> 
 NIN: <span class="op">∉</span> 
+BQ:`
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>
 ABSTRACT:<h2 title="Abstract">要約</h2>
 STATUSofTHIS:<h2 title="Status of this Document">この文書の位置付け</h2>
