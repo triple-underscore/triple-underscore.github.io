@@ -118,8 +118,8 @@ return text;
 
 ●●options
 
-spec_date:2019-05-27
-trans_update:2019-03-01
+spec_date:2019-06-28
+trans_update:2019-06-28
 source_checked:180622
 page_state_key:HTML
 spec_status:LS
@@ -553,6 +553,7 @@ V.B:#_target-browsing-context
 ~navigate~URL~schemeを処理する:#process-a-navigate-url-scheme
 自己~naviを明示的に上書き:#explicit-self-navigation-override
 素片へ~navigateする:#scroll-to-fragid
+素片へ~scrollしようと試行する:#try-to-scroll-to-the-fragment
 素片へ~scrollする:#scroll-to-the-fragment-identifier
 
 履歴を走査する:#traverse-the-history
@@ -656,8 +657,8 @@ sl.Window:~WINDOW#concept-windowproxy-window
 	~scheme~data:~HTMLurl#concept-url-scheme-data
 
 	~HTML文書:~HTMLINFRA#html-documents
-即時に:~HTMLINFRA#immediately
-並列的に:~HTMLINFRA#in-parallel
+即時:~HTMLINFRA#immediately
+並列的:~HTMLINFRA#in-parallel
 ~plugin:~HTMLINFRA#plugin
 ~secure化でき:~HTMLINFRA#concept-plugin-secure
 ~target上書き:~HTMLINFRA#concept-event-target-override
@@ -670,7 +671,6 @@ sl.Window:~WINDOW#concept-windowproxy-window
 関連な大域~obj:~WAPI#concept-relevant-global
 ~DOM操作~task源:~WAPI#dom-manipulation-task-source
 ~event-loop:~WAPI#event-loop
-~event-loopを回す:~WAPI#spin-the-event-loop
 ~task:~WAPI#concept-task
 ~task~queue:~WAPI#task-queue
 ~task源:~WAPI#task-source
@@ -1190,7 +1190,7 @@ Let navigationType be "form-submission" if the navigation algorithm was invoked 
 </li>
 	<li>
 ~RET
-— ただし、以降の手続きは`並列的に$継続する。
+— ただし、以降の手続きは`並列的$に継続する。
 それは、必要とされるなら %資源 を得ようと試みる。
 ◎
 Return to whatever algorithm invoked the navigation steps and continue running these steps in parallel.
@@ -2382,7 +2382,7 @@ Allowed to use
 <p>
 下の各~節の一部にて，~UAが
 `新たな~pageで~session履歴を更新する@
-よう要求されたときは、次を走らす`~taskを~queueする$モノトスル
+よう要求されたときは、`~network用~task源$から次を走らす`~taskを~queueする$モノトスル
 — その~taskを（新たな~entryではなく）`現在の~entry$の`文書$に結付けた上で：
 </p>
 
@@ -2405,7 +2405,7 @@ Allowed to use
 </li></ul>
 
 ◎
-Some of the sections below, to which the above algorithm defers in certain cases, require the user agent to update the session history with the new page. When a user agent is required to do this, it must queue a task (associated with the Document object of the current entry, not the new one) to run the following steps:
+Some of the sections below, to which the above algorithm defers in certain cases, require the user agent to update the session history with the new page. When a user agent is required to do this, it must queue a task on the networking task source, associated with the Document object of the current entry (not the new one), to run the following steps:
 </div>
 
 <ol>
@@ -2539,57 +2539,78 @@ Traverse the history to the new entry. If the navigation was initiated with repl
 The navigation algorithm has now matured.
 </li>
 	<li>
+`素片へ~scrollしようと試行する$( %文書 )
+◎
+Try to scroll to the fragment for the Document.
+</li>
+</ol>
+</div>
+
+<div class="algorithm">
+
 <p>
-~WHILE 無条件：
+`素片へ~scrollしようと試行する@
+ときは、所与の
+( `文書$ %文書 )
+に対し，次の手続きを`並列的$に遂行する：
+◎
+To try to scroll to the fragment for a Document document, perform the following steps in parallel:
 </p>
-		<ol>
-			<li>
-~UAにより定義される時間長だけ`~event-loopを回す$
+
+<ol>
+	<li>
+実装が定義する時間長だけ待機する
 （この段は、~UAが処理能の懸念に面したとき，利用者~体験を最適化できるようにするためにある。）
 ◎
-Fragment loop: Spin the event loop for a user-agent-defined amount of time, as desired by the user agent implementer. (This is intended to allow the user agent to optimize the user experience in the face of performance concerns.)
+Wait for an implementation-defined amount of time. (This is intended to allow the user agent to optimize the user experience in the face of performance concerns.)
 </li>
+	<li>
+<p>
+`~network用~task源$から次を走らす`~taskを~queueする$：
+◎
+Queue a task on the networking task source to run these steps:
+</p>
+		<ol>
 			<li>
 <p>
 ~IF［
 次のいずれかが満たされる
-］
-⇒
-~BREAK：
+］…：
 </p>
-<ul><li>%文書 に対する構文解析器は無い
-</li><li>%文書 に対する構文解析器は`構文解析を停止した$
+
+<ul><li>%文書 用の構文解析器は無い
+</li><li>%文書 用の構文解析器は`構文解析を停止した$
 </li><li>~UAには、［
-利用者が`素片へ~scrollする$ことに関心を失った
-］と予見する事由がある
+利用者が`素片$urlへ~scrollすることに関心を失った
+］と予見する理由がある
 </li></ul>
 
+<p>
+…ならば
+⇒
+~RET
+</p>
+
 ◎
-If the Document object has no parser, or its parser has stopped parsing, or the user agent has reason to believe the user is no longer interested in scrolling to the fragment, then return.
+If document has no parser, or its parser has stopped parsing, or the user agent has reason to believe the user is no longer interested in scrolling to the fragment, then abort these steps.
 </li>
 			<li>
 %文書 の`~URL$doc内に与えられる`素片へ~scrollする$
 ◎
-Scroll to the fragment given in the document's URL.＼
+Scroll to the fragment given in document's URL.＼
 </li>
 			<li>
 ~IF［
-前~段の結果 %文書 内の`指示された部位$docを見出せた
+前~段の結果 %文書 内の`指示された部位$docを見出せなかった
 ］
 ⇒
-~BREAK
+`素片へ~scrollしようと試行する$( %文書 )
 ◎
-If this fails to find an indicated part of the document, then return to the fragment loop step.
+If this does not find an indicated part of the document, then try to scroll to the fragment for document.
 </li>
 		</ol>
 	</li>
 </ol>
-
-<p>
-この`~task$の`~task源$は、`~network用~task源$とする。
-◎
-The task source for this task is the networking task source.
-</p>
 </div>
 
 			</section>
@@ -3983,7 +4004,7 @@ Set entry's Document object's latest entry to entry.
 <p>
 次に与える~taskを， `~eventは他を阻まない~flag$V に応じて
 ⇒＃
-~OFF ならば`即時に$走らす ／
+~OFF ならば`即時$に走らす ／
 ~ON ならば`~queueする$
 ◎
 If the non-blocking events flag is not set, then run the following substeps immediately. Otherwise, the non-blocking events flag flag is set; queue a task to run the following substeps instead.
