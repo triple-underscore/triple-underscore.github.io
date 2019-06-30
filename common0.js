@@ -1674,6 +1674,9 @@ console::::コンソール
 能力:capability:~
 	能力:capabilities:~
 特能:feature::~
+アリ:possible:可能
+	可能性:possibility:~
+	不可能:impossible:~
 可用:available:~
 公開-:expose:~
 公開:exposure:~
@@ -1681,13 +1684,9 @@ console::::コンソール
 供さな:provideしな:~
 供-:provide:~
 提供-:offer:~
-
-アリ:possible:可能
-	可能性:possibility:~
-	不可能:impossible:~
 改める:alterする:~
 改めれ:alterでき:~
-改めな:alterしな
+改めな:alterしな:~
 改めら:alterさ:~
 改めな:alterしな:~
 改めて:alterして:~
@@ -1697,7 +1696,7 @@ console::::コンソール
 	●適合性
 
 標準:standard:~
-標準の:standardな:~
+標準な:standardな:標準の
 草案:draft:~
 編集者草案:Editor’s Draft:~
 作業草案:Working Draft:~
@@ -2467,7 +2466,6 @@ class::::クラス
 構造:structure::~
 有構造:structured::~
 構造的:structural::~
-構造上の:structural::~
 構造上の:structuralな::~
 
 構成子:constructs:~
@@ -2731,6 +2729,7 @@ view::::ビュー
 外観:appearance:~
 手入力-:enter:~
 手入力:entry:~
+対話-:interact::~::インタラクト
 対話:interaction::~::インタラクション
 対話的:interactive::~::インタラクティブ
 対話性:interactivity::~::インタラクティブ性
@@ -3185,6 +3184,9 @@ Foo間:inter-Foo
 良い:good
 方が良い／より良く／より良い／もっと良い:better
 他が〜されない限り unless otherwise 〜
+他からは〜ない:otherwise
+さもなければ:otherwise
+他方:on the other hand,
 多い:often
 元々／元から:originally
 代わりに:instead
@@ -3194,7 +3196,6 @@ Foo間:inter-Foo
 一例として:for instance
 きちんと〜され:well-〜ed
 上手く:well
-他方:on the other hand,
 則って:according to 〜
 則って:accordingly
 則って:in accordance with
@@ -3233,7 +3234,6 @@ Foo間:inter-Foo
 たぶん:perhaps
 おそらく:probably
 諸々の:miscellaneous
-さもなければ:otherwise
 あいにく:unfortunately
 正確に:exactly
 等しい:equal
