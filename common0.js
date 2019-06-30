@@ -1312,6 +1312,7 @@ sizing::::サイズ法
 利用者:user:~:::ユーザ
 利用元:user:~
 有用:useful:~
+用法:usage:~
 開発者:developer:~
 実装:implementation:~
 実装-:implement:~
@@ -3228,6 +3229,7 @@ Foo間:inter-Foo
 諸々の:miscellaneous
 足る:sufficient
 関わらず:regardless
+にもかかわらず:despite
 〜に関する:regarding／:with regards to
 〜に関し:with respect to
 概ね:roughly
