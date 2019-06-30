@@ -41,37 +41,28 @@ if(!indicator) {//%
 let text = key;
 let href = '';
 let classname = class_map[klass] || '';
-let tag = tag_map[klass];
 
 switch(klass){
-case 'r': // ref
+case 'r':
 	text = `[${key}]`;
 	href = `svg-refs.html#ref-${key.toLowerCase()}`;
 	break;
-case 't': // type
+case 't':
 	text = `&lt;${text}&gt;`;
 	break;
-case 'ps': // pseudo-class
+case 'ps':
 	text = `:${text}`;
 	break;
-case 'pe': // pseudo-element
+case 'pe':
 	text = `::${text}`;
 	break;
-case 'at': // at-rule
+case 'at':
 	text = `@${text}`;
 	break;
-case 'l': // literal
+case 'l':
 	text = `"<code class="literal">${text}</code>"`;
 	break;
-case 'e':
-	if(indicator === '@'){
-		// SVG 要素は id が href 参照と異なる
-		klass = ':';
-		tag = 'code';
-		href = `#elementdef-${key}`;
-	}
-	break;
-case 'U': // 
+case 'U':
 	text = `U+${key}`;
 	break;
 case 'sec':
@@ -121,6 +112,7 @@ default:
 	}
 }
 
+let tag = tag_map[klass];
 if(tag) {
 	classname = classname ? ` class="${classname}"` : '';
 	text = `<${tag}${classname}>${text}</${tag}>`;
@@ -317,71 +309,75 @@ I.Window:~WINDOW#window
 I.WindowEventHandlers:~WAPI#windoweventhandlers
 
 	●e
-e.a:~SVGlinking#AElement
+	（要素を指す href は §に代えて要素 dfn id を指すように変更）
+e.a:~SVGlinking#elementdef-a
+e.circle:~SVGshapes#elementdef-circle
+e.clipPath:~MASKING1#elementdef-clipPath
+e.defs:~SVGstruct#elementdef-defs
+e.desc:~SVGstruct#elementdef-desc
+e.ellipse:~SVGshapes#elementdef-ellipse
+e.foreignObject:~SVGembedded#elementdef-foreignObject
+e.g:~SVGstruct#elementdef-g
+e.image:~SVGembedded#elementdef-image
+e.line:~SVGshapes#elementdef-line
+e.linearGradient:~SVGpservers#elementdef-linearGradient
+e.marker:~SVGpainting#elementdef-marker
+e.mask:~MASKING1#elementdef-mask
+e.metadata:~SVGstruct#elementdef-metadata
+e.path:~SVGpaths#elementdef-path
+e.pattern:~SVGpservers#elementdef-pattern
+e.polygon:~SVGshapes#elementdef-polygon
+e.polyline:~SVGshapes#elementdef-polyline
+e.radialGradient:~SVGpservers#elementdef-radialGradient
+e.rect:~SVGshapes#elementdef-rect
+e.script:~SVGinteract#elementdef-script
+e.stop:~SVGpservers#elementdef-stop
+e.style:~SVGstyling#elementdef-style
+e.svg:~SVGstruct#elementdef-svg
+e.switch:~SVGstruct#elementdef-switch
+e.symbol:~SVGstruct#elementdef-symbol
+e.text:~SVGtext#elementdef-text
+e.textPath:~SVGtext#elementdef-textPath
+e.title:~SVGstruct#elementdef-title
+e.tspan:~SVGtext#elementdef-tspan
+e.use:~SVGstruct#elementdef-use
+e.view:~SVGlinking#elementdef-view
+
+	（ SVGanim の要素は元のまま）
 e.animate:~SVGanim#AnimateElement
 e.animateMotion:~SVGanim#AnimateMotionElement
 e.animateTransform:~SVGanim#AnimateTransformElement
-e.circle:~SVGshapes#CircleElement
-e.clipPath:~MASKING1#ClipPathElement
-e.defs:~SVGstruct#DefsElement
-e.desc:~SVGstruct#DescElement
 e.discard:~SVGanim#DiscardElement
-e.ellipse:~SVGshapes#EllipseElement
-e.foreignObject:~SVGembedded#ForeignObjectElement
-e.g:~SVGstruct#GElement
-e.image:~SVGembedded#ImageElement
-e.line:~SVGshapes#LineElement
-e.linearGradient:~SVGpservers#LinearGradientElement
-e.marker:~SVGpainting#MarkerElement
-e.mask:~MASKING1#MaskElement
-e.metadata:~SVGstruct#MetadataElement
 e.mpath:~SVGanim#MPathElement
-e.path:~SVGpaths#PathElement
-e.pattern:~SVGpservers#PatternElement
-e.polygon:~SVGshapes#PolygonElement
-e.polyline:~SVGshapes#PolylineElement
-e.radialGradient:~SVGpservers#RadialGradientElement
-e.rect:~SVGshapes#RectElement
-e.script:~SVGinteract#ScriptElement
 e.set:~SVGanim#SetElement
-e.stop:~SVGpservers#StopElement
-e.style:~SVGstyling#StyleElement
-e.svg:~SVGstruct#SVGElement
-e.switch:~SVGstruct#SwitchElement
-e.symbol:~SVGstruct#SymbolElement
-e.text:~SVGtext#TextElement
-e.textPath:~SVGtext#TextPathElement
-e.title:~SVGstruct#TitleElement
-e.tspan:~SVGtext#TextElement
-e.use:~SVGstruct#UseElement
-e.view:~SVGlinking#ViewElement
 
-e.feBlend:~FILTERS#feBlendElement
-e.feColorMatrix:~FILTERS#feColorMatrixElement
-e.feComponentTransfer:~FILTERS#feComponentTransferElement
-e.feComposite:~FILTERS#feCompositeElement
-e.feConvolveMatrix:~FILTERS#feConvolveMatrixElement
-e.feDiffuseLighting:~FILTERS#feDiffuseLightingElement
-e.feDisplacementMap:~FILTERS#feDisplacementMapElement
-e.feDistantLight:~FILTERS#feDistantLightElement
-e.feDropShadow:~FILTERS#feDropShadowElement
-e.feFlood:~FILTERS#feFloodElement
-e.feFuncA:~FILTERS#feFuncAElement
-e.feFuncB:~FILTERS#feFuncBElement
-e.feFuncG:~FILTERS#feFuncGElement
-e.feFuncR:~FILTERS#feFuncRElement
-e.feGaussianBlur:~FILTERS#feGaussianBlurElement
-e.feImage:~FILTERS#feImageElement
-e.feMerge:~FILTERS#feMergeElement
+	（FILTERS の要素 id は小文字化）
+e.feBlend:~FILTERS#elementdef-feblend
+e.feColorMatrix:~FILTERS#elementdef-fecolormatrix
+e.feComponentTransfer:~FILTERS#elementdef-fecomponenttransfer
+e.feComposite:~FILTERS#elementdef-fecomposite
+e.feConvolveMatrix:~FILTERS#elementdef-feconvolvematrix
+e.feDiffuseLighting:~FILTERS#elementdef-fediffuselighting
+e.feDisplacementMap:~FILTERS#elementdef-fedisplacementmap
+e.feDistantLight:~FILTERS#elementdef-fedistantlight
+e.feDropShadow:~FILTERS#elementdef-fedropshadow
+e.feFlood:~FILTERS#elementdef-feflood
+e.feFuncA:~FILTERS#elementdef-fefunca
+e.feFuncB:~FILTERS#elementdef-fefuncb
+e.feFuncG:~FILTERS#elementdef-fefuncg
+e.feFuncR:~FILTERS#elementdef-fefuncr
+e.feGaussianBlur:~FILTERS#elementdef-fegaussianblur
+e.feImage:~FILTERS#elementdef-feimage
+e.feMerge:~FILTERS#elementdef-femerge
 e.feMergeNode:~FILTERS#elementdef-femergenode
-e.feMorphology:~FILTERS#feMorphologyElement
-e.feOffset:~FILTERS#feOffsetElement
-e.fePointLight:~FILTERS#fePointLightElement
-e.feSpecularLighting:~FILTERS#feSpecularLightingElement
-e.feSpotLight:~FILTERS#feSpotLightElement
-e.feTile:~FILTERS#feTileElement
-e.feTurbulence:~FILTERS#feTurbulenceElement
-e.filter:~FILTERS#FilterElement
+e.feMorphology:~FILTERS#elementdef-femorphology
+e.feOffset:~FILTERS#elementdef-feoffset
+e.fePointLight:~FILTERS#elementdef-fepointlight
+e.feSpecularLighting:~FILTERS#elementdef-fespecularlighting
+e.feSpotLight:~FILTERS#elementdef-fespotlight
+e.feTile:~FILTERS#elementdef-feytile
+e.feTurbulence:~FILTERS#elementdef-feturbulence
+e.filter:~FILTERS#elementdef-filter
 
 	HTML 要素
 eH.a:~HEtextlevel#the-a-element
