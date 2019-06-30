@@ -755,6 +755,9 @@ XHTML:
 XLink:
 2D:
 3D:
+WG:
+	WG:the working group
+	WG:Working Group
 attrdef:<p>Attribute definitions</p>:<p>attribute 定義：</p>:<p>属性定義：</p>
 viewAs:View this example as SVG (SVG-enabled browsers only):この例を SVG で見る（要ブラウザ対応）
 
@@ -987,7 +990,6 @@ multimedia::::マルチメディア
 道具:tool:~
 共通しな:commonでな:~
 類似する:similarな:~
-	同様に:similar
 自立的:standalone:~
 	自立的:stand-alone
 多彩:rich:~
@@ -1022,7 +1024,6 @@ multimedia::::マルチメディア
 	指定されていない:unspecified
 	適合する:are conformant
 	見よ:refer to
-	足る:sufficient
 
 	●未分類（動詞
 反映先の:reflected:~
@@ -1046,11 +1047,9 @@ multimedia::::マルチメディア
 
 
 	●指示語／機能語
-元の:original:~
 	まで:at most
 	章:chapter
 	左:left
-	一部／一部を成す／成す部分:part of
 	最も近い:nearest
 	まったく:at all
 	各種:various
