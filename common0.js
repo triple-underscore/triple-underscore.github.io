@@ -1252,7 +1252,7 @@ OS:operating system:OS
 内縁:inner:~
 外縁:outer:~
 直に:directに:~
-直な:directな:直の
+直な:directな:~
 直接的:direct:~
 間接的:indirect:~
 	ナシ:none:なし
@@ -3052,6 +3052,7 @@ Foo間:inter-Foo
 ここ:here
 そこ:there
 どこでも:anywhere
+どこか:somewhere
 他所:elsewhere
 周囲の:surrounding
 周り:around
