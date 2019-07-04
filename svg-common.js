@@ -559,7 +559,7 @@ t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
 読専~flag:~SVGtypes#_read-only-flag
 必要なら内容~属性を直列化し直す:~SVGtypes#_reserialize-reflected-attribute
 反映を継承する:~SVGtypes#_inherit-reflected
-反映先の属性:~SVGtypes:#_reflected-attribute
+反映先の属性:~SVGtypes#_reflected-attribute
 
 
 	■struct
