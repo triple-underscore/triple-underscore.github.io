@@ -1524,6 +1524,7 @@ risk::::リスク
 意味され:meanされ:意図され
 意味-:mean:~
 有意義:meaningful:~
+イミ:sense:意味
 有意:significant:~
 意図-:intend:~
 意図:intent:~
