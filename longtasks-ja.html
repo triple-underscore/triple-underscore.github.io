@@ -99,8 +99,8 @@ return text;
 ●●options
 
 spec_title:Long Tasks API 1
-spec_date:2019-06-19
-trans_update:2019-06-24
+spec_date:2019-07-03
+trans_update:2019-07-09
 source_checked:190222
 page_state_key:TIMING
 original_url:https://w3c.github.io/longtasks/
@@ -238,8 +238,6 @@ enV.担当の閲覧文脈:~WAPI#responsible-browsing-context
 
 	in this document:https://docs.google.com/document/d/1tIMI1gau_q6X5EBnjDNiFS5NWV9cpYJ5KKA7xPd3VB8/edit
 
-r.RESPONSETIME:~REQUESTIDLECALLBACK#bib-responsetime
-
 ●●words_table1
 REQUESTIDLECALLBACK:requestidlecallback-ja.html
 
@@ -259,7 +257,8 @@ checkpoint:
 
 	何もしない:end up doing nothing
 	早めに抜け出る:bail out 〜 earlier
-	各~callから次回の~callまで:between the successive calls
+満了:expiration:~
+	各~満了から次回の満了まで:between the successive expirations
 
 	●計時／long task
 最小限の:minimalな:~
@@ -288,6 +287,7 @@ schedule::::スケジュール
 	以内:in under
 超過-:exceed:~
 閾値:threshold:~
+	以内:threshold
 	になる時機:time to
 	速く:faster
 
@@ -428,11 +428,11 @@ battery::::バッテリー
 [ECMASCRIPT]
     ECMAScript Language Specification. URL: https://tc39.github.io/ecma262/ 
 [HR-TIME-2]
-    Ilya Grigorik; James Simonsen; Jatinder Mann. High Resolution Time Level 2. 1 March 2018. CR. URL: https://www.w3.org/TR/hr-time-2/ 
+    Ilya Grigorik; James Simonsen; Jatinder Mann. High Resolution Time Level 2. 26 June 2019. CR. URL: https://www.w3.org/TR/hr-time-2/ 
 [HTML]
     Anne van Kesteren; et al. HTML Standard. Living Standard. URL: https://html.spec.whatwg.org/multipage/ 
 [PERFORMANCE-TIMELINE-2]
-    Ilya Grigorik. Performance Timeline Level 2. 23 April 2019. WD. URL: https://www.w3.org/TR/performance-timeline-2/ 
+    Ilya Grigorik. Performance Timeline Level 2. 26 June 2019. WD. URL: https://www.w3.org/TR/performance-timeline-2/ 
 [WebIDL]
     Boris Zbarsky. Web IDL. 15 December 2016. ED. URL: https://heycam.github.io/webidl/ 
 
@@ -511,17 +511,17 @@ This document defines an API that web page authors can use to detect presence of
 — 例えば：
 ~UAは、利用者の活動に基づいて入力~eventを~scheduleする ／
 ~appは、 `requestAnimationFrame()$m 用の~callbackや他の~callback, 等々を~scheduleする。
-~queueに入れられたこれらの~eventは、~browserにより 1 個ずつ~dequeueされ, 実行される。
+~queueされたこれらの~eventは、~browserにより 1 個ずつ~dequeueされ, 実行される。
 ◎
-As the page is loading and while the user is interacting with the page afterwards, both the application and browser, queue various events that are then executed by the browser -- e.g. user agent schedules input events based on user’s activity, the application schedules callbacks for requestAnimationFrame and other callbacks etc. Once in the queue, these events are then dequeued one-by-one by the browser and executed.
+As the page is loading and while the user is interacting with the page afterwards, both the application and browser queue various events that are then executed by the browser -- e.g. user agent schedules input events based on user’s activity, the application schedules callbacks for requestAnimationFrame and other callbacks, etc. Once in the queue, the browser dequeues these events one-by-one and executes them.
 </p>
 
 <p>
-しかしながら，~taskには長い時間（複数の~frame）かかり得るものもあり、それが起きた場合／とき，~UI~threadは~lockされ, 他のすべての~taskも阻まれる。
+しかしながら，~taskには長い時間（複数の~frame）かかり得るものもあり、それが起きた場合／とき，~UI~threadは阻まれ，他のすべての~taskも阻まれる結果になり得る。
 これは，利用者からは、利用者~入力に対し~browserが応答-不能になり，~pageから “締め出される” ことで共通的に可視になる。
 今日における~web上の不良な利用者~体験の大多数は、それを源としている：
 ◎
-However, some task can take a long time (multiple frames), and if and when that happens, the UI thread is locked and all other tasks are blocked as well. To the user this is commonly visible as a "locked up" page where the browser is unable to respond to user input; this is a major source of bad user experience on the web today:
+However, some tasks can take a long time (multiple frames) and if/when that happens, the UI thread may become blocked and block all other tasks as well. To the user, this is commonly visible as a "locked up" page where the browser is unable to respond to user input; this is a major source of bad user experience on the web today:
 </p>
 
 <dl>
@@ -531,11 +531,11 @@ However, some task can take a long time (multiple frames), and if and when that 
 Delayed "time to Interactive":
 </dt>
 	<dd>
-~pageが読込まれる間、長い~taskは~main~threadと~~連携することが多い
-— その結果、~pageが視覚的に具現化されていても，利用者は~pageとヤリトリできなくなる。
+~pageが読込まれる間，あるいは完全に視覚的に具現化されていても、長い~taskは~main~threadと~~連携することが多い
+— その結果、利用者は~pageとヤリトリできなくなる。
 よくある元凶として、拙く設計された第三者-主体の内容が挙げられる。
 ◎
-while the page is loading long tasks often tie up the main thread and prevent the user from interacting with the page even though the page is visually rendered. Poorly designed third-party content is a frequent culprit.
+while the page is loading, or even completely visually rendered, long tasks often tie up the main thread and prevent the user from interacting with the page. Poorly designed third-party content is frequently the culprit.
 </dd>
 
 	<dt>
@@ -544,11 +544,11 @@ while the page is loading long tasks often tie up the main thread and prevent th
 High/variable input latency:
 </dt>
 	<dd>
-~criticalな利用者~対話~event（
+~criticalな利用者~対話~event（例：
 `tap^en, `click^en, `scroll^en, `wheel^en, 等々
 ）は、長い~taskの背後に~queueされ，即応しないため、利用者~体験を予測-不能にする。
 ◎
-critical user interaction events (tap, click, scroll, wheel, etc) are queued behind long tasks, which yields janky and unpredictable user experience.
+critical user-interaction events (e.g. tap, click, scroll, wheel, etc.) are queued behind long tasks which yields janky and unpredictable user experience.
 </dd>
 
 	<dt>
@@ -557,10 +557,9 @@ critical user interaction events (tap, click, scroll, wheel, etc) are queued beh
 High/variable event handling latency:
 </dt>
 	<dd>
-~event~callback（例： `onload^et ~event等）の処理について，前項の入力と同様
-— それは、~appの更新を遅延する。
+入力~同様、~event~callback（例： `onload^et ~event, 等々）の処理は，~appの更新を遅延する。
 ◎
-similar to input, but for processing event callbacks (e.g. onload events, and so on), which delay application updates.
+like input, processing event callbacks (e.g. onload events, etc.) delay application updates.
 </dd>
 
 	<dt>
@@ -574,30 +573,33 @@ Janky animations and scrolling:
 一部の［
 ~animation／~scrolling
 ］は、組成器と~main~threadとの間の協調を要求する
-— ~main~threadが長い~taskに因り阻まれた場合、［
+— 長い~taskが~main~threadを阻んでいる場合、［
 ~animation／~scrolling
 ］の応答性に影響し得る。
 ◎
-some animation and scrolling interactions require coordination between compositor and main threads; if the main thread is blocked due to a long task, it can affect responsiveness of animations and scrolling.
+some animation and scrolling interactions require coordination between compositor and main threads; if a long task is blocking the main thread it can affect responsiveness of animations and scrolling.
 </dd>
 </dl>
 
 <p>
-一部の~app（および `RUM^en† ~vendor）は、すでに， “長い~task” が起こる事例を識別して追跡しようと試みている。
-【† `Real user monitoring^en （現実の利用者~体験の監視）】
-一例を挙げれば、短い周期的な~timerを~installした上で，各~callから次回の~callまでに経過した時間を検分する~patternが知られている。
+一部の~app（および
+<a href="https://en.wikipedia.org/wiki/Real_user_monitoring">RUM</a>
+~vendor
+【 `real user monitoring^en ／ “現実の利用者~体験の監視” 】
+）は、すでに， “長い~task” が起こる事例を識別して追跡しようと試みている。
+一例を挙げれば、短い周期的な~timerを~installした上で，各~満了から次回の満了までに経過した時間を検分する~patternが知られている。
 経過した時間が~timer周期を超えるならば、
-1 個~以上の長い~taskが~timerの実行を遅延させた見込みが高いことになる。
-これは大体は働くが、いくつかの点で処理能に~~悪影響を及ぼす：
+1 個~以上の長い~taskが~event-loopの実行を遅延させた見込みが高いことになる。
+この~approachは大体は働くが、いくつかの点で処理能に~~悪影響を及ぼす：
 ◎
-Some applications (and RUM vendors) are already attempting to identify and track cases where "long tasks" happen. For example, one known pattern is to install a ~short periodic timer and inspect the elapsed time between the successive calls: if the elapsed time is greater than the timer period, then there is high likelihood that one or more long tasks have delayed execution of the timer. This mostly works, but it has several bad performance implications:＼
+Some applications (and RUM vendors) are already attempting to identify and track cases where "long tasks" happen. For example, one known pattern is to install a ~short periodic timer and inspect the elapsed time between the successive expirations: if the elapsed time is greater than the timer period, then there is high likelihood that one or more long tasks have delayed execution of the event loop. This approach mostly works but has several bad performance implications:＼
 </p>
 
 <ul>
 	<li>
-~appが長い~taskを検出するために~pollし続けることにより，遊休~時に走らす~codeに割り当てられる “静止期間” が細切れになる（ `requestIdleCallback()$m を見よ）。
+長い~taskを検出するために~pollし続けることにより，~appが遊休~時に走らす~codeに割り当てられる “静止期間” が細切れになる（ `requestIdleCallback()$m を見よ）。
 ◎
-the application is polling to detect long tasks, which prevents quiescence and long idle blocks (see requestIdleCallback);＼
+by polling to detect long tasks, the application prevents quiescence and long idle blocks (see requestIdleCallback);＼
 </li>
 	<li>
 ~batteryが短命になる。
@@ -605,27 +607,25 @@ the application is polling to detect long tasks, which prevents quiescence and l
 it’s bad for battery life;＼
 </li>
 	<li>
-何が遅延させたか知るすべが無い（例：当事者-主体, 第三者-主体 どちらの~codeか？）。
+何が遅延させているか知るすべが無い（例：当事者-主体, 第三者-主体 どちらの~codeか？）。
 ◎
-there is no way to know who caused the delay (e.g. first party vs third party code).
+there is no way to know what is causing the delay (e.g. first party or third party code).
 </li>
 </ul>
 
 <p>
-<!-- RESPONSETIME？ -->
-`RAIL^en 処理能~model
-【原典不明（参考： `RESPONSETIME$r ）】
-から、［
-~appは，利用者~入力から 100ms 以内に応答するべきである
-］と示唆されている（~touchによる移動-や~scrollingに対しては 16ms 以内）。
+<a href="https://developers.google.com/web/fundamentals/performance/rail"><abbr title="Response Animation Idle Load">RAIL</abbr></a>
+処理能~modelから、［
+~appは，利用者~入力に対し 100ms 以内に応答するべきである
+］と示唆されている（~touchによる移動-や~scrollingにおいては 16ms 以内）。
 この~APIの目標は、この~~目的に抵触し得る~taskについての通知を表面化することである。
-ここでは、 50ms 以上かかる~taskを表面化する。
+この~APIは、 50ms 以上かかる~taskを表面化する。
 そのような~taskを伴わない~web~siteならば、利用者~入力に対し
 — それを受信した時点で実行-中の~taskが完遂するまで 50ms 未満,
 それに反応する~taskを実行するのも 50ms 未満になるので —
 100ms 以内に応答することになるはずである。
 ◎
-The RAIL performance model suggests that applications should respond in under 100ms to user input (for touch move and scrolling, in under 16ms). Our goal with this API is to surface notifications about tasks that may prevent the application from hitting these targets. We surface tasks that take 50ms or more. A website without these tasks should respond to user input in under 100ms: it will take less than 50ms to finish the task that is being executed when the user input is received and less than 50ms to execute the task to react to such user input.
+The RAIL performance model suggests that applications should respond to user input in less than 100ms (for touch move and scrolling, the threshold is 16ms). The goal of this API is to surface notifications about tasks that may prevent the application from hitting these targets. This API surfaces tasks that take 50ms or more. A website without these tasks should respond to user input in under 100ms: it will take less than 50ms to finish the task that is being executed when the user input is received and less than 50ms to execute the task to react to such user input.
 </p>
 
 		<section id="example">
