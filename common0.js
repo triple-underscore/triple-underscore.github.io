@@ -1616,7 +1616,7 @@ console::::コンソール
 前方-:forward:~
 過去互換:quirks:~
 非推奨に:deprecate:~
-非推奨d:deprecated:~
+非推奨d:deprecated:非推奨
 	取って代わ:supersede
 開発-:develop:~
 開発:development:~
