@@ -1798,6 +1798,7 @@ console::::コンソール
 一貫させ:consistentにす:~
 整合な:consistentな:整合する
 整合する:consistentになる:~
+整合させ:consistentにす:~
 整合でな:consistentでな:整合していな
 	inconsistent:
 整合性:consistency:~

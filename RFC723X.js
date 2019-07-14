@@ -1184,7 +1184,6 @@ scalability::::スケーラビリティ
 自動:automatic:~
 自動化-:automate:~
 自動化:automated:~
-表出し:express:表し
 協調的:collaborative:~
 相違化-:differentiate:区別
 相違す:differす:異な
