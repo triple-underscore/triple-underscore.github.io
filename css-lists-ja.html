@@ -3,30 +3,12 @@
 
 <link rel="stylesheet" href="common.css" type="text/css" />
 <link rel="stylesheet" href="common-css.css" type="text/css" />
+
 <style>
 
 #counter-nesting-example .ol { background: rgba(0,0,0,.1); margin: .5em 0; padding: .2em .5em; }
 #counter-nesting-example .li > .ol { margin: 0 0 0 1em; }
 #counter-nesting-example .li { list-style: none; margin-left: 1em;}
-
-/*
-#counter-nesting-example .li {
-	counter-increment: item;
-}
-#counter-nesting-example .ol {
-	counter-reset: item;
-}
-
-#counter-nesting-example .li::before {
-	content: "(" counters(item, "-") ")";
-	color: green;
-}
-#counter-nesting-example .ol::before {
-	content: "(" counters(item, "-") ")";
-	color: green;
-}
-
-*/
 
 pre.ex-rendering {
 	padding: 0;
@@ -47,12 +29,17 @@ pre.ex-rendering {
 }
 
 
-.ex-counter-tree {
-	/* 
-	font-size: 80%;
-	writing-mode: vertical-rl;
-	*/
+.ex-counter-tree {}
+
+/* force instatiate
+.ex-counter-tree::before {
+	content: counter(N);
+	visibility: hidden;
+	display: block;
+	height: 0;
 }
+*/
+
 .ex-counter-tree * {
 	display: block;
 	border-left: groove #EEE 1em;
@@ -63,7 +50,7 @@ pre.ex-rendering {
 	color: red;
 }
 .ex-counter-tree .x-reset {
-	counter-reset: N 1;
+	counter-reset: N 0;
 }
 .ex-counter-tree .x-increment {
 	counter-increment: N;
@@ -98,7 +85,11 @@ Util.ready = function(){
 	return;
 
 	function populate(){
-		counter_tree.innerHTML = create_counter_tree(20);
+		try{
+			counter_tree.innerHTML = create_counter_tree(20);
+		} catch(e){
+			console.log(e);
+		}
 	}
 
 	function create_counter_tree(n){
@@ -116,14 +107,18 @@ Util.ready = function(){
 			.stringify(tree[0])
 			.replace(/[^\[\]]/g, '')
 			.slice(1,-1)
-		; // 例：[[[[][[]][[][]][][]]]][[][][]][][[]][[]]
+		; // 出力例：[[[[][[]][[][]][][]]]][[][][]][][[]][[]]
 
-		let level = 0; // tree level
-		let none_level = Infinity; // display: none にされた level
-		const counters = []; // counter列
-		const length = [0]; // counter列の長さ[level]
-		const created = [false]; // 先行する同胞は counter列を伸ばしたか？[level]
+		let node_id = 1; // 現在の node
 		const flags = 0x3; // 現時点では counter-set (0x4) は除外
+
+		const node_stack = []; // root から現在の node までのパス
+		const created = []; // counter を作成した，先行する最も近い同胞
+		let level = 0; // 現在の tree nesting level
+		let none_level = Infinity; // display: none にされた level
+
+		// 入れ子にされた counter の list
+		const counters = [];
 
 		return tree_str.replace(/[\[\]]/g, r1);
 
@@ -133,16 +128,30 @@ Util.ready = function(){
 
 		function r1(t){
 			if(t === ']'){
+				node_stack.length = level;
 				level--;
 				if( none_level === level){ none_level = Infinity; }
-				counters.length = length[level]; // inherited length
 				return '</div>';
 			}
+
+			// inherit
+			const prev_sibling = node_stack[level] || 0;
+			const counter_source = prev_sibling || node_stack[level - 1] || 0
+			if(counter_source) {
+				for(let i = counters.length - 1; i >= 0; i--){
+					if(counter_source >= counters[i].node ) break;
+					counters.pop();
+				}
+			}
+
 			let len = counters.length;
 			let text = '';
 			let classes = [];
 
-			const props = rnd(8) & flags;
+			let props = rnd(8) & flags;
+			if(node_id === 1){
+				props = props | 0x01; // force reset at root
+			}
 			if(props & 0x1){
 				classes.push('reset');
 			}
@@ -154,34 +163,43 @@ Util.ready = function(){
 			}
 
 			if(level > none_level){
-				// display: none の子孫
+				// descendant of display: none 
 			} else if( level > 0 && rnd(7) === 1 ){
 				// display: none
 				classes.push('none');
 				none_level = level;
-			} else if( props === 0 ){
-				text = `(${counters.join('.')})`;
 			} else {
-				if( ( len === 0 ) || ( (props & 0x1) && !created[level] ) ){
-					created[level] = true;
-					counters.push(0);
-					length[level] = ++len;
+				// instantiate
+				if( ( len === 0 ) || (props & 0x1) ){
+					if(created[level]){ // len > 0
+/* 原文の logic は誤り：
+					if(counters[len - 1].node === prev_sibling){ ...
+*/
+						counters[len - 1].node = node_id; // remove and instatiate
+					} else {
+						counters.push({ node: node_id, value: 0 });
+						len++;
+					}
+					created[level] = node_id;
 				}
+				const counter = counters[len - 1];
 				if(props & 0x1){ // reset
-					counters[len - 1] = 0x1;
+					counter.value = 0x0;
 				}
 				if(props & 0x2){ // increment
-					counters[len - 1] += 0x1;
+					counter.value += 0x1;
 				}
 				if(props & 0x4){ // set
-					counters[len - 1] = 0x0A;
+					counter.value = 0x0A;
 				}
-				text = `(${counters.join('.')}) ${classes.join(' ')}`;
+				const values = counters.map(counter => counter.value);
+				text = `(${values.join('.')}) ${classes.join(' ')}`;
 			}
 
+			node_stack[level] = node_id;
+			node_id++;
 			level++;
-			created[level] = false;
-			length[level] = len; // record current length
+			created[level] = 0;
 
 			let class_str = '';
 			if(classes.length > 0){
@@ -245,12 +263,18 @@ case 'v':
 case 'f':
 	text = `${key}()`;
 	break;
+case 'item':
+	text = `<code class="value">item</code><sub>${key}</sub>`;
+	break;
 case 'dgm':
 	return `<a id="_dgm-${key}"></a>`;
 	break;
 case 'issue': // css values
 	href = `~CSSissue/${key}`;
 	text = `issue#${key}`;
+	break;
+case 'en':
+	return `<span lang="en-x-a0">${key}</span>`
 	break;
 }
 
@@ -293,12 +317,11 @@ return text;
 
 ●●options
 
-spec_date:2019-07-19
-trans_update:2019-07-04
-source_checked:190410
+spec_date:2019-07-31
+trans_update:2019-08-03
+source_checked:190731
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-lists-3/
-	original_url:https://www.w3.org/TR/css-lists/
 	abbr_url:CSSLIST
 spec_status:ED
 ref_id_prefix:biblio-
@@ -336,12 +359,12 @@ v:code
 v2:code
 c:code
 i:i
+em:em
 
 ●●original_id_map
 
 
 ●●link_map
-
 
 	●prop
 p.list-style-image:#propdef-list-style-image
@@ -373,17 +396,16 @@ t.counter-suffix:#typedef-counter-suffix
 
 t.counter-style:~CSSCOUNTER#typedef-counter-style
 t.custom-ident:~CSSVAL#identifier-value
+t.counter-name:#typedef-counter-name
 
 t.image:~CSSIMAGE#typedef-image
 t.integer:~CSSVAL#integer-value
 t.string:~CSSVAL#string-value
 
-vt.integer:#valdef-counter-reset-custom-ident-integer
-vt.custom-ident:#valdef-counter-reset-custom-ident-integer
+
 	vt.image:#valdef-list-style-image-image
 	vt.counter-style:#valdef-list-style-type-counter-style
 	vt.string:#valdef-list-style-type-string
-
 
 d.suffix:~CSSCOUNTER#descdef-counter-style-suffix
 d.prefix:~CSSCOUNTER#descdef-counter-style-prefix
@@ -398,9 +420,13 @@ v.match-self:#valdef-marker-side-match-self
 v.match-parent:#valdef-marker-side-match-parent
 
 	v.none:#valdef-counter-reset-none
+	v.none:#valdef-counter-set-counter-increment-none
+	<counter-name> <integer>?:#valdef-counter-reset-counter-name-integer
+	<counter-name> <integer>?:#valdef-counter-set-counter-increment-counter-name-integer
+	counter name:#valdef-counter-reset-counter-name
+
 	v.none:#valdef-list-style-image-none
 	v.none:#valdef-list-style-type-none
-	v.none:#valdef-counter-set-counter-increment-none
 
 v2.normal:~CSSCONTENT#valdef-content-normal
 v2.none:~CSSCONTENT#valdef-content-none
@@ -412,11 +438,6 @@ v.visible:~CSSOVERFLOW3#valdef-overflow-visible
 v.upper-roman:~CSSCOUNTER#upper-roman
 v.lower-alpha:~CSSCOUNTER#lower-alpha
 v.decimal:~CSSCOUNTER#decimal
-
-
-
-	<custom-ident> <integer>?:#valdef-counter-reset-custom-ident-integer
-	<custom-ident> <integer>?:#valdef-counter-set-counter-increment-custom-ident-integer
 
 
 	●func
@@ -444,16 +465,39 @@ e.rect:~SVGshapes#elementdef-rect
 
 ~list~item:#list-item
 	＊既定の内容:#default-contents
-~counter:#counter
-新たな~counterを作成する:#create-a-new-counter
 
-~counter列:#_counter-values
-継承-:#_inherit
+~counter:#counter
+~counter~prop:#counter-properties
+
+~counterを継承する:#inherit-counters
+継承-:#inherit-counters
+~counterを~instance化する:#instantiate-counter
+~instance化:#instantiate-counter
+
+視野:#counter-scope
+~counter集合:#css-counters-set
+	~CSS~counter集合:#css-counters-set
+cT.名前:#_counter-name
+cT.出自の要素:#_counter-originating-element
+cT.値:#_counter-value
+~counter値:#_counter-value
+最内縁:#innermost
 
 ex-counter-tree:#ex-counter-tree
 
+	§:#counter-functions
+	§:#counter-reset
+	§:#counters-without-boxes
+	§:#creating-counters
+	§:#increment-set
+	§:#inheriting-counters
+	§:#instantiating-counters
+	§:#list-item-counter
+	§:#nested-counters
 
 	●用語外部
+関数記法:~CSSVAL#functional-notation
+
 行l~box:~CSS2VISUREN#line-box
 
 表示~型:~CSSDISP#display-type
@@ -477,6 +521,28 @@ ex-counter-tree:#ex-counter-tree
 ~counter表現を生成-:~CSSCOUNTER#generate-a-counter
 妥当な画像:~CSSIMAGE4#invalid-image
 ~custom~prop:~CSSVAR#custom-property
+無効:~CSSSYN#css-invalid
+~cascade法:~CASCADE#cascading
+~CSS継承:~CASCADE#inheritance
+使用~値:~CASCADE#used-value
+
+親:#concept-tree-parent
+	根~要素:~DOM4#concept-tree-root
+
+連結する:~INFRA#string-concatenate
+有順序~集合:~INFRA#ordered-set
+~list:~INFRA#list
+~tuple:~INFRA#tuple
+文字列:~INFRA#string
+~tree順序:~DOM4#concept-tree-order
+根:~DOM4#concept-tree-root
+前の同胞:~DOM4#concept-tree-previous-sibling
+
+包含する:~INFRA#list-contain
+	set.付加する:~INFRA#set-append
+除去する:~INFRA#list-remove
+付加する:~INFRA#list-append
+連結する:~INFRA#string-concatenate
 
 
 ●●words_table1
@@ -486,17 +552,32 @@ HTMLSEMANTICS:https://html.spec.whatwg.org/multipage/semantics.html
 
 none0:none
 
-
 ●●words_table
 
 	●構造
 逆順の:reversed:~
 出自の:originating:~
+深さ:depth:~
 	深さ:deep
-	深さ:depth
+最内縁:innermost::~
+平坦:flat::~
+	平坦~化された flattened
+
+	後続する:following
+	先行する:earlier
+	同じ名前の~counterを入子に:self-nesting
+	直前:immediately
+	~instance化:instantiation
+	~instance化:instantiate
+
 	~~階層的:tiered
 	子たち:children
 	~self-nesting:self-nesting
+	-:sort
+	-:outermost
+	-:outermost-first
+	-:joined
+	-:collection
 
 	●counter／marker
 丸括弧:parentheses:~
@@ -504,9 +585,10 @@ none0:none
 付番-:number:~
 付番:numbering:~
 	付番された:numbered
-増分:increment:~
+	増減-:increment
+	増やす:increase
+	増分:increment:~
 	incrementing
-	増分:increase
 丸:circle:~
 加算-:add:~
 	操作-法:manipulating
@@ -521,6 +603,10 @@ marker::::マーカ
 	数える:count
 数量的:numerical:~
 数量-:numeric:~
+追跡子:tracker:~
+切詰める:clampする:~
+
+	出る:push the value outside of
 
 	●layout
 浮動体:float::~
@@ -560,21 +646,34 @@ space::::スペース
 
 	●CSS
 CSS-2:CSS2
-	継承されない:Non-inherited
-	継承-法:inheriting
+関数記法:functional notation:~
 詳細度:specificity::~
 	~cascade法:cascading
 	~style付け:styling
+	継承されない:Non-inherited
+	継承-法:inheriting
 
 	●仕様
 冗長:verbose:~
 適度:reasonable:~
+復帰させ:revertする:~
+指名:designate:~
+許容:allowance:~
+規定-:dictate:~
+尊重-:respect:~
+確約-:assure:~
+前処理器:preprocessor::~::プリプロセッサ
+慣行:conventions:~
+文書化-:document:~
+文書化:documentation:~
+類似な:similarな:~
+不可能:impossible:~
 
+	省略されたもの:omissions
 	役立った:useful
 	定かでない:really sure
 	似た:similar
 	よく似る:very similar
-	支持する:in favor of
 	うのみに書き写しただけ:handwavey nonsense
 	真の:real な
 	方々:people
@@ -582,21 +681,6 @@ CSS-2:CSS2
 	別法もある:Alternatively, 〜 could
 	ごく:very
 	ちょっとぶかっこう:*little bit* clumsy
-
-	●仕様（動詞
-復帰させ:revertする:~
-	省略されたもの:omissions
-指名:designate:~
-許容:allowance:~
-規定-:dictate:~
-尊重-:respect:~
-確約-:assure:~
-前処理器:preprocessor::~::プリプロセッサ
-競合-:conflict:~
-慣行:conventions:~
-文書化-:document:~
-文書化:documentation:~
-
 	いくつか明確化-:made some clarifications
 	言い表す:word
 	~~課された:inflict
@@ -606,7 +690,7 @@ CSS-2:CSS2
 	-:Alternately
 	注意:care
 	:come
-	表す:denote
+	表す／表記-:denote
 	示す:illustrate
 	なり得る:potentially
 	~note
@@ -621,20 +705,28 @@ CSS-2:CSS2
 	取り込:pull
 	-:method
 	欠く:lack of
-
-
-	●未分類（動詞
-連結-:concatenate:~
-	設定しておく:set up
-	操作-:set, reset, or increment
+	気にかける:worry
+	-:involve
+	-:prevent
+	-:turn into
+	-:turns 〜 into
+	-:possibly
+	少し:bit
 
 	●未分類
+連結-:concatenate:~
 方向性:directionality:~
 素の:plainな:~
+隠蔽-:obscure:~
 
 	揃う:line up
 	揃う:align
 	変わる:vary
+	設定しておく:set up
+	操作-:set, reset, or increment
+	記され:referred
+	複数~段を経て:multi-step
+	開始~tag:start tag
 
 	●指示語
 
@@ -651,16 +743,15 @@ CSS-2:CSS2
 	全体を通して:throughout
 	~CSSの中でも:among other things
 	主な:main
-	以前の／前にある:previous
+	~~先行する／以前の／前にある:previous
 	助:help
-	十分:suffice
 	単に:simply
 	-:outside
 	一定:fixed
 	大部分:most
+	直:immediate
 	先頭:beginning
 	直前の:immediately preceding
-	直:immediate
 	一体としての:as a whole
 	一連の:successive／in sequence
 	より新たな:newer
@@ -674,34 +765,26 @@ CSS-2:CSS2
 	両側に／-:around
 	~~地点:spot
 	方の:whichever of
+	-:sort
+	それを作成した:creator
+	同じ名前の:identically-named
+	-:starting
+	最後に:latest
+	先行する
+	遭遇-:encounter:~
+	~~累積される:increments will compound
+</pre>
 
 	●counter
-	-:turns 〜 into
-	-:recall
-	-:In other words
-	-:worry about
-	-:treat する
-	-:unlike
-	-:Regardless
-	-:possibly
-	-:refer 
-	-:recall:::
 	-:immediately set
-	-:involve
-	-:collection
-	-:innermost
 	-:fragment
 	-:existing
-	-:produce
-	-:uniquely
-	-:impossible
-	-:situation
-	-:complex
-	-:prevent
-	-:creator
+	呈示-:produce
 
 ●●ref_normative
 
+[CSS-CASCADE-4]
+    Elika Etemad; Tab Atkins Jr.. CSS Cascading and Inheritance Level 4. 28 August 2018. CR. URL: https://www.w3.org/TR/css-cascade-4/ 
 [CSS-CONTENT-3]
     Elika Etemad; Dave Cramer. CSS Generated Content Module Level 3. 10 July 2019. WD. URL: https://www.w3.org/TR/css-content-3/ 
 [CSS-COUNTER-STYLES-3]
@@ -718,6 +801,8 @@ CSS-2:CSS2
     Rossen Atanassov; Arron Eicholz. CSS Positioned Layout Module Level 3. 17 May 2016. WD. URL: https://www.w3.org/TR/css-position-3/ 
 [CSS-PSEUDO-4]
     Daniel Glazman; Elika Etemad; Alan Stearns. CSS Pseudo-Elements Module Level 4. 25 February 2019. WD. URL: https://www.w3.org/TR/css-pseudo-4/ 
+[CSS-SYNTAX-3]
+    Tab Atkins Jr.; Simon Sapin. CSS Syntax Module Level 3. 16 July 2019. CR. URL: https://www.w3.org/TR/css-syntax-3/ 
 [CSS-VALUES-3]
     Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 3. 6 June 2019. CR. URL: https://www.w3.org/TR/css-values-3/ 
 [CSS-VALUES-4]
@@ -725,13 +810,17 @@ CSS-2:CSS2
 [CSS-VARIABLES-1]
     Tab Atkins Jr.. CSS Custom Properties for Cascading Variables Module Level 1. 3 December 2015. CR. URL: https://www.w3.org/TR/css-variables-1/ 
 [CSS-WRITING-MODES-4]
-    Elika Etemad; Koji Ishii. CSS Writing Modes Level 4. 24 May 2018. CR. URL: https://www.w3.org/TR/css-writing-modes-4/ 
+    Elika Etemad; Koji Ishii. CSS Writing Modes Level 4. 30 July 2019. CR. URL: https://www.w3.org/TR/css-writing-modes-4/ 
 [CSS2]
     Bert Bos; et al. Cascading Style Sheets Level 2 Revision 1 (CSS 2.1) Specification. 7 June 2011. REC. URL: https://www.w3.org/TR/CSS2/ 
 [CSS3-IMAGES]
     Elika Etemad; Tab Atkins Jr.. CSS Image Values and Replaced Content Module Level 3. 17 April 2012. CR. URL: https://www.w3.org/TR/css3-images/ 
+[DOM]
+    Anne van Kesteren. DOM Standard. Living Standard. URL: https://dom.spec.whatwg.org/ 
 [HTML]
     Anne van Kesteren; et al. HTML Standard. Living Standard. URL: https://html.spec.whatwg.org/multipage/ 
+[INFRA]
+    Anne van Kesteren; Domenic Denicola. Infra Standard. Living Standard. URL: https://infra.spec.whatwg.org/ 
 [RFC2119]
     S. Bradner. Key words for use in RFCs to Indicate Requirement Levels. March 1997. Best Current Practice. URL: https://tools.ietf.org/html/rfc2119 
 [SELECTORS-4]
@@ -816,10 +905,6 @@ This module contains CSS features related to list counters: styling them, positi
 【以下，この節の他の内容は<a href="css-common-ja.html#status">CSS 日本語訳 共通ページ</a>／冒頭の仕様メタデータに委譲】
 </p>
 	</section>
-
-<nav class="toc" id="contents">
-<h2 title="Table of Contents">目次</h2>
-<ol id="_toc_list0"></ol></nav>
 
 <main id="MAIN0">
 
@@ -911,11 +996,11 @@ With descendant selectors and child selectors, it’s possible to specify differ
 `~list~item@
 とは、 `display$p ~propが `list-item$v2 に設定された要素である。
 各`~list~item$は、他の要素にはない `marker$pe 疑似要素を生成する。
-加えて，`~list~item$は、暗黙の名前 `list-item$v の`~counter$を自動的に増分する（
+加えて，`~list~item$は、暗黙の名前 `list-item$v の`~counter$を自動的に増減する（増やす／減らす
 <a href="#list-item-counter">§ 暗黙的な `list-item^v ~counter</a>
 を見よ）。
 ◎
-A list item is any element with its display property set to list-item. List items generate ::marker pseudo-elements; no other elements do. Additionally, list items automatically increment an implied list-item counter (see § 4.2 The Implicit list-item Counter).
+A list item is any element with its display property set to list-item. List items generate ::marker pseudo-elements; no other elements do. Additionally, list items automatically increment an implied list-item counter (see § 4.6 The Implicit list-item Counter).
 </p>
 
 	</section>
@@ -1704,241 +1789,147 @@ Both of the following example renderings are generated from the following HTML, 
 	<section id="auto-numbering">
 <h2 title="Automatic Numbering With Counters">4. ~counterによる自動的な付番</h2>
 
-<p class="trans-note">【
-この訳では、`~counter列$という用語を導入して、この節以下の内容を原文と等価な~modelを表現するように，かなり書き換えている
-— 特に
-<a href="#counter-properties">§ ~counterの操作-法</a>,
-<a href="#creating-counters">§ ~counter列の作成-法と継承-法</a>
-。
-原文の用語
-— “入子の~counter”, “~counterの継承” —
-そのままでは、難解／不明瞭になるので。
-】</p>
-
 <p>
 `~counter@
-は、~CSSの中でも特別な概念であり，~CSSにて~list~itemを自動的に付番するときに利用される。
-どの要素も、 0 個以上の`~counter$を持つ。
-各`~counter$は、その名前（文字列）と対応する`~counter列$からなる。
-`~counter列@
-は、 0 個~以上の~counter値（整数）からなる~listであり，同じ名前の入子にされた~counter値たちを表現する（末尾ほど深い）。
-`~counter$は、~prop値に似た仕方で文書~treeを通して継承される：
-各~要素は、［
-`counter-increment$p,
-`counter-set$p,
-`counter-reset$p
-］~propを通して，文書~順で直前の要素から`継承-$した`~counter列$を操作したり，新たな名前の~counterを作成する。
+は、~CSSの中でも特別な数量-追跡子であり，~CSSにおいて~list~itemを自動的に付番するときに利用される。
+どの要素にも 0 個以上の~counterがあり、文書~treeを通して，~prop値が継承されるのと類似な仕方で継承される。
+各~counterには，［
+それを作成した要素, 名前
+【`出自の要素$cT, `名前$cT】
+］があり、個々の~counterは それらにより識別される。
+また、要素ごとに整数~値をとる。
+それらは、各種
+`~counter~prop@
+— `counter-increment$p, `counter-set$p, `counter-reset$p —
+で作成され，操作される。
 その結果は、［
 `counter$f ／ `counters$f
-］関数から利用される。
+］`関数記法$から利用される。
 ◎
-A counter is a special concept used, among other things, to automatically number list items in CSS. Every element has a collection of zero or more counters, which are inherited through the document tree in a way similar to inherited property values. They are created and manipulated with the counter-increment, counter-set and counter-reset properties, and used with the counter() and counters() functions. Counters have a name, an integer value, a creator element, and possibly another counter nested inside themselves.
+A counter is a special numeric tracker used, among other things, to automatically number list items in CSS. Every element has a collection of zero or more counters, which are inherited through the document tree in a way similar to inherited property values. Counters have a name and creator element, which identify the counter, and an integer value per element. They are created and manipulated with the counter properties counter-increment, counter-set and counter-reset, and used with the counter() and counters() functional notations.
 </p>
 
-<p class="issue">
-この節は、~CSS-2と同期していない部分がある。
-~CSS~level 2 における
-<a href="~CSS22/generate.html#counters">自動的な~counterと付番</a>
-を参照されたし：
-ここでの［
-~CSS-2と競合するもの／~CSS-2から省略されたもの
-］は、~CSS-2に指定された挙動を支持するように解決されるベキである。
+<p>
+~counterは、~CSS構文においては
+`counter-name@t
+型として記され，その名前を `custom-ident$t として表現する。
+`counter-name$t は、~keyword `none^v には合致し得ない
+— そのような識別子は、 `counter-name$t としては`無効$になる。
 ◎
-This section is not fully synchronized with CSS2. Please reference Automatic Counters and Numbering in CSS Level 2: any conflicts or omissions here should be resolved in favor of the behavior specified in CSS2.
+Counters are referred to in CSS syntax using the &lt;counter-name&gt; type, which represents their name as a &lt;custom-ident&gt;. A &lt;counter-name&gt; name cannot match the keyword none; such an identifier is invalid as a &lt;counter-name&gt;.
 </p>
 
-		<section id="counter-properties">
-<h3 title="Manipulating Counters: the counter-increment, counter-set and counter-reset properties">4.1. ~counterの操作-法： `counter-increment^p, `counter-set^p, `counter-reset^p ~prop</h3>
+<p>
+所与の要素~上の`~counter$の値は、複数~段を経て解決される：
+◎
+Resolving counter values on a given element is a multi-step process:
+</p>
 
-◎名 `counter-reset@p, `counter-set@p, `counter-increment@p
-◎値 [ `custom-ident$vt `integer$vt? ]+ | `none$v
+<ol>
+	<li>
+~~先行する要素から既存の`~counterを継承する$。
+◎
+Existing counters are inherited from previous elements.
+</li>
+	<li>
+新たな`~counterを~instance化する$（ `counter-reset$p ）。
+◎
+New counters are instantiated (counter-reset).
+</li>
+	<li>
+`~counter値$を増減する（ `counter-increment$p ）。
+◎
+Counter values are incremented (counter-increment).
+</li>
+	<li>
+`~counter値$を明示的に設定する（ `counter-set$p ）。
+◎
+Counter values are explicitly set (counter-set).
+</li>
+	<li>
+`~counter値$を利用する（ `counter$f ／ `counters$f ）。
+◎
+Counter values are used (counter()/counters()).
+</li>
+</ol>
+
+<p>
+~UAは、`~counter値$を，実装に特有な［
+最大／最小
+］で制限してもヨイ。
+`~counter$が［
+`~instance化$／増減-／設定-
+【！reset／set／increment】
+］されて，値がこの範囲から出た場合、この範囲に切詰めるモノトスル。
+◎
+UAs may have implementation-specific limits on the maximum or minimum value of a counter. If a counter reset, set, or increment would push the value outside of that range, the value must be clamped to that range.
+</p>
+
+<p class="trans-note">【
+明示的に述べられていないが，この節における “要素” は、一般に［
+`before^pe ／ `after^pe
+］疑似要素も含む。
+】</p>
+
+		<section id="counter-reset">
+<h3 title="Creating Counters: the counter-reset property">4.1. ~counterの作成-法： `counter-reset^p ~prop</h3>
+
+◎名 `counter-reset@p
+◎値 [ `counter-name$t `integer$t? ]+ | `none$v
 ◎初 `none$v
 ◎適 すべての要素
 ◎継 されない
 ◎百 受容しない
-◎算 ~keyword `none^v ／
+◎算
+~keyword `none^v ／
 各~itemが識別子と整数の~pairである~list
 ◎
 the keyword none or a list, each item an identifier paired with an integer
 ◎順 文法に従う
-◎ア 離散的
+◎ア 算出された値~型による
 ◎表終
 
-<div>
-
-<p>
-~UAには、視覚的でないものも含む すべての媒体に対し，これらの~propを~supportすることが期待される。
+<p class="all-media">
+~UAには、視覚的でないものも含む すべての媒体に対し，この~propを~supportすることが期待される。
+◎
+User Agents are expected to support this property on all media, including non-visual ones.
 </p>
 
 <p>
-これらの~propは、要素~上の`~counter列$を操作する。
-各種 値は、次のように定義される：
+`counter-reset$p ~propは、要素~上で新たな`~counter$（たち）を`~instance化$して，指定された整数~値に設定する。
+値は、次に従って定義される：
+◎
+The counter-reset property instantiates new counters on an element and sets them to the specified integer values. Its values are defined as follows:
 </p>
 
 <dl class="valdef">
 	<dt>`none@v</dt>
 	<dd>
-要素は、自身が`継承-$した どの`~counter列$も改めない。
+要素は、新たな~counterを作成しない。
+◎
+This element does not create any new counters.
 </dd>
 
-	<dt id="valdef-counter-set-counter-increment-custom-ident-integer"></dt>
-	<dt id="valdef-counter-reset-custom-ident-integer">`custom-ident$t `integer$t?</dt>
+	<dt id="valdef-counter-reset-counter-name-integer">`counter-name$t `integer$t?</dt>
 	<dd>
-<p>
-要素は、自身が`継承-$した名前 `custom-ident$vt の`~counter列$
-— 以下 %L と記す —
-を操作する。
-供された `integer$vt 値を %K とするとき：
-</p>
-		<ol>
-			<li>
-<p>
-`counter-reset$p ~propは：
-</p>
-				<ul>
-					<li>
-%L が空, または［
-要素に先行するどの同胞もそれが継承した同じ名前の`~counter列$に値を追加しなかった
-］ならば、
-%L の末尾に  %K （省略時は 0 ）を追加する。
-</li>
-					<li>
-他の場合、 %L の最後の値を %K に設定し直す。
-</li>
-				</ul>
-			</li>
-			<li>
-`counter-increment$p ~propは
-⇒
-%L が空ならば %L に 0 を追加した上で，
-%L の最後の値に %K （省略時は 1 ）を加算する。
-</li>
-			<li>
-`counter-set$p ~propは
-⇒
-%L が空ならば %L に 0 を追加した上で，
-%L の最後の値を %K （省略時は 0 ）に設定する。
-</li>
-		</ol>
-	</dd>
-</dl>
-
-<p>
-`~counter列$を成す各~値がとり得る［
-最大／最小
-］には、実装に特有な制限-があり得る。
-増分†により，~counter値がこの制限-を超える場合、その増分を無視して，~counter値を変えないモノトスル。
-【† %K が負ならば “減分” になる。】
-</p>
-
+所与の
+( `counter-name$t, `integer$t )
+を
+( `名前$cT, `値$cT )
+に伴う`~counterを~instance化する$。
+`integer$t が省略された場合の既定の~counter値は `0^v になるとする。
 ◎
-User Agents are expected to support this property on all media, including non-visual ones.
-◎
-The counter-reset property creates new counters on an element. Its values are defined as follows:
-◎
-none
-• This element does not create any new counters.
-◎
-&lt;custom-ident&gt; &lt;integer&gt;?
-• The element creates one or more new counters. Each &lt;custom-ident&gt; names a new counter to be created.
-• If an &lt;integer&gt; is provided after an &lt;custom-ident&gt;, the starting value of the new counter is that integer. Otherwise, the starting value of the new counter is 0.
-• Implementations may have implementation-specific limits on the maximum or minimum value of a counter. If an increment would push the counter’s value beyond these limits, the increment must be ignored, and the counter’s value remain unchanged.
-◎
-Name: 	counter-set
-Value: 	[ &lt;custom-ident&gt; &lt;integer&gt;? ]+ | none
-Initial: 	none
-Applies to: 	all elements
-Inherited: 	no
-Percentages: 	n/a
-Computed value: 	the keyword none or a list, each item an identifier paired with an integer
-Canonical order: 	per grammar
-Animation type: 	by computed value type
-◎
-User Agents are expected to support this property on all media, including non-visual ones.
-◎
-Name: 	counter-increment
-Value: 	[ &lt;custom-ident&gt; &lt;integer&gt;? ]+ | none
-Initial: 	none
-Applies to: 	all elements
-Inherited: 	no
-Percentages: 	n/a
-Computed value: 	the keyword none or a list, each item an identifier paired with an integer
-Canonical order: 	per grammar
-Animation type: 	by computed value type
-◎
-User Agents are expected to support this property on all media, including non-visual ones.
-◎
-The counter-set and counter-increment properties manipulate the value of existing counters. They only create new counters if there is no counter of the given name on the element yet. Their values are defined as follows:
-◎
-none
-• This element does not alter the value of any counters.
-◎
-&lt;custom-ident&gt; &lt;integer&gt;?
-• The element alters the value of one or more counters on it. If there is not currently a counter of the given name on the element, the element creates a new counter of the given name with a starting value of 0 (though it may then immediately set or increment that value to something different).
-• If an &lt;integer&gt; is provided after an &lt;custom-ident&gt;, it sets the innermost counter of the given name’s value to that integer (for counter-set) or increments the value of the innermost counter of the given name by that integer (for counter-increment). Otherwise, the innermost counter of the given name’s value is set to 0 (for counter-set) or incremented by 1 (for counter-increment).
-</div>
+Instantiates a counter of the given &lt;counter-name&gt; counter name with a starting value of the given &lt;integer&gt;, defaulting to 0.
+</dd>
+	</dl>
 
 <div class="example">
 
 <p>
-次の例に、各 章／節を
-"第 1 章. ", "1.1 節. ", "1.2 節. ",
-等々のように付番する仕方を示す。
-◎
-This example shows a way to number chapters and sections with "Chapter 1", "1.1", "1.2", etc.
-</p>
-
-<pre class="lang-css">
-h1::before {
-    content: "第 " counter(章) " 章. ";
-    counter-increment: 章;  /* <span class="comment">
-章 に  1 を加算する
-◎
-Add 1 to chapter
-</span> */
-    counter-reset: 節;      /* <span class="comment">
-節 を 0 に設定する
-◎
-Set section to 0
-</span> */
-}
-h2::before {
-    content: counter(章) "." counter(節) " 節. ";
-    counter-increment: 節;
-}
-</pre>
-</div>
-
-<div class="p">
-
-<p>
-`~counter列$は、他から（例えば， `content$p ~propから）利用されるに先立って，構築するモノトスル。
-各~要素は、`~counter列$を次の順序で操作する
-⇒＃
-`継承-$する,
-設定し直す（ `counter-reset^p ）,
-増分する（ `counter-increment^p ）,
-設定する（ `counter-set^p ）
-</p>
-
-<p>
-正確な詳細は、
-<a href="#creating-counters">§ ~counter列の作成-法と継承-法</a>
-に述べる。
-</p>
-
-◎
-Inheriting counters must be done before resetting counters, which must be done before incrementing counters, which must be done before setting counters, which must be done before using counters (for example, in the content property).
-</div>
-
-
-
-<div class="note">
-<p>注記：
-各種 `counter-*$p ~propは、~cascade法による規則に通常通り従う。
+`~counter~prop$は、`~cascade法$による規則に通常通り従うことに注意。
 したがって、例えば次の~stylesheetは：
 ◎
-The counter properties follow the cascading rules as normal. Thus, due to cascading, the following style sheet:
+Note that counter properties follow the cascading rules as normal. Thus, due to cascading, the following style sheet:
 </p>
 
 <pre class="lang-css">
@@ -1958,24 +1949,706 @@ H1 { counter-reset: section -1 imagenum 99 }
 </pre>
 
 <p>
-同じ原則は、［
-`counter-set$p,
-`counter-increment$p
+同じ原則は［
+`counter-set$p ／ `counter-increment$p
 ］~propにも適用される。
+`css-cascade-4$r を見よ。
 ◎
-The same principles apply to the counter-set and counter-increment properties.
+The same principles apply to the counter-set and counter-increment properties. See [css-cascade-4].
 </p>
+
+</div>
+
+<p>
+`counter-reset$p の値に同じ `counter-name$t が複数回~生じた場合、最後のもののみ尊守される。
+◎
+If multiple instances of the same &lt;counter-name&gt; occur in the property value, only the last one is honored.
+</p>
+
+		</section>
+		<section id="increment-set">
+<h3 title="Manipulating Counter Values: the counter-increment and counter-set properties">4.2. ~counter値の操作-法： `counter-increment^p, `counter-set^p ~prop</h3>
+
+◎名 `counter-increment@p, `counter-set@p
+◎表終
+
+<p>
+他の欄は、 `counter-set$p と同じ【なので、この訳では省略する】。
+◎
+Name: 	counter-increment
+Value: 	[ &lt;counter-name&gt; &lt;integer&gt;? ]+ | none
+Initial: 	none
+Applies to: 	all elements
+Inherited: 	no
+Percentages: 	n/a
+Computed value: 	the keyword none or a list, each item an identifier paired with an integer
+Canonical order: 	per grammar
+Animation type: 	by computed value type
+◎
+User Agents are expected to support this property on all media, including non-visual ones.
+◎
+Name: 	counter-set
+Value: 	[ &lt;counter-name&gt; &lt;integer&gt;? ]+ | none
+Initial: 	none
+Applies to: 	all elements
+Inherited: 	no
+Percentages: 	n/a
+Computed value: 	the keyword none or a list, each item an identifier paired with an integer
+Canonical order: 	per grammar
+Animation type: 	by computed value type
+</p>
+
+<p class="all-media">
+~UAには、視覚的でないものも含む すべての媒体に対し，これらの~propを~supportすることが期待される。
+◎
+User Agents are expected to support this property on all media, including non-visual ones. 
+</p>
+
+<p>
+［
+`counter-increment$p ／ `counter-set$p
+］~propは、既存の`~counter$（たち）の値を操作する。
+それに先立って、要素~上に所与の`名前$cTの~counterが無い場合に限り，その名前の`~counterを~instance化する$。
+値は、次に従って定義される：
+◎
+The counter-increment and counter-set properties manipulate the value of existing counters. They only instantiate new counters if there is no counter of the given name on the element yet. Their values are defined as follows:
+</p>
+
+<dl class="valdef">
+	<dt id="valdef-counter-set-counter-increment-none">`none^v</dt>
+	<dd>
+要素は、どの~counterの値も改めない。
+◎
+This element does not alter the value of any counters.
+</dd>
+
+	<dt id="valdef-counter-set-counter-increment-counter-name-integer">`counter-name$t `integer$t?</dt>
+	<dd>
+要素~上の`名前$cT `counter-name$t の~counterの値を［
+`counter-set$p の場合は 指定された `integer$t に設定する ／
+`counter-increment$p の場合は 指定された `integer$t で増減する
+］。
+`integer$t が省略された場合の既定は、［
+`counter-increment^p 用には `1^v ／
+`counter-set^p 用には `0^v
+］になるとする。
+◎
+Sets (for counter-set) or increments (for counter-increment) the value of the named counter on the element to/by the specified &lt;integer&gt;. If the &lt;integer&gt; is omitted, it defaults to 1 (for counter-increment) or 0 (for counter-set).
+</dd>
+	<dd>
+要素~上に所与の名前の~counterが無い場合、~counterの値を［
+設定する／増減する
+］に先立って，新たな`~counterを~instance化する$( その名前, 要素, 0 ) 。
+◎
+If there is not currently a counter of the given name on the element, the element instantiates a new counter of the given name with a starting value of 0 before setting or incrementing its value.
+</dd>
+</dl>
+
+<div class="example">
+
+<p>
+次の例に、各 章／節を
+"第 1 章. ", "1.1 節. ", "1.2 節. ",
+等々のように付番する仕方を示す。
+◎
+This example shows a way to number chapters and sections with "Chapter 1", "1.1", "1.2", etc.
+</p>
+
+<pre class="lang-css">
+h1::before {
+    content: "第 " counter(章) " 章. ";
+    counter-increment: 章;  /* <span class="comment">
+章 に 1 を加算する
+◎
+Add 1 to chapter
+</span> */
+    counter-reset: 節;      /* <span class="comment">
+節 を 0 に設定する
+◎
+Set section to 0
+</span> */
+}
+h2::before {
+    content: counter(章) "." counter(節) " 節. ";
+    counter-increment: 節;
+}
+</pre>
+</div>
+
+<p>
+~propの値に同じ `counter-name$t が複数回~生じた場合、それらは，現れた順に処理される
+— すなわち
+⇒＃
+`counter-increment$p に対しては，~~累積される／
+`counter-set$p に対しては，最後のもののみが効果を発揮する
+◎
+If multiple instances of the same &lt;counter-name&gt; occur in the property value, they are all processed, in order. Thus increments will compound, but only the last set value will take effect.
+</p>
+
+		</section>
+		<section id="nested-counters">
+<h3 title="Nested Counters and Scope">4.3. 入子の~counterと視野</h3>
+
+<p>
+~counterは、同じ名前の~counterを入子にし得る。
+ある要素~上で新たな`~counterを~instance化する$とき，要素が同じ名前の`~counter$を親から継承している場合には、その名前の新たな~counterを作成して，既存の~counterの内側に入子にする。
+これは、~HTMLにおける~listの様な状況~用に重要になる。
+~listは他の~listたちを任意な深さまで入子にし得るので、各~level間で名前が一意な~counterを定義するのは不可能になる。
+`counter$f 関数は，［
+要素の【`~counter集合$内で】所与の名前を伴う~counter
+］のうち`最内縁$なものだけ検索取得する一方で、
+`counters$f 関数は，それらすべてを利用する。
+【！that contain the element】
+◎
+Counters are “self-nesting”; instantiating a new counter on an element which inherited an identically-named counter from its parent creates a new counter of the same name, nested inside the existing counter. This is important for situations like lists in HTML, where lists can be nested inside lists to arbitrary depth: it would be impossible to define uniquely named counters for each level. The counter() function only retrieves the innermost counter of a given name on the element, whereas the counters() function uses all counters of a given name that contain the element.
+</p>
+
+<p>
+したがって，所与の`~counter$の
+`視野@
+は、その~counterを最初に`~instance化$した要素【すなわち，`出自の要素$cT】から開始し，その［
+子孫, 後続する同胞たち, それらの子孫
+］を含むが、［
+後続する同胞~上の `counter-reset$p により作成された，同じ名前を伴う~counter
+］の視野に入る要素は含まない
+— そのように明示的に`~counterを~instance化する$ことで、先行する同胞の~counterを隠蔽できることになる。
+◎
+The scope of a counter therefore starts at the first element in the document that instantiates that counter and includes the element’s descendants and its following siblings with their descendants. However, it does not include any elements in the scope of a counter with the same name created by a counter-reset on a later sibling of the element, allowing such explicit counter instantiations to obscure those earlier siblings.
+</p>
+
+<p>
+各~counterとその値の視野を統治する正確な規則については、
+<a href="#creating-counters">§ ~counterの作成-法と継承-法</a>
+を見よ。
+◎
+See § 4.4 Creating and Inheriting Counters for the exact rules governing the scope of counters and their values.
+</p>
+
+<div class="example" id="counter-nesting-example">
+
+<p>
+次の~codeは、入子の~list~itemたちを付番する。
+その結果は、［
+`li$e 要素~上に
+<code class="css">`display^p: `list-item^v; `list-style$p: `inside^v</code>
+を設定したとき
+］の付番とよく似る：
+◎
+The following code numbers nested list items. The result is very similar to that of setting display:list-item and list-style: inside on the LI element:
+</p>
+
+<pre class="lang-css">
+ol { counter-reset: item }
+li { display: block }
+li::before { content: counter(item) ". "; counter-increment: item }
+</pre>
+
+<p>
+この例では、各 `ol$e は~counterを作成し， `ol^e のすべての子は その~counterを指すことになる。
+◎
+In this example, an ol will create a counter, and all children of the ol will refer to that counter.
+</p>
+
+<p>
+%n 番目（ 0 から数える）に`~instance化$される名前 `item^v の~counterを
+`<var>n</var>^item
+と表記するならば、次の~HTML片は，各箇所に指示される~counterを利用することになる。
+◎
+If we denote the nth instance of the item counter by itemn, then the following HTML fragment will use the indicated counters.
+</p>
+
+<div>
+ <div class="ol">`ol^e `0^item が作成され, 0 に設定される
+  <div class="li">`li^e `0^item は 1 に増やされる</div>
+  <div class="li">`li^e `0^item は 2 に増やされる
+   <div class="ol">`ol^e `1^item が作成され, 0 に設定され, `0^item 内に入子にされる
+    <div class="li">`li^e `1^item は 1 に増やされる</div>
+    <div class="li">`li^e `1^item は 2 に増やされる</div>
+    <div class="li">`li^e `1^item は 3 に増やされる
+     <div class="ol">`ol^e `2^item が作成され, 0 に設定され, `1^item 内に入子にされる
+      <div class="li">`li^e `2^item は 1 に増やされる</div>
+     `/ol^e
+     </div>
+    </div>
+    <div class="li">`li^e `1^item は 4 に増やされる
+     <div class="ol">`ol^e `3^item が作成され, 0 に設定される, `1^item 内に入子にされる
+      <div class="li">`li^e `3^item は 1 に増やされる</div>
+     `/ol^e
+     </div>
+    </div>
+    <div class="li">`li^e `1^item は 5 に増やされる</div>
+   `/ol^e
+   </div>
+  </div>
+  <div class="li">`li^e `0^item は 3 に増やされる</div>
+  <div class="li">`li^e `0^item は 4 に増やされる</div>
+ `/ol^e
+ </div>
+ <div class="ol">`ol^e `4^item が作成され, 0 に設定される
+  <div class="li">`li^e `4^item は 1 に増やされる</div>
+  <div class="li">`li^e `4^item は 2 に増やされる</div>
+ `/ol^e
+ </div>
+</div>
+
+<!-- 
+
+&lt;ol&gt; item0 is created, set to 0
+&lt;li&gt; item0 is incremented to 1
+&lt;li&gt; item0 is incremented to 2
+&lt;ol&gt; item1 is created, set to 0, nested in item0
+&lt;li&gt; item1 is incremented to 1
+&lt;li&gt; item1 is incremented to 2
+&lt;li&gt; item1 is incremented to 3
+&lt;ol&gt; item2 is created, set to 0, nested in item1
+&lt;li&gt; item2 is incremented to 1
+&lt;/ol&gt;
+&lt;li&gt; item1 is incremented to 4
+&lt;ol&gt; item3 is created, set to 0, nested in item1
+&lt;li&gt; item3 is incremented to 1
+&lt;/ol&gt;
+&lt;li&gt; item1 is incremented to 5
+&lt;/ol&gt;
+&lt;li&gt; item0 is incremented to 3
+&lt;li&gt; item0 is incremented to 4
+&lt;/ol&gt;
+&lt;ol&gt; item4 is created, set to 0
+&lt;li&gt; item4 is incremented to 1
+&lt;li&gt; item4 is incremented to 2
+&lt;/ol&gt;
+
+-->
+
 </div>
 
 		</section>
+		<section id="creating-counters">
+<h3 title="Creating and Inheriting Counters">4.4. ~counterの作成-法と継承-法</h3>
+
+<p class="trans-note">【
+この節に定義される~modelにおいては、［
+`before^pe ／ `after^pe
+］疑似要素は，その`出自の要素$の［
+最初の子／最後の子
+］であると見做す必要があると思われる。
+（~counterは~box~tree上で演算するべきとも示唆されている： `674$issue ）
+】</p>
+
+<p>
+文書~内の各［
+要素／疑似要素
+］は
+— 先行する要素から継承するか, 要素~上で直に~instance化することを通して —
+その要素を`視野$に入れる`~counter$の集合を持つ（空にもなり得る）。
+これらの~counterは、`~list$を成す
+`~counter集合@
+（ `CSS counters set^en ）として表現される†。
+この集合を成す各~itemは、
+( `文字列$, 要素, 整数 )
+からなる`~tuple$であり，~counterの
+( 
+`名前@cT,
+`出自の要素@cT,
+`値@cT
+)
+を順に表現する。
+所与の名前 %N に対し，この集合~内の~itemのうち［
+`名前$cT ~EQ %N
+］を満たす最後のものが，名前 %N の
+`最内縁@
+な~counterを表現する。
+◎
+Each element or pseudo-element in a document has a (possibly empty) set of counters in the scope of that element, either through inheritance from another element or through instantiation on the element directly. These counters are represented as a CSS counters set, which is a set whose values are each a tuple of: a string (representing a counter’s name), an element (representing the counter’s originating element), and an integer (representing the counter’s value). The latest counter of a given name in that set represents the innermost counter of that name.
+</p>
+
+<p class="trans-note">【†
+原文では，`有順序~集合$として定義されているが、同一性の検査を要する箇所は無いので`~list$で十分になる。
+】</p>
+
+			<section id="inheriting-counters">
+<h4 title="Inheriting Counters">4.4.1. ~counterの継承-法</h4>
+
+<p>
+要素は、自身の初期~counter集合を，［
+要素に`前の同胞$が在るならば それ ／
+無いならば 要素の親
+］から`継承-$する。
+次に，それらの~counter用の値を［
+`~tree順序$で要素の直前の要素（前述の要素か，前の同胞の子孫）
+］上の，名前が合致している~counterから値を得る。
+◎
+An element inherits its initial set of counters from its preceding sibling, or from its parent if it has none. It then takes the values for those counters from the values of the matching counters on its preceding element in tree order (which might be its parent, its preceding sibling, or a descendant of its previous sibling).＼
+</p>
+
+<div class="algorithm">
+
+<p>
+所与の %要素 の中へ
+`~counterを継承する@
+ときは：
+◎
+To inherit counters into an element:
+</p>
+
+<ol>
+	<li>
+%要素 の`~counter集合$ ~SET 新たな`~list$
+◎
+Let element counters be an initially empty CSS counters set representing element’s own CSS counters set.
+</li>
+	<li>
+~IF［
+%要素 は`~tree順序$で最初の要素である
+］
+⇒
+~RET
+（ %要素 は根~要素であり，何も継承しないので、`~counter集合$は空になる）
+◎
+If element is the root of its document tree, return. (The element has an initially-empty counter map and inherits nothing.)
+</li>
+	<li>
+%~counter~source ~LET ［
+%要素 の`前の同胞$ ~NEQ ~NULL ならば それ／
+~ELSE_ %要素 の`親$
+］の`~counter集合$
+◎
+Let counter source be the CSS counters set of element’s preceding sibling, if it has one, or else of element’s parent if it does not.
+</li>
+	<li>
+%値~source ~LET ［
+`~tree順序$で %要素 の直前の要素
+］の`~counter集合$
+◎
+Let value source be the CSS counters set of the element immediately preceding element in tree order.
+</li>
+	<li>
+%値~source を成す
+~EACH( `~counter$ %~counter )
+に対し
+⇒
+~IF［
+%~counter~source 内に［［
+`名前$cT, `出自の要素$cT
+］とも %~counter のそれらに一致する`~counter$は在る
+］
+⇒
+%要素 の`~counter集合$に %~counter の複製を`付加する$
+◎
+For each (name, originating element, value) of value source:
+• If counter source also contains a counter with the same name and originating element, then append a copy of value source’s counter (name, originating element, value) to element counters.
+</li>
+</ol>
+</div>
+
+<div class="example" id="counter-inheritance-example">
+<p>
+例として，次の~codeを~~考える：
+◎
+Take the following code as an example:
+</p>
+
+<pre>
+&lt;ul style="counter-reset: example 0;"&gt;
+  &lt;li id="`foo^css" style="counter-increment: example;"&gt;
+    foo
+    &lt;div id="`bar^css" style="counter-increment: example;"&gt;bar&lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li id="`baz^css"&gt;
+    baz
+  &lt;/li&gt;
+&lt;/ul&gt;
+</pre>
+
+<!-- 
+転換-:turn into
+~come
+~next
+読取る:readする:~
+遭遇-:encounter:~
+~recall
+`~tree順序$は文書~treeを有順序~listに転換する。
+そこでは、要素は自身の子より前に, 子は次の同胞より前に来る。
+言い換えれば，~HTMLの様な言語において、その構文解析器が文書を読取るに伴い開始~tagに遭遇する順序になる。
+-->
+
+<p>
+ここでは、
+`ul$e 要素 %ul は，名前 `example^v を伴う新たな~counterを確立してから，その値を 0 に設定する。
+要素 `#foo^css は、%ul の最初の子なので， %ul の~counterを継承する。
+`~tree順序$で直前にある要素も %ul なので、~counterの値として %ul のそれ（ 0 ）を同時に継承し，その値を即時に増減する結果、値は 1 になる。
+◎
+Recall that tree order turns a document tree into an ordered list, where an element comes before its children, and its children come before its next sibling. In other words, for a language like HTML, it’s the order in which the parser encounters start tags as it reads the document.
+◎
+In here, the ul element establishes a new counter named example, and sets its value to 0. The #foo element, being the first child of the ul, inherits this counter. Its parent is also its immediately preceding element in tree order, so it inherits the value 0 with it, and then immediately increments the value to 1.
+</p>
+
+<p>
+同じことは、要素 `#bar^css にも起こる。
+`#bar^css は、 `#foo^css から名前 `example^v ~counterを継承すると同時に，値 1 も継承して、それを増減する結果、値は 2 になる。。
+◎
+The same happens with the #bar element. It inherits the example counter from #foo, and inherits the value 1 from it as well and increments it to 2.
+</p>
+
+<p>
+しかしながら，要素 `#baz^css は少し異なる。
+それは、名前 `example^v の~counterを前の同胞 `#foo^css から継承するが、値は，
+`#foo^css からは継承せず，`~tree順序$で直前の要素である `#bar^css から継承する。
+◎
+However, the #baz element is a bit different. It inherits the example counter from the #foo element, its previous sibling. However, rather than inheriting the value 1 from #foo along with the counter, in inherits the value 2 from #bar, the previous element in tree order.
+</p>
+
+<p>
+この挙動により、作者は，単独の~counterを［
+文書~全体を通して，継続的に増減する
+］ために利用できるようになる
+— 入子にされた文書~構造について気にかけることなく。
+◎
+This behavior allows a single counter to be used throughout a document, continuously incrementing, without the author having to worry about the nested structure of their document.
+</p>
+
+</div>
+
+<p class="note">注記：
+~counterの継承は、定例の`~CSS継承$の様に，
+`DOM$r の文脈における
+“平坦~化された要素~tree”
+【<a href="~CSSSCOPING#flat-tree">参照</a>】
+に対し演算する。
+◎
+Note: Counter inheritance, like regular CSS inheritance, operates on the “flattened element tree” in the context of the [DOM].
+</p>
+
+			</section>
+			<section id="instantiating-counters">
+<h4 title="Instantiating Counters">4.4.2. ~counterの~instance化</h4>
+
+<div class="p">
+<p>
+所与の`名前$cTを伴う`~counter$は、次のいずれかに該当する要素~上で`~instance化$される：
+</p>
+
+<ul>
+	<li>
+`counter-reset$p にて，その名前が与えられている。
+</li>
+	<li>
+［
+`counter-increment$p ／ `counter-set$p
+］~propにて, あるいは［
+`counter$f ／ `counters$f
+］関数記法にて，その名前が与えられたが、当の要素~上に，その名前の~counterは無いとき。
+</li>
+</ul>
+
+<p>
+（新たに`~instance化$された`~counter$は、［
+`名前$cTが一致する, かつ先行する同胞を`出自の要素$とする`~counter$
+］を置換する（もし在れば）一方で、［
+`名前$cTが一致する, かつ先祖~要素を`出自の要素$とする`~counter$
+］に加えて追加される（もし在れば）。
+<a href="#nested-counters">§ 入子の~counterと視野</a>
+を見よ。）
+</p>
+
+<p class="trans-note">【
+すべての要素の`~counter集合$を成す~itemのうち，同じ［
+`名前$cT, `出自の要素$cT
+］を共有するものが成す集合が， 1 つの［
+~counterの~instance
+］
+— 言い換えれば， 1 つの`視野$ —
+を形成する。
+】</p>
+
+◎
+Counters are instantiated when named in counter-reset, and also when not otherwise present if named in counter-increment, counter-set, or the counter() or counters() notations. (Newly instantiated counters replace identically-named counters originating from previous siblings, but are added in addition to identically-named counters originating from ancestor elements, see § 4.3 Nested Counters and Scope.)＼
+</div>
+
+<div class="algorithm">
+<p>
+`~counterを~instance化する@
+ときは、所与の
+( %名前, %要素, %値 )
+に対し：
+◎
+To instantiate a counter of a given name on an element with a starting value:
+</p>
+
+<ol>
+	<li>
+<p>
+~IF［
+%要素 に先行するある同胞は`名前$cT %名前 を伴う~counterを`~instance化$した
+］
+⇒
+%要素 の`~counter集合$から`名前$cT %名前 を伴う`最内縁$な~counterを`除去する$
+</p>
+<p class="trans-note">【
+この場合、［
+最内縁な~counterの`出自の要素$cT ~EQ 該当する同胞のうち最後のもの
+］も満たされる。
+】【
+原文によるこの段の条件は、前の同胞しか調べておらず，~UAの実装と食い違うので修正している。
+】</p>
+◎
+Let counters be element’s CSS counters set.
+◎
+Let innermost counter be the last counter in counters with the name name. If innermost counter’s originating element is element or a previous sibling of element, remove innermost counter from counters.
+</li>
+	<li>
+%要素 の`~counter集合$に
+新たな`~counter$( %名前, %要素, %値 )
+を`付加する$
+◎
+Append a new counter to counters with name name, originating element element, and initial value value
+</li>
+</ol>
+
+</div>
+
+			</section>
+			<section id="_live-example-of-counter">
+<h4 title="Instantiating Counters">4.4.X. ~counterの生きた例</h4>
+
+<p class="trans-note">【
+この節は、この訳による追加。
+】</p>
+
+<div class="example">
+
+<p>
+次の図式に、この仕様の~algoを要素~treeに適用して生成される，（一定の`名前$cTを伴う）~counterの挙動を示す（図式のどこでも，~clickすれば、~tree構造をランダムに組み替えれる）：
+</p>
+
+`ex-counter-tree@
+
+<p>
+この図式の見方は：
+</p>
+
+<ul>
+	<li>
+図式を成す各~行が 1 個の要素に対応し，入子ng~levelに応じて字下げされている。
+</li>
+	<li>
+以下の記述における `~counter列^i とは、［
+要素の`~counter集合$内のこの名前を伴う~counterたちの`値$cT
+］からなる，同順の~listを表す。
+</li>
+	<li>
+行頭に赤く呈示される括弧で括られた整数~列は、利用-中の~UAが実際に要素にあてがっている，~counter列を表す
+— この呈示には、 `counters$f 関数の出力が利用されている。
+</li>
+	<li>
+その次に “=” を挟んで示される，括弧で括られた整数~列は、この仕様の~modelから導出される~counter列を表す。
+~UAがそれに正確に従うならば、前項の整数~列は，この整数~列と一致するべきである。
+</li>
+	<li>
+<p>
+行末に示される文字列［
+"reset" ／ "increment"
+］は、当の要素に，~counterを操作する［
+`counter-reset$p ／ `counter-increment$p
+］~propが（同じ名前の~class名を通して）あてがわれていることを表す
+⇒＃
+`counter-reset$p が設定する~counter値は、常に 0 （既定~値）／
+`counter-increment$p による増減は、常に 1 （既定~値）。
+</p>
+
+<p>
+ここでは、 `counter-set$p については扱っていない
+— 現時点では、~supportする~UAは無いように見受けられるので。
+（また、疑似要素も扱っていない。）
+</p>
+
+	</li>
+	<li>
+先頭の要素には、~tree生成-時に常に `counter-reset$p が設定される。
+（ `couters^f 関数を利用することによる，疑似要素における`~instance化$による副作用により、挙動が不規則な見かけになるのを避けるため。）
+</li>
+</ul>
+
+<p>
+この図式には、次の~styleが利用されている（
+`#root^css は要素~treeの根の id ／
+%N は~counterの名前
+）：
+</p>
+
+<pre class="lang-css">
+#root * {
+  display: block;
+  border-left: groove #EEE 1em; /* 字下げ用 */
+}
+#root *::before {
+  content: "(" counters(%N, ".") ") = ";
+  color: red;
+}
+#root *.reset     { counter-reset: %N 1; }
+#root *.increment { counter-increment: %N; }
+</pre>
+
+</div>
+
+			</section>
+		</section>
+		<section id="counters-without-boxes">
+<h3 title="Counters in elements that do not generate boxes">4.5. ~boxを生成しない要素における~counter</h3>
+
+<p>
+~boxを生成しない要素（例：
+`display$p が
+<a href="~CSSDISP#valdef-display-none">`none^v</a>
+に設定された要素 ／
+`content$p が `none$v2 に設定された疑似要素）は、`~counter$を操作できない
+— `~counter~prop$は、そのような要素でも依然として妥当であるが，それらによる効果はないモノトスル。
+◎
+An element that does not generate a box (for example, an element with display set to none, or a pseudo-element with content set to none) cannot set, reset, or increment a counter. The counter properties are still valid on such an element, but they must have no effect.
+</p>
+
+<div class="example">
+<p>
+例えば次の~stylesheetでは、 `secret^css ~classのどの `h2^e も， `count2^v を増減しなくなる。
+◎
+For example, with the following style sheet, H2s with class "secret" do not increment count2.
+</p>
+
+<pre class="lang-css">
+h2 { counter-increment: count2; }
+h2.secret { display: none; }
+</pre>
+
+</div>
+
+<p>
+`visibility$p を `hidden^v に設定するなどの，要素を “隠す” だけのものは、要素に~boxを生成させるので，このことは適用されない。
+◎
+Other methods of “hiding” elements, such as setting visibility to hidden, still cause the element to generate a box, and so do not apply here.
+</p>
+
+<p>
+`置換され$る子孫（例： ~HTMLの `option$e ／ ~SVGの `rect$e ）が~counterを操作できるかどうかは、未定義である。
+【！set, reset, or increment】
+］
+◎
+Whether a replaced element’s descendants (such as HTML option, or SVG rect) can set, reset, or increment a counter is undefined.
+</p>
+
+<p class="note">注記：
+`置換され$る子孫~要素の挙動は、各~実装~間の相互運用能を欠くことに因り，現時点では未定義である。
+◎
+Note: The behavior on replaced element descendants is currently undefined due to a lack of interoperability across implementations.
+</p>
+
+		</section>
 		<section id="list-item-counter">
-<h3 title="The Implicit list-item Counter">4.2. 暗黙的な `list-item^v ~counter</h3>
+<h3 title="The Implicit list-item Counter">4.6. 暗黙的な `list-item^v ~counter</h3>
 
 <p>
 `~list~item$は、特別な名前の`~counter$
 `list-item@v
-を自動的に増分する。
-`counter-increment$p ~propが `list-item$v `~counter$用に明示的に異なる増分を指定しない限り、各`~list~item$ごとに，`~counter$が通常に増分されると同時に 1 増分するモノトスル（これによる各種 `counter-*^p ~propの算出d値に対する効果は無い）。
+を自動的に増減する。
+`counter-increment$p ~propが `list-item$v `~counter$用に明示的に異なる増減を指定しない限り、各`~list~item$ごとに，`~counter$が通常に増減されると同時に 1 増減するモノトスル（これによる`~counter~prop$の算出d値に対する効果は無い）。
 ◎
 List items automatically increment a special list-item counter. Unless the counter-increment property explicitly specifies a different increment for the list-item counter, it must be incremented by 1 on every list item, at the same time that counters are normally incremented. (This has no effect on the computed values of the counter-* properties.)
 </p>
@@ -2025,6 +2698,7 @@ More definition. See old WG discussions and newer issue discussion.
 <span class="issue">
 この要件をどう言い表すべきか定かでないが、次の例が働くものと期待される。
 </span>
+
 ◎
 UAs and host languages should ensure that the list-item counter values reflect the underlying numeric value dictated by host language semantics when setting up list item styling in their UA style sheet and presentational hint style mappings. Not really sure how to word this requirement, but the following example is expected to work.
 </p>
@@ -2122,559 +2796,89 @@ given markup such as
 </div>
 
 		</section>
-		<section id="creating-counters">
-<h3 title="Creating and Inheriting Counters">4.3. ~counter列の作成-法と継承-法</h3>
-
-<div class="p">
-
-<p>
-要素~上の名前 %N の`~counter列$は、以下に与える~algoにより，文書~順序に基づいて帰納的に計算される
-— すなわち、要素に先行するすべての要素~上の`~counter列$は算出-済みと見做す下で以下を適用する：
-</p>
-
-<p class="trans-note">【
-この~algoの目的においては、どの要素にも名前 %N の`~counter列$があるものと見做される。
-結果が空~listならば，要素は名前 %N の`~counter$を “持たない” ことを意味する。
-】【
-この節の内容は、原文から全面的に書き換えている。
-】</p>
-
-<ol>
-	<li>
-%L ~LET 空~list
-</li>
-	<li>
-<p>
-（~counter列を
-`継承-@
-する）
-</p>
-
-<p>
-~IF［
-要素は文書の根~要素でない
-］：
-</p>
-		<ol>
-			<li>
-%L ~SET ［
-~tree順序で要素の直前の要素
-］の名前 %N の`~counter列$の複製
-</li>
-			<li>
-%L の長さを ［
-要素に前の同胞があるならば その要素 ／
-他の場合は 要素の親
-］上の名前 %N の`~counter列$の長さに切り詰める
-</li>
-		</ol>
-
-<p class="trans-note">【
-1 項目が、原文における “~counter値たちの継承” に対応する。
-2 項目が、原文における “~counterの集合（各~名前ごとに定義される`~counter$）の継承” に対応する
-— この訳では、~counter列の “<em>長さ</em> の継承” として表現しているが。
-】【
-実際に長さが切り詰められるのは、要素の前の同胞が子を持つ（要素の直前の要素は、要素の親でも前の同胞でもない）場合に限られる。
-】【
-実装は，~counter列を実際に複製する必要はないであろう
-— その計算は，要素ごとに一度限りなので。
-しかしながら、その長さは後続する要素~用に記録しておく必要がある。
-】</p>
-	</li>
-	<li>
-~IF［
-要素は~boxを生成しない
-］
-⇒
-~RET %L
-（<a href="#counters-without-boxes">§ ~boxを生成しない要素における~counter</a>を見よ）
-</li>
-	<li>
-( %reset, %increment, %set ) ~LET ( ε, ε, ε )
-</li>
-	<li>
-~IF［
-要素~上の `counter-reset$p 値にて `custom-ident$vt として %N は与えられている
-］
-⇒
-%reset ~SET ［
-対応する `integer$vt は省略されていなければ その整数 ／
-~ELSE_ 0
-］
-</li>
-	<li>
-~IF［
-要素~上の `counter-increment$p 値にて `custom-ident$vt として %N は与えられている
-］
-⇒
-%increment ~SET ［
-対応する `integer$vt は省略されていなければ その整数 ／
-~ELSE_ 1
-］
-</li>
-	<li>
-~IF［
-要素~上の `counter-set$p 値にて `custom-ident$vt として %N は与えられている
-］
-⇒
-%set ~SET ［
-対応する `integer$vt は省略されていなければ その整数 ／
-~ELSE_ 0
-］
-</li>
-	<li>
-~IF［
-%reset ~EQ ε
-］~AND［
-%set ~EQ ε
-］~AND［
-%increment ~EQ ε
-］
-⇒
-~RET %L
-</li>
-	<li id="create-a-new-counter">
-<p>
-（新たな~counter値を “入子にする” ／ 新たな~counterを “作成する”）：
-</p>
-
-<p>
-~IF［
-次のいずれかが満たされる
-］…：
-</p>
-		<ul>
-			<li>
-%L は空である
-</li>
-			<li>
-［
-%reset ~NEQ ε
-］~AND［
-要素に先行するどの同胞も， %L に “値を追加しなかった”
-］
-</li>
-		</ul>
-<p>
-…ならば
-⇒
-%L の末尾に値 0 を追加する
-— この要素は %L に “値を追加した” とされる
-</p>
-	</li>
-	<li>
-~IF［
-%reset ~NEQ ε
-］
-⇒
-%L の最後の値 ~SET %reset
-</li>
-	<li>
-~IF［
-%increment ~NEQ ε
-］
-⇒
-%L の最後の値 ~INCBY %increment
-</li>
-	<li>
-~IF［
-%set ~NEQ ε
-］
-⇒
-%L の最後の値 ~SET %set
-</li>
-	<li>
-~RET %L
-</li>
-</ol>
-
-◎
-Every element has a (possibly empty) set of counters. Like many other CSS values, an element can inherit counters from another element. However, unlike other CSS values, the method that counters are inherited is somewhat complex. A counter and its value are inherited separately, possibly from different elements.
-◎
-If an element has a previous sibling, it must inherit all of the sibling’s counters. Otherwise, if the element has a parent, it must inherit all of the parent’s counters. Otherwise, the element must have an empty set of counters.
-◎
-The element then inherits counter values from the immediately preceding element in document order. This must be done by examining the set of counters that the immediately preceding element has, and, for every counter that exists in both the element’s set and the preceding element’s set, giving the element’s counter the same value. (If an element is the first element in the document, and thus has no immediately preceding element, it also doesn’t have a parent or a previous sibling, and thus no counters to begin with.)
-◎
-Take the following code as an example:
-
-&lt;ul style='counter-reset: example 0;'&gt;
-  &lt;li id='foo' style='counter-increment: example;'&gt;
-    foo
-    &lt;div id='bar' style='counter-increment: example;'&gt;bar&lt;/div&gt;
-  &lt;/li&gt;
-  &lt;li id='baz'&gt;
-    baz
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-Recall that "in document order" turns a document tree into an ordered list, where an element comes before its children, and its children come before its next sibling. In other words, for a language like HTML, its the order in which the parser encounters start tags as it reads the document.
-
-In here, the ul element establishes a new counter named "example", and sets its value to 0. The "foo" element, being the first child of the ul, inherits this counter. Its parent is also its immediately preceding element in document order, so it inherits the value 0 with it, and then immediately increments the value to 1.
-
-The same happens with the "bar" element. It inherits the "example" counter from "foo", and inherits the value 1 from it as well and increments it to 2.
-
-However, the "baz" element is a bit different. It inherits the "example" counter from the "foo" element, its previous sibling. However, rather than inheriting the value 1 from "foo" along with the counter, in inherits the value 2 from "bar", the previous element in document order.
-
-This behavior allows a single counter to be used throughout a document, continuously incrementing, without the author having to worry about the nested structure of their document.
-
-◎
-Elements can create additional counters on themselves, which can then be passed onto siblings or children. To create a new counter, specify an element that’s creating it, a name, and a starting value. The effect depends on what other counters of that name exist on the element:
-• If no counters of that name exist on the element, create a new counter with that name on the element.
-• Otherwise, if a counter of that name exists on the element, and it was created by a preceding sibling, replace the innermost counter of that name on the element with a newly-created counter with that name.
-• Otherwise, create a new counter with that name and nest it inside of the innermost counter with that name.
-◎
-Regardless, the value of the new counter is set to the provided starting value.
-</div>
-
-<div class="example">
-
-<p>
-次の図式に、要素~treeに上の~algoを適用した結果の挙動を例示する
-（図式のどこでも，~clickすれば、~tree構造をランダムに組み替えることができる）：
-</p>
-
-`ex-counter-tree@
-
-<p>
-この図式の見方は：
-</p>
-
-<ul>
-	<li>
-図式を成す各~行が 1 個の要素に対応し，入子ng~levelに応じて字下げされている。
-</li>
-	<li>
-行頭に赤く呈示される括弧で括られた整数~列は、利用-中の~UAが実際に要素にあてがっている，ある名前の`~counter列$を表す。
-この呈示には、 `counters$f 関数の出力が利用されている。
-その定義により、空の`~counter列$は 1 個の 0 からなる~counter列と扱われ、この図式では "(0)" と呈示されることに注意。
-</li>
-	<li>
-その次に “=” を挟んで示される，括弧で括られた整数~列は、この節に与えた~algoから導出される`~counter列$を表す。
-~UAがそれに正確に従うならば、前項の整数~列は
-— "(0)" は "()" に等価になることを除いて —
-この整数~列と一致するべきである。
-【しかしながら、一致しないことがある（下に示す）。】
-</li>
-	<li>
-<p>
-行末に示される文字列［
-"reset" ／ "increment"
-］は、当の要素に，~counter列を操作する［
-`counter-reset$p ／ `counter-increment$p
-］~propが（同じ名前の~class名を通して）あてがわれていることを表す：
-</p>
-		<ul>
-			<li>
-`counter-reset$p が設定する~counter値は、常に 1 である。
-（ 1 にしている理由は、`~counter列$が空のときに呈示される "(0)" と区別するため）
-</li>
-			<li>
-`counter-increment$p による増分は、常に 1 （既定~値）である。
-</li>
-		</ul>
-
-<p>
-ここでは、 `counter-set$p については取扱っていない
-— 現時点では、~supportする~UAがないように見受けられるので。
-</p>
-
-	</li>
-</ul>
-
-<p>
-この図式に利用されている~styleは（
-`#root^css は図式を成す要素~treeの根の id ／
-%N は~counterの名前
-）：
-</p>
-
-<pre class="lang-css">
-#root * {
-  display: block;
-  border-left: groove #EEE 1em;
-}
-#root *::before {
-  content: "(" counters(%N, ".") ") = ";
-  color: red;
-}
-#root *.reset     { counter-reset: %N 1; }
-#root *.increment { counter-increment: %N; }
-</pre>
-
-<div class="trans-note">
-
-<p>【
-~UAによるかもしれないが、現時点では，~counter列が空のまま 2 階~以上~入子にされた場合に一致しないことがある。
-】</p>
-
-<p>
-具体的には、次の~HTML片が与えられたとき（~textは、期待される~counter列を指示する）：
-</p>
-
-<pre class="lang-html">
-&lt;div id="root"&gt;
-  &lt;div&gt;()
-    &lt;div&gt;()
-      &lt;div class="reset"&gt;(1)&lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-  &lt;div&gt;()
-    &lt;div&gt;()
-      &lt;div class="increment"&gt;(1)&lt;/div&gt;
-      &lt;div class="reset"&gt;(1)&lt;/div&gt;
-    &lt;/div&gt;
-    &lt;div&gt;()&lt;/div&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-</pre>
-
-<p>
-この~HTML片を，上に与えた~styleの下で利用中の~UAで呈示した結果
-— ※ を付与した箇所は、一致しないかもしれない：
-</p>
-
-<div class="ex-counter-tree">
-	<div>()
-		<div>()
-			<div class="x-reset">(1) ※</div>
-		</div>
-	</div>
-	<div>()
-		<div>()
-			<div class="x-increment">(1)</div>
-			<div class="x-reset">(1) ※</div>
-		</div>
-		<div>() ※</div>
-	</div>
-</div>
-
-<p>
-（上の~HTMLから `#root^css 直下の要素を剥がしたときは、期待される挙動になるので，上の呈示の~~説明がつかない）
-</p>
-
-<div class="ex-counter-tree">
-	<div>()
-		<div class="x-reset">(1) ※</div>
-	</div>
-	<div>()
-		<div class="x-increment">(1)</div>
-		<div class="x-reset">(1) ※</div>
-	</div>
-	<div>() ※</div>
-</div>
-
-</div>
-
-</div>
-
-		</section>
-		<section id="nested-counters">
-<h3 title="Nested Counters">4.4. 入子の~counter</h3>
-
-<p>
-前~節に述べた `~counter列$の挙動により、~HTMLにおける~listの様な入子の構造をそのまま反映する付番も容易になる。
-後の節で説明されるように、要素~上の所与の名前の`~counter列$ %L に対し：
-`counter$f 関数は %L の最後の値のみを利用する一方で，
-`counters$f 関数は %L 内のすべての値を利用する。
-◎
-Counters are "self-nesting"; creating a new counter in an element which already has a counter with the same name simply creates a new counter of the same name, nested inside the existing counter. This is important for situations like lists in HTML, where lists can be nested inside lists to arbitrary depth. It would be impossible to define uniquely named counters for each level. As explained in a later section, the counter() function only uses the innermost counter of a given name on the element, but the counters() function uses all counters of a given name that contain the element.
-</p>
-
-<div class="example">
-<p>
-入子の~list~itemたちを付番するには，次のもので十分になる。
-その結果は、［
-`LI^e 要素~上に
-<code class="css">`display^p: `list-item^v; `list-style$p: `inside^v</code>
-を設定したとき
-］の付番とよく似る：
-◎
-Thus, the following suffices to number nested list items. The result is very similar to that of setting display:list-item and list-style: inside on the LI element:
-</p>
-
-<pre class="lang-css">
-ol { counter-reset: item }
-li { display: block }
-li::before { content: counter(item) ". "; counter-increment: item }
-</pre>
-
-<p>
-この例では、 `ol$e は名前 `item^css の`~counter列$に新たな値 0 を追加し、そのすべての子 `li^e は，同じ`~counter列$を継承しつつ，（追加された）最後の値に 1 を加算することになる。
-◎
-In this example, an ol will create a counter, and all children of the ol will refer to that counter.
-</p>
-
-<p>
-上の~stylesheetの下では、次の~HTML片は，各~要素に指示される名前 "`item^v" の`~counter列$（括弧で括って示される）を利用することになる。
-◎
-If we denote the nth instance of the "item" counter by item[n], then the following HTML fragment will use the indicated counters. (We assume the style sheet as given in the example above).
-</p>
-
-<!-- 
-<div class="ol">
-
- -->
-<div id="counter-nesting-example">
- <div class="ol">`ol^e ： [0] （追加）
-  <div class="li">`li^e： [1]</div>
-  <div class="li">`li^e： [2]
-   <div class="ol">`ol^e ： [2, 0] （追加）
-    <div class="li">`li^e： [2, 1]</div>
-    <div class="li">`li^e： [2, 2]</div>
-    <div class="li">`li^e： [2, 3]
-     <div class="ol">`ol^e ： [2, 3, 0] （追加）
-      <div class="li">`li^e： [2, 3, 1]</div>
-     </div>
-    </div>
-    <div class="li">`li^e： [2, 4]
-     <div class="ol">`ol^e ： [2, 4, 0] （追加）
-      <div class="li">`li^e： [2, 4, 1]</div>
-     </div>
-    </div>
-    <div class="li">`li^e： [2, 5]</div>
-   </div>
-  </div>
-  <div class="li">`li^e： [3]</div>
-  <div class="li">`li^e： [4]</div>
- </div>
- <div class="ol">`ol^e ： [0] （先行する同胞で追加されているので、追加しない）
-  <div class="li">`li^e： [1]</div>
-  <div class="li">`li^e： [2]</div>
- </div>
-</div>
-
-<!-- 
-
-ol item[0] is created, set to 0
-li item[0] is incremented to 1
-li item[0] is incremented to 2
-ol item[1] is created, set to 0, nested in item[0]
-li item[1] is incremented to 1
-li item[1] is incremented to 2
-li item[1] is incremented to 3
-ol item[2] is created, set to 0, nested in item[1]
-li item[2] is incremented to 1
-li item[1] is incremented to 4
-ol item[3] is created, set to 0, nested in item[1]
-li item[3] is incremented to 1
-li item[1] is incremented to 5
-li item[0] is incremented to 3
-li item[0] is incremented to 4
-ol item[4] is created, set to 0
-li item[4] is incremented to 1
-li item[4] is incremented to 2
--->
-
-</div>
-
-		</section>
-		<section id="counters-without-boxes">
-<h3 title="Counters in elements that do not generate boxes">4.5. ~boxを生成しない要素における~counter</h3>
-
-<p>
-~boxを生成しない要素（例：
-`display$p が
-<a href="~CSSDISP#valdef-display-none">`none^v</a>
-に設定された要素 ／
-`content$p が `none$v2 に設定された疑似要素）は、`~counter列$を操作できない
-— `counter-*$p ~propは、そのような要素でも依然として妥当であるが，それらによる効果はないモノトスル。
-◎
-An element that does not generate a box (for example, an element with display set to none, or a pseudo-element with content set to none) cannot set, reset, or increment a counter. The counter properties are still valid on such an element, but they must have no effect.
-</p>
-
-<div class="example">
-<p>
-例えば次の~stylesheetでは、 `secret^css ~classのどの `H2^e も， `count2^v を増分しなくなる。
-◎
-For example, with the following style sheet, H2s with class "secret" do not increment count2.
-</p>
-
-<pre class="lang-css">
-h2 { counter-increment: count2; }
-h2.secret { display: none; }
-</pre>
-
-</div>
-
-<p>
-`visibility$p を `hidden^v に設定するなどの，要素を “隠す” だけのものは、要素に~boxを生成させるので，このことは適用されない。
-◎
-Other methods of "hiding" elements, such as setting visibility to hidden, still cause the element to generate a box, and so do not apply here.
-</p>
-
-<p>
-`置換され$る子孫（例： ~HTMLの `option$e ／ ~SVGの `rect$e ）が`~counter列$を操作できるかどうかは、未定義である。
-◎
-Whether a replaced element’s descendants (such as HTML option, or SVG rect) can set, reset, or increment a counter is undefined.
-</p>
-
-<p class="note">注記：
-`置換され$る子孫~要素の挙動は、各~実装~間の相互運用能を欠くことに因り，現時点では未定義である。
-◎
-Note: The behavior on replaced element descendants is currently undefined due to a lack of interoperability across implementations.
-</p>
-
-		</section>
 		<section id="counter-functions">
-<h3 title="Outputting Counters: the counter() and counters() functions">4.6. ~counterの出力-法： `counter^f, `counters^f 関数</h3>
+<h3 title="Outputting Counters: the counter() and counters() functions">4.7. ~counterの出力-法： `counter^f, `counters^f 関数</h3>
 
 <p>
-~counterそれ自体は可視~効果を伴わないが、それらの値は［
+`~counter$それ自体は可視~効果を伴わないが、それらの値は［
 `counter$f ／ `counters$f
 ］関数で利用できる
-— それは、文字列や画像としての~counter値を表現する。
-これらの構文は：
+— その`使用~値$は、`~counter値$を文字列や画像として表現し，次に従って定義される：
 ◎
-Counters have no visible effect by themselves, but their values can be used with the counter() and counters() functions, which represent the counter values as strings or images. Their syntax is:
+Counters have no visible effect by themselves, but their values can be used with the counter() and counters() functions, whose used values represent counter values as strings or images. They are defined as follows:
 </p>
 
 <pre class="prod">
 `counter@t
     = `counter()$t | `counters()$t
 `counter@f
-    = counter( `custom-ident$t, [ `counter-style$t | `none^v ]? )
+    = counter( `counter-name$t, `counter-style$t? )
 `counters@f
-    = counters( `custom-ident$t, `string$t, [ `counter-style$t | `none^v ]? )
+    = counters( `counter-name$t, `string$t, `counter-style$t? )
 </pre>
 
 <p>
-両~関数とも、最初の `custom-ident$t 引数が~counterの名前を表現し，最後の `counter-style$t 引数が省略された場合の既定は `decimal$v になる。
+ここで `counter-style$t は、`~counter表現を生成-$するための`~counter~style$を指定する。
+`css-counter-styles-3$r
 ◎
-For both functions, the first argument represents the name of a counter, and if the last argument is omitted it defaults to decimal.
+where &lt;counter-style&gt; specifies the counter style for generating a representation of the named counter(s) as defined in [css-counter-styles-3] and
 </p>
 
-<div>
+<dl class="switch">
+	<dt>`counter^f</dt>
+	<dd>
+`counter-style$t を利用して，［
+要素の`~counter集合$内の名前 `counter-name$t の`最内縁$な`~counter$の`値$cT
+］用の`~counter表現を生成-$した結果を表現する。
+◎
+Represents the value of the innermost counter in the element’s CSS counters set named &lt;counter-name&gt; using the counter style named &lt;counter-style&gt;.
+</dd>
+
+	<dt>`counters^f</dt>
+	<dd>
 <p>
-`counter$f 関数の使用~値は、次に従って得られる：
+次を走らせた結果を表現する：
+</p>
+		<ol>
+			<li>
+%L ~LET 新たな~list
+</li>
+			<li>
+要素の`~counter集合$内の
+~EACH( 名前 `counter-name$t の`~counter$ %~counter )
+に対し
+⇒
+%L に次の結果を`付加する$
+⇒
+`counter-style$t を利用して［
+%~counter の`値$cT
+］用の`~counter表現を生成-$する
+</li>
+			<li>
+~RET %L を `string$t で`連結する$
+</li>
+		</ol>
+◎
+Represents the values of all the counters in the element’s CSS counters set named &lt;counter-name&gt; using the counter style named &lt;counter-style&gt;, sorted in outermost-first to innermost-last order and joined by the specified &lt;string&gt;.
+</dd>
+</dl>
+
+<p>
+両~事例とも，`counter-style$t 引数が省略された場合、
+`decimal$v が既定になる。
+◎
+In both cases, if the &lt;counter-style&gt; argument is omitted it defaults to decimal.
 </p>
 
-<ol>
-	<li>
-( %N, %style ) ~LET 関数の ( 1 個目, 2 個目 ) の引数
-</li>
-	<li>
-~IF［
-%style ~EQ `none^v
-］
+<p>
+［
+`counter$f ／ `counters$f
+］が利用された所で，要素の`~counter集合$内に名前 `counter-name$t の`~counter$は存在しない場合、次を遂行しておく
 ⇒
-~RET 空~文字列
-</li>
-	<li>
-%数 ~LET 要素~上の名前 %N の`~counter列$が［
-空でなければ その最後の値 ／
-~ELSE_ 0
-］
-</li>
-	<li>
-~RET %style を利用して %数 用の`~counter表現を生成-$した結果
-</li>
-</ol>
-
+`~counterを~instance化する$( その名前, 要素, `0^v )
 ◎
-The used value of counter() is obtained as follows:
-• If the second argument to the function is none, the function represents the empty string.
-• Otherwise, the function represents the string returned when one generates a counter representation for the value of the innermost counter of that name on the element (or 0 if the element has no counter of that name) using the &lt;counter-style&gt; specified by the second argument.
-</div>
+If no counter named &lt;counter-name&gt; exists on an element where counter() or counters() is used, one is first instantiated with a starting value of 0.
+</p>
 
 <div class="example">
 
@@ -2717,69 +2921,6 @@ P::before         { content: counter(p, none) }
 inserts nothing
 </span> */
 </pre>
-</div>
-
-<div>
-<p>
-`counters$f 関数の使用~値は、次に従って得られる：
-</p>
-
-<ol>
-	<li>
-( %N, %区切り, %style ) ~LET 関数の ( 1 個目, 2 個目, 3 個目 ) の引数
-</li>
-	<li>
-~IF［
-%style ~EQ `none^v
-］
-⇒
-~RET 空~文字列
-</li>
-	<li>
-%L ~LET 要素~上の名前 %N の`~counter列$
-</li>
-	<li>
-~IF［
-%L は空である
-］
-⇒
-%L ~SET 0 のみからなる~list
-</li>
-	<li>
-%結果 ~LET 空~文字列
-</li>
-	<li>
-<p>
-%L を成す
-~EACH( %~counter値 )
-に対し：
-</p>
-		<ol>
-			<li>
-%結果 に［
-%style を利用して %~counter値 用の`~counter表現を生成-$した結果
-］を付加する
-</li>
-			<li>
-~IF［
-この反復は最後でない
-］
-⇒
-%結果 に %区切り を付加する
-</li>
-		</ol>
-	</li>
-	<li>
-~RET %結果
-</li>
-</ol>
-
-◎
-The used value of counters() is obtained as follows:
-• If the third argument to the function is none, the function represents the empty string.
-• Otherwise, if the element has no counters of that name, the function represents the string returned when one generates a counter representation for 0 using the &lt;counter-style&gt; specified by the third argument.
-• Otherwise, if the element has a single counter of that name, the function represents the string returned when one generates a counter representation for that counter’s value using the &lt;counter-style&gt; specified by the third argument.
-• Otherwise, generate a counter representation for the values of all counters of the given name on the element using the &lt;counter-style&gt; specified by the third argument. Sort the resulting strings by the nesting depth of the counters they were generated from, with the outermost counter first and the innermost last. Join the list into a single string, inserting the &lt;string&gt; specified by the second argument between each item in the list. The function represents the string thus produced.
 </div>
 
 <div class="example">
@@ -2831,10 +2972,10 @@ The preceding document should render something like this:
 
 <div class="example">
 <p>
-各`~counter列$は後続の同胞に継承されるので、それらは入子の~~関係にない見出しと下位~見出しを付番するときにも利用できる。
-あいにく， `counters$f には、これを利用できない
-— 同胞からの `counter-*$p ~propは、`~counter列$の長さを変えないので。
-が、代わりに複数の~counter名を用いて手動で連結すれば可能になる：
+各~counterは、後続の同胞に継承されるので，入子の~~関係にない見出しと下位~見出しを付番するときにも利用できる。
+あいにく，これは、 `counters$f には利用できない
+— 同胞たちの~counterは入子にされないので。
+代わりに，複数の~counter名を手動で連結することで可能になる：
 ◎
 Because counters inherit to siblings as well, they can be used to number headings and subheadings, which aren’t nested within each other. Unfortunately, this prevents the use of counters() as counters from siblings don’t nest, but one can create multiple counters and manually concatenate them instead:
 </p>
@@ -2866,19 +3007,20 @@ h3::before { content: counter(h1,upper-alpha) '.'
 &lt;/style&gt;
 </pre>
 <!-- 
-<h1>First H1</h1>
+ <h1>First H1</h1>
 ...
-<h2>First H2 in H1</h2>
+ <h2>First H2 in H1</h2>
 ...
-<h2>Second H2 in H1</h2>
+ <h2>Second H2 in H1</h2>
 ...
-<h3>First H3 in H2</h3>
+ <h3>First H3 in H2</h3>
 ...
-<h1>Second H1</h1>
+ <h1>Second H1</h1>
 ...
-<h2>First H2 in H1</h2>
+ <h2>First H2 in H1</h2>
 ...
 -->
+
 <p>
 前掲の文書は、次の様に描画されるべきである：
 ◎
@@ -2927,7 +3069,7 @@ Counters are sometimes useful for things other than printing markers. In general
 </p>
 
 <p>
-他にも、入子にされた, あるいは同胞の要素たちに，互いに少しずつ異なる変形を与える利用-事例がある。
+他にも、入子にされた, あるいは同胞どうしの要素に，少しずつ異なる変形を与える利用-事例がある。
 今日、これを適度な仕方で行うためには，前処理器を利用する必要があるが、~counterを使えば “素の” ~CSSでも上手く働くようになる。
 ◎
 Other use-cases involve nested or sibling elements with transforms that are meant to be slightly different from each other. Today you have to use a preprocessor to do this in a reasonable way, but a counter would make it work well in "plain" CSS.
@@ -2941,10 +3083,10 @@ Other use-cases involve nested or sibling elements with transforms that are mean
 
 <p>
 有名~counterの値を文字列ではなく整数として返す
-<code class="css">counter-value(`custom-ident$t)</code>
+<code class="css">counter-value(`counter-name$t)</code>
 関数の追加が示唆されている。
 ◎
-Suggestion is to add a counter-value(&lt;ident&gt;) function, which returns the value of the named counter as an integer, rather than returning a string.
+Suggestion is to add a counter-value(&lt;counter-name&gt;) function, which returns the value of the named counter as an integer, rather than returning a string.
 </p>
 
 <p>
@@ -2963,9 +3105,8 @@ See Issue 1026.
 
 ~INFORMATIVE
 
-<p><em>
-~HTML自身は、~HTML~listに適用される，実際の既定の~propたちを定義する。
-</em>
+<p>
+`~HTML自身は、~HTML~listに適用される，実際の既定の~propたちを定義する。^em
 【参照：<a href="~HTMLrendering#lists">~HTMLが規定する~list用の~UA~stylesheet</a>】
 ◎
 HTML itself defines the actual default properties that apply to HTML lists.
@@ -2979,16 +3120,16 @@ Set up list items
 </span> */
 li {
   display: list-item;
-  /* <span class="comment">
-`counter-increment^p: `list-item^v;
-( `display^p: `list-item^v によりimplyされる）
+  /* <span class="comment">（これは、
+<code class="css">`counter-increment^p: `list-item^v;</code>
+も含意する）
 ◎
 counter-increment: list-item; (implied by display: list-item)
 </span> */
 }
 
 /* <span class="comment">
-`list-item^v ~counterを設定し直すように， `ol^e と `ul^e を設定しておく
+`list-item^v ~counterを設定し直すよう， `ol^e と `ul^e を設定しておく
 ◎
 Set up ol and ul so that they reset the list-item counter
 </span> */
@@ -3136,12 +3277,26 @@ The following people and documentation they wrote were very useful for defining 
 This section documents the changes since previous publications.
 </p>
 
-		<section id="changes-20140320">
-<h2 title="Changes since the 20 March 2014 WD">2014年 3月 20日 WD からの変更点</h2>
+		<section id="changes-20190425">
+<h3>2019年 4月 25日 作業草案からの変更点</h3>
 
 <ul>
 	<li>
-~counter名には `custom-ident$t を一貫して利用するようにした。
+<a href="#auto-numbering">§ ~counterによる自動的な付番</a>
+を書き直した
+— より精確に, CSS2 と一致するよう, 編集上の明確化。
+◎
+Rewrite the § 4 Automatic Numbering With Counters section for better precision, editorial clarity, and synchronization with CSS2.
+</li>
+</ul>
+
+		</section>
+		<section id="changes-20140320">
+<h3 title="Changes since the 20 March 2014 WD">2014年 3月 20日 WD からの変更点</h3>
+
+<ul>
+	<li>
+~counter名には `custom-ident$t 【現在は `counter-name$t 】を一貫して利用するようにした。
 ◎
 Use &lt;custom-ident&gt; consistently for counter names.
 </li>
@@ -3187,7 +3342,7 @@ Established the canonical order of list-style serialization to put &lt;'list-sty
 
 		</section>
 		<section id="changes-from-css2">
-<h2 title="Changes From CSS Level 2">~CSS~level 2 からの変更点</h2>
+<h3 title="Changes From CSS Level 2">~CSS~level 2 からの変更点</h3>
 
 <p>
 序論~節にて述べたように、この~moduleには，
