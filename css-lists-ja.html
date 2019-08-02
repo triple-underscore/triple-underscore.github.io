@@ -50,7 +50,7 @@ pre.ex-rendering {
 	color: red;
 }
 .ex-counter-tree .x-reset {
-	counter-reset: N 0;
+	counter-reset: N;
 }
 .ex-counter-tree .x-increment {
 	counter-increment: N;
@@ -134,7 +134,7 @@ Util.ready = function(){
 				return '</div>';
 			}
 
-			// inherit
+			// inherit counters
 			const prev_sibling = node_stack[level] || 0;
 			const counter_source = prev_sibling || node_stack[level - 1] || 0
 			if(counter_source) {
@@ -144,7 +144,6 @@ Util.ready = function(){
 				}
 			}
 
-			let len = counters.length;
 			let text = '';
 			let classes = [];
 
@@ -169,20 +168,17 @@ Util.ready = function(){
 				classes.push('none');
 				none_level = level;
 			} else {
-				// instantiate
-				if( ( len === 0 ) || (props & 0x1) ){
-					if(created[level]){ // len > 0
-/* 原文の logic は誤り：
-					if(counters[len - 1].node === prev_sibling){ ...
-*/
-						counters[len - 1].node = node_id; // remove and instatiate
-					} else {
-						counters.push({ node: node_id, value: 0 });
-						len++;
+				if( ( counters.length === 0 ) || (props & 0x1) ){
+					// instantiate a counter
+					if(created[level]){
+//	assert: counters.length > 0
+//	assert: created[level] === counters[counters.length - 1].node
+						counters.pop();
 					}
+					counters.push({ node: node_id, value: 0 });
 					created[level] = node_id;
 				}
-				const counter = counters[len - 1];
+				const counter = counters[counters.length - 1];
 				if(props & 0x1){ // reset
 					counter.value = 0x0;
 				}
@@ -525,22 +521,21 @@ ex-counter-tree:#ex-counter-tree
 ~CSS継承:~CASCADE#inheritance
 使用~値:~CASCADE#used-value
 
-親:#concept-tree-parent
+親:~DOM4#concept-tree-parent
 	根~要素:~DOM4#concept-tree-root
+~tree順序:~DOM4#concept-tree-order
+根:~DOM4#concept-tree-root
+前の同胞:~DOM4#concept-tree-previous-sibling
 
 連結する:~INFRA#string-concatenate
 有順序~集合:~INFRA#ordered-set
 ~list:~INFRA#list
 ~tuple:~INFRA#tuple
 文字列:~INFRA#string
-~tree順序:~DOM4#concept-tree-order
-根:~DOM4#concept-tree-root
-前の同胞:~DOM4#concept-tree-previous-sibling
-
 包含する:~INFRA#list-contain
-	set.付加する:~INFRA#set-append
-除去する:~INFRA#list-remove
 付加する:~INFRA#list-append
+set.付加する:~INFRA#set-append
+除去する:~INFRA#list-remove
 連結する:~INFRA#string-concatenate
 
 
@@ -2239,9 +2234,9 @@ If we denote the nth instance of the item counter by itemn, then the following H
 ］は
 — 先行する要素から継承するか, 要素~上で直に~instance化することを通して —
 その要素を`視野$に入れる`~counter$の集合を持つ（空にもなり得る）。
-これらの~counterは、`~list$を成す
+これらの~counterは、`有順序~集合$†を成す
 `~counter集合@
-（ `CSS counters set^en ）として表現される†。
+（ `CSS counters set^en ）として表現される。
 この集合を成す各~itemは、
 ( `文字列$, 要素, 整数 )
 からなる`~tuple$であり，~counterの
@@ -2261,7 +2256,7 @@ Each element or pseudo-element in a document has a (possibly empty) set of count
 </p>
 
 <p class="trans-note">【†
-原文では，`有順序~集合$として定義されているが、同一性の検査を要する箇所は無いので`~list$で十分になる。
+同一性の検査を要する箇所は無いので`~list$でも十分になる（各~tupleの同一性が，成分ごとの比較に基づくわけではない）。
 】</p>
 
 			<section id="inheriting-counters">
@@ -2331,7 +2326,7 @@ Let value source be the CSS counters set of the element immediately preceding el
 ］とも %~counter のそれらに一致する`~counter$は在る
 ］
 ⇒
-%要素 の`~counter集合$に %~counter の複製を`付加する$
+%要素 の`~counter集合$に %~counter の複製を`付加する$set
 ◎
 For each (name, originating element, value) of value source:
 • If counter source also contains a counter with the same name and originating element, then append a copy of value source’s counter (name, originating element, value) to element counters.
@@ -2475,29 +2470,30 @@ To instantiate a counter of a given name on an element with a starting value:
 
 <ol>
 	<li>
-<p>
-~IF［
-%要素 に先行するある同胞は`名前$cT %名前 を伴う~counterを`~instance化$した
-］
-⇒
-%要素 の`~counter集合$から`名前$cT %名前 を伴う`最内縁$な~counterを`除去する$
-</p>
-<p class="trans-note">【
-この場合、［
-最内縁な~counterの`出自の要素$cT ~EQ 該当する同胞のうち最後のもの
-］も満たされる。
-】【
-原文によるこの段の条件は、前の同胞しか調べておらず，~UAの実装と食い違うので修正している。
-】</p>
+%~counter集合 ~LET %要素 の`~counter集合$
 ◎
 Let counters be element’s CSS counters set.
-◎
-Let innermost counter be the last counter in counters with the name name. If innermost counter’s originating element is element or a previous sibling of element, remove innermost counter from counters.
 </li>
 	<li>
-%要素 の`~counter集合$に
+%最内縁な~counter ~LET %~counter集合 内の`名前$cT %名前 を伴う`最内縁$な~counter
+◎
+Let innermost counter be the last counter in counters with the name name.＼
+</li>
+	<li>
+~IF［
+%最内縁な~counter の`出自の要素$cTは %要素 に先行するある同胞である
+【！ a previous sibling = one of preceding siblings ≠ the previous sibling 】
+【すなわち，その同胞がこの~counterを`~instance化$した】
+］
+⇒
+%~counter集合 から %最内縁な~counter を`除去する$
+◎
+If innermost counter’s originating element is element or a previous sibling of element, remove innermost counter from counters.
+</li>
+	<li>
+%~counter集合 に
 新たな`~counter$( %名前, %要素, %値 )
-を`付加する$
+を`付加する$set
 ◎
 Append a new counter to counters with name name, originating element element, and initial value value
 </li>
@@ -2506,8 +2502,8 @@ Append a new counter to counters with name name, originating element element, an
 </div>
 
 			</section>
-			<section id="_live-example-of-counter">
-<h4 title="Instantiating Counters">4.4.X. ~counterの生きた例</h4>
+			<section id="_live-example-of-counters">
+<h4>4.4.X. ~counterの生きた例</h4>
 
 <p class="trans-note">【
 この節は、この訳による追加。
@@ -2516,59 +2512,15 @@ Append a new counter to counters with name name, originating element element, an
 <div class="example">
 
 <p>
-次の図式に、この仕様の~algoを要素~treeに適用して生成される，（一定の`名前$cTを伴う）~counterの挙動を示す（図式のどこでも，~clickすれば、~tree構造をランダムに組み替えれる）：
+次の図式に、この仕様の~algoを要素~treeに適用して生成される，ある固定的な`名前$cTを伴う~counterの挙動を示す（図式のどこでも，~clickすれば、~tree構造をランダムに組み替えれる）：
 </p>
 
 `ex-counter-tree@
 
-<p>
-この図式の見方は：
-</p>
-
-<ul>
-	<li>
-図式を成す各~行が 1 個の要素に対応し，入子ng~levelに応じて字下げされている。
-</li>
-	<li>
-以下の記述における `~counter列^i とは、［
-要素の`~counter集合$内のこの名前を伴う~counterたちの`値$cT
-］からなる，同順の~listを表す。
-</li>
-	<li>
-行頭に赤く呈示される括弧で括られた整数~列は、利用-中の~UAが実際に要素にあてがっている，~counter列を表す
-— この呈示には、 `counters$f 関数の出力が利用されている。
-</li>
-	<li>
-その次に “=” を挟んで示される，括弧で括られた整数~列は、この仕様の~modelから導出される~counter列を表す。
-~UAがそれに正確に従うならば、前項の整数~列は，この整数~列と一致するべきである。
-</li>
-	<li>
-<p>
-行末に示される文字列［
-"reset" ／ "increment"
-］は、当の要素に，~counterを操作する［
-`counter-reset$p ／ `counter-increment$p
-］~propが（同じ名前の~class名を通して）あてがわれていることを表す
-⇒＃
-`counter-reset$p が設定する値は、常に 0 （既定~値）／
-`counter-increment$p による増減は、常に 1 （既定~値）
-</p>
 
 <p>
-ここでは、 `counter-set$p については扱っていない
-— 現時点では、~supportする~UAは無いように見受けられるので。
-</p>
-
-	</li>
-	<li>
-先頭の要素には、~tree生成-時に常に `counter-reset$p が設定される。
-（ `couters^f 関数を利用することによる，疑似要素における`~instance化$による副作用により、挙動が不規則な見かけになるのを避けるため。）
-</li>
-</ul>
-
-<p>
-この図式には、次の~styleが利用されている（
-`#root^css は要素~treeの根の id ／
+この図式の呈示には、次の~styleが利用されている（
+`#root^css は容器の id ／
 %N は~counterの名前
 ）：
 </p>
@@ -2585,6 +2537,50 @@ Append a new counter to counters with name name, originating element element, an
 #root *.reset     { counter-reset: %N; }
 #root *.increment { counter-increment: %N; }
 </pre>
+
+<p>
+この図式の見方は：
+</p>
+
+<ul>
+	<li>
+図式を成す各~行が 1 個の子孫に対応し，入子ng~levelに応じて字下げされている。
+</li>
+	<li>
+行頭に赤く呈示される括弧で括られた整数~列は，
+`counters$f 関数の出力であり、利用-中の~UAが実際に要素にあてがっている，~counter値の~list
+— 要素の`~counter集合$内の，名前 %N を伴う~counterたちの`値$cTからなる同順の~list —
+を反映する。
+</li>
+	<li>
+その次に “=” を挟んで示される，括弧で括られた整数~列は、この仕様の~modelから導出される，~counter値の~listを表す。
+~UAの実装が~modelに正確に従うならば、前項の整数~列とこの整数~列は，一致するはずである。
+</li>
+	<li>
+<p>
+行末に示される文字列［
+"reset" ／ "increment"
+］は、当の要素に，~counterを操作する［
+`counter-reset$p ／ `counter-increment$p
+］~propが（同じ名前の~class名を通して）あてがわれていることを表す
+⇒＃
+`counter-reset$p が設定する値は、常に 0 （既定~値）／
+`counter-increment$p による増減は、常に 1 （既定~値）
+</p>
+
+<p>
+ここでは、 `counter-set$p は利用していない
+— 現時点では、~supportする~UAが無いように見受けられるので。
+</p>
+
+	</li>
+	<li>
+最初の子~要素には、常に `counter-reset$p が設定してある。
+（呈示に利用している［
+`before^pe 疑似要素~上の `couters^f 関数
+］の~~存在による，暗黙的な`~instance化$の副作用により、挙動が不規則な見かけになるのを避けるため。）
+</li>
+</ul>
 
 </div>
 
