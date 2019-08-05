@@ -4,144 +4,145 @@
 <link rel="stylesheet" href="common.css" type="text/css" />
 <link rel="stylesheet" href="common-whatwg.css" type="text/css" />
 
-<script>
+<script type="module">
+'use strict';
 
-document.addEventListener('DOMContentLoaded', init, false);
-function init(){
-	function E(id){ return document.getElementById(id)};
+const E = (id) => {
+	return document.getElementById(id);
+};
 
-	const template = '<tr id="entity-$name"><th><code>$name</code>$legacy<td><span class="code-point">$codepoints</span><td><span class="characters">$characters</span><td>';
+const charref_list = [];
+let sort_key = '_by_code';
+const sorters = {
+	_by_name: (a, b) => {
+		a = a.name;
+		b = b.name;
+		return (a === b) ? 0 : ( a > b ? 1 : -1 );
+	},
+	_by_code: (a, b) => {
+		a = a.codepoints[0];
+		b = b.codepoints[0];
+		return (a === b) ? 0 : ( a > b ? 1 : -1 );
+	},
+	_by_alpha: (a, b) => {
+		a = a.name.toLowerCase();
+		b = b.name.toLowerCase();
+		return (a === b) ? 0 : ( a > b ? 1 : -1 );
+	}
+}
+const sortList = (key) => {
+	const tbody = E('_char_refs');
+	const rows = tbody.rows;
+	charref_list.forEach((item, index) => {
+		item.row = rows[index];
+	})
+	charref_list.sort(sorters[key] || sorters._by_code);
+	charref_list.forEach((item) => {
+		tbody.appendChild(item.row);
+		item.row = null;
+	});
+}
 
-	const charref_list = [];
-	let sort_key = '_by_code';
-	const sorters = {
-		_by_name: function(a, b){
-			a = a.name;
-			b = b.name;
-			return (a === b) ? 0 : ( a < b ? -1 : 1 );
-		},
-		_by_code: function(a, b){
-			a = a.codepoints[0];
-			b = b.codepoints[0];
-			return (a === b) ? 0 : ( a < b ? -1 : 1 );
-		},
-		_by_alpha: function(a, b){
-			a = a.name.toLowerCase();
-			b = b.name.toLowerCase();
-			return (a === b) ? 0 : ( a < b ? -1 : 1 );
+// generate HTML table content markup from json
+const createHTML = (data) => {
+	for( const key of Object.keys(data) ){
+		let name = key.slice(1, -1);
+		if(key.slice(-1) !==';'){
+			const key1 = key + ';';
+			if( key1 in data ){
+				data[key1].legacy = true;
+				continue;
+			}
+			else {// should never happen
+				name = key.slice(1);
+			}
 		}
+		const obj = data[key];
+		obj.name = name; // remove '&', ';'
+		obj.row = null;
+		charref_list.push(obj);
+	}
+
+	charref_list.sort(sorters[sort_key] || sorters._by_code);
+
+	const output = [];
+	for( const obj of charref_list ){
+		const codepoints = obj.codepoints.map((code) => {
+			code = code.toString(16).toUpperCase();
+			if(code.length < 4){
+				code = `0000${code}`.slice(-4);
+			}
+			return `U+${code}`;
+		}).join(' ');
+
+		const legacy = obj.legacy ? ` <span id="entity-${obj.name}-legacy">†</span>`: '';
+		output.push(`
+<tr id="entity-${obj.name}"><th><code>${obj.name}</code>${legacy}<td><span class="code-point">${codepoints}</span><td><span class="characters">${obj.characters}</span><td>`
+		);
+	}
+	return output.join('');
+}
+
+const init0 = (json) => {
+	json = json
+	|| JSON.parse(E('_charref_data').textContent); //_test_data
+
+	E('_char_refs').innerHTML = createHTML(json);
+
+	const group = E('_sort_select');
+	group.addEventListener('click', (event) => {
+		const e = event.target;
+		if(e.tagName !== 'INPUT') return;
+		if(sort_key === e.id) return;
+		sort_key = e.id;
+		sortList(sort_key);
+	});
+	group.hidden = false;
+
+	E('_by_code').checked = true;
+
+	const setGlyphSize = (size) => {
+		E('glyph_size_style').textContent = E('glyph_size' + size).textContent;
+	}
+	E('glyph_size').onchange = (event) => {
+		setGlyphSize(event.target.selectedIndex + 1);
+	}
+
+	if(window.location.hash){
+		const target = E(window.location.hash.slice(1));
+		if(target) {
+			target.scrollIntoView();
+		}
+	}
+}
+
+init0();
+
+
+/* cross-origin アクセス可能な場合：
+
+{
+	const showError = (text) => {
+		const logElem = E('_logElem');
+		logElem.textContent = text;
 	}
 
 	if(!window.fetch){
 		showError('fetch API 未対応ブラウザなので、データを取得できません。');
 		return;
 	}
-
-/* cross-origin アクセス可能な場合：
 	fetch("https://somewhere/entities.json").then(
-		function(res){
+		(res) => {
 			return res.json();
 		},
-		function(e){
+		(e) => {
 			showError('…サーバからのデータ取得に失敗しました（オフライン？）。');
 			throw e;
 		}
-	).then(createHTML);
-
-	function showError(text){
-		const logElem = E('_logElem');
-		logElem.textContent = text;
-	}
-*/
-
-	createHTML(JSON.parse(E('_charref_data').textContent));
-//	createHTML(JSON.parse(E('_test_data').textContent));
-
-	function createHTML(data){
-		Object.keys(data).forEach(function(key){
-			let name = key.slice(1, -1);
-			if(key.slice(-1) !==';'){
-				const key1 = key + ';';
-				if( key1 in data ){
-					data[key1].legacy = true;
-					return;
-				}
-				else {// should never happen
-					name = key.slice(1);
-				}
-			}
-			const obj = data[key];
-			obj.name = name; // remove '&', ';'
-			obj.row = null;
-			charref_list.push(obj);
-		});
-
-		charref_list.sort(sorters[sort_key] || sorters._by_code);
-
-		const output = [];
-		charref_list.forEach(function(obj){
-			const codepoints = obj.codepoints.map(function(code){
-				code = code.toString(16).toUpperCase();
-				if(code.length < 4){
-					code = '0000'.slice(0, 4 - code.length) + code;
-				}
-				return 'U+' + code;
-			}).join(' ');
-
-			const map = {
-				name: obj.name,
-				legacy: obj.legacy ? ' <span id="entity-' + obj.name + '-legacy">†</span>': '',
-				codepoints: codepoints,
-				characters: obj.characters
-			}
-			const row = template.replace(/\$(\w+)/g, function(s, t){
-				return map[t];
-			});
-			output.push(row);
-		});
-		E('_char_refs').innerHTML = output.join('\n');
-
-		const group = E('_sort_select');
-		group.addEventListener('click', function(event){
-			const e = event.target;
-			if(e.tagName !== 'INPUT') return;
-			if(sort_key === e.id) return;
-			sort_key = e.id;
-			sortList(sort_key);
-		});
-		group.hidden = false;
-		E('_by_code').checked = true;
-
-		E('glyph_size').onchange = function(event){
-			setGlyphSize(event.target.selectedIndex + 1);
-		}
-
-		if(window.location.hash){
-			const target = E(window.location.hash.slice(1));
-			if(target) {
-				target.scrollIntoView();
-			}
-		}
-	}
-
-	function sortList(key){
-		const tbody = E('_char_refs');
-		const rows = tbody.rows;
-		charref_list.forEach(function(item, index){
-			item.row = rows[index];
-		})
-		charref_list.sort(sorters[key] || sorters._by_code);
-		charref_list.forEach(function(item){
-			tbody.appendChild(item.row);
-			item.row = null;
-		});
-	}
-
-	function setGlyphSize(size){
-		E('glyph_size_style').textContent = E('glyph_size' + size).textContent;
-	}
-
+	).then(init0);
 }
+
+*/
 
 </script>
 

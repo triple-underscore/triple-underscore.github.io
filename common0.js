@@ -2,21 +2,21 @@
 
 
 // 要素取得
-function E(id){
+const E = (id) => {
 //	const e = document.getElementById(id);if(!e) {console.log(id);};return e;
 	return document.getElementById(id);
 }
 // 要素作成
-function C(tag){
+const C = (tag) => {
 	return tag ? 
 		document.createElement(tag) :
 		document.createDocumentFragment();
 }
 
-function EMPTY_FUNC(){}
+const EMPTY_FUNC = () => {}
 
 // セレクタ対象の要素を反復処理
-function repeat(selector, callback, root){
+const repeat = (selector, callback, root) => {
 	if(!root) root = document
 	const elements = root.querySelectorAll(selector);
 	const L = elements.length;
@@ -108,9 +108,8 @@ const Util = {
 
 
 // 改行＋コロン区切りの文字列データから連想配列を取得
-Util.get_mapping = function(data, map){
+Util.get_mapping = (data, map) => {
 	map = map || Object.create(null);
-
 	const rxp = /\n(\S.*?):(.*)/g;
 	let m;
 	while(m = rxp.exec(data)){
@@ -120,29 +119,29 @@ Util.get_mapping = function(data, map){
 };
 
 // ●●区切りの文字列から有名データブロックを抽出
-Util.parseBlocks = function(source){
+Util.parseBlocks = (source) => {
 //	const rxp = RegExp('(\n' + splitter + ').+');
 	const result = Object.create(null);
 	let name = '';
-	source.split(/(\n●●.*)/).forEach(function(block){
+	for( const block of source.split(/(\n●●.*)/) ){
 		if(block.slice(0,3) === '\n●●'){
 			name = block.slice(3);
 			if(!name){
 				// 無名ブロックはコメント
-				return;
+				continue;
 			}
 			if(!(name in result)){
 				result[name] = '';
 			}
-		}else if(name){
+		} else if(name){
 			result[name] += block;
 		}
-	});
+	};
 	return result;
 }
 
 /* HTML 例示コード用 */
-Util.collectHtmlCodeList = function(parts){
+Util.collectHtmlCodeList = (parts) => {
 	if(!parts){
 		parts = Object.create(null);
 	}
@@ -182,7 +181,7 @@ Util.collectHtmlCodeList = function(parts){
 
 */
 
-Util.getDataByLevel = function(data, level){
+Util.getDataByLevel = (data, level) => {
 	return data
 	// スペース／タブ開始行を削除
 		.replace(/\n[ \t].*/g, '')
@@ -202,7 +201,7 @@ Util.getDataByLevel = function(data, level){
 
 
 // 節見出しを取得
-Util.get_header = function(section){
+Util.get_header = (section) => {
 	const header = section && section.firstElementChild;
 	return (
 		header && /^H\d$/.test(header.tagName)
@@ -210,14 +209,14 @@ Util.get_header = function(section){
 };
 
 
-Util.collectParts = function(parts){
+Util.collectParts = (parts) => {
 	// 既定の収集器
-	repeat('#_persisted_parts > *[id]', function(e){
+	repeat('#_persisted_parts > *[id]', (e) => {
 		parts[e.id] = e;
 	});
 };
 
-Util.dump = function(s){
+Util.dump = (s) => {
 	if(s instanceof Array){
 		s = s.join('\n');
 	} else if(s instanceof Object){
@@ -237,17 +236,17 @@ Util.dump = function(s){
 };
 
 // 訳文消去（ diff 比較用）
-Util.del_j = function(){
+Util.del_j = () => {
 	let parent;
 
-	repeat('.trans-note', function(e){
+	repeat('.trans-note', (e) => {
 		e.parentNode.removeChild(e);
 	});
-	repeat('details', function(e){
+	repeat('details', (e) => {
 		e.open = true;
 	});
 
-	repeat('*[lang="en"]', function(en){
+	repeat('*[lang="en"]', (en) => {
 		const p = en.parentNode;
 		if(en.tagName === 'SPAN'){
 			const en1 = C('P');
@@ -263,14 +262,14 @@ Util.del_j = function(){
 			p.removeChild(p.firstChild);
 		}
 	});
-	repeat('h2,h3,h4,h5', function(e){
+	repeat('h2,h3,h4,h5', (e) => {
 		const text = e.title;
 		if(text){
 			e.textContent = `${e.textContent.match(/[ABC\d\.]+/) || ''} ${text}`;
 		}
 	});
-	Util.DEFERRED.push(function(){
-		repeat('details', function(e){
+	Util.DEFERRED.push(() => {
+		repeat('details', (e) => {
 			e.open = true;
 		});
 	});
@@ -278,13 +277,13 @@ Util.del_j = function(){
 
 
 
-Util.getState = function(key, default_val, type){
+Util.getState = (key, default_val, type) => {
 	if(! (key in Util.page_state) ) return default_val;
 	const val = Util.page_state[key];
 	return (type && (typeof(val) !== type))? default_val : val;
 };
 
-Util.setState = function(key, val){
+Util.setState = (key, val) => {
 	const page_state = Util.page_state;
 	const old_val = page_state[key];
 	if(val === old_val) return;
@@ -299,7 +298,7 @@ Util.setState = function(key, val){
 };
 
 
-new function(){
+/* 初期処理： console */ {
 	if(!window.console){
 		window.console = { log: EMPTY_FUNC };
 	}
@@ -307,34 +306,29 @@ new function(){
 /*
 	try {
 		const opts = Object.defineProperty({}, 'passive', {
-			get: function() { Util.supportsListenerOptions = true;}
+			get: () => { Util.supportsListenerOptions = true;}
 		});
 		window.addEventListener("test", null, opts);
 	} catch (e) {}
 */
 }
 
-new function(){
+/* 初期処理： <meta viewport> */
+{
 	// meta with viewport for mbile (ideally, should be set by CSS, not meta tag)
 	const head = document.head || document.getElementsByTagName('head')[0];
-	if(!head) return;
-//	const w = screen.width;...
-	const meta = C('meta');
-	meta.setAttribute('name', 'viewport');
-	meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no');
-	head.appendChild(meta);
+	if(head){
+	//	const w = screen.width;...
+		const meta = C('meta');
+		meta.setAttribute('name', 'viewport');
+		meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no');
+		head.appendChild(meta);
+	}
 }
 
-new function(){
-	Util._COMP_ = new Promise(function(resolve){
-		document.addEventListener('DOMContentLoaded', function(){
-			init();
-			resolve();
-		}, false);
-	});
+/* 初期処理 */ {
 
-	// 初期化
-	function init(){
+	const init = () => {
 		document.removeEventListener('DOMContentLoaded', init, false);
 
 		const elem = E('_source_data');
@@ -361,7 +355,7 @@ new function(){
 		if(classList.contains('_expanded')){
 			// ページは展開状態で保存されている
 			PAGE_DATA.options.expanded = true;
-			repeat('._hide_if_expanded', function(e){
+			repeat('._hide_if_expanded', (e) => {
 //				e.parentNode.removeChild(e);
 				e.style.display = 'none';
 			});
@@ -373,8 +367,15 @@ new function(){
 		Util.initAdditional();
 	}
 
+	Util._COMP_ = new Promise((resolve) => {
+		document.addEventListener('DOMContentLoaded', () => {
+			init();
+			resolve();
+		}, false);
+	});
+
 	// 表示状態を sessionStorage から読み込む
-	function get_state(){
+	const get_state = () => {
 		let page_state = null;
 		let storage_key = null;
 
@@ -382,7 +383,7 @@ new function(){
 		try {
 // sessionStorage property へのアクセスのみでも security error になることがある
 			page_state = sessionStorage.getItem(storage_key);
-			Util.saveStorage = function(data){
+			Util.saveStorage = (data) => {
 				sessionStorage.setItem(storage_key, JSON.stringify(data));
 			};
 			if(! page_state || (page_state.length > 1000)) return;
@@ -415,7 +416,7 @@ section の入れ子階層を反映する，入れ子 ol による目次を得�
 */
 
 
-Util.rebuildToc = function(main_id, list_id){
+Util.rebuildToc = (main_id, list_id) => {
 	list_id = list_id || '_toc_list';
 	const toc_list = E(list_id), main = E(main_id);
 	if(toc_list && main) {
@@ -426,21 +427,9 @@ Util.rebuildToc = function(main_id, list_id){
 	return toc_list;
 }
 
-Util.buildTocList = function(root){
-	const range = document.createRange();
-	const toc = buildToc(root);
-	if(toc) { // a 要素の入れ子を除去
-		repeat('a a', function(e){
-			range.selectNodeContents(e);
-			e.parentNode.replaceChild(range.extractContents(), e);
-		}, toc);
-		repeat('[id]', function(e){ // 重複 id を除去
-			e.removeAttribute('id');
-		}, toc);
-	}
-	return toc;
+Util.buildTocList = (root) => {
 
-	function buildToc(root){
+	const buildToc = (root) => {
 		let list = null;
 		for(let section = root.firstElementChild; 
 			section;
@@ -466,10 +455,23 @@ Util.buildTocList = function(root){
 		}
 		return list;
 	}
+
+	const range = document.createRange();
+	const toc = buildToc(root);
+	if(toc) { // a 要素の入れ子を除去
+		repeat('a a', (e) => {
+			range.selectNodeContents(e);
+			e.parentNode.replaceChild(range.extractContents(), e);
+		}, toc);
+		repeat('[id]', (e) => { // 重複 id を除去
+			e.removeAttribute('id');
+		}, toc);
+	}
+	return toc;
 }
 
 
-Util.fillHeader = function(){
+Util.fillHeader = () => {
 	const options = PAGE_DATA.options;
 	const url = options.original_url || '';
 //	if(!url) return;
@@ -483,14 +485,32 @@ Util.fillHeader = function(){
 		options.copyright = '2019,whatwg';
 	}
 
-	fillLogoImage();
-	fillDate();
-	placeMetadata();
+	// タイトル横のロゴ画像リンク
+	fillLogo: {
+		let html;
+		const domain = url.match( /^https?:\/\/([\w\.\-]+)\// );
+		if(!domain) break fillLogo;
+		switch(domain[1]){
+		case 'www.w3.org':
+		case 'w3c.github.io':
+		case 'drafts.csswg.org':
+			html = '<a href="https://www.w3.org/" id="_W3C">W3C</a>';
+			break;
+		case 'html.spec.whatwg.org':
+			html = '<a href="https://whatwg.org/" id="_WHATWG">WHATWG</a>';
+			isHTML = true;
+			break;
+		default:
+			break fillLogo;
+		}
+		header.insertAdjacentHTML('afterbegin', html);
+	}
 
-	function fillDate(){
+	// 副題＋日付
+	fillDate: {
 		let date = options.spec_date;
-		if(!date) return;
-		if(!hgroup) return;
+		if(!date) break fillDate;
+		if(!hgroup) break fillDate;
 
 		const m = date.match(/^(\d+)-0*(\d+)-0*(\d+)$/);
 		if(m){
@@ -518,29 +538,8 @@ LS: 'Living Standard',
 		hgroup.insertAdjacentHTML('beforeend', html);
 	}
 
-	function fillLogoImage(){
-		// logo 画像
-		let html;
-		const domain = url.match( /^https?:\/\/([\w\.\-]+)\// );
-		if(!domain) return;
-		switch(domain[1]){
-		case 'www.w3.org':
-		case 'w3c.github.io':
-		case 'drafts.csswg.org':
-			html = '<a href="https://www.w3.org/" id="_W3C">W3C</a>';
-			break;
-		case 'html.spec.whatwg.org':
-			html = '<a href="https://whatwg.org/" id="_WHATWG">WHATWG</a>';
-			isHTML = true;
-			break;
-		default:
-			return;
-		}
-		header.insertAdjacentHTML('afterbegin', html);
-	}
-
 	// metadata 置き場
-	function placeMetadata(){
+	placeMetadata: {
 		let html = 
 '<details id="_trans_metadata"><summary><strong>この日本語訳は非公式な文書です…</strong></summary></details>';
 		if(PAGE_DATA.spec_metadata){
@@ -583,96 +582,15 @@ source_data メンバ：
 .word_map: 後から変更可能な単語置換マップ
 */
 
-Util.switchWordsInit = function(source_data){
+Util.switchWordsInit = (source_data) => {
 	source_data = source_data || {};
-	initLevels();
 	const main_id =
 	source_data.main_id = source_data.main_id || 'MAIN';
 	const abbr_url = (PAGE_DATA.options.abbr_url || '' );
 
-	initHTML();
+/** ページ内のデータ, html 内容を前処理して source_data を拡充する */
 
-	source_data.switchWords =  function(level){
-		level = Math.min(level & 0xF, this.levels.length - 1 );
-
-		const mapping = Util.get_mapping(
-			Util.getDataByLevel( COMMON_DATA.words_table + PAGE_DATA.words_table, level)
-			// 値の最後が英数＋0個以上のかなで終わる所は英数の末尾にスペースを補填
-			.replace(/(\w)([あ-ん]*)(?=\n)/g, '$1 $2')
-			+ COMMON_DATA.words_table1
-			+ ( abbr_url? `\n${abbr_url}:\n` : '' )
-			+ ( PAGE_DATA.words_table1 || '')
-		);
-
-		if(this.word_map){
-			Object.assign(mapping, this.word_map);
-		}
-
-		let parts = this.persisted_parts;
-		if(parts){
-			Object.keys(parts).forEach(function(id){
-				const e = parts[id];
-				if(e.parentNode){
-					e.parentNode.removeChild(e);
-				}
-			});
-		}
-
-		generateHTML(mapping);
-		if( source_data.populate ){
-			source_data.populate();
-		}
-
-		parts = this.persisted_parts;
-		if(parts){
-//			console.log(parts);
-			Object.keys(parts).forEach(function(id){
-				const part = parts[id];
-				const e = E(id);
-				if(e) {
-					e.parentNode.replaceChild(part, e);
-				} else {
-					console.log( `replaceParts: place holder not found for id=${id}` );
-				}
-			});
-		}
-		createToc(this.toc_main);
-		this.level = level;
-	}
-
-	if(source_data.collectParts){
-		const parts = source_data.persisted_parts || Object.create(null);
-		source_data.collectParts(parts);
-		source_data.persisted_parts = parts;
-	}
-
-	source_data.switchWords(source_data.level);
-
-	Util.DEFERRED.push(create_word_switch);
-
-	// 内容生成完了
-	E(main_id).hidden = false;
-	E(main_id).style.display = ''; //TODO 削除
-return;
-
-
-	function initLevels(){
-		let levels = source_data.levels;
-		if(!levels){
-			levels = 'ほぼ英語:英語主体:漢字+英語:漢字主体:カナ主体';
-		}
-		levels = 
-		source_data.levels = levels.split(':');
-		if(levels.length === 0) levels = ['-'];
-		let level = source_data.level;
-		if(!level) {
-			level = [0,1,1,2,2,3,3,4,4,5,5][levels.length] || 0;
-		}
-		level = Util.getState('words', level, 'number')
-		source_data.level = Math.min( level & 0xF, levels.length - 1 );
-	}
-
-	function initHTML(){
+	{
 		source_data.class_map = Util.get_mapping(
 			COMMON_DATA.class_map + (PAGE_DATA.class_map || '')
 		);
@@ -694,8 +612,7 @@ return;
 		delete PAGE_DATA.link_map;
 		delete COMMON_DATA.link_map;
 
-		let html = E(main_id).innerHTML;
-		// 前処理：英文を抽出して placeholder に置換など
+		// html 内容の前処理：英文を抽出して placeholder に置換など
 		const en_list = source_data.en_text_list = [
 '</span>', // \uE000
 '<span lang="en">', // \uE001
@@ -717,15 +634,14 @@ return;
 		let result;
 		const premap = Util.get_mapping(COMMON_DATA.PREMAP);
 
-		html = 
-		source_data.html = html.replace(
+		source_data.html = E(main_id).innerHTML.replace(
 		/◎([\u0080-\uFFFF]\S*|[^<◎]+)|【.*?】|⇒＃?\s*|<\/(?:li|p|dd|div|th|td)\b/g,
 		// 一-鿆ア-ン
 		// ⇒|⇒＃を中で利用するタグはこれらのみ（ ... figcaption|blockquote|pre ）
 		// U+E000.., 私用領域（ likely never be used in the specs.
 		// up to 24bit 4096 items
 
-		function f(match, cap1){
+		(match, cap1) => {
 			switch(match[0]){
 			case '◎':
 				nesting1 = nesting;
@@ -760,17 +676,21 @@ return;
 		}
 	}
 
-	function generateHTML(words_mapping){
+/** 語彙レベルを切り替える回ごとに遂行する処理 */
+
+	// 内容出力
+	const generateHTML = (words_mapping) => {
 		const en_list = source_data.en_text_list;
 
-		E(main_id).innerHTML = Util
-		.replaceWords1(source_data.generate(), words_mapping)
-		.replace(/[\uE000-\uEFFF]/g, function(match){
+		E(main_id).innerHTML = 
+		Util.replaceWords1(source_data.generate(), words_mapping)
+		.replace(/[\uE000-\uEFFF]/g, (match) => {
 			return en_list[match.charCodeAt(0) - 0xE000];
 		});
 	}
 
-	function createToc(id){
+	// 目次生成
+	const createToc = (id) => {
 		const root = E(id || 'MAIN0'); // default toc
 		if(!root) return;
 		let nav = E('_toc');
@@ -794,12 +714,83 @@ return;
 		}
 	}
 
-	/** 語彙切替（内容生成） UI */
+	source_data.switchWords = function(level){
+		level = Math.min(level & 0xF, this.levels.length - 1 );
 
-	function create_word_switch(){
+		const mapping = Util.get_mapping(
+			Util.getDataByLevel( COMMON_DATA.words_table + PAGE_DATA.words_table, level)
+			// 値の最後が英数＋0個以上のかなで終わる所は英数の末尾にスペースを補填
+			.replace(/(\w)([あ-ん]*)(?=\n)/g, '$1 $2')
+			+ COMMON_DATA.words_table1
+			+ ( abbr_url? `\n${abbr_url}:\n` : '' )
+			+ ( PAGE_DATA.words_table1 || '')
+		);
+
+		if(this.word_map){
+			Object.assign(mapping, this.word_map);
+		}
+
+		let parts = this.persisted_parts;
+		if(parts){
+			for( const id of Object.keys(parts) ){
+				const e = parts[id];
+				if(e.parentNode){
+					e.parentNode.removeChild(e);
+				}
+			};
+		}
+
+		generateHTML(mapping);
+		if( source_data.populate ){
+			source_data.populate();
+		}
+
+		parts = this.persisted_parts;
+		if(parts){
+			for( const id of Object.keys(parts) ){
+				const part = parts[id];
+				const e = E(id);
+				if(e) {
+					e.parentNode.replaceChild(part, e);
+				} else {
+					console.log( `replaceParts: place holder not found for id=${id}` );
+				}
+			}
+		}
+		createToc(this.toc_main);
+		this.level = level;
+	}
+
+	if(source_data.collectParts){
+		const parts = source_data.persisted_parts || Object.create(null);
+		source_data.collectParts(parts);
+		source_data.persisted_parts = parts;
+	}
+
+	// 語彙レベルを初期化
+	{
+		let levels = source_data.levels;
+		if(!levels){
+			levels = 'ほぼ英語:英語主体:漢字+英語:漢字主体:カナ主体';
+		}
+		levels = 
+		source_data.levels = levels.split(':');
+		if(levels.length === 0) levels = ['-'];
+		let level = source_data.level;
+		if(!level) {
+			level = [0,1,1,2,2,3,3,4,4,5,5][levels.length] || 0;
+		}
+		level = Util.getState('words', level, 'number')
+		source_data.level = Math.min( level & 0xF, levels.length - 1 );
+	}
+
+	source_data.switchWords(source_data.level);
+	E(main_id).hidden = false; // 内容生成完了
+
+/** 語彙切替（＋内容生成）用 UI */
+	const create_word_switch = () => {
 		const w_switch = C('span');
-
-		new function(){
+		{
 			w_switch.className = '_hide_if_expanded';
 			let html = 
 '<input type="button" id="_words_levelX" tabindex="1" accesskey="X" value="用語" title="アクセスキー： X" >';
@@ -812,10 +803,14 @@ return;
 			w_switch.innerHTML = html;
 		}
 
-		check_level();
+		const checkLevel = () => {
+			w_switch.children[source_data.level + 1].firstChild.checked = true;
+		}
+		checkLevel();
+
 		E('_view_control').appendChild(w_switch);
 
-		w_switch.onclick = function(event){
+		w_switch.onclick = (event) => {
 			let level = (event.target.id || '').match(/^_words_level(\w)$/);
 			if(!level) return;
 			level = parseInt(level[1]);
@@ -825,20 +820,18 @@ return;
 				level = (source_data.level + 1 ) % source_data.levels.length;
 			}
 			if(level === source_data.level) return;
-			Util.switchView(function(){
+			Util.switchView(() => {
 				source_data.switchWords(level);
 			}, true);
 			Util.setState('words', source_data.level);
 
 			if(auto){
-				check_level();
+				checkLevel();
 			}
 		}
-
-		function check_level(){
-			w_switch.children[source_data.level + 1].firstChild.checked = true;
-		}
 	}
+
+	Util.DEFERRED.push(create_word_switch);
 }
 
 
@@ -874,10 +867,9 @@ Util.rxp_wordsX = /\b ((?:<\/[^>]*>)+)|([\u2E80-\u9FFF])(?=(<\w[^>]*>)*\w)/g;
 
 Util.rxp_words1 =
 	/(?:~([\w\-]+|[あ-ん])|~*([\u4E00-\u9FFF]+\w*|[\u30A1-\u30F4ー]+\w*))(-|[あ-ん]{0,2})/g;
-Util.replaceWords1 = function(data, mapping){
+Util.replaceWords1 = (data, mapping) => {
 
-	return data.replace( this.rxp_words1,
-	function(t, en, word, hira){
+	return data.replace( Util.rxp_words1, (t, en, word, hira) => {
 //		hira = hira || '';
 		if(en){
 			if(en[0] > '~') return en + hira;
@@ -903,7 +895,7 @@ Util.replaceWords1 = function(data, mapping){
 		if(!r && en) return t;
 		return ( r || word ) + ( ( hira === '-' ) ? '' : hira );
 	})
-	.replace(this.rxp_wordsX, '$1$2 ');
+	.replace(Util.rxp_wordsX, '$1$2 ');
 };
 
 
@@ -975,6 +967,10 @@ COMMON_DATA.PREMAP = `
 COMMON_DATA.class_map = '';
 COMMON_DATA.tag_map = '';
 COMMON_DATA.link_map = '';
+
+/** 共通な置換語
+	キーワード／略称 URL など
+*/
 COMMON_DATA.words_table1 = `
 THROW:<b>THROW</b>
 WHILE:<b>WHILE</b>
@@ -1205,7 +1201,9 @@ MIXED-CONTENT:webappsec-mixed-content-ja.html
 SECURE-CONTEXT:webappsec-secure-contexts-ja.html
 `;
 
-/* どの仕様にも高確率／高頻度で現れる語彙 */
+/** 対訳データ
+	どの仕様にも高確率／高頻度に現れる語彙
+*/
 
 COMMON_DATA.words_table = `
 
@@ -1262,6 +1260,7 @@ subject::対象
 block::::ブロック
 window:
 worker:
+sw:service worker
 Realm:
 realm:
 title::::タイトル

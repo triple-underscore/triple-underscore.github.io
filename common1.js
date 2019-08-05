@@ -69,11 +69,9 @@ navs
 
 */
 
-/** 付帯機能 初期化／メタデータの拡充 */
-new function(){
+/** ↓付帯機能初期化／メタデータの拡充 */ {
 let options;
-
-Util._COMP_.then(function(){
+Util._COMP_.then(() => {
 
 	PAGE_DATA.original_id_map = PAGE_DATA.original_id_map || '';
 
@@ -91,18 +89,18 @@ Util._COMP_.then(function(){
 			fillSpecMetadata, // 仕様メタデータ
 			fillCopyright, // Copyright
 			fillIndexes, // 巡回
-			fillConformance, // 適合性
+			fillConformance, // §適合性
 			initSideway, // 左端の帯
 			addTopNav, // ページ先頭へのリンク
 			Util.addAltRefs // 参照文献 和訳リンク
 		);
 	}
 
-	Util.DEFERRED.push(initEvents);
 	Util.DEFERRED.push(
-		function(){Util.dfnInit();},
-		function(){Util.ref_position.init();},
-		function(){Util.toc_intersection_observer.restartObservation();},
+		initEvents,
+		Util.dfnInit,
+		() => {Util.ref_position.init();},
+		() => {Util.toc_intersection_observer.restartObservation();},
 		altLinkInit
 	);
 
@@ -110,37 +108,32 @@ Util._COMP_.then(function(){
 });
 
 
-function defer0(){
-	//TODO Util.defer()
-	const d = Util.DEFERRED;
-	const task = d.shift();
+const defer0 = () => {
+	const task = Util.DEFERRED.shift();
 	if(!task) return;
 	try {
 		task();
 	} catch(err){
-		console.log(err);
+		console.log(err.message);
 	}
-	if(d.length === 0) return;
+	if(Util.DEFERRED.length === 0) return;
 	window.setTimeout(defer0, 10);//requestAnimationFrame
 }
 
-function initEvents(){
-	document.body.addEventListener('click', onClick, false);
-	document.body.addEventListener('dblclick', onDblClick, false);
-	document.addEventListener('visibilitychange', onVisibilityChange, false);
+const initEvents = () => {
 
-	function onVisibilityChange(){
+	const onVisibilityChange = () => {
 		if(document.hidden){
 			// pagehide event も含まれる
 			Util.removeAdditionalNodes();
 		}
 	}
 
-	function onDblClick(event){
+	const onDblClick = (event) => {
 		Util.toggleSource(event.target);
 	}
 
-	function onClick(event){
+	const onClick = (event) => {
 		const handlers = Util.CLICK_HANDLERS;
 		const target = event.target;
 		var handler = handlers[target.id];
@@ -193,10 +186,14 @@ function initEvents(){
 			break;
 */
 	}
+
+	document.body.addEventListener('click', onClick, false);
+	document.body.addEventListener('dblclick', onDblClick, false);
+	document.addEventListener('visibilitychange', onVisibilityChange, false);
+
 }
 
-
-function navToInit(){
+const navToInit = () => {
 /** 内容生成後に素片識別子のアンカーへスクロールする */
 	if( history.state ){
 		return; // back/forward
@@ -204,6 +201,16 @@ function navToInit(){
 
 	let e;
 	let id = window.location.hash;
+
+	const targetId1 = (id) => {
+		// 訳文id:原文id （先頭の \t も有効）
+		id = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
+		const match = PAGE_DATA.original_id_map.match(rxp);
+		if(!match) return;
+		return match[1];
+	}
+
 	if(id){
 		id = id.slice(1);
 		if(id.indexOf('_xref-') === 0) return; // 生成リンク（ common1.js ）
@@ -212,7 +219,7 @@ function navToInit(){
 	}
 	if(!e){
 		// 後から生成される内容（参照文献など）の id
-		Util.DEFERRED.push(function(){
+		Util.DEFERRED.push(() => {
 			if(id && E(id)){
 				window.location.hash = id;
 			}
@@ -228,20 +235,25 @@ function navToInit(){
 	e.focus();
 
 	history.replaceState( Util.page_state, '' );
-
-	function targetId1(id){
-		// 訳文id:原文id （先頭の \t も有効）
-		id = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-		const rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
-		const match = PAGE_DATA.original_id_map.match(rxp);
-		if(!match) return;
-		return match[1];
-	}
 }
 
 
 // ボタン類
-function addControls(){
+const addControls = () => {
+
+	const add_button = (label, key, id) => {
+		const b = C('input');
+		b.type = 'button';
+		b.value = label;
+		b.id = id;
+		b.tabIndex = 1;
+		if(key){
+			b.accessKey = key;
+			b.title = `アクセスキー： ${key}`;
+		}
+		controls.appendChild(b);
+	}
+
 	const controls = C('div');
 	controls.id = '_view_control';
 
@@ -259,21 +271,9 @@ function addControls(){
 
 	document.body.appendChild(controls);
 
-	function add_button(label, key, id){
-		const b = C('input');
-		b.type = 'button';
-		b.value = label;
-		b.id = id;
-		b.tabIndex = 1;
-		if(key){
-			b.accessKey = key;
-			b.title = `アクセスキー： ${key}`;
-		}
-		controls.appendChild(b);
-	}
 }
 
-function addTopNav(){
+const addTopNav = () => {
 	const a = C('a');
 	a.href = '#top';
 	a.style.cssText =
@@ -285,7 +285,7 @@ function addTopNav(){
 
 // 付帯情報を生成する
 
-function initSideway(){
+const initSideway = () => {
 	const key = options.spec_status;
 	if(!key) return;
 
@@ -310,17 +310,34 @@ IETFPR: 'IETF PROPOSED STANDARD'
 	document.body.appendChild(div);
 }
 
-function fillSiteNav(){
-	const nav = C('nav');
+const fillSiteNav = () => {
 
 	const html = ['<ul id="_site_nav">'];
-	let href;
-	if(href = findMatch(options.nav_prev)){
-		html.push(`<li><a href="${href}">＜前</a>`);
+
+	{
+		const findMatch = (name) => {
+			if(!name) return;
+			if(name.slice(-5) === '.html') return name;
+			let data = COMMON_DATA.words_table1;
+			if(!data) return;
+			let i = data.indexOf(`\n${name}:` );
+			if(i < 0) return;
+			i += name.length + 2;
+			const j = data.indexOf('\n', i);
+			if(j < 0) return;
+			data = data.slice(i,j);
+			if(data.slice(-5) !== '.html') return;
+			return data;
+		}
+		let href;
+		if(href = findMatch(options.nav_prev)){
+			html.push(`<li><a href="${href}">＜前</a>`);
+		}
+		if(href = findMatch(options.nav_next)){
+			html.push(`<li><a href="${href}">次＞</a>`);
+		}
 	}
-	if(href = findMatch(options.nav_next)){
-		html.push(`<li><a href="${href}">次＞</a>`);
-	}
+
 	const name_map = Util.get_mapping(`
 infrastructure:基盤
 svg:SVG
@@ -365,34 +382,23 @@ http: 'RFC723X-ja.html#index',
 		site_nav = options.page_state_key ? label_map[options.page_state_key] : '';
 	}
 	if(!site_nav) site_nav = 'infrastructure';
-	site_nav.split(',').forEach(function(label){
+
+	for(const label of site_nav.split(',') ){
 		const name = name_map[label];
-		if(!name) return;
+		if(!name) continue;
 		const href = href_map[label] || `index.html#spec-list-${label}`;
 		html.push( `<li><a href="${href}">${name}</a>` );
-	});
+	}
+
 	html.push('<li><a href="index.html#page-list">すべて</a>')
 	html.push('</ul>');
+
+	const nav = C('nav');
 	nav.innerHTML = html.join('');
 	document.body.insertBefore(nav, document.body.firstChild);
-
-	function findMatch(name){
-		if(!name) return;
-		if(name.slice(-5) === '.html') return name;
-		let data = COMMON_DATA.words_table1;
-		if(!data) return;
-		let i = data.indexOf(`\n${name}:` );
-		if(i < 0) return;
-		i += name.length + 2;
-		const j = data.indexOf('\n', i);
-		if(j < 0) return;
-		data = data.slice(i,j);
-		if(data.slice(-5) !== '.html') return;
-		return data;
-	}
 }
 
-function fillTransMetadata(){
+const fillTransMetadata = () => {
 	const details = E('_trans_metadata');
 	if(!details) return;
 	if(options.trans_update){
@@ -433,14 +439,14 @@ HTMLLS:
 COMMITS: url?
 `<li><a href="https://github.com/triple-underscore/triple-underscore.github.io/commits/master/${url[0]}">更新履歴</a>` : '',
 	};
-	html = html.replace(/~(\w+)/g, function(match, key){
+	html = html.replace(/~(\w+)/g, (match, key) => {
 		return mapping[key] || '';
 	});
 
 	details.insertAdjacentHTML('beforeend', html);
 }
 
-function fillSpecMetadata(){
+const fillSpecMetadata = () => {
 	const details = E('_spec_metadata');
 	if(!details) return;
 	let data = PAGE_DATA.spec_metadata;
@@ -461,7 +467,7 @@ ${data}`
 	details.insertAdjacentHTML('beforeend', `<dl>${data}</dl>`);
 }
 
-function fillCopyright(){
+const fillCopyright = () => {
 	const details = E('_copyright');
 	if(!details) return;
 
@@ -513,16 +519,11 @@ https と http の違いは無視。
 	details.insertAdjacentHTML('beforeend', html);
 }
 
-function fillIndexes(){
+const fillIndexes = () => {
 	const details = E('_index');
 	if(!details) return;
-	if(details.open){
-		fill_data();
-	} else {
-		details.addEventListener('toggle', fill_data, false);
-	}
 
-	function fill_data(){
+	const fill_data = () => {
 		details.removeEventListener('toggle', fill_data, false);
 		const html = ['<p>'];
 		const selectors = Util.get_mapping(COMMON_DATA.INDEX_KEYS + (PAGE_DATA.navs || ''));
@@ -552,9 +553,15 @@ function fillIndexes(){
 			html.push( '</p>' );
 		details.insertAdjacentHTML('beforeend', html.join('') );
 	}
+
+	if(details.open){
+		fill_data();
+	} else {
+		details.addEventListener('toggle', fill_data, false);
+	}
 }
 
-function fillConformance(){
+const fillConformance = () => {
 	const links = {
 w3c: '<a href="w3c-common-ja.html#conformance">W3C 日本語訳 共通ページ</a>',
 css: '<a href="css-snapshot-ja.html#conformance">CSS Snapshot ページ</a>',
@@ -571,7 +578,7 @@ css: '<a href="css-snapshot-ja.html#conformance">CSS Snapshot ページ</a>',
 }
 
 /** 外部リンク日本語訳リンク追加 */
-function altLinkInit(){
+const altLinkInit = () => {
 	const root = (options.main) ?
 		E(options.main) :
 		document.getElementsByTagName('main')[0];
@@ -584,11 +591,7 @@ function altLinkInit(){
 	ja_link.className = '_additional';
 	ja_link.textContent = '【和訳】';
 
-	root.addEventListener('mouseover', insert_ja_link, false);
-	//focus does not bubble
-	root.addEventListener('focus', insert_ja_link, true);
-
-	function insert_ja_link(e){
+	const insert_ja_link = (e) => {
 		let a = e.target;
 		if(a.tagName !== 'A'){
 			a = a.parentNode;
@@ -602,7 +605,11 @@ function altLinkInit(){
 		a.parentNode.insertBefore(ja_link, a.nextSibling);
 	}
 
-	function altURL(href){
+	root.addEventListener('mouseover', insert_ja_link, false);
+	//focus does not bubble
+	root.addEventListener('focus', insert_ja_link, true);
+
+	const altURL = (href) => {
 		if(!href) return;
 	//	if(href.indexOf(PAGE_DATA.options.original_url) === 0) return;
 		href = href.match(/^https?:\/\/([^#]+)(#.*)?/);
@@ -629,19 +636,17 @@ function altLinkInit(){
 	}
 }
 
-}//new function
+} // 付帯機能初期化↑
 
-Util.removeAdditionalNodes = function(refresh){
-	this.dfnHide(refresh);
-	this.indexHide(refresh);
-	this.ADDITIONAL_NODES.forEach(function(node){
+Util.removeAdditionalNodes = (refresh) => {
+	Util.dfnHide(refresh);
+	Util.indexHide(refresh);
+	for( const node of Util.ADDITIONAL_NODES ){
 		if(node.parentNode){
 			node.parentNode.removeChild(node);
 		}
-	});
+	}
 };
-
-
 
 Util.CLICK_HANDLERS = {
 //	_toggle_source:
@@ -654,15 +659,15 @@ Util.CLICK_HANDLERS = {
 //	H2, H3, H4, H5, H6
 };
 /** 原文表示切替 */
-Util.CLICK_HANDLERS._toggle_source = function(){
-	Util.switchView(function(){
+Util.CLICK_HANDLERS._toggle_source = () => {
+	Util.switchView(() => {
 		const on = document.body.classList.toggle('show-original');
 		Util.setState('show_original', on);
 	});
 };
 /** 目次表示切替 */
-Util.CLICK_HANDLERS._toggle_toc = function(){
-	Util.switchView(function(){
+Util.CLICK_HANDLERS._toggle_toc = () => {
+	Util.switchView(() => {
 		const on = document.body.classList.toggle('side-menu');
 		Util.ref_position.releaseAndFix()
 		Util.setState('side_menu', on);
@@ -670,7 +675,7 @@ Util.CLICK_HANDLERS._toggle_toc = function(){
 	});
 };
 /** 全体表示 常時化切替 */
-Util.CLICK_HANDLERS._view_control = function(event){
+Util.CLICK_HANDLERS._view_control = (event) => {
 	const e = E('_view_control');
 	if(event.target !== e) return;
 	e.classList.toggle('_hoverd')
@@ -680,7 +685,7 @@ Util.CLICK_HANDLERS._view_control = function(event){
 
 
 /** 原文表示開閉（個別）*/
-Util.toggleSource = function(target){
+Util.toggleSource = (target) => {
 	if(target.lang === 'en') return;
 	for(let e = target; e; e = e.parentNode){
 		if(e.tagName === 'SECTION') return;
@@ -702,7 +707,7 @@ Util.toc_intersection_observer = {
 	observer: null,
 	pending: -1,
 
-	restartObservation: function(){
+	restartObservation(){
 		if(!window.IntersectionObserver) return;
 		if(this.pending >= 0) return;
 
@@ -710,18 +715,15 @@ Util.toc_intersection_observer = {
 			this.observer.disconnect();
 		}
 
-		const that = this;
 		const toc_id = PAGE_DATA.options.toc || '_toc';
 		let first_time = true;
 
-		this.pending = window.setTimeout(observe, 500);
-
-		function observe(){
-			that.pending = -1;
-			let observer = that.observer;
+		const observe = () => {
+			this.pending = -1;
+			let observer = this.observer;
 			if(!observer){
 				observer =
-				that.observer = new IntersectionObserver(
+				this.observer = new IntersectionObserver(
 					intersected, {
 						rootMargin: '-80px 0px', // 0 でも px が要る（ Chrome
 					}
@@ -731,79 +733,78 @@ Util.toc_intersection_observer = {
 			const visible = document.body.classList.contains('side-menu');
 			if(!visible) return;
 //			`#${toc_main} section[id]`
-			repeat(`#${toc_id} a[href]`, function(e){
+			repeat(`#${toc_id} a[href]`, (e) => {
 				const section = E(e.hash.slice(1));
 				if(!section) return; // This should not happen
 				observer.observe(section);
 			});
 		}
 
-		function intersected(entries, observer){
+		const intersected = (entries, observer) => {
 			const nav = E(toc_id);
 			let last_elem;
-			entries.forEach(function(entry){
-				if(first_time && !entry.isIntersecting) return;
+			for( const entry of entries ){
+				if(first_time && !entry.isIntersecting) continue;
 				const id = entry.target.id;// section
-				if(!id) return;
+				if(!id) continue;
 				const a = nav.querySelector(`[href="#${id}"]`);
-				if(!a) return;
+				if(!a) continue;
 				a.classList.toggle('_intersecting', entry.isIntersecting);
 				if(entry.isIntersecting) {
 					last_elem = a;
 				}
-			});
+			}
 			first_time = false;
 			if(last_elem) {
 				last_elem.scrollIntoView({block: 'nearest'});
 			}
 		}
+
+		this.pending = window.setTimeout(observe, 500);
 	},
 };
 
 
 /** 索引機能 初期化*/
-Util.indexInit = function(){
+Util.indexInit = () => {
 
-	let list = null;        // 文書順の索引項目（ DOM node ）リスト
+	let item_list = null;        // 文書順の索引項目（ DOM node ）リスト
 	let sorted = true;      // true 字句順 / false 文書順
 	let scroll_top = 0;     // 最後のスクロール位置
-	const index_node = init(); // 索引コンテナ node
 
-	index_node.onclick = function(event){
-		if(event.target === index_node.firstChild){ //button
-			show_index(!sorted);
-		}
-		// indexHide が呼ばれないようにする
-		event.stopPropagation();
-	};
-	this.indexHide = indexHide;
+	const index_node = C('div'); // 索引コンテナ node
 
-	this.CLICK_HANDLERS._toggle_index = function(event){
-		if(indexHide()) return;
-		show_index(sorted);
-	};
-
-return;
-
-	function init(){
+	{
 		// 索引コンテナ, 切替ボタン, 一覧 Box
-		const index_node = C('div');
 		index_node.className = '_additional'; // for CSS
 		index_node.id = '_index_table'; // for CSS ：子要素はすべて display:block
 		index_node.appendChild(C('button'));// 表示順序 切替ボタン
 		index_node.appendChild(C('div'));//一覧 Box
-		return index_node;
 	}
 
-	function indexHide(refresh){
-		if(!list) return;
+	index_node.onclick = (event) => {
+		if(event.target === index_node.firstChild){ //button
+			showIndex(!sorted);
+		}
+		// indexHide が呼ばれないようにする
+		event.stopPropagation();
+	};
+
+	Util.CLICK_HANDLERS._toggle_index = (event) => {
+		if(indexHide()) return;
+		showIndex(sorted);
+	};
+
+	const indexHide = 
+	Util.indexHide = (refresh) => {
+		if(!item_list) return;
 		const parent = index_node.parentNode;
 		const list_box = index_node.lastChild;
 		if(parent){
 			scroll_top = list_box.scrollTop;
 		}
 		if(refresh){
-			list = null;
+			item_list = null;
 			list_box.textContent = '';
 		}
 		if(parent){
@@ -812,37 +813,35 @@ return;
 		}
 	};
 
-	function show_index(sort){
+	const showIndex = (sort) => {
 		sort = sort? true : false;
 		const list_box = index_node.lastChild;
 
-		if(!list || (sorted !== sort)) {
+		if(!item_list || (sorted !== sort)) {
 			list_box.textContent = '';
-			if(!list) list = collect();
-			let list1 = list;
+			if(!item_list) item_list = collectItems();
+			let list1 = item_list;
 			const button = index_node.firstChild;
 			if(sort){
 				button.textContent = '出現順に切替';
-				list1 = list.slice(0);
-				list1.sort(function(a, b){
+				list1 = item_list.slice(0);
+				list1.sort((a, b) => {
 					return a.textContent <= b.textContent ? -1 :1 ;
 				});
 			} else {
 				button.textContent = '字句順に切替';
 			}
-			list1.forEach(function(e){list_box.appendChild(e)});
+			for(const e of list1){
+				list_box.appendChild(e);
+			}
 		}
 		sorted = sort;
 		document.body.appendChild(index_node);
 		list_box.scrollTop = scroll_top;
 	}
 
-	function collect(){
-		const list = [];
-		repeat('main dfn[id], main dt[id]', add_item);
-		return list;
-
-		function add_item(dfn){
+	const collectItems = () => {
+		const add_item = (dfn) => {
 			const text = dfn.textContent.trim();
 			if(!text) return;
 			const id = dfn.id;
@@ -869,6 +868,10 @@ return;
 			}
 			list.push(a);
 		}
+
+		const list = [];
+		repeat('main dfn[id], main dt[id]', add_item);
+		return list;
 	}
 }
 
@@ -881,7 +884,7 @@ return;
 
 */
 
-Util.switchView = function(callback, refresh){
+Util.switchView = (callback, refresh) => {
 
 	if(refresh){
 		Util.removeAdditionalNodes(refresh);
@@ -889,16 +892,16 @@ Util.switchView = function(callback, refresh){
 	}
 
 	// スクロール位置を保存 -> callback -> 復帰
-	const pos = this.ref_position.current(refresh);
+	const pos = Util.ref_position.current(refresh);
 	callback();
-	this.ref_position.restore(pos);
+	Util.ref_position.restore(pos);
 };
 
 /** reflow 時の scroll 位置の復帰のための基準位置 */
 
 Util.ref_position = {
 	// 現在の基準 scroll 位置
-	current: function(refresh){
+	current(refresh){
 		if(!document.elementFromPoint) {// 低精度 fallback
 			return {ratio: document.body.scrollTop / document.body.scrollHeight };
 		}
@@ -941,7 +944,7 @@ Util.ref_position = {
 	},
 
 	// reflow 後に scroll 位置を基準位置に復帰
-	restore: function(pos){
+	restore(pos){
 		let e;
 		if(pos.id){ //refreshed
 			e = (pos.id && E(pos.id)) || document.body;
@@ -971,7 +974,7 @@ Util.ref_position = {
 */
 
 	// 要素のウィンドウ内での表示位置 y を得る
-	offsetY: function(e){
+	offsetY(e){
 		let y = 0;
 		while(e){
 			y += e.offsetTop;
@@ -983,7 +986,7 @@ Util.ref_position = {
 
 	//	resize 時の reflow 頻度を抑えるため、body の width を固定
 	//	resize 操作を終える度, または目次切り替えの度に更新する：
-	releaseAndFix: function(){
+	releaseAndFix(){
 		const body = document.body;
 		body.style.width = '';
 		body.style.width = window.getComputedStyle(body).width;
@@ -995,7 +998,24 @@ Util.ref_position = {
 	課題: zoom 時に resize イベントが生じない場合がある
 */
 
-	init: function(){
+	init(){
+		const onreflow = () => {
+			if(reflow_timer){
+				clearTimeout(reflow_timer);
+			} else {
+				pos = ref_position.current();
+			}
+			reflow_timer = window.setTimeout(endReflow, 300);
+		}
+		const endReflow = () => {
+			// resize 操作の「終了」
+			ref_position.releaseAndFix();
+			// resize event は reflow 完了後とされているが、そうでないこともある様子 (Safari)
+			ref_position.restore(pos);
+			pos = null;
+			reflow_timer = 0;
+		}
+
 		const ref_position = this;
 		let reflow_timer = 0;
 		let pos = null;
@@ -1005,27 +1025,9 @@ Util.ref_position = {
 		window.addEventListener('resize', onreflow, false);
 		window.addEventListener('orientationchange', onreflow, false);
 
-		window.setTimeout(function(){
+		window.setTimeout(() => {
 			ref_position.releaseAndFix();
 		}, 500);
-
-		function onreflow(){
-			if(reflow_timer){
-				clearTimeout(reflow_timer);
-			} else {
-				pos = ref_position.current();
-			}
-			reflow_timer = window.setTimeout(endReflow, 300);
-		}
-
-		function endReflow(){
-			// resize 操作の「終了」
-			ref_position.releaseAndFix();
-			// resize event は reflow 完了後とされているが、そうでないこともある様子 (Safari)
-			ref_position.restore(pos);
-			pos = null;
-			reflow_timer = 0;
-		}
 	}
 }
 
@@ -1047,13 +1049,10 @@ id 付きの dfn, dt, H2 〜 H6 タグの参照元リンクの一覧, 原文リ�
 */
 
 
-Util.dfnInit = function(){
-		// current target (the clicked element)
-	let dfnStart = null;
-		// all the source anchors targeting to dfnStart in the document
-	let dfnLinks = null;
-		// links to dfnLinks
-	let dfnIndecies = null;
+Util.dfnInit = () => {
+	let dfnStart = null; // current target (the clicked element)
+	let dfnLinks = null; // all link anchors targeting to dfnStart
+	let dfnIndecies = null; // links to dfnLinks
 	let dfnJumpCount = 0;
 	let dfnIndex = -1;
 //	let dfnTargetScrollPositionY = 0;
@@ -1062,10 +1061,12 @@ Util.dfnInit = function(){
 		dfnPanel.id = '_dfnPanel';
 		dfnPanel.innerHTML =
 '<div><input type="button" value="  ←  "><input type="button" value="  →  "><a></a><a class="_additional">(原文)</a></div><ul></ul>';
-		// a link to dfnStart
-	const dfnTarget = dfnPanel.firstElementChild.children[2];
-		// link to the corresponding element in the original spec
-	const dfnOriginal = dfnTarget.nextElementSibling;
+
+	const dfnTarget // a link to dfnStart
+		= dfnPanel.firstElementChild.children[2];
+	
+	const dfnOriginal // a link to the corresponding element in the original spec
+		= dfnTarget.nextElementSibling;
 
 	const original_id_map = Util.get_mapping(PAGE_DATA.original_id_map);
 	var original_urls = null;
@@ -1074,25 +1075,24 @@ Util.dfnInit = function(){
 		original_urls = Util.get_mapping(PAGE_DATA.original_urls);
 	}
 
-	new function(){
-
+	{
 		let b = dfnTarget.previousElementSibling;
-		b.onclick = function(event){navBy( 1, event);}
+		b.onclick = (event) => {navBy( 1, event);}
 		b = b.previousElementSibling;
-		b.onclick = function(event){navBy(-1, event);}
+		b.onclick = (event) => {navBy(-1, event);}
 
-		dfnPanel.lastElementChild.onclick = function(event){
+		dfnPanel.lastElementChild.onclick = (event) => {
 			// dfnHide が呼ばれない様にする
 			event.stopPropagation();
 		};
 
 		// keyboard navigation
 		dfnPanel.tabIndex = '-1';
-		dfnPanel.onkeydown = function(event){
+		dfnPanel.onkeydown = (event) => {
 			if(event.metaKey || event.altKey || event.ctrlKey) return;
 			switch(event.key){
 			case "Escape":
-	//			dfnJump0(-1); // back to the original position
+	//			dfnJump(-1); // back to the original position
 				dfnHide();
 				break;
 			case "ArrowLeft":
@@ -1106,26 +1106,25 @@ Util.dfnInit = function(){
 		};
 
 		// 課題 hash が変化しない場合も，スクロールされているときは呼び出される必要あり
-		window.addEventListener('hashchange', dfnJump, false);
-		function dfnJump(event){
+		window.addEventListener('hashchange', (event) => {
 			if(!dfnStart) return;
 			//event.newURL may not be supported (e.g. IE9)
 			const hash = window.location.hash;
 			const num = hash.match(/_xref-\d+-(\d+)/);
 			if(!num) return;
-			dfnJump0(parseInt(num[1], 10));
-		}
+			dfnJump(parseInt(num[1], 10));
+		}, false);
 
-		function navBy(d, event){
+		const navBy = (d, event) => {
 			const L = dfnLinks.length + 1;
 			const index = (dfnIndex + d + L) % L;
 			event.preventDefault();
 			event.stopPropagation();
-			dfnJump0(index);
+			dfnJump(index);
 			const ul = dfnPanel.lastElementChild;
 			if(ul.scrollHeight <= ul.clientHeight) return;
 			// auto scroll
-			const emp = em_panel.current;
+			const emp = h_panel.current;
 			if(!emp) return;
 			const r1 = ul.getBoundingClientRect();
 			const r2 = emp.getBoundingClientRect();
@@ -1135,39 +1134,29 @@ Util.dfnInit = function(){
 		}
 	}
 
-	const em_external = Object.create(null);
-	const em_panel = Object.create(null);
-	em_external.emphasize = 
-	em_panel.emphasize = 
-	function(e){
-		// emphasize only one of
-		e = e || null;
-		const e0 = this.current || null;
-		if(e0 === e) return;
-		if(e0){
-			e0.classList.toggle('highlight');
+	// For UI: highlighting only one of links/targets during nav
+	const h_panel = {
+		current: null,
+		highlight(e){
+			// highlight only one of
+			e = e || null;
+			const e0 = this.current || null;
+			if(e0 === e) return;
+			if(e0){
+				e0.classList.toggle('highlight');
+			}
+			if(e){
+				e.classList.toggle('highlight');
+			}
+			this.current = e;
 		}
-		if(e){
-			e.classList.toggle('highlight');
-		}
-		this.current = e;
 	}
+	const h_external = {
+		current: null,
+		highlight: h_panel.highlight,
+	};
 
-	this.dfnHide = dfnHide;
-
-	const handlers = this.CLICK_HANDLERS;
-	handlers.DT =
-	handlers.DFN =
-	handlers.A =
-	handlers.H1 =
-	handlers.H2 =
-	handlers.H3 =
-	handlers.H4 =
-	handlers.H5 =
-	handlers.H6 = dfnShow;
-	return;// dfnShow;
-
-	function setLinkForOriginal(id, is_header){
+	const setLinkForOriginal = (id, is_header) => {
 		// 原文リンク先を設定
 		dfnOriginal.style.display = 'none';
 
@@ -1188,14 +1177,11 @@ Util.dfnInit = function(){
 		dfnOriginal.style.display = '';
 	}
 
-	function originalURL(id){
-		return PAGE_DATA.options.original_url;
-	}
-
-	function dfnHide(){
+	const dfnHide =
+	Util.dfnHide = () => {
 		if(!dfnStart) return;
-		em_external.emphasize();
-		em_panel.emphasize();
+		h_external.highlight();
+		h_panel.highlight();
 		dfnIndecies = 
 		dfnLinks = 
 		dfnStart = null;
@@ -1204,7 +1190,7 @@ Util.dfnInit = function(){
 		}
 	}
 
-	function dfnJump0(index){
+	const dfnJump = (index) => {
 // dfnLinks.item() throws an exception in Safari, if the index arg is out of the range
 		let a = dfnLinks[index];
 		let emp;
@@ -1216,8 +1202,8 @@ Util.dfnInit = function(){
 			emp = dfnTarget;
 		}
 		dfnIndex = index;
-		em_panel.emphasize(emp);
-		em_external.emphasize(a);
+		h_panel.highlight(emp);
+		h_external.highlight(a);
 
 /*
 	Show the target at (innerHeight / 10) px below from the top of the viewport
@@ -1237,7 +1223,18 @@ Util.dfnInit = function(){
 		}
 	}
 
-	function dfnShow(dfn){
+	const handlers = Util.CLICK_HANDLERS;
+
+	const dfnShow = 
+	handlers.DT =
+	handlers.DFN =
+	handlers.A =
+	handlers.H1 =
+	handlers.H2 =
+	handlers.H3 =
+	handlers.H4 =
+	handlers.H5 =
+	handlers.H6 = (dfn) => {
 		Util.removeAdditionalNodes();
 		if(dfn === dfnStart) return;
 		let id = dfn.id;
@@ -1319,12 +1316,6 @@ Util.dfnInit = function(){
 
 
 
-/* TODO
-Util.contextMenuInit = function(){
-	-> common-01.js
-}
-*/
-
 /** 参照文献
 • 外部リンク→ 日本語訳 データ構築
 • 参照文献 HTML を生成
@@ -1335,7 +1326,7 @@ Util.contextMenuInit = function(){
 */
 
 
-Util.addAltRefs = function(){
+Util.addAltRefs = () => {
 
 	const LABELS = {
 		'主': '日本語訳',
@@ -1353,16 +1344,41 @@ Util.addAltRefs = function(){
 	const ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
 	const ref_id_lowercase = PAGE_DATA.options.ref_id_lowercase || false;
 
-
 	Util.get_mapping(
 		COMMON_DATA.REF_DATA2
-			.replace(/~(\w+)/g, function(s, s1){ return JA_BASIS[s1];})
+			.replace(/~(\w+)/g, (s, s1) => { return JA_BASIS[s1];})
 			.replace(/● */g, ':https://'),
 		JA_LINKS
 	);
 
 	const mapping = Object.create(null);
-	const ref_node_list = ['normative', 'informative'].filter(collect_entries);
+
+	const refKey = (s) => {
+		const key = s.replace(/[^\w]/g, '').toUpperCase();
+		return REF_KEY_MAP[key] || key;
+	}
+
+	const ref_types = ['normative', 'informative'];
+
+	const ref_node_list = ref_types.filter( (id) => {
+		const ref_data = PAGE_DATA[`ref_${id}`];
+		if(!ref_data) return false;
+		ref_data.replace(/\n\[.+\]/g, (ref_name) => {
+			const key = refKey(ref_name);
+			mapping[key] = '';
+			return '';
+		});
+		return true;
+	});
+
+//	console.log(JSON.stringify(JA_LINKS));
+
+	const add_ref_link = (key, url, label) => {
+		const v = mapping[key];
+		if(v === undefined) return;
+		const html = `<a href="${url}">${label}</a>`;
+		mapping[key] += html;
+	}
 
 	let m;
 	const rxp = /^(\w+)=(\S)(\d*)[\t ]+(~\w*)?([^\s●]+)(●.*)?$/mg;
@@ -1397,43 +1413,10 @@ Util.addAltRefs = function(){
 		}
 	}
 
-	if(ref_node_list.length > 0){
-		generateRefsHTML();
-	}
 
-	// 下位 directory への和訳リンク生成防止
-	if(PAGE_DATA.options.original_url){
-		COMMON_DATA.JA_LINKS[
-			PAGE_DATA.options.original_url.replace(/^https?:\/\//,'')
-		] = '';
-	}
-
-//	console.log(JSON.stringify(JA_LINKS));
-	function refKey(s){
-		const key = s.replace(/[^\w]/g, '').toUpperCase();
-		return REF_KEY_MAP[key] || key;
-	}
-
-	function collect_entries(id){
-		const ref_data = PAGE_DATA[`ref_${id}`];
-		if(!ref_data) return false;
-		ref_data.replace(/\n\[.+\]/g, function(ref_name){
-			const key = refKey(ref_name);
-			mapping[key] = '';
-			return '';
-		});
-		return true;
-	}
-
-	function add_ref_link(key, url, label){
-		const v = mapping[key];
-		if(v === undefined) return;
-		const html = `<a href="${url}">${label}</a>`;
-		mapping[key] += html;
-	}
-
-	function generateRefsHTML(){
+	const generateRefsHTML = () => {
 		let refs = E('references');
+
 		if(!refs){
 			refs = C('section');
 			refs.id = 'references';
@@ -1446,25 +1429,10 @@ normative: '<h3>文献（規範）</h3>',
 informative: '<h3>文献（参考）</h3>'
 		};
 
-		ref_node_list.forEach(function(id){
-			const ref_data = PAGE_DATA[`ref_${id}`];
-			if(!ref_data) return;
-			delete PAGE_DATA[`ref_${id}`];
-			const section = C('section');
-			section.id = id;
-			section.innerHTML = `
-${html_data[id]}
-<dl>
-${refHTML(ref_data)}
-</dl>
-`;
-			refs.appendChild(section);
-		});
-
-		function refHTML(data){
+		const refHTML = (data) => {
 			let last_key = '';
 			let html = data
-			.replace(/\n\[(.+)\]/g, function(match, ref_name){
+			.replace(/\n\[(.+)\]/g, (match, ref_name) => {
 				const id = ref_id_prefix +
 					(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
 				const last_key1 = last_key;
@@ -1496,7 +1464,34 @@ ${refHTML(ref_data)}
 			html += last_key;
 			return html;
 		}
+
+		for(const id of ref_node_list){
+			const ref_data = PAGE_DATA[`ref_${id}`];
+			if(!ref_data) continue;
+			delete PAGE_DATA[`ref_${id}`];
+			const section = C('section');
+			section.id = id;
+			section.innerHTML = `
+${html_data[id]}
+<dl>
+${refHTML(ref_data)}
+</dl>
+`;
+			refs.appendChild(section);
+		}
 	}
+
+	if(ref_node_list.length > 0){
+		generateRefsHTML();
+	}
+
+	// 下位 directory への和訳リンク生成防止
+	if(PAGE_DATA.options.original_url){
+		COMMON_DATA.JA_LINKS[
+			PAGE_DATA.options.original_url.replace(/^https?:\/\//,'')
+		] = '';
+	}
+
 }
 
 COMMON_DATA.INDEX_KEYS =`

@@ -68,61 +68,99 @@ abbr {
 </style>
 
 
-<script>
-document.addEventListener('DOMContentLoaded', init0, false);
-function init0(){
-	let sort_by = 'by_prop0';
+<script type="module">
+'use strict';
 
-	const sorters = {
-by_prop0: function(item1, item2){
-	if(item1.prop === item2.prop){
-		return (item1.module > item2.module) ? 1:-1;
-	}
-	return (item1.prop > item2.prop) ? 1:-1;
-},
-by_prop1: function(item1, item2){
-	if(item1.prop === item2.prop){
-		return (item1.module > item2.module) ? 1:-1;
-	}
-	return (item1.prop < item2.prop) ? 1:-1;
-},
-by_module0: function(item1, item2){
-	if(item1.module === item2.module){
-		return (item1.prop > item2.prop) ? 1:-1;
-	}
-	return (item1.module > item2.module) ? 1:-1;
-},
-by_module1: function(item1, item2){
-	if(item1.module === item2.module){
-		return (item1.prop > item2.prop) ? 1:-1;
-	}
-	return (item1.module < item2.module) ? 1:-1;
+const E = (id) => {
+	return document.getElementById(id);
 }
-	};
 
-	let data = E('prop_data').textContent;
-	data = parse(data);
-	data.sort( sorters[sort_by]);
-
-	E('prop-list').innerHTML = create_html(data);
-
-	E('prop-header').addEventListener('click', function(event){
-		const e = event.target;
-		if(e.tagName === 'BUTTON' && e.id){
-			sort_list(e.id);
+const sorters = {
+	by_prop0: (item1, item2) => {
+		if(item1.prop === item2.prop){
+			return (item1.module > item2.module) ? 1:-1;
 		}
-	});
-
-	document.body.classList.add('_expanded');
-
-	return;
-
-	function E(id){
-		return document.getElementById(id);
+		return (item1.prop > item2.prop) ? 1:-1;
+	},
+	by_prop1: (item1, item2) => {
+		if(item1.prop === item2.prop){
+			return (item1.module > item2.module) ? 1:-1;
+		}
+		return (item1.prop > item2.prop) ? -1:1;
+	},
+	by_module0: (item1, item2) => {
+		if(item1.module === item2.module){
+			return (item1.prop > item2.prop) ? 1:-1;
+		}
+		return (item1.module > item2.module) ? 1:-1;
+	},
+	by_module1: (item1, item2) => {
+		if(item1.module === item2.module){
+			return (item1.prop > item2.prop) ? 1:-1;
+		}
+		return (item1.module > item2.module) ? -1:1;
 	}
+};
+const sort_list = (key_dir, data) => {
+	const tbody = E('prop-list');
+	data.forEach((item, index) => {
+		item.row = tbody.rows[index];
+	})
+	data.sort(sorters[key_dir] || sorters.by_prop0);
+	data.forEach((item) => {
+		tbody.appendChild(item.row);
+		item.row = null;
+	})
+	return key_dir;
+}
 
-	function create_html(data){
-		const mapping = {
+const parse = (data) => {
+	const list = [];
+	let module = '';
+	let is_camel_cased = false;
+	const map = {};
+
+	data.replace(/^●.+|^■?(\S+?):\s*(.+)/mg,
+	(match, m1, m2) => {
+		switch(match[0]){
+		case '●':
+			module = match.slice(1);
+			is_camel_cased = (module.slice(0,3) === 'SVG');
+			break;
+		case '■':
+			map[m1] = m2;
+			break;
+		default:
+			const item = {
+				prop:   m1,
+				module: module,
+				urls:   [],
+			};
+			list.push(item);
+			for( let t of m2.split(',') ){
+				let fragment = item.prop;
+				if( t.indexOf('=') >= 0 ){
+					const t1 = t.split('=');
+					t = t1[0];
+					fragment = t1[1];
+				} else {
+					if(is_camel_cased){
+						fragment =
+( '-' + fragment ).replace( /-\w/g, (m) => { return m[1].toUpperCase();} )
++ 'Property';
+					}
+				}
+				item.urls.push( `${t}:${map[t]}${fragment}` );
+			}
+		}
+		return '';
+	});
+	return list;
+}
+
+
+const create_html = (data) => {
+	const mapping = {
 CSSWG: 'https://drafts.csswg.org',
 SVGWG: 'https://svgwg.org/specs',
 TR: 'https://www.w3.org/TR',
@@ -132,114 +170,54 @@ MOMDO: 'https://momdo.github.io/css2',
 MOMDOUI: 'https://momdo.github.io/css-ui/',
 MOMDODEC: 'https://momdo.github.io/css-text-decor-3/',
 MITSUE: 'http://standards.mitsue.co.jp/resources/w3c/TR',
+	};
 
-		};
-
-		const html = [];
-		data.forEach(function(item){
+	const html = [];
+	for( const item of data ){
+		html.push(
+			'<tr><td><code class="property">',
+			item.prop,
+			'</code><td>'
+		);
+		for( const url of item.urls){
 			html.push(
-				'<tr><td><code class="property">',
-				item.prop,
-				'</code><td>'
+				url.replace(
+/^([A-Z]+)(\d?)\w?:(.+)$/g,
+'<a href="$3"><abbr class="$1">$1$2</abbr></a>'
+				)
 			);
-			item.urls.forEach(function(url){
-				html.push(
-					url.replace(
-	/^([A-Z]+)(\d?)\w?:(.+)$/g,
-	'<a href="$3"><abbr class="$1">$1$2</abbr></a>'
-					)
-				);
-			})
-			html.push(
-				'<td>',
-				item.module
-			);
-		})
-		return html.join('')
-		.replace(/<\/a>\s*<a/g, '<\/a>, <a')
-		.replace(/~(\w+)/g, function(s, t){
-				return mapping[t] || s;
-		});
+		}
+		html.push(
+			'<td>',
+			item.module
+		);
 	}
 
+	return html.join('')
+	.replace(/<\/a>\s*<a/g, '<\/a>, <a')
+	.replace(/~(\w+)/g, (s, t) => { return mapping[t] || s; });
+}
 
-	function parse(data){
-		const list = [];
-		let module = '';
-		let is_camel_cased = false;
-		const map = {};
 
-		data.replace(/^●.+|^■?(\S+?):\s*(.+)/mg,
-		function(match, m1, m2){
-			switch(match[0]){
-			case '●':
-				module = match.slice(1);
-				is_camel_cased = (module.slice(0,3) === 'SVG');
-				break;
-			case '■':
-				map[m1] = m2;
-				break;
-			default:
-				const item = {
-					prop:   m1,
-					module: module,
-					urls:   [],
-				};
-				list.push(item);
-				m2.split(',').forEach(function(t){
-					if(t.indexOf('=') >= 0 ){
-						t = t.split('=');
-						item.urls.push(t[0] + ':' + map[t[0]] + t[1]);
-					} else if(is_camel_cased) {
-						const camel_cased_name = 
-( '-' + item.prop ).replace(/-\w/g, function(m){ return m[1].toUpperCase();})
-+ 'Property';
-						item.urls.push(t + ':' + map[t] + camel_cased_name);
-					} else {
-						item.urls.push(t + ':' + map[t] + item.prop);
-					}
-				});
-			}
-			return '';
-		});
-		return list;
-	}
+{
+	const data = parse(E('prop_data').textContent);
 
-	function sort_list(key_dir){
-		const tbody = E('prop-list');
+	let sort_by = 'by_prop0';
+	data.sort(sorters[sort_by]);
 
-		data.forEach(function(item, index){
-			item.row = tbody.rows[index];
-		})
-		data.sort(sorters[key_dir] || sorters.by_prop0);
-		data.forEach(function(item){
-			tbody.appendChild(item.row);
-			item.row = null;
-		})
-		sort_by = key_dir;
-	}
+	E('prop-list').innerHTML = create_html(data);
+
+	document.body.classList.add('_expanded');
+
+	E('prop-header').addEventListener('click', (event) => {
+		const e = event.target;
+		if(e.tagName === 'BUTTON' && e.id){
+			sort_by = sort_list(e.id, data);
+		}
+	});
 }
 
 </script>
-<!-- 
-	function sort0(key_dir, rows){
-		var new_rows = [];
-		var new_index = 0;
-		data.sort(sorters[key_dir]);
-		data.forEach(function(item){
-			new_rows.push(rows[item.index])
-			item.index = new_index++;
-		})
-		return new_rows;
-	}
-	function sort_list(key_dir){
-		var tbody = E('prop-list');
-		var new_rows = sort0(key_dir, tbody.rows);
-		new_rows.forEach(function(row){
-			tbody.appendChild(row);
-		})
-	}
--->
 
 
 <script type="text/plain" id="prop_data">

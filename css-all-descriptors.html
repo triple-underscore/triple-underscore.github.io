@@ -63,148 +63,137 @@ abbr {
 </style>
 
 
-<script>
-document.addEventListener('DOMContentLoaded', init0, false);
-function init0(){
-	var sort_by = 'by_desc0';
+<script type="module">
+'use strict';
 
-	var sorters = {
-by_desc0: function(item1, item2){
-	if(item1.prop === item2.prop){
-		return (item1.module > item2.module) ? 1:-1;
-	}
-	return (item1.prop > item2.prop) ? 1:-1;
-},
-by_desc1: function(item1, item2){
-	if(item1.prop === item2.prop){
-		return (item1.module > item2.module) ? 1:-1;
-	}
-	return (item1.prop < item2.prop) ? 1:-1;
-},
-by_module0: function(item1, item2){
-	if(item1.module === item2.module){
-		return (item1.prop > item2.prop) ? 1:-1;
-	}
-	return (item1.module > item2.module) ? 1:-1;
-},
-by_module1: function(item1, item2){
-	if(item1.module === item2.module){
-		return (item1.prop > item2.prop) ? 1:-1;
-	}
-	return (item1.module < item2.module) ? 1:-1;
+const E = (id) => {
+	return document.getElementById(id);
 }
-	};
 
-	var data = E('prop_data').textContent;
-	data = parse(data);
-	data.sort(
-		sorters[sort_by]
-	);
+const sorters = {
+	by_desc0: (item1, item2) => {
+		if(item1.prop === item2.prop){
+			return (item1.module > item2.module) ? 1:-1;
+		}
+		return (item1.prop > item2.prop) ? 1:-1;
+	},
+	by_desc1: (item1, item2) => {
+		if(item1.prop === item2.prop){
+			return (item1.module > item2.module) ? 1:-1;
+		}
+		return (item1.prop > item2.prop) ? -1:1;
+	},
+	by_module0: (item1, item2) => {
+		if(item1.module === item2.module){
+			return (item1.prop > item2.prop) ? 1:-1;
+		}
+		return (item1.module > item2.module) ? 1:-1;
+	},
+	by_module1: (item1, item2) => {
+		if(item1.module === item2.module){
+			return (item1.prop > item2.prop) ? 1:-1;
+		}
+		return (item1.module > item2.module) ? -1:1;
+	}
+};
+const sort_list = (key_dir, data) => {
+	const tbody = E('prop-list');
+
+	data.forEach((item, index) => {
+		item.row = tbody.rows[index];
+	})
+	data.sort(sorters[key_dir] || sorters.by_desc0);
+	data.forEach((item) => {
+		tbody.appendChild(item.row);
+		item.row = null;
+	});
+	return key_dir;
+}
+
+const parse = (data) => {
+	const list = [];
+	let module = '';
+	const map = {};
+
+	data.replace(/^■.+|^●?(\S+?):\s*(.+)/mg,
+	(match, m1, m2) => {
+		switch(match[0]){
+		case '■':
+			module = match.slice(1);
+			break;
+		case '●':
+			map[m1] = m2;
+			break;
+		default:
+			const item = {
+				prop:   m1,
+				module: module,
+				urls:   [],
+			};
+			list.push(item);
+			for( let t of m2.split(',') ){
+				let fragment = item.prop;
+				if( t.indexOf('=') >= 0 ){
+					const t1 = t.split('=');
+					t = t1[0];
+					fragment = t1[1];
+				}
+				item.urls.push( `${t}:${map[t]}${fragment}` );
+			}
+		}
+		return '';
+	});
+	return list;
+}
+
+const create_html = (data) => {
+	const mapping = {
+		CSSWG: 'https://drafts.csswg.org',
+		TR: 'https://www.w3.org/TR',
+	};
+	const html = [];
+
+	for( const item of data ){
+		html.push(
+			'<tr><td><code class="descriptor">',
+			item.prop,
+			'</code><td>'
+		);
+		for( const url of item.urls){
+			html.push(
+				url.replace(
+/^([A-Z]+)(\d?):(.+)$/g,
+'<a href="$3"><abbr class="$1">$1$2</abbr></a>'
+				)
+			);
+		}
+		html.push(
+			'<td>',
+			item.module
+		);
+	}
+
+	return html.join('')
+	.replace(/<\/a>\s*<a/g, '<\/a>, <a')
+	.replace(/~(\w+)/g, (s, t) => { return mapping[t] || s; });
+}
+
+{
+	const data = parse(E('prop_data').textContent);
+
+	let sort_by = 'by_desc0';
+	data.sort(sorters[sort_by]);
 
 	E('prop-list').innerHTML = create_html(data);
 
-	E('prop-header').addEventListener('click', function(event){
-		var e = event.target;
-		if(e.tagName === 'BUTTON' && e.id){
-			sort_list(e.id);
-		}
-	});
-
 	document.body.classList.add('_expanded');
 
-	return;
-
-	function E(id){
-		return document.getElementById(id);
-	}
-
-	function create_html(data){
-		var mapping = {
-CSSWG: 'https://drafts.csswg.org',
-TR: 'https://www.w3.org/TR',
-CSS22: 'https://drafts.csswg.org/css2',
-CSS21: 'https://www.w3.org/TR/CSS2',
-		};
-		var html = [];
-		data.forEach(function(item){
-			html.push(
-				'<tr><td><code class="descriptor">',
-				item.prop,
-				'</code><td>'
-			);
-			item.urls.forEach(function(url){
-				html.push(
-					url.replace(
-	/^([A-Z]+)(\d?):(.+)$/g,
-	'<a href="$3"><abbr class="$1">$1$2</abbr></a>'
-					)
-				);
-			})
-			html.push(
-				'<td>',
-				item.module
-			);
-		})
-		return html.join('')
-		.replace(/<\/a>\s*<a/g, '<\/a>, <a')
-		.replace(/~(\w+)/g, function(s, t){
-				return mapping[t] || s;
-		});
-	}
-
-	function parse(data){
-		var list = [];
-		var module = '';
-		var map = {};
-
-		data.replace(/^■.+|^●?(\S+?):\s*(.+)/mg,
-		function(match, m1, m2){
-			switch(match[0]){
-			case '■':
-				module = match.slice(1);
-				break;
-			case '●':
-				map[m1] = m2;
-				break;
-			default:
-				var item = {
-					prop:   m1,
-					module: module,
-					urls:   [],
-				};
-				list.push(item);
-				m2.split(',').forEach(function(t){
-					if(t === 'CSS2') {
-						var path = map.CSS2 + '#propdef-' + item.prop;
-						item.urls.push('ED:~CSS22/' + path);
-						item.urls.push('REC:~CSS21/' + path);
-						item.urls.push('JA:~MOMDO/' + path);
-					} else if(t.indexOf('=') < 0 ){
-						item.urls.push(t + ':' + map[t] + item.prop);
-					} else {
-						var t = t.split('=');
-						item.urls.push(t[0] + ':' + map[t[0]] + t[1]);
-					}
-				});
-			}
-			return '';
-		});
-		return list;
-	}
-
-	function sort_list(key_dir){
-		var tbody = E('prop-list');
-
-		data.forEach(function(item, index){
-			item.row = tbody.rows[index];
-		})
-		data.sort(sorters[key_dir] || sorters.by_desc0);
-		data.forEach(function(item){
-			tbody.appendChild(item.row);
-			item.row = null;
-		})
-		sort_by = key_dir;
-	}
+	E('prop-header').addEventListener('click', (event) => {
+		const e = event.target;
+		if(e.tagName === 'BUTTON' && e.id){
+			sort_by = sort_list(e.id, data);
+		}
+	});
 }
 
 </script>

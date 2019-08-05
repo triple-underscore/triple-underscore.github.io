@@ -3,13 +3,13 @@ const source_data = {
 	init: EMPTY_FUNC,
 };
 
-Util.ready = function(){
+Util.ready = () => {
 	source_data.section_map = Util.get_mapping(PAGE_DATA.section_map || '');
 	source_data.init();
 	Util.switchWordsInit(source_data);
 
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
-	repeat('script[src="RFC723X.js"]', function(e){
+	repeat('script[src="RFC723X.js"]', (e) => {
 		e.parentNode.removeChild(e);
 	});
 };
