@@ -180,7 +180,7 @@ return text;
 
 </script>
 
-<script >
+<script>
 Util.DEFERRED.push(initColorDraw);
 
 function initColorDraw(){
@@ -192,45 +192,37 @@ function initColorDraw(){
 	let isFixed = false; // 色値表示 一時固定
 	let rgb_val = [0,0,0];
 
+	const fillImage = (hue, isHWB) => {
+		const hwbToRgb = (hue, white, black) => {
+			const wb = white + black;
+			if(wb > 1){
+				r = g = b = white / wb;
+				return;
+			}
+			r = r0 * (1 - wb) + white;
+			g = g0 * (1 - wb) + white;
+			b = b0 * (1 - wb) + white;
+		};
 
-	(function(buf){
-		for(let i = 3; i < buf.length; i += 4){
-			buf[i] = 0xFF;
-		}
-	})(sImage.data);
+		const hslToRgb = (hue, sat, light) => {
+			const t2 = ( light <= .5 ) ?
+				( light * (sat + 1) ) :
+				( light + sat - (light * sat) )
+			;
+			const t1 = light * 2 - t2;
+			r = hueToRgb(t1, t2, hue + 2);
+			g = hueToRgb(t1, t2, hue);
+			b = hueToRgb(t1, t2, hue + 4);
+		};
 
-	drawHSL();
+		const hueToRgb = (t1, t2, hue) => {
+			if(hue > 6 ) hue -= 6;
+			if(hue < 1) return (t2 - t1) * hue + t1;
+			else if(hue < 3) return t2;
+			else if(hue < 4) return (t2 - t1) * (4 - hue) + t1;
+			else return t1;
+		};
 
-	E('_EX_hue_control').addEventListener('change', drawHSL, false);
-	E('_EX_hue_control').addEventListener('input', drawHSL, false);
-	E('_EX_scale').addEventListener('change', drawHSL, false);
-	E('_EX_HSL_canvas').addEventListener('mousemove', updateRGBValue, false);
-	E('_EX_HWB_canvas').addEventListener('mousemove', updateRGBValue, false);
-	E('_EX_HSL_canvas').addEventListener('click', fixVal, false);
-	E('_EX_HWB_canvas').addEventListener('click', fixVal, false);
-	E('_EX_format').addEventListener('change', updateRGBText, false);
-	E('_EX_rgbtext').addEventListener('click', function(event){
-		event.target.select();
-	}, false);
-
-	function drawHSL(event){
-		const hue = E('_EX_hue_control').valueAsNumber;
-		if(event
-			&& (event.target.id === '_EX_hue_control')
-			&& (hue === current_hue)
-		) {
-			return;
-		}
-		fillImage(hue, false);
-		drawImage('_EX_HSL_canvas');
-		fillImage(hue, true);
-		drawImage('_EX_HWB_canvas');
-		E('_EX_hue_value').textContent = hue;
-		E('_EX_rgbtext').value = '　';
-		current_hue = hue;
-	}
-
-	function fillImage(hue, isHWB){
 		hue = ((hue & 0xFFFFFFF) % 360 ) / 60;
 		const buffer = sImage.data;
 		const W = sW;
@@ -259,47 +251,36 @@ function initColorDraw(){
 				address++;
 			}
 		}
+	};
 
-		function hwbToRgb(hue, white, black) {
-			const wb = white + black;
-			if(wb > 1){
-				r = g = b = white / wb;
-				return;
-			}
-			r = r0 * (1 - wb) + white;
-			g = g0 * (1 - wb) + white;
-			b = b0 * (1 - wb) + white;
-		}
-
-		function hslToRgb(hue, sat, light) {
-			const t2 = ( light <= .5 ) ?
-				( light * (sat + 1) ) :
-				( light + sat - (light * sat) )
-			;
-			const t1 = light * 2 - t2;
-			r = hueToRgb(t1, t2, hue + 2);
-			g = hueToRgb(t1, t2, hue);
-			b = hueToRgb(t1, t2, hue + 4);
-		}
-		function hueToRgb(t1, t2, hue) {
-			if(hue > 6 ) hue -= 6;
-			if(hue < 1) return (t2 - t1) * hue + t1;
-			else if(hue < 3) return t2;
-			else if(hue < 4) return (t2 - t1) * (4 - hue) + t1;
-			else return t1;
-		}
-	}
-
-	function drawImage(canvas_id){
+	const drawImage = (canvas_id) => {
 		const dCanvas = E(canvas_id);
 		const dW = dCanvas.width;
 		const dH = dCanvas.height;
 		const dContext = dCanvas.getContext('2d');
 		dContext.putImageData(sImage, 0,0);
 		dContext.drawImage(dCanvas, 0, 0, sW, sH, 0, 0, dW, dH);
-	}
+	};
 
-	function updateRGBValue(event){
+
+	const drawHSL = (event) => {
+		const hue = E('_EX_hue_control').valueAsNumber;
+		if(event
+			&& (event.target.id === '_EX_hue_control')
+			&& (hue === current_hue)
+		) {
+			return;
+		}
+		fillImage(hue, false);
+		drawImage('_EX_HSL_canvas');
+		fillImage(hue, true);
+		drawImage('_EX_HWB_canvas');
+		E('_EX_hue_value').textContent = hue;
+		E('_EX_rgbtext').value = '　';
+		current_hue = hue;
+	};
+
+	const updateRGBValue = (event) => {
 		if(isFixed) return;
 		const canvas = event.target;
 		if(canvas.tagName !== 'CANVAS') return;
@@ -309,39 +290,39 @@ function initColorDraw(){
 		const pixel = canvas.getContext('2d').getImageData(x, y, 1, 1).data;
 		rgb_val = [pixel[0], pixel[1], pixel[2]];
 		updateRGBText();
-	}
-	function updateRGBText(){
+	};
+
+	const updateRGBText = () => {
 		const format_func = formatter[E('_EX_format').value] || formatter.rgb16;
 		E('_EX_rgbtext').value = format_func(rgb_val);
-	}
+	};
 
-
-	function fixVal(event){
+	const fixVal = (event) => {
 		if(isFixed) return;
 		if(event.target.tagName !== 'CANVAS') return;
 		isFixed = true;
-		setTimeout(function(){isFixed = false;}, 1000);
-	}
+		setTimeout( () => {isFixed = false;}, 1000);
+	};
 
 	const formatter = {
-		rgb16: function(rgb){
+		rgb16: (rgb) => {
 			return '#' + (
 0x1000000 | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
 			).toString(16).slice(1);
 		},
 
-		rgb10: function(rgb){
+		rgb10: (rgb) => {
 			return ( 'rgb(' + rgb.join(' ') + ')' );
 		},
 
-		rgbPercent: function(rgb){
-			rgb = rgb.map(function(c){
+		rgbPercent: (rgb) => {
+			rgb = rgb.map( (c) => {
 				return Math.round(c * 100 / 255) + '%';
 			});
 			return ( 'rgb(' + rgb.join(' ') + ')' );
 		},
 
-		hsl: function(rgb){
+		hsl: (rgb) => {
 			const R = rgb[0], G = rgb[1], B = rgb[2];
 			const max = Math.max(R, G, B) / 255;
 			const min = Math.min(R, G, B) / 255;
@@ -362,7 +343,7 @@ function initColorDraw(){
 			);
 		},
 
-		hwb: function(rgb){
+		hwb: (rgb) => {
 			const R = rgb[0], G = rgb[1], B = rgb[2];
 			const H = current_hue;
 			const W = Math.min(R, G, B) / 255;
@@ -375,7 +356,7 @@ function initColorDraw(){
 			);
 		},
 
-		cmyk: function(rgb){
+		cmyk: (rgb) => {
 			const R = rgb[0], G = rgb[1], B = rgb[2];
 			const v = Math.max(R, G, B);
 			const K = 1 - v / 255;
@@ -385,12 +366,34 @@ function initColorDraw(){
 				M = 1 - ( G / v );
 				Y = 1 - ( B / v );
 			}
-			const cmyk = [C,M,Y,K].map(function(c){
+			const cmyk = [C,M,Y,K].map( (c) => {
 				return Math.round(c * 100) + '%';
 			})
 			return ( 'device-cmyk(' + cmyk.join(' ') + ')' );
 		}
 	};
+
+	{
+		const buf = sImage.data;
+		for(let i = 3; i < buf.length; i += 4){
+			buf[i] = 0xFF;
+		}
+	}
+
+	drawHSL();
+
+	E('_EX_hue_control').addEventListener('change', drawHSL, false);
+	E('_EX_hue_control').addEventListener('input', drawHSL, false);
+	E('_EX_scale').addEventListener('change', drawHSL, false);
+	E('_EX_HSL_canvas').addEventListener('mousemove', updateRGBValue, false);
+	E('_EX_HWB_canvas').addEventListener('mousemove', updateRGBValue, false);
+	E('_EX_HSL_canvas').addEventListener('click', fixVal, false);
+	E('_EX_HWB_canvas').addEventListener('click', fixVal, false);
+	E('_EX_format').addEventListener('change', updateRGBText, false);
+	E('_EX_rgbtext').addEventListener('click', (event) => {
+		event.target.select();
+	}, false);
+
 }
 
 </script>
