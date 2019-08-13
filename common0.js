@@ -1103,6 +1103,7 @@ CSSSNAPSHOT:css-snapshot-ja.html
 CSSPSEUDO:css-pseudo-ja.html
 CSSSTYLEATTR:css-style-attr-ja.html
 CSSSYN:css-syntax-ja.html
+CSSTABLE:https://drafts.csswg.org/css-tables-3/
 CSSTEXT:css-text-ja.html
 CSSTEXTDECOR:css-text-decor-ja.html
 CSSTOM1:css-typed-om-ja.html
