@@ -357,6 +357,7 @@ paint:塗り
 css:CSS
 css-ux:CSS UX
 css-anim:アニメーション
+css-gnerated:生成内容
 cssom:CSSOM
 typeset:テキスト組版
 layout:レイアウト一般
