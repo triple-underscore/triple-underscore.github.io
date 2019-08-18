@@ -1072,7 +1072,7 @@ CSSBG:css-backgrounds-ja.html
 CSSBREAK:css-break-ja.html
 CSSCOLOR:css-color-ja.html
 CSSCOND:css-conditional-ja.html
-CSSCONTENT:https://drafts.csswg.org/css-content-3/
+CSSCONTENT:css-content-ja.html
 CSSCONTAIN:css-contain-ja.html
 CSSCOUNTER:css-counter-styles-ja.html
 CSSDISP:css-display-ja.html
