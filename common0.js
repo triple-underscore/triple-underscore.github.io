@@ -530,6 +530,7 @@ CR: '勧告候補',
 REC: '勧告',
 NOTE: 'Working Group Note',
 LS: 'Living Standard',
+LD: 'Living Document',
 //IETFPR: 'IETF PROPOSED STANDARD'
 			}[options.spec_status] || '';
 		}
