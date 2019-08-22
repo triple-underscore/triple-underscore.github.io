@@ -348,6 +348,7 @@ comms:メッセージ通信
 browsers:ナビと閲覧
 storage:ストレージ
 uievents:イベント／UX
+sensor:センサ
 network:ネットワーク
 http:HTTP
 security:セキュリティ
