@@ -1171,6 +1171,7 @@ HTMLwriting:HTML-writing-ja.html
 HTMLparsing:HTML-parsing-ja.html
 HTMLdynamic:HTML-dynamic-markup-insertion-ja.html
 HTMLobs:HTML-obsolete-ja.html
+HTMLiana:HTML-iana-ja.html
 HEinteractive:HTML-interactive-elements-ja.html
 HEforms:HTML-form-elements-ja.html
 HEinput:HTML-input-ja.html
