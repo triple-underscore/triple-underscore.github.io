@@ -2388,6 +2388,7 @@ queue::::キュー
 pair::::ペア
 list::::リスト
 配列:array::~
+配列-:arrange::~
 辞書:dictionary::~::ディクショナリ
 collection::::コレクション
 record::::レコード
