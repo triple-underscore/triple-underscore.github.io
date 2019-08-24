@@ -1027,7 +1027,7 @@ FINGERPRINTING:<a class="fingerprinting" href="HTML-infrastructure-ja.html#finge
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
 TR:https://www.w3.org/TR
 IETF:https://tools.ietf.org/html
-TC39:https://tc39.github.io/ecma262/
+TC39:https://tc39.es/ecma262/
 INFRA:infra-ja.html
 DOM4:DOM4-ja.html
 DOM-Parsing:DOM-Parsing-ja.html
