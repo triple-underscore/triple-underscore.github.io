@@ -2291,11 +2291,14 @@ promise:
 先送り:defer::~
 遅延-:delay::~
 遅延:delay::~
-
-進捗-:progress:~
-進捗:progress:~
+待時間:latency::待ち時間
+所要時間:duration::~
+時刻印:timestamp::~::タイムスタンプ
+準備済み:ready::~
+進捗-:progress::~
+進捗:progress::~
 live:
-消費-:consume:~
+消費-:consume::~
 
 反復-:iterate::~
 反復:iteration::~
