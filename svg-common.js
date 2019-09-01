@@ -274,7 +274,6 @@ I.SVGUnitTypes:~SVGtypes#InterfaceSVGUnitTypes
 I.SVGUseElement:~SVGstruct#InterfaceSVGUseElement
 I.SVGUseElementShadowRoot:~SVGstruct#InterfaceSVGUseElementShadowRoot
 I.SVGViewElement:~SVGlinking#InterfaceSVGViewElement
-I.SVGZoomAndPan:~SVGtypes#InterfaceSVGZoomAndPan
 
 I.Animation:~WANIMAPI#the-animation-interface
 	~TR/web-animations-1/#the-animation-interface
