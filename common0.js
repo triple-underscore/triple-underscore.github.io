@@ -2177,13 +2177,13 @@ parameter::::パラメタ
 飛ばせ:skipでき:~
 飛ばし:skipし:~
 
-例外:exception:~
+例外:exception::~
 catch:
 投出:throw:~
 投出-:throw:~
 
-即時:immediate:~
-並列的:parallel:~
+即時:immediate::~
+並列的:parallel::~
 同期c:sync::同期
 非同期c:async::非同期
 同期-:synchronize::~
@@ -2198,46 +2198,47 @@ catch:
 阻んで:blockして::~::ブロックして
 阻んだ:blockした::~::ブロックした
 
-却下:rejection:~
-却下-:reject:~
-充足-:fulfill:~
-充足:fulfillment:~
-失敗-:fail:~
-失敗:failure:~
-成功:success:~
-成功-:succeed:~
-成功裡:successful:~
+却下-:reject::~
+却下:rejection::~
+充足-:fulfill::~
+充足:fulfillment::~
+失敗-:fail::~
+失敗:failure::~
+成功:success::~
+成功-:succeed::~
+成功裡:successful::~
 	成功した:successful
 
-継続-:continue:~
-継続:continuation:~
-継続的:continuous:~
+継続-:continue::~
+継続:continuation::~
+継続的:continuous::~
 
-評価:evaluation:~
-評価-:evaluate:~
+評価:evaluation::~
+評価-:evaluate::~
 
 処理:processing:~
 処理-:process:~
 処理n:process:処理
 処理器:processor:~:::プロセッサ
 
-検証-:validate:~
-検証:validation:~
-検証y-:verify:検証
-検証y:verification:検証
+検証-:validate::~
+検証:validation::~
+検証器:validator::~
+検証y-:verify::検証
+検証y:verification::検証
 検査-:check:~
 検査:check:~
 検査器:checker:~
-検出-:detect:~
-検出:detection:~
+検出-:detect::~
+検出:detection::~
 報告:report::~::レポート
 報告-:report::~::レポート
-通知-:notify:~
-通知:notification:~
-通達-:signal:~
-通達:signal:~
-記録-:record:~
-記録:record:~
+通知-:notify::~
+通知:notification::~
+通達-:signal::~
+通達:signal::~
+記録-:record::~
+記録:record::~
 受取る:receiveする:受け取る
 受取っ:receiveし:受け取っ
 受取らな:receiveしな:受け取らな
@@ -2252,10 +2253,10 @@ catch:
 
 状態:state::~::ステート
 状態s:status::状態°::ステータス
-更新-:update:~
-更新:update:~
+更新-:update::~
+更新:update::~
 
-上書き:override:~
+上書き:override::~
 	上書き:overwrite:~
 
 条件:condition:~
@@ -2264,9 +2265,9 @@ catch:
 	条件付きで:conditionalに:~
 	条件付けら:conditionさ:~
 
-反応-:react:~
-反応:reaction:~
-観測-:observe:~
+反応-:react::~
+反応:reaction::~
+観測-:observe::~
 	観測:observing:~
 
 message::::メッセージ
