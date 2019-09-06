@@ -1610,6 +1610,7 @@ CSSCONDITIONAL3=主     ~/css-conditional-ja.html
 CSSCONTAIN1=主        ~/css-contain-ja.html
 	CSSCONTAIN1=版        ~TR/css-contain-1/
 	CSSCONTAIN1=編        ~CSSWG/css-contain-1/
+CSSCONTENT3=主        ~/css-content-ja.html
 CSSDEVICEADAPT=主     ~momdoG/css-device-adapt-1/
 CSSDEVICEADAPT=版     ~TR/css-device-adapt-1/
 CSSDEVICEADAPT=・     ~TR/css-device-adapt/
@@ -1756,6 +1757,7 @@ ENCODING=主           ~/Encoding-ja.html
 	ENCODING=・           encoding.spec.whatwg.org/
 FETCH=主              ~/Fetch-ja.html
 FETCH=・              fetch.spec.whatwg.org/
+FEATUREPOLICY=主      ~/feature-policy-ja.html
 FILEAPI=主            ~/File_API-ja.html
 	FILEAPI=版            ~TR/FileAPI/
 	FILEAPI=編            w3c.github.io/FileAPI/
@@ -1764,8 +1766,6 @@ FULLSCREEN=主         ~/fullscreen-ja.html
 NOTIFICATIONS=主      ~/notifications-ja.html
 	NOTIFICATIONS=・      notifications.spec.whatwg.org/
 GEOMETRY1=主          ~/geometry-ja.html
-GEOLOCATIONAPI=主     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-API-20161108.html
-GEOLOCATIONAPI=版     ~TR/geolocation-API/
 HTML=副               ~/index.html#spec-list-html●日本語訳(このサイト, WHATWG 版)
 HTML=副               ~momdoG/html/●日本語(部分)訳(WHATWG 版)
 HTML=副               ~momdoG/html/dev/●日本語訳( Web 開発者向け)
@@ -1808,6 +1808,21 @@ RESOURCEHINTS=主      ~/resource-hints-ja.html
 REFERRERPOLICY=主     ~/webappsec-referrer-policy-ja.html
 REPORTING=主          ~/reporting1-ja.html
 PERMISSIONS=主        ~/webappsec-permissions-ja.html
+
+GEOLOCATIONAPI=主     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-API-20161108.html
+	GEOLOCATIONAPI=版     ~TR/geolocation-API/
+AMBIENTLIGHT=主       ~/ambient-light-ja.html
+ACCELEROMETER=主      ~/accelerometer-ja.html
+GENERICSENSOR=主      ~/sensors-ja.html
+GYROSCOPE=主          ~/gyroscope-ja.html
+MAGNETOMETER=主       ~/magnetometer-ja.html
+ORIENTATIONSENSOR=主  ~/orientation-sensor-ja.html
+MEDIAQUERIES5=主      ~/mediaqueries5-ja.html
+PROXIMITY=主          ~/proximity-ja.html
+GEOLOCATIONSENSOR=主  ~/geolocation-sensor-ja.html
+MOTIONSENSORS=主      ~/motion-sensors-ja.html
+WEBBLUETOOTH=主       tkybpp.github.io/web-bluetooth-jp/
+
 RFC1034=主            ＃srgia.com/docs/rfc1034j.html
 RFC1123=主            ＃hp.vector.co.jp/authors/VA002682/rfc1123j.htm
 RFC1123=副2           ＃www2s.biglobe.ne.jp/~hig/tcpip/HostReq_Appl.html
@@ -1974,13 +1989,6 @@ COMMON_DATA.REF_DATA2 = `
 // 文献 id 別名 -> 文献 id
 COMMON_DATA.REF_KEY_MAP = `
 DOM4:DOM
-DOMLS:DOM
-WHATWGDOM:DOM
-WHATWGENCODING:ENCODING
-WHATWGURL:URL
-HTML51:HTML
-WEBIDL2:WEBIDL
-DOMCORE:DOM
 CSP:CSP3
 CSS2:CSS21
 CSS22:CSS21
@@ -2048,12 +2056,9 @@ CSS3MEDIAQUERIES:MEDIAQUERIES3
 MEDIAFRAGS:MEDIAFRAG
 SELECT:SELECTORS3
 CSS3SELECTORS:SELECTORS3
-URLAPISPECIFICATION:URL
 XMLHTTPREQUEST:XHR
 HTML5:HTML
 SVG11:SVG
-TOUCH:TOUCHEVENTS
-WSAPI:WEBSOCKETS
 WEBWORKERS:WORKERS
 XML10:XML
 XMLNAMES:XMLNS
@@ -2067,8 +2072,6 @@ IDNA:RFC3490
 IPV6:RFC4291
 ABNF:RFC5234
 COOKIES:RFC6265
-ORIGIN:RFC6454
-WSP:RFC6455
 WEBIDL1:WEBIDL
 WORKLETS:WORKLETS1
 REFERRER:REFERRERPOLICY
@@ -2076,7 +2079,6 @@ SW:SW1
 SERVICEWORKERS:SW1
 SERVICEWORKERS1:SW1
 UPGRADE:UPGRADEINSECUREREQUESTS
-TLS12:RFC5246
 TLS:RFC5246
 PAGEVISIBILITY2:PAGEVISIBILITY
 `;
