@@ -1933,6 +1933,7 @@ custom::::カスタム
 	~custom化:customize
 	~custom化:customizations
 option::::オプション
+options:::option 群:オプション群
 program::::プログラム
 programming::::プログラミング
 
@@ -2847,8 +2848,8 @@ session::::セッション
 阻止-:block::~::ブロック
 敵対的:hostile:~
 
-指紋収集-:fingerprint:~
-指紋収集:fingerprinting:~
+指紋収集-:fingerprint::~
+指紋収集:fingerprinting::~
 悪意的:malicious:~
 追跡:tracking::~::トラッキング
 追跡-:track::~::トラック
