@@ -117,8 +117,8 @@ return text;
 
 ●●options
 
-spec_date:2019-07-18
-trans_update:2019-07-19
+spec_date:2019-09-09
+trans_update:2019-09-10
 source_checked:190711
 page_state_key:HTML
 spec_status:LS
@@ -173,6 +173,7 @@ sandbox::::サンドボックス
 	navigating
 
 	●環境 ／ 閲覧
+agent:
 補助:auxiliary::~
 
 近しい:familiar with:~
@@ -184,6 +185,7 @@ sandbox::::サンドボックス
 閉中:is closing::閉じかけ
 pointer::::ポインタ
 modal::::モーダル
+類似生成元:similar-origin::~::類似オリジン
 
 	●型／構造／操作
 shadow:
@@ -194,6 +196,7 @@ shadow:
 和集合:union:~
 推移閉包:transitive closure:~
 	~group分け:grouping
+弱い:weakな::~
 
 	●処理 / js / event
 例外投出あり:rethrow any exceptions::~
@@ -235,6 +238,8 @@ tab::::タブ
 	し易くする:help
 	結果になる:end up
 	まったく:completely
+	無くなった:nothing 〜 anymore
+	担う:responsible
 
 	●未分類
 小文字:lowercase::~
@@ -417,6 +422,7 @@ tbcG.~group:#tlbc-group
 文書~族:#document-family
 全部的に作動中:#fully-active
 
+~agent~cluster~map:#agent-cluster-map
 
 	●WINDOW／NAVI／HISTORY
 対応する閲覧文脈:~WINDOW#window-bc
@@ -460,6 +466,8 @@ sbox.補助~navi:~ORIGIN#sandboxed-auxiliary-navigation-browsing-context-flag
 enV.生成元:~WAPI#concept-settings-object-origin
 enV.実行~準備済み~flag:~WAPI#concept-environment-execution-ready-flag
 新たな~JS~realmを作成する:~WAPI#creating-a-new-javascript-realm
+類似生成元~window~agentを得る:~WAPI#obtain-similar-origin-window-agent
+~agent~cluster~key:~WAPI#agent-cluster-key
 
 	●他
 文書から除去され:~HTMLINFRA#remove-an-element-from-a-document
@@ -476,6 +484,7 @@ jA.StructuredSerializeForStorage:~HTMLcloning#structuredserializeforstorage
 有順序~集合:~INFRA#ordered-set
 set.付加する:~INFRA#set-append
 空:~INFRA#list-is-empty
+~map:~INFRA#ordered-map
 
 ~URLを直列化する:~URL1#concept-url-serializer
 ~URL~record:~URL1#concept-url
@@ -483,6 +492,8 @@ url.~scheme:~URL1#concept-url-scheme
 url.生成元:~URL1#concept-url-origin
 
 jA.OrdinaryDefineOwnProperty:~TC39#sec-ordinarydefineownproperty
+~agent~cluster:~TC39#sec-agent-clusters
+
 
 読込後~taskは準備済み:~HTMLparsing#ready-for-post-load-tasks
 完全に読込まれ:~HTMLparsing#completely-loaded
@@ -825,10 +836,10 @@ Return url's origin.
 <p>
 `新たな閲覧文脈を作成する@
 ときは、所与の
-( ~NULL または`文書$ %作成元 )
+( ~NULL または`文書$ %作成元, `閲覧文脈~group$ %G )
 に対し：
 ◎
-To create a new browsing context, given null or a Document object creator:
+To create a new browsing context, given null or a Document object creator and browsing context group group:
 </p>
 
 <ol>
@@ -873,12 +884,27 @@ Let origin be the result of determining the origin given browsingContext, about:
 Let featurePolicy be the result of creating a feature policy given browsingContext and origin. [FEATUREPOLICY]
 </li>
 	<li>
+%~agent ~LET `類似生成元~window~agentを得る$( %生成元, %G )
+◎
+Let agent be the result of obtaining a similar-origin window agent given origin and group.
+</li>
+	<li>
+<p>
 %~realm実行~文脈 ~LET 次のように~custom化する下で，`新たな~JS~realmを作成する$
 ⇒＃
+~agent†用には %~agent を利用する,
 大域~obj用に 新たな `Window$I ~objを作成する,
 大域 `this^jv 束縛には %B の `WindowProxy$I ~objを利用する
+</p>
+
+<p class="issue">†
+これが指すべきものは、まだ~JS仕様に定義されていない。
+<a href="https://github.com/tc39/ecma262/issues/1357">tc39/ecma262 issue#1357</a>
+を見よ。
+</p>
 ◎
 Let realm execution context be the result of creating a new JavaScript realm with the following customizations:
+• For the agent, use agent. This pointer is not yet defined in the JavaScript specification; see tc39/ecma262#1357.
 • For the global object, create a new Window object.
 • For the global this binding, use browsingContext's WindowProxy object.
 </li>
@@ -1022,25 +1048,30 @@ To create a new auxiliary browsing context, given a browsing context opener:
 
 <ol>
 	<li>
-%B ~LET `新たな閲覧文脈を作成する$( %開いたやつ にて`作動中の文書$ )
-◎
-Let browsingContext be the result of creating a new browsing context with opener's active document.
-</li>
-	<li>
 %T ~LET %開いたやつ の`~top-level閲覧文脈$
 ◎
 ↓</li>
 	<li>
-~Assert：
-%T の`~group$tbcG ~NEQ ~NULL
-— `~navigate$するときは、これを直に呼出すので
+%G ~LET %T の`~group$tbcG
 ◎
-Assert: opener's top-level browsing context's group is non-null, as navigating invokes this directly.
+Let group be opener's top-level browsing context's group
 </li>
 	<li>
-`閲覧文脈~groupに付加する$( %T の`~group$tbcG, %閲覧文脈 )
+~Assert：
+%G ~NEQ ~NULL
+— これは、`~navigate$するとき直に呼出されるので。
 ◎
-Append browsingContext to opener's top-level browsing context's group.
+Assert: group is non-null, as navigating invokes this directly.
+</li>
+	<li>
+%B ~LET `新たな閲覧文脈を作成する$( %開いたやつ にて`作動中の文書$, %G )
+◎
+Let browsingContext be the result of creating a new browsing context with opener's active document and group.
+</li>
+	<li>
+`閲覧文脈~groupに付加する$( %G, %B )
+◎
+Append browsingContext to group.
 </li>
 	<li>
 %B を`開いた閲覧文脈$ ~SET %開いたやつ
@@ -1097,9 +1128,13 @@ To create a new nested browsing context, given an element element:
 
 <ol>
 	<li>
-%B ~LET `新たな閲覧文脈を作成する$( %要素 の`~node文書$ )
+%文書 ~LET %要素 の`~node文書$
 ◎
-Let browsingContext be the result of creating a new browsing context with element's node document.
+↓</li>
+	<li>
+%B ~LET `新たな閲覧文脈を作成する$( %文書, %文書 が`属する閲覧文脈$の`~top-level閲覧文脈$の`~group$tbcG )
+◎
+Let browsingContext be the result of creating a new browsing context with element's node document and element's node document's browsing context's top-level browsing context's group.
 </li>
 	<li>
 %要素 が`入子にしている閲覧文脈$ ~SET %B
@@ -1204,7 +1239,8 @@ element's shadow-including root's browsing context is parent
 </li>
 		</ul>
 
-<!-- 従って、 親~子~関係は、入子より強い -->
+【！ 従って、 親~子~関係は、入子より強い】
+
 	</li>
 	<li>
 そのような %親 は、在るならば一意に定まり，
@@ -1381,7 +1417,7 @@ it has a parent browsing context and the Document through which it is nested is 
 
 <p>
 `子~閲覧文脈$ %B は，要素に結付けられるので、常にその`親~閲覧文脈$に属する特定の`文書$ %文書 に束ねられる。
-~UAは、 %文書 が`全部的に作動中$でない下では、<!-- ＊ -->利用者による %B とのやりとりを許容しないモノトスル。
+~UAは、 %文書 が`全部的に作動中$でない下では、【！ ＊ 】利用者による %B とのやりとりを許容しないモノトスル。
 ◎
 Because they are associated with an element, child browsing contexts are always tied to a specific Document in their parent browsing context. User agents must not allow the user to interact with child browsing contexts of elements that are in Documents that are not themselves fully active.
 </p>
@@ -1679,7 +1715,7 @@ Return current's opener browsing context's WindowProxy object.
 所与の値 ~NEQ ~NULL
 ］
 ⇒
-<!-- ＊return -->
+【！return】
 ~ABRUPT `OrdinaryDefineOwnProperty$jA( 此れ, `opener^l, {
 `Value^sl: 所与の値,
 `Writable^sl: ~T,
@@ -2084,6 +2120,18 @@ A user agent holds a browsing context group set (a set of browsing context group
 A browsing context group holds a browsing context set (a set of top-level browsing contexts).
 </p>
 
+<p>
+各 `閲覧文脈~group$には、
+`~agent~cluster~map@
+が結付けられる
+— それは、`~agent~cluster~key$から`~agent~cluster$への弱い`~map$である。
+【 “弱い” とは，すなわち、】［
+ある~agent~clusterに対し，それに~accessし得るものは無くなった
+］と判断されるとき，それを【~garbage】収集するのは、~UAが担うとする。
+◎
+A browsing context group has an associated agent cluster map (a weak map of agent cluster keys to agent clusters). User agents are responsible for collecting agent clusters when it is deemed that nothing can access them anymore.
+</p>
+
 <div class="algorithm">
 <p>
 `新たな閲覧文脈~groupを作成する@
@@ -2104,11 +2152,14 @@ Let group be a new browsing context group.
 Append group to the user agent's browsing context group set.
 </li>
 	<li>
-`閲覧文脈~groupに付加する$( %G, 次の結果 )
-⇒
-`新たな閲覧文脈を作成する$( ~NULL )
+%B ~LET `新たな閲覧文脈を作成する$( ~NULL, %G )
 ◎
-Append the result of creating a new browsing context with null to group.
+Let browsingContext be the result of creating a new browsing context with null and group.
+</li>
+	<li>
+`閲覧文脈~groupに付加する$( %G, %B )
+◎
+Append browsingContext to group.
 </li>
 	<li>
 ~RET %G
@@ -2314,11 +2365,11 @@ These values have different meanings based on whether the page is sandboxed or n
 <th>意味
 </thead>
 
-<tbody><tr><td>`現-^i<!-- current -->
+<tbody><tr><td>`現-^i【！current】
 <td>
 %名前 を指定している “~link等” が所属している`文書$が`属する閲覧文脈$を指す。
 
-<tr><td>`親^i<!-- parent -->
+<tr><td>`親^i【！parent】
 <td>
 `現-^i の`親~閲覧文脈$を指す。
 
@@ -2326,18 +2377,18 @@ These values have different meanings based on whether the page is sandboxed or n
 <td>
 `現-^i の`~top-level閲覧文脈$を指す。
 
-<tr><td>`新-^i<!-- new -->
+<tr><td>`新-^i【！new】
 <td>
 新たな`~top-level閲覧文脈$（`補助~閲覧文脈$の場合もある）が作成されることを意味する。
 これは、種々の［
 利用者による選好／~UAによる施策
 ］の~subjectになる。
 
-<tr><td>`なし^i<!-- none -->
+<tr><td>`なし^i【！none】
 <td>
 何も起きない（~navigateされる閲覧文脈はない）ことを意味する。
 
-<tr><td>`新-？^i<!-- maybe new -->
+<tr><td>`新-？^i【！maybe new】
 <td>
 （ “無” ／ “有” の場合のみ）
 `iframe^e の `sandbox$a 属性に `allow-popups$v ~keywordも指定されているならば `新-^i と同じ。
@@ -2407,9 +2458,9 @@ _parent if there isn't a parent
 ］
 ◎
 _parent if parent is also top
-<td>`親^i （ ~EQ `top^i ）◎ parent/top
+<td>`親^i （ ~EQ `top^i ）
 <td>`なし^i
-<td>`親^i◎ parent/top
+<td>`親^i
 
 <tr><td>
 `_parent^l ~AND［
@@ -2459,9 +2510,9 @@ name that doesn't exist
 %B は `現-^i の子孫である
 ◎
 name that exists and is a descendant
-<td>%B◎ Ipecified descendant
-<td>%B◎ specified descendant
-<td>%B◎ specified descendant
+<td>%B
+<td>%B
+<td>%B
 
 <tr><td>
 %B ~EQ `現-^i
@@ -2479,9 +2530,9 @@ name that exists and is current
 ］
 ◎
 name that exists and is an ancestor that is top
-<td>%B （ ~EQ `top^i ）◎ specified ancestor
+<td>%B （ ~EQ `top^i ）
 <td>`なし^i
-<td>%B◎ specified ancestor/top
+<td>%B
 
 <tr><td>
 ［
@@ -2491,7 +2542,7 @@ name that exists and is an ancestor that is top
 ］
 ◎
 name that exists and is an ancestor that is not top
-<td>%B◎ specified ancestor
+<td>%B
 <td>`なし^i
 <td>`なし^i
 
@@ -2503,7 +2554,7 @@ name that exists and is an ancestor that is not top
 ］
 ◎
 other name that exists with common top
-<td>%B◎ specified
+<td>%B
 <td>`なし^i
 <td>`なし^i
 
@@ -2520,9 +2571,9 @@ other name that exists with common top
 ］
 ◎
 name that exists with different top, if familiar and one permitted sandboxed navigator
-<td>%B◎ specified
-<td>%B◎ specified
-<td>%B◎ specified
+<td>%B
+<td>%B
+<td>%B
 
 <tr><td>
 ［
@@ -2532,7 +2583,7 @@ name that exists with different top, if familiar and one permitted sandboxed nav
 ］
 ◎
 name that exists with different top, if familiar but not one permitted sandboxed navigator
-<td>%B◎ specified
+<td>%B
 <td>`なし^i
 <td>`なし^i
 
