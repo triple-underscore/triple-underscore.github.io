@@ -1923,6 +1923,7 @@ SRI=主                ~/webappsec-subresource-integrity-ja.html
 UPGRADEINSECUREREQUESTS=主 ~/webappsec-upgrade-insecure-requests-ja.html
 	UPGRADEINSECUREREQUESTS=版 ~TR/upgrade-insecure-requests/
 	UPGRADEINSECUREREQUESTS=編 w3c.github.io/webappsec-upgrade-insecure-requests/
+MIXEDCONTENT=主       ~/webappsec-mixed-content-ja.html
 STREAMS=主            ~/Streams-ja.html
 STREAMS=・            streams.spec.whatwg.org/
 STREAMS=・            github.com/whatwg/streams
