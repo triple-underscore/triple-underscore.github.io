@@ -1481,7 +1481,7 @@ risk::::リスク
 
 概念:concept:~
 概念的:conceptual:~
-観念:notion:概念
+観念:notion:~
 抽象-:abstract:~
 	抽象-化:abstraction
 抽象的:abstract:~
