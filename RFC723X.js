@@ -992,8 +992,6 @@ proprietary::::プロプライエタリ
 agent::::エージェント
 app-level:application-level:::アプリケーションレベル
 app:application:::アプリケーション
-調査研究:research::~::リサーチ
-	調査
 scalability::::スケーラビリティ
 	応用-:apply:::
 	適用すること:application
