@@ -3127,6 +3127,9 @@ Foo間:inter-Foo
 いつでも:at any time
 時点:at the time
 この時点:at this point
+時間とともに:over time
+時経過にわたり:over time
+時を経:over time
 
 ●その他の定訳（仕様レベル
 かつ:and
