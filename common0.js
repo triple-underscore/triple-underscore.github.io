@@ -1864,6 +1864,11 @@ tool::::ツール
 	避けれ:avoidでき:避けられ
 	避けつ:avoidしつ:~
 
+達成-:achieve:~
+成遂げる:accomplishする:成し遂げる
+成遂げれ:accomplishでき:成し遂げれ
+成遂げら:accomplishされ:成し遂げら
+
 施行-:enforce:~
 実施:practice:~
 実践:practice:~

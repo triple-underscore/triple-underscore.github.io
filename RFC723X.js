@@ -1153,7 +1153,6 @@ scalability::::スケーラビリティ
 責務:responsibility:~
 誤解釈:misinterpret:~
 性向:nature:~
-達成-:accomplish:~
 開示-:disclose:~
 開示:disclosure:~
 関心:interest:~
