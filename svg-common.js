@@ -50,6 +50,10 @@ case 'r':
 case 't':
 	text = `&lt;${text}&gt;`;
 	break;
+case 'tp':
+	text = `&lt;'<code class="property">${key}</code>'&gt;`;
+	href = link_map[`p.${key}`];
+	break;
 case 'ps':
 	text = `:${text}`;
 	break;
@@ -151,6 +155,7 @@ a:attr
 p:property
 v:value
 t:type
+tp:type
 et:event-type
 at:at-rule
 ps:pseudo
@@ -184,6 +189,7 @@ pe:code
 dfn:dfn
 b:b
 t:var
+tp:var
 u:code
 css:code
 P:var
@@ -486,8 +492,6 @@ p.x:~SVGgeometry#XProperty
 p.y:~SVGgeometry#YProperty
 
 	●t
-t.~opacity-prop:~SVGrender#ObjectAndGroupOpacityProperties
-
 t.number:~CSSVAL#number-value
 t.integer:~CSSVAL#integer-value
 t.length:~CSSVAL#length-value
@@ -502,8 +506,6 @@ t.paint:~SVGpainting#DataTypePaint
 	t.paint:~SVGpainting#SpecifyingPaint
 t.marker-ref:~SVGpainting#DataTypeMarkerRef
 t.dasharray:~SVGpainting#DataTypeDasharray
-t.icccolor:https://svgwg.org/specs/color/#DataTypeICCColor
-
 
 ~URLt:~SVGtypes#attribute-url
 
@@ -727,7 +729,6 @@ xlink_title:xlink:title
 use: <code class="element">use</code> 
 svg: <code class="element">svg</code> 
 URLt:[URL]
-opacity-prop:'<code class="property">opacity</code>'
 
 `
 
@@ -868,7 +869,6 @@ span:
 sRGB:
 RGB:
 RGBA:
-ICC:
 raster::::ラスター
 	~raster化-:rasterize
 bitmap::::ビットマップ
