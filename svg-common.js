@@ -281,9 +281,9 @@ I.SVGUseElement:~SVGstruct#InterfaceSVGUseElement
 I.SVGUseElementShadowRoot:~SVGstruct#InterfaceSVGUseElementShadowRoot
 I.SVGViewElement:~SVGlinking#InterfaceSVGViewElement
 
-I.Animation:~WANIMAPI#the-animation-interface
+I.Animation:~WANIMapi#the-animation-interface
 	~TR/web-animations-1/#the-animation-interface
-I.Animatable:~WANIMAPI#animatable
+I.Animatable:~WANIMapi#animatable
 	~SVGanim#Animatable
 I.ShadowAnimation:~SVGstruct#InterfaceShadowAnimation
 I.DOMMatrix:~GEOMETRY#dommatrix

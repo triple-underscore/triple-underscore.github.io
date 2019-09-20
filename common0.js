@@ -1122,6 +1122,7 @@ TRANSFORM:css-transforms-ja.html
 TRANSFORM2:css-transforms2-ja.html
 TRANSITION:css-transitions-ja.html
 WANIM:web-animations-ja.html
+WANIMapi:web-animations-api-ja.html
 MQ4:mediaqueries4-ja.html
 SVG11:SVG11
 SVG2:https://svgwg.org/svg2-draft
@@ -1192,13 +1193,14 @@ WORKLETS1:worklets-ja.html
 WEBSOCKET:WebSocket-ja.html
 WEBSTORAGE:WebStorage-ja.html
 INDEXEDDB:IndexedDB-ja.html
-PROMISES:promises-guide-ja.html
 TIMELINE:performance-timeline-ja.html
 HRTIME:hr-time-ja.html
 NAV-TIMING:navigation-timing-ja.html
 RESOURCE-TIMING:resource-timing-ja.html
 PAGE-VISIBILITY:page-visibility-ja.html
 RESOURCE-HINTS:resource-hints-ja.html
+SENSORS:sensors-ja.html
+PERMISSIONS:webappsec-permissions-ja.html
 FEATUREPOLICY:feature-policy-ja.html
 REFERRER-POLICY:webappsec-referrer-policy-ja.html
 MIXED-CONTENT:webappsec-mixed-content-ja.html
