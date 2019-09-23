@@ -1543,8 +1543,13 @@ stateless::::ステートレス
 疑似:pseudo:~
 発行-:publish:~
 発行:publication:~
-発行m-:make:発行
-発行m:making:発行
+為す:makeする:~
+為され:makeされ:~
+為さな:makeしな:~
+為して:makeして:~
+為した:makeした:~
+為せる:makeできる:~
+為せな:makeできな:~
 	登録-済み:registered
 登記簿:registry:::レジストリ
 監視-:monitor::~::モニタ
