@@ -1001,7 +1001,9 @@ scalability::::スケーラビリティ
 事実:fact:~
 理由付け:reasoning:~
 乏しい:poorな:~
-予測-:anticipate:~
+見越す:anticipateする:~
+見越して:anticipateして:~
+見越され:anticipateされ:~
 上品:graceful::~
 不利:disadvantage:~
 不可欠:crucial:~
