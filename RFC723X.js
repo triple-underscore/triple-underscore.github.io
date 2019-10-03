@@ -900,7 +900,6 @@ UTC:
 
 charset:
 overhead::::オーバーヘッド
-subject::対象
 	~~渡る:span:
 指図-:instruct:~
 account::::アカウント
@@ -919,7 +918,6 @@ folder::::フォルダ
 guide::::ガイド
 	~hypertext:hypertext note
 key::::キー
-listener::::リスナー
 literal::::リテラル
 log::::ログ
 machine::::マシン
@@ -939,14 +937,12 @@ random::::ランダム
 repository::::リポジトリ
 reset::::リセット
 schedule::::スケジュール
-scripting::::スクリプティング
 storage::::ストレージ
 subset::::サブセット
 table::::テーブル
 textによる／~textからなる
 major::::主:メジャー
 minor::::副:マイナー
-view::::ビュー
 
 	●指示語
 
@@ -1007,7 +1003,6 @@ app:application:::アプリケーション
 不可欠:crucial:~
 不明瞭に:obscure:~
 依存:dependent:~
-依存関係:dependency:~
 保守的:conservative:~
 	適合:conformant:~
 適度:reasonable:~
@@ -1036,7 +1031,6 @@ app:application:::アプリケーション
 包括的:comprehensive:~
 参照文献:references:~
 参考:informative:~
-厳密に:strictに:~
 合意:consensus:~
 同意-:agree:~
 回答:answer:~
@@ -1055,16 +1049,11 @@ app:application:::アプリケーション
 古い:older:~
 可用性:availability:~
 不可能:impossible:~
-可能化:enable:可能に
-	無効化-／無力化:disable:無効化
-
 同義語:synonym:~
 多様:diverse:~
 多様性:diversity:~
 大概は:presumably:~
 	〜ないことを奨励discouraged
-定義済みの:predefined:~
-再定義-:redefine:~
 実用性:practicality:~
 遂行:performing:~
 導入:introduction:~
@@ -1076,7 +1065,6 @@ app:application:::アプリケーション
 恒久的:permanent:~
 意向:intention:~
 慣行:convention::~
-旧式の:ancient:~
 早期の:early:~
 明らか:obvious:~
 暫定的:interim:~
@@ -1104,7 +1092,6 @@ app:application:::アプリケーション
 推測:guess:~
 支援-:assist:~
 故意:deliberate:~
-方法:how:~
 方針:strategy:~
 深刻:serious:~
 準拠-:comply::~
@@ -1128,17 +1115,16 @@ app:application:::アプリケーション
 総集的:collective:~
 緩めら:relaxさ:~
 緩める:relaxする:~
-義務化:mandate:~
+義務化-:mandate:~
 翻訳-:translate::~
 翻訳:translation::~
-転化-:translate::~
 自由:free:~
 衝突-:collide:~
 衝突:collision:~
 補助:help:~
 複雑化-:complicate:~
 表記規約:notational conventions:~
-著者:author:~
+著作者:author:~
 機会:chance:~
 設置-:place:~
 設置しな:placeしな:課さな
@@ -1181,25 +1167,17 @@ app:application:::アプリケーション
 自動化:automated:~
 協調的:collaborative:~
 相違化-:differentiate:区別
-相違す:differす:異な
-	相違し:differし:異なり
-
 変更管理者:change controller:~
 運用-:operate:~
 運用:operation:~
-運用上の:operational:~
 運用者:operator:~
 
 	●保安
-
-sensible:
 sensitive:
 私的:private:~:::プライベート
-policy::::ポリシー
 騙す:trickする:~
 騙せ:trickでき:~
 穴:hole::~::ホール
-未保護の:unprotected:~
 弱体化-:compromise:~
 悪用-:exploit:~
 悪用:exploitation:~
@@ -1226,8 +1204,7 @@ policy::::ポリシー
 軽減策:mitigation:~
 署名:signature:~
 防御策:defense:~
-露に:reveal:~
-露呈-:expose:~
+露呈-:reveal:露に
 中間者:man-in-the-middle::~
 相関-:correlate:~
 相関:correlation:~
@@ -1241,7 +1218,6 @@ messaging::::メッセージ処理
 zero:::ゼロ
 ゼロ:zero::~
 pathname::::パス名
-query::::クエリ
 スキーム:scheme::~
 	~frame法:framing
 packet::::パケット
@@ -1283,8 +1259,8 @@ quote::::クォート
 実数:real number:~
 
 桁:digit::~
-正準:canonical::~
-正準化:canonicalization::~
+正準-:canonical::~
+	正準-化:canonicalization
 移行:transition::~
 稀:rare:~
 番号:number:~
@@ -1471,12 +1447,8 @@ referrer::::リファラ
 在する:presentする:在る
 在さな:presentしな:無
 不在:absence:~
-存在:presence:~
+存在p:presence:存在
 提示-:present:~
-提示:presentation:~
-存在e-:exist:存在
-存在e:existence:存在
-
 容量:capacity:~
 対応-:correspond:~
 対応ng:corresponding:対応する
@@ -1500,17 +1472,13 @@ referrer::::リファラ
 給せ:supplyでき:~
 給さな:supplyしな:~
 改変子:modifier::~
-改訂:revision::~::リビジョン
-改訂履歴:revision::~::リビジョン
 
 文書化:document 化:~
 族:family::~::ファミリ
 日付時刻:date and time::~
 日時:date::~
 時刻:time::~
-時刻印:timestamp::~::タイムスタンプ
 時間制限:timeout::~::タイムアウト
-待時間:latency:待ち時間
 時計:clock::~::クロック
 昇順:ascending order:~
 降順:decreaseing order:~
