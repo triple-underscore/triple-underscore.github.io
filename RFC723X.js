@@ -661,7 +661,7 @@ IETF Review:~5226#section-4.1
 隣点間~header:~7230#hop-by-hop-header
 ~payload本体:~7230#payload-body
 ~payload:~7230#payload-body
-形式変換proxy:~7230#transforming-proxy
+形式変換ng~proxy:~7230#transforming-proxy
 相対~参照:~7230#p.relative-part
 	~3986#section-4.2
 素片:~7230#p.fragment
@@ -990,12 +990,10 @@ proprietary::::プロプライエタリ
 望まず:wishせず:~
 回避法:avoidance:~
 agent::::エージェント
-app-level:application-level:::アプリケーションレベル
 app:application:::アプリケーション
-scalability::::スケーラビリティ
+	~app~levelの:application-level
 	応用-:apply:::
 	適用すること:application
-
 一般用:general-purpose:~
 中立的:neutral:~
 事実:fact:~
@@ -1010,7 +1008,6 @@ scalability::::スケーラビリティ
 不明瞭に:obscure:~
 依存:dependent:~
 依存関係:dependency:~
-信頼性:reliability:~
 保守的:conservative:~
 	適合:conformant:~
 適度:reasonable:~
@@ -1149,7 +1146,6 @@ scalability::::スケーラビリティ
 不許可に:disallow:~
 診断:diagnostic:~
 承認-:acknowledge:~
-謝辞:acknowledgement:~
 未認識:unrecognized:認識できない
 誤解:mistake:~
 責務:responsibility:~
@@ -1202,7 +1198,7 @@ sensitive:
 policy::::ポリシー
 騙す:trickする:~
 騙せ:trickでき:~
-穴:hole::穴:ホール
+穴:hole::~::ホール
 未保護の:unprotected:~
 弱体化-:compromise:~
 悪用-:exploit:~
@@ -1310,7 +1306,7 @@ quote::::クォート
 暗号化-:encrypt::~
 暗号化:encryption::~
 暗号用の:cryptographic::~
-形式変換proxy:transforming proxy::形式変換 proxy:形式変換プロキシ
+形式変換ng:transforming::形式変換
 形式変換-:transform::~
 形式変換:transformation::~
 分割-:split:~
@@ -1341,7 +1337,6 @@ server-wide::server 全般::サーバ全般
 spider::::スパイダー
 robot::::ロボット
 robotic::::ロボット的
-traffic::::トラフィック
 transaction::::トランザクション
 tunnel::::トンネル
 close:
@@ -1519,7 +1514,6 @@ referrer::::リファラ
 時計:clock::~::クロック
 昇順:ascending order:~
 降順:decreaseing order:~
-更新:update::~::アップデート
 更新喪失:lost update::~
 条件付き:conditional::~
 	〜でない:unconditional~
@@ -1590,8 +1584,6 @@ stateless::::ステートレス
 
 負荷:load:~
 過負荷:overload:~
-
-起動させ:initiateし:~
 超過-:exceed:~
 近似:approximation:~
 連合-:federate:~
