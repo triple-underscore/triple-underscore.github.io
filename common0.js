@@ -1695,7 +1695,6 @@ console::::コンソール
 改めれ:alterでき:~
 改めな:alterしな:~
 改めら:alterさ:~
-改めな:alterしな:~
 改めて:alterして:~
 改めた:alterした:~
 
@@ -2158,7 +2157,6 @@ parameter::::パラメタ
 不能化-:disable:~
 可能化-:enable:~
 可能化:enabled:~
-阻止-:block::~::ブロック
 破棄-:discard:~
 停止-:stop::~
 中断-:interrupt::~
@@ -2292,9 +2290,8 @@ message::::メッセージ
 
 promise:
 解決-:resolve::~
-解決:resolution::~
-解決-:resolve::~
 解決d:resolved::解決
+解決:resolution::~
 	処理待ち:pending:~
 	処理待ちの:pending:~
 先送り:defer::~
@@ -2396,7 +2393,6 @@ member::::メンバ
 map::::マップ
 top-level::::トップレベル
 tuple::::タプル
-queue::::キュー
 pair::::ペア
 list::::リスト
 配列:array::~
@@ -2525,7 +2521,6 @@ byte::::バイト
 bit::::ビット
 本体:body::~::ボディ
 binary::::バイナリ
-method::::メソッド
 source::::ソース
 query::::クエリ
 源:source::~::ソース
@@ -2880,7 +2875,6 @@ session::::セッション
 style::::スタイル
 stylesheet:style sheet:::スタイルシート
 cascade::::カスケード
-prop:property:::プロパティ
 at-rule:::at-規則
 記述子:descriptor::~
 略式:shorthand::~
@@ -2888,7 +2882,6 @@ at-rule:::at-規則
 適用対象:applies to:~
 百分率:percentage:~
 離散的:discrete::~
-正準的:canonical:~
 animate::::アニメート
 animation::::アニメーション
 使用:used:~
