@@ -968,7 +968,6 @@ hyperlink::::ハイパーリンク
 	navigate法:navigating
 遠隔:remote::~::リモート
 multimedia::::マルチメディア
-再読込する:reloadする::読み込み直す::リロードする
 
 	●仕様
 	~program的:programmatical
