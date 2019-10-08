@@ -1489,7 +1489,7 @@ risk::::リスク
 抽象的:abstract:~
 定義-:define:~
 定義:definition:~
-定義な:-defined:~
+定義な:definedな:~
 未定義:undefined:~
 未定義の:undefinedな:~
 	定義されない:undefined
@@ -2030,7 +2030,7 @@ programming::::プログラミング
 任意な:arbitraryな:任意の
 任意に:arbitraryに:~
 帰結:consequence:~
-駆動な:-driven:駆動の
+駆動な:drivenな:駆動の
 駆動-:drive:~
 導出-:derive:~
 正準的:canonical:~
