@@ -1201,7 +1201,6 @@ sensitive:
 特権拡大:privilege escalation:~
 盗聴:theft:~
 脆弱:vulnerable::~
-軽減策:mitigation:~
 署名:signature:~
 防御策:defense:~
 露呈-:reveal:露に

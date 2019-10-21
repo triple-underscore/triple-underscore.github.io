@@ -2845,6 +2845,8 @@ session::::セッション
 同一-:same-::~
 非同一-:cross-::~::クロス
 軽減-:mitigate:~
+軽減:mitigation:~
+軽減策:mitigations:~
 安全:safe:~
 第三者主体:third-party::~::サードパーティ
 阻止-:block::~::ブロック
