@@ -772,17 +772,14 @@ escape::::エスケープ
 
 
 	●処理／IDL／event
-subject::対象
 nullable:::null 可能
 変異不能:immutable::~
-即時に:immediateに:~
 
 	●構造
 shadow:
 	~group化する:grouping
 svg:
 	子孫:descendent
-文書片:document fragment::~
 不可分:atomic::~
 構造化-:structure::~
 隔離-:isolate::~
@@ -871,7 +868,6 @@ raster::::ラスター
 	~raster化-:rasterize
 bitmap::::ビットマップ
 alpha::::アルファ
-channel::::チャネル
 fill::::フィル
 stroke::::ストローク
 	~stroke時の:stroking
@@ -885,7 +881,6 @@ mask::::マスク
 masking::::マスク法
 	~maskされ見えなくなる:masked out
 	~raster化-:rasterize
-overflow::::過フロー
 	~screen上の:onscreen
 symbol::::シンボル
 glyph::::グリフ
@@ -941,8 +936,6 @@ green:
 	非~animate化:non-animated
 window::::ウィンドウ
 pointer::::ポインタ
-accessibility:::access 性:アクセス性:アクセシビリティ
-view::::ビュー
 viewer::::ビューア
 zoom::::ズーム
 pan::::パン
