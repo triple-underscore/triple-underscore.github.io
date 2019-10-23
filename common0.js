@@ -1293,7 +1293,9 @@ sizing::::サイズ法
 絶対的:absolute:~
 相対:relative:~
 相対的:relative:~
+物理-:physical:~
 物理的:physical:~
+論理-:logical:~
 論理的:logical:~
 移動-:move:~
 開始-:start:~
