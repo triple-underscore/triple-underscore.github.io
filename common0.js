@@ -1186,7 +1186,7 @@ HEcustom:HTML-custom-ja.html
 HEtextlevel:HTML-text-level-ja.html
 HEsections:HTML-sections-ja.html
 HEscripting:HTML-scripting-ja.html
-HEcanvas:https://html.spec.whatwg.org/multipage/canvas.html
+HEcanvas:HTML-canvas-ja.html
 HEtables:HTML-tables-ja.html
 WORKERS:Workers-ja.html
 WORKLETS1:worklets-ja.html
