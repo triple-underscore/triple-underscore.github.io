@@ -273,8 +273,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2019-09-24
-trans_update:2019-09-25
+spec_date:2019-11-04
+trans_update:2019-11-05
 source_checked:180329
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -329,6 +329,7 @@ COLOR_Y:<span style="color:blue;">青色区間</span>
 TOUCHEVENTS:touch-events-ja.html
 	https://www.w3.org/TR/touch-events/#touchevent-interface
 DEVICEORIENTATION:deviceorientation-ja.html
+CONSOLE:console-ja.html
 	
 Text: <code>Text</code> 
 scope-ps: <code class="pseudo">:scope</code> 
@@ -623,6 +624,7 @@ portable::可搬::ポータブル
 保つ:keepする:~
 支払う:payする:~
 貢献-:contribute:~
+警告:warning:~
 
 	働き続けられる:don’t stop working
 	要-:require
@@ -1559,6 +1561,8 @@ set.置換する:~INFRA#set-replace
 却下する:~WEBIDL#reject
 解決する:~WEBIDL#resolve
 
+~consoleに警告を報告する:~CONSOLE#report-a-warning-to-the-console
+
 ~URL:~URL1#concept-url
 ~URLを直列化する:~URL1#concept-url-serializer
 
@@ -1595,8 +1599,11 @@ rM.大域~obj:~WAPI#concept-realm-global
 属する閲覧文脈:~BROWSERS#concept-document-bc
 
 ~sw:~SW1#dfn-service-worker
+SWG.~sw:~SW1#serviceworkerglobalscope-service-worker
+取扱う~event型の集合:~SW1#dfn-set-of-event-types-to-handle
 ~script資源:~SW1#dfn-script-resource
 過去評価済み~flag:~SW1#dfn-has-ever-been-evaluated-flag
+~sw~event:~SW1#dfn-service-worker-events
 
 ~Realm:~TC39#realm
 時刻起点:~HRTIME#dfn-time-origin
@@ -1610,10 +1617,12 @@ _acks1:#_acks1
 
 ●●ref_normative
 
+[CONSOLE]
+    Dominic Farolino; Terin Stock; Robert Kowalski. Console Standard. Living Standard. URL: https://console.spec.whatwg.org/ 
 [DEVICE-ORIENTATION]
     Rich Tibbett; et al. DeviceOrientation Event Specification. URL: https://w3c.github.io/deviceorientation/ 
 [ECMASCRIPT]
-    ECMAScript Language Specification. URL: https://tc39.github.io/ecma262/ 
+    ECMAScript Language Specification. URL: https://tc39.es/ecma262/ 
 [ENCODING]
     Anne van Kesteren. Encoding Standard. Living Standard. URL: https://encoding.spec.whatwg.org/ 
 [HR-TIME]
@@ -1681,7 +1690,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/57512fac17cf2f1c4c85be4aec178c8086ee5ee4/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/b9383a331434964cb41014b805820feb1fc34729/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -4125,15 +4134,24 @@ To add an event listener given an EventTarget object eventTarget and an event li
 	<li>
 <p>
 ~IF［
-%~target に`関連な大域~obj$ %G は $ServiceWorkerGlobalScope ~objである
+%~target は $ServiceWorkerGlobalScope ~objである
 ］~AND［
-%G に結付けられている`~sw$の`~script資源$の，`過去評価済み~flag$ ~EQ ~T
+%~target の`~sw$SWGの`~script資源$の`過去評価済み~flag$ ~EQ ~T
+］~AND［
+%~listener の `type$evL は ある`~sw~event$の $type 属性~値に合致する†
 ］`SERVICE-WORKERS$r
 ⇒
-~THROW `TypeError$E
+`~consoleに警告を報告する$( “期待される結果を与えないであろう” )
 ◎
-If eventTarget’s relevant global object is a ServiceWorkerGlobalScope object and its associated service worker’s script resource’s has ever been evaluated flag is set, then throw a TypeError. [SERVICE-WORKERS]
+If eventTarget is a ServiceWorkerGlobalScope object, its service worker’s script resource’s has ever been evaluated flag is set, and listener’s type matches the type attribute value of any of the service worker events, then report a warning to the console that this might not give the expected results. [SERVICE-WORKERS]
 </p>
+
+<p class="trans-note">【†
+そのような~eventの~instanceが在ることも要求しているかのように解釈できる条件だが、単に，~sw~eventの ^type 属性~値がとり得る値の集合に入ることを意味するのかも？
+（しかしながら、`~event~listenerを除去する$ときのように，明示的な用語
+“`取扱う~event型の集合$”
+を利用していないので、実際にその解釈が意図されているのかもしれない。）
+】</p>
 
 <p class="note">注記：
 ［
@@ -4222,13 +4240,44 @@ Add an event listener with the context object and an event listener whose type i
 `~event~listenerを除去する@
 ときは、所与の
 ( $EventTarget ~obj %~target, `~event~listener$ %~listener )
-に対し，次を走らす
-⇒＃
+に対し，次を走らす：
+◎
+To remove an event listener, given an EventTarget object eventTarget and an event listener listener, run these steps:
+</p>
+
+<ol>
+	<li>
+~IF［
+此れは $ServiceWorkerGlobalScope ~objである
+］~AND［
+%type 【 %~listener の `type$evL ？】 ~NIN 此れの`~sw$SWGが`取扱う~event型の集合$
+］`SERVICE-WORKERS$r
+⇒
+`~consoleに警告を報告する$( “期待される結果を与えないであろう” )
+◎
+If the context object is a ServiceWorkerGlobalScope object and its service worker’s set of event types to handle contains type, then report a warning to the console that this might not give the expected results. [SERVICE-WORKERS]
+</li>
+	<li>
 %~listener の `removed$evL ~SET ~T；
+◎
+Set listener’s removed to true and＼
+</li>
+	<li>
 %~target の`~event~listener~list$から %~listener を`除去する$
 ◎
-To remove an event listener, given an EventTarget object eventTarget and an event listener listener, set listener’s removed to true and remove listener from eventTarget’s event listener list.
+remove listener from eventTarget’s event listener list.
+</li>
+</ol>
+
+<p class="note">注記：
+~HTMLは、~event~handlerを定義するために これを必要とする。
+`HTML$r
+◎
+HTML needs this to define event handlers. [HTML]
 </p>
+</div>
+
+<div class="algorithm">
 
 <p>
 `~event~listenerをすべて除去する@
@@ -4263,17 +4312,6 @@ HTML needs this to define document.open(). [HTML]
 The removeEventListener(type, callback, options) method, when invoked, must run these steps:
 </p>
 		<ol>
-			<li>
-~IF［
-此れに`関連な大域~obj$ %G は $ServiceWorkerGlobalScope ~objである
-］~AND［
-%G に結付けられている`~sw$の`~script資源$の，`過去評価済み~flag$ ~EQ ~T
-］`SERVICE-WORKERS$r
-⇒
-~THROW `TypeError$E
-◎
-If the context object’s relevant global object is a ServiceWorkerGlobalScope object and its associated service worker’s script resource’s has ever been evaluated flag is set, then throw a TypeError. [SERVICE-WORKERS]
-</li>
 			<!--cp-let-capture-flatten-->
 			<li>
 ~IF［
@@ -16032,7 +16070,7 @@ If context object’s namespace is not the HTML namespace, then throw a "NotSupp
 `h5^l,
 `h6^l,
 `header^l,
-`nav^l,
+`main^l,
 `nav^l,
 `p^l,
 `section^l,
@@ -16046,7 +16084,7 @@ If context object’s namespace is not the HTML namespace, then throw a "NotSupp
 </p>
 
 ◎
-If context object’s local name is not a valid custom element name, "article", "aside", "blockquote", "body", "div", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "main" "nav", "p", "section", or "span", then throw a "NotSupportedError" DOMException.
+If context object’s local name is not a valid custom element name, "article", "aside", "blockquote", "body", "div", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "main", "nav", "p", "section", or "span", then throw a "NotSupportedError" DOMException.
 </li>
 			<li>
 <p>
@@ -22527,8 +22565,8 @@ Ondřej Žára,
 Peter Sharpe,
 Philip Jägenstedt,
 Philippe Le Hégaret,
-prosody—Gab Vereable Context(,
 Pierre-Marie Dartus,
+prosody—Gab Vereable Context(,
 Ra’Shaun Stovall (Snuggs),
 Rafael Weinstein,
 Rakina Zata Amni,
