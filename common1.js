@@ -1340,7 +1340,6 @@ Util.addAltRefs = () => {
 	const JA_REFS = COMMON_DATA.JA_REFS;
 	const JA_LINKS = COMMON_DATA.JA_LINKS;
 	const JA_BASIS = COMMON_DATA.JA_BASIS;
-	const REF_DATA = (PAGE_DATA.ref_data || '') + COMMON_DATA.REF_DATA;
 	const REF_KEY_MAP = Util.get_mapping(COMMON_DATA.REF_KEY_MAP + (PAGE_DATA.ref_key_map || ''));
 
 	const ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
@@ -1362,11 +1361,16 @@ Util.addAltRefs = () => {
 
 	const ref_types = ['normative', 'informative'];
 
+	const rfc_list = [];
 	const ref_node_list = ref_types.filter( (id) => {
 		const ref_data = PAGE_DATA[`ref_${id}`];
 		if(!ref_data) return false;
 		ref_data.replace(/\n\[.+\]/g, (ref_name) => {
 			const key = refKey(ref_name);
+			if(/^RFC\d+$/.test(key)){
+				// for google translate ( RFC only )
+				rfc_list.push(key.slice(3));
+			}
 			mapping[key] = '';
 			return '';
 		});
@@ -1381,6 +1385,13 @@ Util.addAltRefs = () => {
 		const html = `<a href="${url}">${label}</a>`;
 		mapping[key] += html;
 	}
+
+	//和訳リンク先データ
+	const REF_DATA = (PAGE_DATA.ref_data || '')
+	+ COMMON_DATA.REF_DATA
+	+ rfc_list.join('\n').replace(/\d+/g, 
+		'RFC$&=副 rfcs.web.fc2.com/rfc$&.html●google 翻訳'
+	);
 
 	let m;
 	const rxp = /^(\w+)=(\S)(\d*)[\t ]+(~\w*)?([^\s●]+)(●.*)?$/mg;
@@ -2067,14 +2078,12 @@ XML10:XML
 XMLNAMES:XMLNS
 XMLSTYLESHEET:XMLSS
 ECMA262:ECMASCRIPT
-	HTTP:RFC2616
-HTTP11:RFC2616
-HTTPAUTH:RFC2617
 URI:RFC3986
 IDNA:RFC3490
 IPV6:RFC4291
 ABNF:RFC5234
 COOKIES:RFC6265
+TLS:RFC8446
 WEBIDL1:WEBIDL
 WORKLETS:WORKLETS1
 REFERRER:REFERRERPOLICY
@@ -2082,7 +2091,6 @@ SW:SW1
 SERVICEWORKERS:SW1
 SERVICEWORKERS1:SW1
 UPGRADE:UPGRADEINSECUREREQUESTS
-TLS:RFC5246
 PAGEVISIBILITY2:PAGEVISIBILITY
 `;
 
