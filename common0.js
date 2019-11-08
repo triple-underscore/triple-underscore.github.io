@@ -3266,5 +3266,7 @@ Foo間:inter-Foo
 歓迎:welcome
 指定通り:as specified:指定どおり
 〜に利する:on behalf of 〜
+する用意がある:willing to
+するつもりはない:unwilling to／:not willing to
 
 */

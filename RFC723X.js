@@ -1666,11 +1666,6 @@ note
 意識-:be aware
 ~logをとる:~logging
 	高い:high
-言い換えれば、in other words
-〜に関する／関して:regarding／regard／with respect to
-〜に関わらず:regardless
-〜するつもりがある:willing
-〜するつもりがない:unwilling
 思しきもの:supposedly:
 よって:hence
 その時々:on occasion
