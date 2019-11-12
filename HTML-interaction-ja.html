@@ -109,8 +109,8 @@ return text;
 
 ●●options
 
-spec_date:2019-10-28
-trans_update:2019-10-30
+spec_date:2019-11-11
+trans_update:2019-11-12
 source_checked:180514
 page_state_key:HTML
 spec_status:LS
@@ -396,6 +396,7 @@ cF.隠d状態:~HEinteractive#command-facet-hiddenstate
 ~focusを更新する:#focus-update-steps
 ~objを~unfocusする:#unfocusing-steps
 ~objを~focusする:#focusing-steps
+~focus可能な区画を取得する:#get-the-focusable-area
 
 自動focus処理-済み~flag:#autofocus-processed-flag
 自動focus候補たち:#autofocus-candidates
@@ -651,6 +652,7 @@ unfocus::::未フォーカスに
 
 指名-:designate::~
 標的:target::~::ターゲット
+	標的:focus target
 	標的:new focus target
 届けら:routeさ::~
 届ける:routeする::~
@@ -2885,6 +2887,149 @@ The varying default value based on element type is a historical artifact.
 
 <div class="algorithm">
 <p>
+`~focus可能な区画を取得する@
+ときは、所与の
+( %標的, 文字列 %~focus誘発元 （省略時は ε ） )
+に対し，次の手続きを走らす：
+◎
+To get the focusable area for a focus target that is either an element that is not a focusable area, or is a browsing context, given an optional string focus trigger, run the first matching set of steps from the following list:
+</p>
+
+<ol>
+	<li>
+~Assert：
+%標的 は次のいずれかである
+⇒
+`~focus可能な区画$でない要素 ／ `閲覧文脈$
+◎
+↑</li>
+	<li>
+~IF［
+%標的 は `area$e 要素である
+］~AND［
+%標的 は`~focus可能な図形$を定義している
+］
+⇒
+~RET それらの図形の`~DOM~anchor$のうち，`~tree順序$で最初のもの
+◎
+If focus target is an area element with one or more shapes that are focusable areas
+• Return the shape corresponding to the first img element in tree order that uses the image map to which the area element belongs.
+</li>
+	<li>
+~IF［
+%標的 は要素である
+］~AND［
+%標的 は 1 個以上の［
+`~focus可能な区画$である~scroll可能な領域
+］を伴う
+］
+⇒
+~RET それらの領域のうち，`平坦~tree順序$において最初のもの
+◎
+If focus target is an element with one or more scrollable regions that are focusable areas
+• Return the element's first scrollable region, according to a pre-order, depth-first traversal of the flat tree. [CSSSCOPING]
+</li>
+	<li>
+~IF［
+%標的 は`文書~要素$である
+］
+⇒
+~RET %標的 の`文書$の`表示域$
+◎
+If focus target is the document element of its Document
+• Return the Document's viewport.
+</li>
+	<li>
+~IF［
+%標的 は`閲覧文脈$である
+］
+⇒
+~RET %標的 にて`作動中の文書$
+◎
+If focus target is a browsing context
+• Return the browsing context's active document.
+</li>
+	<li>
+~IF［
+%標的 は ある`閲覧文脈$ %B を`入子にしている閲覧文脈~容器$である
+］
+⇒
+~RET %B にて`作動中の文書$
+◎
+If focus target is a browsing context container with a non-null nested browsing context
+• Return the browsing context container's nested browsing context's active document.
+</li>
+	<li>
+<p>
+~IF［
+%標的 は`~shadow~host$であって，その`~shadow根$elmの`~focusを委譲する$sR ~EQ ~T
+］：
+◎
+If focus target is a shadow host whose shadow root's delegates focus is true
+</p>
+		<ol>
+			<li>
+~IF［
+%標的 は`~top-level閲覧文脈の現在の被focus区画$の`~DOM~anchor$の`~shadowも含む広義先祖$である
+］
+⇒
+~RET ~NULL
+◎
+If focus target is a shadow-including inclusive ancestor of the currently focused area of a top-level browsing context's DOM anchor, then return null.
+◎
+Otherwise:
+</li>
+			<li>
+%アリな~focus委譲-先~list ~LET `~focus可能な区画$のうち［
+その`~DOM~anchor$は，`平坦~tree$内で %標的 の子孫であるもの
+］からなる，`平坦~tree順序$【！`~DOM~anchor$の`~tree順序$】による~list
+◎
+↓</li>
+			<li>
+~IF［
+%~focus誘発元 ~EQ `click^l
+］
+⇒
+%アリな~focus委譲-先~list から`~clickで~focus可能$でないものを除去する
+◎
+If focus trigger is "click", then let possible focus delegates be the list of all click focusable focusable areas whose DOM anchor is a descendant of new focus target in the flat tree.
+◎
+Otherwise, let possible focus delegates be the list of all focusable areas whose DOM anchor is a descendant of new focus target in the flat tree.
+</li>
+			<li>
+~RET［
+%アリな~focus委譲-先~list は空でないならば その最初の~item ／
+~ELSE_ ~NULL
+］
+◎
+Set new focus target to the first focusable area in tree order of their DOM anchors in possible focus delegates, or null if possible focus delegates is empty.
+</li>
+		</ol>
+
+【！原文更新漏れ：new focus target → focus target／Set ... → Return 】
+
+<p class="note">
+`逐次的に~focus可能$かどうかについては、［
+`~shadow~host$,
+`~focusを委譲する$sR
+］の取扱いは，`逐次的~focus~navi順序$を構築するとき行われる。
+すなわち，そのような`~shadow~host$に対しては、逐次的~focus~naviの一部として
+`~objを~focusする$() が~callされることは決してない。
+◎
+For sequential focusability, the handling of shadow hosts and delegates focus is done when constructing the sequential focus navigation order. That is, the focusing steps will never be called on such shadow hosts as part of sequential focus navigation.
+</p>
+	</li>
+	<li>
+~RET ~NULL
+◎
+Otherwise
+• Return null
+</li>
+</ol>
+</div>
+
+<div class="algorithm">
+<p>
 `~objを~focusする@
 ときは、所与の
 ( %標的, %~fallback標的 （省略時は ε ）, 文字列 %~focus誘発元 （省略時は ε ） )
@@ -2902,142 +3047,14 @@ The focusing steps for an object new focus target that is either a focusable are
 ◎
 ↑</li>
 	<li>
-<p>
-%標的 ~SET 次の下位手続きを走らせた結果：
-◎
-If new focus target is not a focusable area, then run the first matching set of steps from the following list:
-</p>
-		<ol>
-			<li>
 ~IF［
-%標的 は`~focus可能な区画$である
+%標的 は`~focus可能な区画$でない
 ］
 ⇒
-~RET %標的
+%標的 ~SET `~focus可能な区画を取得する$( %標的, %~focus誘発元 )
 ◎
-↑</li>
-			<li>
-~IF［
-%標的 は `area$e 要素である
-］~AND［
-%標的 は`~focus可能な図形$を定義している
-］
-⇒
-~RET それらの図形の`~DOM~anchor$のうち，`~tree順序$で最初のもの
-◎
-If new focus target is an area element with one or more shapes that are focusable areas
-• Set new focus target to the shape corresponding to the first img element in tree order that uses the image map to which the area element belongs.
+If new focus target is not a focusable area, then set new focus target to the result of getting the focusable area for new focus target, given focus trigger if it was passed.
 </li>
-			<li>
-~IF［
-%標的 は要素である
-］~AND［
-%標的 は 1 個以上の［
-`~focus可能な区画$である~scroll可能な領域
-］を伴う
-］
-⇒
-~RET それらの領域のうち，`平坦~tree順序$において最初のもの
-◎
-If new focus target is an element with one or more scrollable regions that are focusable areas
-• Set new focus target to the element's first scrollable region, according to a pre-order, depth-first traversal of the flat tree. [CSSSCOPING]
-</li>
-			<li>
-~IF［
-%標的 は`文書~要素$である
-］
-⇒
-~RET %標的 の`文書$の`表示域$
-◎
-If new focus target is the document element of its Document
-• Set new focus target to the Document's viewport.
-</li>
-			<li>
-~IF［
-%標的 は`閲覧文脈$である
-］
-⇒
-~RET %標的 にて`作動中の文書$
-◎
-If new focus target is a browsing context
-• Set new focus target to the browsing context's active document.
-</li>
-			<li>
-~IF［
-%標的 は ある`閲覧文脈$ %B を`入子にしている閲覧文脈~容器$である
-］
-⇒
-~RET %B にて`作動中の文書$
-◎
-If new focus target is a browsing context container with a non-null nested browsing context
-• Set new focus target to the browsing context container's nested browsing context's active document.
-</li>
-			<li>
-<p>
-~IF［
-%標的 は`~shadow~host$であって，その`~shadow根$elmの`~focusを委譲する$sR ~EQ ~T
-］：
-◎
-If new focus target is a shadow host whose shadow root's delegates focus is true
-</p>
-				<ol>
-					<li>
-~IF［
-%標的 は`~top-level閲覧文脈の現在の被focus区画$の`~DOM~anchor$の`~shadowも含む広義先祖$である
-］
-⇒
-~RET ~NULL
-◎
-If new focus target is a shadow-including inclusive ancestor of the currently focused area of a top-level browsing context's DOM anchor, then set new focus target to null.
-◎
-Otherwise:
-</li>
-					<li>
-%アリな~focus委譲-先~list ~LET `~focus可能な区画$のうち［
-その`~DOM~anchor$は，`平坦~tree$内で %標的 の子孫であるもの
-］からなる，`平坦~tree順序$【！`~DOM~anchor$の`~tree順序$】による~list
-◎
-↓</li>
-					<li>
-~IF［
-%~focus誘発元 ~EQ `click^l
-］
-⇒
-%アリな~focus委譲-先~list から`~clickで~focus可能$でないものを除去する
-◎
-If focus trigger is "click", then let possible focus delegates be the list of all click focusable focusable areas whose DOM anchor is a descendant of new focus target in the flat tree.
-◎
-Otherwise, let possible focus delegates be the list of all focusable areas whose DOM anchor is a descendant of new focus target in the flat tree.
-</li>
-					<li>
-~RET［
-%アリな~focus委譲-先~list は空でないならば その最初の~item ／
-~ELSE_ ~NULL
-］
-◎
-Set new focus target to the first focusable area in tree order of their DOM anchors in possible focus delegates, or null if possible focus delegates is empty.
-</li>
-				</ol>
-
-<p class="note">
-`逐次的に~focus可能$かどうかについては、［
-`~shadow~host$,
-`~focusを委譲する$sR
-］の取扱いは，`逐次的~focus~navi順序$を構築するとき行われる。
-すなわち，そのような`~shadow~host$に対しては、逐次的~focus~naviの一部として
-`~objを~focusする$() が~callされることは決してない。
-◎
-For sequential focusability, the handling of shadow hosts and delegates focus is done when constructing the sequential focus navigation order. That is, the focusing steps will never be called on such shadow hosts as part of sequential focus navigation.
-</p>
-			</li>
-			<li>
-~RET ~NULL
-◎
-Otherwise
-• Set new focus target to null.
-</li>
-		</ol>
-	</li>
 	<li>
 <p>
 ~IF［
@@ -3069,7 +3086,7 @@ Otherwise, set new focus target to the fallback target.
 ］
 ⇒＃
 %標的 ~SET %B にて`作動中の文書$；
-`and redo this step^en 【意図不明な記述】
+`and redo this step^en 【（ “この段を再び行う” と解釈したい所だが）意図不明な記述】
 ◎
 If new focus target is a browsing context container with non-null nested browsing context, then set new focus target to the nested browsing context's active document, and redo this step.
 </li>
@@ -4639,36 +4656,25 @@ Let inclusiveAncestorDocuments be a list consisting of doc, plus the active docu
 If URL's fragment of any Document in inclusiveAncestorDocuments is not empty, then continue.
 </li>
 			<li>
+%標的 ~LET %要素
+◎
+Let target be element.
+</li>
+			<li>
 <p>
 ~IF［
-%要素 は`~focus可能な区画$である
-］：
+%標的 は`~focus可能な区画$でない
+］
+⇒
+%標的 ~SET `~focus可能な区画を取得する$( %標的 )
 ◎
-If element is a focusable area, then:
+If target is not a focusable area, then set target to the result of getting the focusable area for target.
 </p>
-
-				<ol>
-					<li>
-%候補たち を`空にする$
-◎
-Empty candidates.
-</li>
-					<li>
-%~top文書 の`自動focus処理-済み~flag$ ~SET ~T
-◎
-Set topDocument's autofocus processed flag to true.
-</li>
-					<li>
-`~objを~focusする$( %要素 )
-◎
-Run the focusing steps for element.
-</li>
-				</ol>
 
 <div class="note">
 <p>注記：
 `自動focus候補たち$は、`~focus可能な区画$でない要素を包含し得る。
-これは、次のいずれかの場合に起こり得る：
+`~focus可能な区画を取得する$~algoにて取扱われる特別な事例に加えて、これが起こり得るわけには，次が挙げられる：
 </p>
 <ul>
 	<li>
@@ -4681,8 +4687,34 @@ Run the focusing steps for element.
 </li>
 </ul>
 ◎
-Autofocus candidates can contain elements which are not focusable areas. This can happen either because a non-focusable area element with an autofocus attribute was inserted into a document and it never became focusable, or because the element was focusable but its status changed while it was stored in autofocus candidates.
+Autofocus candidates can contain elements which are not focusable areas. In addition to the special cases handled in the get the focusable area algorithm, this can happen because a non-focusable area element with an autofocus attribute was inserted into a document and it never became focusable, or because the element was focusable but its status changed while it was stored in autofocus candidates.
 </div>
+			</li>
+			<li>
+<p>
+~IF［
+%標的 ~NEQ ~NULL
+］：
+◎
+If target is not null, then:
+</p>
+				<ol>
+					<li>
+%候補たち を`空にする$
+◎
+Empty candidates.
+</li>
+					<li>
+%~top文書 の`自動focus処理-済み~flag$ ~SET ~T
+◎
+Set topDocument's autofocus processed flag to true.
+</li>
+					<li>
+`~objを~focusする$( %標的 )
+◎
+Run the focusing steps for target..
+</li>
+				</ol>
 			</li>
 		</ol>
 	</li>
@@ -6367,3 +6399,4 @@ When enterkeyhint is unspecified (or is in a state not supported by the user age
 		</section>
 	</section>
 </main>
+
