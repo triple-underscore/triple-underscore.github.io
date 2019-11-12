@@ -1182,6 +1182,7 @@ HEedits:HTML-edits-ja.html
 HEimages:HTML-images-ja.html
 HEembed:HTML-embed-ja.html
 HEmedia:HTML-media-ja.html
+HEtrack:HTML-track-ja.html
 HEcustom:HTML-custom-ja.html
 HEtextlevel:HTML-text-level-ja.html
 HEsections:HTML-sections-ja.html
