@@ -1654,7 +1654,7 @@ console::::コンソール
 変更点:changes:~
 発行版:publication:~
 正誤表:errata:~
-謝辞:acknowledgments:~
+謝辞:acknowledgements:~
 
 将来:future:~
 	将来の:future:~
