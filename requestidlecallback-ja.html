@@ -154,8 +154,8 @@ return text;
 ●●options
 
 spec_title:Cooperative Scheduling of Background Tasks
-spec_date:2019-10-29
-trans_update:2019-10-30
+spec_date:2019-11-20
+trans_update:2019-11-22
 source_checked:170815
 page_state_key:TIMING
 original_url:https://w3c.github.io/requestidlecallback/
@@ -1121,32 +1121,12 @@ Increment the window's idle callback identifier by one.
 Let handle be the current value of window's idle callback identifier.
 </li>
 	<li>
-`遊休~期間を開始する？^V ~LET ［
-此れの`遊休~callback~list$は空ならば ~T ／
-~ELSE_ ~F
-］
-◎
-Let start_idle_period be true if the window's list of idle request callbacks and it's list of runnable idle callbacks are empty, otherwise false.
-</li>
-	<li>
 此れの`遊休~callback~list$に，次のように設定された新たな`遊休~callback$を付加する
 ⇒＃
 `~callback$ ~SET %callback,
 `~handle$ ~SET %~handle
 ◎
 Push callback to the end of window's list of idle request callbacks, associated with handle.
-</li>
-	<li>
-~IF［
-`遊休~期間を開始する？^V ~EQ ~T
-］
-⇒
-`遊休task~task源$から，次を走らす`~taskを~queueする$
-⇒
-`遊休~期間を開始する$( 此れ )
-◎
-If start_idle_period is true:
-• queue a task on the queue associated with the idle-task task source, which performs the start an idle period algorithm, passing window as a parameter.
 </li>
 	<li>
 <p>
@@ -1603,52 +1583,52 @@ The invoke idle callbacks algorithm:
 
 <ol>
 	<li>
+~IF［
+高~優先度な作業が新たに~scheduleされたことに因り，遊休~期間は早々に終端すべきと予見される
+］
+⇒
+~RET
+◎
+If the user-agent believes it should end the idle period early due to newly scheduled high-priority work, return from the algorithm.
+</li>
+	<li>
+~IF［
+現在時刻 ~GTE %刻限
+］
+⇒
+~RET
+◎
+Let now be the current time.
+◎
+If now is less than deadline and＼
+</li>
+	<li>
 %遊休~callback~list ~LET %window の`遊休~callback~list$
 ◎
 ↓</li>
 	<li>
-<p>
-~IF［
-次のいずれかが満たされる
-］…：
-</p>
-		<ul>
-			<li>
-高~優先度な作業が新たに~scheduleされたことに因り，遊休~期間は早々に終端すべきと予見される
-</li>
-			<li>
-現在時刻 ~GTE %刻限
-</li>
-			<li>
-%遊休~callback~list 内に［
+%遊休~callback ~LET %遊休~callback~list 内に［
 `稼働可能$ ~EQ ~T
-］を満たす`遊休~callback$は無い
-</li>
-		</ul>
-<p>
-…ならば
-⇒
-~GOTO `最後の段^i
-</p>
-
+］を満たす`遊休~callback$は［
+在るならば それらのうち最初のもの ／
+無いならば ε
+］
 ◎
-If the user-agent believes it should end the idle period early due to newly scheduled high-priority work, skip to step 4.
-◎
-Let now be the current time.
-◎
-If now is less than deadline and the window's list of runnable idle callbacks is not empty:
-</li>
+↓</li>
 	<li>
-%遊休~callback ~LET %遊休~callback~list 内の［
-`稼働可能$ ~EQ ~T
-］を満たす最初の`遊休~callback$
+~IF［
+%遊休~callback ~EQ ε
+］
+⇒
+~RET
 ◎
-Pop the top callback from window's list of runnable idle callbacks.
+the window's list of runnable idle callbacks is not empty:
 </li>
 	<li>
 %遊休~callback~list から %遊休~callback を除去する【！Pop】
 ◎
-↑</li>
+Pop the top callback from window's list of runnable idle callbacks.
+</li>
 	<li>
 `遊休~callbackを内部的に呼出す$( %遊休~callback, %刻限, ~F )
 ◎
@@ -1657,50 +1637,26 @@ Let deadlineArg be a new IdleDeadline. Set the time associated with deadlineArg 
 Call callback with deadlineArg as its argument. If an uncaught runtime script error occurs, then report the error.
 </li>
 	<li>
-<p>
 ~IF［
 %遊休~callback~list 内に［
 `稼働可能$ ~EQ ~T
 ］を満たす`遊休~callback$は在る
-］：
-◎
-If window's list of runnable idle callbacks is not empty,＼
-</p>
-		<ol>
-			<li>
-次を走らす`~taskを~queueする$
-⇒
-`遊休~callbackを呼出す$( %刻限, %window )
-◎
-queue a task which performs the steps in the invoke idle callbacks algorithm with deadline and window as a parameters and＼
-</li>
-			<li>
-~RET
-◎
-return from this algorithm
-</li>
-		</ol>
-	</li>
-	<li>
-`最後の段^i：<br>
-~IF［
-%遊休~callback~list は空でない
 ］
 ⇒
 次を走らす`~taskを~queueする$
 ⇒
-`遊休~期間を開始する$( %window )
+`遊休~callbackを呼出す$( %刻限, %window )
 ◎
-Otherwise, if either the window's list of idle request callbacks or it's list of runnable idle callbacks are not empty, queue a task which performs the steps in the start an idle period algorithm algorithm with window and as a parameter.
+If window's list of runnable idle callbacks is not empty, queue a task which performs the steps in the invoke idle callbacks algorithm with deadline and window as a parameters and return from this algorithm
 </li>
 </ol>
 </div>
 
 <p class="note">注記：
-~UAは、 %刻限 がまだ来ていなくても，上の~algoの `最後の段^i まで直に飛ぶものと裁定して 遊休~期間を早々に終端させれる。
+~UAは、 %刻限 がまだ来ていなくても，上の~algoの最初の段で終わらすものと裁定して 遊休~期間を早々に終端させれる。
 例えば~UAは、より優先度の高い稼働可能~な作業があれば，そうするものと裁定してもヨイ。
 ◎
-The user agent is free to end an idle period early, even if deadline has not yet occurred, by deciding to skip from step 1 directly to step 4. For example, the user agent may decide to do this if it determines that higher priority work has become runnable.
+The user agent is free to end an idle period early, even if deadline has not yet occurred, by deciding return from the algorithm in step 1. For example, the user agent may decide to do this if it determines that higher priority work has become runnable.
 </p>
 
 		</section>
