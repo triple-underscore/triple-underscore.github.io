@@ -531,7 +531,8 @@ REC: '勧告',
 NOTE: 'Working Group Note',
 LS: 'Living Standard',
 LD: 'Living Document',
-//IETFPR: 'IETF PROPOSED STANDARD'
+//IETFPR: 'IETF PROPOSED STANDARD',
+IETFID: 'Internet Draft',
 			}[options.spec_status] || '';
 		}
 
@@ -1044,6 +1045,7 @@ WEBIDL:WebIDL-ja.html
 XHR:XHR-ja.html
 UIEVENTS:uievents-ja.html
 SELECTIONAPI:selection-api-ja.html
+HTTPcommon:http-common-ja.html
 RFC7230:RFC7230-ja.html
 RFC7231:RFC7231-ja.html
 RFC7232:RFC7232-ja.html

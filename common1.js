@@ -298,11 +298,12 @@ CR: 'W3C Candidate Recommendation',
 REC: 'W3C Recommendation',
 NOTE: 'W3C Working Group Note',
 LS: 'Living Standard',
-IETFPR: 'IETF PROPOSED STANDARD'
+IETFPR: 'IETF PROPOSED STANDARD',
+IETFID: 'IETF Internet-Draft'
 	}[key];
 	if(!text) return;
 
-	const color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', LS: 'green' }[key];
+	const color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', IETFID: 'green', LS: 'green' }[key];
 	const div = C('div');
 	div.id = '_sideways-logo';
 	if(color) div.style.background = color;
@@ -377,7 +378,7 @@ HTTP: 'http,network,security',
 UIEVENTS: 'uievents,css-ux,html',
 	};
 	const href_map = {
-http: 'RFC723X-ja.html#index',
+http: 'http-common-ja.html#index',
 	};
 	let site_nav = options.site_nav;
 	if(!site_nav){
@@ -1848,9 +1849,8 @@ RFC2119=副3           ＃www.t-net.ne.jp/~cyfis/rfc/format/rfc2119_ja.html
 RFC2119=副4           ~ipa/RFC2119JA.html
 RFC2397=・            ~IETF/rfc2397
 RFC2397=主            ＃d.hatena.ne.jp/tily/20071103/p1
-HTTP=主               ~/RFC723X-ja.html
 RFC2616=主            ~/rfc-others/RFC2616-ja.html
-RFC2616=副            ~/RFC723X-ja.html
+RFC2616=副            ~/http-common-ja.html#core-specifications
 RFC2616=・            ~IETF/rfc2616
 RFC2616=・            www.ietf.org/rfc/rfc2616.txt
 RFC2616=副2           ~suika/n/RFC%202616
@@ -1896,6 +1896,7 @@ RFC6901=主            ~/RFC6901-ja.html
 RFC6902=主            ~/RFC6902-ja.html
 RFC6919=主            ＃www.geocities.jp/toyprog/rfc/rfc6919.txt
 RFC6919=・            ~IETF/rfc6919
+HTTP=主               ~/http-common-ja.html#core-specifications
 RFC7230=主            ~/RFC7230-ja.html
 RFC7230=・            ~IETF/rfc7230
 RFC7230=・            ~HTTPWG/rfc7230.html

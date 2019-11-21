@@ -45,35 +45,35 @@ source_data.generate = function(){
 
 let text = key;
 let href = '';
-const tag = tag_map[klass];
+let tag = tag_map[klass];
 
 switch(klass){
 case '':
 	break;
 case 'r': // ref
-	text = '[' + key + ']';
-	href = '~723X#ref-' + key;
-//	if(!href) href = '~723X#ref-' + key;
+	text = `[${key}]`;
+	href = `~723X#${key}`;
+//	if(!href) href = `~723X#ref-${key}`;
 	break;
 case 'R': // ref
-	text = '[RFC' + key + ']';
-	href = '~723X#ref-RFC' + key;
+	text = `[RFC${key}]`;
+	href = `~723X#RFC${key}`;
 	break;
 case 'RFC': // ref
-	text = 'RFC ' + key;
-	href = '~IETF/rfc' + key;
+	text = `RFC ${key}`;
+	href = `~IETF/rfc${key}`;
 	break;
 case 'rfc': // ref
 	href = key.match(/^(\d+)-([\d\.]+)$/);
 //	if(!href) {href='#'; console.log(key);break;}
 	key = href[1];
-	text = `RFC ${key}, ${href[2]} ~~節`;
-	href = ((key.slice(0,2) === '72') ? '~' : '~IETF/rfc') + key +
-		'#section-' + href[2];
+	text = `[RFC${key}] § ${href[2]} `;
+	const href0 = (key.slice(0,2) === '72') ? '~' : '~IETF/rfc';
+	href = `${href0}${key}#section-${href[2]}`;
 	break;
 case 'sec': // 節（同一頁内）
-	href = '#' + section_map[key];// || ('#section-' + key);
-	text = key + ' ~~節';
+	href = `#${section_map[key]}`;// || ('#section-${key);
+	text = `§ ${key} `;
 	break;
 case 'st': // status code
 	text = `<code class="status">${key}</code> <span class="phrase">(${st_phrase[key]})</span>`;
@@ -82,23 +82,22 @@ case 'st0':
 	klass = 'st';
 	break;
 case 'errata': 
-	text = '正誤表#' + key + ' ';
-	href = 'https://www.rfc-editor.org/errata/eid' + key;
+	text = `正誤表#${key} `;
+	href = `https://www.rfc-editor.org/errata/eid${key}`;
 	break;
 case 'en': // english words
 	return `<span lang="en-x-a0">${key}</span>`;
 	break;
 }
 
-let classname = class_map[klass];
 if(tag) {
-	classname = classname ? ' class="' + classname + '"' : '';
+	let classname = class_map[klass];
+	classname = classname ? ` class="${classname}"` : '';
 	text = `<${tag}${classname}>${text}</${tag}>`;
 }
 
-
 if(indicator !== '^'){
-	href = link_map[klass ? (klass + '.' + key) : key] || href;
+	href = link_map[ klass ? `${klass}.${key}` : key ] || href;
 	if(!href){
 		console.log(match); // check error
 		return match;
@@ -106,14 +105,11 @@ if(indicator !== '^'){
 
 	switch(indicator){
 	case '$':
-		text = '<a href="' + href + '">' + text + '</a>';
+		text = `<a href="${href}">${text}</a>`;
 		break;
 	case '@':
-		text = '<dfn id="' + href.slice(1) + '">' + text + '</dfn>';
+		text = `<dfn id="${href.slice(1)}">${text}</dfn>`;
 		break;
-	default:
-		console.log(match);
-		return match;
 	}
 }
 
@@ -347,18 +343,18 @@ st.505:~7231#status.505
 
 	protocol elements
 
-P.ALPHA:~723X#P.ALPHA
-P.CR:~723X#P.CR
-P.CRLF:~723X#P.CRLF
-P.CTL:~723X#P.CTL
-P.DIGIT:~723X#P.DIGIT
-P.DQUOTE:~723X#P.DQUOTE
-P.HEXDIG:~723X#P.HEXDIG
-P.HTAB:~723X#P.HTAB
-P.LF:~723X#P.LF
-P.OCTET:~723X#P.OCTET
-P.SP:~723X#P.SP
-P.VCHAR:~723X#P.VCHAR
+P.ALPHA:~HTTPcommon#P.ALPHA
+P.CR:~HTTPcommon#P.CR
+P.CRLF:~HTTPcommon#P.CRLF
+P.CTL:~HTTPcommon#P.CTL
+P.DIGIT:~HTTPcommon#P.DIGIT
+P.DQUOTE:~HTTPcommon#P.DQUOTE
+P.HEXDIG:~HTTPcommon#P.HEXDIG
+P.HTAB:~HTTPcommon#P.HTAB
+P.LF:~HTTPcommon#P.LF
+P.OCTET:~HTTPcommon#P.OCTET
+P.SP:~HTTPcommon#P.SP
+P.VCHAR:~HTTPcommon#P.VCHAR
 	TODO
 	P.CHAR = %x01-7F
 	P.NUL:
@@ -586,7 +582,7 @@ c.application/http:~7230#internet.media.type.application.http
 	■XXXX
 IETF Review:~5226#section-4.1
 著作者連絡先:~723X#authors-addresses
-二重引用符:~723X#P.DQUOTE
+二重引用符:~HTTPcommon#P.DQUOTE
 	■7230
 ~UA:~7230#user-agent
 ~URI:~7230#uri
@@ -778,7 +774,7 @@ c.multipart/byteranges:~7233#internet.media.type.multipart.byteranges
 COMMON_DATA.words_table1 += `
 IANA-a:https://www.iana.org/assignments
 ERRATA:https://www.rfc-editor.org/errata_search.php
-723X:RFC723X-ja.html
+723X:http-common-ja.html
 7230:RFC7230-ja.html
 7231:RFC7231-ja.html
 7232:RFC7232-ja.html
@@ -810,8 +806,6 @@ HTTP11: HTTP/1.1
 100cont:<code>100-continue</code>
 close_:"<code>close</code>" 
 IETF-org: “IETF (iesg@ietf.org) — Internet Engineering Task Force” 
-共通頁:RFC723X 共通ページ
-Status-of-This-Mamo:<h2 title="Status of This Mamo">このメモの位置付け</h2><p class="trans-note">【この節の内容は、著作権の告知も含め，<a href="RFC723X-ja.html#status">RFC723X 共通ページ</a>に委譲。】</p></section>
 `;
 
 
@@ -1865,7 +1859,7 @@ sdir.s-maxage:~7234#section-5.2.2.9
 	■XXXX
 IETF Review:~5226#section-4.1
 著作者連絡先:~723X#authors-addresses
-二重引用符:~723X#P.DQUOTE
+二重引用符:~HTTPcommon#P.DQUOTE
 	■7230
 〜~UA:~7230#user-agent
 ~URI:~7230#URI
