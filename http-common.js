@@ -19,6 +19,11 @@ Util.ready = function(){
 		}
 	});
 
+	PAGE_DATA.ref_data = (PAGE_DATA.ref_data || '') + `
+MESSAGING=主          ~/http-messaging-ja.html
+SEMANTICS=主          ~/http-semantics-ja.html
+CACHING=主            ~/http-cache-ja.html
+`
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
 	repeat('script[src="http-common.js"]', function(e){
 		e.parentNode.removeChild(e);
