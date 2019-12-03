@@ -293,7 +293,7 @@ m.DELETE:~HTTPrq#DELETE
 m.CONNECT:~HTTPrq#CONNECT
 m.OPTIONS:~HTTPrq#OPTIONS
 m.TRACE:~HTTPrq#TRACE
-m.PATCH:~IETF/rfc5789#section-2
+m.PATCH:~HTTPpatch#patch
 
 	●status codes
 
@@ -739,6 +739,7 @@ HTTPrs:http-response-ja.html
 HTTPcache:http-cache-ja.html
 RFC8246:http-immutable-response-ja.html
 RFC7538:http-status-code-308-ja.html
+HTTPpatch:http-patch-ja.html
 
 IANA-a:https://www.iana.org/assignments
 	ERRATA:https://www.rfc-editor.org/errata_search.php

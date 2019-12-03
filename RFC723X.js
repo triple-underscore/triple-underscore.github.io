@@ -161,6 +161,7 @@ source_data.st_phrase = {
 '415': 'Unsupported Media Type',
 '416': 'Range Not Satisfiable',
 '417': 'Expectation Failed',
+'422': 'Unprocessable Entity', // RFC4918
 '426': 'Upgrade Required',
 '451': 'Unavailable For Legal Reasons', // RFC7725
 '500': 'Internal Server Error',
@@ -225,7 +226,8 @@ m.DELETE:~7231#DELETE
 m.CONNECT:~7231#CONNECT
 m.OPTIONS:~7231#OPTIONS
 m.TRACE:~7231#TRACE
-m.PATCH:~IETF/rfc5789#section-2
+m.PATCH:~HTTPpatch#patch
+	m.PATCH:~IETF/rfc5789#section-2
 
 	header fields 
 
@@ -686,7 +688,7 @@ IETF Review:~5226#section-4.1
 	資源の識別:~7231#identification
 表現~data:~7231#representation.data
 表現~header:~7231#representation.metadata
-~payload~header:#payload-headers
+~payload~header:~7231#payload-headers
 内容~折衝:~7231#content.negotiation
 ~proactive折衝:~7231#proactive.negotiation
 ~reactive折衝:~7231#reactive.negotiation
@@ -783,6 +785,7 @@ ERRATA:https://www.rfc-editor.org/errata_search.php
 7235:RFC7235-ja.html
 723Xabnf:RFC723X-ABNF-ja.html
 7538:http-status-code-308-ja.html
+HTTPpatch:http-patch-ja.html
 	7238:https://tools.ietf.org/html/rfc7238
 2045:https://tools.ietf.org/html/rfc2045
 2068:https://tools.ietf.org/html/rfc2068

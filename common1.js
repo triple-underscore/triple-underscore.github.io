@@ -1880,6 +1880,7 @@ RFC5234=主            ＃www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc5234j.html
 RFC5246=主            ~ipa/RFC5246-00JA.html
 RFC5321=主            ＃srgia.com/docs/rfc5321j.html
 RFC5322=主            ＃srgia.com/docs/rfc5322j.html
+RFC5789=主            ~/http-patch-ja.html
 RFC5890=主            jprs.co.jp/idn/rfc5890j.txt
 RFC5891=主            jprs.co.jp/idn/rfc5891j.txt
 RFC5895=主            jprs.co.jp/idn/rfc5895j.txt
