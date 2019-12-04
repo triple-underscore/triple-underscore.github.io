@@ -76,7 +76,7 @@ case 'sec': // 節（同一頁内）
 	text = `§ ${key} `;
 	break;
 case 'st': // status code
-	text = `<code class="status">${key}</code> <span class="phrase">(${st_phrase[key]})</span>`;
+	text = `<code class="status">${key}</code> <span class="phrase">(${st_phrase[key]||''})</span>`;
 	break;
 case 'st0':
 	klass = 'st';
@@ -977,7 +977,7 @@ proprietary::::プロプライエタリ
 取戻され:reclaimされ:取り戻され
 導かれ:leadされ:~
 導き:leadし:~
-
+メモ:memo::~
 扱い:treatment:~
 望まず:wishせず:~
 回避法:avoidance:~
