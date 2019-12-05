@@ -179,8 +179,8 @@ return text;
 
 ●●options
 
-spec_date:2019-12-04
-trans_update:2019-12-05
+spec_date:2019-12-05
+trans_update:2019-12-06
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -673,8 +673,6 @@ rej.取扱済みでない:#concept-promise-rejection-nothandled
 
 ~event-loop処理~model:#event-loop-processing-model
 ~event-loop:#event-loop
-~event-loop始動-時刻:#event-loop-begin
-~event-loop終止-時刻:#event-loop-end
 ~window~event-loop:#window-event-loop
 ~worker~event-loop:#worker-event-loop-2
 ~worklet~event-loop:#worklet-event-loop
@@ -1139,8 +1137,6 @@ timer::::タイマー
 	走っている:running
 可走な:runnable:走れる
 標的:target:::ターゲット
-	%~task:oldestTask
-	%~task~queue:taskQueue
 小task:microtask::小 task:小タスク
 通知待ちの:about-to-be-notified:~
 黙秘-:mute::~
@@ -1239,6 +1235,10 @@ race:::競合
 	予め読込んで:pre-load
 	~~伝送中:in flight
 	~loopするように戻る:loops back
+
+	%~task:oldestTask
+	%~task~queue:taskQueue
+	%~task開始-時刻:taskStartTime
 
 	●event
 capture:
@@ -7971,15 +7971,6 @@ Each event loop has a performing a microtask checkpoint boolean, which is initia
 ◎
 It is used to prevent reentrant invocation of the perform a microtask checkpoint algorithm.
 </dd>
-
-	<dt>`~event-loop始動-時刻@</dt>
-	<dt>`~event-loop終止-時刻@</dt>
-	<dd>
-両者とも初期~時は ε （未設定）とする。
-【所与の時点で、~event-loopの`現在の周回^emが始まった時刻, `直前の周回^emが終わった時刻】
-◎
-Each event loop has associated values event loop begin and event loop end, which are initially unset.
-</dd>
 </dl>
 
 				</section>
@@ -8224,46 +8215,55 @@ An event loop must continually run through the following steps for as long as it
 <ol>
 	<li id="step1">
 <p>
-~IF［
-%~event-loop に属する`~task~queue$であって，`可走な~task$を包含するものは在る
+%~task ~LET ［
+%~event-loop に属する`~task~queue$であって，`可走な~task$を包含するもの
+］は［
+無いならば ε ／
+在るならば 次の下位手続きに従って決定される~task
 ］：
-◎
-↓</p>
+</p>
 		<ol>
 			<li>
-<p>
 %~task~queue ~LET 該当する~task~queueのうち，~UAにより定義される方式で選ばれるいずれか
-◎
-Let taskQueue be one of the event loop's task queues, chosen in a user-agent-defined manner, with the constraint that the chosen task queue must contain at least one runnable task. If there is no such task queue, then jump to the microtasks step below.
-</p>
+</li>
+			<li>
+%~task~queue から `可走な~task$のうち最初のものを`除去する$
+</li>
+			<li>
+~RET 前~段で除去した~task
+</li>
+		</ol>
 
 <p class="note">注記：
 `小task~queue$は`~task~queue$ではないので、この段で選ばれることはない。
 しかしながら、`小task~task源$が結付けられた`~task~queue$が，この段にて選ばれることもある。
-その事例では，次の段で選ばれる`~task$は、元々は`小task$であったが，`~event-loopを回す$一部として移動されたものになる。
+その事例では，この段で選ばれる`~task$は、元々は`小task$であったが，`~event-loopを回す$一部として移動されたものになる。
+</p>
+
+◎
+Let taskQueue be one of the event loop's task queues, chosen in a user-agent-defined manner, with the constraint that the chosen task queue must contain at least one runnable task. If there is no such task queue, then jump to the microtasks step below.
 ◎
 Remember that the microtask queue is not a task queue, so it will not be chosen in this step. However, a task queue to which the microtask task source is associated might be chosen in this step. In that case, the task chosen in the next step was originally a microtask, but it got moved as part of spinning the event loop.
-</p>
-			</li>
-			<li>
-%~task ~LET %~task~queue 内の`可走な~task$のうち最初のもの
 ◎
-Let oldestTask be the first runnable task in taskQueue,＼
+Let oldestTask be the first runnable task in taskQueue, and remove it from taskQueue.
 </li>
-			<li>
-%~task~queue から %~task を`除去する$
+	<li>
+<p>
+~IF［
+%~task ~NEQ ε
+］：
 ◎
-and remove it from taskQueue.
-</li>
+↓</p>
+		<ol>
 			<li>
 %~event-loop の`現在~走っている~task$ ~SET %~task
 ◎
 Set the event loop's currently running task to oldestTask.
 </li>
 			<li>
-%~event-loop の`~event-loop始動-時刻$ ~SET `現在の高分解能~時刻$
+%~task開始-時刻 ~LET `現在の高分解能~時刻$
 ◎
-Set event loop begin to the current high resolution time.
+Let taskStartTime be the current high resolution time.
 </li>
 			<li>
 %~task を走らす
@@ -8289,7 +8289,9 @@ Let now be the current high resolution time. [HRT]
 </li>
 	<li>
 <p>
-この段は、`~task$の所要時間を報告する：
+~IF［
+%~task ~NEQ ε
+］（この段は、`~task$の所要時間を報告する）：
 ◎
 Report the task's duration by performing the following steps:
 </p>
@@ -8311,12 +8313,12 @@ For each environment settings object settings of oldestTask's script evaluation 
 			<li>
 `長い~taskを報告する$( 次に挙げる引数 )
 ⇒＃
-`~event-loop始動-時刻$（ %~task の始動-時刻と~~同一視する）,
+%~task開始-時刻,
 %now（~taskの終止-時刻）,
 %~top-level閲覧文脈たち,
 %~task
 ◎
-Report long tasks, passing in event loop begin (repurposed as meaning the beginning of the task), now (the end time of the task), top-level browsing contexts, and oldestTask.
+Report long tasks, passing in taskStartTime, now (the end time of the task), top-level browsing contexts, and oldestTask.
 </li>
 		</ol>
 	</li>
@@ -8743,11 +8745,6 @@ If there are no tasks in the event loop's task queues and the WorkerGlobalScope 
 </li>
 		</ol>
 	</li>
-	<li>
-`~event-loop終止-時刻$ ~SET `現在の高分解能~時刻$
-◎
-Set event loop end to be the current high resolution time.
-</li>
 </ol>
 </div>
 
