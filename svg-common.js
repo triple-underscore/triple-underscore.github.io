@@ -763,7 +763,6 @@ viewAs:View this example as SVG (SVG-enabled browsers only):この例を SVG で
 	●構文
 space:
 comma::::カンマ
-escape::::エスケープ
 展開-:expand::~
 内包-:include::~
 内包:inclusion::~
@@ -841,8 +840,6 @@ span:
 中心:center::~
 半径:radius::~
 	半径:radii
-始端:start::~
-終端:end::~
 縦方向:vertical::~
 横方向:horizontal::~
 縦横比:aspect ratio::~
@@ -853,10 +850,9 @@ span:
 直線:straight line::~
 曲線:curve::~
 真円:circle::~
-真円な:circularな::真円の
+真円な:circularな::~
 矩形:rectangle::~
-矩形な:rectangularな::矩形の
-軸:axis::~
+矩形な:rectangularな::~
 無限:infinite:~
 接触判定:hit-testing::~
 
@@ -919,7 +915,6 @@ green:
 混色:blending::~
 組成-:composite::~
 組成:compositing::~
-層:layer::~::レイヤ
 積層-:stack::~
 積層:stacking::~
 画素:pixel::~
@@ -928,14 +923,10 @@ green:
 
 	● CSS
 内在的:intrinsic::~
-下位prop:sub-property:::下位プロパティ
-	下位prop:longhand／subproperties／sub-properties
 
 	●呈示／UI
 	~animate化:animated
 	非~animate化:non-animated
-window::::ウィンドウ
-pointer::::ポインタ
 viewer::::ビューア
 zoom::::ズーム
 pan::::パン

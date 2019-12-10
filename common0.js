@@ -1290,9 +1290,6 @@ metadata::::メタデータ
 長さ:length:~
 size::::サイズ
 sizing::::サイズ法
-空間:space:~
-次元:dimension:~
-境界:boundary:~
 絶対:absolute:~
 絶対的:absolute:~
 相対:relative:~
@@ -1304,6 +1301,13 @@ sizing::::サイズ法
 移動-:move:~
 開始-:start:~
 整数:integer:~
+正な:positive:~
+正で:positiveで:~
+正に:positiveに:~
+負な:negative:~
+負で:negativeで:~
+負に:negativeに:~
+	負でない:non-negative
 別名:alias::~
 確立-:establish:~
 省略-:omit:~
@@ -1311,6 +1315,19 @@ sizing::::サイズ法
 形成-:form:~
 不透明:opaque::~
 透明:transparent::~
+空間:space:~
+次元:dimension:~
+方向:direction::~
+方向性:directionality::~
+右端:right::~
+左端:left::~
+上端:top::~
+下端:bottom::~
+始端:start::~
+終端:end::~
+軸:axis::~
+	軸:axes
+境界:boundary:~
 
 ●仕様レベル
 
@@ -1824,6 +1841,7 @@ system::::システム
 browser::::ブラウザ
 software::::ソフトウェア
 hardware::::ハードウェア
+engine::::エンジン
 support::::サポート
 	~supportされない:unsupported
 library::::ライブラリ
@@ -2444,6 +2462,9 @@ node::::ノード
 階層:hierarchy:~
 階層-:heirarchical:~
 階層的:hierarchical:~
+下層:underlying:~
+下層の:underlying:~
+層:layer::~::レイヤ
 
 包含-:contain::~
 内容:content::~
@@ -2494,9 +2515,6 @@ class::::クラス
 構築-:construct::~::コンストラクト
 構築:construction::~::コンストラクション
 
-下層:underlying:~
-下層の:underlying:~
-
 築く:buildする:~
 築かれ:buildされ:~
 築ける:buildできる:~
@@ -2529,6 +2547,7 @@ bit::::ビット
 binary::::バイナリ
 source::::ソース
 query::::クエリ
+	pointer::::ポインタ
 源:source::~::ソース
 値:value:~
 範囲:range:~
@@ -2666,13 +2685,16 @@ mark-up:mark up:::マークアップ
 	空白:white space
 token::::トークン
 comment::::コメント
+escape::::エスケープ
+literal::::リテラル
 接頭辞:prefix::~
 接尾辞:suffix::~
-文字大小無視:case-insensitive:~
-大小無視:case-insensitive:~
-	小文字:lowercase:~
-	大文字:uppercase:~
-
+小文字:lowercase::~
+大文字:uppercase::~
+文字大小無視:case-insensitive::~
+大小無視:case-insensitive::~
+文字大小区別:case-sensitive::~
+文字大小:case::~
 合致-:match::~::マッチ
 照合-:match::~::マッチ
 照合:matching::~::マッチング
@@ -2731,7 +2753,6 @@ file::::ファイル
 UI:
 	UI:user interface:UI
 accessibility:::access 能:アクセス能:アクセシビリティ
-	window::::ウィンドウ
 form::::フォーム
 focus::::フォーカス
 screen::::スクリーン
@@ -2745,7 +2766,13 @@ mouse::::マウス
 Key:key:::キー
 keyboard::::キーボード
 view::::ビュー
-
+UIwindow:window:::ウィンドウ
+menu::::メニュー
+dialog::::ダイアログ
+icon::::アイコン
+widget::::ウィジェット
+caption::::キャプション
+pointer::::ポインタ
 外観:appearance:~
 手入力-:enter:~
 手入力:entry:~
@@ -2886,6 +2913,8 @@ cascade::::カスケード
 at-rule:::at-規則
 記述子:descriptor::~
 略式:shorthand::~
+下位prop:sub-property::下位 property:下位プロパティ
+	下位prop:longhand／subproperty／sub-properties／subproperties
 
 適用対象:applies to:~
 百分率:percentage:~
@@ -2900,14 +2929,6 @@ animation::::アニメーション
 疑似類:pseudo-class::疑似 class:疑似クラス
 疑似要素:pseudo-element::~
 
-font::::フォント
-graphic::::グラフィック
-graphicな:graphical:::グラフィックな
-canvas::::キャンバス
-layout::::レイアウト
-lay-out:lay out:::レイアウト
-flow::::フロー
-overflow::::過フロー:オーバーフロー
 寸法:dimension:~
 横幅:width::~
 縦幅:height::~
@@ -2919,14 +2940,21 @@ overflow::::過フロー:オーバーフロー
 配置-:place:~
 配置:placement:~
 
+font::::フォント
+graphic::::グラフィック
+graphicな:graphical:::グラフィックな
+canvas::::キャンバス
+layout::::レイアウト
+lay-out:lay out:::レイアウト
+flow::::フロー
+overflow::::過フロー:オーバーフロー
 box::::ボックス
-包含塊:containing block::包含 block:包含ブロック
-
 border::::ボーダー
 padding::::パディング
 margin::::マージン
 offset::::オフセット
 
+包含塊:containing block::包含 block:包含ブロック
 行内level:inline-level::行内-level:行内レベル:インラインレベル
 行内-:inline-::~::インライン
 行内:inline::~::インライン

@@ -906,7 +906,6 @@ component::::コンポーネント
 container:::コンテナ
 crash::::クラッシュ
 database::::データベース
-dialog::::ダイアログ
 encapsulate::::カプセル化
 encapsulation::::カプセル化
 	~err::
@@ -914,7 +913,6 @@ folder::::フォルダ
 guide::::ガイド
 	~hypertext:hypertext note
 key::::キー
-literal::::リテラル
 log::::ログ
 machine::::マシン
 mail::::メール
@@ -923,7 +921,6 @@ memory::::メモリ
 email:
 句:phrase::~::フレーズ
 	pipe-and-filter:パイプ＆フィルタ
-pointer::::ポインタ
 property::::プロパティ
 	特質
 command::::コマンド
@@ -1104,7 +1101,6 @@ app:application:::アプリケーション
 競合:conflict:~
 簡潔:compact:~
 精緻化:refinement:~
-終端:end:~
 結論:conclusion:~
 統一的:uniform:~
 網羅的:exhaustive:~
@@ -1232,7 +1228,6 @@ comma::::カンマ
 	comma区切りの:comma-separated
 decimal::10 進
 escaping::::エスケープ処理
-escape::::エスケープ
 quote::::クォート
 引用符:quote:::~:クォート
 二重引用符:double quote::~::ダブルクォート
@@ -1244,11 +1239,6 @@ quote::::クォート
 区切る:delimitする::~
 区切子:delimiter::~
 合致:match::~::マッチ
-大文字:uppercase::~
-小文字:lowercase::~
-文字大小:case::~
-文字大小区別:case-sensitive::~
-文字大小無視の:case-insensitiveな::~
 数字:numeral:~
 数的:numeric:~
 実数:real number:~
@@ -1322,7 +1312,6 @@ redirect::::リダイレクト
 redirection::::リダイレクト
 	ディレクティブ
 指令-:direct::~
-方向:direction::~
 	directional:
 双方向:bidirectional::~
 主体:party::~
@@ -1451,7 +1440,6 @@ referrer::::リファラ
 尚早:premature:~
 	局所的な
 展開-:expand:~
-層:layer::~
 帯域幅:bandwidth::~::バンド幅
 形:form:~
 役割:role::~::ロール
@@ -1485,7 +1473,6 @@ referrer::::リファラ
 格納域:store::~
 記憶域:storage::~::ストレージ
 蓄積:storage::~::ストレージ
-検索:search:~
 再構築-:reconstruct:~
 再構築:reconstruction:~
 段階:stage:~
