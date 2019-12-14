@@ -1892,7 +1892,7 @@ tool::::ツール
 達成-:achieve:~
 成遂げる:accomplishする:成し遂げる
 成遂げれ:accomplishでき:成し遂げれ
-成遂げら:accomplishされ:成し遂げら
+成遂げら:accomplishさ:成し遂げら
 
 施行-:enforce:~
 実施:practice:~
