@@ -2133,7 +2133,6 @@ lock::::ロック
 access::::アクセス
 error::::エラー
 task::::タスク
-event-loop:event loop:::イベントループ
 loop::::ループ
 event::::イベント
 handler::::ハンドラ
