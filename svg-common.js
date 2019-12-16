@@ -965,7 +965,6 @@ multimedia::::マルチメディア
 条件付き:conditional:~
 道具:tool:~
 共通しな:commonでな:~
-類似する:similarな:~
 自立的:standalone:~
 	自立的:stand-alone
 多彩:rich:~
@@ -975,7 +974,6 @@ multimedia::::マルチメディア
 	●仕様（動詞
 並行して:parallelに:~
 再構成-:rearrange:~
-制限:limitation:~
 参考:informative:~
 寄与-:contribute:~
 尊重-:respect:~

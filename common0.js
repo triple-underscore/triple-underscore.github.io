@@ -1345,6 +1345,7 @@ sizing::::サイズ法
 実装:implementation:~
 実装-:implement:~
 実装者:implementer:~
+ヒト:human:人
 
 通常:normal:~
 通常の:normalな:~
@@ -1747,6 +1748,8 @@ console::::コンソール
 抑止-:suppress:~
 抑制-:reduce:~
 制限-:limit:~
+制限s:limits:制限
+制限:limitations:~
 制約-:restrict:~
 制約:restriction:~
 制約的:restrictive:~
@@ -2006,6 +2009,8 @@ programming::::プログラミング
 妥当性:validity:~
 無効:invalid:~
 	妥当でない:invalid
+	無効~化:invalidate／invalidation
+	無効に:invalidate
 正確:exact:~
 正確a:accurate:正確
 精確:precise:~
@@ -2039,6 +2044,9 @@ programming::::プログラミング
 代替-:alternate:~
 代替:alternative:~
 相似的:analogous:~
+類似な:similarな:~
+類似に:similarに:同様に
+類似する:similarである:~
 干渉-:interfere:~
 干渉:interference:~
 予測-:predict:~
@@ -3182,9 +3190,11 @@ Foo間:inter-Foo
 含む:include
 含め:including
 呼ばれ:called
-在る:present
+在る／無い:present／:absent／:there is
+在る／無い［こと／下で／場合／とき］:presence／:absence
+有無:presence／:present
+不在:absence／:absent
 対応-:correspond
-対応-:corresponding
 得る:obtain
 選ぶ:choose
 生じ:occur
@@ -3255,7 +3265,6 @@ Foo間:inter-Foo
 の様な:-like
 同様に:likewise
 同様に:similarly
-同様の:similar
 因り／因る／因っ:due to
 場合によっては:possibly
 少し／少しばかり:slightly

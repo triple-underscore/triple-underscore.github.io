@@ -906,10 +906,6 @@ minor::::副:マイナー
 近過去の:recentな::~
 
 重複:duplicate:~
-類似な:similarな:~
-類似に:similarに:~
-類似する:similarである:~
-	~similarly
 節:section:~
 別個の:distinct:~
 
@@ -962,7 +958,6 @@ agent::::エージェント
 濫用:abuse:~
 制定-:prescribe:~
 上限:limit:~
-制限:limitation:~
 副次的:secondary:~
 創出-:mint:~
 非効率:inefficient:~
@@ -1316,7 +1311,6 @@ referrer::::リファラ
 root::::ルート
 企業:corporate:~
 個人-:personal:~
-ヒト:human:人
 一掃-:purge:~
 不定:indefinite:~
 中断:interruption:~
@@ -1382,9 +1376,6 @@ reactive::::リアクティブ
 有効性:validity:~
 無効化-:invalidate::~
 無効化:invalidation::~
-不在:absence:~
-	無い:absent
-存在p:presence:存在
 容量:capacity:~
 対応-:correspond:~
 対応ng:corresponding:対応する

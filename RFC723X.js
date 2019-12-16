@@ -956,11 +956,7 @@ minor::::副:マイナー
 版:edition:~
 近過去:recent::~
 近過去の:recentな::~
-
 重複:duplicate:~
-類似した:similarな:~
-類似する:similarである:~
-類似的:similar:~
 節:section:~
 
 	●仕様
@@ -1015,7 +1011,6 @@ app:application:::アプリケーション
 濫用:abuse:~
 制定-:prescribe:~
 上限:limit:~
-制限:limitation:~
 副次的:secondary:~
 創出-:mint:~
 非効率:inefficient:~
@@ -1362,7 +1357,6 @@ referrer::::リファラ
 
 企業:corporate:~
 個人:personal:~
-人:human:~
 一掃-:purge:~
 不定:indefinite:~
 中断:interruption:~
@@ -1428,10 +1422,6 @@ referrer::::リファラ
 有効性:validity:~
 無効化:invalidate::~
 妥当でない:invalidな::~
-在する:presentする:在る
-在さな:presentしな:無
-不在:absence:~
-存在p:presence:存在
 提示-:present:~
 容量:capacity:~
 対応-:correspond:~
