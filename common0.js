@@ -1145,6 +1145,8 @@ SVGinteract:svg-interact-ja.html
 SVGlinking:svg-linking-ja.html
 HTMLLS:https://html.spec.whatwg.org/multipage
 ARIA1:https://w3c.github.io/aria/
+HTMLARIA:https://w3c.github.io/html-aria/
+HTMLAAM:https://w3c.github.io/html-aam/
 BROWSERS:browsers-ja.html
 WINDOW:HTML-window-ja.html
 ORIGIN:HTML-origin-ja.html
