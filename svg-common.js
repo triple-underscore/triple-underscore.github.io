@@ -931,7 +931,6 @@ viewer::::ビューア
 zoom::::ズーム
 pan::::パン
 辿り:traversal::~
-呈示hint:presentational hint::呈示 hint:呈示ヒント
 隠され:hideされ::~
 隠す:hideする::~
 隠せば:hideすれば::~
@@ -960,7 +959,6 @@ multimedia::::マルチメディア
 高品質:high-quality::~
 	〜品質:-quality
 基礎的:fundamental:~
-実用上の:practicalな:~
 役割:role::~
 条件付き:conditional:~
 道具:tool:~

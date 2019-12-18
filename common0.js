@@ -1211,6 +1211,7 @@ FEATUREPOLICY:feature-policy-ja.html
 REFERRER-POLICY:webappsec-referrer-policy-ja.html
 MIXED-CONTENT:webappsec-mixed-content-ja.html
 SECURE-CONTEXT:webappsec-secure-contexts-ja.html
+SECQ:security-questionnaire-ja.html
 `;
 
 /** 対訳データ
@@ -1245,28 +1246,17 @@ OS:operating system:OS
 
 ●指示語
 特定0の:particular:ある特定の
-部分的:partial:~
-全部的:full:~
-	全部的な:full:~
 自前の:own:~
 単独の:single:~
 現在の:current:~
 元の:original:~
-内部:internal:~
-内部の:internalな:~
-内部的:internal:~
-外部:external:~
-外部の:externalな:~
-内側:inside:~
-外側:outside:~
-内縁:inner:~
-外縁:outer:~
-直に:directに:~
-直な:directな:~
-直接的:direct:~
-間接的:indirect:~
 	ナシ:none:なし
 subject::対象
+直に:directに:~
+直な:directな:~
+首な:primaryな:主たる
+首に:primaryに:主として
+	首に:primarily
 
 ●未分類
 block::::ブロック
@@ -1330,6 +1320,8 @@ sizing::::サイズ法
 軸:axis::~
 	軸:axes
 境界:boundary:~
+text::::テキスト
+textな:textual::textな:テキストな
 
 ●仕様レベル
 
@@ -2364,6 +2356,19 @@ garbage::::ガーベジ
 
 ●構造／関係／IDL
 
+部分的:partial:~
+全部的:full:~
+内部:internal:~
+内部の:internalな:~
+内部的:internal:~
+外部:external:~
+外部の:externalな:~
+内側:inside:~
+外側:outside:~
+内縁:inner:~
+外縁:outer:~
+直接的:direct:~
+間接的:indirect:~
 依拠-:rely:~
 依存-:depend:~
 	依存して:depending on(upon)
@@ -2681,7 +2686,6 @@ sort::::ソート
 
 ●構文
 
-text::::テキスト
 文字:character:~
 文字列:string::~
 tag::::タグ
@@ -2696,6 +2700,7 @@ token::::トークン
 comment::::コメント
 escape::::エスケープ
 literal::::リテラル
+引用符:quote::~
 接頭辞:prefix::~
 接尾辞:suffix::~
 小文字:lowercase::~

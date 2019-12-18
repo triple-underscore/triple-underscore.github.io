@@ -717,7 +717,7 @@ IETF Review:~5226#section-4.1
 	日時~形式:~7231#section-7.1.1.1
 日時:~7231#origination.date
 時計:~7231#clock
-首~資源:~7231#primary-resource
+首な資源:~7231#primary-resource
 製品~識別子:~7231#product-identifier
 検証子~header:~7231#response.validator
 ~cache可能:~7231#cacheable.methods
@@ -938,8 +938,6 @@ major::::主:メジャー
 minor::::副:マイナー
 
 	●指示語
-
-首:primary::主
 一時的:temporary:~
 余分な:extra:~
 側:side:~
@@ -1060,7 +1058,6 @@ app:application:::アプリケーション
 柔軟:flexible:~
 柔軟性:flexibility:~
 根本的:fundamental:~
-木目細かい:fine-grained:~
 極小:minimal:~
 権利:right:~
 欠如:lack:~
@@ -1223,11 +1220,8 @@ comma::::カンマ
 	comma区切りの:comma-separated
 decimal::10 進
 escaping::::エスケープ処理
-quote::::クォート
-引用符:quote:::~:クォート
-二重引用符:double quote::~::ダブルクォート
-	::クォートする
-	::クォートされ
+	引用符~付き:quoted
+二重引用符:double quote::~
 区切られ:delimitされ::~
 区切り:delimitation::~
 区切りの:-separated:~
@@ -1969,7 +1963,7 @@ IETF Review:~5226#section-4.1
 	日時~形式:~7231#section-7.1.1.1
 ／日時:~7231#section-7.1.1
 〜時計:~7231#clock
-〜首~資源:~7231#primary-resource
+〜首な資源:~7231#primary-resource
 〜製品~識別子:~7231#product-identifier
 ／検証子~header:~7231#validator-header
 ／~cache可能:~7231#cacheable

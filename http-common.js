@@ -707,7 +707,7 @@ c.realm:~HTTPrq#realm
 ~messageの出生日時:~HTTPrs#origination-date
 部分的な応答:~HTTPrs#status.206
 部分的:~HTTPrs#status.206
-首~資源:~HTTPrs#primary-resource
+首な資源:~HTTPrs#primary-resource
 選定用~header:~HTTPrs#selecting-header
 制御~data:~HTTPrs#response.control.data
 日時:~HTTPrs#origination.date
@@ -880,14 +880,11 @@ reset::::リセット
 schedule::::スケジュール
 storage::::ストレージ
 table::::テーブル
-	textによる／~textからなる:textual
 major::::主:メジャー
 minor::::副:マイナー
 
 	●指示語
-
 一定の:certain:~
-首:primary::主
 一時的:temporary:~
 余分な:extra:~
 今後の:later:~
@@ -1005,7 +1002,6 @@ agent::::エージェント
 柔軟:flexible:~
 柔軟性:flexibility:~
 根本的:fundamental:~
-木目細かい:fine-grained:~
 	本質的でない:nonessential
 極小:minimal:~
 権利:right:~
@@ -1179,10 +1175,8 @@ comma::::カンマ
 	comma区切りの:comma-separated
 decimal::10 進
 escaping::::エスケープ処理
-quote::::クォート
-引用符:quote:::~:クォート
-二重引用符:double quote::~::ダブルクォート
 	引用符~付き:quoted
+二重引用符:double quote::~
 区切られ:delimitされ::~
 区切り:delimitation::~
 区切りの:-separated:~
