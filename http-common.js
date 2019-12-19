@@ -895,9 +895,6 @@ minor::::副:マイナー
 巨大:large:~
 広範:wide:~
 広範囲:extensive:~
-最大:maximum:~
-最大化-:maximize:~
-最小:minimum:~
 最終:final:~
 近過去:recent::~
 近過去の:recentな::~
@@ -1003,7 +1000,6 @@ agent::::エージェント
 柔軟性:flexibility:~
 根本的:fundamental:~
 	本質的でない:nonessential
-極小:minimal:~
 権利:right:~
 欠如:lack:~
 欠如する:lackする:欠く

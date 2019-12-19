@@ -1300,6 +1300,11 @@ sizing::::サイズ法
 負で:negativeで:~
 負に:negativeに:~
 	負でない:non-negative
+最小:minimum:~
+最大:maximum:~
+	最小~化:minimize／-tion／ing
+	最大~化:maximize／-tion／ing
+最小限に:minimize:~
 別名:alias::~
 確立-:establish:~
 省略-:omit:~
@@ -1465,6 +1470,7 @@ module::::モジュール
 model::::モデル
 risk::::リスク
 問題:problem:~
+	問題になり得る:problematic
 課題:issue:~
 一般:general:~
 一般の:generalな:~
