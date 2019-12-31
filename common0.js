@@ -3211,7 +3211,7 @@ Foo間:inter-Foo
 得る:obtain
 選ぶ:choose
 生じ:occur
-用立てる:make use of
+用立てる:make use of／utilize
 知る:know
 示す:show
 示され:shown
