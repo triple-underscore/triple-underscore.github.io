@@ -1291,8 +1291,7 @@ open:
 連鎖:chain::~::チェイン
 経路制御-:route::~:ルート
 経路制御:routing::~:ルーティング
-direct:::指図
-	指向ける／ダイレクト／ディレクト
+direct::::ダイレクト
 redirect::::リダイレクト
 redirection::::リダイレクト
 	ディレクティブ

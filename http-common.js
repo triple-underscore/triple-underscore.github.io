@@ -1246,8 +1246,7 @@ open:
 route::::ルート
 	~route法:routing
 経路制御:routing::~:ルーティング
-direct:::指図
-	指向ける／ダイレクト／ディレクト
+direct::::ダイレクト
 redirect::::リダイレクト
 redirection::::リダイレクト
 	ディレクティブ
