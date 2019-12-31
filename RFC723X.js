@@ -283,8 +283,8 @@ h.Expires:~7234#header.expires
 
 h.MIME-Version:~7231#mime-version
 h.Keep-Alive:~7230#compatibility.with.http.1.0.persistent.connections
-h.Set-Cookie:~HTTPcookie#section-4.1
-h.Cookie:~HTTPcookie#section-4.2
+h.Set-Cookie:~HTTPcookie#sane-set-cookie
+h.Cookie:~HTTPcookie#sane-cookie
 h.Link:~HTTPweblink#section-3
 	h.Link:~IETF/rfc5988#section-5
 h.Content-Transfer-Encoding:~IETF/rfc2045#section-6

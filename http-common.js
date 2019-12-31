@@ -277,8 +277,8 @@ h.Pragma:~HTTPcache#header.pragma
 h.Warning:~HTTPcache#header.warning
 h.Expires:~HTTPcache#header.expires
 
-h.Set-Cookie:~HTTPcookie#section-4.1
-h.Cookie:~HTTPcookie#section-4.2
+h.Set-Cookie:~HTTPcookie#sane-set-cookie
+h.Cookie:~HTTPcookie#sane-cookie
 h.Link:~HTTPweblink#section-3
 h.Content-Transfer-Encoding:~IETF/rfc2045#section-6
 	h.URI
