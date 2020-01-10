@@ -6,7 +6,7 @@
 予約済みメンバ（ # → 詳細は common0.js ）
 
 options:
-	各種オプション
+	各種オプション／メタデータ
 original_id_map:
 	訳文 id → 原文 id への対応付け（文字列データ
 original_urls:
@@ -46,26 +46,28 @@ source_checked
 	最後に原文テキストと付き合わせた日付
 original_url:
 	原文 URL
+abbr_url:
+	和訳略称 URL
 main:
 	'MAIN'
 toc:
 	目次 id
 no_index:
-	あるならば、用語索引なし
+	在るならば、用語索引なし
 no_original_dfn:
-	あるならば、どの dfn の id も原文にはない
-fill_text_link: （選択子）
-	要素内容の text を URL としてリンクを作成させる
+	在るならば、どの dfn の id も原文には無い
 ref_id_lowercase
-	参照文献の id は小文字化する
+	在るならば、参照文献の id は小文字化する
 ref_id_prefix
-	参照文献の id 接頭辞（ 'biblio-' etc.
+	参照文献の id 接頭辞（ 'biblio-', 'ref-', 等々
+ref_rfc
+	在るならば、参照文献の RFC（~RFCXXXX）を生成用に置換
 site_nav
 	他の一覧へのナビゲーション用キーワードリスト
 nav_prev／nav_next
-	前／次のページへのリンク（ HTML 用
+	前／次のページへのリンク（ HTML/SVG 用
 navs
-	巡回用（ INDEX_KEYS
+	巡回 UI 用（ INDEX_KEYS
 
 */
 
