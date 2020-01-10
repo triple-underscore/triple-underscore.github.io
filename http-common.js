@@ -10,14 +10,6 @@ Util.ready = function(){
 	source_data.init();
 
 	Util.switchWordsInit(source_data);
-	['ref_normative', 'ref_informative'].forEach( (ref) => {
-		const data = PAGE_DATA[ref];
-		if(data){
-			PAGE_DATA[ref] = data.replace(/~RFC(\d+)\b(.*)/g,
-'RFC $1$2 URL: https://tools.ietf.org/html/rfc$1'
-			);
-		}
-	});
 
 	PAGE_DATA.ref_data = (PAGE_DATA.ref_data || '') + `
 MESSAGING=主          ~/http-messaging-ja.html

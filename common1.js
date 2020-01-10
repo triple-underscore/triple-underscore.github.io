@@ -1345,6 +1345,7 @@ Util.addAltRefs = () => {
 
 	const ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
 	const ref_id_lowercase = PAGE_DATA.options.ref_id_lowercase || false;
+	const ref_rfc = !!PAGE_DATA.options.ref_rfc;
 
 	Util.get_mapping(
 		COMMON_DATA.REF_DATA2
@@ -1364,7 +1365,7 @@ Util.addAltRefs = () => {
 
 	const rfc_list = [];
 	const ref_node_list = ref_types.filter( (id) => {
-		const ref_data = PAGE_DATA[`ref_${id}`];
+		let ref_data = PAGE_DATA[`ref_${id}`];
 		if(!ref_data) return false;
 		ref_data.replace(/\n\[.+\]/g, (ref_name) => {
 			const key = refKey(ref_name);
@@ -1445,6 +1446,12 @@ informative: '<h3>文献（参考）</h3>'
 
 		const refHTML = (data) => {
 			let last_key = '';
+			if(ref_rfc) {
+				data = data.replace(/~RFC(\d+)\b(.*)/g,
+'RFC $1$2 URL: https://tools.ietf.org/html/rfc$1'
+				);
+			}
+
 			let html = data
 			.replace(/\n\[(.+)\]/g, (match, ref_name) => {
 				const id = ref_id_prefix +
