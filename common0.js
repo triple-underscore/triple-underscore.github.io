@@ -2919,6 +2919,7 @@ session::::セッション
 資格証:credentials::資格証明情報::クレデンシャル
 攻撃:attack::~
 攻撃者:attacker::~
+行路:vector::路
 保護-:protect::~
 保護:protection::~
 脆弱性:vulnerability::~
