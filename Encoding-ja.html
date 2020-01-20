@@ -317,14 +317,14 @@ return text;
 ●●options
 
 spec_title:Encoding
-spec_date:2019-10-10
-trans_update:2019-10-11
+spec_date:2020-01-20
+trans_update:2020-01-20
 source_checked:180823
 spec_status:LS
 original_url:https://encoding.spec.whatwg.org/
 ref_id_prefix:biblio-
 ref_id_lowercase:true
-copyright:2019,whatwg
+copyright:2020,whatwg
 trans_1st_pub:2012-10-22
 
 
@@ -634,6 +634,7 @@ byte.長さ:~INFRA#byte-sequence-length
 ~cu:~INFRA#code-unit
 ~cp:~INFRA#code-point
 ~scalar値:~INFRA#scalar-value
+~surrogate:~INFRA#surrogate
 ~ASCII~cp:~INFRA#ascii-code-point
 	~ASCII空白:~INFRA#ascii-whitespace
 ~ASCII数字:~INFRA#ascii-digit
@@ -904,6 +905,7 @@ no_flush:do not flush:状態維持
 	fatal:
 発され:emitされ:~
 	invocation
+	渡す:pass
 
 
 	●データ型／操作／IDL
@@ -1112,7 +1114,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/encoding/commits
-	<a href="https://encoding.spec.whatwg.org/commit-snapshots/c1ad763cbece33a7fd51397c6de24faa74c98318/">Snapshot as of this commit</a>
+	<a href="https://encoding.spec.whatwg.org/commit-snapshots/47c667e23f1002f26e4835d1d79ab0432add0e41/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/encodings">@encodings</a>
 
 Tests:
@@ -1329,9 +1331,9 @@ For logical right shifts operands must have at least twenty-one bits precision.
 
 <p>
 `~token@
-は、`~byte$や`~cp$などの， 1 個の~data片である。
+は、`~byte$や`~scalar値$などの， 1 個の~data片である。
 ◎
-A token is a piece of data, such as a byte or code point.
+A token is a piece of data, such as a byte or scalar value.
 </p>
 
 <p>
@@ -1623,7 +1625,7 @@ Otherwise, do nothing.
 `~tokenを処理する@
 ときは、所与の
 ⇒＃
-`~token$ %~token ,
+`~token$ %~token,
 `符号化法$の［ `符号化器$／`復号器$ ］の~instance %~coder~instance,
 入力`~stream$ %入力,
 出力`~stream$ %出力,
@@ -1647,6 +1649,13 @@ To process a token token for an encoding’s encoder or decoder instance encoder
 If mode is not given, set it to "replacement", if encoderDecoderInstance is a decoder instance, and "fatal" otherwise.
 </li>
 	<li>
+~Assert：
+%~coder~instance は`符号化器$の~instanceであるならば、
+%~token は`~surrogate$ではない。
+◎
+Assert: if encoderDecoderInstance is an encoder instance, token is not a surrogate.
+</li>
+	<li>
 %結果 ~LET 次を与える下で， %~coder~instance の`~handler$を走らせた結果
 ⇒
 ( %入力, %~token )
@@ -1663,15 +1672,31 @@ Let result be the result of running encoderDecoderInstance’s handler on input 
 If result is continue or finished, return result.
 </li>
 	<li>
+<p>
 ~IF［
 %結果 は 1 個~以上の`~token$である
-］
-⇒＃
+］：
+◎
+Otherwise, if result is one or more tokens:
+</p>
+		<ol>
+			<li>
+%~coder~instance は`復号器$の~instanceであるならば、
+%結果 は`~surrogate$を包含しない。
+◎
+Assert: if encoderDecoderInstance is a decoder instance, result does not contain any surrogates.
+</li>
+			<li>
 %出力 に %結果 を`~pushする$；
+◎
+Push result to output.
+</li>
+			<li>
 ~RET `継続-$
 ◎
-Otherwise, if result is one or more tokens, push result to output.
-</li>
+↓↓</li>
+		</ol>
+	</li>
 	<li>
 ~Assert：
 %結果 は`~error$である
@@ -2670,6 +2695,16 @@ Standards are strongly discouraged from using decode and encode, except as neede
 The get an encoding algorithm is to be used to turn a label into an encoding.
 </p>
 
+<p>
+標準は、［
+`符号化法を利用して符号化する$／`~UTF-8符号化する$
+］~algoに渡す~streamが，実質的には`~scalar値$の~streamである
+— すなわち、`~surrogate$を包含しない —
+ことを確保すること。
+◎
+Standards are to ensure that the streams they pass to the encode and UTF-8 encode algorithms are effectively scalar value streams, i.e., they contain no surrogates.
+</p>
+
 </div>
 
 <div class="algorithm">
@@ -2772,9 +2807,9 @@ If BOM seen flag is unset, prepend buffer to stream.
 Otherwise, if BOM seen flag is set, encoding is not UTF-8, and buffer contains three bytes, prepend the last byte of buffer to stream.
 </li>
 	<li>
-%出力 ~LET 新たな~cp`~stream$
+%出力 ~LET 新たな~scalar値`~stream$
 ◎
-Let output be a code point stream.
+Let output be a scalar value stream.
 </li>
 	<li>
 %符号化法 の`復号器$を`走らす$( %~stream, %出力 )
@@ -2836,9 +2871,9 @@ Read three bytes from stream into buffer.
 If buffer does not match 0xEF 0xBB 0xBF, prepend buffer to stream.
 </li>
 	<li>
-%出力 ~LET 新たな~cp`~stream$
+%出力 ~LET 新たな~scalar値`~stream$
 ◎
-Let output be a code point stream.
+Let output be a scalar value stream.
 </li>
 	<li>
 `UTF-8$n の`復号器$を`走らす$( %~stream, %出力 )
@@ -2864,9 +2899,9 @@ To UTF-8 decode without BOM a byte stream stream, run these steps:
 </p>
 <ol>
 	<li>
-%出力 ~LET 新たな~cp`~stream$
+%出力 ~LET 新たな~scalar値`~stream$
 ◎
-Let output be a code point stream.
+Let output be a scalar value stream.
 </li>
 	<li>
 `UTF-8$n の`復号器$を`走らす$( %~stream, %出力 )
@@ -2892,9 +2927,9 @@ To UTF-8 decode without BOM or fail a byte stream stream, run these steps:
 </p>
 <ol>
 	<li>
-%出力 ~LET 新たな~cp`~stream$
+%出力 ~LET 新たな~scalar値`~stream$
 ◎
-Let output be a code point stream.
+Let output be a scalar value stream.
 </li>
 	<li>
 `UTF-8$n の`復号器$を`走らす$( %~stream, %出力, `fatal^l )
@@ -2923,10 +2958,10 @@ Return output.
 `符号化法を利用して符号化する@
 ときは、所与の
 ( 符号化法 %符号化法,
-~cp~stream %~stream
+~scalar値~stream %~stream
 ) に対し，次を走らす：
 ◎
-To encode a code point stream stream using encoding encoding, run these steps:
+To encode a scalar value stream stream using encoding encoding, run these steps:
 </p>
 <ol>
 	<li>
@@ -2967,12 +3002,12 @@ This is mostly a legacy hook for URLs and HTML forms. Layering UTF-8 encode on t
 <p>
 `~UTF-8符号化する@
 ときは、所与の
-( ~cp~stream %~stream )
+( ~scalar値~stream %~stream )
 に対し，次を走らす
 ⇒
 ~RET `符号化法を利用して符号化する$( `UTF-8$n, %~stream )
 ◎
-To UTF-8 encode a code point stream stream, return the result of encoding stream using encoding UTF-8.
+To UTF-8 encode a scalar value stream stream, return the result of encoding stream using encoding UTF-8.
 </p>
 </div>
 
@@ -7933,6 +7968,7 @@ Adam Rice,
 Alan Chaney,
 Alexander Shtuchkin,
 Allen Wirfs-Brock,
+Andreu Botella,
 Aneesh Agrawal,
 Arkadiusz Michalski,
 Asmus Freytag,
@@ -8011,7 +8047,7 @@ The <a href="#api">API</a> chapter was initially written by Joshua Bell
 </p>
 
 <p>
-Copyright © 2019 WHATWG (Apple, Google, Mozilla, Microsoft). This work is licensed under a <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">Creative Commons Attribution
+Copyright © 2020 WHATWG (Apple, Google, Mozilla, Microsoft). This work is licensed under a <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">Creative Commons Attribution
 4.0 International License</a>.
 </p>
 </div>
