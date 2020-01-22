@@ -30,32 +30,32 @@ words_table1:#
 
 PAGE_DATA.options 予約済みメンバ
 
-expanded:
+expanded
 	ページは展開状態で保存されている
-spec_title:
+spec_title
 	仕様の原文タイトル（未利用
-trans_title:
+trans_title
 	仕様の和訳タイトル（未利用
-spec_status:
-	ED, REC, LS, etc.
-spec_date:
+spec_status
+	仕様の位置付け（ ED, REC, LS, etc.
+spec_date
 	原文更新日（ YYYY-MM-DD ）
-trans_update:
+trans_update
 	和訳更新日（ YYYY-MM-DD ）
 source_checked
-	最後に原文テキストと付き合わせた日付
-original_url:
+	最後に原文テキストと付き合わせた日付（YYMMDD）
+original_url
 	原文 URL
-abbr_url:
+abbr_url
 	和訳略称 URL
-main:
+main
 	'MAIN'
-toc:
+toc
 	目次 id
-no_index:
+no_index
 	在るならば、用語索引なし
-no_original_dfn:
-	在るならば、どの dfn の id も原文には無い
+no_original_dfn
+	在るならば、どの dfn の id も原文には無い（主に RFC 用
 ref_id_lowercase
 	在るならば、参照文献の id は小文字化する
 ref_id_prefix
@@ -1540,8 +1540,8 @@ COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
 
 // 短縮形 URL の接頭辞 対応表
 COMMON_DATA.JA_BASIS = {
-	'' :       'triple-underscore.github.io',
-	XML :      'triple-underscore.github.io/XML',
+	'':        'triple-underscore.github.io',
+	XML:       'triple-underscore.github.io/XML',
 	mitsue:    'standards.mitsue.co.jp/resources/w3c/TR',
 	momdo:     '＃momdo.s35.xrea.com/web-html-test/spec',
 	momdoG:    'momdo.github.io',
@@ -1558,444 +1558,266 @@ COMMON_DATA.JA_BASIS = {
 
 /*
 主 副 版 編 ・
-■ ■ ■ ■ 　 参照文献に追加する？
-　 　 ■ ■ ■ 和訳リンク対応表に追加する？  JA_LINKS に (url:ref-id) を追加
-■ 　 　 　 　 hover 時に表示する？       JA_REFS に  (ref-id:url) を追加
+＊ ＊ ＊ ＊ 　 参照文献に追加する？
+　 　 ＊ ＊ ＊ 和訳リンク対応表に追加する？  JA_LINKS に (url:ref-id) を追加
+＊ 　 　 　 　 hover 時に表示する？       JA_REFS に  (ref-id:url) を追加
+
+	=版／=編は廃止
 */
 
 COMMON_DATA.REF_DATA = `
-ARIA=主               ~momdoG/wai-aria-1.1/
-ARIA=版               ~TR/wai-aria-1.1/
 ARIA=・               w3c.github.io/aria/
-ARIAHTML=副           ~momdoG/html-aria/
-	（id が一致しないので =副）
+ARIA=主               ~momdoG/wai-aria-1.1/
+ARIA=・               ~TR/wai-aria-1.1/
 ARIAHTML=・           w3c.github.io/html-aria/
-ATOM=主               ＃momdo.s35.xrea.com/web-html-test/spec/rfc4287j.html
-ATOM=副               ＃www.futomi.com/lecture/japanese/rfc4287.html
-COMPOSITING1=主       ~/compositing-ja.html●Level 2 日本語訳
-	COMPOSITING1=版       ~TR/compositing-1/
-	COMPOSITING1=編       dev.w3.org/fxtf/compositing-1/
-CHARMOD=主            ~/charmod-ja.html
+ARIAHTML=主           ~momdoG/html-aria/
+ATOM=副               ＃momdo.s35.xrea.com/web-html-test/spec/rfc4287j.html
+ATOM=副2              ＃www.futomi.com/lecture/japanese/rfc4287.html
+COMPOSITING1=副       ~/compositing-ja.html
+CHARMOD=副            ~/charmod-ja.html
 CORS=副               ~/Fetch-ja.html●Fetch 日本語訳
-CSP3=主               ~/CSP3-ja.html
+CSP3=副               ~/CSP3-ja.html
 CSP3=副2              hashedhyphen.github.io/webappsec-specjp/csp/index.html
-CSP3=編               w3c.github.io/webappsec-csp/
-CSP2=主               ~/CSP-ja.html
-	CSP2=版               ~TR/CSP2/
-	CSP2=編               w3c.github.io/webappsec/specs/content-security-policy/
-CSP1=主               ~/CSP10-ja.html
-CSP1=版               ~TR/CSP/
-CSS1=主               ＃www.doraneko.org/webauth/css1/19961217/Overview.html
-	CSS1=＊               ~TR/REC-CSS1
+CSP2=副               ~/CSP-ja.html
+
+CSS1=副               ＃www.doraneko.org/webauth/css1/19961217/Overview.html
+CSS21=・              ~TR/CSS2/
+CSS21=・              ~CSSWG/css2/
 CSS21=主              ~momdoG/css2/Overview.html
 CSS21=副2             ＃hp.vector.co.jp/authors/VA022006/css/index.html
-CSS21=副              ~adagio/tr_css2/toc.html●2.0 日本語訳 2
-CSS21=版              ~TR/CSS2/
-CSS21=編              ~CSSWG/css2/
-CSSALIGN3=主           ~/css-align-ja.html
-	CSSALIGN3=版           ~TR/css-align-3/
-	CSSALIGN3=編           ~CSSWG/css-align-3/
-CSSANIMATIONS1=主     ~/css-animations-ja.html
-	CSSANIMATIONS1=版     ~TR/css-animations-1/
-	CSSANIMATIONS1=編     ~CSSWG/css-animations-1/
-	CSSANIMATIONS1=・     ~CSSWG/css-animations/
-CSSANIMATIONS2=主     ~/css-animations2-ja.html
-CSSBACKGROUNDS3=主    ~/css-backgrounds-ja.html
+CSS21=副              ~adagio/tr_css2/toc.html●2.0 日本語訳
+CSSALIGN3=副           ~/css-align-ja.html
+CSSANIMATIONS1=副     ~/css-animations-ja.html
+CSSANIMATIONS2=副     ~/css-animations2-ja.html
+CSSBACKGROUNDS3=副    ~/css-backgrounds-ja.html
 CSSBACKGROUNDS3=副2   ~mitsue/css3-background/
-	CSSBACKGROUNDS3=版    ~TR/css-background-3/
-	CSSBACKGROUNDS3=編    ~CSSWG/css-backgrounds/
-	CSSBACKGROUNDS3=・    ~CSSWG/css-backgrounds-3/
-CSSBOX3=主            ~/css-box-ja.html
-CSSBREAK3=主          ~/css-break-ja.html●Level 4 日本語訳
-	CSSBREAK3=版          ~TR/css-break-3/
-	CSSBREAK3=編          ~CSSWG/css-break-3/
-CSSBREAK4=主          ~/css-break-ja.html
-CSSCASCADE4=主         ~/css-cascade-ja.html
-	CSSCASCADE4=版         ~TR/css-cascade-4/
-	CSSCASCADE4=編         ~CSSWG/css-cascade-4/
-CSSCASCADE3=主         ~/css-cascade-ja.html●Level 4 日本語訳
-	CSSCASCADE3=版         ~TR/css-cascade-3/
-	CSSCASCADE3=編         ~CSSWG/css-cascade/
-CSSCOLOR4=主          ~/css-color-ja.html
-	CSSCOLOR4=編          ~CSSWG/css-color-4/
+CSSBOX3=副            ~/css-box-ja.html
+CSSBREAK3=副          ~/css-break-ja.html●Level 4 日本語訳
+CSSBREAK4=副          ~/css-break-ja.html
+CSSCASCADE4=副         ~/css-cascade-ja.html
+CSSCASCADE3=副         ~/css-cascade-ja.html●Level 4 日本語訳
 CSSCOLOR3=主          ~mitsue/css3-color/
 CSSCOLOR3=副          ~/css-color-ja.html●Level 4 日本語訳
-	CSSCOLOR3=版          ~TR/css-color-3/
-	CSSCOLOR3=編          ~CSSWG/css-color-3/
-CSSCOUNTERSTYLES3=主  ~/css-counter-styles-ja.html
-	CSSCOUNTERSTYLES3=版  ~TR/css-counter-styles-3/
-	CSSCOUNTERSTYLES3=編  ~CSSWG/css-counter-styles/
-CSSCONDITIONAL3=主     ~/css-conditional-ja.html
-	CSSCONDITIONAL3=版     ~TR/css3-conditional/
-	CSSCONDITIONAL3=編     ~CSSWG/css-conditional-3/
-	CSSCONDITIONAL3=・     ~TR/css-conditional/
-CSSCONTAIN2=主        ~/css-contain-ja.html
-CSSCONTAIN1=主        ~/css-contain-ja.html●Level 2 日本語訳
-	CSSCONTAIN1=版        ~TR/css-contain-1/
-	CSSCONTAIN1=編        ~CSSWG/css-contain-1/
-CSSCONTENT3=主        ~/css-content-ja.html
-CSSDEVICEADAPT=主     ~momdoG/css-device-adapt-1/
-CSSDEVICEADAPT=版     ~TR/css-device-adapt-1/
-CSSDEVICEADAPT=・     ~TR/css-device-adapt/
-CSSDEVICEADAPT=編     ~CSSWG/css-device-adapt/
-CSSDEVICEADAPT=・     ~CSSWG/css-device-adapt-1/
-CSSDISPLAY3=主         ~/css-display-ja.html
-	CSSDISPLAY3=版         ~TR/css-display-3/
-	CSSDISPLAY3=編         ~CSSWG/css-display-3/
-CSSEXCLUSIONS=主      ~/css-exclusions-ja.html
-	CSSEXCLUSIONS=版      ~TR/css3-exclusions/
-	CSSEXCLUSIONS=編      ~CSSWG/css-exclusions/
-CSSFLEXBOX1=主            ~/css-flexbox-ja.html
-	CSSFLEXBOX1=版            ~TR/css-flexbox-1/
-	CSSFLEXBOX1=編            ~CSSWG/css-flexbox-1/
-CSSFONTS3=主          ~/css-fonts-ja.html
-	CSSFONTS3=版          ~TR/css-fonts-3/
-	CSSFONTS3=編          ~CSSWG/css-fonts-3/
-CSSFONTS4=主          ~/css-fonts4-ja.html
-CSSFONTLOAD=主        ~/css-font-loading-ja.html
-	CSSFONTLOAD=版        ~TR/css-font-loading/
-	CSSFONTLOAD=編        ~CSSWG/css-font-loading/
-CSSGRID1=主            ~/css-grid-ja.html
-	CSSGRID1=版            ~TR/css-grid-1/
-	CSSGRID1=編            ~CSSWG/css-grid-1/
-CSSINLINE3=主         ~/css-inline-ja.html
-	CSSINLINE3=版         ~TR/css-inline/
-	CSSINLINE3=編         ~CSSWG/css-inline/
-CSSIMAGES3=主         ~/css-images-ja.html
-CSSIMAGES3=副         ~momdo/CR-css3-images-20120417.html
-	CSSIMAGES3=版         ~TR/css3-images/
-	CSSIMAGES3=編         ~CSSWG/css-images-3/
-CSSLOGICAL1=主         ~/css-logical-ja.html
-	CSSLOGICAL1=編         ~CSSWG/css-logical/
-CSSLISTS3=主           ~/css-lists-ja.html
-CSSMASKING1=主         ~/css-masking-ja.html
-	CSSMASKING=版         ~TR/css-masking-1/
-	CSSMASKING=編         ~CSSWG/css-masking-1/
-CSSMULTICOL1=主        ~/css-multicol-ja.html
-	CSSMULTICOL1=編        ~CSSWG/css-multicol-1/
-	CSSMULTICOL1=版        ~TR/css-multicol-1/
-CSSNAMESPACES3=主     ~/css-namespaces-ja.html
+CSSCOLOR4=副          ~/css-color-ja.html
+CSSCOUNTERSTYLES3=副  ~/css-counter-styles-ja.html
+CSSCONDITIONAL3=副    ~/css-conditional-ja.html
+CSSCONTAIN2=副        ~/css-contain-ja.html
+CSSCONTAIN1=副        ~/css-contain-ja.html●Level 2 日本語訳
+CSSCONTENT3=副        ~/css-content-ja.html
+CSSDEVICEADAPT1=・    ~TR/css-device-adapt/
+CSSDEVICEADAPT1=・    ~CSSWG/css-device-adapt-1/
+CSSDEVICEADAPT1=主    ~momdoG/css-device-adapt-1/
+CSSDISPLAY3=副        ~/css-display-ja.html
+CSSEXCLUSIONS1=副     ~/css-exclusions-ja.html
+CSSFLEXBOX1=副        ~/css-flexbox-ja.html
+CSSFONTS3=副          ~/css-fonts-ja.html
+CSSFONTS4=副          ~/css-fonts4-ja.html
+CSSFONTLOAD1=副       ~/css-font-loading-ja.html
+CSSGRID1=副           ~/css-grid-ja.html
+CSSINLINE3=副         ~/css-inline-ja.html
+CSSIMAGES3=副         ~/css-images-ja.html
+CSSIMAGES3=副2        ~momdo/CR-css3-images-20120417.html
+CSSIMAGES4=副         ~/css-images4-ja.html
+CSSLOGICAL1=副        ~/css-logical-ja.html
+CSSLISTS3=副          ~/css-lists-ja.html
+CSSMASKING1=副        ~/css-masking-ja.html
+CSSMULTICOL1=副       ~/css-multicol-ja.html
+CSSNAMESPACES3=副     ~/css-namespaces-ja.html
 CSSNAMESPACES3=副2    ~mitsue/css3-namespace/
 CSSNAMESPACES3=副3    ~momdo/REC-css-namespaces-3-20140320.html
-	CSSNAMESPACES3=版     ~TR/css3-namespace/
-	CSSNAMESPACES3=編     ~CSSWG/css3-namespace/
-CSSOVERFLOW3=主       ~/css-overflow3-ja.html
-	CSSOVERFLOW3=版       ~TR/css-overflow-3/
-	CSSOVERFLOW3=編       ~CSSWG/css-overflow/
-CSSPAGE3=主           ~/css-page-ja.html
-	CSSPAGE3=版           ~TR/css3-page/
-	CSSPAGE3=編           ~CSSWG/css-page/
-	CSSPAGE3=・           ~CSSWG/css-page-3/
-	CSSPOSITION=編        ~CSSWG/css-position/
-	CSSPOSITION=版        ~TR/css3-positioning/
-CSSRUBY1=主           ~/css-ruby-ja.html
-	CSSRUBY1=版           ~TR/css-ruby-1/
-	CSSRUBY1=編           ~CSSWG/css-ruby-1/
-CSSSHAPES1=主         ~/css-shapes-ja.html
-	CSSSHAPES1=版         ~TR/css-shapes-1/
-	CSSSHAPES1=編         ~CSSWG/css-shapes-1/
-CSSSIZING3=主         ~/css-sizing-ja.html
-	CSSSIZING3=版         ~TR/css-sizing-3/
-	CSSSIZING3=編         ~CSSWG/css-sizing-3/
-CSSOM1=主             ~/cssom-ja.html
-	CSSOM1=版             ~TR/cssom/
-	CSSOM1=編             ~CSSWG/cssom/
-CSSOMVIEW1=主         ~/cssom-view-ja.html
-	CSSOMVIEW1=版         ~TR/cssom-view/
-	CSSOMVIEW1=編         ~CSSWG/cssom-view/
-CSSPAINTAPI1=主       ~/css-paint-api-ja.html
-CSSPSEUDO4=主         ~/css-pseudo-ja.html
-CSSSCOPING1=主        ~/css-scoping-ja.html
-CSSSHADOWPARTS1=主    ~/css-shadow-parts-ja.html
-CSSSCROLLSNAP1=主     ~/css-scroll-snap-ja.html
-CSSSTYLEATTR1=主      ~/css-style-attr-ja.html
+CSSOVERFLOW3=副       ~/css-overflow3-ja.html
+CSSPAGE3=副           ~/css-page-ja.html
+CSSRUBY1=副           ~/css-ruby-ja.html
+CSSSHAPES1=副         ~/css-shapes-ja.html
+CSSSIZING3=副         ~/css-sizing-ja.html
+CSSOM1=副             ~/cssom-ja.html
+CSSOMVIEW1=副         ~/cssom-view-ja.html
+CSSPAINTAPI1=副       ~/css-paint-api-ja.html
+CSSPSEUDO4=副         ~/css-pseudo-ja.html
+CSSSCOPING1=副        ~/css-scoping-ja.html
+CSSSHADOWPARTS1=副    ~/css-shadow-parts-ja.html
+CSSSCROLLSNAP1=副     ~/css-scroll-snap-ja.html
+CSSSTYLEATTR1=副      ~/css-style-attr-ja.html
 CSSSTYLEATTR1=副2     ~mitsue/css-style-attr/
-	CSSSTYLEATTR1=版      ~TR/css-style-attr/
-CSSSYNTAX3=主          ~/css-syntax-ja.html
-	CSSSYNTAX3=版          ~TR/css-syntax-3/
-	CSSSYNTAX3=編          ~CSSWG/css-syntax-3/
-CSSTEXT3=主           ~/css-text-ja.html
+CSSSYNTAX3=副          ~/css-syntax-ja.html
+CSSTEXT3=副           ~/css-text-ja.html
 CSSTEXT3=副2          suzukima.github.io/css-ja/css3-text/
-	CSSTEXT3=編           ~CSSWG/css-text-3/
-	CSSTEXT3=版           ~TR/css-text-3/
-CSSTEXTDECOR3=主      ~/css-text-decor-ja.html
+CSSTEXTDECOR3=副      ~/css-text-decor-ja.html
 CSSTEXTDECOR3=副2     ~momdoG/css-text-decor-3/
-	CSSTEXTDECOR3=編      ~CSSWG/css-text-decor-3/
-	CSSTEXTDECOR3=版      ~TR/css-text-decor-3/
-CSSEASING1=主          ~/css-easing-ja.html
-CSSTIMING1=主          ~/css-easing-ja.html
-CSSTRANSFORMS1=主     ~/css-transforms-ja.html
-	CSSTRANSFORMS1=・     ~CSSWG/css-transforms/
-	CSSTRANSFORMS1=版     ~TR/css3-transforms/
-	CSSTRANSFORMS1=編     ~CSSWG/css-transforms-1/
-	CSSTRANSFORMS1=・     ~CSSWG/css-transforms/
-CSSTRANSFORMS2=主     ~/css-transforms2-ja.html
-CSSTRANSITIONS1=主    ~/css-transitions-ja.html
-	CSSTRANSITIONS1=版    ~TR/css-transitions-1/
-	CSSTRANSITIONS1=編    ~CSSWG/css-transitions-1/
-CSSUI4=主             ~/css-ui-ja.html
-	CSSUI4=版             ~TR/css-ui-4/
-	CSSUI4=編             ~CSSWG/css-ui-4/
-CSSUI3=主             ~momdoG/css-ui/
+CSSEASING1=副          ~/css-easing-ja.html
+CSSTRANSFORMS1=副     ~/css-transforms-ja.html
+CSSTRANSFORMS2=副     ~/css-transforms2-ja.html
+CSSTRANSITIONS1=副    ~/css-transitions-ja.html
+CSSUI3=副             ~momdoG/css-ui/
 CSSUI3=副             ~/css-ui-ja.html●Level 4 日本語訳
-	CSSUI3=版             ~TR/css-ui-3/
-	CSSUI3=・             ~TR/css3-ui/
-	CSSUI3=編             ~CSSWG/css-ui-3/
-CSSVALUES4=主         ~/css-values-ja.html
-CSSVALUES3=主         ~momdoG/css3-values/
-CSSVALUES3=副2        ~/css-values-ja.html●Level 4 日本語訳
-	CSSVALUES3=版         ~TR/css-values-3/
-	CSSVALUES3=編         ~CSSWG/css-values-3/
-CSSVARIABLES1=主       ~/css-variables-ja.html
-	CSSVARIABLES1=編       ~CSSWG/css-variables-1/
-	CSSVARIABLES1=版       ~TR/css-variables-1/
-CSSWILLCHANGE1=主     ~/css-will-change-ja.html
-	CSSWILLCHANGE1=版     ~TR/css-will-change-1/
-CSSWRITINGMODES4=主   ~/css-writing-modes-ja.html
-	CSSWRITINGMODES=版    ~CSSWG/css-writing-modes-4/
-	CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-4/
-CSSWRITINGMODES3=主   ＃suzukima.github.io/css-ja/css3-writing-modes/
-CSSWRITINGMODES3=副   ~/css-writing-modes-ja.html●Level 4 日本語訳
-	CSSWRITINGMODES=版    ~TR/css-writing-modes-3/
-	CSSWRITINGMODES=編    ~CSSWG/css-writing-modes-3/●編（Level 3）
-MEDIAQUERIES4=主      ~/mediaqueries4-ja.html
-	MEDIAQUERIES4=編      ~CSSWG/mediaqueries-4/
-	MEDIAQUERIES4=版      ~TR/mediaqueries-4/
-MEDIAQUERIES3=主      ~mitsue/css3-mediaqueries/
+CSSUI4=副             ~/css-ui-ja.html
+CSSVALUES3=副         ~momdoG/css3-values/
+CSSVALUES3=副         ~/css-values-ja.html●Level 4 日本語訳
+CSSVALUES4=副         ~/css-values-ja.html
+CSSVARIABLES1=副      ~/css-variables-ja.html
+CSSWILLCHANGE1=副     ~/css-will-change-ja.html
+CSSWRITINGMODES4=副   ~/css-writing-modes-ja.html
+CSSWRITINGMODES3=副   ~/css-writing-modes3-ja.html
+CSSWRITINGMODES3=副   ＃suzukima.github.io/css-ja/css3-writing-modes/
+MEDIAQUERIES4=副      ~/mediaqueries4-ja.html
+MEDIAQUERIES3=副      ~mitsue/css3-mediaqueries/
 MEDIAQUERIES3=副      ~/mediaqueries4-ja.html●Level 4 日本語訳
-MEDIAQUERIES3=副2     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/css/REC-css3-mediaqueries-20120619.html
-FILTEREFFECTS1=主     ~/filter-effects-ja.html
-	FILTEREFFECTS1=編     drafts.fxtf.org/filter-effects-1/
-	FILTEREFFECTS1=版     ~TR/filter-effects-1/
-MEDIAFRAG=主          ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/media/REC-media-frags-10-20120925.html
+MEDIAQUERIES3=副3     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/css/REC-css3-mediaqueries-20120619.html
+FILTEREFFECTS1=副     ~/filter-effects-ja.html
 MEDIAFRAG=・          ~TR/media-frags/
-COMPAT=主             ~/compat-ja.html
-DOM=主                ~/DOM4-ja.html
-	DOM=編                dom.spec.whatwg.org/●LS
-DOMPARSING=主         ~/DOM-Parsing-ja.html
-	DOMPARSING=編         w3c.github.io/DOM-Parsing/
-	DOMPARSING=版         ~TR/DOM-Parsing/
-DOMLEVEL2STYLE=主     ~adagio/tr_dom2_style/expanded-toc.html
-ENCODING=主           ~/Encoding-ja.html
-	ENCODING=・           encoding.spec.whatwg.org/
-FETCH=主              ~/Fetch-ja.html
-FETCH=・              fetch.spec.whatwg.org/
-FEATUREPOLICY=主      ~/feature-policy-ja.html
-FILEAPI=主            ~/File_API-ja.html
-	FILEAPI=版            ~TR/FileAPI/
-	FILEAPI=編            w3c.github.io/FileAPI/
-FULLSCREEN=主         ~/fullscreen-ja.html
-	FULLSCREEN=・         fullscreen.spec.whatwg.org/
-NOTIFICATIONS=主      ~/notifications-ja.html
-	NOTIFICATIONS=・      notifications.spec.whatwg.org/
-GEOMETRY1=主          ~/geometry-ja.html
-HTML=副               ~/index.html#spec-list-html●日本語訳(このサイト)
-HTML=副               ~momdoG/html/●日本語(部分)訳
-HTML=副               ~momdoG/html/dev/●日本語訳( Web 開発者向け)
+MEDIAFRAG=主          ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/media/REC-media-frags-10-20120925.html
+COMPAT=副             ~/compat-ja.html
+DOM=副                ~/DOM4-ja.html
+DOMPARSING=副         ~/DOM-Parsing-ja.html
+DOMLEVEL2STYLE=副     ~adagio/tr_dom2_style/expanded-toc.html
+ENCODING=副           ~/Encoding-ja.html
+FETCH=副              ~/Fetch-ja.html
+FEATUREPOLICY=副      ~/feature-policy-ja.html
+FILEAPI=副            ~/File_API-ja.html
+FULLSCREEN=副         ~/fullscreen-ja.html
+NOTIFICATIONS=副      ~/notifications-ja.html
+GEOMETRY1=副          ~/geometry-ja.html
 	HTML=・               html.spec.whatwg.org/multipage/
-HTMLMICRODATA=主      ~momdoG/html/microdata.html
+HTML=副               ~/index.html#spec-list-html●日本語訳（このサイト）
+HTML=副               ~momdoG/html/●日本語（部分）訳
+HTML=副               ~momdoG/html/dev/●日本語訳（ Web 開発者向け）
 HTMLMICRODATA=・      ~HTMLLS/microdata.html
-HTMLIANA=主           ~momdoG/html/iana.html
+HTMLMICRODATA=主      ~momdoG/html/microdata.html
 HTMLIANA=・           ~HTMLLS/iana.html
-HTML401=主            ＃www.asahi-net.or.jp/~sd5a-ucd/rec-html401j/cover.html
-INDEXEDDB=主          ~/IndexedDB-ja.html
-	INDEXEDDB=版          ~TR/IndexedDB/
-	INDEXEDDB=編          w3c.github.io/IndexedDB/
+HTMLIANA=主           ~momdoG/html/iana.html
+HTML401=副            ＃www.asahi-net.or.jp/~sd5a-ucd/rec-html401j/cover.html
+INDEXEDDB=副          ~/IndexedDB-ja.html
 JLREQ=主              ~TR/jlreq/ja/
-JLREQ=副              w3c.github.io/jlreq/ja/●日本語訳(編集者草案)
-JLREQ=編              w3c.github.io/jlreq/
-INFRA=主              ~/infra-ja.html
-MIX=主                ~/webappsec-mixed-content-ja.html
-	MIX=版                ~TR/mixed-content/
-	MIX=編                w3c.github.io/webappsec-mixed-content/
-HRTIME2=主            ~/hr-time-ja.html
-	HRTIME2=版            ~TR/hr-time-2/
-	HRTIME2=編            w3c.github.io/hr-time/
-NAVIGATIONTIMING2=主  ~/navigation-timing-ja.html
-	NAVIGATIONTIMING2=版  ~TR/navigation-timing-2/
-PAGEVISIBILITY=主     ~/page-visibility-ja.html
-	PAGEVISIBILITY=版     ~TR/page-visibility-2/
-	PAGEVISIBILITY=・     ~TR/page-visibility/
-PERFORMANCETIMELINE2=主    ~/performance-timeline-ja.html
-	PERFORMANCETIMELINE2=版    ~TR/performance-timeline-2/
-	PERFORMANCETIMELINE2=編    w3c.github.io/performance-timeline/
-USERTIMING2=主        ~/user-timing-ja.html
-	USERTIMING2=版        ~TR/user-timing-2/
-RESOURCETIMING2=主     ~/resource-timing-ja.html
-RESOURCETIMING=主     ~/resource-timing-ja.html
-	RESOURCETIMING=版     ~TR/resource-timing/
-	RESOURCETIMING=編     w3c.github.io/resource-timing/
-BEACON=主             ~/beacon-ja.html
-	BEACON=版             ~TR/beacon/
-RESOURCEHINTS=主      ~/resource-hints-ja.html
-REFERRERPOLICY=主     ~/webappsec-referrer-policy-ja.html
-REPORTING=主          ~/reporting1-ja.html
-PERMISSIONS=主        ~/webappsec-permissions-ja.html
+JLREQ=副              w3c.github.io/jlreq/ja/●日本語訳（編集者草案）
+JLREQ=・              w3c.github.io/jlreq/
+INFRA=副              ~/infra-ja.html
+MIX=副                ~/webappsec-mixed-content-ja.html
+HRTIME2=副            ~/hr-time-ja.html
+NAVIGATIONTIMING2=副  ~/navigation-timing-ja.html
+PAGEVISIBILITY=副     ~/page-visibility-ja.html
+PERFORMANCETIMELINE2=副    ~/performance-timeline-ja.html
+USERTIMING2=副        ~/user-timing-ja.html
+RESOURCETIMING2=副     ~/resource-timing-ja.html
+RESOURCETIMING=副     ~/resource-timing-ja.html
+BEACON=副             ~/beacon-ja.html
+RESOURCEHINTS=副      ~/resource-hints-ja.html
+REFERRERPOLICY=副     ~/webappsec-referrer-policy-ja.html
+REPORTING=副          ~/reporting1-ja.html
+PERMISSIONS=副        ~/webappsec-permissions-ja.html
+GEOLOCATIONAPI=・     ~TR/geolocation-API/
+GEOLOCATIONAPI=副     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-API-20161108.html
+AMBIENTLIGHT=副       ~/ambient-light-ja.html
+ACCELEROMETER=副      ~/accelerometer-ja.html
+GENERICSENSOR=副      ~/sensors-ja.html
+GYROSCOPE=副          ~/gyroscope-ja.html
+MAGNETOMETER=副       ~/magnetometer-ja.html
+ORIENTATIONSENSOR=副  ~/orientation-sensor-ja.html
+MEDIAQUERIES5=副      ~/mediaqueries5-ja.html
+PROXIMITY=副          ~/proximity-ja.html
+GEOLOCATIONSENSOR=副  ~/geolocation-sensor-ja.html
+MOTIONSENSORS=副      ~/motion-sensors-ja.html
+WEBBLUETOOTH=副       tkybpp.github.io/web-bluetooth-jp/
 
-GEOLOCATIONAPI=主     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-API-20161108.html
-	GEOLOCATIONAPI=版     ~TR/geolocation-API/
-AMBIENTLIGHT=主       ~/ambient-light-ja.html
-ACCELEROMETER=主      ~/accelerometer-ja.html
-GENERICSENSOR=主      ~/sensors-ja.html
-GYROSCOPE=主          ~/gyroscope-ja.html
-MAGNETOMETER=主       ~/magnetometer-ja.html
-ORIENTATIONSENSOR=主  ~/orientation-sensor-ja.html
-MEDIAQUERIES5=主      ~/mediaqueries5-ja.html
-PROXIMITY=主          ~/proximity-ja.html
-GEOLOCATIONSENSOR=主  ~/geolocation-sensor-ja.html
-MOTIONSENSORS=主      ~/motion-sensors-ja.html
-WEBBLUETOOTH=主       tkybpp.github.io/web-bluetooth-jp/
-
-RFC1034=主            ＃srgia.com/docs/rfc1034j.html
-RFC1123=主            ＃hp.vector.co.jp/authors/VA002682/rfc1123j.htm
+RFC1034=副            ＃srgia.com/docs/rfc1034j.html
+RFC1123=副            ＃hp.vector.co.jp/authors/VA002682/rfc1123j.htm
 RFC1123=副2           ＃www2s.biglobe.ne.jp/~hig/tcpip/HostReq_Appl.html
-RFC1630=主            ＃srgia.com/docs/rfc1630j.html
-RFC1928=主            ＃srgia.com/docs/rfc1928j.html
-RFC2046=主            ＃www.t-net.ne.jp/~cyfis/rfc/mime/rfc2046_ja-1.html
+RFC1630=副            ＃srgia.com/docs/rfc1630j.html
+RFC1928=副            ＃srgia.com/docs/rfc1928j.html
+RFC2046=副            ＃www.t-net.ne.jp/~cyfis/rfc/mime/rfc2046_ja-1.html
 RFC2046=副            ~adagio/tr_mime-p2_2046/toc.htm
-RFC2119=主            ＃www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc2119j.html
+RFC2119=副            ＃www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc2119j.html
 RFC2119=副2           ＃www.asahi-net.or.jp/~sd5a-ucd/rfc-j/rfc-2119j.html
 RFC2119=副3           ＃www.t-net.ne.jp/~cyfis/rfc/format/rfc2119_ja.html
 RFC2119=副4           ~ipa/RFC2119JA.html
 RFC2397=・            ~IETF/rfc2397
 RFC2397=主            ＃d.hatena.ne.jp/tily/20071103/p1
-RFC2616=主            ~/rfc-others/RFC2616-ja.html
+RFC2616=副            ~/rfc-others/RFC2616-ja.html
 RFC2616=副            ~/http-common-ja.html#core-specifications
 RFC2616=・            ~IETF/rfc2616
-RFC2616=・            www.ietf.org/rfc/rfc2616.txt
 RFC2616=副2           ~suika/n/RFC%202616
-RFC2616=・            www.w3.org/Protocols/rfc2616/rfc2616-sec8.html
-RFC2616=・            www.w3.org/Protocols/rfc2616/rfc2616-sec13.html
 RFC2817=副            ~ipa/RFC2817JA.html
 RFC2817=・            ~IETF/rfc2817
 RFC2818=主            ~suika/n/RFC%202818
 RFC2818=副2           ~ipa/RFC2818JA.html
-RFC2818=・            www.ietf.org/rfc/rfc2818.txt
 RFC2818=・            ~IETF/rfc2818
 RFC3174=主            ~ipa/RFC3174JA.html
 RFC3174=副2           ＃www7b.biglobe.ne.jp/~k-west/SSLandTLS/rfc3174-Ja.txt
-RFC3490=主            ＃www.jdna.jp/survey/rfc/rfc3490j.html
-RFC3629=主            ＃www5d.biglobe.ne.jp/~stssk/rfc/rfc3629j.html
+RFC3490=副            ＃www.jdna.jp/survey/rfc/rfc3490j.html
+RFC3629=副            ＃www5d.biglobe.ne.jp/~stssk/rfc/rfc3629j.html
 RFC3629=副2           ＃www.akanko.net/marimo/data/rfc/rfc3629-jp.txt
-RFC3986=主            ~/rfc-others/RFC3986-ja.html
 RFC3986=・            ~IETF/rfc3986
-RFC3986=・            www.ietf.org/rfc/rfc3986.txt
-RFC3987=主            ~suika/n/RFC%203987
-RFC4086=主            ~ipa/RFC4086JA.html
-RFC4122=主            ＃rui86.hatenablog.jp/entry/2013/07/18/065147
-RFC4270=主            ~ipa/RFC4270JA.html
-RFC4291=主            ＃srgia.com/docs/rfc4291j.html
-RFC4648=主            ＃www5d.biglobe.ne.jp/~stssk/rfc/rfc4648j.html
-RFC5234=主            ＃www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc5234j.html
-RFC5246=主            ~ipa/RFC5246-00JA.html
-RFC5321=主            ＃srgia.com/docs/rfc5321j.html
-RFC5322=主            ＃srgia.com/docs/rfc5322j.html
-RFC5789=主            ~/http-patch-ja.html
-RFC5890=主            jprs.co.jp/idn/rfc5890j.txt
-RFC5891=主            jprs.co.jp/idn/rfc5891j.txt
-RFC5895=主            jprs.co.jp/idn/rfc5895j.txt
-RFC5988=主            ~/http-web-linking-ja.html
-RFC8288=主            ~/http-web-linking-ja.html
-RFC6066=主            ~ipa/RFC6066JA.html
-RFC6265=主            ~/http-cookie-ja.html
-RFC6265=・            ~IETF/rfc6265
-RFC6454=主            ~/RFC6454-ja.html
+RFC3986=主            ~/rfc-others/RFC3986-ja.html
+RFC3987=副            ~suika/n/RFC%203987
+RFC4086=副            ~ipa/RFC4086JA.html
+RFC4122=副            ＃rui86.hatenablog.jp/entry/2013/07/18/065147
+RFC4270=副            ~ipa/RFC4270JA.html
+RFC4291=副            ＃srgia.com/docs/rfc4291j.html
+RFC4648=副            ＃www5d.biglobe.ne.jp/~stssk/rfc/rfc4648j.html
+RFC5234=副            ＃www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc5234j.html
+RFC5246=副            ~ipa/RFC5246-00JA.html
+RFC5321=副            ＃srgia.com/docs/rfc5321j.html
+RFC5322=副            ＃srgia.com/docs/rfc5322j.html
+RFC5789=副            ~/http-patch-ja.html
+RFC5890=副            jprs.co.jp/idn/rfc5890j.txt
+RFC5891=副            jprs.co.jp/idn/rfc5891j.txt
+RFC5895=副            jprs.co.jp/idn/rfc5895j.txt
+RFC5988=副            ~/http-web-linking-ja.html
+RFC8288=副            ~/http-web-linking-ja.html
+RFC6066=副            ~ipa/RFC6066JA.html
+RFC6265=副            ~/http-cookie-ja.html
+RFC6454=副            ~/RFC6454-ja.html
 RFC6454=副2           ~ipa/RFC6454JA.html
-RFC6454=・            ~IETF/rfc6454
-RFC6455=主            ~/RFC6455-ja.html
-RFC6901=主            ~/RFC6901-ja.html
-RFC6902=主            ~/RFC6902-ja.html
-HTTP=主               ~/http-common-ja.html#core-specifications
-RFC7230=主            ~/RFC7230-ja.html
-RFC7230=・            ~IETF/rfc7230
-RFC7230=・            ~HTTPWG/rfc7230.html
-RFC7231=主            ~/RFC7231-ja.html
-RFC7231=・            ~IETF/rfc7231
-RFC7231=・            ~HTTPWG/rfc7231.html
-RFC7232=主            ~/RFC7232-ja.html
-RFC7232=・            ~IETF/rfc7232
-RFC7232=・            ~HTTPWG/rfc7232.html
-RFC7233=主            ~/RFC7233-ja.html
-RFC7233=・            ~IETF/rfc7233
-RFC7233=・            ~HTTPWG/rfc7233.html
-RFC7234=主            ~/RFC7234-ja.html
-RFC7234=・            ~IETF/rfc7234
-RFC7234=・            ~HTTPWG/rfc7234.html
-RFC7235=主            ~/RFC7235-ja.html
-RFC7235=・            ~IETF/rfc7235
-RFC7235=・            ~HTTPWG/rfc7235.html
-RFC7301=主            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
-SELECTORS4=・         ~CSSWG/selectors/
-SELECTORS4=主         ~/selectors4-ja.html
-	SELECTORS4=版         ~TR/selectors4/
-	SELECTORS4=編         ~CSSWG/selectors4/
-SELECTORS3=主         ~mitsue/css3-selectors/
+RFC6455=副            ~/RFC6455-ja.html
+RFC6901=副            ~/RFC6901-ja.html
+RFC6902=副            ~/RFC6902-ja.html
+HTTP=副               ~/http-common-ja.html#core-specifications●日本語訳（ RFC 7230〜7235 ）
+RFC7230=副            ~/RFC7230-ja.html
+RFC7231=副            ~/RFC7231-ja.html
+RFC7232=副            ~/RFC7232-ja.html
+RFC7233=副            ~/RFC7233-ja.html
+RFC7234=副            ~/RFC7234-ja.html
+RFC7235=副            ~/RFC7235-ja.html
+RFC7301=副            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
+SELECTORS4=副         ~/selectors4-ja.html
+SELECTORS3=副         ~mitsue/css3-selectors/
 SELECTORS3=副2        ＃zng.info/specs/css3-selectors.html
-SELECTORS3=副3        ~/selectors4-ja.html●Level 4 日本語訳
-	SELECTORS3=版         ~TR/css-selectors-3/
-	SELECTORS3=編         ~CSSWG/selectors-3/
-SELECTORSAPI=主       ~mitsue/selectors-api/●Level 1 日本語訳
-SECURECONTEXTS=主     ~/webappsec-secure-contexts-ja.html
+SELECTORS3=副         ~/selectors4-ja.html●Level 4 日本語訳
+SELECTORSAPI=副       ~mitsue/selectors-api/●Level 1 日本語訳
+SECURECONTEXTS=副     ~/webappsec-secure-contexts-ja.html
 SECURECONTEXTS=副     hashedhyphen.github.io/webappsec-specjp/secure-contexts/index.html
-	SECURECONTEXTS=版     ~TR/secure-contexts/
-	SECURECONTEXTS=編     w3c.github.io/webappsec-secure-contexts/
-SRI=主                ~/webappsec-subresource-integrity-ja.html
-	SRI=版                ~TR/SRI/
-	SRI=編                w3c.github.io/webappsec-subresource-integrity/
-UPGRADEINSECUREREQUESTS=主 ~/webappsec-upgrade-insecure-requests-ja.html
-	UPGRADEINSECUREREQUESTS=版 ~TR/upgrade-insecure-requests/
-	UPGRADEINSECUREREQUESTS=編 w3c.github.io/webappsec-upgrade-insecure-requests/
-MIXEDCONTENT=主       ~/webappsec-mixed-content-ja.html
-SECURITYPRIVACYQUESTIONNAIRE=主 ~/security-questionnaire-ja.html
-STREAMS=主            ~/Streams-ja.html
-STREAMS=・            streams.spec.whatwg.org/
-STREAMS=・            github.com/whatwg/streams
-SVG2=主               triple-underscore.github.io/index.html#spec-list-svg
-SVG=主                triple-underscore.github.io/SVG11/
-SW1=主                ~/service-workers-ja.html
-TOUCHEVENTS=主        ~/touch-events-ja.html
-URL=主                ~/URL-ja.html
-	URL=編                url.spec.whatwg.org/●LS
-UIEVENTS=主           ~/uievents-ja.html
-	UIEVENTS=版           ~TR/uievents/
-	UIEVENTS=編           w3c.github.io/uievents/
-WCAG20=主             waic.jp/docs/WCAG20/Overview.html
+SRI=副                ~/webappsec-subresource-integrity-ja.html
+UPGRADEINSECUREREQUESTS=副 ~/webappsec-upgrade-insecure-requests-ja.html
+MIXEDCONTENT=副       ~/webappsec-mixed-content-ja.html
+SECURITYPRIVACYQUESTIONNAIRE=副 ~/security-questionnaire-ja.html
+STREAMS=副            ~/Streams-ja.html
+SVG2=副               triple-underscore.github.io/index.html#spec-list-svg
+SVG11=副              triple-underscore.github.io/SVG11/
+SW1=副                ~/service-workers-ja.html
+TOUCHEVENTS=副        ~/touch-events-ja.html
+URL=副                ~/URL-ja.html
+UIEVENTS=副           ~/uievents-ja.html
 WCAG20=・             ~TR/WCAG20/
-WCAG21=主             waic.github.io/wcag21/guidelines/
+WCAG20=主             waic.jp/docs/WCAG20/Overview.html
 WCAG21=・             ~TR/WCAG21/
-WEBANIMATIONS1=主     ~/web-animations-ja.html
-	WEBANIMATIONS1=版     ~TR/web-animations-1/
-	WEBANIMATIONS1=編     ~CSSWG/web-animations-1/
-WEBIDL=主             ~/WebIDL-ja.html
-	WEBIDL=版             ~TR/WebIDL-1/
-	WEBIDL=編             heycam.github.io/webidl/
-	WEBIDL=・             ~TR/WebIDL/
-WEBSOCKETS=主         ~/WebSocket-ja.html
-	WEBSOCKETS=版         ~TR/websockets/
-WEBSTORAGE=主         ~/WebStorage-ja.html
-	WEBSTORAGE=版         ~TR/webstorage/
-	WEBSTORAGE=編         ~HTMLLS/webstorage.html●WHATWG版
-WORKERS=主            ~/Workers-ja.html
-	WORKERS=・            ~HTMLLS/workers.html
-	WORKERS=版            ~TR/workers/
-	WORKERS=編            w3c.github.io/workers/
-WORKLETS1=主          ~/worklets-ja.html
-	WORKLETS1=版          ~TR/worklets-1/
-	WORKLETS1=編          drafts.css-houdini.org/worklets/
-XHR=主                ~/XHR-ja.html
-	XHR=・                xhr.spec.whatwg.org/
-XML11=主              ＃w4ard.eplusx.net/translation/W3C/REC-xml11-20060816/
-XML=主                ＃w4ard.eplusx.net/translation/W3C/REC-xml-20081126/
-XML=・                ~TR/xml/
-XMLNS=主              ~/xml-names-ja.html
-XMLNS=・              ~TR/xml-names/
-XMLSS=主              ~/xml-stylesheet-ja.html
-XMLSS=・              ~TR/xml-stylesheet/
-XSLT=主               ~adagio/tr_xslt10/toc.htm
+WCAG21=主             waic.github.io/wcag21/guidelines/
+WEBANIMATIONS1=副     ~/web-animations-ja.html
+WEBIDL=副             ~/WebIDL-ja.html
+WEBSOCKETS=副         ~/WebSocket-ja.html
+WEBSTORAGE=副         ~/WebStorage-ja.html
+WORKERS=副            ~/Workers-ja.html
+WORKLETS1=副          ~/worklets-ja.html
+XHR=副                ~/XHR-ja.html
+XML11=副              ＃w4ard.eplusx.net/translation/W3C/REC-xml11-20060816/
+XML10=・              ~TR/xml/
+XML10=主              ＃w4ard.eplusx.net/translation/W3C/REC-xml-20081126/
+XMLNS=副              ~/xml-names-ja.html
+XMLSS=副              ~/xml-stylesheet-ja.html
+XSLT=副               ~adagio/tr_xslt10/toc.htm
 XSLT=副2              ~XML/xslt10-ja.html
-PROMISES=主           ~/promises-guide-ja.html
+PROMISES=副           ~/promises-guide-ja.html
 PROMISES=・           www.w3.org/2001/tag/doc/promises-guide
-PRELOAD=主            ~/preload-ja.html
+PRELOAD=副            ~/preload-ja.html
+STORAGE=副            ~/storage-ja.html
 `;
 
 COMMON_DATA.REF_DATA2 = `
@@ -2017,7 +1839,8 @@ CSP:CSP3
 CSS2:CSS21
 CSS22:CSS21
 COMPOSITING:COMPOSITING1
-	CSSALIGN:CSSALIGN3
+CSS3ALIGN:CSSALIGN3
+CSS3LIST:CSSLISTS3
 CSS3ANIMATIONS:CSSANIMATIONS1
 CSS3BACKGROUND:CSSBACKGROUNDS3
 CSS3BOX:CSSBOX3
@@ -2031,18 +1854,20 @@ CSSCOLOR:CSSCOLOR4
 CSS3CONDITIONAL:CSSCONDITIONAL3
 CSSCONDITIONAL:CSSCONDITIONAL3
 CSSCOUNTERSTYLES:CSSCOUNTERSTYLES3
+CSSDEVICEADAPT:CSSDEVICEADAPT1
 CSSDISPLAY:CSSDISPLAY3
-CSS3DISPLAY:CSSDISPLAY3
-CSS3EXCLUSIONS:CSSEXCLUSIONS
+CSS3EXCLUSIONS:CSSEXCLUSIONS1
+CSSEXCLUSIONS:CSSEXCLUSIONS1
 CSS3FLEXBOX:CSSFLEXBOX1
-CSS3FONT:CSSFONTS3
 CSS3FONTS:CSSFONTS3
+CSSFONTLOAD1:CSSFONTLOAD
 CSSGRID:CSSGRID1
 CSS3GRIDLAYOUT:CSSGRID1
 CSSINLINE:CSSINLINE3
 CSSLOGICAL:CSSLOGICAL1
 CSSMASKING:CSSMASKING1
 CSSMULTICOL:CSSMULTICOL1
+CSS3COL:CSSMULTICOL1
 CSS3IMAGES:CSSIMAGES3
 CSS3MULTICOL:CSSMULTICOL1
 CSS3NAMESPACE:CSSNAMESPACES3
@@ -2066,9 +1891,9 @@ CSSEASING:CSSEASING1
 CSS3TRANSFORMS:CSSTRANSFORMS1
 CSS3TRANSITIONS:CSSTRANSITIONS1
 CSSUI:CSSUI4
+CSS3UI:CSSUI3
 CSSVALUES:CSSVALUES3
 CSSVARIABLES:CSSVARIABLES1
-CSS3UI:CSSUI3
 CSS3VALUES:CSSVALUES3
 CSS3VAL:CSSVALUES3
 CSS3WRITINGMODES:CSSWRITINGMODES3
@@ -2082,9 +1907,9 @@ SELECT:SELECTORS3
 CSS3SELECTORS:SELECTORS3
 XMLHTTPREQUEST:XHR
 HTML5:HTML
-SVG11:SVG
+SVG:SVG11
 WEBWORKERS:WORKERS
-XML10:XML
+XML:XML10
 XMLNAMES:XMLNS
 XMLSTYLESHEET:XMLSS
 ECMA262:ECMASCRIPT
@@ -2102,6 +1927,7 @@ SERVICEWORKERS:SW1
 SERVICEWORKERS1:SW1
 UPGRADE:UPGRADEINSECUREREQUESTS
 PAGEVISIBILITY2:PAGEVISIBILITY
+HRTIME:HRTIME2
 `;
 
 /* END REF_KEY_MAP*/
