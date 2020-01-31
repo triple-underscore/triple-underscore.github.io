@@ -168,8 +168,8 @@ return text;
 
 ●●options
 
-spec_date:2019-10-28
-trans_update:2019-10-30
+spec_date:2020-01-30
+trans_update:2020-02-01
 source_checked:180709
 original_url:https://drafts.csswg.org/web-animations-1/
 	abbr_url:WANIMapi
@@ -256,6 +256,7 @@ DOMString:~WEBIDL#idl-DOMString
 object:~WEBIDL#idl-object
 CSSOMString:~CSSOM1#cssomstring
 
+E.TypeError:~WEBIDL#exceptiondef-typeerror
 E.InvalidStateError:~WEBIDL#invalidstateerror
 E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
 	I.DOMException:~WEBIDL#idl-DOMException
@@ -886,6 +887,7 @@ process::::プロセス
 	~keyframe~map:property-indexed
 	~propの ( 名前 / 値 ):property-value
 	~propの ( 名前 / 値~list ):property-valuelist
+	構文~的に:syntactically
 
 
 ●仕様
@@ -2600,9 +2602,30 @@ Creates a new KeyframeEffect object using the following procedure:
 Create a new KeyframeEffect object, effect.
 </li>
 			<li>
-%効果 の`~target要素$ ~SET %target
+%効果 の
+⇒＃
+`~target要素$ ~SET %target,
+`~target疑似-選択子$ ~SET ~NULL
 ◎
 Set the target element of effect to target.
+◎
+↓</li>
+			<li>
+~IF［
+%options は `KeyframeEffectOptions$I ~objである
+］
+⇒
+%効果 の`pseudoElement$m 設定子の手続き( %options の `pseudoElement$m1 値 )
+◎
+Set the target pseudo-selector to the result corresponding to the first matching condition from below.
+◎
+If options is a KeyframeEffectOptions object with a pseudoElement property,
+• Set the target pseudo-selector to the value of the pseudoElement property.
+◎
+When assigning this property, the error-handling defined for the pseudoElement setter on the interface is applied. If the setter requires an exception to be thrown, this procedure must throw the same exception and abort all further steps.
+◎
+Otherwise,
+• Set the target pseudo-selector to null.
 </li>
 			<li>
 %計時~入力 ~SET %options
@@ -2632,25 +2655,16 @@ Call the procedure to update the timing properties of an animation effect of eff
 If that procedure causes an exception to be thrown, propagate the exception and abort this procedure.
 </li>
 			<li>
-<p>
 ~IF［
 %options は `KeyframeEffectOptions$I ~objである
 ］
 ⇒
-%効果 の `composite$m ~SET %options の `composite$m1 値
+%効果 の`composite$m 設定子の手続き( %options の `composite$m1 値 )
 ◎
 If options is a KeyframeEffectOptions object, assign the composite property of effect to the corresponding value from options.
-</p>
-
-<p>
-この~propをアテガうときには、
-`KeyframeEffect$I ~interface上の対応する設定子~用に定義される~errorの取扱いを適用する。
-その設定子が %options が指定する値に対し例外を投出するよう要求する場合、同じ例外が，この手続きから`投出され$なければナラナイ。
-【と記されているが，その設定子には特に該当する記述はないので、単に~WebIDLによる既定の型~変換の挙動に従うと見受けられる。】
 ◎
 When assigning this property, the error-handling defined for the corresponding setter on the KeyframeEffect interface is applied. If the setter requires an exception to be thrown for the value specified by options, this procedure must throw the same exception and abort all further steps.
-</p>
-			</li>
+</li>
 			<li>
 %効果 用の`~keyframe$が成す集合を，［
 %keyframes に`~keyframes引数の処理-法$secを適用した結果
@@ -2784,21 +2798,49 @@ The target element being animated by this object (either the effect target if it
 pseudoElement, of type CSSOMString, nullable
 </dt>
 	<dd>
-取得子は、此れの`~target疑似-選択子$を返す。
+取得子は、此れの`効果~target$に応じて，次を返す
+⇒＃
+疑似要素であるならば その`~target疑似-選択子$（例： `before^pe ）／
+~ELSE_ ~NULL
 ◎
-The target pseudo-selector.＼
+The target pseudo-selector. null if this effect has no effect target or if the effect target is an element (i.e. not a pseudo-element). When the effect target is a pseudo-element, this specifies the pseudo-element selector (e.g. ::before).
 </dd>
 	<dd>
-結果は、此れの`効果~target$は［
-~NULL ／ `Element$I
-］である場合には ~NULL になる。
-~NULL でない場合、これは妥当な構文を伴う`疑似要素$選択子でなければナラナイ†。
-これは、妥当でない値を受容しない†。
-これは常に，正準的な形による選択子（すなわち `:before^css ではなく `::before^css ）を返すことになる。
-【† これらは，設定子に与える値に対する要件のように見受けられるが、妥当でない値に対する挙動が指定されていない。】
+<p>
+設定子は、次を走らす：
 ◎
-This is null if the effect target is an Element or is itself null. When not null, this must be a pseudo-element selector with valid syntax. This will not accept invalid values and will always return the selector in its canonical form (i.e. ::before instead of :before).
-</dd>
+On setting, sets the target pseudo-selector of the animation effect to the provided value after applying the following exceptions:
+</p>
+		<ol>
+			<li>
+~IF［
+所与の値 ~NEQ ~NULL
+］~AND［
+所与の値は構文~的に妥当でない
+］
+⇒
+~THROW `TypeError^E
+◎
+If the provided value is not null or a syntactically valid the user agent must throw a DOMException with error name TypeError and leave the target pseudo-selector of this animation effect unchanged.
+</li>
+			<li>
+~IF［
+所与の値 ~IN { `:before^l, `:after^l, `:first-letter^l, `:first-line^l }
+（旧来の構文による疑似要素である）
+］
+⇒
+所与の値の先頭に `:^l を付加する
+◎
+If one of the legacy Selectors Level 2 single-colon selectors (':before', ':after', ':first-letter', or ':first-line') is specified, the target pseudo-selector must be set to the equivalent two-colon selector (e.g. '::before').
+</li>
+			<li>
+此れの`効果~target$【！`~animation効果$】の`~target疑似-選択子$ ~SET 所与の値
+
+【`効果~target$ ~EQ ~NULL の場合にどうなるのか，述べられていない。 `TypeError^E を投出する？】
+◎
+↑↑</li>
+		</ol>
+	</dd>
 
 	<dt>
 `composite@m
@@ -4495,7 +4537,7 @@ Performs the following steps:
 			<li>
 %効果 ~LET %~Realm 内で次を走らせて構築される，新たな `KeyframeEffect$I ~obj（例外が投出され得る）
 ⇒
-`KeyframeEffect()$m0 構築子と同じ手続き( 此れ, %keyframes, %options )
+`KeyframeEffect()$m0 構築子の手続き( 此れ, %keyframes, %options )
 ◎
 Let target be the object on which this method was called.
 ◎
@@ -4506,7 +4548,7 @@ If the above procedure causes an exception to be thrown, propagate the exception
 			<li>
 %~animation ~LET %~Realm 内で次を走らせて構築される，新たな `Animation$I ~obj
 ⇒
-`Animation()$m0 構築子と同じ手続き( %効果, 此れの`~node文書$の`既定の文書~時列線$ )
+`Animation()$m0 構築子の手続き( %効果, 此れの`~node文書$の`既定の文書~時列線$ )
 ◎
 Construct a new Animation object, animation, in the relevant Realm of target by using the same procedure as the Animation() constructor, passing effect as the argument of the same name, and the default document timeline of the node document of the element on which this method was called as the timeline argument.
 </li>
@@ -5135,4 +5177,3 @@ In this case, calling animate() will not trigger a style change event. As a resu
 		</section>
 	</section>
 </main></div>
-
