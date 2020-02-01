@@ -493,6 +493,7 @@ Util.fillHeader = () => {
 		switch(domain[1]){
 		case 'www.w3.org':
 		case 'w3c.github.io':
+		case 'w3ctag.github.io':
 		case 'drafts.csswg.org':
 			html = '<a href="https://www.w3.org/" id="_W3C">W3C</a>';
 			break;
@@ -517,11 +518,13 @@ Util.fillHeader = () => {
 			date = 
 `<time datetime="${date}">${m[1]} 年 ${m[2]} 月 ${m[3]} 日</time>`;
 		}
-		let header_text;
+		let header_text ='';
 		if(isHTML) {
 			header_text = 'HTML Living Standard';
 		} else {
-			header_text = {
+			const status = options.spec_status;
+			if(status){
+				header_text = {
 WD: '作業草案',
 ED: '編集者草案',
 EDCG: 'W3C Community Group Draft Report',
@@ -533,7 +536,8 @@ LS: 'Living Standard',
 LD: 'Living Document',
 //IETFPR: 'IETF PROPOSED STANDARD',
 IETFID: 'Internet Draft',
-			}[options.spec_status] || '';
+				}[status] || status;
+			}
 		}
 
 		const html = `<h2>${header_text} — ${date}</h2>`;
