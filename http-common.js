@@ -398,7 +398,7 @@ p.chunk-ext-val:~HTTPmsg#p.chunk-ext-val
 p.chunk-size:~HTTPmsg#p.chunk-size
 p.chunked-body:~HTTPmsg#p.chunked-body
 p.connection-option:~HTTPmsg#p.connection-option
-p.header-field:~HTTPmsg#p.header-field
+p.field-line:~HTTPmsg#p.field-line
 p.last-chunk:~HTTPmsg#p.last-chunk
 p.message-body:~HTTPmsg#p.message-body
 p.method:~HTTPmsg#p.method
@@ -568,6 +568,7 @@ c.realm:~HTTPrq#realm
 外方:~HTTPsem#outbound
 端点:~HTTPsem#endpoint
 端点間:~HTTPsem#end-to-end
+隣点間:~HTTPsem#hop-by-hop
 連鎖:~HTTPsem#chain
 ~UA:~HTTPsem#user-agent
 ~client:~HTTPsem#client
@@ -593,11 +594,18 @@ c.realm:~HTTPrq#realm
 
 素片~識別子:~HTTPsem#uri.fragment.identifiers
 表現:~HTTPsem#representation
-~header:~HTTPsem#header.fields
-~header値:~HTTPsem#field.values
-~header名:~HTTPsem#field.names
+~field:~HTTPsem#fields
+~field名:~HTTPsem#field-name
+~field値:~HTTPsem#field-value
+~field行l:~HTTPsem#field-line
+~field行l値:~HTTPsem#field-line-value
 ~header節:~HTTPsem#header-section
 ~trailer節:~HTTPsem#trailer-section
+~header:~HTTPsem#header-field
+~trailer:~HTTPsem#trailer-field
+	~header:~HTTPsem#header.fields
+	~header値:~HTTPsem#field.values
+	~header名:~HTTPsem#field.names
 ~payload:~HTTPsem#payload
 ~message~payload:~HTTPsem#payload
 ~payload本体:~HTTPsem#payload.body
@@ -685,6 +693,9 @@ c.realm:~HTTPrq#realm
 状態s~code:~HTTPrs#status.codes
 	資源:~7231#resources
 	~MIME型:~7231#media.type
+暫定-応答:~HTTPrs#interim-response
+最終-応答:~HTTPrs#final-response
+	#final-interim
 
 時計:~HTTPrs#clock
 検証子~header:~HTTPrs#response.validator
@@ -887,6 +898,7 @@ minor::::副:マイナー
 巨大:large:~
 広範:wide:~
 広範囲:extensive:~
+暫定-:interim:~
 最終:final:~
 近過去:recent::~
 近過去の:recentな::~
@@ -987,7 +999,6 @@ agent::::エージェント
 慣行:convention::~
 早期の:early:~
 明らか:obvious:~
-暫定:interim:~
 柔軟:flexible:~
 柔軟性:flexibility:~
 根本的:fundamental:~
@@ -1150,7 +1161,7 @@ payload::::ペイロード
 percent::::パーセント
 subtag::::下位タグ
 trailer::::トレイラ
-trailers::::トレイラ節
+	trailer節:trailers
 chunked:::chunk 化:チャンク化
 octet::::オクテット
 hex::16 進
@@ -1187,7 +1198,7 @@ escaping::::エスケープ処理
 下位成分:subcomponent::~
 折返-:fold::~
 折返さな:foldしな::~
-折返し:folding::~
+折返し:folding::折り返し
 記号:symbol:~
 符号化:encoding::~::エンコーディング
 	符号化-済み:encoded
@@ -1442,6 +1453,7 @@ stateless::::ステートレス
 終了-:terminate:~
 終了:termination:~
 結合-:combine:~
+結合:combination:~
 続行-:proceed:~
 計測:measure:~
 記憶-:remember:~

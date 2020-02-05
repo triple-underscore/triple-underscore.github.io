@@ -12,9 +12,9 @@
 
 ●●options
 spec_title:HTTP Caching
-spec_date:2019-11-22
-trans_update:2019-12-02
-source_checked:191120
+spec_date:2020-02-04
+trans_update:2020-02-05
+source_checked:200204
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-cache-latest.html
 abbr_url:HTTPcache
@@ -45,6 +45,7 @@ qdir.only-if-cached:#cache-request-directive.only-if-cached
 
 sdir.max-age:#cache-response-directive.max-age
 sdir.must-revalidate:#cache-response-directive.must-revalidate
+sdir.must-understand:#cache-response-directive.must-understand
 sdir.no-cache:#cache-response-directive.no-cache
 sdir.no-store:#cache-response-directive.no-store
 sdir.no-transform:#cache-response-directive.no-transform
@@ -103,6 +104,7 @@ cite.~cache指令~登記簿:~IANA-a/http-cache-directives
 4.2.4:#serving.stale.responses
 4.3.4:#freshening.responses
 4.4:#invalidation
+5.2:#header.cache-control
 5.5:#header.warning
 6:#history.lists
 7.2:#security.timing
@@ -113,6 +115,8 @@ C:#change.log
 
 Messaging/9.3:~HTTPmsg#associating.response.to.request
 Messaging/6.3:~HTTPmsg#message.body.length
+
+Semantics/4.4:~HTTPsem#field.values
 Semantics/8.2.2:~HTTPrq#precedence
 	Semantics/8.3:~HTTPrq#header.range
 Semantics/9.1:~HTTPrs#overview.of.status.codes
@@ -174,14 +178,15 @@ V.応答~遅延:#response_delay
 5.2.1.7:#cache-request-directive.only-if-cached
 5.2.2:#cache-response-directive
 5.2.2.1:#cache-response-directive.must-revalidate
-5.2.2.2:#cache-response-directive.no-cache
-5.2.2.3:#cache-response-directive.no-store
-5.2.2.4:#cache-response-directive.no-transform
-5.2.2.5:#cache-response-directive.public
-5.2.2.6:#cache-response-directive.private
-5.2.2.7:#cache-response-directive.proxy-revalidate
-5.2.2.8:#cache-response-directive.max-age
-5.2.2.9:#cache-response-directive.s-maxage
+5.2.2.2:#cache-response-directive.must-understand
+5.2.2.3:#cache-response-directive.no-cache
+5.2.2.4:#cache-response-directive.no-store
+5.2.2.5:#cache-response-directive.no-transform
+5.2.2.6:#cache-response-directive.public
+5.2.2.7:#cache-response-directive.private
+5.2.2.8:#cache-response-directive.proxy-revalidate
+5.2.2.9:#cache-response-directive.max-age
+5.2.2.10:#cache-response-directive.s-maxage
 5.2.3:#cache.control.extensions
 5.3:#header.expires
 5.4:#header.pragma
@@ -340,10 +345,11 @@ asset::::アセット
 帯域外の:out-of-band:~
 素早く:quickに:~
 合成-:synthesize:~
+消費器:consumer::~
 
 	^en:double keying
 	member
-	拾える:gleanできる:~
+	拾える:gleanできる
 	“戻る” "Back"
 	そのまま書き出:write through
 	保持:hold
@@ -353,7 +359,14 @@ asset::::アセット
 	通過中:in transit
 	過ぎていない:earlier than or equal to
 	発する:emit
+
+	●言い換え
 	表示し直す:redisplay
+	再利用-可能:reusable
+	より強い:stronger
+	強く禁制され:have stronger prohibitions
+	生じる:create
+	格納できる:caching of
 
 	●指示語
 	A:first
@@ -508,7 +521,7 @@ The changes in this draft are summarized in Appendix C.8.
 <h2 title="Copyright Notice">著作権の告知</h2>
 
 <p lang="en-x-a0">
-Copyright (c) 2019 IETF Trust and the persons identified as the document authors. All rights reserved.
+Copyright (c) 2020 IETF Trust and the persons identified as the document authors. All rights reserved.
 </p>
 
 <p class="trans-note">【
@@ -643,7 +656,7 @@ Conformance criteria and considerations regarding error handling are defined in 
 ◎
 This specification uses the Augmented Backus-Naur Form (ABNF) notation of [RFC5234], extended with the notation for case-sensitivity in strings defined in [RFC7405].
 ◎
-It also uses a list extension, defined in Section 12 of [Semantics], that allows for compact definition of comma-separated lists using a '#' operator (similar to how the '*' operator indicates repetition).＼
+It also uses a list extension, defined in Section 4.5 of [Semantics], that allows for compact definition of comma-separated lists using a '#' operator (similar to how the '*' operator indicates repetition).＼
 ◎
 Appendix A shows the collected grammar with all list operators expanded to standard ABNF notation.
 ◎
@@ -662,10 +675,10 @@ The following core rules are included by reference, as defined in [RFC5234], App
 The rules below are defined in [Semantics]:
 ◎
 HTTP-date     = &lt;HTTP-date, see [Semantics], Section 10.1.1.1&gt;
-OWS           = &lt;OWS, see [Semantics], Section 11.1&gt;
-field-name    = &lt;field-name, see [Semantics], Section 4.1&gt;
-quoted-string = &lt;quoted-string, see [Semantics], Section 4.2.3.2&gt;
-token         = &lt;token, see [Semantics], Section 4.2.3.1&gt;
+OWS           = &lt;OWS, see [Semantics], Section 1.2.1&gt;
+field-name    = &lt;field-name, see [Semantics], Section 4.3&gt;
+quoted-string = &lt;quoted-string, see [Semantics], Section 4.4.1.2&gt;
+token         = &lt;token, see [Semantics], Section 4.4.1.1&gt;
 </p>
 
 		</section>
@@ -802,89 +815,95 @@ A cache is disconnected when it cannot contact the origin server or otherwise fi
 要請に対する応答を~cacheが格納し得るのは、次のいずれも満たされる場合に限られる
 — 他の応答は格納してはナラナイ：
 ◎
-A cache MUST NOT store a response to any request, unless:
+A cache MUST NOT store a response to a request unless:
 </p>
 
 <ul>
 	<li>
 ~cacheは、`要請~method$を解する。†
 ◎
-The request method is understood by the cache, and
+the request method is understood by the cache;
 </li>
 	<li>
-応答は最終~応答（ `Messaging/9.3$sec ）である（その`状態s~code$は `1xx$st0 でない）。
+応答は`最終-応答$である。
 ◎
-the response status code is final (see Section 9.3 of [Messaging]), and
+the response status code is final (see Section 9 of [Semantics]);
 </li>
 	<li>
-~cacheは、`応答~状態s~code$を解する。†
+`応答~状態s~code$は［
+`206$st0 ／ `304$st0
+］であるか, または
+`must-understand$sdir ~cache指令が在って，~cacheは`応答~状態s~code$を解する。
 ◎
-the response status code is understood by the cache, and
+if the response status code is 206 or 304, or the "must-understand" cache directive (see Section 5.2) is present: the cache understands the response status code;
 </li>
 	<li>
-応答~内に， `no-store$sdir `~cache指令$は出現していない。
+応答~内に `no-store$sdir `~cache指令$は無い。
 ◎
-the "no-store" cache directive (see Section 5.2) does not appear in the response, and
+the "no-store" cache directive is not present in the response (see Section 5.2);
 </li>
 	<li>
 <p>
-~cacheは`共用~cache$でないか, または［
-`共用~cache$であって，次のいずれも満たされる
-］：
+~cacheが`共用~cache$である場合は、次のいずれも満たされる：
 ◎
 ↓</p>
 		<ul>
 			<li>
-応答~内に `private$sdir 応答~指令は出現していない。
+`private$sdir 応答~指令は、応答~内に無いか，応答~内に在って［
+改変された応答を`共用~cache$に格納する
+］ことを許容する
 ◎
-the "private" response directive (see Section 5.2.2.6) does not appear in the response, if the cache is shared, and
+if the cache is shared: the "private" response directive is either not present or allows a modified response to be stored by a shared cache; see Section 5.2.2.7);
 </li>
 			<li>
-要請~内に `Authorization$h ~headerは出現していない
-— ただし、応答により明示的に格納-が許容されている場合を除く（ `3.2$sec を見よ）。
+［
+要請~内に `Authorization$h ~headerは無い
+］または［
+`共用~cache$に~cacheすることを明示的に許容するような，ある応答~指令が要請~内に在る
+（ `3.2$sec を見よ）
+］
 ◎
-the Authorization header field (see Section 8.5.3 of [Semantics]) does not appear in the request, if the cache is shared, unless the response explicitly allows it (see Section 3.2), and
+if the cache is shared: the Authorization header field is not present in the request (see Section 8.5.3 of [Semantics]) or a response directive is present that explicitly allows shared caching (see Section 3.2); and,
 </li>
 		</ul>
 	</li>
 	<li>
 <p>
-応答は、次のいずれかを満たす：
+応答は、次に挙げるいずれかを包含する：
 ◎
-the response either:
+the response contains at least one of:
 </p>
 		<ul>
 			<li>
-`Expires$h ~headerを包含している。
+`public$sdir 応答~指令
 ◎
-contains an Expires header field (see Section 5.3), or
+a public response directive (see Section 5.2.2.6);
 </li>
 			<li>
-`max-age$sdir 応答~指令を包含している。
+`Expires$h ~header
 ◎
-contains a max-age response directive (see Section 5.2.2.8), or
+an Expires header field (see Section 5.3);
 </li>
 			<li>
-`s-maxage$sdir 応答~指令を包含している, かつ ~cacheは`共有-$されている。
+`max-age$sdir 応答~指令
 ◎
-contains a s-maxage response directive (see Section 5.2.2.9) and the cache is shared, or
+a max-age response directive (see Section 5.2.2.9);
 </li>
 			<li>
-［
+`共用~cache$である場合に限り：
+`s-maxage$sdir 応答~指令
+◎
+if the cache is shared, an s-maxage response directive (see Section 5.2.2.10);
+</li>
+			<li>
 ~cacheされることを許容する，`~cache制御~拡張$
-］を包含している。
 ◎
-contains a Cache Control Extension (see Section 5.2.3) that allows it to be cached, or
+a Cache Control Extension that allows it to be cached (see Section 5.2.3); or,
 </li>
 			<li>
-`状態s~code$により，`経験的に~cache可能$であるものと定義されている。
+`経験的に~cache可能$であるものと定義された`状態s~code$
 ◎
-has a status code that is defined as heuristically cacheable (see Section 4.2.2), or
-</li>
-			<li>
-`public$sdir 応答~指令を包含している。
-◎
-contains a public response directive (see Section 5.2.2.5).
+a status code that is defined as heuristically cacheable (see Section 4.2.2).
 </li>
 		</ul>
 	</li>
@@ -1075,7 +1094,7 @@ selecting header fields nominated by the stored response (if any) match those pr
 `応答^V は成功裡に`検証-$されている, または
 `応答^V は、 `no-cache$sdir 応答~cache指令を包含しない。
 ◎
-the stored response does not contain the no-cache cache directive (Section 5.2.2.2), unless it is successfully validated (Section 4.3), and
+the stored response does not contain the no-cache cache directive (Section 5.2.2.3), unless it is successfully validated (Section 4.3), and
 </li>
 	<li>
 <p>
@@ -1166,7 +1185,7 @@ A cache that does not have a clock available MUST NOT use stored responses witho
 ~cacheが［
 格納-済み応答により満足できるような，要請
 ］を受信したとき，その応答に `Vary$h ~headerが在る場合には、［
-その~header値に~~挙げられた，すべての`選定用~header$
+その`~field値$に~~挙げられた，すべての`選定用~header$
 ］について，［
 元の要請（すなわち，格納-済み応答に結付けられているもの）と
 今の要請が，以下に述べるように合致する
@@ -1179,7 +1198,7 @@ When a cache receives a request that can be satisfied by a stored response that 
 	<li>
 <p>
 所与の`選定用~header$に対し， 2 つの要請のそれが互いに合致するための必要十分条件は、［
-それぞれの要請に，次に挙げるいくつかを適用することにより、一方の要請の`~header値$を他方のそれに変形できるとき
+それぞれの要請に，次に挙げるいくつかを適用することにより、一方の要請の`~field値$を他方のそれに変形できるとき
 ］と定義される：
 ◎
 The selecting header fields from two requests are defined to match if and only if those in the first request can be transformed to those in the second request by applying any of the following:
@@ -1192,15 +1211,16 @@ The selecting header fields from two requests are defined to match if and only i
 • adding or removing whitespace, where allowed in the header field's syntax
 </li>
 			<li>
-同じ`~header名$の，複数の`~header値$を`結合-$する。
+同じ`~field名$を伴う複数の~headerを`結合-$する。
+【！ `Semantics/4.4$sec  Semantics/4.1？ 】
 ◎
-• combining multiple header fields with the same field name (see Section 4.2 of [Semantics])
+• combining multiple header fields with the same field name (see Section 4.4 of [Semantics])
 </li>
 			<li>
-両~header値を、［
+両~headerの`~field値$を、［
 ~headerの仕様に則って，意味論が一致することが既知である
 ］ような仕方で正規化する（例：［
-順序が有意でない所では，`~header値$を並替える
+順序が有意でない所では，`~field値$を並替える
 ］, ［
 文字大小無視と定義されている所では，小文字（または大文字）のみに正規化する
 ］, 等々）。
@@ -1210,15 +1230,14 @@ The selecting header fields from two requests are defined to match if and only i
 		</ul>
 	</li>
 	<li>
-（正規化を終えた後に，）対象の~headerが片方の要請のみに在る場合は、合致しないものとする。
+（正規化を終えた後に，）対象の~headerが片方の要請にだけ在る場合、合致しないとする。
 ◎
 If (after any normalization that might take place) a header field is absent from a request, it can only match another request if it is also absent there.
 </li>
 	<li>
-`Vary$h ~header値 "`*^c" は、常に合致しない。
-【他方のそれも "`*^c" であっても】
+どちらかの要請に `Vary$h ~headerが在って，その`~field値$を成す ある~memberに "`*^c" が在る場合、常に合致しない。
 ◎
-A Vary header field-value of "*" always fails to match.
+A Vary header field value containing a member "*" always fails to match.
 </li>
 </ul>
 
@@ -1323,7 +1342,7 @@ When a response is "fresh" in the cache, it can be used to satisfy subsequent re
 ］ような、未来の`失効時刻$
 ］を，`明示的な失効時刻$として応答にアテガうことになる。
 ◎
-The primary mechanism for determining freshness is for an origin server to provide an explicit expiration time in the future, using either the Expires header field (Section 5.3) or the max-age response directive (Section 5.2.2.8). Generally, origin servers will assign future explicit expiration times to responses in the belief that the representation is not likely to change in a semantically significant way before the expiration time is reached.
+The primary mechanism for determining freshness is for an origin server to provide an explicit expiration time in the future, using either the Expires header field (Section 5.3) or the max-age response directive (Section 5.2.2.9). Generally, origin servers will assign future explicit expiration times to responses in the belief that the representation is not likely to change in a semantically significant way before the expiration time is reached.
 </p>
 
 <p>
@@ -1436,14 +1455,14 @@ A cache can calculate the freshness lifetime (denoted as freshness_lifetime) of 
 ⇒
 その値
 ◎
-• If the cache is shared and the s-maxage response directive (Section 5.2.2.9) is present, use its value, or
+• If the cache is shared and the s-maxage response directive (Section 5.2.2.10) is present, use its value, or
 </li>
 	<li>
 `max-age$sdir 応答~指令が在る場合
 ⇒
 その値
 ◎
-• If the max-age response directive (Section 5.2.2.8) is present, use its value, or
+• If the max-age response directive (Section 5.2.2.9) is present, use its value, or
 </li>
 	<li>
 `Expires$h 応答~headerが在る場合
@@ -1488,7 +1507,7 @@ When there is more than one value present for a given directive (e.g., two Expir
 したがって，明示的な時刻が指定されていないときは、~cacheは，［
 確からしい`失効時刻$を見積もる
 ］ために［
-他の~header値（ `Last-Modified$h による時刻など）を利用する~algo
+他の~header`~field値$（ `Last-Modified$h による時刻など）を利用する~algo
 ］を使役して，`経験的な失効時刻$をアテガってもヨイ。
 この仕様は，特定の~algoは供さないが、それらの結果に対する~~最低限の拘束を課す。
 ◎
@@ -1541,7 +1560,7 @@ Note: Section 13.9 of [RFC2616] prohibited caches from calculating heuristic fre
 `Age$h ~headerは、［
 応答~messageが~cacheから得られるときに，見積もられた`齢$を伝達する
 ］ために利用される。
-`Age$h ~headerの値は、~cacheにより見積もられた，［
+`Age$h ~header`~field値$は、~cacheにより見積もられた，［
 その応答が`生成元~server$により［
 `生成され$た, または`検証-$された
 ］ときからの秒~数
@@ -1674,7 +1693,7 @@ the "corrected_age_value", if all of the caches along the response path implemen
 `修正済み初期~齢@V = `max^op( `見かけ齢$V, `修正済み齢~値$V )
 ◎
 These are combined as
-• corrected_initial_age = max( apparent_age, corrected_age_value );
+• corrected_initial_age = max(apparent_age, corrected_age_value);
 </p>
 
 <p>
@@ -1842,19 +1861,19 @@ One such validator is the timestamp given in a Last-Modified header field (Secti
 </p>
 
 <p>
-`検証子$には、 `ETag$h ~header内に与えられる `entity-tag$p もある。
+`検証子$には、 `ETag$h ~field内に与えられる `entity-tag$p もある。
 1 個~以上の格納-済み応答を指示する 1 個~以上の `entity-tag$p を、［
 応答を`検証-$するためとして
 `If-None-Match$h ~headerにて
 ］, あるいは［
-`表現$を選定するためとして
+`表現$を選定するためとして［
 `If-Match$h ／ `If-Range$h
-~headerにて
+］~headerにて
 ］，利用できる（すなわち，~clientは、以前に得られた［
 ~listされた `entity-tag$p を伴う， 1 個~以上の`表現$
 ］を，特に指している）。
 ◎
-Another validator is the entity-tag given in an ETag header field (Section 10.2.3 of [Semantics]). One or more entity-tags, indicating one or more stored responses, can be used in an If-None-Match header field for response validation, or in an If-Match or If-Range header field for representation selection (i.e., the client is referring specifically to one or more previously obtained representations with the listed entity-tags).
+Another validator is the entity-tag given in an ETag field (Section 10.2.3 of [Semantics]). One or more entity-tags, indicating one or more stored responses, can be used in an If-None-Match header field for response validation, or in an If-Match or If-Range header field for representation selection (i.e., the client is referring specifically to one or more previously obtained representations with the listed entity-tags).
 </p>
 
 			</section>
@@ -1933,7 +1952,7 @@ The proper evaluation of conditional requests by a cache depends on the received
 — 後者が何であれ —
 比較して`検証-$するよう求めている
 ］ことを指示する。
-その`~header値$が［
+その`~field値$が［
 "`*^c" である, または［
 `entity-tag$p の~listであって，そのうち いずれかが［
 格納-済みな`被選定~応答$の `entity-tag$p
@@ -1943,7 +1962,7 @@ The proper evaluation of conditional requests by a cache depends on the received
 — その合致した応答を送信する代わりに — 
 （その応答の~metadataを利用して，） `304$st 応答を`生成する$ベキである。
 ◎
-A request containing an If-None-Match header field (Section 8.2.4 of [Semantics]) indicates that the client wants to validate one or more of its own stored responses in comparison to whichever stored response is selected by the cache. If the field-value is "*", or if the field-value is a list of entity-tags and at least one of them matches the entity-tag of the selected stored response, a cache recipient SHOULD generate a 304 (Not Modified) response (using the metadata of the selected stored response) instead of sending that stored response.
+A request containing an If-None-Match header field (Section 8.2.4 of [Semantics]) indicates that the client wants to validate one or more of its own stored responses in comparison to whichever stored response is selected by the cache. If the field value is "*", or if the field value is a list of entity-tags and at least one of them matches the entity-tag of the selected stored response, a cache recipient SHOULD generate a 304 (Not Modified) response (using the metadata of the selected stored response) instead of sending that stored response.
 </p>
 
 <div class="p">
@@ -1959,13 +1978,13 @@ When a cache decides to revalidate its own stored responses for a request that c
 
 <ul>
 	<li>
-要請を回送する際に，その `If-None-Match$h ~header値を，［
+要請を回送する際に，その `If-None-Match$h ~header`~field値$を［
 `L^V と［
 各［
 自前の格納-済み応答（`新鮮$か否かを問わず）
 ］の `entity-tag$p たちからなる~list
 ］とを結合した結果の和集合
-］に置き換えて送信してもヨイ
+］に置換して送信してもヨイ
 — ただし，
 ◎
 the cache MAY combine the received list with a list of entity-tags from its own stored set of responses (fresh or stale) and send the union of the two lists as a replacement If-None-Match header field value in the forwarded request.＼
@@ -1980,11 +1999,11 @@ If a stored response contains only partial content, the cache MUST NOT include i
 回送した要請に対する応答 `R^V が，［
 `304$st である, かつ
 `ETag$h ~headerを伴う, かつ
-その~header値は `L^V 内に無い `entity-tag$p を含む
+その`~field値$は `L^V 内に無い `entity-tag$p を含む
 ］場合、その `entity-tag$p に対応ng格納-済み応答を再利用しつつ,
 `R^V の~metadataで更新した上で（ `4.3.4$sec ）、~clientに対し `200$st 応答を`生成し$なければナラナイ
 ◎
-If the response to the forwarded request is 304 (Not Modified) and has an ETag header field value with an entity-tag that is not in the client's list, the cache MUST generate a 200 (OK) response for the client by reusing its corresponding stored response, as updated by the 304 response metadata (Section 4.3.4).
+If the response to the forwarded request is 304 (Not Modified) and has an ETag field value with an entity-tag that is not in the client's list, the cache MUST generate a 200 (OK) response for the client by reusing its corresponding stored response, as updated by the 304 response metadata (Section 4.3.4).
 </li>
 </ul>
 </div>
@@ -2009,14 +2028,14 @@ If an If-None-Match header field is not present, a request containing an If-Modi
 
 <ol>
 	<li>
-`R^V に `Last-Modified$h ~headerが在るならば、その値による時刻
+`R^V に `Last-Modified$h ~fieldが在るならば、その`~field値$による時刻
 ◎
-1) the selected stored response has a Last-Modified field-value that is earlier than or equal to the conditional timestamp;＼
+1) the selected stored response has a Last-Modified field value that is earlier than or equal to the conditional timestamp;＼
 </li>
 	<li>
-他の場合， `R^V に `Date$h ~headerが在るならば、その値による時刻
+他の場合， `R^V に `Date$h ~fieldが在るならば、その`~field値$による時刻
 ◎
-2) no Last-Modified field is present in the selected stored response, but it has a Date field-value that is earlier than or equal to the conditional timestamp; or,＼
+2) no Last-Modified field is present in the selected stored response, but it has a Date field value that is earlier than or equal to the conditional timestamp; or,＼
 </li>
 	<li>
 他の場合，~cacheにて `R^V を受信した時刻が記録されて［
@@ -2358,11 +2377,11 @@ Note that this does not guarantee that all appropriate responses are invalidated
 		</section>
 	</section>
 	<section id="header.field.definitions">
-<h2 title="Header Field Definitions">5. ~headerの定義</h2>
+<h2 title="Field Definitions">5. ~field定義</h2>
 
 <p>
 この節では、次に挙げる［
-~cache法に関係する各種~HTTP~header
+~cache法に関係する各種~HTTP`~field$
 ］の構文と意味論を定義する
 — これらの位置付けは、廃用にされた `Warning^h を除き，どれも `標準^i （ `standard^en ）である
 ⇒＃
@@ -2372,10 +2391,10 @@ Note that this does not guarantee that all appropriate responses are invalidated
 `Pragma$h,
 `Warning$h
 ◎
-This section defines the syntax and semantics of HTTP header fields related to caching.
+This section defines the syntax and semantics of HTTP fields related to caching.
 ◎
 Table 1
-Header Field Name 	Status 	Reference
+Field Name 	Status 	Reference
 
 Age 	standard 	Section 5.1
 Cache-Control 	standard 	Section 5.2
@@ -2403,9 +2422,9 @@ The "Age" header field conveys the sender's estimate of the amount of time since
 </pre>
 
 <p>
-`Age$h `~header値$は、秒数を表現する負でない整数である（ `1.3$sec を見よ）。
+`Age$h `~field値$は、秒数を表現する負でない整数である（ `1.3$sec を見よ）。
 ◎
-The Age field-value is a non-negative integer, representing time in seconds (see Section 1.3).
+The Age field value is a non-negative integer, representing time in seconds (see Section 1.3).
 </p>
 
 <p>
@@ -2429,12 +2448,12 @@ The presence of an Age header field implies that the response was not generated 
 — ［
 要請／応答
 ］の`連鎖$沿いにある~cacheたちの挙動を制御するための指令（ `directive^en ） —
-を指定するために利用される。
+を~listするために利用される。
 そのような指令は，単方向であり、要請~内にそれが在っても，対する応答~内に同じ指令が［
 在る／繰返される
 ］ことは含意しない。
 ◎
-The "Cache-Control" header field is used to specify directives for caches along the request/response chain. Such cache directives are unidirectional in that the presence of a directive in a request does not imply that the same directive is present in the response, or to be repeated in it.
+The "Cache-Control" header field is used to list directives for caches along the request/response chain. Such cache directives are unidirectional in that the presence of a directive in a request does not imply that the same directive is present in the response, or to be repeated in it.
 </p>
 
 <div class="trans-note">
@@ -2481,31 +2500,16 @@ Note: Some HTTP/1.0 caches might not implement Cache-Control.
 A proxy, whether or not it implements a cache, MUST pass cache directives through in forwarded messages, regardless of their significance to that application, since the directives might be applicable to all recipients along the request/response chain. It is not possible to target a directive to a specific cache.
 </p>
 
-<div class="p">
 <p>
 `~cache指令$は、文字大小無視 `token$p により識別され，引数（省略可）もとり得る。
 引数には，［
 `token$p, `quoted-string$p
 ］どちらの構文も利用し得る。
-`受信者$は：
+`受信者$は、この仕様が定義する指令に対しては，（引数を定義するものであれば）両~構文とも受容する~OUGHT
+— 生成において片方が要求されているものもあるが。
 ◎
-Cache directives are identified by a token, to be compared case-insensitively, and have an optional argument, that can use both token and quoted-string syntax.＼
+Cache directives are identified by a token, to be compared case-insensitively, and have an optional argument, that can use both token and quoted-string syntax. For the directives defined below that define arguments, recipients ought to accept both forms, even if a specific form is required for generation.
 </p>
-
-<ul>
-	<li>
-この仕様が定義する指令に対しては、（引数を定義するものであれば）両~構文とも受容する~OUGHT
-— 片方が選好されると文書化されているものもあるが。
-◎
-For the directives defined below that define arguments, recipients ought to accept both forms, even if one is documented to be preferred.＼
-</li>
-	<li>
-この仕様が定義しない指令に対しては、両~構文とも受容しなければナラナイ。
-◎
-For any directive not defined by this specification, a recipient MUST accept both forms.
-</li>
-</ul>
-</div>
 
 <pre class="ABNF">
 `Cache-Control@p
@@ -2539,6 +2543,9 @@ For the cache directives defined below, no argument is defined (nor allowed) unl
 <tr><td>—
 <td>`must-revalidate$sdir
 
+<tr><td>—
+<td>`must-understand$sdir
+
 <tr><td>`no-cache$qdir
 <td>`no-cache$sdir
 
@@ -2568,18 +2575,19 @@ For the cache directives defined below, no argument is defined (nor allowed) unl
 ◎
 Table 2
 Cache Directive 	Reference
-max-age 	Section 5.2.1.1, Section 5.2.2.8
+max-age 	Section 5.2.1.1, Section 5.2.2.9
 max-stale 	Section 5.2.1.2
 min-fresh 	Section 5.2.1.3
 must-revalidate 	Section 5.2.2.1
-no-cache 	Section 5.2.1.4, Section 5.2.2.2
-no-store 	Section 5.2.1.5, Section 5.2.2.3
-no-transform 	Section 5.2.1.6, Section 5.2.2.4
+must-understand 	Section 5.2.2.2
+no-cache 	Section 5.2.1.4, Section 5.2.2.3
+no-store 	Section 5.2.1.5, Section 5.2.2.4
+no-transform 	Section 5.2.1.6, Section 5.2.2.5
 only-if-cached 	Section 5.2.1.7
-private 	Section 5.2.2.6
-proxy-revalidate 	Section 5.2.2.7
-public 	Section 5.2.2.5
-s-maxage 	Section 5.2.2.9
+private 	Section 5.2.2.7
+proxy-revalidate 	Section 5.2.2.8
+public 	Section 5.2.2.6
+s-maxage 	Section 5.2.2.10
 </div>
 
 			<section id="cache-request-directive">
@@ -2621,9 +2629,9 @@ The "max-age" request directive indicates that the client prefers a response who
 ）を利用する。
 送信者は、 `quoted-string$p 形（例：
 <samp>`max-age^dir="5"</samp>
-）を`生成する$ベキでない。
+）を`生成し$てはナラナイ。
 ◎
-This directive uses the token form of the argument syntax: e.g., 'max-age=5' not 'max-age="5"'. A sender SHOULD NOT generate the quoted-string form.
+This directive uses the token form of the argument syntax: e.g., 'max-age=5' not 'max-age="5"'. A sender MUST NOT generate the quoted-string form.
 </p>
 
 				</section>
@@ -2658,9 +2666,9 @@ The "max-stale" request directive indicates that the client is willing to accept
 ）を利用する。
 送信者は、 `quoted-string$p 形（例：
 <samp>`max-stale^dir="10"</samp>
-）を`生成する$ベキでない。
+）を`生成し$てはナラナイ。
 ◎
-This directive uses the token form of the argument syntax: e.g., 'max-stale=10' not 'max-stale="10"'. A sender SHOULD NOT generate the quoted-string form.
+This directive uses the token form of the argument syntax: e.g., 'max-stale=10' not 'max-stale="10"'. A sender MUST NOT generate the quoted-string form.
 </p>
 
 				</section>
@@ -2694,9 +2702,9 @@ The "min-fresh" request directive indicates that the client prefers a response w
 ）を利用する。
 送信者は、 `quoted-string$p 形（例：
 <samp>`max-fresh^dir="20"</samp>
-）を`生成する$ベキでない。
+）を`生成し$てはナラナイ。
 ◎
-This directive uses the token form of the argument syntax: e.g., 'min-fresh=20' not 'min-fresh="20"'. A sender SHOULD NOT generate the quoted-string form.
+This directive uses the token form of the argument syntax: e.g., 'min-fresh=20' not 'min-fresh="20"'. A sender MUST NOT generate the quoted-string form.
 </p>
 
 				</section>
@@ -2841,8 +2849,22 @@ The must-revalidate directive also has the effect of allowing a stored response 
 </p>
 
 				</section>
+				<section id="cache-response-directive.must-understand">
+<h5>5.2.2.2. `must-understand^sdir</h5>
+
+<p>
+`must-understand^sdir 応答~指令は、応答を格納できる~cacheは［
+応答の状態s~code用の要件を解する, かつ それに適合するもの
+］に制限されることを指示する。
+応答~状態s~codeを解さない~cacheは、
+`must-understand^sdir 指令を包含する応答を格納してはナラナイ。
+◎
+The "must-understand" response directive limits caching of the response to a cache that understands and conforms to the requirements for that response's status code. A cache MUST NOT store a response containing the must-understand directive if the cache does not understand the response status code.
+</p>
+
+				</section>
 				<section id="cache-response-directive.no-cache">
-<h5>5.2.2.2. `no-cache^sdir</h5>
+<h5>5.2.2.3. `no-cache^sdir</h5>
 
 <p>
 引数の構文：
@@ -2874,9 +2896,9 @@ This allows an origin server to prevent a cache from using it to satisfy a reque
 <div class="p">
 <p>
 `no-cache^sdir 応答~指令が，【その引数により】
-1 個~以上の`~header名$を指定する場合、~cacheは：
+1 個~以上の`~field名$を指定する場合、~cacheは：
 ◎
-If the no-cache response directive specifies one or more field-names, then＼
+If the no-cache response directive specifies one or more field names, then＼
 </p>
 
 <ul>
@@ -2888,7 +2910,7 @@ a cache MAY use the response to satisfy a subsequent request, subject to any oth
 	<li>
 しかしながら，引数に~listされた どの~headerも、`生成元~server$上での成功裡な`再検証$を伴わないまま，後続の要請に対する応答~内に送信してはナラナイ。
 ◎
-However, any header fields in the response that have the field-name(s) listed MUST NOT be sent in the response to a subsequent request without successful revalidation with the origin server.＼
+However, any header fields in the response that have the field name(s) listed MUST NOT be sent in the response to a subsequent request without successful revalidation with the origin server.＼
 </li>
 </ul>
 
@@ -2900,10 +2922,10 @@ This allows an origin server to prevent the re-use of certain header fields in a
 </div>
 
 <p>
-引数に与え得る~header名は、この仕様が定義する それらに制限されない。
-~header名は、文字大小無視である。
+引数に与え得る~field名は、この仕様が定義する それらに制限されない。
+~field名は、文字大小無視である。
 ◎
-The field-names given are not limited to the set of header fields defined by this specification. Field names are case-insensitive.
+The field names given are not limited to the set of header fields defined by this specification. Field names are case-insensitive.
 </p>
 
 <p>
@@ -2918,12 +2940,12 @@ This directive uses the quoted-string form of the argument syntax. A sender SHOU
 また、引数をとる【！ header名を伴う】 `no-cache^sdir 応答~指令は、~cacheからは，引数なしの【！unqualified】 `no-cache^sdir 指令が受信されたかのように取扱われることが多い
 — すなわち，引数~付き【！qualified form】に対する特別な取扱いは、広範に実装されていない。
 ◎
-Note: Although it has been back-ported to many implementations, some HTTP/1.0 caches will not recognize or obey this directive. Also, no-cache response directives with field-names are often handled by caches as if an unqualified no-cache directive was received; i.e., the special handling for the qualified form is not widely implemented.
+Note: Although it has been back-ported to many implementations, some HTTP/1.0 caches will not recognize or obey this directive. Also, no-cache response directives with field names are often handled by caches as if an unqualified no-cache directive was received; i.e., the special handling for the qualified form is not widely implemented.
 </p>
 
 				</section>
 				<section id="cache-response-directive.no-store">
-<h5>5.2.2.3. `no-store^sdir</h5>
+<h5>5.2.2.4. `no-store^sdir</h5>
 
 <div class="p">
 <p>
@@ -2971,7 +2993,7 @@ This directive is NOT a reliable or sufficient mechanism for ensuring privacy. I
 
 				</section>
 				<section id="cache-response-directive.no-transform">
-<h5>5.2.2.4. `no-transform^sdir</h5>
+<h5>5.2.2.5. `no-transform^sdir</h5>
 
 <p>
 `no-transform^sdir 応答~指令は、［
@@ -2983,31 +3005,39 @@ The "no-transform" response directive indicates that an intermediary (regardless
 
 				</section>
 				<section id="cache-response-directive.public">
-<h5>5.2.2.5. `public^sdir</h5>
+<h5>5.2.2.6. `public^sdir</h5>
 
 <p>
 `public^sdir 応答~指令は、［
-どの~cacheも，応答を格納してもヨイ
-］ことを指示する
-— 応答が［
-通常は~cache可能でない, あるいは
-`私用~cache$においてのみ~cache可能である
-］ときでも。
-（［
-`Authorization$h を包含する要請に対する応答
-］における `public^sdir の利用に関係する，追加的な詳細は、 `3.2$sec を見よ。
-［
-`状態s~code$が`経験的に~cache可能$であると定義されていないことに因り，通常は格納されないような応答
-］に， `public^sdir がどう影響するかについての詳細は、`3$sec を見よ。）
+さもなければ，~cacheは応答を格納-不能になるような、一定の条件
+］を上書きする
+— 特定的には：
 ◎
-The "public" response directive indicates that any cache MAY store the response, even if the response would normally be non-cacheable or cacheable only within a private cache. (See Section 3.2 for additional details related to the use of public in response to a request containing Authorization, and Section 3 for details of how public affects responses that would normally not be stored, due to their status codes not being defined as heuristically cacheable; see Section 4.2.2.)
+The "public" response directive overrides certain conditions that would otherwise make a cache unable to store the response. Specifically,＼
 </p>
 
-【！ Errata ID: 4616 Rejected】
+<ul>
+	<li>
+［
+`Authorization$h を包含する要請に対する応答
+］における `public^dir の利用に関しては、
+`3.2$sec を見よ。
+◎
+see Section 3.2 regarding the use of public in response to a request containing Authorization, and＼
+</li>
+	<li>
+［
+`状態s~code$が`経験的に~cache可能$であると定義されていないことに因り，通常は格納されない応答
+］に `public^sdir がどう影響するかについては、
+`4.2.2$sec【 `3$sec ？】を見よ。
+◎
+Section 3 for how public affects responses that would normally not be stored, due to their status codes not being defined as heuristically cacheable; see Section 4.2.2.
+</li>
+</ul>
 
 				</section>
 				<section id="cache-response-directive.private">
-<h5>5.2.2.6. `private^sdir</h5>
+<h5>5.2.2.7. `private^sdir</h5>
 
 <p>
 引数の構文：
@@ -3021,27 +3051,25 @@ Argument syntax:
 
 <p>
 `private^sdir 応答~指令は［
-応答~messageは、単独の利用者~用に意図されているものであり，`共用~cache$により格納されてはナラナイ
+応答~messageは、単独の利用者~用に意図されているものであり，`共用~cache$には格納されてはナラナイ
 ］ことを指示する。
-`私用~cache$は、応答を格納して，今後の要請に対しそれを再利用してもヨイ
-— 応答が通常は~cache可能でないとしても。
 ◎
-The "private" response directive indicates that the response message is intended for a single user and MUST NOT be stored by a shared cache. A private cache MAY store the response and reuse it for later requests, even if the response would normally be non-cacheable.
+The "private" response directive indicates that the response message is intended for a single user and MUST NOT be stored by a shared cache.
 </p>
 
 <p>
-`private^sdir 応答~指令に， 1 個~以上の`~header名$が~listされている場合、この要件は，
-それらの~header名に結付けられた`~header値$に制限される。
-すなわち，`共用~cache$は、それらの~header名を持つ~headerたちを格納してはナラナイ一方で、応答~messageの残りの部分は，格納してもヨイ。
+`private^sdir 応答~指令に， 1 個~以上の`~field名$が~listされている場合、この要件は，
+それらの~field名に結付けられた`~field値$に制限される。
+すなわち，`共用~cache$は、それらの~field名を持つ~headerたちを格納してはナラナイ一方で、応答~messageの残りの部分は，格納してもヨイ。
 ◎
-If the private response directive specifies one or more field-names, this requirement is limited to the field-values associated with the listed response header fields. That is, a shared cache MUST NOT store the specified field-names(s), whereas it MAY store the remainder of the response message.
+If the private response directive specifies one or more field names, this requirement is limited to the field values associated with the listed response header fields. That is, a shared cache MUST NOT store the specified field names(s), whereas it MAY store the remainder of the response message.
 </p>
 
 <p>
-引数に与え得る~header名は、この仕様が定義する それらに制限されない。
-~header名は、文字大小無視である。
+引数に与え得る~field名は、この仕様が定義する それらに制限されない。
+~field名は、文字大小無視である。
 ◎
-The field-names given are not limited to the set of header fields defined by this specification. Field names are case-insensitive.
+The field names given are not limited to the set of header fields defined by this specification. Field names are case-insensitive.
 </p>
 
 <p>
@@ -3057,12 +3085,12 @@ This directive uses the quoted-string form of the argument syntax. A sender SHOU
 また、引数をとる【！ header名を伴う】 `private^sdir 応答~指令は、~cacheからは，引数なしの【！ unqualified】 `private^sdir が受信されたかのように取扱われることが多い
 — すなわち，引数~付き【！qualified】の形に対する特別な取扱いは、広範に実装されていない。
 ◎
-Note: This usage of the word "private" only controls where the response can be stored; it cannot ensure the privacy of the message content. Also, private response directives with field-names are often handled by caches as if an unqualified private directive was received; i.e., the special handling for the qualified form is not widely implemented.
+Note: This usage of the word "private" only controls where the response can be stored; it cannot ensure the privacy of the message content. Also, private response directives with field names are often handled by caches as if an unqualified private directive was received; i.e., the special handling for the qualified form is not widely implemented.
 </p>
 
 				</section>
 				<section id="cache-response-directive.proxy-revalidate">
-<h5>5.2.2.7. `proxy-revalidate^sdir</h5>
+<h5>5.2.2.8. `proxy-revalidate^sdir</h5>
 
 <p>
 `proxy-revalidate^sdir 応答~指令は、`私用~cache$には適用されないことを除いて，
@@ -3073,7 +3101,7 @@ The "proxy-revalidate" response directive has the same meaning as the must-reval
 
 				</section>
 				<section id="cache-response-directive.max-age">
-<h5>5.2.2.8. `max-age^sdir</h5>
+<h5>5.2.2.9. `max-age^sdir</h5>
 
 <p>
 引数の構文：
@@ -3101,14 +3129,14 @@ The "max-age" response directive indicates that the response is to be considered
 ）を利用する。
 送信者は、 `quoted-string$p 形（例：
 <samp>`max-age^dir="5"</samp>
-）を`生成する$ベキでない。
+）を`生成し$てはナラナイ。
 ◎
-This directive uses the token form of the argument syntax: e.g., 'max-age=5' not 'max-age="5"'. A sender SHOULD NOT generate the quoted-string form.
+This directive uses the token form of the argument syntax: e.g., 'max-age=5' not 'max-age="5"'. A sender MUST NOT generate the quoted-string form.
 </p>
 
 				</section>
 				<section id="cache-response-directive.s-maxage">
-<h5>5.2.2.9. `s-maxage^sdir</h5>
+<h5>5.2.2.10. `s-maxage^sdir</h5>
 
 <p>
 引数の構文：
@@ -3149,9 +3177,9 @@ The s-maxage directive also has the effect of allowing a stored response to be u
 ）を利用する。
 送信者は、 `quoted-string$p 形（例：
 <samp>`s-maxage^dir="10"</samp>
-）を`生成する$ベキでない。
+）を`生成し$てはナラナイ。
 ◎
-This directive uses the token form of the argument syntax: e.g., 's-maxage=10' not 's-maxage="10"'. A sender SHOULD NOT generate the quoted-string form.
+This directive uses the token form of the argument syntax: e.g., 's-maxage=10' not 's-maxage="10"'. A sender MUST NOT generate the quoted-string form.
 </p>
 
 				</section>
@@ -3372,7 +3400,7 @@ A cache recipient MUST interpret invalid date formats, especially the value "0",
 `Cache-Control$h ~headerをまだ実装していない`受信者$
 ］用に意図されたものである。
 ◎
-If a response includes a Cache-Control field with the max-age directive (Section 5.2.2.8), a recipient MUST ignore the Expires field. Likewise, if a response includes the s-maxage directive (Section 5.2.2.9), a shared cache recipient MUST ignore the Expires field. In both these cases, the value in Expires is only intended for recipients that have not yet implemented the Cache-Control field.
+If a response includes a Cache-Control field with the max-age directive (Section 5.2.2.9), a recipient MUST ignore the Expires field. Likewise, if a response includes the s-maxage directive (Section 5.2.2.10), a shared cache recipient MUST ignore the Expires field. In both these cases, the value in Expires is only intended for recipients that have not yet implemented the Cache-Control field.
 </p>
 
 <div class="p">
@@ -3402,10 +3430,10 @@ its value has been associated with the resource by a system or user with a relia
 
 <p>
 歴史的に，~HTTPは、
-`Expires^h `~header値$に対し，一年以内の未来にすることを要求していた。
+`Expires^h `~field値$に対し，一年以内の未来にすることを要求していた。
 長い`鮮度維持期間$は，もはや禁制されなくなったが、度を越して巨大な値は 問題を起こすことが判っているので（例：時刻~値~用の 32 ~bit整数の利用に因る，時計の桁溢れ），多くの~cacheは それより ずっと早くに応答を抹消する。
 ◎
-Historically, HTTP required the Expires field-value to be no more than a year in the future. While longer freshness lifetimes are no longer prohibited, extremely large values have been demonstrated to cause problems (e.g., clock overflows due to use of 32-bit integers for time values), and many caches will evict a response far sooner than that.
+Historically, HTTP required the Expires field value to be no more than a year in the future. While longer freshness lifetimes are no longer prohibited, extremely large values have been demonstrated to cause problems (e.g., clock overflows due to use of 32-bit integers for time values), and many caches will evict a response far sooner than that.
 </p>
 
 		</section>
@@ -3608,12 +3636,43 @@ Note that the Set-Cookie response header field [RFC6265] does not inhibit cachin
 <h2 title="Changes from RFC 7234">付録 B. RFC 7234 からの変更点</h2>
 
 <p>
+`public$sdir,
+`private$sdir
+~cache指令を［
+どの条件~下でも応答を再利用-可能にしない
+］よう明確化した。
+【！5.2.2#cache-response-directive】
+◎
+The "public" and "private" cache directives were clarified, so that they do not make responses reusable under any condition. (Section 5.2.2)
+</p>
+
+<p>
 `Warning$h 応答~headerは廃用にされた。
 `Warning^h が~supportする情報の大部分は、応答を精査すれば拾える
 — それ以外の各種 `warn-code^p も、有用にはなり得るが，全面的に助言的であり、実施においては，~cacheや中継者により追加されていなかった。
 （ `5.5$sec ）
 ◎
 The Warning response header was obsoleted. Much of the information supported by Warning could be gleaned by examining the response), and the remaining warn-codes — although potentially useful — were entirely advisory, and in practice were not added by caches or intermediaries. (Section 5.5)
+</p>
+
+<p>
+この仕様により定義される~cache指令のうち一部には、今や
+`quoted-string$p 形による値を生成することに対し，より強く禁制される
+— さもなければ，相互運用能の問題が生じることが見出されたので。
+拡張~cache指令の消費器には、［
+`token$p, `quoted-string$p
+］両~形とも受容することはもはや要求されないが、
+未知な拡張に対しては依然として，それらを適正に構文解析する必要がある。
+（ `5.2$sec ）
+◎
+Some cache directives defined by this specification now have stronger prohibitions against generating the quoted form of their values, since this has been found to create interoperability problems. Consumers of extension cache directives are no longer required to accept both token and quoted-string forms, but they still need to properly parse them for unknown extensions. (Section 5.2)
+</p>
+
+<p>
+`must-understand$sdir ~cache指令が導入された。
+~cacheには，それが無い場合には、新たな応答~状態s~codeの意味論を解することは，もはや要求されない。
+◎
+The "must-understand" cache directive was introduced; caches are no longer required to understand the semantics of new response status codes unless it is present. (Section 5.2.2.2)
 </p>
 
 	</section>
