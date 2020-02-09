@@ -879,7 +879,6 @@ random::::ランダム
 	render::::レンダー
 	rendering::::レンダリング
 repository::::リポジトリ
-reset::::リセット
 schedule::::スケジュール
 storage::::ストレージ
 table::::テーブル
