@@ -179,8 +179,8 @@ return text;
 
 ●●options
 
-spec_date:2020-01-15
-trans_update:2020-01-16
+spec_date:2020-02-12
+trans_update:2020-02-14
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -937,6 +937,8 @@ js.Script Record:~TC39#sec-script-records
 js.List:~TC39#sec-list-and-record-specification-type
 js.TypeError:~TC39#sec-native-error-types-used-in-this-standard-typeerror
 js.FunctionBody:~TC39#prod-FunctionBody
+js.PromiseResolveThenableJob:~TC39#sec-promiseresolvethenablejob
+js.PromiseReactionJob:~TC39#sec-promisereactionjob
 
 jI.JSONParse:~TC39#sec-json.parse
 jI.FunctionPrototype:~TC39#sec-properties-of-the-function-prototype-object
@@ -1285,8 +1287,6 @@ semicolon::::セミコロン
 	ずっと低速:much slower
 
 	●仕様
-	FINGERPRINTING
-
 理想的:ideal:~
 	どう:how
 総計:total:~
@@ -2374,7 +2374,7 @@ The credentials mode used for the initial fetch (for module scripts) and for fet
 	<dt>`~referrer施策@sfO</dt>
 	<dd>
 初期~fetch, および
-~importされる~moduleの~fetchingに利用される，`~referrer施策$rq。
+~importした~moduleを~fetchするときに利用される，`~referrer施策$rq。
 ◎
 The referrer policy used for the initial fetch and for fetching any imported modules
 </dd>
@@ -5728,9 +5728,9 @@ The JavaScript specification defines the JavaScript job and job queue abstractio
 <p class="note">注記：
 これは厳密には真でない。
 事実、それらの~algoの多くの
-“実装により定義される”
+“実装~定義なもの”
 とされている各~節に与えられる~~自由度を利用して、この目的のために それをひねくりまわすこともアリではある。
-しかしながら、形上では，実装により定義される挙動の範囲内として~~是認される仕方ではあっても、結局は，本質的に~job~queueの基盤をまるごと迂回するような，遠回しでとっ散らかった回避策であふれることになる。
+しかしながら、形上では，実装~定義な挙動の範囲内として~~是認される仕方ではあっても、結局は，本質的に~job~queueの基盤をまるごと迂回するような，遠回しでとっ散らかった回避策であふれることになる。
 ここでは、この道は採らない代わりに，以下の各~下位~節に与える`故意的な違反$を導入する。
 ◎
 This is not strictly true. It is in fact possible, by taking liberal advantage of the many "implementation defined" sections of the algorithm, to contort it to our purposes. However, the end result is a mass of messy indirection and workarounds that essentially bypasses the job queue infrastructure entirely, albeit in a way that is technically sanctioned within the bounds of implementation-defined behavior. We do not take this path, and instead introduce the following willful violation.
@@ -5750,7 +5750,7 @@ The RunJobs abstract operation from the JavaScript specification must not be use
 </p>
 
 					<section id="enqueuejob(queuename,-job,-arguments)">
-<h5>8.1.3.7.1. `EnqueueJob^jA( %queueName , %job , %arguments )</h5>
+<h5>8.1.3.7.1. `EnqueueJob^jA( %~queue名 , %~job , %引数たち )</h5>
 
 <div class="algorithm">
 <p>
@@ -5762,26 +5762,52 @@ When the JavaScript specification says to call the EnqueueJob abstract operation
 <ol>
 	<li>
 ~Assert：
-%queueName ~EQ `PromiseJobs^l
+%~queue名 ~EQ `PromiseJobs^l
 （ ~UAは、 `ScriptJobs^l を利用してはならない）
 ◎
 Assert: queueName is "PromiseJobs". ("ScriptJobs" must not be used by user agents.)
 </li>
 	<li>
+~Assert：
+%~job は［
+`PromiseResolveThenableJob$js ／ `PromiseReactionJob$js
+］である。
+（別の型の~promise~jobが導入された場合、以下の手続きは更新する必要がある。）
+◎
+Assert: job is either PromiseResolveThenableJob or PromiseReactionJob. (The following steps would need to be updated if another type of promise job were introduced.)
+</li>
+	<li>
 <p>
-%~job設定群 ~LET 何らかの適切な`環境~設定群~obj$
+%~job設定群 ~LET %~job に応じて：
 ◎
-Let job settings be some appropriate environment settings object.
+Let job settings be determined by switching on job:
 </p>
-
-<p class="warning">
-ここで利用すべき`環境~設定群~obj$をどう指定するかは、まだはっきりしていない。
-実施においては、これは，~jobを実行している間に`入口~某$の概念が正しく指定されていないことを意味する。
-<a href="https://github.com/whatwg/html/pull/1189#issuecomment-224950188">issue #1189 における論点</a>
-を見よ。
+		<dl class="switch">
+			<dt>`PromiseResolveThenableJob$js</dt>
+			<dd>
+%引数たち[2] . `Realm^sl 用の`設定群~obj$rM
+（すなわち， `then^c 関数が属する`~JS~realm$）
 ◎
-It is not yet clear how to specify the environment settings object that should be used here. In practice, this means that the entry concept is not correctly specified while executing a job. See discussion in issue #1189.
-</p>
+The settings object for arguments[2].[[Realm]]. (I.e., the Realm of the then function.)
+</dd>
+			<dt>`PromiseReactionJob$js</dt>
+			<dd>
+%引数たち[0] . `Handler^sl %~handler に応じて
+⇒＃
+`undefined^jv ならば ~NULL ／
+~ELSE_ %~handler . `Realm^sl 用の`設定群~obj$rM
+◎
+If arguments[0].[[Handler]] is not undefined, then the settings object of arguments[0].[[Handler]].[[Realm]]; otherwise, null.
+</dd>
+			<dd class="note">注記：
+%~handler ~EQ `undefined^jv になるのは、
+`promise.then(null, null)^c の様な事例である。
+この事例では，走らす作者~codeは無いので、以下において
+%~job設定群 を利用する段は，すべて飛ばされることになる。
+◎
+If the handler is undefined, then we are in a case like promise.then(null, null). In this case, no author code will run, so all of the steps below that would otherwise use job settings get skipped.
+</dd>
+		</dl>
 	</li>
 	<li>
 %現任の設定群 ~LET `現任の設定群~obj$
@@ -5885,25 +5911,33 @@ As a consequence, this means that when the import() expression is evaluated, the
 	</li>
 	<li>
 <p>
-%~job設定群 の`担当の~event~loop$enVの中で，次の手続きを走らす`小taskを~queueする$：
+`~surrounding~agent$の`~event~loop$の中で，次の手続きを走らす`小taskを~queueする$：
 ◎
-Queue a microtask, on job settings's responsible event loop, to perform the following steps:
+Queue a microtask on the surrounding agent's event loop to perform the following steps:
 </p>
 		<ol>
 			<li>
+<p>
+~IF［
+%~job設定群 ~NEQ ~NULL
+］：
+◎
+↓</p>
+				<ol>
+					<li>
 ~IF［
 `~scriptは走れるかどうか検査する$( %~job設定群 ) ~EQ `走るな^i
 ］
 ⇒
 ~RET
 ◎
-Check if we can run script with job settings. If this returns "do not run" then return.
+If job settings is not null, then check if we can run script with job settings. If this returns "do not run" then return.
 </li>
-			<li>
+					<li>
 <p>
 `~scriptを走らすために準備する$( %~job設定群 )
 ◎
-Prepare to run script with job settings.
+If job settings is not null, then prepare to run script with job settings.
 </p>
 
 <p class="note">注記：
@@ -5911,6 +5945,8 @@ Prepare to run script with job settings.
 ◎
 This affects the entry concept while the job runs.
 </p>
+					</li>
+				</ol>
 			</li>
 			<li>
 <p>
@@ -5944,8 +5980,8 @@ As explained above, this affects the active script while the job runs.
 			</li>
 			<li>
 %結果 ~LET ［
-%job により指定される抽象-演算
-］( %arguments )
+%~job により指定される抽象-演算
+］( %引数たち )
 を遂行した結果
 ◎
 Let result be the result of performing the abstract operation specified by job, using the elements of arguments as its arguments.
@@ -5965,9 +6001,13 @@ If script execution context is not null, then pop script execution context from 
 Clean up after running a callback with incumbent settings.
 </li>
 			<li>
+~IF［
+%~job設定群 ~NEQ ~NULL
+］
+⇒
 `走らせた~scriptを片付ける$( %~job設定群 )
 ◎
-Clean up after running script with job settings.
+If job settings is not null, then clean up after running script with job settings.
 </li>
 			<li>
 ~IF［
@@ -6381,7 +6421,7 @@ Return resolved module script's record.
 
 <div class="algorithm">
 <p>
-~JS `JAVASCRIPT$r には、実装により定義される `HostImportModuleDynamically$jA 抽象-演算がある。
+~JS `JAVASCRIPT$r には、実装~定義な `HostImportModuleDynamically$jA 抽象-演算がある。
 ~UAは、次の実装を利用するモノトスル：
 ◎
 JavaScript contains an implementation-defined HostImportModuleDynamically abstract operation. User agents must use the following implementation: [JAVASCRIPT]
@@ -6525,7 +6565,7 @@ Return undefined.
 <p>
 <cite>import.meta</cite>
 提案 `JSIMPORTMETA$r
-には、実装により定義される `HostGetImportMetaProperties$jA 抽象-演算がある。
+には、実装~定義な `HostGetImportMetaProperties$jA 抽象-演算がある。
 ~UAは、次の実装を利用するモノトスル：
 ◎
 The import.meta proposal contains an implementation-defined HostGetImportMetaProperties abstract operation. User agents must use the following implementation: [JSIMPORTMETA]
@@ -7162,7 +7202,7 @@ Let target be in error reporting mode.
 	<li>
 ~FINGERPRINTING
 %~message ~LET
-~errorについて役立つ何かを述べるような，~UAにより定義される文字列
+~errorについて役立つ何かを述べるような，~UA定義な文字列
 ◎
 (This is a tracking vector.)
 Let message be a user-agent-defined string describing the error in a helpful manner.
@@ -7507,7 +7547,7 @@ This algorithm results in promise rejections being marked as handled or not hand
 <p>
 ~JS `JAVASCRIPT$r は、その抽象-演算
 `HostPromiseRejectionTracker$jA( %promise, %演算 )
-を，実装により定義されるものと~~規定している。
+を，実装~定義なものとしている。
 ~UAは、次の実装を利用するモノトスル：
 ◎
 JavaScript contains an implementation-defined HostPromiseRejectionTracker(promise, operation) abstract operation. User agents must use the following implementation: [JAVASCRIPT]
@@ -7653,7 +7693,7 @@ The reason attribute must return the value it was initialized to. It represents 
 <p>
 ~JS `JAVASCRIPT$r は、その抽象-演算
 `HostEnsureCanCompileStrings$jA( %callerRealm, %calleeRealm )
-を，実装により定義されるものと~~規定している。
+を，実装~定義なものとしている。
 ~UAは、次の実装を利用するモノトスル：
 ◎
 JavaScript contains an implementation-defined HostEnsureCanCompileStrings(callerRealm, calleeRealm) abstract operation. User agents must use the following implementation: [JAVASCRIPT]
@@ -8287,7 +8327,7 @@ An event loop must continually run through the following steps for as long as it
 </p>
 		<ol>
 			<li>
-%~task~queue ~LET 該当する~task~queueのうち，~UAにより定義される方式で選ばれるいずれか
+%~task~queue ~LET 該当する~task~queueのうち，~UA定義な方式で選ばれるいずれか
 </li>
 			<li>
 %~task~queue から `可走な~task$のうち最初のものを`除去する$
@@ -11395,14 +11435,12 @@ The following are the event handlers (and their corresponding event handler even
 </li>
 	<li>
 `~window$においては、`~event~handler~IDL属性$として，~supportするモノトスル。
-</li>
-	<li>
-前項に対応する［
+加えて、当の`~window$に`結付けられている文書$が所有する［
+`body$e ／ `frameset$e
+］要素においても，対応する［
 `~event~handler内容~属性$,
 `~event~handler~IDL属性$
-］は、当の`~window$に`結付けられている文書$が所有する［
-`body$e ／ `frameset$e
-］要素において公開するモノトスル。
+］を公開するモノトスル。
 </li>
 </ul>
 
