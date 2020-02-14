@@ -43,13 +43,13 @@ spec_date
 trans_update
 	和訳更新日（ YYYY-MM-DD ）
 source_checked
-	最後に原文テキストと付き合わせた日付（YYMMDD）
+	最後に原文テキストと突き合わせた日付（YYMMDD）
 original_url
 	原文 URL
 abbr_url
 	和訳略称 URL
-main
-	'MAIN'
+main_id
+	内容生成コンテナ id
 toc
 	目次 id
 no_index
@@ -584,8 +584,8 @@ css: '<a href="css-snapshot-ja.html#conformance">CSS Snapshot ページ</a>',
 
 /** 外部リンク日本語訳リンク追加 */
 const altLinkInit = () => {
-	const root = (options.main) ?
-		E(options.main) :
+	const root = (options.main_id) ?
+		E(options.main_id) :
 		document.getElementsByTagName('main')[0];
 
 	if(!root) return;

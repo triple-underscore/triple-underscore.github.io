@@ -591,6 +591,7 @@ source_data メンバ：
 Util.switchWordsInit = (source_data) => {
 	source_data = source_data || {};
 	const main_id =
+	PAGE_DATA.options.main_id =
 	source_data.main_id = source_data.main_id || 'MAIN';
 	const abbr_url = (PAGE_DATA.options.abbr_url || '' );
 
