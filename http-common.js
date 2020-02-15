@@ -364,15 +364,15 @@ p.absolute-URI:~HTTPsem#p.absolute-URI
 p.relative-part:~HTTPsem#p.relative-part
 p.authority:~HTTPsem#p.authority
 p.uri-host:~HTTPsem#p.uri-host
-p.port:~HTTPsem#p.port
 p.path-abempty:~HTTPsem#p.path-abempty
 p.segment:~HTTPsem#p.segment
 p.query:~HTTPsem#p.query
 
 p.scheme:~HTTPsem#p.scheme
 p.host:~HTTPsem#p.host
-p.fragment:~HTTPsem#p.fragment
+p.port:~HTTPsem#p.port
 p.path:~HTTPsem#p.path
+p.fragment:~HTTPsem#p.fragment
 
 p.HTTP-message:~HTTPmsg#p.HTTP-message
 p.HTTP-name:~HTTPmsg#p.HTTP-name
@@ -526,13 +526,6 @@ p.year:~HTTPrs#p.year
 p.cache-directive:~HTTPcache#p.cache-directive
 p.delta-seconds:~HTTPcache#p.delta-seconds
 
-素片~識別子:~HTTPsem#uri.fragment.identifiers
-内容~符号法の名前:~HTTPsem#p.content-coding
-~MIME型~parameter:~HTTPsem#mdia-type.parameter
-
-転送~符号法の名前:~HTTPmsg#transfer-coding-name
-
-
 	●others
 c.chunked:~HTTPmsg#chunked.encoding
 c.compress:~HTTPsem#compress.coding
@@ -559,6 +552,7 @@ c.realm:~HTTPrq#realm
 不完全:~HTTPmsg#incomplete
 ~close_接続~option:~HTTPmsg#close-connection-option
 転送~符号法:~HTTPmsg#transfer.codings
+転送~符号法の名前:~HTTPmsg#transfer-coding-name
 
 	// -> semantics
 ~stateless:~HTTPsem#stateless
@@ -593,6 +587,7 @@ c.realm:~HTTPrq#realm
 要請:~HTTPsem#request
 
 素片~識別子:~HTTPsem#uri.fragment.identifiers
+
 表現:~HTTPsem#representation
 ~field:~HTTPsem#fields
 ~field名:~HTTPsem#field-name
@@ -616,9 +611,11 @@ c.realm:~HTTPrq#realm
 空白:~HTTPsem#whitespace
 ~charset:~HTTPsem#charset
 内容~符号法:~HTTPsem#content.codings
+内容~符号法の名前:~HTTPsem#p.content-coding
 資源:~HTTPsem#resources
 ~MIME型:~HTTPsem#media.type
 	~MIME型:~HTTPsem#media.type
+~MIME型~parameter:~HTTPsem#mdia-type.parameter
 
 満足可能:~HTTPsem#satisfiable
 満足不能:~HTTPsem#unsatisfiable
@@ -638,8 +635,6 @@ c.realm:~HTTPrq#realm
 ~proactive折衝:~HTTPsem#proactive.negotiation
 ~reactive折衝:~HTTPsem#reactive.negotiation
 
-権限的:~HTTPsem#authoritative
-権限的~応答:~HTTPsem#authoritative
 形式変換-:~HTTPsem#message.transformations
 形式変換:~HTTPsem#message.transformations
 
@@ -904,7 +899,7 @@ minor::::副:マイナー
 
 重複:duplicate:~
 節:section:~
-別個の:distinct:~
+別個:distinct:~
 
 	●仕様
 RFC:
@@ -1042,6 +1037,7 @@ agent::::エージェント
 簡潔:compact:~
 精緻化:refinement:~
 経験的:heuristic::~::ヒューリスティック
+結論-:conclude:~
 結論:conclusion:~
 統一的:uniform:~
 網羅的:exhaustive:~
