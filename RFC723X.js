@@ -614,7 +614,6 @@ IETF Review:~5226#section-4.1
 状態s行l:~7230#status.line
 ~target~URI:~7230#target-URI
 ~target資源:~7230#target-resource
-~trailer:~7230#trailer
 ~tunnel:~7230#tunnel
 ~version:~7230#http.version
 ~protocol~version:~7230#http.version
