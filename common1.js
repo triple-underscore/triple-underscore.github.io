@@ -11,6 +11,8 @@ original_id_map:
 	訳文 id → 原文 id への対応付け（文字列データ
 original_urls:
 	原文URL複数分岐
+mdn_urls:
+	MDN サイト（https://developer.mozilla.org/docs/Web/...）へのリンク（ id → URL ）
 trans_metadata:
 	和訳メタデータ
 spec_metadata:
@@ -1065,20 +1067,22 @@ Util.dfnInit = () => {
 	const dfnPanel = C('div');
 		dfnPanel.id = '_dfnPanel';
 		dfnPanel.innerHTML =
-'<div><input type="button" value="  ←  "><input type="button" value="  →  "><a></a><a class="_additional">(原文)</a></div><ul></ul>';
+'<div><input type="button" value="  ←  "><input type="button" value="  →  "><a></a><a class="_additional">(原文)</a><a class="_additional">(MDN)</a></div><ul></ul>';
 
 	const dfnTarget // a link to dfnStart
 		= dfnPanel.firstElementChild.children[2];
-	
 	const dfnOriginal // a link to the corresponding element in the original spec
 		= dfnTarget.nextElementSibling;
+	const dfnMDN // a link to the corresponding MDN page
+		= dfnOriginal.nextElementSibling;
 
 	const original_id_map = Util.get_mapping(PAGE_DATA.original_id_map);
-	var original_urls = null;
+	let original_urls = null;
 	if(PAGE_DATA.original_urls){
 		// original_url の他に複数の原文 URL がある
 		original_urls = Util.get_mapping(PAGE_DATA.original_urls);
 	}
+	const mdn_urls = Util.get_mapping(PAGE_DATA.mdn_urls || '');
 
 	{
 		let b = dfnTarget.previousElementSibling;
@@ -1182,6 +1186,15 @@ Util.dfnInit = () => {
 		dfnOriginal.style.display = '';
 	}
 
+	const setLinkForMDN = (id) => {
+		// MDNリンク先を設定
+		dfnMDN.style.display = 'none';
+		const href = mdn_urls[id];
+		if(!href) return;
+		dfnMDN.href = `https://developer.mozilla.org/docs/Web/${href}`;
+		dfnMDN.style.display = '';
+	}
+
 	const dfnHide =
 	Util.dfnHide = () => {
 		if(!dfnStart) return;
@@ -1255,6 +1268,7 @@ Util.dfnInit = () => {
 //		dfnTargetScrollPositionY = window.scrollY;
 
 		setLinkForOriginal(id, is_header);
+		setLinkForMDN(id);
 
 		// 合致するものが無ければ空の NodeList
 		dfnIndecies = [];
