@@ -317,7 +317,6 @@ I.WindowEventHandlers:~WAPI#windoweventhandlers
 	（要素を指す href は §に代えて要素 dfn id を指すように変更）
 e.a:~SVGlinking#elementdef-a
 e.circle:~SVGshapes#elementdef-circle
-e.clipPath:~MASKING1#elementdef-clipPath
 e.defs:~SVGstruct#elementdef-defs
 e.desc:~SVGstruct#elementdef-desc
 e.ellipse:~SVGshapes#elementdef-ellipse
@@ -327,7 +326,6 @@ e.image:~SVGembedded#elementdef-image
 e.line:~SVGshapes#elementdef-line
 e.linearGradient:~SVGpservers#elementdef-linearGradient
 e.marker:~SVGpainting#elementdef-marker
-e.mask:~MASKING1#elementdef-mask
 e.metadata:~SVGstruct#elementdef-metadata
 e.path:~SVGpaths#elementdef-path
 e.pattern:~SVGpservers#elementdef-pattern
@@ -347,6 +345,9 @@ e.title:~SVGstruct#elementdef-title
 e.tspan:~SVGtext#elementdef-tspan
 e.use:~SVGstruct#elementdef-use
 e.view:~SVGlinking#elementdef-view
+
+e.clipPath:~MASKING1#elementdef-clippath
+e.mask:~MASKING1#elementdef-mask
 
 	（ SVGanim の要素は元のまま）
 e.animate:~SVGanim#AnimateElement
