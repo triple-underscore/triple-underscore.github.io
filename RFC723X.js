@@ -241,7 +241,7 @@ h.Content-Encoding:~7231#header.content-encoding
 h.Content-Language:~7231#header.content-language
 h.Content-Location:~7231#header.content-location
 h.Content-Type:~7231#header.content-type
-h.Date:~7231#header.Date
+h.Date:~7231#header.date
 h.Expect:~7231#header.expect
 h.From:~7231#header.from
 h.Location:~7231#header.location
