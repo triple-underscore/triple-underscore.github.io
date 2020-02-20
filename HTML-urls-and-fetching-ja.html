@@ -79,6 +79,9 @@ case 'smb':
 case 'sl':
 	text = `[[${key}]]`;
 	break;
+case 'en':
+	return `<span lang="en-x-a0">${key}</span>`;
+	break;
 }
 
 let tag = tag_map[klass];
@@ -118,8 +121,8 @@ return text;
 
 ●●options
 
-spec_date:2020-02-12
-trans_update:2020-02-14
+spec_date:2020-02-20
+trans_update:2020-02-20
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -263,6 +266,7 @@ doc.~URL:~DOM4#concept-document-url
 ~shadowも含む根:~DOM4#concept-shadow-including-root
 属性~値を設定する:~DOM4#concept-element-attributes-set-value
 ~clone時の手続き:~DOM4#concept-node-clone-ext
+属性~変更-時の手続き:~DOM4#concept-element-attributes-change-ext
 
 	●文字列
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
@@ -401,6 +405,7 @@ shadow:
 翻訳:translation:~
 種類:kind:~
 形:form:~
+復旧-:restore:~
 
 	予約-済み:reserved
 	走らす:execute
@@ -427,6 +432,7 @@ shadow:
 	大別
 	列目:column
 	表:table
+	局所~名:localName
 
 	●指示語
 	大部分:majority
@@ -970,7 +976,7 @@ The rules for sniffing images specifically, the rules for distinguishing if a re
 
 <p class="warning">
 `MIME Sniffing^cite による規則には正確に従うことが絶対必要である。
-内容~型~検出に対し，~serverが予期するものと異なる経験則を利用するような~UAにおいては、~securityの問題が生じ得る。
+~UAが内容~型の検出~用に~serverが期待するものと異なる経験則を利用すると、~securityの問題が生じ得る。
 更なる詳細は、その仕様を見よ。
 ◎
 It is imperative that the rules in MIME Sniffing be followed exactly. When a user agent uses different heuristics for content type detection than the server expects, security problems can occur. For more details, see MIME Sniffing. [MIMESNIFF]
@@ -1277,9 +1283,7 @@ Finally, the `Referrer-Policy` HTTP header.
 
 <p>
 `nonce@a
-内容~属性は、暗号用~nonce （
-“number used once” 【使い捨ての番号】
-）を表現する。
+内容~属性は、暗号用~nonce （ “`number used once^en” 【使い捨ての番号】 ）を表現する。
 それは、 `CSP$r により利用され，［
 所与の~fetchを続行するのを許容する
 ］かどうかを決定する。
@@ -1290,12 +1294,14 @@ A nonce content attribute represents a cryptographic nonce ("number used once") 
 
 <p>
 要素が `nonce$a 内容~属性を有するとき、その暗号用~nonceは，~scriptのみに公開される（および，~CSS属性~選択子の様な~side-channelには公開されない）ことを確保する
-— 内容~属性から値を抽出して，
+— 内容~属性から値をとって，
 `CryptographicNonce@sl
-内部~slotに移動して， `HTMLOrSVGElement$I ~interface~mixinを介して~scriptに公開することにより。
+内部~slotに移動して，
+`HTMLOrSVGElement$I ~interface~mixinを介して~scriptに公開して，
+内容~属性を空~文字列に設定することにより。
 他が指定されない限り、この~slotの値は，空~文字列になるとする。
 ◎
-Elements that have a nonce content attribute ensure that the crytographic nonce is only exposed to script (and not to side-channels like CSS attribute selectors) by extracting the value from the content attribute, moving it into an internal slot named [[CryptographicNonce]], and exposing it to script via the HTMLOrSVGElement interface mixin. Unless otherwise specified, the slot's value is the empty string.
+Elements that have a nonce content attribute ensure that the crytographic nonce is only exposed to script (and not to side-channels like CSS attribute selectors) by taking the value from the content attribute, moving it into an internal slot named [[CryptographicNonce]], exposing it to script via the HTMLOrSVGElement interface mixin, and setting the content attribute to the empty string. Unless otherwise specified, the slot's value is the empty string.
 </p>
 
 <dl class="domintro">
@@ -1329,61 +1335,114 @@ The nonce IDL attribute must, on getting, return the value of this element's [[C
 	<dd id="nonce-does-not-update-dom" class="note">注記：
 `nonce$m ~IDL属性~用の設定子は、対応する内容~属性を更新しないことに注意。
 このこと, および［
-要素が`閲覧文脈に接続された$とき `nonce$a 内容~属性を空~文字列に設定すること
+要素が`閲覧文脈に接続された$とき，
+`nonce$a 内容~属性を空~文字列に設定すること
 ］（下に述べる）は、［
 内容~属性を容易に読取れる仕組み（選択子など）による，~nonce値の不正転送
 ］を防止することが意味されている。
 この挙動が導入された~~経緯は、
-<a href="~HTMLissue/2369">issue #2369</a>
+<a href="~HTMLissue/2369">課題 #2369</a>
 にて学べる。
 ◎
 Note how the setter for the nonce IDL attribute does not update the corresponding content attribute. This, as well as the below setting of the nonce content attribute to the empty string when an element becomes browsing-context connected, is meant to prevent exfiltration of the nonce value through mechanisms that can easily read content attributes, such as selectors. Learn more in issue #2369, where this behavior was introduced.
 </dd>
 </dl>
 
+<div class="algorithm">
 <p>
-`HTMLOrSVGElement$I ~objを`内包して$いる要素 %要素 に対しては、~UAは：
-</p>
-
-<ul>
-	<li>
-%要素 の `nonce$a 属性が［
-設定-／ 変更-
-］されたときは、次を走らすモノトスル
-⇒
-%要素 の `CryptographicNonce$sl ~slot ~SET 所与の値
+%要素 上の `nonce$a 内容~属性~用に利用される
+`属性~変更-時の手続き$は、所与の
+( %局所~名, %旧~値, %値, %名前空間 )
+に対し：
 ◎
-Whenever an element including HTMLOrSVGElement has its nonce attribute is set or changed, set this element's [[CryptographicNonce]] to the given value.
+The following attribute change steps are used for the nonce content attribute:
+</p>
+<ol>
+	<li>
+~IF［
+%要素 は `HTMLOrSVGElement$I を`内包して$いない
+］
+⇒
+~RET
+◎
+If element does not include HTMLOrSVGElement, then return.
 </li>
 	<li>
+~IF［
+%局所~名 ~NEQ `nonce^l
+］~OR［
+%名前空間 ~NEQ ~NULL
+］
+⇒
+~RET
+◎
+If localName is not nonce or namespace is not null, then return.
+</li>
+	<li>
+%要素 の `CryptographicNonce$sl ~SET %値 に応じて
+⇒＃
+~NULL ならば 空~文字列 ／
+~ELSE_ %値
+◎
+If value is null, then set element's [[CryptographicNonce]] to the empty string.
+◎
+Otherwise, set element's [[CryptographicNonce]] to value.
+</li>
+</ol>
+</div>
+
+
+<div class="algorithm">
+
 <p>
-%要素 が`閲覧文脈に接続された$ときは、次を走らすモノトスル：
+`HTMLOrSVGElement$I を`内包して$いる %要素 が`閲覧文脈に接続された$ときは、次を走らすモノトスル：
 ◎
 Whenever an element including HTMLOrSVGElement becomes browsing-context connected, the user agent must execute the following steps on the element:
 </p>
-
-		<ol>
-			<li>
+<ol>
+	<li>
 %~CSP~list ~LET %要素 の
 `~shadowも含む根$の`~CSP~list$doc
 ◎
 Let CSP list be element's shadow-including root's CSP list.
 </li>
-			<li>
+	<li>
+<p>
 ~IF［
 %~CSP~list は`~headerにより送達された~CSPを包含している$
 ］~AND［
 %要素 は `nonce$a 内容~属性 %属性 を有する
 ］~AND［
 %属性 の値 ~NEQ 空~文字列
-］
-⇒
-%要素 の`属性~値を設定する$( `nonce^l, 空~文字列 )
+］：
 ◎
 If CSP list contains a header-delivered Content Security Policy, and element has a nonce content attribute attr whose value is not the empty string, then:
-• Set an attribute value for element using "nonce" and the empty string.
+</p>
+		<ol>
+			<li>
+%nonce ~LET %要素 の `CryptographicNonce$sl
+◎
+Let nonce be element's [[CryptographicNonce]].
+</li>
+			<li>
+%要素 の`属性~値を設定する$( `nonce^l, 空~文字列 )
+◎
+Set an attribute value for element using "nonce" and the empty string.
+</li>
+			<li>
+%要素 の `CryptographicNonce$sl ~SET %nonce
+◎
+Set element's [[CryptographicNonce]] to nonce.
 </li>
 		</ol>
+
+<p class="note">注記：
+%要素 の `CryptographicNonce^sl は、復旧しないと空~文字列になる。
+◎
+If element's [[CryptographicNonce]] were not restored it would be the empty string at this point.
+</p>
+	</li>
+</ol>
 
 <p class="note">注記：
 各`文書$の`~CSP~list$docは，付加されるのみなので、~UAは，それが`~headerにより送達された~CSPを包含している$かどうか検査するのを最適化できる
@@ -1391,17 +1450,19 @@ If CSP list contains a header-delivered Content Security Policy, and element has
 ◎
 As each Document's CSP list is append-only, user agents can optimize away the contains a header-delivered Content Security Policy check by, for example, holding a flag on the Document, set during Document creation and initialization.
 </p>
-	</li>
-	<li>
-%要素 ~node用の`~clone時の手続き$は、所与の
+</div>
+
+<div class="algorithm">
+<p>
+`HTMLOrSVGElement$I を`内包して$いる %要素 用の`~clone時の手続き$は、所与の
 ( %複製, %要素, … )
 に対し，次を走らすモノトスル
 ⇒
 %複製 の `CryptographicNonce$sl ~slot ~SET %要素 の `CryptographicNonce$sl ~slotの値
 ◎
 The cloning steps for elements that include HTMLOrSVGElement must set the [[CryptographicNonce]] slot on the copy to the value of the slot on the element being cloned.
-</li>
-</ul>
+</p>
+</div>
 
 			</section>
 			<section id="lazy-loading-attributes">
