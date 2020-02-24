@@ -730,11 +730,6 @@ COMMON_DATA.words_table1 += `
 
 ●●words_table1
 
-HTTPmsg:http-messaging-ja.html
-HTTPsem:http-semantics-ja.html
-HTTPrq:http-request-ja.html
-HTTPrs:http-response-ja.html
-HTTPcache:http-cache-ja.html
 RFC8246:http-immutable-response-ja.html
 RFC7538:http-status-code-308-ja.html
 HTTPpatch:http-patch-ja.html
