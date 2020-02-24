@@ -257,8 +257,8 @@ mWC: 'code',
 
 ●●options
 
-spec_date:2020-01-09
-trans_update:2020-01-10
+spec_date:2020-02-24
+trans_update:2020-02-25
 source_checked:190611
 original_url:https://w3c.github.io/ServiceWorker/
 	abbr_url:SW1
@@ -366,6 +366,7 @@ E.InvalidStateError:~WEBIDL#invalidstateerror
 E.QuotaExceededError:~WEBIDL#quotaexceedederror
 E.SecurityError:~WEBIDL#securityerror
 E.AbortError:~WEBIDL#aborterror
+E.NetworkError:~WEBIDL#networkerror
 
 	I.DOMException:~WEBIDL#idl-DOMException
 I.AbstractWorker:~WORKERS#abstractworker
@@ -440,6 +441,7 @@ I.SyncEvent:https://wicg.github.io/BackgroundSync/spec/#syncevent
 	m.event.respondWith(r):#dom-fetchevent-respondwith
 	m.event.source:#dom-extendablemessageevent-source
 	m.event.replacesClientId:#dom-fetchevent-replacesclientid
+	m.event.handled:#dom-fetchevent-handled
 	m.event.waitUntil(f):#dom-extendableevent-waituntil
 	m.event.waitUntil(r):#dom-extendableevent-waituntil
 
@@ -518,6 +520,7 @@ n.register:#dom-serviceworkercontainer-register
 	FetchEventInit.request:#dom-fetcheventinit-request
 	FetchEventInit.resultingClientId:#dom-fetcheventinit-resultingclientid
 	FetchEventInit.replacesClientId:#dom-fetcheventinit-replacesclientid
+	FetchEventInit.handled:#dom-fetcheventinit-handled
 
 	Cache.add:#dom-cache-add
 	Cache.addAll:#dom-cache-addall
@@ -572,7 +575,8 @@ n.register:#dom-serviceworkercontainer-register
 	FetchEvent.resultingClientId:#dom-fetchevent-resultingclientid
 	FetchEvent.respondWith:#dom-fetchevent-respondwith
 	FetchEvent.replacesClientId:#dom-fetchevent-replacesclientid
-	
+	FetchEvent.handled:#dom-fetchevent-handled
+
 	NavigationPreloadState.enabled:#dom-navigationpreloadstate-enabled
 	NavigationPreloadState.headerValue:#dom-navigationpreloadstate-headervalue
 	
@@ -1030,6 +1034,9 @@ enV.~target閲覧文脈:~WAPI#concept-environment-target-browsing-context
 
 ~Realm:~WAPI#concept-global-object-realm
 関連な~realm:~WAPI#concept-relevant-realm
+関連な~Realm:~WAPI#concept-relevant-realm
+関連な大域~obj:~WAPI#concept-relevant-global
+関連な設定群~obj:~WAPI#relevant-settings-object
 古典~script:~WAPI#classic-script
 現在の大域~obj:~WAPI#current-global-object
 環境:~WAPI#environment
@@ -1051,9 +1058,6 @@ enV.~target閲覧文脈:~WAPI#concept-environment-target-browsing-context
 ~taskを~queueする:~WAPI#queue-a-task
 ~queueされ:~WAPI#queue-a-task
 	~re-queues~those~tasks:~WAPI#queue-a-task
-関連な~Realm:~WAPI#concept-relevant-realm
-関連な大域~obj:~WAPI#concept-relevant-global
-関連な設定群~obj:~WAPI#relevant-settings-object
 古典~scriptを走らす:~WAPI#run-a-classic-script
 ~module~scriptを走らす:~WAPI#run-a-module-script
 ~script:~WAPI#concept-script
@@ -1765,6 +1769,8 @@ disk::::ディスク
 	%開始-に失敗した:startFailed
 	%~soft更新すべき:shouldSoftUpdate
 	%~cacheを迂回するよう強制する:forceBypassCache
+	%~worker~realm:workerRealm
+	%~eventは取扱った:eventHandled
 
 ●●ref_normative
 
@@ -4743,8 +4749,7 @@ Invoke Try Activate with service worker's containing service worker registration
 ◎
 Resolve promise with undefined.
 ◎
-↑↑
-Return promise.
+↑↑Return promise.
 </li>
 </ol>
 
@@ -5547,8 +5552,7 @@ If client’s execution ready flag is set, then invoke Resolve Get Client Promis
 ◎
 Resolve promise with undefined.
 ◎
-↑↑
-Return promise.
+↑↑Return promise.
 </li>
 </ol>
 
@@ -6501,6 +6505,7 @@ interface `FetchEvent@I : `ExtendableEvent$I {
   readonly attribute `DOMString$ `clientId$m;
   readonly attribute `DOMString$ `resultingClientId$m;
   readonly attribute `DOMString$ `replacesClientId$m;
+  readonly attribute Promise&lt;void&gt; `handled$m;
 
   void `respondWith$m(Promise&lt;`Response$I&gt; %r);
 };
@@ -6513,6 +6518,7 @@ dictionary `FetchEventInit@I : `ExtendableEventInit$I {
   `DOMString$ `clientId@m = "";
   `DOMString$ `resultingClientId@m = "";
   `DOMString$ `replacesClientId@m = "";
+  Promise&lt;void&gt; `handled@m;
 };
 </pre>
 
@@ -6611,8 +6617,21 @@ replacesClientId attribute must return the value it was initialized to. When an 
 </p>
 
 			</section>
+			<section id="fetch-event-handled">
+<h4>4.5.6. `handled@m</h4>
+
+<p>
+取得子は、初期化-時の値を返すモノトスル。
+此れの作成-時には、この属性は
+処理待ち`~promise$【すなわち、`新たな~promise$】に初期化するモノトスル。
+【<a href="#handle-fetch">~fetchが取扱われた</a>とき，解決される。】
+◎
+handled attribute must return the value it was initialized to. When an event is created the attribute must be initialized to a pending promise.
+</p>
+
+			</section>
 			<section id="fetch-event-respondwith">
-<h4>4.5.6. `respondWith(r)@m</h4>
+<h4>4.5.7. `respondWith(r)@m</h4>
 
 <p class="note">注記：
 開発者は、引数 %r を［
@@ -7128,11 +7147,11 @@ The service worker's containing service worker registration’s active worker ch
 <td>`FetchEvent$I
 <td>`機能的~event$
 <td>
-`~HTTP~fetch$は、`~fetchを取扱う$( 要請 ) を呼出す。
+`~HTTP~fetch$は、`~fetchを取扱う$( `要請$ ) を呼出す。
 これを遂行した結果として、 %~sw は，`~HTTP~fetch$に`応答$を返す。
-この`応答$は、`Response$I ~objにより表現され，［
+この応答は、`Response$I ~objにより表現され，［
 `Cache$I ~objから ／
-`self.fetch(input, init)$n ~methodを利用して~networkから直に
+`self.fetch()$n ~methodを利用して~networkから直に
 ］検索取得できる。
 （別の選択肢として~custom `Response$I ~objもある。）
 ◎
@@ -8784,8 +8803,7 @@ For each key → value of the relevant name to cache map:
 ◎
 Resolve promise with false.
 ◎
-↑↑
-Return promise.
+↑↑Return promise.
 </li>
 </ol>
 
@@ -8844,8 +8862,7 @@ For each key → value of the relevant name to cache map:
 • Set the relevant name to cache map[cacheName] to cache. If this cache write operation failed due to exceeding the granted quota limit, reject promise with a "QuotaExceededError" DOMException and abort these steps.
 • Resolve promise with a new Cache object that represents cache.
 ◎
-↑↑
-Return promise.
+↑↑Return promise.
 </div>
 
 			</section>
@@ -8956,8 +8973,7 @@ Note: The items in the result ordered set are in the order that their correspond
 ◎
 Resolve promise with cacheKeys.
 ◎
-↑↑
-Return promise.
+↑↑Return promise.
 </li>
 </ol>
 
@@ -12009,7 +12025,7 @@ Queue a task task on activeWorker’s event loop using the DOM manipulation task
 Let e be the result of creating an event with ExtendableEvent.
 </li>
 							<li>
-%~event の`type$n 属性 ~SET "`activate$et" に初期化する
+%~event の `type$n 属性 ~SET "`activate$et" に初期化する
 ◎
 Initialize e’s type attribute to activate.
 </li>
@@ -12133,8 +12149,7 @@ no service worker client is using registration or registration’s waiting worke
 ⇒
 `作動化する$( %登録 )
 ◎
-↑
-</p>
+↑</p>
 
 	</li>
 </ol>
@@ -12654,6 +12669,16 @@ Let reservedClient be request’s reserved client.
 %~preload応答~promise ~LET `新たな~promise$
 ◎
 Let preloadResponse be a new promise.
+</li>
+	<li>
+%~worker~realm ~LET ~NULL
+◎
+Let workerRealm be null.
+</li>
+	<li>
+%~eventは取扱った ~LET ~NULL
+◎
+Let eventHandled be null.
 ◎
 Let fetchInstance be the instance of the fetch algorithm representing the ongoing fetch.
 </li>
@@ -12774,7 +12799,7 @@ If request is a navigation request, registration’s navigation preload enabled 
 </p>
 
 <p class="note">注記：
-これらの条件が，最後のもの† を除いて満たされる場合、開発者の意図が明瞭でないので，~UAは~consoleに警告を示したいと望むかもしれない。
+これらの条件が，最後のもの† を除いて満たされる場合、開発者の意図は明瞭でないので，~UAは~consoleに警告を示したいと望むかもしれない。
 ◎
 Note: If the above is true except registration’s active worker's set of event types to handle does not contain fetch, then the user agent may wish to show a console warning, as the developer’s intent isn’t clear.
 </p>
@@ -12983,14 +13008,24 @@ If the result of running the Run Service Worker algorithm with activeWorker is f
 <p>
 ~ELSE：
 ◎
-Else＼
+Else:
 </p>
 		<ol>
+			<li>
+%~worker~realm ~SET %作動中の~worker の`大域~obj$swに`関連な~realm$
+◎
+Set workerRealm to the relevant realm of the activeWorker’s global object.
+</li>
+			<li>
+%~eventは取扱った ~SET %~worker~realm 内の`新たな~promise$
+◎
+Set eventHandled to a new promise in workerRealm.
+</li>
 			<li>
 <p>
 %~task ~LET `~taskを~queueする$( `~fetchを取扱う~task源$, 次の下位手続き, %作動中の~worker の`~event~loop$ )：
 ◎
-queue a task task to run the following substeps:
+Queue a task task to run the following substeps:
 </p>
 				<ol>
 					<li>
@@ -13015,7 +13050,8 @@ Let requestObject be a new Request object associated with request and a new asso
 `preloadResponse$m1 ~SET %~preload応答~promise,
 `clientId$m1 属性 ~SET %~client の`~id$enV,
 `resultingClientId$m1 属性 ~SET 空~文字列,
-`replacesClientId$m1 属性 ~SET 空~文字列
+`replacesClientId$m1 属性 ~SET 空~文字列,
+`handled$m1 属性 ~SET %~eventは取扱った
 ◎
 Initialize e’s type attribute to fetch.
 ◎
@@ -13026,7 +13062,8 @@ Initialize e’s request attribute to requestObject.
 Initialize e’s preloadResponse to preloadResponse.
 ◎
 Initialize e’s clientId attribute to client’s id.
-</li>
+◎
+↓</li>
 					<li>
 ~IF［
 %要請 は`非~下位資源~要請$である
@@ -13034,7 +13071,7 @@ Initialize e’s clientId attribute to client’s id.
 %要請 の`行先$rq ~NEQ `report$l
 ］
 ⇒
-%~event の `resultingClientId$m 属性 ~SET %予約-済み~client の`~id$enV
+%~event の `resultingClientId$m1 属性 ~SET %予約-済み~client の`~id$enV
 ◎
 If request is a non-subresource request and request’s destination is not "report", initialize e’s resultingClientId attribute to reservedClient’s id, and to the empty string otherwise.
 </li>
@@ -13043,9 +13080,13 @@ If request is a non-subresource request and request’s destination is not "repo
 %要請 は`~navi要請$である
 ］
 ⇒
-%~event の `replacesClientId$m 属性 ~SET %要請 の`置換する~client~id$rq
+%~event の `replacesClientId$m1 属性 ~SET %要請 の`置換する~client~id$rq
 ◎
-If request is a navigation request, initialize e’s replacesClientId attribute to request’s replaces client id, and to the empty string otherwise.
+If request is a navigation request, initialize e’s replacesClientId attribute to request’s replaces client id,＼
+◎
+↑and to the empty string otherwise.
+◎
+↑Initialize e’s handled to eventHandled.
 </li>
 					<li>
 %作動中の~worker の`大域~obj$swに向けて，
@@ -13130,8 +13171,7 @@ If fetchInstance is terminated, then queue a task to signal abort on requestObje
 ◎
 If task is discarded, set handleFetchFailed to true.
 ◎
-↑
-The task must use activeWorker’s event loop and the handle fetch task source.
+↑The task must use activeWorker’s event loop and the handle fetch task source.
 </p>
 			</li>
 			<li>
@@ -13155,26 +13195,90 @@ Wait for task to have executed or for handleFetchFailed to be true.
 If shouldSoftUpdate is true, then in parallel run the Soft Update algorithm with registration.
 </li>
 	<li>
+<p>
 ~IF［
 %~enteredで応答する ~EQ ~F
-］
-⇒
-~RET ［
-%~eventは取消された ~EQ ~T ならば`~network~error$ ／
-~ELSE_ ~NULL
-］
-⇒
+］：
 ◎
-If respondWithEntered is false, then return a network error if eventCanceled is true and null otherwise.
+If respondWithEntered is false, then:
+</p>
+		<ol>
+			<li>
+<p>
+~IF［
+%~eventは取消された ~EQ ~T
+］：
+◎
+If eventCanceled is true, then:
+</p>
+				<ol>
+					<li>
+~IF［
+%~eventは取扱った ~NEQ ~NULL
+］
+⇒
+%~eventは取扱った を %~worker~realm 内の `NetworkError$E 例外で`却下する$
+◎
+If eventHandled is not null, then reject eventHandled with a "NetworkError" DOMException in workerRealm.
 </li>
+					<li>
+~RET `~network~error$
+◎
+Return a network error.
+</li>
+				</ol>
+			</li>
+			<li>
+~IF［
+%~eventは取扱った ~NEQ ~NULL
+］
+⇒
+%~eventは取扱った を`解決する$
+◎
+If eventHandled is not null, then resolve eventHandled.
+</li>
+			<li>
+~RET ~NULL
+◎
+Return null.
+</li>
+		</ol>
+	</li>
 	<li>
+<p>
 ~IF［
 %~fetchを取扱うのに失敗した ~EQ ~T
 ］
 ⇒
 ~RET `~network~error$
 ◎
-If handleFetchFailed is true, then return a network error.
+If handleFetchFailed is true, then:
+</p>
+		<ol>
+			<li>
+~IF［
+%~eventは取扱った ~NEQ ~NULL
+］
+⇒
+%~eventは取扱った を %~worker~realm 内の `NetworkError$E 例外で`却下する$
+◎
+If eventHandled is not null, then reject eventHandled with a "NetworkError" DOMException in workerRealm.
+</li>
+			<li>
+~RET `~network~error$
+◎
+Return a network error.
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+%~eventは取扱った ~NEQ ~NULL
+］
+⇒
+%~eventは取扱った を`解決する$
+◎
+If eventHandled is not null, then resolve eventHandled.
 </li>
 	<li>
 ~RET %応答
@@ -15251,8 +15355,7 @@ If operation’s response is null, throw a TypeError.
 ⇒
 ~THROW `TypeError^E
 ◎
-↑↑
-Let r be operation’s request's associated request.
+↑↑Let r be operation’s request's associated request.
 （'s associated request は余計）
 ◎
 If r’s url's scheme is not one of "http" and "https", throw a TypeError.
