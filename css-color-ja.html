@@ -5,14 +5,9 @@
 <link rel="stylesheet" href="common-css.css" type="text/css" />
 
 <style>
-
-.idl-def > dt {
-	font-family: monospace0, monospace;
-}
-
-dt.prod::before {
-	content: "• ";
-	color: gray;
+img {
+	max-width:100%;
+	object-fit: contain;
 }
 
 #named-color-table > thead th {
@@ -50,11 +45,6 @@ dt.prod::before {
 	margin: 0;
 	border: 0;
 	cursor: crosshair;
-}
-
-img {
-	max-width:100%;
-	object-fit: contain;
 }
 
 </style>
@@ -238,9 +228,9 @@ function initColorDraw(){
 
 		hue = ((hue & 0xFFFFFFF) % 360 ) / 60;
 		const buffer = sImage.data;
-		const W = sW;
-		const H = sH;
-		const R = Math.max(parseInt(E('_EX_scale').value) & 0xFF, 2);
+		const xMax = sW;
+		const yMax = sH;
+		const scale = Math.max(parseInt(E('_EX_scale').value) & 0xFF, 2);
 		const toRGB = isHWB ? hwbToRgb : hslToRgb;
 
 		let r, g, b
@@ -253,14 +243,14 @@ function initColorDraw(){
 			b0 = b;
 		}
 
-		for(let S = 0; S < H; S++){
-			let address = S * W * 4;
-			sat = Math.floor((S / H) * R + 0.5 ) / R;
-			for(let L = 0; L < W; L++){
-				toRGB(hue, sat, Math.floor((L / W) * R + 0.5 ) / R );
-				buffer[address++ ]  = r * 255;
-				buffer[address++ ]  = g * 255;
-				buffer[address++ ]  = b * 255;
+		for(let y = 0; y < yMax; y++){
+			let address = y * xMax * 4;
+			sat = Math.floor((y / yMax) * scale + 0.5 ) / scale;
+			for(let x = 0; x < xMax; x++){
+				toRGB(hue, sat, Math.floor((x / xMax) * scale + 0.5 ) / scale );
+				buffer[ address++ ] = r * 255;
+				buffer[ address++ ] = g * 255;
+				buffer[ address++ ] = b * 255;
 				address++;
 			}
 		}
@@ -271,7 +261,7 @@ function initColorDraw(){
 		const dW = dCanvas.width;
 		const dH = dCanvas.height;
 		const dContext = dCanvas.getContext('2d');
-		dContext.putImageData(sImage, 0,0);
+		dContext.putImageData(sImage, 0, 0);
 		dContext.drawImage(dCanvas, 0, 0, sW, sH, 0, 0, dW, dH);
 	};
 
@@ -301,7 +291,7 @@ function initColorDraw(){
 		const x = Math.floor(event.clientX - rect.left);
 		const y = Math.floor(event.clientY - rect.top);
 		const pixel = canvas.getContext('2d').getImageData(x, y, 1, 1).data;
-		rgb_val = [pixel[0], pixel[1], pixel[2]];
+		[rgb_val[0], rgb_val[1], rgb_val[2]] = pixel;
 		updateRGBText();
 	};
 
@@ -319,20 +309,19 @@ function initColorDraw(){
 
 	const formatter = {
 		rgb16: (rgb) => {
-			return '#' + (
-0x1000000 | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
-			).toString(16).slice(1);
+			const hex = 0x1000000 | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
+			return `#${hex.toString(16).slice(1)}`;
 		},
 
 		rgb10: (rgb) => {
-			return ( 'rgb(' + rgb.join(' ') + ')' );
+			return `rgb(${rgb.join(' ')})`;
 		},
 
 		rgbPercent: (rgb) => {
 			rgb = rgb.map( (c) => {
 				return Math.round(c * 100 / 255) + '%';
 			});
-			return ( 'rgb(' + rgb.join(' ') + ')' );
+			return `rgb(${rgb.join(' ')})`;
 		},
 
 		hsl: (rgb) => {
@@ -349,10 +338,7 @@ function initColorDraw(){
 			const L = sum / 2;
 
 			return (
-				'hsl(' +
-				Math.round( H ) + ' ' +
-				Math.round( S * 100 ) + '% ' + 
-				Math.round( L * 100 ) + '%)'
+`hsl(${Math.round(H)} ${Math.round(S * 100)}% ${Math.round(L * 100)}%)`
 			);
 		},
 
@@ -362,10 +348,7 @@ function initColorDraw(){
 			const W = Math.min(R, G, B) / 255;
 			const K = 1 - Math.max(R, G, B) / 255;
 			return (
-				'hwb(' +
-				Math.round( H ) + ' ' +
-				Math.round( W * 100 ) + '% ' + 
-				Math.round( K * 100 ) + '%)'
+`hwb(${Math.round(H)} ${Math.round(W * 100)}% ${Math.round(K * 100)}%)`
 			);
 		},
 
@@ -382,7 +365,7 @@ function initColorDraw(){
 			const cmyk = [C,M,Y,K].map( (c) => {
 				return Math.round(c * 100) + '%';
 			})
-			return ( 'device-cmyk(' + cmyk.join(' ') + ')' );
+			return `device-cmyk(${cmyk.join(' ')})`;
 		}
 	};
 
@@ -395,18 +378,22 @@ function initColorDraw(){
 
 	drawHSL();
 
-	E('_EX_hue_control').addEventListener('change', drawHSL, false);
-	E('_EX_hue_control').addEventListener('input', drawHSL, false);
-	E('_EX_scale').addEventListener('change', drawHSL, false);
-	E('_EX_HSL_canvas').addEventListener('mousemove', updateRGBValue, false);
-	E('_EX_HWB_canvas').addEventListener('mousemove', updateRGBValue, false);
-	E('_EX_HSL_canvas').addEventListener('click', fixVal, false);
-	E('_EX_HWB_canvas').addEventListener('click', fixVal, false);
-	E('_EX_format').addEventListener('change', updateRGBText, false);
-	E('_EX_rgbtext').addEventListener('click', (event) => {
-		event.target.select();
-	}, false);
-
+	{
+		const addListener = (id, ev, func) => {
+			E(id).addEventListener(ev, func, {passive: true});
+		}
+		addListener('_EX_hue_control', 'change', drawHSL);
+		addListener('_EX_hue_control', 'input', drawHSL);
+		addListener('_EX_scale', 'change', drawHSL);
+		addListener('_EX_HSL_canvas', 'pointermove', updateRGBValue);
+		addListener('_EX_HWB_canvas', 'pointermove', updateRGBValue);
+		addListener('_EX_HSL_canvas', 'click', fixVal);
+		addListener('_EX_HWB_canvas', 'click', fixVal);
+		addListener('_EX_format', 'change', updateRGBText);
+		addListener('_EX_rgbtext', 'click', (event) => {
+			event.target.select();
+		});
+	}
 }
 
 </script>
