@@ -152,7 +152,7 @@ Util.collectHtmlCodeList = (parts) => {
 	let m;
 	while(m = rxp.exec(data)){
 		const pre = C('pre');
-		pre.className = 'html-code' + (m[2] || '');
+		pre.className = 'lang-html' + (m[2] || '');
 		const markup = m[3].trim().replace(/％/g, '');
 		if(markup.indexOf('＜') < 0 ){
 			pre.textContent = markup;
@@ -632,9 +632,9 @@ Util.switchWordsInit = (source_data) => {
 '<tr><th>', // \uE007
 '<tbody><tr><th>', // \uE008
 '</tbody></table>', // \uE009
-'<table class="propdef">', // \uE00A
-'<table class="descdef">', // \uE00B
-'<table class="eventdef">' // \uE00C
+'<table class="def-table propdef">', // \uE00A
+'<table class="def-table descdef">', // \uE00B
+'<table class="def-table eventdef">' // \uE00C
 		];
 		let nesting = '';
 		let nesting1;

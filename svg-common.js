@@ -672,14 +672,14 @@ t.dasharray:~SVGpainting#DataTypeDasharray
 
 // ●PREMAP
 COMMON_DATA.PREMAP += `
-要素名:<table class="elemdef"><tbody><tr><th>名前<td>
+要素名:<table class="def-table elemdef"><tbody><tr><th>名前<td>
 分類:<tr><th>分類<td>
 内容:<tr><th>内容~model<td>
 属性:<tr><th>属性<td>
 幾何:<tr><th>幾何~prop<td>
 界面:<tr><th>~DOM~interface<td>
 
-属名:<table class="attrdef"><tbody><tr><th colspan="2">
+属名:<table class="def-table attrdef"><tbody><tr><th colspan="2">
 属値:<tr><th>値<td>
 属初:<tr><th>初期~値<td>
 属ア:<tr><th>~animate可？<td>
