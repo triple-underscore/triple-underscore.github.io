@@ -30,10 +30,6 @@ table._row > tbody > tr {
 	color: black;
 }
 
-i {
-	color: purple;
-}
-
 #_hierarchy td {
 	text-align: center;
 	border: none;
@@ -164,8 +160,8 @@ return (quote ? quote + text + quote : text);
 ●●options
 
 spec_title:Indexed Database API 3.0
-spec_date:2020-01-28
-trans_update:2020-01-29
+spec_date:2020-03-04
+trans_update:2020-03-06
 source_checked:190930
 original_url:https://w3c.github.io/IndexedDB/
 spec_status:ED
@@ -463,6 +459,7 @@ i.~close待ち:#connection-close
 tx.接続:#transaction-connection
 	専属する接続:#transaction-connection
 視野:#transaction-scope
+視野が重合して:#transaction-overlap
 ~mode:#transaction-mode
 
 tx.状態:#transaction-state
@@ -765,7 +762,6 @@ escaping::::エスケープ処理
 
 	●一般処理
 標的:target:::ターゲット
-starvation:
 同時並行的:concurrent:~
 区間:interval:~
 時機:timing:~
@@ -877,7 +873,7 @@ tx: transaction:::トランザクション
 	設置-先:place 先
 索引:index::~::インデックス
 索引付き:indexed::~::インデックス付き
-
+併合-:merge::~
 
 	●演算
 
@@ -916,6 +912,7 @@ cursor::::カーソル
 生成key:generated key::生成 key
 下位key:subkey::下位 key
 首key:primaryKey::首 key
+	首key:primary key
 only:
 path:
 全範囲:unbounded key range:~
@@ -928,6 +925,7 @@ path:
 減少-:decrease:~
 	retrieval
 検索-:look up::~
+検索:look-up::~
 単調:monotonic::~
 番号:number::~
 抽出d:extracted::抽出
@@ -1056,7 +1054,6 @@ targeted:
 機会:chance:~
 参考:informative:~
 優位性:advantage:~
-公平さ:fairness:~
 発行:publication:~
 適度:reasonable:~
 決定的:deterministic:~
@@ -1076,7 +1073,10 @@ monkey-patching:monkey patching
 正した:correctした:~
 重視-:weigh:~
 	勝る:outweigh:~
+人為的:artificial:~
+課-:impose:~
 
+	~~課す
 	際どい:edge
 	易く:easy
 	該当:cover
@@ -1125,7 +1125,6 @@ monkey-patching:monkey patching
 	時間:time
 	nonsupported
 	できなくなる:prevent
-	待たせ:prevent し
 	できるように:allowed to／:allowing
 	自覚できるようにしておく:make sure 〜 is aware
 	authoring:
@@ -1212,7 +1211,6 @@ tab::::タブ
 有符号:signed:~
 式:expression:~
 総数:total number:~
-不定:indefinite:~
 連続的:continuous:~
 区切子:delimiter:~
 分割-:split:~
@@ -1325,7 +1323,6 @@ tab::::タブ
 	one and only one
 	一階層:one level
 	日夜:day and night
-	絶え間なく:one after another
 	large:
 	later:
 	今後の:later
@@ -1502,25 +1499,37 @@ This specification provides a concrete API to perform advanced key-value data ma
 
 <p>
 次の例は、~APIを利用して，`書庫^l ~dbに~accessする。
-この~dbは、`保管庫$（~db内の一群の~dataを保持する単位）である `書棚^l を保持する。
-この書棚には、`isbn^l 属性を~keyに用いて，一群の本が格納される。
-加えて，この書棚に格納された各~obj（すなわち，本）の `書名^l に対しても，`索引$ `書名索引^l が保守される。
-この書名索引は、本を書名でも検索できるようにする。
-また、一意性の拘束（ `unique: true^jv ）も施行されている。
-~objの `著者名^l についても別の索引 `著者名索引^l が保守され，本を著者名で検索するときに利用できる。
+この~dbは、名前 `書棚^l の`保管庫$を持つ。
+この書棚には、 `isbn^l ~propを首keyに用いて，一群の`~record$ （すなわち， “本” ）が格納される。
 ◎
-In the following example, the API is used to access a "library" database that holds books stored by their "isbn" attribute. Additionally, an index is maintained on the "title" attribute of the objects stored in the object store. This index can be used to look up books by title, and enforces a uniqueness constraint. Another index is maintained on the "author" attribute of the objects, and can be used to look up books by author.
+The following example uses the API to access a "library" database. It has a "books" object store that holds books records stored by their "isbn" property as the primary key.
 </p>
 
 <p>
-まず、~dbへの接続を~openする。
-`書庫^l ~dbが まだ存在していない場合は，新たに作成される。
-~event~handlerの中で，保管庫と各~索引を作成する。
-~~最後に、後続の例で利用するため，~openした接続を保存する（
-`onsuccess^m ~handler内の %書庫
-）。
+各 本には、 `書名^l ~propもある。
+この例では、書名が【書棚~内で】一意になることを，人為的に要求する。
+この~codeは、［
+<a href="#dom-idbindexparameters-unique">`unique^m</a>
+~optionが ~T に設定された，名前 `書名索引^l の`索引$を作成する
+］ことにより，これを施行する。
+この索引は、各 本を書名で検索するために利用され，書名が一意でない本を追加するのも防止することになる。
 ◎
-A connection to the database is opened. If the "library" database did not already exist, it is created and an event handler creates the object store and indexes. Finally, the opened connection is saved for use in subsequent examples.
+Book records have a "title" property. This example artificially requires that book titles are unique. The code enforces this by creating an index named "by_title" with the unique option set. This index is used to look up books by title, and will prevent adding books with non-unique titles.
+</p>
+
+<p>
+各 本には、 `著者名^l ~propもあり，一意になることは要求されない。
+この~codeは、名前 `著者名索引^l の`索引$も作成して，この~propによる検索を許容する。
+◎
+Book records also have an "author" property, which is not required to be unique. The code creates another index named "by_author" to allow look-ups by this property.
+</p>
+
+<p>
+この~codeは、まず，~dbへの接続を~openする。
+`upgradeneeded$et ~event~handlerの~codeが，必要なら保管庫と（それに`専属する$）索引たちを作成する。
+`success$et ~event~handlerの~codeは、~openした接続を後の利用-用に保存する。
+◎
+The code first opens a connection to the database. The upgradeneeded event handler code creates the object store and indexes, if needed. The success event handler code saves the opened connection for use in later examples.
 </p>
 
 <pre class="lang-js">
@@ -1638,9 +1647,9 @@ No more matching records.
 };</pre>
 
 <p>
-要請が失敗したときの~errorをどう取扱えるかを、次の例に示す：
+要請が失敗したとき~errorを取扱う仕方の一つを、次の例に示す：
 ◎
-The following example shows how errors could be handled when a request fails.
+The following example shows one way to handle errors when a request fails.
 </p>
 
 <pre class="lang-js">
@@ -1682,9 +1691,9 @@ The database connection can be closed when it is no longer needed.
 
 <p>
 ~dbは，未来に他の保管庫／索引を包含するように成長させれる。
-より古い~versionの~dbから移行するときに取扱う仕方の一例を次に示す。
+より古い~versionから移行するときに取扱う仕方の一例を次に示す。
 ◎
-In the future, the database might have grown to contain other object stores and indexes. The following example shows one way to handle migrating from an older version of the database.
+In the future, the database might have grown to contain other object stores and indexes. The following example shows one way to handle migrating from an older version.
 </p>
 
 <pre class="lang-js">
@@ -1885,7 +1894,7 @@ The user will only see the above message if another client fails to disconnect f
 <h2>【この訳に固有の表記規約】</h2>
 
 <p><small>（
-この節の表記規約は、この仕様が~UAに課す要件（〜するモノトスル）を集約するものでもある。
+この節の表記規約は、この仕様が~UAに~~課す要件（〜するモノトスル）を集約するものでもある。
 ）</small></p>
 
 <p>
@@ -2248,7 +2257,7 @@ A database has at most one associated upgrade transaction, which is either null 
 </dl>
 
 			<section id="database-connection">
-<h5 title="Database Connection">2.1.1. ~db接続</h5>
+<h5 title="Database connection">2.1.1. ~db接続</h5>
 
 <p>
 ~scriptが`~db$と直にヤリトリすることはない。
@@ -2397,7 +2406,7 @@ A versionchange will be fired at an open connection if an attempt is made to upg
 			</section>
 		</section>
 		<section id="object-store-construct">
-<h3 title="Object Store">2.2. 保管庫</h3>
+<h3 title="Object store">2.2. 保管庫</h3>
 
 <p>
 `保管庫@
@@ -2514,7 +2523,7 @@ Keys can also be explicitly specified when a value is stored in the object store
 </ul>
 
 			<section id="object-store-handle-construct">
-<h5 title="Object Store Handle">2.2.1. 保管庫~handle</h5>
+<h5 title="Object store handle">2.2.1. 保管庫~handle</h5>
 
 <p>
 ~scriptが`保管庫$と直にヤリトリすることはない。
@@ -3160,7 +3169,7 @@ Members of binary keys are compared as unsigned byte values (in the range 0 to 2
 
 		</section>
 		<section id="key-path-construct">
-<h3 title="Key Path">2.5. ~key~path</h3>
+<h3 title="Key path">2.5. ~key~path</h3>
 
 <p>
 `~key~path@
@@ -3582,7 +3591,7 @@ K( %R ) ~EQ `値から~key集合を抽出する$(
 
 			</section>
 			<section id="index-handle-construct">
-<h5 title="Index Handle">2.6.1. 索引~handle</h5>
+<h5 title="Index handle">2.6.1. 索引~handle</h5>
 
 <p>
 ~scriptが`索引$と直にヤリトリすることはない。
@@ -3655,7 +3664,7 @@ An index handle has a name, which is initialized to the name of the associated i
 `~tx@
 （ `transaction^en ）が利用される。
 ◎
-A Transaction is used to interact with the data in a database. Whenever data is read or written to the database it is done by using a transaction.
+A transaction is used to interact with the data in a database. Whenever data is read or written to the database it is done by using a transaction.
 </p>
 
 <div class="p">
@@ -3706,11 +3715,19 @@ All transactions are created through a connection, which is the transaction’s 
 `~tx$がヤリトリし得る`保管庫$たちからなる集合。
 視野は、~txの作成-時に決定され，~txが存続する限り固定され続ける†。
 ◎
-A transaction has a scope that determines the object stores with which the transaction may interact. A transaction’s scope remains fixed for the lifetime of that transaction.
+A transaction has a scope which is a set of object stores that the transaction may interact with. A transaction’s scope remains fixed for the lifetime of that transaction.
 </dd>
 	<dd class="trans-note">【†
 `昇格~tx$については、その視野は`常に^em，それが`専属する$`接続$の`保管庫~集合$Cnになる。
 】</dd>
+	<dd>
+2 つの`~tx$は、ある`保管庫$が両`~tx$の`視野$に入るならば，
+`視野が重合して@
+いるとされる
+◎
+Two transactions have overlapping scope if any object store is in both transactions' scope.
+</dd>
+
 	<dd class="trans-note">【
 それぞれの~txは、同じ`保管庫$を，
 <strong>別々の`保管庫~handle$を通して</strong>
@@ -3734,7 +3751,7 @@ A transaction has a mode that determines which types of interactions can be perf
 			<dd>
 この型の`~tx$には、~dataを読取することのみが許容され，改変は行えない。
 `readonly^l ~txには、複数のそれらを同時に稼働できる優位性がある
-— 互いの`視野$が重合していようが（すなわち，同じ保管庫を利用していても）。
+— 互いの`視野が重合して$いようが（すなわち，同じ保管庫を利用していても）。
 この型の~txは、~dbが~openされたなら，いつでも作成できる。
 【！ 手短に言えば、［ 同じ保管庫を視野に入れている，この型の~txたち ］は，その保管庫を排他的に占有する。】
 ◎
@@ -3750,7 +3767,7 @@ The transaction is only allowed to read data. No modifications can be done by th
 追加する, 除去する
 ］ことはできない。
 また、［
-互いの`視野$が重合するような複数の `readwrite^l `~tx$
+互いの`視野が重合して$いる複数の `readwrite^l `~tx$
 ］を同時に稼働させることはできない
 — そうすると，~txの間に互いの~dataを改変し得ることになるので。
 この型の~txは、~dbが~openされたなら，いつでも作成できる。
@@ -3892,7 +3909,7 @@ A read/write transaction is a transaction with mode "readwrite".
 </p>
 
 			<section id="transaction-lifecycle">
-<h4 title="Transaction Lifecycle">2.7.1. ~txの~lifecycle</h4>
+<h4 title="Transaction lifecycle">2.7.1. ~txの~lifecycle</h4>
 
 <p>
 `~tx$の
@@ -4181,10 +4198,6 @@ This behavior is invoked by [HTML]. It ensures that transactions created by a sc
 </p>
 </div>
 
-			</section>
-			<section id="transaction-scheduling">
-<h4 title="Transaction Scheduling">2.7.2. ~txの~schedule法</h4>
-
 <p>
 `complete@et
 ~eventは、成功裡に`~commit$された`~tx$に向けて発火される。
@@ -4199,85 +4212,147 @@ An event with type complete is fired at a transaction that has successfully comm
 An event with type abort is fired at a transaction that has aborted.
 </p>
 
+			</section>
+			<section id="transaction-scheduling">
+<h4 title="Transaction scheduling">2.7.2. ~txの~schedule法</h4>
+
 <p>
-`~tx$の開始~時機は、以下に挙げる拘束により定義される：
+`~tx$がいつ`開始-$できるかは、次の拘束により定義される：
 ◎
 The following constraints define when a transaction can be started:
 </p>
 
-<p>
-`~readonly~tx$は、同時並行的にいくつでも
-— 互いの`視野$が重合していようが —
-稼働することが許容される。
-`~readonly~tx$に対しては
-— 稼働している限り —
-実装が その~txにより作成された`要請$を通して返す~dataは，一定であり続けるモノトスル。
-すなわち，同じ~data片を読取する 2 つの要請は、~dataが見出されるかどうかも含め，同じ結果を得るモノトスル。
-◎
-Any number of read-only transactions are allowed to run concurrently, even if the transaction’s scope overlap and include the same object stores. As long as a read-only transaction is running, the data that the implementation returns through requests created with that transaction must remain constant. That is, two requests to read the same piece of data must yield the same result both for the case when data is found and the result is that data, and for the case when data is not found and a lack of data is indicated.
-</p>
-
-<p>
-実装がこれを確保する仕方はいくつもある。
-例えば，`~readwrite~tx$に対し、視野が重合する`~readonly~tx$が他にあるときは，それらが`完遂-$するまで`開始-$を遅らすこともできる。
-あるいは，`~readonly~tx$に対しては、その開始-時点での`保管庫$の~snapshotを常に見るようにする方法もある。
-◎
-There are a number of ways that an implementation can ensure this. The implementation could prevent any read/write transaction, whose scope overlaps the scope of the read-only transaction, from starting until the read-only transaction finishes. Or the implementation could allow the read-only transaction to see a snapshot of the contents of the object stores which is taken when the read-only transaction started.
-</p>
-
-<p>
-同様に、実装は 次を確保するモノトスル：
-◎
-Similarly, implementations must＼
-</p>
 <ul>
 	<li>
-`~readwrite~tx$は，それを利用して為された`保管庫$への変更~以外からは影響されないこと
-— 例えば、別の~txが，`~readwrite~tx$の`視野$に入る`保管庫$の内容を改変しないこと。
+<p>
+`~readonly~tx$ %~tx は、［
+次をすべて満たす`~readwrite~tx$は無い
+］ならば`開始-$できる：
 ◎
-ensure that a read/write transaction is only affected by changes to object stores that are made using the transaction itself. For example, the implementation must ensure that another transaction does not modify the contents of object stores in the read/write transaction’s scope.＼
+A read-only transactions tx can start when there are no read/write transactions which:
+</p>
+		<ul>
+			<li>
+%~tx より前に`作成-$された
+◎
+Were created before tx; and
+</li>
+			<li>
+%~tx と`視野が重合して$いる
+◎
+have overlapping scopes with tx; and
+</li>
+			<li>
+`完遂-$していない
+◎
+are not finished.
+</li>
+		</ul>
+	</li>
+	<li>
+<p>
+`~readwrite~tx$ %~tx は［
+次をすべて満たす`~tx$は無い
+］ならば`開始-$できる：
+◎
+A read/write transaction tx can start when there are no transactions which:
+</p>
+		<ul>
+			<li>
+%~tx より前に`作成-$された
+◎
+Were created before tx; and
+</li>
+			<li>
+%~tx と`視野が重合して$いる
+◎
+have overlapping scopes with tx; and
+</li>
+			<li>
+`完遂-$していない
+◎
+are not finished.
+</li>
+		</ul>
+	</li>
+</ul>
+
+<p>
+実装は追加的な拘束を課してもヨイ。
+例えば，実装は
+⇒＃
+`視野が重合して$いない`~readwrite~tx$を並列的に稼働することは要求されない／
+同時に稼働している~txの個数に制限sを課してもヨイ
+◎
+Implementations may impose additional constraints. For example, implementations are not required to run non-overlapping read/write transactions in parallel, or may impose limits on the number of running transactions.
+</p>
+
+
+<div class="note">
+
+<p>注記：
+これらの拘束は、次を含意する：
+◎
+These constraints imply the following:
+</p>
+
+<ul>
+	<li>
+`~readonly~tx$は、同時並行的にいくつでも
+— 互いの`視野が重合して$いようが —
+稼働することが許容される。
+◎
+Any number of read-only transactions are allowed to run concurrently, even if they have overlapping scopes.
 </li>
 	<li>
-成功裡に完了した`~readwrite~tx$により`保管庫$に書込された変更は，`~tx$間で互いに競合することなく
-— 競合に因り~txを中止することなく —
-`~db$に~commitできること。
+`~readonly~tx$は、稼働している限り，［
+実装が その~txにより作成された`要請$を通して返す~data
+］は一定であり続ける。
+すなわち，同じ~data片を読取する 2 つの要請からは、~dataが見出されるかどうかも含め，同じ結果を得られる。
 ◎
-The implementation must also ensure that if the read/write transaction completes successfully, the changes written to object stores using the transaction can be committed to the database without merge conflicts. An implementation must not abort a transaction due to merge conflicts.
+As long as a read-only transaction is running, the data that the implementation returns through requests created with that transaction remains constant. That is, two requests to read the same piece of data yield the same result both for the case when data is found and the result is that data, and for the case when data is not found and a lack of data is indicated.
 </li>
 	<li>
-複数の`~readwrite~tx$が同じ保管庫に~accessしようと試みた（すなわち，それらの`視野$が重合している）場合、先に`作成-$された~txが保管庫への~accessを先に取得すること。
-前 2 項による要件に因り、これは［
-その~txが`完遂-$するまで，保管庫に~accessできるのはその~txに限られる
-］ことも意味する。
+<p>
+`~readwrite~tx$は、他の`~tx$を利用して為された`保管庫$への変更からは影響されない。
+実装は、次を確保することになる：
+</p>
+		<ul>
+			<li>
+別の~txが，`~readwrite~tx$の`視野$に入る`保管庫$の内容を改変しない。
+</li>
+			<li>
+`~readwrite~tx$が成功裡に完了したなら，その~txを利用して`保管庫$に書込された変更を
+— 併合する際に競合することなく —
+`~db$に~commitできる。
+</li>
+		</ul>
 ◎
-If multiple read/write transactions are attempting to access the same object store (i.e. if they have overlapping scope), the transaction that was created first must be the transaction which gets access to the object store first. Due to the requirements in the previous paragraph, this also means that it is the only transaction which has access to the object store until the transaction is finished.
+A read/write transaction is only affected by changes to object stores that are made using the transaction itself. The implementation ensures that another transaction does not modify the contents of object stores in the read/write transaction’s scope. The implementation also ensures that if the read/write transaction completes successfully, the changes written to object stores using the transaction can be committed to the database without merge conflicts.
 </li>
 	<li>
-`~readwrite~tx$ %A の後に`作成-$された，~tx %B は、 %A  と`視野$が重合する`保管庫$ %O があるならば， %A により書込された %O への変更を見ること。
-前~項による要件に因り，これは、 %A が`完遂-$するまで，［
+複数の`~readwrite~tx$が同じ保管庫に~accessしようと試みた場合（すなわち，それらの`視野が重合して$いる）、先に`作成-$された~txが保管庫への~accessを先に取得する
+— 当の~txが`完遂-$するまで、保管庫に~accessできるのは，当の~txに限られる。
+◎
+If multiple read/write transactions are attempting to access the same object store (i.e. if they have overlapping scopes), the transaction that was created first is the transaction which gets access to the object store first, and it is the only transaction which has access to the object store until the transaction is finished.
+</li>
+	<li>
+`~readwrite~tx$ %A の後に`作成-$された，~tx %B は、
+%A と`視野が重合して$いる`保管庫$ %O があるならば，
+%A により書込された %O への変更を見ることになる。
+これはまた，［
+%A が`完遂-$するまでは、
 %B は， %A の`視野$に入る どの`保管庫$にも~accessできない
 ］ことを意味する。
 ◎
-Any transaction created after a read/write transaction must see the changes written by the read/write transaction. So if a read/write transaction, A, is created, and later another transaction B, is created, and the two transactions have overlapping scopes, then B must see any changes made to any object stores that are part of that overlapping scope. Due to the requirements in the previous paragraph, this also means that the B transaction does not have access to any object stores in that overlapping scope until the A transaction is finished.
+Any transaction created after a read/write transaction sees the changes written by the read/write transaction. For example, if a read/write transaction A, is created, and later another transaction B, is created, and the two transactions have overlapping scopes, then transaction B sees any changes made to any object stores that are part of that overlapping scope. This also means that transaction B does not have access to any object stores in that overlapping scope until transaction A is finished.
 </li>
 </ul>
-
-<p class="note">注記：
-上述から、一般に，`~readwrite~tx$と, その後に作成された~txは、互いの視野が重合するならば，並列的に稼働できないことを意味する。
-◎
-Generally speaking, the above requirements mean that any transaction which has an overlapping scope with a read/write transaction and which was created after that read/write transaction, can’t run in parallel with that read/write transaction.
-</p>
-
-<p>
-~UAは、~starvationを防止するように，各~tx間に適度な公平さを確保するモノトスル。
-例えば，いくつもの`~readonly~tx$が絶え間なく開始される状況下で、`開始-$待ち`~readwrite~tx$を不定に待たせないモノトスル。
-◎
-User agents must ensure a reasonable level of fairness across transactions to prevent starvation. For example, if multiple read-only transactions are started one after another the implementation must not indefinitely prevent a pending read/write transaction from starting.
-</p>
+</div>
 
 			</section>
 			<section id="upgrade-transaction-construct">
-<h4 title="Upgrade Transactions">2.7.3. 昇格~tx</h4>
+<h4 title="Upgrade transactions">2.7.3. 昇格~tx</h4>
 
 <p>
 `~mode$が `versionchange$l にされた`~tx$を
@@ -4504,7 +4579,7 @@ Requests are not typically re-used, but there are exceptions. When a cursor is i
 </p>
 
 			<section id="open-requests">
-<h4 title="Open Requests">2.8.1. ~open要請</h4>
+<h4 title="Open requests">2.8.1. ~open要請</h4>
 
 <p>
 `~open要請@
@@ -4576,7 +4651,7 @@ A connection queue is not a task queue associated with an event loop, as the req
 			</section>
 		</section>
 		<section id="range-construct">
-<h3 title="Key Range">2.9. ~key範囲</h3>
+<h3 title="Key range">2.9. ~key範囲</h3>
 
 <p>
 `保管庫$や`索引$から一連の`~record$を検索取得するためには、［
@@ -5084,7 +5159,7 @@ A cursor also has a key only flag, that indicates whether the cursor’s value i
 
 		</section>
 		<section id="key-generator-construct">
-<h3 title="Key Generators">2.11. ~key生成器</h3>
+<h3 title="Key generators">2.11. ~key生成器</h3>
 
 <p>
 `保管庫$の作成-時には、
@@ -6665,10 +6740,13 @@ Return p.
 </li>
 		</ol>
 	</dd>
-	<dd class="note">
-🚧これは、この版による新たな~methodである。🚧
+	<dd class="advisement">🚧
+これは、この版による新たな~methodである。
+Chrome 71, Edge 79
+から~supportされている。
+🚧
 ◎
-🚧 The databases() method is new in this edition. 🚧
+🚧 The databases() method is new in this edition. It is supported in Chrome 71 and Edge 79. 🚧
 </dd>
 </dl>
 
@@ -7270,10 +7348,13 @@ Return an IDBTransaction object representing transaction.
 </li>
 		</ol>
 	</dd>
-	<dd class="note">
-🚧 `durability$m は、この版による新たな~optionである。🚧
+	<dd class="advisement">🚧
+`durability$m は、この版による新たな~optionである。
+Chrome 82, Edge 82
+から~supportされている。
+🚧
 ◎
-🚧 The durability option is new in this edition. 🚧
+🚧 The durability option is new in this edition. It is supported in Chrome 82 and Edge 82. 🚧
 </dd>
 	<dd class="note">注記：
 作成された~txは、その`存続期間$の規則に従う。
@@ -9985,10 +10066,13 @@ The primaryKey attribute’s getter must return the result of running convert a 
 ◎
 The request attribute’s getter must return this's request.
 </dd>
-	<dd class="note">
-🚧これは、この版による新たな属性である。🚧
+	<dd class="advisement">🚧
+これは、この版による新たな属性である。
+Chrome 76, Edge 79
+から~supportされている。
+🚧
 ◎
-🚧 The request attribute is new in this edition. 🚧
+🚧 The request attribute is new in this edition. It is supported in Chrome 76 and Edge 79. 🚧
 </dd>
 </dl>
 
@@ -10615,7 +10699,7 @@ Note that if this property returns an object, it returns the same object instanc
 <p>
 `~tx$は、次の~interfaceを実装する~objで表現される：
 ◎
-transaction objects implement the following interface:
+Transaction objects implement the following interface:
 </p>
 
 <pre class="idl">
@@ -10736,10 +10820,13 @@ The mode attribute’s getter must return this's mode.
 ◎
 The durability attribute’s getter must return this's durability hint.
 </dd>
-	<dd class="note">
-🚧これは、この版による新たな属性である。🚧
+	<dd class="advisement">🚧
+これは、この版による新たな属性である。
+Chrome 82, Edge 82
+から~supportされている。
+🚧
 ◎
-🚧 The durability attribute is new in this edition. 🚧
+🚧 The durability attribute is new in this edition. It is supported in Chrome 82 and Edge 82. 🚧
 </dd>
 
 	<dt>`db@m</dt>
@@ -10946,10 +11033,13 @@ Run commit a transaction with this.
 </li>
 		</ol>
 	</dd>
-	<dd class="note">
-🚧これは、この版による新たな~methodである。🚧
+	<dd class="advisement">🚧
+これは、この版による新たな~methodである。
+Chrome 76, Edge 79, Firefox 74
+から~supportされている。
+🚧
 ◎
-🚧 The commit() method is new in this edition. 🚧
+🚧 The commit() method is new in this edition. It is supported in Chrome 76, Edge 79, and Firefox 74. 🚧
 </dd>
 	<dd class="note">
 `~tx$上でこの~methodを~callすることは、通常は必要とされない。
@@ -12822,7 +12912,7 @@ Invocations of StructuredDeserialize() in the operation steps below can be asser
 </p>
 
 		<section id="object-store-storage-operation">
-<h3 title="Object Store Storage Operation">6.1. 保管庫における蓄積~演算</h3>
+<h3 title="Object store storage operation">6.1. 保管庫における蓄積~演算</h3>
 
 <div class="algorithm">
 <p>
@@ -13017,7 +13107,7 @@ Return key.
 
 		</section>
 		<section id="_retrieval-operations">
-<h3 title="(Object Store|Index) Retrieval Operations">6.2.／6.3. 保管庫／索引から検索取得する演算</h3>
+<h3 title="(Object store|index) retrieval operations">6.2.／6.3. 保管庫／索引から検索取得する演算</h3>
 
 【！ Object Store Retrieval Operations 】
 【！ Index Retrieval Operations 】
@@ -13141,7 +13231,7 @@ Return list converted to a sequence&lt;any&gt;.
 </div>
 
 <div lang="en" style="white-space: pre-line;">
-<h3>6.2 Object Store Retrieval Operations</h3>
+<h3>6.2 Object store retrieval perations</h3>
 <p>
 To retrieve a value from an object store with targetRealm, store and range, run these steps:
 
@@ -13178,7 +13268,7 @@ To retrieve multiple keys from an object store with store, range and optional co
 • Return list converted to a sequence&lt;any&gt;.
 </p>
 
-<h3>6.3. Index Retrieval Operations</h3>
+<h3>6.3. Index retrieval operations</h3>
 <p>
 To retrieve a referenced value from an index with targetRealm, index and range, run these steps:
 
@@ -13220,7 +13310,7 @@ To retrieve multiple values from an index with index, range and optional count, 
 
 		</section>
 		<section id="object-store-deletion-operation">
-<h3 title="Object Store Deletion Operation">6.4. 保管庫から~recordを削除する演算</h3>
+<h3 title="Object store deletion operation">6.4. 保管庫から~recordを削除する演算</h3>
 
 <div class="algorithm">
 <p>
@@ -13261,7 +13351,7 @@ Return undefined.
 
 		</section>
 		<section id="record-counting-operation">
-<h3 title="Record Counting Operation">6.5. 範囲に入る~recordを数える演算</h3>
+<h3 title="Record counting operation">6.5. 範囲に入る~recordを数える演算</h3>
 
 <div class="algorithm">
 <p>
@@ -13288,7 +13378,7 @@ Return count.
 
 		</section>
 		<section id="object-store-clear-operation">
-<h3 title="Object Store Clear Operation">6.6. 保管庫の中を消去する演算</h3>
+<h3 title="Object store clear operation">6.6. 保管庫の中を消去する演算</h3>
 
 <div class="algorithm">
 <p>
@@ -13325,7 +13415,7 @@ Return undefined.
 
 		</section>
 		<section id="_cursor-creation-operation">
-<h3 title="Cursor Iteration Operation">6.X. ~cursorを作成する演算</h3>
+<h3 title="Cursor iteration operation">6.X. ~cursorを作成する演算</h3>
 
 <p class="trans-note">【
 この訳では、原文にて繰り~~返し現れる記述をこの節に集約して定義する。
@@ -13381,7 +13471,7 @@ Return undefined.
 
 		</section>
 		<section id="cursor-iteration-operation">
-<h3 title="Cursor Iteration Operation">6.7. ~cursorを反復する演算</h3>
+<h3 title="Cursor iteration operation">6.7. ~cursorを反復する演算</h3>
 
 <div class="algorithm">
 <p>
@@ -14970,7 +15060,7 @@ For example, the value [10, 20, null, 30, 20] is converted to an array key with 
 		</section>
 	</section>
 	<section id="privacy">
-<h2 title="Privacy Considerations">8. ~privacy上の考慮点</h2>
+<h2 title="Privacy considerations">8. ~privacy上の考慮点</h2>
 
 ~INFORMATIVE
 
@@ -15161,7 +15251,7 @@ To this end, user agents should ensure that when deleting data, it is promptly d
 		</section>
 	</section>
 	<section id="security">
-<h2 title="Security Considerations">9. ~securityの考慮点</h2>
+<h2 title="Security considerations">9. ~securityの考慮点</h2>
 
 		<section id="dns-spoofing-attacks">
 <h3 title="DNS spoofing attacks">9.1. DNS 偽装~攻撃</h3>
@@ -15287,7 +15377,7 @@ User agents must identify and handle older data appropriately. One approach is t
 		</section>
 	</section>
 	<section id="revision-history">
-<h2 title="Revision History">10. 改訂~履歴</h2>
+<h2 title="Revision history">10. 改訂~履歴</h2>
 
 ~INFORMATIVE
 
@@ -15360,6 +15450,13 @@ Transactions are now temporarily made inactive during clone operations.
 （ `50$issue ）
 ◎
 Added durability option and durability attribute. (Issue #50)
+</li>
+	<li>
+<a href="#transaction-scheduling">§ ~txの~schedule法</a>をもっと精確に指定した。
+`視野が重合して$いる`~readonly~tx$が稼働している間は、`~readwrite~tx$は開始できないようにした。
+（ `253$issue ）
+◎
+Specified § 2.7.2 Transaction scheduling more precisely and disallow starting read/write transactions while read-only transactions with overlapping scope are running. (Issue #253)
 </li>
 </ul>
 
