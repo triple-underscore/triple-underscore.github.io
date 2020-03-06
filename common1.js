@@ -1716,7 +1716,7 @@ RESOURCETIMING=副     ~/resource-timing-ja.html
 BEACON=副             ~/beacon-ja.html
 RESOURCEHINTS=副      ~/resource-hints-ja.html
 REFERRERPOLICY=副     ~/webappsec-referrer-policy-ja.html
-REPORTING=副          ~/reporting1-ja.html
+REPORTING1=副         ~/reporting1-ja.html
 PERMISSIONS=副        ~/webappsec-permissions-ja.html
 GEOLOCATIONAPI=・     ~TR/geolocation-API/
 GEOLOCATIONAPI=副     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-API-20161108.html
@@ -1791,6 +1791,12 @@ RFC7232=副            ~/RFC7232-ja.html
 RFC7233=副            ~/RFC7233-ja.html
 RFC7234=副            ~/RFC7234-ja.html
 RFC7235=副            ~/RFC7235-ja.html
+RFC7230=副            ~/http-messaging-ja.html●日本語訳（改訂中）
+RFC7231=副            ~/http-semantics-ja.html●日本語訳（改訂中）
+RFC7232=副            ~/http-request-ja.html#preconditions●日本語訳（改訂中）
+	RFC7233=副            ~/http-semantics-ja.html#range.units●日本語訳（改訂中）
+RFC7234=副            ~/http-cache-ja.html●日本語訳（改訂中）
+RFC7235=副            ~/http-request-ja.html#request.auth●日本語訳（改訂中）
 RFC7301=副            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
 SELECTORS4=副         ~/selectors4-ja.html
 SELECTORS3=副         ~mitsue/css3-selectors/
@@ -1921,6 +1927,7 @@ SELECT:SELECTORS3
 CSS3SELECTORS:SELECTORS3
 XMLHTTPREQUEST:XHR
 HTML5:HTML
+REPORTING:REPORTING1
 SVG:SVG11
 WEBWORKERS:WORKERS
 XML:XML10
