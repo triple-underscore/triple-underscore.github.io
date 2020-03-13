@@ -711,7 +711,7 @@ c.realm:~HTTPrq#realm
 日時:~HTTPrs#origination.date
 
 		●HTTPcache
-経験的に~cache可能:~HTTPcache#heuristic.freshness
+経験的に~cache可能:~HTTPcache#heuristically-cacheable
 ~cache検証:~HTTPcache#validation.model
 ~cache検証~要請:~HTTPcache#validation.sent
 鮮度~情報:~HTTPcache#calculating.freshness.lifetime
