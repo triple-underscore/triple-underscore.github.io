@@ -1232,6 +1232,9 @@ COMMON_DATA.words_table = `
 
 ●略語
 UA:user agent:UA
+WG:
+	WG:Working Group／:the working group／:working group
+	~CSS~WG:CSSWG
 Web:
 web:
 JS:JavaScript

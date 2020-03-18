@@ -750,9 +750,6 @@ XHTML:
 XLink:
 2D:
 3D:
-WG:
-	WG:the working group
-	WG:Working Group
 attrdef:<p>Attribute definitions</p>:<p>attribute 定義：</p>:<p>属性定義：</p>
 viewAs:View this example as SVG (SVG-enabled browsers only):この例を SVG で見る（要ブラウザ対応）
 
