@@ -1048,6 +1048,7 @@ MIMESNIFF:mimesniff-ja.html
 FULLSCREEN:fullscreen-ja.html
 NOTIFICATIONS:notifications-ja.html
 WEBIDL:WebIDL-ja.html
+WEBIDLjs:WebIDL-JS-ja.html
 XHR:XHR-ja.html
 UIEVENTS:uievents-ja.html
 SELECTIONAPI:selection-api-ja.html
