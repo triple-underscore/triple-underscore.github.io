@@ -1287,11 +1287,9 @@ tunnel::::トンネル
 close:
 closure:
 open:
-連鎖:chain::~::チェイン
 経路制御-:route::~:ルート
 経路制御:routing::~:ルーティング
 direct::::ダイレクト
-redirect::::リダイレクト
 redirection::::リダイレクト
 	ディレクティブ
 指令-:direct::~
@@ -1316,7 +1314,6 @@ redirection::::リダイレクト
 到着-:arrive:~
 参加-:engage:~
 参加者:participant:~
-referrer::::リファラ
 参照元:referring:refer 元:~
 受信:receiving::~
 受信者:recipient::~
@@ -1458,7 +1455,6 @@ referrer::::リファラ
 消去-:erase:~
 消費量:consumption:~
 準備-:prepare:~
-無限:infinite:~
 状態変更:state-changing::~::ステート変更
 stateless::::ステートレス
 	無状態の:statelessな:::ステートレスな
@@ -1475,7 +1471,6 @@ stateless::::ステートレス
 為せる:makeできる:~
 為せな:makeできな:~
 	登録-済み:registered
-登記簿:registry:::レジストリ
 監視-:monitor::~::モニタ
 監視器:monitor::~::モニタ
 盲目的:blind::~

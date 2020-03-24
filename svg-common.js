@@ -830,11 +830,7 @@ span:
 斜傾:skew::~
 
 平面:plane::~
-原点:origin::~
-座標:coordinate::~
-座標系:coordinate system::~
 図形:shape::~
-距離:distance::~
 中心:center::~
 半径:radius::~
 	半径:radii
@@ -843,15 +839,12 @@ span:
 縦横比:aspect ratio::~
 側:side:~
 位置決め:positioning::~
-方位-:orient::~
-方位:orientation::~
 直線:straight line::~
 曲線:curve::~
 真円:circle::~
 真円な:circularな::~
 矩形:rectangle::~
 矩形な:rectangularな::~
-無限:infinite:~
 接触判定:hit-testing::~
 
 	●塗り／色／効果
@@ -919,8 +912,6 @@ green:
 解像度:resolution::~
 装飾d:decorated::装飾
 
-	● CSS
-内在的:intrinsic::~
 
 	●呈示／UI
 	~animate化:animated
@@ -943,9 +934,7 @@ OpenType:
 JPEG:
 PNG:
 	~fetch法:fetching
-download::::ダウンロード
 linking::::リンク法
-hyperlink::::ハイパーリンク
 	navigate法:navigating
 遠隔:remote::~::リモート
 multimedia::::マルチメディア
@@ -979,7 +968,6 @@ multimedia::::マルチメディア
 正した:correctした:~
 禁制-:prohibit:~
 義務:mandatory:~
-要旨-:outline:~
 未解決:unresolved::~
 未解決の:unresolved::~
 記述的:descriptive:~

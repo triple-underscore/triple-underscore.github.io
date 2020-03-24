@@ -1313,12 +1313,14 @@ sizing::::サイズ法
 負な:negative:~
 負で:negativeで:~
 負に:negativeに:~
-	負でない:non-negative
 最小:minimum:~
 最大:maximum:~
 	最小~化:minimize／-tion／ing
 	最大~化:maximize／-tion／ing
 最小限に:minimize:~
+無限:infinite:~
+有限:finite:~
+無限大:infinity:~
 別名:alias::~
 確立-:establish:~
 省略-:omit:~
@@ -1326,6 +1328,11 @@ sizing::::サイズ法
 形成-:form:~
 不透明:opaque::~
 透明:transparent::~
+text::::テキスト
+textな:textual::textな:テキストな
+scalar::::スカラー
+
+●幾何
 空間:space:~
 次元:dimension:~
 方向:direction::~
@@ -1339,8 +1346,18 @@ sizing::::サイズ法
 軸:axis::~
 	軸:axes
 境界:boundary:~
-text::::テキスト
-textな:textual::textな:テキストな
+寸法:dimension:~
+横幅:width::~
+縦幅:height::~
+位置-:position:~
+位置:position:~
+座標:coordinate::~
+座標系:coordinate system::~
+原点:origin::~
+距離:distance::~
+角度:angle::~
+方位:orientation::~
+方位-:orient::~
 
 ●仕様レベル
 
@@ -1452,6 +1469,7 @@ textな:textual::textな:テキストな
 明瞭:clear:~
 不明瞭:unclear:~
 可読性:readability:~
+要旨-:outline:~
 
 表現-:represent:~
 表現:representation:~
@@ -1647,6 +1665,7 @@ bug::::バグ
 debug::::デバッグ
 test::::テスト
 console::::コンソール
+registry::::レジストリ
 相互運用能:interoperability:~
 相互運用可能:interoperable:~
 互換:compatible:~
@@ -1697,6 +1716,7 @@ console::::コンソール
 	未来の:future:~
 旧来:legacy:~
 旧来の:legacyな:~
+現代の:modernな:~
 伝統的:traditional:~
 相違-:differ:~
 相違:difference:~
@@ -1792,7 +1812,6 @@ console::::コンソール
 固守-:adhere:~
 順守-:obey:~
 規範的:normative:~
-	規範的でない:non-normative
 厳密:strict:~
 確保-:ensure:~
 保証:guarantee:~
@@ -2041,7 +2060,7 @@ programming::::プログラミング
 完全:complete:~
 不完全:incomplete:~
 容易:easy:~
-
+	容易に:easily
 孕む:involveする:~
 孕まれ:involveされ:~
 孕んで:involveして:~
@@ -2499,7 +2518,7 @@ node::::ノード
 下層:underlying:~
 下層の:underlying:~
 層:layer::~::レイヤ
-
+内在的:intrinsic::~
 包含-:contain::~
 内容:content::~
 容器:container:::コンテナ
@@ -2558,8 +2577,12 @@ class::::クラス
 
 伝播-:propagate::~
 伝播:propagation::~
+連鎖:chain::~::チェイン
+連鎖-:chain::~::チェイン
 反映-:reflect:~
 反映:reflection:~
+
+隔離-:isolate::~
 
 等価:equivalent:~
 比較:comparison:~
@@ -2857,12 +2880,17 @@ host::::ホスト
 port::::ポート
 site::::サイト
 link::::リンク
+hyperlink::::ハイパーリンク
 address::::アドレス
 domain::::ドメイン
 frame::::フレーム
 閲覧文脈:browsing context::~
 navi:navigation:::ナビ
 navigate::::ナビゲート
+download::::ダウンロード
+upload::::アップロード
+redirect::::リダイレクト
+referrer::::リファラ
 
 接続-:connect::~
 接続:connection::~
@@ -2881,6 +2909,7 @@ navigate::::ナビゲート
 伝送:transmission::~
 
 network::::ネットワーク
+networking::::ネットワーク処理
 header::::ヘッダ
 client::::クライアント
 server::::サーバ
@@ -2905,9 +2934,13 @@ fetching::::fetch 処理
 ●保安
 security::::セキュリティ
 secure::::セキュア
+	~secure化:secured
 privacy::::プライバシー
 施策:policy::~::ポリシー
 session::::セッション
+sandbox::::サンドボックス
+	~sandbox化:sandboxed
+	~sandbox法:sandboxing
 生成元:origin::~::オリジン
 同一-:same-::~
 非同一-:cross-::~::クロス
@@ -2964,17 +2997,6 @@ animation::::アニメーション
 疑似類:pseudo-class::疑似 class:疑似クラス
 疑似要素:pseudo-element::~
 
-寸法:dimension:~
-横幅:width::~
-縦幅:height::~
-区画:area::~
-整形-:format::~
-整形:formatting::~
-位置-:position:~
-位置:position:~
-配置-:place:~
-配置:placement:~
-
 font::::フォント
 graphic::::グラフィック
 graphicな:graphical:::グラフィックな
@@ -2988,6 +3010,11 @@ border::::ボーダー
 padding::::パディング
 margin::::マージン
 offset::::オフセット
+配置-:place:~
+配置:placement:~
+区画:area::~
+整形-:format::~
+整形:formatting::~
 
 包含塊:containing block::包含 block:包含ブロック
 行内level:inline-level::行内-level:行内レベル:インラインレベル
@@ -3005,8 +3032,9 @@ offset::::オフセット
 ●●その他の定訳
 
 	●定訳（語彙レベル
-FOO化-:FOOize
-FOO化:FOOzation
+FOO化-:FOOize／FOOfy
+FOO化:FOOoization／FOOfication
+FOO化:FOOizing
 FOO-法:FOOing
 非FOO:non-FOO
 FOOでない:non-FOO

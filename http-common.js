@@ -1093,7 +1093,6 @@ agent::::エージェント
 警告:warning::~
 警告-:warn::~
 組織:organization:~
-登記簿:registry:::レジストリ
 再試行:retry::~
 再試行-:retry::~
 	再試行-法:retrying
@@ -1235,12 +1234,10 @@ tunnel::::トンネル
 close:
 closure:
 open:
-連鎖:chain::~::チェイン
 route::::ルート
 	~route法:routing
 経路制御:routing::~:ルーティング
 direct::::ダイレクト
-redirect::::リダイレクト
 redirection::::リダイレクト
 	ディレクティブ
 指令-:direct::~
@@ -1264,7 +1261,6 @@ redirection::::リダイレクト
 到着-:arrive:~
 参加-:engage:~
 参加者:participant:~
-referrer::::リファラ
 参照元:referring:refer 元:~
 受信:receiving::~
 受信者:recipient::~
@@ -1406,7 +1402,6 @@ reactive::::リアクティブ
 消去-:erase:~
 消費量:consumption:~
 準備-:prepare:~
-無限:infinite:~
 状態変更:state-changing::~::ステート変更
 stateless::::ステートレス
 	無状態の:statelessな:::ステートレスな
