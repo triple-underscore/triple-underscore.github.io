@@ -313,8 +313,8 @@ return text;
 ●●options
 
 spec_title:Encoding
-spec_date:2020-03-11
-trans_update:2020-03-13
+spec_date:2020-03-24
+trans_update:2020-03-25
 source_checked:180823
 spec_status:LS
 original_url:https://encoding.spec.whatwg.org/
@@ -447,6 +447,7 @@ mb.stream:#dom-textdecodeoptions-stream
 ~UTF-8復号する:#utf-8-decode
 ~BOMはそのままに~UTF-8復号する:#utf-8-decode-without-bom
 ~BOMも失敗-もそのままに~UTF-8復号する:#utf-8-decode-without-bom-or-fail
+~BOMを~sniffする:#bom-sniff
 ~UTF-8符号化する:#utf-8-encode
 符号化法を利用して符号化する:#encode
 符号化器:#encoder
@@ -653,6 +654,7 @@ byte.長さ:~INFRA#byte-sequence-length
 ~ASCII小文字~化:~INFRA#ascii-lowercase
 ~ASCII小文字~化する:~INFRA#ascii-lowercase
 前後の~ASCII空白~列を剥ぐ:~INFRA#strip-leading-and-trailing-ascii-whitespace
+から開始して:~INFRA#byte-sequence-starts-with
 
 却下される~promise:~WEBIDLjs#a-promise-rejected-with
 解決される~promise:~WEBIDLjs#a-promise-resolved-with
@@ -666,6 +668,8 @@ byte.長さ:~INFRA#byte-sequence-length
 可読~stream:~STREAMS#readable-stream
 可書~stream:~STREAMS#writable-stream
 形式変換~stream:~STREAMS#transform-stream
+
+符号化法を~sniffする~algo:~HTMLparsing#encoding-sniffing-algorithm
 
 _acks1:#_acks1
 
@@ -737,6 +741,7 @@ reverse-engineer:reverse engineer:::リバースエンジニア
 	-:known
 読者:reader:~
 演習:exercise:~
+対処法:workaround:~
 
 	助力:help
 	~~標準の:The
@@ -781,6 +786,7 @@ reverse-engineer:reverse engineer:::リバースエンジニア
 	記す
 	一方で:whereas
 	残しておく:left as
+	事:fact
 
 
 	●未分類
@@ -846,6 +852,7 @@ cu:code unit::符号単位::コードユニット
 有符号:coded::~::有コード
 索引:index::~::インデックス
 BOM:
+	BOM:byte order mark
 BOMseen:BOM seen:BOM 確認済み
 BOMignore:ignore BOM:BOM 無視
 簡体字:simplified::~
@@ -888,6 +895,7 @@ flush:
 lead:::頭部
 trail:::尾部
 連結-:concatenate:~
+sniff:
 
 	前後の:leading and trailing
 	~buffer源:bufferSource
@@ -916,7 +924,10 @@ no_flush:do not flush:状態維持
 発され:emitされ:~
 	invocation
 	渡す:pass
-
+	挙げられた順に:starting with the first one and going down
+	次のいずれかが生じるまで:whichever comes first
+	~call元:caller
+	%~BOM符号化法:BOMEncoding
 
 	●データ型／操作／IDL
 table::::テーブル
@@ -1127,7 +1138,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/encoding/commits
-	<a href="https://encoding.spec.whatwg.org/commit-snapshots/5e93af5b5fd759dce3ef1c5ea7c1eee633c00f45/">Snapshot as of this commit</a>
+	<a href="https://encoding.spec.whatwg.org/commit-snapshots/244d88406ae11aeb30655044354d453e412f78e4/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/encodings">@encodings</a>
 
 Tests:
@@ -2663,7 +2674,7 @@ All indexes are also available as a non-normative indexes.json resource. (Index 
 <p>注記：
 次に挙げる各種~algo（以下に定義される）は、他の仕様からの~~利用が意図されている：
 ◎
-The algorithms defined below (decode, UTF-8 decode, UTF-8 decode without BOM, UTF-8 decode without BOM or fail, encode, and UTF-8 encode) are intended for usage by other standards.
+The algorithms defined below (decode, UTF-8 decode, UTF-8 decode without BOM, UTF-8 decode without BOM or fail, encode, UTF-8 encode, and BOM sniff) are intended for usage by other standards.
 </p>
 
 <dl>
@@ -2691,10 +2702,11 @@ For encoding, UTF-8 encode is to be used.
 
 	<dt>`符号化法を利用して符号化する$</dt>
 	<dt>`~Unicodeに復号する$</dt>
+	<dt>`~BOMを~sniffする$</dt>
 	<dd>
 標準は、互換性を得るために必要な場合を除き，これらは利用しないことが強く奨励される。
 ◎
-Standards are strongly discouraged from using decode and encode, except as needed for compatibility.
+Standards are strongly discouraged from using decode, encode, and BOM sniff, except as needed for compatibility.
 </dd>
 </dl>
 
@@ -2727,64 +2739,39 @@ To decode a byte stream stream using fallback encoding encoding, run these steps
 </p>
 <ol>
 	<li>
-%buffer ~LET ~byte列 []
+%~BOM符号化法 ~LET `~BOMを~sniffする$( %~stream )
 ◎
-Let buffer be an empty byte sequence.
-</li>
-	<li>
-%~BOMseen ~LET ~F
-◎
-Let BOMSeen be false.
+Let BOMEncoding be the result of BOM sniffing stream.
 </li>
 	<li>
 <p>
-次を 3 回まで繰返す：
+~IF［
+%~BOM符号化法 ~NEQ ~NULL
+］：
+◎
+If BOMEncoding is non-null:
 </p>
 		<ol>
 			<li>
-%~byte ~LET `~tokenを読取る$( %~stream )
+%符号化法 ~SET %~BOM符号化法
+◎
+Set encoding to BOMEncoding.
 </li>
 			<li>
-~IF［
-%~byte ~EQ `~EoS$
+%N ~LET ［
+%~BOM符号化法 ~EQ `UTF-8$n ならば 3 ／
+~ELSE_ 2
 ］
-⇒
-~BREAK
-</li>
+◎
+↓</li>
 			<li>
-%buffer に %~byte を付加する
+次を %N 回~繰返す
+⇒
+`~tokenを読取る$( %~stream )
+◎
+Read three bytes from stream, if BOMEncoding is UTF-8; otherwise read two bytes. (Do nothing with those bytes.)
 </li>
 		</ol>
-◎
-Read bytes from stream into buffer until either buffer contains three bytes or read returns end-of-stream.
-</li>
-	<li>
-<p>
-~IF［
-次の表の中で， 1 列目に示された~byte列が %buffer の先頭の~byte列に合致する行がある
-］
-⇒＃
-%符号化法 ~SET その行の 2 列目に与えられる `符号化法$；
-%~BOMseen ~LET ~T
-◎
-For each of the rows in the table below, starting with the first one and going down, if the first bytes of buffer match all the bytes given in the first column, then set encoding to the encoding given in the cell in the second column of that row and BOMSeen to true.
-</p>
-
-<table>
-<thead><tr><th>~BOM◎ Byte order mark
-<th>符号化法◎ Encoding
-</thead>
-
-<tbody><tr><td>`EF^X `BB^X `BF^X
-<td>`UTF-8$n
-
-<tr><td>`FE^X `FF^X
-<td>`UTF-16BE$n
-
-<tr><td>`FF^X `FE^X
-<td>`UTF-16LE$n
-
-</tbody></table>
 
 <p class="note">注記：
 配備-済みの内容との互換性を得るため、~BOMは他より~~優先される。
@@ -2795,26 +2782,6 @@ HTTP が利用される文脈においては、これは，
 For compatibility with deployed content, the byte order mark is more authoritative than anything else. In a context where HTTP is used this is in violation of the semantics of the `Content-Type` header.
 </p>
 	</li>
-	<li>
-~IF［
-%~BOMseen ~EQ ~F
-］
-⇒
-%~stream に %buffer を`前付加する$
-◎
-If BOMSeen is false, prepend buffer to stream.
-</li>
-	<li>
-~ELIF ［
-%符号化法 ~NEQ `UTF-8$n
-］~AND［
-%buffer の長さ ~EQ 3
-］
-⇒
-%~stream に %buffer の最後の~byteを`前付加する$
-◎
-Otherwise, if BOMSeen is true, encoding is not UTF-8, and buffer contains three bytes, prepend the last byte of buffer to stream.
-</li>
 	<li>
 %出力 ~LET 新たな~scalar値`~stream$
 ◎
@@ -3017,6 +2984,85 @@ This is mostly a legacy hook for URLs and HTML forms. Layering UTF-8 encode on t
 ~RET `符号化法を利用して符号化する$( `UTF-8$n, %~stream )
 ◎
 To UTF-8 encode a scalar value stream stream, return the result of encoding stream using encoding UTF-8.
+</p>
+</div>
+
+<hr>
+
+<div class="algorithm">
+<p>
+`~BOMを~sniffする@
+ときは、所与の
+( ~byte~stream %~stream )
+に対し，次を走らす：
+◎
+To BOM sniff a byte stream stream, run these steps:
+</p>
+
+<ol>
+	<li>
+次のいずれかが生じるまで待機する
+⇒＃
+%~stream 内に 3 個の~byteが可用になる／
+%~stream の`~EoS$に達する
+◎
+Wait until stream has three bytes available or the end-of-stream has been reached, whichever comes first.
+</li>
+	<li>
+<p>
+下の表~内の
+~EACH( %行 )
+に対し，挙げられた順に
+⇒
+~IF［
+%~stream は %行 の 1 列目に与える~byte列`から開始して$いる（この~byte列は消費しないこと）
+］
+⇒
+~RET %行 の 2 列目に与える`符号化法$
+◎
+For each of the rows in the table below, starting with the first one and going down, if stream starts with the bytes given in the first column, return the encoding given in the cell in the second column of that row. (Do not consume those bytes.)
+</p>
+
+<table><thead><tr><th>
+~BOM
+◎ Byte order mark
+<th>
+符号化法
+◎
+Encoding
+</thead>
+
+<tbody><tr><td>`EF^X `BB^X `BF^X
+<td>`UTF-8$n
+
+<tr><td>`FE^X `FF^X
+<td>`UTF-16BE$n
+
+<tr><td>`FF^X `FE^X
+<td>`UTF-16LE$n
+
+</tbody></table>
+
+	</li>
+	<li>
+~RET ~NULL
+◎
+Return null.
+</li>
+</ol>
+
+<p class="note">注記：
+`~Unicodeに復号する$~algoには、［
+~BOMが見出されたので、供された符号化法は利用していないこと
+］を~call元に通信する仕方が無い。
+この~hookは、その事への対処法であり，`~Unicodeに復号する$前に呼出されることになる†。
+それは、［
+~BOMが見出されたなら それに対応する符号化法 ／
+~ELSE_ ~NULL
+］を返す。
+【†特に，~HTMLの構文解析~algoは、入力~streamを~Unicodeに復号する前に，`符号化法を~sniffする~algo$にて これを呼出す。】
+◎
+This hook is a workaround for the fact that decode has no way to communicate back to the caller that it has found a byte order mark and is therefore not using the provided encoding. The hook is to be invoked before decode, and it will return an encoding corresponding to the byte order mark found, or null otherwise.
 </p>
 </div>
 
