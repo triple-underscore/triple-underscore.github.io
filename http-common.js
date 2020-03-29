@@ -467,6 +467,7 @@ p.pseudonym:~HTTPsem#p.pseudonym
 p.qdtext:~HTTPsem#p.qdtext
 p.quoted-pair:~HTTPsem#p.quoted-pair
 p.quoted-string:~HTTPsem#p.quoted-string
+p.qvalue:~HTTPsem#p.qvalue
 p.range-resp:~HTTPsem#p.range-resp
 p.range-unit:~HTTPsem#p.range-unit
 p.received-by:~HTTPsem#p.received-by
@@ -479,6 +480,7 @@ p.token:~HTTPsem#p.token
 p.type:~HTTPsem#p.type
 p.unsatisfied-range:~HTTPsem#p.unsatisfied-range
 p.userinfo:~HTTPsem#p.userinfo
+p.weight:~HTTPsem#p.weight
 
 p.Range:~HTTPrq#p.Range
 p.accept-ext:~HTTPrq#p.accept-ext
@@ -493,9 +495,7 @@ p.mailbox:~HTTPrq#p.mailbox
 p.media-range:~HTTPrq#p.media-range
 p.product-version:~HTTPrq#p.product-version
 p.product:~HTTPrq#p.product
-p.qvalue:~HTTPrq#p.qvalue
 p.token68:~HTTPrq#p.token68
-p.weight:~HTTPrq#p.weight
 
 p.HTTP-date:~HTTPrs#p.HTTP-date
 p.GMT:~HTTPrs#p.GMT
@@ -634,6 +634,9 @@ c.realm:~HTTPrq#realm
 内容~折衝:~HTTPsem#content.negotiation
 ~proactive折衝:~HTTPsem#proactive.negotiation
 ~reactive折衝:~HTTPsem#reactive.negotiation
+要請~payload折衝:~HTTPsem#request.payload.negotiation
+品質値:~HTTPsem#quality.values
+品質~値:~HTTPsem#quality.values
 
 形式変換-:~HTTPsem#message.transformations
 形式変換:~HTTPsem#message.transformations
@@ -655,6 +658,7 @@ c.realm:~HTTPrq#realm
 
 		●HTTPrq
 要請~header:~HTTPrq#request.header.fields
+内容~折衝の~subject:~HTTPrq#request.conneg
 ~proactive折衝~header:~HTTPrq#request.conneg
 ~100cont 期待:~HTTPrq#100-continue
 ~method:~HTTPrq#methods
@@ -662,8 +666,6 @@ c.realm:~HTTPrq#realm
 冪等:~HTTPrq#idempotent.methods
 冪等~method:~HTTPrq#idempotent.methods
 制御~header:~HTTPrq#request.controls
-品質値:~HTTPrq#quality.values
-品質~値:~HTTPrq#quality.values
 安全:~HTTPrq#safe.methods
 要請~method:~HTTPrq#methods
 要請の意味論:~HTTPrq#methods
@@ -1259,7 +1261,8 @@ redirection::::リダイレクト
 伝達-:convey::~
 分散型の:distributed::~
 到着-:arrive:~
-参加-:engage:~
+携わる:engageする:~
+携わっ:engageし:~
 参加者:participant:~
 参照元:referring:refer 元:~
 受信:receiving::~
