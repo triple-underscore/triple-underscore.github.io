@@ -100,9 +100,9 @@ return text;
 
 ●●options
 spec_title:Paint Timing 1
-spec_date:2020-03-27
-trans_update:2020-03-28
-source_checked:180109
+spec_date:2020-04-01
+trans_update:2020-04-02
+source_checked:180401
 page_state_key:TIMING
 original_url:https://w3c.github.io/paint-timing/
 	abbr_url:
@@ -152,6 +152,7 @@ m.entryType:~TIMELINE#dom-performanceentry-entrytype
 m.name:~TIMELINE#dom-performanceentry-name
 m.startTime:~TIMELINE#dom-performanceentry-starttime
 m.supportedEntryTypes:~TIMELINE#dom-performanceobserver-supportedentrytypes
+	~TIMELINE#supportedentrytypes-attribute
 
 m.getBoundingClientRect:~CSSOMVIEW#dom-element-getboundingclientrect
 
@@ -177,8 +178,11 @@ e.input:~HEinput#the-input-element
 a.value:~HEinput#attr-input-value
 
 塗り:#paint
+塗り計時に適格:#paint-timing-eligible
 最初の塗り:#first-paint
 最初の有内容な塗り:#first-contentful-paint
+以前に報告した塗り:#previously-reported-paints
+最初の有内容な塗りを報告するべき:#should-report-first-contentful-paint
 
 有内容:#contentful
 有内容な画像:#contentful-image
@@ -192,12 +196,26 @@ a.value:~HEinput#attr-input-value
 空でない~text:#non-empty
 
 	●用語（外部
-処理能~entryを~queueする:~TIMELINE#dfn-queue-a-performanceentry
+新たな:~WEBIDLjs#new
 
-描画を更新する:~WAPI#update-the-rendering
+集合:~INFRA#sets
+付加する:~INFRA#list-append
+
+処理能~entryを~queueする:~TIMELINE#dfn-queue-a-performanceentry
+	現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
+
+~top-level閲覧文脈:~BROWSERS#top-level-browsing-context
+入子の閲覧文脈:~BROWSERS#nested-browsing-context
+閲覧文脈:~BROWSERS#browsing-context
+
+描画を更新する段:~WAPI#update-the-rendering
 	:~WAPI#event-loop-processing-model
 ~event~loop処理~model:~WAPI#event-loop-processing-model
 関連な~Realm:~WAPI#concept-relevant-realm
+rM.大域~obj:~WAPI#concept-realm-global
+関連な設定群~obj:~WAPI#relevant-settings-object
+enV.担当の閲覧文脈:~WAPI#responsible-browsing-context
+
 
 文書:~DOM4#concept-document
 
@@ -270,6 +288,7 @@ typographic::::タイポグラフィック
 	最初の有内容な塗り:first contentful paint／:FCP
 	最初の塗り:first paint／:FP
 	塗りの種別:minimal frame attribution
+	塗り計時:paint-timing／paint timing
 
 観測器:observer::~::オブザーバ
 	処理能~entryを~queueする:Add the PerformanceEntry
@@ -286,17 +305,21 @@ pipeline:
 問い:question:~
 答える:answerする:~
 主要な:key:~
+適格:eligible:~
+
 	関知する:aware of
 	対照的に:By contrast
 	とても:very
 	導いた:lead した
 	~~意見:input
 	満たす:apply
+	注記-:note
 
 	●未分類
 解析:analytics:~
 監視:monitoring:~
 白紙:blank:~
+露呈-:reveal:露わに
 
 	含まれない:exclude
 	文字列:DOMString
@@ -309,8 +332,17 @@ pipeline:
 	-:instance
 	-:possible
 	-:target
+	転換-:turn into
+	%報告した塗り:reportedPaints
+	%閲覧文脈:ctx
+	初期~時:initiallize
+	満たす:apply
+	-:choose
+	-:know
+	含める:includeする
 
 	●指示語
+main:
 	一連の:a series of
 	何であれ:anything
 	-:何かを
@@ -321,7 +353,8 @@ pipeline:
 	最新の:latest
 	〜以外の:excluding
 	〜個以上は:at least
-
+	〜の他に:in addition to
+	少なくとも，:at the very least
 
 ●●ref_normative
 
@@ -483,7 +516,7 @@ Paint:
 </dt>
 	<dd>
 ~UAが描画-~treeを~screen上の画素に変換したときに遂行した “塗り” （あるいは “描画-” ）。
-正式には、`~event~loop処理~model$において`描画を更新する$を遂行したとき，~UAは文書を “描画した” と見なされる。
+正式には、`~event~loop処理~model$において`描画を更新する段$を遂行したとき，~UAは文書を “描画した” と見なされる。
 ◎
 the user agent has performed a "paint" (or "render") when it has converted the render tree to pixels on the screen. Formally, we consider the user agent to have "rendered" a document when it has performed the update the rendering steps of the event loop.
 </dd>
@@ -575,6 +608,7 @@ when one or more of the following apply:
 </p>
 		<ul>
 			<li>
+<p>
 次を満たす`~text~node$が子に在る
 ⇒
 ［
@@ -654,7 +688,7 @@ target is an originating element for a paintable pseudo-element that represents 
 語義的には，［
 子孫に`有内容$な要素が在る要素も`有内容$である
 ］と見なしたくなる所だが、上の定義はそうなっていない。
-とはいえ，そのように定義を改めても結果は同じになる（現時点では, および この仕様の中に限るなら）。
+とはいえ，そのように定義を改めても結果は同じになる（現時点では, および この仕様に限るなら）。
 】</dd>
 
 	<dt>
@@ -789,20 +823,47 @@ entry contains a DOMHighResTimeStamp reporting the time when the user agent firs
 </dd>
 
 	<dt>
-`最初の有内容な塗り@
-（ `first contentful paint^en ／ <abbr>FCP</abbr> ）
+`塗り計時に適格@
+（ `paint-timing eligible^en ）
 ◎
-first contentful paint
-</dt>
+↓</dt>
 	<dd>
-これに対応する~entryは、
-`DOMHighResTimeStamp$I 値を包含する
-— それは、~UAが［
-`有内容$かつ`塗り可能$な`要素$を 1 個以上は含む`文書$
-］を最初に描画した時点を報告する。
+<p>
+`閲覧文脈$は、次のいずれかを満たすならば，`塗り計時に適格$であるとされる：
 ◎
-entry contains a DOMHighResTimeStamp reporting the time when the user agent first rendered a document which includes at least one element that is both contentful and paintable.
-</dd>
+A browsing context ctx is paint-timing eligible when one of the following apply:
+</p>
+		<ul>
+			<li>
+`~top-level閲覧文脈$である
+◎
+ctx is a top-level browsing context.
+</li>
+			<li>
+<p>
+［
+`入子の閲覧文脈$である
+］~AND［
+~UAは、［
+この閲覧文脈が塗り計時を報告する
+］よう環境設定されている
+］
+◎
+ctx is a nested browsing context, and the user agent has configured ctx to report paint timing.
+</p>
+
+<p class="note">注記：
+これは、［
+~main~frameの他に，塗り計時を可能化する~frameは、一部に限る
+］ことを，~UAに許容する。
+例えば，~UAは、非同一-生成元に属する~iframe用には，塗り計時を不能化するよう裁定してもヨイ
+— 一部の局面においては、それらの塗り計時は~main~frameについての情報を露呈するかもしれないので。
+◎
+NOTE: this allows user agents to enable paint-timing only for some of the frames, in addition to the main frame, if they so choose. For example, a user agent may decide to disable paint-timing for cross-origin iframes, as in some scenarios their paint-timing might reveal information about the main frame.
+</p>
+			</li>
+		</ul>
+	</dd>
 </dl>
 
 	</section>
@@ -856,9 +917,14 @@ The duration attribute’s getter must return 0.
 </dl>
 
 <p class="note">注記：
-`PerformancePaintTiming$I を実装する~UAは、その~supportを開発者が検出できるよう，`~window$文脈~用の `supportedEntryTypes$m 内に `paint^l を含める必要がある。
+`PerformancePaintTiming$I を実装している~UAは、`大域~obj$rMのうち［
+それに`関連な設定群~obj$の`担当の閲覧文脈$enVは`塗り計時に適格$であるもの
+］には，その `supportedEntryTypes$m 内に `paint^l を含める必要がある。
+これは、［
+特定0の`閲覧文脈$に対し塗り計時~用の~supportを検出すること
+］を，開発者に許容する。
 ◎
-NOTE: A user agent implementing PerformancePaintTiming would need to include "paint" in supportedEntryTypes for Window contexts. This allows developers to detect support for paint timing.
+NOTE: A user agent implementing PerformancePaintTiming would need to include "paint" in supportedEntryTypes of a global object whose relevant settings object's responsible browsing context is paint-timing eligible. This allows developers to detect support for paint timing for a particular browsing context.
 </p>
 
 	</section>
@@ -868,42 +934,77 @@ NOTE: A user agent implementing PerformancePaintTiming would need to include "pa
 		<section id="sec-reporting-paint-timing">
 <h3 title="Reporting paint timing">4.1. 塗り計時の報告-法</h3>
 
-<p class="trans-note">【
-この節に与える各 手続きがとる引数 %文書 は、この訳による補完。
-】</p>
+<p>
+どの`文書$にも，
+`以前に報告した塗り@
+が結付けられる
+— それは`集合$であり，初期~時には空とする。
+◎
+Every Document has an associated set of previously reported paints, initiallized to an empty set.
+</p>
 
-<!-- 
+			<section id="first-contentful-paint">
+<h4 title="First Contentful Paint">4.1.1. 最初の有内容な塗り</h4>
+
+<p>
+次を満たす`文書$ %文書 は
+`最初の有内容な塗りを報告するべき@
+であるとされる
+⇒
+［
+`first-contentful-paint^l ~NIN %文書 の`以前に報告した塗り$
+］~AND［
+%文書 は`塗り可能$かつ`有内容$な`要素$を 1 個は包含する
+］
+◎
+To know whether Document document should report first contentful paint, perform the following steps:
+• If document’s previously reported paints contains "first-contentful-paint", then return false.
+• If document contains at least one element that is both paintable and contentful, then return true.
+• Otherwise, return false.
+</p>
+
+			</section>
 			<section id="mark-paint-timing">
-<h4 title="Mark paint timing">4.1.1. 塗り計時を刻む</h4>
-			</section>
-			<section id="report-paint-timing">
-<h4 title="Report paint timing">4.1.2. 塗り計時を報告する</h4>
-			</section>
--->
+<h4 title="Mark paint timing">4.1.2. 塗り計時を刻む</h4>
 
 <div class="algorithm">
 
 <p>
-`塗り計時を刻む@
-ときは、所与の
+`塗り計時を刻む$ときは、所与の
 ( `文書$ %文書, 時刻印 %塗り時刻印 )
 に対し，次の手続きを遂行する：
 ◎
-4.1.1. Mark paint timing
-• When asked to mark paint timing given a Document document as input, perform the following steps:
-•• Let paintTimestamp be the current high resolution time.（ paintTimestamp は描画を更新する段から渡されるので不要）
+When asked to mark paint timing given a Document document as input, perform the following steps:
 </p>
 
 <ol>
 	<li>
+~IF［
+%文書 の`担当の閲覧文脈$enVは`塗り計時に適格$でない
+］
+⇒
+~RET
+◎
+If the document's responsible browsing context is not paint-timing eligible, return.
+◎
+Let paintTimestamp be the current high resolution time.（ paintTimestamp は描画を更新する段から渡されるので不要）
+</li>
+	<li>
+%報告した塗り ~LET %文書 の`以前に報告した塗り$
+◎
+Let reportedPaints be the previously reported paints associated with document.
+</li>
+	<li>
 <p>
 ~IF［
-この手続きを呼出した`描画を更新する$段は、 %文書 の`最初の塗り$である
+`first-paint^l ~NIN %報告した塗り
+］~AND［
+~UAは`最初の塗り$を刻むよう環境設定されている
 ］
 ⇒
 `塗り計時を報告する$( %文書, `first-paint^l, %塗り時刻印 )
 ◎
-If this instance of update the rendering is the first paint of document, then invoke the § 4.1.2 Report paint timing algorithm with document, "first-paint", and paintTimestamp.
+If reportedPaints does not contain "first-paint", and the user agent is configured to mark first paint, then invoke the § 4.1.3 Report paint timing algorithm with document, "first-paint", and paintTimestamp.
 </p>
 
 <p class="note">注記：
@@ -911,16 +1012,23 @@ If this instance of update the rendering is the first paint of document, then in
 ◎
 NOTE: First paint excludes the default background paint, but includes non-default background paint.
 </p>
+
+<p class="issue">
+これは、規範的な注記に転換されるベキである。
+◎
+This should be turned into a normative note.
+</p>
 	</li>
 	<li>
 <p>
 ~IF［
-この手続きを呼出した`描画を更新する$段は、 %文書 の`最初の有内容な塗り$である
+%文書 は`最初の有内容な塗りを報告するべき$である
 ］
 ⇒
 `塗り計時を報告する$( %文書, `first-contentful-paint^l, %塗り時刻印 )
 ◎
-If this instance of update the rendering is the first contentful paint of document, then invoke the § 4.1.2 Report paint timing algorithm with document, "first-contentful-paint", and paintTimestamp as arguments.
+If document should report first contentful paint, then:
+• Invoke the § 4.1.3 Report paint timing algorithm with document, "first-contentful-paint", and paintTimestamp as arguments.
 </p>
 
 <p class="note">注記：
@@ -932,33 +1040,41 @@ NOTE: A parent frame should not be aware of the paint events from its child ifra
 
 <p class="note">注記：
 `文書$が［
-`最初の塗り$／`最初の有内容な塗り$
+`first-paint^l ／ `first-contentful-paint^l
 ］を刻むことは保証されない。
 完全に白紙な`文書$は、`最初の塗り$を決して刻まないであろう。
 `有内容$でない要素しか包含しない`文書$は、`最初の有内容な塗り$を決して刻まないであろう。
 ◎
-NOTE: A document is not guaranteed to mark first paint first contentful paint. A completely blank document may never mark first paint, and a document containing only elements that are not contentful, may never mark first contentful paint.
+NOTE: A document is not guaranteed to mark "first-paint" or "first-contentful-paint". A completely blank document may never mark first paint, and a document containing only elements that are not contentful, may never mark first contentful paint.
 </p>
 	</li>
 </ol>
+
+<p class="note">注記：
+`最初の塗り$を刻むことは、任意選択~である。
+塗り計時を実装している~UAは、少なくとも，`最初の有内容な塗り$は刻むベキである
+◎
+NOTE: The marking of first paint is optional. User-agents implementing paint timing should at the very least mark first contentful paint .
+</p>
+
 </div>
 
-<div class="algorithm">
+			</section>
+			<section id="report-paint-timing">
+<h4 data-dfn-type="dfn" data-noexport="" title="Report paint timing">4.1.3. 塗り計時を報告する</h4>
 
+<div class="algorithm">
 <p>
-`塗り計時を報告する@
-ときは、所与の
+`塗り計時を報告する$ときは、所与の
 ( %文書, %塗り種別, %塗り時刻印 )
 に対し，次の手続きを遂行する：
 ◎
-4.1.2. Report paint timing
-• When asked to report paint timing given document, paintType, and paintTimestamp as arguments, perform the following steps:
+When asked to report paint timing given document, paintType, and paintTimestamp as arguments, perform the following steps:
 </p>
-
 <ol>
 	<li>
 %新たな~entry ~LET 次のように設定された，
-%文書 に`関連な~Realm$に属する新たな `PerformancePaintTiming$I ~obj
+%文書 に`関連な~Realm$内の`新たな$ `PerformancePaintTiming$I ~obj
 ⇒＃
 `name$m 属性 ~SET %塗り種別
 `entryType$m 属性 ~SET `paint^l
@@ -966,9 +1082,8 @@ NOTE: A document is not guaranteed to mark first paint first contentful paint. A
 `duration$m 属性 ~SET 0
 ◎
 Create a new PerformancePaintTiming object newEntry with document’s relevant realm and set its attributes as follows:
-
 • Set newEntry’s name attribute to paintType.
-• Set newEntry’s entryType attribute to paint.
+• Set newEntry’s entryType attribute to "paint".
 • Set newEntry’s startTime attribute to paintTimestamp.
 • Set newEntry’s duration attribute to 0.
 </li>
@@ -977,10 +1092,15 @@ Create a new PerformancePaintTiming object newEntry with document’s relevant r
 ◎
 Add the PerformanceEntry newEntry object.
 </li>
+	<li>
+%文書 の`以前に報告した塗り$に %塗り種別 を`付加する$
+◎
+Append paintType to document’s associated previously reported paints.
+</li>
 </ol>
-
 </div>
 
+			</section>
 		</section>
 	</section>
 	<section id="acknowledgements">
