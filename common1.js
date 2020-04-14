@@ -993,10 +993,13 @@ Util.ref_position = {
 
 	//	resize 時の reflow 頻度を抑えるため、body の width を固定
 	//	resize 操作を終える度, または目次切り替えの度に更新する：
-	releaseAndFix(){
+	releaseAndFix(fix_timer){
 		const body = document.body;
 		body.style.width = '';
-		body.style.width = window.getComputedStyle(body).width;
+		clearTimeout(fix_timer);
+		return window.setTimeout( () => {
+			body.style.width = window.getComputedStyle(body).width;
+		}, 500)
 	},
 
 /** resize/zoom/orientationchange 時に
@@ -1025,6 +1028,7 @@ Util.ref_position = {
 
 		const ref_position = this;
 		let reflow_timer = 0;
+		let fix_timer = 0;
 		let pos = null;
 
 		if(!document.elementFromPoint) return;
@@ -1033,7 +1037,7 @@ Util.ref_position = {
 		window.addEventListener('orientationchange', onreflow, false);
 
 		window.setTimeout(() => {
-			ref_position.releaseAndFix();
+			fix_timer = ref_position.releaseAndFix(fix_timer);
 		}, 500);
 	}
 }
