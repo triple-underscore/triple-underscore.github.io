@@ -676,7 +676,6 @@ Util.CLICK_HANDLERS._toggle_source = () => {
 Util.CLICK_HANDLERS._toggle_toc = () => {
 	Util.switchView(() => {
 		const on = document.body.classList.toggle('side-menu');
-		Util.ref_position.releaseAndFix()
 		Util.setState('side_menu', on);
 		Util.toc_intersection_observer.restartObservation();
 	});
@@ -975,9 +974,9 @@ Util.ref_position = {
 	},
 
 /* 注記
-	e.scrollIntoView(); window.scrollBy(0, - this.y_offset);
-	の方法は、 scrollBy の時点で scrollIntoView の処理が
-	途中でキャンセルされて位置がずれることがある( Safari )
+	e.scrollIntoView(); window.scrollBy(0, - pos.y_offset);
+	とするのは、 scrollIntoView が滑らかに scroll している間に
+	scrollBy により中断され，位置がずれる
 */
 
 	// 要素のウィンドウ内での表示位置 y を得る
@@ -988,24 +987,10 @@ Util.ref_position = {
 			e = e.offsetParent;
 		}
 		return y - window.scrollY;
-//		return e.getBoundingClientRect().top; より軽い？
 	},
 
-	//	resize 時の reflow 頻度を抑えるため、body の width を固定
-	//	resize 操作を終える度, または目次切り替えの度に更新する：
-	releaseAndFix(fix_timer){
-		const body = document.body;
-		body.style.width = '';
-		clearTimeout(fix_timer);
-		return window.setTimeout( () => {
-			body.style.width = window.getComputedStyle(body).width;
-		}, 500)
-	},
-
-/** resize/zoom/orientationchange 時に
-	基準位置へ復帰する／基準位置を更新するようにする
-
-	課題: zoom 時に resize イベントが生じない場合がある
+/** resize/orientationchange 時に
+	基準位置へ復帰する／基準位置を更新する
 */
 
 	init(){
@@ -1016,15 +1001,26 @@ Util.ref_position = {
 				pos = ref_position.current();
 			}
 			reflow_timer = window.setTimeout(endReflow, 300);
-		}
+		};
 		const endReflow = () => {
-			// resize 操作の「終了」
-			ref_position.releaseAndFix();
+			// 一連の resize 操作の「終了」
+			fix_timer = releaseAndFix(fix_timer);
 			// resize event は reflow 完了後とされているが、そうでないこともある様子 (Safari)
 			ref_position.restore(pos);
 			pos = null;
 			reflow_timer = 0;
-		}
+		};
+
+		// resize 時の reflow 頻度を抑えるため、全体の width を固定する
+		// 一連の resize 操作を終える度に更新する：
+		const releaseAndFix = (fix_timer) => {
+			const root = document.documentElement;
+			root.style.width = '';
+			clearTimeout(fix_timer);
+			return window.setTimeout( () => {
+				root.style.width = window.getComputedStyle(root).width;
+			}, 500)
+		};
 
 		const ref_position = this;
 		let reflow_timer = 0;
@@ -1037,26 +1033,14 @@ Util.ref_position = {
 		window.addEventListener('orientationchange', onreflow, false);
 
 		window.setTimeout(() => {
-			fix_timer = ref_position.releaseAndFix(fix_timer);
+			fix_timer = releaseAndFix(fix_timer);
 		}, 500);
 	}
 }
 
 
 /** 被参照リンク一覧の表示
-
-id 付きの dfn, dt, H2 〜 H6 タグの参照元リンクの一覧, 原文リンク を表示する
-
-動作前提：
-	document.querySelectorAll
-	element.scrollIntoView
-		(課題) speech browser でも有効にするためには？
-
-	// 必須ではない
-	getBoundingClientRect
-
-
-//original_url, no_original_dfn
+	id 付きの dfn, dt, H2 〜 H6 タグの参照元リンクの一覧, 原文リンク を表示する
 */
 
 
