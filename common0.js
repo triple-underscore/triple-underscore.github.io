@@ -321,7 +321,7 @@ Util.setState = (key, val) => {
 	//	const w = screen.width;...
 		const meta = C('meta');
 		meta.setAttribute('name', 'viewport');
-		meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no');
+		meta.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1');
 		head.appendChild(meta);
 	}
 }
