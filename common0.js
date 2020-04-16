@@ -1943,6 +1943,11 @@ tool::::ツール
 	高処理能:performant:~
 事例:case:~
 利用事例:use case:~:::ユースケース
+デモる:demonstrateする::~
+デモられ:demonstrateされ::~
+デモっ:demonstrateし::~
+デモ:demonstration::~
+	デモ:demo
 基盤:infrastructure:~:::インフラ
 	規定-:dictate:~
 強力:powerful:~
@@ -2002,7 +2007,6 @@ option::::オプション
 options:::option 群:オプション群
 program::::プログラム
 programming::::プログラミング
-
 拡充-:populate:~
 検分-:inspect:~
 検分:inspection:~
