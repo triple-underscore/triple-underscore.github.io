@@ -3021,12 +3021,12 @@ offset::::オフセット
 整形:formatting::~
 
 包含塊:containing block::包含 block:包含ブロック
-行内level:inline-level::行内-level:行内レベル:インラインレベル
 行内-:inline-::~::インライン
 行内:inline::~::インライン
+	行内~levelの:inline-level
 塊:block:::ブロック
 塊-:block-:::ブロック
-塊level:block-level:::ブロックレベル
+	塊~levelの:block-level
 行l:line::行
 	行-:line-:~
 `;
