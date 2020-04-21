@@ -1373,6 +1373,7 @@ scalar::::スカラー
 用法:usage:~
 開発者:developer:~
 実装:implementation:~
+実装定義:implementation-defined:~
 実装-:implement:~
 実装者:implementer:~
 ヒト:human:人
