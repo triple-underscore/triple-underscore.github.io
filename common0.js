@@ -1283,9 +1283,9 @@ title::::タイトル
 page::::ページ
 hint::::ヒント
 channel::::チャネル
-匿名:anonymous:~
-行先:destination:~
-関数:function:~
+匿名:anonymous::~
+行先:destination::~
+関数:function::~
 inline::::インライン
 機器:device:~
 装置:device:~
@@ -1296,14 +1296,14 @@ metadata::::メタデータ
 長さ:length:~
 size::::サイズ
 sizing::::サイズ法
-絶対:absolute:~
-絶対的:absolute:~
-相対:relative:~
-相対的:relative:~
-物理-:physical:~
-物理的:physical:~
-論理-:logical:~
-論理的:logical:~
+絶対:absolute::~
+絶対的:absolute::~
+相対:relative::~
+相対的:relative::~
+物理-:physical::~
+物理的:physical::~
+論理-:logical::~
+論理的:logical::~
 移動-:move:~
 開始-:start:~
 整数:integer:~
@@ -1349,8 +1349,11 @@ scalar::::スカラー
 寸法:dimension:~
 横幅:width::~
 縦幅:height::~
-位置-:position:~
-位置:position:~
+位置-:position::~
+位置:position::~
+位置決め:positioning::~
+有位置:positioned::~
+	位置し直す:reposition
 座標:coordinate::~
 座標系:coordinate system::~
 原点:origin::~

@@ -838,7 +838,6 @@ span:
 横方向:horizontal::~
 縦横比:aspect ratio::~
 側:side:~
-位置決め:positioning::~
 直線:straight line::~
 曲線:curve::~
 真円:circle::~
