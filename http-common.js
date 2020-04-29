@@ -543,18 +543,14 @@ c.realm:~HTTPrq#realm
 
 	●用語
 
-~HTTP要請:~HTTPsem#request
 ~HTTP11:~HTTPmsg#version-1.1
-~message:~HTTPmsg#http.message
-	~message本体:~HTTPmsg#message.body
 ~message本体~長さ:~HTTPmsg#message.body.length
-要請~target:~HTTPmsg#request.target
-不完全:~HTTPmsg#incomplete
-~close_接続~option:~HTTPmsg#close-connection-option
+	~message本体:~HTTPmsg#message.body
 転送~符号法:~HTTPmsg#transfer.codings
 転送~符号法の名前:~HTTPmsg#transfer-coding-name
 
 	// -> semantics
+~HTTP要請:~HTTPsem#request
 ~stateless:~HTTPsem#stateless
 上流:~HTTPsem#upstream
 下流:~HTTPsem#downstream
@@ -582,9 +578,10 @@ c.realm:~HTTPrq#realm
 	~version番号:~HTTPsem#version-number
 ~major~version:~HTTPsem#major-version
 ~minor~version:~HTTPsem#minor-version
-~target~URI:~HTTPsem#target-URI
 応答:~HTTPsem#response
 要請:~HTTPsem#request
+完全:~HTTPsem#complete
+不完全:~HTTPsem#complete
 
 素片~識別子:~HTTPsem#uri.fragment.identifiers
 
@@ -606,8 +603,9 @@ c.realm:~HTTPrq#realm
 ~payload本体:~HTTPsem#payload.body
 ~message本体:~HTTPsem#message-body
 
-~target資源:~HTTPsem#target.resource
 ~URI:~HTTPsem#uri
+~target~URI:~HTTPsem#target-URI
+~target資源:~HTTPsem#target-resource
 空白:~HTTPsem#whitespace
 ~charset:~HTTPsem#charset
 内容~符号法:~HTTPsem#content.codings
@@ -620,7 +618,6 @@ c.realm:~HTTPrq#realm
 満足可能:~HTTPsem#satisfiable
 満足不能:~HTTPsem#unsatisfiable
 複部位:~HTTPsem#multipart
-~target資源:~HTTPsem#target.resource
 指紋収集:~HTTPsem#fingerprinting
 資源:~HTTPsem#resources
 表現:~HTTPsem#representation
@@ -642,7 +639,6 @@ c.realm:~HTTPrq#realm
 形式変換:~HTTPsem#message.transformations
 
 ~payload~header:~HTTPsem#payload-headers
-実効~要請~URI:~HTTPsem#effective.request.uri
 
 範囲~単位:~HTTPsem#range.units
 ~byte範囲:~HTTPsem#byte.ranges
@@ -753,8 +749,6 @@ HTTP10: HTTP/1.0
 HTTP11: HTTP/1.1 
 	HTTP1x:
 100cont:<code>100-continue</code>
-close_:"<code>close</code>" 
-
 
 `
 
@@ -950,8 +944,6 @@ agent::::エージェント
 副次的:secondary:~
 創出-:mint:~
 非効率:inefficient:~
-実効:effective::~
-実効性:effectiveness:~
 包括的:comprehensive:~
 参照文献:references:~
 参考:informative:~
@@ -1144,9 +1136,7 @@ agent::::エージェント
 	●HTTP／構文／data／stream
 
 hypertext::::ハイパーテキスト
-messaging::::メッセージ処理
 pathname::::パス名
-	~frame法:framing
 packet::::パケット
 payload::::ペイロード
 percent::::パーセント
@@ -1166,6 +1156,8 @@ comma::::カンマ
 decimal::10 進
 escaping::::エスケープ処理
 	引用符~付き:quoted
+	~message法:messaging:
+	~frame法:framing
 二重引用符:double quote::~
 区切られ:delimitされ::~
 区切り:delimitation::~

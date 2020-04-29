@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP/1.1: Messaging
-spec_date:2020-03-20
-trans_update:2020-02-23
+spec_date:2020-04-28
+trans_update:2020-04-30
 source_checked:200204
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-messaging-latest.html
@@ -61,7 +61,6 @@ c.application/http:~HTTPmsg#media.type.application.http
 
 	圧縮~符号法:~HTTPmsg#compression.codings
 
-	実効~要請~URI:~HTTPmsg#h1.effective.request.uri
 持続的~接続:~HTTPmsg#persistent.connections
 接続~option:~HTTPmsg#connection-option
 最終-転送~符号法:~HTTPmsg#final-transfer-coding
@@ -104,6 +103,7 @@ Semantics/謝辞:~HTTPsem#acks
 Caching/3:~HTTPcache#response.cacheability
 
 ~message構文解析:#message.parsing
+~close_接続~option:~HTTPmsg#close-connection-option
 
 cite.~HTTP転送~符号法~registry:~IANA-a/http-parameters
 cite.~HTTP Upgrade ~token~registry:~IANA-a/http-upgrade-tokens
@@ -135,7 +135,7 @@ cite.~HTTP Upgrade ~token~registry:~IANA-a/http-upgrade-tokens
 3.2.2:#absolute-form
 3.2.3:#authority-form
 3.2.4:#asterisk-form
-3.3:#h1.effective.request.uri
+3.3:#reconstructing.target.uri
 4:#status.line
 5:#header.fields
 5.1:#field.parsing
@@ -203,6 +203,8 @@ D.4:#changes.since.02
 
 ●●words_table1
 
+close_:"<code>close</code>" 
+
 ●●words_table
 
 	●仕様
@@ -230,6 +232,7 @@ D.4:#changes.since.02
 流儀:fashion:~
 超越-:transcend:~
 衝突:collision:~
+古代の:ancientな:~
 
 	欲されない:not desirable
 	自由度を高める:greater freedom
@@ -448,8 +451,9 @@ multibyte::::マルチバイト
 	J. Reschke (greenbytes)
 
 履歴
-	<a href="https://github.com/httpwg/http-core/commits/master">GitHub</a>
 	https://datatracker.ietf.org/doc/draft-ietf-httpbis-messaging
+commit 履歴
+	<a href="https://github.com/httpwg/http-core/commits/master">GitHub</a>
 HTTP working group mailing list
 	ietf-http-wg@w3.org (<a href="https://lists.w3.org/Archives/Public/ietf-http-wg/">archive</a>)
 
@@ -1315,6 +1319,56 @@ GET http://www.example.org/pub/WWW/TheProject.html HTTP/1.1
 </div>
 
 <p>
+`~client$は、
+`request-target$p が `absolute-form$p であっても，
+`~HTTP11$要請においては `Host$h ~headerを送信しなければナラナイ。
+これにより、 `Host$h 情報を［
+`Host$h を実装していない古代の~HTTP10~proxy
+］を通して回送することも可能になるので。
+◎
+A client MUST send a Host header field in an HTTP/1.1 request even if the request-target is in the absolute-form, since this allows the Host information to be forwarded through ancient HTTP/1.0 proxies that might not have implemented Host.
+</p>
+
+<div class="p">
+<p>
+`~proxy$は、［
+`absolute-form$p による `request-target$p
+］を伴う要請を受信したときは、要請~内に `Host$h ~headerを受信したとしても：
+◎
+When a proxy receives a request with an absolute-form of request-target,＼
+</p>
+
+<ul>
+	<li>
+`Host$h ~headerは無視して、代わりにそれを［
+`request-target$p を成す `host$p 情報
+］に置換しなければナラナイ。
+【例えば、自身が使役する~cache用に】
+◎
+the proxy MUST ignore the received Host header field (if any) and instead replace it with the host information of the request-target.＼
+</li>
+	<li>
+その要請を回送するときは、
+`Host$h ~header`~field値$は そのまま回送せずに，［
+受信した `request-target$p に基づく，新たな `Host$h `~field値$
+］を`生成し$なければナラナイ。
+◎
+A proxy that forwards such a request MUST generate a new Host field value based on the received request-target rather than forward the received Host field value.
+</li>
+</ul>
+</div>
+
+<p>
+`生成元~server$は，［
+`absolute-form$p による `request-target$p
+］を伴う要請を受信したときは、要請~内に `Host$h ~headerを受信したとしても無視して，代わりに `request-target$p を成す `host$p 情報を利用しなければナラナイ。
+この事例では、
+`request-target$p に `authority$p 成分が無い場合，空な `Host$h ~headerが送信されることになることに注意。
+◎
+When an origin server receives a request with an absolute-form of request-target, the origin server MUST ignore the received Host header field (if any) and instead use the host information of the request-target. Note that if the request-target does not have an authority component, an empty Host header field will be sent in this case.
+</p>
+
+<p>
 ［
 ~HTTPの将来の`~version$における，すべての要請にわたる `absolute-form$p への移行
 ］を許容するため、`~server$は，［
@@ -1444,27 +1498,25 @@ after connecting to port 8001 of host "www.example.org".
 
 			</section>
 		</section>
-		<section id="h1.effective.request.uri">
-<h3 title="Effective Request URI">3.3. 実効~要請~URI</h3>
+		<section id="reconstructing.target.uri">
+<h3 title="Reconstructing the Target URI">3.3. ~target~URIの再構築-法</h3>
 
 <p>
 `request-target$p は，［
 `~UA$の`~target~URI$の一部分のみ
-］を包含することが多いので、`~server$は，意図された~targetを
-— 要請に対し適正に~serviceするために —
-`実効~要請~URI$として構築し直す。
+］を包含することが多いので、`~server$は，要請に対し適正に~serviceするために その値を構築する。
 ◎
-Since the request-target often contains only part of the user agent's target URI, a server reconstructs the intended target as an effective request URI to properly service the request (Section 5.5 of [Semantics]).
+Since the request-target often contains only part of the user agent's target URI, a server constructs its value to properly service the request (Section 5.1 of [Semantics]).
 </p>
 
 <p>
-`実効~要請~URI$は、所与の
+所与の
 ( `request-target$p `要請~target^V )
-に対し，［
+に対し，`~target~URI$は、［
 `要請~target^V は `absolute-form$p である
 ］ならば `要請~target^V と同じであり，他の場合は 次に従って構築される：
 ◎
-If the request-target is in absolute-form, the effective request URI is the same as the request-target. Otherwise, the effective request URI is constructed as follows:
+If the request-target is in absolute-form, the target URI is the same as the request-target. Otherwise, the target URI is constructed as follows:
 </p>
 
 <ol>
@@ -1493,7 +1545,7 @@ If the request-target is in absolute-form, the effective request URI is the same
 		</ol>
 
 ◎
-If the server's configuration (or outbound gateway) provides a fixed URI scheme, that scheme is used for the effective request URI. Otherwise, if the request is received over a TLS-secured TCP connection, the effective request URI's scheme is "https"; if not, the scheme is "http".
+If the server's configuration (or outbound gateway) provides a fixed URI scheme, that scheme is used for the target URI. Otherwise, if the request is received over a TLS-secured TCP connection, the target URI's scheme is "https"; if not, the scheme is "http".
 </li>
 	<li>
 <p>
@@ -1525,7 +1577,7 @@ If the server's configuration (or outbound gateway) provides a fixed URI scheme,
 `~server$に環境設定された既定の名前
 — 更に，［
 接続の入力用~TCP~port番号が［
-`実効~要請~URI$の `scheme$p 用の既定の~port
+`~target~URI$の `scheme$p 用の既定の~port
 ］と相違する場合は，［
 ~colon （"`:^c"）, および（~decimal形による）その入力用~port番号
 ］も付加する。
@@ -1533,7 +1585,7 @@ If the server's configuration (or outbound gateway) provides a fixed URI scheme,
 		</ol>
 
 ◎
-If the server's configuration (or outbound gateway) provides a fixed URI authority component, that authority is used for the effective request URI. If not, then if the request-target is in authority-form, the effective request URI's authority component is the same as the request-target. If not, then if a Host header field is supplied with a non-empty field-value, the authority component is the same as the Host field-value. Otherwise, the authority component is assigned the default name configured for the server and, if the connection's incoming TCP port number differs from the default port for the effective request URI's scheme, then a colon (":") and the incoming port number (in decimal form) are appended to the authority component.
+If the server's configuration (or outbound gateway) provides a fixed URI authority component, that authority is used for the target URI. If not, then if the request-target is in authority-form, the target URI's authority component is the same as the request-target. If not, then if a Host header field is supplied with a non-empty field-value, the authority component is the same as the Host field-value. Otherwise, the authority component is assigned the default name configured for the server and, if the connection's incoming TCP port number differs from the default port for the target URI's scheme, then a colon (":") and the incoming port number (in decimal form) are appended to the authority component.
 </li>
 	<li>
 <p>
@@ -1555,10 +1607,10 @@ If the server's configuration (or outbound gateway) provides a fixed URI authori
 		</dl>
 
 ◎
-If the request-target is in authority-form or asterisk-form, the effective request URI's combined path and query component is empty. Otherwise, the combined path and query component is the same as the request-target.
+If the request-target is in authority-form or asterisk-form, the target URI's combined path and query component is empty. Otherwise, the combined path and query component is the same as the request-target.
 </li>
 	<li>
-`実効~要請~URI$は、［
+`~target~URI$は、［
 上で決定された各~成分, および 文字列 "`://^c"
 ］を，次の順に連結した結果の `absolute-URI$p 形
 【 `absolute-form$p 】
@@ -1569,7 +1621,7 @@ If the request-target is in authority-form or asterisk-form, the effective reque
 `authority$p,
 結合された `path$p, `query$p 成分
 ◎
-The components of the effective request URI, once determined as above, can be combined into absolute-URI form by concatenating the scheme, "://", authority, and combined path and query component.
+The components of the target URI, once determined as above, can be combined into absolute-URI form by concatenating the scheme, "://", authority, and combined path and query component.
 </li>
 </ol>
 
@@ -1587,9 +1639,9 @@ Host: www.example.org:8080
 </pre>
 
 <p>
-実効~要請~URIは：
+`~target~URI$は：
 ◎
-has an effective request URI of
+has a target URI of
 </p>
 
 <pre>
@@ -1608,9 +1660,9 @@ Host: www.example.org
 </pre>
 
 <p>
-実効~要請~URIは：
+`~target~URI$は：
 ◎
-has an effective request URI of
+has a target URI of
 </p>
 
 <pre>
@@ -1623,10 +1675,10 @@ https://www.example.org
 ［
 `Host$h ~headerを欠如する~HTTP10要請
 ］の`受信者$は、［
-`実効~要請~URI$の `authority$p 成分
+`~target~URI$の `authority$p 成分
 ］を推測するために，経験則（例： 特定0の~hostに一意な何かに対する，~URI~pathの精査）の利用が必要になることもある。
 ◎
-Recipients of an HTTP/1.0 request that lacks a Host header field might need to use heuristics (e.g., examination of the URI path for something unique to a particular host) in order to guess the effective request URI's authority component.
+Recipients of an HTTP/1.0 request that lacks a Host header field might need to use heuristics (e.g., examination of the URI path for something unique to a particular host) in order to guess the target URI's authority component.
 </p>
 
 		</section>
@@ -2363,80 +2415,66 @@ the message body length cannot be determined reliably; the server MUST respond w
 `Transfer-Encoding$h が `Content-Length$h を上書きする。
 そのような~messageは［
 `要請~密入$や`応答~分割$
-］を遂行する試みを指示しているかもしれないので、［
-~errorとして取扱われる~OUGHT
-］。
-`送信者$は，［
-そのような~messageを`下流$へ回送する
-］に先立って［
-受信した `Content-Length$h ~header
-］を除去しなければナラナイ。
+］を遂行する試みを指示しているかもしれないので、~errorとして取扱われる~OUGHT。
+`送信者$は、そのような~messageを`下流$へ回送するに先立って，受信した `Content-Length$h ~headerを除去しなければナラナイ。
 ◎
 If a message is received with both a Transfer-Encoding and a Content-Length header field, the Transfer-Encoding overrides the Content-Length. Such a message might indicate an attempt to perform request smuggling (Section 11.2) or response splitting (Section 11.1) and ought to be handled as an error. A sender MUST remove the received Content-Length field prior to forwarding such a message downstream.
 </p>
 	</dd>
 
 	<dt>
-複数個の `Content-Length$h ~headerが在って，それらの~field値は相違する†
+妥当でない `Content-Length$h ~headerが在る
 ◎
-If a message is received without Transfer-Encoding and with either multiple Content-Length header fields having differing field values or＼
+If a message is received without Transfer-Encoding and with an invalid Content-Length header field, then＼
 </dt>
-	<dt>
-妥当でない値をとる `Content-Length$h ~headerが在る
-◎
-a single Content-Length header field having an invalid value, then＼
-</dt>
-	<dd class="trans-note">【†
-`~field行l値$？
-文面からは，［
-"`Content-Length: 42, 42^c",
-"`Content-Length: 42^c"
-の 2 個があるような場合
-］も該当しそうだが、意味論的には "`Content-Length: 42^c" が 3 個ある（あるいは、どこかで`結合-$された結果， "`Content-Length: 42, 42, 42^c" が 1 個ある）のと同じであり，該当しないと解釈できそうでもある。
-】</dd>
 	<dd>
-<p id="invalid-Content-Length-value">
-~message~frame法は妥当でないので、`受信者$は，それを回復-不能な~errorとして扱った上で，次に従って動作しなければナラナイ：
+<p id="invalid-Content-Length">
+~message~frame法は妥当でない。
+その`~field値$が［
+~comma区切りの~list（ `Semantics/4.5$sec ）として成功裡に構文解析でき、~list内のすべての値は，妥当かつ互いに同じである場合
+］を除き†、`受信者$は
+— それを回復-不能な~errorとして扱った上で —
+次に従って動作しなければナラナイ：
 ◎
-the message framing is invalid and the recipient MUST treat it as an unrecoverable error.＼
+the message framing is invalid and the recipient MUST treat it as an unrecoverable error, unless the field value can be successfully parsed as a comma-separated list (Section 4.5 of [Semantics]), all values in the list are valid, and all values in the list are the same.＼
 </p>
-		<dl class="switch">
-			<dt>
+
+<p class="trans-note">【†
+`Content-Length$h は~list構文を受容しないが、ここでは特別に取扱われている。
+加えて、この条件を満たす場合でも，
+<a href="~HTTPsem#invalid-Content-Length">妥当でないものとして扱う</a>
+ことは許容されている。
+】【†
+同じ数を表現する異なる値（ `012^c と `12^c など）が，同じと見なされるかどうかは、はっきりしない。
+】</p>
+
+		<ul class="switch">
+			<li>
 要請である場合
-◎
-If this is a request message,＼
-</dt>
-			<dd>
+⇒
 `~server$は、状態s~code `400$st で応答した上で，接続を~closeする。
 ◎
-the server MUST respond with a 400 (Bad Request) status code and then close the connection.＼
-</dd>
-
-			<dt>
-`~proxy$が受信した応答である場合
 ◎
-If this is a response message received by a proxy,＼
-</dt>
-			<dd>
+If this is a request message, the server MUST respond with a 400 (Bad Request) status code and then close the connection.＼
+</li>
+			<li>
+`~proxy$が受信した応答である場合
+⇒
 `~proxy$は、`~server$への接続を~closeし,
 受信した応答を破棄した上で，`~client$に向けて［
 `502$st 応答
 ］を送信する。
 ◎
-the proxy MUST close the connection to the server, discard the received response, and send a 502 (Bad Gateway) response to the client.＼
-</dd>
-
-			<dt>
+If this is a response message received by a proxy, the proxy MUST close the connection to the server, discard the received response, and send a 502 (Bad Gateway) response to the client.＼
+</li>
+			<li>
 `~UA$が受信した応答である場合
-◎
-If this is a response message received by a user agent,＼
-</dt>
-			<dd>
+⇒
 `~UA$は、`~server$への接続を~closeした上で，受信した応答を破棄する。
 ◎
-the user agent MUST close the connection to the server and discard the received response.
-</dd>
-		</dl>
+If this is a response message received by a user agent, the user agent MUST close the connection to the server and discard the received response.
+</li>
+		</ul>
 	</dd>
 
 	<dt>
@@ -2444,7 +2482,7 @@ the user agent MUST close the connection to the server and discard the received 
 ◎
 </dt>
 	<dd>
-その~decimal値が、~octet数による，期待される`本体~長さ$を定義する。
+その~decimal値【その`~field値$を~decimal数として解釈した結果】が、~octet数による，期待される`本体~長さ$を定義する。
 ［
 送信者が接続を~closeした
 ］または［
@@ -2538,18 +2576,10 @@ A user agent that sends a request containing a message body MUST send a valid Co
 
 <div class="p">
 <p>
-［
-接続~上の最後の要請に対する`最終-応答$を完全に†受信した
-］かつ［
-読取る追加的な~dataが残っている
-］場合、`~UA$は，次のいずれかを~~行ってもヨイ：
+接続~上の最後の要請に対する`最終-応答$を`完全$に受信したが，読取る追加的な~dataが残っている場合【実際に受信した~dataは、上で決定された`本体~長さ$より長かった場合】、`~UA$は，次のいずれかを~~行ってもヨイ：
 ◎
 If the final response to the last request on a connection has been completely received and there remains additional data to read, a user agent MAY＼
 </p>
-
-<p class="trans-note">【†
-この “完全に” は、上で決定される`本体~長さ$（ `Content-Length^h に指示される長さなど）まで（本体を持たないとされている場合は，`~header節$全体まで），を意味すると見受けられる。
-】</p>
 
 <ul>
 	<li>
@@ -3532,20 +3562,23 @@ When defining new connection options, specification authors ought to document it
 
 <p>
 `~close_接続~option@
-は、`送信者$が，［
-この接続が，応答の完了の後に~closeされる
-］ことを他へ通達するためのものとして，定義される。
-例えば：
+は、`送信者$が［
+この接続は、応答の完了~後に~closeされることになる
+］ことを他へ通達するためとして，定義される。
 ◎
-The "close" connection option is defined for a sender to signal that this connection will be closed after completion of the response. For example,
+The "close" connection option is defined for a sender to signal that this connection will be closed after completion of the response.＼
 </p>
 
 <div class="example">
+<p>
+例えば：
+◎
+For example,
+</p>
 
 <pre class="lang-http">
 Connection: close
 </pre>
-
 </div>
 
 <p>
@@ -5354,7 +5387,7 @@ This section summarizes major differences between versions HTTP/1.0 and HTTP/1.1
 `~client$／`~server$は、 `Host$h ~headerを~supportし，~HTTP11要請に それが欠落しているときは~errorを報告する。
 </li>
 	<li>
-絶対~URI（ `absolute-URI$p ）を受容する（`要請~target$sec）。
+絶対~URI（ `absolute-form$p ）を受容する。
 </li>
 </ul>
 

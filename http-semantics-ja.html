@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP Semantics
-spec_date:2020-04-01
-trans_update:2020-04-03
+spec_date:2020-04-28
+trans_update:2020-04-30
 source_checked:200204
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html
@@ -82,6 +82,8 @@ sdir.no-transform:~HTTPcache#cache-response-directive.no-transform
 役割:#role
 	接続:#connection
 ~secure化:#secured
+
+絶対~形:#p.absolute-URI
 
 ~scheme:~HTTPsem#p.scheme
 ~host:~HTTPsem#p.host
@@ -166,11 +168,10 @@ D.9:#changes.since.07
 
 Caching/2:~HTTPcache#caching.overview
 Caching/7:~HTTPcache#security.considerations
-Messaging/3.3:~HTTPmsg#h1.effective.request.uri
+Messaging/3.3:~HTTPmsg#reconstructing.target.uri
 Messaging/5.1:~HTTPmsg#field.parsing
 Messaging/5.2:~HTTPmsg#line.folding
 Messaging/6:~HTTPmsg#message.body
-Messaging/9:~HTTPmsg#connection.management
 Messaging/9.1:~HTTPmsg#header.connection
 Messaging/9.9:~HTTPmsg#header.upgrade
 Messaging/B:~HTTPmsg#differences.between.http.and.mime
@@ -250,6 +251,7 @@ wildcard::::ワイルドカード
 	片:fragment:~
 封入法:envelope::~
 構成-:compose:~
+	構成し直-:recompose
 英数字:alphanumeric character:~
 封入-:enclose:~
 省かれ:elideされ:~
@@ -358,7 +360,6 @@ social:
 事実調査:research:~
 説明的:descriptive:~
 限定-:confine:~
-古代の:ancientな:~
 推定-:infer:~
 矛盾-:contradict:~
 発見:discovery:~
@@ -379,9 +380,11 @@ social:
 手配-:arrange:~
 	予め手配-:prearrange
 同意t:consent:同意や黙認
+確約-:assure:~
+機能:function:~
 
 	IESG
-
+	実効:effective
 	読み易く:readability を improve
 	引き換え:commission:引き換え
 	~~明らか:apparent
@@ -612,13 +615,13 @@ hyphen::::ハイフン
 	になり得る:potential
 	〜から:rerative
 	~~連続する一連の:ordered subsequence
-	absolute-form:absolute form
 	単純にするため:for simplicity
 	-:fashion
 	依存しない:independent
 	少なくとも:minimum
 	それでも:Regardless,
 	等しく:equally
+	判別-不能:indistinguishable
 
 	●他の語
 	^i:ClientHello
@@ -749,7 +752,7 @@ hyphen::::ハイフン
 5.4.3:~HTTPsem#https.initiation
 5.4.3.1:~HTTPsem#https.identify.server
 5.4.3.2:~HTTPsem#https.identify.client
-5.5:~HTTPsem#effective.request.uri
+5.5:~HTTPsem#reconstructing.target.uri
 5.6:~HTTPsem#header.host
 5.7:~HTTPsem#message.forwarding
 5.7.1:~HTTPsem#header.via
@@ -1150,6 +1153,7 @@ C.1:~HTTPsem#changes.since.publication.as.rfc
 	J. Reschke, Editor (greenbytes)
 履歴
 	https://datatracker.ietf.org/doc/draft-ietf-httpbis-semantics
+commit 履歴
 	<a href="https://github.com/httpwg/http-core/commits/master">GitHub</a>
 HTTP working group mailing list
 	ietf-http-wg@w3.org (<a href="https://lists.w3.org/Archives/Public/ietf-http-wg/">archive</a>)
@@ -1359,12 +1363,12 @@ Each HTTP message is either a request or a response.＼
 
 <ol><li>接続に対し要請を~listenして，
 </li><li>受信した各~messageを構文解析して，
-</li><li>識別された`要請~target$に関係する~message意味論を解釈して，
+</li><li>識別された`~target資源$に関係する~message意味論を解釈して，
 </li><li>その要請に対し 1 個~以上の応答~messageで応答する。
 </li></ol>
 
 ◎
-A server listens on a connection for a request, parses each message received, interprets the message semantics in relation to the identified request target, and responds to that request with one or more response messages.＼
+A server listens on a connection for a request, parses each message received, interprets the message semantics in relation to the identified target resource, and responds to that request with one or more response messages.＼
 </li>
 	<li>
 <p>
@@ -1470,7 +1474,7 @@ This document defines HTTP range requests, partial responses, and the multipart/
 <p>
 この文書は、
 `RFC7230$r を成す，~HTTP11の［
-~messaging構文, 接続~管理
+~message法の構文, 接続~管理
 ］には依存しない部位を廃用にする
 — 変更点は、付録 `B.2$sec にて要約されている。
 `RFC7230$r を成す他の各部は、 `Messaging$r により廃用にされた。
@@ -1541,14 +1545,12 @@ Section 4.4.1 defines some generic syntactic components for field values.
 `obs-fold$p,
 `protocol-name$p,
 `protocol-version$p,
-`request-target$p
 ◎
 The rules below are defined in [Messaging]:
 ◎
 obs-fold         = &lt;obs-fold, see [Messaging], Section 5.2&gt;
 protocol-name    = &lt;protocol-name, see [Messaging], Section 9.9&gt;
 protocol-version = &lt;protocol-version, see [Messaging], Section 9.9&gt;
-request-target   = &lt;request-target, see [Messaging], Section 3.2&gt;
 ◎
 This specification uses the terms "character", "character encoding scheme", "charset", and "protocol element" as they are defined in [RFC6365].
 </p>
@@ -1675,7 +1677,7 @@ HTTP was created for the World Wide Web (WWW) architecture and has evolved over 
 </p>
 
 		<section id="operation">
-<h3 title="Client/Server Messaging">2.1. ~client／~serverによる~messaging</h3>
+<h3 title="Client/Server Messaging">2.1. ~client／~serverによる~message法</h3>
 
 <div class="p">
 
@@ -1683,12 +1685,12 @@ HTTP was created for the World Wide Web (WWW) architecture and has evolved over 
 ~HTTPは、［
 依拠-可能な［
 ~transport層／~session層
-］の接続にまたがって，`~message$を交換する
-］ことにより運用される（ `Messaging/9$sec ），`~stateless$な［
+］の接続にまたがって，~messageを交換する
+］ことにより運用される，`~stateless$な［
 要請, 応答
 ］~protocolである。
 ◎
-HTTP is a stateless request/response protocol that operates by exchanging messages (Section 2 of [Messaging]) across a reliable transport- or session-layer "connection" (Section 9 of [Messaging]).＼
+HTTP is a stateless request/response protocol that operates by exchanging messages across a reliable transport- or session-layer "connection". An HTTP "client" is a program that establishes a connection to a server for the purpose of sending one or more HTTP requests. An HTTP "server" is a program that accepts connections in order to service HTTP requests by sending HTTP responses.
 </p>
 
 <ul>
@@ -1889,6 +1891,18 @@ finally a payload body (if any, Section 6.3.3).
 </div>
 
 <p>
+~message~frame法の仕組みには、~messageは
+`完全@
+であることを確約する機能がある。
+~messageは、その~frame法により指示される すべての~octetが可用になったとき，`完全$と見なされる。
+明示的な~frame法が利用されていない場合、~transport接続の~closeにより終端された応答~messageは
+— 不完全な応答と判別-不能であろうが，~transport~levelの~errorにより完全でないものと指示されない限り —
+`完全$と見なされることに注意。
+◎
+One of the functions of the message framing mechanism is to assure that messages are complete. A message is considered complete when all of the octets indicated by its framing are available. Note that, when no explicit framing is used, a response message that is ended by the transport connection's close is considered complete even though it might be indistinguishable from an incomplete response, unless a transport-level error indicates that it is not complete.
+</p>
+
+<p>
 同じ接続が，複数の［
 要請／応答
 ］の交換に利用されることもある。
@@ -1998,7 +2012,7 @@ The figure above shows three intermediaries (A, B, and C) between the user agent
 
 <ul>
 	<li>
-最も近い, 非`~tunnel$の，隣接点との接続のみ
+最も近い, `~tunnel$でない隣接点との接続のみ
 【 `隣点間@（ `hop-by-hop^en ） 】
 ◎
 only to the connection with the nearest, non-tunnel neighbor,＼
@@ -2103,7 +2117,7 @@ A "gateway" (a.k.a. "reverse proxy") is an intermediary that acts as an origin s
 to encapsulate legacy or untrusted information services,＼
 </li>
 	<li>
-“加速器” による~cachingを通して~server処理能を改善する。
+~cachingによる “加速器” を通して~server処理能を改善する。
 ◎
 to improve server performance through "accelerator" caching, and＼
 </li>
@@ -2156,7 +2170,7 @@ A "tunnel" acts as a blind relay between two connections without changing the me
 ］なしに［
 ~HTTP流通を~filterしたり~redirectする
 ］ものもある。
-~network中継者は，（~protocol~levelでは）中間者~攻撃かどうか判別できないので、［
+~network中継者は，（~protocol~levelでは）中間者~攻撃かどうか判別-不能なので、［
 ~HTTP意味論を誤解して違反することに因る，~securityの欠陥や相互運用能の問題
 ］が導入されることも多い。
 ◎
@@ -2392,7 +2406,7 @@ Each protocol element in HTTP that allows a URI reference will indicate in its A
 any form of reference (URI-reference),＼
 </li>
 	<li>
-`absolute-form$p（ `absolute-URI$p ）による~URIのみ
+絶対~形（ `absolute-URI$p ）による~URIのみ
 ◎
 only a URI in absolute form (absolute-URI),＼
 </li>
@@ -2410,9 +2424,9 @@ some combination of the above.＼
 </ul>
 
 <p>
-他から指示されない限り、~URI参照は，`実効~要請~URI$に相対的に構文解析される。
+他から指示されない限り、~URI参照は，`~target~URI$に相対的に構文解析される。
 ◎
-Unless otherwise indicated, URI references are parsed relative to the effective request URI (Section 5.5).
+Unless otherwise indicated, URI references are parsed relative to the target URI (Section 5.1).
 </p>
 
 </div>
@@ -2645,7 +2659,7 @@ Since the "http" and "https" schemes conform to the URI generic syntax, such URI
 `port$p が `scheme$p 用の既定の~portに等しい場合、
 `port$p 下位成分は省略するのが，正規な形である。
 空な `path$p 成分は
-— `OPTIONS$m 要請の`要請~target$として， `absolute-form$p で利用されている場合を除き —
+— `OPTIONS$m 要請の~targetとして利用されている場合を除き —
 絶対~path "`/^c" に等価であり、正規な形においては，代わりに ~path "`/^c" を供する。
 ［
 `scheme$p ／ `host$p
@@ -2656,7 +2670,7 @@ Since the "http" and "https" schemes conform to the URI generic syntax, such URI
 ］に等価になる
 — 正規な形においては、それらは符号化しない。
 ◎
-If the port is equal to the default port for a scheme, the normal form is to omit the port subcomponent. When not being used in absolute form as the request target of an OPTIONS request, an empty path component is equivalent to an absolute path of "/", so the normal form is to provide a path of "/" instead. The scheme and host are case-insensitive and normally provided in lowercase; all other components are compared in a case-sensitive manner. Characters other than those in the "reserved" set are equivalent to their percent-encoded octets: the normal form is to not encode them (see Sections 2.1 and 2.2 of [RFC3986]).
+If the port is equal to the default port for a scheme, the normal form is to omit the port subcomponent. When not being used as the target of an OPTIONS request, an empty path component is equivalent to an absolute path of "/", so the normal form is to provide a path of "/" instead. The scheme and host are case-insensitive and normally provided in lowercase; all other components are compared in a case-sensitive manner. Characters other than those in the "reserved" set are equivalent to their percent-encoded octets: the normal form is to not encode them (see Sections 2.1 and 2.2 of [RFC3986]).
 </p>
 
 <div class="example">
@@ -2712,12 +2726,12 @@ Some implementations make use of the userinfo component for internal configurati
 `送信者$は、［
 "`http^c" ／ "`https^c"
 ］~URI参照を［
-`要請~target$や`~field値$
+`~target~URI$や`~field値$
 ］として~message内に`生成する$ときには，［
 `userinfo^p 下位成分（および その "`@^c" 区切子）
 ］を`生成し$てはナラナイ。
 ◎
-A sender MUST NOT generate the userinfo subcomponent (and its "@" delimiter) when an "http" or "https" URI reference is generated within a message as a request target or field value.
+A sender MUST NOT generate the userinfo subcomponent (and its "@" delimiter) when an "http" or "https" URI reference is generated within a message as a target URI or field value.
 </p>
 
 <p>
@@ -2979,10 +2993,10 @@ HTTP does not have specific length limitations for many of its protocol elements
 例えば，［
 自前の`資源$に ~~長大な~URI参照を発行する`生成元~server$
 ］は、［
-`要請~target$として受信した，同じ参照
+`~target~URI$として受信した，同じ参照
 ］を構文解析して処理できる必要がある。
 ◎
-At a minimum, a recipient MUST be able to parse and process protocol element lengths that are at least as long as the values that it generates for those same protocol elements in other messages. For example, an origin server that publishes very long URI references to its own resources needs to be able to parse and process those same references when received as a request target.
+At a minimum, a recipient MUST be able to parse and process protocol element lengths that are at least as long as the values that it generates for those same protocol elements in other messages. For example, an origin server that publishes very long URI references to its own resources needs to be able to parse and process those same references when received as a target URI.
 </p>
 
 		</section>
@@ -3050,7 +3064,7 @@ The HTTP version number consists of two decimal digits separated by a "." (perio
 	<li>
 1 個目の桁
 — `~major~version@ —
-は、~HTTP~messaging構文を指示する。
+は、~HTTP~message法の構文を指示する。
 ◎
 The first digit ("major version") indicates the HTTP messaging syntax, whereas＼
 </li>
@@ -4120,7 +4134,7 @@ A construct "#" is defined, similar to "*", for defining comma-delimited lists o
 <h4 title="Sender Requirements">4.5.1. 送信者に対する要件</h4>
 
 <p>
-`送信者$は、~list構成子を利用するどの生成規則に対しても，空な~list要素たちを`生成し$てはナラナイ。
+`送信者$は、~list構成子を利用するどの生成規則に対しても，空な~list要素を`生成し$てはナラナイ。
 言い換えれば、送信者は，［
 次の構文を満足する~list
 ］を`生成し$なければナラナイ：
@@ -4624,14 +4638,14 @@ HTTP is used in a wide variety of applications, ranging from general-purpose com
 ~HTTP通信は、何らかの目的で`~UA$から起動される。
 その目的は、`要請の意味論$と,
 それらの意味論が適用される
-`~target資源^dfn
+`~target資源@
 との組合nである。
 `~target資源$の識別子には、概して，`~URI$参照が利用される
-— `~UA$は、それを `absolute-form$p に解決して，
+— `~UA$は、
 `~target~URI@
-を得ることになる。
-参照~内の素片（ `fragment$p ）成分については、もし在れば，~target~URIからは除外される
-— 素片~識別子は、`~client$側の処理 （`RFC3986/3.5$sec ）に予約されているので。
+を得るために，この~URIを`絶対~形$に解決することになる。
+参照~内の素片（ `fragment$p ）成分は、在っても，~target~URIからは除外される
+— 素片~識別子は、`~client$側の処理（ `RFC3986/3.5$sec ）に予約されているので。
 ◎
 HTTP communication is initiated by a user agent for some purpose. The purpose is a combination of request semantics and a target resource upon which to apply those semantics. A URI reference (Section 2.4) is typically used as an identifier for the "target resource", which a user agent would resolve to its absolute form in order to obtain the "target URI". The target URI excludes the reference's fragment component, if any, since fragment identifiers are reserved for client-side processing ([RFC3986], Section 3.5).
 </p>
@@ -4753,13 +4767,6 @@ If the request is not satisfied by a cache, then a typical client will check its
 If no proxy is applicable, a typical client will invoke a handler routine, usually specific to the target URI's scheme, to connect directly to an origin for the target resource. How that is accomplished is dependent on the target URI scheme and defined by its associated specification, similar to how this specification defines origin server access for resolution of the "http" (Section 2.5.1) and "https" (Section 2.5.2) schemes.
 </p>
 
-<p>
-接続の管理に関する~HTTP要件は、
-`Messaging/9$sec にて定義される。
-◎
-HTTP requirements regarding connection management are defined in Section 9 of [Messaging].
-</p>
-
 		</section>
 		<section id="authoritative.access">
 <h3 title="Direct Authoritative Access">5.4. 直な権限的~access</h3>
@@ -4770,7 +4777,7 @@ HTTP requirements regarding connection management are defined in Section 9 of [M
 <p>
 ~HTTPは，~transport~protocolには依存しないが、
 "`http$c" `~scheme$は，次に関して~TCPに特有である
-— すなわち，その `authority$p （ “権限” ）成分の中で識別される `host$p が何であれ、権限を［［
+— その `authority$p （ “権限” ）成分の中で識別される `host$p が何であれ、権限を［［
 その `host$p の指示された `port$p 上で，~TCP接続を~listenしている`生成元~server$
 ］を制御する何者か
 ］に結付けることに関して。
@@ -4780,8 +4787,8 @@ HTTP requirements regarding connection management are defined in Section 9 of [M
 中間者~攻撃に対し~secure化されないかもしれない通信
 ］にも依存するので、ごく弱いイミの権限である。
 そうであっても，［
-"`http$c" 識別子を，ある`生成元~server$に束縛すること
-］は、少なくとも，信用される環境の中で解決~結果が一貫するためには足るものになる。
+"`http$c" 識別子たちを，ある`生成元~server$に束縛すること
+］は、少なくとも，信用される環境の中で解決が一貫するためには足るものになる。
 ◎
 Although HTTP is independent of the transport protocol, the "http" scheme is specific to associating authority with whomever controls the origin server listening for TCP connections on the indicated port of whatever host is identified within the authority component. This is a very weak sense of authority because it depends on both client-specific name resolution mechanisms and communication that might not be secured from man-in-the-middle attacks. Nevertheless, it is a sufficient minimum for binding "http" identifiers to an origin server for consistent resolution within a trusted environment.
 </p>
@@ -4813,7 +4820,7 @@ If the host identifier is provided as an IP address, the origin server is the li
 その~addressへの~TCP接続を指示された `port$p 上に確立して、
 </li>
 	<li>
-~HTTP要請`~message$を
+~HTTP要請~messageを
 — 当の~URIを識別する~dataを包含した上で —
 `~server$へ送信する。
 </li>
@@ -4824,7 +4831,7 @@ When an "http" URI is used within a context that calls for access to the indicat
 
 <p>
 そのような要請に対し，`~server$が［
-暫定-（ `1xx$st ）でない~HTTP応答`~message$で応答した
+暫定-（ `1xx$st ）でない~HTTP応答~messageで応答した
 ］なら、その応答は［
 `~client$の要請に対する`権限的$な回答
 ］と見なされる。
@@ -4951,12 +4958,12 @@ In HTTP/2, a client will associate authority to all names that are present in th
 を同意tなしに
 "<code>https://example.com:`Q^V/foo</code>"
 に置換すること
-］はできないことを確保するため、`実効~要請~URI$を検査することが必要とされる。
+］はできないことを確保するため、`~target~URI$を検査することが必要とされる。
 同様に，`~server$は、［
 一部の`~host$に対しては、`生成元$として~serveする権限を有するときでも，そうする用意はない
 ］かもしれない。
 ◎
-In addition to the client's verification, an origin server is responsible for verifying that requests it receives over a connection correspond to resources for which it actually wants to be the origin. If a network attacker causes connections for port N to be received at port Q, checking the effective request URI is necessary to ensure that the attacker can't cause "https://example.com:N/foo" to be replaced by "https://example.com:Q/foo" without consent. Likewise, a server might be unwilling to serve as the origin for some hosts even when they have the authority to do so.
+In addition to the client's verification, an origin server is responsible for verifying that requests it receives over a connection correspond to resources for which it actually wants to be the origin. If a network attacker causes connections for port N to be received at port Q, checking the target URI is necessary to ensure that the attacker can't cause "https://example.com:N/foo" to be replaced by "https://example.com:Q/foo" without consent. Likewise, a server might be unwilling to serve as the origin for some hosts even when they have the authority to do so.
 </p>
 
 <div class="p">
@@ -4979,7 +4986,7 @@ In addition to the client's verification, an origin server is responsible for ve
 機密性と完全性が保護されるよう`~secure化$して、
 </li>
 	<li>
-その~secure化された接続~越しに~HTTP要請`~message$を
+その~secure化された接続~越しに~HTTP要請~messageを
 — 当の~URIを識別する~dataを包含した上で —
 `~server$へ送信する。
 </li>
@@ -4991,7 +4998,7 @@ When an "https" URI is used within a context that calls for access to the indica
 
 <p>
 そのような要請に対し，`~server$が［
-暫定-（ `1xx$st ）でない~HTTP応答`~message$で応答した
+暫定-（ `1xx$st ）でない~HTTP応答~messageで応答した
 ］なら、その応答は［
 `~client$の要請に対する`権限的$な回答
 ］と見なされる。
@@ -5135,11 +5142,11 @@ Typically, the server has no external knowledge of what the client's identity ou
 				</section>
 			</section>
 		</section>
-		<section id="effective.request.uri">
-<h3 title="Effective Request URI">5.5. 実効~要請~URI</h3>
+		<section id="reconstructing.target.uri">
+<h3 title="Reconstructing the Target URI">5.5. ~target~URIの再構築-法</h3>
 
 <p>
-`内方$への接続が得られたなら、`~client$は，~HTTP要請`~message$を送信する。
+`内方$への接続が得られたなら、`~client$は，~HTTP要請~messageを送信する。
 ◎
 Once an inbound connection is obtained, the client sends an HTTP request message (Section 2 of [Messaging]).
 </p>
@@ -5148,32 +5155,22 @@ Once an inbound connection is obtained, the client sends an HTTP request message
 ~clientの~target~URIは、当の要請の資質に依存して，要請~messageを成す様々な各部の中へ 何~成分かに分割されて，伝送される（または含意される）こともある。
 各~受信者は、［
 各自の局所的な環境設定, 入って来る接続の文脈
-］に則って，これらの各部を結合し直して、当の~serverに関して意図される`~target資源$を識別するために，
-`実効~要請~URI^dfn
-を形成する。
-~serverが~HTTP11要請~用に実効~要請~URIを決定する方法は、
+］に則って，`~target~URI$を決定する。
+~serverが~HTTP11要請~用に~target~URIを決定する方法は、
 `Messaging/3.3$sec
 が定義する。
 ◎
-Depending on the nature of the request, the client's target URI might be split into components and transmitted (or implied) within various parts of a request message. These parts are recombined by each recipient, in accordance with their local configuration and incoming connection context, to form an "effective request URI" for identifying the intended target resource with respect to that server. Section 3.3 of [Messaging] defines how a server determines the effective request URI for an HTTP/1.1 request.
-</p>
-
-<p>
-`~UA$にとっては、`実効~要請~URI$が，`~target~URI$になる。
-◎
-For a user agent, the effective request URI is the target URI.
+Depending on the nature of the request, the client's target URI might be split into components and transmitted (or implied) within various parts of a request message. These parts are recombined by each recipient, in accordance with their local configuration and incoming connection context, to determine the target URI. Section 3.3 of [Messaging] defines how a server determines the target URI for an HTTP/1.1 request.
 </p>
 
 <div class="p">
 <p>
-`実効~要請~URI$が構築されたなら、`生成元~server$は，［
+`~target~URI$が再構築されたなら、`生成元~server$は，［
 その~URIに対する~serviceを，［
 要請が受信された接続
 ］を介して供するかどうか
 ］を裁定する必要がある。
-例えば，受信した要請の［
-`request-target$p ／ `Host$h ~header
-］の中の情報は、故意に, あるいは不用意に誤って［
+例えば，受信した要請の `Host$h ~headerの中の情報は、故意に, あるいは不用意に誤って［
 接続が~~確立されている［
 `~host$＆`~port$
 ］とは相違する何か
@@ -5184,7 +5181,7 @@ For a user agent, the effective request URI is the target URI.
 非公開の内容を送達させるよう，~serverを騙す ／
 ~cacheを汚染する
 ◎
-Once the effective request URI has been constructed, an origin server needs to decide whether or not to provide service for that URI via the connection in which the request was received. For example, the request might have been misdirected, deliberately or accidentally, such that the information within a received request-target or Host header field differs from the host or port upon which the connection has been made. If the connection is from a trusted gateway, that inconsistency might be expected; otherwise, it might indicate an attempt to bypass security filters, trick the server into delivering non-public content, or poison a cache.＼
+Once the target URI has been reconstructed, an origin server needs to decide whether or not to provide service for that URI via the connection in which the request was received. For example, the request might have been misdirected, deliberately or accidentally, such that the information within a received Host header field differs from the host or port upon which the connection has been made. If the connection is from a trusted gateway, that inconsistency might be expected; otherwise, it might indicate an attempt to bypass security filters, trick the server into delivering non-public content, or poison a cache.＼
 </p>
 
 <p>
@@ -5194,6 +5191,14 @@ Once the effective request URI has been constructed, an origin server needs to d
 See Section 11 for security considerations regarding message routing.
 </p>
 </div>
+
+<p class="note">注記：
+以前の仕様は、構成し直した~target~URIを，別個な概念として
+<dfn id="effective.request.uri">実効~要請~URI</dfn>
+（ `effective request URI^en ）と定義していた。
+◎
+Note: previous specifications defined the recomposed target URI as a distinct concept, the effective request URI.
+</p>
 
 		</section>
 		<section id="header.host">
@@ -5271,56 +5276,6 @@ Host: www.example.org
 </pre>
 
 </div>
-
-<p>
-`~client$は、
-`request-target$p が `absolute-form$p であっても，
-`~HTTP11$要請においては `Host$h ~headerを送信しなければナラナイ。
-これにより、 `Host$h 情報を［
-`Host$h を実装していない古代の~HTTP10~proxy
-］を通して回送することも可能になるので。
-◎
-A client MUST send a Host header field in an HTTP/1.1 request even if the request-target is in the absolute-form, since this allows the Host information to be forwarded through ancient HTTP/1.0 proxies that might not have implemented Host.
-</p>
-
-<div class="p">
-<p>
-`~proxy$は、［
-`absolute-form$p による `request-target$p
-］を伴う要請を受信したときは、要請~内に `Host$h ~headerを受信したとしても：
-◎
-When a proxy receives a request with an absolute-form of request-target,＼
-</p>
-
-<ul>
-	<li>
-`Host$h ~headerは無視して、代わりにそれを［
-`request-target$p を成す `host$p 情報
-］に置換しなければナラナイ。
-【例えば、自身が使役する~cache用に】
-◎
-the proxy MUST ignore the received Host header field (if any) and instead replace it with the host information of the request-target.＼
-</li>
-	<li>
-その要請を回送するときは、
-`Host$h ~header`~field値$は そのまま回送せずに，［
-受信した `request-target$p に基づく，新たな `Host$h `~field値$
-］を`生成し$なければナラナイ。
-◎
-A proxy that forwards such a request MUST generate a new Host field value based on the received request-target rather than forward the received Host field value.
-</li>
-</ul>
-</div>
-
-<p>
-`生成元~server$は，［
-`absolute-form$p による `request-target$p
-］を伴う要請を受信したときは、要請~内に `Host$h ~headerを受信したとしても無視して，代わりに `request-target$p を成す `host$p 情報を利用しなければナラナイ。
-この事例では、
-`request-target$p に `authority$p 成分が無い場合，空な `Host$h ~headerが送信されることになることに注意。
-◎
-When an origin server receives a request with an absolute-form of request-target, the origin server MUST ignore the received Host header field (if any) and instead use the host information of the request-target. Note that if the request-target does not have an authority component, an empty Host header field will be sent in this case.
-</p>
 
 <p>
 `Host$h ~headerは，［
@@ -5738,34 +5693,30 @@ An HTTP-to-HTTP proxy is called a "transforming proxy" if it is designed or conf
 <ul>
 	<li>
 <p>
-受信した `request-target$p に［
+受信した`~target~URI$に［
 完全修飾~domain名でない `host$p 名
-］が伴われる場合には、要請を回送するときに，自前の~domainを受信した`host$p 名に追加してもヨイ。
+］が伴われる場合には、要請を回送するときに，自前の~domainを受信した `host$p 名に追加してもヨイ。
 ◎
-If a proxy receives a request-target with a host name that is not a fully qualified domain name, it MAY add its own domain to the host name it received when forwarding the request.＼
+If a proxy receives a target URI with a host name that is not a fully qualified domain name, it MAY add its own domain to the host name it received when forwarding the request.＼
 </p>
 
 <p>
-［
-`request-target$p が完全修飾~domain名を包含する
-］場合には，
-`host$p 名を変更してはナラナイ。
+`~target~URI$が完全修飾~domain名を包含する場合には。 `host$p 名を変更してはナラナイ。
 ◎
-A proxy MUST NOT change the host name if the request-target contains a fully qualified domain name.
+A proxy MUST NOT change the host name if the target URI contains a fully qualified domain name.
 </p>
 
 	</li>
 	<li>
-受信した `request-target$p を，`内方$にある次の`~server$へ回送するときには、その［
+受信した`~target~URI$を，`内方$にある次の`~server$へ回送するときには、その［
 `absolute-path$p, `query$p
 ］を成す部分を改変してはナラナイ
 — ただし，上に注記された［
 空な~pathを "`/^c" または "`*^c" に置換する
 ］場合を除く。
 ◎
-A proxy MUST NOT modify the "absolute-path" and "query" parts of the received request-target when forwarding it to the next inbound server, except as noted above to replace an empty path with "/" or "*".
+A proxy MUST NOT modify the "absolute-path" and "query" parts of the received target URI when forwarding it to the next inbound server, except as noted above to replace an empty path with "/" or "*".
 </li>
-
 	<li>
 ［
 `転送~符号法$を，適用したり除去する
@@ -5897,13 +5848,13 @@ An origin server might be provided with, or be capable of generating, multiple r
 ~HTTP~messageに結付けられる`表現$を成す~dataは、［
 ~messageの`~payload本体$として供される
 ］か, または［
-~message意味論と`実効~要請~URI$から指される
+~message意味論と`~target~URI$から指される
 ］か，のいずれかになる。
 表現~dataの［
 形式と符号化法
 ］は、`表現~metadata$~headerにより定義される。
 ◎
-The representation data associated with an HTTP message is either provided as the payload body of the message or referred to by the message semantics and the effective request URI. The representation data is in a format and encoding defined by the representation metadata header fields.
+The representation data associated with an HTTP message is either provided as the payload body of the message or referred to by the message semantics and the target URI. The representation data is in a format and encoding defined by the representation metadata header fields.
 </p>
 
 <p>
@@ -7234,29 +7185,27 @@ Any Content-Length field value greater than or equal to zero is valid. Since the
 
 <div class="p">
 <p>
-受信した~message内に `Content-Length$h ~headerが［
-複数個あって，その`~field行l値$【！~field値】が互いに一致する~decimal値†である ／
-1 個あって，その`~field値$は互いに一致する~decimal値からなる~listである（例：
-`Content-Length: 42, 42^c ）
-］場合††、`上流$の~message処理器が，［
+受信した~message内に `Content-Length$h ~headerが在って，［
+その`~field値$は、~comma区切りの~list（ `4.5$sec ）として，複数個の同じ~decimal値からなる場合（例： `Content-Length: 42, 42^c ）
+］†、`上流$の~message処理器が［
 `Content-Length$h ~headerを重複して`生成し$たか, または`結合-$した
 ］ことを指示している。
 そのような場合，`受信者$は、［
 `~message本体$の長さを決定する ／ ~messageを回送する
 ］に先立って，次のいずれかを行わなければナラナイ：
 ◎
-If a message is received that has multiple Content-Length header fields with field values consisting of the same decimal value, or a single Content-Length header field with a field value containing a list of identical decimal values (e.g., "Content-Length: 42, 42"), indicating that duplicate Content-Length header fields have been generated or combined by an upstream message processor, then the recipient MUST either＼
+If a message is received that has a Content-Length header field value consisting of the same decimal value as a comma-separated list (Section 4.5) — for example, "Content-Length: 42, 42" — indicating that duplicate Content-Length header fields have been generated or combined by an upstream message processor, then the recipient MUST either＼
 </p>
 
 <ul>
-	<li>
+	<li id="invalid-Content-Length">
 ~messageを妥当でないものとして却下する。
 ◎
 reject the message as invalid or＼
 </li>
 	<li>
 重複された値たち【！~field値】を［
-その~decimal~~表現【！~decimal値】を包含している， 1 個の妥当な`Content-Length$h ~header
+その~decimal値を包含している， 1 個の妥当な`Content-Length$h ~header
 ］に置換する。
 ◎
 replace the duplicated field values with a single valid Content-Length field containing that decimal value prior to determining the message body length or forwarding the message.
@@ -7264,13 +7213,12 @@ replace the duplicated field values with a single valid Content-Length field con
 </ul>
 
 <p class="trans-note">【†
-はっきりしないが， “~decimal値” とは、
-“~decimal数として解釈した結果の数”
-の略記（ "`011^c" と "`11^c" は，~decimal値として一致すると見なす）と思われる。
-】【††
-異なる値が混じっている場合、~HTTP11においては
-<a href="~HTTPmsg#invalid-Content-Length-value">~message~frame法は妥当でない</a>
+`Content-Length$p は~list構文を受容しないが、ここでは特別に取扱われている。
+異なる値や妥当でない値が混じっている場合、~HTTP11においては，
+<a href="~HTTPmsg#invalid-Content-Length">~message~frame法は妥当でない</a>
 とされ，回復-不能な~errorになる。
+】【†
+同じ数を表現する異なる値（ "`012^c" と "`12^c" など）は同じと見なすのかどうか、はっきりしない。
 】</p>
 </div>
 
@@ -7297,7 +7245,7 @@ The "Content-Location" header field references a URI that can be used as an iden
 </pre>
 
 <p>
-`Content-Location^h 値は、`実効~要請~URI$に代わるものではない。
+`Content-Location^h 値は、`~target~URI$に代わるものではない。
 それは、`表現~metadata$である。
 その構文と意味論は、［
 ~MIME本体 部分~用に定義される同じ名前の~header `RFC2557/4$sec
@@ -7306,24 +7254,20 @@ The "Content-Location" header field references a URI that can be used as an iden
 `Content-Location^h の出現は、~HTTP受信者にとっては，ある特別な含意がある
 —
 ◎
-The Content-Location value is not a replacement for the effective Request URI (Section 5.5). It is representation metadata. It has the same syntax and semantics as the header field of the same name defined for MIME body parts in Section 4 of [RFC2557]. However, its appearance in an HTTP message has some special implications for HTTP recipients.
+The Content-Location value is not a replacement for the target URI (Section 5.1). It is representation metadata. It has the same syntax and semantics as the header field of the same name defined for MIME body parts in Section 4 of [RFC2557]. However, its appearance in an HTTP message has some special implications for HTTP recipients.
 </p>
 
 <p>
-それが， `2xx$st 応答~message内に内包されているならば、その`~field値$（を `absolute-form$p へ変換した†後の値）が：
+それが， `2xx$st 応答~message内に内包されているならば、その`~field値$（を`絶対~形$へ変換した後の値）が：
 ◎
 If Content-Location is included in a 2xx (Successful) response message and its value refers (after conversion to absolute form)＼
 </p>
 
-<p class="trans-note">【†
-具体的にどう変換するのか記されていないが、実効~要請~URIの構築（ `Messaging/3.3$sec ）と同様に？
-】</p>
-
 <dl class="switch">
 	<dt>
-`実効~要請~URI$と同じ~URIを指す場合：
+`~target~URI$と同じ~URIを指す場合：
 ◎
-to a URI that is the same as the effective request URI, then＼
+to a URI that is the same as the target URI, then＼
 </dt>
 	<dd>
 <p>
@@ -7333,7 +7277,6 @@ to a URI that is the same as the effective request URI, then＼
 ◎
 the recipient MAY consider the payload to be a current representation of that resource at the time indicated by the message origination date.＼
 </p>
-
 		<ul>
 			<li>
 ［
@@ -7359,9 +7302,9 @@ For a state-changing request like PUT (Section 7.3.4) or POST (Section 7.3.3), i
 	</dd>
 
 	<dt>
-`実効~要請~URI$と相違する`~URI$を指す場合：
+`~target~URI$と相違する`~URI$を指す場合：
 ◎
-If Content-Location is included in a 2xx (Successful) response message and its field value refers to a URI that differs from the effective request URI, then＼
+If Content-Location is included in a 2xx (Successful) response message and its field value refers to a URI that differs from the target URI, then＼
 </dt>
 	<dd>
 <p>
@@ -7379,7 +7322,6 @@ the origin server claims that the URI is an identifier for a different resource 
 <p>
 （以下、 `Content-Location^h `~field値$を単に `~field値^V と記す。）
 </p>
-
 		<ul>
 			<li>
 <p>
@@ -7389,7 +7331,7 @@ the origin server claims that the URI is an identifier for a different resource 
 </p>
 				<ul>
 					<li>
-`実効~要請~URI$は、`内容~折衝$の~subjectである`資源$を指している。
+`~target~URI$は、`内容~折衝$の~subjectである`資源$を指している。
 </li>
 					<li>
 `~field値^V は、`選定された表現$用の，より特定な識別子である。
@@ -7397,7 +7339,7 @@ the origin server claims that the URI is an identifier for a different resource 
 				</ul>
 
 ◎
-• For a response to a GET or HEAD request, this is an indication that the effective request URI refers to a resource that is subject to content negotiation and the Content-Location field value is a more specific identifier for the selected representation.
+• For a response to a GET or HEAD request, this is an indication that the target URI refers to a resource that is subject to content negotiation and the Content-Location field value is a more specific identifier for the selected representation.
 </li>
 			<li>
 状態変更~methodに対する `201$st 応答に対しては、［
@@ -7609,7 +7551,7 @@ Response messages with an error status code usually contain a payload that repre
 
 <p>
 `~message~payload$内に［
-完全な, または部分的な`表現$
+完全または部分的な`表現$
 ］が転送されるときに、［
 その表現に対応する`資源$用の識別子
 ］を［
@@ -7669,10 +7611,10 @@ For a response message, the following rules are applied in order until a match i
 			<dt>`304$st</dt>
 			<dd>
 ~payloadは、［
-`実効~要請~URI$により識別される`資源$
+`~target~URI$により識別される`資源$
 ］の`表現$である。
 ◎
-If the request method is GET or HEAD and the response status code is 200 (OK), 204 (No Content), 206 (Partial Content), or 304 (Not Modified), the payload is a representation of the resource identified by the effective request URI (Section 5.5).
+If the request method is GET or HEAD and the response status code is 200 (OK), 204 (No Content), 206 (Partial Content), or 304 (Not Modified), the payload is a representation of the resource identified by the target URI (Section 5.5).
 </dd>
 			<dt>`203$st</dt>
 			<dd>
@@ -7691,7 +7633,7 @@ If the request method is GET or HEAD and the response status code is 203 (Non-Au
 	</li>
 	<li>
 <p>
-他の場合，応答に `Content-Location$h ~headerが在るならば、その`~field値$が，`実効~要請~URI$と：
+他の場合，応答に `Content-Location$h ~headerが在るならば、その`~field値$が，`~target~URI$と：
 ◎
 ↓</p>
 		<ul class="switch">
@@ -7699,10 +7641,10 @@ If the request method is GET or HEAD and the response status code is 203 (Non-Au
 同じ~URIへの参照である場合
 ⇒
 ~payloadは、［
-`実効~要請~URI$により識別される`資源$
+`~target~URI$により識別される`資源$
 ］の`表現$である。
 ◎
-If the response has a Content-Location header field and its field value is a reference to the same URI as the effective request URI, the payload is a representation of the resource identified by the effective request URI.
+If the response has a Content-Location header field and its field value is a reference to the same URI as the target URI, the payload is a representation of the resource identified by the target URI.
 </li>
 			<li>
 <p>
@@ -7713,7 +7655,7 @@ If the response has a Content-Location header field and its field value is a ref
 ］ことを表明している。
 しかしながら，そのような表明は、他の手段（この仕様では定義されない）により検証yされない限り，信用できない。
 ◎
-If the response has a Content-Location header field and its field value is a reference to a URI different from the effective request URI, then the sender asserts that the payload is a representation of the resource identified by the Content-Location field value. However, such an assertion cannot be trusted unless it can be verified by other means (not defined by this specification).
+If the response has a Content-Location header field and its field value is a reference to a URI different from the target URI, then the sender asserts that the payload is a representation of the resource identified by the Content-Location field value. However, such an assertion cannot be trusted unless it can be verified by other means (not defined by this specification).
 </p>
 
 <p class="trans-note">【
@@ -8934,18 +8876,18 @@ Users need to be aware that intermediaries are no more trustworthy than the peop
 
 <p>
 `生成元~server$は、［
-`実効~要請~URI$から資源~表現への対応付け
+`~target~URI$から資源~表現への対応付け
 ］を管理するために，自身の局所的な~file~systemを用立てることが多い。
 ほとんどの~file~systemは、悪意的な［
 ~file／~path
 ］名から保護されるように設計されていない。
-したがって，生成元~serverは、`要請~target$から［
+したがって，生成元~serverは、`~target資源$を［
 ~file／~folder／~directory
-］への対応付けに際し，［
-~systemにおいて特別な有意性を持つような，名前
+］に対応付けるときに，［
+~systemにおいて特別な有意性がある名前
 ］への~accessを避ける必要がある。
 ◎
-Origin servers frequently make use of their local file system to manage the mapping from effective request URI to resource representations. Most file systems are not designed to protect against malicious file or path names. Therefore, an origin server needs to avoid accessing names that have a special significance to the system when mapping the request target to files, folders, or directories.
+Origin servers frequently make use of their local file system to manage the mapping from target URI to resource representations. Most file systems are not designed to protect against malicious file or path names. Therefore, an origin server needs to avoid accessing names that have a special significance to the system when mapping the target resource to files, folders, or directories.
 </p>
 
 <p>
@@ -8997,20 +8939,20 @@ Attacks based on such special names tend to focus on either denial-of-service (e
 ］を通して渡されたときに［
 ~command／~code／~query
 ］として誤解釈され得る
-］ような~dataを包含させるために，どのような要請~data要素（~method, `request-target$p, ~header, 本体）も構築できる。
+］ような~dataを包含させるために，どのような要請~data要素（~method, `~target~URI$, ~header, 本体）も構築できる。
 ◎
-Origin servers often use parameters within the URI as a means of identifying system services, selecting database entries, or choosing a data source. However, data received in a request cannot be trusted. An attacker could construct any of the request data elements (method, request-target, header fields, or body) to contain data that might be misinterpreted as a command, code, or query when passed through a command invocation, language interpreter, or database interface.
+Origin servers often use parameters within the URI as a means of identifying system services, selecting database entries, or choosing a data source. However, data received in a request cannot be trusted. An attacker could construct any of the request data elements (method, target URI, header fields, or body) to contain data that might be misinterpreted as a command, code, or query when passed through a command invocation, language interpreter, or database interface.
 </p>
 
 <p>
 例えば SQL 注入は、［
-`request-target$p または~header（例： `Host$h, `Referer$h, 等々）のある部分
+`~target~URI$または~header（例： `Host$h, `Referer$h, 等々）のある部分
 ］の中に 追加的な~query言語を挿入するときに，共通的にある攻撃である。
 受信した~dataが SELECT 文0の中で直に利用された場合、~query言語は，~database~commandとして解釈され得る
 — 単純な文字列~値としてではなく。
 実装における この型の脆弱性は、防止するのは容易にもかかわらず，ごく ありふれている。
 ◎
-For example, SQL injection is a common attack wherein additional query language is inserted within some part of the request-target or header fields (e.g., Host, Referer, etc.). If the received data is used directly within a SELECT statement, the query language might be interpreted as a database command instead of a simple string value. This type of implementation vulnerability is extremely common, in spite of being easy to prevent.
+For example, SQL injection is a common attack wherein additional query language is inserted within some part of the target URI or header fields (e.g., Host, Referer, etc.). If the received data is used directly within a SELECT statement, the query language might be interpreted as a database command instead of a simple string value. This type of implementation vulnerability is extremely common, in spite of being easy to prevent.
 </p>
 
 <p>
@@ -9072,13 +9014,13 @@ To promote interoperability, specific recommendations are made for minimum size 
 
 <p>
 `~server$は、~messageの［
-`request-target$p が~~長過ぎる／要請の`~payload$が巨大~過ぎる
+`~target~URI$が~~長過ぎる／要請の`~payload$が巨大~過ぎる
 ］場合には，（ `414$st ／ `413$st で）却下できる。
 ~HTTPの拡張 `RFC6585$r にも，［
 容量~制限に関係する追加的な`状態s~code$
 ］が定義されている。
 ◎
-A server can reject a message that has a request-target that is too long (Section 9.5.15) or a request payload that is too large (Section 9.5.14). Additional status codes related to capacity limits have been defined by extensions to HTTP [RFC6585].
+A server can reject a message that has a target URI that is too long (Section 9.5.15) or a request payload that is too large (Section 9.5.14). Additional status codes related to capacity limits have been defined by extensions to HTTP [RFC6585].
 </p>
 
 <p>
@@ -9190,18 +9132,17 @@ URIs are intended to be shared, not secured, even when they identify secure reso
 ~serviceの作者は、［
 `GET$m に基づく~formによる，敏感な~dataの提出
 ］を避ける~OUGHT
-— そのような~dataは、 `request-target$p 内に置かれることになるので。
+— そのような~dataは、 `~target~URI$内に置かれることになるので。
 既存の［
 ~server／~proxy／~UA
-］の多くは、
-`request-target$p を［
+］の多くは、`~target~URI$を［
 第三者主体から可視になり得る所
 ］に，~logしたり, 表示する。
 そのような~serviceは、代わりに［
 `POST$m に基づく~form提出
 ］を利用する~OUGHT。
 ◎
-Authors of services ought to avoid GET-based forms for the submission of sensitive data because that data will be placed in the request-target. Many existing servers, proxies, and user agents log or display the request-target in places where it might be visible to third parties. Such services ought to use POST-based form submission instead.
+Authors of services ought to avoid GET-based forms for the submission of sensitive data because that data will be placed in the target URI. Many existing servers, proxies, and user agents log or display the target URI in places where it might be visible to third parties. Such services ought to use POST-based form submission instead.
 </p>
 
 <p>
@@ -9657,7 +9598,7 @@ Trailer field semantics now transcend the specifics of chunked encoding. Use of 
 </p>
 
 <p>
-`absolute-form$p による要請~URIの優先度を
+`絶対~形$による要請~URIの優先度を
 — ~proxyの取扱いに揃えるため —
 明示的に，`生成元~server$による `Host^h ~headerよりも高くした。
 （ § `Host$h ）
@@ -9718,6 +9659,14 @@ The description of an origin and authoritative access to origin servers has been
 （ `2.4$sec【！`2.5^sec】 ）
 ◎
 Minimum URI lengths to be supported by implementations are now recommended. (Section 2.5)
+</p>
+
+<p>
+用語 “実効~要請~URI” を “`~target~URI$” に置換した。
+（ `5.1$sec ）
+【 “要請~target” も “~target~URI” ／ “~target資源” に置換された。】
+◎
+The term "effective request URI" has been replaced with "target URI". (Section 5.1)
 </p>
 
 <p>
