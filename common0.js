@@ -1109,7 +1109,7 @@ CSSOVERFLOW4:https://drafts.csswg.org/css-overflow-4/
 CSSOVERFLOW3:css-overflow3-ja.html
 CSSPV1:css-properties-values-api-ja.html
 CSSPAGE:css-page-ja.html
-CSSPOS:https://drafts.csswg.org/css-position-3/
+CSSPOS:css-position-ja.html
 CSSRUBY:css-ruby-ja.html
 CSSREGION:https://drafts.csswg.org/css-regions-1/
 CSSSCOPING:css-scoping-ja.html
