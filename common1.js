@@ -1631,6 +1631,7 @@ CSSOVERFLOW3=副       ~/css-overflow3-ja.html
 CSSPAGE3=副           ~/css-page-ja.html
 CSSRUBY1=副           ~/css-ruby-ja.html
 CSSSHAPES1=副         ~/css-shapes-ja.html
+CSSSPEECH1=副         ~/css-speech-ja.html
 CSSSIZING3=副         ~/css-sizing-ja.html
 CSSOM1=副             ~/cssom-ja.html
 CSSOMVIEW1=副         ~/cssom-view-ja.html

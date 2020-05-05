@@ -1281,6 +1281,9 @@ Realm:
 realm:
 title::::タイトル
 page::::ページ
+paged::::ページ化
+	~page割り:paginate
+	~page割り:pagination
 hint::::ヒント
 channel::::チャネル
 匿名:anonymous::~
@@ -2473,6 +2476,7 @@ item::::アイテム
 queue::::キュー
 entry::::エントリ
 group::::グループ
+	~group化:grouping
 key:
 member::::メンバ
 map::::マップ
