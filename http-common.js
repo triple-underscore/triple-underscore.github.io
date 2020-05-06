@@ -208,66 +208,66 @@ COMMON_DATA.link_map += `
 
 	●header fields 
 
-h.TE:~HTTPmsg#header.te
-h.Transfer-Encoding:~HTTPmsg#header.transfer-encoding
-h.Connection:~HTTPmsg#header.connection
-h.Upgrade:~HTTPmsg#header.upgrade
-h.Close:~HTTPmsg#header.close
+h.TE:~HTTPmsg#field.te
+h.Transfer-Encoding:~HTTPmsg#field.transfer-encoding
+h.Connection:~HTTPmsg#field.connection
+h.Upgrade:~HTTPmsg#field.upgrade
+h.Close:~HTTPmsg#field.close
 h.Keep-Alive:~HTTPmsg#compatibility.with.http.1.0.persistent.connections
-	h.Keep-Alive:~HTTPmsg#header.keep-alive
+	h.Keep-Alive:~HTTPmsg#field.keep-alive
 h.MIME-Version:~HTTPmsg#mime-version
 
-h.Trailer:~HTTPsem#header.trailer
-h.Host:~HTTPsem#header.host
-h.Via:~HTTPsem#header.via
-h.Content-Type:~HTTPsem#header.content-type
-h.Content-Encoding:~HTTPsem#header.content-encoding
-h.Content-Language:~HTTPsem#header.content-language
-h.Content-Length:~HTTPsem#header.content-length
-	h.Content-Length:~HTTPsem#header.content-length
-h.Content-Location:~HTTPsem#header.content-location
-h.Content-Range:~HTTPsem#header.content-range
+h.Trailer:~HTTPsem#field.trailer
+h.Host:~HTTPsem#field.host
+h.Via:~HTTPsem#field.via
+h.Content-Type:~HTTPsem#field.content-type
+h.Content-Encoding:~HTTPsem#field.content-encoding
+h.Content-Language:~HTTPsem#field.content-language
+h.Content-Length:~HTTPsem#field.content-length
+	h.Content-Length:~HTTPsem#field.content-length
+h.Content-Location:~HTTPsem#field.content-location
+h.Content-Range:~HTTPsem#field.content-range
 
 
-h.Expect:~HTTPrq#header.expect
-h.Max-Forwards:~HTTPrq#header.max-forwards
-h.If-Match:~HTTPrq#header.if-match
-h.If-None-Match:~HTTPrq#header.if-none-match
-h.If-Modified-Since:~HTTPrq#header.if-modified-since
-h.If-Unmodified-Since:~HTTPrq#header.if-unmodified-since
-h.If-Range:~HTTPrq#header.if-range
-h.Range:~HTTPrq#header.range
-h.Accept:~HTTPrq#header.accept
-h.Accept-Charset:~HTTPrq#header.accept-charset
-h.Accept-Encoding:~HTTPrq#header.accept-encoding
-h.Accept-Language:~HTTPrq#header.accept-language
-h.Authorization:~HTTPrq#header.authorization
-h.Proxy-Authorization:~HTTPrq#header.proxy-authorization
-h.From:~HTTPrq#header.from
-h.Referer:~HTTPrq#header.referer
-h.User-Agent:~HTTPrq#header.user-agent
+h.Expect:~HTTPrq#field.expect
+h.Max-Forwards:~HTTPrq#field.max-forwards
+h.If-Match:~HTTPrq#field.if-match
+h.If-None-Match:~HTTPrq#field.if-none-match
+h.If-Modified-Since:~HTTPrq#field.if-modified-since
+h.If-Unmodified-Since:~HTTPrq#field.if-unmodified-since
+h.If-Range:~HTTPrq#field.if-range
+h.Range:~HTTPrq#field.range
+h.Accept:~HTTPrq#field.accept
+h.Accept-Charset:~HTTPrq#field.accept-charset
+h.Accept-Encoding:~HTTPrq#field.accept-encoding
+h.Accept-Language:~HTTPrq#field.accept-language
+h.Authorization:~HTTPrq#field.authorization
+h.Proxy-Authorization:~HTTPrq#field.proxy-authorization
+h.From:~HTTPrq#field.from
+h.Referer:~HTTPrq#field.referer
+h.User-Agent:~HTTPrq#field.user-agent
 
-h.Date:~HTTPrs#header.date
-h.Location:~HTTPrs#header.location
-h.Retry-After:~HTTPrs#header.retry-after
-h.Vary:~HTTPrs#header.vary
-h.Last-Modified:~HTTPrs#header.last-modified
-h.ETag:~HTTPrs#header.etag
+h.Date:~HTTPrs#field.date
+h.Location:~HTTPrs#field.location
+h.Retry-After:~HTTPrs#field.retry-after
+h.Vary:~HTTPrs#field.vary
+h.Last-Modified:~HTTPrs#field.last-modified
+h.ETag:~HTTPrs#field.etag
 
-h.WWW-Authenticate:~HTTPrs#header.www-authenticate
-h.Proxy-Authenticate:~HTTPrs#header.proxy-authenticate
-h.Authentication-Info:~HTTPrs#header.authentication-info
-h.Proxy-Authentication-Info:~HTTPrs#header.proxy-authentication-info
-h.Accept-Ranges:~HTTPrs#header.accept-ranges
-h.Allow:~HTTPrs#header.allow
-h.Server:~HTTPrs#header.server
+h.WWW-Authenticate:~HTTPrs#field.www-authenticate
+h.Proxy-Authenticate:~HTTPrs#field.proxy-authenticate
+h.Authentication-Info:~HTTPrs#field.authentication-info
+h.Proxy-Authentication-Info:~HTTPrs#field.proxy-authentication-info
+h.Accept-Ranges:~HTTPrs#field.accept-ranges
+h.Allow:~HTTPrs#field.allow
+h.Server:~HTTPrs#field.server
 
 	//HTTPcache
-h.Age:~HTTPcache#header.age
-h.Cache-Control:~HTTPcache#header.cache-control
-h.Pragma:~HTTPcache#header.pragma
-h.Warning:~HTTPcache#header.warning
-h.Expires:~HTTPcache#header.expires
+h.Age:~HTTPcache#field.age
+h.Cache-Control:~HTTPcache#field.cache-control
+h.Pragma:~HTTPcache#field.pragma
+h.Warning:~HTTPcache#field.warning
+h.Expires:~HTTPcache#field.expires
 
 h.Set-Cookie:~HTTPcookie#sane-set-cookie
 h.Cookie:~HTTPcookie#sane-cookie
@@ -595,7 +595,7 @@ c.realm:~HTTPrq#realm
 ~trailer節:~HTTPsem#trailer-section
 ~header:~HTTPsem#header-field
 ~trailer:~HTTPsem#trailer-field
-	~header:~HTTPsem#header.fields
+	~header:~HTTPsem#field.fields
 	~header値:~HTTPsem#field.values
 	~header名:~HTTPsem#field.names
 ~payload:~HTTPsem#payload
@@ -676,7 +676,7 @@ c.realm:~HTTPrq#realm
 認証~parameter:~HTTPrq#authentication-parameter
 正準的~root~URI:~HTTPrq#canonical-root-URI
 製品~識別子:~HTTPrq#product-identifier
-範囲~要請:~HTTPrq#header.range
+範囲~要請:~HTTPrq#field.range
 更新喪失:~HTTPrq#lost-update
 
 	●HTTPrs
