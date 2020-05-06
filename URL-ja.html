@@ -429,6 +429,7 @@ byte.長さ:~INFRA#byte-sequence-length
 ~C0制御文字:~INFRA#c0-control
 ~C0制御文字や~space:~INFRA#c0-control-or-space
 同型に復号する:~INFRA#isomorphic-decode
+厳密に分割する:~INFRA#strictly-split
 空:~INFRA#list-is-empty
 	~EACH:~INFRA#list-iterate
 ~list:~INFRA#list
@@ -2076,25 +2077,261 @@ Return asciiDomain.
 </ol>
 </div>
 
+<hr>
+
 <div class="algorithm">
+
+<p>
+`~IPv4構文解析器@
+は、所与の
+( 文字列 %入力 )
+に対し，次を走らす：
+◎
+The IPv4 parser takes a string input and then runs these steps:
+</p>
+
+<ol>
+	<li>
+<p>
+%検証~error ~LET ~F
+◎
+Let validationError be false.
+</p>
+
+<p class="note">注記：
+%検証~error は、`検証~error$を追跡して，［
+%入力 を~IPv4~addressとして構文解析するよう求まれないときは、それを報告するのを避ける
+］ために利用される
+— `~host構文解析器$は、ほぼ常に`~IPv4構文解析器$を呼出すので。
+◎
+This uses validationError to track validation errors to avoid reporting them before we are confident we want to parse input as an IPv4 address as the host parser almost always invokes the IPv4 parser.
+</p>
+	</li>
+	<li>
+%~~成分~list ~LET %入力 を ❝. で`厳密に分割する$
+◎
+Let parts be the result of strictly splitting input on U+002E (.).
+</li>
+	<li>
+<p>
+~IF［
+%~~成分~list 内の最後の`~item$ ~EQ 空~文字列
+］：
+◎
+If the last item in parts is the empty string, then:
+</p>
+		<ol>
+			<li>
+%検証~error ~SET ~T
+◎
+Set validationError to true.
+</li>
+			<li>
+<p>
+~IF［
+%~~成分~list の`~size$ ~GT 1
+］
+⇒
+%~~成分~list から最後の`~item$を`除去する$
+</p>
+
+<p class="trans-note">【
+%入力 の末尾に余計な ❝. があっても受容されることになる。
+】</p>
+◎
+If parts’s size is greater than 1, then remove the last item from parts.
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+%~~成分~list の`~size$ ~GT 4
+］
+⇒
+~RET %入力
+◎
+If parts’s size is greater than 4, then return input.
+</li>
+	<li>
+%数~list ~LET 新たな`~list$
+◎
+Let numbers be an empty list.
+</li>
+	<li>
+<p>
+%~~成分~list を成す
+~EACH( %~~成分 )
+に対し：
+◎
+For each part of parts:
+</p>
+		<ol>
+			<li>
+<p>
+~IF［
+%~~成分 ~EQ 空~文字列
+］
+⇒
+~RET %入力
+◎
+If part is the empty string, then return input.
+</p>
+
+<p class="example">
+`0..0x300^l は`~domain$であって，`~IPv4~address$ではない
+◎
+0..0x300 is a domain, not an IPv4 address.
+</p>
+			</li>
+			<li>
+( %数, %検証~結果 ) ~LET `~IPv4番号~構文解析器$( %~~成分 )
+◎
+Let result be the result of parsing part.
+</li>
+			<li>
+~IF［
+%検証~結果 ~EQ `失敗^i
+］
+⇒
+~RET %入力
+◎
+If result is failure, then return input.
+</li>
+			<li>
+~IF［
+%検証~結果 ~EQ `検証~error^i
+］
+⇒
+%検証~error ~SET ~T
+◎
+If result[1] is true, then set validationError to true.
+</li>
+			<li>
+%数~list に %数 を`付加する$
+◎
+Append result[0] to numbers.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~IF［
+%検証~error ~EQ ~T
+］
+⇒
+`検証~error$
+◎
+If validationError is true, validation error.
+</p>
+
+<p class="note">注記：
+この時点で、各~~成分は数に構文解析されたことになる。
+以降、 %入力 は~IPv4~address（または `失敗^i ）として扱われ，~error報告-法を再開することになる。
+◎
+At this point each part was parsed into a number and input will be treated as an IPv4 address (or failure). And therefore error reporting resumes.
+</p>
+	</li>
+	<li>
+~IF［
+%数~list を成す ある`~item$ ~GT 255
+］
+⇒
+`検証~error$
+◎
+If any item in numbers is greater than 255, validation error.
+</li>
+	<li>
+~IF［
+%数~list 内の最後でない ある`~item$ ~GT 255
+］
+⇒
+~RET `失敗^i
+◎
+If any but the last item in numbers is greater than 255, then return failure.
+</li>
+	<li>
+~IF［
+%数~list 内の最後の`~item$† ~GTE
+( 256 の ( 5 − ( %数~list の`~size$ ) ) 乗 )
+］
+⇒＃
+`検証~error$；
+~RET `失敗^i
+◎
+If the last item in numbers is greater than or equal to 256(5 − numbers’s size), validation error, return failure.
+</li>
+	<li>
+%ipv4 ~LET %数~list 内の最後の`~item$
+◎
+Let ipv4 be the last item in numbers.
+</li>
+	<li>
+%数~list から最後の`~item$を`除去する$††
+◎
+Remove the last item from numbers.
+</li>
+	<li>
+%~counter ~LET 0
+◎
+Let counter be 0.
+</li>
+	<li>
+<p>
+%数~list を成す
+~EACH( %n )
+に対し：
+◎
+For each n of numbers:
+</p>
+		<ol>
+			<li>
+%ipv4 ~INCBY ( %n × ( 256 の ( 3 − %~counter ) 乗 ) )
+◎
+Increment ipv4 by n × 256(3 − counter).
+</li>
+			<li>
+%~counter ~INCBY 1
+◎
+Increment counter by 1.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET %ipv4
+◎
+Return ipv4.
+</li>
+</ol>
+
+<p class="trans-note">【†
+最後の~itemだけ特別扱い
+— 例えば、
+`100.100.25600^l は `100.100.100.0^l と等価になり，
+`0xFFFFFFFF^l は `255.255.255.255^l と等価になる。
+】【††
+ここでも、（ %数~list の~sizeが 4 に満たない場合は）最後の~itemだけ特別扱い
+— 例えば、
+`100.100^l は `100.0.0.100^l と等価になる。
+】</p>
+
+</div>
+
+<div class="algorithm">
+
 <p>
 `~IPv4番号~構文解析器@
 は、所与の
 ( 文字列 %入力 )
 に対し，次を走らす：
 ◎
-The IPv4 number parser takes a string input and a validationErrorFlag pointer, and then runs these steps:
+The IPv4 number parser takes a string input and then runs these steps:
 </p>
 
 <ol>
 	<li>
-<p>
-%検証~error ~LET `無し^i
-</p>
-
-<p class="trans-note">【
-和訳固有の既存の記号で表記する都合により、特にこの変数（原文 %validationErrorFlag ）に関して，この~algoには入出力の表記法に手を加えている。
-】</p>
+%検証~結果 ~LET `成功^i
+◎
+Let validationError be false.
 </li>
 	<li>
 %R ~LET 10
@@ -2111,7 +2348,7 @@ Let R be 10.
 </p>
 		<ol>
 			<li>
-%検証~error ~SET `有り^i
+%検証~結果 ~SET `検証~error^i
 </li>
 			<li>
 %入力 から先頭の~cpを除去する
@@ -2120,26 +2357,23 @@ Let R be 10.
 %R ~SET 8
 </li>
 			<li>
-<p>
 ~IF［
 %入力 の先頭の~cp ~IN { ❝x, ❝X }
-］：
-</p>
-
-<ol><li>%入力 から先頭の~cpを除去する
-</li><li>%R ~SET 16
-</li></ol>
-			</li>
+］
+⇒＃
+%入力 から先頭の~cpを除去する；
+%R ~SET 16
+</li>
 		</ol>
 
 ◎
 If input contains at least two code points and the first two code points are either "0x" or "0X", then:
-• Set validationErrorFlag.
+• Set validationError to true.
 • Remove the first two code points from input.
 • Set R to 16.
-
+◎
 Otherwise, if input contains at least two code points and the first code point is U+0030 (0), then:
-• Set validationErrorFlag.
+• Set validationError to true.
 • Remove the first code point from input.
 • Set R to 8.
 </li>
@@ -2149,32 +2383,34 @@ Otherwise, if input contains at least two code points and the first code point i
 %入力 ~EQ 空~文字列
 ］
 ⇒
-~RET ( 0, %検証~error )
+~RET ( 0, %検証~結果 )
 </p>
 
 <p class="trans-note">【
 `0x^l ／ `0X^l が入力されたときも，ここに該当することになる。
 】</p>
 ◎
-If input is the empty string, then return zero.
+If input is the empty string, then return 0.
 </li>
 	<li>
 ~IF［
 %入力 内に基数 %R の数字でない~cpがある
 ］
 ⇒
-~RET ( `失敗^i, `有り^i )
+~RET ( ε, `失敗^i )
 ◎
 If input contains a code point that is not a radix-R digit, then return failure.
 </li>
 	<li>
-%結果 ~LET %入力 を基数 %R による表記と~~見なす下で，整数 値として~~解釈した結果
+%出力 ~LET %入力 を基数 %R による表記と~~見なす下で，整数 値として~~解釈した結果
 — %R ~EQ 16 の場合、各桁の`~ASCII~hex数字$を 0 〜 15 の値に対応~付ける下で
 ◎
-Return the mathematical integer value that is represented by input in radix-R notation, using ASCII hex digits for digits with values 0 through 15. 
+Let output be the mathematical integer value that is represented by input in radix-R notation, using ASCII hex digits for digits with values 0 through 15.
 </li>
 	<li>
-~RET ( %結果, %検証~error )
+~RET ( %出力, %検証~結果 )
+◎
+Return (output, validationError).
 </li>
 </ol>
 
@@ -2185,224 +2421,6 @@ Return the mathematical integer value that is represented by input in radix-R no
 `012^l は 8 進数,
 `12^l は 10 進数
 として解釈されることになる。
-】</p>
-</div>
-
-<hr>
-
-<div class="algorithm">
-<p>
-`~IPv4構文解析器@
-は、所与の
-( 文字列 %入力 )
-に対し，次を走らす：
-◎
-The IPv4 parser takes a string input and then runs these steps:
-</p>
-
-<ol>
-	<li>
-%検証~error~flag ~LET ~F
-◎
-Let validationErrorFlag be unset.
-</li>
-	<li>
-%~~成分~list ~LET %入力 を ❝. で分割した結果
-◎
-Let parts be input split on U+002E (.).
-</li>
-	<li>
-<p>
-~IF［
-%~~成分~list 内の最後の~item ~EQ 空~文字列
-］：
-◎
-If the last item in parts is the empty string, then:
-</p>
-		<ol>
-			<li>
-%検証~error~flag ~SET ~T
-◎
-Set validationErrorFlag.
-</li>
-			<li>
-<p>
-~IF［
-%~~成分~list の~item数 ~GT 1
-］
-⇒
-%~~成分~list から最後の~itemを除去する
-</p>
-<p class="trans-note">【
-%入力 の末尾に余計な ❝. があっても受容されることになる。
-】</p>
-◎
-If parts has more than one item, then remove the last item from parts.
-</li>
-		</ol>
-	</li>
-	<li>
-~IF［
-%~~成分~list の~item数 ~GT 4
-］
-⇒
-~RET %入力
-【結果は`~IPv4~address$ではない。】
-◎
-If parts has more than four items, return input.
-</li>
-	<li>
-%数~list ~LET 空~list
-◎
-Let numbers be the empty list.
-</li>
-	<li>
-<p>
-%~~成分~list 内の
-~EACH( %~~成分 )
-に対し：
-◎
-For each part in parts:
-</p>
-		<ol>
-			<li>
-<p>
-~IF［
-%~~成分 ~EQ 空~文字列
-］
-⇒
-~RET %入力
-◎
-If part is the empty string, return input.
-</p>
-
-<p class="example">
-`0..0x300^l は`~domain$であって，`~IPv4~address$ではない。
-◎
-0..0x300 is a domain, not an IPv4 address.
-</p>
-			</li>
-			<li>
-( %n, %検証~error ) ~LET
-`~IPv4番号~構文解析器$( %~~成分 )
-◎
-Let n be the result of parsing part using validationErrorFlag.
-</li>
-			<li>
-~IF［
-%n ~EQ `失敗^i
-］
-⇒
-~RET %入力
-◎
-If n is failure, return input.
-</li>
-			<li>
-%数~list に %n を付加する
-◎
-Append n to numbers.
-</li>
-			<li>
-~IF［
-%検証~error ~EQ `有り^i
-］
-⇒
-%検証~error~flag ~SET ~T
-◎
-↑↑↑</li>
-		</ol>
-	</li>
-	<li>
-~IF［
-%検証~error~flag ~EQ ~T
-］
-⇒
-`検証~error$
-◎
-If validationErrorFlag is set, validation error.
-</li>
-	<li>
-~IF［
-%数~list 内の ある~item ~GT 255
-］
-⇒
-`検証~error$
-◎
-If any item in numbers is greater than 255, validation error.
-</li>
-	<li>
-~IF［
-%数~list 内の最後でない ある~item ~GT 255
-］
-⇒
-~RET `失敗^i
-◎
-If any but the last item in numbers is greater than 255, return failure.
-</li>
-	<li>
-~IF［
-%数~list の最後の~item† ~GTE
-( 256 の ( 5 − ( %数~list の~item数 ) ) 乗 )
-］
-⇒＃
-`検証~error$；
-~RET `失敗^i
-◎
-If the last item in numbers is greater than or equal to 256(5 − the number of items in numbers), validation error, return failure.
-</li>
-	<li>
-%ipv4 ~LET %数~list の最後の~item
-◎
-Let ipv4 be the last item in numbers.
-</li>
-	<li>
-%数~list から最後の~itemを除去する††
-◎
-Remove the last item from numbers.
-</li>
-	<li>
-%counter ~LET 0
-◎
-Let counter be zero.
-</li>
-	<li>
-<p>
-%数~list 内の
-~EACH( %n )
-に対し：
-◎
-For each n in numbers:
-</p>
-		<ol>
-			<li>
-%ipv4 ~INCBY ( %n × ( 256 の (3 − %counter) 乗 ) )
-◎
-Increment ipv4 by n × 256(3 − counter).
-</li>
-			<li>
-%counter ~INCBY 1
-◎
-Increment counter by 1.
-</li>
-		</ol>
-	</li>
-	<li>
-~RET %ipv4
-◎
-Return ipv4.
-</li>
-</ol>
-
-<p class="trans-note">【†
-最後の~itemだけ特別扱い：
-例えば
-`100.100.25600^l と `100.100.100.0^l
-は等価になり，
-`0xFFFFFFFF^l と `255.255.255.255^l
-は等価になることになる。
-】【††
-ここでも、（ %数~list の項~数が 4 に満たない場合は）最後の~itemだけ特別扱い：
-例えば `100.100^l は， `100.0.0.100^l と等価になる。
 】</p>
 
 </div>
@@ -2436,7 +2454,7 @@ Let pieceIndex be 0.
 Let compress be null.
 </li>
 	<li>
-%~pointer ~LET %入力 用の`~pointer$＊
+%~pointer ~LET %入力 用の`~pointer$
 ◎
 Let pointer be a pointer for input.
 </li>
@@ -4522,7 +4540,7 @@ Let buffer be the empty string.
 Let the @ flag, [] flag, and passwordTokenSeenFlag be unset.
 </li>
 	<li>
-%~pointer ~LET %入力 用の`~pointer$＊
+%~pointer ~LET %入力 用の`~pointer$
 ◎
 Let pointer be a pointer for input.
 </li>
@@ -5951,7 +5969,7 @@ If base’s path[0] is a normalized Windows drive letter, then append base’s p
 
 <p class="note">注記：
 これは~drive_letter用の（~platformに依存しない）過去互換対処である。
-この条件の下では、 %url, %基底 どちらも その`~host$urlは ~NULL であり、したがって，＊複製されない。
+この条件の下では、 %url, %基底 どちらも その`~host$urlは ~NULL であり、したがって，複製されない。
 ◎
 This is a (platform-independent) Windows drive letter quirk. Both url’s and base’s host are null under these conditions and therefore not copied.
 </p>
