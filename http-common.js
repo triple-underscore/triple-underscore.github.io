@@ -589,15 +589,15 @@ c.realm:~HTTPrq#realm
 ~field:~HTTPsem#fields
 ~field名:~HTTPsem#field-name
 ~field値:~HTTPsem#field-value
+	~field:~HTTPsem#header.and.trailer.fields
+	~field値:~HTTPsem#field.values
+	~field名:~HTTPsem#field.names
 ~field行l:~HTTPsem#field-line
 ~field行l値:~HTTPsem#field-line-value
 ~header節:~HTTPsem#header-section
 ~trailer節:~HTTPsem#trailer-section
 ~header:~HTTPsem#header-field
 ~trailer:~HTTPsem#trailer-field
-	~header:~HTTPsem#field.fields
-	~header値:~HTTPsem#field.values
-	~header名:~HTTPsem#field.names
 ~payload:~HTTPsem#payload
 ~message~payload:~HTTPsem#payload
 ~payload本体:~HTTPsem#payload.body
