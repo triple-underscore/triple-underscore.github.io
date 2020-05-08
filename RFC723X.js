@@ -775,7 +775,7 @@ c.multipart/byteranges:~7233#internet.media.type.multipart.byteranges
 COMMON_DATA.words_table1 += `
 IANA-a:https://www.iana.org/assignments
 ERRATA:https://www.rfc-editor.org/errata_search.php
-723X:http-common-ja.html
+723X:RFC723X-ja.html
 7230:RFC7230-ja.html
 7231:RFC7231-ja.html
 7232:RFC7232-ja.html
