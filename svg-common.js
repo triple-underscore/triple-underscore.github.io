@@ -845,6 +845,7 @@ span:
 矩形:rectangle::~
 矩形な:rectangularな::~
 接触判定:hit-testing::~
+対角線長さ:diagonal::~
 
 	●塗り／色／効果
 sRGB:
