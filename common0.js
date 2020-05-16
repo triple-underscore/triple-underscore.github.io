@@ -2765,8 +2765,9 @@ literal::::リテラル
 接尾辞:suffix::~
 小文字:lowercase::~
 大文字:uppercase::~
-文字大小無視:case-insensitive::~
 大小無視:case-insensitive::~
+文字大小無視:case-insensitive::~
+大小区別:case-sensitive::~
 文字大小区別:case-sensitive::~
 文字大小:case::~
 合致-:match::~::マッチ
@@ -3268,7 +3269,6 @@ Foo間:inter-Foo
 有無:presence／:present
 不在:absence／:absent
 対応-:correspond
-得る:obtain
 選ぶ:choose
 生じ:occur
 用立てる:make use of／utilize
