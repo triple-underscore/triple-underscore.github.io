@@ -2650,8 +2650,8 @@ query::::クエリ
 得され:obtainされ:得られ
 得した:obtainした:得た
 得して:obtainして:得て
+得しよ:obtainしよ:得よ
 得せ:obtainでき:得れ
-得そう:obtainしよう:得よう
 取得-:get::~
 取得子:getter::~
 設定-:set::~
