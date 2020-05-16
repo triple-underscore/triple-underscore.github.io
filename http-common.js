@@ -1573,7 +1573,6 @@ logging
 	:tell
 	記す／表す:denoteする
 	保持-:held
-	得られ／取得:obtainされ
 	remain
 	応える:meet
 	求めに応じて

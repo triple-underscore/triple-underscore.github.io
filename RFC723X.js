@@ -1598,7 +1598,6 @@ vary
 :tell
 記す／表す:denote する
 保持-:held
-得られ／取得:obtain され
 remain
 応える:meet
 求めに応じて
