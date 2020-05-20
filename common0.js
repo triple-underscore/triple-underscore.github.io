@@ -1047,6 +1047,7 @@ URL1:URL-ja.html
 MIMESNIFF:mimesniff-ja.html
 FULLSCREEN:fullscreen-ja.html
 NOTIFICATIONS:notifications-ja.html
+INTERSECTIONOBSERVER:IntersectionObserver-ja.html
 WEBIDL:WebIDL-ja.html
 WEBIDLjs:WebIDL-JS-ja.html
 XHR:XHR-ja.html
