@@ -1033,7 +1033,8 @@ INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This
 FINGERPRINTING:<a class="fingerprinting" href="infra-ja.html#tracking-vector" title="（ここには、利用者の追跡に利用され得るものがある。／There is a tracking vector here.）"></a>
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
 TR:https://www.w3.org/TR
-IETF:https://tools.ietf.org/html
+RFCx:https://tools.ietf.org/html
+	https://www.rfc-editor.org/rfc
 TC39:https://tc39.es/ecma262/
 INFRA:infra-ja.html
 DOM4:DOM4-ja.html

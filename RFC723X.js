@@ -50,7 +50,7 @@ let tag = tag_map[klass];
 switch(klass){
 case '':
 	break;
-case 'r': // ref
+case 'r': // ref ( RFC 以外
 	text = `[${key}]`;
 	href = `~723X#${key}`;
 //	if(!href) href = `~723X#ref-${key}`;
@@ -59,17 +59,17 @@ case 'R': // ref
 	text = `[RFC${key}]`;
 	href = `~723X#RFC${key}`;
 	break;
-case 'RFC': // ref
-	text = `RFC ${key}`;
-	href = `~IETF/rfc${key}`;
-	break;
-case 'rfc': // ref
-	href = key.match(/^(\d+)-([\d\.]+)$/);
-//	if(!href) {href='#'; console.log(key);break;}
-	key = href[1];
-	text = `[RFC${key}] § ${href[2]} `;
-	const href0 = (key.slice(0,2) === '72') ? '~' : '~IETF/rfc';
-	href = `${href0}${key}#section-${href[2]}`;
+case 'rfc': // RFC link
+	{
+		href = key.match(/^(\d+)-([\d\.]+)$/);
+		if(!href) return match; // error
+		key = href[1];
+		text = `[RFC${key}] § ${href[2]} `;
+		const href0 = (key.slice(0,2) === '72')
+			? '~'
+			: '~RFCx/rfc';
+		href = `${href0}${key}#section-${href[2]}`;
+	}
 	break;
 case 'sec': // 節（同一頁内）
 	href = `#${section_map[key]}`;// || ('#section-${key);
@@ -227,7 +227,6 @@ m.CONNECT:~7231#CONNECT
 m.OPTIONS:~7231#OPTIONS
 m.TRACE:~7231#TRACE
 m.PATCH:~HTTPpatch#patch
-	m.PATCH:~IETF/rfc5789#section-2
 
 	header fields 
 
@@ -286,8 +285,8 @@ h.Keep-Alive:~7230#compatibility.with.http.1.0.persistent.connections
 h.Set-Cookie:~HTTPcookie#sane-set-cookie
 h.Cookie:~HTTPcookie#sane-cookie
 h.Link:~HTTPweblink#section-3
-	h.Link:~IETF/rfc5988#section-5
-h.Content-Transfer-Encoding:~IETF/rfc2045#section-6
+	h.Link:~RFCx/rfc5988#section-5
+h.Content-Transfer-Encoding:~RFCx/rfc2045#section-6
 	h.URI
 	h.Alternates:rfc2295#section-8.3
 

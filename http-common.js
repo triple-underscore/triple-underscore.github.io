@@ -55,7 +55,7 @@ case 'sec':
 		if(sec){
 			text = `[${spec}] § ${sec}`;
 			if(spec.slice(0,3) === 'RFC'){
-				href = `~IETF/rfc${spec.slice(3)}#section-${sec}`;
+				href = `~RFCx/rfc${spec.slice(3)}#section-${sec}`;
 			}
 		} else {
 			text = `§ ${spec}`;
@@ -272,7 +272,7 @@ h.Expires:~HTTPcache#field.expires
 h.Set-Cookie:~HTTPcookie#sane-set-cookie
 h.Cookie:~HTTPcookie#sane-cookie
 h.Link:~HTTPweblink#section-3
-h.Content-Transfer-Encoding:~IETF/rfc2045#section-6
+h.Content-Transfer-Encoding:~RFCx/rfc2045#section-6
 	h.URI
 	h.Alternates:rfc2295#section-8.3
 
@@ -720,7 +720,7 @@ c.realm:~HTTPrq#realm
 
 		●
 		著作者連絡先:#_spec_metadata
-IETF による考査:~IETF/rfc8126#section-4.8
+IETF による考査:~RFCx/rfc8126#section-4.8
 `
 
 // 

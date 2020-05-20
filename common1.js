@@ -441,6 +441,8 @@ W3C:
 '<a href="https://www.w3.org/">W3C</a>',
 WHATWG:
 '<a href="https://whatwg.org/">WHATWG</a>',
+IETF:
+'<a href="https://www.ietf.org/">IETF</a>',
 HTMLLS:
 'https://html.spec.whatwg.org/multipage',
 COMMITS: url?
@@ -1452,7 +1454,7 @@ informative: '<h3>文献（参考）</h3>'
 			let last_key = '';
 			if(ref_rfc) {
 				data = data.replace(/~RFC(\d+)\b(.*)/g,
-'RFC $1$2 URL: https://tools.ietf.org/html/rfc$1'
+'RFC $1$2 URL: https://www.rfc-editor.org/rfc/rfc$1.html'
 				);
 			}
 
@@ -1552,7 +1554,8 @@ COMMON_DATA.JA_BASIS = {
 	TR:        'www.w3.org/TR',
 	CSSWG:     'drafts.csswg.org',
 	HTMLLS:    'html.spec.whatwg.org/multipage',
-	IETF:      'tools.ietf.org/html',
+	RFCx:      'tools.ietf.org/html',
+//	RFCx:      'www.rfc-editor.org/rfc',
 	HTTPWG:    'httpwg.org/specs',
 	suika:     'wiki.suikawiki.org',
 //	default:   ''
@@ -1732,24 +1735,24 @@ RFC2119=副            ＃www.cam.hi-ho.ne.jp/mendoxi/rfc/rfc2119j.html
 RFC2119=副2           ＃www.asahi-net.or.jp/~sd5a-ucd/rfc-j/rfc-2119j.html
 RFC2119=副3           ＃www.t-net.ne.jp/~cyfis/rfc/format/rfc2119_ja.html
 RFC2119=副4           ~ipa/RFC2119JA.html
-RFC2397=・            ~IETF/rfc2397
+RFC2397=・            ~RFCx/rfc2397
 RFC2397=主            ＃d.hatena.ne.jp/tily/20071103/p1
 RFC2616=副            ~/rfc-others/RFC2616-ja.html
 RFC2616=副            ~/http-common-ja.html#core-specifications
-RFC2616=・            ~IETF/rfc2616
+RFC2616=・            ~RFCx/rfc2616
 RFC2616=副2           ~suika/n/RFC%202616
 RFC2817=副            ~ipa/RFC2817JA.html
-RFC2817=・            ~IETF/rfc2817
+RFC2817=・            ~RFCx/rfc2817
 RFC2818=主            ~suika/n/RFC%202818
 RFC2818=副2           ~ipa/RFC2818JA.html
-RFC2818=・            ~IETF/rfc2818
+RFC2818=・            ~RFCx/rfc2818
 RFC3174=主            ~ipa/RFC3174JA.html
 RFC3174=副2           ＃www7b.biglobe.ne.jp/~k-west/SSLandTLS/rfc3174-Ja.txt
 RFC3490=副            ＃www.jdna.jp/survey/rfc/rfc3490j.html
 RFC3629=副            ＃www5d.biglobe.ne.jp/~stssk/rfc/rfc3629j.html
 RFC3629=副2           ＃www.akanko.net/marimo/data/rfc/rfc3629-jp.txt
-RFC3986=・            ~IETF/rfc3986
 RFC3986=主            ~/rfc-others/RFC3986-ja.html
+RFC3986=・            ~RFCx/rfc3986
 RFC3987=副            ~suika/n/RFC%203987
 RFC4086=副            ~ipa/RFC4086JA.html
 RFC4122=副            ＃rui86.hatenablog.jp/entry/2013/07/18/065147
