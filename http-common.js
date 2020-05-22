@@ -142,6 +142,7 @@ com:span
 X:span
 V:var
 i:i
+em:em
 cite:cite
 2119:em
 `
