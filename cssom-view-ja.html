@@ -47,7 +47,6 @@
 .en::before {
 	content: "↑";
 	color: gray;
-	display: block;
 }
 
 .dictionary-member {
@@ -89,10 +88,11 @@ function expand(){
 	const tag_map = this.tag_map;
 	const link_map = this.link_map;
 
-	let idl_ifc = '';
+	let ctx_ifc = '';
+	let ctx_ifc1 = ''; // interface for 'm1'
 
 	return this.html.replace(
-		/%[\w\-~一-鿆あ-ん]+|`(.+?)([$@!\^])(\w*)/g,
+		/%[\w\-~一-鿆あ-ん]+|`(.+?)([$@\^])(\w*)/g,
 		create_html
 	);
 
@@ -111,23 +111,36 @@ case 'r':
 	href = `#biblio-${key.toLowerCase()}`;
 	break;
 case 'I':
-	if((indicator === '@') || (indicator === '!')){
-		idl_ifc = key;
+	if(indicator === '@'){
+		ctx_ifc = key;
+	} else {
+		ctx_ifc1 = key;
 	}
 	href = `#${key.toLowerCase()}`;
+	break;
+case 'I0':
+	ctx_ifc = key;
+	return '';
+	break;
+case 'I1':
+	ctx_ifc1 = key;
+	return '';
 	break;
 case 'mc':
 	href = `#dom-${key.toLowerCase()}-${key.toLowerCase()}`;
 	text = 'constructor';
 	break;
+case 'm1':
 case 'm':
-	const n = text.indexOf('(');
-	if(n > 0){
-		key = text.slice(0, n);
-		text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
+	{
+		const n = text.indexOf('(');
+		if(n > 0){
+			key = text.slice(0, n);
+			text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
+		}
+		const ifc = ( klass === 'm1' ) ? ctx_ifc1: ctx_ifc
+		href = `#dom-${ifc}-${key}`.toLowerCase();
 	}
-	href = (key === idl_ifc) ? idl_ifc : `${idl_ifc}-${key}`;
-	href = `#dom-${href.toLowerCase()}`;
 	break;
 case 'opf':
 case 'l':
@@ -156,7 +169,6 @@ if(indicator !== '^'){
 	}
 
 	switch(indicator){
-	case '!':
 	case '$':
 		text = `<a href="${href}">${text}</a>`;
 		break;
@@ -495,7 +507,7 @@ return;
 
 spec_title:CSSOM View Module
 spec_date:2020-02-20
-trans_update:2020-05-14
+trans_update:2020-05-23
 source_checked:180721
 page_state_key:CSS
 original_url:https://drafts.csswg.org/cssom-view-1/
@@ -524,6 +536,7 @@ op:op
 ●●tag_map
 I:code
 m:code
+m1:code
 mb:code
 mc:code
 et:code
@@ -648,6 +661,12 @@ mb.relativeTo:#dom-boxquadoptions-relativeto
 mb.fromBox:#dom-convertcoordinateoptions-frombox
 mb.toBox:#dom-convertcoordinateoptions-tobox
 
+	mb.screenX:#dom-mouseeventinit-
+	mb.screenY
+	mb.clientX
+	mb.clientY
+
+
 opf.width:#supported-open-feature-name-width
 opf.height:#supported-open-feature-name-height
 opf.left:#supported-open-feature-name-left
@@ -708,6 +727,9 @@ v.table-column-group:~CSSDISP#valdef-display-table-column-group
 有効~横幅:#_effective-width
 有効~縦幅:#_effective-height
 文書:#_document
+接触判定:#_hit-testing
+~window用の~scroll手続き:#_window-scroll-steps
+要素~用の~scroll手続き:#_element-scroll-steps
 
 内容~辺:#content-edge
 ~padding辺:#padding-edge
@@ -868,7 +890,6 @@ evL.capture:~DOM4#event-listener-capture
 閉な~shadowで隠されて:~DOM4#concept-closed-shadow-hidden
 
 	●追加
-座標から~scroll~optionsを作成する:#_create-a-new-scroll-options
 
 dir:~HTMLLS/elements.html#the-dir-attribute
 
@@ -2138,25 +2159,6 @@ When asked to normalize non-finite values for a value x, if x is one of the thre
 </p>
 </div>
 
-<div class="algorithm">
-<p>
-`座標から~scroll~optionsを作成する@
-ときは、所与の
-( %x, %y )
-に対し，次のように設定された `ScrollToOptions$I 辞書~値を返す
-【！~WEBIDLjs#es-dictionary】
-⇒＃
-`behavior$mb ~SET `auto$l （既定~値）,
-`left$mb ~SET %x を`有限~値に正規化-$した結果,
-`top$mb ~SET %y を`有限~値に正規化-$した結果
-</p>
-
-<p class="trans-note">【
-この~algoは、他所の記述を集約するため，この訳に導入している。
-】</p>
-
-</div>
-
 		</section>
 	</section>
 	<section id="extensions-to-the-window-interface">
@@ -2177,7 +2179,7 @@ dictionary `ScrollToOptions@I : `ScrollOptions$I {
 </pre>
 
 <pre class="idl">
-partial interface `Window!I {
+partial interface `Window$I {`Window^I0
   [`NewObject$] `MediaQueryList$I `matchMedia$m(`CSSOMString$ %query);
   [`SameObject$, `Replaceable$] readonly attribute `Screen$I `screen$m;
 
@@ -2216,10 +2218,11 @@ partial interface `Window!I {
 
 `Window^dgm
 
-<dl class="idl-def">
-	<dt>`matchMedia(query)@m</dt>
-	<dd>
-被呼出時には、次のように設定された，新たな `MediaQueryList$I ~objを返すモノトスル
+<div class="algo">
+`matchMedia(query)@m
+~method~手続きは
+⇒
+~RET 次のように設定された，新たな `MediaQueryList$I ~obj
 ⇒＃
 `媒体~query~list$ ~SET `媒体~query~listとして構文解析する$( %query ),
 `文書$mq ~SET コレに`結付けられている文書$
@@ -2229,41 +2232,46 @@ When the matchMedia(query) method is invoked these steps must be run:
 Let parsed media query list be the result of parsing query.
 ◎
 Return a new MediaQueryList object, with the context object’s associated Document as the document, with parsed media query list as its associated media query list.
-</dd>
+</div>
 
-	<dt>`screen@m</dt>
-	<dd>
-取得子は、コレに結付けられている `Screen$I ~objを返すモノトスル。
+<div class="algo">
+<p>
+`screen@m
+取得子~手続きは
+⇒
+~RET コレに結付けられている `Screen$I ~obj
 ◎
 The screen attribute must return the Screen object associated with the Window object.
-</dd>
-	<dd class="note">注記：
+</p>
+
+<p class="note">注記：
 `WindowProxy$I ~objを通した `screen^c への~accessでは、`文書$が~navigateされたときには，異なる結果が得られ得る。
 ◎
 Note: Accessing screen through a WindowProxy object might yield different results when the Document is navigated.
-</dd>
+</p>
+</div>
 
-	<dt>`moveTo(x, y)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`moveTo(x, y)@m
+~method~手続きは：
 ◎
 The moveTo(x, y) method must follow these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 任意選択で
 ⇒
 ~RET
 ◎
 Optionally, terminate these steps.
 </li>
-			<li>
+	<li>
 %target ~LET コレの`閲覧文脈$
 ◎
 Let target be the browsing context of the context object.
 </li>
-			<li>
+	<li>
 ~IF［［
 `現任の設定群~obj$の`担当の閲覧文脈$
 ］に %target の `~resizeと移動-は許容され$ていない
@@ -2275,7 +2283,7 @@ Let source be the responsible browsing context of the incumbent settings object.
 ◎
 If source is not allowed to resize and move target, terminate these steps.
 </li>
-			<li>
+	<li>
 任意選択で，~UA定義な方式で
 ⇒
 %x, %y
@@ -2285,7 +2293,7 @@ If source is not allowed to resize and move target, terminate these steps.
 ◎
 Optionally, clamp x and y in a user-agent-defined manner so that the window does not move outside the available space.
 </li>
-			<li>
+	<li>
 %target の~UIwindowを，その左上隅が［
 出力~機器の左上隅から相対的な［
 %target の `px$css 単位による座標 (%x, %y) 
@@ -2296,30 +2304,30 @@ Optionally, clamp x and y in a user-agent-defined manner so that the window does
 ◎
 Move target’s window such that the window’s top left corner is at coordinates (x, y) relative to the top left corner of the output device, measured in CSS pixels of target. The positive axes are rightward and downward. 
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`moveBy(x, y)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`moveBy(x, y)@m
+~method~手続きは：
 ◎
 The moveBy(x, y) method must follow these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 任意選択で
 ⇒
 ~RET
 ◎
 Optionally, terminate these steps.
 </li>
-			<li>
+	<li>
 %target ~LET コレの`閲覧文脈$
 ◎
 Let target be the browsing context of the context object.
 </li>
-			<li>
+	<li>
 ~IF［［
 `現任の設定群~obj$の`担当の閲覧文脈$
 ］に %target の `~resizeと移動-は許容され$ていない
@@ -2331,7 +2339,7 @@ Let source be the responsible browsing context of the incumbent settings object.
 ◎
 If source is not allowed to resize and move target, terminate these steps.
 </li>
-			<li>
+	<li>
 任意選択で，~UA定義な方式で
 ⇒
 %x, %y
@@ -2341,7 +2349,7 @@ If source is not allowed to resize and move target, terminate these steps.
 ◎
 Optionally, clamp x and y in a user-agent-defined manner so that the window does not move outside the available space.
 </li>
-			<li>
+	<li>
 %target の~UIwindowを，
 %target の `px$css 単位で［
 右方に %x, 下方に %y
@@ -2349,30 +2357,30 @@ Optionally, clamp x and y in a user-agent-defined manner so that the window does
 ◎
 Move target’s window x CSS pixels of target rightward and y CSS pixels of target downward.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`resizeTo(width, height)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`resizeTo(width, height)@m
+~method~手続きは：
 ◎
 The resizeTo(width, height) method must follow these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 任意選択で
 ⇒
 ~RET
 ◎
 Optionally, terminate these steps.
 </li>
-			<li>
+	<li>
 %target ~LET コレの`閲覧文脈$
 ◎
 Let target be the browsing context of the context object.
 </li>
-			<li>
+	<li>
 ~IF［［
 `現任の設定群~obj$の`担当の閲覧文脈$
 ］に %target の `~resizeと移動-は許容され$ていない
@@ -2384,7 +2392,7 @@ Let source be the responsible browsing context of the incumbent settings object.
 ◎
 If source is not allowed to resize and move target, terminate these steps.
 </li>
-			<li>
+	<li>
 任意選択で，~UA定義な方式で
 ⇒
 %width, %height
@@ -2394,7 +2402,7 @@ If source is not allowed to resize and move target, terminate these steps.
 ◎
 Optionally, clamp width and height in a user-agent-defined manner so that the window does not get too small or bigger than the available space.
 </li>
-			<li>
+	<li>
 %target の~UIwindowを~resizeする
 — ［
 %width, %height は %target の `px$css 単位の値を表す
@@ -2408,37 +2416,37 @@ Optionally, clamp width and height in a user-agent-defined manner so that the wi
 ◎
 Resize target’s window by moving its right and bottom edges such that the distance between the left and right edges of the viewport are width CSS pixels of target and the distance between the top and bottom edges of the viewport are height CSS pixels of target.
 </li>
-			<li>
+	<li>
 任意選択で，~UA定義な方式で
 ⇒
 %target の~UIwindowを，可用な空間をはみ出さないように移動する
 ◎
 Optionally, move target’s window in a user-agent-defined manner so that it does not grow outside the available space.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`resizeBy(x, y)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`resizeBy(x, y)@m
+~method~手続きは：
 ◎
 The resizeBy(x, y) method must follow these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 任意選択で
 ⇒
 ~RET
 ◎
 Optionally, terminate these steps.
 </li>
-			<li>
+	<li>
 %target ~LET コレの`閲覧文脈$
 ◎
 Let target be the browsing context of the context object.
 </li>
-			<li>
+	<li>
 ~IF［［
 `現任の設定群~obj$の`担当の閲覧文脈$
 ］に %target の `~resizeと移動-は許容され$ていない
@@ -2450,7 +2458,7 @@ Let source be the responsible browsing context of the incumbent settings object.
 ◎
 If source is not allowed to resize and move target, terminate these steps.
 </li>
-			<li>
+	<li>
 任意選択で，~UA定義な方式で
 ⇒
 %x, %y
@@ -2460,7 +2468,7 @@ If source is not allowed to resize and move target, terminate these steps.
 ◎
 Optionally, clamp x and y in a user-agent-defined manner so that the window does not get too small or bigger than the available space.
 </li>
-			<li>
+	<li>
 %target の~UIwindowを，~resizeする
 — その右辺と下辺を %target の `px$css 単位で［
 左辺を %x,
@@ -2469,16 +2477,15 @@ Optionally, clamp x and y in a user-agent-defined manner so that the window does
 ◎
 Resize target’s window by moving its right edge x CSS pixels of target rightward and its bottom edge y CSS pixels of target downward.
 </li>
-			<li>
+	<li>
 任意選択で，~UA定義な方式で
 ⇒
 %target の~UIwindowを，可用な空間をはみ出さないように移動する
 ◎
 Optionally, move target’s window in a user-agent-defined manner so that it does not grow outside the available space.
 </li>
-		</ol>
-	</dd>
-</dl>
+</ol>
+</div>
 
 <p>
 次の条件~すべてが満たされるとき、
@@ -2502,13 +2509,12 @@ A is familiar with B.
 </li>
 </ul>
 
-<dl class="idl-def">
-	<dt>`innerWidth@m ｜ `innerHeight@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`innerWidth@m ｜ `innerHeight@m
+］取得子~手続きは：
 </p>
-
 <ol>
 	<li>
 ~IF［
@@ -2524,154 +2530,194 @@ A is familiar with B.
 ］（~scroll~barが描画されている場合はその~sizeも含める）
 </li>
 </ol>
-◎
-The innerWidth attribute must return the viewport width including the size of a rendered scroll bar (if any), or zero if there is no viewport.
-</dd>
-	<dd class="example">
+
+<div class="example">
 <p>
 次の~code片は、表示域の横幅を得する方法を示す：
+</p>
+
+<pre class="lang-js">
+var %viewportWidth = innerWidth
+</pre>
+</div>
+
+◎
+The innerWidth attribute must return the viewport width including the size of a rendered scroll bar (if any), or zero if there is no viewport.
 ◎
 The following snippet shows how to obtain the width of the viewport:
-</p>
-
-<pre class="lang-js">var viewportWidth = innerWidth</pre>
-	</dd>
-
-	<dd class="en">
+• var viewportWidth = innerWidth
 ◎
 The innerHeight attribute must return the viewport height including the size of a rendered scroll bar (if any), or zero if there is no viewport.
-</dd>
+</div>
 
-	<dt>`scrollX@m ｜ `scrollY@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`scrollX@m ｜ `scrollY@m
+］取得子~手続きは：
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレの`表示域$は無い
 ］
 ⇒
 ~RET 0
 </li>
-			<li>
+	<li>
 ~RET
 `初期~包含塊$の原点に相対的な，`表示域$の［
 左端の x 座標 ｜ 上端の y 座標
 ］
 </li>
-		</ol>
+</ol>
 ◎
 The scrollX attribute attribute must return the x-coordinate, relative to the initial containing block origin, of the left of the viewport, or zero if there is no viewport.
-</dd>
-
-	<dt>`pageXOffset@m ｜ `pageYOffset@m</dt>
-	<dd>
-取得子は［
-`scrollX$m ｜ `scrollY$m
-］属性と同じ値を返すモノトスル。
 ◎
 The pageXOffset attribute must return the value returned by the scrollX attribute.
-</dd>
-	<dd class="en">
 ◎
 The scrollY attribute attribute must return the y-coordinate, relative to the initial containing block origin, of the top of the viewport, or zero if there is no viewport.
 ◎
 The pageYOffset attribute must return the value returned by the scrollY attribute.
-</dd>
+</div>
 
-	<dt>`scroll(options)@m</dt>
-	<dt>`scroll(x, y)^m</dt>
-	<dd>
+<div class="algo">
+［
+`pageXOffset@m ｜ `pageYOffset@m
+］取得子~手続きは、［
+`scrollX$m ｜ `scrollY$m
+］取得子~手続きと同じに挙動する。
+◎
+↑</div>
+
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`scroll()@m
+~method~手続きは：
+</p>
+<ol>
+	<li>
+<p>
+( %x, %y, %behavior ) ~LET ~methodの引数に応じて：
+</p>
+		<ul class="switch">
+			<li>
+`ScrollToOptions$I %options 引数を伴って呼出された場合
+⇒
+( %options[ "`left$mb" ], %options[ "`top$mb" ], %options[ "`behavior$mb" ] )
+</li>
+			<li>
+%x, %y 引数を伴って呼出された場合
+⇒
+( %x, %y, `auto$l )
+</li>
+		</ul>
+</li>
+	<li>
+~IF［
+%x ~NEQ ε
+］
+⇒
+%x ~SET %x を`有限~値に正規化-$した結果
+</li>
+	<li>
+~IF［
+%y ~NEQ ε
+］
+⇒
+%y ~SET %y を`有限~値に正規化-$した結果
+</li>
+	<li>
+`~window用の~scroll手続き$( コレ, %x, %y, %behavior )
+</li>
+</ol>
 ◎
 When the scroll() method is invoked these steps must be run:
-</p>
-		<ol>
-			<li>
-<p>
-~IF［
-~methodは %options 引数（ `ScrollToOptions$I ）を伴って呼出された
-］：
-</p>
-				<ol>
-					<li>
-%left ~LET %options[ "`left$mb" ]
-</li>
-					<li>
-%options[ "`left$mb" ] ~SET ［
-%left ~EQ ε ならば `表示域$の現在の x 軸 ~scroll位置 ／
-~ELSE_ %left を`有限~値に正規化-$した結果
-］
-</li>
-					<li>
-%top ~LET %options[ "`top$mb" ]
-</li>
-					<li>
-%options[ "`top$mb" ] ~SET ［
-%top ~EQ ε ならば `表示域$の現在の y 軸 ~scroll位置 ／
-~ELSE_ %top を`有限~値に正規化-$した結果
-］
-</li>
-				</ol>
 ◎
 If invoked with one argument, follow these substeps:
 • Let options be the argument.
 • Let x be the value of the left dictionary member of options, if present, or the viewport’s current scroll position on the x axis otherwise.
 • Let y be the value of the top dictionary member of options, if present, or the viewport’s current scroll position on the y axis otherwise.
-</li>
-			<li>
-~ELSE
-⇒
-%options ~LET `座標から~scroll~optionsを作成する$( %x, %y )
 ◎
 If invoked with two arguments, follow these substeps:
 • Let options be null converted to a ScrollToOptions dictionary. [WEBIDL]
 • Let x and y be the arguments, respectively.
 ◎
 Normalize non-finite values for x and y.
-</li>
-			<li>
+◎
+↓
+</div>
+
+<div class="algo">
+<p class="trans-note">【
+この訳では、原文による `scroll()$m ~method~手続きを成す引数の取扱い以外の部分を，次に与える手続きに分離する
+— それは、複数の箇所から共通して利用されるので。
+】</p>
+
+<p>
+`~window用の~scroll手続き@
+は、所与の
+( %window, %x, %y, %behavior )
+に対し：
+◎
+↑</p>
+<ol>
+	<li>
 ~IF［
-コレの`表示域$は無い
+%window の`表示域$は無い
 ］
 ⇒
 ~RET
 ◎
 If there is no viewport, abort these steps.
 </li>
-			<li>
+	<li>
+%表示域 ~LET %window の`表示域$
+</li>
+	<li>
 <p>
 %座標 ~LET 次の下位手続きを走らせた結果：
 </p>
-				<ol>
-					<li>
-%~scrollされる区画 ~LET `表示域$の`~scrollされる区画$
+		<ol>
+			<li>
+~IF［
+%x ~EQ ε
+］
+⇒
+%x ~SET `表示域$の現在の x 軸 ~scroll位置
 </li>
-					<li>
-%符号 ~LET `表示域$の横方向の`~overflow方向$に応じて
+			<li>
+~IF［
+%y ~EQ ε
+］
+⇒
+%y ~SET `表示域$の現在の y 軸 ~scroll位置
+</li>
+			<li>
+%~scrollされる区画 ~LET %表示域 の`~scrollされる区画$
+</li>
+			<li>
+%符号 ~LET %表示域 の横方向の`~overflow方向$に応じて
 ⇒＃
 右方 ならば 1 ／
 左方 ならば −1
 </li>
-					<li>
-%x ~SET %符号 ~MUL `max^op( 0, `min^op( %符号 ~MUL %x, ( %~scrollされる区画 の横幅 ~MINUS `表示域$の`有効~横幅$ )))
+			<li>
+%x ~SET %符号 ~MUL `max^op( 0, `min^op( %符号 ~MUL %x, ( %~scrollされる区画 の横幅 ~MINUS %表示域 の`有効~横幅$ )))
 </li>
-					<li>
-%符号 ~LET `表示域$の縦方向の`~overflow方向$に応じて
+			<li>
+%符号 ~LET %表示域 の縦方向の`~overflow方向$に応じて
 ⇒＃
 下方 ならば 1 ／
 上方 ならば −1
 </li>
-					<li>
-%y ~SET %符号 ~MUL `max^op( 0, `min^op( %符号 ~MUL %y, ( %~scrollされる区画 の縦幅 ~MINUS `表示域$の`有効~縦幅$ )))
+			<li>
+%y ~SET %符号 ~MUL `max^op( 0, `min^op( %符号 ~MUL %y, ( %~scrollされる区画 の縦幅 ~MINUS %表示域 の`有効~縦幅$ )))
 </li>
-					<li>
+			<li>
 ~RET ( %x, %y )
 </li>
-				</ol>
+		</ol>
 ◎
 Let viewport width be the width of the viewport excluding the width of the scroll bar, if any.
 ◎
@@ -2689,171 +2735,190 @@ If the viewport has downward overflow direction
 If the viewport has upward overflow direction
 • Let y be min(0, max(y, viewport height - viewport scrolling area height)).
 </li>
-			<li>
-%目的位置 ~LET %~scrollされる区画 の座標 %座標 が`表示域$の左上隅に整列されるような，`表示域$の~scroll位置
+	<li>
+%目的位置 ~LET %~scrollされる区画 の座標 %座標 が %表示域 の左上隅に整列されるような， %表示域 の~scroll位置
 ◎
 Let position be the scroll position the viewport would have by aligning the x-coordinate x of the viewport scrolling area with the left of the viewport and aligning the y-coordinate y of the viewport scrolling area with the top of the viewport.
 </li>
-			<li>
+	<li>
 ~IF［
-%目的位置 ~EQ `表示域$の現在の~scroll位置
+%目的位置 ~EQ %表示域 の現在の~scroll位置
 ］~AND［
-`表示域$において`滑らかな~scroll$は進行中でない
+%表示域 において`滑らかな~scroll$は進行中でない
 ］
 ⇒
 ~RET
 ◎
 If position is the same as the viewport’s current scroll position, and the viewport does not have an ongoing smooth scroll, abort these steps.
 </li>
-			<li>
-%~assoc要素 ~LET `表示域$に結付けられている`文書$の`根~要素$
+	<li>
+%~assoc要素 ~LET %表示域 に結付けられている`文書$の`根~要素$
 ◎
 Let document be the viewport’s associated Document.
 </li>
-			<li>
-`~scrollを遂行する$( `表示域$, %目的位置, %~assoc要素, %options[ "`behavior$mb" ] )
+	<li>
+`~scrollを遂行する$( %表示域, %目的位置, %~assoc要素, %behavior )
 ◎
 Perform a scroll of the viewport to position, document’s root element as the associated element, if there is one, or null otherwise, and the scroll behavior being the value of the behavior dictionary member of options.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`scrollTo()@m</dt>
-	<dd>
-被呼出時には、コレ上の `scroll()$m と同じに挙動するモノトスル。
+<div class="algo">
+`scrollTo()@m
+~method~手続きは、
+`scroll()$m ~method~手続きと同じに挙動する。
 ◎
 When the scrollTo() method is invoked, the user agent must act as if the scroll() method was invoked with the same arguments.
-</dd>
+</div>
 
-	<dt>`scrollBy(options)@m</dt>
-	<dt>`scrollBy(x, y)^m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`scrollBy()@m
+~method~手続きは：
 ◎
 When the scrollBy() method is invoked, the user agent must run these steps:
 </p>
-		<ol>
+<ol>
+	<li>
+<p>
+( %x, %y, %behavior ) ~LET ~methodの引数に応じて：
+</p>
+		<ul class="switch">
 			<li>
-~IF［
-~methodは %options 引数（ `ScrollToOptions$I ）を伴って呼出された
-］
+`ScrollToOptions$I %options 引数を伴って呼出された場合
 ⇒
-何もしない
-◎
-↓</li>
+( %options[ "`left$mb" ], %options[ "`top$mb" ], %options[ "`behavior$mb" ] )
+</li>
 			<li>
-~ELSE
+%x, %y 引数を伴って呼出された場合
 ⇒
-%options ~LET `座標から~scroll~optionsを作成する$( %x, %y )
+( %x, %y, `auto$l )
+</li>
+		</ul>
 ◎
 If invoked with two arguments, follow these substeps:
 • Let options be null converted to a ScrollToOptions dictionary. [WEBIDL]
 • Let x and y be the arguments, respectively.
 • Let the left dictionary member of options have the value x.
 • Let the top dictionary member of options have the value y.
-◎
-Normalize non-finite values for the left and top dictionary members of options.
 </li>
-			<li>
+	<li>
 ~IF［
-%options[ "`left$mb" ] ~NEQ ε
+%x ~NEQ ε
 ］
 ⇒
-%options[ "`left$mb" ] ~INCBY コレの `scrollX$m
+%x ~SET %x を`有限~値に正規化-$した結果 ~PLUS コレ上の `scrollX$m 取得子~手続き()
+◎
+Normalize non-finite values for the left and top dictionary members of options.
 ◎
 Add the value of scrollX to the left dictionary member.
 </li>
-			<li>
+	<li>
 ~IF［
-%options[ "`top$mb" ] ~NEQ ε
+%y ~NEQ ε
 ］
 ⇒
-%options[ "`top$mb" ] ~INCBY コレの `scrollY$m
+%y ~SET %y を`有限~値に正規化-$した結果 ~PLUS コレ上の `scrollY$m 取得子~手続き()
+◎
+↑
 ◎
 Add the value of scrollY to the top dictionary member.
 </li>
-			<li>
-コレ上の `scroll$m の手続き( %options )
+	<li>
+`~window用の~scroll手続き$( コレ, %x, %y, %behavior )
 ◎
 Act as if the scroll() method was invoked with options as the only argument.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`screenX@m ｜ `screenY@m</dt>
-	<dt>`screenLeft@m ｜ `screenTop@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`screenX@m ｜ `screenY@m
+］取得子~手続きは：
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレの~client~UIwindowは無い
 ］
 ⇒
 ~RET 0
 </li>
-			<li>
+	<li>
 ~RET
 出力~機器の`~Webに公開される~screen区画$の原点に相対的な,  `px$css 単位による，~client~UIwindow†の［
 左端の x 座標 ｜ 上端の y 座標
 ］
 </li>
-		</ol>
+</ol>
+
+<p class="trans-note">【†
+“~client~UIwindow” がどの部分を指すのか，定義されていないが、現実の~browserのふるまいからは，外枠も含めた~UIwindow全体が占める区画を指すものと推定される。
+】</p>
+
 ◎
 The screenX and screenLeft attributes must return the x-coordinate, relative to the origin of the Web-exposed screen area, of the left of the client window as number of CSS pixels, or zero if there is no such thing.
 ◎
 The screenY and screenTop attributes must return the y-coordinate, relative to the origin of the screen of the Web-exposed screen area, of the top of the client window as number of CSS pixels, or zero if there is no such thing.
-</dd>
-	<dd class="trans-note">【
-［
-`screenLeft^m ｜ `screenTop^m
-］は［
-`screenX^m ｜ `screenY^m
-］の別名。
-】</dd>
-	<dd class="trans-note">【†
-“~client~UIwindow” がどの部分を指すのか，定義されていないが、現実の~browserのふるまいからは，外枠も含めた~UIwindow全体が占める区画を指すものと推定される。
-】</dd>
+</div>
 
-	<dt>`outerWidth@m ｜ `outerHeight@m</dt>
-	<dd>
+<div class="algo">
+［
+`screenLeft@m ｜ `screenTop@m
+］取得子~手続きは、［
+`screenX$m ｜ `screenY$m
+］取得子~手続きと同じに挙動する。
+◎
+↑</div>
+
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`outerWidth@m ｜ `outerHeight@m
+］取得子~手続きは：
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレの~client~UIwindowは無い
 ］
 ⇒
 ~RET 0
 </li>
-			<li>
+	<li>
 ~RET ~client~UIwindowの［
 横幅 ｜ 縦幅
 ］
 </li>
-		</ol>
+</ol>
 ◎
 The outerWidth attribute must return the width of the client window. If there is no client window this attribute must return zero.
 ◎
 The outerHeight attribute must return the height of the client window. If there is no client window this attribute must return zero.
-</dd>
+</div>
 
-	<dt>`devicePixelRatio@m</dt>
-	<dd>
-<p>
-取得子は、次に与える
-`機器~pixel比を決定する@
-~algoを走らすモノトスル：
+<div class="algo">
+`devicePixelRatio@m
+取得子~手続きは
+⇒
+~RET `機器~pixel比を決定する$()
 ◎
-The devicePixelRatio attribute must return the result of the following determine the device pixel ratio algorithm:
+The devicePixelRatio attribute must return the result of＼
+</div>
+
+<div class="algo">
+<p>
+`機器~pixel比を決定する@
+ときは：
+◎
+the following determine the device pixel ratio algorithm:
 </p>
-		<ol>
-			<li>
+
+<ol>
+	<li>
 ~IF［
 出力~機器は無い
 ］
@@ -2862,7 +2927,7 @@ The devicePixelRatio attribute must return the result of the following determine
 ◎
 If there is no output device, return 1 and abort these steps.
 </li>
-			<li>
+	<li>
 %~CSS~pixel~size ~LET ［
 現在の`~page~zoom$倍率
 ］, および［
@@ -2872,21 +2937,20 @@ If there is no output device, return 1 and abort these steps.
 ◎
 Let CSS pixel size be the size of a CSS pixel at the current page zoom scale factor and at a pinch zoom scale factor of 1.0.
 </li>
-			<li>
+	<li>
 %機器~pixel~size ~LET
 出力~機器の機器~pixelの縦~size
 ◎
 Let device pixel size be the vertical size of a device pixel of the output device.
 </li>
-			<li>
+	<li>
 ~RET
 %~CSS~pixel~size ~DIV %機器~pixel~size
 ◎
 Return the result of dividing CSS pixel size by device pixel size.
 </li>
-		</ol>
-	</dd>
-</dl>
+</ol>
+</div>
 
 		<section id="the-features-argument-to-the-open()-method">
 <h3 title="The features argument to the open() method">4.1. `open()^m ~methodに対する %features 引数</h3>
@@ -3239,12 +3303,12 @@ For each MediaQueryList object target that has doc as its document, in the order
 ］
 ⇒
 %target に向けて，`~eventを発火する$
-— `MediaQueryList!I 構築子を利用し，次のように初期化して
+— `MediaQueryList$I 構築子を利用し，次のように初期化して
 ⇒＃
 `type$m 属性 ~SET `change$et,
 `isTrusted$m 属性 ~SET ~T,
-`media$m 属性 ~SET %target の`媒体$mq,
-`matches$m 属性 ~SET %target の`合致状態$mq
+`media$m1 属性 ~SET %target の`媒体$mq,
+`matches$m1 属性 ~SET %target の`合致状態$mq
 【！fingerprint】
 ◎
 If target’s matches state has changed since the last time these steps were run, fire an event at target using the MediaQueryListEvent constructor, with its type attribute initialized to change, its isTrusted attribute initialized to true, its media attribute initialized to target’s media, and its matches attribute initialized to target’s matches state.
@@ -3285,32 +3349,34 @@ interface `MediaQueryList@I : `EventTarget$I {
 };
 </pre>
 
-<dl class="idl-def">
-	<dt>`media@m</dt>
-	<dd>
-<p>
-取得子は、コレに結付けられている`媒体$mqを返すモノトスル。
+<div class="algo">
+`media@m
+取得子~手続きは
+⇒
+~RET コレに結付けられている`媒体$mq
 ◎
 The media attribute must return the associated media.
-</dd>
+</div>
 
-	<dt>`matches@m</dt>
-	<dd>
-取得子は、コレに結付けられている`合致状態$mqを返すモノトスル。
+<div class="algo">
+`matches@m
+取得子~手続きは
+⇒
+~RET コレに結付けられている`合致状態$mq
 【！fingerprint】
 ◎
 The matches attribute must return the associated matches state.
-</dd>
+</div>
 
-	<dt>`addListener(callback)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`addListener(callback)@m
+~method~手続きは：
 ◎
 The addListener(callback) method, when invoked, must run these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 `~event~listenerを追加する$( コレ, 次のようにされた`~event~listener$ )
 ⇒＃
 `type$evL ~SET `change$et,
@@ -3318,18 +3384,18 @@ The addListener(callback) method, when invoked, must run these steps:
 ◎
 Add an event listener with the context object and an event listener whose type is change, and callback is callback.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`removeListener(callback)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`removeListener(callback)@m
+~method~手続きは：
 ◎
 The removeListener(callback) method, when invoked, must run these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレの`~event~listener~list$内に［
 ( `type$evL, `callback$evL, `capture$evL )
@@ -3341,9 +3407,8 @@ The removeListener(callback) method, when invoked, must run these steps:
 ◎
 If the context object’s event listener list contains an event listener whose type is change, callback is callback, and capture is false, then remove an event listener with the context object and that event listener.
 </li>
-		</ol>
-	</dd>
-</dl>
+</ol>
+</div>
 
 <p class="note">注記：
 この仕様は、当初，［
@@ -3387,23 +3452,21 @@ dictionary `MediaQueryListEventInit@I : `EventInit$I {
 };
 </pre>
 
-<!-- `MediaQueryListEvent@I -->
+`MediaQueryListEvent^I0
 
-<dl class="idl-def">
-	<dt>`media@m</dt>
-	<dd>
-取得子は、初期化-時の値を返すモノトスル。
+<div class="algo">
+`media@m
+取得子~手続きは、初期化-時の値を返す。
 ◎
 The media attribute must return the value it was initialized to.
-</dd>
+</div>
 
-	<dt>`matches@m</dt>
-	<dd>
-取得子は、初期化-時の値を返すモノトスル。
+<div class="algo">
+`matches@m
+取得子~手続きは、初期化-時の値を返す。
 ◎
 The matches attribute must return the value it was initialized to.
-</dd>
-</dl>
+</div>
 
 			<section id="mediaquerylist-event-summary">
 
@@ -3452,58 +3515,75 @@ interface `Screen@I {
 
 `Screen^dgm
 
-<dl class="idl-def">
-	<dt>`availWidth@m ｜ `availHeight@m</dt>
-	<dd>
-取得子は、`~Webに公開される可用な~screen区画$の［
+<div class="algo">
+［
+`availWidth@m ｜ `availHeight@m
+］取得子~手続きは
+⇒
+~RET `~Webに公開される可用な~screen区画$の［
 横幅 ｜ 縦幅
-］を返すモノトスル。
+］
 ◎
 The availWidth attribute must return the width of the Web-exposed available screen area.
 ◎
 The availHeight attribute must return the height of the Web-exposed available screen area.
-</dd>
+</div>
 
-	<dt>`width@m ｜ `height@m</dt>
-	<dd>
-取得子は、`~Webに公開される~screen区画$の［
+<div class="algo">
+［
+`width@m ｜ `height@m
+］取得子~手続きは
+⇒
+~RET `~Webに公開される~screen区画$の［
 横幅 ｜ 縦幅
-］を返すモノトスル。
+］
 ◎
 The width attribute must return the width of the Web-exposed screen area.
 ◎
 The height attribute must return the height of the Web-exposed screen area.
-</dd>
+</div>
 
-	<dt>`colorDepth@m</dt>
-	<dt>`pixelDepth@m</dt>
-	<dd>
-これらの属性の取得子は、出力~機器における~pixelの色に割振られている~bit数を
+<p>
+［
+`colorDepth@m
+／
+`pixelDepth@m
+］属性の取得子は、いずれも：
+◎
+The colorDepth and pixelDepth attributes＼
+</p>
+<ul>
+	<li>
+出力~機器における~pixelの色に割振られている~bit数を
 — その~alpha~channelは除外して —
-返すべきである。
-~UAがこの~bit数を知り得ない場合は、自身による最も近い見積もりを返すべきである
+返すベキである。
+~UAがこの~bit数を知り得ない場合は、自身による最も近い見積もりを返すベキである
 — 例えば、出力~機器が利用する値に最も近くなるような，［
 機器に送り込まれる~frame~buffer, または何らかの内部~表現
 ］に利用されている~bit数など。
-これらの属性は、 `color$d 媒体~特能の値の 3 倍~以上の値を返すモノトスル
+◎
+should return the number of bits allocated to colors for a pixel in the output device, excluding the alpha channel. If the user agent is not able to return the number of bits used by the output device, it should return the closest estimation such as, for example, the number of bits used by the frame buffer sent to the display or any internal representation that would be the closest to the value the output device would use.＼
+</li>
+	<li>
+`color$d 媒体~特能の値の 3 倍~以上の値を返すモノトスル
 — ~bit数が色~成分ごとに異なる場合、返す値は 3 倍を超えてもヨイ。
 ~UAは、色~深度を［
 知り得ない, または~privacyに配慮するため返したくない
-］場合は， 24 を返すべきである。
+］場合は， 24 を返すベキである。
 ◎
-The colorDepth and pixelDepth attributes should return the number of bits allocated to colors for a pixel in the output device, excluding the alpha channel. If the user agent is not able to return the number of bits used by the output device, it should return the closest estimation such as, for example, the number of bits used by the frame buffer sent to the display or any internal representation that would be the closest to the value the output device would use. The user agent must return a value for these attributes at least equal to the value of color media query multiplied by three. If the different color components are not represented with the same number of bits, the returned value may be greater than three times color media query. If the user agent does not know the color depth or does not want to return it for privacy considerations, it should return 24.
-</dd>
-	<dd class="note">注記：
+The user agent must return a value for these attributes at least equal to the value of color media query multiplied by three. If the different color components are not represented with the same number of bits, the returned value may be greater than three times color media query. If the user agent does not know the color depth or does not want to return it for privacy considerations, it should return 24.
+</li>
+	<li class="note">注記：
 互換性の理由から，両~属性とも同じ値を返す。
 ◎
 Note: The colorDepth and pixelDepth attributes return the same value for compatibility reasons.
-</dd>
-	<dd class="note">注記：
+</li>
+	<li class="note">注記：
 一部の不適合な実装は、 24 でなく 32 を返すことが知られている。
 ◎
 Note: Some non-conforming implementations are known to return 32 instead of 24.
-</dd>
-	<dd class="example">
+</li>
+	<li class="example">
 <p>
 `colorDepth^m は、他の情報
 — 例えば色域 —
@@ -3522,9 +3602,8 @@ if (screen.colorDepth &gt;= 48
   // SDR 内容を利用する
 }
 </pre>
-
-	</dd>
-</dl>
+	</li>
+</ul>
 
 		</section>
 	</section>
@@ -3533,7 +3612,7 @@ if (screen.colorDepth &gt;= 48
 <h2 title="Extensions to the Document Interface">5. `Document^I ~interfaceに対する拡張</h2>
 
 <pre class="idl">
-partial interface `Document!I {
+partial interface `Document$I {`Document^I0
   `Element$I? `elementFromPoint$m(double %x, double %y);
   sequence&lt;`Element$I&gt; `elementsFromPoint$m(double %x, double %y);
   `CaretPosition$I? `caretPositionFromPoint$m(double %x, double %y);
@@ -3543,16 +3622,15 @@ partial interface `Document!I {
 
 `Document^dgm
 
-<dl class="idl-def">
-	<dt>`elementFromPoint(x, y)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`elementFromPoint(x, y)@m
+~method~手続きは：
 ◎
 The elementFromPoint(x, y) method must follow these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレに結付けられている`表示域$はない
 ］
@@ -3560,57 +3638,59 @@ The elementFromPoint(x, y) method must follow these steps:
 ~RET ~NULL
 ◎
 ↓</li>
-			<li>
+	<li>
 ~IF［［［
 0 ~LTE %x ~LTE `表示域$の`有効~横幅$
-］, かつ［
+］~AND［
 0 ~LTE %y ~LTE `表示域$の`有効~縦幅$
-］］でない
+］］ではない
 ］
 ⇒
 ~RET ~NULL
 ◎
 If either argument is negative, x is greater than the viewport width excluding the size of a rendered scroll bar (if any), or y is greater than the viewport height excluding the size of a rendered scroll bar (if any), or there is no viewport associated with the document, return null and terminate these steps.
 </li>
-			<li>
+	<li>
 ~IF［
-`表示域$の子孫に対する`変形$を適用した下で，座標 (%x, %y) の接触判定の標的になる`~layout~box$は`表示域$内にある
+`表示域$の子孫に対する`変形$を適用した下で，座標 (%x, %y) の`接触判定$の標的になる`~layout~box$は`表示域$内にある
 ］
 ⇒
-~RET それに結付けられている要素
+~RET それを結付けている要素
 ◎
 If there is a layout box in the viewport that would be a target for hit testing at coordinates x,y, when applying the transforms that apply to the descendants of the viewport, return the associated element and terminate these steps.
 </li>
-			<li>
+	<li>
 ~RET コレの`根~要素$
 ◎
 If the document has a root element, return the root element and terminate these steps.
 ◎
 Return null.
 </li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
+</ol>
+
+<p class="note">注記：
 `elementFromPoint()^m ~methodは、最も手前に塗られている要素を返すとは限らない。
-例えば要素は `pointer-events$p ~CSS~propの利用を通して接触判定の標的から除外され得る。
+例えば要素は `pointer-events$p ~CSS~propの利用を通して`接触判定$の標的から除外され得る。
 ◎
 Note: The elementFromPoint() method does not necessarily return the top-most painted element. For instance, an element can be excluded from being a target for hit testing by using the pointer-events CSS property.
-</dd>
+</p>
 
-	<dt>`elementsFromPoint(x, y)@m</dt>
-	<dd>
+</div>
+
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`elementsFromPoint(x, y)@m
+~method~手続きは：
 ◎
 The elementsFromPoint(x, y) method must follow these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 %~list ~LET 新たな~list
 ◎
 Let sequence be a new empty sequence.
 </li>
-			<li>
+	<li>
 <p>
 ~IF［
 コレに結付けられている`表示域$はある
@@ -3622,16 +3702,16 @@ Let sequence be a new empty sequence.
 ◎
 If either argument is negative, x is greater than the viewport width excluding the size of a rendered scroll bar (if any), or y is greater than the viewport height excluding the size of a rendered scroll bar (if any), or there is no viewport associated with the document, return sequence and terminate these steps.
 </p>
-				<ol>
-					<li>
+		<ol>
+			<li>
 %~list に次を満たす すべての要素を付加する
 — `topmost^en ~box【最も手前に塗られるもの】から順に，要素の`~layout~box$の塗り順序で
 ⇒
-要素の`~layout~box$は、`表示域$の子孫に対する`変形$を適用した下で，`表示域$内にあって座標 (%x, %y) における接触判定の標的になる（そこに何も `overlap^en していないとしても【要素には塗られる内容がないとしても？】）
+要素の`~layout~box$は、`表示域$の子孫に対する`変形$を適用した下で，`表示域$内にあって座標 (%x, %y) における`接触判定$の標的になる（そこに何も `overlap^en していないとしても【要素には塗られる内容がないとしても？】）
 ◎
 For each layout box in the viewport, in paint order, starting with the topmost box, that would be a target for hit testing at coordinates x,y even if nothing would be overlapping it, when applying the transforms that apply to the descendants of the viewport, append the associated element to sequence.
 </li>
-					<li>
+			<li>
 ~IF［
 %~list は空でない
 ］~AND［
@@ -3642,25 +3722,25 @@ For each layout box in the viewport, in paint order, starting with the topmost b
 ◎
 If the document has a root element, and the last item in sequence is not the root element, append the root element to sequence.
 </li>
-				</ol>
-			</li>
-			<li>
+		</ol>
+	</li>
+	<li>
 ~RET %~list を表現する連列~型~obj
 ◎
 Return sequence.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`caretPositionFromPoint(x, y)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`caretPositionFromPoint(x, y)@m
+~method~手続きは：
 ◎
 The caretPositionFromPoint(x, y) method must return the result of running these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレに結付けられている`表示域$はない
 ］
@@ -3669,7 +3749,7 @@ The caretPositionFromPoint(x, y) method must return the result of running these 
 ◎
 If there is no viewport associated with the document, return null.
 </li>
-			<li>
+	<li>
 ~IF［［［
 0 ~LTE %x ~LTE `表示域$の`有効~横幅$
 ］~AND［
@@ -3680,11 +3760,11 @@ If there is no viewport associated with the document, return null.
 ~RET ~NULL
 <!-- 
 引数が指す座標が`表示域$の外を指す場合、 null を返す（“表示域の外” の定義は上の <code>elementFromPoint</code> の記述と同じ）。
- -->
+-->
 ◎
 If either argument is negative, x is greater than the viewport width excluding the size of a rendered scroll bar (if any), y is greater than the viewport height excluding the size of a rendered scroll bar (if any) return null.
 </li>
-			<li>
+	<li>
 ~IF［［
 `表示域$の子孫に対する`変形$を適用した下で，`表示域$内の座標
 ( %x, %y )
@@ -3696,7 +3776,7 @@ If either argument is negative, x is greater than the viewport width excluding t
 ◎
 If at the coordinates x,y in the viewport no text insertion point indicator would have been inserted when applying the transforms that apply to the descendants of the viewport, return null.
 </li>
-			<li>
+	<li>
 ~IF［
 `表示域$の子孫に対する`変形$を適用した下で，`表示域$内の座標
 ( %x, %y )
@@ -3716,12 +3796,12 @@ If at the coordinates x,y in the viewport a text insertion point indicator would
 • The amount of 16-bit units to the left of where the text insertion point indicator would have inserted.
 • null
 </li>
-			<li>
+	<li>
 %~caret範囲 ~LET `表示域$の子孫に対する`変形$を適用した下で，~text挿入位置指示が挿入されることになる地点を指すような、`畳まれて$いる `Range$I ~obj
 ◎
 Otherwise, return a caret position where the caret range is a collapsed Range object for the position where the text insertion point indicator would have been inserted when applying the transforms that apply to the descendants of the viewport, and＼
 </li>
-			<li>
+	<li>
 ~RET 次のように設定された`~caret位置$
 ⇒＃
 `~caret範囲$ ~SET %~caret範囲,
@@ -3732,28 +3812,30 @@ the other properties are set as follows:
 • The startContainer of the caret range.
 • The startOffset of the caret range.
 </li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
-接触判定の詳細は、この仕様の視野~外であり，したがって
-`elementFromPoint()$m
-と
+</ol>
+</div>
+
+<p class="note">注記：
+`接触判定@
+の詳細は、この仕様の視野から外れる。
+したがって［
+`elementFromPoint()$m ／
 `caretPositionFromPoint()$m
-についての正確な詳細も同様になる。
-接触判定は希望的には，~CSSまたは~HTMLの将来版にて定義されることになる。
+］の正確な詳細についても同様になる。
+接触判定は、希望的には，~CSSまたは~HTMLの将来版にて定義されることになる。
 ◎
 Note: The specifics of hit testing are out of scope of this specification and therefore the exact details of elementFromPoint() and caretPositionFromPoint() are therefore too. Hit testing will hopefully be defined in a future revision of CSS or HTML.
-</dd>
+</p>
 
-	<dt>`scrollingElement@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+`scrollingElement@m
+取得子~手続きは：
 ◎
 The scrollingElement attribute, on getting, must run these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 <p>
 ~IF［
 コレは`過去互換~mode$下にある
@@ -3761,8 +3843,8 @@ The scrollingElement attribute, on getting, must run these steps:
 ◎
 If the Document is in quirks mode, follow these substeps:
 </p>
-				<ol>
-					<li>
+		<ol>
+			<li>
 ~IF［
 `~HTML~body要素$ %~body は在る
 ］~AND［
@@ -3773,23 +3855,23 @@ If the Document is in quirks mode, follow these substeps:
 ◎
 If the HTML body element exists, and it is not potentially scrollable, return the HTML body element and abort these steps.
 </li>
-					<li>
+			<li>
 ~RET ~NULL
 ◎
 Return null and abort these steps.
 </li>
-				</ol>
-			</li>
-			<li>
+		</ol>
+	</li>
+	<li>
 ~RET コレの`根~要素$
 ◎
 If there is a root element, return the root element and abort these steps.
 ◎
 Return null.
 </li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
+</ol>
+
+<p class="note">注記：
 `scrollTop^m,
 `scrollLeft^m
 に対し，`過去互換~mode$の挙動を常に利用する不適合~UAには、
@@ -3798,14 +3880,15 @@ Return null.
 — 特定0の~UAの挙動を前提にしたり，どの要素が表示域を~scrollするかを見るために~scrollを呼出す必要なく。
 ◎
 Note: For non-conforming user agents that always use the quirks mode behavior for scrollTop and scrollLeft, the scrollingElement attribute is expected to also always return the HTML body element (or null if it does not exist). This API exists so that Web developers can use it to get the right element to use for scrolling APIs, without making assumptions about a particular user agent’s behavior or having to invoke a scroll to see which element scrolls the viewport.
-</dd>
-	<dd class="note">注記：
+</p>
+
+<p class="note">注記：
 `~HTML~body要素$は、~HTMLの `document.body^m とは異なる
-— 後者は `frameset^m 要素を返すこともある。
+— 後者は `frameset^e 要素を返すこともある。
 ◎
 Note: The HTML body element is different from HTML’s document.body in that the latter can return a frameset element.
-</dd>
-</dl>
+</p>
+</div>
 
 		<section id="the-caretposition-interface">
 <h3 title="The CaretPosition Interface">5.1. `CaretPosition^I ~interface</h3>
@@ -3831,30 +3914,33 @@ interface `CaretPosition@I {
 };
 </pre>
 
-<dl class="idl-def">
-	<dt>`offsetNode@m</dt>
-	<dd>
-取得子は、コレの`~caret~node$を返すモノトスル。
+<div class="algo">
+`offsetNode@m
+取得子~手続きは
+⇒
+~RET コレの`~caret~node$
 ◎
 The offsetNode attribute must return the caret node.
-</dd>
+</div>
 
-	<dt>`offset@m</dt>
-	<dd>
-取得子は、コレの`~caret~offset$を返すモノトスル。
+<div class="algo">
+`offset@m
+取得子~手続きは
+⇒
+~RET コレの`~caret~offset$
 ◎
 The offset attribute must return the caret offset.
-</dd>
+</div>
 
-	<dt>`getClientRect()@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`getClientRect()@m
+~method~手続きは：
 ◎
 The getClientRect() method must follow these steps, aborting on the first step that returns a value:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 <p>
 ~IF［
 コレの`~caret範囲$ ~NEQ ~NULL
@@ -3862,16 +3948,14 @@ The getClientRect() method must follow these steps, aborting on the first step t
 ◎
 If caret range is not null:
 </p>
-				<ol>
-					  <li>
-%~list ~LET
-その範囲に対し
-`getClientRects()^m
-~methodを呼出した結果
+		<ol>
+			<li>
+%~list ~LET コレの`~caret範囲$上の 
+`Range^I1 `getClientRects$m1 ~method手続き()
 ◎
 Let list be the result of invoking the getClientRects() method on the range.
 </li>
-					<li>
+			<li>
 ~IF［
 %~list は空である
 ］
@@ -3880,14 +3964,14 @@ Let list be the result of invoking the getClientRects() method on the range.
 ◎
 If list is empty, return null.
 </li>
-					<li>
+			<li>
 ~RET %~list 内の最初の `DOMRect$I ~obj
 ◎
 Return the DOMRect object in list at index 0.
 </li>
-				</ol>
-			</li>
-			<li>
+		</ol>
+	</li>
+	<li>
 ~IF［
 コレの`~caret~node$ %node は，［
 `置換d要素$による~text手入力~widgetである
@@ -3901,19 +3985,19 @@ Return the DOMRect object in list at index 0.
 ◎
 If caret node is a text entry widget that is a replaced element, and that is in the document, return a DOMRect object for the caret in the widget as represented by the caret offset value. The transforms that apply to the element and its ancestors are applied.
 </li>
-			<li>
+	<li>
 ~RET ~NULL
 ◎
 Return null.
 </li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
+</ol>
+
+<p class="note">注記：
 この~methodが返す `DOMRect$I ~objは、`~live$でない。
 ◎
 Note: This DOMRect object is not live.
-</dd>
-</dl>
+</p>
+</div>
 
 		</section>
 	</section>
@@ -3930,7 +4014,7 @@ dictionary `ScrollIntoViewOptions@I : `ScrollOptions$I {
 </pre>
 
 <pre class="idl">
-partial interface `Element!I {
+partial interface `Element$I {`Element^I0
   `DOMRectList$I `getClientRects$m();
   [`NewObject$] `DOMRect$I `getBoundingClientRect$m();
   void `scrollIntoView$m(optional (boolean or `ScrollIntoViewOptions$I) %arg = {});
@@ -3953,16 +4037,15 @@ partial interface `Element!I {
 
 `Element^dgm
 
-<dl class="idl-def">
-	<dt>`getClientRects()@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`getClientRects()@m
+~method~手続きは：
 ◎
 The getClientRects() method, when invoked, must return the result of the following algorithm:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレは`~layout~box$を持たない
 ］
@@ -3971,7 +4054,7 @@ The getClientRects() method, when invoked, must return the result of the followi
 ◎
 If the element on which it was invoked does not have an associated layout box return an empty DOMRectList object and stop this algorithm.
 </li>
-			<li>
+	<li>
 ~IF［
 コレは`~SVG~layout~box$を持つ
 ］
@@ -3982,7 +4065,7 @@ If the element on which it was invoked does not have an associated layout box re
 ◎
 If the element has an associated SVG layout box return a DOMRectList object containing a single DOMRect object that describes the bounding box of the element as defined by the SVG specification, applying the transforms that apply to the element and its ancestors.
 </li>
-			<li>
+	<li>
 <p>
 %~list ~LET
 コレの`~layout~box$内の`~box断片$からなる~list
@@ -4001,7 +4084,7 @@ table ~box と caption ~boxは ~listに含めるが，匿名~容器~boxは含め
 
 ◎
 ↓</li>
-			<li>
+	<li>
 <p>
 ~RET 
 %~list 内の 各`~box断片$を，［［［
@@ -4022,31 +4105,29 @@ Return a DOMRectList object containing DOMRect objects in content order, one for
 • If the element on which the method was invoked has a computed value for the display property of table or inline-table include both the table box and the caption box, if any, but not the anonymous container box.
 • Replace each anonymous block box with its child box(es) and repeat this until no anonymous block boxes are left in the final list.
 </li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
+</ol>
+
+<p class="note">注記：
 この~methodが返す `DOMRect$I ~objは、`~live$でない。
 ◎
 Note: The DOMRect objects returned by getClientRects() are not live.
-</dd>
+</p>
+</div>
 
-	<dt>`getBoundingClientRect()@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`getBoundingClientRect()@m
+~method~手続きは：
 ◎
 The getBoundingClientRect() method, when invoked, must return the result of the following algorithm:
 </p>
-		<ol>
-			<li>
-%~list ~LET
-コレ上で
-`getClientRects()$m
-を呼出した結果
+<ol>
+	<li>
+%~list ~LET コレ上の `getClientRects$m ~method手続き()
 ◎
 Let list be the result of invoking getClientRects() on the same element this method was invoked on.
 </li>
-			<li>
+	<li>
 ~IF［
 %~list は空である
 ］
@@ -4059,7 +4140,7 @@ Let list be the result of invoking getClientRects() on the same element this met
 ◎
 If the list is empty return a DOMRect object whose x, y, width and height members are zero.
 </li>
-			<li>
+	<li>
 ~IF［
 %~list 内の どの矩形も，横幅, 縦幅ともに 0 である
 ］
@@ -4068,7 +4149,7 @@ If the list is empty return a DOMRect object whose x, y, width and height member
 ◎
 If all rectangles in list have zero width or height, return the first rectangle in list.
 </li>
-			<li>
+	<li>
 ~RET ［
 %~list 内の［
 横幅, 縦幅ともに 0 でない
@@ -4077,14 +4158,15 @@ If all rectangles in list have zero width or height, return the first rectangle 
 ◎
 Otherwise, return a DOMRect object describing the smallest rectangle that includes all of the rectangles in list of which the height or width is not zero.
 </li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
+</ol>
+
+<p class="note">注記：
 この~methodが返す `DOMRect$I ~objは、`~live$でない。
 ◎
 Note: The DOMRect object returned by getBoundingClientRect() is not live.
-</dd>
-	<dd class="example">
+</p>
+
+<div class="example">
 <p>
 次の~code片は文書~内の最初の `div^e 要素の~sizeを取得する：
 ◎
@@ -4098,32 +4180,33 @@ var example = document
 var exampleWidth = example.width;
 var exampleHeight = example.height;
 </pre>
-	</dd>
+</div>
+</div>
 
-	<dt>`scrollIntoView(arg)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`scrollIntoView(arg)@m
+~method~手続きは：
 ◎
 The scrollIntoView(arg) method must run these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 %挙動 ~LET `auto^l
 ◎
 Let behavior be "auto".
 </li>
-			<li>
+	<li>
 %塊 ~LET `start^l
 ◎
 Let block be "start".
 </li>
-			<li>
+	<li>
 %行内 ~LET `nearest^l
 ◎
 Let inline be "nearest".
 </li>
-			<li>
+	<li>
 ~IF［
 %arg は `ScrollIntoViewOptions$I 辞書である
 ］
@@ -4137,7 +4220,7 @@ If arg is a ScrollIntoViewOptions dictionary, then:
 • Set block to the block dictionary member of options.
 • Set inline to the inline dictionary member of options.
 </li>
-			<li>
+	<li>
 ~ELIF［
 %arg ~EQ ~F
 ］
@@ -4146,7 +4229,7 @@ If arg is a ScrollIntoViewOptions dictionary, then:
 ◎
 Otherwise, if arg is false, then set block to "end".
 </li>
-			<li>
+	<li>
 ~IF［
 コレは`~layout~box$を持たない
 ］
@@ -4155,56 +4238,65 @@ Otherwise, if arg is false, then set block to "end".
 ◎
 If the element does not have any associated layout box, then return.
 </li>
-			<li>
+	<li>
 コレを`~viewの中へ~scrollする$( %挙動, %塊, %行内 )
 ◎
 Scroll the element into view with behavior, block, and inline.
 </li>
-			<li>
+	<li>
 任意選択で
 ⇒
 利用者に コレを注目してもらう何らかの動作があれば，それを遂行する
 ◎
 Optionally perform some other action that brings the element to the user’s attention.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`scroll(options)@m</dt>
-	<dt>`scroll(x, y)^m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`scroll()@m
+~method~手続きは：
+</p>
+<ol>
+	<li>
+<p>
+( %x, %y, %behavior ) ~LET ~methodの引数に応じて：
+</p>
+		<ul class="switch">
+			<li>
+`ScrollToOptions$I %options 引数を伴って呼出された場合
+⇒
+( %options[ "`left$mb" ], %options[ "`top$mb" ], %options[ "`behavior$mb" ] )
+</li>
+			<li>
+%x, %y 引数を伴って呼出された場合
+⇒
+( %x, %y, `auto$l )
+</li>
+		</ul>
+</li>
+	<li>
+~IF［
+%x ~NEQ ε
+］
+⇒
+%x ~SET %x を`有限~値に正規化-$した結果
+</li>
+	<li>
+~IF［
+%y ~NEQ ε
+］
+⇒
+%y ~SET %y を`有限~値に正規化-$した結果
+</li>
+	<li>
+`要素~用の~scroll手続き$( コレ, %x, %y, %behavior )
+</li>
+</ol>
+
 ◎
 The scroll() method must run these steps:
-</p>
-		<ol>
-			<li>
-<p>
-~IF［
-~methodは %options 引数（ `ScrollToOptions$I ）を伴って呼出された
-］：
-</p>
-				<ol>
-					<li>
-%left ~LET %options[ "`left$mb" ]
-</li>
-					<li>
-%options[ "`left$mb" ] ~SET ［
-%left ~EQ ε ならば コレの現在の x 軸 ~scroll位置 ／
-~ELSE_ %left を`有限~値に正規化-$した結果
-］
-</li>
-					<li>
-%top ~LET %options[ "`top$mb" ]
-</li>
-					<li>
-%options[ "`top$mb" ] ~SET ［
-%top ~EQ ε ならば コレの現在の y 軸 ~scroll位置 ／
-~ELSE_ %top を`有限~値に正規化-$した結果
-］
-</li>
-				</ol>
 ◎
 If invoked with one argument, follow these substeps:
 • Let options be the argument.
@@ -4213,11 +4305,6 @@ If invoked with one argument, follow these substeps:
 • Let x be the value of the left dictionary member of options, if present, or the element’s current scroll position on the x axis otherwise.
 ◎
 • Let y be the value of the top dictionary member of options, if present, or the element’s current scroll position on the y axis otherwise.
-</li>
-			<li>
-~ELSE
-⇒
-%options ~LET `座標から~scroll~optionsを作成する$( %x, %y )
 ◎
 If invoked with two arguments, follow these substeps:
 • Let options be null converted to a ScrollToOptions dictionary. [WEBIDL]
@@ -4225,13 +4312,30 @@ If invoked with two arguments, follow these substeps:
 • Normalize non-finite values for x and y.
 • Let the left dictionary member of options have the value x.
 • Let the top dictionary member of options have the value y.
-</li>
-			<li>
-%文書 ~LET コレの`~node文書$
+◎
+↓</div>
+
+<div class="algo">
+<p class="trans-note">【
+この訳では、原文による `scroll()$m ~method~手続きを成す引数の取扱い以外の部分を，次に与える手続きに分離する
+— それは、複数の箇所から共通して利用されるので。
+】</p>
+
+<p>
+`要素~用の~scroll手続き@
+は、所与の
+( %要素, %x, %y, %behavior )
+に対し：
+◎
+↑</p>
+
+<ol>
+	<li>
+%文書 ~LET %要素 の`~node文書$
 ◎
 Let document be the element’s node document.
 </li>
-			<li>
+	<li>
 ~IF［
 %文書 は`作動中の文書$でない
 ］
@@ -4240,12 +4344,12 @@ Let document be the element’s node document.
 ◎
 If document is not the active document, terminate these steps.
 </li>
-			<li>
-%window ~LET %文書 の `defaultView$m 属性~値
+	<li>
+%window ~LET %文書 上の `defaultView$m 取得子~手続き()
 ◎
 Let window be the value of document’s defaultView attribute.
 </li>
-			<li>
+	<li>
 ~IF［
 %window ~EQ ~NULL
 ］
@@ -4254,9 +4358,9 @@ Let window be the value of document’s defaultView attribute.
 ◎
 If window is null, terminate these steps.
 </li>
-			<li>
+	<li>
 ~IF［
-コレ ~EQ %文書 の`根~要素$
+%要素 ~EQ %文書 の`根~要素$
 ］~AND［
 %文書 は`過去互換~mode$下にある
 ］
@@ -4265,34 +4369,51 @@ If window is null, terminate these steps.
 ◎
 If the element is the root element and document is in quirks mode, terminate these steps.
 </li>
-			<li>
+	<li>
 ~IF［
-コレ ~EQ %文書 の`根~要素$
+%要素 ~EQ %文書 の`根~要素$
 ］
 ⇒＃
-%window 上で `scroll()^m を ( `scrollX^m, %y ) を引数に渡して呼出す；
+%x ~SET %window の `Window^I1 `scrollX$m1  取得子~手続き()；
+`~window用の~scroll手続き$( %window, %x, %y, `auto$l )
 ~RET
 ◎
 If the element is the root element invoke scroll() on window with scrollX on window as first argument and y as second argument, and terminate these steps.
 </li>
-			<li>
+	<li>
 ~IF［
-コレは `~HTML~body要素$ である
+%要素 は `~HTML~body要素$ である
 ］~AND［
 %文書 は`過去互換~mode$下にある
 ］~AND［
-コレは`~scroll可能になり得ない$
+%要素 は`~scroll可能になり得ない$
 ］
 ⇒＃
-%window 上で `scroll()^m を ( %options ) を引数に渡して呼出す；
+`~window用の~scroll手続き$( %window, %x, %y, %behavior )；
 ~RET
 ◎
 If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, invoke scroll() on window with options as the only argument, and terminate these steps.
 </li>
-			<li>
+	<li>
+~IF［
+%x ~EQ ε
+］
+⇒
+%x ~SET %要素 の現在の x 軸 ~scroll位置
+◎
+↑</li>
+	<li>
+~IF［
+%y ~EQ ε
+］
+⇒
+%y ~SET %要素 の現在の y 軸 ~scroll位置
+◎
+↑</li>
+	<li>
 <p>
 ~IF［
-コレは，次のいずれかを満たす
+%要素 は，次のいずれかを満たす
 ］…：
 </p>
 
@@ -4309,46 +4430,50 @@ If the element is the HTML body element, document is in quirks mode, and the ele
 ◎
 If the element does not have any associated CSS layout box, the element has no associated scrolling box, or the element has no overflow, terminate these steps.
 </li>
-			<li>
-`要素を~scrollする$( コレ,  ( %x, %y ), %options[ "`behavior$mb" ] )
+	<li>
+`要素を~scrollする$( %要素, ( %x, %y ), %behavior )
 ◎
 Scroll the element to x,y, with the scroll behavior being the value of the behavior dictionary member of options.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`scrollTo()@m</dt>
-	<dd>
-被呼出時には、コレ上の `scroll()$m と同じに挙動するモノトスル。
+<div class="algo">
+`scrollTo()@m
+~method~手続きは、
+`scroll()$m ~method~手続きと同じに挙動する。
 ◎
 When the scrollTo() method is invoked, the user agent must act as if the scroll() method was invoked with the same arguments.
-</dd>
+</div>
 
-	<dt>`scrollBy(options)@m</dt>
-	<dt>`scrollBy(x, y)^m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`scrollBy()@m
+~method~手続きは：
 ◎
 When the scrollBy() method is invoked, the user agent must run these steps:
 </p>
-		<ol>
+<ol>
+	<li>
+<p>
+( %x, %y, %behavior ) ~LET ~methodの引数に応じて：
+</p>
+		<ul class="switch">
 			<li>
-~IF［
-~methodは %options 引数（ `ScrollToOptions$I ）を伴って呼出された
-］
+`ScrollToOptions$I %options 引数を伴って呼出された場合
 ⇒
-何もしない
-【原文における この段の内容は，最後の `scroll()^m 手続きの中で処理されるので不要】
+( %options[ "`left$mb" ], %options[ "`top$mb" ], %options[ "`behavior$mb" ] )
+</li>
+			<li>
+%x, %y 引数を伴って呼出された場合
+⇒
+( %x, %y, `auto$l )
+</li>
+		</ul>
 ◎
 If invoked with one argument, follow these substeps:
 • Let options be the argument.
 • Normalize non-finite values for left and top dictionary members of options, if present.
-</li>
-			<li>
-~ELSE
-⇒
-%options ~LET `座標から~scroll~optionsを作成する$( %x, %y )
 ◎
 If invoked with two arguments, follow these substeps:
 • Let options be null converted to a ScrollToOptions dictionary. [WEBIDL]
@@ -4357,46 +4482,47 @@ If invoked with two arguments, follow these substeps:
 • Let the left dictionary member of options have the value x.
 • Let the top dictionary member of options have the value y.
 </li>
-			<li>
+	<li>
 ~IF［
-%options[ "`left$mb" ] ~NEQ ε
+%x ~NEQ ε
 ］
 ⇒
-%options[ "`left$mb" ] ~INCBY コレの `scrollLeft$m
+%x ~SET %x を`有限~値に正規化-$した結果 ~PLUS コレ上の `scrollLeft$m 取得子~手続き()
 ◎
 Add the value of scrollLeft to the left dictionary member.
 </li>
-			<li>
+	<li>
 ~IF［
-%options[ "`top$mb" ] ~NEQ ε
+%y ~NEQ ε
 ］
 ⇒
-%options[ "`top$mb" ] ~INCBY コレの `scrollTop$m
+%y ~SET %y を`有限~値に正規化-$した結果 ~PLUS コレ上の `scrollTop$m 取得子~手続き()
 ◎
 Add the value of scrollTop to the top dictionary member.
 </li>
-			<li>
-コレ上の `scroll$m の手続き( %options )
+	<li>
+`要素~用の~scroll手続き$( コレ, %x, %y, %behavior )
 ◎
 Act as if the scroll() method was invoked with options as the only argument.
 </li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`scrollTop@m ｜ `scrollLeft@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`scrollTop@m ｜ `scrollLeft@m
+］取得子~手続きは：
 ◎
 The scrollTop attribute, on getting, must return the result of running these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 %文書 ~LET コレの`~node文書$
 ◎
 Let document be the element’s node document.
 </li>
-			<li>
+	<li>
 ~IF［
 %文書 は`作動中の文書$でない
 ］
@@ -4405,12 +4531,12 @@ Let document be the element’s node document.
 ◎
 If document is not the active document, return zero and terminate these steps.
 </li>
-			<li>
-%window ~LET %文書 の `defaultView$m 属性~値
+	<li>
+%window ~LET %文書 上の `defaultView$m 取得子~手続き()
 ◎
 Let window be the value of document’s defaultView attribute.
 </li>
-			<li>
+	<li>
 ~IF［
 %window ~EQ ~NULL
 ］
@@ -4419,7 +4545,7 @@ Let window be the value of document’s defaultView attribute.
 ◎
 If window is null, return zero and terminate these steps.
 </li>
-			<li>
+	<li>
 ~IF［
 コレ ~EQ %文書 の`根~要素$
 ］~AND［
@@ -4430,18 +4556,18 @@ If window is null, return zero and terminate these steps.
 ◎
 If the element is the root element and document is in quirks mode, return zero and terminate these steps.
 </li>
-			<li>
+	<li>
 <p>
 ~IF［
 次のいずれかが満たされる
 ］…：
 </p>
 
-				<ul>
-					<li>
+		<ul>
+			<li>
 コレ ~EQ %文書 の`根~要素$
 </li>
-					<li>
+			<li>
 ［
 コレは `~HTML~body要素$である
 ］~AND［
@@ -4450,7 +4576,7 @@ If the element is the root element and document is in quirks mode, return zero a
 コレは`~scroll可能になり得ない$
 ］
 </li>
-				</ul>
+		</ul>
 <p>
 …ならば
 ⇒
@@ -4464,7 +4590,7 @@ If the element is the root element return the value of scrollY on window.
 ◎
 If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, return the value of scrollY on window.
 </li>
-			<li>
+	<li>
 ~IF［
 コレは `~CSS~layout~box$を持たない
 ］
@@ -4473,7 +4599,7 @@ If the element is the HTML body element, document is in quirks mode, and the ele
 ◎
 If the element does not have any associated CSS layout box, return zero and terminate these steps.
 </li>
-			<li>
+	<li>
 ~RET
 コレの`~scrollされる区画$の整列~点から相対的な，
 コレの`~padding辺$の［
@@ -4482,28 +4608,31 @@ If the element does not have any associated CSS layout box, return zero and term
 ◎
 Return the y-coordinate of the scrolling area at the alignment point with the top of the padding edge of the element.
 </li>
-		</ol>
-	</dd>
-	<dd>
+</ol>
+</div>
+
+<div class="algo">
 <p>
-設定子は、次を走らすモノトスル：
+［
+`scrollTop$m ｜ `scrollLeft$m
+］設定子~手続きは：
 ◎
 When setting the scrollTop attribute these steps must be run:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 %v ~LET 所与の値を`有限~値に正規化-$した結果
 ◎
 Let y be the given value.
 ◎
 Normalize non-finite values for y.
 </li>
-			<li>
+	<li>
 %文書 ~LET コレの`~node文書$
 ◎
 Let document be the element’s node document.
 </li>
-			<li>
+	<li>
 ~IF［
 %文書 は`作動中の文書$でない
 ］
@@ -4512,12 +4641,12 @@ Let document be the element’s node document.
 ◎
 If document is not the active document, terminate these steps.
 </li>
-			<li>
-%window ~LET %文書 の `defaultView$m 属性~値
+	<li>
+%window ~LET %文書 上の `defaultView$m 取得子~手続き()
 ◎
 Let window be the value of document’s defaultView attribute.
 </li>
-			<li>
+	<li>
 ~IF［
 %window ~EQ ~NULL
 ］
@@ -4526,7 +4655,7 @@ Let window be the value of document’s defaultView attribute.
 ◎
 If window is null, terminate these steps.
 </li>
-			<li>
+	<li>
 ~IF［
 コレ ~EQ %文書 の`根~要素$
 ］~AND［
@@ -4537,17 +4666,17 @@ If window is null, terminate these steps.
 ◎
 If the element is the root element and document is in quirks mode, terminate these steps.
 </li>
-			<li>
+	<li>
 <p>
 ~IF［
 次のいずれかが満たされる
 ］…：
 </p>
-				<ul>
-					<li>
+		<ul>
+			<li>
 コレ ~EQ %文書 の`根~要素$
 </li>
-					<li>
+			<li>
 ［
 コレは `~HTML~body要素$ である
 ］~AND［
@@ -4556,26 +4685,31 @@ If the element is the root element and document is in quirks mode, terminate the
 コレは`~scroll可能になり得ない$
 ］
 </li>
-				</ul>
+		</ul>
 <p>
 …ならば：
+`Window^I1
 </p>
-				<ol>
-					<li>
-%window 上の `scroll()^m を次を引数に渡して呼出す
-⇒
-( ［ %window 上の `scrollX^m の値｜ %v ］, ［ %v ｜ %window 上の `scrollY^m の値 ］ )
+		<ol>
+			<li>
+%x ~LET ［ %window 上の `scrollX$m1 取得子~手続き() ｜ %v ］
 </li>
-					<li>
+			<li>
+%y ~LET ［ %v ｜ %window 上の `scrollY$m1 取得子~手続き() ］
+</li>
+			<li>
+`~window用の~scroll手続き$( %window, %x, %y, `auto$l )
+</li>
+			<li>
 ~RET
 </li>
-				</ol>
+		</ol>
 ◎
 If the element is the root element invoke scroll() on window with scrollX on window as first argument and y as second argument, and terminate these steps.
 ◎
 If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, invoke scroll() on window with scrollX as first argument and y as second argument, and terminate these steps.
 </li>
-			<li>
+	<li>
 <p>
 ~IF［
 コレは，次のいずれかを満たす
@@ -4596,22 +4730,23 @@ If the element is the HTML body element, document is in quirks mode, and the ele
 ◎
 If the element does not have any associated CSS layout box, the element has no associated scrolling box, or the element has no overflow, terminate these steps.
 </li>
-			<li>
+	<li>
 %目的位置 ~LET ( ［
-`scrollLeft$m の値 ｜ %v
+コレ上の `scrollLeft$m 取得子~手続き() ｜ %v
 ］, ［
-%v ｜ `scrollTop$m の値
+%v ｜ コレ上の `scrollTop$m 取得子~手続き()
 ］ )
 ◎
 ↓</li>
-			<li>
+	<li>
 `要素を~scrollする$( コレ,  %目的位置 , `auto$l )
 ◎
 Scroll the element to scrollLeft,y, with the scroll behavior being "auto".
 </li>
 </ol>
-			</dd>
-			<dd class="en">
+</div>
+
+<p class="en">
 ◎
 The scrollLeft attribute, on getting, must return the result of running these steps:
 • Let document be the element’s node document.
@@ -4636,22 +4771,23 @@ When setting the scrollLeft attribute these steps must be run:
 • If the element is the HTML body element, document is in quirks mode, and the element is not potentially scrollable, invoke scroll() on window with x as first argument and scrollY on window as second argument, and terminate these steps.
 • If the element does not have any associated CSS layout box, the element has no associated scrolling box, or the element has no overflow, terminate these steps.
 • Scroll the element to x,scrollTop, with the scroll behavior being "auto".
-</dd>
+</p>
 
-	<dt>`scrollWidth@m ｜ `scrollHeight@m </dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`scrollWidth@m ｜ `scrollHeight@m 
+］取得子~手続きは：
 ◎
 The scrollWidth attribute must return the result of running these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 %文書 ~LET コレの`~node文書$
 ◎
 Let document be the element’s node document.
 </li>
-			<li>
+	<li>
 ~IF［
 %文書 は`作動中の文書$でない
 ］
@@ -4660,22 +4796,22 @@ Let document be the element’s node document.
 ◎
 If document is not the active document, return zero and terminate these steps.
 </li>
-			<li>
+	<li>
 <p>
 ~IF［
 次のいずれかが満たされる
 ］…：
 </p>
 
-				<ul >
-					<li>
+		<ul >
+			<li>
 ［
 %文書 は`過去互換~mode$下にない
 ］~AND［
 コレ ~EQ %文書 の`根~要素$
 ］
 </li>
-					<li>
+			<li>
 ［
 %文書 は`過去互換~mode$下にある
 ］~AND［
@@ -4685,20 +4821,20 @@ If document is not the active document, return zero and terminate these steps.
 `~scroll可能になり得ない$
 ］
 </li>
-				</ul>
+		</ul>
 
 <p>
 …ならば：
 </p>
-				<ol>
-					<li>
+		<ol>
+			<li>
 ~IF［
 コレの`表示域$は無い
 ］
 ⇒
 ~RET 0
 </li>
-					<li>
+			<li>
 ~RET
 `max^op( `表示域$の`~scrollされる区画$の［
 横幅 ｜ 縦幅
@@ -4706,7 +4842,7 @@ If document is not the active document, return zero and terminate these steps.
 `有効~横幅$ ｜ `有効~縦幅$
 ］ )
 </li>
-				</ol>
+		</ol>
 ◎
 Let viewport width be the width of the viewport excluding the width of the scroll bar, if any, or zero if there is no viewport.
 ◎
@@ -4714,7 +4850,7 @@ If the element is the root element and document is not in quirks mode return max
 ◎
 If the element is the HTML body element, document is in quirks mode and the element is not potentially scrollable, return max(viewport scrolling area width, viewport width).
 </li>
-			<li>
+	<li>
 ~IF［
 コレは `~CSS~layout~box$を持たない
 ］
@@ -4723,7 +4859,7 @@ If the element is the HTML body element, document is in quirks mode and the elem
 ◎
 If the element does not have any associated CSS layout box return zero and terminate these steps.
 </li>
-			<li>
+	<li>
 ~RET
 コレの`~scrollされる区画$の［
 横幅 ｜ 縦幅
@@ -4731,9 +4867,10 @@ If the element does not have any associated CSS layout box return zero and termi
 ◎
 Return the width of the element’s scrolling area.
 </li>
-		</ol>
-	</dd>
-	<dd class="en">
+</ol>
+</div>
+
+<p class="en">
 ◎
 The scrollHeight attribute must return the result of running these steps:
 • Let document be the element’s node document.
@@ -4743,17 +4880,18 @@ The scrollHeight attribute must return the result of running these steps:
 • If the element is the HTML body element, document is in quirks mode and the element is not potentially scrollable, return max(viewport scrolling area height, viewport height).
 • If the element does not have any associated CSS layout box return zero and terminate these steps.
 • Return the height of the element’s scrolling area.
-</dd>
+</p>
 
-	<dt>`clientTop@m ｜ `clientLeft@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`clientTop@m ｜ `clientLeft@m
+］取得子~手続きは：
 ◎
 The clientTop attribute must run these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレは `~CSS~layout~box$を持たない
 ］~OR［
@@ -4764,17 +4902,17 @@ The clientTop attribute must run these steps:
 ◎
 If the element has no associated CSS layout box or if the CSS layout box is inline, return zero.
 </li>
-			<li>
+	<li>
 <p>
 ~RET 次の和：
 </p>
-				<ul>
-					<li>
+		<ul>
+			<li>
 ［
 `border-top-width$p ｜ `border-left-width$p
 ］~propの算出d値
 </li>
-			<li>
+	<li>
 `~padding辺$の［
 上端 ｜ 左端
 ］と`~border辺$の［
@@ -4783,7 +4921,7 @@ If the element has no associated CSS layout box or if the CSS layout box is inli
 縦幅 ｜ 横幅
 ］
 </li>
-				</ul>
+		</ul>
 <p>
 — ここで、
 コレとその先祖に対する`変形$は適用しないとする。
@@ -4791,24 +4929,26 @@ If the element has no associated CSS layout box or if the CSS layout box is inli
 ◎
 Return the computed value of the border-top-width property plus the height of any scrollbar rendered between the top padding edge and the top border edge, ignoring any transforms that apply to the element and its ancestors.
 </li>
-		</ol>
-	</dd>
-	<dd class="en">
+</ol>
+</div>
+
+<p class="en">
 ◎
 The clientLeft attribute must run these steps:
 • If the element has no associated CSS layout box or if the CSS layout box is inline, return zero.
 • Return the computed value of the border-left-width property plus the width of any scrollbar rendered between the left padding edge and the left border edge, ignoring any transforms that apply to the element and its ancestors.
-</dd>
+</p>
 
-	<dt>`clientWidth@m ｜ `clientHeight@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`clientWidth@m ｜ `clientHeight@m
+］取得子~手続きは：
 ◎
 The clientWidth attribute must run these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレは `~CSS~layout~box$を持たない
 ］~OR［
@@ -4819,28 +4959,28 @@ The clientWidth attribute must run these steps:
 ◎
 If the element has no associated CSS layout box or if the CSS layout box is inline, return zero.
 </li>
-			<li>
+	<li>
 <p>
 ~IF［
 次のいずれかが満たされる
 ］…：
 </p>
-				<ul>
-					<li>
+		<ul>
+			<li>
 ［
 コレ ~EQ %文書 の`根~要素$
 ］~AND［
 %文書 は`過去互換~mode$下にない
 ］
 </li>
-					<li>
+			<li>
 ［
 コレは `~HTML~body要素$ である
 ］~AND［
 %文書 は`過去互換~mode$下にある
 ］
 </li>
-		</ul>
+</ul>
 
 <p>
 …ならば
@@ -4853,7 +4993,7 @@ If the element has no associated CSS layout box or if the CSS layout box is inli
 ◎
 If the element is the root element and the element’s node document is not in quirks mode, or if the element is the HTML body element and the element’s node document is in quirks mode, return the viewport width excluding the size of a rendered scroll bar (if any).
 </li>
-			<li>
+	<li>
 <p>
 ~RET  `~padding辺$の［
 横幅 ｜ 縦幅
@@ -4869,16 +5009,16 @@ If the element is the root element and the element’s node document is not in q
 ◎
 Return the width of the padding edge excluding the width of any rendered scrollbar between the padding edge and the border edge, ignoring any transforms that apply to the element and its ancestors.
 </li>
-		</ol>
-	</dd>
-	<dd class="en">
+</ol>
+</div>
+
+<p class="en">
 ◎
 The clientHeight attribute must run these steps:
 • If the element has no associated CSS layout box or if the CSS layout box is inline, return zero.
 • If the element is the root element and the element’s node document is not in quirks mode, or if the element is the HTML body element and the element’s node document is in quirks mode, return the viewport height excluding the size of a rendered scroll bar (if any).
 • Return the height of the padding edge excluding the height of any rendered scrollbar between the padding edge and the border edge, ignoring any transforms that apply to the element and its ancestors.
-</dd>
-</dl>
+</p>
 
 		<section id="element-scrolling-members">
 <h3 title="Element Scrolling Members">6.1. 要素の~scroll法</h3>
@@ -4916,8 +5056,8 @@ The clientHeight attribute must run these steps:
 </li>
 			<li>
 %要素境界 ~LET ［
-%要素 上で `getBoundingClientRect()$m を呼出した結果
-］を表現する~box
+%要素 上の `getBoundingClientRect$m ~method手続き()
+］の結果を表現する~box
 </li>
 			<li>
 下に与える
@@ -5109,7 +5249,7 @@ Align element edge B with scrolling box edge B.
 			</dd>
 		</dl>
 
-<div class="en">
+<p class="en">
 ◎
 • If inline is "start", then align element edge C with scrolling box edge C.
 • Otherwise, if inline is "end", then align element edge D with scrolling box edge D.
@@ -5123,7 +5263,7 @@ Align element edge B with scrolling box edge B.
 •• If element edge C is outside scrolling box edge C and element width is greater than scrolling box width
 •• If element edge D is outside scrolling box edge D and element width is less than scrolling box width
 ••• Align element edge D with scrolling box edge D.
-</div>
+</p>
 
 	</li>
 	<li>
@@ -5171,7 +5311,7 @@ To scroll an element element to x,y optionally with a scroll behavior behavior (
 
 <ol>
 	<li>
-%~box ~LET %要素 の`~scrollされる~box$＊
+%~box ~LET %要素 の`~scrollされる~box$
 ◎
 Let box be element’s associated scrolling box.
 </li>
@@ -5180,63 +5320,37 @@ Let box be element’s associated scrolling box.
 ◎
 ↓</li>
 	<li>
-<p>
-%x ~SET
-%~box の横方向の`~overflow方向$に応じて，次で与えられる値：
+%符号 ~LET %~box の横方向の`~overflow方向$に応じて
+⇒＃
+右方 ならば 1 ／
+左方 ならば −1
 ◎
-↓</p>
-		<dl class="switch">
-			<dt>右方
+↓</li>
+	<li>
+%x ~SET %符号 ~MUL `max^op( 0, `min^op( %符号 ~MUL %x, %要素 の`~scrollされる区画$の横幅 ~MINUS %要素 の`~padding辺$の横幅 ) )
 ◎
 If box has rightward overflow direction
-</dt>
-			<dd>
-`max^op( 0, `min^op( %x, %要素 の`~scrollされる区画$の横幅 ~MINUS %要素 の`~padding辺$の横幅 ) )
-◎
-Let x be max(0, min(x, element scrolling area width - element padding edge width)).
-</dd>
-
-			<dt>左方
+• Let x be max(0, min(x, element scrolling area width - element padding edge width)).
 ◎
 If box has leftward overflow direction
-</dt>
-
-			<dd>
-`min^op( 0, `max^op( %x, %要素 の`~padding辺$の横幅 ~MINUS %要素 の`~scrollされる区画$の横幅 ) )
+• Let x be min(0, max(x, element padding edge width - element scrolling area width)).
+</li>
+			<li>
+%符号 ~LET %~box の縦方向の`~overflow方向$に応じて
+⇒＃
+下方 ならば 1 ／
+上方 ならば −1
 ◎
-Let x be min(0, max(x, element padding edge width - element scrolling area width)).
-</dd>
-		</dl>
-	</li>
+↓</li>
 	<li>
-<p>
-%y ~SET
-%~box の縦方向の`~overflow方向$に応じて，次で与えられる値：
-◎
-↓</p>
-		<dl class="switch">
-			<dt>下方
+%y ~SET %符号 ~MUL `max^op( 0, `min^op( %符号 ~MUL %y, %要素 の`~scrollされる区画$の縦幅 ~MINUS %要素 の`~padding辺$の縦幅 ) )
 ◎
 If box has downward overflow direction
-</dt>
-			<dd>
-`max^op( 0, `min^op( %y, %要素 の`~scrollされる区画$の縦幅 ~MINUS %要素 の`~padding辺$の縦幅 ) )
-◎
-Let y be max(0, min(y, element scrolling area height - element padding edge height)).
-</dd>
-
-			<dt>上方
+• Let y be max(0, min(y, element scrolling area height - element padding edge height)).
 ◎
 If box has upward overflow direction
-</dt>
-
-			<dd>
-`min^op( 0, `max^op( %y, %要素 の`~padding辺$の縦幅 ~MINUS %要素 の`~scrollされる区画$の縦幅 ) )
-◎
-Let y be min(0, max(y, element padding edge height - element scrolling area height)).
-</dd>
-		</dl>
-	</li>
+• Let y be min(0, max(y, element padding edge height - element scrolling area height)).
+</li>
 	<li>
 %目的位置 ~LET
 `~scrollされる区画$の座標 ( %x, %y ) は
@@ -5270,7 +5384,7 @@ Perform a scroll of box to position, element as the associated element and behav
 <h2 title="Extensions to the HTMLElement Interface">7. `HTMLElement^I ~interfaceに対する拡張</h2>
 
 <pre class="idl">
-partial interface `HTMLElement!I {
+partial interface `HTMLElement$I {`HTMLElement^I0
   readonly attribute `Element$I? `offsetParent$m;
   readonly attribute long `offsetTop$m;
   readonly attribute long `offsetLeft$m;
@@ -5281,16 +5395,15 @@ partial interface `HTMLElement!I {
 
 `HTMLElement^dgm
 
-<dl class="idl-def">
-	<dt>`offsetParent@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+`offsetParent@m
+取得子~手続きは：
 ◎
 The offsetParent attribute must return the result of running these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 <p>
 ~IF［
 コレは次のいずれかを満たす
@@ -5298,28 +5411,28 @@ The offsetParent attribute must return the result of running these steps:
 ◎
 If any of the following holds true return null and terminate this algorithm:
 </p>
-				<ul>
-					<li>
+		<ul>
+			<li>
 `~CSS~layout~box$を持たない
 ◎
 The element does not have an associated CSS layout box.
 </li>
-					<li>
+			<li>
 `根~要素$である
 ◎
 The element is the root element.
 </li>
-					<li>
+			<li>
 `~HTML~body要素$である
 ◎
 The element is the HTML body element.
 </li>
-					<li>
+			<li>
 `position$p ~propの算出d値 ~EQ `fixed^v
 ◎
 The element’s computed value of the position property is fixed.
 </li>
-				</ul>
+		</ul>
 <p>
 …ならば
 ⇒
@@ -5327,12 +5440,12 @@ The element’s computed value of the position property is fixed.
 ◎
 ↑</p>
 
-			</li>
-			<li>
+	</li>
+	<li>
 %先祖 ~LET コレ
 ◎
 ↓</li>
-			<li>
+	<li>
 <p>
 ~WHILE［
 `平坦~tree$における %先祖 の親~要素 %親 はある
@@ -5340,12 +5453,12 @@ The element’s computed value of the position property is fixed.
 ◎
 Let ancestor be the parent of the element in the flat tree and repeat these substeps:
 </p>
-				<ol>
-					<li>
+		<ol>
+			<li>
 %先祖 ~SET %親
 ◎
 ↑</li>
-					<li>
+			<li>
 <p>
 ~IF［
 %先祖 は コレからは`閉な~shadowで隠されて$いる
@@ -5359,7 +5472,7 @@ Let ancestor be the parent of the element in the flat tree and repeat these subs
 ◎
 If ancestor is closed-shadow-hidden from the element and its computed value of the position property is fixed, terminate this algorithm and return null.
 </li>
-					<li>
+			<li>
 <p>
 ~ELIF［
 次のいずれかが満たされる
@@ -5367,20 +5480,20 @@ If ancestor is closed-shadow-hidden from the element and its computed value of t
 ◎
 If ancestor is not closed-shadow-hidden from the element and satisfies at least one of the following, terminate this algorithm and return ancestor.
 </p>
-						<ul>
-							<li>
+				<ul>
+					<li>
 コレは［
 `絶対~位置決め包含塊$／`固定d位置決め包含塊$
 ］を確立する
 ◎
 The element is a containing block of absolutely-positioned descendants (regardless of whether there are any absolutely-positioned descendants).
 </li>
-							<li>
+					<li>
 %先祖 は `~HTML~body要素$である
 ◎
 It is the HTML body element.
 </li>
-							<li>
+					<li>
 ［
 コレの `position$p ~propの算出d値 ~EQ `static^v
 ］~AND［
@@ -5391,7 +5504,7 @@ It is the HTML body element.
 ◎
 The computed value of the position property of the element is static and the ancestor is one of the following HTML elements: td, th, or table.
 </li>
-						</ul>
+				</ul>
 <p>
 …ならば
 ⇒
@@ -5401,25 +5514,26 @@ If there is no more parent of ancestor in the flat tree, terminate this algorith
 ◎
 Let ancestor be the parent of ancestor in the flat tree.
 </p>
-					</li>
-				</ol>
 			</li>
-			<li>
+		</ol>
+	</li>
+	<li>
 ~RET ~NULL
 ◎
 ↑</li>
-		</ol>
-	</dd>
+</ol>
+</div>
 
-	<dt>`offsetTop@m ｜ `offsetLeft@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`offsetTop@m ｜ `offsetLeft@m
+］取得子~手続きは：
 ◎
 The offsetTop attribute must return the result of running these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレは `~HTML~body要素$である
 ］~OR［
@@ -5430,21 +5544,21 @@ The offsetTop attribute must return the result of running these steps:
 ◎
 If the element is the HTML body element or does not have any associated CSS layout box return zero and terminate this algorithm.
 </li>
-			<li>
+	<li>
 以下においては
 ⇒＃
 どの座標も`初期~包含塊$の原点に相対的とする ／
 コレとその先祖に対する`変形$は適用しないとする
 ◎
 ↓</li>
-			<li>
+	<li>
 %~border座標 ~LET コレの最初の`~CSS~layout~box$の`~border辺$の［
 上端の y 座標 ｜ 左端の x 座標
 ］
 ◎
 If the offsetParent of the element is null return the y-coordinate of the top border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors, and terminate this algorithm.
 </li>
-			<li>
+	<li>
 ~IF［
 コレの `offsetParent$m ~NEQ ~NULL
 ］
@@ -5455,34 +5569,36 @@ If the offsetParent of the element is null return the y-coordinate of the top bo
 ◎
 Return the result of subtracting the y-coordinate of the top padding edge of the first CSS layout box associated with the offsetParent of the element from the y-coordinate of the top border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors.
 </li>
-			<li>
+	<li>
 ~RET %~border座標
 ◎
 ↑</li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
+</ol>
+<p class="note">注記：
 複数の行l~boxからなる`行内$要素については、その最初の `~CSS~layout~box$のみが考慮されることになる。
 ◎
 Note: An inline element that consists of multiple line boxes will only have its first CSS layout box considered.
-</dd>
-	<dd class="en">
+</p>
+</div>
+
+<p class="en">
 ◎
 The offsetLeft attribute must return the result of running these steps:
 • If the element is the HTML body element or does not have any associated CSS layout box return zero and terminate this algorithm.
 • If the offsetParent of the element is null return the x-coordinate of the left border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors, and terminate this algorithm.
 • Return the result of subtracting the x-coordinate of the left padding edge of the first CSS layout box associated with the offsetParent of the element from the x-coordinate of the left border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors.
-</dd>
+</p>
 
-	<dt>`offsetWidth@m ｜ `offsetHeight@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`offsetWidth@m ｜ `offsetHeight@m
+］取得子~手続きは：
 ◎
 The offsetWidth attribute must return the result of running these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレは `~CSS~layout~box$を持たない
 ］
@@ -5491,7 +5607,7 @@ The offsetWidth attribute must return the result of running these steps:
 ◎
 If the element does not have any associated CSS layout box return zero and terminate this algorithm.
 </li>
-			<li>
+	<li>
 ~RET 
 コレの最初の `~CSS~layout~box$の`~border辺$の［
 横幅 ｜ 縦幅
@@ -5500,15 +5616,15 @@ If the element does not have any associated CSS layout box return zero and termi
 ◎
 Return the border edge width of the first CSS layout box associated with the element, ignoring any transforms that apply to the element and its ancestors.
 </li>
-		</ol>
-	</dd>
-	<dd class="en">
+</ol>
+</div>
+
+<p class="en">
 ◎
 The offsetHeight attribute must return the result of running these steps:
 • If the element does not have any associated CSS layout box return zero and terminate this algorithm.
 • Return the border edge height of the first CSS layout box associated with the element, ignoring any transforms that apply to the element and its ancestors.
-</dd>
-</dl>
+</p>
 
 	</section>
 	<section id="excensions-to-the-htmlimageelement-interface">
@@ -5516,27 +5632,27 @@ The offsetHeight attribute must return the result of running these steps:
 <h2 title="Extensions to the HTMLImageElement Interface">8. `HTMLImageElement^I ~interfaceに対する拡張</h2>
 
 <pre class="idl">
-partial interface `HTMLImageElement!I {
+partial interface `HTMLImageElement$I {`HTMLImageElement^I0
   readonly attribute long `x$m;
   readonly attribute long `y$m;
 };
 </pre>
 
-<dl class="idl-def">
-	<dt>`x@m ｜ `y@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`x@m ｜ `y@m
+］取得子~手続きは：
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレは `~CSS~layout~box$を持たない
 ］
 ⇒
 ~RET 0
 </li>
-			<li>
+	<li>
 ~RET `初期~包含塊$の原点に相対的な［
 コレの最初の `~CSS~layout~box$の`~border辺$
 ］の［
@@ -5544,13 +5660,12 @@ partial interface `HTMLImageElement!I {
 ］］
 — ここで、コレとその先祖に対する`変形$は適用しないとする。
 </li>
-		</ol>
+</ol>
 ◎
 The x attribute, on getting, must return the x-coordinate of the left border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors, or zero if there is no CSS layout box.
 ◎
 The y attribute, on getting, must return the y-coordinate of the top border edge of the first CSS layout box associated with the element, relative to the initial containing block origin, ignoring any transforms that apply to the element and its ancestors, or zero if there is no CSS layout box. 
-</dd>
-</dl>
+</div>
 
 	</section>
 	<section id="extensions-to-the-range-interface">
@@ -5558,7 +5673,7 @@ The y attribute, on getting, must return the y-coordinate of the top border edge
 <h2 title="Extensions to the Range Interface">9. `Range^I ~interfaceに対する拡張</h2>
 
 <pre class="idl">
-partial interface `Range!I {
+partial interface `Range$I {`Range^I0
   `DOMRectList$I `getClientRects$m();
   [`NewObject$] `DOMRect$I `getBoundingClientRect$m();
 };
@@ -5566,16 +5681,15 @@ partial interface `Range!I {
 
 `Range^dgm
 
-<dl class="idl-def">
-	<dt>`getClientRects()@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`getClientRects()@m
+~method~手続きは：
 ◎
 The getClientRects() method, when invoked, must＼
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレは文書~内を指していない
 ］
@@ -5584,7 +5698,7 @@ The getClientRects() method, when invoked, must＼
 ◎
 return an empty DOMRectList object if the range is not in the document and＼
 </li>
-			<li>
+	<li>
 <p>
 ~RET ［
 次の拘束に合致するような `DOMRect$I ~obj
@@ -5592,15 +5706,17 @@ return an empty DOMRectList object if the range is not in the document and＼
 ◎
 otherwise a DOMRectList object containing a list of DOMRect objects in content order that matches the following constraints:
 </p>
-				<ul>
-					<li>
+		<ul>
+			<li>
 コレに`包含され$ている各 %要素 に対する
 ⇒
-%要素 上の `getClientRects()^m を呼出した結果に含まれる~border区画たち
+［
+%要素 上の `Element^I1 `getClientRects$m1 ~method手続き()
+］の結果に含まれる~border区画たち
 ◎
 For each element selected by the range, whose parent is not selected by the range, include the border areas returned by invoking getClientRects() on the element.
 </li>
-					<li>
+			<li>
 <p>
 コレに［
 `部分的に包含され$ているか`包含され$ている†
@@ -5632,33 +5748,32 @@ The bounds of these DOMRect objects are computed using font metrics; thus, for h
 “送り幅（ `advance^en ）”
 — 対象~textが描画される起点から，後続の~textが同じ行lに描画されるとするときの，その起点までの長さ
 】</p>
-					</li>
-				</ul>
 			</li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
+		</ul>
+	</li>
+</ol>
+
+<p class="note">注記：
 この~methodが返す `DOMRect$I ~objは、`~live$でない。
 ◎
 Note: The DOMRect objects returned by getClientRects() are not live.
-</dd>
+</p>
+</div>
 
-	<dt>`getBoundingClientRect@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`getBoundingClientRect@m
+~method~手続きは：
 ◎
 The getBoundingClientRect() method, when invoked, must return the result of the following algorithm:
 </p>
-		<ol>
-			<li>
-%~list ~LET コレ上で
-`getClientRects()$m
-を呼出した結果
+<ol>
+	<li>
+%~list ~LET コレ上の `getClientRects$m ~method手続き()
 ◎
 Let list be the result of invoking getClientRects() on the same range this method was invoked on.
 </li>
-			<li>
+	<li>
 ~IF［
 %~list は空である
 ］
@@ -5671,7 +5786,7 @@ Let list be the result of invoking getClientRects() on the same range this metho
 ◎
 If list is empty return a DOMRect object whose x, y, width and height members are zero.
 </li>
-			<li>
+	<li>
 ~IF［
 %~list 内の どの矩形も，横幅, 縦幅とも 0 である
 ］
@@ -5680,7 +5795,7 @@ If list is empty return a DOMRect object whose x, y, width and height members ar
 ◎
 If all rectangles in list have zero width or height, return the first rectangle in list.
 </li>
-			<li>
+	<li>
 ~RET ［
 %~list 内の［
 横幅, 縦幅とも 0 ではない
@@ -5689,14 +5804,14 @@ If all rectangles in list have zero width or height, return the first rectangle 
 ◎
 Otherwise, return a DOMRect object describing the smallest rectangle that includes all of the rectangles in list of which the height or width is not zero.
 </li>
-		</ol>
-	</dd>
-	<dd class="note">注記：
+</ol>
+
+<p class="note">注記：
 この~methodが返す `DOMRect$I ~objは、`~live$でない。
 ◎
 Note: The DOMRect object returned by getBoundingClientRect() is not live.
-</dd>
-</dl>
+</p>
+</div>
 
 	</section>
 	<section id="extensions-to-the-mouseevent-interface">
@@ -5704,14 +5819,14 @@ Note: The DOMRect object returned by getBoundingClientRect() is not live.
 <h2 title="Extensions to the MouseEvent Interface">10. `MouseEvent^I ~interfaceに対する拡張</h2>
 
 <p class="issue">
-この~obj~IDL片は、一部の~memberを再定義している。
-Can we resolve this somehow?【！＊】
+この~IDL片は、一部の~memberを定義し直している。
+これをどうにか解決できないか？
 ◎
 The object IDL fragment redefines some members. Can we resolve this somehow?
 </p>
 
 <pre class="idl">
-partial interface `MouseEvent!I {
+partial interface `MouseEvent$I {`MouseEvent^I0
   readonly attribute double `screenX$m;
   readonly attribute double `screenY$m;
   readonly attribute double `pageX$m;
@@ -5724,7 +5839,7 @@ partial interface `MouseEvent!I {
   readonly attribute double `offsetY$m;
 };
 
-partial dictionary `MouseEventInit!I {
+partial dictionary `MouseEventInit$I {`MouseEventInit^I0
   double `screenX@m = 0.0;
   double `screenY@m = 0.0;
   double `clientX@m = 0.0;
@@ -5734,29 +5849,30 @@ partial dictionary `MouseEventInit!I {
 
 `MouseEvent^dgm
 
-<!-- `MouseEvent!I -->
+`MouseEvent^I0
 
-<dl class="idl-def">
-	<dt>`screenX@m ｜ `screenY@m</dt>
-	<dd>
-取得子は、`~Webに公開される~screen区画$の原点に相対的な，コレが生じた地点の［
+<div class="algo">
+［
+`screenX@m ｜ `screenY@m
+］取得子~手続きは
+⇒
+~RET `~Webに公開される~screen区画$の原点に相対的な，コレが生じた地点の［
 x 座標 ｜ y 座標
-］を返すモノトスル。
+］
 ◎
 The screenX attribute must return the x-coordinate of the position where the event occurred relative to the origin of the Web-exposed screen area.
 ◎
 The screenY attribute must return the y-coordinate of the position where the event occurred relative to the origin of the Web-exposed screen area.
-</dd>
+</div>
 
-	<dt>`pageX@m ｜ `pageY@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
-◎
-The pageX attribute must follow these steps:
+［
+`pageX@m ｜ `pageY@m
+］取得子~手続きは：
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 ~IF［
 コレの`配送~flag$ ~EQ ~T
 ］
@@ -5765,69 +5881,76 @@ The pageX attribute must follow these steps:
 `初期~包含塊$の原点に相対的な，コレが生じた地点の［
 横方向 ｜ 縦方向
 ］の座標
-◎
-If the event’s dispatch flag is set, return the horizontal coordinate of the position where the event occurred relative to the origin of the initial containing block and terminate these steps.
 </li>
-			<li>
-%offset ~SET コレに結付けられている `Window$I ~objは［
-在れば その［
-`scrollX^m ｜ `scrollY^m
-］属性の値 ／
-無ければ 0
+	<li>
+%offset ~LET 0
+</li>
+	<li>
+~IF［
+コレに結付けられている `Window$I ~obj %window 【！＊】は在る
 ］
-◎
-Let offset be the value of the scrollX attribute of the event’s associated Window object, if there is one, or zero otherwise.
+⇒
+%offset ~SET %window 上の［
+`scrollX$m1 ｜ `scrollY$m1
+］取得子~手続き()
 </li>
-			<li>
-~RET ［
-%offset ~PLUS ( コレの［
+	<li>
+%offset ~INCBY コレ上の［
 `clientX$m ｜ `clientY$m
-］属性の値 )
-］
-◎
-Return the sum of offset and the value of the event’s clientX attribute. 
+］取得子~手続き()
 </li>
-		</ol>
-	</dd>
-	<dd class="en">
+	<li>
+~RET %offset
+</li>
+</ol>
+◎
+The pageX attribute must follow these steps:
+• If the event’s dispatch flag is set, return the horizontal coordinate of the position where the event occurred relative to the origin of the initial containing block and terminate these steps.
+• Let offset be the value of the scrollX attribute of the event’s associated Window object, if there is one, or zero otherwise.
+• Return the sum of offset and the value of the event’s clientX attribute. 
 ◎
 The pageY attribute must follow these steps:
 • If the event’s dispatch flag is set, return the vertical coordinate of the position where the event occurred relative to the origin of the initial containing block and terminate these steps.
 • Let offset be the value of the scrollY attribute of the event’s associated Window object, if there is one, or zero otherwise.
 • Return the sum of offset and the value of the event’s clientY attribute. 
-</dd>
+</div>
 
-	<dt>`clientX@m ｜ `clientY@m</dt>
-	<dd>
-取得子は、`表示域$の原点に相対的な，コレが生じた地点の［
+<div class="algo">
+［
+`clientX@m ｜ `clientY@m
+］取得子~手続きは
+⇒
+~RET `表示域$の原点に相対的な，コレが生じた地点の［
 x 座標 ｜ y 座標
-］を返すモノトスル。
+］
 ◎
 The clientX attribute must return the x-coordinate of the position where the event occurred relative to the origin of the viewport.
 ◎
 The clientY attribute must return the y-coordinate of the position where the event occurred relative to the origin of the viewport.
-</dd>
+</div>
 
-	<dt>`x@m ｜ `y@m</dt>
-	<dd>
-取得子は、［
+<div class="algo">
+［
+`x@m ｜ `y@m
+］取得子~手続きは、［
 `clientX$m ｜ `clientY$m
-］と同じ値を返すモノトスル。
+］取得子~手続きと同じに挙動する。
 ◎
 The x attribute must return the value of clientX.
 ◎
 The y attribute must return the value of clientY.
-</dd>
+</div>
 
-	<dt>`offsetX@m ｜ `offsetY@m</dt>
-	<dd>
+<div class="algo">
 <p>
-取得子は、次を走らすモノトスル：
+［
+`offsetX@m ｜ `offsetY@m
+］取得子~手続きは：
 ◎
 The offsetX attribute must follow these steps:
 </p>
-		<ol>
-			<li>
+<ol>
+	<li>
 <p>
 ~IF［
 コレの`配送~flag$ ~EQ ~T
@@ -5846,23 +5969,23 @@ If the event’s dispatch flag is set, return the x-coordinate of the position w
 target ~node：
 コレの配送-先の~node（より明確には，~event伝播の中で `AT_TARGET$m に該当する~node）。
 】</p>
-			</li>
-			<li>
-~RET ［
+	</li>
+	<li>
+~RET コレ上の［
 `pageX$m ｜ `pageY$m
-］属性の値
+］取得子~手続き()
 ◎
 Return the value of the event’s pageX attribute. 
 </li>
-		</ol>
-	</dd>
-	<dd class="en">
+</ol>
+</div>
+
+<p class="en">
 ◎
 The offsetY attribute must follow these steps:
 • If the event’s dispatch flag is set, return the y-coordinate of the position where the event occurred relative to the origin of the padding edge of the target node, ignoring the transforms that apply to the element and its ancestors, and terminate these steps.
 • Return the value of the event’s pageY attribute. 
-</dd>
-</dl>
+</p>
 
 	</section>
 	<section id="geometry">
@@ -5913,50 +6036,50 @@ interface mixin `GeometryUtils@I {
 typedef (`Text$I or `Element$I or `CSSPseudoElement$I or `Document$I) `GeometryNode@I;
 </pre>
 
-<dl class="idl-def">
-	<dt>`getBoxQuads(options)@m</dt>
-	<dd>
+<div class="algo">
 <p>
-被呼出時には、次を走らすモノトスル：
+`getBoxQuads(options)@m
+~method~手続きは：
 ◎
 The getBoxQuads(options) method must run the following steps:
 </p>
-		<ol>
-			<li class="issue">
+<ol>
+	<li class="issue" lang="en-x-a0">
 DOM order
+<p>p1 = top left even in RTL
+<p>scale to 0 means divide by zero, return 0x0
+<p>cross-frames not allowed, throw WrongDocumentError?
+<p>points are flattened (3d transform), z=0. like getClientRect
+<p>test block in inline
+<p>pseudo-elements before/after are children of the element
+<p>viewport boxes are all the same
+</li>
+</ol>
+</div>
 
-<p>p1 = top left even in RTL</p>
-<p>scale to 0 means divide by zero, return 0x0</p>
-<p>cross-frames not allowed, throw WrongDocumentError?</p>
-<p>points are flattened (3d transform), z=0. like getClientRect</p>
-<p>test block in inline</p>
-<p>pseudo-elements before/after are children of the element</p>
-<p>viewport boxes are all the same</p>
-			</li>
-		</ol>
-	</dd>
-
-	<dt>`convertQuadFromNode(quad, from, options)@m</dt>
-	<dd class="issue">
-【未策定】
+<div class="algo">
+`convertQuadFromNode(quad, from, options)@m
+~method~手続きは
+<span class="issue">【未策定】</span>
 ◎
 The convertQuadFromNode(quad, from, options) method must run the following steps:
-</dd>
+</div>
 
-	<dt>`convertRectFromNode(rect, from, options)@m</dt>
-	<dd class="issue">
-【未策定】
+<div class="algo">
+`convertRectFromNode(rect, from, options)@m
+~method~手続きは
+<span class="issue">【未策定】</span>
 ◎
 The convertRectFromNode(rect, from, options) method must run the following steps:
-</dd>
+</div>
 
-	<dt>`convertPointFromNode(point, from, options)@m</dt>
-	<dd class="issue">
-【未策定】
+<div class="algo">
+`convertPointFromNode(point, from, options)@m
+~method~手続きは
+<span class="issue">【未策定】</span>
 ◎
 The convertPointFromNode(point, from, options) method must run the following steps:
-</dd>
-</dl>
+</div>
 
 		</section>
 	</section>
@@ -6226,7 +6349,7 @@ The scrolling box is scrolled in an instant fashion.
 	<dt>`smooth@v</dt>
 	<dd>
 `~scrollされる~box$による~scrollは、~UA定義な速度と動きにより，`滑らか$に行われる。
-~UAは~platform慣行があればそれに従うべきである。
+~UAは~platform慣行があればそれに従うベキである。
 ◎
 The scrolling box is scrolled in a smooth fashion using a user-agent-defined timing function over a user-agent-defined period of time. User agents should follow platform conventions, if any.
 </dd>
@@ -6263,7 +6386,7 @@ This section documents some of the changes between publications of this specific
 Added Simon Fraser as editor
 </li>
 	<li>
-`Window!I 上の `resizeTo()$m の引数を %width, %height に改称した。
+`Window$I 上の `resizeTo()$m1 の引数を %width, %height に改称した。
 （<a href="~CSSissue/4727">課題 #4727</a>）
 ◎
 Renamed the arguments to resizeTo() to be width and height (4727)
@@ -6276,29 +6399,29 @@ Renamed the arguments to resizeTo() to be width and height (4727)
 
 <ul>
 	<li>
-`Element!I 上の
-`scrollIntoView()$m ~methodを変更して拡張した。
+`Element$I 上の
+`scrollIntoView()$m1 ~methodを変更して拡張した。
 ◎
 The scrollIntoView() method on Element was changed and extended.
 </li>
 	<li>
-`Element!I 上の［
-`scrollTop$m, `scrollLeft$m
+`Element$I 上の［
+`scrollTop$m1, `scrollLeft$m1
 ］~IDL属性は、~objをとらないようにした
 — 代わりに［
-`scroll()$m, `scrollTo()$m, `scrollBy()$m
+`scroll()$m1, `scrollTo()$m1, `scrollBy()$m1
 ］~methodを追加した。
 ◎
 The scrollTop and scrollLeft IDL attributes on Element changed to no longer take an object; the scroll(), scrollTo() and scrollBy() methods were added instead.
 </li>
 	<li>
-`Element!I 上の［
-`scrollWidth$m,
-`scrollHeight$m,
-`clientTop$m,
-`clientLeft$m,
-`clientWidth$m 
-`clientHeight$m
+`Element$I 上の［
+`scrollWidth$m1,
+`scrollHeight$m1,
+`clientTop$m1,
+`clientLeft$m1,
+`clientWidth$m1 
+`clientHeight$m1
 ］~IDL属性は、整数を返す~~元のふるまいに戻した。
 ◎
 The scrollWidth, scrollHeight, clientTop, clientLeft, clientWidth and clientHeight IDL attributes on Element were changed back to return integers.
@@ -6309,7 +6432,7 @@ The scrollWidth, scrollHeight, clientTop, clientLeft, clientWidth and clientHeig
 The DOMRectList interface was removed.
 </li>
 	<li>
-`Document!I 上に `scrollingElement$m ~IDL属性を追加した。
+`Document$I に `scrollingElement$m1 ~IDL属性を追加した。
 ◎
 The scrollingElement IDL attribute on Document was added.
 </li>
@@ -6336,20 +6459,20 @@ MediaQueryList, scroll event and resize event are integrated with the event loop
 The instant value of scroll-behavior was renamed to auto.
 </li>
 	<li>
-`Element!I 上の `scrollLeft$m の原点を（右横書き用に）変更した。
+`Element$I 上の `scrollLeft$m1 の原点を（右横書き用に）変更した。
 ◎
 The origin of scrollLeft on Element was changed (for RTL).
 </li>
 	<li>
-`Element!I 上の `scrollIntoView()$m ~method, および
-`Window!I 上の［
-`scroll()$m, `scrollTo()$m, `scrollBy()$m
+`Element$I 上の `scrollIntoView()$m1 ~method, および
+`Window$I 上の［
+`scroll()$m1, `scrollTo()$m1, `scrollBy()$m1
 ］~methodは、関連な辞書~型~値を最初の引数にとるようにした。
 ◎
 The scrollIntoView() method on Element and scroll(), scrollTo() and scrollBy() methods on Window take the relevant dictionary as the first argument.
 </li>
 	<li>
-`MediaQueryList!I ~interfaceを、定例の~event~APIを利用し，それを通して `addListener()$m を定義するように変更した。
+`MediaQueryList$I ~interfaceを、定例の~event~APIを利用し，それを通して `addListener()$m1 を定義するように変更した。
 ◎
 The MediaQueryList interface was changed to use regular event API and define addListener() in terms of that.
 </li>
@@ -6378,23 +6501,23 @@ The specification is now aware of page zoom and pinch zoom.
 The scroll-behavior CSS property is introduced and scrolling APIs are extended with a mechanism to control smooth scrolling.
 </li>
 	<li>
-［
-`moveTo()^m,
-`moveBy()^m,
-`resizeTo()^m,
-`resizeBy()^m
+`Window$I の［
+`moveTo()$m1,
+`moveBy()$m1,
+`resizeTo()$m1,
+`resizeBy()$m1
 ］~methodを定義した。
 ◎
 The moveTo(), moveBy(), resizeTo() and resizeBy() methods are now defined.
 </li>
 	<li>
-`innerWidth^m, 等々は、
+`Window$I の `innerWidth$m1, 等々は、
 WebIDL 型 `long^c ではなく， `double^c を利用するようにした。
 ◎
 innerWidth et al now use the WebIDL type double instead of long.
 </li>
 	<li>
-`devicePixelRatio^m を定義した。
+`Window$I の `devicePixelRatio$m1 を定義した。
 ◎
 devicePixelRatio is now defined.
 </li>
@@ -6406,14 +6529,14 @@ The features argument to window.open() is now defined.
 </li>
 	<li>
 `Screen$I の［
-`colorDepth^m, `pixelDepth^m
+`colorDepth$m1, `pixelDepth$m1
 ］属性は、 24 を返すようにした。
 ◎
 The colorDepth and pixelDepth attributes of Screen now always return 24.
 </li>
 	<li>
-`Element$I に
-`elementsFromPoint()^m
+`Document$I 【！`Element^I】 に
+`elementsFromPoint()$m1
 ~methodを導入した。
 ◎
 The elementsFromPoint() method of Element is introduced.
