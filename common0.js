@@ -153,17 +153,19 @@ Util.collectHtmlCodeList = (parts) => {
 	while(m = rxp.exec(data)){
 		const pre = C('pre');
 		pre.className = 'lang-html' + (m[2] || '');
-		const markup = m[3].trim().replace(/％/g, '');
-		if(markup.indexOf('＜') < 0 ){
-			pre.textContent = markup;
-		} else {
+		const markup = m[3].trim();
+		if(/[%＜]/.test(markup)){
 			pre.innerHTML = markup
 				.replace(/&/g, '&amp;')
 				.replace(/</g, '&lt;')
 				.replace(/>/g, '&gt;')
 				.replace(/＜/g, '<mark>')
 				.replace(/＞/g, '</mark>')
+				.replace(/%(\w+)/g, '<var>$1</var>')
+				.replace(/％/g, '')
 			;
+		} else {
+			pre.textContent = markup.replace(/％/g, '');
 		}
 		parts['_ex-' + m[1]] = pre;
 	}
