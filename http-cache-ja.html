@@ -12,8 +12,8 @@
 
 ●●options
 spec_title:HTTP Caching
-spec_date:2020-05-06
-trans_update:2020-05-06
+spec_date:2020-05-28
+trans_update:2020-05-31
 source_checked:200307
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-cache-latest.html
@@ -39,6 +39,8 @@ field.warning:HTTP/Headers/Warning
 field.expires:HTTP/Headers/Expires
 
 ●●link_map
+
+h.Content-MD5:~RFCx/rfc2616#section-14.15
 
 	●指令
 
@@ -102,8 +104,9 @@ cite.~cache指令~registry:~IANA-a/http-cache-directives
 	●§
 1.3:#delta-seconds
 3:#response.cacheability
-3.2:#caching.authenticated.responses
-3.3:#combining.responses
+3.1:#storing.fields
+3.3:#caching.authenticated.responses
+3.4:#combining.responses
 4:#constructing.responses.from.caches
 4.1:#caching.negotiated.responses
 4.2.2:#heuristic.freshness
@@ -117,7 +120,7 @@ cite.~cache指令~registry:~IANA-a/http-cache-directives
 7.2:#security.timing
 A:#collected.abnf
 B:#changes.from.rfc.7234
-C:#change.log
+C.10:#change.log
 
 
 Messaging/9.3:~HTTPmsg#associating.response.to.request
@@ -128,6 +131,7 @@ Semantics/8.2.2:~HTTPrq#precedence
 	Semantics/8.3:~HTTPrq#field.range
 Semantics/9.1:~HTTPrs#overview.of.status.codes
 Semantics/9.3.7.3:~HTTPrs#combining.byte.ranges
+	＊？Semantics/13.1:~HTTPsem#field.connection
 Semantics/謝辞:~HTTPsem#acks
 Semantics/著作者の~address:~HTTPsem#rfc.authors
 
@@ -155,9 +159,9 @@ V.応答~遅延:#response_delay
 1.3:#delta-seconds
 2:#caching.overview
 3:#response.cacheability
-3.1:#incomplete.responses
-3.2:#caching.authenticated.responses
-3.3:#combining.responses
+3.2:#incomplete.responses
+3.3:#caching.authenticated.responses
+3.4:#combining.responses
 4:#constructing.responses.from.caches
 4.1:#caching.negotiated.responses
 4.2:#expiration.model
@@ -208,13 +212,8 @@ V.応答~遅延:#response_delay
 9:#rfc.references
 A:#collected.abnf
 B:#changes.from.rfc.7234
-C:#change.log
+C.10:#change.log
 
-    C.1.   Between RFC7234 and draft 00
-    C.2.   Since draft-ietf-httpbis-cache-00
-    C.3.   Since draft-ietf-httpbis-cache-01
-    C.4.   Since draft-ietf-httpbis-cache-02
-    C.5.   Since draft-ietf-httpbis-cache-03
 
 Acknowledgments
 Index
@@ -259,9 +258,9 @@ refresh:::更新::リフレッシュ
 reload:::再読み込み::リロード
 	^en:canned
 新鮮:fresh::~
+	新鮮~化-:freshen
+	新鮮~化法:freshening
 非新鮮:stale::~
-新鮮化-:freshen::~
-	新鮮化-法:freshening
 鮮度:freshness::~
 切断-:disconnect:~
 検証子:validator::~
@@ -274,8 +273,11 @@ reload:::再読み込み::リロード
 修正済み:corrected:~
 滞在:resident:~
 滞在-:reside:~
+識別情報:identity:~
+
 	完全なものに:complete
 	`max^op:If the result is negative, the result is replaced by zero
+	格納する前に:before storage
 
 	●保安
 増幅-:amplify:~
@@ -512,9 +514,9 @@ Working Group information can be found at &lt;https://httpwg.org/&gt;; source co
 </p>
 
 <p>
-この草案における変更点は、 `C$sec 【！C.9】に要約されている。
+この草案における変更点は、 `C.10$sec に要約されている。
 ◎
-The changes in this draft are summarized in Appendix C.9.
+The changes in this draft are summarized in Appendix C.10
 </p>
 
 	</section>
@@ -613,7 +615,7 @@ A shared cache is a cache that stores responses to be reused by more than one us
 ）を伴わずに再利用できるとき，`新鮮$であると見なされる。
 したがって，`新鮮$な応答は、再利用される度に，遅延, ~network~overheadの両者を抑制し得る。
 ~cache済み応答が`新鮮$でないときでも，［
-`検証$により新鮮化できる, または
+`検証$により新鮮~化できる, または
 生成元~serverが可用でない
 ］ときは、依然として再利用できることもある（ `4.2.4$sec ）。
 ◎
@@ -872,10 +874,10 @@ if the cache is shared: the "private" response directive is either not present o
 ］または［
 要請~内に［
 `共用~cache$に~cacheすることを明示的に許容する応答~指令
-］が在る（ `3.2$sec を見よ）
+］が在る（ `3.3$sec を見よ）
 ］
 ◎
-if the cache is shared: the Authorization header field is not present in the request (see Section 8.5.3 of [Semantics]) or a response directive is present that explicitly allows shared caching (see Section 3.2); and,
+if the cache is shared: the Authorization header field is not present in the request (see Section 8.5.3 of [Semantics]) or a response directive is present that explicitly allows shared caching (see Section 3.3); and,
 </li>
 		</ul>
 	</li>
@@ -952,8 +954,58 @@ In this context, a cache has "understood" a request method or a response status 
 Note that, in normal operation, some caches will not store a response that has neither a cache validator nor an explicit expiration time, as such responses are not usually useful to store. However, caches are not prohibited from storing such responses.
 </p>
 
+		<section id="storing.fields">
+<h3 title="Storing Header and Trailer Fields">3.1. ~header／~trailerの格納-法</h3>
+
+<p>
+~cacheは、応答を格納するときには，受信した~headerすべてを
+— 認識しないものも含めて —
+含めなければナラナイ。
+これは、新たな~HTTP~header~fieldが成功裡に配備できることを確約する。
+しかしながら，次に挙げる例外がある：
+◎
+Caches MUST include all received header fields — including unrecognised ones — when storing a response; this assures that new HTTP header fields can be successfully deployed. However, the following exceptions are made:
+</p>
+
+<ul>
+	<li>
+`Connection$h ~header, その`~field値$に~listされた名前の~fieldは、その~field定義【！`Semantics/13.1$】により，~messageを回送する前に除去することが要求される。
+これは、格納する前にそうするよう実装してもヨイ。
+◎
+The Connection header field and fields whose names are listed in it are required by Section 13.1 of [Semantics] to be removed before forwarding the message. This MAY be implemented by doing so before storage.
+</li>
+	<li>
+同様に，一部の~fieldの意味論は、~messageを回送する前に除去するよう要求する
+— これは、格納する前にそうするよう実装してもヨイ。
+例えば， § `Connection$h 【！`Semantics/13.1$】に挙げられたものなど。
+◎
+Likewise, some fields' semantics require them to be removed before forwarding the message, and this MAY be implemented by doing so before storage; see Section 13.1 of [Semantics] for some examples.
+</li>
+	<li>
+~clientの~proxy環境設定に特有な~headerは、格納してはナラナイ
+— ただし、~cacheが当の~proxyの識別情報を~cache~keyの中に組入れる場合は除く。
+これは、実質的に，次に挙げるものに制限される
+⇒＃
+`Proxy-Authenticate$h,
+`Proxy-Authentication-Info$h,
+`Proxy-Authorization$h
+◎
+Header fields that are specific to a client's proxy configuration MUST NOT be stored, unless the cache incorporates the identity of the proxy into the cache key. Effectively, this is limited to Proxy-Authenticate Section 10.3.2 of [Semantics], Proxy-Authentication-Info Section 10.3.4 of [Semantics], and Proxy-Authorization Section 8.5.4 of [Semantics].
+</li>
+</ul>
+
+<p>
+~cacheは、~trailerを［
+~headerとは別々に格納しても，破棄しても
+］ヨイ。
+~cacheは、~trailerを~headerと`結合-$してはナラナイ。
+◎
+Caches MAY either store trailer fields separately from header fields, or discard them. Caches MUST NOT combine trailer fields with header fields.
+</p>
+
+		</section>
 		<section id="incomplete.responses">
-<h3 title="Storing Incomplete Responses">3.1. 不完全な応答の格納-法</h3>
+<h3 title="Storing Incomplete Responses">3.2. 不完全な応答の格納-法</h3>
 
 <p>
 ~cacheは、［
@@ -983,10 +1035,10 @@ If the request method is GET, the response status code is 200 (OK), and the enti
 ~cacheは、［
 後続して`範囲~要請$を為すことにより得られた成功裡な応答
 ］を［
-`3.3$sec に従って，格納-済み応答たちと結合する
+`3.4$sec に従って，格納-済み応答たちと結合する
 ］ことにより，`不完全$な格納-済み応答を`完全$なものにしてもヨイ。
 ◎
-A cache MAY complete a stored incomplete response by making a subsequent range request (Section 8.3 of [Semantics]) and combining the successful response with the stored response, as defined in Section 3.3.＼
+A cache MAY complete a stored incomplete response by making a subsequent range request (Section 8.3 of [Semantics]) and combining the successful response with the stored response, as defined in Section 3.4.＼
 </p>
 
 <p>
@@ -1012,7 +1064,7 @@ the request is partial and specifies a range that is wholly within the incomplet
 
 		</section>
 		<section id="caching.authenticated.responses">
-<h3 title="Storing Responses to Authenticated Requests">3.2. 認証-済み要請に対する応答の格納-法</h3>
+<h3 title="Storing Responses to Authenticated Requests">3.3. 認証-済み要請に対する応答の格納-法</h3>
 
 
 <div class="p">
@@ -1050,7 +1102,7 @@ In this specification, the following response directives have such an effect: mu
 
 		</section>
 		<section id="combining.responses">
-<h3 title="Combining Partial Content">3.3. 部分的な内容の結合-法</h3>
+<h3 title="Combining Partial Content">3.4. 部分的な内容の結合-法</h3>
 
 <p>
 応答は、接続が尚早に~closeされた, または
@@ -2123,7 +2175,7 @@ act as if the server failed to respond. In the latter case, the cache MAY send a
 
 			</section>
 			<section id="freshening.responses">
-<h4 title="Freshening Stored Responses upon Validation">4.3.4. 検証にあたっての，格納-済み応答の新鮮化-法</h4>
+<h4 title="Freshening Stored Responses upon Validation">4.3.4. 検証にあたっての，格納-済み応答の新鮮~化法</h4>
 
 <p>
 `304$st 応答
@@ -2194,17 +2246,37 @@ and there is only one stored response, and that stored response also lacks a val
 <p>
 ~cacheは、更新するものと識別された各 格納-済み応答 `応答^V に対し，次をしなければナラナイ
 ⇒
-`304 応答^V 内に供された各~header `h^V に対し：
+`304 応答^V 内に供された各~header `h^V に対し
+⇒
 `応答^V 内の［
 `h^V に対応する~headerの~instanceたち
 ］を `h^V で置換する
+— ただし、次に挙げる例外は除く：
 ◎
-For each stored response identified for update, the cache MUST use the header fields provided in the 304 (Not Modified) response to replace all instances of the corresponding header fields in the stored response.
+For each stored response identified for update, the cache MUST use the header fields provided in the 304 (Not Modified) response to replace all instances of the corresponding header fields in the stored response, with the following exceptions:
 </p>
+<ul>
+	<li>
+`3.1$sec による~headerの格納に対する例外は、~headerの更新にも適用される。
+◎
+The exceptions to header field storage in Section 3.1 also apply to header field updates.
+</li>
+	<li>
+次に挙げる~headerを更新してはナラナイ
+⇒＃
+`Content-Encoding$h,
+`Content-Length$h,
+`Content-MD5$h `RFC2616$r,
+`Content-Range$h,
+`ETag$h
+◎
+Caches MUST NOT update the following header fields: Content-Encoding, Content-Length, Content-MD5 (Section 14.15 of [RFC2616]), Content-Range, ETag.
+</li>
+</ul>
 
 			</section>
 			<section id="head.effects">
-<h4 title="Freshening Responses with HEAD">4.3.5. `HEAD^m による応答の新鮮化-法</h4>
+<h4 title="Freshening Responses with HEAD">4.3.5. `HEAD^m による応答の新鮮~化法</h4>
 
 <div class="p">
 <p>
@@ -2281,11 +2353,10 @@ otherwise, the cache SHOULD consider the stored response to be stale.
 
 <p>
 ~cacheが［
-格納-済み応答 `応答^V を
-`HEAD 応答^V 内に供された~metadataで更新する
+格納-済み応答 `応答^V  を `HEAD 応答^V 内に供された~metadataで更新する
 ］ときは、次をしなければナラナイ
 ⇒
-`HEAD 応答^V 内に供された各~header `~header^V に対し
+`HEAD 応答^V 内に供された各~header `~header^V に対し（ `4.3.4$sec による例外の~subjectになる~headerは除く）
 ⇒
 `~header^V は `Cache-Control$h ~headerにより制約されるものでないならば
 ⇒
@@ -2294,7 +2365,7 @@ otherwise, the cache SHOULD consider the stored response to be stale.
 在るならば それらを `~header^V で置換する／
 無いならば `応答^V の`~header節$に `~header^V を付加する
 ◎
-If a cache updates a stored response with the metadata provided in a HEAD response, the cache MUST use the header fields provided in the HEAD response to replace all instances of the corresponding header fields in the stored response and append new header fields to the stored response's header section unless otherwise restricted by the Cache-Control header field.
+If a cache updates a stored response with the metadata provided in a HEAD response, the cache MUST use the header fields provided in the HEAD response to replace all instances of the corresponding header fields in the stored response (subject to the exceptions in Section 4.3.4) and append new header fields to the stored response's header section unless otherwise restricted by the Cache-Control header field.
 </p>
 
 			</section>
@@ -2843,9 +2914,9 @@ The must-revalidate directive ought to be used by servers if and only if failure
 `must-revalidate^sdir 指令は、`共用~cache$が［
 `Authorization$h ~headerを包含している要請に対し，応答を再利用する
 ］ことも許可する
-— それは、再検証に対する要件（ `3.2$sec ）の~subjectになる。
+— それは、再検証に対する要件（ `3.3$sec ）の~subjectになる。
 ◎
-The must-revalidate directive also permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the above requirement on revalidation (Section 3.2).
+The must-revalidate directive also permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the above requirement on revalidation (Section 3.3).
 </p>
 
 				</section>
@@ -3014,9 +3085,9 @@ The "no-transform" response directive indicates that an intermediary (regardless
 言い換えれば， `public^sdir は、応答は~cache可能であるものと明示的に~markする。
 例えば， `public^dir は、`共用~cache$が［
 `Authorization$h ~headerを包含している要請に対し，応答を再利用する
-］ことを許可する（ `3.2$sec ）
+］ことを許可する（ `3.3$sec ）
 ◎
-The "public" response directive indicates that a cache MAY store the response even if it would otherwise be prohibited, subject to the constraints defined in Section 3. In other words, public explicitly marks the response as cacheable. For example, public permits a shared cache to reuse a response to a request containing an Authorization header field (Section 3.2).
+The "public" response directive indicates that a cache MAY store the response even if it would otherwise be prohibited, subject to the constraints defined in Section 3. In other words, public explicitly marks the response as cacheable. For example, public permits a shared cache to reuse a response to a request containing an Authorization header field (Section 3.3).
 </p>
 
 <p class="note">注記：
@@ -3195,10 +3266,10 @@ The "s-maxage" response directive indicates that, for a shared cache, the maximu
 `Authorization$h ~headerを包含している要請に対し，応答を再利用する
 ］ことも許可する
 — それは、［
-上述した最大~齢に対する要件, 再検証に対する要件（ `3.2$sec ）
+上述した最大~齢に対する要件, 再検証に対する要件（ `3.3$sec ）
 ］の~subjectになる。
 ◎
-The s-maxage directive incorporates the proxy-revalidate (Section 5.2.2.8) response directive's semantics for a shared cache. A shared cache MUST NOT reuse a stale response with s-maxage to satisfy another request until it has been successfully validated by the origin, as defined by Section 4.3. This directive also permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the above requirements on maximum age and revalidation (Section 3.2).
+The s-maxage directive incorporates the proxy-revalidate (Section 5.2.2.8) response directive's semantics for a shared cache. A shared cache MUST NOT reuse a stale response with s-maxage to satisfy another request until it has been successfully validated by the origin, as defined by Section 4.3. This directive also permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the above requirements on maximum age and revalidation (Section 3.3).
 </p>
 
 <p>
@@ -3546,10 +3617,10 @@ The requirements in this specification do not necessarily apply to how applicati
 
 <p>
 このことは、応用が~HTTP~cache法を織り込むことを禁制するものではない
-— 例えば，履歴の仕組みは、［
+— 例えば，履歴の仕組みは、次を行うかもしれない
+⇒＃
 ~viewは非新鮮であることを利用者に~~伝える／
-~cache指令を尊守する（例： `Cache-Control: no-store^c ）
-］かもしれない。
+~cache指令（例： `Cache-Control: no-store^c ）を尊守する
 ◎
 This does not prohibit the application from taking HTTP caching into account; for example, a history mechanism might tell the user that a view is stale, or it might honor cache directives (e.g., Cache-Control: no-store).
 </p>
@@ -3699,10 +3770,10 @@ The "must-understand" cache directive was introduced; caches are no longer requi
 <p>
 `Warning$h 応答~headerは廃用にされた。
 `Warning^h が~supportする情報の大部分は、応答を精査すれば拾える
-— それ以外の各種 `warn-code^p も、有用にはなり得るが，全面的に助言的であり、実施においては，~cacheや中継者により追加されていなかった。
+— それ以外の各種 `warn-code^p も有用にはなり得るが，全面的に助言的であり、実施においては，~cacheや中継者は `Warning^h を追加していなかった。
 （ `5.5$sec ）
 ◎
-The Warning response header was obsoleted. Much of the information supported by Warning could be gleaned by examining the response), and the remaining warn-codes — although potentially useful — were entirely advisory, and in practice were not added by caches or intermediaries. (Section 5.5)
+The Warning response header was obsoleted. Much of the information supported by Warning could be gleaned by examining the response, and the remaining warn-codes — although potentially useful — were entirely advisory. In practice, Warning was not added by caches or intermediaries. (Section 5.5)
 </p>
 
 	</section>

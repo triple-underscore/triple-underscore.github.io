@@ -209,15 +209,7 @@ COMMON_DATA.link_map += `
 
 	●header fields 
 
-h.TE:~HTTPmsg#field.te
-h.Transfer-Encoding:~HTTPmsg#field.transfer-encoding
-h.Connection:~HTTPmsg#field.connection
-h.Upgrade:~HTTPmsg#field.upgrade
-h.Close:~HTTPmsg#field.close
-h.Keep-Alive:~HTTPmsg#compatibility.with.http.1.0.persistent.connections
-	h.Keep-Alive:~HTTPmsg#field.keep-alive
-h.MIME-Version:~HTTPmsg#mime-version
-
+	//HTTPsem
 h.Trailer:~HTTPsem#field.trailer
 h.Host:~HTTPsem#field.host
 h.Via:~HTTPsem#field.via
@@ -228,7 +220,6 @@ h.Content-Length:~HTTPsem#field.content-length
 	h.Content-Length:~HTTPsem#field.content-length
 h.Content-Location:~HTTPsem#field.content-location
 h.Content-Range:~HTTPsem#field.content-range
-
 
 h.Expect:~HTTPrq#field.expect
 h.Max-Forwards:~HTTPrq#field.max-forwards
@@ -254,7 +245,6 @@ h.Retry-After:~HTTPrs#field.retry-after
 h.Vary:~HTTPrs#field.vary
 h.Last-Modified:~HTTPrs#field.last-modified
 h.ETag:~HTTPrs#field.etag
-
 h.WWW-Authenticate:~HTTPrs#field.www-authenticate
 h.Proxy-Authenticate:~HTTPrs#field.proxy-authenticate
 h.Authentication-Info:~HTTPrs#field.authentication-info
@@ -270,10 +260,17 @@ h.Pragma:~HTTPcache#field.pragma
 h.Warning:~HTTPcache#field.warning
 h.Expires:~HTTPcache#field.expires
 
+	//HTTPmsg
+h.TE:~HTTPmsg#field.te
+h.Transfer-Encoding:~HTTPmsg#field.transfer-encoding
+h.Connection:~HTTPmsg#field.connection
+h.Upgrade:~HTTPmsg#field.upgrade
+
+	//他
 h.Set-Cookie:~HTTPcookie#sane-set-cookie
 h.Cookie:~HTTPcookie#sane-cookie
 h.Link:~HTTPweblink#section-3
-h.Content-Transfer-Encoding:~RFCx/rfc2045#section-6
+
 	h.URI
 	h.Alternates:rfc2295#section-8.3
 
@@ -607,6 +604,7 @@ c.realm:~HTTPrq#realm
 ~URI:~HTTPsem#uri
 ~target~URI:~HTTPsem#target-URI
 ~target資源:~HTTPsem#target-resource
+要請~target:~HTTPsem#request-target
 空白:~HTTPsem#whitespace
 ~charset:~HTTPsem#charset
 内容~符号法:~HTTPsem#content.codings
@@ -771,6 +769,7 @@ COMMON_DATA.words_table += `
 含まれ:includeされ:~
 含む:includeする:~
 含めて:includeして:~
+含めな:includeしな:~
 内包-:include:~
 内包:inclusion:~
 
@@ -1048,8 +1047,6 @@ agent::::エージェント
 設置-:place:~
 設置しな:placeしな:課さな
 設置する:placeする:課す
-
-不許可に:disallow:~
 診断:diagnostic:~
 承認-:acknowledge:~
 誤解:mistake:~
@@ -1092,6 +1089,7 @@ agent::::エージェント
 再試行-:retry::~
 	再試行-法:retrying
 過度の:excessiveな:~
+確約-:assure:~
 
 	:be aware of
 	適切でない:inappropriate
