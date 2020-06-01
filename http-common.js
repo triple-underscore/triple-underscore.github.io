@@ -207,68 +207,67 @@ source_data.st_phrase = {
 // ●link
 COMMON_DATA.link_map += `
 
-	●header fields 
+	●fields
 
-	//HTTPsem
-h.Trailer:~HTTPsem#field.trailer
-h.Host:~HTTPsem#field.host
-h.Via:~HTTPsem#field.via
-h.Content-Type:~HTTPsem#field.content-type
+	//Semantics
 h.Content-Encoding:~HTTPsem#field.content-encoding
 h.Content-Language:~HTTPsem#field.content-language
 h.Content-Length:~HTTPsem#field.content-length
-	h.Content-Length:~HTTPsem#field.content-length
 h.Content-Location:~HTTPsem#field.content-location
 h.Content-Range:~HTTPsem#field.content-range
+h.Content-Type:~HTTPsem#field.content-type
+h.Host:~HTTPsem#field.host
+h.Trailer:~HTTPsem#field.trailer
+h.Via:~HTTPsem#field.via
 
-h.Expect:~HTTPrq#field.expect
-h.Max-Forwards:~HTTPrq#field.max-forwards
-h.If-Match:~HTTPrq#field.if-match
-h.If-None-Match:~HTTPrq#field.if-none-match
-h.If-Modified-Since:~HTTPrq#field.if-modified-since
-h.If-Unmodified-Since:~HTTPrq#field.if-unmodified-since
-h.If-Range:~HTTPrq#field.if-range
-h.Range:~HTTPrq#field.range
 h.Accept:~HTTPrq#field.accept
 h.Accept-Charset:~HTTPrq#field.accept-charset
 h.Accept-Encoding:~HTTPrq#field.accept-encoding
 h.Accept-Language:~HTTPrq#field.accept-language
 h.Authorization:~HTTPrq#field.authorization
-h.Proxy-Authorization:~HTTPrq#field.proxy-authorization
+h.Expect:~HTTPrq#field.expect
 h.From:~HTTPrq#field.from
+h.If-Match:~HTTPrq#field.if-match
+h.If-Modified-Since:~HTTPrq#field.if-modified-since
+h.If-None-Match:~HTTPrq#field.if-none-match
+h.If-Range:~HTTPrq#field.if-range
+h.If-Unmodified-Since:~HTTPrq#field.if-unmodified-since
+h.Max-Forwards:~HTTPrq#field.max-forwards
+h.Proxy-Authorization:~HTTPrq#field.proxy-authorization
+h.Range:~HTTPrq#field.range
 h.Referer:~HTTPrq#field.referer
 h.User-Agent:~HTTPrq#field.user-agent
 
-h.Date:~HTTPrs#field.date
-h.Location:~HTTPrs#field.location
-h.Retry-After:~HTTPrs#field.retry-after
-h.Vary:~HTTPrs#field.vary
-h.Last-Modified:~HTTPrs#field.last-modified
-h.ETag:~HTTPrs#field.etag
-h.WWW-Authenticate:~HTTPrs#field.www-authenticate
-h.Proxy-Authenticate:~HTTPrs#field.proxy-authenticate
-h.Authentication-Info:~HTTPrs#field.authentication-info
-h.Proxy-Authentication-Info:~HTTPrs#field.proxy-authentication-info
 h.Accept-Ranges:~HTTPrs#field.accept-ranges
 h.Allow:~HTTPrs#field.allow
+h.Authentication-Info:~HTTPrs#field.authentication-info
+h.Date:~HTTPrs#field.date
+h.ETag:~HTTPrs#field.etag
+h.Last-Modified:~HTTPrs#field.last-modified
+h.Location:~HTTPrs#field.location
+h.Proxy-Authenticate:~HTTPrs#field.proxy-authenticate
+h.Proxy-Authentication-Info:~HTTPrs#field.proxy-authentication-info
+h.Retry-After:~HTTPrs#field.retry-after
 h.Server:~HTTPrs#field.server
+h.Vary:~HTTPrs#field.vary
+h.WWW-Authenticate:~HTTPrs#field.www-authenticate
 
-	//HTTPcache
+	//Cache
 h.Age:~HTTPcache#field.age
 h.Cache-Control:~HTTPcache#field.cache-control
+h.Expires:~HTTPcache#field.expires
 h.Pragma:~HTTPcache#field.pragma
 h.Warning:~HTTPcache#field.warning
-h.Expires:~HTTPcache#field.expires
 
-	//HTTPmsg
+	//Messaging
+h.Connection:~HTTPmsg#field.connection
 h.TE:~HTTPmsg#field.te
 h.Transfer-Encoding:~HTTPmsg#field.transfer-encoding
-h.Connection:~HTTPmsg#field.connection
 h.Upgrade:~HTTPmsg#field.upgrade
 
 	//他
-h.Set-Cookie:~HTTPcookie#sane-set-cookie
 h.Cookie:~HTTPcookie#sane-cookie
+h.Set-Cookie:~HTTPcookie#sane-set-cookie
 h.Link:~HTTPweblink#section-3
 
 	h.URI
@@ -372,10 +371,10 @@ p.port:~HTTPsem#p.port
 p.path:~HTTPsem#p.path
 p.fragment:~HTTPsem#p.fragment
 
+	//Messaging
 p.HTTP-message:~HTTPmsg#p.HTTP-message
 p.HTTP-name:~HTTPmsg#p.HTTP-name
 p.HTTP-version:~HTTPmsg#p.HTTP-version
-
 p.Connection:~HTTPmsg#p.Connection
 p.TE:~HTTPmsg#p.TE
 p.Transfer-Encoding:~HTTPmsg#p.Transfer-Encoding
@@ -418,7 +417,7 @@ p.trailer-section:~HTTPmsg#p.trailer-section
 p.transfer-coding:~HTTPmsg#p.transfer-coding
 p.transfer-parameter:~HTTPmsg#p.transfer-parameter
 
-
+	//Semantics
 p.BWS:~HTTPsem#p.BWS
 p.OWS:~HTTPsem#p.OWS
 p.RWS:~HTTPsem#p.RWS
@@ -521,10 +520,11 @@ p.time-of-day:~HTTPrs#p.time-of-day
 p.weak:~HTTPrs#p.weak
 p.year:~HTTPrs#p.year
 
+	//Cache
 p.cache-directive:~HTTPcache#p.cache-directive
 p.delta-seconds:~HTTPcache#p.delta-seconds
 
-	●others
+	●code 他
 c.chunked:~HTTPmsg#chunked.encoding
 c.compress:~HTTPsem#compress.coding
 c.deflate:~HTTPsem#deflate.coding
@@ -612,7 +612,7 @@ c.realm:~HTTPrq#realm
 資源:~HTTPsem#resources
 ~MIME型:~HTTPsem#media.type
 	~MIME型:~HTTPsem#media.type
-~MIME型~parameter:~HTTPsem#mdia-type.parameter
+~MIME型~parameter:~HTTPsem#media-type.parameter
 
 満足可能:~HTTPsem#satisfiable
 満足不能:~HTTPsem#unsatisfiable
