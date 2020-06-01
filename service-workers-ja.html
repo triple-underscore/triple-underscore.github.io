@@ -655,9 +655,6 @@ h.Referrer-Policy:~REFERRER-POLICY#referrer-policy-header-dfn
 	h.Service-Worker-Navigation-Preload
 
 	●
-P.field-value:~RFC7230#section-3.2
-	~field値:~HTTPsem#field-value
-
 sl.Call:~TC39#sec-ecmascript-function-objects-call-thisargument-argumentslist
 Completion:~TC39#sec-completion-record-specification-type
 
@@ -866,6 +863,7 @@ enV.~sw登録~obj~map:#environment-settings-object-service-worker-registration-o
 
 ~byte列:~INFRA#byte-sequence
 	~IN:~INFRA#list-contain
+同型に符号化する:~INFRA#isomorphic-encode
 ~key~listを取得する:~INFRA#map-getting-the-keys
 ~item:~INFRA#list-item
 除去する:~INFRA#list-remove
@@ -969,6 +967,7 @@ hd.名前:~FETCH#concept-header-name
 hd.値:~FETCH#concept-header-value
 
 ~header~listから値を取得する:~FETCH#concept-header-list-get
+~header~listから値を取得して復号して分割する:~FETCH#concept-header-list-get-decode-split
 
 ~CORS安全とされる~method:~FETCH#cors-safelisted-method
 ~CORS安全とされる要請~header:~FETCH#cors-safelisted-request-header
@@ -7871,17 +7870,22 @@ To process response for response, run these substeps:
 ］~OR［
 %応答 の`状態s$rs ~EQ `206^st
 ］
-⇒
-`TypeError^E で %応答~promise を却下する
+⇒＃
+`TypeError^E で %応答~promise を却下する；
+~RET
 ◎
 If response’s type is "error", or response’s status is not an ok status or is 206, reject responsePromise with a TypeError.
 </li>
 							<li>
+%Vary ~LET `~header~listから値を取得して復号して分割する$( %応答 の`~header~list$rs, `Vary$h )
+◎
+↓</li>
+							<li>
 <p>
-~ELIF［
-%応答 の`~header~list$rs内に `Vary$h を`名前に持つ~header$はある
+~IF［
+%Vary ~NEQ ~NULL
 ］~AND［
-その`値$hdを成す ある `field-value$P ~EQ `*^bl
+`*^l ~IN %Vary
 ］：
 ◎
 Else if response’s header list contains a header named `Vary`, then:
@@ -8164,10 +8168,12 @@ If innerResponse’s status is 206, return a promise rejected with a TypeError.
 </li>
 			<li>
 ［
-%内縁~応答 の`~header~list$rs内に `Vary$h を`名前に持つ~header$はある
+次の結果 ~NEQ ~NULL
 ］~AND［
-その`値$hdを成す ある `field-value$P ~EQ `*^bl
+`*^l ~IN 次の結果
 ］
+⇒
+`~header~listから値を取得して復号して分割する$( %内縁~応答 の`~header~list$rs, `Vary$h )
 ◎
 If innerResponse’s header list contains a header named `Vary`, then:
 • Let fieldValues be the list containing the items corresponding to the Vary header’s field-values.
@@ -15207,44 +15213,69 @@ Set queryURL’s query to the empty string.
 If queryURL does not equal cachedURL with the exclude fragment flag set, then return false.
 </li>
 	<li>
+~IF［
+%応答 ~EQ ~NULL
+］~OR［
+%~options[ "`ignoreVary$m1" ] ~EQ ~T
+］
+⇒
+~RET ~T
+◎
+If response is null, options.ignoreVary is true, or＼
+↓response’s header list does not contain `Vary`,＼
+then return true.
+</li>
+	<li>
+%Vary ~SET `~header~listから値を取得して復号して分割する$( %応答 の`~header~list$rs, `Vary$h )
+◎
+Let fieldValues be the list containing the elements corresponding to the field-values of the Vary header for the value of the header with name `Vary`.
+</li>
+	<li>
+~IF［
+%Vary ~EQ ~NULL
+］
+⇒
+~RET ~T
+◎
+↑</li>
+	<li>
 <p>
-~RET ［
-次がすべて満たされるならば ~F ／
-~ELSE_ ~T
-］：
+%Vary を成す
+~EACH( %~field値 )
+に対し：
+◎
+For each fieldValue in fieldValues:
 </p>
-		<ul>
+		<ol>
 			<li>
-%応答 ~NEQ ~NULL
+%~field値 ~SET `同型に符号化する$( %~field値 )
+◎
+↓</li>
+			<li>
+~IF［
+%~field値 ~EQ `*^bl
+］
+⇒
+~RET ~F
+◎
+If fieldValue matches "*", or＼
 </li>
 			<li>
-%~options[ "`ignoreVary$m1" ] ~EQ ~F
-</li>
-			<li>
-<p>
-%応答 の`~header~list$rs内に `Vary$h を`名前に持つ~header$が在って、その`値$hdを成す
-ある `field-value$P %~field値 に対し，次のいずれかが満たされる：
-</p>
-				<ul>
-					<li>
-%~field値 ~EQ `*^l
-</li>
-					<li>
+~IF［
 `~header~listから値を取得する$( %要請 の`~header~list$rq, %~field値 )
 ~NEQ
 `~header~listから値を取得する$( %要請~query の`~header~list$rq, %~field値 )
-【！原文 “combined value” ~FETCH#concept-header-list-combine は、改変するので不適切】
+【！原文 “combined value” ~FETCH#concept-header-list-combine は、~header~listを改変するので不適切】
+］
+⇒
+~RET ~F
+◎
+the combined value given fieldValue and request’s header list does not match the combined value given fieldValue and requestQuery’s header list, then return false.
 </li>
-				</ul>
-			</li>
-		</ul>
-◎
-If response is null, options.ignoreVary is true, or response’s header list does not contain `Vary`, then return true.
-◎
-Let fieldValues be the list containing the elements corresponding to the field-values of the Vary header for the value of the header with name `Vary`.
-◎
-For each fieldValue in fieldValues:
-• If fieldValue matches "*", or the combined value given fieldValue and request’s header list does not match the combined value given fieldValue and requestQuery’s header list, then return false.
+		</ol>
+	</li>
+	<li>
+~RET ~T
 ◎
 Return true.
 </li>
