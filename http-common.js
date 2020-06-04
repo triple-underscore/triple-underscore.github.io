@@ -1394,7 +1394,6 @@ reactive::::リアクティブ
 段階:stage:~
 活動:activity::~
 消去-:erase:~
-消費量:consumption:~
 準備-:prepare:~
 状態変更:state-changing::~::ステート変更
 stateless::::ステートレス
