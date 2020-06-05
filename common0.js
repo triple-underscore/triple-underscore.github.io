@@ -921,7 +921,6 @@ COMMON_DATA.PREMAP = `
 適:\uE007適用対象\uE005
 継:\uE007<a href="~CASCADE#inherited-property">継承-</a>\uE005
 百:\uE007<a href="~CSSVAL#percentages">百分率</a>\uE005
-媒:\uE007媒体\uE005
 算:\uE007<a href="~CASCADE#computed">算出d値</a>\uE005
 使:\uE007<a href="~CASCADE#used">使用~値</a>\uE005
 順:\uE007正準的~順序\uE005
@@ -954,7 +953,6 @@ COMMON_DATA.PREMAP = `
 適:<tr><th>適用対象<td>
 継:<tr><th>継承-<td>
 百:<tr><th>百分率<td>
-媒:<tr><th>媒体<td>
 算:<tr><th>算出d値<td>
 順:<tr><th>正準的~順序<td>
 ア:<tr><th>~animation<td>
