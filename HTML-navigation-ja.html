@@ -112,7 +112,7 @@ return text;
 ●●options
 
 spec_date:2020-06-05
-trans_update:2020-06-07
+trans_update:2020-06-08
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -383,11 +383,17 @@ package::::パッケージ
 	それ用の処理器:word processor
 
 	●変数
+	%B:browsingContext
 	%現任の~navi生成元:incumbentNavigationOrigin
 	%作動中の文書~navi生成元:activeDocumentNavigationOrigin
 	%最終~sandbox~flags:finalSandboxFlags
 	%~sandbox~flags:sandboxFlags
 	%内容~型:contentType
+	%現在の~URL:~currentURL
+	%~top-level作成時の~URL:topLevelCreationURL
+	%~top-level生成元:topLevelOrigin
+	%親~環境:parentEnvironment
+	%予約-済み環境:reservedEnvironment
 
 	●指示語
 最近の:latest:~
@@ -706,6 +712,8 @@ sl.Window:~WINDOW#concept-windowproxy-window
 enV.~HTTPS状態:~WAPI#https-state
 enV.~referrer施策:~WAPI#concept-settings-object-referrer-policy
 enV.~id:~WAPI#concept-environment-id
+enV.~top-level生成元:~WAPI#concept-environment-top-level-origin
+enV.~top-level作成時の~URL:~WAPI#concept-environment-top-level-creation-url
 enV.作成時の~URL:~WAPI#concept-environment-creation-url
 enV.~target閲覧文脈:~WAPI#concept-environment-target-browsing-context
 enV.作動中の~sw:~WAPI#concept-environment-active-service-worker
@@ -1251,7 +1259,8 @@ This is the step that attempts to obtain resource, if necessary. Jump to the fir
 %B,
 %~sandbox~flags,
 %現任の~navi生成元,
-%作動中の文書~navi生成元
+%作動中の文書~navi生成元,
+~NULL
 </li>
 			<li>
 ~RET
@@ -1259,7 +1268,7 @@ This is the step that attempts to obtain resource, if necessary. Jump to the fir
 		</ol>
 ◎
 If resource is a response
-• Run process a navigate response with null, resource, navigationType, the source browsing context, browsingContext, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin.
+• Run process a navigate response with null, resource, navigationType, the source browsing context, browsingContext, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and null.
 </li>
 	<li>
 ~Assert：
@@ -1303,9 +1312,10 @@ Let response be the result of executing a javascript: URL request given resource
 %B,
 %~sandbox~flags,
 %現任の~navi生成元,
-%作動中の文書~navi生成元
+%作動中の文書~navi生成元,
+~NULL
 ◎
-Run process a navigate response with resource, response, navigationType, the source browsing context, browsingContext, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin.
+Run process a navigate response with resource, response, navigationType, the source browsing context, browsingContext, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and null.
 </li>
 				</ol>
 
@@ -1468,31 +1478,72 @@ Set reservedEnvironment to null.
 				</ol>
 			</li>
 			<li>
+<p>
 ~IF［
 %予約-済み環境 ~EQ ~NULL
-］
-⇒
+］：
+◎
+If reservedEnvironment is null, then:
+</p>
+				<ol>
+					<li>
+%~top-level作成時の~URL ~LET %現在の~URL
+◎
+Let topLevelCreationURL be currentURL.
+</li>
+					<li>
+%~top-level生成元 ~LET ~NULL
+◎
+Let topLevelOrigin be null.
+</li>
+					<li>
+<p>
+~IF［
+%B は`~top-level閲覧文脈$でない
+］：
+◎
+If browsingContext is not a top-level browsing context, then:
+</p>
+						<ol>
+							<li>
+%親~環境 ~LET %B の`容器$bcに`関連な設定群~obj$
+◎
+Let parentEnvironment be browsingContext's container's relevant settings object.
+</li>
+							<li>
+%~top-level作成時の~URL ~SET %親~環境 の`~top-level作成時の~URL$enV
+◎
+Set topLevelCreationURL to parentEnvironment's top-level creation URL＼
+</li>
+							<li>
+%~top-level生成元 ~SET %親~環境 の`~top-level生成元$enV
+◎
+and topLevelOrigin to parentEnvironment's top-level origin.
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
 %予約-済み環境 ~SET 次のようにされた新たな`環境$
 ⇒＃
 `~id$enV ~SET 一意かつ不透明な文字列,
-`~target閲覧文脈$enV ~SET %B
+`~target閲覧文脈$enV ~SET %B,
+`作成時の~URL$enV ~SET %現在の~URL,
+`~top-level作成時の~URL$enV ~SET %~top-level作成時の~URL,
+`~top-level生成元$enV ~SET %~top-level生成元
 ◎
-If reservedEnvironment is null, then set reservedEnvironment to a new environment whose id is a unique opaque string and target browsing context is browsingContext.
-</li>
-			<li>
-<p>
-%予約-済み環境 の`作成時の~URL$enV ~SET %現在の~URL
-◎
-Set reservedEnvironment's creation URL to currentURL.
+Set reservedEnvironment to a new environment whose id is a unique opaque string, target browsing context is browsingContext, creation URL is currentURL, top-level creation URL is topLevelCreationURL, and top-level origin is topLevelOrigin.
 </p>
 
 <p class="note">注記：
-%予約-済み環境 の`作動中の~sw$enVは、要請~URLが~sw登録に合致するならば，~fetchの間に
+ここで作成した環境の`作動中の~sw$enVは、要請~URLが~sw登録に合致するならば，~fetchの間に
 <a href="~SW1#on-fetch-request-algorithm">~fetchを取扱う~algo</a>の中で設定される。
 `SW$r
 ◎
 The created environment's active service worker is set in the Handle Fetch algorithm during the fetch if the request URL matches a service worker registration. [SW]
 </p>
+					</li>
+				</ol>
 			</li>
 			<li>
 %要請 の`予約-済み~client$rq ~SET %予約-済み環境
@@ -1663,13 +1714,12 @@ Fallback for fallback entries: If response was not fetched from an application c
 `~sandbox法~flag集合$ %~sandbox~flags,
 `生成元$ %現任の~navi生成元,
 `生成元$ %作動中の文書~navi生成元,
-`環境$ %予約-済み環境 （省略時は ε ）
+~NULL または`環境$ %予約-済み環境
 ◎終
 に対し，次を走らす：
 ◎
-To process a navigate response, given null or a request request, a response response, a string navigationType, two browsing contexts source and browsingContext, a sandboxing flag set sandboxFlags, two origins incumbentNavigationOrigin and activeDocumentNavigationOrigin, and an optional environment reservedEnvironment, run these steps:
+To process a navigate response, given null or a request request, a response response, a string navigationType, two browsing contexts source and browsingContext, a sandboxing flag set sandboxFlags, two origins incumbentNavigationOrigin and activeDocumentNavigationOrigin, and null or an environment reservedEnvironment, run these steps:
 </p>
-
 <ol>
 	<li>
 <p>
@@ -1793,7 +1843,7 @@ an HTML MIME type
 に与える手続き
 【！#navigate-html】
 ◎
-Follow the steps given in the HTML document section providing browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin. Once the steps have completed, return.
+Follow the steps given in the HTML document section providing browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and reservedEnvironment. Once the steps have completed, return.
 </dd>
 			<dt>
 `~XML~MIME型$であって, `明示的に~supportされる~XML~MIME型$でない
@@ -1804,7 +1854,7 @@ an XML MIME type that is not an explicitly supported XML MIME type
 <a href="#read-xml">§ ~XML文書</a>
 に与える手続き
 ◎
-Follow the steps given in the XML document section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin. Once the steps have completed, return.
+Follow the steps given in the XML document section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and reservedEnvironment. Once the steps have completed, return.
 </dd>
 			<dt>
 `~JS~MIME型$
@@ -1824,14 +1874,14 @@ a JSON MIME type that is not an explicitly supported JSON MIME type
 <a href="#read-text">§ 素の~text~file</a>
 に与える手続き
 ◎
-Follow the steps given in the plain text file section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin. Once the steps have completed, return.
+Follow the steps given in the plain text file section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and reservedEnvironment. Once the steps have completed, return.
 </dd>
 			<dt>`multipart/x-mixed-replace$c</dt>
 			<dd>
 <a href="#read-multipart-x-mixed-replace">§ `multipart/x-mixed-replace^c</a>
 に与える手続き
 ◎
-Follow the steps given in the multipart/x-mixed-replace section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin. Once the steps have completed, return.
+Follow the steps given in the multipart/x-mixed-replace section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and reservedEnvironment. Once the steps have completed, return.
 </dd>
 			<dt>
 ~supportされる［
@@ -1844,7 +1894,7 @@ A supported image, video, or audio type
 <a href="#read-media">§ ~media</a>
 に与える手続き
 ◎
-Follow the steps given in the media section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin. Once the steps have completed, return.
+Follow the steps given in the media section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and reservedEnvironment. Once the steps have completed, return.
 </dd>
 			<dt>
 内容を %B 内に具現化するときに外部~appを利用するような型
@@ -1855,7 +1905,7 @@ A type that will use an external application to render the content in browsingCo
 <a href="#read-plugin">§ ~plugin</a>
 に与える手続き
 ◎
-Follow the steps given in the plugin section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin. Once the steps have completed, return.
+Follow the steps given in the plugin section providing browsingContext, type, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and reservedEnvironment. Once the steps have completed, return.
 </dd>
 			<dt>その他</dt>
 			<dd>
@@ -1881,7 +1931,8 @@ Follow the steps given in the plugin section providing browsingContext, type, re
 %要請,
 %応答,
 %現任の~navi生成元,
-%作動中の文書~navi生成元
+%作動中の文書~navi生成元,
+%予約-済み環境
 ◎
 ↑</li>
 	<li>
@@ -2284,11 +2335,11 @@ In addition to the specific issues linked above, javascript: URLs have a dedicat
 `~sandbox法~flag集合$ %~sandbox~flags,
 `生成元$ %現任の~navi生成元,
 `生成元$ %作動中の文書~navi生成元,
-`環境$ %予約-済み環境 （省略時は ε ）
+~NULL または`環境$ %予約-済み環境
 ◎終
 に対し，次を走らす：
 ◎
-Some of the sections below, to which the above algorithm defers in certain cases, use the following steps to create and initialize a Document object, given a type type, content type contentType, a request request, a response response, a browsing context browsingContext, a sandboxing flag set sandboxFlags, two origins incumbentNavigationOrigin, activeDocumentNavigationOrigin, and an optional environment reservedEnvironment:
+Some of the sections below, to which the above algorithm defers in certain cases, use the following steps to create and initialize a Document object, given a type type, content type contentType, a request request, a response response, a browsing context browsingContext, a sandboxing flag set sandboxFlags, two origins incumbentNavigationOrigin, activeDocumentNavigationOrigin, and null or an environment reservedEnvironment:
 </p>
 
 <ol>
@@ -2339,6 +2390,20 @@ See below for some examples of this in action.
 </div>
 	</li>
 	<li>
+%作成時の~URL ~LET %応答 の`~URL$rs
+◎
+Let creationURL be response's URL.
+</li>
+	<li>
+~IF［
+%要請 ~NEQ ~NULL
+］
+⇒
+%作成時の~URL ~SET %要請 の`現在の~URL$rq
+◎
+If request is non-null, then set creationURL to request's current URL.
+</li>
+	<li>
 <p>
 ~IF［
 次のすべてが満たされる
@@ -2383,17 +2448,50 @@ Let realm execution context be the result of creating a new JavaScript realm giv
 • For the global this binding, use browsingContext's WindowProxy object.
 </li>
 			<li>
-%~top-level生成元 ~LET ［
-%B は`~top-level閲覧文脈$であるならば %生成元 ／
-~ELSE_ %Bの `~top-level閲覧文脈$にて`作動中の文書$の`生成元$
-］
+%~top-level作成時の~URL ~LET %作成時の~URL
 ◎
-Let topLevelOrigin be origin if browsingContext is top-level browsing context, otherwise let topLevelOrigin be browsingContext's top-level browsing context's active document's origin.
+Let topLevelCreationURL be creationURL.
 </li>
 			<li>
-`~window用に環境~設定群~objを設定しておく$( %~realm実行~文脈, %~top-level生成元, %予約-済み環境 )
+%~top-level生成元 ~LET %生成元
 ◎
-Set up a window environment settings object with realm execution context, topLevelOrigin, and reservedEnvironment, if present.
+Let topLevelOrigin be origin.
+</li>
+			<li>
+<p>
+~IF［
+%B は`~top-level閲覧文脈$でない
+］：
+◎
+If browsingContext is not a top-level browsing context, then:
+</p>
+				<ol>
+					<li>
+%親~環境 ~LET %B の`容器$bcに`関連な設定群~obj$
+◎
+Let parentEnvironment be browsingContext's container's relevant settings object.
+</li>
+					<li>
+%~top-level作成時の~URL ~SET %親~環境 の`~top-level作成時の~URL$enV
+◎
+Set topLevelCreationURL to parentEnvironment's top-level creation URL.
+</li>
+					<li>
+%~top-level生成元 ~SET %親~環境 の`~top-level生成元$enV
+◎
+Set topLevelOrigin to parentEnvironment's top-level origin.
+</li>
+				</ol>
+			</li>
+			<li>
+`~window用に環境~設定群~objを設定しておく$( 次に挙げる引数 )
+⇒＃
+%~realm実行~文脈,
+%予約-済み環境,
+%~top-level作成時の~URL,
+%~top-level生成元
+◎
+Set up a window environment settings object with realm execution context, reservedEnvironment, topLevelCreationURL, and topLevelOrigin.
 </li>
 		</ol>
 	</li>
@@ -2409,14 +2507,9 @@ Set up a window environment settings object with realm execution context, topLev
 Let document be a new Document, whose type is type, content type is contentType, origin is origin, feature policy is featurePolicy, and active sandboxing flag set is finalSandboxFlags.
 </li>
 	<li id="set-the-document's-address">
-%文書 の`~URL$doc ~SET ［
-%要請 ~NEQ ~NULL ならば %要請 の`現在の~URL$rq ／
-~ELSE_ %応答 の`~URL$rs
-］
+%文書 の`~URL$doc ~SET %作成時の~URL
 ◎
-If request is non-null, then set document's URL to request's current URL.
-◎
-Otherwise, set document's URL to response's URL.
+Set document's URL to creationURL.
 </li>
 	<li>
 %文書 の`~HTTPS状態$doc ~SET %応答 の`~HTTPS状態$rs
@@ -2466,7 +2559,6 @@ Per Fetch a request's referrer will be either a URL record or "no-referrer" at t
 ◎
 If response has a `Refresh` header, then:
 </p>
-
 		<ol>
 			<li>
 %値 ~LET `同型に復号する$( `Refresh^h の値 )
@@ -2814,13 +2906,12 @@ If this does not find an indicated part of the document, then try to scroll to t
 
 <div class="algorithm">
 <p>
-`閲覧文脈$内に
 `~HTML文書が読込まれる@
-ことになるときは、~UAは，供された
-( %B, %要請, %応答, %~sandbox~flags, %現任の~navi生成元, %作動中の文書~navi生成元 )
+ことになるときは、~UAは，所与の
+( %B, %要請, %応答, %~sandbox~flags, %現任の~navi生成元, %作動中の文書~navi生成元, %環境 )
 に対し、`~network用~task源$から，次を走らす`~taskを~queueする$モノトスル：
 ◎
-When an HTML document is to be loaded in a browsing context, provided browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin, the user agent must queue a task on the networking task source to:
+When an HTML document is to be loaded, given a browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment, the user agent must queue a task on the networking task source to:
 </p>
 
 <ol>
@@ -2834,9 +2925,10 @@ When an HTML document is to be loaded in a browsing context, provided browsingCo
 %B,
 %~sandbox~flags,
 %現任の~navi生成元,
-%作動中の文書~navi生成元
+%作動中の文書~navi生成元,
+%環境
 ◎
-Let document be the result of creating and initializing a Document object providing "html", "text/html", request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin.
+Let document be the result of creating and initializing a Document object providing "html", "text/html", request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment.
 </li>
 	<li>
 <p>
@@ -2889,7 +2981,7 @@ Application cache selection happens in the HTML parser.
 <div class="algorithm">
 <p>
 ~XML~fileを~inlineに表示することになった場合、~UAは，供された
-( %B, %要請, %応答, %現任の~navi生成元, %作動中の文書~navi生成元 )
+( %B, %要請, %応答, %現任の~navi生成元, %作動中の文書~navi生成元, %環境 )
 に対し、次に挙げる各種 仕様に定義される要件に従う下で
 ⇒＃
 `XML^cite `XML$r,
@@ -2900,9 +2992,8 @@ Application cache selection happens in the HTML parser.
 ◎終
 次に行うモノトスル：
 ◎
-When faced with displaying an XML file inline, provided browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin, user agents must follow the requirements defined in XML and Namespaces in XML, XML Media Types, DOM, and other relevant specifications＼
+When faced with displaying an XML file inline, provided browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment, user agents must follow the requirements defined in XML and Namespaces in XML, XML Media Types, DOM, and other relevant specifications＼
 </p>
-
 <ol>
 	<li>
 `文書を作成して初期化する$( 次に与える引数 )
@@ -2914,9 +3005,10 @@ When faced with displaying an XML file inline, provided browsingContext, request
 %B,
 %~sandbox~flags,
 %現任の~navi生成元,
-%作動中の文書~navi生成元
+%作動中の文書~navi生成元,
+%環境
 ◎
-to create and initialize a Document object providing "xml", type, request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin.＼
+to create and initialize a Document object providing "xml", type, request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment.＼
 </li>
 	<li>
 対応する`~XML構文解析器$を作成する
@@ -2930,7 +3022,7 @@ It must also create and a corresponding XML parser. [XML] [XMLNS] [RFC7303] [DOM
 これを書いている時点では，~XML仕様~communityは、実際には，~XMLと~DOMとがどう相互作用するか まだ指定していない。
 ◎
 At the time of writing, the XML specification community had not actually yet specified how XML and the DOM interact.
-</p> 
+</p>
 
 <p>
 ~UAは、`文書$ %文書 を作成したときは：
@@ -2982,11 +3074,11 @@ Error messages from the parse process (e.g., XML namespace well-formedness error
 
 <div class="algorithm">
 <p>
-素の~text文書を `閲覧文脈$内に読込むことになるときは、~UAは，供された
-( %B, %要請, %応答, %~sandbox~flags, %現任の~navi生成元, %作動中の文書~navi生成元 )
+素の~text文書を読込むことになるときは、~UAは，供された
+( %B, %要請, %応答, %~sandbox~flags, %現任の~navi生成元, %作動中の文書~navi生成元, %環境 )
 に対し、`~network用~task源$から，次を走らす`~taskを~queueする$モノトスル：
 ◎
-When a plain text document is to be loaded in a browsing context, provided browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin, the user agent must queue a task on the networking task source to:
+When a plain text document is to be loaded, provided a browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment, the user agent must queue a task on the networking task source to:
 </p>
 
 <ol>
@@ -3000,9 +3092,10 @@ When a plain text document is to be loaded in a browsing context, provided brows
 %B,
 %~sandbox~flags,
 %現任の~navi生成元,
-%作動中の文書~navi生成元
+%作動中の文書~navi生成元,
+%環境
 ◎
-Let document be the result of creating and initialize a Document object providing "html", type, request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin.
+Let document be the result of creating and initialize a Document object providing "html", type, request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment.
 </li>
 	<li>
 <p>
@@ -3110,7 +3203,7 @@ In particular, if the user agent supports the Format=Flowed feature of RFC 3676 
 
 <p>
 型 `multipart/x-mixed-replace$c を伴う資源を `閲覧文脈$内に読込むことになるときは、~UAは
-【！供された ( %B, %要請, %応答, %現任の~navi生成元, %作動中の文書~navi生成元 ) に対し】
+【！供された ( %B, %要請, %応答, %現任の~navi生成元, %作動中の文書~navi生成元, %環境 ) に対し】
 次に従うモノトスル：
 ◎
 When a resource with the type multipart/x-mixed-replace is to be loaded in a browsing context, the user agent must＼
@@ -3160,13 +3253,12 @@ Thus, load events (and for that matter unload events) do fire for each body part
 <p>
 ［
 画像 ／ 動画 ／ 音声
-］資源を `閲覧文脈$内に読込むことになるときは、~UAは，供された
-( %B, %要請, %応答, %~sandbox~flags, %現任の~navi生成元, %作動中の文書~navi生成元 )
+］資源を読込むことになるときは、~UAは，供された
+( %B, %要請, %応答, %~sandbox~flags, %現任の~navi生成元, %作動中の文書~navi生成元, %環境 )
 に対し，次をするベキである：
 ◎
-When an image, video, or audio resource is to be loaded in a browsing context, provided browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin, the user agent should:
+When an image, video, or audio resource is to be loaded, provided a browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment, the user agent should:
 </p>
-
 <ol>
 	<li>
 %文書 ~LET `文書を作成して初期化する$( 次に与える引数 )
@@ -3178,9 +3270,10 @@ When an image, video, or audio resource is to be loaded in a browsing context, p
 %B,
 %~sandbox~flags,
 %現任の~navi生成元,
-%作動中の文書~navi生成元
+%作動中の文書~navi生成元,
+%環境
 ◎
-Let document be the result of creating and initialize a Document object providing "html", type, request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin.
+Let document be the result of creating and initialize a Document object providing "html", type, request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment.
 </li>
 	<li>
 %文書 に `html$e 要素を付加する
@@ -3281,11 +3374,11 @@ User agents may add content to the head element of the Document, or attributes t
 
 <div class="algorithm">
 <p>
-外部~資源を具現化することを要する資源を，`閲覧文脈$内に読込むことになるときは、~UAは，供された
-( %B, %要請, %応答, %~sandbox~flags, %現任の~navi生成元, %作動中の文書~navi生成元 )
+外部~資源を具現化することを要する資源を読込むことになるときは、~UAは，供された
+( %B, %要請, %応答, %~sandbox~flags, %現任の~navi生成元, %作動中の文書~navi生成元, %環境 )
 に対し，次をするベキである：
 ◎
-When a resource that requires an external resource to be rendered is to be loaded in a browsing context, provided browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin, the user agent should:
+When a resource that requires an external resource to be rendered is to be loaded, provided a browsingContext, request, response, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment, the user agent should:
 </p>
 
 <ol>
@@ -3299,9 +3392,10 @@ When a resource that requires an external resource to be rendered is to be loade
 %B,
 %~sandbox~flags,
 %現任の~navi生成元,
-%作動中の文書~navi生成元
+%作動中の文書~navi生成元,
+%環境
 ◎
-Let document be the result of creating and initialize a Document object providing "html", type, request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, and activeDocumentNavigationOrigin.
+Let document be the result of creating and initialize a Document object providing "html", type, request, response, browsingContext, sandboxFlags, incumbentNavigationOrigin, activeDocumentNavigationOrigin, and environment.
 </li>
 	<li>
 %文書 を
@@ -3395,9 +3489,9 @@ If the Document's active sandboxing flag set has its sandboxed plugins browsing 
 
 <div class="algorithm">
 <p>
-~UAは、~pageを`閲覧文脈$内に~inlineに表示するときは、次をするベキである：
+~UAは、~pageを~inlineに表示するときは、次をするベキである：
 ◎
-When the user agent is to display a user agent page inline in a browsing context, the user agent should＼
+When the user agent is to display a user agent page inline, the user agent should＼
 </p>
 
 <ol>
@@ -3411,9 +3505,10 @@ When the user agent is to display a user agent page inline in a browsing context
 %B,
 空~集合,
 ~NULL,
+~NULL,
 ~NULL
 ◎
-create and initialize a Document object providing "html", "text/html", null, null, browsingContext, an empty set, null, and null,＼
+create and initialize a Document object providing "html", "text/html", null, null, browsingContext, an empty set, null, null, and null,＼
 </li>
 	<li>
 <p>
@@ -5174,5 +5269,3 @@ This feature is in the process of being removed from the Web platform. (This is 
 
 		</section>
 </main>
-
-
