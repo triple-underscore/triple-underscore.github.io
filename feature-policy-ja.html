@@ -58,6 +58,9 @@ case 'm' : // interface member
 		text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
 	}
 	break;
+case 'sf': // structured fields
+	text = `<sub>sf-</sub>${text}`;
+	break;
 case 'U':
 	text = `U+${key}`;
 	break;
@@ -101,8 +104,8 @@ return text;
 ●●options
 
 spec_title:Permissions Policy
-spec_date:2020-05-27
-trans_update:2020-05-30
+spec_date:2020-06-11
+trans_update:2020-06-13
 source_checked:200526
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-feature-policy/
@@ -144,19 +147,6 @@ s:samp
 U:span
 i:i
 em:em
-
-●●
-	（ ED と WD で異なる id ）
-algo-define-inherited-policy-in-container:define-inherited-policy-in-container
-algo-is-feature-enabled:is-feature-enabled
-algo-merge-directive-with-declared-policy:merge-directive-with-declared-policy
-algo-parse-header:parse-header
-parse-header-from-value-and-origin:parse-header
-algo-parse-policy-directive:parse-policy-directive
-algo-process-policy-attributes:process-feature-policy-attributes
-algo-process-response-policy:process-response-policy
-algo-report-permissions-policy-violation:report-feature-policy-violation
-algo-should-request-be-allowed-to-use-feature:should-request-be-allowed-to-use-feature
 
 ●●original_id_map
 
@@ -233,6 +223,7 @@ dir.sandbox:~CSP3#sandbox
 
 P.*:#the-special-value
 i.全~生成元:#_any-origin
+P.self:#_self
 P.serialized-permissions-policy:#serialized-permissions-policy
 P.serialized-policy-directive:#serialized-policy-directive
 直列形の許可~施策:#serialized-policy-directive
@@ -240,6 +231,8 @@ P.feature-identifier:#feature-identifier
 P.allow-list:#allow-list
 P.allow-list-value:#allow-list-value
 P.serialized-origin:#serialized-origin
+
+P.sf-dictionary:~HEADER-STRUCTURE#p.sf-dictionary
 
 h.Permissions-Policy:#permissions-policy-header
 
@@ -281,9 +274,9 @@ iF.施策~obj:#iframe-policy-object
 
 	algo
 応答~施策を処理する:#process-response-policy
-値と生成元から~headerを構文解析する:#parse-header-from-value-and-origin
+辞書と生成元から施策を構築する:#construct-policy-from-dictionary-and-origin
+	§ #algo-construct-policy
 施策~指令を構文解析する:#parse-policy-directive
-指令を宣言-済み施策に併合する:#merge-directive-with-declared-policy
 許可~施策~属性を処理する:#process-permissions-policy-attributes
 閲覧文脈~用の施策を作成する:#create-for-browsingcontext
 応答から閲覧文脈~用の施策を作成する:#create-from-response
@@ -293,18 +286,33 @@ iF.施策~obj:#iframe-policy-object
 設定群~上で許可~施策の違反~用に報告を生成する:#report-permissions-policy-violation
 要請には特能の利用は許容されるべきか？:#should-request-be-allowed-to-use-feature
 
-pd.~ASCII直列化:#ascii-serialization
 
+	§ #structured-header-serialization
 
 	●外部
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 ~ASCII小文字~化する:~INFRA#ascii-lowercase
 ~ASCII空白で分割する:~INFRA#split-on-ascii-whitespace
-~commaで分割する:~INFRA#split-on-commas
 区切子で厳密に分割する:~INFRA#strictly-split
+~list:~INFRA#list
 有順序~集合:~INFRA#ordered-set
+set.付加する:~INFRA#set-append
 有順序~map:~INFRA#ordered-map
+map.~key:~INFRA#map-key
+map.値:~INFRA#map-value
 構造体:~INFRA#struct
+
+
+有構造~field:~HEADER-STRUCTURE#structured~field
+有構造~header:~HEADER-STRUCTURE#structured-header
+sf.~token:~HEADER-STRUCTURE#sf-token
+sf.文字列:~HEADER-STRUCTURE#sf-string
+sf.内縁~list:~HEADER-STRUCTURE#sf-inner-list
+sf.~item:~HEADER-STRUCTURE#sf-item
+sf.辞書:~HEADER-STRUCTURE#sf-dictionary
+	sf.辞書:~HEADER-STRUCTURE#dictionary
+sf.~key::~HEADER-STRUCTURE#sf-key
+
 
 doc.許可~施策:~HTMLdom#concept-document-permissions-policy
 
@@ -326,9 +334,9 @@ doc.許可~施策:~HTMLdom#concept-document-permissions-policy
 生成元:~ORIGIN#concept-origin
 不透明な生成元:~ORIGIN#concept-origin-opaque
 生成元の直列化:~ORIGIN#ascii-serialisation-of-an-origin
+生成元を直列化する:~ORIGIN#ascii-serialisation-of-an-origin
 同一-生成元:~ORIGIN#same-origin
 同じ生成元~domain:~ORIGIN#same-origin-domain
-生成元を直列化する:~ORIGIN#ascii-serialisation-of-an-origin
 閲覧文脈~sandbox化( 生成元 )~flag:~ORIGIN#sandboxed-origin-browsing-context-flag
 作動中の~sandbox法~flag集合:~ORIGIN#active-sandboxing-flag-set
 
@@ -347,8 +355,7 @@ rq.生成元:~FETCH#concept-request-origin
 	応答:~FETCH#concept-response-response＊原文誤
 rs.~header~list:~FETCH#concept-response-header-list
 hd.値:~FETCH#concept-header-value
-~header~listから値を取得する:~FETCH#concept-header-list-get
-
+有構造~headerを取得する:~FETCH#concept-header-list-get-structured-header
 結付けられている文書:~WINDOW#concept-document-window
 
 報告:~REPORTING#report
@@ -359,6 +366,7 @@ rP.本体:~REPORTING#report-body
 
 ●●words_table1
 REPORTING:reporting1-ja.html
+HEADER-STRUCTURE:http-header-structure-ja.html
 
 permissionsPolicyD:permissionsPolicy
 permissionsPolicyF:permissionsPolicy
@@ -433,18 +441,28 @@ log-in:log in:::ログイン
 
 	●データ／構文
 
-併合-:merge::~
 結合-:combine::~
 comma::::カンマ
 percent-::: %-
 直列形の:serialized::~::シリアル形の
 区切子:delimiter::~
 分割-:split::~
+形:form:~
 
 	直列化された宣言:serialized-declaration
 	文字列:character strings
 	-:separated
 	-:concatenation
+	%~item:element
+	有構造~field$:Structured Field:#1
+	辞書$sf:Dictionary
+	辞書$sfの~member:Dictionary Member
+	~member:Member
+	~memberの名前:Name
+	~memberの値:Value
+	文字列$sf:String
+	~token$sf:Token
+	内縁~list:Inner List
 
 	●仕様
 framework::::フレームワーク
@@ -560,6 +578,8 @@ SecureCorp:
     Anne van Kesteren. Fetch Standard. Living Standard. URL: https://fetch.spec.whatwg.org/ 
 [FULLSCREEN]
     Philip Jägenstedt. Fullscreen API Standard. Living Standard. URL: https://fullscreen.spec.whatwg.org/ 
+[HEADER-STRUCTURE]
+    Mark Nottingham; Poul-Henning Kamp. Structured Field Values for HTTP. Draft. URL: https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-18 
 [HTML]
     Anne van Kesteren; et al. HTML Standard. Living Standard. URL: https://html.spec.whatwg.org/multipage/ 
 [INFRA]
@@ -782,15 +802,15 @@ SecureCorp Inc. wants to disable use of Fullscreen and Geolocation APIs within t
 </p>
 
 <pre class="lang-http">
-`Permissions-Policy$h: fullscreen 'none'; geolocation 'none'
+`Permissions-Policy$h: fullscreen=(), geolocation=()
 </pre>
 
 <p>
-生成元~list用の~keyword `'none'^l を指定することにより、指定された特能は
-— どの閲覧文脈においても，その生成元に関わらず —
+空な生成元~listを指定することにより、指定された特能は
+— 入子にされたものも含め，どの文書においても、その生成元に関わらず —
 不能化されることになる。
 ◎
-By specifying the "'none'"keyword for the origin list, the specified features will be disabled for all browsing contexts, regardless of their origin.
+By specifying an empty origin list, the specified features will be disabled for all documents, including nested documents, regardless of their origin.
 </p>
 
 </div>
@@ -834,17 +854,17 @@ SecureCorp Inc. wants to completely disable use of the Geolocation API within al
 </p>
 
 <pre class="lang-http">
-`Permissions-Policy$h: geolocation 'self' https://example.com
+`Permissions-Policy$h: geolocation=(self "https://example.com")
 </pre>
 
 <p>
 `許容list$は、 1 個~以上の生成元からなる~listである
 — その各~生成元には、次のいずれかを与えれる
 ⇒＃
-任意選択で ~keyword `'self'^l を伴う，~appの生成元 ／
+任意選択で~keyword `self$P を伴う，~appの生成元 ／
 任意の第三者主体~生成元
 ◎
-The allowlist is a list of one or more origins, which can include the application’s origin, optionally with the keyword "'self'", and any third-party origin.
+The allowlist is a list of one or more origins, which can include the application’s origin, optionally with the keyword "self", and any third-party origin.
 </p>
 
 <p>
@@ -1125,7 +1145,7 @@ In addition to the header policy, each nested browsing context has a container p
 <p>
 `入子の閲覧文脈$用の`容器~施策$は、その文脈の中に読込まれる文書に`継承される施策$に波及する（`閲覧文脈~内の特能~用に継承される施策を定義する$を見よ）。
 ◎
-The container policy for a nested browsing context influences the inherited policy of any document loaded into that context. (See § 9.8 Define an inherited policy for feature in browsing context)
+The container policy for a nested browsing context influences the inherited policy of any document loaded into that context. (See § 9.7 Define an inherited policy for feature in browsing context)
 </p>
 
 <p class="note">注記：
@@ -1152,11 +1172,12 @@ A policy directive is an ordered map, mapping policy-controlled features to corr
 </p>
 
 <p>
-`施策~指令$は、［
-~HTTP~header／~HTML属性
-］内では，`~ASCII直列化$pdとして表現される。
+`施策~指令$は
+⇒＃
+~HTTP~header内では`辞書$sfの直列化として表現される／
+~HTML属性~内では<a href="#ascii-serialization">~ASCII直列化</a>として表現される
 ◎
-A policy directive is represented in HTTP headers and HTML attributes as its ASCII serialization.
+A policy directive is represented in HTTP headers as the serialization of an sh-dictionary structure, and in and HTML attributes as its ASCII serialization.
 </p>
 
 		</section>
@@ -1186,6 +1207,7 @@ The special value *, which represents every origin, or
 </li>
 	<li>
 `生成元$たちが成す`有順序~集合$
+【集合を成す~itemどうしの比較は、`同一-生成元$に基づくことになる。】
 ◎
 An ordered set of origins
 </li>
@@ -1197,13 +1219,14 @@ An ordered set of origins
 ］内の文字列による許容listの~text表現には、~keyword［
 `'self'^l, `'src'^l, `'none'^l
 ］も現れ得る。
+【~header内では、 `self^l に限り，一重引用符 `'^l で括られずに現れ得る。】
 これらの各~keywordは，常に構文解析の間に その文脈において解釈され、それぞれが指す生成元のみが，許容list~内に格納される。
 ~keyword自身は、許容listの一部を成すことはない。
 ◎
 The keywords 'self', 'src', and 'none' can appear in the text representation of allowlists in headers and attribute strings. These keywords are always interpreted in context during parsing, and only the origins which they refer to are stored in the allowlist. The keywords themselves are not part of the allowlist.
 </p>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `許容listは生成元に合致する@
 かどうか決定するときは、所与の
@@ -1292,14 +1315,12 @@ The feature is allowed in documents in top-level browsing contexts by default, a
 <h2 title="Permissions Policy Serialization">5. 許可~施策の直列化</h2>
 
 		<section id="ascii-serialization">
-<h3 title="ASCII serialization">5.1. ~ASCII直列化</h3>
+<h3 title="ASCII serialization">5.1. ~HTML属性の直列化</h3>
 
 <p>
-`施策~指令$は［
-~HTTP~header／~HTML属性
-］内では、~ASCII~textとして表現される。
+`施策~指令$は、~HTML属性~内では，次の~ABNFによる~ASCII直列化として表現される：
 ◎
-Policy Directives are represented in HTTP headers and in HTML attributes as ASCII text.
+Policy Directives in HTML attributes are represented as their ASCII serialization, with the following ABNF:
 </p>
 
 <pre class="bnf">
@@ -1334,6 +1355,71 @@ The string "'self'" may be used as an origin in an allowlist. When it is used in
 </p>
 
 		</section>
+		<section id="structured-header-serialization">
+<h3 title="Structured header serialization">5.2. 有構造~headerの直列化</h3>
+
+<p>
+~HTTP~header内の`施策~指令$は、`有構造~field$として表現される。
+`HEADER-STRUCTURE$r
+◎
+Policy Directives in HTTP headers are represented as Structured Fields. [HEADER-STRUCTURE]
+</p>
+
+<p>
+この表現においては、`施策~指令$は，`辞書$sfにより表現される。
+◎
+In this representation, a policy directive is represented by a Dictionary.
+</p>
+
+<p>
+`辞書$sfの各~memberは、ある`特能$をある`許容list$に結付ける。
+~memberの名前は、~tokenでなければナラナイ
+【と記されているが、これは`~token$sfではなく，`~key$sfでなければならないはず】
+。
+~tokenが~supportされる特能の名前でない場合、当の辞書~memberは，処理~手続きにより無視されることになる。
+◎
+Each Dictionary Member associates a feature with an allowlist. The Member Names must be Tokens. If a token does not name a supported feature, then the Dictionary Member will be ignored by the processing steps.
+</p>
+
+<p>
+各~memberの値は、`許容list$を表現する
+— 次に挙げるいずれかでなければナラナイ：
+◎
+The Member Values represent allowlists, and must be one of:
+</p>
+<ul>
+	<li>
+ある`生成元の直列化$を包含する`文字列$sf
+◎
+a String containing the ASCII serialization of an origin
+</li>
+	<li>
+`~token$sf `全~生成元$i（ `*^P ）
+◎
+the Token *
+</li>
+	<li>
+`~token$sf `self@P
+◎
+the Token self
+</li>
+	<li>
+上に挙げた 0 個以上の`~item$sfを包含している`内縁~list$sf
+— この~list内にある他の`~item$sfは、処理~手続きにより無視され，当の~itemは無かったかのように処理されることになる。
+◎
+an Inner List containing zero or more of the above items.
+◎
+Any other items inside of an Inner List will be ignored by the processing steps, and＼
+</li>
+</ul>
+
+<p>
+`辞書$sfの~memberが他の形による値をとる場合、処理~手続きにより，当の~member全体が無視されることになる。
+◎
+the Member Value will be processed as if they were not present. Member Values of any other form will cause the entire Dictionary Member to be ignored by the processing steps.
+</p>
+
+		</section>
 	</section>
 	<section id="delivery">
 <h2 title="Delivery">6. 送達</h2>
@@ -1353,16 +1439,30 @@ The `Permissions-Policy` HTTP header field can be used in the response (server t
 </p>
 
 <p>
-この~headerの値は、 1 個~以上の［
-`施策~指令$の`~ASCII直列化$pd
-］からなる。
+`Permissions-Policy$h は、`有構造~header$である。
+その値は、`辞書$sfでなければナラナイ。
+その~ABNFは：
 ◎
-The header’s value is the § 5.1 ASCII serialization of one or more policy directives:.
+Permissions-Policy is a structured header. Its value must be a dictionary. It’s ABNF is:
 </p>
 
 <pre class="bnf">
-PermissionsPolicy = `serialized-permissions-policy$P *("," `serialized-permissions-policy$P)
+PermissionsPolicy = `sf-dictionary$P
 </pre>
+
+<p>
+この辞書の意味論は、<a href="#structured-header-serialization">§ 有構造~headerの直列化</a>にて定義される。
+◎
+The semantics of the dictionary are defined in § 5.2 Structured header serialization.
+</p>
+
+<p>
+この辞書の処理~手続きは、
+§ `辞書と生成元から施策を構築する$
+にて定義される。
+◎
+The processing steps are defined in § 9.2 Construct policy from dictionary and origin.
+</p>
 
 		</section>
 		<section id="iframe-allow-attribute">
@@ -1824,7 +1924,7 @@ Set result to an empty ordered set.
 ~EACH( `~support済み特能$ %特能 )
 に対し
 ⇒
-%特能 を %結果 に付加する
+%特能 を %結果 に`付加する$set
 ◎
 For each supported feature feature:
 • Append feature to result.
@@ -1868,7 +1968,7 @@ Let policy be the observable policy for this PermissionsPolicy object’s associ
 %施策 により， %特能 は %生成元 用に許容される
 ］
 ⇒
-%結果 に %特能 を付加する
+%結果 に %特能 を`付加する$set
 ◎
 For each supported feature feature:
 • If feature is allowed by policy for origin, append feature to result.
@@ -1923,7 +2023,7 @@ Let allowlist be policy’s declared policy[feature]
 %許容list ~EQ `全~生成元$i
 ］
 ⇒
-%結果 に`全~生成元$iを付加する
+%結果 に`全~生成元$iを`付加する$set
 ◎
 If allowlist is the special value *, append "*" to result
 </li>
@@ -1934,7 +2034,7 @@ If allowlist is the special value *, append "*" to result
 ~EACH( %生成元 )
 に対し
 ⇒
-%結果 に次の結果を付加する
+%結果 に次の結果を`付加する$set
 ⇒
 `生成元を直列化する$( %生成元 )
 ◎
@@ -1961,7 +2061,7 @@ Return result.
 The observable policy for any Node is a permissions policy, which contains the information about the policy in the browsing context represented by that Node which is visible from the current browsing context.
 </p>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 所与の %文書 用の`観測-可能な施策$を取得するときは、
 %文書 の`許可~施策$docを返す。
@@ -1970,7 +2070,7 @@ To get the observable policy for a Document document, return document’s permis
 </p>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 所与の要素 %~node 用の`観測-可能な施策$を取得するときは、次を走らす：
 ◎
@@ -2010,7 +2110,7 @@ Return a new permissions policy with inherited policy inherited policy and decla
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `Element$I %~node 用に
 `宣言された生成元@
@@ -2212,24 +2312,25 @@ Given a response (response) and an origin (origin), this algorithm returns a dec
 
 <ol>
 	<li>
-%~header値 ~LET `~header~listから値を取得する$( %応答 の`~header~list$rs, `Permissions-Policy^h )
+%構文解析した~header ~LET
+%応答 の`~header~list$rsから`有構造~headerを取得する$( `Permissions-Policy$h, `辞書^i )
 ◎
-Abort these steps if response’s header list does not contain a header whose name is "Permissions-Policy".
-◎
-Let header be the concatenation of the values of all header fields in response’s header list whose name is "Permissions-Policy", separated by U+002C (,) (according to [RFC7230, 3.2.2]).
+Let parsed header be the result of executing get a structured header given "Permissions-Policy" and "dictionary" from response’s header list.
 </li>
 	<li>
 ~IF［
-%~header値 ~EQ ~NULL
+%構文解析した~header ~IN { ~NULL, `失敗^i }
 ］
 ⇒
-~RET
+~RET ε
+【原文は、この場合に何を返すか指定していない。】
 ◎
-↑</li>
+If parsed header is null or failure, abort these steps.
+</li>
 	<li>
-~RET `値と生成元から~headerを構文解析する$( %~header値, %生成元 )
+~RET `辞書と生成元から施策を構築する$( %構文解析した~header, %生成元 )
 ◎
-Let policy be the result of executing Parse header from value and origin on header and origin.
+Let policy be the result of executing Construct policy from dictionary and origin on parsed header and origin.
 ◎
 Return policy.
 </li>
@@ -2237,43 +2338,164 @@ Return policy.
 </div>
 
 		</section>
-		<section id="algo-parse-header">
-<h3 title="Parse header from value and origin">9.2. `値と生成元から~headerを構文解析する@</h3>
+		<section id="algo-construct-policy">
+<h3 title="Construct policy from dictionary and origin">9.2. `辞書と生成元から施策を構築する@</h3>
 
 <div class="algo">
+
 <p>
 この~algoは、所与の
-( 文字列 %値, `生成元$ %生成元 )
+( `有順序~map$ %辞書, `生成元$ %生成元 )
 に対し，`宣言-済み施策$を返す：
 ◎
-Given a string (value) and an origin (origin) this algorithm will return a declared permissions policy.
+Given an ordered map (dictionary) and an origin (origin), this algorithm will return a declared permissions policy.
 </p>
-
 <ol>
 	<li>
-%施策 ~LET 新たな`有順序~map$
+%施策 ~LET 空な`有順序~map$
 ◎
 Let policy be an empty ordered map.
 </li>
 	<li>
 <p>
-`~commaで分割する$( %値 ) の結果を成す
-~EACH( %要素 )
+%辞書 を成す
+~EACH( %特能~名 → %値 )
 に対し：
 ◎
-For each element returned by splitting value on commas:
+For each feature-name → value of dictionary:
 </p>
 		<ol>
 			<li>
-%指令 ~LET `施策~指令を構文解析する$( %要素, %生成元 )
+%特能 ~LET ［
+%特能~名 は ある`施策により制御される特能$を識別するものであって，~UAは それを認識するならば その特能／
+~ELSE_ ε
+］
 ◎
-Let directive be the result of executing § 9.3 Parse policy directive on element with container origin set to origin.
+If feature-name does not identify any recognized policy-controlled feature, then continue.
+◎
+Let feature be the policy-controlled feature identified by feature-name.
 </li>
 			<li>
-`指令を宣言-済み施策に併合する$( %指令, %施策 )
+~IF［
+%特能 ~EQ ε
+］
+⇒
+~CONTINUE
 ◎
-Run Merge directive with declared policy on directive and policy.
+↑</li>
+			<li>
+<p>
+%施策[ %特能 ] ~SET ［
+次の下位手続きを走らせた結果
+］として与えられる新たな`許容list$：
+◎
+Let allowlist be a new allowlist.
+</p>
+				<ol>
+					<li>
+~IF［
+%値 ~EQ `全~生成元$i
+］
+⇒
+~RET `全~生成元$i
+◎
+If value is the token *, or＼
 </li>
+					<li>
+~IF［
+%値 は`~list$である
+］~AND［
+`全~生成元$i ~IN %値
+］
+⇒
+~RET `全~生成元$i
+◎
+if value is a list which contains the token *, set allowlist to the special value *.
+◎
+Otherwise:
+</li>
+					<li>
+%許容list ~SET 新たな`有順序~集合$
+◎
+Set allowlist to an new ordered set.
+</li>
+					<li>
+~IF［
+%値 ~EQ `self$P
+］
+⇒＃
+%許容list に %生成元 を`付加する$set；
+~RET %許容list
+◎
+If value is the token self, append origin to allowlist.
+</li>
+					<li>
+~IF［
+%値 は`~list$でない
+］
+⇒
+~RET %許容list
+◎
+If value is a list, then＼
+</li>
+					<li>
+<p>
+%値 を成す
+~EACH( %~item )
+に対し：
+◎
+for each element in value:
+</p>
+						<ol>
+							<li>
+~IF［
+%~item ~EQ `self$P
+］
+⇒＃
+%許容list に %生成元 を`付加する$set；
+~CONTINUE
+◎
+If element is the token self, append origin to allowlist.
+◎
+Otherwise,＼
+</li>
+							<li>
+%結果 ~LET `~URL構文解析する$( %~item )
+◎
+let result be the result of executing the URL parser on element.
+</li>
+							<li>
+~IF［
+%結果 ~EQ `失敗^i
+］
+⇒
+~CONTINUE
+◎
+If result is not failure:
+</li>
+							<li>
+%~target ~LET %結果 の`生成元$url
+◎
+Let target be the origin of result.
+</li>
+							<li>
+~IF［
+%~target は`不透明な生成元$でない
+］
+⇒
+%許容list に %~target を`付加する$set
+◎
+If target is not an opaque origin, append target to allowlist.
+</li>
+						</ol>
+					</li>
+					<li>
+~RET %許容list
+◎
+Set policy[feature] to allowlist.
+</li>
+				</ol>
+			</li>
 		</ol>
 	</li>
 	<li>
@@ -2383,7 +2605,7 @@ Set allowlist to an new ordered set.
 %~target生成元 ~NEQ ε
 ］
 ⇒
-%許容list に %~target生成元 を付加する
+%許容list に %~target生成元 を`付加する$set
 ◎
 If targetlist is empty and target origin is given, append target origin to allowlist.
 </li>
@@ -2447,7 +2669,7 @@ Let target be the origin of result.
 %~target は`不透明な生成元$でない
 ］
 ⇒
-%許容list に %~target を付加する
+%許容list に %~target を`付加する$set
 ◎
 If target is not an opaque origin, append target to allowlist.
 </li>
@@ -2471,45 +2693,8 @@ Return directive
 </div>
 
 		</section>
-		<section id="algo-merge-directive-with-declared-policy">
-<h3 title="Merge directive with declared policy">9.4. `指令を宣言-済み施策に併合する@</h3>
-
-<div class="algo">
-<p>
-この~algoは、所与の
-( 施策~指令 %指令, `宣言-済み施策$ %施策 )
-に対し，新たな指令を織り込むように %施策 を改変する：
-◎
-Given a policy directive (directive) and a declared policy (policy), this algorithm will modify policy to account for the new directive.
-</p>
-
-<ol>
-	<li>
-<p>
-%指令 を成す
-~EACH( %特能 → %許容list )
-に対し：
-◎
-For each feature → allowlist of directive:
-</p>
-		<ol>
-			<li>
-~IF［
-%施策[ %特能 ] ~EQ ε
-］
-⇒
-%施策[ %特能 ] ~SET %許容list
-◎
-If policy does not contain an allowlist for feature, then set policy[feature] to allowlist.
-</li>
-		</ol>
-	</li>
-</ol>
-</div>
-
-		</section>
 		<section id="algo-process-policy-attributes">
-<h3 title="Process permissions policy attributes">9.5. `許可~施策~属性を処理する@</h3>
+<h3 title="Process permissions policy attributes">9.4. `許可~施策~属性を処理する@</h3>
 
 <div class="algo">
 <p>
@@ -2576,7 +2761,7 @@ Return container policy.
 
 		</section>
 		<section id="algo-create-for-browsingcontext">
-<h3 title="Create a Permissions Policy for a browsing context">9.6. `閲覧文脈~用の施策を作成する@</h3>
+<h3 title="Create a Permissions Policy for a browsing context">9.5. `閲覧文脈~用の施策を作成する@</h3>
 
 <div class="algo">
 <p>
@@ -2627,7 +2812,7 @@ Return policy.
 
 		</section>
 		<section id="algo-create-from-response">
-<h3 title="Create a Permissions Policy for a browsing context from response">9.7. `応答から閲覧文脈~用の施策を作成する@</h3>
+<h3 title="Create a Permissions Policy for a browsing context from response">9.6. `応答から閲覧文脈~用の施策を作成する@</h3>
 
 <div class="algo">
 <p>
@@ -2673,7 +2858,7 @@ Return policy.
 
 		</section>
 		<section id="algo-define-inherited-policy">
-<h3 title="Define an inherited policy for feature in browsing context">9.8. `閲覧文脈~内の特能~用に継承される施策を定義する@</h3>
+<h3 title="Define an inherited policy for feature in browsing context">9.7. `閲覧文脈~内の特能~用に継承される施策を定義する@</h3>
 
 <div class="algo">
 <p>
@@ -2705,7 +2890,7 @@ Otherwise, return "Enabled".
 
 		</section>
 		<section id="algo-define-inherited-policy-in-container">
-<h3 title="Define an inherited policy for feature in container at origin">9.9. `生成元に属する容器~内の特能~用に継承される施策を定義する@</h3>
+<h3 title="Define an inherited policy for feature in container at origin">9.8. `生成元に属する容器~内の特能~用に継承される施策を定義する@</h3>
 
 <div class="algo">
 <p>
@@ -2803,7 +2988,7 @@ Otherwise return "Disabled".
 
 		</section>
 		<section id="algo-is-feature-enabled">
-<h3 title="Is feature enabled in document for origin?">9.10. `文書~内の特能は生成元~用に可能化されるか？@</h3>
+<h3 title="Is feature enabled in document for origin?">9.9. `文書~内の特能は生成元~用に可能化されるか？@</h3>
 
 <div class="algo">
 <p>
@@ -2888,7 +3073,7 @@ Return "Disabled".
 
 		</section>
 		<section id="algo-report-permissions-policy-violation">
-<h3 title="Generate report for violation of permissions policy on settings">9.11. `設定群~上で許可~施策の違反~用に報告を生成する@</h3>
+<h3 title="Generate report for violation of permissions policy on settings">9.10. `設定群~上で許可~施策の違反~用に報告を生成する@</h3>
 
 <div class="algo">
 <p>
@@ -2956,7 +3141,7 @@ Note: This algorithm should be called when a permissions policy has been violate
 
 		</section>
 		<section id="algo-should-request-be-allowed-to-use-feature">
-<h3 title="Should request be allowed to use feature?">9.12. `要請には特能の利用は許容されるべきか？@</h3>
+<h3 title="Should request be allowed to use feature?">9.11. `要請には特能の利用は許容されるべきか？@</h3>
 
 <div class="algo">
 <p>
