@@ -268,7 +268,7 @@ h.Upgrade:~HTTPmsg#field.upgrade
 	//他
 h.Cookie:~HTTPcookie#sane-cookie
 h.Set-Cookie:~HTTPcookie#sane-set-cookie
-h.Link:~HTTPweblink#section-3
+h.Link:~HTTPweblink#field.link
 
 	h.URI
 	h.Alternates:rfc2295#section-8.3
