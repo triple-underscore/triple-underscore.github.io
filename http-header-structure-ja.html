@@ -111,8 +111,8 @@ return text;
 
 ●●options
 
-spec_date:2020-05-22
-trans_update:2020-05-27
+spec_date:2020-06-04
+trans_update:2020-06-13
 source_checked:200124
 original_url:https://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html
 	abbr_url:HEADER-STRUCTURE
@@ -156,11 +156,11 @@ P.SP:~HTTPcommon#P.SP
 P.VCHAR:~HTTPcommon#P.VCHAR
 P.LF:~HTTPcommon#P.LF
 	P.CR:~HTTPcommon#P.CR
-	P.HTAB:~HTTPcommon#P.HTAB
+P.HTAB:~HTTPcommon#P.HTAB
 	P.CTL:~HTTPcommon#P.CTL
-	制御~文字
 
 	~RFC7230 → ~HTTPsem
+p.OWS:~HTTPsem#p.OWS
 p.token:~HTTPsem#p.token
 p.tchar:~HTTPsem#p.tchar
 p.field-name:~HTTPsem#p.field-name
@@ -416,6 +416,7 @@ map.~entry:~INFRA#map-entry
 ナラナイ:<em class="rfc2119">ならない</em>
 ベキ:<em class="rfc2119">べき</em>
 ヨイ:<em class="rfc2119">よい</em>
+HTAB:<span class="hex-value">0x09</span> ( tab )
 
 ●●words_table
 
@@ -476,6 +477,7 @@ trailer::::トレイラ
 base64:
 alphabet:
 octet::::オクテット
+tab:
 英小文字:lower alpha::~
 英字:alpha::~
 数字:digit::~
@@ -530,6 +532,8 @@ pad:
 	~header:field
 	最後を除き:all but the last instance
 	超える:larger than
+	大文字:uppercase letters
+	大文字:uppercase characters
 
 	●処理
 剥取る:stripする:剥ぎ取る
@@ -811,7 +815,7 @@ HTTP 拡張仕様の草案／ HTTP WG 情報
 ソースコード／課題リスト
 	https://github.com/httpwg/http-extensions/labels/header-structure
 実装テスト
-	https://github.com/httpwg/structured-header-tests
+	https://github.com/httpwg/structured-field-tests
 実装追跡
 	https://github.com/httpwg/wiki/wiki/Structured-Headers
 
@@ -934,8 +938,8 @@ A HTTP field that is defined as a “Structured Header” or “Structured Trail
 Additionally, future versions of HTTP can define alternative serializations of the abstract model of these structures, allowing fields that use that model to be transmitted more efficiently without being redefined.
 </p>
 
-<p>
-この文書の目標は、既存の`~HTTP~field$の構文を定義し直すことではないことに注意。
+<p>注記：
+この文書の目標は、既存の`~HTTP~field$の構文を定義し直すことではない。
 ここに述べる仕組みは、明示的にそれを任意選択する~fieldに限り，利用されることが意図される。
 ◎
 Note that it is not a goal of this document to redefine the syntax of existing HTTP fields; the mechanisms described herein are only intended to be used with fields that explicitly opt into them.
@@ -993,8 +997,8 @@ It is designed to encourage faithful implementation and therefore good interoper
 In other words, strict processing is an intentional feature of this specification; it allows non-conformant input to be discovered and corrected by the producer early, and avoids both interoperability and security issues that might otherwise result.
 </p>
 
-<p>
-この厳密さの結果として，ある~fieldが複数の主体により付加される場合（例：`中継者$や`送信者$における異なる~component）、ある主体による値に~errorがあれば，当の`~field値$全体の構文解析を失敗させると見込まれることに注意。
+<p>注記：
+この厳密さの結果として，ある~fieldが複数の主体により付加される場合（例：`中継者$や`送信者$における異なる~component）、ある主体による値に~errorがあれば，当の`~field値$全体の構文解析を失敗させると見込まれる。
 ◎
 Note that as a result of this strictness, if a field is appended to by multiple parties (e.g., intermediaries, or different components in the sender), an error in one party’s value is likely to cause the entire field value to fail parsing.
 </p>
@@ -1017,9 +1021,11 @@ Note that as a result of this strictness, if a field is appended to by multiple 
 `RFC5234$r の［
 `VCHAR$P, `SP$P, `DIGIT$P, `ALPHA$P, `DQUOTE$P
 ］規則, および
-`RFC7230$r の `tchar$p 規則を利用する。
+`RFC7230$r の［
+`tchar$p, `OWS$p
+］規則を利用する。
 ◎
-This document uses algorithms to specify parsing and serialization behaviors, and the Augmented Backus-Naur Form (ABNF) notation of [RFC5234] to illustrate expected syntax in HTTP header fields. In doing so, it uses the VCHAR, SP, DIGIT, ALPHA and DQUOTE rules from [RFC5234]. It also includes the tchar rule from [RFC7230].
+This document uses algorithms to specify parsing and serialization behaviors, and the Augmented Backus-Naur Form (ABNF) notation of [RFC5234] to illustrate expected syntax in HTTP header fields. In doing so, it uses the VCHAR, SP, DIGIT, ALPHA and DQUOTE rules from [RFC5234]. It also includes the tchar and OWS rules from [RFC7230].
 </p>
 
 <p>
@@ -1439,7 +1445,7 @@ The ABNF for Lists in HTTP fields is:
 
 <pre class="bnf">
 `sf-list@p
-      = `list-member$p *( *`SP$P "," *`SP$P `list-member$p )
+      = `list-member$p *( `OWS$p "," `OWS$p `list-member$p )
 `list-member@p
       = `sf-item$p
       / `inner-list$p
@@ -1472,12 +1478,12 @@ Example-StrList: "foo", "bar", "It was the best of times."
 An empty List is denoted by not serializing the field at all. This implies that fields defined as Lists have a default empty value.
 </p>
 
-<p>
+<p>注記：
 `~list$sfを成す~memberたちは、`~field節$の内側では
 — ［
 `~fieldの順序付けと結合$sec `Semantics^r ／ `RFC7230/3.2.2$sec
 ］に従って —
-複数個の`~field行l$に分割し得ることに注意。
+複数個の`~field行l$に分割し得る。
 ◎
 Note that Lists can have their members split across multiple lines inside a header or trailer section, as per Section 3.2.2 of [RFC7230];＼
 </p>
@@ -1657,12 +1663,13 @@ The ABNF for Parameters is:
 同じ `param-name$p を伴う複数個の `parameter$p が現れても許容され，最後に現れるものが他を上書きする（`~parametersを構文解析する$secを見よ）。
 】</p>
 
-<p>
+<p>注記：
 `~parameters$sfを成す`~parameter$sfたちは、直列化されたとおりに順序付けられる。
+各`~parameter$sfの`~key$sfは、大文字を包含し得ない。
 各`~parameter$sfは、
 `;^ch を接頭することにより，他と区切られる。
 ◎
-Parameters are ordered as serialized. A parameter is separated from its Item or Inner List and other parameters by a semicolon.＼
+Note that Parameters are ordered as serialized, and Parameter keys cannot contain uppercase letters. A parameter is separated from its Item or Inner List and other parameters by a semicolon.＼
 </p>
 
 <div class="example">
@@ -1698,8 +1705,8 @@ Example-Int: 1; a; b=?0
 </pre>
 </div>
 
-<p>
-この要件は、直列化に限られることに注意。
+<p>注記：
+この要件は、直列化に限られる。
 構文解析器には、`~parameter$sf内に`真偽値$sf ~T が出現しても正しく取扱うことが，依然として要求される。
 ◎
 Note that this requirement is only on serialization; parsers are still required to correctly handle the true value when it appears in a parameter.
@@ -1803,7 +1810,7 @@ The ABNF for Dictionaries is:
 
 <pre class="bnf">
 `sf-dictionary@p
-      = `dict-member$p *( *`SP$P "," *`SP$P `dict-member$p )
+      = `dict-member$p *( `OWS$p "," `OWS$p `dict-member$p )
 `dict-member@p
       = `member-name$p [ "=" `member-value$p ]
 `member-name@p
@@ -1821,11 +1828,12 @@ The ABNF for Dictionaries is:
 ~memberたちは、直列化されたとおりに順序付けられ，［
 0 個以上の空白を伴う `,^ch
 ］で互いに区切られる。
+各~memberの名前は、大文字を包含し得ない。
 各~memberの名前と値は、［
 空白は伴わない `=^ch
 ］で区切られる。
 ◎
-Members are ordered as serialized, and separated by a comma with optional whitespace. Names and values are separated by “=” (without whitespace).＼
+Members are ordered as serialized, and separated by a comma with optional whitespace. Member names cannot contain uppercase characters. Names and values are separated by “=” (without whitespace).＼
 </p>
 
 <div class="example">
@@ -1866,8 +1874,8 @@ Example-Dict: a=?0, b, c; foo=bar
 </pre>
 </div>
 
-<p>
-この要件は、直列化に限られることに注意。
+<p>注記：
+この要件は、直列化に限られる。
 構文解析器には、`辞書$sfを成す各~memberに出現する`真偽値$sf ~T を正しく取扱うことが依然として要求される。
 ◎
 Note that this requirement is only on serialization; parsers are still required to correctly handle the true Boolean value when it appears in Dictionary values.
@@ -1921,8 +1929,8 @@ As with lists, an empty Dictionary is represented by omitting the entire field. 
 Typically, a field specification will define the semantics of Dictionaries by specifying the allowed type(s) for individual members by their names, as well as whether their presence is required or optional. Recipients MUST ignore names that are undefined or unknown, unless the field’s specification specifically disallows them.
 </p>
 
-<p>
-`辞書$sfを成す~memberたちは、`~field節$の内側では複数個の`~field行l$に分割し得ることに注意。
+<p>注記：
+`辞書$sfを成す~memberたちは、`~field節$の内側では複数個の`~field行l$に分割し得る。
 ◎
 Note that Dictionaries can have their members split across multiple lines inside a header or trailer section;＼
 </p>
@@ -2170,8 +2178,8 @@ Example-Decimal: 4.5
 While it is possible to serialise Decimals with leading zeros (e.g., “0002.5”, “-01.334”), trailing zeros (e.g., “5.230”, “-0.40”), and signed zero (e.g., “-0.0”), these distinctions may not be preserved by implementations.
 </p>
 
-<p>
-`~decimalを直列化する$~algoは、小数~成分~内の 3 桁を超える精度を伴う入力を丸めることに注意。
+<p>注記：
+`~decimalを直列化する$~algoは、小数~成分~内の 3 桁を超える精度を伴う入力を丸める。
 代替な丸め策が欲される場合、直列化の前に生じるよう，~header定義により指定されるべきである。
 ◎
 Note that the serialisation algorithm (Section 4.1.5) rounds input with more than three digits of precision in the fractional component. If an alternative rounding strategy is desired, this should be specified by the header definition to occur before serialisation.
@@ -2232,9 +2240,9 @@ Example-String: "hello world"
 </pre>
 </div>
 
-<p>
+<p>注記：
 `文字列$sfが区切子として利用するのは `"^ch に限られる
-— 一重引用符 `'^ch は`文字列$sfを区切らないことに注意。
+— 一重引用符 `'^ch は`文字列$sfを区切らない。
 更には、~escapeできる文字は［
 `"^ch ／ `\^ch
 ］に限られる
@@ -2326,10 +2334,10 @@ Example-Token: foo123/456
 Parsers MUST support Tokens with at least 512 characters.
 </p>
 
-<p>
+<p>注記：
 `~token$sfは、［
 `RFC7230$r に定義される `token$p ~ABNF規則
-］と同じ文字たちを許容するが、次の点で相違することに注意
+］と同じ文字たちを許容するが、次の点で相違する
 ⇒＃
 最初の文字は、`~ASCII英字$か `*^ch にすることが要求される／
 後続の各~文字には、 `:^ch, `/^ch も許容される
@@ -2440,10 +2448,10 @@ Example-Bool: ?1
 </pre>
 </div>
 
-<p>
+<p>注記：
 ［
 `辞書$sfを成す各~entryの値／各`~parameter$sfの値
-］における`真偽値$sf ~T は、値を省略することで指示されることに注意。
+］における`真偽値$sf ~T は、値を省略することで指示される。
 ◎
 Note that in Dictionary (Section 3.2) and Parameter (Section 3.1.2) values, Boolean true is indicated by omitting the value.
 </p>
@@ -3348,20 +3356,6 @@ Convert input_bytes into an ASCII string input_string; if conversion fails, fail
 </li>
 	<li>
 <p>
-~IF［
-%入力~文字列 を成すある文字は`制御~文字$である
-］
-⇒
-構文解析を失敗させる
-</p>
-
-<p class="trans-note">【
-この段は、この訳による追加。
-この仕様が定義する どの構文解析~algoも，`制御~文字$に対し構文解析を失敗させることになるので、この段で予めそれらを排することにより，他所の記述を単純~化する。
-】</p>
-	</li>
-	<li>
-<p>
 %位置 ~LET %入力~文字列 内の先頭を指している`位置~変数$
 ⇒
 %入力~文字列, %位置 は、この~algoが利用する すべての~algoから共有される。
@@ -3376,13 +3370,7 @@ Convert input_bytes into an ASCII string input_string; if conversion fails, fail
 
 	</li>
 	<li>
-<p>
 %入力~文字列 内の %位置 から ` ^ch からなる`文字~並びを収集する$
-</p>
-
-<p class="trans-note">【
-%入力~文字列 内には`制御~文字$は無いので、これは`~ASCII空白を読飛ばす$ことと同義になる（以下同様）。
-】</p>
 ◎
 Discard any leading SP characters from input_string.
 </li>
@@ -3406,7 +3394,7 @@ Discard any leading SP characters from input_string.
 </li>
 	<li>
 ~IF［
-%入力~文字列 は空でない
+%位置↗ ~NEQ ε
 ］
 ⇒
 構文解析を失敗させる
@@ -3438,8 +3426,10 @@ When generating input_bytes, parsers MUST combine all field lines in the same se
 `~list$sf／`辞書$sf
 ］に対しては、これには，当の`~field行l値$すべてを正しく連結する効果がある
 — ~top-level~data構造を成す個々の~memberが複数個の`~field行l$に分割されていない限り。
+どちらの型も、それ用の構文解析~algoは，~tab文字を許容する
+— `~field行l$を結合するとき，~tab文字を利用する実装があるかもしれないので。
 ◎
-For Lists and Dictionaries, this has the effect of correctly concatenating all of the field’s lines, as long as individual members of the top-level data structure are not split across multiple header instances.
+For Lists and Dictionaries, this has the effect of correctly concatenating all of the field’s lines, as long as individual members of the top-level data structure are not split across multiple header instances. The parsing algorithms for both types allow tab characters, since these might be used to combine field lines by some implementations.
 </p>
 
 <p>
@@ -3495,8 +3485,8 @@ Example-String: bar"
 If parsing fails – including when calling another algorithm – the entire field value MUST be ignored (i.e., treated as if the field were not present in the section). This is intentionally strict, to improve interoperability and safety, and specifications referencing this document are not allowed to loosen this requirement.
 </p>
 
-<p>
-この要件は、~headerを構文解析しない実装には適用されないことに注意。
+<p>注記：
+この要件は、~headerを構文解析しない実装には適用されない。
 例えば，`中継者$には、［
 ~messageを回送する前に，失敗している~fieldを剥取る
 ］ことは要求されない。
@@ -3537,9 +3527,9 @@ While input_string is not empty:
 Append the result of running Parsing an Item or Inner List (Section 4.2.1.1) with input_string to members.
 </li>
 			<li>
-%入力~文字列 内の %位置 から ` ^ch からなる`文字~並びを収集する$
+%入力~文字列 内の %位置 から { ` ^ch, ~HTAB } からなる`文字~並びを収集する$
 ◎
-Discard any leading SP characters from input_string.
+Discard any leading OWS characters from input_string.
 </li>
 			<li>
 ~IF［
@@ -3565,9 +3555,9 @@ If input_string is empty, return members.
 Consume the first character of input_string; if it is not “,”, fail parsing.
 </li>
 			<li>
-%入力~文字列 内の %位置 から ` ^ch からなる`文字~並びを収集する$
+%入力~文字列 内の %位置 から { ` ^ch, ~HTAB } からなる`文字~並びを収集する$
 ◎
-Discard any leading SP characters from input_string.
+Discard any leading OWS characters from input_string.
 </li>
 			<li>
 ~IF［
@@ -3780,9 +3770,9 @@ Otherwise:
 Add name this_key with value member to dictionary. If dictionary already contains a name this_key (comparing character-for-character), overwrite its value.
 </li>
 			<li>
-%入力~文字列 内の %位置 から ` ^ch からなる`文字~並びを収集する$
+%入力~文字列 内の %位置 から { ` ^ch, ~HTAB } からなる`文字~並びを収集する$
 ◎
-Discard any leading SP characters from input_string.
+Discard any leading OWS characters from input_string.
 </li>
 			<li>
 ~IF［
@@ -3807,9 +3797,9 @@ If input_string is empty, return dictionary.
 Consume the first character of input_string; if it is not “,”, fail parsing.
 </li>
 			<li>
-%入力~文字列 内の %位置 から ` ^ch からなる`文字~並びを収集する$
+%入力~文字列 内の %位置 から { ` ^ch, ~HTAB } からなる`文字~並びを収集する$
 ◎
-Discard any leading SP characters from input_string.
+Discard any leading OWS characters from input_string.
 </li>
 			<li>
 ~IF［
@@ -3831,8 +3821,8 @@ No structured data has been found; return dictionary (which is empty).
 </li>
 </ol>
 
-<p>
-`辞書$sf内で同じ`~key$sfに複数回 遭遇した場合、最後を除き無視されることに注意。
+<p>注記：
+`辞書$sf内で同じ`~key$sfに複数回 遭遇した場合、最後を除き無視される。
 ◎
 Note that when duplicate Dictionary keys are encountered, this has the effect of ignoring all but the last instance.
 </p>
@@ -4012,8 +4002,8 @@ Return parameters.
 </li>
 </ol>
 
-<p>
-`~parameters$sf内で同じ`~key$sfに複数回 遭遇した場合、最後を除き無視されることに注意。
+<p>注記：
+`~parameters$sf内で同じ`~key$sfに複数回 遭遇した場合、最後を除き無視される。
 ◎
 Note that when duplicate Parameter keys are encountered, this has the effect of ignoring all but the last instance.
 </p>
@@ -4248,15 +4238,13 @@ Discard the first character of input_string.
 </li>
 				</ol>
 			</li>
-<!-- 
 			<li>
 ~ELIF［
-%位置↗ ~NIN { ＊`VCHAR$P, ` ^ch }
+%位置↗ は`制御~文字$である【！~NIN { `VCHAR$P, ` ^ch }】
 ］
 ⇒
 構文解析を失敗させる
 </li>
- -->
 			<li>
 %出力~文字列 に %位置↗ を付加する
 </li>
