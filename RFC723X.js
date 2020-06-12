@@ -284,7 +284,7 @@ h.MIME-Version:~7231#mime-version
 h.Keep-Alive:~7230#compatibility.with.http.1.0.persistent.connections
 h.Set-Cookie:~HTTPcookie#sane-set-cookie
 h.Cookie:~HTTPcookie#sane-cookie
-h.Link:~HTTPweblink#section-3
+h.Link:~HTTPweblink#field.link
 	h.Link:~RFCx/rfc5988#section-5
 h.Content-Transfer-Encoding:~RFCx/rfc2045#section-6
 	h.URI
