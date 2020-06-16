@@ -1552,6 +1552,8 @@ risk::::リスク
 抽象-:abstract:~
 	抽象-化:abstraction
 抽象的:abstract:~
+具象-:concrete:~
+具象的:concrete:~
 定義-:define:~
 定義:definition:~
 定義な:definedな:~
