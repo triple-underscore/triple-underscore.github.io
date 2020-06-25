@@ -1225,6 +1225,7 @@ REFERRER-POLICY:webappsec-referrer-policy-ja.html
 MIXED-CONTENT:webappsec-mixed-content-ja.html
 SECURE-CONTEXT:webappsec-secure-contexts-ja.html
 SECQ:security-questionnaire-ja.html
+EXEC-COMMAND:https://w3c.github.io/editing/docs/execCommand/
 `;
 
 /** 対訳データ
