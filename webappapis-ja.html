@@ -182,8 +182,8 @@ return text;
 
 ●●options
 
-spec_date:2020-06-23
-trans_update:2020-06-24
+spec_date:2020-06-25
+trans_update:2020-06-27
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -634,6 +634,8 @@ i.~top-level内:#fetching-scripts-is-top-level
 環境~設定群~obj:#environment-settings-object
 環境を破棄する手続き:#environment-discarding-steps
 
+enV.~secureな文脈:#secure-context
+enV.非~secureな文脈:#non-secure-context
 
 enV.~id:#concept-environment-id
 enV.作成時の~URL:#concept-environment-creation-url
@@ -651,6 +653,7 @@ enV.~top-level作成時の~URL:#concept-environment-top-level-creation-url
 enV.~top-level生成元:#concept-environment-top-level-origin
 enV.~HTTPS状態:#https-state
 enV.~referrer施策:#concept-settings-object-referrer-policy
+enV.埋込元~施策:#concept-settings-object-embedder-policy
 enV.通知待ちの却下-済み~promise~list:#about-to-be-notified-rejected-promises-list
 enV.未決の却下-済み~promiseへの弱い参照の集合:#outstanding-rejected-promises-weak-set
 
@@ -732,6 +735,7 @@ tK.~script評価 環境~設定群~obj集合:#script-evaluation-environment-setti
 ~taskを~queueする:#queue-a-task
 ~queueする:#queue-a-task
 ~queueされ:#queue-a-task
+大域~taskを~queueする:#queue-a-global-task
 要素~taskを~queueする:#queue-an-element-task
 小taskを~queueする:#queue-a-microtask
 小task:#microtask
@@ -820,6 +824,7 @@ bc.容器:#bc-container
 同じ生成元~domain:~ORIGIN#same-origin-domain
 作動中の~sandbox法~flag集合:~ORIGIN#active-sandboxing-flag-set
 閲覧文脈~sandbox化( ~script )~flag:~ORIGIN#sandboxed-scripts-browsing-context-flag
+埋込元~施策:~ORIGIN#embedder-policy
 ~site:~ORIGIN#site
 ~siteを得する:~ORIGIN#obtain-a-site
 
@@ -895,14 +900,16 @@ x.変換-:~WEBIDLjs#es-type-mapping
 文書の~scroll手続き:~CSSOMVIEW#run-the-scroll-steps
 文書~用の媒体~queryを評価して変化を報告する:~CSSOMVIEW#evaluate-media-queries-and-report-changes
 
-	●WORKERS
+	●WORKERS／WORKLETS
 ~worker:~WORKERS#workers
 ~workerを走らす:~WORKERS#run-a-worker
 	x.~worker~event~loop:~WORKERS#worker-event-loop
 ~close中~flag:~WORKERS#dom-workerglobalscope-closing
 共用~worker:~WORKERS#sharedworker
 構築子~url:~WORKERS#concept-sharedworkerglobalscope-constructor-url
+所有者~集合:~WORKERS#concept-WorkerGlobalScope-owner-set
 
+所有者~文書:~WORKLETS1#workletglobalscope-owner-document
 
 	●FETCH
 ~fetch:~FETCH#concept-fetch
@@ -936,6 +943,8 @@ rs.状態s:~FETCH#concept-response-status
 rs.~URL:~FETCH#concept-response-url
 rs.応答~URL:~FETCH#concept-response-url
 rs.種別:~FETCH#concept-response-type
+
+非同一-生成元~資源~施策~検査:~FETCH#cross-origin-resource-policy-check
 
 
 	●JS
@@ -1034,6 +1043,8 @@ set.付加する:~INFRA#set-append
 ~scalar値~文字列:~INFRA#scalar-value-string
 
 	●他
+~URLは信用に価し得るか？:~SECURE-CONTEXT#potentially-trustworthy-url
+
 現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
 塗り計時を刻む:~PAINTTIMING#mark-paint-timing
 交差観測を更新する:~INTERSECTIONOBSERVER#run-the-update-intersection-observations-steps
@@ -1118,6 +1129,7 @@ worklet:
 某:〜
 	大域~obj:global
 類似生成元:similar-origin::~::類似オリジン
+埋込元:embedder::埋め込み元
 
 	●データ（構造／操作／構文解析
 shadow:
@@ -1270,6 +1282,8 @@ memory::::メモリ
 	%~task:oldestTask
 	%~task~queue:taskQueue
 	%~task開始-時刻:taskStartTime
+	%大域~obj:global
+	%~task源:source
 
 	●event
 capture:
@@ -1442,7 +1456,7 @@ semicolon::::セミコロン
 	結局:invariably
 	示す:illustrate
 	相当する:amount to
-
+	必要とされている:necessarily
 
 	●仕様（動詞
 取扱済み:handled:取り扱い済み
@@ -1651,6 +1665,7 @@ milli::::ミリ
 	何か:somewhat
 	多々:many
 	初回:first time
+	最初の:0th
 	最初の:initial
 	種々の:various
 	一連の:series of
@@ -2218,6 +2233,108 @@ Specifications may define environment discarding steps for environments. The ste
 The environment discarding steps are run for only a select few environments: the ones that will never become execution ready because, for example, they failed to load.
 </p>
 
+<div class="algo">
+<p>
+所与の`環境$ %環境 は、次の~algoが ~T を返すとき，そのときに限り，
+`~secureな文脈@enV
+（ `secure context^en ）であるとされる：
+◎
+An environment environment is a secure context if the following algorithm returns true:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%環境 は`環境~設定群~obj$である
+］：
+◎
+If environment is an environment settings object, then:
+</p>
+		<ol>
+			<li>
+~IF［
+%環境 の`~HTTPS状態$enV ~EQ `deprecated^l
+］
+⇒
+~RET ~F
+◎
+If environment's HTTPS state is "deprecated", then return false.
+</li>
+			<li>
+%大域~obj ~LET %環境 の`大域~obj$enV
+◎
+Let global be environment's global object.
+</li>
+			<li>
+<p>
+~IF［
+%大域~obj は `WorkerGlobalScope$I ~objである
+］
+⇒
+~RET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
+］
+⇒
+［
+%大域~obj の`所有者~集合$[ 0 ]
+］に`関連な設定群~obj$は`~secureな文脈$enVである
+</p>
+
+<p class="note">注記：
+最初の~item以外を検査する必要はない
+— それらすべてが一貫することが必要とされているので。
+</p>
+
+◎
+If global is a WorkerGlobalScope, then:
+• If global's owner set[0]'s relevant settings object is a secure context, then return true.
+• We only need to check the 0th item since they will necessarily all be consistent.
+• Return false.
+</li>
+			<li>
+<p>
+~IF［
+%大域~obj は `WorkletGlobalScope$I ~objである
+］
+⇒
+~RET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
+］
+⇒
+%大域~obj の`所有者~文書$に`関連な設定群~obj$は`~secureな文脈$enVである
+◎
+If global is a WorkletGlobalScope, then:
+• If global's owner document's relevant settings object is a secure context, then return true.
+• Return false.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
+］
+⇒
+`~URLは信用に価し得るか？$( %環境 の`~top-level作成時の~URL$enV ) ~EQ `価し得る^i 
+◎
+If the result of Is url potentially trustworthy? given environment's top-level creation URL is "Potentially Trustworthy", then return true.
+◎
+Return false.
+</li>
+</ol>
+
+<p>
+`~secureな文脈$enVでない`環境$は、
+`非~secureな文脈@enV
+（ `non-secure context^en ）であるとされる。
+【和訳では、この用語は利用せず，単に “`~secureな文脈$enVでない” と記すことにする。】
+◎
+An environment is a non-secure context if it is not a secure context.
+</p>
+</div>
+
 <p>
 `環境~設定群~obj@
 %設定群 とは、`環境$であることに加え，次を得るための各種~algoも指定するものである：
@@ -2360,6 +2477,18 @@ A referrer policy
 The default referrer policy for fetches performed using this environment settings object as a request client. [REFERRERPOLICY]
 </dd>
 
+	<dt>
+`埋込元~施策@enV
+◎
+An embedder policy
+</dt>
+	<dd>
+［
+%設定群 を`要請~client$rqに利用して遂行される`~fetch$
+］用の`非同一-生成元~資源~施策~検査$に利用される`埋込元~施策$。
+◎
+An embedder policy used by cross-origin resource policy checks for fetches performed using this environment settings object as a request client.
+</dd>
 </dl>
 
 <div class="p">
@@ -2457,7 +2586,6 @@ The credentials mode used for the initial fetch (for module scripts) and for fet
 ◎
 The referrer policy used for the initial fetch and for fetching any imported modules
 </dd>
-
 </dl>
 
 <p class="note">注記：
@@ -7489,10 +7617,15 @@ If list is empty, return.
 Clear settings object's about-to-be-notified rejected promises list.
 </li>
 	<li>
-<p>
-`~DOM操作~task源$から，次を走らす`~taskを~queueする$：
+%大域~obj ~LET %設定群~obj の`大域~obj$enV
 ◎
-Queue a task on the DOM manipulation task source to run the following substep:
+Let global be settings object's global object.
+</li>
+	<li>
+<p>
+次を走らす`大域~taskを~queueする$( `~DOM操作~task源$, %大域~obj )：
+◎
+Queue a global task on the DOM manipulation task source given global to run the following substep:
 </p>
 		<ol>
 			<li>
@@ -7514,14 +7647,14 @@ For each promise p in list:
 If p's [[PromiseIsHandled]] internal slot is true, continue to the next iteration of the loop.
 </li>
 					<li>
-%未取扱0 ~LET %設定群~obj の`大域~obj$enVに向けて，名前 `unhandledrejection$et の`~eventを発火する$
+%未取扱0 ~LET %大域~obj に向けて，名前 `unhandledrejection$et の`~eventを発火する$
 — `PromiseRejectionEvent$I を利用し，次のように初期化して
 ⇒＃
 `cancelable$m ~SET ~T,
 `promise$m ~SET %p,
 `reason$m ~SET %p の `PromiseResult^sl 内部~slotの値
 ◎
-Let notHandled be the result of firing an event named unhandledrejection at settings object's global object, using PromiseRejectionEvent, with the cancelable attribute initialized to true, the promise attribute initialized to p, and the reason attribute initialized to the value of p's [[PromiseResult]] internal slot.
+Let notHandled be the result of firing an event named unhandledrejection at global , using PromiseRejectionEvent, with the cancelable attribute initialized to true, the promise attribute initialized to p, and the reason attribute initialized to the value of p's [[PromiseResult]] internal slot.
 </li>
 					<li>
 ~IF［
@@ -7651,15 +7784,20 @@ If settings object's outstanding rejected promises weak set does not contain pro
 Remove promise from settings object's outstanding rejected promises weak set.
 </li>
 					<li>
-`~DOM操作~task源$から，次を走らす`~taskを~queueする$
+%大域~obj ~LET %設定群~obj の`大域~obj$enV
+◎
+Let global be settings object's global object.
+</li>
+					<li>
+次を走らす`大域~taskを~queueする$( `~DOM操作~task源$, %大域~obj )
 ⇒
-%設定群~obj の`大域~obj$enVに向けて，名前 `rejectionhandled$et の`~eventを発火する$
+%大域~obj に向けて，名前 `rejectionhandled$et の`~eventを発火する$
 — `PromiseRejectionEvent$I を利用し，次のように初期化して
 ⇒＃
 `promise$m ~SET %promise,
 `reason$m ~SET %promise の `PromiseResult^sl 内部~slotの値
 ◎
-Queue a task on the DOM manipulation task source to fire an event named rejectionhandled at settings object's global object, using PromiseRejectionEvent, with the promise attribute initialized to promise, and the reason attribute initialized to the value of promise's [[PromiseResult]] internal slot.
+Queue a global task on the DOM manipulation task source given global to fire an event named rejectionhandled at global, using PromiseRejectionEvent, with the promise attribute initialized to promise, and the reason attribute initialized to the value of promise's [[PromiseResult]] internal slot.
 </li>
 				</ol>
 			</dd>
@@ -8125,37 +8263,39 @@ Append task to queue.
 
 <p class="trans-note">【
 原文は何も返していないが、ときには，この~algoを利用している文脈から~queueした~taskを~~参照する必要もあり、（その表記上の都合により）この訳では %~task を返すことにしている。
-次の “`要素~taskを~queueする$” も、同様。
+以下の［
+“`大域~taskを~queueする$” ／ “`要素~taskを~queueする$”
+］も、同様。
 】</p>
 	</li>
 </ol>
-
 </div>
 
 <div class="algo">
-
 <p>
-`要素~taskを~queueする@
+`大域~taskを~queueする@
 ときは、所与の
-( `~task源$ %源, 要素 %要素, 何かを遂行する一連の段 %手続き )
+( `~task源$ %~task源, `大域~obj$ %大域~obj, 何かを遂行する一連の段 %手続き )
 に対し：
 ◎
-To queue an element task on a task source source, with an element element and a series of steps steps:
+To queue a global task on a task source source, with a global object global and a series of steps steps:
 </p>
-
 <ol>
 	<li>
-%文書 ~LET %要素 の`~node文書$
+%~event~loop ~LET %大域~obj に`関連な~agent$ の`~event~loop$aG
 ◎
-Let document be element's node document.
+Let event loop be global's relevant agent's event loop.
 </li>
 	<li>
-%~event~loop ~LET %文書 に`関連な~Realm$に対応している`~agent$の`~event~loop$aG
+%文書 ~LET ［
+%大域~obj は`~window$であるならば それに`結付けられている文書$ ／
+~ELSE_ ~NULL
+］
 ◎
-Let event loop be document's relevant realm's corresponding agent's event loop.
+Let document be global's associated Document, if global is a Window object; otherwise null.
 </li>
 	<li>
-~RET `~taskを~queueする$( %源, %~event~loop, %文書, %手続き )
+~RET `~taskを~queueする$( %~task源, %~event~loop, %文書, %手続き )
 ◎
 Queue a task given source, event loop, document, and steps.
 </li>
@@ -8163,13 +8303,44 @@ Queue a task given source, event loop, document, and steps.
 
 <p>
 【表記上の都合により，この訳では、】
-これは，次のような形で呼出されることもある
+これは，次の形で呼出されることもある
 ⇒
-次を走らす`要素~taskを~queueする$( %源, %要素 )
+次を走らす`大域~taskを~queueする$( %~task源, %大域~obj )
 ⇒
 （ %手続き の内容）
 </p>
+</div>
 
+<div class="algo">
+<p>
+`要素~taskを~queueする@
+ときは、所与の
+( `~task源$ %~task源, 要素 %要素, 何かを遂行する一連の段 %手続き )
+に対し：
+◎
+To queue an element task on a task source source, with an element element and a series of steps steps:
+</p>
+<ol>
+	<li>
+%大域~obj ~LET %要素 に`関連な大域~obj$
+◎
+Let global be element's relevant global object.
+</li>
+	<li>
+~RET `大域~taskを~queueする$( %~task源, %大域~obj, %手続き )
+◎
+Queue a global task given source, global, and steps.
+</li>
+</ol>
+
+<p>
+【表記上の都合により，この訳では、】
+これは，次の形で呼出されることもある
+⇒
+次を走らす`要素~taskを~queueする$( %~task源, %要素 )
+⇒
+（ %手続き の内容）
+</p>
 </div>
 
 <div class="algo">
@@ -8180,7 +8351,6 @@ Queue a task given source, event loop, document, and steps.
 ( %手続き, %~event~loop, %文書 )
 に対し…：
 </p>
-
 <ul>
 	<li>
 ~taskを~queueするときと同様に、これは，次のような形で呼出されることもある
@@ -8197,13 +8367,11 @@ Queue a task given source, event loop, document, and steps.
 %文書 は`文書$または ~NULL であり、省略時は`暗黙の文書$とする
 </li>
 </ul>
-
 ◎
 To queue a microtask which performs a series of steps steps, optionally given an event loop event loop:
 • If event loop was not given, set event loop to the implied event loop.
 • If document was not given, set document to the implied document.
 </div>
-
 <ol>
 	<li>
 %~event~loop の`小task~queue$に［
@@ -11849,4 +12017,8 @@ Firing a click event at target means firing a synthetic mouse event named click 
 				</section>
 			</section>
 		</section>
+<pre>
+	必要とされている:necessarily
+	0 番の:0th
+</pre>
 </main>

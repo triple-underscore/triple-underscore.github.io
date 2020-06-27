@@ -109,8 +109,8 @@ return text;
 
 ●●options
 
-spec_date:2020-06-05
-trans_update:2020-06-08
+spec_date:2020-06-26
+trans_update:2020-06-27
 source_checked:191126
 page_state_key:HTML
 original_url:https://html.spec.whatwg.org/multipage/workers.html
@@ -333,6 +333,7 @@ wG.~url:#concept-workerglobalscope-url
 wG.種別:#concept-workerglobalscope-type
 wG.~HTTPS状態:#concept-workerglobalscope-https-state
 wG.~referrer施策:#concept-workerglobalscope-referrer-policy
+wG.埋込元~施策:#concept-workerglobalscope-embedder-policy
 wG.~CSP~list:#concept-workerglobalscope-csp-list
 wG.~module~map:#concept-workerglobalscope-module-map
 
@@ -375,9 +376,11 @@ sC.再投出-用~error:~WAPI#concept-script-error-to-rethrow
 ~task源:~WAPI#task-source
 ~task:~WAPI#concept-task
 ~taskを~queueする:~WAPI#queue-a-task
+大域~taskを~queueする:~WAPI#queue-a-global-task
 ~task~queue:~WAPI#task-queue
 ~DOM操作~task源:~WAPI#dom-manipulation-task-source
 大域~obj:~WAPI#global-object
+関連な大域~obj:~WAPI#concept-relevant-global
 enV.大域~obj:~WAPI#concept-settings-object-global
 の大域~obj:~WAPI#concept-settings-object-global
 rM.大域~obj:~WAPI#concept-realm-global
@@ -386,6 +389,8 @@ rM.大域~obj:~WAPI#concept-realm-global
 環境を破棄する手続き:~WAPI#environment-discarding-steps
 関連な~agent:~WAPI#relevant-agent
 専用／共用~worker~agentを得する:~WAPI#obtain-a-dedicated/shared-worker-agent
+
+enV.~secureな文脈:~WAPI#secure-context
 
 enV.~id:~WAPI#concept-environment-id
 enV.作成時の~URL:~WAPI#concept-environment-creation-url
@@ -399,6 +404,7 @@ enV.生成元:~WAPI#concept-settings-object-origin
 enV.~top-level生成元:~WAPI#concept-environment-top-level-origin
 enV.~module~map:~WAPI#concept-settings-object-module-map
 enV.~referrer施策:~WAPI#concept-settings-object-referrer-policy
+enV.埋込元~施策:~WAPI#concept-settings-object-embedder-policy
 enV.~API用~URL文字~符号化法:~WAPI#api-url-character-encoding
 enV.~API用~基底~URL:~WAPI#api-base-url
 
@@ -422,6 +428,9 @@ i.~top-level内:~WAPI#fetching-scripts-is-top-level
 不透明な生成元:~ORIGIN#concept-origin-opaque
 同一-生成元:~ORIGIN#same-origin
 生成元を直列化する:~ORIGIN#ascii-serialisation-of-an-origin
+埋込元~施策:~ORIGIN#embedder-policy
+埋込元~施策を得する:~ORIGIN#obtain-an-embedder-policy
+大域~objの埋込元~施策を検査する:~ORIGIN#check-a-global-object's-embedder-policy
 
 ~app~cache用:~NAVI#offline
 	~NAVI#_for-app-cache
@@ -471,12 +480,14 @@ url.基底~URL不可用~flag:~URL1#url-cannot-be-a-base-url-flag
 
 	●Fetch
 ~fetch:~FETCH#concept-fetch
+~network~error:~FETCH#concept-network-error
 ~HTTPS状態~値:~FETCH#concept-https-state-value
 rq.予約-済み~client:~FETCH#concept-request-reserved-client
 応答を処理する:~FETCH#process-response
 応答:~FETCH#concept-response
 rs.~URL:~FETCH#concept-response-url
 rs.~HTTPS状態:~FETCH#concept-response-https-state
+局所~scheme:~FETCH#local-scheme
 
 UTF-8:~ENCODING#utf-8
 
@@ -484,8 +495,6 @@ UTF-8:~ENCODING#utf-8
 ~client~message~queue:~SW1#dfn-client-message-queue
 ~sw~client:~SW1#serviceworkercontainer-service-worker-client
 
-環境~設定群~objは~secureな文脈を与えるか？:~SECURE-CONTEXT#is-settings-object-contextually-secure
-	＊設定群は~secureな文脈であるか？:~SECURE-CONTEXT#settings-object
 ~referrer施策:~REFERRER-POLICY#referrer-policy
 ~CSP~obj:~CSP3#content-security-policy-object
 ~CSP~list:~CSP3#csp-list
@@ -675,6 +684,7 @@ transaction::::トランザクション
 担当の:responsible::~::レスポンシブル
 閲覧:browsing::~
 agent:
+埋込元:embedder::埋め込み元
 
 	●IDL／型／構造
 	%共用？:is shared
@@ -2606,6 +2616,13 @@ A WorkerGlobalScope object has an associated HTTPS state (an HTTPS state value).
 A WorkerGlobalScope object has an associated referrer policy (a referrer policy). It is initially the empty string.
 </dd>
 
+	<dt>`埋込元~施策@wG</dt>
+	<dd>
+`埋込元~施策$
+◎
+A WorkerGlobalScope object has an associated embedder policy (an embedder policy).
+</dd>
+
 	<dt>`~CSP~list@wG（空~list）</dt>
 	<dd>
 この~worker用に作動中のすべての`~CSP~obj$を包含している`~CSP~list$
@@ -3393,9 +3410,33 @@ Set worker global scope's HTTPS state to response's HTTPS state.
 Set worker global scope's referrer policy to the result of parsing the `Referrer-Policy` header of response.
 </li>
 					<li>
+~IF［
+%応答 の`~URL$rsの`~scheme$urlは`局所~scheme$である
+］
+⇒
+%~worker大域~scope の`埋込元~施策$wG ~SET %所有者 の`埋込元~施策$enV
+◎
+If response's url's scheme is a local scheme, then set worker global scope's embedder policy to owner's embedder policy.
+</li>
+					<li>
+~ELSE
+⇒
+%~worker大域~scope の`埋込元~施策$wG ~SET `埋込元~施策を得する$( %応答 )
+◎
+Otherwise, set worker global scope's embedder policy to the result of obtaining an embedder policy from response.
+</li>
+					<li>
+~IF［
+`大域~objの埋込元~施策を検査する$( %~worker大域~scope, %所有者, %応答 ) ~EQ ~F
+］
+⇒
+%応答 ~SET `~network~error$
+◎
+If the result of checking a global object's embedder policy with worker global scope, owner, and response is false, then set response to a network error.
+</li>
+					<li>
 `大域~objの~CSP~listを初期化する$( %~worker大域~scope, %応答 )
 `CSP$r
-
 ◎
 Execute the Initialize a global object's CSP list algorithm on worker global scope and response. [CSP]
 </li>
@@ -3425,11 +3466,11 @@ If the algorithm asynchronously completes with null or with a script whose error
 </p>
 		<ol>
 			<li>
-次を走らす`~taskを~queueする$
+次を走らす`大域~taskを~queueする$( `~DOM操作~task源$, %~worker に`関連な大域~obj$ )
 ⇒
 %~worker に向けて，名前 `error$et の`~eventを発火する$
 ◎
-Queue a task to fire an event named error at worker.
+Queue a global task on the DOM manipulation task source given worker's relevant global object to fire an event named error at worker.
 </li>
 			<li>
 %内側~設定群 用に`環境を破棄する手続き$を走らす
@@ -3550,7 +3591,7 @@ If is shared is false, enable the port message queue of the worker's implicit po
 	<li>
 ~ELSE
 ⇒
-`~DOM操作~task源$から，次を走らす`~taskを~queueする$
+次を走らす`大域~taskを~queueする$( `~DOM操作~task源$, %~worker大域~scope )
 ⇒
 %~worker大域~scope に向けて，名前 `connect$et の`~eventを発火する$
 — `MessageEvent$I を利用し，次のように初期化して
@@ -3559,7 +3600,7 @@ If is shared is false, enable the port message queue of the worker's implicit po
 `ports$m 属性 ~SET %内側~port のみを含む新たな`凍結d配列$,
 `source$m 属性 ~SET %内側~port
 ◎
-If is shared is true, then queue a task, using the DOM manipulation task source, to fire an event named connect at worker global scope, using MessageEvent, with the data attribute initialized to the empty string, the ports attribute initialized to a new frozen array containing inside port, and the source attribute initialized to inside port.
+If is shared is true, then queue a global task on DOM manipulation task source given worker global scope to fire an event named connect at worker global scope, using MessageEvent, with the data attribute initialized to the empty string, the ports attribute initialized to a new frozen array containing inside port, and the source attribute initialized to inside port.
 </li>
 	<li>
 ［
@@ -3659,14 +3700,6 @@ If the worker's WorkerGlobalScope object is actually a DedicatedWorkerGlobalScop
 ］ときは、`~workerを終了させ$てもヨイ。
 ◎
 User agents may invoke the terminate a worker algorithm when a worker stops being an active needed worker and the worker continues executing even after its closing flag was set to true.
-</p>
-
-<hr>
-
-<p>
-上で言及した~taskの`~task源$は、`~DOM操作~task源$とする。
-◎
-The task source for the tasks mentioned above is the DOM manipulation task source.
 </p>
 
 		</section>
@@ -3885,6 +3918,14 @@ The HTTPS state
 ◎
 The referrer policy
 • Return worker global scope's referrer policy.
+</li>
+			<li>
+`埋込元~施策$enV
+⇒
+~RET %~worker大域~scope の`埋込元~施策$wG
+◎
+The embedder policy
+• Return worker global scope's embedder policy.
 </li>
 		</ul>
 	</li>
@@ -4378,10 +4419,14 @@ Create a new MessagePort object whose owner is outside settings. Let this be the
 Assign outside port to the port attribute of worker.
 </li>
 	<li>
-%~call元は~secureな文脈？ ~LET
-`環境~設定群~objは~secureな文脈を与えるか？$( %外側~設定群 )
+%~call元は~secureな文脈？ ~LET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
+］
+⇒
+%外側~設定群 は`~secureな文脈$enVである
 ◎
-Let callerIsSecureContext be the result of executing Is environment settings object a secure context? on outside settings.
+Let callerIsSecureContext be true if outside settings is a secure context; otherwise, false.
 </li>
 	<li>
 <p>
@@ -4482,10 +4527,14 @@ If worker global scope is not null, then run these subsubsteps:
 Let settings object be the relevant settings object for worker global scope.
 </li>
 					<li>
-%~workerは~secureな文脈？ ~LET
-`環境~設定群~objは~secureな文脈を与えるか？$( %設定群~obj )
+%~workerは~secureな文脈？ ~LET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
+］
+⇒
+%設定群~obj は`~secureな文脈$enVである
 ◎
-Let workerIsSecureContext be the result of executing Is environment settings object a secure context? on settings object.
+Let workerIsSecureContext be true if settings object is a secure context; otherwise, false.
 </li>
 					<li>
 <p>

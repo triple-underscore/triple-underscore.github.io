@@ -51,9 +51,6 @@ case 'm':
 		text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
 	}
 	break;
-case 'sc': // url scheme
-	text = text.replace(/_/, ':');
-	break;
 case 'sl':
 	text = `[[${key}]]`;
 	break;
@@ -112,8 +109,8 @@ return text;
 
 ●●options
 
-spec_date:2020-06-24
-trans_update:2020-06-25
+spec_date:2020-06-26
+trans_update:2020-06-27
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -203,6 +200,7 @@ id:
 走査:traversal::辿り
 回復-:salvage:~
 未所有化:disowned::~
+埋込元:embedder::埋め込み元
 	戻る:back
 	進む:forward
 
@@ -275,6 +273,7 @@ iframe-srcdoc:iframe srcdoc
 
 HTMLWPROXY:HTML-windowproxy-ja.html
 postMessageO:postMessage
+about_blank:about:blank
 
 ●●original_id_map
 dom-window-document:dom-document-2
@@ -384,7 +383,7 @@ a.id:~HTMLdom#the-id-attribute
 
 	●code
 	m.onclick
-sc.about_blank:~HTMLdep#about:blank
+sc.~about_blank:~HTMLdep#about:blank
 
 sl.Window:#concept-windowproxy-window
 sl.GetOwnProperty:~HTMLWPROXY#windowproxy-getownproperty
@@ -392,6 +391,7 @@ sl.GetOwnProperty:~HTMLWPROXY#windowproxy-getownproperty
 	●
 ~window:#the-window-object
 文書:~HTMLdom#the-document-object
+doc.埋込元~施策:~HTMLdom#concept-document-embedder-policy
 
 ~window~open手続き:#window-open-steps
 有名~obj:#dom-window-nameditem-filter
@@ -507,7 +507,9 @@ doc.基底~URL:~HTMLurl#document-base-url
 relem.大域~obj:~WAPI#concept-realm-global
 ~task:~WAPI#concept-task
 ~taskを~queueする:~WAPI#queue-a-task
+大域~taskを~queueする:~WAPI#queue-a-global-task
 ~task源:~WAPI#task-source
+~network用~task源:~WAPI#networking-task-source
 ~DOM操作~task源:~WAPI#dom-manipulation-task-source
 ~event~loop:~WAPI#event-loop
 環境:~WAPI#environment
@@ -527,6 +529,7 @@ enV.生成元:~WAPI#concept-settings-object-origin
 enV.~top-level生成元:~WAPI#concept-environment-top-level-origin
 enV.~module~map:~WAPI#concept-settings-object-module-map
 enV.~referrer施策:~WAPI#concept-settings-object-referrer-policy
+enV.埋込元~施策:~WAPI#concept-settings-object-embedder-policy
 
 	●外
 ~URL:~URL1#concept-url
@@ -721,7 +724,7 @@ Returns the Window object of the active document.
 各`~window$には、それに
 `結付けられている文書@
 と呼ばれる，ある`文書$が結付けられる。
-それは、`~window$の作成-時に初期 `about_blank$sc `文書$に設定され、`~navi$の間に限り，そこから変化する。
+それは、`~window$の作成-時に初期 `~about_blank$sc `文書$に設定され、`~navi$の間に限り，そこから変化する。
 ◎
 The Window object has an associated Document, which is a Document object. It is set when the Window object is created, and only ever changed during navigation from the initial about:blank Document.
 </p>
@@ -762,7 +765,7 @@ The document IDL attribute, on getting, must return this Window object's associa
 `~window$に`結付けられている文書$が変化し得る事例は、唯一，［
 `~navigate$ ~algoが，`閲覧文脈$内に最初の~pageを読込むために`新たな文書を作成する$
 ］ときに限られる。
-その事例では、元の `about_blank$sc ~pageの `~window$が再利用され，新たな`文書$を取得する。
+その事例では、元の `~about_blank$sc ~pageの `~window$が再利用され，新たな`文書$を取得する。
 ◎
 The Document object associated with a Window object can change in exactly one case: when the navigate algorithm creates a new Document object for the first page loaded in a browsing context. In that specific case, the Window object of the original about:blank page is reused and gets a new Document object.
 </p>
@@ -804,7 +807,7 @@ For historical reasons, Window objects must also have a writable, configurable, 
 <dl class="domintro">
 	<dt>%window = %window . `open$m( [ %url [, %target [, %features ] ] ] )</dt>
 	<dd>
-~windowを開いて %url （省略時は `about_blank$sc ）を示した上で、それを返す。
+~windowを開いて %url （省略時は `~about_blank$sc ）を示した上で、それを返す。
 %target 引数には，新たな~windowの名前を与える。
 その名前の~windowがすでに存在する場合、それが再利用される。
 %features 引数を利用すれば、新たな~windowの描画に波及させられる。
@@ -959,7 +962,7 @@ If target browsing context is null, then return null.
 If new is true, then set up browsing context features for target browsing context given tokenizedFeatures. [CSSOMVIEW]
 </li>
 	<li>
-%~URL~record ~LET "`about_blank$sc"
+%~URL~record ~LET "`~about_blank$sc"
 ◎
 Let urlRecord be the URL "about:blank".
 </li>
@@ -1016,18 +1019,23 @@ Let request be a new request whose URL is urlRecord.
 If noreferrer is true, then set request's referrer to "noreferrer".
 </li>
 			<li>
+%~window ~LET %~target閲覧文脈 にて`作動中の~window$
+◎
+Let window be target browsing context's active window.
+</li>
+			<li>
 ~IF［
-%~URL~record ~EQ "`about_blank$sc"
+%~URL~record ~EQ "`~about_blank$sc"
 【<a href="~URL1#concept-url-equals">同等な~URL</a>？】
 ］~AND［
 %新 ~EQ ~T
 ］
 ⇒
-次を走らす`~taskを~queueする$
+次を走らす`大域~taskを~queueする$( `~network用~task源$, %~window )
 ⇒
-%~target閲覧文脈 にて`作動中の~window$に向けて，名前 `load$et の`~eventを発火する$( `~targetを上書きする^i )
+%~window に向けて，名前 `load$et の`~eventを発火する$( `~targetを上書きする^i )
 ◎
-If urlRecord is "about:blank" and new is true, then queue a task to fire an event named load at target browsing context's active window, with the legacy target override flag set.
+If urlRecord is "about:blank" and new is true, then queue a global task on the networking task source given window to fire an event named load at window, with the legacy target override flag set.
 </li>
 			<li>
 <p>
@@ -2282,12 +2290,12 @@ To set up a window environment settings object, given a JavaScript execution con
 Let realm be the value of execution context's Realm component.
 </li>
 	<li>
-%window ~LET %realm の`大域~obj$relem
+%~window ~LET %realm の`大域~obj$relem
 ◎
 Let window be realm's global object.
 </li>
 	<li>
-%url ~LET %window に`結付けられている文書$の`~URL$docの複製
+%url ~LET %~window に`結付けられている文書$の`~URL$docの複製
 ◎
 Let url be a copy of the URL of window's associated Document.
 </li>
@@ -2296,7 +2304,7 @@ Let url be a copy of the URL of window's associated Document.
 %設定群~obj ~LET
 各種~algoが次のように定義される，新たな`環境~設定群~obj$
 — 以下における %現~文書 とは、~algoが呼出された時点で
-%window に`結付けられている文書$を表すとする：
+%~window に`結付けられている文書$を表すとする：
 ◎
 Let settings object be a new environment settings object whose algorithms are defined as follows:
 </p>
@@ -2389,6 +2397,14 @@ Return document's referrer policy.
 </li>
 				</ol>
 			</li>
+			<li>
+`埋込元~施策$enV
+⇒
+~RET %現~文書 の`埋込元~施策$doc
+◎
+The embedder policy
+• Return window's associated Document's embedder policy.
+</li>
 		</ul>
 	</li>
 	<li>
