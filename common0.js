@@ -1220,6 +1220,7 @@ RESOURCE-TIMING:resource-timing-ja.html
 PAGE-VISIBILITY:page-visibility-ja.html
 RESOURCE-HINTS:resource-hints-ja.html
 SENSORS:sensors-ja.html
+REPORTING:reporting1-ja.html
 PERMISSIONS:webappsec-permissions-ja.html
 FEATUREPOLICY:feature-policy-ja.html
 REFERRER-POLICY:webappsec-referrer-policy-ja.html
