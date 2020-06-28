@@ -137,9 +137,9 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2020-06-14
-trans_update:2020-06-17
-	source_checked:200614
+spec_date:2020-06-25
+trans_update:2020-06-28
+	source_checked:200625
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -548,24 +548,49 @@ A.StructuredSerialize:~HTMLcloning#structuredserialize
 読取器:#reader
 非同期c読取器:#readablestream-async-iterator-reader
 取消-を防止する？:#readablestream-async-iterator-prevent-cancel
+既定の読取器:#default-readers
+~BYOB読取器:#byob-readers
 
 可書~stream書込器:#writer
 書込器:#writer
+
+作動中:#active
 
 ~lock:#lock
 ~lockされて:#lock
 ~lockを解放-:#release-a-lock
 解放-:#release-a-lock
 
-作動中:#active
-
-既定の読取器:#default-readers
-~BYOB読取器:#byob-readers
-
 完結する:#rs-pipeTo-finalize
 ~shutdownする:#rs-pipeTo-shutdown-with-action
 	#rs-pipeTo-shutdown
 転送され:#transfer-array-buffer
+
+
+可読~byte~stream用の~queue~entry:#readable-byte-stream-queue-entry
+qE.~buffer:#readable-byte-stream-queue-entry-buffer
+qE.~byte~offset:#readable-byte-stream-queue-entry-byte-offset
+qE.~byte長さ:#readable-byte-stream-queue-entry-byte-length
+
+~pull~into記述子:#pull-into-descriptor
+pD.~buffer:#pull-into-descriptor-buffer
+pD.~byte~offset:#pull-into-descriptor-byte-offset
+pD.~byte長さ:#pull-into-descriptor-byte-length
+pD.~fill済み~byte数:#pull-into-descriptor-bytes-filled
+pD.要素~size:#pull-into-descriptor-element-size
+pD.~view構築子:#pull-into-descriptor-view-constructor
+pD.読取器~型:#pull-into-descriptor-reader-type
+
+処理待ち中止-要請:#pending-abort-request
+aR.~promise:#pending-abort-request-promise
+aR.事由:#pending-abort-request-reason
+aR.すでに~errorした:#pending-abort-request-was-already-erroring
+
+i.~close~sentinel:#close-sentinel
+
+~sizeを伴う値:#value-with-size
+Vs.値:#value-with-size-value
+Vs.~size:#value-with-size-size
 
 	●§
 sec.個別~size付き~queue:#queue-with-sizes
@@ -600,7 +625,6 @@ jI.ObjectPrototype:~TC39#sec-properties-of-the-object-prototype-object
 ~realm:~TC39#realm
 完了~record:~TC39#sec-completion-record-specification-type
 抽象-演算:~TC39#sec-algorithm-conventions-abstract-operations
-~record:~TC39#sec-list-and-record-specification-type
 内部~slot:~TC39#sec-object-internal-methods-and-internal-slots
 	中途完了:~TC39#sec-completion-record-specification-type
 
@@ -638,6 +662,8 @@ i.反復~終端-:~WEBIDL#end-of-iteration
 除去する:~INFRA#list-remove
 有順序~集合:~INFRA#ordered-set
 set.付加する:~INFRA#set-append
+構造体:~INFRA#struct
+sct.~item:~INFRA#struct-item
 
 要請~本体:~FETCH#concept-request-body
 
@@ -781,6 +807,9 @@ shut-down:shut down
 closing:
 	~closeし終える:closing down／finishes closing
 closure:
+into:
+	~pull~into:pull-into
+sentinel:::番
 
 旅する:travelする:~
 測定-:measure:~
@@ -802,12 +831,14 @@ closure:
 限界水位:high-water mark::~
 chunk::::チャンク
 enqueue:
+fill:
+	~fill済み~byte数:bytes filled
 count:
-	~queueしておく:queue up
 queue:
 queuing:
+	~queueしておく:queue up
 	個別~size付き~queue:queue-with-sizes
-
+	~sizeを伴う値:value-with-size
 合計:total::~
 rate::::レート
 流入:incoming:流入してくる
@@ -820,19 +851,20 @@ buffering::::バッファ処理
 
 	slower
 減速-:slow down:~
-	~byte数による:byte-length
 止める:stopする::~
 	数え:count
 	~chunk数による:count
 正解の:rightな:~
 	使用量:usage
-埋めよ:fillしよ:~
-	取出-:pull out:取り出
+
 	手を止めて:back off
 	捨てら:throw away さ
 	減らす:cut down
 	素早く:quickly
 	時間あたりの流量は低下:low throughput
+	~byte数による:byte-length
+	~byte数:number of bytes
+	~byte数:bytes
 
 	●promise
 promise-calling:
@@ -845,7 +877,6 @@ promise-calling:
 成否:success or failure::~
 
 	●idl／js／データ型／データ操作
-Record:
 
 	設定しておけば:this setup
 	設定しておく:set up／setup
@@ -925,6 +956,7 @@ memory::::メモリ
 	何もしない:do nothing
 	何もしない:no-op
 	不定期の間:indefinitely
+	成り行き:outcome
 
 	●仕様
 WebIDL:Web IDL
@@ -1076,7 +1108,6 @@ encapsulate::::カプセル化
 	やりとりする:interface する
 	要因になる:factored in to
 	別法として:alternatively
-	請われ:ask され
 	もたらす:introduce
 	外から見える:noticeable
 	興味を引く:interesting
@@ -1139,6 +1170,8 @@ encapsulate::::カプセル化
 	高~levelから:higher level
 	より高~level:higher level
 	^en:out of the box
+	に代えて:in lieu of
+	-:In what follows
 
 	●未分類
 install::::インストール
@@ -1274,6 +1307,7 @@ mapper:
 	各部:portions
 	形:form
 	数:number
+	負でない:nonnegative
 	false
 	his
 	中身:what type of ~ under the cover
@@ -1326,21 +1360,24 @@ mapper:
 	この時点で:At this point
 	の場合には:time
 	-:time
-	各回に 1 個ずつ:one at a time
 	同時に:at the same time,
-	同時に:at a time
+	各回に 1 個ずつ:one at a time
+	一度に:at a time
+	一度に:one go
+	一度も:without 〜 ever
+	一度でも:ever
 	先頭:first
 	末尾:final
 	ちょうど~~同じく:just asに
 	どこかで:ever
 	それ全体として:in its entirety
 	順に:in sequence
-	一度に:one go
 	その他の:miscellaneous
 	外側:outside
 	種々の:various
 	一定の:certain
 	それはまた、:finally
+	入るまで:before〜finally
 	何か他のもの:something else
 	総:overall
 	前述の:the earlier
@@ -1400,7 +1437,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/c20f174396617787e1176e11796fc5039088a5ab" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/cf19e8dd13095a59e38671a7e8ec61f07f25fd42" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -2093,19 +2130,18 @@ This specification depends on the Infra Standard. [INFRA]
 This specification uses the abstract operation concept from the JavaScript specification for its internal algorithms. This includes treating their return values as completion records, and the use of ! and ? prefixes for unwrapping those completion records. [ECMASCRIPT]
 </p>
 
-<p class="trans-note">【
-大雑把に述べるなら、抽象-演算を~callする所で：
+<p class="trans-note">
+【概略的には、抽象-演算を~callする所で】
+⇒＃
 ~NOABRUPT が接頭されていれば 決して`中途完了^にならず，完了~recordの [[Value]] が返される／
 ~ABRUPT が接頭されていれば `中途完了^に対しては例外が投出される／
-何も接頭されていない場合、結果の完了~recordに対する明示的な取扱いを要する。
-】</p>
+何も接頭されていない場合、結果の完了~recordに対する明示的な取扱いを要する
+</p>
 
 <p>
-この仕様はまた、~JS仕様による［
-`内部~slot$, `~record$
-］の概念と記法を利用する（内部~slotは、~JS~objではなく，~Web~IDLの`~platform~obj$上にあるが。）
+この仕様はまた、~JS仕様による`内部~slot$の概念と記法を利用する（内部~slotは、~JS~objではなく，~Web~IDLの`~platform~obj$上にあるが。）
 ◎
-This specification also uses the internal slot and record concepts and notation from the JavaScript specification. (Although, the internal slots are on Web IDL platform objects instead of on JavaScript objects.)
+This specification also uses the internal slot concept and notation from the JavaScript specification. (Although, the internal slots are on Web IDL platform objects instead of on JavaScript objects.)
 </p>
 
 <p class="note">注記：
@@ -4631,17 +4667,18 @@ A boolean flag set to true while the underlying byte source's pull algorithm is 
 
 <tr><td>[[pendingPullIntos]]
 <td>
-処理待ちの~BYOB~pull要請を表現している記述子たちからなる`~list$。
+`~pull~into記述子$たちが成す`~list$。
 ◎
-A list of descriptors representing pending BYOB pull requests
+A list of pull-into descriptors
 
 <tr><td>[[queue]]
 <td>
-~streamの［
-`~chunk$たちからなる内部~queue
-］を表現する`~list$。
+`可読~byte~stream用の~queue~entry$たちが成す`~list$
+— 当の~streamの［
+一連の`~chunk$からなる内部~queue
+］を表現する。
 ◎
-A list representing the stream’s internal queue of chunks
+A list of readable byte stream queue entries representing the stream’s internal queue of chunks
 
 <tr><td>[[queueTotalSize]]
 <td>
@@ -4685,6 +4722,149 @@ This might be cleaned up in a future spec refactoring.
 </p>
 
 </div>
+
+<p>
+`可読~byte~stream用の~queue~entry@
+は、`可読~byte~stream$に特有な事例~用に`~chunk$を成す重要な側面を~encapsulateする`構造体$であり，次に挙げる`~item$sctからなる：
+◎
+A readable byte stream queue entry is a struct encapsulating the important aspects of a chunk for the specific case of readable byte streams. It has the following items:
+</p>
+
+<dl class="def-list">
+	<dt>
+`~buffer@qE
+◎
+buffer
+</dt>
+	<dd>
+`ArrayBuffer$I
+— それは、`下層~byte源$により元々給されたものの`転送され$た~versionになる。
+◎
+An ArrayBuffer, which will be a transferred version of the one originally supplied by the underlying byte source
+</dd>
+
+	<dt>
+`~byte~offset@qE
+◎
+byte offset
+</dt>
+	<dd>
+負でない整数
+— `下層~byte源$により元々給された~viewから導出された，~byte~offsetを与える
+◎
+A nonnegative integer number giving the byte offset derived from the view originally supplied by the underlying byte source
+</dd>
+
+	<dt>
+`~byte長さ@qE
+◎
+byte length
+</dt>
+	<dd>
+負でない整数
+— `下層~byte源$により元々給された~viewから導出された，~byte長さを与える
+◎
+A nonnegative integer number giving the byte length derived from the view originally supplied by the underlying byte source
+</dd>
+</dl>
+
+<p>
+`~pull~into記述子@
+は、処理待ち~BYOB~pull要請を表現するために利用される`構造体$であり、次に挙げる`~item$sctからなる：
+◎
+A pull-into descriptor is a struct used to represent pending BYOB pull requests. It has the following items:
+</p>
+
+<dl class="def-list">
+	<dt>
+`~buffer@pD
+◎
+buffer
+</dt>
+	<dd>
+`ArrayBuffer$I
+◎
+An ArrayBuffer
+</dd>
+
+	<dt>
+`~byte~offset@pD
+◎
+byte offset
+</dt>
+	<dd>
+負でない整数
+— `~buffer$pDの中を指す~byte~offsetを表す。
+`下層~byte源$は、そこから書込みを開始することになる。
+◎
+A nonnegative integer byte offset into the buffer where the underlying byte source will start writing
+</dd>
+
+	<dt>
+`~byte長さ@pD
+◎
+byte length
+</dt>
+	<dd>
+負でない整数
+— `~buffer$pDの中へ書込できる~byte数を表す。
+◎
+A nonnegative integer number of bytes which can be written into the buffer
+</dd>
+
+	<dt>
+`~fill済み~byte数@pD
+◎
+bytes filled
+</dt>
+	<dd>
+負でない整数
+— それまでに`~buffer$pDの中に書込された~byte数を表す。
+◎
+A nonnegative integer number of bytes that have been written into the buffer so far
+</dd>
+
+	<dt>
+`要素~size@pD
+◎
+element size
+</dt>
+	<dd>
+正な整数
+— `~view構築子$pDが述べる型の~viewを利用して，`~buffer$pDの中に一度に書込できる~byte数を表現する。
+◎
+A positive integer representing the number of bytes that can be written into the buffer at a time, using views of the type described by the view constructor
+</dd>
+
+	<dt>
+`~view構築子@pD
+◎
+view constructor
+</dt>
+	<dd>
+<a href="~TC39#table-49">有型~配列~構築子</a> または `DataView$jI
+— ［
+`~buffer$pDの中に書込するために用いる【配列~buffer】~view
+］を構築するときに利用されることになる。
+◎
+A typed array constructor or %DataView%, which will be used for constructing a view with which to write into the buffer
+</dd>
+
+	<dt>
+`読取器~型@pD
+◎
+reader type
+</dt>
+	<dd>
+この要請を起動した`読取器$の型を指示する
+— 次のいずれか
+⇒
+`default^l ／
+`byob^l
+◎
+Either "default" or "byob", indicating what type of readable stream reader initiated this request
+</dd>
+</dl>
 
 			</section>
 			<section id="rbs-controller-prototype">
@@ -4764,12 +4944,12 @@ Let firstDescriptor be this.[[pendingPullIntos]][0].
 			<li>
 %view ~LET
 ~NOABRUPT `Construct$Ax( `Uint8Array$jI,
-« %firstDescriptor.[[buffer]],
-( %firstDescriptor.[[byteOffset]] ~PLUS %firstDescriptor.[[bytesFilled]] ),
-( %firstDescriptor.[[byteLength]] ~MINUS %firstDescriptor.[[bytesFilled]] ) »
+« %firstDescriptor の`~buffer$pD,
+( %firstDescriptor の`~byte~offset$pD ~PLUS %firstDescriptor の`~fill済み~byte数$pD ),
+( %firstDescriptor の`~byte長さ$pD ~MINUS %firstDescriptor の`~fill済み~byte数$pD ) »
 )
 ◎
-Let view be ! Construct(%Uint8Array%, « firstDescriptor.[[buffer]], firstDescriptor.[[byteOffset]] + firstDescriptor.[[bytesFilled]], firstDescriptor.[[byteLength]] − firstDescriptor.[[bytesFilled]] »).
+Let view be ! Construct(%Uint8Array%, « firstDescriptor’s buffer, firstDescriptor’s byte offset + firstDescriptor’s bytes filled, firstDescriptor’s byte length − firstDescriptor’s bytes filled »).
 </li>
 			<li>
 %byobRequest ~LET `新たな$ `ReadableStreamBYOBRequest$I
@@ -4960,9 +5140,9 @@ If this.[[pendingPullIntos]] is not empty,
 Let firstDescriptor be this.[[pendingPullIntos]][0].
 </li>
 			<li>
-%firstDescriptor.[[bytesFilled]] ~SET 0
+%firstDescriptor の`~fill済み~byte数$pD ~SET 0
 ◎
-Set firstDescriptor.[[bytesFilled]] to 0.
+Set firstDescriptor’s bytes filled to 0.
 </li>
 		</ol>
 	</li>
@@ -5037,9 +5217,9 @@ Let entry be this.[[queue]][0].
 Remove entry from this.[[queue]].
 </li>
 			<li>
-コレ.[[queueTotalSize]] ~DECBY %entry.[[byteLength]]
+コレ.[[queueTotalSize]] ~DECBY %entry の`~byte長さ$qE
 ◎
-Set this.[[queueTotalSize]] to this.[[queueTotalSize]] − entry.[[byteLength]].
+Set this.[[queueTotalSize]] to this.[[queueTotalSize]] − entry’s byte length.
 </li>
 			<li>
 ~NOABRUPT `ReadableByteStreamControllerHandleQueueDrain$A( コレ )
@@ -5048,9 +5228,9 @@ Perform ! ReadableByteStreamControllerHandleQueueDrain(this).
 </li>
 			<li>
 %view ~LET
-~NOABRUPT `Construct$Ax( `Uint8Array$jI, « %entry.[[buffer]], %entry.[[byteOffset]], %entry.[[byteLength]] » )
+~NOABRUPT `Construct$Ax( `Uint8Array$jI, « %entry の`~buffer$qE, %entry の`~byte~offset$qE, %entry の`~byte長さ$qE » )
 ◎
-Let view be ! Construct(%Uint8Array%, « entry.[[buffer]], entry.[[byteOffset]], entry.[[byteLength]] »).
+Let view be ! Construct(%Uint8Array%, « entry’s buffer, entry’s byte offset, entry’s byte length »).
 </li>
 			<li>
 ~RET 次の結果で`解決される~promise$
@@ -5090,17 +5270,17 @@ Let buffer be Construct(%ArrayBuffer%, « autoAllocateChunkSize »).
 If buffer is an abrupt completion, return a promise rejected with buffer.[[Value]].
 </li>
 			<li>
-%pullIntoDescriptor ~LET 次の~fieldからなる~Record
+%pullIntoDescriptor ~LET 次を伴う，新たな`~pull~into記述子$
 ⇒＃
-[[buffer]]: %buffer.[[Value]],
-[[byteOffset]]: 0,
-[[byteLength]]: %autoAllocateChunkSize,
-[[bytesFilled]]: 0,
-[[elementSize]]: 1,
-[[ctor]]: `Uint8Array$jI,
-[[readerType]]: `default^l
+`~buffer$pD ~SET %buffer.[[Value]],
+`~byte~offset$pD ~SET 0,
+`~byte長さ$pD ~SET %autoAllocateChunkSize,
+`~fill済み~byte数$pD ~SET 0,
+`要素~size$pD ~SET 1,
+`~view構築子$pD ~SET `Uint8Array$jI,
+`読取器~型$pD ~SET `default^l
 ◎
-Let pullIntoDescriptor be Record {[[buffer]]: buffer.[[Value]], [[byteOffset]]: 0, [[byteLength]]: autoAllocateChunkSize, [[bytesFilled]]: 0, [[elementSize]]: 1, [[ctor]]: %Uint8Array%, [[readerType]]: "default"}.
+Let pullIntoDescriptor be a new pull-into descriptor with buffer buffer.[[Value]], byte offset 0, byte length autoAllocateChunkSize, bytes filled 0, element size 1, view constructor %Uint8Array%, and reader type "default".
 </li>
 			<li>
 コレ.[[pendingPullIntos]] に %pullIntoDescriptor を`付加する$
@@ -5471,7 +5651,7 @@ The same usage note for the forAuthorCode parameter applies here as it does for 
 は、
 `ReadableStream$I ~instanceを作成したいと望む，他の仕様から~callされる用途に意味されている。
 ◎
-CreateReadableStream(startAlgorithm, pullAlgorithm, cancelAlgorithm[, highWaterMark,[, sizeAlgorithm]]) is meant to be called from other specifications that wish to create ReadableStream instances.＼
+CreateReadableStream(startAlgorithm, pullAlgorithm, cancelAlgorithm[, highWaterMark, [, sizeAlgorithm]]) is meant to be called from other specifications that wish to create ReadableStream instances.＼
 </p>
 <ul>
 	<li>
@@ -5975,7 +6155,7 @@ Add abortAlgorithm to signal.
 これが起こる正確な方式は、
 ( 読取器, 書込器 )
 が供する~lock法に因り，作者~codeからは観測-可能でない。
-よって，~UAには これを柔軟に行う余地があるが、利用される正確な~algoが何であれ，次の拘束が適用される：
+よって，~UAには これを柔軟に行う余地があるが、利用される正確な~algoが何であれ，以下の拘束が適用される：
 ◎
 In parallel but not really; see #905, using reader and writer, read all chunks from source and write them to dest. Due to the locking provided by the reader and writer, the exact manner in which this happens is not observable to author code, and so there is flexibility in how this is done. The following constraints apply regardless of the exact algorithm used:
 </p>
@@ -6054,7 +6234,7 @@ Shutdown must stop activity: if shuttingDown becomes true, the user agent must n
 			<li>
 <p>
 `~error／~close状態は伝播するモノトスル^strong
-— 次に挙げる条件は順に適用されるモノトスル：
+— 以下の条件は、挙げられた順に適用するモノトスル：
 ◎
 Error and close states must be propagated: the following conditions must be applied in order.
 </p>
@@ -6196,7 +6376,7 @@ Otherwise, shutdown with destClosed.
 <p id="rs-pipeTo-shutdown">
 上のいずれかの要件／手続きにより，
 `~shutdownする@
-よう請われたときは、所与の
+よう依頼されたときは、所与の
 ( %error, %action )
 に対し，次の下位手続きを遂行する：
 ◎
@@ -6798,7 +6978,7 @@ Each controller class defines two internal methods, which are called by the Read
 </p>
 
 <dl>
-	<dt>`[[CancelSteps]]@A( %reason )</dt>
+	<dt>`[[CancelSteps]](reason)@A</dt>
 	<dd>
 ~streamが`取消され$たときの反応として走らす，制御器の手続き。
 制御器に格納されている状態を片付けて，`下層~源$に伝えるために利用される。
@@ -6806,7 +6986,7 @@ Each controller class defines two internal methods, which are called by the Read
 The controller’s steps that run in reaction to the stream being canceled, used to clean up the state stored in the controller and inform the underlying source.
 </dd>
 
-	<dt>`[[PullSteps]]@A()</dt>
+	<dt>`[[PullSteps]]()@A</dt>
 	<dd>
 `既定の読取器$から読取されるときに走らす，制御器の手続き。
 ［
@@ -8860,10 +9040,10 @@ Let firstPendingPullInto be controller.[[pendingPullIntos]][0].
 			<li>
 <p>
 ~IF［
-%firstPendingPullInto.[[bytesFilled]] ~GT 0
+%firstPendingPullInto の`~fill済み~byte数$pD ~GT 0
 ］：
 ◎
-If firstPendingPullInto.[[bytesFilled]] &gt; 0,
+If firstPendingPullInto’s bytes filled &gt; 0,
 </p>
 				<ol>
 					<li>
@@ -8928,9 +9108,9 @@ If stream.[[state]] is "closed",
 		<ol>
 			<li>
 ~Assert：
-%pullIntoDescriptor.[[bytesFilled]] ~EQ 0
+%pullIntoDescriptor の`~fill済み~byte数$pD ~EQ 0
 ◎
-Assert: pullIntoDescriptor.[[bytesFilled]] is 0.
+Assert: pullIntoDescriptor’s bytes filled is 0.
 </li>
 			<li>
 %done ~SET ~T
@@ -8948,10 +9128,10 @@ Let filledView be ! ReadableByteStreamControllerConvertPullIntoDescriptor(pullIn
 	<li>
 <p>
 ~IF［
-%pullIntoDescriptor.[[readerType]] ~EQ `default^l
+%pullIntoDescriptor の`読取器~型$pD ~EQ `default^l
 ］：
 ◎
-If pullIntoDescriptor.[[readerType]] is "default",
+If pullIntoDescriptor’s reader type is "default",
 </p>
 		<ol>
 			<li>
@@ -8970,10 +9150,10 @@ Otherwise,
 		<ol>
 			<li>
 ~Assert：
-%pullIntoDescriptor.[[readerType]] ~EQ `byob^l
+%pullIntoDescriptor の`読取器~型$pD ~EQ `byob^l
 ：
 ◎
-Assert: pullIntoDescriptor.[[readerType]] is "byob".
+Assert: pullIntoDescriptor’s reader type is "byob".
 </li>
 			<li>
 ~NOABRUPT `ReadableStreamFulfillReadIntoRequest$A( %stream, %filledView, %done )
@@ -8994,20 +9174,20 @@ ReadableByteStreamControllerConvertPullIntoDescriptor(pullIntoDescriptor) perfor
 </p>
 <ol>
 	<li>
-%bytesFilled ~LET %pullIntoDescriptor.[[bytesFilled]]
+%bytesFilled ~LET %pullIntoDescriptor の`~fill済み~byte数$pD
 ◎
-Let bytesFilled be pullIntoDescriptor.[[bytesFilled]].
+Let bytesFilled be pullIntoDescriptor’s bytes filled.
 </li>
 	<li>
-%elementSize ~LET %pullIntoDescriptor.[[elementSize]]
+%elementSize ~LET %pullIntoDescriptor の`要素~size$pD
 ◎
-Let elementSize be pullIntoDescriptor.[[elementSize]].
+Let elementSize be pullIntoDescriptor’s element size.
 </li>
 	<li>
 ~Assert：
-%bytesFilled ~LTE %pullIntoDescriptor.[[byteLength]]
+%bytesFilled ~LTE %pullIntoDescriptor の`~byte長さ$pD
 ◎
-Assert: bytesFilled ≤ pullIntoDescriptor.[[byteLength]].
+Assert: bytesFilled ≤ pullIntoDescriptor’s byte length.
 </li>
 	<li>
 ~Assert：
@@ -9017,9 +9197,9 @@ Assert: bytesFilled mod elementSize is 0.
 </li>
 	<li>
 ~RET
-~NOABRUPT `Construct$Ax( %pullIntoDescriptor.[[ctor]], « %pullIntoDescriptor.[[buffer]], %pullIntoDescriptor.[[byteOffset]], %bytesFilled ~DIV %elementSize » )
+~NOABRUPT `Construct$Ax( %pullIntoDescriptor の`~view構築子$pD, « %pullIntoDescriptor の`~buffer$pD, %pullIntoDescriptor の`~byte~offset$pD, %bytesFilled ~DIV %elementSize » )
 ◎
-Return ! Construct(pullIntoDescriptor.[[ctor]], « pullIntoDescriptor.[[buffer]], pullIntoDescriptor.[[byteOffset]], bytesFilled ÷ elementSize »).
+Return ! Construct(pullIntoDescriptor’s view constructor, « pullIntoDescriptor’s buffer, pullIntoDescriptor’s byte offset, bytesFilled ÷ elementSize »).
 </li>
 </ol>
 </div>
@@ -9181,14 +9361,14 @@ ReadableByteStreamControllerEnqueueChunkToQueue(controller, buffer, byteOffset, 
 <ol>
 	<li>
 %controller.[[queue]] に［
-次の~fieldからなる~Record
+次を伴う，新たな`可読~byte~stream用の~queue~entry$
 ］を`付加する$
 ⇒＃
-{[[buffer]]: %buffer,
-[[byteOffset]]: %byteOffset,
-[[byteLength]]: %byteLength
+`~buffer$qE ~SET %buffer,
+`~byte~offset$qE ~SET %byteOffset,
+`~byte長さ$qE ~SET %byteLength
 ◎
-Append Record {[[buffer]]: buffer, [[byteOffset]]: byteOffset, [[byteLength]]: byteLength} to controller.[[queue]].
+Append a new readable byte stream queue entry with buffer buffer, byte offset byteOffset, and byte length byteLength to controller.[[queue]].
 </li>
 	<li>
 %controller.[[queueTotalSize]] ~INCBY %byteLength
@@ -9266,9 +9446,9 @@ Assert: either controller.[[pendingPullIntos]] is empty, or controller.[[pending
 Perform ! ReadableByteStreamControllerInvalidateBYOBRequest(controller).
 </li>
 	<li>
-%pullIntoDescriptor.[[bytesFilled]] ~INCBY %size
+%pullIntoDescriptor の`~fill済み~byte数$pD ~INCBY %size
 ◎
-Set pullIntoDescriptor.[[bytesFilled]] to pullIntoDescriptor.[[bytesFilled]] + size.
+Set pullIntoDescriptor’s bytes filled to bytes filled + size.
 </li>
 </ol>
 </div>
@@ -9282,29 +9462,29 @@ ReadableByteStreamControllerFillPullIntoDescriptorFromQueue(controller, pullInto
 </p>
 <ol>
 	<li>
-%elementSize ~LET %pullIntoDescriptor.[[elementSize]]
+%elementSize ~LET %pullIntoDescriptor の`要素~size$pD【！[[elementSize]]】
 ◎
 Let elementSize be pullIntoDescriptor.[[elementSize]].
 </li>
 	<li>
 %currentAlignedBytes ~LET
-( %pullIntoDescriptor.[[bytesFilled]] ~MINUS ( %pullIntoDescriptor.[[bytesFilled]] `mod^op %elementSize ) )
+( %pullIntoDescriptor の`~fill済み~byte数$pD ~MINUS ( %pullIntoDescriptor の`~fill済み~byte数$pD `mod^op %elementSize ) )
 ◎
-Let currentAlignedBytes be pullIntoDescriptor.[[bytesFilled]] − (pullIntoDescriptor.[[bytesFilled]] mod elementSize).
+Let currentAlignedBytes be pullIntoDescriptor’s bytes filled − (pullIntoDescriptor’s bytes filled mod elementSize).
 </li>
 	<li>
 %maxBytesToCopy ~LET
 `min^op( %controller.[[queueTotalSize]],
-( %pullIntoDescriptor.[[byteLength]] ~MINUS %pullIntoDescriptor.[[bytesFilled]] )
+( %pullIntoDescriptor の`~byte長さ$pD ~MINUS %pullIntoDescriptor の`~fill済み~byte数$pD )
 )
 ◎
-Let maxBytesToCopy be min(controller.[[queueTotalSize]], pullIntoDescriptor.[[byteLength]] − pullIntoDescriptor.[[bytesFilled]]).
+Let maxBytesToCopy be min(controller.[[queueTotalSize]], pullIntoDescriptor’s byte length − pullIntoDescriptor’s bytes filled).
 </li>
 	<li>
 %maxBytesFilled ~LET
-( %pullIntoDescriptor.[[bytesFilled]] ~PLUS %maxBytesToCopy )
+( %pullIntoDescriptor の`~fill済み~byte数$pD ~PLUS %maxBytesToCopy )
 ◎
-Let maxBytesFilled be pullIntoDescriptor.[[bytesFilled]] + maxBytesToCopy.
+Let maxBytesFilled be pullIntoDescriptor’s bytes filled + maxBytesToCopy.
 </li>
 	<li>
 %maxAlignedBytes ~LET
@@ -9332,9 +9512,9 @@ If maxAlignedBytes &gt; currentAlignedBytes,
 </p>
 		<ol>
 			<li>
-%totalBytesToCopyRemaining ~SET %maxAlignedBytes ~MINUS %pullIntoDescriptor.[[bytesFilled]]
+%totalBytesToCopyRemaining ~SET %maxAlignedBytes ~MINUS %pullIntoDescriptor の`~fill済み~byte数$pD
 ◎
-Set totalBytesToCopyRemaining to maxAlignedBytes − pullIntoDescriptor.[[bytesFilled]].
+Set totalBytesToCopyRemaining to maxAlignedBytes − pullIntoDescriptor’s bytes filled.
 </li>
 			<li>
 %ready ~SET ~T
@@ -9364,28 +9544,28 @@ Let headOfQueue be queue[0].
 </li>
 			<li>
 %bytesToCopy ~LET
-`min^op( %totalBytesToCopyRemaining, %headOfQueue.[[byteLength]] )
+`min^op( %totalBytesToCopyRemaining, %headOfQueue の`~byte長さ$qE )
 ◎
-Let bytesToCopy be min(totalBytesToCopyRemaining, headOfQueue.[[byteLength]]).
+Let bytesToCopy be min(totalBytesToCopyRemaining, headOfQueue’s byte length).
 </li>
 			<li>
 %destStart ~LET
-( %pullIntoDescriptor.[[byteOffset]] ~PLUS %pullIntoDescriptor.[[bytesFilled]] )
+( %pullIntoDescriptor の`~byte~offset$pD ~PLUS %pullIntoDescriptor の`~fill済み~byte数$pD )
 ◎
-Let destStart be pullIntoDescriptor.[[byteOffset]] + pullIntoDescriptor.[[bytesFilled]].
+Let destStart be pullIntoDescriptor’s byte offset + pullIntoDescriptor’s bytes filled.
 </li>
 			<li>
-~NOABRUPT `CopyDataBlockBytes$Ax( %pullIntoDescriptor.[[buffer]].[[ArrayBufferData]], %destStart, %headOfQueue.[[buffer]].[[ArrayBufferData]], %headOfQueue.[[byteOffset]], %bytesToCopy )
+~NOABRUPT `CopyDataBlockBytes$Ax( %pullIntoDescriptor の`~buffer$pD.[[ArrayBufferData]], %destStart, %headOfQueue の`~buffer$qE.[[ArrayBufferData]], %headOfQueue の`~byte~offset$qE, %bytesToCopy )
 ◎
-Perform ! CopyDataBlockBytes(pullIntoDescriptor.[[buffer]].[[ArrayBufferData]], destStart, headOfQueue.[[buffer]].[[ArrayBufferData]], headOfQueue.[[byteOffset]], bytesToCopy).
+Perform ! CopyDataBlockBytes(pullIntoDescriptor’s buffer.[[ArrayBufferData]], destStart, headOfQueue’s buffer.[[ArrayBufferData]], headOfQueue’s byte offset, bytesToCopy).
 </li>
 			<li>
 <p>
 ~IF［
-%headOfQueue.[[byteLength]] ~EQ %bytesToCopy
+%headOfQueue の`~byte長さ$qE ~EQ %bytesToCopy
 ］：
 ◎
-If headOfQueue.[[byteLength]] is bytesToCopy,
+If headOfQueue’s byte length is bytesToCopy,
 </p>
 				<ol>
 					<li>
@@ -9403,14 +9583,14 @@ Otherwise,
 </p>
 				<ol>
 					<li>
-%headOfQueue.[[byteOffset]] ~INCBY %bytesToCopy
+%headOfQueue の`~byte~offset$qE ~INCBY %bytesToCopy
 ◎
-Set headOfQueue.[[byteOffset]] to headOfQueue.[[byteOffset]] + bytesToCopy.
+Set headOfQueue’s byte offset to headOfQueue’s byte offset + bytesToCopy.
 </li>
 					<li>
-%headOfQueue.[[byteLength]] ~DECBY %bytesToCopy
+%headOfQueue の`~byte長さ$qE ~DECBY %bytesToCopy
 ◎
-Set headOfQueue.[[byteLength]] to headOfQueue.[[byteLength]] − bytesToCopy.
+Set headOfQueue’s byte length to headOfQueue’s byte length − bytesToCopy.
 </li>
 				</ol>
 			</li>
@@ -9448,15 +9628,15 @@ Assert: controller.[[queueTotalSize]] is 0.
 </li>
 			<li>
 ~Assert：
-%pullIntoDescriptor.[[bytesFilled]] ~GT 0
+%pullIntoDescriptor の`~fill済み~byte数$pD ~GT 0
 ◎
-Assert: pullIntoDescriptor.[[bytesFilled]] &gt; 0.
+Assert: pullIntoDescriptor’s bytes filled &gt; 0.
 </li>
 			<li>
 ~Assert：
-%pullIntoDescriptor.[[bytesFilled]] ~LT %pullIntoDescriptor.[[elementSize]]
+%pullIntoDescriptor の`~fill済み~byte数$pD ~LT %pullIntoDescriptor の`要素~size$pD
 ◎
-Assert: pullIntoDescriptor.[[bytesFilled]] &lt; pullIntoDescriptor.[[elementSize]].
+Assert: pullIntoDescriptor’s bytes filled &lt; pullIntoDescriptor’s element size.
 </li>
 		</ol>
 	</li>
@@ -9694,10 +9874,9 @@ Let ctor be %DataView%.
 ］
 ⇒
 ( %elementSizem, %ctor ) ~SET
-%view.[[TypedArrayName]] に対し
 <a href="~TC39#sec-dataview-objects">有型~配列 構築子 table</a>
-に指定される
-( 要素~size, 構築子 )
+に指定される，
+%view.[[TypedArrayName]] 用の ( 要素~size, 構築子 )
 ◎
 If view has a [[TypedArrayName]] internal slot (i.e., it is not a DataView),
 ◎
@@ -9722,17 +9901,17 @@ Let byteLength be view.[[ByteLength]].
 Let buffer be ! TransferArrayBuffer(view.[[ViewedArrayBuffer]]).
 </li>
 	<li>
-%pullIntoDescriptor ~LET 次の~fieldからなる~Record
+%pullIntoDescriptor ~LET 次を伴う，新たな`~pull~into記述子$
 ⇒＃
-[[buffer]]: %buffer,
-[[byteOffset]]: %byteOffset,
-[[byteLength]]: %byteLength,
-[[bytesFilled]]: 0,
-[[elementSize]]: %elementSize,
-[[ctor]]: %ctor,
-[[readerType]]: `byob^l
+`~buffer$pD ~SET %buffer,
+`~byte~offset$pD ~SET %byteOffset,
+`~byte長さ$pD ~SET %byteLength,
+`~fill済み~byte数$pD ~SET 0,
+`要素~size$pD ~SET %elementSize,
+`~view構築子$pD ~SET %ctor,
+`読取器~型$pD ~SET `byob^l
 ◎
-Let pullIntoDescriptor be Record {[[buffer]]: buffer, [[byteOffset]]: byteOffset, [[byteLength]]: byteLength, [[bytesFilled]]: 0, [[elementSize]]: elementSize, [[ctor]]: ctor, [[readerType]]: "byob"}.
+Let pullIntoDescriptor be a new pull-into descriptor with buffer buffer, byte offset byteOffset, byte length byteLength, bytes filled 0, element size elementSize, view constructor ctor, and reader type "byob".
 </li>
 	<li>
 <p>
@@ -9767,9 +9946,9 @@ If stream.[[state]] is "closed",
 		<ol>
 			<li>
 %emptyView ~LET
-~NOABRUPT `Construct$Ax( %ctor, « %pullIntoDescriptor.[[buffer]], %pullIntoDescriptor.[[byteOffset]], 0 » )
+~NOABRUPT `Construct$Ax( %ctor, « %pullIntoDescriptor の`~buffer$pD, %pullIntoDescriptor の`~byte~offset$pD, 0 » )
 ◎
-Let emptyView be ! Construct(ctor, « pullIntoDescriptor.[[buffer]], pullIntoDescriptor.[[byteOffset]], 0 »).
+Let emptyView be ! Construct(ctor, « pullIntoDescriptor’s buffer, pullIntoDescriptor’s byte offset, 0 »).
 </li>
 			<li>
 ~RET 次の結果で`解決される~promise$
@@ -9901,16 +10080,16 @@ ReadableByteStreamControllerRespondInClosedState(controller, firstDescriptor) pe
 </p>
 <ol>
 	<li>
-%firstDescriptor.[[buffer]] ~SET
-~NOABRUPT `TransferArrayBuffer$A( %firstDescriptor.[[buffer]] )
+%firstDescriptor の`~buffer$pD ~SET
+~NOABRUPT `TransferArrayBuffer$A( %firstDescriptor の`~buffer$pD )
 ◎
-Set firstDescriptor.[[buffer]] to ! TransferArrayBuffer(firstDescriptor.[[buffer]]).
+Set firstDescriptor’s buffer to ! TransferArrayBuffer(firstDescriptor’s buffer).
 </li>
 	<li>
 ~Assert：
-%firstDescriptor.[[bytesFilled]] ~EQ 0
+%firstDescriptor の`~fill済み~byte数$pD ~EQ 0
 ◎
-Assert: firstDescriptor.[[bytesFilled]] is 0.
+Assert: firstDescriptor’s bytes filled is 0.
 </li>
 	<li>
 %stream ~LET %controller.[[controlledReadableStream]]
@@ -9963,13 +10142,13 @@ ReadableByteStreamControllerRespondInReadableState(controller, bytesWritten, pul
 <ol>
 	<li>
 ~IF［
-( %pullIntoDescriptor.[[bytesFilled]] ~PLUS %bytesWritten ) ~GT
-%pullIntoDescriptor.[[byteLength]]
+( %pullIntoDescriptor の`~fill済み~byte数$pD ~PLUS %bytesWritten ) ~GT
+%pullIntoDescriptor の`~byte長さ$pD
 ］
 ⇒
 ~THROW `RangeError$E
 ◎
-If pullIntoDescriptor.[[bytesFilled]] + bytesWritten &gt; pullIntoDescriptor.[[byteLength]], throw a RangeError exception.
+If pullIntoDescriptor’s bytes filled + bytesWritten &gt; pullIntoDescriptor’s byte length, throw a RangeError exception.
 </li>
 	<li>
 ~NOABRUPT `ReadableByteStreamControllerFillHeadPullIntoDescriptor$A( %controller, %bytesWritten, %pullIntoDescriptor )
@@ -9978,12 +10157,12 @@ Perform ! ReadableByteStreamControllerFillHeadPullIntoDescriptor(controller, byt
 </li>
 	<li>
 ~IF［
-%pullIntoDescriptor.[[bytesFilled]] ~LT %pullIntoDescriptor.[[elementSize]]
+%pullIntoDescriptor の`~fill済み~byte数$pD ~LT %pullIntoDescriptor の`要素~size$pD
 ］
 ⇒
 ~RET
 ◎
-If pullIntoDescriptor.[[bytesFilled]] &lt; pullIntoDescriptor.[[elementSize]], return.
+If pullIntoDescriptor’s bytes filled &lt; pullIntoDescriptor’s element size, return.
 </li>
 	<li>
 ~NOABRUPT `ReadableByteStreamControllerShiftPendingPullInto$A( %controller )
@@ -9992,9 +10171,9 @@ Perform ! ReadableByteStreamControllerShiftPendingPullInto(controller).
 </li>
 	<li>
 %remainderSize ~LET
-( %pullIntoDescriptor.[[bytesFilled]] `mod^op %pullIntoDescriptor.[[elementSize]] )
+( %pullIntoDescriptor の`~fill済み~byte数$pD `mod^op %pullIntoDescriptor の`要素~size$pD )
 ◎
-Let remainderSize be pullIntoDescriptor.[[bytesFilled]] mod pullIntoDescriptor.[[elementSize]].
+Let remainderSize be pullIntoDescriptor’s bytes filled mod pullIntoDescriptor’s element size.
 </li>
 	<li>
 <p>
@@ -10007,15 +10186,15 @@ If remainderSize &gt; 0,
 		<ol>
 			<li>
 %end ~LET
-( %pullIntoDescriptor.[[byteOffset]] ~PLUS %pullIntoDescriptor.[[bytesFilled]] )
+( %pullIntoDescriptor の`~byte~offset$pD ~PLUS %pullIntoDescriptor の`~fill済み~byte数$pD )
 ◎
-Let end be pullIntoDescriptor.[[byteOffset]] + pullIntoDescriptor.[[bytesFilled]].
+Let end be pullIntoDescriptor’s byte offset + pullIntoDescriptor’s bytes filled.
 </li>
 			<li>
 %remainder ~LET
-~ABRUPT `CloneArrayBuffer$Ax( %pullIntoDescriptor.[[buffer]], ( %end ~MINUS %remainderSize ), %remainderSize, `ArrayBuffer$jI )
+~ABRUPT `CloneArrayBuffer$Ax( %pullIntoDescriptor の`~buffer$pD, ( %end ~MINUS %remainderSize ), %remainderSize, `ArrayBuffer$jI )
 ◎
-Let remainder be ? CloneArrayBuffer(pullIntoDescriptor.[[buffer]], end − remainderSize, remainderSize, %ArrayBuffer%).
+Let remainder be ? CloneArrayBuffer(pullIntoDescriptor’s buffer, end − remainderSize, remainderSize, %ArrayBuffer%).
 </li>
 			<li>
 ~NOABRUPT `ReadableByteStreamControllerEnqueueChunkToQueue$A( %controller, %remainder, 0, %remainder.[[ByteLength]] )
@@ -10025,16 +10204,16 @@ Perform ! ReadableByteStreamControllerEnqueueChunkToQueue(controller, remainder,
 		</ol>
 	</li>
 	<li>
-%pullIntoDescriptor.[[buffer]] ~SET
-~NOABRUPT `TransferArrayBuffer$A( %pullIntoDescriptor.[[buffer]] )
+%pullIntoDescriptor の`~buffer$pD ~SET
+~NOABRUPT `TransferArrayBuffer$A( %pullIntoDescriptor の`~buffer$pD )
 ◎
-Set pullIntoDescriptor.[[buffer]] to ! TransferArrayBuffer(pullIntoDescriptor.[[buffer]]).
+Set pullIntoDescriptor’s buffer to ! TransferArrayBuffer(pullIntoDescriptor’s buffer).
 </li>
 	<li>
-%pullIntoDescriptor.[[bytesFilled]] ~SET
-%pullIntoDescriptor.[[bytesFilled]] ~MINUS %remainderSize
+%pullIntoDescriptor の`~fill済み~byte数$pD ~SET
+%pullIntoDescriptor の`~fill済み~byte数$pD ~MINUS %remainderSize
 ◎
-Set pullIntoDescriptor.[[bytesFilled]] to pullIntoDescriptor.[[bytesFilled]] − remainderSize.
+Set pullIntoDescriptor’s bytes filled to pullIntoDescriptor’s bytes filled − remainderSize.
 </li>
 	<li>
 ~NOABRUPT `ReadableByteStreamControllerCommitPullIntoDescriptor$A( %controller.[[controlledReadableStream]], %pullIntoDescriptor )
@@ -10141,26 +10320,26 @@ Let firstDescriptor be controller.[[pendingPullIntos]][0].
 </li>
 	<li>
 ~IF［
-( %firstDescriptor.[[byteOffset]] ~PLUS %firstDescriptor.[[bytesFilled]] ) ~NEQ %view.[[ByteOffset]]
+( %firstDescriptor の`~byte~offset$pD ~PLUS %firstDescriptor の`~fill済み~byte数$pD ) ~NEQ %view.[[ByteOffset]]
 ］
 ⇒
 ~THROW `RangeError$E
 ◎
-If firstDescriptor.[[byteOffset]] + firstDescriptor.[[bytesFilled]] is not view.[[ByteOffset]], throw a RangeError exception.
+If firstDescriptor’s byte offset + firstDescriptor’ bytes filled is not view.[[ByteOffset]], throw a RangeError exception.
 </li>
 	<li>
 ~IF［
-%firstDescriptor.[[byteLength]] ~NEQ %view.[[ByteLength]]
+%firstDescriptor の`~byte長さ$pD ~NEQ %view.[[ByteLength]]
 ］
 ⇒
 ~THROW `RangeError$E
 ◎
-If firstDescriptor.[[byteLength]] is not view.[[ByteLength]], throw a RangeError exception.
+If firstDescriptor’s byte length is not view.[[ByteLength]], throw a RangeError exception.
 </li>
 	<li>
-%firstDescriptor.[[buffer]] ~SET %view.[[ViewedArrayBuffer]]
+%firstDescriptor の`~buffer$pD ~SET %view.[[ViewedArrayBuffer]]
 ◎
-Set firstDescriptor.[[buffer]] to view.[[ViewedArrayBuffer]].
+Set firstDescriptor’s buffer to view.[[ViewedArrayBuffer]].
 </li>
 	<li>
 ~ABRUPT `ReadableByteStreamControllerRespondInternal$A( %controller, %view.[[ByteLength]] )
@@ -10816,12 +10995,9 @@ A slot set to the promise for the current in-flight close operation while the un
 
 <tr><td>[[pendingAbortRequest]]
 <td>
-［
-`abort()$dw から返される~promise,
-`abort()$dw に渡した事由
-］を包含している~Record
+`処理待ち中止-要請$
 ◎
-A Record containing the promise returned from abort() and the reason passed to abort()
+A pending abort request
 
 <tr><td>[[state]]
 <td>
@@ -10881,6 +11057,49 @@ A list of promises representing the stream’s internal queue of write requests 
 ◎
 The [[inFlightCloseRequest]] slot and [[closeRequest]] slot are mutually exclusive. Similarly, no element will be removed from [[writeRequests]] while [[inFlightWriteRequest]] is not undefined. Implementations can optimize storage for these slots based on these invariants.
 </p>
+
+<p>
+`処理待ち中止-要請@
+は、~streamを中止する要請を その処理に入るまで追跡するために利用される`構造体$であり、次に挙げる`~item$sctからなる：
+◎
+A pending abort request is a struct used to track a request to abort the stream before that request is finally processed. It has the following items:
+</p>
+
+<dl class="def-list">
+	<dt>
+`~promise@aR
+◎
+promise
+</dt>
+	<dd>
+`WritableStreamAbort()$A から返された~promise。
+◎
+A promise returned from WritableStreamAbort
+</dd>
+
+	<dt>
+`事由@aR
+◎
+reason
+</dt>
+	<dd>
+中止-事由として `WritableStreamAbort()$A に渡された~JS値
+◎
+A JavaScript value that was passed as the abort reason to WritableStreamAbort
+</dd>
+
+	<dt>
+`すでに~errorした@aR
+◎
+was already erroring
+</dt>
+	<dd>
+`WritableStreamAbort()$A を~callした時点で、当の~streamは `erroring^l 状態にあったかどうかを指示する真偽値
+— それは、中止-要請の成り行きに影響iする。
+◎
+A boolean indicating whether or not the stream was in the "erroring" state when WritableStreamAbort was called, which impacts the outcome of the abort request
+</dd>
+</dl>
 
 			</section>
 			<section id="underlying-sink-api">
@@ -11886,6 +12105,14 @@ A promise-returning algorithm, taking one argument (the chunk to write), which w
 
 </tbody></table>
 
+<p>
+`~close~sentinel@i
+（ `close~sentinel^en ）は、~streamは~closeされたことを通達する一意な値であり，`~chunk$に代えて [[queue]] の中に~enqueueされる。
+それは、内部に限り利用され，~web開発者に公開されることは決してない。
+◎
+The close sentinel is a unique value enqueued into [[queue]], in lieu of a chunk, to signal that the stream is closed. It is only used internally, and is never exposed to web developers.
+</p>
+
 			</section>
 			<section id="ws-default-controller-prototype">
 <h4 title="Methods">5.4.3. ~method</h4>
@@ -12387,9 +12614,9 @@ If state is "closed" or "errored", return a promise resolved with undefined.
 %stream.[[pendingAbortRequest]] ~NEQ `undefined^jv
 ］
 ⇒
-~RET %stream.[[pendingAbortRequest]].[[promise]]
+~RET %stream.[[pendingAbortRequest]] の`~promise$aR
 ◎
-If stream.[[pendingAbortRequest]] is not undefined, return stream.[[pendingAbortRequest]].[[promise]].
+If stream.[[pendingAbortRequest]] is not undefined, return stream.[[pendingAbortRequest]]'s promise.
 </li>
 	<li>
 ~Assert：
@@ -12429,10 +12656,13 @@ Set reason to undefined.
 Let promise be a new promise.
 </li>
 	<li>
-%stream.[[pendingAbortRequest]] ~SET
-~Record{ [[promise]]: %promise, [[reason]]: %reason, [[wasAlreadyErroring]]: %wasAlreadyErroring }
+%stream.[[pendingAbortRequest]] ~SET 次を伴う，新たな`処理待ち中止-要請$
+⇒＃
+`~promise$aR ~SET %promise,
+`事由$aR ~SET %reason,
+`すでに~errorした$aR ~SET %wasAlreadyErroring
 ◎
-Set stream.[[pendingAbortRequest]] to Record {[[promise]]: promise, [[reason]]: reason, [[wasAlreadyErroring]]: wasAlreadyErroring}.
+Set stream.[[pendingAbortRequest]] to a new pending abort request whose promise is promise, reason is reason, and was already erroring is wasAlreadyErroring.
 </li>
 	<li>
 ~IF［
@@ -12546,7 +12776,7 @@ Each controller class defines two internal methods, which are called by the Writ
 </p>
 
 <dl>
-	<dt>`[[AbortSteps]]( reason )@A</dt>
+	<dt>`[[AbortSteps]](reason)@A</dt>
 	<dd>
 ~streamが`中止-$されたときの反応として走らす，制御器の手続き。
 制御器に格納されている状態を片付けて，`下層~槽$に伝えるために利用される。
@@ -12554,7 +12784,7 @@ Each controller class defines two internal methods, which are called by the Writ
 The controller’s steps that run in reaction to the stream being aborted, used to clean up the state stored in the controller and inform the underlying sink. 
 </dd>
 
-	<dt>`[[ErrorSteps]]( )@A</dt>
+	<dt>`[[ErrorSteps]]()@A</dt>
 	<dd>
 ~streamが~errorしたときの反応として走らす，制御器の手続き。
 制御器に格納されている状態を片付けるために利用される。
@@ -12781,16 +13011,16 @@ Set stream.[[pendingAbortRequest]] to undefined.
 	<li>
 <p>
 ~IF［
-%abortRequest.[[wasAlreadyErroring]] ~EQ ~T
+%abortRequest の`すでに~errorした$aR ~EQ ~T
 ］：
 ◎
-If abortRequest.[[wasAlreadyErroring]] is true,
+If abortRequest’s was already erroring is true,
 </p>
 		<ol>
 			<li>
-%storedError で %abortRequest.[[promise]] を`却下する$
+%storedError で %abortRequest の`~promise$aRを`却下する$
 ◎
-Reject abortRequest.[[promise]] with storedError.
+Reject abortRequest’s promise with storedError.
 </li>
 			<li>
 ~NOABRUPT `WritableStreamRejectCloseAndClosedPromiseIfNeeded$A( %stream)
@@ -12807,11 +13037,10 @@ Return.
 	<li>
 <p>
 %promise ~LET
-~NOABRUPT %stream.[[writableStreamController]].[[AbortSteps]]( %abortRequest.[[reason]] )
+~NOABRUPT %stream.[[writableStreamController]].[[AbortSteps]]( %abortRequest の`事由$aR )
 ◎
-Let promise be ! stream.[[writableStreamController]].[[AbortSteps]](abortRequest.[[reason]]).
+Let promise be ! stream.[[writableStreamController]].[[AbortSteps]](abortRequest’s reason).
 </p>
-
 		<ul>
 			<li>
 <p>
@@ -12822,9 +13051,9 @@ Upon fulfillment of promise,
 				<ol>
 					<li>
 `undefined^jv で
-%abortRequest.[[promise]] を`解決する$
+%abortRequest の`~promise$aRを`解決する$
 ◎
-Resolve abortRequest.[[promise]] with undefined.
+Resolve abortRequest’s promise with undefined.
 </li>
 					<li>
 ~NOABRUPT `WritableStreamRejectCloseAndClosedPromiseIfNeeded$A( %stream)
@@ -12843,9 +13072,9 @@ Upon rejection of promise with reason reason,
 				<ol>
 					<li>
 %reason で
-%abortRequest.[[promise]] を`却下する$
+%abortRequest の`~promise$aRを`却下する$
 ◎
-Reject abortRequest.[[promise]] with reason.
+Reject abortRequest’s promise with reason.
 </li>
 					<li>
 ~NOABRUPT `WritableStreamRejectCloseAndClosedPromiseIfNeeded$A( %stream)
@@ -12920,9 +13149,9 @@ If stream.[[pendingAbortRequest]] is not undefined,
 				<ol>
 					<li>
 `undefined^jv で
-%stream.[[pendingAbortRequest]].[[promise]] を`解決する$
+%stream.[[pendingAbortRequest]] の`~promise$aRを`解決する$
 ◎
-Resolve stream.[[pendingAbortRequest]].[[promise]] with undefined.
+Resolve stream.[[pendingAbortRequest]]'s promise with undefined.
 </li>
 					<li>
 %stream.[[pendingAbortRequest]] ~SET `undefined^jv
@@ -13010,9 +13239,9 @@ If stream.[[pendingAbortRequest]] is not undefined,
 		<ol>
 			<li>
 %error で
-%stream.[[pendingAbortRequest]].[[promise]] を`却下する$
+%stream.[[pendingAbortRequest]] の`~promise$aRを`却下する$
 ◎
-Reject stream.[[pendingAbortRequest]].[[promise]] with error.
+Reject stream.[[pendingAbortRequest]]'s promise with error.
 </li>
 			<li>
 %stream.[[pendingAbortRequest]] ~SET `undefined^jv
@@ -14124,26 +14353,26 @@ Return.
 If controller.[[queue]] is empty, return.
 </li>
 	<li>
-%writeRecord ~LET 
+%value ~LET 
 ~NOABRUPT `PeekQueueValue$A( %controller )
 ◎
-Let writeRecord be ! PeekQueueValue(controller).
+Let value be ! PeekQueueValue(controller).
 </li>
 	<li>
 ~IF［
-%writeRecord ~EQ `close^l
+%value ~EQ `~close~sentinel$i
 ］
 ⇒
 ~NOABRUPT `WritableStreamDefaultControllerProcessClose$A( %controller )
 ◎
-If writeRecord is "close", perform ! WritableStreamDefaultControllerProcessClose(controller).
+If value is the close sentinel, perform ! WritableStreamDefaultControllerProcessClose(controller).
 </li>
 	<li>
 ~ELSE
 ⇒
-~NOABRUPT `WritableStreamDefaultControllerProcessWrite$A( %controller, %writeRecord.[[chunk]] )
+~NOABRUPT `WritableStreamDefaultControllerProcessWrite$A( %controller, %value )
 ◎
-Otherwise, perform ! WritableStreamDefaultControllerProcessWrite(controller, writeRecord.[[chunk]]).
+Otherwise, perform ! WritableStreamDefaultControllerProcessWrite(controller, value).
 </li>
 </ol>
 </div>
@@ -14209,9 +14438,9 @@ WritableStreamDefaultControllerClose(controller) performs the following steps:
 </p>
 <ol>
 	<li>
-~NOABRUPT `EnqueueValueWithSize$A( %controller, `close^l, 0 )
+~NOABRUPT `EnqueueValueWithSize$A( %controller, `~close~sentinel$i, 0 )
 ◎
-Perform ! EnqueueValueWithSize(controller, "close", 0).
+Perform ! EnqueueValueWithSize(controller, close sentinel, 0).
 </li>
 	<li>
 ~NOABRUPT `WritableStreamDefaultControllerAdvanceQueueIfNeeded$A( %controller )
@@ -14556,15 +14785,10 @@ WritableStreamDefaultControllerWrite(controller, chunk, chunkSize) performs the 
 </p>
 <ol>
 	<li>
-%writeRecord ~LET ~Record{ [[chunk]]: %chunk }
-◎
-Let writeRecord be Record {[[chunk]]: chunk}.
-</li>
-	<li>
 %enqueueResult ~LET
-`EnqueueValueWithSize$A( %controller, %writeRecord, %chunkSize )
+`EnqueueValueWithSize$A( %controller, %chunk, %chunkSize )
 ◎
-Let enqueueResult be EnqueueValueWithSize(controller, writeRecord, chunkSize).
+Let enqueueResult be EnqueueValueWithSize(controller, chunk, chunkSize).
 </li>
 	<li>
 <p>
@@ -17060,15 +17284,13 @@ The following abstract operations each support the implementation of more than o
 個別~size付き~queueは、仕様~levelの様々な~objに包含され，常に［
 [[queue]], [[queueTotalSize]]
 と命名され，~pairにされる 2 つの内部~slot
-］を持つ~objにより表現される。
-[[queue]] は，それぞれが［
-[[value]], [[size]]
-］~fieldを伴う一連の~Recordからなる`~list$であり、
+］を持つ~objとして表現される。
+[[queue]] は，`~sizeを伴う値$たちが成す`~list$であり、
 [[queueTotalSize]] は，~JS `Number$jT
 — すなわち，倍精度~浮動小数点~number —
 をとる。
 ◎
-The streams in this specification use a "queue-with-sizes" data structure to store queued up values, along with their determined sizes. Various specification objects contain a queue-with-sizes, represented by the object having two paired internal slots, always named [[queue]] and [[queueTotalSize]]. [[queue]] is a list of Records with [[value]] and [[size]] fields, and [[queueTotalSize]] is a JavaScript Number, i.e. a double-precision floating point number.
+The streams in this specification use a "queue-with-sizes" data structure to store queued up values, along with their determined sizes. Various specification objects contain a queue-with-sizes, represented by the object having two paired internal slots, always named [[queue]] and [[queueTotalSize]]. [[queue]] is a list of value-with-sizes, and [[queueTotalSize]] is a JavaScript Number, i.e. a double-precision floating point number.
 </p>
 
 <p>
@@ -17084,6 +17306,16 @@ The following abstract operations are used when operating on objects that contai
 （しかしながら，この相違が生じるのは、~chunkたちの~sizeの変動幅が莫大になるとき（ 〜 10<sup>15</sup> ）か, 数 100 京 個の~chunkが~enqueueされたときに限られる。）
 ◎
 Due to the limited precision of floating-point arithmetic, the framework specified here, of keeping a running total in the [[queueTotalSize]] slot, is not equivalent to adding up the size of all chunks in [[queue]]. (However, this only makes a difference when there is a huge (~1015) variance in size between chunks, or when trillions of chunks are enqueued.)
+</p>
+
+<p>
+`~sizeを伴う値@
+は、次に挙げる`~item$sctからなる`構造体$である
+⇒＃
+`値@Vs,
+`~size@Vs
+◎
+In what follows, a value-with-size is a struct with the two items value and size.
 </p>
 
 <div class="algo">
@@ -17109,19 +17341,19 @@ Assert: container has [[queue]] and [[queueTotalSize]] internal slots.
 Assert: container.[[queue]] is not empty.
 </li>
 	<li>
-%pair ~LET %container.[[queue]][0]
+%valueWithSize ~LET %container.[[queue]][0]
 ◎
-Let pair be container.[[queue]][0].
+Let valueWithSize be container.[[queue]][0].
 </li>
 	<li>
-%container.[[queue]] から %pair を`除去する$
+%container.[[queue]] から %valueWithSize を`除去する$
 ◎
-Remove pair from container.[[queue]].
+Remove valueWithSize from container.[[queue]].
 </li>
 	<li>
-%container.[[queueTotalSize]] ~SET %container.[[queueTotalSize]] ~MINUS %pair.[[size]]
+%container.[[queueTotalSize]] ~SET %container.[[queueTotalSize]] ~MINUS %valueWithSize の`~size$Vs
 ◎
-Set container.[[queueTotalSize]] to container.[[queueTotalSize]] − pair.[[size]].
+Set container.[[queueTotalSize]] to container.[[queueTotalSize]] − valueWithSize’s size.
 </li>
 	<li>
 ~IF［
@@ -17133,9 +17365,9 @@ Set container.[[queueTotalSize]] to container.[[queueTotalSize]] − pair.[[size
 If container.[[queueTotalSize]] &lt; 0, set container.[[queueTotalSize]] to 0. (This can occur due to rounding errors.)
 </li>
 	<li>
-~RET %pair.[[value]]
+~RET %valueWithSize の`値$Vs
 ◎
-Return pair.[[value]].
+Return valueWithSize’s value.
 </li>
 </ol>
 </div>
@@ -17175,11 +17407,14 @@ If ! IsNonNegativeNumber(size) is false, throw a RangeError exception.
 If size is +∞, throw a RangeError exception.
 </li>
 	<li>
-%container.[[queue]] に
-~Record{ [[value]]: %value, [[size]]: %size }
-を`付加する$
+%container.[[queue]] に［
+次を伴う，新たな`~sizeを伴う値$
+］を`付加する$
+⇒＃
+`値$Vs ~SET %value,
+`~size$Vs ~SET %size
 ◎
-Append Record {[[value]]: value, [[size]]: size} to container.[[queue]].
+Append a new value-with-size with value value and size size to container.[[queue]].
 </li>
 	<li>
 %container.[[queueTotalSize]] ~INCBY %size
@@ -17212,14 +17447,14 @@ Assert: container has [[queue]] and [[queueTotalSize]] internal slots.
 Assert: container.[[queue]] is not empty.
 </li>
 	<li>
-%pair ~LET %container.[[queue]][0]
+%valueWithSize ~LET %container.[[queue]][0]
 ◎
-Let pair be container.[[queue]][0].
+Let valueWithSize be container.[[queue]][0].
 </li>
 	<li>
-~RET %pair.[[value]]
+~RET %valueWithSize の`値$Vs
 ◎
-Return pair.[[value]].
+Return valueWithSize’s value.
 </li>
 </ol>
 </div>
@@ -17597,7 +17832,7 @@ function makeUDPSocketStream(%host, %port) {
       function readRepeatedly() {
         return %socket.select2().then(() =&gt; {
           /* <span class="comment">
-処理待ちの~BYOB要請（ `byobRequest$rbsc ）がないときでも， %socket は読取~可能になり得るので、両~事例とも取扱う必要がある。
+処理待ち~BYOB要請（ `byobRequest$rbsc ）がないときでも， %socket は読取~可能になり得るので、両~事例とも取扱う必要がある。
 ◎
 Since the socket can become readable even when there’s no pending BYOB requests, we need to handle both cases.
 </span> */
@@ -17700,7 +17935,7 @@ We can then create and use readable streams for files just as we could before fo
 次の関数は，
 <a href="https://nodejs.org/api/fs.html">Node.js file system API</a>
 を再度~利用して`可読~byte~stream$を返すが、今度は，~fileを複製することなく効率的に読取できるようにする。
-それは、予め決定-済みの~chunk~size 1024 を利用する代わりに，開発者から給された~bufferを埋めようと試みることで、全部的に制御できるようにする。
+それは、予め決定-済みの~chunk~size 1024 を利用する代わりに，開発者から給された~bufferを~fillしようと試みることで、全部的に制御できるようにする。
 ◎
 The following function returns readable byte streams that allow efficient zero-copy reading of files, again using the Node.js file system API. Instead of using a predetermined chunk size of 1024, it attempts to fill the developer-supplied buffer, allowing full control.
 </p>
