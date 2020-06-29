@@ -492,9 +492,9 @@ const fillCopyright = () => {
 <br><span lang="en-x-a0">
 `;
 	switch( license ){
-	case 'whatwg':
+	case 'whatwg': // whatwg は year なし
 		html += `
-<a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>. Copyright © ${year} WHATWG (Apple, Google, Mozilla, Microsoft).`;
+<a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>. Copyright © WHATWG (Apple, Google, Mozilla, Microsoft).`;
 		break;
 	case 'use':
 	case 'permissive':

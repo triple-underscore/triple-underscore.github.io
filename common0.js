@@ -489,7 +489,7 @@ Util.fillHeader = () => {
 	const hgroup = header.querySelector('hgroup');
 
 	if( url.slice(0,39) === 'https://html.spec.whatwg.org/multipage/' ){
-		options.copyright = '2020,whatwg';
+		options.copyright = ',whatwg';
 	}
 
 	// タイトル横のロゴ画像リンク
