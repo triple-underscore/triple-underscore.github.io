@@ -315,16 +315,21 @@ Util.setState = (key, val) => {
 */
 }
 
-/* 初期処理： <meta viewport> */
+/* 初期処理： <meta viewport> <link rel=icon> */
 {
 	// meta with viewport for mbile (ideally, should be set by CSS, not meta tag)
 	const head = document.head || document.getElementsByTagName('head')[0];
 	if(head){
 	//	const w = screen.width;...
 		const meta = C('meta');
-		meta.setAttribute('name', 'viewport');
-		meta.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1');
+		meta.name = 'viewport';
+		meta.content = 'width=device-width, initial-scale=1, minimum-scale=1';
 		head.appendChild(meta);
+
+		const link = C('link');
+		link.rel = 'icon';
+		link.href = 'common/3underscore.png';
+		head.appendChild(link);
 	}
 }
 
