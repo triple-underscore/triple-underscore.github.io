@@ -1075,9 +1075,9 @@ HEADER-STRUCTURE:http-header-structure-ja.html
 CSSWG:https://drafts.csswg.org
 CSSissue:https://github.com/w3c/csswg-drafts/issues
 HTMLissue:https://github.com/whatwg/html/issues
-	CSS22:https://www.w3.org/TR/CSS22
-CSS22:https://drafts.csswg.org/css2
-CSS21:https://www.w3.org/TR/CSS21
+CSS21:https://www.w3.org/TR/CSS2
+CSS22:https://www.w3.org/TR/CSS2
+	CSS22:https://drafts.csswg.org/css2 → single page
 CSP3:CSP3-ja.html
 COMPOSITING:compositing-ja.html
 FILTERS:filter-effects-ja.html
