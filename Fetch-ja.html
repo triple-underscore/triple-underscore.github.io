@@ -187,8 +187,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2020-06-29
-trans_update:2020-06-27
+spec_date:2020-07-03
+trans_update:2020-07-04
 source_checked:191204
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -861,6 +861,8 @@ cc.寿命:#concept-cache-max-age
 cc.~header名:#concept-cache-header-name
 cc.~method:#concept-cache-method
 
+~HTTP~cache区分を決定する:#determine-the-http-cache-partition
+
 	●CORS/接続 他
 
 ~CORS検査:#concept-cors-check
@@ -1109,6 +1111,10 @@ enV.~referrer施策:~WAPI#concept-settings-object-referrer-policy
 enV.埋込元~施策:~WAPI#concept-settings-object-embedder-policy
 enV.作成時の~URL:~WAPI#concept-environment-creation-url
 enV.生成元:~WAPI#concept-settings-object-origin
+enV.~top-level生成元:~WAPI#concept-environment-top-level-origin
+enV.~top-level作成時の~URL:~WAPI#concept-environment-top-level-creation-url
+~siteを得する:~ORIGIN#obtain-a-site
+
 ~script~fetch~options:~WAPI#script-fetch-options
 
 閲覧文脈:~BROWSERS#browsing-context
@@ -1503,6 +1509,10 @@ RFC:
 増補-:augment:~
 必要最小限:minimal:~
 申請-:file:~
+精緻:fine:~
+	より精緻:finer
+複雑:complicated:~
+文言:language:~
 
 	用途:usage
 	~~強く:highly
@@ -1661,6 +1671,7 @@ memory::::メモリ
 internet::::インターネット
 再生-:play:~
 	再生し直す:replay
+区分:partition:~
 
 	改変されてない:unmodified
 	予約-済み:reserved
@@ -1703,6 +1714,7 @@ internet::::インターネット
 	%範囲~値:rangeValue
 	%~header名:headerName
 	%~http要請:httpRequest
+	%~http~cache:httpCache
 	%再検証-要請:revalidateRequest
 	%再検証中~flag:revalidatingFlag
 	%格納-済み応答:storedResponse
@@ -1729,8 +1741,9 @@ internet::::インターネット
 	%埋込元~施策:embedderPolicy
 	%報告のみ:reportOnly
 	%実際の応答:actualResponse
-	%~http要請:~httpRequest
 	%埋込元~施策~値:~embedderPolicyValue
+	%~top-level生成元:topLevelOrigin
+	%~top-level~site:topLevelSite
 
 	非同一-生成元~埋込元~施策:Cross-Origin Embedder Policy
 	~secureでない:non-secure
@@ -1891,7 +1904,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/2945edc978da86e701b3091151d35097dc1a7621/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/8b0ac51c97228da73a20231792e5a8473707c789/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -6340,8 +6353,110 @@ This is intentionally a little vague as the finer points are still evolving. Des
 </div>
 
 		</section>
+		<section id="http-cache-partitions">
+<h3 title="HTTP cache partitions">2.6. ~HTTP~cacheの区分</h3>
+
+<div class="algo">
+<p>
+`~HTTP~cache区分を決定する@
+ときは、所与の
+( %要請 )
+に対し，次の手続きを走らす：
+◎
+To determine the HTTP cache partition, given request, run these steps:
+</p>
+
+<ol>
+	<li>
+%~top-level生成元 ~LET ~NULL
+◎
+Let topLevelOrigin be null.
+</li>
+	<li>
+<p>
+~IF［
+%要請 の`予約-済み~client$rq ~NEQ ~NULL
+］：
+◎
+If request’s reserved client is non-null, then:
+</p>
+		<ol>
+			<li>
+%~top-level生成元 ~SET %要請 の`予約-済み~client$rqの`~top-level生成元$enV
+◎
+Set topLevelOrigin to request’s reserved client’s top-level origin.
+</li>
+			<li>
+<p>
+~IF［
+%~top-level生成元 ~EQ ~NULL
+］
+⇒
+%~top-level生成元 ~SET %要請 の`予約-済み~client$rqの`~top-level作成時の~URL$enVの`生成元$url
+◎
+If topLevelOrigin is null, then set topLevelOrigin to request’s reserved client’s top-level creation URL’s origin.
+</p>
+
+<p class="note">注記：
+これが起こるのは、~top-level~naviに限られる。
+◎
+This happens for top-level navigations only.
+</p>
+			</li>
+		</ol>
+	</li>
+	<li>
+~ELIF［
+%要請 の`~client$rq ~NEQ ~NULL
+］
+⇒
+%~top-level生成元 ~SET %要請 の`~client$rqの`~top-level生成元$enV
+◎
+Otherwise, if request’s client is non-null, set topLevelOrigin to request’s client’s top-level origin.
+</li>
+	<li>
+~ELSE
+⇒
+~RET ~NULL
+◎
+Otherwise, return null.
+</li>
+	<li>
+~Assert：
+%~top-level生成元 は`生成元$である
+◎
+Assert: topLevelOrigin is an origin.
+</li>
+	<li>
+%~top-level~site ~LET `~siteを得する$( %~top-level生成元 )
+◎
+Let topLevelSite be the result of obtaining a site, given topLevelOrigin.
+</li>
+	<li>
+<p>
+~RET %~top-level~site
+— または、場合によっては，それと もう一つの~keyが成す組 —
+に結付けられている~HTTP~cache
+`HTTP-CACHING$r
+◎
+Return the HTTP cache associated with topLevelSite and, possibly, a second key. [HTTP-CACHING]
+</p>
+
+<p class="XXX">
+もう一つの~keyは、意図的に少し曖昧にされている
+— より精緻な点で、依然として発展しているので。
+<a href="https://github.com/whatwg/fetch/issues/1035">課題 #1035</a>
+を見よ。
+◎
+The second key is intentionally a little vague as the finer points are still evolving. See issue #1035.
+</p>
+	</li>
+</ol>
+</div>
+
+		</section>
 		<section id="port-blocking">
-<h3 title="Port blocking">2.6. ~portの阻止-法</h3>
+<h3 title="Port blocking">2.7. ~portの阻止-法</h3>
 
 <div class="algo">
 <p>
@@ -6483,7 +6598,7 @@ A port is a bad port if it is listed in the first column of the following table.
 
 		</section>
 		<section id="should-response-to-request-be-blocked-due-to-mime-type?">
-<h3 title="Should response to request be blocked due to its MIME type?">2.7. %要請 に対する %応答 は，~MIME型に因り阻止されるべきか？</h3>
+<h3 title="Should response to request be blocked due to its MIME type?">2.8. %要請 に対する %応答 は，~MIME型に因り阻止されるべきか？</h3>
 
 <p>
 次の手続きを走らす：
@@ -6536,7 +6651,7 @@ Return allowed.
 
 		</section>
 		<section id="streams">
-<h3 title="Streams">2.8. ~stream</h3>
+<h3 title="Streams">2.9. ~stream</h3>
 
 <p class="note">注記：
 この節は、~IDLなどの他の標準に統合されるかもしれない。
@@ -6545,7 +6660,7 @@ This section might be integrated into other standards, such as IDL.
 </p>
 
 			<section id="readablestream">
-<h4 title="ReadableStream">2.8.1. ~ReadableStream</h4>
+<h4 title="ReadableStream">2.9.1. ~ReadableStream</h4>
 
 <p>
 `~ReadableStream@
@@ -10646,6 +10761,11 @@ Let response be null.
 Let storedResponse be null.
 </li>
 	<li>
+%~http~cache ~LET ~NULL
+◎
+Let httpCache be null.
+</li>
+	<li>
 %再検証中~flag ~LET ~F
 ◎
 Let the revalidatingFlag be unset.
@@ -11172,6 +11292,20 @@ This intentionally does not depend on httpRequest’s credentials mode.
 </p>
 			</li>
 			<li>
+%~http~cache ~SET `~HTTP~cache区分を決定する$( %~http要請 )
+◎
+Set httpCache to the result of determining the HTTP cache partition, given httpRequest.
+</li>
+			<li>
+~IF［
+%~http~cache ~EQ ~NULL
+］
+⇒
+%~http要請 の`~cache~mode$rq~SET `no-store^l
+◎
+If httpCache is null, then set httpRequest’s cache mode to "no-store".
+</li>
+			<li>
 <p>
 `(B)^i：<br>
 
@@ -11184,7 +11318,7 @@ If httpRequest’s cache mode is neither "no-store" nor "reload", then:
 				<ol>
 					<li>
 <p>
-%格納-済み応答 ~SET ~HTTP~cacheから応答を選定した結果
+%格納-済み応答 ~SET %~http~cache から応答を選定した結果
 ⇒
 ~IF［
 該当する応答はない
@@ -11198,7 +11332,7 @@ If httpRequest’s cache mode is neither "no-store" nor "reload", then:
 </p>
 
 ◎
-Set storedResponse to the result of selecting a response from the HTTP cache, possibly needing validation, as per the "Constructing Responses from Caches" chapter of HTTP Caching [HTTP-CACHING], if any.
+Set storedResponse to the result of selecting a response from the httpCache, possibly needing validation, as per the "Constructing Responses from Caches" chapter of HTTP Caching [HTTP-CACHING], if any.
 ◎
 As mandated by HTTP, this still takes the `Vary` header into account.
 ◎
@@ -11255,11 +11389,11 @@ In parallel, perform main fetch using revalidateRequest.
 </p>
 
 <p class="note">注記：
-この~fetchに意味されるのは，~HTTP~cacheの状態を更新することに限られ、対する応答は，別の~cache~accessまで利用されないことになる。
+この~fetchに意味されるのは， %~http~cache の状態を更新することに限られ、対する応答は，別の~cache~accessまで利用されないことになる。
 現在の要請に対する応答には、非新鮮な応答が利用されることになる。
 この~fetchは，~clientの文脈で発行iされるので、消え去った場合，要請【 %再検証-要請 ？】は終了されることになる。
 ◎
-This fetch is only meant to update the state of the HTTP cache and the response will be unused until another cache access. The stale response will be used as the response to current request. This fetch is issued in the context of a client so if it goes away the request will be terminated.
+This fetch is only meant to update the state of httpCache and the response will be unused until another cache access. The stale response will be used as the response to current request. This fetch is issued in the context of a client so if it goes away the request will be terminated.
 </p>
 							</li>
 						</ol>
@@ -11383,10 +11517,10 @@ Let forwardResponse be the result of making an HTTP-network fetch using httpRequ
 ⇒＃
 `HTTP Caching^cite による
 <a href="~HTTPcache#invalidation">§ 無効化-法</a>
-にしたがって，~HTTP~cache内の適切な格納-済み応答たちを無効化する `HTTP-CACHING$r；
+にしたがって， %~http~cache 内の適切な格納-済み応答たちを無効化する `HTTP-CACHING$r；
 %格納-済み応答 ~SET ~NULL
 ◎
-If httpRequest’s method is unsafe and forwardResponse’s status is in the range 200 to 399, inclusive, invalidate appropriate stored responses in the HTTP cache, as per the "Invalidation" chapter of HTTP Caching, and set storedResponse to null. [HTTP-CACHING]
+If httpRequest’s method is unsafe and forwardResponse’s status is in the range 200 to 399, inclusive, invalidate appropriate stored responses in httpCache, as per the "Invalidation" chapter of HTTP Caching, and set storedResponse to null. [HTTP-CACHING]
 </li>
 			<li>
 <p>
@@ -11441,12 +11575,12 @@ Set response to forwardResponse.
 <p>
 `HTTP Caching^cite による
 <a href="~HTTPcache#response.cacheability">§ ~cache内への応答の格納-法</a>
-にしたがって，~HTTP~cache内に［
+にしたがって，%~http~cache 内に［
 %~http要請, %~forward応答
 ］を格納する
 `HTTP-CACHING$r
 ◎
-Store httpRequest and forwardResponse in the HTTP cache, as per the "Storing Responses in Caches" chapter of HTTP Caching. [HTTP-CACHING]
+Store httpRequest and forwardResponse in httpCache, as per the "Storing Responses in Caches" chapter of HTTP Caching. [HTTP-CACHING]
 </p>
 
 <p class="note">注記：
@@ -11689,6 +11823,20 @@ To perform an HTTP-network fetch using request with an optional credentials flag
 %応答 ~LET ~NULL
 ◎
 Let response be null.
+</li>
+	<li>
+%~http~cache ~LET `~HTTP~cache区分を決定する$( %~http要請 )
+◎
+Let httpCache be the result of determining the HTTP cache partition, given httpRequest.
+</li>
+	<li>
+~IF［
+%~http~cache ~EQ ~NULL
+］
+⇒
+%要請 の`~cache~mode$rq~SET `no-store^l
+◎
+If httpCache is null, then set request’s cache mode to "no-store".
 </li>
 	<li>
 <p>
@@ -11971,11 +12119,11 @@ If response has a payload body length, then set response’s body’s total byte
 %要請 の`~cache~mode$rq ~NEQ `no-store^l
 ］
 ⇒
-~HTTP~cache内の［
+%~http~cache 内の［
 %要請 に対する %応答
 ］を更新する
 ◎
-If response is not a network error and request’s cache mode is not "no-store", update response in the HTTP cache for request.
+If response is not a network error and request’s cache mode is not "no-store", then update response in httpCache for request.
 </li>
 			<li>
 <p>
@@ -16613,8 +16761,8 @@ fetch(`https://www.example.com/^l)
 <p>注記：
 この節は、~WebSocket~protocolの~opening~handshakeに課される~client要件の一部を，~Fetchにて定義される~algoに統合するために置換する。
 ~CSP, ~cookie, HSTS, その他， Fetch に関係する~protocolは、この仕方で，一箇所に集約して取扱われるようになる。
-~RFCがこの言語とともに更新されるのが理想だが、それは決して容易にはならない。
-~HTML標準に定義される~WebSocket~APIは、この言語を利用するように更新された。
+~RFCがこの文言で更新されるのが理想だが、それは決して容易にはならない。
+~HTML標準に定義される~WebSocket~APIは、この文言を利用するように更新された。
 `WSP$r `HTML$r
 ◎
 This section replaces part of the WebSocket protocol opening handshake client requirement to integrate it with algorithms defined in Fetch. This way CSP, cookies, HSTS, and other Fetch-related protocols are handled in a single location. Ideally the RFC would be updated with this language, but it is never that easy. The WebSocket API, defined in the HTML Standard, has been updated to use this language. [WSP] [HTML]
@@ -17432,6 +17580,7 @@ Sendil Kumar N,
 Shao-xuan Kang,
 Sharath Udupa,
 Shivakumar Jagalur Matt,
+Shivani Sharma,
 Sigbjørn Finne,
 Simon Pieters,
 Simon Sapin,
