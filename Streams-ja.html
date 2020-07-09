@@ -140,8 +140,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2020-06-29
-trans_update:2020-06-28
+spec_date:2020-07-07
+trans_update:2020-07-09
 	source_checked:200625
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -191,6 +191,8 @@ qsi:code
 rwp:code
 blqs:code
 cqs:code
+brr:code
+drr:code
 I:code
 A:span
 Ax:span
@@ -212,10 +214,6 @@ acquire-readable-stream-default-reader:acquire-readable-stream-reader
 extract-high-water-mark:validate-and-normalize-high-water-mark
 extract-size-algorithm:make-size-algorithm-from-size-function
 readable-stream-default-controller-has-backpressure:rs-default-controller-has-backpressure
-transform-stream-default-controller-enqueue:set-up-transform-stream-default-controller-enqueue
-transform-stream-default-controller-error:set-up-transform-stream-default-controller-error
-transform-stream-default-controller-perform-transform:set-up-transform-stream-default-controller-perform-transform
-transform-stream-default-controller-terminate:set-up-transform-stream-default-controller-terminate
 transform-stream-default-source-pull-algorithm:transform-stream-default-source-pull
 
 	rs-asynciterator:rs-asynciterator-prototype
@@ -256,10 +254,12 @@ E.RangeError:~WEBIDL#exceptiondef-rangeerror
 
 I.ReadableStream:#readablestream
 I.ReadableStreamDefaultReader:#readablestreamdefaultreader
+I.ReadableStreamDefaultReadResult:#dictdef-readablestreamdefaultreadresult
 I.ReadableStreamDefaultController:#readablestreamdefaultcontroller
 I.ReadableByteStreamController:#readablebytestreamcontroller
 I.ReadableStreamBYOBReader:#readablestreambyobreader
 I.ReadableStreamBYOBRequest:#readablestreambyobrequest
+I.ReadableStreamBYOBReadResult:#dictdef-readablestreambyobreadresult
 
 I.WritableStream:#writablestream
 I.WritableStreamDefaultWriter:#writablestreamdefaultwriter
@@ -357,6 +357,12 @@ byob.releaseLock:#byob-reader-release-lock
 bbrq.view:#rs-byob-request-view
 bbrq.respond:#rs-byob-request-respond
 bbrq.respondWithNewView:#rs-byob-request-respond-with-new-view
+
+drr.done:#dom-readablestreamdefaultreadresult-done
+drr.value:#dom-readablestreamdefaultreadresult-value
+
+brr.done:#dom-readablestreambyobreadresult-done
+brr.value:#dom-readablestreambyobreadresult-value
 
 m.new WritableStream:#ws-constructor
 ws.locked:#ws-locked
@@ -498,14 +504,10 @@ A.StructuredSerialize:~HTMLcloning#structuredserialize
 	Ax.CopyDataBlockBytes
 	Ax.CreateArrayFromList
 	Ax.CreateBuiltinFunction
-	Ax.CreateDataProperty
-	Ax.CreateIterResultObject
 	Ax.DetachArrayBuffer
-	Ax.Get
 	Ax.GetV
 	Ax.IsDetachedBuffer
 	Ax.IsInteger
-	Ax.OrdinaryObjectCreate
 	Ax.SetFunctionLength
 	Ax.SetFunctionName
 
@@ -571,7 +573,6 @@ A.StructuredSerialize:~HTMLcloning#structuredserialize
 	#rs-pipeTo-shutdown
 転送され:#transfer-array-buffer
 
-
 可読~byte~stream用の~queue~entry:#readable-byte-stream-queue-entry
 qE.~buffer:#readable-byte-stream-queue-entry-buffer
 qE.~byte~offset:#readable-byte-stream-queue-entry-byte-offset
@@ -596,6 +597,15 @@ i.~close~sentinel:#close-sentinel
 ~sizeを伴う値:#value-with-size
 Vs.値:#value-with-size-value
 Vs.~size:#value-with-size-size
+
+中へ読取する要請:#read-into-request
+riR.~chunk手続き:#read-into-request-chunk-steps
+riR.~close手続き:#read-into-request-close-steps
+riR.~error手続き:#read-into-request-error-steps
+読取n要請:#read-request
+rR.~chunk手続き:#read-request-chunk-steps
+rR.~close手続き:#read-request-close-steps
+rR.~error手続き:#read-request-error-steps
 
 	●§
 sec.個別~size付き~queue:#queue-with-sizes
@@ -622,7 +632,6 @@ jE.TypeError:~TC39#sec-native-error-types-used-in-this-standard-typeerror
 jI.ArrayBuffer:~TC39#sec-arraybuffer-constructor
 jI.Uint8Array:~TC39#sec-typedarray-objects
 jI.DataView:~TC39#sec-dataview-constructor
-jI.ObjectPrototype:~TC39#sec-properties-of-the-object-prototype-object
 
 有型~配列:~TC39#sec-typedarray-objects
 現在の~Realm:~TC39#current-realm
@@ -684,6 +693,7 @@ aB.中止-済み~flag:~DOM4#abortsignal-aborted-flag
 関連な~Realm:~WAPI#concept-relevant-realm
 関連な設定群~obj:~WAPI#relevant-settings-object
 関連な大域~obj:~WAPI#concept-relevant-global
+小taskを~queueする:~WAPI#queue-a-microtask
 
 e.img:~HEimages#the-img-element
 et.fetch:~SW1#service-worker-global-scope-fetch-event
@@ -715,7 +725,7 @@ BYOB:
 書込する:writeする::書込む
 書込でき:writeでき::書込め
 書込み:writing::書込み
-書込:write::書込み
+書込n:write::書込み
 書込器:writer::書込み器
 可書:writable::書込める
 
@@ -729,10 +739,10 @@ BYOB:
 読取する:readする::読取る
 読取でき:readでき::読取れ
 読取り:reading::読取り
-読取:read::読取り
-	読取~可能:readable
+読取n:read::読取り
 読取器:reader::読取り器
 可読:readable::読取れる
+	読取n可能:readable
 	write:::::
 	read:::::
 	readable:::::
@@ -940,6 +950,7 @@ return:
 移行-:move::~
 memory::::メモリ
 契約:contract::~
+小task:microtask::小 task:小タスク
 
 	~call元:caller
 	calling
@@ -962,6 +973,9 @@ memory::::メモリ
 	何もしない:no-op
 	不定期の間:indefinitely
 	成り行き:outcome
+	より早く:sooner
+	事前に:ahead of time
+	先んじて:ahead of
 
 	●仕様
 WebIDL:Web IDL
@@ -1060,6 +1074,7 @@ polyfill:
 	これについて:subject
 	べきである:ought to
 	~~際どい:edge
+	するわけにはいかない:cannot let 〜 happen
 
 refactor::::リファクター
 	refactoring
@@ -1073,7 +1088,6 @@ encapsulate::::カプセル化
 具象-:concrete:~
 	具体的には:concretely
 希望-:hope:~
-計画-:plan:~
 尊重-:respect:~
 確信-:believe:~
 拡張d:extended:拡張
@@ -1089,8 +1103,6 @@ encapsulate::::カプセル化
 浪費-:waste:~
 関心:interest:~
 警告:warning:~
-梱包-:package:~
-弄って:tamperして:~
 寄与-:contribute:~
 集中-:centralize:~
 承認-:acknowledge:~
@@ -1150,11 +1162,6 @@ encapsulate::::カプセル化
 	そうなり得る:could become so
 	それに伴われる:come along for the ride
 	整理:clean up
-	未だ終えてない:which we have not done
-	~~考えられる:conceivable
-	書き直して:rephrase
-	大仕事:large undertaking
-	根底にある:underlying
 	ままにしておく:leave
 	促進させる:encouraging
 	動機にある:motivated
@@ -1165,7 +1172,6 @@ encapsulate::::カプセル化
 	~~利用する:usage
 	-:equal
 	各種:various
-	事前に:ahead of time
 	寄せ集め:grab-bag
 	主要な:major
 	情報片:piece
@@ -1442,7 +1448,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/c63ae9eb7de6069f0e3cf5ea6b0ef68a2c8a3971" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/6969058362a777310af6a5274079b023a3c6914b" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -1644,7 +1650,7 @@ Push sources push data at you, whether or not you are listening for it. They may
 <p>
 `~pull源@
 は、~dataを得るためには要請を要するような`下層~源$である。
-~dataは、同期的に可用になることもあれば（例： ~OSの記憶域~bufferに保持されている場合），非同期的に可用になることもある（例：~diskからの読取を要する場合）。
+~dataは、同期的に可用になることもあれば（例： ~OSの記憶域~bufferに保持されている場合），非同期的に可用になることもある（例：~diskからの読取nを要する場合）。
 ~pull源の例には，~file~handleがある
 — そこでは、特定の所在へ~seekして，特定の量を読取する。
 ◎
@@ -1743,7 +1749,7 @@ A writable stream represents a destination for data, into which you can write. I
 可読~streamと相似的に、ほとんどの可書~streamは，
 `下層~槽@
 （ `underlying sink^en ）と呼ばれる より低~levelな入出力~槽を包装する。
-可書~streamは、一連の書込を~queueして 下層~槽に 1 個ずつ送達することにより，下層~槽の複階性の一部を抽象-化して見えなくするように働く。
+可書~streamは、一連の書込nを~queueして 下層~槽に 1 個ずつ送達することにより，下層~槽の複階性の一部を抽象-化して見えなくするように働く。
 ◎
 Analogously to readable streams, most writable streams wrap a lower-level I/O sink, called the underlying sink. Writable streams work to abstract away some of the complexity of the underlying sink, by queuing subsequent writes and only delivering them to the underlying sink one by one.
 </p>
@@ -1772,9 +1778,9 @@ Code that writes into a writable stream using its public interface is known as a
 `中止する@
 （ `abort^en する）能も備える。
 これは、［
-生産器が 何か不具合があると確信したこと，したがって 以降の書込は継続されるべきでないこと
+生産器が 何か不具合があると確信したこと，したがって 以降の書込nは継続されるべきでないこと
 ］を指示する。
-これは、`下層~槽$からの通達がなくとも，~streamを~error状態に置くことに加え、~streamの`内部~queue$内にある すべての書込を破棄する。
+これは、`下層~槽$からの通達がなくとも，~streamを~error状態に置くことに加え、~streamの`内部~queue$内にある すべての書込nを破棄する。
 ◎
 Producers also have the ability to abort a writable stream, using its abort() method. This indicates that the producer believes something has gone wrong, and that future writes should be discontinued. It puts the stream in an errored state, even without a signal from the underlying sink, and it discards all writes in the stream’s internal queue.
 </p>
@@ -1977,7 +1983,7 @@ A queuing strategy is an object that determines how a stream should signal backp
 ］に利用できる
 — 残り~sizeを 0 以上に保とうとするために。
 可書~streamにおいては、生産器は，類似に挙動できる
-— 残り~sizeが負になる前に書込を避けるために。
+— 残り~sizeが負になる前に書込nを避けるために。
 ◎
 For readable streams, an underlying source can use this desired size as a backpressure signal, slowing down chunk generation so as to try to keep the desired size above or at zero. For writable streams, a producer can behave similarly, avoiding writes that would cause the desired size to go negative.
 </p>
@@ -2629,7 +2635,7 @@ autoAllocateChunkSize (byte streams only), of type unsigned long long
 </dt>
 	<dd>
 正な整数に設定すれば、［
-実装が、下層~源の~code用に，書込~用の~bufferを自動的に割振る
+実装が、下層~源の~code用に，書込n用の~bufferを自動的に割振る
 ］ようにできる。
 この事例では、`消費器$が`既定の読取器$を利用しているときは、~stream実装は，所与の~sizeの `ArrayBuffer$I を自動的に割振る
 — ［
@@ -2728,7 +2734,7 @@ Creates a ReadableStreamDefaultReader and locks the stream to the new reader. Wh
 ］を創出するときに，とりわけ有用になる。
 利用者は、~stream用の読取器を取得することにより，［
 他から［
-読取が差挟まれたり，~streamが取消される
+読取nが差挟まれたり，~streamが取消される
 ］ことにより，自身による抽象-化が干渉される
 ］ことがないことを確保できる。
 ◎
@@ -2753,7 +2759,7 @@ Creates a ReadableStreamBYOBReader and locks the stream to the new reader.
 This call behaves the same way as the no-argument variant, except that it only works on readable byte streams, i.e. streams which were constructed specifically with the ability to handle "bring your own buffer" reading. The returned BYOB reader provides the ability to directly read individual chunks from the stream via its read() method, into developer-supplied buffers, allowing more precise control over allocation.
 </dd>
 
-	<dt>%readable = %stream.`pipeThrough$rs({ `writable$rwp, `readable$rwp }[, { `preventClose$spo, `preventCancel$spo, `preventCancel$spo, `signal$spo }])</dt>
+	<dt>%readable = %stream.`pipeThrough$rs({ `writable$rwp, `readable$rwp }[, { `preventClose$spo, `preventAbort$spo, `preventCancel$spo, `signal$spo }])</dt>
 	<dd>
 ［
 `形式変換~stream$（または，他の
@@ -2770,7 +2776,7 @@ Provides a convenient, chainable way of piping this readable stream through a tr
 Piping a stream will lock it for the duration of the pipe, preventing any other consumer from acquiring a reader.
 </dd>
 
-	<dt>await %stream.`pipeTo$rs(%destination[, { `preventClose$spo, `preventCancel$spo, `preventCancel$spo, `signal$spo }])</dt>
+	<dt>await %stream.`pipeTo$rs(%destination[, { `preventClose$spo, `preventAbort$spo, `preventCancel$spo, `signal$spo }])</dt>
 	<dd>
 この`可読~stream$を，所与の`可書~stream$ %destination に`~pipeする$。
 ~pipeする処理nにおける 種々の~error条件の下での挙動は、渡された~optionsにより~custom化できる。
@@ -3042,9 +3048,9 @@ The getReader(options) method steps are:
 ］
 ⇒
 ~RET
-~ABRUPT `AcquireReadableStreamDefaultReader$A( コレ, ~T )
+~ABRUPT `AcquireReadableStreamDefaultReader$A( コレ )
 ◎
-If options["mode"] does not exist, return ? AcquireReadableStreamDefaultReader(this, true).
+If options["mode"] does not exist, return ? AcquireReadableStreamDefaultReader(this).
 </li>
 	<li>
 ~Assert：
@@ -3054,9 +3060,9 @@ Assert: options["mode"] is "byob".
 </li>
 	<li>
 ~RET
-~ABRUPT `AcquireReadableStreamBYOBReader$A( コレ, ~T )
+~ABRUPT `AcquireReadableStreamBYOBReader$A( コレ )
 ◎
-Return ? AcquireReadableStreamBYOBReader(this, true).
+Return ? AcquireReadableStreamBYOBReader(this).
 </li>
 </ol>
 
@@ -3377,83 +3383,54 @@ Let reader be iterator’s reader.
 If reader.[[ownerReadableStream]] is undefined, return a promise rejected with a TypeError.
 </li>
 	<li>
-%結果 ~LET
-~NOABRUPT `ReadableStreamDefaultReaderRead$A( %reader )
+%promise ~LET `新たな~promise$
 ◎
-↓</li>
+Let promise be a new promise.
+</li>
 	<li>
 <p>
-~RET %結果 に対し，次に与える［
-充足~手続き, 却下~手続き
-］で`反応-$した結果：
+%readRequest ~LET 次に挙げる`~item$sctを伴う，新たな`読取n要請$
+:
 ◎
-Return the result of reacting to ! ReadableStreamDefaultReaderRead(reader) with＼
+Let readRequest be a new read request with the following items:
 </p>
 		<ul>
 			<li>
-<p>
-充足~手続きは、所与の ( %result ) に対し，次を走らす：
+`~chunk手続き$rRは、所与の
+( %chunk )
+に対し
+⇒
+%chunk で %promise を`解決する$
 ◎
-the following fulfillment steps given the argument result:
+chunk steps, given chunk
+• Resolve promise with chunk.
+</li>
+			<li>
+<p>
+`~close手続き$rRは：
+◎
+close steps
 </p>
 				<ol>
 					<li>
-~Assert：
-`Type$A( %result ) ~EQ `Object^jT
-◎
-Assert: Type(result) is Object.
-</li>
-					<li>
-%done ~LET
-~NOABRUPT `Get$Ax( %result, `done^l )
-◎
-Let done be ! Get(result, "done").
-</li>
-					<li>
-~Assert：
-`Type$A( %done ) ~EQ `Boolean^jT
-◎
-Assert: Type(done) is Boolean.
-</li>
-					<li>
-<p>
-~IF［
-%done ~EQ ~T
-］：
-◎
-If done is true:
-</p>
-						<ol>
-							<li>
 ~NOABRUPT `ReadableStreamReaderGenericRelease$A( %reader )
 ◎
 Perform ! ReadableStreamReaderGenericRelease(reader).
 </li>
-							<li>
-~RET `反復~終端-$i
-◎
-Return end of iteration.
-</li>
-						</ol>
-					</li>
 					<li>
-%value ~LET 
-~NOABRUPT `Get$Ax( %result, `value^l )
+`反復~終端-$i で %promise を`解決する$
 ◎
-Let value be ! Get(result, "value").
-</li>
-					<li>
-~RET %value
-◎
-Return value.
+Resolve promise with end of iteration.
 </li>
 				</ol>
 			</li>
 			<li>
 <p>
-却下~手続きは、所与の ( %reason ) に対し，次を走らす：
+`~error手続き$rRは、所与の
+( %e )
+に対し：
 ◎
-as well as the following rejection steps given the argument reason:
+error steps, given e
 </p>
 				<ol>
 					<li>
@@ -3462,14 +3439,24 @@ as well as the following rejection steps given the argument reason:
 Perform ! ReadableStreamReaderGenericRelease(reader).
 </li>
 					<li>
-~THROW %reason
+%e で %promise を`却下する$
 ◎
-Throw reason.
+Reject promise with e.
 </li>
 				</ol>
 			</li>
 		</ul>
 	</li>
+	<li>
+~NOABRUPT `ReadableStreamDefaultReaderRead$A( コレ, %readRequest )
+◎
+Perform ! ReadableStreamDefaultReaderRead(this, readRequest).
+</li>
+	<li>
+~RET %promise
+◎
+Return promise.
+</li>
 </ol>
 </div>
 
@@ -3574,8 +3561,13 @@ interface `ReadableStreamDefaultReader@I {
   readonly attribute Promise&lt;void&gt; `closed$dr;
 
   Promise&lt;void&gt; `cancel$dr(optional any %reason);
-  Promise&lt;any&gt; `read$dr();
+  Promise&lt;`ReadableStreamDefaultReadResult$I&gt; `read$dr();
   void `releaseLock$dr();
+};
+
+dictionary `ReadableStreamDefaultReadResult@I {
+  any `value@drr;
+  `boolean$ `done@drr;
 };
 </pre>
 
@@ -3606,15 +3598,6 @@ Description (non-normative)
 ◎
 A promise returned by the reader’s closed getter
 
-<tr><td>`forAuthorCode^sl
-<td>
-真偽~flag
-— ［
-この読取器は作者~codeから可視になる
-］かどうかを指示する。
-◎
-A boolean flag indicating whether this reader is visible to author code
-
 <tr><td>`ownerReadableStream^sl
 <td>
 この読取器を所有する `ReadableStream$I ~instance
@@ -3623,15 +3606,60 @@ A ReadableStream instance that owns this reader
 
 <tr><td>`readRequests^sl
 <td>
-［［［
-`消費器$が`~chunk$たちを可用になるより早く要請する
-］ことに因り，まだ解決されていない
-］ような，~promiseたち
-］からなる`~list$
-— 読取器の `read()$dr ~methodの~callから返される。
+`読取n要請$たちが成す`~list$
+— `消費器$が，可用になるより早く`~chunk$たちを要請するとき利用される
 ◎
-A list of promises returned by calls to the reader’s read() method that have not yet been resolved, due to the consumer requesting chunks sooner than they are available
+A list of read requests, used when a consumer requests chunks sooner than they are available
+
 </tbody></table>
+
+<p>
+`読取n要請@
+は、`構造体$であり，次に挙げる`~item$sctを伴う
+— これらの~itemは、`可読~stream$の［
+`内部~queue$が~fillされた／状態が変化した
+］ときに対する反応として遂行される~algoを与える：
+◎
+A read request is a struct containing three algorithms to perform in reaction to filling the readable stream's internal queue or changing its state. It has the following items:
+</p>
+
+<dl class="def-list">
+	<dt>
+`~chunk手続き@rR
+◎
+chunk steps
+</dt>
+	<dd>
+1 個の`~chunk$をとる~algo
+— ~chunkが読取り用に可用になったとき~callされる。
+◎
+An algorithm taking a chunk, called when a chunk is available for reading
+</dd>
+
+	<dt>
+`~close手続き@rR
+◎
+close steps
+</dt>
+	<dd>
+引数をとらない~algo
+— ~streamは~closeされたため，可用な`~chunk$は無いとき~callされる。
+◎
+An algorithm taking no arguments, called when no chunks are available because the stream is closed
+</dd>
+
+	<dt>
+`~error手続き@rR
+◎
+error steps
+</dt>
+	<dd>
+~JS値をとる~algo
+— ~streamは~errorしたため，可用な`~chunk$は無いとき~callされる。
+◎
+An algorithm taking a JavaScript value, called when no chunks are available because the stream is errored
+</dd>
+</dl>
 
 			</section>
 			<section id="default-reader-prototype">
@@ -3717,7 +3745,7 @@ If reading a chunk causes the queue to become empty, more data will be pulled fr
 Releases the reader’s lock on the corresponding stream. After the lock is released, the reader is no longer active. If the associated stream is errored when the lock is released, the reader will appear errored in the same way from now on; otherwise, the reader will appear closed.
 </dd>
 	<dd>
-読取器の~lockは、処理待ちにある読取~要請が まだある間
+読取器の~lockは、処理待ちにある読取n要請が まだある間
 — すなわち，読取器の `read()$dr ~methodから返された~promiseがまだ決着していない間 —
 は、解放できない。
 そのような試みは、 `TypeError$jE を投出させ，~streamは読取器に~lockされたままになる。
@@ -3802,10 +3830,60 @@ The read() method steps are:
 If this.[[ownerReadableStream]] is undefined, return a promise rejected with a TypeError exception.
 </li>
 	<li>
-~RET
-~NOABRUPT `ReadableStreamDefaultReaderRead$A( コレ )
+%promise ~LET `新たな~promise$
 ◎
-Return ! ReadableStreamDefaultReaderRead(this).
+Let promise be a new promise.
+</li>
+	<li>
+<p>
+%readRequest ~LET 次に挙げる`~item$sctを伴う，新たな`読取n要請$
+:
+◎
+Let readRequest be a new read request with the following items:
+</p>
+		<ul>
+			<li>
+`~chunk手続き$rRは、所与の
+( %chunk )
+に対し
+⇒
+«[ "`value$drr" → %chunk, "`done$drr" → ~F ]»
+で %promise を`解決する$
+◎
+chunk steps, given chunk
+• Resolve promise with «[ "value" → chunk, "done" → false ]».
+</li>
+			<li>
+`~close手続き$rRは
+⇒
+«[ "`value$drr" → `undefined^jv, "`done$drr" → ~T ]»
+で %promise を`解決する$
+◎
+close steps
+• Resolve promise with «[ "value" → undefined, "done" → true ]».
+</li>
+			<li>
+`~error手続き$rRは、所与の
+( %e )
+に対し
+⇒
+%e で %promise を`却下する$
+◎
+error steps, given e
+• Reject promise with e.
+</li>
+		</ul>
+	</li>
+	<li>
+~RET
+~NOABRUPT `ReadableStreamDefaultReaderRead$A( コレ, %readRequest )
+◎
+Perform ! ReadableStreamDefaultReaderRead(this, readRequest).
+</li>
+	<li>
+~RET %promise
+◎
+Return promise.
 </li>
 </ol>
 </div>
@@ -3850,11 +3928,11 @@ Perform ! ReadableStreamReaderGenericRelease(this).
 <h3 title="The ReadableStreamBYOBReader class">4.4. `ReadableStreamBYOBReader^I ~class</h3>
 
 <p>
-`ReadableStreamBYOBReader$I【！ReadableStreamDefaultReader】 ~classは、［
+`ReadableStreamBYOBReader$I ~classは、［
 `ReadableStream$I ~instanceにより配給されるように設計された `~BYOB読取器$
 ］を表現する。
 ◎
-The ReadableStreamDefaultReader class represents a BYOB reader designed to be vended by a ReadableStream instance.
+The ReadableStreamBYOBReader class represents a BYOB reader designed to be vended by a ReadableStream instance.
 </p>
 
 			<section id="byob-reader-class-definition">
@@ -3874,8 +3952,13 @@ interface `ReadableStreamBYOBReader@I {
   readonly attribute Promise&lt;void&gt; `closed$byob;
 
   Promise&lt;void&gt; `cancel$byob(optional any %reason);
-  Promise&lt;any&gt; `read$byob(`ArrayBufferView$I %view);
+  Promise&lt;`ReadableStreamBYOBReadResult$I&gt; `read$byob(`ArrayBufferView$I %view);
   void `releaseLock$byob();
+};
+
+dictionary `ReadableStreamBYOBReadResult@I {
+ `ArrayBufferView$I `value@brr;
+ `boolean$ `done@brr;
 };
 </pre>
 
@@ -3907,15 +3990,6 @@ Description (non-normative)
 ◎
 A promise returned by the reader’s closed getter
 
-<tr><td>`forAuthorCode^sl
-<td>
-真偽~flag
-— ［
-この読取器は作者~codeから可視になる
-］かどうかを指示する。
-◎
-A boolean flag indicating whether this reader is visible to author code
-
 <tr><td>`ownerReadableStream^sl
 <td>
 この読取器を所有する `ReadableStream$I ~instance
@@ -3924,15 +3998,73 @@ A ReadableStream instance that owns this reader
 
 <tr><td>`readIntoRequests^sl
 <td>
-［［［
-`消費器$が`~chunk$たちを可用になるより早く要請する
-］ことに因り，まだ解決されていない
-］ような，~promiseたち
-］からなる`~list$
-— 読取器の `read(view)$byob ~methodの~callから返される。
+`中へ読取する要請$たちが成す`~list$
+— `消費器$が，可用になるより早く`~chunk$たちを要請するとき利用される
 ◎
-A list of promises returned by calls to the reader’s read(view) method that have not yet been resolved, due to the consumer requesting chunks sooner than they are available
+A list of read-into requests, used when a consumer requests chunks sooner than they are available
+
 </tbody></table>
+
+<p>
+`中へ読取する要請@
+は、`構造体$であり，次に挙げる`~item$sctを伴う
+— これらの~itemは、`可読~byte~stream$の［
+`内部~queue$が~fillされた／状態が変化した
+］ときに対する反応として遂行される~algoを与える：
+◎
+A read-into request is a struct containing three algorithms to perform in reaction to filling the readable byte stream's internal queue or changing its state. It has the following items:
+</p>
+<dl class="def-list">
+	<dt>
+`~chunk手続き@riR
+◎
+chunk steps
+</dt>
+	<dd>
+`~chunk$をとる~algo
+— ~chunkが読取り用に可用になったとき~callされる。
+◎
+An algorithm taking a chunk, called when a chunk is available for reading
+</dd>
+
+	<dt>
+`~close手続き@riR
+◎
+close steps
+</dt>
+	<dd>
+`~chunk$をとる~algo
+— ~streamは~closeされたため，可用な`~chunk$は無いとき~callされる。
+◎
+An algorithm taking a chunk, called when no chunks are available because the stream is closed
+</dd>
+
+	<dt>
+`~error手続き@riR
+◎
+error steps
+</dt>
+	<dd>
+~JS値をとる~algo
+— ~streamは~errorしたため可用な`~chunk$は無いとき~callされる。
+◎
+An algorithm taking a JavaScript value, called when no chunks are available because the stream is errored
+</dd>
+</dl>
+
+<p class="note">注記：
+`~close手続き$riRが`~chunk$をとるのは、アリなら，~call元に裏~memoryを返せるようにするためである。
+例えば
+<code>%byobReader.`read(chunk)$byob</code>
+は、~closeされた~streamに対しては
+— より伝統的な
+`{ value: undefined, done: true }^c
+ではなく —
+<code>{ value: %newViewOnSameMemory, done: true }</code>
+で充足されることになる。
+◎
+The close steps take a chunk so that it can return the backing memory to the caller if possible. For example, byobReader.read(chunk) will fulfill with { value: newViewOnSameMemory, done: true } for closed streams, instead of the more traditional { value: undefined, done: true }.
+</p>
 
 			</section>
 			<section id="byob-reader-prototype">
@@ -3987,10 +4119,13 @@ If the chunk does become available, the promise will be fulfilled with an object
 </li>
 			<li>
 ~streamが~closeされたときは、
-`{ value: undefined, done: true }^c
+<code>{ value: %theChunk, done: true }</code>
 の形による~objで充足されることになる。
+この事例では %view は`切離され$，もはや利用-可能でなくなるが、
+%theChunk は同じ裏~memory領域への新たな（かつ同じ型の）~viewになる
+— その~memoryが~call元に返されることを確保するため，改変を加えずに。
 ◎
-If the stream becomes closed, the promise will be fulfilled with an object of the form { value: undefined, done: true }.
+If the stream becomes closed, the promise will be fulfilled with an object of the form { value: theChunk, done: true }. In this case, view will be detached and no longer usable, but theChunk will be a new view (of the same type) onto the same backing memory region, with no modifications, to ensure the memory is returned to the caller.
 </li>
 			<li>
 ~streamが~errorしたときは、関連な~errorで却下されることになる。
@@ -4016,7 +4151,7 @@ If reading a chunk causes the queue to become empty, more data will be pulled fr
 Releases the reader’s lock on the corresponding stream. After the lock is released, the reader is no longer active. If the associated stream is errored when the lock is released, the reader will appear errored in the same way from now on; otherwise, the reader will appear closed.
 </dd>
 	<dd>
-読取器の~lockは、処理待ちにある読取~要請が まだある間
+読取器の~lockは、処理待ちにある読取n要請が まだある間
 — すなわち，読取器の `read()$byob ~methodから返された~promiseがまだ決着していない間 —
 は、解放できない。
 そのような試みは、 `TypeError$jE を投出させ，~streamは読取器に~lockされたままになる。
@@ -4119,10 +4254,62 @@ If view.[[ViewedArrayBuffer]].[[ArrayBufferByteLength]] is 0, return a promise r
 If this.[[ownerReadableStream]] is undefined, return a promise rejected with a TypeError exception.
 </li>
 	<li>
+%promise ~LET `新たな~promise$
+◎
+Let promise be a new promise.
+</li>
+
+	<li>
+<p>
+%readIntoRequest ~LET 次に挙げる`~item$sctを伴う，新たな`中へ読取する要請$：
+◎
+Let readIntoRequest be a new read-into request with the following items:
+</p>
+		<ul>
+			<li>
+`~chunk手続き$riRは、所与の
+( %chunk )
+に対し
+⇒
+«[ "`value$brr" → %chunk, "`done$brr" → ~F ]»
+で %promise を`解決する$
+◎
+chunk steps, given chunk
+• Resolve promise with «[ "value" → chunk, "done" → false ]».
+</li>
+			<li>
+`~close手続き$riRは、所与の
+( %chunk )
+に対し
+⇒
+«[ "`value$brr" → %chunk, "`done$brr" → ~T ]»
+で %promise を`解決する$
+◎
+close steps, given chunk
+• Resolve promise with «[ "value" → chunk, "done" → true ]».
+</li>
+			<li>
+`~error手続き$riRは、所与の
+( %e )
+に対し
+⇒
+%e で %promise を`却下する$
+◎
+error steps, given e
+• Reject promise with e.
+</li>
+		</ul>
+	</li>
+	<li>
 ~RET
 ~NOABRUPT `ReadableStreamBYOBReaderRead$A( コレ, %view )
 ◎
-Return ! ReadableStreamBYOBReaderRead(this, view).
+Perform ! ReadableStreamBYOBReaderRead(this, view).
+</li>
+	<li>
+~RET %promise
+◎
+Return promise.
 </li>
 </ol>
 </div>
@@ -4469,12 +4656,12 @@ Return result.
 
 <div class="algo">
 <p>
-`[[PullSteps]]()@rsdc
+`[[PullSteps]](readRequest)@rsdc
 は、
 `PullSteps$sl の契約を実装する。
 それは、次の手続きを遂行する：
 ◎
-[[PullSteps]]() implements the [[PullSteps]] contract. It performs the following steps:
+[[PullSteps]](readRequest) implements the [[PullSteps]] contract. It performs the following steps:
 </p>
 <ol>
 	<li>
@@ -4528,31 +4715,31 @@ Perform ! ReadableStreamClose(stream).
 Otherwise, perform ! ReadableStreamDefaultControllerCallPullIfNeeded(this).
 </li>
 			<li>
-~RET 次の結果で`解決される~promise$
-⇒
-~NOABRUPT `ReadableStreamCreateReadResult$A( %chunk, ~F, %stream.`reader^sl.`forAuthorCode^sl )
-
+%readRequest の`~chunk手続き$rR( %chunk )
 ◎
-Return a promise resolved with ! ReadableStreamCreateReadResult(chunk, false, stream.[[reader]].[[forAuthorCode]]).
+Perform readRequest’s chunk steps, given chunk.
 </li>
 		</ol>
 	</li>
 	<li>
-%pendingPromise ~LET
+<p>
+~ELSE：
+◎
+Otherwise,
+</p>
+		<ol>
+			<li>
 ~NOABRUPT `ReadableStreamAddReadRequest$A( %stream )
 ◎
-Let pendingPromise be ! ReadableStreamAddReadRequest(stream).
+Perform ! ReadableStreamAddReadRequest(stream, readRequest).
 </li>
-	<li>
+			<li>
 ~NOABRUPT `ReadableStreamDefaultControllerCallPullIfNeeded$A( コレ )
 ◎
 Perform ! ReadableStreamDefaultControllerCallPullIfNeeded(this).
 </li>
-	<li>
-~RET %pendingPromise
-◎
-Return pendingPromise.
-</li>
+		</ol>
+	</li>
 </ol>
 </div>
 
@@ -5177,12 +5364,12 @@ Return result.
 
 <div class="algo">
 <p>
-`[[PullSteps]]()@rbsc
+`[[PullSteps]](readRequest)@rbsc
 は、
 `PullSteps$sl の契約を実装する。
 それは、次の手続きを遂行する：
 ◎
-[[PullSteps]]() implements the [[PullSteps]] contract. It performs the following steps:
+[[PullSteps]](readRequest) implements the [[PullSteps]] contract. It performs the following steps:
 </p>
 <ol>
 	<li>
@@ -5238,11 +5425,14 @@ Perform ! ReadableByteStreamControllerHandleQueueDrain(this).
 Let view be ! Construct(%Uint8Array%, « entry’s buffer, entry’s byte offset, entry’s byte length »).
 </li>
 			<li>
-~RET 次の結果で`解決される~promise$
-⇒
-~NOABRUPT `ReadableStreamCreateReadResult$A( %view, ~F, %stream.`reader^sl.`forAuthorCode^sl )
+%readRequest の`~chunk手続き$rR( %view )
 ◎
-Return a promise resolved with ! ReadableStreamCreateReadResult(view, false, stream.[[reader]].[[forAuthorCode]]).
+Perform readRequest’s chunk steps, given view.
+</li>
+			<li>
+~RET
+◎
+Return.
 </li>
 		</ol>
 	</li>
@@ -5266,14 +5456,26 @@ If autoAllocateChunkSize is not undefined,
 Let buffer be Construct(%ArrayBuffer%, « autoAllocateChunkSize »).
 </li>
 			<li>
+<p>
 ~IF［
 %buffer は`中途完了^である
-］
-⇒
-~RET %buffer.`Value^sl で`却下される~promise$
+］：
 ◎
-If buffer is an abrupt completion, return a promise rejected with buffer.[[Value]].
+If buffer is an abrupt completion,
+</p>
+				<ol>
+					<li>
+%readRequest の`~error手続き$rR( %buffer.`Value^sl )
+◎
+Perform readRequest’s error steps, given buffer.[[Value]].
 </li>
+					<li>
+~RET
+◎
+Return.
+</li>
+				</ol>
+			</li>
 			<li>
 %pullIntoDescriptor ~LET 次を伴う，新たな`~pull~into記述子$
 ⇒＃
@@ -5295,20 +5497,14 @@ Append pullIntoDescriptor to this.[[pendingPullIntos]].
 		</ol>
 	</li>
 	<li>
-%promise ~LET
-~NOABRUPT `ReadableStreamAddReadRequest$A( %stream )
+~NOABRUPT `ReadableStreamAddReadRequest$A( %stream, %readRequest )
 ◎
-Let promise be ! ReadableStreamAddReadRequest(stream).
+Perform ! ReadableStreamAddReadRequest(stream, readRequest).[
 </li>
 	<li>
 ~NOABRUPT `ReadableByteStreamControllerCallPullIfNeeded$A( コレ )
 ◎
 Perform ! ReadableByteStreamControllerCallPullIfNeeded(this).
-</li>
-	<li>
-~RET %promise
-◎
-Return promise.
 </li>
 </ol>
 </div>
@@ -5551,22 +5747,13 @@ The following abstract operations operate on ReadableStream instances at a highe
 
 <div class="algo">
 <p>
-`AcquireReadableStreamBYOBReader(stream[, forAuthorCode ])@A
+`AcquireReadableStreamBYOBReader(stream)@A
 は、所与の~streamから`~BYOB読取器$を獲得したいと望む，他の仕様から~callされる用途に意味されている。
 それは、次の手続きを遂行する：
 ◎
-AcquireReadableStreamBYOBReader(stream[, forAuthorCode]) is meant to be called from other specifications that wish to acquire a BYOB reader for a given stream. It performs the following steps:
+ AcquireReadableStreamBYOBReader(stream) is meant to be called from other specifications that wish to acquire a BYOB reader for a given stream. It performs the following steps:
 </p>
 <ol>
-	<li>
-~IF［
-%forAuthorCode は渡されていない
-］
-⇒
-%forAuthorCode ~SET ~F
-◎
-If forAuthorCode was not passed, set it to false.
-</li>
 	<li>
 %reader ~LET `新たな$ `ReadableStreamBYOBReader$I
 ◎
@@ -5578,47 +5765,22 @@ Let reader be a new ReadableStreamBYOBReader.
 Perform ? SetUpReadableStreamBYOBReader(reader, stream).
 </li>
 	<li>
-%reader.`forAuthorCode^sl ~SET %forAuthorCode
-◎
-Set reader.[[forAuthorCode]] to forAuthorCode.
-</li>
-	<li>
 ~RET %reader
 ◎
 Return reader.
 </li>
 </ol>
-
-<p class="note">注記：
-他の仕様は、 %forAuthorCode を 既定の値 ~F のままにしておくべきである
-— 結果の `{ value, done }^c ~objを，作者に直に公開することを計画していない限り。
-さらなる情報は、
-<a href="#rs-read-result-for-author-code">`ReadableStreamCreateReadResult^A に関する注記</a>
-を見よ。
-◎
-Other specifications ought to leave forAuthorCode as its default value of false, unless they are planning to directly expose the resulting { value, done } object to authors. See the note regarding ReadableStreamCreateReadResult for more information.
-</p>
-
 </div>
 
 <div class="algo">
 <p>
-`AcquireReadableStreamDefaultReader(stream[, forAuthorCode ])@A
+`AcquireReadableStreamDefaultReader(stream)@A
 は、所与の~streamから`既定の読取器$を獲得したいと望む，他の仕様から~callされる用途に意味されている。
 それは、次の手続きを遂行する：
 ◎
-AcquireReadableStreamDefaultReader(stream[, forAuthorCode]) is meant to be called from other specifications that wish to acquire a default reader for a given stream. It performs the following steps:
+AcquireReadableStreamDefaultReader(stream) is meant to be called from other specifications that wish to acquire a default reader for a given stream. It performs the following steps:
 </p>
 <ol>
-	<li>
-~IF［
-%forAuthorCode は渡されていない
-］
-⇒
-%forAuthorCode ~SET ~F
-◎
-If forAuthorCode was not passed, set it to false.
-</li>
 	<li>
 %reader ~LET `新たな$ `ReadableStreamDefaultReader$I
 ◎
@@ -5630,24 +5792,11 @@ Let reader be a new ReadableStreamDefaultReader.
 Perform SetUpReadableStreamDefaultReader(reader, stream).
 </li>
 	<li>
-%reader.`forAuthorCode^sl ~SET %forAuthorCode
-◎
-Set reader.[[forAuthorCode]] to forAuthorCode.
-</li>
-	<li>
 ~RET %reader
 ◎
 Return reader.
 </li>
 </ol>
-
-<p class="note">注記：
-`AcquireReadableStreamBYOBReader$A における
-%forAuthorCode ~parameterの用法と同じ注記が、ここでも適用される。
-◎
-The same usage note for the forAuthorCode parameter applies here as it does for AcquireReadableStreamBYOBReader.
-</p>
-
 </div>
 
 <div class="algo">
@@ -6211,13 +6360,13 @@ It’s frequently inefficient to read chunks that are too small or too large. Ot
 					</li>
 					<li>
 <p>
-読取や書込は、背圧~通達~以外の理由で遅延されるべきでない。
+読取nや書込nは、背圧~通達~以外の理由で遅延されるべきでない。
 ◎
 Reads or writes should not be delayed for reasons other than these backpressure signals.
 </p>
 
 <p class="example" id="example-bad-backpressure">
-次回の 読取／書込 演算を続行する前に，各 書込が成功裡に完了するのを待機するような実装は、この推奨に違反する。
+次回の 読取n／書込n 演算を続行する前に，各 書込nが成功裡に完了するのを待機するような実装は、この推奨に違反する。
 そのような実装では、 %dest の`内部~queue$は，常に高々 1 個の`~chunk$しか包含せず，役立たずになるので。
 ◎
 An implementation that waits for each write to successfully complete before proceeding to the next read/write operation violates this recommendation. In doing so, such an implementation makes the internal queue of dest useless, as it ensures dest always contains at most one queued chunk.
@@ -6227,10 +6376,10 @@ An implementation that waits for each write to successfully complete before proc
 			</li>
 			<li>
 `~shutdownは、活動を停止させるモノトスル^strong
-— %shuttingDown が ~T になって以降は、~UAは，それ以上 %reader からの読取を起動しないモノトスル。
-また、以下に述べるように，すでに読取された~chunkの書込のみを遂行するモノトスル。
+— %shuttingDown が ~T になって以降は、~UAは，それ以上 %reader からの読取nを起動しないモノトスル。
+また、以下に述べるように，すでに読取された~chunkの書込nのみを遂行するモノトスル。
 特に，~UAは、［
-読取／書込
+読取n／書込n
 ］を遂行する前に，以下の条件を検査するモノトスル
 — それらは、即時に~shutdownに至らせることもあるので。
 ◎
@@ -6666,99 +6815,36 @@ Set reading to true.
 </li>
 			<li>
 <p>
-%readPromise ~LET ［
-所与の ( %result ) に対し，次を走らす充足~手続き
-］で［
-~NOABRUPT `ReadableStreamDefaultReaderRead$A( %reader )
-］の結果に`反応-$した結果：
+%readRequest ~LET 次に挙げる`~item$sctを伴う，`読取n要請$：
 ◎
-Let readPromise be the result of reacting to ! ReadableStreamDefaultReaderRead(reader) with the following fulfillment steps given the argument result:
+Let readRequest be a read request with the following items:
 </p>
-				<ol>
-					<li>
-%reading ~SET ~T
-◎
-Set reading to false.
-</li>
-					<li>
-~Assert：
-`Type$A( %result ) ~EQ `Object^jT
-◎
-Assert: Type(result) is Object.
-</li>
-					<li>
-%done ~LET
-
-~NOABRUPT `Get$Ax( %result, `done^l )
-◎
-Let done be ! Get(result, "done").
-</li>
-					<li>
-~Assert：
-`Type$A( %done ) ~EQ `Boolean^jT
-◎
-Assert: Type(done) is Boolean.
-</li>
+				<ul>
 					<li>
 <p>
-~IF［
-%done ~EQ ~T
-］：
+`~chunk手続き$rRは、所与の
+( %value )
+に対し，次の手続きを遂行する`小taskを~queueする$：
 ◎
-If done is true,
+chunk steps, given value
+• Queue a microtask to perform the following steps:
 </p>
 						<ol>
 							<li>
-<p>
-~IF［
-%canceled1 ~EQ ~F
-］：
+%reading ~SET ~F
 ◎
-If canceled1 is false,
-</p>
-								<ol>
-									<li>
-~NOABRUPT `ReadableStreamDefaultControllerClose$A( %branch1.`readableStreamController^sl )
-◎
-Perform ! ReadableStreamDefaultControllerClose(branch1.[[readableStreamController]]).
+Set reading to false.
 </li>
-								</ol>
-							</li>
 							<li>
-<p>
-~IF［
-%canceled2 ~EQ ~F
-］：
+%value1 ~LET %value
 ◎
-If canceled2 is false,
-</p>
-								<ol>
-									<li>
-~NOABRUPT `ReadableStreamDefaultControllerClose$A( %branch2.`readableStreamController^sl )
-◎
-Perform ! ReadableStreamDefaultControllerClose(branch2.[[readableStreamController]]).
-</li>
-								</ol>
-							</li>
+↓</li>
 							<li>
-~RET
-◎
-Return.
-</li>
-						</ol>
-					</li>
-					<li>
-%value ~LET
-~NOABRUPT `Get$Ax( %result, `value^l )
-◎
-Let value be ! Get(result, "value").
-</li>
-					<li>
-( %value1, %value2 ) ~LET ( %value, %value )
+%value2 ~LET %value
 ◎
 Let value1 and value2 be value.
 </li>
-					<li>
+							<li>
 ~IF［
 %canceled2 ~EQ ~F
 ］~AND［
@@ -6770,16 +6856,16 @@ Let value1 and value2 be value.
 ◎
 If canceled2 is false and cloneForBranch2 is true, set value2 to ? StructuredDeserialize(? StructuredSerialize(value2), the current Realm).
 </li>
-					<li>
+							<li>
 ~IF［
 %canceled1 ~EQ ~F
 ］
 ⇒
-~ABRUPT `ReadableStreamDefaultControllerEnqueue$A( %branch1`readableStreamController^sl, %value1 )
+~ABRUPT `ReadableStreamDefaultControllerEnqueue$A( %branch1.`readableStreamController^sl, %value1 )
 ◎
 If canceled1 is false, perform ? ReadableStreamDefaultControllerEnqueue(branch1.[[readableStreamController]], value1).
 </li>
-					<li>
+							<li>
 ~IF［
 %canceled2 ~EQ ~F
 ］
@@ -6788,13 +6874,64 @@ If canceled1 is false, perform ? ReadableStreamDefaultControllerEnqueue(branch1.
 ◎
 If canceled2 is false, perform ? ReadableStreamDefaultControllerEnqueue(branch2.[[readableStreamController]], value2).
 </li>
-				</ol>
+						</ol>
+
+<p class="note">注記：
+ここでの小taskによる遅延は、必要とされる
+— 下にて %reader.`closedPromise^sl を利用するとき、少なくとも，~errorを検出する小taskがかかるので。
+%stream における~errorは，両~分岐とも即時に~errorにすることが求まれるので、非同期的に可用な~errorに先んじて，成功裡な読取nを同期的に可用にするわけにはいかない。
+◎
+The microtask delay here is necessary because it takes at least a microtask to detect errors, when we use reader.[[closedPromise]] below. We want errors in stream to error both branches immediately, so we cannot let successful synchronously-available reads happen ahead of asynchronously-available errors.
+</p>
+					</li>
+					<li>
+<p>
+`~close手続き$rRは：
+◎
+close steps
+</p>
+						<ol>
+							<li>
+%reading ~SET ~F
+◎
+Set reading to false.
+</li>
+							<li>
+~IF［
+%canceled1 ~EQ ~F
+］
+⇒
+~NOABRUPT `ReadableStreamDefaultControllerClose$A( %branch1.`readableStreamController^sl )
+◎
+If canceled1 is false, perform ! ReadableStreamDefaultControllerClose(branch1.[[readableStreamController]]).
+</li>
+							<li>
+~IF［
+%canceled2 ~EQ ~F
+］
+⇒
+~NOABRUPT `ReadableStreamDefaultControllerClose$A( %branch2.`readableStreamController^sl )
+◎
+If canceled2 is false, perform ! ReadableStreamDefaultControllerClose(branch2.[[readableStreamController]]).
+</li>
+						</ol>
+					</li>
+					<li>
+`~error手続き$rRは
+⇒
+%reading ~SET ~F
+◎
+error steps
+• Set reading to false.
+</li>
+				</ul>
 			</li>
 			<li>
-%readPromise.`PromiseIsHandled^sl ~SET ~T
+~NOABRUPT `ReadableStreamDefaultReaderRead$A( %reader, %readRequest )
 ◎
-Set readPromise.[[PromiseIsHandled]] to true.
+Perform ! ReadableStreamDefaultReaderRead(reader, readRequest).
 </li>
+
 			<li>
 ~RET `undefined^jv で`解決される~promise$
 ◎
@@ -6991,7 +7128,7 @@ Each controller class defines two internal methods, which are called by the Read
 The controller’s steps that run in reaction to the stream being canceled, used to clean up the state stored in the controller and inform the underlying source.
 </dd>
 
-	<dt>`PullSteps@sl()</dt>
+	<dt>`PullSteps@sl(%readRequest)</dt>
 	<dd>
 `既定の読取器$から読取されるときに走らす，制御器の手続き。
 ［
@@ -7019,10 +7156,10 @@ The rest of this section concerns abstract operations that go in the other direc
 
 <div class="algo">
 <p>
-`ReadableStreamAddReadIntoRequest(stream)@A
+`ReadableStreamAddReadIntoRequest(stream, readRequest)@A
 は、次の手続きを遂行する：
 ◎
-ReadableStreamAddReadIntoRequest(stream) performs the following steps:
+ReadableStreamAddReadIntoRequest(stream, readRequest) performs the following steps:
 </p>
 <ol>
 	<li>
@@ -7038,29 +7175,19 @@ Assert: stream.[[reader]] implements ReadableStreamBYOBReader.
 Assert: stream.[[state]] is "readable" or "closed".
 </li>
 	<li>
-%promise ~LET `新たな~promise$
+%stream.`reader^sl.`readIntoRequests^sl に %readRequest を`付加する$
 ◎
-Let promise be a new promise.
-</li>
-	<li>
-%stream.`reader^sl.`readIntoRequests^sl に %promise を`付加する$
-◎
-Append promise to stream.[[reader]].[[readIntoRequests]].
-</li>
-	<li>
-~RET %promise
-◎
-Return promise.
+Append readRequest to stream.[[reader]].[[readIntoRequests]].
 </li>
 </ol>
 </div>
 
 <div class="algo">
 <p>
-`ReadableStreamAddReadRequest(stream)@A
+`ReadableStreamAddReadRequest(stream, readRequest)@A
 は、次の手続きを遂行する：
 ◎
-ReadableStreamAddReadRequest(stream) performs the following steps:
+ReadableStreamAddReadRequest(stream, readRequest performs the following steps:
 </p>
 <ol>
 	<li>
@@ -7076,19 +7203,9 @@ Assert: stream.[[reader]] implements ReadableStreamDefaultReader.
 Assert: stream.[[state]] is "readable".
 </li>
 	<li>
-%promise ~LET `新たな~promise$
+%stream.`reader^sl.`readRequests^sl に %readRequest を`付加する$
 ◎
-Let promise be a new promise.
-</li>
-	<li>
-%stream.`reader^sl.`readRequests^sl に %promise を`付加する$
-◎
-Append promise to stream.[[reader]].[[readRequests]].
-</li>
-	<li>
-~RET %promise
-◎
-Return promise.
+Append readRequest to stream.[[reader]].[[readRequests]].
 </li>
 </ol>
 </div>
@@ -7192,12 +7309,10 @@ If reader implements ReadableStreamDefaultReader,
 ~EACH( %readRequest )
 に対し
 ⇒
-次の結果で %readRequest を`解決する$
-⇒
-~NOABRUPT `ReadableStreamCreateReadResult$A( `undefined^jv, ~T, %reader.`forAuthorCode^sl )
+%readRequest の`~close手続き$rR()
 ◎
 For each readRequest of reader.[[readRequests]],
-• Resolve readRequest with ! ReadableStreamCreateReadResult(undefined, true, reader.[[forAuthorCode]]).
+• Perform readRequest’s close steps.
 </li>
 			<li>
 %reader.`readRequests^sl ~SET 空`~list$
@@ -7227,101 +7342,6 @@ Resolve reader.[[closedPromise]] with undefined.
 ◎
 The case where stream.[[state]] is "closed", but stream.[[closeRequested]] is false, will happen if the stream was closed without its controller’s close method ever being called: i.e., if the stream was closed by a call to cancel(reason). In this case we allow the controller’s close() method to be called and silently do nothing, since the cancelation was outside the control of the underlying source.
 </p>
-</div>
-
-<div class="algo">
-<p>
-`ReadableStreamCreateReadResult(value, done, forAuthorCode)@A
-は、次の手続きを遂行する：
-◎
-ReadableStreamCreateReadResult(value, done, forAuthorCode) performs the following steps:
-</p>
-<ol>
-	<li>
-%prototype ~LET ~NULL
-◎
-Let prototype be null.
-</li>
-	<li>
-~IF［
-%forAuthorCode ~EQ ~T
-］
-⇒
-%prototype ~SET `ObjectPrototype$jI
-◎
-If forAuthorCode is true, set prototype to %ObjectPrototype%.
-</li>
-	<li>
-~Assert：
-`Type$A( %done ) ~EQ `Boolean^jT
-◎
-Assert: Type(done) is Boolean.
-</li>
-	<li>
-%obj ~LET
-【~NOABRUPT】 `OrdinaryObjectCreate$Ax( %prototype )
-◎
-Let obj be OrdinaryObjectCreate(prototype).
-</li>
-	<li>
-【~NOABRUPT】 `CreateDataProperty$Ax( %obj, `value^l, %value )
-を遂行する
-◎
-Perform CreateDataProperty(obj, "value", value).
-</li>
-	<li>
-【~NOABRUPT】 `CreateDataProperty$Ax( %obj, `done^l, %done )
-を遂行する
-◎
-Perform CreateDataProperty(obj, "done", done).
-</li>
-	<li>
-~RET %obj
-◎
-Return obj.
-</li>
-</ol>
-
-<div class="note" id="rs-read-result-for-author-code">
-<p>
-この抽象-演算は、［
-%forAuthorCode ~EQ ~T
-］のときは， `CreateIterResultObject$Ax( %value, %done ) と同じ結果を与える。
-これは、［
-`defaultReader.read()^c ／ `byobReader.read()^c
-］~methodから返される~objに対しては，期待される意味論を供する。
-◎
-When forAuthorCode is true, this abstract operation gives the same result as CreateIterResultObject(value, done). This provides the expected semantics when the object is to be returned from the defaultReader.read() or byobReader.read() methods.
-</p>
-
-<p>
-しかしながら，そのような~objで~promiseを解決するときには、
-`Object.prototype.then^c への~accessが不可避になる。
-内部~利用~用には
-— 特に `pipeTo()$rs や 他の仕様においては —
-作者~codeが `Object.prototype^c を弄っていようが、読取は作者~codeからは観測-可能にならないことが重要になる。
-この理由から， %forAuthorCode に対する ~F 値による結果は、~promise解決が観測-不能になるのを保つよう，~prototypeが ~NULL にされた~objになる。
-◎
-However, resolving promises with such objects will unavoidably result in an access to Object.prototype.then. For internal use, particularly in pipeTo() and in other specifications, it is important that reads not be observable by author code—even if that author code has tampered with Object.prototype. For this reason, a false value of forAuthorCode results in an object with a null prototype, keeping promise resolution unobservable.
-</p>
-
-<p>
-ここで根底にある課題は、~streamからの読取りは，常に［
-`{ value, done }^c ~obj用の~promise
-］を
-— 仕様においても —
-利用する点にある。
-すべての内部~algoを，~promiseも~JS~objも利用しないように書き直して、代わりに，
-`read()^c ~methodが~callされたときの結果は［
-`{ value, done }^c 用の~promise
-］の中に梱包するに限ることも~~考えられるが、それは，未だ終えてない大仕事になる。
-これについて，もっと背景を知りたければ、
-<a href="https://github.com/whatwg/infra/issues/181">whatwg/infra#181</a>
-を見よ。
-◎
-The underlying issue here is that reading from streams always uses promises for { value, done } objects, even in specifications. Although it is conceivable we could rephrase all of the internal algorithms to not use promises and not use JavaScript objects, and instead only package up the results into promise-for-{ value, done } when a read() method is called, this would be a large undertaking, which we have not done. See whatwg/infra#181 for more background on this subject.
-</p>
-</div>
 </div>
 
 <div class="algo">
@@ -7372,22 +7392,15 @@ If reader implements ReadableStreamDefaultReader,
 </p>
 		<ol>
 			<li>
-<p>
 %reader.`readRequests^sl を成す
 ~EACH( %readRequest )
-に対し：
+に対し
+⇒
+%readRequest の`~error手続き$rR( %e )
 ◎
 For each readRequest of reader.[[readRequests]],
-</p>
-				<ol>
-					<li>
-%e で
-%readRequest を`却下する$
-◎
-Reject readRequest with e.
+• Perform readRequest’s error steps, given e.
 </li>
-				</ol>
-			</li>
 			<li>
 %reader.`readRequests^sl ~SET 新たな空`~list$
 ◎
@@ -7409,22 +7422,15 @@ Otherwise,
 Assert: reader implements ReadableStreamBYOBReader.
 </li>
 			<li>
-<p>
 %reader.`readIntoRequests^sl を成す
 ~EACH( %readIntoRequest )
-に対し：
+に対し
+⇒
+%readIntoRequest の`~error手続き$riR( %e )
 ◎
 For each readIntoRequest of reader.[[readIntoRequests]],
-</p>
-				<ol>
-					<li>
-%e で
-%readIntoRequest を`却下する$
-◎
-Reject readIntoRequest with e.
+• Perform readIntoRequest’s error steps, given e.
 </li>
-				</ol>
-			</li>
 			<li>
 %reader.`readIntoRequests^sl ~SET 新たな空`~list$
 ◎
@@ -7476,11 +7482,20 @@ Let readIntoRequest be reader.[[readIntoRequests]][0].
 Remove readIntoRequest from reader.[[readIntoRequests]].
 </li>
 	<li>
-次の結果で %readIntoRequest を`解決する$
+~IF［
+%done ~EQ ~T
+］
 ⇒
-~NOABRUPT `ReadableStreamCreateReadResult$A( %chunk, %done, %reader.`forAuthorCode^sl )
+%readIntoRequest の`~close手続き$riR( %chunk )
 ◎
-Resolve readIntoRequest with ! ReadableStreamCreateReadResult(chunk, done, reader.[[forAuthorCode]]).
+If done is true, perform readIntoRequest’s close steps, given chunk.
+</li>
+	<li>
+~ELSE
+⇒
+%readIntoRequest の`~chunk手続き$riR( %chunk )
+◎
+Otherwise, perform readIntoRequest’s chunk steps, given chunk.
 </li>
 </ol>
 </div>
@@ -7515,11 +7530,20 @@ Let readRequest be reader.[[readRequests]][0].
 Remove readRequest from reader.[[readRequests]].
 </li>
 	<li>
-次の結果で %readRequest を`解決する$
+~IF［
+%done ~EQ ~T
+］
 ⇒
-~NOABRUPT `ReadableStreamCreateReadResult$A( %chunk, %done, %reader.`forAuthorCode^sl )
+%readRequest の`~close手続き$rR()
 ◎
-Resolve readRequest with ! ReadableStreamCreateReadResult(chunk, done, reader.[[forAuthorCode]]).
+If done is true, perform readRequest’s close steps.
+</li>
+	<li>
+~ELSE
+⇒
+%readRequest の`~chunk手続き$rR( %chunk )
+◎
+Otherwise, perform readRequest’s chunk steps, given chunk.
 </li>
 </ol>
 </div>
@@ -7684,11 +7708,6 @@ ReadableStreamReaderGenericInitialize(reader, stream) performs the following ste
 </p>
 <ol>
 	<li>
-%reader.`forAuthorCode^sl ~SET ~T
-◎
-Set reader.[[forAuthorCode]] to true.
-</li>
-	<li>
 %reader.`ownerReadableStream^sl ~SET %stream
 ◎
 Set reader.[[ownerReadableStream]] to stream.
@@ -7816,10 +7835,10 @@ Set reader.[[ownerReadableStream]] to undefined.
 
 <div class="algo">
 <p>
-`ReadableStreamBYOBReaderRead(reader, view)@A
+`ReadableStreamBYOBReaderRead(reader, view, readIntoRequest)@A
 は、次の手続きを遂行する：
 ◎
-ReadableStreamBYOBReaderRead(reader, view) performs the following steps:
+ReadableStreamBYOBReaderRead(reader, view, readIntoRequest) performs the following steps:
 </p>
 <ol>
 	<li>
@@ -7843,25 +7862,25 @@ Set stream.[[disturbed]] to true.
 %stream.`state^sl ~EQ `errored^l
 ］
 ⇒
-~RET %stream.`storedError^sl で`却下される~promise$
+%readIntoRequest の`~error手続き$riR( %stream.`storedError^sl  )
 ◎
-If stream.[[state]] is "errored", return a promise rejected with stream.[[storedError]].
+If stream.[[state]] is "errored", perform readIntoRequest’s error steps given stream.[[storedError]].
 </li>
 	<li>
 ~RET
-~NOABRUPT `ReadableByteStreamControllerPullInto$A( %stream.`readableStreamController^sl, %view )
+~NOABRUPT `ReadableByteStreamControllerPullInto$A( %stream.`readableStreamController^sl, %view, %readIntoRequest )
 ◎
-Return ! ReadableByteStreamControllerPullInto(stream.[[readableStreamController]], view).
+Return ! ReadableByteStreamControllerPullInto(stream.[[readableStreamController]], view, readIntoRequest).
 </li>
 </ol>
 </div>
 
 <div class="algo">
 <p>
-`ReadableStreamDefaultReaderRead(reader)@A
+`ReadableStreamDefaultReaderRead(reader, readRequest)@A
 は、次の手続きを遂行する：
 ◎
-ReadableStreamDefaultReaderRead(reader) performs the following steps:
+ReadableStreamDefaultReaderRead(reader, readRequest) performs the following steps:
 </p>
 <ol>
 	<li>
@@ -7885,32 +7904,39 @@ Set stream.[[disturbed]] to true.
 %stream.`state^sl ~EQ `closed^l
 ］
 ⇒
-~RET 次の結果で`解決される~promise$
-⇒
-~NOABRUPT `ReadableStreamCreateReadResult$A( `undefined^jv, ~T, %reader.`forAuthorCode^sl )
+%readRequest の`~close手続き$rR()
 ◎
-If stream.[[state]] is "closed", return a promise resolved with ! ReadableStreamCreateReadResult(undefined, true, reader.[[forAuthorCode]]).
+If stream.[[state]] is "closed", perform readRequest’s close steps.
 </li>
 	<li>
-~IF［
+~ELIF［
 %stream.`state^sl ~EQ `errored^l
 ］
 ⇒
-~RET %stream.`storedError^sl で`却下される~promise$
+%readRequest の`~error手続き$rR( %stream.`storedError^sl )
 ◎
-If stream.[[state]] is "errored", return a promise rejected with stream.[[storedError]].
+Otherwise, if stream.[[state]] is "errored", perform readRequest’s error steps given stream.[[storedError]].
 </li>
 	<li>
+<p>
+~ELSE：
+◎
+Otherwise,
+</p>
+		<ol>
+			<li>
 ~Assert：
 %stream.`state^sl ~EQ `readable^l
 ◎
 Assert: stream.[[state]] is "readable".
 </li>
-	<li>
-~RET ! %stream.`readableStreamController^sl.`PullSteps$sl()
+			<li>
+~NOABRUPT %stream.`readableStreamController^sl.`PullSteps$sl( %readRequest )
 ◎
-Return ! stream.[[readableStreamController]].[[PullSteps]]().
+Perform ! stream.[[readableStreamController]].[[PullSteps]](readRequest).
 </li>
+		</ol>
+	</li>
 </ol>
 </div>
 
@@ -9846,10 +9872,10 @@ Perform ! ReadableByteStreamControllerCommitPullIntoDescriptor(controller.[[cont
 
 <div class="algo">
 <p>
-`ReadableByteStreamControllerPullInto(controller, view)@A
+`ReadableByteStreamControllerPullInto(controller, view, readIntoRequest)@A
 は、次の手続きを遂行する：
 ◎
-ReadableByteStreamControllerPullInto(controller, view) performs the following steps:
+ReadableByteStreamControllerPullInto(controller, view, readIntoRequest) performs the following steps:
 </p>
 <ol>
 	<li>
@@ -9927,10 +9953,14 @@ If controller.[[pendingPullIntos]] is not empty,
 Append pullIntoDescriptor to controller.[[pendingPullIntos]].
 </li>
 			<li>
-~RET
-~NOABRUPT `ReadableStreamAddReadIntoRequest$A( %stream )
+~NOABRUPT `ReadableStreamAddReadIntoRequest$A( %stream, %readIntoRequest )
 ◎
-Return ! ReadableStreamAddReadIntoRequest(stream).
+Perform ! ReadableStreamAddReadIntoRequest(stream, readIntoRequest).
+</li>
+			<li>
+~RET
+◎
+Return.
 </li>
 		</ol>
 	</li>
@@ -9950,11 +9980,14 @@ If stream.[[state]] is "closed",
 Let emptyView be ! Construct(ctor, « pullIntoDescriptor’s buffer, pullIntoDescriptor’s byte offset, 0 »).
 </li>
 			<li>
-~RET 次の結果で`解決される~promise$
-⇒
-~NOABRUPT `ReadableStreamCreateReadResult$A( %emptyView, ~T, %stream.`reader^sl.`forAuthorCode^sl )
+%readIntoRequest の`~close手続き$riR( %emptyView )
 ◎
-Return a promise resolved with ! ReadableStreamCreateReadResult(emptyView, true, stream.[[reader]].[[forAuthorCode]]).
+Perform readIntoRequest’s close steps, given emptyView.
+</li>
+			<li>
+~RET
+◎
+Return.
 </li>
 		</ol>
 	</li>
@@ -9988,11 +10021,14 @@ Let filledView be ! ReadableByteStreamControllerConvertPullIntoDescriptor(pullIn
 Perform ! ReadableByteStreamControllerHandleQueueDrain(controller).
 </li>
 					<li>
-~RET 次の結果で`解決される~promise$
-⇒
-~NOABRUPT `ReadableStreamCreateReadResult$A( %filledView, ~F, %stream.`reader^sl.`forAuthorCode^sl )
+%readIntoRequest の`~chunk手続き$riR( %filledView )
 ◎
-Return a promise resolved with ! ReadableStreamCreateReadResult(filledView, false, stream.[[reader]].[[forAuthorCode]]).
+Perform readIntoRequest’s chunk steps, given filledView.
+</li>
+					<li>
+~RET
+◎
+Return.
 </li>
 				</ol>
 			</li>
@@ -10016,9 +10052,14 @@ Let e be a TypeError exception.
 Perform ! ReadableByteStreamControllerError(controller, e).
 </li>
 					<li>
-~RET %e で`却下される~promise$
+%readIntoRequest の`~error手続き$riR( %e )
 ◎
-Return a promise rejected with e.
+Perform readIntoRequest’s error steps, given e.
+</li>
+					<li>
+~RET
+◎
+Return.
 </li>
 				</ol>
 			</li>
@@ -10030,20 +10071,14 @@ Return a promise rejected with e.
 Append pullIntoDescriptor to controller.[[pendingPullIntos]].
 </li>
 	<li>
-%promise ~LET
-~NOABRUPT `ReadableStreamAddReadIntoRequest$A( %stream )
+~NOABRUPT `ReadableStreamAddReadIntoRequest$A( %stream, %readIntoRequest )
 ◎
-Let promise be ! ReadableStreamAddReadIntoRequest(stream).
+Perform ! ReadableStreamAddReadIntoRequest(stream, readIntoRequest).
 </li>
 	<li>
 ~NOABRUPT `ReadableByteStreamControllerCallPullIfNeeded$A( %controller )
 ◎
 Perform ! ReadableByteStreamControllerCallPullIfNeeded(controller).
-</li>
-	<li>
-~RET %promise
-◎
-Return promise.
 </li>
 </ol>
 </div>
@@ -10742,7 +10777,7 @@ readableStream.pipeTo(%writableStream)
 `write()$dw ／ `close()$dw
 ~methodを利用すれば、可書~streamに直に書込することもできる。
 それらは、［
-流入~書込を，~queueした上で`下層~槽$へ順に回送する
+流入~書込nを，~queueした上で`下層~槽$へ順に回送する
 ］ことを，内部的に手入れするので、手間をかけず無差別的に，可書~streamへ書込できる：
 ◎
 You can also write directly to writable streams by acquiring a writer and using its write() and close() methods. Since writable streams queue any incoming writes, and take care internally to forward them to the underlying sink in sequence, you can indiscriminately write to a writable stream without much ceremony:
@@ -10802,7 +10837,7 @@ However, if you care about the success of writing a specific chunk, you can use 
 
 <p>
 “成功” が何を意味するかは、所与の~stream~instance（より精確には, その`下層~槽$）が裁定する。
-例えば，~file~streamに対してなら、単純に~OSが書込を受容したことを意味し，`~chunk$を~diskへ書出すことは必要とされないであろう。
+例えば，~file~streamに対してなら、単純に~OSが書込nを受容したことを意味し，`~chunk$を~diskへ書出すことは必要とされないであろう。
 そのような通達を与える~~能が全くない~streamもあるかもしれない
 — その事例では、返される~promiseは即時に充足されることになる。
 ◎
@@ -10897,14 +10932,14 @@ async function writeSuppliedBytesForever(%writableStream, %getBytes) {
 `ready$dw ~promiseは、［
 `~streamの内部~queueの残り~size$ ~GT 0
 ］になったとき，充足されることに注意
-— それは，書込が成功する前になるかもしれない（とりわけ、`限界水位$が高い事例では）。
+— それは，書込nが成功する前になるかもしれない（とりわけ、`限界水位$が高い事例では）。
 ◎
 Unlike the previous example, where—because we were always writing exactly writer.desiredSize bytes each time—the write() and ready promises were synchronized, in this case it’s quite possible that the ready promise fulfills before the one returned by write() does. Remember, the ready promise fulfills when the desired size becomes positive, which might be before the write succeeds (especially in cases with a larger high water mark).
 </p>
 
 <p>
 言い換えれば、 `write()$dw の返り値を `await^c することは、［
-~streamの`内部~queue$内には，書込は決して~queueしておかれない代わりに、以前の書込が成功した後に限り，書込を実行する
+~streamの`内部~queue$内には，書込nは決して~queueしておかれない代わりに、以前の書込nが成功した後に限り，書込nを実行する
 ］ことを意味する
 — その結果、時間あたりの流量は低下し得る。
 ◎
@@ -10980,7 +11015,7 @@ The promise returned from the writer’s close() method
 
 <tr><td>`inFlightWriteRequest^sl
 <td>
-この~slotは、`下層~槽$の書込~algoが まだ実行-中で充足されていない間に，現在の~in-flight 【“~~処理中にある”】書込~演算~用の~promiseに設定される。
+この~slotは、`下層~槽$の書込n~algoが まだ実行-中で充足されていない間に，現在の~in-flight 【“~~処理中にある”】書込n演算~用の~promiseに設定される。
 これは、再入~callを防止するために利用される。
 ◎
 A slot set to the promise for the current in-flight write operation while the underlying sink's write algorithm is executing and has not yet fulfilled, used to prevent reentrant calls
@@ -11039,7 +11074,7 @@ A WritableStreamDefaultWriter instance, if the stream is locked to a writer, or 
 <tr><td>`writeRequests^sl
 <td>
 一連の［
-`下層~槽$がまだ処理していない書込~要請に対する~promise
+`下層~槽$がまだ処理していない書込n要請に対する~promise
 ］からなる，~streamの内部~queueを表現する`~list$。
 ◎
 A list of promises representing the stream’s internal queue of write requests not yet processed by the underlying sink
@@ -11166,7 +11201,7 @@ write(chunk, controller), of type UnderlyingSinkWriteCallback
 この関数は、［
 `下層~槽$へ書込される~dataを成す，新たな`~chunk$
 ］が準備済みになったときに~callされる。
-~stream実装は、この関数が~callされるのは、以前の書込が成功した後に限られ, かつ［
+~stream実装は、この関数が~callされるのは、以前の書込nが成功した後に限られ, かつ［
 `start()$usk が成功する前 ／［
 `close()$usk ／ `abort()$usk
 ］が~callされた後
@@ -11187,7 +11222,7 @@ This function is used to actually send the data to the resource presented by the
 成否を通達する~promiseを返すようにすることもでき、返された~promiseは，
 <code>%writer.`write()$dw</code>
 の~call元へ
-— それが個々の書込を監視できるよう —
+— それが個々の書込nを監視できるよう —
 通信されることになる。
 例外を投出した場合、却下される~promiseを返すのと同じに扱われる。
 ◎
@@ -11218,7 +11253,7 @@ Note that such signals are not always available; compare e.g. § 9.6 A writable 
 は、~promiseが決着するまでの間は，以前の値であり続ける。
 </li>
 			<li>
-もっと~chunkを欲することを通達するために増やされるのは、書込が成功した場合に限られる。
+もっと~chunkを欲することを通達するために増やされるのは、書込nが成功した場合に限られる。
 </li>
 		</ul>
 ◎
@@ -11236,15 +11271,15 @@ close(), of type UnderlyingSinkCloseCallback
 <code>%writer.`close()$dw</code>
 を介して，次を通達した後に~callされる
 ⇒
-生産器による，一連の`~chunk$の~streamへの書込みは済み、後続して，~queueしておかれた すべての書込は成功裡に完了した
+生産器による，一連の`~chunk$の~streamへの書込みは済み、後続して，~queueしておかれた すべての書込nは成功裡に完了した
 ◎
 A function that is called after the producer signals, via writer.close(), that they are done writing chunks to the stream, and subsequently all queued-up writes have successfully completed.
 </dd>
 	<dd>
 次に必要とされる動作があれば、この関数~内で遂行できる
 ⇒＃
-`下層~槽$への書込を完結する／
-`下層~槽$への書込を書出す／
+`下層~槽$への書込nを完結する／
+`下層~槽$への書込nを書出す／
 保持されている資源への~accessを解放する
 ◎
 This function can perform any actions necessary to finalize or flush writes to the underlying sink, and release access to any held resources.
@@ -11373,7 +11408,7 @@ Returns whether or not the writable stream is locked to a writer.
 	<dd>
 ~streamを`中止する$。
 それは、生産器は もはや成功裡に~streamに書込できないことを通達する
-— 書込が~queueしておかれたときは、破棄した上で，即時に~error状態に移行することになる。
+— 書込nが~queueしておかれたときは、破棄した上で，即時に~error状態に移行することになる。
 これはまた、`下層~槽$の中止する仕組みも実行することになる。
 ◎
 Aborts the stream, signaling that the producer can no longer successfully write to the stream and it is to be immediately moved to an errored state, with any queued-up writes discarded. This will also execute any abort mechanism of the underlying sink.
@@ -11419,7 +11454,7 @@ Creates a writer (an instance of WritableStreamDefaultWriter) and locks the stre
 </dd>
 	<dd>
 この機能性は、［
-他から中断されたり書込が差挟まれることなく~streamに書込する能を欲するような，抽象-化
+他から中断されたり書込nが差挟まれることなく~streamに書込する能を欲するような，抽象-化
 ］を創出するときに，とりわけ有用になる。
 ~stream用の書込器を取得することにより，［
 他から同時に書込されて，書込した~dataが予測-不能になり，役立たずになる
@@ -11762,8 +11797,8 @@ If the reader is active, behaves the same as stream.close().
 Releases the writer’s lock on the corresponding stream. After the lock is released, the writer is no longer active. If the associated stream is errored when the lock is released, the writer will appear errored in the same way from now on; otherwise, the writer will appear closed.
 </dd>
 	<dd>
-まだ完遂してない進行中の書込があるときでも（すなわち、前回の `write()$dw ~callから返された~promiseが決着していなくとも）、~lockは解放できることに注意。
-書込~中に書込器に対する~lockを保持することは、必要とされない
+まだ完遂してない進行中の書込nがあるときでも（すなわち、前回の `write()$dw ~callから返された~promiseが決着していなくとも）、~lockは解放できることに注意。
+書込n中に書込器に対する~lockを保持することは、必要とされない
 — ~lockは、単純に，他の`生産器$が差挟むような方式で書込するのを防止するためにある。
 ◎
 Note that the lock can still be released even if some ongoing writes have not yet finished (i.e. even if the promises returned from previous calls to write() have not yet settled). It’s not necessary to hold the lock on the writer for the duration of the write; the lock instead simply prevents other producers from writing in an interleaved manner.
@@ -11772,10 +11807,10 @@ Note that the lock can still be released even if some ongoing writes have not ye
 	<dt>await %writer.`write(chunk)$dw</dt>
 	<dd>
 所与の`~chunk$を可書~streamに書込する
-— 以前の書込があれば それが成功裡に完遂するまで待機した上で，`下層~槽$の `write()$usk ~methodに`~chunk$を送信することにより。
+— 以前の書込nがあれば それが成功裡に完遂するまで待機した上で，`下層~槽$の `write()$usk ~methodに`~chunk$を送信することにより。
 この~methodは、~promiseを返す
-— それは、書込が成功したときは `undefined^jv で充足され，［
-書込に失敗した, または書込み処理nが起動される前に~streamが~errorした場合
+— それは、書込nが成功したときは `undefined^jv で充足され，［
+書込nに失敗した, または書込み処理nが起動される前に~streamが~errorした場合
 ］は 却下される。
 ◎
 Writes the given chunk to the writable stream, by waiting until any previous writes have finished successfully, and then sending the chunk to the underlying sink's write() method. It will return a promise that fulfills with undefined upon a successful write, or rejects if the write fails or stream becomes errored before the writing process is initiated.
@@ -15062,7 +15097,7 @@ A function that is called immediately during creation of the TransformStream.
 <code>%controller.`enqueue()$tsdc</code>
 を利用して，接頭-`~chunk$を~enqueueする
 ］ために利用される。
-それらの~chunkは、`可読~側$から読取されるが，`可書~側$へのどの書込にも依存しないことになる。
+それらの~chunkは、`可読~側$から読取されるが，`可書~側$へのどの書込nにも依存しないことになる。
 ◎
 Typically this is used to enqueue prefix chunks, using controller.enqueue(). Those chunks will be read from the readable side but don’t depend on any writes to the writable side.
 </dd>
@@ -16533,18 +16568,9 @@ If flushPromise was fulfilled, then:
 If readable.[[state]] is "errored", throw readable.[[storedError]].
 </li>
 					<li>
-%readableController ~LET %readable.`readableStreamController^sl
+~NOABRUPT `ReadableStreamDefaultControllerClose$A( %readable.`readableStreamController^sl )
 ◎
-Let readableController be readable.[[readableStreamController]].
-</li>
-					<li>
-~IF［
-~NOABRUPT `ReadableStreamDefaultControllerCanCloseOrEnqueue$A( %readableController ) ~EQ ~T
-］
-⇒
-~NOABRUPT `ReadableStreamDefaultControllerClose$A( %readableController )
-◎
-If ! ReadableStreamDefaultControllerCanCloseOrEnqueue(readableController) is true, perform ! ReadableStreamDefaultControllerClose(readableController).
+Perform ! ReadableStreamDefaultControllerClose(readable.[[readableStreamController]]).
 </li>
 				</ol>
 			</li>
@@ -16755,7 +16781,7 @@ const %stream = new WritableStream(
 </pre>
 
 <p>
-この事例では、`下層~槽$への以前の書込が完遂するまで待機する間，可書~streamが `生産器$へ向けて`背圧$通達の送信を開始するまでに、~~総計 32 KiB 程の`~chunk$たちを可書~streamの内部~queue内に累積できる。
+この事例では、`下層~槽$への以前の書込nが完遂するまで待機する間，可書~streamが `生産器$へ向けて`背圧$通達の送信を開始するまでに、~~総計 32 KiB 程の`~chunk$たちを可書~streamの内部~queue内に累積できる。
 ◎
 In this case, 32 KiB worth of chunks can be accumulated in the writable stream’s internal queue, waiting for previous writes to the underlying sink to finish, before the writable stream starts sending backpressure signals to any producers.
 </p>
@@ -16986,7 +17012,7 @@ const %stream = new WritableStream(
 </pre>
 
 <p>
-この事例では、`下層~槽$への以前の書込が完遂するまで待機している間，可書~streamが `生産器$へ向けて`背圧$通達の送信を開始するまでに、可書~streamの内部~queue内に（種類は問わず） 5 個の`~chunk$を累積できる。
+この事例では、`下層~槽$への以前の書込nが完遂するまで待機している間，可書~streamが `生産器$へ向けて`背圧$通達の送信を開始するまでに、可書~streamの内部~queue内に（種類は問わず） 5 個の`~chunk$を累積できる。
 ◎
 In this case, five chunks (of any kind) can be accumulated in the writable stream’s internal queue, waiting for previous writes to the underlying sink to finish, before the writable stream starts sending backpressure signals to any producers.
 </p>
@@ -17825,7 +17851,7 @@ function makeUDPSocketStream(%host, %port) {
       function readRepeatedly() {
         return %socket.select2().then(() =&gt; {
           /* <span class="comment">
-処理待ち~BYOB要請（ `byobRequest$rbsc ）がないときでも， %socket は読取~可能になり得るので、両~事例とも取扱う必要がある。
+処理待ち~BYOB要請（ `byobRequest$rbsc ）がないときでも， %socket は読取n可能になり得るので、両~事例とも取扱う必要がある。
 ◎
 Since the socket can become readable even when there’s no pending BYOB requests, we need to handle both cases.
 </span> */
@@ -18004,7 +18030,7 @@ With this in hand, we can create and use BYOB readers for the returned ReadableS
 ］を伝える仕方を供さない（扱いにくい `bufferedAmount$m の~pollingを行わない限り
 — それについては，読者への演習に残しておく）。
 そのようなわけで、この可書~streamは，その`生産器$に［
-正確aな背圧~通達や 書込の成否
+正確aな背圧~通達や 書込nの成否
 ］を通信する能を持たない。
 すなわち、その`書込器$の［
 `write()$dw ~method ／ `ready$dw 取得子
@@ -18034,7 +18060,7 @@ function makeWritableWebSocketStream(%url, %protocols) {
       %ws.send(%chunk);
         /* <span class="comment">
 即時に返る
-— ~web~socketでは，書込がいつ完了するかを伝える容易な仕方はないので。
+— ~web~socketでは，書込nがいつ完了するかを伝える容易な仕方はないので。
 ◎
 Return immediately, since the web socket gives us no easy way to tell when the write completes.
 </span> */
@@ -18101,7 +18127,7 @@ See the earlier note about this style of wrapping web sockets into streams.
 ］組みへ対応付けている）
 <a href="https://nodejs.org/api/fs.html">Node.js file system API</a>
 の各部を包装する，`可書~stream$を返す。
-その~APIは、所与の書込が成功したときにそれを伝える仕方を供するので、この~streamは，個々の書込の成否も込みで，`背圧$通達を通信できる。
+その~APIは、所与の書込nが成功したときにそれを伝える仕方を供するので、この~streamは，個々の書込nの成否も込みで，`背圧$通達を通信できる。
 ◎
 The following function returns writable streams that wrap portions of the Node.js file system API (which themselves map fairly directly to C’s fopen, fwrite, and fclose trio). Since the API we are wrapping provides a way to tell when a given write succeeds, this stream will be able to communicate backpressure signals as well as whether an individual write succeeded or failed.
 </p>
@@ -18160,7 +18186,7 @@ const %writer = %fileStream.getWriter();
 
 <p>
 特定0の `fileHandle.write^m ~callにて時間がかかる場合、返される~promiseは，~~後に充足されることになることに注意。
-当面の間は，追加的な書込を~queueしておける
+当面の間は，追加的な書込nを~queueしておける
 — それらは~streamの内部~queueに格納される。
 この~queueにおける`~chunk$たちの累積により、~streamは， `ready$dw 取得子が処理待ち~promiseを返すように変化し得る
 — それは、~streamの`生産器$に［
@@ -18171,7 +18197,7 @@ Note that if a particular call to fileHandle.write takes a longer time, the retu
 </p>
 
 <p>
-この事例においては、可書~streamが書込を~queueしておく仕方が，とりわけ重要になる
+この事例においては、可書~streamが書込nを~queueしておく仕方が，とりわけ重要になる
 —
 <a href="https://nodejs.org/api/fs.html#fs_filehandle_write_buffer_offset_length_position">`fileHandle.write^m にて文書化されている</a>
 ように：
