@@ -182,8 +182,8 @@ return text;
 
 ●●options
 
-spec_date:2020-06-26
-trans_update:2020-06-27
+spec_date:2020-07-09
+trans_update:2020-07-10
 source_checked:200626
 page_state_key:HTML
 spec_status:LS
@@ -629,6 +629,7 @@ i.~top-level内:#fetching-scripts-is-top-level
 中止-:#abort-a-running-script
 
 非安全~応答:~HTMLurl#unsafe-response
+非同一-生成元~隔離-済み:#cross-origin-isolated
 
 現在の設定群~obj:#current-settings-object
 
@@ -781,8 +782,6 @@ click ~eventを発火する:#fire-a-click-event
 類似生成元~window~agent:#similar-origin-window-agent
 類似生成元~window~agentを得する:#obtain-similar-origin-window-agent
 ~agent~cluster~key:#agent-cluster-key
-~agent~cluster~keyを得する:#obtain-agent-cluster-key
-閲覧文脈~agent~clusterを得する:#obtain-browsing-agent-cluster
 ~agentを作成する:#create-an-agent
 ~worker／~worklet~agentを得する:#obtaining-a-worker/worklet-agent
 専用／共用~worker~agentを得する:#obtain-a-dedicated/shared-worker-agent
@@ -809,6 +808,7 @@ bc.容器:#bc-container
 ~top-level閲覧文脈:~BROWSERS#top-level-browsing-context
 閲覧文脈~group:~BROWSERS#browsing-context-group
 ~agent~cluster~map:~BROWSERS#agent-cluster-map
+bcG.非同一-生成元~隔離-済み:~BROWSERS#bcg-cross-origin-isolated
 
 結付けられている文書:~WINDOW#concept-document-window
 ~window:~WINDOW#the-window-object
@@ -830,6 +830,8 @@ bc.容器:#bc-container
 ~site:~ORIGIN#site
 ~siteを得する:~ORIGIN#obtain-a-site
 同じ~site:~ORIGIN#same-site
+~scheme＆登録-可能な~domain:~ORIGIN#scheme-and-registrable-domain
+o.~host:~ORIGIN#concept-origin-host
 
 	●HTMLINFRA
 ~HTML要素:~HTMLINFRA#html-elements
@@ -865,6 +867,8 @@ x.~script:~HEscripting#the-script-element
 url.~query:~URL1#concept-url-query
 url.素片:~URL1#concept-url-fragment
 url.生成元:~URL1#concept-url-origin
+
+登録-可能な~domain:~URL1#host-registrable-domain
 
 	●DOM4
 ~eventを発火する:~DOM4#concept-event-fire
@@ -1281,12 +1285,8 @@ memory::::メモリ
 	予め読込んで:pre-load
 	~~伝送中:in flight
 	~loopするように戻る:loops back
+	何もしない:no-op
 
-	%~task:oldestTask
-	%~task~queue:taskQueue
-	%~task開始-時刻:taskStartTime
-	%大域~obj:global
-	%~task源:source
 
 	●event
 capture:
@@ -1481,7 +1481,7 @@ semicolon::::セミコロン
 避けつ:avoidしつ:~
 直面-:face:~
 織込んで:accountに入れて:織り込んで
-希望-:hope:~
+希望:hope:~
 略称-:abbreviate:~
 	デモ:demo
 時機:timing:~
@@ -1553,6 +1553,7 @@ encapsulate:::カプセル化
 	-:Remember that
 	と称される:is known as
 	何を指すか:pointer
+	入手:get at
 
 	●未分類（動詞）
 持続的な:persisted:~
@@ -1638,6 +1639,11 @@ milli::::ミリ
 	~~字数:typing
 	同じ~agent:same-agent
 
+	%~task:oldestTask
+	%~task~queue:taskQueue
+	%~task開始-時刻:taskStartTime
+	%大域~obj:global
+	%~task源:source
 	%参照元~scriptまたは~module:referencingScriptOrModule
 	%~module~record:moduleRecord
 	%~module~script:moduleScript
@@ -1655,7 +1661,6 @@ milli::::ミリ
 	%描画~機会がある:hasARenderingOpportunity
 	%実行候補:candidateExecution
 	%~platform~obj:platformObject
-	%~agent~cluster:agentCluster
 	%所有者~agent:ownerAgent
 	%~top-level？:isTopLevel
 	%共用？:~isShared
@@ -1892,6 +1897,15 @@ Similar-origin window agent
 ◎
 Contains various Window objects which can potentially reach each other, either directly or by using document.domain.
 </dd>
+	<dd>
+包摂している`~agent~cluster$の`非同一-生成元~隔離-済み$ ~EQ ~T の場合、すべての`~window$は，［
+互いに`同一-生成元$になる／
+互いに直に到達し得る／
+`document.domain$m は何もしない
+］ことになる。
+◎
+If the encompassing agent cluster's cross-origin isolated is true, then all the Window objects will be same origin, can reach each other directly, and document.domain will no-op.
+</dd>
 	<dd class="note">注記：
 `同一-生成元$に属する 2 個の`~window$は、異なる`類似生成元~window~agent$に属することもある
 — 一例として、それぞれが自前の`閲覧文脈~group$に属する場合。
@@ -2051,6 +2065,14 @@ The agent cluster concept is crucial for defining the JavaScript memory model, a
 Conceptually, the agent cluster concept is an architecture-independent, idealized "process boundary" that groups together multiple "threads" (agents). The agent clusters defined by the specification are generally more restrictive than the actual process boundaries implemented in user agents. By enforcing these idealized divisions at the specification level, we ensure that web developers see interoperable behavior with regard to shared memory, even in the face of varying and changing user agent process models.
 </p>
 
+<p>
+各`~agent~cluster$には、真偽値をとる
+`非同一-生成元~隔離-済み@
+が結付けられ，初期~時には ~F とする。
+◎
+An agent cluster has an associated cross-origin isolated (a boolean), which is initially false.
+</p>
+
 <hr>
 
 <p>
@@ -2061,32 +2083,19 @@ The following defines the allocation of the agent clusters of similar-origin win
 
 <p>
 `~agent~cluster~key@
-は`~site$である。
-【~map内での`~agent~cluster~key$の同等性は、`同じ~site$に基づくと見受けられる。】
+は、`~site$または［
+`成分組~生成元$のうち，その`~host$oの`登録-可能な~domain$ ~NEQ ~NULL なるもの
+］である。
+すなわち，`~agent~cluster~key$は、`生成元$または`~scheme＆登録-可能な~domain$である。
 ◎
-An agent cluster key is a site.
+An agent cluster key is a site or tuple origin whose host's registrable domain is non-null. I.e., an agent cluster key can be a scheme-and-registrable-domain or any origin.
 </p>
 
-<p class="XXX">
-（`~site$ではなく）`~agent~cluster~key$は、すべての`成分組~生成元$を包摂するよう広げられるものと，
-<a href="https://github.com/whatwg/html/pull/4734">whatwg/html #4734</a>
-にて期待されている。
-◎
-whatwg/html #4734 is expected to widen agent cluster key (but not site) to encompass all tuple origins.
-</p>
-
-<div class="algo">
-<p>
-`~agent~cluster~keyを得する@
-ときは、所与の
-( `生成元$ %生成元 )
-に対し，次の結果を返す
-⇒
-`~siteを得する$( %生成元 )
-◎
-To obtain an agent cluster key, given an origin origin, return the result of obtaining a site with origin.
-</p>
-</div>
+<p class="trans-note">【
+~map内での`~agent~cluster~key$の同等性は、［
+`~site$ならば`同じ~site$／`成分組~生成元$ならば`同一-生成元$
+］に基づくと見受けられる。
+】</p>
 
 <div class="algo">
 <p>
@@ -2100,42 +2109,23 @@ To obtain a similar-origin window agent, given an origin origin and browsing con
 
 <ol>
 	<li>
-%~cluster~key ~LET `~agent~cluster~keyを得する$( %生成元 )
+%~key ~LET `~siteを得する$( %生成元 )
 ◎
-Let clusterKey be the result of obtaining an agent cluster key given origin.
+Let key be the result of obtaining a site with origin.
 </li>
 	<li>
-%~agent~cluster ~LET `閲覧文脈~agent~clusterを得する$( %~group, %~cluster~key )
+~IF［
+%~group の`非同一-生成元~隔離-済み$bcG ~EQ ~T
+］
+⇒
+%~key ~SET %生成元
 ◎
-Let agentCluster be the result of obtaining a browsing context agent cluster with group and clusterKey.
+If group's cross-origin isolated is true, then set key to origin.
 </li>
-	<li>
-~RET %~agent~cluster 内に 1 つだけ在る，`類似生成元~window~agent$
-◎
-Return the single similar-origin window agent contained in agentCluster.
-</li>
-</ol>
-</div>
-
-<div class="algo">
-<p>
-`閲覧文脈~agent~clusterを得する@
-ときは、所与の
-( `閲覧文脈~group$ %~group, `~agent~cluster~key$ %~key )
-に対し，次を走らす：
-◎
-To obtain a browsing context agent cluster, given a browsing context group group and agent cluster key key, run these steps:
-</p>
-
-<ol>
-	<li>
-%~agent~cluster ~LET %~group の`~agent~cluster~map$[ %~key ]
-◎
-↓</li>
 	<li>
 <p>
 ~IF［
-%~agent~cluster ~EQ ε
+%~group の`~agent~cluster~map$[ %~key ] ~EQ ε
 ］：
 ◎
 If group's agent cluster map[key] does not exist, then:
@@ -2145,6 +2135,11 @@ If group's agent cluster map[key] does not exist, then:
 %~agent~cluster ~SET 新たな`~agent~cluster$
 ◎
 Let agentCluster be a new agent cluster.
+</li>
+			<li>
+%~agent~cluster の`非同一-生成元~隔離-済み$ ~SET %~group の`非同一-生成元~隔離-済み$bcG
+◎
+Set agentCluster's cross-origin isolated to group's cross-origin isolated.
 </li>
 			<li>
 %~agent~cluster に次の結果を追加する
@@ -2161,16 +2156,16 @@ Set group's agent cluster map[key] to agentCluster.
 		</ol>
 	</li>
 	<li>
-~RET %~agent~cluster
+~RET %~group の`~agent~cluster~map$[ %~key ] 内に 1 つだけ在る，`類似生成元~window~agent$
 ◎
-Return group's agent cluster map[key].
+Return the single similar-origin window agent contained in group's agent cluster map[key].
 </li>
 </ol>
 
 <p class="note">注記：
-これにより、`類似生成元~window~agent$ %~agent は，閲覧文脈~agent~clusterごとに 1 つだけ在るようになる（しかしながら，［
-`専用~worker~agent$, `~worklet~agent$
-］は、同じ~cluster内に在るかもしれない）。
+これは、各 閲覧文脈~agent~clusterには，`類似生成元~window~agent$は 1 つだけ在ることを意味する（しかしながら，［
+`専用~worker~agent$／`~worklet~agent$
+］は、同じ~cluster内に複数在るかもしれない）。
 ◎
 This means that there is only one similar-origin window agent per browsing context agent cluster. (However, dedicated worker and worklet agents might be in the same cluster.)
 </p>
@@ -2920,6 +2915,43 @@ Let realm be realm execution context's Realm component.
 ◎
 Set realm's agent to agent. This pointer is not yet defined in the JavaScript specification; see tc39/ecma262#1357.
 </li>
+	<li>
+<p>
+~IF［
+%~agent の`~agent~cluster$の`非同一-生成元~隔離-済み$ ~EQ ~F
+］：
+◎
+If agent's agent cluster's cross-origin isolated is false, then:
+</p>
+		<ol>
+			<li>
+%大域~obj ~LET %~realm の`大域~obj$rM
+◎
+Let global be realm's global object.
+</li>
+			<li>
+%状態s ~LET
+~NOABRUPT %大域~obj.`Delete^sl( `SharedArrayBuffer^l )
+◎
+Let status be ! global.[[Delete]]("SharedArrayBuffer").
+</li>
+			<li>
+~Assert：
+%状態s ~EQ ~T
+◎
+Assert: status is true.
+</li>
+		</ol>
+
+<p class="note">注記：
+これは，~web内容との互換性を得るために行われるが、将来には除去できる希望もある。
+~web開発者は，依然として、次を通して構築子を入手できる
+⇒
+`new WebAssembly.Memory({ shared:true, initial:0, maximum:0 }).buffer.constructor^c
+◎
+This is done for compatibility with web content and there is some hope that this can be removed in the future. Web developers can still get at the constructor through new WebAssembly.Memory({ shared:true, initial:0, maximum:0 }).buffer.constructor.
+</p>
+	</li>
 	<li>
 ~RET %~realm実行~文脈
 ◎
