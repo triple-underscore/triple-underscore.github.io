@@ -479,6 +479,25 @@ p.unsatisfied-range:~HTTPsem#p.unsatisfied-range
 p.userinfo:~HTTPsem#p.userinfo
 p.weight:~HTTPsem#p.weight
 
+p.HTTP-date:~HTTPsem#p.HTTP-date
+p.IMF-fixdate:~HTTPsem#p.IMF-fixdate
+p.day-name:~HTTPsem#p.day-name
+p.date1:~HTTPsem#p.date1
+p.day:~HTTPsem#p.day
+p.month:~HTTPsem#p.month
+p.year:~HTTPsem#p.year
+p.GMT:~HTTPsem#p.GMT
+p.time-of-day:~HTTPsem#p.time-of-day
+p.hour:~HTTPsem#p.hour
+p.minute:~HTTPsem#p.minute
+p.second:~HTTPsem#p.second
+p.obs-date:~HTTPsem#p.obs-date
+p.rfc850-date:~HTTPsem#p.rfc850-date
+p.date2:~HTTPsem#p.date2
+p.day-name-l:~HTTPsem#p.day-name-l
+p.asctime-date:~HTTPsem#p.asctime-date
+p.date3:~HTTPsem#p.date3
+
 p.Range:~HTTPrq#p.Range
 p.accept-ext:~HTTPrq#p.accept-ext
 p.accept-params:~HTTPrq#p.accept-params
@@ -494,31 +513,13 @@ p.product-version:~HTTPrq#p.product-version
 p.product:~HTTPrq#p.product
 p.token68:~HTTPrq#p.token68
 
-p.HTTP-date:~HTTPrs#p.HTTP-date
-p.GMT:~HTTPrs#p.GMT
-p.IMF-fixdate:~HTTPrs#p.IMF-fixdate
 p.Location:~HTTPrs#p.Location
 p.acceptable-ranges:~HTTPrs#p.acceptable-ranges
-p.asctime-date:~HTTPrs#p.asctime-date
-p.date1:~HTTPrs#p.date1
-p.date2:~HTTPrs#p.date2
-p.date3:~HTTPrs#p.date3
-p.day-name-l:~HTTPrs#p.day-name-l
-p.day-name:~HTTPrs#p.day-name
-p.day:~HTTPrs#p.day
 p.delay-seconds:~HTTPrs#p.delay-seconds
 p.entity-tag:~HTTPrs#p.entity-tag
 p.etagc:~HTTPrs#p.etagc
-p.hour:~HTTPrs#p.hour
-p.minute:~HTTPrs#p.minute
-p.month:~HTTPrs#p.month
-p.obs-date:~HTTPrs#p.obs-date
 p.opaque-tag:~HTTPrs#p.opaque-tag
-p.rfc850-date:~HTTPrs#p.rfc850-date
-p.second:~HTTPrs#p.second
-p.time-of-day:~HTTPrs#p.time-of-day
 p.weak:~HTTPrs#p.weak
-p.year:~HTTPrs#p.year
 
 	//Cache
 p.cache-directive:~HTTPcache#p.cache-directive
@@ -613,9 +614,8 @@ c.realm:~HTTPrq#realm
 ~MIME型:~HTTPsem#media.type
 	~MIME型:~HTTPsem#media.type
 ~MIME型~parameter:~HTTPsem#media-type.parameter
+日時:~HTTPsem#http.date
 
-満足可能:~HTTPsem#satisfiable
-満足不能:~HTTPsem#unsatisfiable
 複部位:~HTTPsem#multipart
 指紋収集:~HTTPsem#fingerprinting
 資源:~HTTPsem#resources
@@ -705,7 +705,8 @@ c.realm:~HTTPrq#realm
 首な資源:~HTTPrs#primary-resource
 選定用~header:~HTTPrs#selecting-header
 制御~data:~HTTPrs#response.control.data
-日時:~HTTPrs#origination.date
+満足可能:~HTTPrs#satisfiable
+	満足不能:~HTTPsem#unsatisfiable
 
 		●HTTPcache
 経験的に~cache可能:~HTTPcache#heuristically-cacheable
@@ -803,9 +804,8 @@ COMMON_DATA.words_table += `
 満足しよ:satisfyしよ:満たそ
 満足する:satisfyする:満たす
 満足でき:satisfyでき:満たせ
-	満足可能な:satisfy 可能な:満たせる
-	満足不能な:satisfy 不能な:満たせない
-
+満足可能:satisfiable:~
+	満足可能でない:unsatisfiable
 結付法:associating:結び付け
 見出させ:findさせ:~
 運ばせ:carryさせ::~
@@ -1327,7 +1327,6 @@ reactive::::リアクティブ
 品質値:qvalue::~
 回復-:recover::~
 固定的な:fixed:~
-固定長:fixed-length:~
 下位型:subtype::~
 回復:recovery::~
 
@@ -1371,10 +1370,8 @@ reactive::::リアクティブ
 給せ:supplyでき:~
 給さな:supplyしな:~
 改変子:modifier::~
-
-文書化:document 化:~
 族:family::~::ファミリ
-日付時刻:date and time::~
+日付時刻:date and time::日時
 日時:date::~
 時刻:time::~
 時間制限:timeout::~::タイムアウト
@@ -1478,6 +1475,7 @@ stateless::::ステートレス
 /*
 	●仕様（他
 logging
+	文書~化:document
 	高い:high
 	〜する用意がない:unwilling
 	思しきもの:supposedly:
