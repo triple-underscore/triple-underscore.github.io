@@ -866,7 +866,6 @@ random::::ランダム
 	rendering::::レンダリング
 repository::::リポジトリ
 schedule::::スケジュール
-storage::::ストレージ
 table::::テーブル
 major::::主:メジャー
 minor::::副:マイナー
@@ -1383,8 +1382,6 @@ reactive::::リアクティブ
 	〜でない:unconditional~
 条態:condition::~
 格納域:store::~
-記憶域:storage::~::ストレージ
-蓄積:storage::~::ストレージ
 再構築-:reconstruct:~
 再構築:reconstruction:~
 	＊構築し直す

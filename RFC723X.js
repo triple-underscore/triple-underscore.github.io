@@ -928,7 +928,6 @@ random::::ランダム
 repository::::リポジトリ
 reset::::リセット
 schedule::::スケジュール
-storage::::ストレージ
 subset::::サブセット
 table::::テーブル
 textによる／~textからなる
@@ -1443,10 +1442,7 @@ redirection::::リダイレクト
 条件付き:conditional::~
 	〜でない:unconditional~
 条態:condition::~
-
 格納域:store::~
-記憶域:storage::~::ストレージ
-蓄積:storage::~::ストレージ
 再構築-:reconstruct:~
 再構築:reconstruction:~
 段階:stage:~
