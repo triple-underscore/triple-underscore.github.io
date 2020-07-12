@@ -227,11 +227,14 @@ navigator::::ナビゲータ
 flags:::flag 群:フラグ群
 報告先:reporting endpoint::~
 報告用:reporting::~
+陥穽:pitfall:落とし穴
+蝕む:undermineする:~
 
 	信用できない:untrusted
 	CORS-cross-origin
 	CORS-same-origin
 	~secure化-:secured
+	ひどいことに:acute
 
 	●環境 ／ 閲覧
 agent:
@@ -380,17 +383,20 @@ about_blank:about:blank
 I.Document:~HTMLdom#document
 I.WorkerGlobalScope:~WORKERS#workerglobalscope
 I.DedicatedWorkerGlobalScope:~WORKERS#dedicatedworkerglobalscope
+I.MessageChannel:~HTMLcomms#messagechannel
 
 E.SecurityError:~WEBIDL#securityerror
 
 m.document.domain:#dom-document-domain
 m.domain:#dom-document-domain
 m.localStorage:~WEBSTORAGE#dom-localstorage
+m.crossOriginIsolated:~HTMLGAPI#dom-crossoriginisolated
 m.window.alert:~HTMLGAPI#dom-window-alert
 m.window.confirm:~HTMLGAPI#dom-window-confirm
 m.window.print:~HTMLGAPI#dom-window-print
 m.window.prompt:~HTMLGAPI#dom-window-prompt
 m.window.open:~WINDOW#dom-window-open
+m.postMessage:~HTMLcomms#dom-window-postmessage
 
 	●event
 et.beforeunload:~HTMLindex#event-beforeunload
@@ -1330,12 +1336,169 @@ Returns the current domain used for security checks.
 	<dd>
 下位domainを除去するような値に設定して，`生成元$の`~domain$oを変更できる
 — そうすることにより，
-同じ~domainにおける他の下位domain上の~pageと互いに~accessできるようになる（それらも，同じことをしたならば）。
-（ただし，~sandbox化された `iframe$e においては設定できない。）
+同じ~domainに属する他の下位domain上の~pageと互いに~accessできるようになる（それらも，同じことをしたならば）。
+＊これは、同じ~domainに属する異なる~host上の~pageが，互いの~DOMへ同期的に~accessすることを可能化する。
 ◎
-Can be set to a value that removes subdomains, to change the origin's domain to allow pages on other subdomains of the same domain (if they do the same thing) to access each other. (Can't be set in sandboxed iframes.)
+Can be set to a value that removes subdomains, to change the origin's domain to allow pages on other subdomains of the same domain (if they do the same thing) to access each other. This enables pages on different hosts of a domain to synchronously access each other's DOMs.
+</dd>
+	<dd>
+次においては／次のときは、設定子は `SecurityError$E 例外を投出することになる
+⇒＃
+~sandbox化された `iframe$e 内／
+`不透明な生成元$を伴う`文書$内／
+`属する閲覧文脈$が無い`文書$内／
+`document-domain$l 特能は不能化されているとき
+◎
+In sandboxed iframes, Documents with opaque origins, Documents without a browsing context, and when the "document-domain" feature is disabled, the setter will throw a "SecurityError" exception.＼
+</dd>
+	<dd>
+`crossOriginIsolated$m が ~T を返す事例では、設定子は何もしない。
+◎
+In cases where crossOriginIsolated returns true, the setter will do nothing.
 </dd>
 </dl>
+
+<div class="critical">
+
+<p>
+`document.domain$m 設定子を利用するのは、避けること。
+それは、同一-生成元~施策が供する~security保護を蝕む。
+とりわけ、他者と~hostを共有しているとき，ひどいことになる：
+例えば，信用できない第三者主体が［
+同じ~IP~address上の~portだけ異なる~HTTP~server
+］を~hostできる場合、［
+通常は同じ~host上の異なる~siteどうしを保護する，同一-生成元による保護
+］は，失敗することになる
+— `document.domain$m 設定子が利用されて以降は、生成元の比較-時に，その~portは無視されるので。
+◎
+Avoid using the document.domain setter. It undermines the security protections provided by the same-origin policy. This is especially acute when using shared hosting; for example, if an untrusted third party is able to host an HTTP server at the same IP address but on a different port, then the same-origin protection that normally protects two different sites on the same host will fail, as the ports are ignored when comparing origins after the document.domain setter has been used.
+</p>
+
+<p>
+これらの~security上の陥穽があるので、この特能は~web~platformから除去されつつある過程にある（何年もかかるであろう）。
+◎
+Because of these security pitfalls, this feature is in the process of being removed from the web platform. (This is a long process that takes many years.)
+</p>
+
+<p>
+他の生成元と安全な方式で通信するためには、代わりに［
+`postMessage()$m ／ `MessageChannel$I ~obj
+］を利用すること。
+◎
+Instead, use postMessage() or MessageChannel objects to communicate across origins in a safe manner.
+</p>
+</div>
+
+<p>
+`Document$I の
+`domain@m
+属性の：
+◎
+↓</p>
+<ul>
+	<li class="algo">
+<p>
+取得子~手続きは：
+◎
+The domain getter steps are:
+</p>
+		<ol>
+			<li>
+%実効~domain ~LET コレの`生成元$の`実効~domain$
+◎
+Let effectiveDomain be this's origin's effective domain.
+</li>
+			<li>
+~IF［
+%実効~domain ~EQ ~NULL
+］
+⇒
+~RET 空~文字列
+◎
+If effectiveDomain is null, then return the empty string.
+</li>
+			<li>
+~RET `~hostを直列化する$( %実効~domain )
+◎
+Return effectiveDomain, serialized.
+</li>
+		</ol>
+	</li>
+	<li class="algo">
+<p>
+設定子~手続きは：
+◎
+The domain setter steps are:
+</p>
+		<ol>
+			<li>
+~IF［
+コレが`属する閲覧文脈$ ~EQ ~NULL
+］
+⇒
+~THROW `SecurityError$E
+◎
+If this's browsing context is null, then throw a "SecurityError" DOMException.
+</li>
+			<li>
+~IF［
+`~document-domain$sbox ~IN
+コレにて`作動中の~sandbox法~flag集合$
+］
+⇒
+~THROW `SecurityError$E
+◎
+If this's active sandboxing flag set has its sandboxed document.domain browsing context flag set, then throw a "SecurityError" DOMException.
+</li>
+			<li>
+~IF［
+コレには `document-domain$l 特能の`利用は許容されて$いない
+］
+⇒
+~THROW `SecurityError$E
+◎
+If this is not allowed to use the "document-domain" feature, then throw a "SecurityError" DOMException.
+</li>
+			<li>
+%実効~domain ~LET コレの`生成元$の`実効~domain$
+◎
+Let effectiveDomain be this's origin's effective domain.
+</li>
+			<li>
+~IF［
+%実効~domain ~EQ ~NULL
+］
+⇒
+~THROW `SecurityError$E
+◎
+If effectiveDomain is null, then throw a "SecurityError" DOMException.
+</li>
+			<li>
+~IF［
+所与の値は %実効~domain に対し`登録-可能な~domain接尾辞または同等$でない
+］
+⇒
+~THROW `SecurityError$E
+◎
+If the given value is not a registrable domain suffix of and is not equal to effectiveDomain, then throw a "SecurityError" DOMException.
+</li>
+			<li>
+~IF［
+`~surrounding~agent$の`~agent~cluster$の`非同一-生成元~隔離-済み$ ~EQ ~T
+］
+⇒
+~RET
+◎
+If the surrounding agent's agent cluster's cross-origin isolated is true, then return.
+</li>
+			<li>
+コレの`生成元$の`~domain$o ~SET `~host構文解析器$( 所与の値 )
+◎
+Set this's origin's domain to the result of parsing the given value.
+</li>
+		</ol>
+	</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -1428,136 +1591,6 @@ Return true.
 </li>
 </ol>
 </div>
-
-<p>
-`Document$I の
-`domain@m
-属性は：
-◎
-↓</p>
-<ul>
-	<li class="algo">
-<p>
-その取得子~手続きは：
-◎
-The domain attribute's getter must run these steps:
-</p>
-		<ol>
-			<li>
-%実効~domain ~LET コレの`生成元$の`実効~domain$
-◎
-Let effectiveDomain be this Document object's origin's effective domain.
-</li>
-			<li>
-~IF［
-%実効~domain ~EQ ~NULL
-］
-⇒
-~RET 空~文字列
-◎
-If effectiveDomain is null, then return the empty string.
-</li>
-			<li>
-~RET `~hostを直列化する$( %実効~domain )
-◎
-Return effectiveDomain, serialized.
-</li>
-		</ol>
-	</li>
-	<li class="algo">
-<p>
-その設定子~手続きは：
-◎
-The domain attribute's setter must run these steps:
-</p>
-		<ol>
-			<li>
-~IF［
-コレが`属する閲覧文脈$ ~EQ ~NULL
-］
-⇒
-~THROW `SecurityError$E
-◎
-If this Document object's browsing context is null, then throw a "SecurityError" DOMException.
-</li>
-			<li>
-~IF［
-`~document-domain$sbox ~IN
-コレにて`作動中の~sandbox法~flag集合$
-］
-⇒
-~THROW `SecurityError$E
-◎
-If this Document object's active sandboxing flag set has its sandboxed document.domain browsing context flag set, then throw a "SecurityError" DOMException.
-</li>
-			<li>
-~IF［
-コレには `document-domain$l 特能の`利用は許容されて$いない
-］
-⇒
-~THROW `SecurityError$E
-◎
-If this Document object is not allowed to use the "document-domain" feature, then throw a "SecurityError" DOMException.
-</li>
-			<li>
-%実効~domain ~LET コレの`生成元$の`実効~domain$
-◎
-Let effectiveDomain be this Document object's origin's effective domain.
-</li>
-			<li>
-~IF［
-%実効~domain ~EQ ~NULL
-］
-⇒
-~THROW `SecurityError$E
-◎
-If effectiveDomain is null, then throw a "SecurityError" DOMException.
-</li>
-			<li>
-~IF［
-所与の値は %実効~domain に対し`登録-可能な~domain接尾辞または同等$でない
-］
-⇒
-~THROW `SecurityError$E
-◎
-If the given value is not a registrable domain suffix of and is not equal to effectiveDomain, then throw a "SecurityError" DOMException.
-</li>
-			<li>
-~IF［
-`~surrounding~agent$の`~agent~cluster$の`非同一-生成元~隔離-済み$ ~EQ ~T
-］
-⇒
-~RET
-◎
-If the surrounding agent's agent cluster's cross-origin isolated is true, then return.
-</li>
-			<li>
-コレの`生成元$の`~domain$o ~SET `~host構文解析器$( 所与の値 )
-◎
-Set this Document object's origin's domain to the result of parsing the given value.
-</li>
-		</ol>
-	</li>
-</ul>
-
-<p class="note">注記：
-`domain$m 属性は、同じ~domain上の異なる~host上の~pageどうしが互いの
-DOM に~accessすることを可能化するために利用される。
-◎
-The document.domain attribute is used to enable pages on different hosts of a domain to access each other's DOMs.
-</p>
-
-<p class="warning">
-他者と~hostを共有しているときは、`document.domain$m 属性を利用しないこと。
-信用できない第三者主体が［
-同じ~IP~address上の~portだけ異なる~HTTP~server
-］を~hostできる場合、［
-通常は同じ~host上の異なる~siteどうしを保護する，同一-生成元による保護
-］は，失敗することになる
-— `document.domain$m 属性が利用されて以降は、生成元の比較-時に，その~portは無視されるので。
-◎
-Do not use the document.domain attribute when using shared hosting. If an untrusted third party is able to host an HTTP server at the same IP address but on a different port, then the same-origin protection that normally protects two different sites on the same host will fail, as the ports are ignored when comparing origins after the document.domain attribute has been used.
-</p>
 
 			</section>
 		</section>
