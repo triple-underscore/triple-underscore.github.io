@@ -1679,7 +1679,6 @@ DOMPARSING=副         ~/DOM-Parsing-ja.html
 DOMLEVEL2STYLE=副     ~adagio/tr_dom2_style/expanded-toc.html
 ENCODING=副           ~/Encoding-ja.html
 FETCH=副              ~/Fetch-ja.html
-FEATUREPOLICY=副      ~/feature-policy-ja.html
 FILEAPI=副            ~/File_API-ja.html
 FULLSCREEN=副         ~/fullscreen-ja.html
 NOTIFICATIONS=副      ~/notifications-ja.html
@@ -1707,6 +1706,7 @@ RESOURCETIMING2=副     ~/resource-timing-ja.html
 RESOURCETIMING=副     ~/resource-timing-ja.html
 BEACON=副             ~/beacon-ja.html
 RESOURCEHINTS=副      ~/resource-hints-ja.html
+FEATUREPOLICY=副      ~/feature-policy-ja.html
 REFERRERPOLICY=副     ~/webappsec-referrer-policy-ja.html
 REPORTING1=副         ~/reporting1-ja.html
 PERMISSIONS=副        ~/webappsec-permissions-ja.html
@@ -1936,6 +1936,8 @@ REFERRER:REFERRERPOLICY
 SW:SW1
 SERVICEWORKERS:SW1
 SERVICEWORKERS1:SW1
+PERMISSIONSPOLICY:FEATUREPOLICY
+PERMISSIONSPOLICY1:FEATUREPOLICY
 UPGRADE:UPGRADEINSECUREREQUESTS
 PAGEVISIBILITY2:PAGEVISIBILITY
 HRTIME:HRTIME2
