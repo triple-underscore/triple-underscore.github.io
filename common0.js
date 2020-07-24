@@ -1093,6 +1093,7 @@ CSSANIM:css-animations-ja.html
 CSSBG:css-backgrounds-ja.html
 CSSBREAK:css-break-ja.html
 CSSCOLOR:css-color-ja.html
+CSSCOLORADJUST:css-color-adjust-ja.html
 CSSCOND:css-conditional-ja.html
 CSSCONTENT:css-content-ja.html
 CSSCONTAIN:css-contain-ja.html
@@ -1102,6 +1103,7 @@ CSSEXCLUSION:css-exclusions-ja.html
 CSSFLEX:css-flexbox-ja.html
 CSSFONT:css-fonts-ja.html
 CSSFONT4:css-fonts4-ja.html
+CSSFONTLOADING:css-font-loading-ja.html
 CSSGRID:css-grid-ja.html
 CSSIMAGE:css-images-ja.html
 CSSIMAGE4:css-images4-ja.html
@@ -1216,6 +1218,7 @@ HEtables:HTML-tables-ja.html
 WORKERS:Workers-ja.html
 WORKLETS1:worklets-ja.html
 WEBSOCKET:WebSocket-ja.html
+STORAGE:storage-ja.html
 WEBSTORAGE:WebStorage-ja.html
 INDEXEDDB:IndexedDB-ja.html
 TIMELINE:performance-timeline-ja.html
