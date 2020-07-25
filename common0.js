@@ -1230,7 +1230,7 @@ RESOURCE-HINTS:resource-hints-ja.html
 SENSORS:sensors-ja.html
 REPORTING:reporting1-ja.html
 PERMISSIONS:webappsec-permissions-ja.html
-FEATUREPOLICY:feature-policy-ja.html
+PERMISSIONS-POLICY:feature-policy-ja.html
 REFERRER-POLICY:webappsec-referrer-policy-ja.html
 MIXED-CONTENT:webappsec-mixed-content-ja.html
 SECURE-CONTEXT:webappsec-secure-contexts-ja.html
