@@ -217,7 +217,9 @@ h.Content-Location:~HTTPsem#field.content-location
 h.Content-Range:~HTTPsem#field.content-range
 h.Content-Type:~HTTPsem#field.content-type
 h.Host:~HTTPsem#field.host
+h.TE:~HTTPsem#field.te
 h.Trailer:~HTTPsem#field.trailer
+h.Upgrade:~HTTPsem#field.upgrade
 h.Via:~HTTPsem#field.via
 
 h.Accept:~HTTPrq#field.accept
@@ -261,9 +263,7 @@ h.Warning:~HTTPcache#field.warning
 
 	//Messaging
 h.Connection:~HTTPmsg#field.connection
-h.TE:~HTTPmsg#field.te
 h.Transfer-Encoding:~HTTPmsg#field.transfer-encoding
-h.Upgrade:~HTTPmsg#field.upgrade
 
 	//他
 h.Cookie:~HTTPcookie#sane-cookie
@@ -376,10 +376,7 @@ p.HTTP-message:~HTTPmsg#p.HTTP-message
 p.HTTP-name:~HTTPmsg#p.HTTP-name
 p.HTTP-version:~HTTPmsg#p.HTTP-version
 p.Connection:~HTTPmsg#p.Connection
-p.TE:~HTTPmsg#p.TE
 p.Transfer-Encoding:~HTTPmsg#p.Transfer-Encoding
-p.Upgrade:~HTTPmsg#p.Upgrade
-
 p.Age:~HTTPcache#p.Age
 p.Cache-Control:~HTTPcache#p.Cache
 p.Expires:~HTTPcache#p.Expires
@@ -401,18 +398,12 @@ p.message-body:~HTTPmsg#p.message-body
 p.method:~HTTPmsg#p.method
 p.obs-fold:~HTTPmsg#p.obs-fold
 p.origin-form:~HTTPmsg#p.origin-form
-p.protocol-name:~HTTPmsg#p.protocol-name
-p.protocol-version:~HTTPmsg#p.protocol-version
-p.protocol:~HTTPmsg#p.protocol
-p.rank:~HTTPmsg#p.rank
 p.reason-phrase:~HTTPmsg#p.reason-phrase
 p.request-line:~HTTPmsg#p.request-line
 p.request-target:~HTTPmsg#p.request-target
 p.start-line:~HTTPmsg#p.start-line
 p.status-code:~HTTPmsg#p.status-code
 p.status-line:~HTTPmsg#p.status-line
-p.t-codings:~HTTPmsg#p.t-codings
-p.t-ranking:~HTTPmsg#p.t-ranking
 p.trailer-section:~HTTPmsg#p.trailer-section
 p.transfer-coding:~HTTPmsg#p.transfer-coding
 p.transfer-parameter:~HTTPmsg#p.transfer-parameter
@@ -421,6 +412,7 @@ p.transfer-parameter:~HTTPmsg#p.transfer-parameter
 p.BWS:~HTTPsem#p.BWS
 p.OWS:~HTTPsem#p.OWS
 p.RWS:~HTTPsem#p.RWS
+
 p.Content-Encoding:~HTTPsem#p.Content-Encoding
 p.Content-Language:~HTTPsem#p.Content-Language
 p.Content-Length:~HTTPsem#p.Content-Length
@@ -429,13 +421,13 @@ p.Content-Range:~HTTPsem#p.Content-Range
 p.Content-Type:~HTTPsem#p.Content-Type
 p.Host:~HTTPsem#p.Host
 p.Trailer:~HTTPsem#p.Trailer
+p.TE:~HTTPsem#p.TE
+p.Upgrade:~HTTPsem#p.Upgrade
 p.Via:~HTTPsem#p.Via
+
 p.absolute-path:~HTTPsem#p.absolute-path
 p.byte-content-range:~HTTPsem#p.byte-content-range
 p.byte-range-resp:~HTTPsem#p.byte-range-resp
-p.range-set:~HTTPsem#p.range-set
-p.range-spec:~HTTPsem#p.range-spec
-p.ranges-specifier:~HTTPsem#p.ranges-specifier
 p.charset:~HTTPsem#p.charset
 p.comment:~HTTPsem#p.comment
 p.complete-length:~HTTPsem#p.complete-length
@@ -456,22 +448,31 @@ p.media-type:~HTTPsem#p.media-type
 p.obs-text:~HTTPsem#p.obs-text
 p.other-content-range:~HTTPsem#p.other-content-range
 p.other-range:~HTTPsem#p.other-range
-p.parameter:~HTTPsem#p.parameter
 p.parameter-name:~HTTPsem#p.parameter-name
 p.parameter-value:~HTTPsem#p.parameter-value
+p.parameter:~HTTPsem#p.parameter
 p.partial-URI:~HTTPsem#p.partial-URI
+p.protocol-name:~HTTPsem#p.protocol-name
+p.protocol-version:~HTTPsem#p.protocol-version
+p.protocol:~HTTPsem#p.protocol
 p.pseudonym:~HTTPsem#p.pseudonym
 p.qdtext:~HTTPsem#p.qdtext
 p.quoted-pair:~HTTPsem#p.quoted-pair
 p.quoted-string:~HTTPsem#p.quoted-string
 p.qvalue:~HTTPsem#p.qvalue
 p.range-resp:~HTTPsem#p.range-resp
+p.range-set:~HTTPsem#p.range-set
+p.range-spec:~HTTPsem#p.range-spec
 p.range-unit:~HTTPsem#p.range-unit
+p.ranges-specifier:~HTTPsem#p.ranges-specifier
+p.rank:~HTTPsem#p.rank
 p.received-by:~HTTPsem#p.received-by
 p.received-protocol:~HTTPsem#p.received-protocol
 p.subtype:~HTTPsem#p.subtype
-p.suffix-range:~HTTPsem#p.suffix-range
 p.suffix-length:~HTTPsem#p.suffix-length
+p.suffix-range:~HTTPsem#p.suffix-range
+p.t-codings:~HTTPsem#p.t-codings
+p.t-ranking:~HTTPsem#p.t-ranking
 p.tchar:~HTTPsem#p.tchar
 p.token:~HTTPsem#p.token
 p.type:~HTTPsem#p.type
@@ -506,6 +507,7 @@ p.auth-scheme:~HTTPrq#p.auth-scheme
 p.challenge:~HTTPrq#p.challenge
 p.codings:~HTTPrq#p.codings
 p.credentials:~HTTPrq#p.credentials
+p.expectation:~HTTPrq#p.expectation
 p.language-range:~HTTPrq#p.language-range
 p.mailbox:~HTTPrq#p.mailbox
 p.media-range:~HTTPrq#p.media-range
@@ -581,6 +583,7 @@ c.realm:~HTTPrq#realm
 要請:~HTTPsem#request
 完全:~HTTPsem#complete
 不完全:~HTTPsem#complete
+~parameter:~HTTPsem#parameter
 
 素片~識別子:~HTTPsem#uri.fragment.identifiers
 
@@ -928,7 +931,6 @@ agent::::エージェント
 自己記述的:self-descriptive:~
 適応的:adaptive:~
 適時:timely:~
-選好順:descending preferenceの order:選好度の高い順
 有利:advantageous:~
 有意度:significance:~
 有意性:significance:~
@@ -1126,7 +1128,7 @@ agent::::エージェント
 署名:signature:~
 防御策:defense:~
 露呈-:reveal:露に
-中間者:man-in-the-middle::~
+経路上の:on-path::~
 相関-:correlate:~
 相関:correlation:~
 隔離:isolate:~
@@ -1275,7 +1277,7 @@ redirection::::リダイレクト
 応答待ち:outstanding::~
 
 所在-:locate::~
-経路:path:~
+経路:path::~
 遠隔:remote::~::リモート
 
 	●未分類

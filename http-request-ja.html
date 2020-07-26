@@ -13,7 +13,7 @@
 ●●options
 
 spec_title:HTTP Semantics
-trans_update:2020-07-11
+trans_update:2020-07-27
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html
 abbr_url:HTTPrq
@@ -472,7 +472,7 @@ Unlike distributed objects, the standardized request methods in HTTP are not res
 ◎
 This specification defines a number of standardized methods that are commonly used in HTTP, as outlined by the following table.
 ◎
-Table 8
+Table 9
 Method 	Description 	Sec.
 </p>
 
@@ -618,7 +618,7 @@ When a request method is received that is known by an origin server but not allo
 
 </tbody></table>
 ◎
-Table 9
+Table 10
 Method 	Safe 	Idempotent 	Reference
 
 CONNECT 	no 	no 	Section 8.3.6
@@ -2122,24 +2122,24 @@ Controls are request header fields that direct specific handling of the request.
 </p>
 
 <div>
-<ul><li>`Cache-Control$h
+<ul><li>`Cache-Control$h `Caching$r
 </li><li>`Expect$h
 </li><li>`Host$h
 </li><li>`Max-Forwards$h
-</li><li>`Pragma$h
+</li><li>`Pragma$h `Caching$r
 </li><li>`Range$h
 </li><li>`TE$h
 </li></ul>
 
 ◎
-Table 10
+Table 11
 Field Name 	Defined in...
 • Cache-Control 	Section 5.2 of [Caching]
 • Expect 	Section 9.1.1
 • Host 	Section 6.6
 • Max-Forwards 	Section 9.1.2
 • Pragma 	Section 5.4 of [Caching]
-• TE 	Section 7.4 of [Messaging]
+• TE 	Section 5.6.4
 </div>
 
 			<section id="field.expect">
@@ -2152,14 +2152,15 @@ Field Name 	Defined in...
 当の要請を適正に取扱うためには，~serverにより~supportされる必要がある
 ］ような，一定の挙動の集合 —
 を指示する。
-この仕様が定義する，そのような期待は、 "`100-continue^c" のみである：
 ◎
-The "Expect" header field in a request indicates a certain set of behaviors (expectations) that need to be supported by the server in order to properly handle this request. The only such expectation defined by this specification is 100-continue.
+The "Expect" header field in a request indicates a certain set of behaviors (expectations) that need to be supported by the server in order to properly handle this request.
 </p>
 
 <pre class="bnf">
 `Expect@p
-    = "100-continue"
+    = 1#`expectation$p
+`expectation@p
+    = `token$p [ "=" ( `token$p / `quoted-string$p ) *`parameter$p ]
 </pre>
 
 <p>
@@ -2169,11 +2170,19 @@ The Expect field value is case-insensitive.
 </p>
 
 <p>
-`Expect^h `~field値$に "`100-continue^c" 以外の値を受信した`~server$は、［
-予期されない期待には応えられない
-］ことを指示する， `417$st で応答してもヨイ。
+この仕様が定義する唯一の期待は、
+"`100-continue^c" である（定義される~parameterは無い）。
 ◎
-A server that receives an Expect field value other than 100-continue MAY respond with a 417 (Expectation Failed) status code to indicate that the unexpected expectation cannot be met.
+The only expectation defined by this specification is "100-continue" (with no defined parameters).
+</p>
+
+<p>
+`Expect^h にて［
+"`100-continue^c" 以外の~memberを包含している`~field値$
+］を受信した`~server$は、
+`417$st で応答して，予期されない期待には応えられないことを指示してもヨイ。
+◎
+A server that receives an Expect field value containing a member other than 100-continue MAY respond with a 417 (Expectation Failed) status code to indicate that the unexpected expectation cannot be met.
 </p>
 
 <p>
@@ -2282,12 +2291,12 @@ A server MAY omit sending a 100 (Continue) response if it has already received s
 A server that sends a 100 (Continue) response MUST ultimately send a final status code, once the message body is received and processed, unless the connection is closed prematurely.
 </li>
 	<li>
-要請の~payload本体 全体を読取る前に，最終-状態s~codeで応答するときは、［
-接続を~closeするのか（ `Messaging/9.7$sec を見よ）,
-~payload本体の読取りを継続するのか
-］，どちらを意図するか指示するベキである。
+要請の~payload本体 全体を読取る前に，最終-状態s~codeで応答するときは、次のどちらを意図するか指示するベキである
+⇒＃
+接続を~closeする（例： `Messaging/9.7$sec を見よ）／
+~payload本体の読取りを継続する
 ◎
-A server that responds with a final status code before reading the entire request payload body SHOULD indicate whether it intends to close the connection (see Section 9.7 of [Messaging]) or continue reading the payload body.
+A server that responds with a final status code before reading the entire request payload body SHOULD indicate whether it intends to close the connection (e.g., see Section 9.7 of [Messaging]) or continue reading the payload body.
 </li>
 </ul>
 
@@ -2296,9 +2305,9 @@ A server that responds with a final status code before reading the entire reques
 `生成元~server$／`~proxy$
 ］は、`~HTTP11$（以上の~versionの）［
 ~method, `~target~URI$, 完全な`~header節$
-］を受信したときに，それが［
-`~100cont 期待$を包含していて，要請の~message本体が後続することを指示している
-］場合は：
+］を受信したとき，それが［
+`~100cont 期待$を包含していて，要請の`~message本体$が後続することを指示している
+］ならば：
 ◎
 ↓</p>
 <ul>
@@ -2544,7 +2553,7 @@ The following request header fields allow a client to place a precondition on th
 ◎
 Each precondition defined by this specification consists of a comparison between a set of validators obtained from prior representations of the target resource to the current state of validators for the selected representation (Section 11.2). Hence, these preconditions evaluate whether the state of the target resource has changed since a given state known by the client. The effect of such an evaluation depends on the method semantics and choice of conditional, as defined in Section 9.2.1.
 ◎
-Table 11
+Table 12
 Field Name 	Defined in...
 • If-Match 	Section 9.2.3
 • If-None-Match 	Section 9.2.4
@@ -3781,7 +3790,7 @@ If all of the preconditions are true, the server supports the Range header field
 ◎
 The following request header fields can be sent by a user agent to engage in proactive negotiation of the response content, as defined in Section 7.4.1. The preferences sent in these fields apply to any content in the response, including representations of the target resource, representations of error or processing status, and potentially even the miscellaneous text strings that might appear within the protocol.
 ◎
-Table 12
+Table 13
 Field Name 	Defined in...
 Accept 	Section 9.4.1
 Accept-Charset 	Section 9.4.2
@@ -4069,7 +4078,7 @@ would cause the following values to be associated:
 
 </tbody></table>
 ◎
-Table 13
+Table 14
 Media Type 	Quality Value
 text/plain;format=flowed 	1
 text/plain 	0.7
@@ -4588,7 +4597,7 @@ Two header fields are used for carrying authentication credentials. Note that va
 </li></ul>
 
 ◎
-Table 14
+Table 15
 Field Name 	Defined in...
 Authorization 	Section 9.5.3
 Proxy-Authorization 	Section 9.5.4
@@ -5181,7 +5190,7 @@ Schemes using Authentication-Info, Proxy-Authentication-Info, or any other authe
 ◎
 The following request header fields provide additional information about the request context, including information about the user, user agent, and resource behind the request.
 ◎
-Table 15
+Table 16
 Field Name 	Defined in...
 From 	Section 9.6.1
 Referer 	Section 9.6.2
