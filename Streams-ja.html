@@ -140,8 +140,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2020-07-16
-trans_update:2020-07-17
+spec_date:2020-07-27
+trans_update:2020-07-28
 	source_checked:200625
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -951,6 +951,7 @@ return:
 memory::::メモリ
 契約:contract::~
 小task:microtask::小 task:小タスク
+切替える:switchする:切り替える
 
 	~call元:caller
 	calling
@@ -976,6 +977,8 @@ memory::::メモリ
 	より早く:sooner
 	事前に:ahead of time
 	先んじて:ahead of
+	吸い取る:swallow
+	投出し直す:rethrow
 
 	●仕様
 WebIDL:Web IDL
@@ -1183,6 +1186,7 @@ encapsulate::::カプセル化
 	^en:out of the box
 	に代えて:in lieu of
 	-:In what follows
+	価する:worth
 
 	●未分類
 install::::インストール
@@ -1447,7 +1451,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/5a4e2d805dc4ad0125d3ad7127b21eda3a90abb4" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/505edd79173cb4a348df094c4e21d15928964602" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -2464,7 +2468,8 @@ A value indicating how the stream failed, to be given as a failure reason or exc
 The ReadableStream() constructor accepts as its first argument a JavaScript object representing the underlying source. Such objects can contain any of the following properties:
 </p>
 
-<pre class="idl">dictionary `UnderlyingSource@I {
+<pre class="idl">
+dictionary `UnderlyingSource@I {
   `UnderlyingSourceStartCallback$I `start$usc;
   `UnderlyingSourcePullCallback$I `pull$usc;
   `UnderlyingSourceCancelCallback$I `cancel$usc;
@@ -3241,6 +3246,82 @@ if it exists, or undefined otherwise.
 Return ! ReadableStreamPipeTo(this, destination, options["preventClose"], options["preventAbort"], options["preventCancel"], signal).
 </li>
 </ol>
+</div>
+
+<div class="example">
+<p>
+`AbortSignal$I を利用すれば、進行中の`~pipe$演算を次のように停止できる：
+◎
+An ongoing pipe operation can be stopped using an AbortSignal, as follows:
+</p>
+
+<pre class="lang-js">
+const %controller = new AbortController();
+%readable.pipeTo(%writable, { signal: %controller.signal });
+
+/* <span class="comment">
+… しばらく後で …
+◎
+... some time later ...
+</span> */
+%controller.abort();
+</pre>
+
+<p>
+（上では `pipeTo()$rs から返される~promise用の~errorの取扱いを省略している。
+加えて，［
+`preventAbort$spo ／ `preventCancel$spo
+］~optionも、~pipingの停止-時に何が起こるかに影響iがあり，考慮するに価する。）
+◎
+(The above omits error handling for the promise returned by pipeTo(). Additionally, the impact of the preventAbort and preventCancel options what happens when piping is stopped are worth considering.)
+</p>
+</div>
+
+<div class="example">
+
+<p>
+上の技法は、同じ `WritableStream$I の中へ書込している間に，~pipeされている `ReadableStream$I を切替えるときにも利用できる：
+◎
+The above technique can be used to switch the ReadableStream being piped, while writing into the same WritableStream:
+</p>
+
+<pre class="lang-js">
+const %controller = new AbortController();
+const %pipePromise = %readable1.pipeTo(%writable, { preventAbort: true, signal: %controller.signal });
+
+/* <span class="comment">
+… しばらく後で …
+◎
+... some time later ...
+</span> */
+%controller.abort();
+
+/* <span class="comment">
+新たな~pipeを開始する前に，当の~pipeが完了するまで待機する：
+◎
+Wait for the pipe to complete before starting a new one:
+</span> */
+try {
+ await %pipePromise;
+} catch (%e) {
+ /* <span class="comment">
+予期される `AbortError^E 例外に限り，ここで吸い取る
+— 他の失敗は投出し直す。
+◎
+Swallow "AbortError" DOMExceptions as expected, but rethrow any unexpected failures.
+</span> */
+ if (%e.name !== "AbortError") {
+  throw %e;
+ }
+}
+
+/* <span class="comment">
+新たな~pipeを開始する。
+◎
+Start the new pipe!
+</span> */
+%readable2.pipeTo(%writable);
+</pre>
 </div>
 
 <div class="algo">
@@ -15066,7 +15147,8 @@ The WritableStream instance controlled by this object
 The TransformStream() constructor accepts as its first argument a JavaScript object representing the transformer. Such objects can contain any of the following methods:
 </p>
 
-<pre class="idl">dictionary `Transformer@I {
+<pre class="idl">
+dictionary `Transformer@I {
   `TransformerStartCallback$I `start$tf;
   `TransformerTransformCallback$I `transform$tf;
   `TransformerFlushCallback$I `flush$tf;
