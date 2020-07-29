@@ -1184,7 +1184,6 @@ sensitive:
 中間者:man-in-the-middle::~
 相関-:correlate:~
 相関:correlation:~
-隔離:isolate:~
 	追跡:trace::~::トレース
 
 	●HTTP／構文／data／stream
@@ -1255,7 +1254,6 @@ escaping::::エスケープ処理
 分割-:split:~
 分割:splitting:~
 分解-:decompose:~
-分離-:separate:~
 分離子:separator:~
 
 	●network
@@ -1466,7 +1464,6 @@ stateless::::ステートレス
 為せる:makeできる:~
 為せな:makeできな:~
 	登録-済み:registered
-監視-:monitor::~::モニタ
 監視器:monitor::~::モニタ
 盲目的:blind::~
 省略:omit:~

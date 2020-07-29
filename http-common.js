@@ -927,8 +927,6 @@ agent::::エージェント
 保守的:conservative:~
 適度:reasonable:~
 見合う:reasonableな:~
-
-自己記述的:self-descriptive:~
 適応的:adaptive:~
 適時:timely:~
 有利:advantageous:~
@@ -1127,11 +1125,10 @@ agent::::エージェント
 脆弱:vulnerable::~
 署名:signature:~
 防御策:defense:~
-露呈-:reveal:露に
+露呈-:reveal:露わに
 経路上の:on-path::~
 相関-:correlate:~
 相関:correlation:~
-隔離:isolate:~
 
 	●HTTP／構文／data／stream
 
@@ -1198,7 +1195,6 @@ escaping::::エスケープ処理
 分割-:split:~
 分割:splitting:~
 分解-:decompose:~
-分離-:separate:~
 分離子:separator:~
 
 	●network
@@ -1407,7 +1403,6 @@ stateless::::ステートレス
 為せる:makeできる:~
 為せな:makeできな:~
 	登録-済み:registered
-監視-:monitor::~::モニタ
 監視器:monitor::~::モニタ
 盲目的:blind::~
 省略:omit:~

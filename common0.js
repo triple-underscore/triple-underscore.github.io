@@ -864,7 +864,7 @@ Util.rxp_wordsX = /\b ((?:<\/[^>]*>)+)|([\u2E80-\u9FFF])(?=(<\w[^>]*>)*\w)/g;
 語１２	結果				例
 語？？	mapping[語 ？？]	満たす	→satisfyする|満たす
 語でき	mapping[語-]１２	定義 + でき	→define|定義 + でき
-語？＊	mapping[語 ？]２	共通の + ＊	→common|共通の + ＊
+語？＊	mapping[語 ？]２	定義な + ＊	→definedな|定義な + ＊
 語？／	mapping[語 ？]／	渡す		→passする|渡す
 語サ＊	mapping[語-]１２	定義 + され	→define|定義 + され
 語サ／	mapping[語-]１／	定義 + し	→define|定義 + し
@@ -1302,6 +1302,7 @@ channel::::チャネル
 匿名:anonymous::~
 行先:destination::~
 関数:function::~
+関数-:functional::~
 inline::::インライン
 機器:device:~
 装置:device:~
@@ -1347,6 +1348,9 @@ sizing::::サイズ法
 text::::テキスト
 textな:textual::textな:テキストな
 scalar::::スカラー
+素な:plain::~
+	素な~text:plaintext
+包装-:wrap::~
 
 ●幾何
 空間:space:~
@@ -1403,7 +1407,6 @@ scalar::::スカラー
 通常に:normalに:通常どおり
 通常通り:as normalに:通常どおり
 共通:common:~
-共通の:commonな:~
 共通して:commonに:共通して
 共通する:commonになる:共通する
 共通的な:commonな:よくある
@@ -1441,6 +1444,7 @@ scalar::::スカラー
 述べる:describeする:~
 記述-:describe:~
 記述:description:~
+記述的:descriptive:~
 解釈-:interpret:~
 解釈:interpretation:~
 明確化-:clarify:~
@@ -1528,9 +1532,6 @@ risk::::リスク
 一般の:generalな:~
 一般的:general:~
 汎用:generic:~
-汎用の:genericな:~
-汎用的:generic:~
-
 策定者:author:~
 著作-:author:~
 著作:authoring:~
@@ -1569,10 +1570,8 @@ risk::::リスク
 定義:definition:~
 定義な:definedな:~
 未定義:undefined:~
-未定義の:undefinedな:~
 	定義されない:undefined
 定義済み:predefined:~
-定義済みの:predefinedな:~
 裁定-:decide:~
 裁定:decision:~
 設計-:design:~
@@ -1580,6 +1579,7 @@ risk::::リスク
 精査-:examine:~
 考査-:review:~
 考査:review:~
+	査読:peer review
 仕組み:mechanism:~
 取組む:addressする:取り組む
 取組んで:addressして:取り組んで
@@ -1902,6 +1902,8 @@ hardware::::ハードウェア
 engine::::エンジン
 support::::サポート
 	~supportされない:unsupported
+	~supportしない:unsupported
+	未~supportな:unsupported
 library::::ライブラリ
 plugin::::プラグイン
 	~plugin:plug-in
@@ -1953,6 +1955,8 @@ tool::::ツール
 成遂げら:accomplishさ:成し遂げら
 
 施行-:enforce:~
+監視-:monitor::~
+監視:monitoring::~
 実施:practice:~
 実践:practice:~
 実用的:practical:~
@@ -2043,7 +2047,6 @@ programming::::プログラミング
 判別-:distinguish:~
 除外:exclusion:~
 除外-:exclude:~
-
 既定:default:~:::デフォルト
 既定の:default:~:::デフォルト
 理由:reason:~
@@ -2072,13 +2075,17 @@ programming::::プログラミング
 	無効に:invalidate
 正確:exact:~
 正確a:accurate:正確
+正確度:accuracy:正確さ
 精確:precise:~
+精度:precision:~
 
 言語:language:~
 自動的:automatic:~
 登録-:register:~
 登録:registration:~
 未登録に:unregister:~
+公に:publicに:~
+公な:publicな:~
 
 既知:known:~
 未知:unknown:~
@@ -2138,7 +2145,7 @@ care::::ケア
 管理-:manage:~
 管理:management:~
 純粋:pure:~
-組込みの:built-in:組み込みの
+組込みの:built-inな:組み込みの
 国際的:international:~
 国際-:international:~
 	国際-化:internationalization／:internationalized
@@ -2346,11 +2353,15 @@ catch:
 	演算子:operator:~
 計算-:calculate:~
 計算:calculation:~
+補間-:interpolate::~
+補間:interpolation::~
 
 状態:state::~::ステート
 状態s:status::状態°::ステータス
 更新-:update::~
 更新:update::~
+遷移-:transition::~
+遷移:transition::~
 
 上書き:override::~
 	上書き:overwrite:~
@@ -2363,7 +2374,7 @@ catch:
 
 反応-:react::~
 反応:reaction::~
-観測-:observe::~
+観測-εqqe::~
 	観測:observing:~
 
 message::::メッセージ
@@ -2390,6 +2401,7 @@ promise:
 待時間:latency::待ち時間
 所要時間:duration::~
 時刻印:timestamp::~::タイムスタンプ
+計時:timing::~
 準備済み:ready::~
 進捗-:progress::~
 進捗:progress::~
@@ -2432,6 +2444,8 @@ garbage::::ガーベジ
 外側:outside:~
 内縁:inner:~
 外縁:outer:~
+自己-:self-:~
+下位-:sub-:~
 直接的:direct:~
 間接的:indirect:~
 依拠-:rely:~
@@ -2560,7 +2574,6 @@ node::::ノード
 順序付けら:orderさ:~
 並替ng:reordering:並び替え
 
-空の:emptyな:~
 空:empty:~
 
 型:type::~
@@ -2610,6 +2623,9 @@ class::::クラス
 反映:reflection:~
 
 隔離-:isolate::~
+隔離:isolation::~
+分離:separation:~
+分離-:separate:~
 
 等価:equivalent:~
 比較:comparison:~
@@ -2635,7 +2651,7 @@ query::::クエリ
 源:source::~::ソース
 値:value:~
 範囲:range:~
-真偽:boolean::~
+真偽-:boolean::~
 真偽値:boolean::~
 名:name:~
 名前:name:~
@@ -2832,12 +2848,10 @@ file::::ファイル
 
 	合成-:synthesize:~
 	合成:synthetic:~
-	合成な:syntheticな:合成
-	合成の:syntheticな:~
+	合成な:syntheticな:~
 	合成d:synthesized:合成
 	合成:synthesis:~
 	合成的に:syntheticに:合成により
-	合成的な:syntheticな:合成による
 	合成器:synthesizer:~
 
 ●UI
@@ -3006,6 +3020,10 @@ sandbox::::サンドボックス
 脆弱性:vulnerability::~
 信用:trust::~
 信用-:trust::~
+漏洩-:leak::~
+漏洩:leak::~
+漏洩e:leakage::漏洩
+漏洩ng:leaking::漏洩
 
 ●CSS 全般
 
@@ -3067,7 +3085,7 @@ offset::::オフセット
 
 	●定訳（語彙レベル
 FOO化-:FOOize／FOOfy
-FOO化:FOOoization／FOOfication
+FOO化:FOOnization／FOOfication
 FOO化:FOOizing
 FOO-法:FOOing
 非FOO:non-FOO

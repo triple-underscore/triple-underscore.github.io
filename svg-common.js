@@ -623,7 +623,7 @@ t.dasharray:~SVGpainting#DataTypeDasharray
 外部~資源~参照:~SVGlinking#TermExternalReference
 ~data~URL参照:~SVGlinking#TermDataURL
 ~URL参照:~SVGlinking#TermURLReference
-未解決の参照:~SVGlinking#TermUnresolvedReference
+未解決な参照:~SVGlinking#TermUnresolvedReference
 素片~識別子~付き~URL参照:~SVGlinking#TermURLReferenceWithFragmentIdentifier
 無効な参照:~SVGlinking#TermInvalidReference
 無効な循環-参照:~SVGlinking#TermCircularReference
@@ -779,9 +779,7 @@ svg:
 	子孫:descendent
 不可分:atomic::~
 構造化-:structure::~
-隔離-:isolate::~
 外来の:foreign::~
-包装-:wrap:~
 下位-:sub-:~
 部位:portion:~
 最外縁の:outermost::~
@@ -969,8 +967,6 @@ multimedia::::マルチメディア
 禁制-:prohibit:~
 義務:mandatory:~
 未解決:unresolved::~
-未解決の:unresolved::~
-記述的:descriptive:~
 警告:warning:~
 給-:supply:~
 指名-:designate:~
@@ -1000,7 +996,6 @@ multimedia::::マルチメディア
 時列線:timeline::~
 時刻:time::~
 時機:timing::~
-遷移:transition::~
 単位:unit:~
 
 
