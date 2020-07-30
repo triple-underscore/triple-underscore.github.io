@@ -1381,6 +1381,9 @@ scalar::::スカラー
 角度:angle::~
 方位:orientation::~
 方位-:orient::~
+交差-:intersect::~
+交差:intersection::~
+交差域:intersection::~
 
 ●仕様レベル
 
@@ -2360,8 +2363,8 @@ catch:
 状態s:status::状態°::ステータス
 更新-:update::~
 更新:update::~
-遷移-:transition::~
-遷移:transition::~
+遷移-:transition::~::トランジション
+遷移:transition::~::トランジション
 
 上書き:override::~
 	上書き:overwrite:~
@@ -2374,8 +2377,10 @@ catch:
 
 反応-:react::~
 反応:reaction::~
-観測-εqqe::~
-	観測:observing:~
+観測-:observe::~::オブザーブ
+観測:observing::~::オブザービング
+観測n:observation::~::オブザベーション
+観測器:observer::~::オブザーバ
 
 message::::メッセージ
 

@@ -800,8 +800,6 @@ span:
 限界:bounding::~
 限界域:bounds::~
 領域:region::~
-交差-:intersect::~
-交差:intersection::~
 外形線:outline::~
 内域:interior::~
 
