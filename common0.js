@@ -2379,7 +2379,7 @@ catch:
 反応:reaction::~
 観測-:observe::~::オブザーブ
 観測:observing::~::オブザービング
-観測n:observation::~::オブザベーション
+観測n:observation::観測::オブザベーション
 観測器:observer::~::オブザーバ
 
 message::::メッセージ
