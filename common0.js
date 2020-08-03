@@ -1531,6 +1531,8 @@ risk::::リスク
 問題:problem:~
 	問題になり得る:problematic
 課題:issue:~
+処置集:disposition:~
+	各~commentに対する処置集:Disposition of Comments
 一般:general:~
 一般の:generalな:~
 一般的:general:~
