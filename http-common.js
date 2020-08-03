@@ -768,12 +768,15 @@ COMMON_DATA.words_table += `
 割振ら:allocateさ:割り振ら
 割振る:allocateする::割り振る
 アテガえな:assignできな:あてがえな
-含ま:includeし:~
+含まな:includeしな:~
 含ませ:includeさせ:~
 含まれ:includeされ:~
 含む:includeする:~
 含めて:includeして:~
 含めな:includeしな:~
+含めら:includeさ:~
+含める:includeする:~
+含んで:includeして:~
 内包-:include:~
 内包:inclusion:~
 
