@@ -153,8 +153,8 @@ return text;
 
 ●●options
 
-spec_date:2020-07-23
-trans_update:2020-07-24
+spec_date:2020-08-07
+trans_update:2020-08-08
 source_checked:200402
 page_state_key:HTML
 spec_status:LS
@@ -372,6 +372,10 @@ utility::::ユーティリティ
 視聴-:watch:~
 視聴v:viewing:視聴
 一過:transient::~
+審美的:aesthetic:~
+滑らか:smooth:~
+知覚-:perceive:~
+	途切れる:gap
 
 	●media
 	GIF
@@ -496,6 +500,8 @@ motion::::モーション
 	~~集約:fold
 	10 月の金曜日の昼過ぎ:sunny Friday afternoon in October
 	真中:in the middle
+	音高を保全するよう調整-:pitch-preserving algorithms are used／in effect
+	速めたり遅める:speed up or slow down
 
 	●処理
 looping::::ループ処理
@@ -639,7 +645,6 @@ stereo::::ステレオ
 中間の:intermediate:~
 一時的:temporal:~
 近過去の:recentな:~
-忠実:faithful:~
 
 	箇所:spot／
 	巨大:large
@@ -909,6 +914,7 @@ mM.play:#dom-media-play
 mM.playbackRate:#dom-media-playbackrate
 mM.played:#dom-media-played
 mM.preload:#dom-media-preload
+mM.preservesPitch:#dom-media-preservespitch
 mM.readyState:#dom-media-readystate
 mM.seekable:#dom-media-seekable
 mM.seeking:#dom-media-seeking
@@ -2774,6 +2780,7 @@ interface `HTMLMediaElement@I : `HTMLElement$I {
   readonly attribute boolean `paused$mM;
   attribute double `defaultPlaybackRate$mM;
   attribute double `playbackRate$mM;
+  attribute boolean `preservesPitch$mM;
   readonly attribute `TimeRanges$I `played$mM;
   readonly attribute `TimeRanges$I `seekable$mM;
   readonly attribute boolean `ended$mM;
@@ -7077,6 +7084,20 @@ Returns the current rate playback, where 1.0 is normal speed.
 Can be set, to change the rate of playback.
 </dd>
 
+	<dt>%media . `preservesPitch$mM</dt>
+	<dd>
+`playbackRate$mM （再生~rate）が 1.0 でない間も，音高を保全するよう調整されるならば ~T を返す。
+既定では ~T を返す。
+◎
+Returns true if pitch-preserving algorithms are used when the playbackRate is not 1.0. The default value is true.
+</dd>
+	<dd>
+~F に設定して、`~media資源$の音声の音高が `playbackRate$mM に応じて変化するようにさせられる。
+これは、審美的または処理能の理由で有用になる。
+◎
+Can be set to false to have the media resource's audio pitch change up or down depending on the playbackRate. This is useful for aesthetic and performance reasons.
+</dd>
+
 	<dt>%media . `played$mM</dt>
 	<dd>
 ~UAが再生した`~media資源$の範囲たちを表現する， `TimeRanges$I ~objを返す。
@@ -7569,18 +7590,46 @@ if the element is potentially playing, change the playback speed.
 </ul>
 </div>
 
-<div class="algo">
 <p id="rateUpdate">
 `defaultPlaybackRate$mM ／
 `playbackRate$mM
-属性の値が変更されたときは（~scriptにより設定されようが，例えば利用者からの制御に呼応して~UAにより直に変更されようが）、次を行うモノトスル
-⇒
+属性の値が変化したときは（~scriptにより設定されようが，~UAにより直に変更されようが（例：利用者からの制御に呼応して））、~UAは，次に従うモノトスル：
+◎
+When the defaultPlaybackRate or playbackRate attributes change value (either by being set by script or by being changed directly by the user agent, e.g. in response to user control) the user agent must
+</p>
+<ul>
+	<li class="algo">
 次を走らす`~media~taskを~queueする$( %要素 )
 ⇒
 `~media要素$に向けて，名前 `ratechange$et の`~eventを発火する$
 ◎
-When the defaultPlaybackRate or playbackRate attributes change value (either by being set by script or by being changed directly by the user agent, e.g. in response to user control) the user agent must queue a media element task given the media element to fire an event named ratechange at the media element.
+queue a media element task given the media element to fire an event named ratechange at the media element.＼
+</li>
+	<li>
+再生が知覚-可能なほど途切れたり消音されないよう，滑らかに処理する。
+【特に、音高を保全している場合。】
+◎
+The user agent must process attribute changes smoothly and must not introduce any perceivable gaps or muting of playback in response.
+</li>
+</ul>
+
+<div class="p">
+<p>
+`preservesPitch@mM
+属性は、再生の間，音声は元の音高が保全されるよう調整されるかどうかを表現する（ ~T ならば保全される）：
 </p>
+<ul>
+	<li class="algo">
+取得子~手続きは、最後に設定された値を返す
+— 初期~時には ~T に設定されるモノトスル。
+</li>
+	<li class="algo">
+設定子~手続きは、この属性を所与の値に設定する。
+再生-中に値が変更されても、再生が知覚-可能なほど途切れたり消音されないよう切替えるモノトスル。
+</li>
+</ul>
+◎
+The preservesPitch getter steps are to return true if a pitch-preserving algorithm is in effect during playback. The setter steps are to correspondingly switch the pitch-preserving algorithm on or off, without any perceivable gaps or muting of playback. By default, such a pitch-preserving algorithm must be in effect (i.e., the getter will initially return true).
 </div>
 
 <hr>
@@ -8096,7 +8145,6 @@ Any time the user agent provides a stable state, the official playback position 
 次のいずれかに該当する間は、音声は`消音-$するモノトスル。
 ◎
 ↓</p>
-
 <ul>
 	<li>
 `再生~方向$ ~EQ 逆方向
@@ -8104,7 +8152,7 @@ Any time the user agent provides a stable state, the official playback position 
 While the direction of playback is backwards, any corresponding audio must be muted.＼
 </li>
 	<li>
-要素の `playbackRate$mM が，~UAが音声を有用に再生できないほどに 低過ぎるか高過ぎる
+要素の `playbackRate$mM は，~UAが音声を有用に再生できないほど低過ぎるか高過ぎる
 ◎
 While the element's playbackRate is so low or so high that the user agent cannot play audio usefully, the corresponding audio must also be muted.＼
 </li>
@@ -8113,9 +8161,16 @@ While the element's playbackRate is so low or so high that the user agent cannot
 <p>
 ［
 要素の `playbackRate$mM ~NEQ 1.0
-］の間は、~UAは，忠実に具現化する必要に応じて音声に音高~調整を適用してヨイ。
+］の間は、音声を速めたり遅めるときに［
+元の音高を保全するような音高~調整
+］を［
+要素の `preservesPitch$mM
+］が［
+~T をとる間は適用する／
+~F をとる間は適用しない
+］モノトスル。
 ◎
-If the element's playbackRate is not 1.0, the user agent may apply pitch adjustments to the audio as necessary to render it faithfully.
+If the element's playbackRate is not 1.0 and preservesPitch is true, the user agent must apply pitch adjustment to preserve the original pitch of the audio. Otherwise, the user agent must speed up or slow down the audio without any pitch adjustment.
 </p>
 
 <p>
@@ -10630,4 +10685,3 @@ When a media element that is paused is removed from a document and not reinserte
 				</section>
 			</section>
 </main>
-
