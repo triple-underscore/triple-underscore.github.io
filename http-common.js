@@ -211,6 +211,7 @@ COMMON_DATA.link_map += `
 
 	//Semantics
 h.Content-Encoding:~HTTPsem#field.content-encoding
+h.Connection:~HTTPsem#field.connection
 h.Content-Language:~HTTPsem#field.content-language
 h.Content-Length:~HTTPsem#field.content-length
 h.Content-Location:~HTTPsem#field.content-location
@@ -262,7 +263,6 @@ h.Pragma:~HTTPcache#field.pragma
 h.Warning:~HTTPcache#field.warning
 
 	//Messaging
-h.Connection:~HTTPmsg#field.connection
 h.Transfer-Encoding:~HTTPmsg#field.transfer-encoding
 
 	//他
@@ -375,7 +375,6 @@ p.fragment:~HTTPsem#p.fragment
 p.HTTP-message:~HTTPmsg#p.HTTP-message
 p.HTTP-name:~HTTPmsg#p.HTTP-name
 p.HTTP-version:~HTTPmsg#p.HTTP-version
-p.Connection:~HTTPmsg#p.Connection
 p.Transfer-Encoding:~HTTPmsg#p.Transfer-Encoding
 p.Age:~HTTPcache#p.Age
 p.Cache-Control:~HTTPcache#p.Cache
@@ -391,7 +390,6 @@ p.chunk-ext-name:~HTTPmsg#p.chunk-ext-name
 p.chunk-ext-val:~HTTPmsg#p.chunk-ext-val
 p.chunk-size:~HTTPmsg#p.chunk-size
 p.chunked-body:~HTTPmsg#p.chunked-body
-p.connection-option:~HTTPmsg#p.connection-option
 p.field-line:~HTTPmsg#p.field-line
 p.last-chunk:~HTTPmsg#p.last-chunk
 p.message-body:~HTTPmsg#p.message-body
@@ -413,6 +411,7 @@ p.BWS:~HTTPsem#p.BWS
 p.OWS:~HTTPsem#p.OWS
 p.RWS:~HTTPsem#p.RWS
 
+p.Connection:~HTTPsem#p.Connection
 p.Content-Encoding:~HTTPsem#p.Content-Encoding
 p.Content-Language:~HTTPsem#p.Content-Language
 p.Content-Length:~HTTPsem#p.Content-Length
@@ -431,6 +430,7 @@ p.byte-range-resp:~HTTPsem#p.byte-range-resp
 p.charset:~HTTPsem#p.charset
 p.comment:~HTTPsem#p.comment
 p.complete-length:~HTTPsem#p.complete-length
+p.connection-option:~HTTPsem#p.connection-option
 p.content-coding:~HTTPsem#p.content-coding
 p.ctext:~HTTPsem#p.ctext
 p.field-content:~HTTPsem#p.field-content
@@ -451,6 +451,7 @@ p.other-range:~HTTPsem#p.other-range
 p.parameter-name:~HTTPsem#p.parameter-name
 p.parameter-value:~HTTPsem#p.parameter-value
 p.parameter:~HTTPsem#p.parameter
+p.parameters:~HTTPsem#p.parameters
 p.partial-URI:~HTTPsem#p.partial-URI
 p.protocol-name:~HTTPsem#p.protocol-name
 p.protocol-version:~HTTPsem#p.protocol-version
@@ -533,6 +534,7 @@ c.compress:~HTTPsem#compress.coding
 c.deflate:~HTTPsem#deflate.coding
 c.gzip:~HTTPsem#gzip.coding
 c.identity:~HTTPrq#identity-token
+c.100-continue:~HTTPrq#100-continue
 
 c.http:~HTTPsem#http.uri
 c.https:~HTTPsem#https.uri
@@ -596,6 +598,8 @@ c.realm:~HTTPrq#realm
 	~field名:~HTTPsem#field.names
 ~field行l:~HTTPsem#field-line
 ~field行l値:~HTTPsem#field-line-value
+単数~field:~HTTPsem#singleton-field
+~listに基づく~field:~HTTPsem#list-based-field
 ~header節:~HTTPsem#header-section
 ~trailer節:~HTTPsem#trailer-section
 ~header:~HTTPsem#header-field
@@ -658,7 +662,7 @@ c.realm:~HTTPrq#realm
 要請~header:~HTTPrq#request.header.fields
 内容~折衝の~subject:~HTTPrq#request.conneg
 ~proactive折衝~header:~HTTPrq#request.conneg
-~100cont 期待:~HTTPrq#100-continue
+期待:~HTTPrq#field.expect
 ~method:~HTTPrq#methods
 ~server-wide:~HTTPrq#server-wide
 冪等:~HTTPrq#idempotent.methods
@@ -751,7 +755,6 @@ HTTP09: HTTP/0.9
 HTTP10: HTTP/1.0 
 HTTP11: HTTP/1.1 
 	HTTP1x:
-100cont:<code>100-continue</code>
 
 `
 
@@ -786,6 +789,7 @@ COMMON_DATA.words_table += `
 指され:referされ:~
 書込み:write::書き込み
 書込め:writeでき::書き込め
+書込んで:writeして::書き込んで
 書換え:rewriteし::書き換え
 書換える:rewriteする::書き換える
 読取っ:readし::読み取っ
@@ -923,6 +927,7 @@ agent::::エージェント
 見越す:anticipateする:~
 見越して:anticipateして:~
 見越され:anticipateされ:~
+見越さな:anticipateしな:~
 上品:graceful::~
 不利:disadvantage:~
 不可欠:crucial:~
@@ -955,7 +960,6 @@ agent::::エージェント
 
 損なう:loseする:~
 損失:loss:~
-失われ:lostし:~
 対処-:work around:~
 対処法:workaround:~
 堅牢:robust:~
@@ -1164,9 +1168,10 @@ escaping::::エスケープ処理
 区切りの:-separated:~
 区切る:delimitする::~
 区切子:delimiter::~
+分離子:separator:~
 合致:match::~::マッチ
 実数:real number:~
-
+単数:singleton:::~
 桁:digit::~
 	構文~上:syntactical
 正準-:canonical::~
@@ -1198,7 +1203,6 @@ escaping::::エスケープ処理
 分割-:split:~
 分割:splitting:~
 分解-:decompose:~
-分離子:separator:~
 
 	●network
 
@@ -1250,7 +1254,7 @@ redirection::::リダイレクト
 	回送-法:forwarding
 伝送路:wire::~
 伝達-:convey::~
-分散型の:distributed::~
+分散型の:distributedな::~
 到着-:arrive:~
 携わる:engageする:~
 携わっ:engageし:~
