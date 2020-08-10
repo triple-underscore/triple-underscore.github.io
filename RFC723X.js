@@ -630,7 +630,7 @@ IETF Review:~5226#section-4.1
 形式変換:~7230#message.transformations
 応答:~7230#response
 応答~分割:~7230#response.splitting
-持続的~接続:~7230#persistent.connections
+持続的な接続:~7230#persistent.connections
 接続~option:~7230#connection-option
 最終~転送~符号法:~7230#final-transfer-coding
 生成:~7230#generate
@@ -1859,7 +1859,7 @@ IETF Review:~5226#section-4.1
 ／形式変換:~7230#transform
 〜応答:~7230#response
 ／応答~分割:~7230#response-splitting
-／持続的~接続:~7230#persistent-connection
+／持続的な接続:~7230#persistent-connection
 〜接続~option:~7230#connection-option
 〜最終~転送~符号法:~7230#final-transfer-coding
 〜本体~長さ:~7230#body-length
