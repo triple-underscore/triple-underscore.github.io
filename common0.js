@@ -2863,7 +2863,7 @@ file::::ファイル
 
 ●UI
 UI:
-	UI:user interface:UI
+	UI:user interface／interface
 accessibility:::access 能:アクセス能:アクセシビリティ
 form::::フォーム
 focus::::フォーカス
