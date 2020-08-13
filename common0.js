@@ -2034,8 +2034,6 @@ logic::::ロジック
 custom::::カスタム
 	~custom化:customize
 	~custom化:customizations
-option::::オプション
-options:::option 群:オプション群
 program::::プログラム
 programming::::プログラミング
 拡充-:populate:~
@@ -2247,7 +2245,10 @@ listener::::リスナ
 	初期~時には:initially
 mode::::モード
 flag::::フラグ
+option::::オプション
+options:::option 群:オプション群
 parameter::::パラメタ
+parameters:::parameter 群:パラメタ群
 入力:input:~
 引数:argument:~
 変数:variable:~
