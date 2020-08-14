@@ -902,7 +902,6 @@ green:
 組成:compositing::~
 積層-:stack::~
 積層:stacking::~
-画素:pixel::~
 解像度:resolution::~
 装飾d:decorated::装飾
 

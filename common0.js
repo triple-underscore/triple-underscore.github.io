@@ -1268,7 +1268,6 @@ HTTP:
 HTTPS:
 MIME:
 Unicode:
-
 OS:operating system:OS
 
 ●指示語
@@ -1313,6 +1312,7 @@ metadata::::メタデータ
 長さ:length:~
 size::::サイズ
 sizing::::サイズ法
+resize::::リサイズ
 絶対:absolute::~
 絶対的:absolute::~
 相対:relative::~
@@ -1324,10 +1324,10 @@ sizing::::サイズ法
 移動-:move:~
 開始-:start:~
 整数:integer:~
-正な:positive:~
+正な:positiveな:~
 正で:positiveで:~
 正に:positiveに:~
-負な:negative:~
+負な:negativeな:~
 負で:negativeで:~
 負に:negativeに:~
 最小:minimum:~
@@ -1355,6 +1355,7 @@ scalar::::スカラー
 ●幾何
 空間:space:~
 次元:dimension:~
+寸法:dimension:~
 方向:direction::~
 方向性:directionality::~
 右端:right::~
@@ -1365,8 +1366,8 @@ scalar::::スカラー
 終端:end::~
 軸:axis::~
 	軸:axes
+辺:edge::~
 境界:boundary:~
-寸法:dimension:~
 横幅:width::~
 縦幅:height::~
 位置-:position::~
@@ -1429,16 +1430,9 @@ scalar::::スカラー
 導入-:introduce:~
 序論:introduction:~
 概観:overview:~
-論じる:discussする:~
-論じら:discussさ:~
-論じて:discussして:~
-論じた:discussした:~
-論点:discussion:~
-論:discussion:~
 用語:term:~
 各種用語:terminology:~
 語彙:vocabulary:~
-
 述べな:describeしな:~
 述べれ:describeでき:~
 述べて:describeして:~
@@ -1528,6 +1522,12 @@ feedback::::フィードバック
 module::::モジュール
 model::::モデル
 risk::::リスク
+論じる:discussする:~
+論じら:discussさ:~
+論じて:discussして:~
+論じた:discussした:~
+論点:discussion:~
+論:discussion:~
 問題:problem:~
 	問題になり得る:problematic
 課題:issue:~
@@ -2833,6 +2833,8 @@ literal::::リテラル
 media::::メディア
 file::::ファイル
 画像:image::~::イメージ
+画素:pixel::~::ピクセル
+pixel::::ピクセル
 動画:video::~::ビデオ
 音声:audio::~::オーディオ
 表示:display:~
@@ -3070,6 +3072,7 @@ border::::ボーダー
 padding::::パディング
 margin::::マージン
 offset::::オフセット
+inset::::インセット
 配置-:place:~
 配置:placement:~
 区画:area::~
@@ -3103,15 +3106,18 @@ FOOでない:inFOO
 FOOなしの:FOOless
 非:non
 FOO-可能:FOOable
+FOO-可能:able to FOO
 FOO-不能:unFOOable
+FOO-不能:unable to FOO
 FOO-不能:inFOOable／imFOOable
 可FOO:FOOable
 よりFOO:FOOer
+方がFOO:FOOer
 最もFOO:FOOest
-再Foo:reFoo
-FOOし直す:reFoo
-再びFooする:reFooする
-Foo間:inter-Foo
+再FOO:reFOO
+FOOし直す:reFOO
+再びFOOする:reFOOする
+FOO間:inter-FOO
 過FOO:overFOO
 
 	●定訳（文法レベル
