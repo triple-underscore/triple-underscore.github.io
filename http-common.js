@@ -547,8 +547,6 @@ c.realm:~HTTPrq#realm
 	●用語
 
 ~HTTP11:~HTTPmsg#version-1.1
-~message本体~長さ:~HTTPmsg#message.body.length
-	~message本体:~HTTPmsg#message.body
 転送~符号法:~HTTPmsg#transfer.codings
 転送~符号法の名前:~HTTPmsg#transfer-coding-name
 
