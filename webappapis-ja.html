@@ -182,8 +182,8 @@ return text;
 
 ●●options
 
-spec_date:2020-08-13
-trans_update:2020-08-15
+spec_date:2020-08-21
+trans_update:2020-08-22
 source_checked:200626
 page_state_key:HTML
 spec_status:LS
@@ -336,6 +336,11 @@ m.promise:#dom-promiserejectionevent-promise
 m.reason:#dom-promiserejectionevent-reason
 
 m.returnValue:~NAVI#dom-beforeunloadevent-returnvalue
+m.document.domain:~ORIGIN#dom-document-domain
+m.originIsolated:~ORIGIN#dom-originisolated
+m.assign:~HISTORY#dom-location-assign
+m.history.back:~HISTORY#dom-history-back
+m.history.pushState:~HISTORY#dom-history-pushstate
 
 m.document.open:~HTMLdynamic#dom-document-open
 m.document.write:~HTMLdynamic#dom-document-write
@@ -343,11 +348,6 @@ m.document.write:~HTMLdynamic#dom-document-write
 m.print:~HTMLGAPI#dom-window-print
 m.window.alert:~HTMLGAPI#dom-window-alert
 m.setTimeout:~HTMLGAPI#dom-settimeout
-
-m.document.domain:~ORIGIN#dom-document-domain
-m.assign:~HISTORY#dom-location-assign
-m.history.back:~HISTORY#dom-history-back
-m.history.pushState:~HISTORY#dom-history-pushstate
 
 m.click:~HTMLinteraction#dom-click
 m.onmessage:~HTMLcomms#handler-messageport-onmessage
@@ -632,6 +632,7 @@ i.~top-level内:#fetching-scripts-is-top-level
 
 非安全~応答:~HTMLurl#unsafe-response
 非同一-生成元~隔離-済み:#cross-origin-isolated
+生成元~隔離-済み:#origin-isolated
 
 現在の設定群~obj:#current-settings-object
 
@@ -810,6 +811,7 @@ bc.容器:#bc-container
 ~top-level閲覧文脈:~BROWSERS#top-level-browsing-context
 閲覧文脈~group:~BROWSERS#browsing-context-group
 ~agent~cluster~map:~BROWSERS#agent-cluster-map
+履歴上の~agent~cluster~key~map:~BROWSERS#historical-agent-cluster-key-map
 bcG.非同一-生成元~隔離-済み:~BROWSERS#bcg-cross-origin-isolated
 
 結付けられている文書:~WINDOW#concept-document-window
@@ -1144,6 +1146,10 @@ worklet:
 	大域~obj:global
 類似生成元:similar-origin::~::類似オリジン
 埋込元:embedder::埋め込み元
+履歴上の:historicalな:~
+
+	生成元~隔離され:origin-isolated
+	生成元~隔離:origin-isolation
 
 	●データ（構造／操作／構文解析
 shadow:
@@ -1672,7 +1678,7 @@ milli::::ミリ
 	%signifier
 	%canBlock
 	%基底~URL:baseURL
-
+	%生成元~隔離を要請する:requestsOI
 
 	●指示語
 現在:currently:~
@@ -2078,6 +2084,14 @@ Conceptually, the agent cluster concept is an architecture-independent, idealize
 An agent cluster has an associated cross-origin isolated (a boolean), which is initially false.
 </p>
 
+<p>
+各`~agent~cluster$には、真偽値をとる
+`生成元~隔離-済み@
+が結付けられ，初期~時には ~F とする。
+◎
+An agent cluster has an associated origin-isolated (a boolean), which is initially false.
+</p>
+
 <hr>
 
 <p>
@@ -2106,16 +2120,18 @@ An agent cluster key is a site or tuple origin whose host's registrable domain i
 <p>
 `類似生成元~window~agentを得する@
 ときは、所与の
-( `生成元$ %生成元, `閲覧文脈~group$ %~group )
+( `生成元$ %生成元, `閲覧文脈~group$ %~group, 真偽値 %生成元~隔離を要請する )
 に対し，次を走らす：
 ◎
-To obtain a similar-origin window agent, given an origin origin and browsing context group group, run these steps:
+To obtain a similar-origin window agent, given an origin origin, a browsing context group group, and a boolean requestsOI, run these steps:
 </p>
 <ol>
 	<li>
 %~key ~LET `~siteを得する$( %生成元 )
 ◎
-Let key be the result of obtaining a site with origin.
+Let site be the result of obtaining a site with origin.
+◎
+Let key be site.
 </li>
 	<li>
 ~IF［
@@ -2126,6 +2142,38 @@ Let key be the result of obtaining a site with origin.
 ◎
 If group's cross-origin isolated is true, then set key to origin.
 </li>
+	<li>
+~ELIF［
+%~group の`履歴上の~agent~cluster~key~map$[ %生成元 ] ~NEQ ε
+］
+⇒
+%~key ~SET %~group の`履歴上の~agent~cluster~key~map$[ %生成元 ]
+◎
+Otherwise, if group's historical agent cluster key map[origin] exists, then set key to group's historical agent cluster key map[origin].
+</li>
+	<li>
+<p>
+~ELSE
+◎
+Otherwise:
+</p>
+		<ol>
+			<li>
+~IF［
+%生成元~隔離を要請する ~EQ ~T
+］
+⇒
+%~key ~SET %生成元
+◎
+If requestsOI is true, then set key to origin.
+</li>
+			<li>
+%~group の`履歴上の~agent~cluster~key~map$[ %生成元 ] ~SET %~key
+◎
+Set group's historical agent cluster key map[origin] to key.
+</li>
+		</ol>
+	</li>
 	<li>
 <p>
 ~IF［
@@ -2144,6 +2192,14 @@ Let agentCluster be a new agent cluster.
 %~agent~cluster の`非同一-生成元~隔離-済み$ ~SET %~group の`非同一-生成元~隔離-済み$bcG
 ◎
 Set agentCluster's cross-origin isolated to group's cross-origin isolated.
+</li>
+			<li>
+%~agent~cluster の`生成元~隔離-済み$ ~SET ［
+%~key ~EQ %生成元 ならば ~T ／
+~ELSE_ ~F
+］
+◎
+Set agentCluster's origin-isolated to true if key equals origin; otherwise false.
 </li>
 			<li>
 %~agent~cluster に次の結果を追加する
@@ -2200,14 +2256,36 @@ To obtain a worker/worklet agent, given an environment settings object or null o
 Let agentCluster be null.
 </li>
 	<li>
+<p>
 ~IF［
 %~top-level？ ~EQ ~T
-］
-⇒
+］：
+◎
+If isTopLevel is true, then:
+</p>
+		<ol>
+			<li>
 %~agent~cluster ~SET 新たな`~agent~cluster$
 ◎
-If isTopLevel is true, then set agentCluster to a new agent cluster.
+Set agentCluster to a new agent cluster.
 </li>
+			<li>
+<p>
+%~agent~cluster の`生成元~隔離-済み$ ~SET ~T
+◎
+Set agentCluster's origin-isolated to true.
+</p>
+
+<p class="note">注記：
+これらの~workerは、生成元~隔離されるものと見なせる。
+しかしながら、これは，~APIを通しては公開されない（
+`originIsolated$m が~window用に生成元~隔離~状態を公開するような仕方では）。
+◎
+These workers can be considered to be origin-isolated. However, this is not exposed through any APIs (in the way that originIsolated exposes the origin-isolation state for windows).
+</p>
+			</li>
+		</ol>
+	</li>
 	<li>
 <p>
 ~ELSE：

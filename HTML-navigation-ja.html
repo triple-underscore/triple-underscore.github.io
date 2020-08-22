@@ -66,6 +66,9 @@ case 'ps':
 case 'sl':
 	text = `[[${key}]]`;
 	break;
+case 'sf': // structured fields
+	text = `<sub>sf-</sub>${text}`;
+	break;
 case 'en':
 	return `<span lang="en-x-a0">${key}</span>`;
 	break;
@@ -439,6 +442,8 @@ X:
 	%値:value
 	%容器~文書:containerDocument
 	%容器~閲覧文脈:containerBC
+	%生成元~隔離を要請する:requestsOI
+	%生成元~隔離~header:oiHeader
 
 	●指示語
 最近の:latest:~
@@ -594,6 +599,7 @@ h.Referrer-Policy:~REFERRER-POLICY#referrer-policy-header-dfn
 	https://w3c.github.io/webappsec-referrer-policy/#referrer-policy-header-dfn
 h.Refresh:~HTMLiana#refresh
 h.X-Frame-Options:~HTMLiana#x-frame-options
+h.Origin-Isolation:~HTMLiana#origin-isolation-2
 
 v.off:~HTMLautofill#attr-fe-autocomplete-off
 ps.target:~HTMLselectors#selector-target
@@ -800,6 +806,8 @@ enV.作成時の~URL:~WAPI#concept-environment-creation-url
 enV.~target閲覧文脈:~WAPI#concept-environment-target-browsing-context
 enV.作動中の~sw:~WAPI#concept-environment-active-service-worker
 enV.~API用~基底~URL:~WAPI#api-base-url
+enV.~secureな文脈:~WAPI#secure-context
+
 環境を破棄する手続き:~WAPI#environment-discarding-steps
 新たな~JS~realmを作成する:~WAPI#creating-a-new-javascript-realm
 
@@ -814,6 +822,7 @@ enV.~API用~基底~URL:~WAPI#api-base-url
 ~fetch:~FETCH#concept-fetch
 ~HTTP~redirect~fetch:~FETCH#concept-http-redirect-fetch
 ~ok状態s:~FETCH#ok-status
+有構造~headerを取得する:~FETCH#concept-header-list-get-structured-header
 ~header~list:~FETCH#concept-header-list
 ~header~listから値を取得して復号して分割する:~FETCH#concept-header-list-get-decode-split
 応答を処理する:~FETCH#process-response
@@ -906,6 +915,8 @@ sct.~item:~INFRA#struct-item
 set.付加する:~INFRA#set-append
 和集合:~INFRA#set-union
 ~size:~INFRA#list-size
+
+sf.真偽値:~HEADER-STRUCTURE#sf-boolean
 
 ~tree順序:~DOM4#concept-tree-order
 ~ID:~DOM4#concept-id
@@ -2842,10 +2853,38 @@ Otherwise:
 </p>
 		<ol>
 			<li>
-%~agent ~LET `類似生成元~window~agentを得する$( %~navi~params の`生成元$nvP, %B の`~group$tbcG )
-
+%生成元~隔離~header ~LET
+%応答 の`~header~list$rsから`有構造~headerを取得する$( `Origin-Isolation$h, `~item^i )
 ◎
-Let agent be the result of obtaining a similar-origin window agent given navigationParams's origin and browsingContext's group.
+Let oiHeader be the result of getting a structured field value given `Origin-Isolation` and "item" from response's header list.
+</li>
+			<li>
+%生成元~隔離を要請する ~LET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
+］
+⇒
+［
+%生成元~隔離~header ~NEQ ~NULL
+］~AND［
+%生成元~隔離~header[ 0 ] ~EQ `真偽値$sf ~T
+］
+◎
+Let requestsOI be true if oiHeader is not null and oiHeader[0] is the boolean true; otherwise false.
+</li>
+			<li>
+~IF［
+%予約-済み環境 は`~secureな文脈$enVでない
+］
+⇒
+%生成元~隔離を要請する ~SET ~F
+◎
+If reservedEnvironment is a non-secure context, then set requestsOI to false.
+</li>
+			<li>
+%~agent ~LET `類似生成元~window~agentを得する$( %~navi~params の`生成元$nvP, %B の`~group$tbcG, %生成元~隔離を要請する )
+◎
+Let agent be the result of obtaining a similar-origin window agent given navigationParams's origin, browsingContext's group, and requestsOI.
 </li>
 			<li>
 %~realm実行~文脈 ~LET 次のように~custom化する下で，
@@ -5068,7 +5107,7 @@ A Document has a completely loaded time (a time or null), which is initially nul
 A Document is considered completely loaded if its completely loaded time is non-null.
 </p>
 
-<div class="algo'>
+<div class="algo">
 <p>
 `文書$ %文書 の
 `読込ngを完全に終わらす@
