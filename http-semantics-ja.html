@@ -169,8 +169,9 @@ cite.~HTTP Upgrade ~token~registry:~IANA-a/http-upgrade-tokens
 5.6:~HTTPsem#trailer.fields
 5.6.1:~HTTPsem#trailers.purpose
 5.6.2:~HTTPsem#trailers.limitations
-5.6.3:~HTTPsem#field.trailer
-5.6.4:~HTTPsem#field.te
+5.6.3:~HTTPsem#trailers.processing
+5.6.4:~HTTPsem#field.trailer
+5.6.5:~HTTPsem#field.te
 5.7:~HTTPsem#considerations.for.new.header.fields
 5.8:~HTTPsem#field.definitions
 6:~HTTPsem#message.routing
@@ -814,6 +815,8 @@ hyphen::::ハイフン
 拡げる:expandする:~
 選好順:descending preference の order:選好度の高い順
 固定的:fixed:~
+序数:ordinal:~
+反復的:iterative:~
 
 	場を占める:take place
 	組:triple
@@ -841,6 +844,8 @@ hyphen::::ハイフン
 	~~グリニッジ~~平均時
 	~~頭字語:abbreviation
 	最下~層のものから昇順に:layer-ascending order
+	切り替え-:shift
+	？:conclude
 
 	●言い換え
 	依存-:dependent
@@ -903,6 +908,10 @@ hyphen::::ハイフン
 	共用~辞書:shared-dictionary
 	内容~符号法:content-codings
 	転送~符号法:transfer-codings
+	~streamにおける中途:mid-stream
+	期待されるもの:expectation
+	~frame化:framing
+	見つけようと:looking for
 
 	●他の語
 	^i:ClientHello
@@ -983,6 +992,7 @@ hyphen::::ハイフン
 	次に:next
 	より高い:greater
 	より広:greater
+	総体としての:overall
 
 ●●section_map
 	#rfc.abstract:SECTION
@@ -1925,39 +1935,45 @@ Most HTTP communication consists of a retrieval request (GET) for a representati
 
 <div class="p">
 <p>
-~HTTPの各 `~major~version$は、~message内に情報を内包するための，自前の構文を定義する。
-いずれにせよ，それらに共通な抽象-化として、~messageは，何らかの形の封入法や~frame法の下で次を内包する：
+~HTTPの各 `~major~version$は、~messageの通信~用に，自前の構文を定義する。
+いずれにせよ，それらに共通な抽象-化として、各~messageは，何らかの形の封入法や~frame法の下で次を包含する：
 </p>
 <ul>
 	<li>
-`~header節$
-— 0 個以上の有名`~field$からなる
+~messageの意味論と~route法を指示する自己-記述的な`制御~data$
+◎
+self-descriptive control data that indicates its semantics and routing,＼
 </li>
 	<li>
-0 〜 1 個の本体,
+0 個以上の有名`~field$からなる，`~header節$
 </li>
 	<li>
-`~trailer節$
-— 0 個以上の有名`~field$からなる
+0 〜 1 個の本体
+</li>
+	<li>
+本体が始まった後に送信される，
+0 個以上の有名`~field$
+— それらは、 0 個以上の`~trailer節$を成す
 </li>
 </ul>
 ◎
-Each major version of HTTP defines its own syntax for the inclusion of information in messages. Nevertheless, a common abstraction is that a message includes some form of envelope/framing,＼
+Each major version of HTTP defines its own syntax for the communication of messages. Nevertheless, a common abstraction is that each message contains some form of envelope/framing with＼
+self-descriptive control data that indicates its semantics and routing,＼
 a potential set of named fields up front (a header section),＼
 a potential body, and＼
-a potential following set of named fields (a trailer section).
+potential fields sent after the body begins (trailer sections).
 </div>
 
 <div class="p">
 <p>
-`~client$は、~HTTP要請を［
+`~client$は、要請を［
 `~method$, `要請~target$
 ］【~HTTP11においては `request-line$p 】を伴う
 `要請@
 ~messageの形で`~server$へ送信する。
 要請は、次に挙げるものも包含し得る：
 ◎
-A client sends an HTTP request to a server in the form of a request message with a method (Section 8) and request target. The request might also contain＼
+A client sends requests to a server in the form of a request message with a method (Section 8) and request target. The request might also contain＼
 </p>
 <ul>
 	<li>
@@ -1983,15 +1999,17 @@ and trailer fields for metadata collected while sending the payload.
 <div class="p">
 <p>
 `~server$は、`~client$からの要請に対し，
-1 個~以上の~HTTP
+1 個~以上の
 `応答@
 ~message
-を送信して応答する。
-各~応答は、成功または~errorを表す`状態s~code$
+を送信して応答する
+【 0 個以上の`暫定-応答$, 1 個の`最終-応答$】
+。
+各~応答は、`状態s~code$
 【~HTTP11においては `status-line$p 】
 を内包し，次に挙げるものも包含し得る：
 ◎
-A server responds to a client's request by sending one or more HTTP response messages, each including a success or error code (Section 10). The response might also contain＼
+A server responds to a client's request by sending one or more response messages, each including a status code (Section 10). The response might also contain＼
 </p>
 <ul>
 	<li>
@@ -2015,7 +2033,7 @@ and trailer fields for metadata collected while sending the payload.
 </div>
 
 <p>
-~message~frame法の仕組みには、~messageは
+~message~frame法には、~messageは
 `完全@
 であることを確約する機能がある。
 ~messageは、その~frame法により指示される すべての~octetが可用になったとき，`完全$と見なされる。
@@ -2023,7 +2041,7 @@ and trailer fields for metadata collected while sending the payload.
 — 不完全な応答と判別-不能であろうが，~transport~levelの~errorにより完全でないものと指示されない限り —
 `完全$と見なされることに注意。
 ◎
-One of the functions of the message framing mechanism is to assure that messages are complete. A message is considered complete when all of the octets indicated by its framing are available. Note that, when no explicit framing is used, a response message that is ended by the transport connection's close is considered complete even though it might be indistinguishable from an incomplete response, unless a transport-level error indicates that it is not complete.
+One of the functions of message framing is to assure that messages are complete. A message is considered complete when all of the octets indicated by its framing are available. Note that, when no explicit framing is used, a response message that is ended by the transport connection's close is considered complete even though it might be indistinguishable from an incomplete response, unless a transport-level error indicates that it is not complete.
 </p>
 
 <p>
@@ -3444,47 +3462,50 @@ When a major version of HTTP does not define any minor versions, the minor versi
 ~message／
 ~messageの`~payload$／
 `~target資源$／
-接続（すなわち`制御~data$）
+接続
 ］についての~dataを伝達する。
 これらの~pairは、
 `~field@
-（ `HTTP field^en ／ 略して `field^en ）†と呼ばれる
+（ `HTTP field^en ／ 略して `field^en ）†と呼ばれる。
+~fieldは、次の 2 種に大別される：
 ◎
-HTTP messages use key/value pairs to convey data about the message, its payload, the target resource, or the connection (i.e., control data). They are called "HTTP fields" or just "fields".
+HTTP messages use key/value pairs to convey data about the message, its payload, the target resource, or the connection. They are called "HTTP fields" or just "fields".
 </p>
 
-<p>
-どの~messageにも，そのような`~field$が生じ得る 2 つの別々な区画がある：
-◎
-Every message can have two separate areas that such fields can occur within;＼
-</p>
 <ul>
 	<li>
-`~header節@
-（ `header field section^en ／ 略して `header section^en ）†は、~message本体に先行し，
-0 個以上の
 `~header@
-（ `header field^en ／ 俗に `header^en ）†を包含する。
+（ `header field^en ／ 俗に `header^en ）†
+は、`~message本体$より前に［
+送信される／受信される
+］ものを指す。
+それらは、~messageの
+`~header節@
+（ `header field section^en ／ 略して `header section^en ）
+の中に所在する。
+`~header$は、［
+有名~fieldのうち，`~header節$内に限り送信することが許容されるもの
+］を特定的に指す【ためにも利用される】。
 ◎
-the "header field section" (or just "header section") preceding the message body and containing "header fields" (or just "headers", colloquially) and＼
+Fields that are sent/received before the message body are referred to as "header fields" (or just "headers", colloquially) and are located within the "header section" of a message. We refer to some named fields specifically as a "header field" when they are only allowed to be sent in the header section.
 </li>
 	<li>
-`~trailer節@
-（ `trailer field section^en ／ 略して `trailer section^en ）†は、~message本体に後続し，
-0 個以上の
 `~trailer@
-（ `trailer field^en ／ 俗に `trailer^en ）†を包含する。
+（ `trailer field^en ／ 俗に `trailer^en ）†
+は、`~header節$が終端した後（通例的には，`~message本体$を成す~streamが始まった後）に［
+送信される／受信される
+］ものを指す。
+それらは、ある
+`~trailer節@
+（ `trailer field section^en ／ 略して `trailer section^en ）†
+の中に所在する。
+1 個以上の`~trailer節$がアリになるのは、利用-中の~HTTP~versionが それを~supportしていて，［
+何個かの~message節に~frame化するための拡張-可能な仕組み
+］により可能化されているときに限られる。
 ◎
-the "trailer field section" (or just "trailer section") after the message body containing "trailer fields" (or just "trailers" colloquially).＼
+Fields that are sent/received after the header section has ended (usually after the message body begins to stream) are referred to as "trailer fields" (or just "trailers", colloquially) and located within a "trailer section". One or more trailer sections are only possible when supported by the version of HTTP in use and enabled by an extensible mechanism for framing message sections.
 </li>
 </ul>
-
-<p>
-`~header$の方が共通的にある。
-`~trailer$の適用能と制限についての論点は、`5.6$secを見よ。
-◎
-Header fields are more common; see Section 5.6 for discussion of the applicability and limitations of trailer fields.
-</p>
 
 <p class="trans-note">【†
 この訳では、もっぱら，これらの略称／俗称で表記する。
@@ -3502,11 +3523,9 @@ Header fields are more common; see Section 5.6 for discussion of the applicabili
 “~header節” ／ “~trailer節”
 ］としている。
 】【
-［
-~header節, ~trailer節
-］どちらも［
+~header節が［
 0 個の~fieldからなること, 無いこと
-］を区別して取扱うような要件は，この仕様には無いので、この訳では，これらの節は概念的には常に在ると見做す。
+］を区別して取扱うような要件は，この仕様には無いので、この訳では，~header節は概念的には常に在ると見做す。
 】【
 ~HTTP11における［
 `~header節$／`~trailer節$
@@ -3703,7 +3722,7 @@ Note: In practice, the "Set-Cookie" header field ([RFC6265]) often appears in a 
 ］の長さに，定義済み制限を設置しない。
 実施においては、個々の長さには，特定の~fieldの意味論に依存して，様々な場当的な制限が見出されることも多い。
 ◎
-HTTP does not place a predefined limit on the length of each field line, field value, or on the length of the header or trailer section as a whole, as described in Section 3. Various ad hoc limitations on individual lengths are found in practice, often depending on the specific field's semantics.
+HTTP does not place a predefined limit on the length of each field line, field value, or on the length of a header or trailer section as a whole, as described in Section 3. Various ad hoc limitations on individual lengths are found in practice, often depending on the specific field's semantics.
 </p>
 
 <p>
@@ -4712,7 +4731,7 @@ In some HTTP versions, additional metadata can be sent after the initial header 
 `~header節$が完了した時点で既知になった~message意味論
 ］に矛盾するのを避けるため，`~header節$内の`~field$とは別々に処理され, 格納される~OUGHT。
 ある種の~headerの有無は、［
-`~trailer節$を受信する前に，一体としての~messageを［
+`~trailer$を受信する前に，一体としての~messageを［
 ~routeする／処理する
 ］ために為される選択
 ］に影響iするかもしれない
@@ -4727,7 +4746,7 @@ Trailer fields ought to be processed and stored separately from the fields in th
 
 <p>
 多くの`~field$は、［
-その評価が、~message本体の受信に先立って必要とされる
+その評価が、`~message本体$の受信に先立って必要とされる
 ］ので，`~header節$の外側では処理し得ない
 — ~messageの［
 ~frame法／
@@ -4773,9 +4792,9 @@ Trailer fields can be difficult to process by intermediaries that forward messag
 "`trailers^c" が在ったとしても、［
 応答~内の特定0の~trailerについて，それを処理する~client（たち）がある
 ］ことにはならないことに注意
-— それが意味するのは、どの~clientも，一体としての`~trailer節$を落とさないことに限られる。
+— それが意味するのは、どの~clientも，`~trailer節$を落とさないことに限られる。
 ◎
-The presence of the keyword "trailers" in the TE header field (Section 5.6.4) indicates that the client is willing to accept trailer fields, on behalf of itself and any downstream clients. For requests from an intermediary, this implies that all downstream clients are willing to accept trailer fields in the forwarded response. Note that the presence of "trailers" does not mean that the client(s) will process any particular trailer field in the response; only that the trailer section as a whole will not be dropped by any of the clients.
+The presence of the keyword "trailers" in the TE header field (Section 5.6.5) indicates that the client is willing to accept trailer fields, on behalf of itself and any downstream clients. For requests from an intermediary, this implies that all downstream clients are willing to accept trailer fields in the forwarded response. Note that the presence of "trailers" does not mean that the client(s) will process any particular trailer field in the response; only that the trailer section(s) will not be dropped by any of the clients.
 </p>
 
 <p>
@@ -4787,8 +4806,62 @@ Because of the potential for trailer fields to be discarded in transit, a server
 </p>
 
 			</section>
+			<section id="trailers.processing">
+<h4 title="Processing">5.6.3. 処理</h4>
+
+<p>
+同じ名前を伴う`~trailer$たちは、~headerの様に，受信した順序で処理される。
+同じ名前を伴う複数個の~trailer`~field行l$による意味論は、それらが別々の`~trailer節$内に受信されたときでも，~memberの~listに複数個の値を付加するのと等価になる。
+~trailerのうち，同じ~messageの間に複数個~生成され得るものは、~list値として定義されなければナラナイ
+— 各~member値は、`~field行l$が受信されるごとに 1 度~限り【その場限りで】処理されるとしても。
+◎
+Like header fields, trailer fields with the same name are processed in the order received; multiple trailer field lines with the same name have the equivalent semantics as appending the multiple values as a list of members, even when the field lines are received in separate trailer sections. Trailer fields that might be generated more than once during a message MUST be defined as a list value even if each member value is only processed once per field line received.
+</p>
+
+<p>
+`~trailer$に対しては、
+1 回に 1 個の`~trailer節$が処理されるものと期待される（要求されないが）。
+すなわち，~trailerを見つけようとしている受信者は、受信した各`~trailer節$に対し，~message処理における その時点で、受信した節を一連の~fieldに構文解析して，それらに結付けられる処理を呼出してから、総体としての~message用に，それらの~fieldを［
+受信した~trailerが成す集合
+］に付加することになる。
+【！したがって，処理の時機を除けば、複数個の~trailer節と それらを 1 個の~trailer節に併合したものは，等価と見なされることになる。】
+◎
+Trailer fields are expected (but not required) to be processed one trailer section at a time. That is, for each trailer section received, a recipient that is looking for trailer fields will parse the received section into fields, invoke any associated processing for those fields at that point in the message processing, and then append those fields to the set of trailer fields received for the overall message.
+</p>
+
+<p>
+この挙動は、何個かの`~trailer$が［
+増分的な［
+署名~情報／~streamにおける中途の状態s情報
+］を包含する ／
+同じ節の中で他の値を互いに参照rするかもしれない
+］場合のために，反復的な処理を許容する。
+しかしながら，各`~trailer節$が［
+`~message本体$を成す~streamへの関係を切り替えない／
+~~通過中に結合し直されない（または落とされない）
+］ことは保証されないので、~trailerのうち［
+~~現在の`~trailer節$の外側にある~dataを参照rするもの
+］には，自己-記述的な参照を利用する（すなわち、当の~dataを［
+名前／序数による位置／~octet範囲
+］で参照rする）必要がある
+— 最も近過去に受信した~dataと見做すのではなく。
+◎
+This behavior allows for iterative processing of trailer fields that contain incremental signatures or mid-stream status information, and fields that might refer to each other's values within the same section. However, there is no guarantee that trailer sections won't shift in relation to the message body stream, or won't be recombined (or dropped) in transit, so trailer fields that refer to data outside the present trailer section need to use self-descriptive references (i.e., refer to the data by name, ordinal position, or an octet range) rather than assume it is the data most recently received.
+</p>
+
+<p>
+同様に，受信者は、~messageの終端にて，受信した`~trailer$が成す集合~全体を［
+当の~messageが結論するものと見なされるような，
+1 個の~data構造
+］として扱ってもヨイ。
+`~trailer節$内での利用が意図される~fieldに対しては、追加的な処理として期待されるものがあるならば，当の~field仕様の中で定義できる。
+◎
+Likewise, at the end of a message, a recipient MAY treat the entire set of received trailer fields as one data structure to be considered as the message concludes. Additional processing expectations, if any, can be defined within the field specification for a field intended for use in trailers.
+</p>
+
+			</section>
 			<section id="field.trailer">
-<h4 title="Trailer">5.6.3. `Trailer^h</h4>
+<h4 title="Trailer">5.6.4. `Trailer^h</h4>
 
 <p>
 `Trailer^h ~headerは、送信者が［
@@ -4823,7 +4896,7 @@ A sender that intends to generate one or more trailer fields in a message SHOULD
 
 			</section>
 			<section id="field.te">
-<h4 title="TE">5.6.4. `TE^h</h4>
+<h4 title="TE">5.6.5. `TE^h</h4>
 
 <p>
 要請~内に［
@@ -5080,8 +5153,8 @@ Range 	standard 	9.3
 Referer 	standard 	9.6.2
 Retry-After 	standard 	11.1.3
 Server 	standard 	11.4.3
-TE 	standard 	5.6.4
-Trailer 	standard 	5.6.3
+TE 	standard 	5.6.5
+Trailer 	standard 	5.6.4
 Upgrade 	standard 	6.8
 User-Agent 	standard 	9.6.3
 Vary 	standard 	11.1.4
@@ -6195,7 +6268,7 @@ A proxy MUST NOT modify the "absolute-path" and "query" parts of the received ta
 			<li>
 包含する場合、その`~payload$を`形式変換-$してはナラナイ。
 `転送~符号法$などの［
-~payloadには影響しない，~message本体に対する変更
+~payloadには影響しない，`~message本体$に対する変更
 ］は、これには該当しないことに注意。
 ◎
 A proxy MUST NOT transform the payload (Section 7.3) of a message that contains a no-transform cache-control response directive (Section 5.2 of [Caching]).＼
@@ -6678,8 +6751,8 @@ Hence, the Connection header field provides a declarative way of distinguishing 
 Furthermore, intermediaries SHOULD remove or replace field(s) whose semantics are known to require removal before forwarding, whether or not they appear as a Connection option, after applying those fields' semantics. This includes but is not limited to:
 • Proxy-Connection (Appendix C.1.2 of [Messaging])
 • Keep-Alive (Section 19.7.1 of [RFC2068])
-• TE (Section 5.6.4)
-• Trailer (Section 5.6.3)
+• TE (Section 5.6.5)
+• Trailer (Section 5.6.4)
 • Transfer-Encoding (Section 6.1 of [Messaging])
 • Upgrade (Section 6.8)
 </p>
@@ -7014,12 +7087,12 @@ If a representation is encoded with a content-coding, the underlying data ought 
 
 <p>
 ~MIMEは、［
-単独の~message本体の中に， 1 個以上の`表現$が~encapsulateされる
+単独の`~message本体$の中に， 1 個以上の`表現$が~encapsulateされる
 ］ような，いくつもの
 "`multipart^c" 型
 を供する。
 すべての "`multipart^c" 型は、`RFC2046/5.1.1$secにて定義される 共通な構文を共有し，`~MIME型$ 値の一部として 境界~parameterを内包する。
-~message本体~自身は、~protocol要素である
+`~message本体$自身は、~protocol要素である
 — `送信者$は、本体の各 部分~間の改行を表現するときは， `CRLF$P のみを`生成し$なければナラナイ。
 ◎
 MIME provides for a number of "multipart" types — encapsulations of one or more representations within a single message body. All multipart types share a common syntax, as defined in Section 5.1.1 of [RFC2046], and include a boundary parameter as part of the media type value. The message body is itself a protocol element; a sender MUST generate only CRLF to represent line breaks between body parts.
@@ -8480,7 +8553,7 @@ Header fields that specifically describe the payload, rather than the associated
 Table 9
 Field Name 	Ref.
 Content-Range 	7.3.4
-Trailer 	5.6.3
+Trailer 	5.6.4
 Transfer-Encoding 	Section 6.1 of [Messaging]
 </p>
 
@@ -10629,6 +10702,16 @@ Parameters in media type, media range, and expectation can be empty via one or m
 （ `5.6.2$sec ）
 ◎
 Trailer field semantics now transcend the specifics of chunked encoding. Use of trailer fields has been further limited to only allow generation as a trailer field when the sender knows the field defines that usage and to only allow merging into the header section if the recipient knows the corresponding field definition permits and defines how to merge. In all other cases, implementations are encouraged to either store the trailer fields separately or discard them instead of merging. (Section 5.6.2)
+</p>
+
+<p>
+今や，`~trailer$たちは、利用-中の［
+~HTTP~versionと~frame法
+］により許容されるならば，複数個の`~trailer節$として出現し得る
+— 各~節が受信されるに伴い，【！described as being】反復的に処理されるような。
+（ `5.6.3$sec ）
+◎
+Trailer fields can now potentially appear as multiple trailer sections, if allowed by the HTTP version and framing in use, with processing described as being iterative as each section is received. (Section 5.6.3)
 </p>
 
 <p>
