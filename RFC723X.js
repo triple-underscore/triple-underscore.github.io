@@ -1056,8 +1056,6 @@ app:application:::アプリケーション
 欠如:lack:~
 欠如する:lackする:欠く
 正した:correctした:~
-手引き:guidance:~
-手引きす:guideす:~
 手続き:procedure:~
 手順:steps:~
 抽象化-:abstract 化:~

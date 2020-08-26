@@ -1845,6 +1845,9 @@ registry::::レジストリ
 保証-:guarantee:~
 
 指針:guideline:~:::ガイドライン
+指導:guidance:~:::ガイダンス
+手引き:guide:~:::ガイド
+	目安:guidance／guide
 助言的:advisory:助言
 	助言:advice:~
 公式的:official:~
