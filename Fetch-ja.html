@@ -187,8 +187,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2020-08-21
-trans_update:2020-08-27
+spec_date:2020-08-27
+trans_update:2020-08-28
 source_checked:200806
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -444,7 +444,6 @@ USVString:~WEBIDL#idl-USVString
 ByteString:~WEBIDL#idl-ByteString
 Promise:~WEBIDL#idl-promise
 
-I.USVString:~WEBIDL#idl-USVString
 I.BufferSource:~WEBIDL#BufferSource
 I.ArrayBuffer:~WEBIDL#idl-ArrayBuffer
 I.Uint8Array:~WEBIDL#idl-Uint8Array
@@ -932,16 +931,16 @@ c.body.getReader():~STREAMS#rs-get-reader
 ~close手続き:~STREAMS#read-request-close-steps
 ~error手続き:~STREAMS#read-request-error-steps
 
-空な~ReadableStream~obj:#concept-empty-readablestream
-RS.~enqueue:#concept-enqueue-readablestream
+RS.~ReadableStream~objを構築する:#concept-construct-readablestream
+	可読~streamを構築する:#concept-construct-readablestream
+RS.読取器を取得する:#concept-get-reader
+RS.~byte列を~enqueueする:#concept-enqueue-readablestream
 RS.~closeする:#concept-close-readablestream
 RS.~errorにする:#concept-error-readablestream
-RS.~ReadableStream~objを構築する:#concept-construct-readablestream
-RS.固定的~ReadableStream~objを構築する:#concept-construct-fixed-readablestream
-RS.読取器を取得する:#concept-get-reader
+RS.取消す:#concept-cancel-readablestream
 RS.~chunkを読取る:#concept-read-chunk-from-readablestream
 RS.すべての~byte列を読取る:#concept-read-all-bytes-from-readablestream
-RS.二叉化:#concept-tee-readablestream
+RS.二叉化する:#concept-tee-readablestream
 RS.読取n可能:#concept-readablestream-readable
 RS.~closeされた:#concept-readablestream-closed
 RS.~errorした:#concept-readablestream-errored
@@ -949,7 +948,6 @@ RS.妨げられている:#concept-readablestream-disturbed
 RS.~lockされている:#concept-readablestream-locked
 RS.もっと~dataが必要:#concept-readablestream-need-more-data
 	RS.妨げる:#concept-readablestream-disturbed
-RS.取消す:#concept-cancel-readablestream
 
 本体を伝送する~loop:#transmit-body-loop
 読取n~loop:#read-loop
@@ -996,6 +994,7 @@ Bd.~MIME型:#concept-body-mime-type
 ~byte大小無視:~INFRA#byte-case-insensitive
 ~byte列を~JSONとして構文解析する:~INFRA#parse-json-from-bytes
 文字列:~INFRA#string
+~scalar値~文字列:~INFRA#scalar-value-string
 ~ASCII空白:~INFRA#ascii-whitespace
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 符号位置:~INFRA#code-point
@@ -1013,6 +1012,7 @@ sct.~item:~INFRA#struct-item
 ~cloneする:~INFRA#list-clone
 map.空:~INFRA#map-is-empty
 ~list:~INFRA#list
+~size:~INFRA#list-size
 付加する:~INFRA#list-append
 除去する:~INFRA#list-remove
 包含して:~INFRA#list-contain
@@ -1159,7 +1159,9 @@ l.unsafe-none:~ORIGIN#coep-unsafe-none
 ~mp_form_data境界~文字列:~HTMLforms#multipart/form-data-boundary-string
 ~mp_form_dataとして符号化する:~HTMLforms#multipart/form-data-encoding-algorithm
 
-x.読取n演算:~FILEAPI#readOperation
+読取n演算:~FILEAPI#readOperation
+~streamを取得する:~FILEAPI#blob-get-stream
+
 bU.~obj:~FILEAPI#blob-url-entry-object
 
 ~CSP指令:~CSP3#csp-directives
@@ -1283,7 +1285,6 @@ main:
 process::::プロセス
 排他的:exclusive:~
 妨げら:disturbさ::~
-固定的:fixed:~
 不可分:atomic::~
 ok:
 早期:early::~
@@ -1752,6 +1753,7 @@ internet::::インターネット
 	%~network区分~key:networkPartitionKey
 	%第二~key:secondKey
 	%処置:disposition
+	-:ignoreType
 
 	●指示語
 
@@ -1908,7 +1910,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/ad9a84ad91fb6bd3a2dcdf0406321785f51c4c11/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/cd38ecaf5e8587cf0ec69a1fb6b73430c5b0e88c/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -3831,7 +3833,7 @@ If parsing header’s value, per the ABNF for header’s name, fails, then retur
 	<li>
 ~RET［
 前~段に失敗したならば `失敗^i ／
-~ELSE_ 前~段による結果の 1 個以上の`値$hd
+~ELSE_ 前~段による結果を成す 1 個以上の`値$hd
 ］
 ◎
 Return one or more values resulting from parsing header’s value, per the ABNF for header’s name.
@@ -4096,7 +4098,7 @@ To clone a body body, run these steps:
 <ol>
 	<li>
 «%out1, %out2» ~LET
-%本体 の`~stream$bdを`二叉化$RSした結果
+%本体 の`~stream$bdを`二叉化する$RS()
 ◎
 Let «out1, out2» be the result of teeing body’s stream.
 </li>
@@ -4140,10 +4142,12 @@ To handle content codings given codings and bytes, run these steps:
 If codings are not supported, then return bytes.
 </li>
 	<li>
-~RET ~HTTPに従って， %~byte列 を %符号法s で復号した結果は［
-~errorでないならば その結果 ／
+~RET ［
+次の結果は~errorでないならば その結果 ／
 ~ELSE_ `失敗^i
 ］
+⇒
+~HTTPに従って， %~byte列 を %符号法s で復号する
 `HTTP$r
 `HTTP-SEMANTICS$r
 ◎
@@ -4235,14 +4239,15 @@ The unsafe-request flag is set by APIs such as fetch() and XMLHttpRequest to ens
 
 	<dt>`本体@rq（ ~NULL ）</dt>
 	<dd>
-~NULL または`本体$。
+~NULL ／ `~byte列$ ／ `本体$。
 ◎
-A request has an associated body (null or a body). Unless stated otherwise it is null.
+A request has an associated body (null, a byte sequence, or a body). Unless stated otherwise it is null.
 </dd>
 	<dd class="note">注記：
-これは、`~HTTP~fetch$にて述べるように，~redirectの間に ~NULL に更新され得る。
+`本体$の中へは、`~fetch$における早期に`~byte列$が<a href="#bodyinit-safely-extract">安全に抽出される</a>ことになる。
+この~fieldは、ある種の~redirectに因り，`~HTTP~fetch$の一部として ~NULL に設定され得る。
 ◎
-This can be updated during redirects to null as described in HTTP fetch.
+A byte sequence will be safely extracted into a body early on in fetch. As part of HTTP fetch it is possible for this field to be set to null due to certain redirects.
 </dd>
 
 	<dt>`~client@rq</dt>
@@ -4483,7 +4488,8 @@ HTML’s navigate algorithm (top-level only).
 `fetch()$m,
 `XMLHttpRequest$I,
 `WebSocket$I,
-Cache ~API?
+Cache API【？】
+
 </span>
 
 <tr><td>`object^l
@@ -5302,7 +5308,7 @@ If body is null, then queue a fetch task on request to process request end-of-bo
 </li>
 	<li>
 <p>
-%読取器 ~LET `読取器を取得する$RS( %本体 の`~stream$bd )
+%読取器 ~LET %本体 の`~stream$bdから`読取器を取得する$RS()
 ◎
 Let reader be the result of getting a reader from body’s stream.
 </p>
@@ -6721,13 +6727,30 @@ In this section, we define common operations for ReadableStream objects. [STREAM
 
 <div class="algo">
 <p>
-`ReadableStream$I ~obj %~stream の中へ %~chunk を
-`~enqueue@RS
-するときは、次を走らす：
+`ReadableStream$I ~obj %~stream に
+`~byte列を~enqueueする@RS
+ときは、所与の
+( `~byte列$ %~byte列 )
+に対し：
 ◎
-To enqueue chunk into a ReadableStream object stream, run these steps:
+To enqueue bytes, given a byte sequence bytes and a ReadableStream object stream:
 </p>
 <ol>
+	<li>
+<p>
+%~chunk ~LET ［
+%~byte列 を包含している `ArrayBuffer$I
+］を包装している `Uint8Array$I ~obj
+⇒
+【 `ArrayBuffer$I の作成-時に】例外が投出されたときは
+⇒＃
+%~stream を`~errorにする$RS( その例外 )；
+~RET
+◎
+Let chunk be a Uint8Array object wrapping an ArrayBuffer object containing bytes.＼
+If that threw an exception, error stream with that exception and return.
+</p>
+	</li>
 	<li>
 `ReadableStreamDefaultControllerEnqueue$A( %~stream.`readableStreamController^sl, %~chunk )
 を~callする
@@ -6757,9 +6780,11 @@ Call ReadableStreamDefaultControllerClose(stream.[[readableStreamController]]).
 
 <div class="algo">
 <p>
-`ReadableStream$I ~obj %~stream を所与の %事由 で
+`ReadableStream$I ~obj %~stream を
 `~errorにする@RS
-ときは、次を走らす：
+ときは、所与の
+( 所与の %事由 )
+に対し，次を走らす：
 ◎
 To error a ReadableStream object stream with given reason, run these steps:
 </p>
@@ -6872,47 +6897,9 @@ Return CreateReadableStream(startAlgorithm, pullAlgorithm, cancelAlgorithm, high
 
 <div class="algo">
 <p>
-`固定的~ReadableStream~objを構築する@RS
-ときは、所与の
-( %~chunk列 )
-に対し，次を走らす：
-◎
-To construct a fixed ReadableStream object with given chunks, run these steps:
-</p>
-<ol>
-	<li>
-%~stream ~LET `~ReadableStream~objを構築する$RS()
-◎
-Let stream be the result of constructing a ReadableStream object.
-</li>
-	<li>
-%~chunk列 内の
-~EACH( %~chunk )
-に対し
-⇒
-%~stream の中へ %~chunk を`~enqueue$RSする
-◎
-For each chunk in chunks, enqueue chunk into stream.
-</li>
-	<li>
-%~stream を`~closeする$RS
-◎
-Close stream.
-</li>
-	<li>
-~RET %~stream
-◎
-Return stream.
-</li>
-</ol>
-</div>
-
-<div class="algo">
-<p>
+`ReadableStream$I ~obj %~stream から
 `読取器を取得する@RS
-ときは、所与の
-( `ReadableStream$I ~obj %~stream )
-に対し，次を走らす：
+ときは、次を走らす：
 ◎
 To get a reader from a ReadableStream object stream, run these steps:
 </p>
@@ -7056,8 +7043,7 @@ Perform ReadableStreamDefaultReaderRead(reader, readRequest).
 
 <p class="note">注記：
 読取器への~accessは排他的になるので、読取nの実際の仕組みは，
-【~script側からは】
-観測し得ない。
+【~scriptからは】観測し得ない。
 実装は、自身に都合よい より直接的な仕組みも利用できる。
 ◎
 Because the reader grants exclusive access, the actual mechanism of how to read cannot be observed. Implementations could use more direct mechanism if convenient.
@@ -7067,11 +7053,13 @@ Because the reader grants exclusive access, the actual mechanism of how to read 
 
 <div class="algo">
 <p>
-`ReadableStream$I ~obj %~stream を所与の %事由 で
+`ReadableStream$I ~obj %~stream を
 `取消す@RS
-ときは、
-`ReadableStreamCancel$A( %~stream, %事由 )
-を~callした結果を返す。
+ときは、所与の
+( %事由 )
+に対し
+⇒
+~RET `ReadableStreamCancel$A( %~stream, %事由 )
 ◎
 To cancel a ReadableStream object stream with reason, return the result of calling ReadableStreamCancel(stream, reason).
 </p>
@@ -7080,8 +7068,8 @@ To cancel a ReadableStream object stream with reason, return the result of calli
 <div class="algo">
 <p>
 `ReadableStream$I ~obj %~stream を
-`二叉化@RS
-するときは、次を走らす：
+`二叉化する@RS
+ときは、次を走らす：
 ◎
 To tee a ReadableStream object stream, run these steps:
 </p>
@@ -7101,23 +7089,6 @@ Return the result of calling ReadableStreamTee(stream, true).
 `<a href="https://ja.wikipedia.org/wiki/Tee_%28UNIX%29">tee コマンド</a>^,
 T 字路の “tee”）。
 】</p>
-</div>
-
-<div class="algo">
-<p>
-`空な~ReadableStream~obj@
-は、次の結果を返す
-⇒
-`固定的~ReadableStream~objを構築する$RS( 空~list )
-◎
-An empty ReadableStream object is the result of constructing a fixed ReadableStream object with an empty list.
-</p>
-
-<p class="note">注記：
-`空な~ReadableStream~obj$を構築する際には、例外は投出されない。
-◎
-Constructing an empty ReadableStream object will not throw an exception.
-</p>
 </div>
 
 <p>
@@ -8643,7 +8614,7 @@ Otherwise, return blocked.
 			<dd>
 <p>
 ~RET ［
-次が いずれも満たされるならば `許容される^i ／
+次が すべて満たされるならば `許容される^i ／
 ~ELSE_ `阻止される^i
 ］：
 </p>
@@ -8861,14 +8832,28 @@ Run these steps, but abort when the ongoing fetch is terminated:
 		<ol>
 			<li>
 ~IF［
+%要請 の`本体$rqは`~byte列$である
+］
+⇒
+%要請 の`本体$rq ~SET 次の結果を成す`本体$
+⇒
+`本体と内容~型を安全に抽出する$( %要請 の`本体$rq )
+◎
+If request’s body is a byte sequence, then:
+• Let body and ignoreType be the result of safely extracting request’s body.
+• Set request’s body to body.
+</li>
+			<li>
+~IF［
 %要請 の`~window$rq ~EQ `client^l
 ］
 ⇒
-%要請 の`~window$rq ~SET ［［
-%要請 の`~client$rqの`大域~obj$enVは `Window$I ~objである
-］ならば %要請 の`~client$rq ／
+%要請 の`~window$rq ~SET ［
+次が満たされるならば %要請 の`~client$rq ／
 ~ELSE_ `no-window^l
 ］
+⇒
+%要請 の`~client$rqの`大域~obj$enVは `Window$I ~objである
 ◎
 If request’s window is "client", set request’s window to request’s client, if request’s client’s global object is a Window object, and to "no-window" otherwise.
 </li>
@@ -9580,10 +9565,10 @@ opaque filtered response
 		</ol>
 	</li>
 	<li>
-%内部~応答 ~LET ［
-%応答 は`~network~error$ならば %応答 ／
+%内部~応答 ~LET %応答 に応じて
+⇒＃
+`~network~error$であるならば %応答 ／
 ~ELSE_ %応答 の`内部~応答$
-］
 ◎
 Let internalResponse be response, if response is a network error, and response’s internal response otherwise.
 </li>
@@ -9979,7 +9964,7 @@ Append `Content-Type`/blob’s type attribute value to response’s header list.
 </li>
 					<li>
 %応答 の`本体$rs ~SET
-%blob 上で`読取n演算$xを遂行した結果
+%blob 上で`読取n演算$を遂行した結果
 ◎
 Set response’s body to the result of performing the read operation on blob.
 </li>
@@ -10179,10 +10164,10 @@ If response is not null, then:
 Transmit body for request.
 </li>
 					<li>
-%実際の応答 ~SET ［
-%応答 は`絞込み応答$でないならば %応答 ／
+%実際の応答 ~SET %応答 に応じて
+⇒＃
+`絞込み応答$でないならば %応答 ／
 ~ELSE_ %応答 の`内部~応答$
-］
 ◎
 Set actualResponse to response, if response is not a filtered response, and to response’s internal response otherwise.
 </li>
@@ -10535,10 +10520,10 @@ To perform an HTTP-redirect fetch using request and response, run these steps:
 </p>
 <ol>
 	<li>
-%実際の応答 ~LET ［
-%応答 は`絞込み応答$でないならば %応答 ／
+%実際の応答 ~LET %応答 に応じて
+⇒＃
+`絞込み応答$でないならば %応答 ／
 ~ELSE_ %応答 の`内部~応答$
-］
 ◎
 Let actualResponse be response, if response is not a filtered response, and response’s internal response otherwise.
 </li>
@@ -10690,9 +10675,9 @@ For each headerName of request-body-header name, delete headerName from request�
 %要請 の`本体$rq ~NEQ ~NULL
 ］
 ⇒
-%要請 の`本体$rq ~SET ［
+%要請 の`本体$rq ~SET 次の結果を成す`本体$
+⇒
 `本体と内容~型を安全に抽出する$( %要請 の`本体$rqの`~source$bd )
-］の結果の`本体$
 ◎
 If request’s body is non-null, then set request’s body to the first return value of safely extracting request’s body’s source.
 </p>
@@ -11679,9 +11664,9 @@ If request’s body is non-null, then:
 If request’s body’s source is null, then return a network error.
 </li>
 					<li>
-%要請 の`本体$rq ~SET ［
+%要請 の`本体$rq ~SET 次の結果を成す`本体$
+⇒
 `本体と内容~型を安全に抽出する$( %要請 の`本体$rqの`~source$bd )
-］の結果の`本体$
 ◎
 Set request’s body to the first return value of safely extracting request’s body’s source.
 </li>
@@ -12268,16 +12253,18 @@ This makes the `Content-Length` header unreliable to the extent that it was reli
 If bytes is failure, then terminate the ongoing fetch.
 </li>
 							<li>
-%~stream の中へ［［
-%~byte列 を包含している `ArrayBuffer$I
-］を包装している `Uint8Array$I ~obj
-］を`~enqueue$RSする
-— 例外が投出されたときは
-⇒＃
-%~stream をその例外で`~errorにする$RS；
+%~stream に`~byte列を~enqueueする$RS( %~byte列 )
+◎
+Enqueue bytes given bytes and stream.
+</li>
+							<li>
+~IF［
+%~stream は`~errorした$RS
+］
+⇒
 進行中の~fetchを`終了させる$()
 ◎
-Enqueue a Uint8Array object wrapping an ArrayBuffer containing bytes to stream. If that threw an exception, terminate the ongoing fetch, and error stream with that exception.
+If stream is errored, then terminate the ongoing fetch.
 </li>
 							<li>
 ~IF［
@@ -12301,7 +12288,7 @@ If stream doesn’t need more data and request’s synchronous flag is unset, as
 %~stream は`読取n可能$RSである
 ］
 ⇒＃
-%~stream を`~closeする$RS；
+%~stream を`~closeする$RS()；
 ~BREAK
 ◎
 Otherwise, if the bytes transmission for response’s message body is done normally and stream is readable, then close stream and abort these in-parallel steps.
@@ -12336,7 +12323,7 @@ Set response’s aborted flag.
 %~stream は`読取n可能$RSである
 ］
 ⇒
-%~stream を `AbortError$E 例外で`~errorにする$RS
+%~stream を`~errorにする$RS( `AbortError$E 例外 )
 ◎
 If stream is readable, error stream with an "AbortError" DOMException.
 </li>
@@ -12347,7 +12334,7 @@ If stream is readable, error stream with an "AbortError" DOMException.
 %~stream は`読取n可能$RSである
 ］
 ⇒
-%~stream を `TypeError$E で`~errorにする$RS
+%~stream を`~errorにする$RS( `TypeError$E )
 ◎
 Otherwise, if stream is readable, error stream with a TypeError.
 </li>
@@ -13857,8 +13844,8 @@ The value pairs to iterate over are the return value of running sort and combine
 </div>
 
 		</section>
-		<section id="body-mixin">
-<h3 title="Body mixin">5.2. `Body^I ~mixin</h3>
+		<section id="bodyinit-unions">
+<h3 title="BodyInit unions">5.2. `BodyInit^I 共用体</h3>
 
 <pre class="idl">
 typedef (
@@ -13920,19 +13907,23 @@ The safely extract operation is a subset of the extract operation that is guaran
 <p>
 `本体と内容~型を抽出する@
 ときは、所与の
-( %~obj, %~keepalive~flag ~IN { `~keepalive^i, ε }（省略時は ε ）)
+( %~obj, %~keepalive ~IN { `~keepalive^i, ε }（省略時は ε ）)
+【！boolean keepalive (default false)】
 に対し，次を走らす
 — この手続きは
 ( `本体$, `Content-Type$h `値$hd )
 の組を返す：
 ◎
-To extract a body and a `Content-Type` value from object, with an optional keepalive flag, run these steps:
+To extract a body and a `Content-Type` value from object, with an optional boolean keepalive (default false), run these steps:
 </p>
 <ol>
 	<li>
-%~stream ~LET `~ReadableStream~objを構築する$RS()
+%~stream ~LET %~obj に応じて
+⇒＃
+`ReadableStream$I ~objであるならば %~obj ／
+~ELSE_ `~ReadableStream~objを構築する$RS()
 ◎
-Let stream be the result of constructing a ReadableStream object.
+Let stream be object if object is a ReadableStream object; otherwise the result of constructing a ReadableStream object.
 </li>
 	<li>
 %内容~型 ~LET ~NULL
@@ -13945,22 +13936,27 @@ Let Content-Type be null.
 Let action be null.
 </li>
 	<li>
-%~source ~LET ~NULL
+%~source ~LET %~obj に応じて
+⇒＃
+`ReadableStream$I ~objであるならば ~NULL ／
+~ELSE_ %~obj
 ◎
-Let source be null.
+Let source be null if object is a ReadableStream object; otherwise object.
 </li>
 	<li>
 <p>
-%~obj の型に応じて：
+%~obj に応じて：
 ◎
-Switch on object’s type:
+Switch on object:
 </p>
 		<dl class="switch">
 			<dt>`Blob$I</dt>
 			<dd>
 				<ol>
 					<li>
-%動作 ~SET %~obj を読取る動作
+%動作 ~SET 次を走らす動作
+⇒
+~RET %~obj を読取った結果†
 ◎
 Set action to an action that reads object.
 </li>
@@ -13973,10 +13969,27 @@ Set action to an action that reads object.
 ◎
 If object’s type attribute is not the empty byte sequence, set Content-Type to its value.
 </li>
-					<li>
-%~source ~SET %~obj
+				</ol>
+
+<p class="trans-note">【†
+明確には指定されていないが、以降の処理は，
+`FILEAPI$r に定義される`~streamを取得する$ ~algoと同じ結果になると見受けられる。
+】</p>
+			</dd>
+
+			<dt>
+`~byte列$
 ◎
-Set source to object.
+byte sequence
+</dt>
+			<dd>
+				<ol>
+					<li>
+%動作 ~SET 次を走らす動作
+⇒
+~RET %~obj
+◎
+Set action to an action that returns object.
 </li>
 				</ol>
 			</dd>
@@ -13985,31 +13998,15 @@ Set source to object.
 			<dd>
 				<ol>
 					<li>
-%~stream の中へ［［［
-%~obj に保持されている~byte列の複製
-］を包含している `ArrayBuffer$I
-］を包装している `Uint8Array$I ~obj
-］を`~enqueue$RSする
-</li>
-					<li>
-%~stream を`~closeする$RS
-</li>
-					<li>
-%~source ~SET %~obj
+%動作 ~SET 次を走らす動作
+⇒
+~RET %~obj が保持している
+<a href="~WEBIDL#dfn-get-buffer-source-copy">~byte列の複製</a>
+◎
+Set action to an action that returns a copy of the bytes held by object.
 </li>
 				</ol>
-
-<p>
-例外が投出されたときは
-⇒
-%~stream をその例外で`~errorにする$RS
-</p>
-
-◎
-Enqueue a Uint8Array object wrapping an ArrayBuffer containing a copy of the bytes held by object to stream and close stream. If that threw an exception, error stream with that exception.
-◎
-Set source to object.
-</dd>
+			</dd>
 
 			<dt>`FormData$I</dt>
 			<dd>
@@ -14017,26 +14014,21 @@ Set source to object.
 					<li>
 %動作 ~SET 次を走らす動作
 ⇒
-`~mp_form_dataとして符号化する$( %~obj, `~UTF-8$enc )
+~RET `~mp_form_dataとして符号化する$( %~obj, `~UTF-8$enc )
 ◎
 Set action to an action that runs the multipart/form-data encoding algorithm, with object as form data set and with UTF-8 as the explicit character encoding.
 </li>
 					<li>
-<p>
-%内容~型 ~SET 次の連結
-</p>
-
-<ol ><li>`multipart/form-data; boundary=^bl
-</li><li>%動作 により生成されることになる `~mp_form_data境界~文字列$
-</li></ol>
-
+%内容~型 ~SET `multipart/form-data; boundary=^bl
 ◎
-Set Content-Type to `multipart/form-data; boundary=`, followed by the multipart/form-data boundary string generated by the multipart/form-data encoding algorithm.
+Set Content-Type to `multipart/form-data; boundary=`,＼
 </li>
 					<li>
-%~source ~SET %~obj
+%内容~型 に次を付加する
+⇒
+%動作 により生成されることになる `~mp_form_data境界~文字列$
 ◎
-Set source to object.
+followed by the multipart/form-data boundary string generated by the multipart/form-data encoding algorithm.
 </li>
 				</ol>
 			</dd>
@@ -14047,7 +14039,7 @@ Set source to object.
 					<li>
 %動作 ~SET 次を走らす動作
 ⇒
-`~form_urlencoded直列化器$( %~obj の`名値~pair~list$ )
+~RET `~form_urlencoded直列化器$( %~obj の`名値~pair~list$ )
 ◎
 Set action to an action that runs the application/x-www-form-urlencoded serializer with object’s list.
 </li>
@@ -14056,21 +14048,20 @@ Set action to an action that runs the application/x-www-form-urlencoded serializ
 ◎
 Set Content-Type to `application/x-www-form-urlencoded;charset=UTF-8`.
 </li>
-					<li>
-%~source ~SET %~obj
-◎
-Set source to object.
-</li>
 				</ol>
 			</dd>
 
-			<dt>`USVString$I</dt>
+			<dt>
+`~scalar値~文字列$
+◎
+scalar value string
+</dt>
 			<dd>
 				<ol>
 					<li>
 %動作 ~SET 次を走らす動作
 ⇒
-`~UTF-8符号化する$( %~obj )
+~RET `~UTF-8符号化する$( %~obj )
 ◎
 Set action to an action that runs UTF-8 encode on object.
 </li>
@@ -14078,11 +14069,6 @@ Set action to an action that runs UTF-8 encode on object.
 %内容~型 ~SET `text/plain;charset=UTF-8^bl
 ◎
 Set Content-Type to `text/plain;charset=UTF-8`.
-</li>
-					<li>
-%~source ~SET %~obj
-◎
-Set source to object.
 </li>
 				</ol>
 			</dd>
@@ -14092,7 +14078,7 @@ Set source to object.
 				<ol>
 					<li>
 ~IF［
-%~keepalive~flag ~NEQ ε
+%~keepalive ~NEQ ε
 ］~OR［
 %~obj は`妨げられている$Bd
 ］~OR［
@@ -14101,14 +14087,9 @@ Set source to object.
 ⇒
 ~THROW `TypeError$E
 ◎
-If the keepalive flag is set, then throw a TypeError.
+If keepalive is true, then throw a TypeError. 
 ◎
-If object is disturbed or locked, then throw a TypeError. 
-</li>
-					<li>
-%~stream ~SET %~obj
-◎
-Set stream to object.
+If object is disturbed or locked, then throw a TypeError.
 </li>
 				</ol>
 			</dd>
@@ -14120,30 +14101,30 @@ Set stream to object.
 %動作 ~NEQ ~NULL
 ］
 ⇒
-%動作 を`並列的$に走らす：
+次に従う下で %動作 を`並列的$に走らす：
 ◎
 If action is non-null, run action in parallel:
 </p>
 		<ul>
 			<li>
-1 個以上の~byte %~byte列 が可用になる度に
+【 %動作 の結果から】
+1 個以上の~byte %~byte列 が可用になるたびに
 ⇒
-%~stream の中へ［［
-%~byte列 を包含している `ArrayBuffer$I
-］を包装している `Uint8Array$I ~obj
-］を`~enqueue$RSする
-⇒
-`ArrayBuffer$I の作成-時に例外が投出されたときは
-⇒＃
-%~stream をその例外で`~errorにする$RS；
-走っている %動作 を取消す
+%~stream に`~byte列を~enqueueする$RS( %~byte列 )
 ◎
-Whenever one or more bytes are available, let bytes be the bytes and enqueue a Uint8Array object wrapping an ArrayBuffer containing bytes to stream. If creating the ArrayBuffer threw an exception, error stream with that exception and cancel running action.
+Whenever one or more bytes are available and stream is not errored, enqueue bytes given the available bytes and stream.
 </li>
+			<li>
+前項により %~stream が`~errorした$RSときは
+⇒
+この段を終える
+【この場合、次項を飛ばしても同じ結果になると見受けられる。】
+◎
+↑</li>
 			<li>
 %動作 を走らせ終えたときは
 ⇒
-%~stream を`~closeする$RS
+%~stream を`~closeする$RS()
 ◎
 When running action is done, close stream.
 </li>
@@ -14165,6 +14146,10 @@ Return body and Content-Type.
 </li>
 </ol>
 </div>
+
+		</section>
+		<section id="body-mixin">
+<h3 title="Body mixin">5.3. `Body^I ~mixin</h3>
 
 <pre class="idl">
 interface mixin `Body@I {
@@ -14213,24 +14198,28 @@ Objects implementing the Body mixin gain an associated body (null or a body) and
 
 <ul>
 	<li>
+次を満たすとき，
+`妨げられている@Bd
+という
+⇒
 ［
 %本体 ~NEQ ~NULL
 ］~AND［
 %本体 の`~stream$bdは`妨げられている$RS
-］とき，
-`妨げられている@Bd
-という。
+］
 ◎
 An object implementing the Body mixin is said to be disturbed if its body is non-null and its body’s stream is disturbed.
 </li>
 	<li>
+次を満たすとき，
+`~lockされている@Bd
+という
+⇒
 ［
 %本体 ~NEQ ~NULL
 ］~AND［
 %本体 の`~stream$bdは`~lockされている$Bd
-］とき，
-`~lockされている@Bd
-という。
+］
 ◎
 An object implementing the Body mixin is said to be locked if its body is non-null and its body’s stream is locked.
 </li>
@@ -14469,28 +14458,41 @@ The consume body algorithm, given an object and type, runs these steps:
 If object is disturbed or locked, then return a promise rejected with a TypeError.
 </li>
 	<li>
-%~stream ~LET ［
-%~obj の`本体$Bd ~NEQ ~NULL ならば その`~stream$bd ／
-~ELSE_ `空な~ReadableStream~obj$
-］
+%~promise ~LET 空な`~byte列$で`解決される~promise$
 ◎
-Let stream be object’s body’s stream if object’s body is non-null; otherwise an empty ReadableStream object.
+Let promise be a promise resolved with an empty byte sequence.
 </li>
 	<li>
-%読取器 ~LET `読取器を取得する$RS( %~stream )
+<p>
+~IF［
+%~obj の`本体$Bd ~NEQ ~NULL
+］：
+◎
+If object’s body is non-null, then:
+</p>
+		<ol>
+			<li>
+%~stream ~LET %~obj の`本体$Bdの`~stream$bd
+◎
+Let stream be object’s body’s stream.
+</li>
+			<li>
+%読取器 ~LET %~stream から`読取器を取得する$RS()
 ⇒
 例外が投出されたときは
 ⇒
 ~RET その例外で`却下される~promise$
 ◎
-Let reader be the result of getting a reader from stream. If that threw an exception, return a promise rejected with that exception.
+Let reader be the result of getting a reader from stream. If that threw an exception, then return a promise rejected with that exception.
 </li>
-	<li>
-%~promise ~LET
+			<li>
+%~promise ~SET
 %~stream から`すべての~byte列を読取る$RS( %読取器 )
 ◎
-Let promise be the result of reading all bytes from stream with reader.
+Set promise to the result of reading all bytes from stream with reader.
 </li>
+		</ol>
+	</li>
 	<li>
 %手続き ~LET 次を走らす手続き
 ⇒
@@ -14499,7 +14501,6 @@ Let promise be the result of reading all bytes from stream with reader.
 Let steps be to return the result of package data with the first argument given, type, and object’s MIME type.
 </li>
 	<li>
-<p>
 ~RET %手続き を走らす充足~handlerで %~promise に`反応-$した結果【！`充足-時$】
 ◎
 Return the result of upon fulfillment of promise given steps.
@@ -14554,7 +14555,7 @@ The text() method steps are to return the result of running consume body with th
 
 		</section>
 		<section id="request-class">
-<h3 title="Request class">5.3. `Request^I ~class</h3>
+<h3 title="Request class">5.4. `Request^I ~class</h3>
 
 <pre class="idl">
 typedef (`Request$I or `USVString$) `RequestInfo@I;
@@ -15575,10 +15576,10 @@ Otherwise, fill this’s headers with headers.
 		</ol>
 	</li>
 	<li>
-%入力~本体 ~LET［
-%input は `Request$I ~objであるならば %input の`要請$Rqの`本体$rq ／
+%入力~本体 ~LET %input に応じて
+⇒＃
+`Request$I ~objであるならば %input の`要請$Rqの`本体$rq ／
 ~ELSE_ ~NULL
-］
 ◎
 Let inputBody be input’s request’s body if input is a Request object, and null otherwise.
 </li>
@@ -15622,16 +15623,16 @@ If init["body"] exists and is non-null, then:
 Let Content-Type be null.
 </li>
 			<li>
-%~keepalive ~LET ［
-%init[ "`keepalive$RqI" ] ~EQ ~T ならば `~keepalive^i ／
+%~keepalive ~LET %init[ "`keepalive$RqI" ] に応じて
+⇒＃
+~T ならば `~keepalive^i ／
 ~ELSE_ ε
-］
 ◎
 ↓</li>
 			<li>
 ( %本体, %内容~型 ) ~SET `本体と内容~型を抽出する$( %本体~member, %~keepalive )
 ◎
-If init["keepalive"] exists and is true, then set body and Content-Type to the result of extracting init["body"], with the keepalive flag set.
+If init["keepalive"] exists and is true, then set body and Content-Type to the result of extracting init["body"], with keepalive set to true.
 ◎
 Otherwise, set body and Content-Type to the result of extracting init["body"].
 </li>
@@ -15955,7 +15956,7 @@ Return clonedRequestObject.
 
 		</section>
 		<section id="response-class">
-<h3 title="Response class">5.4. `Response^I ~class</h3>
+<h3 title="Response class">5.5. `Response^I ~class</h3>
 
 <pre class="idl">
 [`Exposed$=(Window,Worker)]
@@ -16264,8 +16265,12 @@ The url getter steps are to return the empty string if this’s response’s URL
 `redirected@m
 取得子~手続きは
 ⇒
-~RET コレの`応答$Rsの`~URL~list$rs内に複数の~itemがあるならば ~T ／
+~RET ［
+次が満たされるならば ~T ／
 ~ELSE_ ~F
+］
+⇒
+コレの`応答$Rsの`~URL~list$rsの`~size$ ~GT 1
 ◎
 The redirected getter steps are to return true if this’s response’s URL list has more than one item; otherwise false.
 </p>
@@ -16275,7 +16280,7 @@ The redirected getter steps are to return true if this’s response’s URL list
 — 例えば
 `fetch(url, { redirect:"error" })^c
 のように。
-こうすれば、安全でないかもしれない`応答$が不用意に漏洩されるのを~~防げる。
+こうすれば、安全でないものにもなり得る`応答$が不用意に漏洩されるのを~~防げる。
 ◎
 To filter out responses that are the result of a redirect, do this directly through the API, e.g., fetch(url, { redirect:"error" }). This way a potentially unsafe response cannot accidentally leak.
 </p>
@@ -16365,7 +16370,7 @@ Return clonedResponse.
 
 		</section>
 		<section id="fetch-method">
-<h3 title="Fetch method">5.5. `fetch^m ~method</h3>
+<h3 title="Fetch method">5.6. `fetch^m ~method</h3>
 
 <pre class="idl">
 partial interface mixin `WindowOrWorkerGlobalScope$I {
@@ -16592,7 +16597,7 @@ This is a no-op if promise has already fulfilled.
 %要請 の`本体$rqは`読取n可能$RSである
 ］
 ⇒
-%要請 の`本体$rqを %~error で`取消す$RS
+%要請 の`本体$rqを`取消す$RS( %~error )
 ◎
 If request’s body is not null and is readable, then cancel request’s body with error.
 </li>
@@ -16617,7 +16622,7 @@ Let response be responseObject’s response.
 %応答 の`本体$rsは`読取n可能$RSである
 ］
 ⇒
-%応答 の`本体$rsを %~error で`~errorにする$RS
+%応答 の`本体$rsを`~errorにする$RS( %~error )
 ◎
 If response’s body is not null and is readable, then error response’s body with error.
 </li>
@@ -16626,7 +16631,7 @@ If response’s body is not null and is readable, then error response’s body w
 
 		</section>
 		<section id="garbage-collection">
-<h3 title="Garbage collection">5.6. ~garbage収集</h3>
+<h3 title="Garbage collection">5.7. ~garbage収集</h3>
 
 <p>
 ~UAは、進行中の~fetchを
@@ -16641,7 +16646,7 @@ The user agent may terminate an ongoing fetch if that termination is not observa
 とは、［
 `fetch()$m の引数や返り値を通して観測-可能にならない
 ］ことを意味する。
-~serverとの別の通信-法を通して可能になるものなどの，他の仕方は含まれない。
+~serverとの別の通信-法を通して可能になるものなど，他の仕方は含まれない。
 ◎
 "Observable through script" means observable through fetch()’s arguments and return value. Other ways, such as communicating with the server through a side-channel are not included.
 </p>
@@ -17239,7 +17244,7 @@ This section and its subsections are informative only.
 
 <div class="p">
 <p>
-~fetchingの目的においては、次の層がある：
+~fetchingの目的においては、次に挙げる層がある：
 </p>
 <ol>
 	<li>
