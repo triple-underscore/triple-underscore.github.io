@@ -152,8 +152,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2020-08-25
-trans_update:2020-08-19
+spec_date:2020-08-26
+trans_update:2020-08-27
 	source_checked:200625
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -1063,6 +1063,8 @@ prototype::::プロトタイプ
 普通の:ordinary::~
 切離され:detachされ::切り離され
 	そのまま:unchanged
+連結-:concatenate::~
+連結:concatenation::~
 
 	●処理一般
 return:
@@ -1099,6 +1101,8 @@ memory::::メモリ
 小task:microtask::小 task:小タスク
 切替える:switchする:切り替える
 投函-:post::~::ポスト
+adapter::::アダプタ
+可反復:iterable::~
 
 	~call元:caller
 	calling
@@ -1157,7 +1161,7 @@ polyfill:
 事前条件:preconditions:~
 役立たず:useless:~
 堅牢性:robustness:~
-自明:trivial:~
+些末:trivial:~
 良実践:good practice:良い実践
 簡潔:concise:~
 現実の:real:~
@@ -1339,6 +1343,9 @@ encapsulate::::カプセル化
 	まったく同じに:exactly like
 	見逃すと:Failure to do so
 	至りかねない:could lead
+	二三:a couple of
+	ときには、:sometimes
+	より巧妙:subtle
 
 	●未分類
 install::::インストール
@@ -1606,7 +1613,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/f2be83188f7a75b7a451ed174cff301e4326e99a" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/1af4aff8892d859b26e0da74bd0318ee7fbfe724" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -11634,7 +11641,7 @@ A function that is called after the producer signals, via writer.close(), that t
 次に必要とされる動作があれば、この関数~内で遂行できる
 ⇒＃
 `下層~槽$への書込nを完結する／
-`下層~槽$への書込nを書出す／
+`下層~槽$への書込nをどこかへ書出す／
 保持されている資源への~accessを解放する
 ◎
 This function can perform any actions necessary to finalize or flush writes to the underlying sink, and release access to any held resources.
@@ -19795,7 +19802,7 @@ For simplicity, LipFuzzTransformer performs unescaped text substitutions. In rea
 
 <p>
 次の関数は、通常は `Array.prototype.map$c に渡すような型の同期的な “~mapper” 関数から，新たな `TransformStream$I ~instanceを作成-可能にする。
-それは、自明な形式変換に対しても，~APIは簡潔になることをデモる。
+それは、些末な形式変換に対しても，~APIは簡潔になることをデモる。
 ◎
 The following function allows creating new TransformStream instances from synchronous "mapper" functions, of the type you would normally pass to Array.prototype.map. It demonstrates that the API is concise even for trivial transforms.
 </p>
@@ -19821,14 +19828,14 @@ const %ts = mapperTransformStream(%chunk =&gt; %chunk.toUpperCase());
 const %writer = %ts.writable.getWriter();
 const %reader = %ts.readable.getReader();
 
-writer.write(`No need to shout^l);
+%writer.write(`No need to shout^l);
 
 /* <span class="comment">
 これは `NO NEED TO SHOUT^l を~logする：
 ◎
 Logs "NO NEED TO SHOUT":
 </span> */
-reader.read().then(({ %value }) =&gt; console.log(%value));
+%reader.read().then(({ %value }) =&gt; console.log(%value));
 </pre>
 
 <p>
@@ -19858,6 +19865,93 @@ Logs a SyntaxError, twice:
 %reader.read().catch(%e =&gt; console.error(%e));
 %writer.write(`{}^l).catch(%e =&gt; console.error(%e));
 </pre>
+
+		</section>
+		<section id="example-identity-transform-usages">
+<h3 title="Using an identity transform stream as a primitive to create new readable streams">9.11. ~identity形式変換~streamを新たな可読~streamを作成する~primitiveとして利用する</h3>
+
+<p>
+`~identity形式変換~stream$を `pipeTo()$rs と組合せれば，~streamを操作する強力な仕方になる。
+この節では、この一般~技法の例を二三与える。
+◎
+Combining an identity transform stream with pipeTo() is a powerful way to manipulate streams. This section contains a couple of examples of this general technique.
+</p>
+
+<p>
+ときには、`可読~stream$用の~promiseを，可読~streamであったかのように扱うと自然になる。
+必要なものは、単純な~adapter関数の他にない：
+◎
+It’s sometimes natural to treat a promise for a readable stream as if it were a readable stream. A simple adapter function is all that’s needed:
+</p>
+
+<pre class="lang-js">
+function promiseToReadable(%promiseForReadable) {
+  const %ts = new TransformStream();
+
+  %promiseForReadable
+      .then(%readable =&gt; %readable.pipeTo(%ts.writable))
+      .catch(%reason =&gt; %ts.writable.abort(%reason))
+      .catch(() =&gt; {});
+
+  return %ts.readable;
+}
+</pre>
+
+<p>
+ここでは、~dataを`可書~側$へ~pipeして，`可読~側$を返す。
+~pipeが~errorした場合、可書~側を`中止する$
+— ~errorは、自動的に，返された可読~側へ伝播する。
+`pipeTo()$rs までに，すでに可書~側が~errorしていた場合、
+`abort()$ws ~callは却下を返すことになる
+— それは、安全に無視できる。
+◎
+Here, we pipe the data to the writable side and return the readable side. If the pipe errors, we abort the writable side, which automatically propagates the error to the returned readable side. If the writable side had already been errored by pipeTo(), then the abort() call will return a rejection, which we can safely ignore.
+</p>
+
+<p>
+これのもっと複階的な拡張は、複数の可読~streamを 1 つに連結することである：
+◎
+A more complex extension of this is concatenating multiple readable streams into one:
+</p>
+
+<pre class="lang-js">
+function concatenateReadables(%readables) {
+  const %ts = new TransformStream();
+  let %promise = Promise.resolve();
+
+  for (const %readable of %readables) {
+    %promise = %promise.then(
+     () =&gt; %readable.pipeTo(%ts.writable, { preventClose: true }),
+     %reason =&gt; {
+       return Promise.all([
+         %ts.writable.abort(%reason),
+         %readable.cancel(%reason)
+       ]);
+     }
+   );
+  }
+
+  %promise.then(() =&gt; %ts.writable.close(),
+               %reason =&gt; %ts.writable.abort(%reason))
+         .catch(() =&gt; {});
+
+  return %ts.readable;
+}</pre>
+
+
+<p>
+ここでの~errorの取扱いは、より巧妙になる
+— 連結した~streamを取消すには、すべての入力~streamを取消す必要があるので。
+しかしながら，成功~事例は十分~単純である。
+可反復 %readables 内で各~streamを 1 個ずつ`~identity形式変換~stream$の`可書~側$へ~pipeして，済んだら それを~closeするだけである。
+`可読~側$は、［
+各~streamからの すべての~chunk
+］すべての連結になる。
+関数からは、それを返す。
+背圧は通例通りに適用される。
+◎
+The error handling here is subtle because canceling the concatenated stream has to cancel all the input streams. However, the success case is simple enough. We just pipe each stream in the readables iterable one at a time to the identity transform stream's writable side, and then close it when we are done. The readable side is then a concatenation of all the chunks from all of of the streams. We return it from the function. Backpressure is applied as usual.
+</p>
 
 		</section>
 	</section>
