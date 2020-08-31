@@ -1399,7 +1399,14 @@ Util.addAltRefs = () => {
 	+ COMMON_DATA.REF_DATA
 	+ rfc_list.join('\n').replace(/\d+/g, 
 		'RFC$&=副 rfcs.web.fc2.com/rfc$&.html●google 翻訳'
-	);
+	)
+	+ '\n'
+	+ rfc_list.filter( (e) => {
+		return ( parseInt(e) >= 2220 );
+	}).join('\n').replace(/\d+/g, 
+		'RFC$&=副 tex2e.github.io/rfc-translater/html/rfc$&.html●rfc-translater'
+	)
+	;
 
 	let m;
 	const rxp = /^(\w+)=(\S)(\d*)[\t ]+(~\w*)?([^\s●]+)(●.*)?$/mg;
