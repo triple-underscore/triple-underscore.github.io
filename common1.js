@@ -1057,7 +1057,7 @@ Util.dfnInit = () => {
 	const dfnPanel = C('div');
 		dfnPanel.id = '_dfnPanel';
 		dfnPanel.innerHTML =
-'<div><input type="button" value="  ←  "><input type="button" value="  →  "><a></a><a class="_additional">(原文)</a><a class="_additional">(MDN)</a></div><ul></ul>';
+'<div><input type="button" value="  ←  "><input type="button" value="  →  "><a></a><a class="_additional" target="original-spec">(原文)</a><a class="_additional" target="mdn">(MDN)</a></div><ul></ul>';
 
 	const dfnTarget // a link to dfnStart
 		= dfnPanel.firstElementChild.children[2];
