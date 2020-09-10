@@ -226,6 +226,9 @@ case 'm':
 case 'n': // encoding name
 	href = `#${key.toLowerCase()}`;
 	break;
+case 'tA': // 型注釈
+	text = `&lt;${key}&gt;`;
+	break;
 case 'U':
 	text = `U+${key}`;
 	break;
@@ -307,9 +310,9 @@ return text;
 ●●options
 
 spec_title:Encoding
-spec_date:2020-06-29
-trans_update:2020-05-15
-source_checked:180823
+spec_date:2020-09-08
+trans_update:2020-09-10
+source_checked:200908
 spec_status:LS
 original_url:https://encoding.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -345,6 +348,7 @@ sl:span
 jA:span
 jv:code
 xA:code
+tA:sub
 em:em
 
 ●●mdn_urls
@@ -365,8 +369,8 @@ textencoder:API/TextEncoder
 	旧 id
 	textdecodercommon-decoder:textdecoder-decoder
 	textdecodercommon-decoder:textdecoderstream-decoder
-	textdecodercommon-stream:textdecoder-stream
-	textdecodercommon-stream:textdecoderstream-stream
+	textdecodercommon-i-o-queue:textdecodercommon-stream
+	textdecodercommon-i-o-queue:textdecoder-stream
 
 ●●link_map
 
@@ -458,17 +462,21 @@ mb.stream:#dom-textdecodeoptions-stream
 ~error:#error
 完遂d:#finished
 継続-:#continue
-~EoS:#end-of-stream
+~EoQ:#end-of-stream
 ~labelから符号化法を取得する:#concept-encoding-get
 符号化法から出力~符号化法を取得する:#get-an-output-encoding
-~token:#concept-token
-~stream:#concept-stream
-~tokenを読取る:#concept-stream-read
-前付加する:#concept-stream-prepend
-前付加-:#concept-stream-prepend
-~pushする:#concept-stream-push
+入出力~queue:#concept-stream
+~itemを読取る:#concept-stream-read
+入出力~queueから~itemを読取る:#concept-stream-read
+入出力~queueを覗見る:#i-o-queue-peek
+入出力~queueに~pushする:#concept-stream-push
+ioQ.~push:#concept-stream-push
+入出力~queueに前付加する:#concept-stream-prepend
+変換する:#from-i-o-queue-convert
+入出力~queueに変換する:#to-i-o-queue-convert
+
 走らす:#concept-encoding-run
-~tokenを処理する:#concept-encoding-process
+~itemを処理する:#concept-encoding-process
 
 	●
 索引:#index
@@ -543,13 +551,13 @@ mb.stream:#dom-textdecodeoptions-stream
 	●encoder／decoder IDL
 dec.符号化法:#textdecoder-encoding
 dec.復号器:#textdecodercommon-decoder
-dec.~stream:#textdecodercommon-stream
+dec.入出力~queue:#textdecodercommon-i-o-queue
 dec.~BOMignore:#textdecoder-ignore-bom-flag
 dec.~BOMseen:#textdecoder-bom-seen-flag
 dec.~error~mode:#textdecoder-error-mode
-dec.~no_flush:#textdecoder-do-not-flush-flag
+dec.一掃しない:#textdecoder-do-not-flush-flag
 
-~streamを直列化する:#concept-td-serialize
+入出力~queueを直列化する:#concept-td-serialize
 
 enc.符号化器:#textencoderstream-encoder
 enc.処理待ち高位~surrogate:#textencoderstream-pending-high-surrogate
@@ -638,10 +646,21 @@ indexes.json:https://encoding.spec.whatwg.org/indexes.json
 	●用語（外部
 jA.CreateTransformStream:~STREAMS#create-transform-stream
 jA.TransformStreamDefaultControllerEnqueue:~STREAMS#transform-stream-default-controller-enqueue
-	:~STREAMS#set-up-transform-stream-default-controller-enqueue
+
+~list:~INFRA#list
+~item:~INFRA#list-item
+付加する:~INFRA#list-append
+空:~INFRA#list-empty
+挿入する:~INFRA#list-insert
+前付加する:~INFRA#list-prepend
+除去する:~INFRA#list-remove
+~size:~INFRA#list-size
+~queue:~INFRA#queue
+範囲:~INFRA#the-range
 
 ~ASCII~byte:~INFRA#ascii-byte
 ~byte:~INFRA#byte
+~byte列:~INFRA#byte-sequence
 byte.長さ:~INFRA#byte-sequence-length
 文字列:~INFRA#string
 ~scalar値~文字列:~INFRA#scalar-value-string
@@ -671,7 +690,9 @@ byte.から開始して:~INFRA#byte-sequence-starts-with
 可書~stream:~STREAMS#writable-stream
 形式変換~stream:~STREAMS#transform-stream
 
+並列的:~HTMLINFRA#in-parallel
 符号化法を~sniffする~algo:~HTMLparsing#encoding-sniffing-algorithm
+~event~loop:~WAPI#event-loop
 
 _acks1:#_acks1
 
@@ -801,6 +822,9 @@ reverse-engineer:reverse engineer:::リバースエンジニア
 	疑わしい:doubtful
 	主要な:major
 	含める／含めること:inclusion
+	-:feature
+	〜周り:around
+	してもよい:free to find
 
 
 	●未分類
@@ -887,8 +911,12 @@ Chinese:
 
 	空~行l:empty string
 
-	●stream
+	●I/O queue／stream
+入出力:I/O:~
+close:
 streaming::::ストリーム処理
+	~streamしている:streaming
+	~streamしていない:immediate
 可読:readable::読み取れる
 読取れる:readできる::読み取れる
 読取る:readする::読み取る
@@ -900,16 +928,18 @@ streaming::::ストリーム処理
 書込む:writeする::書き込む
 制御器:controller::~
 形式変換:transform::~
-EoS:end-of-stream::stream 終端:ストリーム終端
+EoQ:end-of-queue::queue 終端:キュー終端
 chunk::::チャンク
 enqueue:
 coder:
 一掃-:flush::~
-flush:
+	一掃しない:do not flush
+覗見る:peekする:覗き見る
 lead:::頭部
 trail:::尾部
 連結-:concatenate:~
 sniff:
+不定:indefinite:~
 
 	前後の:leading and trailing
 	~buffer源:bufferSource
@@ -917,9 +947,11 @@ sniff:
 	一掃する~algo:flushAlgorithm
 	形式変換~algo:transformAlgorithm
 	開始~algo:startAlgorithm
+	来て:coming
+	来る:come
+	個数:number
 
 	●一般処理
-no_flush:do not flush:状態維持
 繰返す:繰り返す
 処理待ち:pending::~
 演算対象:operand:~
@@ -942,6 +974,8 @@ no_flush:do not flush:状態維持
 	次のいずれかが生じるまで:whichever comes first
 	~call元:caller
 	%~BOM符号化法:BOMEncoding
+	%入出力~queue:ioQueue
+	%読取った~itemたち:readItems
 
 	●データ型／操作／IDL
 table::::テーブル
@@ -998,7 +1032,7 @@ glyph::::グリフ
 	若干の:slight
 	下位:least significant
 	逆方向:vice versa
-	並び／列:sequence
+	並び／列／連列:sequence
 	直後に続く:follows immediately
 	成立-:true
 	3 種の:three
@@ -1069,7 +1103,6 @@ glyph::::グリフ
 	有無:-
 	無い
 	点で
-	片
 	的
 	異なる
 	有-
@@ -1152,7 +1185,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/encoding/commits
-	<a href="https://encoding.spec.whatwg.org/commit-snapshots/81329ae5c78f573d400895675c792e55128595d6/">Snapshot as of this commit</a>
+	<a href="https://encoding.spec.whatwg.org/commit-snapshots/46711e682e285497d7efc8442c80a07da104b3f0/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/encodings">@encodings</a>
 
 Tests:
@@ -1363,88 +1396,382 @@ In equations, all numbers are integers, addition is represented by "+", subtract
 For logical right shifts operands must have at least twenty-one bits precision.
 </p>
 
+<hr>
+
 <p>
-`~token@
-は、`~byte$や`~scalar値$などの， 1 個の~data片である。
+`入出力~queue@
+（ `I/O queue^en ）は、各`~item$が特定0の型の値（ `~byte$ ／ `~scalar値$ ／ `~cu$ など）をとる`~list$である。
+~item型も含めて指定するときは、 “`入出力~queue$`~byte^tA” 等々と記される†。
+【†この表記規約は、この訳による。】
 ◎
-A token is a piece of data, such as a byte or scalar value.
+An I/O queue is a type of list with items of a particular type (i.e., bytes or scalar values).＼
 </p>
 
 <p>
-`~stream@
-は、有順序`~token$列を表現する。
-`~EoS@
-は、`~stream$にそれ以上 読取れる`~token$は無いことを表す，特別な`~token$である。
+`入出力~queue$は、特別な`~item$として
+`~EoQ@
+（ `end-of-queue^en ）も含み得る
+— それは、当の~queue内には，それより後に`~item$は無いことを徴す。
+【`~EoQ$の型は、形式的に，それが属する`入出力~queue$の~item型と見なされる。】
 ◎
-A stream represents an ordered sequence of tokens. End-of-stream is a special token that signifies no more tokens are in the stream.
+End-of-queue is a special item that can be present in I/O queues of any type and it signifies that there are no more items in the queue.
 </p>
 
-<p class="trans-note">【
-~streamと~token列は（ “静的な” ）~data構造としては同じでも，
- “~stream” には，その~accessが［
-先頭（入力として与えられた場合）／末尾（出力~先の場合）
-］に（ “時系列的に” ）制約されることが含意される。
-】</p>
+<div class="note">
+<p>注記：
+`入出力~queue$は、
+2 つの仕方
+— “~streamしている” ~mode，していない~mode —
+で利用され、順に［
+~networkから来ている~data,
+~memory内に格納された入出力~data
+］を表現する。
+~streamしていない~queue内には、最後の~itemとして【常に】`~EoQ$が在る。
+一方で，~streamしている`入出力~queue$は：
+◎
+There are two ways to use an I/O queue: in immediate mode, to represent I/O data stored in memory, and in streaming mode, to represent data coming in from the network. Immediate queues have end-of-queue as their last item, whereas streaming queues
+</p>
+<ul>
+	<li>
+`~EoQ$は無いこともあり、`~itemを読取る$演算は，
+【何らかの~itemが可用になるまで】阻まれるかもしれない。
+◎
+need not have it, and so their read operation might block.
+</li>
+	<li>
+次の順に演算されるものと期待される
+⇒＃
+空として作成される,
+~networkから~dataが来るに伴い，新たな`~item$が`~push$ioQされる,
+下層の~network~streamが~closeされるとき，`~EoQ$が`~push$ioQされる
+◎
+It is expected that streaming I/O queues will be created empty, and that new items will be pushed to it as data comes in from the network. When the underlying network stream closes, an end-of-queue item is to be pushed into the queue.
+</li>
+	<li>
+そこから何かを読取るとき，阻まれるかもしれないので、`~event~loop$からは利用されず，代わりに`並列的$に利用される。
+◎
+Since reading from a streaming I/O queue might block, streaming I/O queues are not to be used from an event loop. They are to be used in parallel instead.
+</li>
+</ul>
+</div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
-~streamから
-`~tokenを読取る@
-ときは、所与の
-( `~stream$ %~stream )
-に対し，次を走らすモノトスル：
+`入出力~queue$ %入出力~queue から 1 個の
+`~itemを読取る@
+ときは、次を走らす：
 </p>
 <ol>
 	<li>
 ~IF［
-%~stream は空である
+%入出力~queue は`空$である
 ］
 ⇒
-~RET `~EoS$
+次が満たされるまで待機する
+⇒
+%入出力~queue の`~size$ ~GTE 1
 </li>
 	<li>
-%~stream の先頭から 1 個の~tokenを除去する
+%結果 ~LET %入出力~queue[ 0 ]
 </li>
 	<li>
-~RET 前~段で除去した~token
+~IF［
+%結果 ~NEQ `~EoQ$
+］
+⇒
+%入出力~queue から最初の~itemを`除去する$
+</li>
+	<li>
+~RET %結果
 </li>
 </ol>
 
-<!-- this means read is blocking on e.g. networking activity; SimonSapin thinks this is fine, curse him if not -->
 ◎
-When a token is read from a stream, the first token in the stream must be returned and subsequently removed, and end-of-stream must be returned otherwise.
+To read an item from an I/O queue ioQueue, run these steps:
+• If ioQueue is empty, then wait until its size is at least 1.
+• If ioQueue[0] is end-of-queue, then return end-of-queue.
+• Remove ioQueue[0] and return it.
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
-`~stream$に 1 個~以上の`~token$を
-`前付加する@
-ときは、それらの~tokenを，~streamの先頭に, 所与の順序を保ったまま挿入するモノトスル。
-◎
-When one or more tokens are prepended to a stream, those tokens must be inserted, in given order, before the first token in the stream.
+%入出力~queue から %個数 個の`~itemを読取る$ときは、次を走らす：
 </p>
+<ol>
+	<li>
+%読取った~itemたち ~LET 新たな`~list$
+</li>
+	<li>
+%n ~LET 0
+</li>
+	<li>
+<p>
+~WHILE［
+%n ~LT %個数
+］：
+</p>
+		<ol>
+			<li>
+%~item ~LET %入出力~queue から`~itemを読取る$
+</li>
+			<li>
+~IF［
+%~item ~EQ `~EoQ$
+］
+⇒
+~BREAK
+</li>
+			<li>
+%読取った~itemたち に %~item を`付加する$
+</li>
+			<li>
+%n ~INCBY 1
+</li>
+		</ol>
+	</li>
+	<li>
+~RET %読取った~itemたち
+</li>
+</ol>
+◎
+To read a number number of items from ioQueue, run these steps:
+• Let readItems be an empty list.
+•• Perform the following step number times:
+•• Append to readItems the result of reading an item from ioQueue.
+• Remove end-of-queue from readItems.
+• Return readItems.
 </div>
+
+<div class="algo">
+<p>
+`入出力~queueを覗見る@
+ときは、所与の
+( `入出力~queue$ %入出力~queue, 整数 %個数 )
+に対し，次を走らす：
+◎
+To peek a number number of items from an I/O queue ioQueue, run these steps:
+</p>
+<ol>
+	<li>
+次が満たされるまで待機する
+⇒
+［
+%入出力~queue の`~size$ ~GTE %個数
+］~OR［
+`~EoQ$ ~IN %入出力~queue
+］
+◎
+Wait until either ioQueue’s size is equal to or greater than number, or ioQueue contains end-of-queue, whichever comes first.
+</li>
+	<li>
+%接頭辞 ~LET 新たな`~list$
+◎
+Let prefix be an empty list.
+</li>
+	<li>
+<p>
+`範囲$ { 0 〜 %個数 ~MINUS 1 }【！range 1 to number】 を成す
+~EACH( %n )
+に対し：
+◎
+For each n in the range 1 to number, inclusive:
+</p>
+		<ol>
+			<li>
+~IF［
+%入出力~queue[ %n ] ~EQ `~EoQ$
+］
+⇒
+~BREAK
+◎
+If ioQueue[n] is end-of-queue, break.
+</li>
+	<li>
+%接頭辞 に %入出力~queue[ %n ] を`付加する$
+◎
+Otherwise, append ioQueue[n] to prefix.
+</li></ol></li>
+	<li>
+~RET %接頭辞
+◎
+Return prefix.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`入出力~queueに~pushする@
+ときは、所与の
+( `入出力~queue$ %入出力~queue, %~item列 )
+に対し，次を走らす：
+◎
+To push an item item to an I/O queue ioQueue, run these steps:
+</p>
+<ol>
+	<li>
+~Assert：
+%~item列 は 1 個の値または 0 個以上の値からなる連列であって，どの値の型も %入出力~queue の~item型である
+◎
+↑↓</li>
+	<li>
+<p>
+%~item列 を成す
+~EACH( %~item )
+に対し：
+</p>
+		<ol>
+			<li>
+%最後の~index ~LET %入出力~queue の`~size$ ~MINUS 1
+◎
+↓</li>
+			<li>
+<p>
+~IF［
+%入出力~queue[ %最後の~index ] ~EQ `~EoQ$
+］：
+◎
+If the last item in ioQueue is end-of-queue, then:
+</p>
+				<ol>
+					<li>
+~IF［
+%~item ~NEQ `~EoQ$
+］
+⇒
+%入出力~queue の中の %最後の~index の前に %~item を`挿入する$
+◎
+If item is end-of-queue, do nothing.
+◎
+Otherwise, insert item before the last item in ioQueue.
+</li>
+				</ol>
+			</li>
+			<li>
+~ELSE
+⇒
+%入出力~queue に %~item を`付加する$
+◎
+Otherwise, append item to ioQueue.
+◎
+To push a sequence of items to an I/O queue ioQueue is to push each item in the sequence to ioQueue, in the given order.
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`入出力~queueに前付加する@
+ときは、所与の
+( `入出力~queue$ %入出力~queue, %~item列 )
+に対し，次を走らす：
+</p>
+
+<ol>
+	<li>
+~Assert：
+%~item列 は 1 個の値または 0 個以上の値からなる連列であって，どの値も［
+その型は %入出力~queue の~item型であって，`~EoQ$でない
+］
+</li>
+	<li>
+%~item列 を成す
+~EACH( %~item )
+に対し，逆順に
+⇒
+%入出力~queue に %~item を`前付加する$
+</li>
+</ol>
+◎
+To prepend an item other than end-of-queue to an I/O queue, perform the normal list prepend operation. To prepend a sequence of items, insert those items, in the given order, before the first item in the queue.
+</div>
+
 
 <p class="example">
-~token列 "<code>&amp;#128169;</code>" を~stream "<code> hello world</code>" の先頭に挿入した結果は，~stream "<code>&amp;#128169; hello world</code>" になり、次回に読取られる~tokenは <code>&amp;</code> になる。
+~scalar値~itemが成す連列
+"<code>&amp;#128169;</code>"
+を`入出力~queue$`~scalar値^tA
+"<code> hello world</code>"
+の先頭に挿入した結果は，入出力~queue
+"<code>&amp;#128169; hello world</code>"
+になり、次回に読取られる~itemは <code>&amp;</code> になる。
 <!-- 💩 --><!-- #x1F4A9 = 128169 decimal -->
 ◎
-Inserting the sequence of tokens &amp;#128169; in a stream " hello world", results in a stream "&amp;#128169; hello world". The next token to be read would be &amp;.
+Inserting the sequence of scalar value items &amp;#128169; in an I/O queue of scalar values " hello world", results in an I/O queue "&amp;#128169; hello world". The next item to be read would be &amp;.
 </p>
 
-<div class="algorithm">
+<div class="algo">
 <p>
-`~stream$に 1 個~以上の`~token$を
-`~pushする@
-ときは、それらの~tokenを，~streamの末尾に, 所与の順序を保ったまま付加するモノトスル。
+`入出力~queue$ %入出力~queue を［
+`~list$／`文字列$／`~byte列$
+］に
+`変換する@
+ときは、次の結果を返す
+⇒
+%入出力~queue から不定~個数の`~itemを読取る$
 ◎
-When one or more tokens are pushed to a stream, those tokens must be inserted, in given order, after the last token in the stream.
-</p>
+To convert an I/O queue ioQueue into a list, string or byte sequence, return the result of reading an indefinite number of items from ioQueue.＼
 </div>
+
+<div class="algo">
+<p>
+`入出力~queueに変換する@
+ときは、所与の
+( %入力 )
+に対し：
+</p>
+<ol>
+	<li>
+~Assert：
+%入力 は［
+`文字列$（ `DOMString^I ）／`~scalar値~文字列$（ `USVString^I ）／`~byte列$
+］であるか、`~list$であって，それを成すどの~itemも同じ型の値である。
+</li>
+	<li>
+%入出力~queue ~LET ［
+%入力 を成す~item型
+］用の新たな`入出力~queue$
+</li>
+	<li>
+%入力 を成す
+~EACH( %~item )
+に対し
+⇒
+%入出力~queue に %~item を`付加する$
+</li>
+	<li>
+%入出力~queue に`~EoQ$を`付加する$
+</li>
+	<li>
+~RET %入出力~queue
+</li>
+</ol>
+◎
+To convert a list, string or byte sequence input into an I/O queue, return an I/O queue containing the items in input, in order, followed by end-of-queue.
+</div>
+
+<p class="XXX">
+`INFRA$r 標準が型~変換~周りの何らかの基盤を定義するものと期待される。
+<a href="https://github.com/whatwg/infra/issues/319">whatwg/infra 課題 #319</a>
+を見よ。
+◎
+The Infra standard is expected to define some infrastructure around type conversions. See whatwg/infra issue #319. [INFRA]
+</p>
+
+<p class="note">注記：
+`入出力~queue$が，`~queue$ではなく`~list$として定義されているのは、`入出力~queueに前付加する$演算を要するからである。
+しかしながら，この前付加-演算は、この仕様が与える~algoの内部的な詳細であり，他の標準からは利用されない。
+実装は、そのような~algoを代替な仕方で実装してもよい
+— 詳細は、<a href="#implementation-considerations">§ 実装の考慮点</a>に。
+◎
+I/O queues are defined as lists, not queues, because they feature a prepend operation. However, this prepend operation is an internal detail of the algorithms in this specification, and is not to be used by other standards. Implementations are free to find alternative ways to implement such algorithms, as detailed in Implementation considerations.
+</p>
 
 	</section>
 	<section id="_conventions">
-<h2>【この訳に固有の表記規約】</h2>
+<h2>【この訳に特有な表記規約】</h2>
 
 <p>
 この訳の，~algoの記述に利用されている各種記号（コレ, ~LET, ~IF, ~RET, 等々）の意味や定義の詳細は、~SYMBOL_DEF_REFを~~参照されたし。
@@ -1456,16 +1783,15 @@ When one or more tokens are pushed to a stream, those tokens must be inserted, i
 </thead>
 
 <tbody>
-<tr><th style="white-space:nowrap;">~byte列 [ %value1, %value2, … ]
+<tr><th style="white-space:nowrap;">~byte列 [ %n1, %n2, … ]
 <td>
-数値として %value1, %value2 … と同じ値をとる一連の`~byte$からなる, 所与の順序による，新たな`~token$列の~instanceを表す。
+数値として %n1, %n2 … と同じ値をとる一連の`~byte$からなる, 同順の，新たな`~item$列を表す。
 角括弧の中が空
 — “~byte列 [] ” —
-と記されたときは，空な`~token$列を表す。
+と記されたときは，空な`~item$列を表す。
 
-<tr><th style="white-space:nowrap;">~cp [ %value ]
-<td>
-数値として %value と同じ値をとる 1 個の`~cp$からなる，新たな`~token$列の~instanceを表す。
+<tr><th style="white-space:nowrap;">~cp [ %n ]
+<td>数値として %n と同じ値をとる 1 個の`~cp$からなる，新たな`~item$列を表す。
 
 </tbody></table>
 
@@ -1523,19 +1849,21 @@ This specification defines three encodings with the same names as encoding schem
 `~handler@
 が結付けられる。
 `~handler$は、
-( `~stream$, 1 個の`~token$ )
+( `入出力~queue$, 1 個の`~item$ )
 を入力にとり，次のいずれかを返す~algoである
 ⇒＃
 `完遂d@ ／
-空でない`~token$列† ／
+1 個以上の`~item$† ／
 `~error@ — ~optionで`~cp$も伴い得る†† ／
 `継続-@
 ◎
-Each encoding has an associated decoder and most of them have an associated encoder. Each decoder and encoder have a handler algorithm. A handler algorithm takes an input stream and a token, and returns finished, one or more tokens, error optionally with a code point, or continue.
+Each encoding has an associated decoder and most of them have an associated encoder. Each decoder and encoder have a handler algorithm. A handler algorithm takes an input I/O queue and an item, and returns finished, one or more items, error optionally with a code point, or continue.
 </p>
 
 <p class="trans-note">【†
-ほとんどの復号器の~handlerは， 1 個の~cpからなる~token列を返すが、
+符号化器の~handlerは、~byte列を返す。
+】【†
+ほとんどの復号器の~handlerは， 1 個の~cpからなる~item列を返すが、
 `~Big5復号器$の~handlerだけ， 2 個の~cpを返す場合がある。
 】【††
 符号化器の~handlerに限り、常に，~cpも伴う~errorを返す。
@@ -1592,7 +1920,7 @@ An XML processor would set error mode to "fatal". [XML]
 html exists as error mode due to URLs and HTML forms requiring a non-terminating legacy encoder. The "html" error mode causes a sequence to be emitted that cannot be distinguished from legitimate input and can therefore lead to silent data loss. Developers are strongly encouraged to use the UTF-8 encoding to prevent this from happening. [URL] [HTML]
 </p>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `符号化法$の［
 `復号器$ ／ `符号化器$
@@ -1600,13 +1928,13 @@ html exists as error mode due to URLs and HTML forms requiring a non-terminating
 `走らす@
 ときは、所与の
 ⇒＃
-入力`~stream$ %入力,
-出力`~stream$ %出力,
+`入出力~queue$ %入力,
+`入出力~queue$ %出力,
 `~error~mode$ %~mode （省略時は ε ）
 ◎終
 に対し，次を走らす：
 ◎
-To run an encoding’s decoder or encoder encoderDecoder with input stream input, output stream output, and optional error mode mode, run these steps:
+To run an encoding’s decoder or encoder encoderDecoder with input I/O queue input, output I/O queue output, and optional error mode mode, run these steps:
 </p>
 <ol>
 	<li>
@@ -1634,7 +1962,9 @@ While true:
 </p>
 		<ol>
 			<li>
-%結果 ~LET  `~tokenを処理する$( `~tokenを読取る$( %入力 ), %~coder~instance, %入力, %出力, %~mode )
+%結果 ~LET `~itemを処理する$( 次の結果, %~coder~instance, %入力, %出力, %~mode )
+⇒
+%入力 から`~itemを読取る$
 ◎
 Let result be the result of processing the result of reading from input for encoderDecoderInstance, input, output, and mode.
 </li>
@@ -1654,20 +1984,20 @@ Otherwise, do nothing.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
-`~tokenを処理する@
+`~itemを処理する@
 ときは、所与の
 ⇒＃
-`~token$ %~token,
+`~item$ %~item,
 `符号化法$の［ `符号化器$／`復号器$ ］の~instance %~coder~instance,
-入力`~stream$ %入力,
-出力`~stream$ %出力,
+`入出力~queue$ %入力,
+`入出力~queue$ %出力,
 `~error~mode$ %~mode（省略時は ε ）
 ◎終
 に対し，次を走らす：
 ◎
-To process a token token for an encoding’s encoder or decoder instance encoderDecoderInstance, stream input, output stream output, and optional error mode mode, run these steps:
+To process an item item for an encoding’s encoder or decoder instance encoderDecoderInstance, I/O queue input, output I/O queue output, and optional error mode mode, run these steps:
 </p>
 <ol>
 	<li>
@@ -1685,43 +2015,59 @@ If mode is not given, then set it to "replacement" if encoderDecoderInstance is 
 	<li>
 ~Assert：
 %~coder~instance は`符号化器$の~instanceであるならば、
-%~token は`~surrogate$ではない。
+%~item は`~surrogate$ではない。
 ◎
-Assert: if encoderDecoderInstance is an encoder instance, token is not a surrogate.
+Assert: if encoderDecoderInstance is an encoder instance, item is not a surrogate.
 </li>
 	<li>
 %結果 ~LET 次を与える下で， %~coder~instance の`~handler$を走らせた結果
 ⇒
-( %入力, %~token )
+( %入力, %~item )
 ◎
-Let result be the result of running encoderDecoderInstance’s handler on input and token.
+Let result be the result of running encoderDecoderInstance’s handler on input and item.
 </li>
 	<li>
 ~IF［
-%結果 ~IN { `継続-$, `完遂d$ }
+%結果 ~EQ `継続-$
 ］
 ⇒
 ~RET %結果
 ◎
-If result is continue or finished, return result.
+If result is continue, return result.
+</li>
+	<li>
+~IF［
+%結果 ~EQ `完遂d$
+］
+⇒＃
+`入出力~queueに~pushする$( %出力, `~EoQ$ )；
+~RET %結果
+◎
+Otherwise, if result is finished:
+• Push end-of-queue to output.
+• Return result.
 </li>
 	<li>
 <p>
 ~IF［
-%結果 は 1 個~以上の`~token$である
+%結果 は 1 個~以上の`~item$からなる
 ］：
 ◎
-Otherwise, if result is one or more tokens:
+Otherwise, if result is one or more items:
 </p>
 		<ol>
 			<li>
-%~coder~instance は`復号器$の~instanceであるならば、
+~IF［
+%~coder~instance は`復号器$の~instanceである
+］
+⇒
+~Assert：
 %結果 は`~surrogate$を包含しない。
 ◎
 Assert: if encoderDecoderInstance is a decoder instance, result does not contain any surrogates.
 </li>
 			<li>
-%出力 に %結果 を`~pushする$；
+`入出力~queueに~pushする$( %出力, %結果 )；
 ◎
 Push result to output.
 </li>
@@ -1733,7 +2079,7 @@ Push result to output.
 	</li>
 	<li>
 ~Assert：
-%結果 は`~error$である
+%結果 は`~error$である。
 ◎
 Otherwise, if result is error,＼
 </li>
@@ -1746,14 +2092,14 @@ switch on mode and run the associated steps:
 		<dl class="switch">
 			<dt>`replacement^l</dt>
 			<dd>
-%出力 に `FFFD^U を`~pushする$
+`入出力~queueに~pushする$( %出力, `FFFD^U )
 ◎
 Push U+FFFD to output.
 </dd>
 
 			<dt>`html^l</dt>
 			<dd>
-%入力 に次に与える~cp列を`前付加する$
+`入出力~queueに前付加する$( %入力, 次に与える~cp列 )
 ⇒＃
 `0026^U,
 `0023^U,
@@ -1822,7 +2168,7 @@ Authors must use the UTF-8 encoding and must use the ASCII case-insensitive "utf
 New protocols and formats, as well as existing formats deployed in new contexts, must use the UTF-8 encoding exclusively. If these protocols and formats need to expose the encoding’s name or label, they must expose it as "utf-8".
 </p>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~labelから符号化法を取得する@
 ときは、所与の
@@ -1860,14 +2206,16 @@ otherwise return failure.
 ］は、
 <a href="https://www.unicode.org/reports/tr22/tr22-8.html#Charset_Alias_Matching">Unicode Technical Standard #22 § 1.4</a>
 によるものより基本的かつ制約的である
-— 配備-済みの内容と互換になることが必要とされるので。
+— 配備-済みな内容と互換になることが必要とされるので。
 ◎
 This is a more basic and restrictive algorithm of mapping labels to encodings than section 1.4 of Unicode Technical Standard #22 prescribes, as that is necessary to be compatible with deployed content.
 </p>
 
 <table id="encoding-labels">
-<thead><tr><th>`名前$◎ Name
-<th>`~label$◎ Labels
+<thead><tr><th>`名前$◎
+Name
+<th>`~label$◎
+Labels
 </thead>
 
 <tbody><tr><th colspan="2" scope="rowgroup">
@@ -2216,7 +2564,7 @@ The set of supported encodings is primarily based on the intersection of the set
 		<section id="output-encodings">
 <h3 title="Output encodings">4.3 出力~符号化法</h3>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `符号化法から出力~符号化法を取得する@
 ときは、所与の
@@ -2276,7 +2624,7 @@ Most legacy encodings make use of an index. An index is an ordered list of entri
 An efficient implementation likely has two indexes per encoding. One optimized for its decoder and one for its encoder.
 </p>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `索引$
 【の~dataを供する下記の資源】
@@ -2477,7 +2825,7 @@ This matches the KS X 1001 standard and the Unified Hangul Code, more commonly k
 <td>`gb18030$idx
 <td>
 これは、各~cpが 2 ~byteに符号化される GB18030-2005 標準に合致する
-— ただし，配備-済みの内容と互換になるよう、 `A3^X `A0^X は `3000^U に対応付けられる。
+— ただし，配備-済みな内容と互換になるよう、 `A3^X `A0^X は `3000^U に対応付けられる。
 この索引~全体で、~Unicodeの~CJK統合漢字（ `CJK Unified Ideographs^en ）~blockを覆う。
 その~block内の~entryのうち，視覚-化における（最初の） `3000^U より上または左にあるものは、~Unicode順に並ぶ。
 ◎
@@ -2534,7 +2882,7 @@ This maps halfwidth to fullwidth katakana as per Unicode Normalization Form KC, 
 
 </tbody></table>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 %~pointer が指す
 `索引~gb18030範囲集~cp@
@@ -2582,7 +2930,7 @@ Return a code point whose value is code point offset + pointer − offset.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 %~cp を指す
 `索引~gb18030範囲集~pointer@
@@ -2619,7 +2967,7 @@ Return a pointer whose value is pointer offset + code point − offset.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 %~cp を指す
 `索引~Shift_JIS~pointer@
@@ -2651,7 +2999,7 @@ Return the index pointer for code point in index.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 %~cp を指す
 `索引~Big5~pointer@
@@ -2766,29 +3114,29 @@ The get an encoding algorithm is to be used to turn a label into an encoding.
 <p>
 標準は、［
 `符号化法を利用して符号化する$／`~UTF-8符号化する$
-］~algoに渡す~streamが，実質的には`~scalar値$の~streamである
+］~algoに渡す`入出力~queue$が，実質的には`~scalar値$が成す入出力~queueである
 — すなわち、`~surrogate$を包含しない —
 ことを確保すること。
 ◎
-Standards are to ensure that the streams they pass to the encode and UTF-8 encode algorithms are effectively scalar value streams, i.e., they contain no surrogates.
+Standards are to ensure that the I/O queues they pass to the encode and UTF-8 encode algorithms are effectively I/O queues of scalar values, i.e., they contain no surrogates.
 </p>
 
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~Unicodeに復号する@
 ときは、所与の
-( ~byte~stream %~stream, ~fallback符号化法 %符号化法 )
+( `入出力~queue$`~byte^tA %入出力~queue, ~fallback符号化法 %符号化法, `入出力~queue$`~scalar値^tA %出力（省略時は « » ）)
 に対し，次を走らす：
 ◎
-To decode a byte stream stream using fallback encoding encoding, run these steps:
+To decode an I/O queue of bytes ioQueue given a fallback encoding encoding and an optional I/O queue of scalar values output (default « »), run these steps: 
 </p>
 <ol>
 	<li>
-%~BOM符号化法 ~LET `~BOMを~sniffする$( %~stream )
+%~BOM符号化法 ~LET `~BOMを~sniffする$( %入出力~queue )
 ◎
-Let BOMEncoding be the result of BOM sniffing stream.
+Let BOMEncoding be the result of BOM sniffing ioQueue.
 </li>
 	<li>
 <p>
@@ -2814,14 +3162,14 @@ Set encoding to BOMEncoding.
 			<li>
 次を %N 回~繰返す
 ⇒
-`~tokenを読取る$( %~stream )
+%入出力~queue から`~itemを読取る$
 ◎
-Read three bytes from stream, if BOMEncoding is UTF-8; otherwise read two bytes. (Do nothing with those bytes.)
+Read three bytes from ioQueue, if BOMEncoding is UTF-8; otherwise read two bytes. (Do nothing with those bytes.)
 </li>
 		</ol>
 
 <p class="note">注記：
-配備-済みの内容との互換性を得るため、~BOMは他より~~優先される。
+配備-済みな内容との互換性を得るため、~BOMは他より~~優先される。
 HTTP が利用される文脈においては、これは，
 `<code class="header">Content-Type</code>`
 ~headerの意味論に対する違反である。
@@ -2830,14 +3178,9 @@ For compatibility with deployed content, the byte order mark is more authoritati
 </p>
 	</li>
 	<li>
-%出力 ~LET 新たな~scalar値`~stream$
+%符号化法 の`復号器$を`走らす$( %入出力~queue, %出力 )
 ◎
-Let output be a scalar value stream.
-</li>
-	<li>
-%符号化法 の`復号器$を`走らす$( %~stream, %出力 )
-◎
-Run encoding’s decoder with stream and output.
+Run encoding’s decoder with ioQueue and output.
 </li>
 	<li>
 ~RET %出力
@@ -2847,61 +3190,35 @@ Return output.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~UTF-8復号する@
 ときは、所与の
-( ~byte~stream %~stream )
+( `入出力~queue$`~byte^tA %入出力~queue, `入出力~queue$`~scalar値^tA %出力（省略時は « » ）) )
 に対し，次を走らす：
 ◎
-To UTF-8 decode a byte stream stream, run these steps:
+To UTF-8 decode an I/O queue of bytes ioQueue given an optional I/O queue of scalar values output (default « »), run these steps: 
 </p>
 <ol>
 	<li>
-%buffer ~LET ~byte列 []
+%~buffer ~LET `入出力~queueを覗見る$( %入出力~queue, 3 )
 ◎
-Let buffer be an empty byte sequence.
-</li>
-	<li>
-<p>
-次を 3 回まで繰返す：
-</p>
-		<ol>
-			<li>
-%~byte ~LET `~tokenを読取る$( %~stream )
-</li>
-			<li>
-~IF［
-%~byte ~EQ `~EoS$
-］
-⇒
-~BREAK
-</li>
-			<li>
-%buffer に %~byte を付加する
-</li>
-		</ol>
+Let buffer be the result of reading three bytes from ioQueue.
 ◎
-Read three bytes from stream into buffer.
+If buffer does not match 0xEF 0xBB 0xBF, prepend buffer to ioQueue.
 </li>
 	<li>
 ~IF［
-%buffer ~NEQ ~byte列 [ `EF^X, `BB^X, `BF^X ]
+( %~buffer[0], %~buffer[1], %~buffer[2] ) ~EQ ( `EF^X, `BB^X, `BF^X )
 ］
 ⇒
-%~stream に %buffer を`前付加する$
+%入出力~queue から 3 個の`~itemを読取る$
 ◎
-If buffer does not match 0xEF 0xBB 0xBF, prepend buffer to stream.
-</li>
+↑</li>
 	<li>
-%出力 ~LET 新たな~scalar値`~stream$
+`UTF-8$n の`復号器$を`走らす$( %入出力~queue, %出力 )
 ◎
-Let output be a scalar value stream.
-</li>
-	<li>
-`UTF-8$n の`復号器$を`走らす$( %~stream, %出力 )
-◎
-Run UTF-8’s decoder with stream and output.
+Run UTF-8’s decoder with ioQueue and output.
 </li>
 	<li>
 ~RET %出力
@@ -2911,25 +3228,20 @@ Return output.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~BOMはそのままに~UTF-8復号する@
 ときは、所与の
-( ~byte~stream %~stream )
+( `入出力~queue$`~byte^tA %入出力~queue, `入出力~queue$`~scalar値^tA %出力（省略時は « » ）)
 に対し，次を走らす：
 ◎
-To UTF-8 decode without BOM a byte stream stream, run these steps:
+To UTF-8 decode without BOM an I/O queue of bytes ioQueue given an optional I/O queue of scalar values output (default « »), run these steps:
 </p>
 <ol>
 	<li>
-%出力 ~LET 新たな~scalar値`~stream$
+`UTF-8$n の`復号器$を`走らす$( %入出力~queue, %出力 )
 ◎
-Let output be a scalar value stream.
-</li>
-	<li>
-`UTF-8$n の`復号器$を`走らす$( %~stream, %出力 )
-◎
-Run UTF-8’s decoder with stream and output.
+Run UTF-8’s decoder with ioQueue and output.
 </li>
 	<li>
 ~RET %出力
@@ -2939,25 +3251,20 @@ Return output.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~BOMも失敗-もそのままに~UTF-8復号する@
 ときは、所与の
-( ~byte~stream %~stream )
+( `入出力~queue$`~byte^tA %入出力~queue, `入出力~queue$`~scalar値^tA %出力（省略時は « » ）)
 に対し，次を走らす：
 ◎
-To UTF-8 decode without BOM or fail a byte stream stream, run these steps:
+To UTF-8 decode without BOM or fail an I/O queue of bytes ioQueue given an optional I/O queue of scalar values output (default « »), run these steps:
 </p>
 <ol>
 	<li>
-%出力 ~LET 新たな~scalar値`~stream$
+`UTF-8$n の`復号器$を`走らす$( %入出力~queue, %出力, `fatal^l )
 ◎
-Let output be a scalar value stream.
-</li>
-	<li>
-`UTF-8$n の`復号器$を`走らす$( %~stream, %出力, `fatal^l )
-◎
-Let potentialError be the result of running UTF-8’s decoder with stream, output, and "fatal".
+Let potentialError be the result of running UTF-8’s decoder with ioQueue, output, and "fatal".
 </li>
 	<li>
 ~IF［
@@ -2976,15 +3283,17 @@ Return output.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `符号化法を利用して符号化する@
 ときは、所与の
-( 符号化法 %符号化法,
-~scalar値~stream %~stream
-) に対し，次を走らす：
+(
+`入出力~queue$`~scalar値^tA %入出力~queue,
+符号化法 %符号化法,
+`入出力~queue$`~byte^tA【！~scalar値】 %出力（省略時は « » ）)
+に対し，次を走らす：
 ◎
-To encode a scalar value stream stream using encoding encoding, run these steps:
+To encode an I/O queue of scalar values ioQueue given an encoding encoding and an optional I/O queue of scalar values output (default « »), run these steps: 
 </p>
 <ol>
 	<li>
@@ -2992,17 +3301,12 @@ To encode a scalar value stream stream using encoding encoding, run these steps:
 %符号化法 ~NIN
 { `replacement$n, `UTF-16BE$n, `UTF-16LE$n }
 ◎
-Assert: encoding is not replacement, UTF-16BE or UTF-16LE.
+Assert: encoding is not replacement, UTF-16BE, or UTF-16LE.
 </li>
 	<li>
-%出力 ~LET 新たな~byte`~stream$
+ %符号化法 の`符号化器$を`走らす$( %入出力~queue, %出力, `html^l )
 ◎
-Let output be a byte stream.
-</li>
-	<li>
- %符号化法 の`符号化器$を`走らす$( %~stream, %出力, `html^l )
-◎
-Run encoding’s encoder with stream, output, and "html".
+Run encoding’s encoder with ioQueue, output, and "html".
 </li>
 	<li>
 ~RET %出力
@@ -3021,39 +3325,37 @@ This is mostly a legacy hook for URLs and HTML forms. Layering UTF-8 encode on t
 </p>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~UTF-8符号化する@
 ときは、所与の
-( ~scalar値~stream %~stream )
+( `入出力~queue$`~scalar値^tA %入出力~queue, `入出力~queue$`~byte^tA【！~scalar値】 %出力（省略時は « » ）)
 に対し，次を走らす
 ⇒
-~RET `符号化法を利用して符号化する$( `UTF-8$n, %~stream )
+~RET `符号化法を利用して符号化する$( %入出力~queue, `UTF-8$n, %出力 )
 ◎
-To UTF-8 encode a scalar value stream stream, return the result of encoding stream using encoding UTF-8.
+To UTF-8 encode an I/O queue of scalar values ioQueue given an optional I/O queue of scalar values output (default « »), return the result of encoding ioQueue with encoding UTF-8 and output.
 </p>
 </div>
 
 <hr>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~BOMを~sniffする@
 ときは、所与の
-( ~byte~stream %~stream )
+( `入出力~queue$`~byte^tA %入出力~queue )
 に対し，次を走らす：
 ◎
-To BOM sniff a byte stream stream, run these steps:
+To BOM sniff an I/O queue of bytes ioQueue, run these steps:
 </p>
-
 <ol>
 	<li>
-次のいずれかが生じるまで待機する
-⇒＃
-%~stream 内に 3 個の~byteが可用になる／
-%~stream の`~EoS$に達する
+%~BOM ~LET 次の結果を~byte列に`変換する$
+⇒
+`入出力~queueを覗見る$( %入出力~queue, 3 )
 ◎
-Wait until stream has three bytes available or the end-of-stream has been reached, whichever comes first.
+Let BOM be the result of peeking 3 bytes from ioQueue, converted to a byte sequence.
 </li>
 	<li>
 <p>
@@ -3062,24 +3364,21 @@ Wait until stream has three bytes available or the end-of-stream has been reache
 に対し，挙げられた順に
 ⇒
 ~IF［
-%~stream は %行 の 1 列目に与える~byte列`から開始して$byteいる（この~byte列は消費しないこと）
+%~BOM は %行 の 1 列目に与える~byte列`から開始して$byteいる
 ］
 ⇒
 ~RET %行 の 2 列目に与える`符号化法$
 ◎
-For each of the rows in the table below, starting with the first one and going down, if stream starts with the bytes given in the first column, return the encoding given in the cell in the second column of that row. (Do not consume those bytes.)
+For each of the rows in the table below, starting with the first one and going down, if BOM starts with the bytes given in the first column, then return the encoding given in the cell in the second column of that row. Otherwise, return null.
 </p>
 
-<table><thead><tr><th>
-~BOM
-◎ Byte order mark
-<th>
-符号化法
-◎
-Encoding
-</thead>
+<div>
+<table><thead><tr>
+<th>~BOM
+<th>符号化法
+</thead><tbody>
 
-<tbody><tr><td>`EF^X `BB^X `BF^X
+<tr><td>`EF^X `BB^X `BF^X
 <td>`UTF-8$n
 
 <tr><td>`FE^X `FF^X
@@ -3090,12 +3389,18 @@ Encoding
 
 </tbody></table>
 
+◎
+Byte order mark｜Encoding
+0xEF 0xBB 0xBF｜UTF-8
+0xFE 0xFF｜UTF-16BE
+0xFF 0xFE｜UTF-16LE
+</div>
+
 	</li>
 	<li>
 ~RET ~NULL
 ◎
-Return null.
-</li>
+↑</li>
 </ol>
 
 <p class="note">注記：
@@ -3257,14 +3562,14 @@ A decoder.
 】</dd>
 
 	<dt>
-`~stream@dec
+`入出力~queue@dec
 ◎
-stream
+I/O queue
 </dt>
 	<dd>
-`~stream$。
+`入出力~queue$`~byte^tA。
 ◎
-A stream.
+An I/O queue of bytes.
 </dd>
 
 	<dt>
@@ -3300,18 +3605,18 @@ error mode
 `~error~mode$
 — 初期~時は `replacement^l とする。
 ◎
-An error mode, initially "replacement"
+An error mode, initially "replacement".
 </dd>
 </dl>
 
-<div class="algorithm">
+<div class="algo">
 <p>
-`~streamを直列化する@
+`入出力~queueを直列化する@
 ~algoは、所与の
-( `TextDecoderCommon$I %復号器, `~stream$ %~stream )
+( `TextDecoderCommon$I %復号器, `入出力~queue$`~scalar値^tA %入出力~queue )
 に対し，次を走らす：
 ◎
-The serialize stream algorithm, given a TextDecoderCommon decoder and a stream stream, runs these steps:
+The serialize I/O queue algorithm, given a TextDecoderCommon decoder and an I/O queue of scalar values ioQueue, runs these steps:
 </p>
 <ol>
 	<li>
@@ -3327,18 +3632,18 @@ While true:
 </p>
 		<ol>
 			<li>
-%~token ~LET `~tokenを読取る$( %~stream )
+%~item ~LET %入出力~queue から`~itemを読取る$
 ◎
-Let token be the result of reading from stream.
+Let item be the result of reading from ioQueue.
 </li>
 			<li>
 ~IF［
-%~token ~NEQ `~EoS$
+%~item ~NEQ `~EoQ$
 ］
 ⇒
 ~RET %出力
 ◎
-If token is end-of-stream, then return output.
+If item is end-of-queue, then return output.
 </li>
 			<li>
 <p>
@@ -3360,19 +3665,19 @@ Set decoder’s BOM seen to true.
 </li>
 					<li>
 ~IF［
-%~token ~EQ `FEFF^U
+%~item ~EQ `FEFF^U
 ］
 ⇒
 ~CONTINUE
 ◎
-If token is U+FEFF, then continue.
+If item is U+FEFF, then continue.
 </li>
 				</ol>
 			</li>
 			<li>
-%出力 に %~token を付加する
+%出力 に %~item を付加する
 ◎
-Append token to output.
+Append item to output.
 </li>
 		</ol>
 	</li>
@@ -3454,8 +3759,8 @@ interface `TextDecoder@I {
 】</p>
 
 <p>
-各 `TextDecoder$I ~objには、真偽値
-`~no_flush@dec
+各 `TextDecoder$I ~objには、真偽値をとる
+`一掃しない@dec
 が結付けられ，初期~時は ~F をとるとする。
 ◎
 A TextDecoder object has an associated do not flush, which is a boolean, initially false.
@@ -3503,12 +3808,12 @@ Returns the value of ignore BOM.
 	<dt>%decoder . `decode([input [, options]])$m</dt>
 	<dd>
 %input を `符号化法$decの`復号器$にかけた結果を返す。
-~streamを断片化して処理するときは、
+%input を断片化して処理するときは、
 %options の `stream$mb ~memberを ~T にした下で，この~method 0 回~以上~呼出してから， %options を省略して（または その `stream$mb ~memberを ~F にして）
 1 回だけ呼出すことで行える。
 後者の呼出nに %input もないならば、両~引数とも省略するのが最も簡明になる。
 ◎
-Returns the result of running encoding’s decoder. The method can be invoked zero or more times with options’s stream set to true, and then once without options’s stream (or set to false), to process a fragmented stream. If the invocation without options’s stream (or set to false) has no input, it’s clearest to omit both arguments.
+Returns the result of running encoding’s decoder. The method can be invoked zero or more times with options’s stream set to true, and then once without options’s stream (or set to false), to process a fragmented input. If the invocation without options’s stream (or set to false) has no input, it’s clearest to omit both arguments.
 </dd>
 	<dd class="example">
 <pre class="lang-js">
@@ -3516,7 +3821,7 @@ var %string = "", %decoder = new TextDecoder(%encoding), %buffer;
 while(%buffer = next_chunk()) {
   %string += %decoder.decode(%buffer, {stream:true});
 }
-%string += %decoder.decode(); // ~EoS
+%string += %decoder.decode(); // ~EoQ
 </pre>
 
 	</dd>
@@ -3583,17 +3888,17 @@ The decode(input, options) method steps are:
 <ol>
 	<li>
 ~IF［
-コレの`~no_flush$dec ~EQ ~F
+コレの`一掃しない$dec ~EQ ~F
 ］
 ⇒＃
 コレの`復号器$dec ~SET コレの`符号化法$dec用の新たな`復号器$；
-コレの`~stream$dec ~SET 新たな`~stream$；
+コレの`入出力~queue$dec ~SET `入出力~queue$`~byte^tA « `~EoQ$ »；
 コレの`~BOMseen$dec ~SET ~F
 ◎
-If this’s do not flush is false, then set this’s decoder to a new decoder for this’s encoding, this’s stream to a new stream, and this’s BOM seen to false.
+If this’s do not flush is false, then set this’s decoder to a new decoder for this’s encoding, this’s I/O queue to the I/O queue of bytes « end-of-queue », and this’s BOM seen to false.
 </li>
 	<li>
-コレの`~no_flush$dec ~SET %options[ "`stream$mb" ]
+コレの`一掃しない$dec ~SET %options[ "`stream$mb" ]
 ◎
 Set this’s do not flush to options["stream"].
 </li>
@@ -3603,9 +3908,9 @@ Set this’s do not flush to options["stream"].
 %input ~NEQ ε
 ］
 ⇒
-コレの`~stream$decに %input の<a href="~WEBIDL#dfn-get-buffer-source-copy">複製</a>を`~pushする$
+`入出力~queueに~pushする$( コレの`入出力~queue$dec, %input の<a href="~WEBIDL#dfn-get-buffer-source-copy">複製</a> )
 ◎
-If input is given, then push a copy of input to this’s stream.
+If input is given, then push a copy of input to this’s I/O queue.
 </p>
 
 <p class="note">注記：
@@ -3626,9 +3931,9 @@ The memory exposed by SharedArrayBuffer objects does not adhere to data race fre
 </p>
 	</li>
 	<li>
-%出力 ~LET 新たな`~stream$
+%出力 ~LET `入出力~queue$`~scalar値^tA « `~EoQ$ »
 ◎
-Let output be a new stream.
+Let output be the I/O queue of scalar values « end-of-queue ».
 </li>
 	<li>
 <p>
@@ -3638,47 +3943,47 @@ While true:
 </p>
 		<ol>
 			<li>
-%~token ~LET `~tokenを読取る$( コレの`~stream$dec )
+%~item ~LET コレの`入出力~queue$decから`~itemを読取る$
 ◎
-Let token be the result of reading from this’s stream.
+Let item be the result of reading from this’s I/O queue.
 </li>
 			<li>
 <p>
 ~IF［
-%~token ~EQ `~EoS$
+%~item ~EQ `~EoQ$
 ］~AND［
-コレの`~no_flush$dec ~EQ ~T
+コレの`一掃しない$dec ~EQ ~T
 ］
 ⇒
-~RET `~streamを直列化する$( コレ, %出力 )
+~RET `入出力~queueを直列化する$( コレ, %出力 )
 ◎
-If token is end-of-stream and this’s do not flush is true, then return the result of running serialize stream with this and output.
+If item is end-of-queue and this’s do not flush is true, then return the result of running serialize I/O queue with this and output.
 </p>
 
 <p class="note">注記：
 ~streamingでは、［
-コレの`~no_flush$dec ~EQ ~T
-］のとき，ここで`~EoS$を取扱うことなく，それを ~F にしない仕方で働く。
+コレの`一掃しない$dec ~EQ ~T
+］のとき，ここで`~EoQ$を取扱うことなく，それを ~F にしない仕方で働く。
 この仕方により，コレの`復号器$decは、後続の呼出nにおいて，この~algoの最初の段で一新されることなく，その状態は保全される。
 ◎
-The way streaming works is to not handle end-of-stream here when this’s do not flush is true and to not set it to false. That way in a subsequent invocation this’s decoder is not set anew in the first step of the algorithm and its state is preserved.
+The way streaming works is to not handle end-of-queue here when this’s do not flush is true and to not set it to false. That way in a subsequent invocation this’s decoder is not set anew in the first step of the algorithm and its state is preserved.
 </p>
 			</li>
 			<li>
-%結果 ~LET `~tokenを処理する$( %~token, コレの`復号器$dec, コレの`~stream$dec, %出力, コレの`~error~mode$dec )
+%結果 ~LET `~itemを処理する$( %~item, コレの`復号器$dec, コレの`入出力~queue$dec, %出力, コレの`~error~mode$dec )
 ◎
 Otherwise:
 ◎
-Let result be the result of processing token for this’s decoder, this’s stream, output, and this’s error mode.
+Let result be the result of processing item for this’s decoder, this’s I/O queue, output, and this’s error mode.
 </li>
 			<li>
 ~IF［
 %結果 ~EQ `完遂d$
 ］
 ⇒
-~RET `~streamを直列化する$( コレ, %出力 )
+~RET `入出力~queueを直列化する$( コレ, %出力 )
 ◎
-If result is finished, then return the result of running serialize stream with this and output.
+If result is finished, then return the result of running serialize I/O queue with this and output.
 </li>
 			<li>
 ~IF［
@@ -3800,14 +4105,14 @@ The encode(input) method steps are:
 </p>
 <ol>
 	<li>
-%入力 ~LET %input を`~stream$に変換した結果
+%入力 ~LET `入出力~queueに変換する$( %input )
 ◎
-Convert input to a stream.
+Convert input to an I/O queue of scalar values.
 </li>
 	<li>
-%出力 ~LET 新たな`~stream$
+%出力 ~LET `入出力~queue$`~byte^tA « `~EoQ$ »
 ◎
-Let output be a new stream.
+Let output be the I/O queue of bytes « end-of-queue ».
 </li>
 	<li>
 <p>
@@ -3817,14 +4122,14 @@ While true:
 </p>
 		<ol>
 			<li>
-%~token ~LET `~tokenを読取る$( %入力 )
+%~item ~LET %入力 から`~itemを読取る$
 ◎
-Let token be the result of reading from input.
+Let item be the result of reading from input.
 </li>
 			<li>
-%結果 ~LET `~tokenを処理する$( %~token, `~UTF-8符号化器$, %入力, %出力 )
+%結果 ~LET `~itemを処理する$( %~item, `~UTF-8符号化器$, %入力, %出力 )
 ◎
-Let result be the result of processing token for the UTF-8 encoder, input, output.
+Let result be the result of processing item for the UTF-8 encoder, input, output.
 </li>
 			<li>
 <p>
@@ -3845,10 +4150,12 @@ The UTF-8 encoder cannot return error.
 %結果 ~EQ `完遂d$
 ］
 ⇒
-~RET ［［
-%出力 を~byte列に変換した結果
-］を包含する `ArrayBuffer$I
-］を包装する，新たな `Uint8Array$I ~obj
+~RET 
+次を包装する，新たな `Uint8Array$I ~obj
+⇒
+次の結果を包含する `ArrayBuffer$I
+⇒
+%出力 を~byte列に`変換する$
 ◎
 If result is finished, convert output into a byte sequence, and then return a Uint8Array object wrapping an ArrayBuffer containing output.
 </li>
@@ -3862,7 +4169,7 @@ If result is finished, convert output into a byte sequence, and then return a Ui
 `encodeInto(source, destination)@m
 ~method~手続きは：
 ◎
-The encodeInto(source, destination) method, when invoked, must run these steps:
+The encodeInto(source, destination) method steps are:
 </p>
 <ol>
 	<li>
@@ -3886,9 +4193,9 @@ Let destinationBytes be the result of getting a reference to the bytes held by d
 ↓</li>
 	<li>
 <p>
-%利用されない ~LET 新たな`~stream$
+%利用されない~queue ~LET `入出力~queue$`~scalar値^tA « `~EoQ$ »
 ◎
-Let unused be a new stream.
+Let unused be the I/O queue of scalar values « end-of-queue ».
 </p>
 
 <p class="note">注記：
@@ -3899,9 +4206,9 @@ The handler algorithm invoked below requires this argument, but it is not used b
 </p>
 	</li>
 	<li>
-%source ~SET %source を`~stream$に変換した結果
+%source ~SET `入出力~queueに変換する$( %source )
 ◎
-Convert source to a stream.
+Convert source to an I/O queue of scalar values.
 </li>
 	<li>
 <p>
@@ -3911,16 +4218,16 @@ While true:
 </p>
 		<ol>
 			<li>
-%~token ~LET `~tokenを読取る$( %source )
+%~item ~LET %source から`~itemを読取る$
 ◎
-Let token be the result of reading from source.
+Let item be the result of reading from source.
 </li>
 			<li>
 %結果 ~LET 次を与える下で，`~UTF-8符号化器$の`~handler$を走らせた結果
 ⇒
-( %利用されない, %~token )
+( %利用されない~queue, %~item )
 ◎
-Let result be the result of running the UTF-8 encoder’s handler on unused and token.
+Let result be the result of running the UTF-8 encoder’s handler on unused and item.
 </li>
 			<li>
 ~IF［
@@ -3944,11 +4251,11 @@ If destinationBytes’s length − written is greater than or equal to the numbe
 </li>
 			<li>
 %read ~INCBY ［
-%~token ~LTE `FFFF^U ならば 1 ／
+%~item ~LTE `FFFF^U ならば 1 ／
 ~ELSE_ 2
 ］
 ◎
-• If token is greater than U+FFFF, then increment read by 2.
+• If item is greater than U+FFFF, then increment read by 2.
 • Otherwise, increment read by 1.
 </li>
 			<li>
@@ -4069,7 +4376,7 @@ The writable getter steps are to return this’s transform.[[writable]].
 interface `TextDecoderStream@I {
   `TextDecoderStream$mc(
     optional `DOMString$ %label = "utf-8",
-    optional `TextDecoderOptions$I %options
+    optional `TextDecoderOptions$I %options = {}
   );
 };
 `TextDecoderStream$I includes `TextDecoderCommon$I;
@@ -4187,8 +4494,6 @@ If encoding is failure or replacement, then throw a RangeError.
 コレの`符号化法$dec ~SET %符号化法
 ◎
 Set this’s encoding to encoding.
-
-Set dec’s encoding to encoding.
 </li>
 	<li>
 ~IF［
@@ -4210,9 +4515,9 @@ set this’s ignore BOM to options["ignoreBOM"].
 Set this’s decoder to a new decoder for this’s encoding,＼
 </li>
 	<li>
-コレの`~stream$dec ~SET 新たな`~stream$
+コレの`入出力~queue$dec ~SET 新たな`入出力~queue$`~byte^tA
 ◎
-and set this’s stream to a new stream.
+and set this’s I/O queue to a new I/O queue.
 </li>
 	<li>
 %開始~algo ~LET 引数をとらず，何も返さない~algo
@@ -4246,7 +4551,7 @@ Set this’s transform to transform.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~chunkを復号して~enqueueする@
 ~algoは、所与の
@@ -4269,7 +4574,7 @@ Let bufferSource be the result of converting chunk to an [AllowShared] BufferSou
 </li>
 	<li>
 <p>
-%復号器 の`~stream$decに次の結果を`~pushする$
+`入出力~queueに~pushする$( %復号器 の`入出力~queue$dec, 次の結果 )
 ⇒
 `複製を取得する$( %~buffer源 )
 ⇒
@@ -4277,7 +4582,7 @@ Let bufferSource be the result of converting chunk to an [AllowShared] BufferSou
 ⇒
 ~RET その例外で`却下される~promise$
 ◎
-Push a copy of bufferSource to decoder’s stream. If this throws an exception, then return a promise rejected with that exception.
+Push a copy of bufferSource to decoder’s I/O queue. If this throws an exception, then return a promise rejected with that exception.
 </p>
 
 <p class="warning">
@@ -4287,7 +4592,6 @@ Push a copy of bufferSource to decoder’s stream. If this throws an exception, 
 ◎
 See the warning for SharedArrayBuffer objects above.
 </p>
-
 	</li>
 	<li>
 %制御器 ~LET %復号器 の`形式変換$ . `transformStreamController^sl
@@ -4295,35 +4599,35 @@ See the warning for SharedArrayBuffer objects above.
 Let controller be decoder’s transform.[[transformStreamController]].
 </li>
 	<li>
-%出力 ~LET 新たな`~stream$
+%出力 ~LET `入出力~queue$`~scalar値^tA « `~EoQ$ »
 ◎
-Let output be a new stream.
+Let output be the I/O queue of scalar values « end-of-queue ».
 </li>
 	<li>
 <p>
 ~WHILE 無条件
 ◎
-While true, run these steps:
+While true:
 </p>
 		<ol>
 			<li>
-%~token ~LET `~tokenを読取る$( %復号器 の`~stream$dec )
+%~item ~LET %復号器 の`入出力~queue$decから`~itemを読取る$
 ◎
-Let token be the result of reading from decoder’s stream.
+Let item be the result of reading from decoder’s I/O queue.
 </li>
 			<li>
 <p>
 ~IF［
-%~token ~EQ `~EoS$
+%~item ~EQ `~EoQ$
 ］：
 ◎
-If token is end-of-stream, run these steps:
+If item is end-of-queue, then:
 </p>
 				<ol>
 					<li>
-%出力~chunk ~LET `~streamを直列化する$( コレ, %出力 )
+%出力~chunk ~LET `入出力~queueを直列化する$( コレ, %出力 )
 ◎
-Let outputChunk be the result of running serialize stream with decoder and output.
+Let outputChunk be the result of running serialize I/O queue with decoder and output.
 </li>
 					<li>
 ~IF［
@@ -4344,9 +4648,9 @@ Return a new promise resolved with undefined.
 				</ol>
 			</li>
 			<li>
-%結果 ~LET `~tokenを処理する$( %~token, %復号器 の`復号器$dec, %復号器 の`~stream$dec, %出力, %復号器 の`~error~mode$dec )
+%結果 ~LET `~itemを処理する$( %~item, %復号器 の`復号器$dec, %復号器 の`入出力~queue$dec, %出力, %復号器 の`~error~mode$dec )
 ◎
-Let result be the result of processing token for decoder’s decoder, decoder’s stream, output, and decoder’s error mode.
+Let result be the result of processing item for decoder’s decoder, decoder’s I/O queue, output, and decoder’s error mode.
 </li>
 			<li>
 ~IF［
@@ -4362,7 +4666,7 @@ If result is error, then return a new promise rejected with a TypeError exceptio
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `一掃して~enqueueする@
 ~algoは、入力 `ReadableStream$I ~objからの~dataの終端を取扱う
@@ -4374,14 +4678,14 @@ The flush and enqueue algorithm, which handles the end of data from the input Re
 </p>
 <ol>
 	<li>
-%出力 ~LET 新たな`~stream$
+%出力 ~LET `入出力~queue$`~scalar値^tA « `~EoQ$ »
 ◎
-Let output be a new stream.
+Let output be the I/O queue of scalar values « end-of-queue ».
 </li>
 	<li>
-%結果 ~LET `~tokenを処理する$( `~EoS$, %復号器 の`復号器$dec, %復号器 の`~stream$dec, %出力, %復号器 の`~error~mode$dec )
+%結果 ~LET `~itemを処理する$( `~EoQ$, %復号器 の`復号器$dec, %復号器 の`入出力~queue$dec, %出力, %復号器 の`~error~mode$dec )
 ◎
-Let result be the result of processing end-of-stream for decoder’s decoder and decoder’s stream, output, and decoder’s error mode.
+Let result be the result of processing end-of-queue for decoder’s decoder and decoder’s I/O queue, output, and decoder’s error mode.
 </li>
 	<li>
 <p>
@@ -4389,13 +4693,13 @@ Let result be the result of processing end-of-stream for decoder’s decoder and
 %結果 ~EQ `完遂d$
 ］：
 ◎
-If result is finished, run these steps:
+If result is finished, then:
 </p>
 		<ol>
 			<li>
-%出力~chunk ~LET `~streamを直列化する$( コレ, %出力 )
+%出力~chunk ~LET `入出力~queueを直列化する$( コレ, %出力 )
 ◎
-Let outputChunk be the result of running serialize stream with decoder and output.
+Let outputChunk be the result of running serialize I/O queue with decoder and output.
 </li>
 			<li>
 %制御器 ~LET
@@ -4463,7 +4767,7 @@ encoder
 An encoder.
 </dd>
 	<dd class="trans-note">【
-下に注記されるように， `UTF-8$n 用の`符号化器$しかとらない。
+下に注記されるように， `UTF-8$n の`符号化器$しかとらない。
 また、`復号器$decのときと違って，内部状態を保持する変数は無い。
 】</dd>
 
@@ -4582,20 +4886,17 @@ Set this’s transform to transform.
 
 <hr>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~chunkを符号化して~enqueueする@
 ~algoは、所与の
 ( `TextEncoderStream$I ~obj %符号化器, %~chunk )
 に対し，次を走らす：
 ◎
-The encode and enqueue a chunk algorithm, given a TextEncoderStream object encoder and chunk, runs these steps: 
-
 The encode and enqueue a chunk algorithm, given a TextEncoderStream object encoder and chunk, runs these steps:
 </p>
 <ol>
 	<li>
-<p>
 %入力 ~LET %~chunk を `DOMString^I 型の`~IDL値に変換-$した結果
 ⇒
 例外が投出されたときは
@@ -4603,26 +4904,28 @@ The encode and enqueue a chunk algorithm, given a TextEncoderStream object encod
 ~RET その例外で`却下される~promise$
 ◎
 Let input be the result of converting chunk to a DOMString. If this throws an exception, then return a promise rejected with that exception.
+</li>
+	<li>
+<p>
+%入力 ~SET `入出力~queueに変換する$( %入力 )
+◎
+Convert input to an I/O queue of code units.
 </p>
 
 <p class="note">注記：
-ここでは `DOMString^I が利用される
-— 2 つの~chunkに分割された~surrogate~pairを，適切な~scalar値に組立直せるようにするため。
-他の挙動は `USVString^I と一致する
-— 特に，~~孤立した~surrogateは `FFFD^U に置換されることになる。
+`DOMString^I 型から変換しているので、結果の`入出力~queue$の~item型は，~scalar値ではなく`~cu$になる。
+そのようにしているのは、［
+2 つの~chunkに分割された~surrogate~pairを，適切な~scalar値に組立直せるようにする
+］ためであり，他の挙動は `USVString^I と一致する。
+特に，~~孤立した~surrogateは `FFFD^U に置換されることになる。
 ◎
-DOMString is used here so that a surrogate pair that is split between chunks can be reassembled into the appropriate scalar value. The behavior is otherwise identical to USVString. In particular, lone surrogates will be replaced with U+FFFD.
+DOMString, as well as an I/O queue of code units rather than scalar values, are used here so that a surrogate pair that is split between chunks can be reassembled into the appropriate scalar value. The behavior is otherwise identical to USVString. In particular, lone surrogates will be replaced with U+FFFD.
 </p>
 	</li>
 	<li>
-%入力 を`~stream$に変換する
+%出力 ~LET `入出力~queue$`~byte^tA « `~EoQ$ »
 ◎
-Convert input to a stream.
-</li>
-	<li>
-%出力 ~LET 新たな`~stream$
-◎
-Let output be a new stream.
+Let output be the I/O queue of bytes « end-of-queue ».
 </li>
 	<li>
 %制御器 ~LET
@@ -4634,25 +4937,25 @@ Let controller be encoder’s transform.[[transformStreamController]].
 <p>
 ~WHILE 無条件
 ◎
-While true, run these steps:
+While true:
 </p>
 		<ol>
 			<li>
-%~token ~LET `~tokenを読取る$( %入力 )
+%~item ~LET %入力 から`~itemを読取る$
 ◎
-Let token be the result of reading from input.
+Let item be the result of reading from input.
 </li>
 			<li>
 <p>
 ~IF［
-%~token ~EQ `~EoS$
+%~item ~EQ `~EoQ$
 ］：
 ◎
-If token is end-of-stream, run these steps:
+If item is end-of-queue, then:
 </p>
 				<ol>
 					<li>
-%出力 ~SET %出力 を~byte列に変換した結果
+%出力 ~SET %出力 を~byte列に`変換する$
 ◎
 Convert output into a byte sequence.
 </li>
@@ -4662,7 +4965,7 @@ Convert output into a byte sequence.
 %出力 は空でない
 ］：
 ◎
-If output is non-empty, run these steps:
+If output is non-empty, then:
 </p>
 						<ol>
 							<li>
@@ -4687,16 +4990,16 @@ Return a new promise resolved with undefined.
 				</ol>
 			</li>
 			<li>
-%結果 ~LET `~cuを~scalar値に変換する$( %符号化器, %~token, %入力 )
+%結果 ~LET `~cuを~scalar値に変換する$( %符号化器, %~item, %入力 )
 ◎
-Let result be the result of executing the convert code unit to scalar value algorithm with encoder, token and input.
+Let result be the result of executing the convert code unit to scalar value algorithm with encoder, item and input.
 </li>
 			<li>
 ~IF［
 %結果 ~NEQ `継続-$
 ］
 ⇒
-`~tokenを処理する$( %結果, `符号化器$enc, %入力, %出力 )
+`~itemを処理する$( %結果, `符号化器$enc, %入力, %出力 )
 ◎
 If result is not continue, then process result for encoder, input, output.
 </li>
@@ -4705,14 +5008,14 @@ If result is not continue, then process result for encoder, input, output.
 </ol>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `~cuを~scalar値に変換する@
 ~algoは、所与の
-( `TextEncoderStream$I ~obj %符号化器, %~token, ~stream %入力 )
+( `TextEncoderStream$I ~obj %符号化器, `~cu$ %~item, `入出力~queue$`~cu^tA %入力 )
 に対し，次を走らす：
 ◎
-The convert code unit to scalar value algorithm, given a TextEncoderStream object encoder, token, and stream input, runs these steps:
+The convert code unit to scalar value algorithm, given a TextEncoderStream object encoder, a code unit item, and an I/O queue of code units input, runs these steps:
 </p>
 <ol>
 	<li>
@@ -4721,7 +5024,7 @@ The convert code unit to scalar value algorithm, given a TextEncoderStream objec
 %符号化器 の`処理待ち高位~surrogate$enc ~NEQ ~NULL
 ］：
 ◎
-If encoder’s pending high surrogate is non-null, run these steps:
+If encoder’s pending high surrogate is non-null, then:
 </p>
 		<ol>
 			<li>
@@ -4738,17 +5041,17 @@ Set encoder’s pending high surrogate to null.
 </li>
 			<li>
 ~IF［
-%~token ~IN { `DC00^U 〜 `DFFF^U }
+%~item ~IN { `DC00^U 〜 `DFFF^U }
 ］
 ⇒
-~RET ~cp [ `10000^X + (( %高位~surrogate ~MINUS `D800^X ) ~Lshift 10) + ( %~token ~MINUS `DC00^X ) ]
+~RET 【！~scalar値】~cp [ `10000^X + (( %高位~surrogate ~MINUS `D800^X ) ~Lshift 10) + ( %~item ~MINUS `DC00^X ) ]
 ◎
-If token is in the range U+DC00 to U+DFFF, inclusive, then return a code point whose value is 0x10000 + ((high surrogate − 0xD800) &lt;&lt; 10) + (token − 0xDC00).
+If item is in the range U+DC00 to U+DFFF, inclusive, then return a scalar value whose value is 0x10000 + ((high surrogate − 0xD800) &lt;&lt; 10) + (item − 0xDC00).
 </li>
 			<li>
-%入力 に %~token を`前付加する$
+`入出力~queueに前付加する$( %入力, %~item )
 ◎
-Prepend token to input.
+Prepend item to input.
 </li>
 			<li>
 ~RET `FFFD^U
@@ -4759,27 +5062,27 @@ Return U+FFFD.
 	</li>
 	<li>
 ~IF［
-%~token ~IN { `D800^U 〜 `DBFF^U }
+%~item ~IN { `D800^U 〜 `DBFF^U }
 ］
 ⇒＃
-`処理待ち高位~surrogate$enc ~SET %~token；
+`処理待ち高位~surrogate$enc ~SET %~item；
 ~RET `継続-$
 ◎
-If token is in the range U+D800 to U+DBFF, inclusive, then set pending high surrogate to token and return continue.
+If item is in the range U+D800 to U+DBFF, inclusive, then set pending high surrogate to item and return continue.
 </li>
 	<li>
 ~IF［
-%~token ~IN { `DC00^U 〜 `DFFF^U }
+%~item ~IN { `DC00^U 〜 `DFFF^U }
 ］
 ⇒
 ~RET `FFFD^U
 ◎
-If token is in the range U+DC00 to U+DFFF, inclusive, then return U+FFFD.
+If item is in the range U+DC00 to U+DFFF, inclusive, then return U+FFFD.
 </li>
 	<li>
-~RET %~token
+~RET %~item
 ◎
-Return token.
+Return item.
 </li>
 </ol>
 
@@ -4795,7 +5098,7 @@ This is equivalent to the "convert a string into a scalar value string" algorith
 </p>
 </div>
 
-<div class="algorithm">
+<div class="algo">
 <p>
 `符号化して一掃する@
 ~algoは、所与の
@@ -4811,7 +5114,7 @@ The encode and flush algorithm, given a TextEncoderStream object encoder, runs t
 %符号化器 の`処理待ち高位~surrogate$enc ~NEQ ~NULL
 ］：
 ◎
-If encoder’s pending high surrogate is non-null, run these steps:
+If encoder’s pending high surrogate is non-null, then:
 </p>
 		<ol>
 			<li>
@@ -4873,7 +5176,7 @@ Return a new promise resolved with undefined.
 
 <p class="note">注記：
 ~BOMは、`~label$より~~優先される
-— その方が配備-済みの内容において正確aになるものと見出されたので。
+— その方が配備-済みな内容において正確aになるものと見出されたので。
 したがってそれは、`~UTF-8復号器$~algoの一部を成さない
 — 代わりに［
 `~Unicodeに復号する$ ／ `~UTF-8復号する$
@@ -4898,15 +5201,15 @@ UTF-8’s decoder’s has an associated UTF-8 code point, UTF-8 bytes seen, and 
 
 <p>
 `UTF-8$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-UTF-8’s decoder’s handler, given a stream and byte, runs these steps:
+UTF-8’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］~AND［
 `~UTF-8要~byte数$ ~NEQ 0
 ］
@@ -4914,16 +5217,16 @@ UTF-8’s decoder’s handler, given a stream and byte, runs these steps:
 `~UTF-8要~byte数$ ~SET 0；
 ~RET `~error$
 ◎
-If byte is end-of-stream and UTF-8 bytes needed is not 0, set UTF-8 bytes needed to 0 and return error.
+If byte is end-of-queue and UTF-8 bytes needed is not 0, set UTF-8 bytes needed to 0 and return error.
 </li>
 	<li>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］
 ⇒
 ~RET `完遂d$
 ◎
-If byte is end-of-stream, return finished.
+If byte is end-of-queue, return finished.
 </li>
 	<li>
 <p>
@@ -5080,9 +5383,9 @@ Set UTF-8 code point, UTF-8 bytes needed, and UTF-8 bytes seen to 0,＼
 set UTF-8 lower boundary to 0x80, and set UTF-8 upper boundary to 0xBF.
 </li>
 			<li>
-%~stream に %~byte を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, %~byte )
 ◎
-Prepend byte to stream.
+Prepend byte to ioQueue.
 </li>
 			<li>
 ~RET `~error$
@@ -5156,20 +5459,20 @@ The constraints in the UTF-8 decoder above match “Best Practices for Using U+F
 
 <p>
 `UTF-8$n の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-UTF-8’s encoder’s handler, given a stream and code point, runs these steps:
+UTF-8’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~cp ~EQ `~EoS$
+%~cp ~EQ `~EoQ$
 ］
 ⇒
 ~RET `完遂d$
 ◎
-If code point is end-of-stream, return finished.
+If code point is end-of-queue, return finished.
 </li>
 	<li>
 ~IF［
@@ -5326,20 +5629,20 @@ ISO-8859-8 and ISO-8859-8-I are distinct encoding names, because ISO-8859-8 has 
 
 <p>
 `単byte符号化法$の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-Single-byte encodings’s decoder’s handler, given a stream and byte, runs these steps:
+Single-byte encodings’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］
 ⇒
 ~RET `完遂d$
 ◎
-If byte is end-of-stream, return finished.
+If byte is end-of-queue, return finished.
 </li>
 	<li>
 ~IF［
@@ -5380,20 +5683,20 @@ Return a code point whose value is code point.
 
 <p>
 `単byte符号化法$ の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-Single-byte encodings’s encoder’s handler, given a stream and code point, runs these steps:
+Single-byte encodings’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~cp ~EQ `~EoS$
+%~cp ~EQ `~EoQ$
 ］
 ⇒
 ~RET `完遂d$
 ◎
-If code point is end-of-stream, return finished.
+If code point is end-of-queue, return finished.
 </li>
 	<li>
 ~IF［
@@ -5484,16 +5787,16 @@ gb18030’s decoder has an associated gb18030 first, gb18030 second, and gb18030
 
 <p>
 `gb18030$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-gb18030’s decoder’s handler, given a stream and byte, runs these steps:
+gb18030’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］：
 ◎
 ↓</p>
@@ -5505,12 +5808,12 @@ gb18030’s decoder’s handler, given a stream and byte, runs these steps:
 ⇒
 ~RET `完遂d$
 ◎
-If byte is end-of-stream and gb18030 first, gb18030 second, and gb18030 third are 0x00, return finished.
+If byte is end-of-queue and gb18030 first, gb18030 second, and gb18030 third are 0x00, return finished.
 </li>
 			<li>
 ( `~gb1$, `~gb2$, `~gb3$ ) ~SET ( `00^X, `00^X, `00^X )
 ◎
-If byte is end-of-stream, and gb18030 first, gb18030 second, or gb18030 third is not 0x00, set gb18030 first, gb18030 second, and gb18030 third to 0x00, and＼
+If byte is end-of-queue, and gb18030 first, gb18030 second, or gb18030 third is not 0x00, set gb18030 first, gb18030 second, and gb18030 third to 0x00, and＼
 </li>
 			<li>
 ~RET `~error$
@@ -5538,9 +5841,9 @@ If byte is not in the range 0x30 to 0x39, inclusive, then:
 </p>
 				<ol>
 					<li>
-%~stream に~byte列 [ `~gb2$, `~gb3$, %~byte ] を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, ~byte列 [ `~gb2$, `~gb3$, %~byte ] ) 
 ◎
-Prepend gb18030 second, gb18030 third, and byte to stream.
+Prepend gb18030 second, gb18030 third, and byte to ioQueue.
 </li>
 					<li>
 ( `~gb1$, `~gb2$, `~gb3$ ) ~SET ( `00^X, `00^X, `00^X )
@@ -5605,9 +5908,9 @@ If gb18030 second is not 0x00, then:
 If byte is in the range 0x81 to 0xFE, inclusive, set gb18030 third to byte and return continue.
 </li>
 			<li>
-%~stream に~byte列 [ `~gb2$, %~byte ] を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, ~byte列 [ `~gb2$, %~byte ] )
 ◎
-Prepend gb18030 second followed by byte to stream,＼
+Prepend gb18030 second followed by byte to ioQueue,＼
 </li>
 			<li>
 ( `~gb1$, `~gb2$ ) ~SET ( `00^X, `00^X )
@@ -5694,9 +5997,9 @@ If code point is non-null, return a code point whose value is code point.
 %~byte ~IN `~ASCII~byte$
 ］
 ⇒
-%~stream に %~byte を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, %~byte )
 ◎
-If byte is an ASCII byte, prepend byte to stream.
+If byte is an ASCII byte, prepend byte to ioQueue.
 </li>
 			<li>
 ~RET `~error$
@@ -5747,20 +6050,20 @@ gb18030’s encoder has an associated is GBK (initially false).
 
 <p>
 `gb18030$n の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-gb18030’s encoder’s handler, given a stream and code point, runs these steps:
+gb18030’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~cp ~EQ `~EoS$
+%~cp ~EQ `~EoQ$
 ］
 ⇒
 ~RET `完遂d$
 ◎
-If code point is end-of-stream, return finished.
+If code point is end-of-queue, return finished.
 </li>
 	<li>
 ~IF［
@@ -5783,7 +6086,7 @@ If code point is U+E5E5, return error with code point.
 </p>
 
 <p class="note">注記：
-配備-済みの内容との互換性を得るため、 `索引~gb18030$ は［
+配備-済みな内容との互換性を得るため、 `索引~gb18030$ は［
 `A3^X `A0^X
 ］を `E5E5^U ではなく `3000^U に対応付けている。
 したがって往来できない。
@@ -5928,16 +6231,16 @@ Big5’s decoder has an associated Big5 lead (initially 0x00).
 
 <p>
 `Big5$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-Big5’s decoder’s handler, given a stream and byte, runs these steps:
+Big5’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］：
 </p>
 		<ol>
@@ -5954,9 +6257,9 @@ Big5’s decoder’s handler, given a stream and byte, runs these steps:
 </li>
 		</ol>
 ◎
-If byte is end-of-stream and Big5 lead is not 0x00, set Big5 lead to 0x00 and return error.
+If byte is end-of-queue and Big5 lead is not 0x00, set Big5 lead to 0x00 and return error.
 ◎
-If byte is end-of-stream and Big5 lead is 0x00, return finished.
+If byte is end-of-queue and Big5 lead is 0x00, return finished.
 </li>
 	<li>
 <p>
@@ -6005,7 +6308,7 @@ If byte is in the range 0x40 to 0x7E, inclusive, or 0xA1 to 0xFE, inclusive, set
 下の表の中で， 1 列目が %~pointer に等しい行がある
 ］
 ⇒
-~RET 同じ行の 2 列目の `2 個の^em ~cpからなる`~token$列
+~RET 同じ行の 2 列目に与える~cp列（ `2 個の^em ~cpからなる）
 ◎
 If there is a row in the table below whose first column is pointer, return the two code points listed in its second column (the third column is irrelevant):
 </p>
@@ -6044,11 +6347,11 @@ If there is a row in the table below whose first column is pointer, return the t
 【！文字参照（&#x00EA;&#x030C;）を利用すると異なる表示になる~UAもある】
 
 ◎
-Pointer 	Code points 	Notes
-1133 	U+00CA U+0304 	Ê̄ (LATIN CAPITAL LETTER E WITH CIRCUMFLEX AND MACRON)
-1135 	U+00CA U+030C 	Ê̌ (LATIN CAPITAL LETTER E WITH CIRCUMFLEX AND CARON)
-1164 	U+00EA U+0304 	ê̄ (LATIN SMALL LETTER E WITH CIRCUMFLEX AND MACRON)
-1166 	U+00EA U+030C 	ê̌ (LATIN SMALL LETTER E WITH CIRCUMFLEX AND CARON)
+Pointer｜Code points｜Notes
+1133｜U+00CA U+0304｜Ê̄ (LATIN CAPITAL LETTER E WITH CIRCUMFLEX AND MACRON)
+1135｜U+00CA U+030C｜Ê̌ (LATIN CAPITAL LETTER E WITH CIRCUMFLEX AND CARON)
+1164｜U+00EA U+0304｜ê̄ (LATIN SMALL LETTER E WITH CIRCUMFLEX AND MACRON)
+1166｜U+00EA U+030C｜ê̌ (LATIN SMALL LETTER E WITH CIRCUMFLEX AND CARON)
 </div>
 
 <p class="note">注記：
@@ -6079,9 +6382,9 @@ If code point is non-null, return a code point whose value is code point.
 %~byte ~IN `~ASCII~byte$
 ］
 ⇒
-%~stream に %~byte を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, %~byte )
 ◎
-If byte is an ASCII byte, prepend byte to stream.
+If byte is an ASCII byte, prepend byte to ioQueue.
 </li>
 			<li>
 ~RET `~error$
@@ -6122,20 +6425,20 @@ Return error.
 
 <p>
 `Big5$n の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-Big5’s encoder’s handler, given a stream and code point, runs these steps:
+Big5’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~cp ~EQ `~EoS$
+%~cp ~EQ `~EoQ$
 ］
 ⇒
 ~RET `完遂d$
 ◎
-If code point is end-of-stream, return finished.
+If code point is end-of-queue, return finished.
 </li>
 	<li>
 ~IF［
@@ -6212,16 +6515,16 @@ EUC-JP’s decoder has an associated EUC-JP jis0212 (initially false) and EUC-JP
 
 <p>
 `EUC-JP$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-EUC-JP’s decoder’s handler, given a stream and byte, runs these steps:
+EUC-JP’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］：
 ◎
 ↓</p>
@@ -6234,14 +6537,14 @@ EUC-JP’s decoder’s handler, given a stream and byte, runs these steps:
 `~EUC-JP~lead$ ~SET `00^X ；
 ~RET `~error$
 ◎
-If byte is end-of-stream and EUC-JP lead is not 0x00, set EUC-JP lead to 0x00, and return error.
+If byte is end-of-queue and EUC-JP lead is not 0x00, set EUC-JP lead to 0x00, and return error.
 </li>
 			<li>
 ~ELSE
 ⇒
 ~RET `完遂d$
 ◎
-If byte is end-of-stream and EUC-JP lead is 0x00, return finished.
+If byte is end-of-queue and EUC-JP lead is 0x00, return finished.
 </li>
 		</ol>
 	</li>
@@ -6338,9 +6641,9 @@ If code point is non-null, return a code point whose value is code point.
 %~byte ~IN `~ASCII~byte$
 ］
 ⇒
-%~stream に %~byte を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, %~byte )
 ◎
-If byte is an ASCII byte, prepend byte to stream.
+If byte is an ASCII byte, prepend byte to ioQueue.
 </li>
 			<li>
 ~RET `~error$
@@ -6381,23 +6684,23 @@ Return error.
 
 <p>
 `EUC-JP$n の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-EUC-JP’s encoder’s handler, given a stream and code point, runs these steps:
+EUC-JP’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 %結果 ~LET %~cp に応じて
 ⇒＃
-`~EoS$ ならば `完遂d$ ／
+`~EoQ$ ならば `完遂d$ ／
 `~ASCII~cp$ならば ~byte列 [ %~cp ] ／
 `00A5^U ならば ~byte列 [ `5C^X ] ／
 `203E^U ならば ~byte列 [ `7E^X ] ／
 `FF61^U 〜 `FF9F^U ならば ~byte列 [ `8E^X, ( %~cp ~MINUS `FF61^X ~PLUS `A1^X ) ] ／
 ~ELSE_ ~NULL
 ◎
-If code point is end-of-stream, return finished.
+If code point is end-of-queue, return finished.
 ◎
 If code point is an ASCII code point, return a byte whose value is code point.
 ◎
@@ -6491,10 +6794,10 @@ ISO-2022-JP’s decoder has an associated ISO-2022-JP decoder state (initially A
 
 <p>
 `ISO-2022-JP$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，`~ISO-2022-JP復号器~状態$に応じて 次を走らす：
 ◎
-ISO-2022-JP’s decoder’s handler, given a stream and byte, runs these steps, switching on ISO-2022-JP decoder state:
+ISO-2022-JP’s decoder’s handler, given ioQueue and byte, runs these steps, switching on ISO-2022-JP decoder state:
 </p>
 
 <dl class="switch">
@@ -6525,11 +6828,11 @@ Based on byte:
 • Set ISO-2022-JP output to false and return a code point whose value is byte.
 </li>
 			<li>
-`~EoS$
+`~EoQ$
 ⇒＃
 ~RET `完遂d$
 ◎
-end-of-stream
+end-of-queue
 • Return finished.
 </li>
 			<li>
@@ -6590,11 +6893,11 @@ Based on byte:
 • Set ISO-2022-JP output to false and return a code point whose value is byte.
 </li>
 			<li>
-`~EoS$
+`~EoQ$
 ⇒＃
 ~RET `完遂d$
 ◎
-end-of-stream
+end-of-queue
 • Return finished.
 </li>
 			<li>
@@ -6637,11 +6940,11 @@ Based on byte:
 • Set ISO-2022-JP output to false and return a code point whose value is 0xFF61 − 0x21 + byte.
 </li>
 			<li>
-`~EoS$
+`~EoQ$
 ⇒＃
 ~RET `完遂d$
 ◎
-end-of-stream
+end-of-queue
 • Return finished.
 </li>
 			<li>
@@ -6685,11 +6988,11 @@ Based on byte:
 • Set ISO-2022-JP output to false, ISO-2022-JP lead to byte, ISO-2022-JP decoder state to trail byte, and return continue.
 </li>
 			<li>
-`~EoS$
+`~EoQ$
 ⇒＃
 ~RET `完遂d$
 ◎
-end-of-stream
+end-of-queue
 • Return finished.
 </li>
 			<li>
@@ -6763,14 +7066,14 @@ Return a code point whose value is code point.
 				</ol>
 			</li>
 			<li>
-`~EoS$
+`~EoQ$
 ⇒＃
 `~ISO-2022-JP復号器~状態$ ~SET `~lead~byte$i ；
-%~stream に %~byte を`前付加する$ ；
+`入出力~queueに前付加する$( %入出力~queue, %~byte )；
 ~RET `~error$
 ◎
-end-of-stream
-• Set the ISO-2022-JP decoder state to lead byte, prepend byte to stream, and return error.
+end-of-queue
+• Set the ISO-2022-JP decoder state to lead byte, prepend byte to ioQueue, and return error.
 </li>
 			<li>
 その他
@@ -6800,9 +7103,9 @@ Otherwise
 If byte is either 0x24 or 0x28, set ISO-2022-JP lead to byte, ISO-2022-JP decoder state to escape, and return continue.
 </li>
 			<li>
-%~stream に %~byte を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, %~byte )
 ◎
-Prepend byte to stream.
+Prepend byte to ioQueue.
 </li>
 			<li>
 `~ISO-2022-JP出力$ ~SET ~F
@@ -6896,9 +7199,9 @@ Return continue, if output is false, and error otherwise.
 				</ol>
 			</li>
 			<li>
-%~stream に~byte列 [ %~lead, %~byte ] を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, ~byte列 [ %~lead, %~byte ] )
 ◎
-Prepend lead and byte to stream.
+Prepend lead and byte to ioQueue.
 </li>
 			<li>
 `~ISO-2022-JP出力$ ~SET ~F
@@ -6963,16 +7266,16 @@ ISO-2022-JP’s encoder has an associated ISO-2022-JP encoder state which is ASC
 
 <p>
 `ISO-2022-JP$n の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-ISO-2022-JP’s encoder’s handler, given a stream and code point, runs these steps:
+ISO-2022-JP’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%~cp ~EQ `~EoS$
+%~cp ~EQ `~EoQ$
 ］：
 ◎
 ↓</p>
@@ -6982,16 +7285,16 @@ ISO-2022-JP’s encoder’s handler, given a stream and code point, runs these s
 `~ISO-2022-JP符号化器~状態$ ~NEQ `ASCII$i1
 ］
 ⇒＃
-%~stream に %~cp を`前付加する$ ；
+`入出力~queueに前付加する$( %入出力~queue, %~cp )；
 `~ISO-2022-JP符号化器~状態$ ~SET `ASCII$i1 ；
 ~RET ~byte列 [ `1B^X, `28^X, `42^X ]
 ◎
-If code point is end-of-stream and ISO-2022-JP encoder state is not ASCII, prepend code point to stream, set ISO-2022-JP encoder state to ASCII, and return three bytes 0x1B 0x28 0x42.
+If code point is end-of-queue and ISO-2022-JP encoder state is not ASCII, prepend code point to ioQueue, set ISO-2022-JP encoder state to ASCII, and return three bytes 0x1B 0x28 0x42.
 </li>
 			<li>
 ~RET `完遂d$
 ◎
-If code point is end-of-stream and ISO-2022-JP encoder state is ASCII, return finished.
+If code point is end-of-queue and ISO-2022-JP encoder state is ASCII, return finished.
 </li>
 		</ol>
 	</li>
@@ -7064,11 +7367,11 @@ If ISO-2022-JP encoder state is Roman and code point is an ASCII code point, exc
 `~ISO-2022-JP符号化器~状態$ ~NEQ `ASCII$i1
 ］
 ⇒＃
-%~stream に %~cp を`前付加する$ ；
+`入出力~queueに前付加する$( %入出力~queue, %~cp )；
 `~ISO-2022-JP符号化器~状態$ ~SET `ASCII$i1 ；
 ~RET ~byte列 [ `1B^X, `28^X, `42^X ]
 ◎
-If code point is an ASCII code point, and ISO-2022-JP encoder state is not ASCII, prepend code point to stream, set ISO-2022-JP encoder state to ASCII, and return three bytes 0x1B 0x28 0x42.
+If code point is an ASCII code point, and ISO-2022-JP encoder state is not ASCII, prepend code point to ioQueue, set ISO-2022-JP encoder state to ASCII, and return three bytes 0x1B 0x28 0x42.
 </li>
 	<li>
 ~IF［
@@ -7077,11 +7380,11 @@ If code point is an ASCII code point, and ISO-2022-JP encoder state is not ASCII
 `~ISO-2022-JP符号化器~状態$ ~NEQ `Roman$i1
 ］
 ⇒＃
-%~stream に %~cp を`前付加する$ ；
+`入出力~queueに前付加する$( %入出力~queue, %~cp )；
 `~ISO-2022-JP符号化器~状態$ ~SET `Roman$i1 ；
 ~RET ~byte列 [ `1B^X, `28^X, `4A^X ]
 ◎
-If code point is either U+00A5 or U+203E, and ISO-2022-JP encoder state is not Roman, prepend code point to stream, set ISO-2022-JP encoder state to Roman, and return three bytes 0x1B 0x28 0x4A.
+If code point is either U+00A5 or U+203E, and ISO-2022-JP encoder state is not Roman, prepend code point to ioQueue, set ISO-2022-JP encoder state to Roman, and return three bytes 0x1B 0x28 0x4A.
 </li>
 	<li>
 ~IF［
@@ -7131,11 +7434,11 @@ If pointer is null, return error with code point.
 `~ISO-2022-JP符号化器~状態$ ~NEQ `jis0208$i1
 ］
 ⇒＃
-%~stream に %~cp を`前付加する$ ；
+`入出力~queueに前付加する$( %入出力~queue, %~cp )；
 `~ISO-2022-JP符号化器~状態$ ~SET `jis0208$i1 ；
 ~RET ~byte列 [ `1B^X, `24^X, `42^X ]
 ◎
-If ISO-2022-JP encoder state is not jis0208, prepend code point to stream, set ISO-2022-JP encoder state to jis0208, and return three bytes 0x1B 0x24 0x42.
+If ISO-2022-JP encoder state is not jis0208, prepend code point to ioQueue, set ISO-2022-JP encoder state to jis0208, and return three bytes 0x1B 0x24 0x42.
 </li>
 	<li>
 %~lead ~LET ( %~pointer ~DIV 94 ) ~PLUS `21^X
@@ -7174,16 +7477,16 @@ Shift_JIS’s decoder has an associated Shift_JIS lead (initially 0x00).
 
 <p>
 `Shift_JIS$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-Shift_JIS’s decoder’s handler, given a stream and byte, runs these steps:
+Shift_JIS’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］：
 ◎
 ↓</p>
@@ -7196,14 +7499,14 @@ Shift_JIS’s decoder’s handler, given a stream and byte, runs these steps:
 `~Shift_JIS~lead$ ~SET `00^X ；
 ~RET `~error$
 ◎
-If byte is end-of-stream and Shift_JIS lead is not 0x00, set Shift_JIS lead to 0x00 and return error.
+If byte is end-of-queue and Shift_JIS lead is not 0x00, set Shift_JIS lead to 0x00 and return error.
 </li>
 			<li>
 ~ELSE
 ⇒
 ~RET `完遂d$
 ◎
-If byte is end-of-stream and Shift_JIS lead is 0x00, return finished.
+If byte is end-of-queue and Shift_JIS lead is 0x00, return finished.
 </li>
 		</ol>
 	</li>
@@ -7307,9 +7610,9 @@ If code point is non-null, return a code point whose value is code point.
 %~byte ~IN `~ASCII~byte$
 ］
 ⇒
-%~stream に %~byte を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, %~byte )
 ◎
-If byte is an ASCII byte, prepend byte to stream.
+If byte is an ASCII byte, prepend byte to ioQueue.
 </li>
 			<li>
 ~RET `~error$
@@ -7361,16 +7664,16 @@ Return error.
 
 <p>
 `Shift_JIS$n の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-Shift_JIS’s encoder’s handler, given a stream and code point, runs these steps:
+Shift_JIS’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 %結果 ~LET %~cp に応じて
 ⇒＃
-`~EoS$ ならば `完遂d$ ／
+`~EoQ$ ならば `完遂d$ ／
 `~ASCII~cp$ならば ~byte列 [ %~cp ] ／
 `0080^U ならば ~byte列 [ %~cp ] ／
 `00A5^U ならば ~byte列 [ `5C^X ] ／
@@ -7378,7 +7681,7 @@ Shift_JIS’s encoder’s handler, given a stream and code point, runs these ste
 `FF61^U 〜 `FF9F^U ならば ~byte列 [ ( %~cp ~MINUS `FF61^X ) ~PLUS `A1^X ] ／
 ~ELSE_ ~NULL
 ◎
-If code point is end-of-stream, return finished.
+If code point is end-of-queue, return finished.
 ◎
 If code point is an ASCII code point or U+0080, return a byte whose value is code point.
 ◎
@@ -7477,16 +7780,16 @@ EUC-KR’s decoder has an associated EUC-KR lead (initially 0x00).
 
 <p>
 `EUC-KR$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-EUC-KR’s decoder’s handler, given a stream and byte, runs these steps:
+EUC-KR’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］：
 ◎
 ↓</p>
@@ -7499,14 +7802,14 @@ EUC-KR’s decoder’s handler, given a stream and byte, runs these steps:
 `~EUC-KR~lead$ ~SET `00^X ；
 ~RET `~error$
 ◎
-If byte is end-of-stream and EUC-KR lead is not 0x00, set EUC-KR lead to 0x00 and return error.
+If byte is end-of-queue and EUC-KR lead is not 0x00, set EUC-KR lead to 0x00 and return error.
 </li>
 			<li>
 ~ELSE
 ⇒
 ~RET `完遂d$
 ◎
-If byte is end-of-stream and EUC-KR lead is 0x00, return finished.
+If byte is end-of-queue and EUC-KR lead is 0x00, return finished.
 </li>
 		</ol>
 	</li>
@@ -7565,9 +7868,9 @@ If code point is non-null, return a code point whose value is code point.
 %~byte ~IN `~ASCII~byte$
 ］
 ⇒
-%~stream に %~byte を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, %~byte )
 ◎
-If byte is an ASCII byte, prepend byte to stream.
+If byte is an ASCII byte, prepend byte to ioQueue.
 </li>
 			<li>
 ~RET `~error$
@@ -7608,20 +7911,20 @@ Return error.
 
 <p>
 `EUC-KR$n の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-EUC-KR’s encoder’s handler, given a stream and code point, runs these steps:
+EUC-KR’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~cp ~EQ `~EoS$
+%~cp ~EQ `~EoQ$
 ］
 ⇒
 ~RET `完遂d$
 ◎
-If code point is end-of-stream, return finished.
+If code point is end-of-queue, return finished.
 </li>
 	<li>
 ~IF［
@@ -7698,20 +8001,20 @@ replacement’s decoder has an associated replacement error returned (initially 
 
 <p>
 `replacement$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-replacement’s decoder’s handler, given a stream and byte, runs these steps:
+replacement’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］
 ⇒
 ~RET `完遂d$
 ◎
-If byte is end-of-stream, return finished.
+If byte is end-of-queue, return finished.
 </li>
 	<li>
 ~IF［
@@ -7744,7 +8047,7 @@ Return finished.
 
 <p class="note">注記：
 ~BOMは`~label$より優先される。
-それは，配備-済みの内容において、どの`~label$よりも正確aであることが見出されているので。
+それは，配備-済みな内容において、どの`~label$よりも正確aであることが見出されているので。
 したがって それは、`共用~UTF-16復号器$の一部ではなく，`~Unicodeに復号する$ ~algoの一部を成す。
 ◎
 A byte order mark has priority over a label as it has been found to be more accurate in deployed content. Therefore it is not part of the shared UTF-16 decoder algorithm but rather the decode algorithm.
@@ -7764,16 +8067,16 @@ shared UTF-16 decoder has an associated UTF-16 lead byte and UTF-16 lead surroga
 
 <p>
 `共用~UTF-16復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-shared UTF-16 decoder’s handler, given a stream and byte, runs these steps:
+shared UTF-16 decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%~byte ~EQ `~EoS$
+%~byte ~EQ `~EoQ$
 ］：
 ◎
 ↓</p>
@@ -7789,14 +8092,14 @@ shared UTF-16 decoder’s handler, given a stream and byte, runs these steps:
 `~UTF-16~lead~surrogate$ ~SET ~NULL；
 ~RET `~error$
 ◎
-If byte is end-of-stream and either UTF-16 lead byte or UTF-16 lead surrogate is non-null, set UTF-16 lead byte and UTF-16 lead surrogate to null, and return error.
+If byte is end-of-queue and either UTF-16 lead byte or UTF-16 lead surrogate is non-null, set UTF-16 lead byte and UTF-16 lead surrogate to null, and return error.
 </li>
 			<li>
 ~ELSE
 ⇒
 ~RET `完遂d$
 ◎
-If byte is end-of-stream and UTF-16 lead byte and UTF-16 lead surrogate are null, return finished.
+If byte is end-of-queue and UTF-16 lead byte and UTF-16 lead surrogate are null, return finished.
 </li>
 		</ol>
 	</li>
@@ -7876,9 +8179,9 @@ Let byte2 be code unit &amp; 0x00FF.
 Let bytes be two bytes whose values are byte1 and byte2, if is UTF-16BE decoder is true, and byte2 and byte1 otherwise.
 </li>
 			<li>
-%~stream に %~byte列 を`前付加する$
+`入出力~queueに前付加する$( %入出力~queue, %~byte列 )
 ◎
-Prepend the bytes to stream and return error.
+Prepend the bytes to ioQueue and return error.
 </li>
 			<li>
 ~RET `~error$
@@ -7935,7 +8238,7 @@ UTF-16BE’s decoder is shared UTF-16 decoder with its is UTF-16BE decoder set t
 <h3 title="UTF-16LE">14.4. ~UTF-16LE</h3>
 
 <p class="note">注記：
-配備-済みの内容に~~対処するため、
+配備-済みな内容に~~対処するため、
 `utf-16^lb は `UTF-16LE$n 用の`~label$にされている。
 ◎
 "utf-16" is a label for UTF-16LE to deal with deployed content.
@@ -7966,20 +8269,20 @@ While technically this is a single-byte encoding, it is defined separately as it
 
 <p>
 `x-user-defined$n の`復号器$の`~handler$は、所与の
-( %~stream, %~byte )
+( %入出力~queue, %~byte )
 に対し，次を走らす：
 ◎
-x-user-defined’s decoder’s handler, given a stream and byte, runs these steps:
+x-user-defined’s decoder’s handler, given ioQueue and byte, runs these steps:
 </p>
 <ol>
 	<li>
 ~RET %~byte に応じて
 ⇒＃
-`~EoS$ならば `完遂d$ ／
+`~EoQ$ならば `完遂d$ ／
 `~ASCII~byte$であるならば ~cp [ %~byte ] ／
 ~ELSE_ ~cp [ `F780^X ~PLUS %~byte ~MINUS `80^X ]
 ◎
-If byte is end-of-stream, return finished.
+If byte is end-of-queue, return finished.
 ◎
 If byte is an ASCII byte, return a code point whose value is byte.
 ◎
@@ -7993,21 +8296,21 @@ Return a code point whose value is 0xF780 + byte − 0x80.
 
 <p>
 `x-user-defined$n の`符号化器$の`~handler$は、所与の
-( %~stream, %~cp )
+( %入出力~queue, %~cp )
 に対し，次を走らす：
 ◎
-x-user-defined’s encoder’s handler, given a stream and code point, runs these steps:
+x-user-defined’s encoder’s handler, given ioQueue and code point, runs these steps:
 </p>
 <ol>
 	<li>
 ~RET %~cp に応じて
 ⇒＃
-`~EoS$ならば `完遂d$ ／
+`~EoQ$ならば `完遂d$ ／
 `~ASCII~cp$ならば ~byte列 [ %~cp ] ／
 `F780^U 〜 `F7FF^U ならば ~byte列 [ %~cp ~MINUS `F780^X ~PLUS `80^X ] ／
 ~ELSE_ %~cp を伴う`~error$
 ◎
-If code point is end-of-stream, return finished.
+If code point is end-of-queue, return finished.
 ◎
 If code point is an ASCII code point, return a byte whose value is code point.
 ◎
@@ -8039,12 +8342,12 @@ Browsers are encouraged to not enable overriding the encoding of a resource. If 
 
 	</section>
 	<section id="implementation-considerations">
-<h2 title="Implementation considerations">実装~上の考慮点</h2>
+<h2 title="Implementation considerations">実装の考慮点</h2>
 
 <p>
-この標準における`符号化法$用の`復号器$は、任意な`前付加-$を備える`~stream$を~supportする代わりに，次により実装することもできる：
+この標準における`符号化法$用の`復号器$は、`入出力~queueに前付加する$( ) を備える`入出力~queue$を~supportする代わりに，次により実装することもできる：
 ◎
-Instead of supporting streams with arbitrary prepend, the decoders for encodings in this standard could be implemented with:
+Instead of supporting I/O queues with arbitrary prepend, the decoders for encodings in this standard could be implemented with:
 </p>
 <ol>
 	<li>
@@ -8077,7 +8380,9 @@ For gb18030 when hitting a bogus byte while gb18030 third is not 0x00, gb18030 s
 </ol>
 
 <p>
-`~ISO-2022-JP符号化器$には，追加的な状態として`~ISO-2022-JP符号化器~状態$が必要になるが、それ以外では，この標準における`符号化法$用のどの`符号化器$にも 追加的な状態や~bufferは要求されない。
+`~ISO-2022-JP符号化器$には，追加的な状態として`~ISO-2022-JP符号化器~状態$が必要になるが、それ以外では，この標準におけるどの`符号化法$に対しても，それ用の`符号化器$に［
+追加的な状態／~buffer
+］は要求されない。
 ◎
 The ISO-2022-JP encoder needs ISO-2022-JP encoder state as additional state, but other than that, none of the encoders for encodings in this standard require additional state or buffers.
 </p>
@@ -8193,4 +8498,3 @@ Copyright © WHATWG (Apple, Google, Mozilla, Microsoft). This work is licensed u
 </p>
 </div>
 </div>
-
