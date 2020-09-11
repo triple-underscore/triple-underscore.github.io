@@ -902,7 +902,6 @@ minor::::副:マイナー
 	●仕様
 RFC:
 framework::::フレームワーク
-programmatic::::プログラム的
 proprietary::::プロプライエタリ
 十分:enough:~
 説明d:description:説明
@@ -919,7 +918,7 @@ agent::::エージェント
 応用-:apply::~
 一般用:general-purpose:~
 中立的:neutral:~
-事実:fact:~
+	事実:In fact
 理由付け:reasoning:~
 乏しい:poorな:~
 見越す:anticipateする:~
@@ -941,7 +940,6 @@ agent::::エージェント
 分類上の:categorization:~
 利点:advantage:~
 利用e:usage:利用
-再利用性:reusability:~
 誤用-:misuse:~
 濫用:abuse:~
 制定-:prescribe:~
