@@ -1611,6 +1611,7 @@ CSSBREAK3=副          ~/css-break-ja.html●Level 4 日本語訳
 CSSBREAK4=副          ~/css-break-ja.html
 CSSCASCADE4=副         ~/css-cascade-ja.html
 CSSCASCADE3=副         ~/css-cascade-ja.html●Level 4 日本語訳
+CSSCASCADE5=副         ~/css-cascade-ja.html●Level 4 日本語訳
 CSSCOLOR3=主          ~mitsue/css3-color/
 CSSCOLOR3=副          ~/css-color-ja.html●Level 4 日本語訳
 CSSCOLOR4=副          ~/css-color-ja.html
