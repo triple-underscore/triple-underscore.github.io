@@ -1736,6 +1736,7 @@ registry::::レジストリ
 発行版:publication:~
 正誤表:errata:~
 謝辞:acknowledgements:~
+知的財産権:intellectual property rights:~
 
 将来:future:~
 	将来の:future:~
