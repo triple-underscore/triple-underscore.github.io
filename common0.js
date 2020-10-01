@@ -3025,7 +3025,7 @@ sandbox::::サンドボックス
 完全性:integrity::~
 偽装-:spoof::~
 偽装:spoofing::~
-資格証:credentials::資格証明情報::クレデンシャル
+資格証:credentials::資格情報::クレデンシャル
 攻撃:attack::~
 攻撃者:attacker::~
 行路:vector::路
