@@ -223,37 +223,37 @@ h.Trailer:~HTTPsem#field.trailer
 h.Upgrade:~HTTPsem#field.upgrade
 h.Via:~HTTPsem#field.via
 
-h.Accept:~HTTPrq#field.accept
-h.Accept-Charset:~HTTPrq#field.accept-charset
-h.Accept-Encoding:~HTTPrq#field.accept-encoding
-h.Accept-Language:~HTTPrq#field.accept-language
-h.Authorization:~HTTPrq#field.authorization
-h.Expect:~HTTPrq#field.expect
-h.From:~HTTPrq#field.from
-h.If-Match:~HTTPrq#field.if-match
-h.If-Modified-Since:~HTTPrq#field.if-modified-since
-h.If-None-Match:~HTTPrq#field.if-none-match
-h.If-Range:~HTTPrq#field.if-range
-h.If-Unmodified-Since:~HTTPrq#field.if-unmodified-since
-h.Max-Forwards:~HTTPrq#field.max-forwards
-h.Proxy-Authorization:~HTTPrq#field.proxy-authorization
-h.Range:~HTTPrq#field.range
-h.Referer:~HTTPrq#field.referer
-h.User-Agent:~HTTPrq#field.user-agent
+h.Accept:~HTTPsem#field.accept
+h.Accept-Charset:~HTTPsem#field.accept-charset
+h.Accept-Encoding:~HTTPsem#field.accept-encoding
+h.Accept-Language:~HTTPsem#field.accept-language
+h.Authorization:~HTTPsem#field.authorization
+h.Expect:~HTTPsem#field.expect
+h.From:~HTTPsem#field.from
+h.If-Match:~HTTPsem#field.if-match
+h.If-Modified-Since:~HTTPsem#field.if-modified-since
+h.If-None-Match:~HTTPsem#field.if-none-match
+h.If-Range:~HTTPsem#field.if-range
+h.If-Unmodified-Since:~HTTPsem#field.if-unmodified-since
+h.Max-Forwards:~HTTPsem#field.max-forwards
+h.Proxy-Authorization:~HTTPsem#field.proxy-authorization
+h.Range:~HTTPsem#field.range
+h.Referer:~HTTPsem#field.referer
+h.User-Agent:~HTTPsem#field.user-agent
 
-h.Accept-Ranges:~HTTPrs#field.accept-ranges
-h.Allow:~HTTPrs#field.allow
-h.Authentication-Info:~HTTPrs#field.authentication-info
-h.Date:~HTTPrs#field.date
-h.ETag:~HTTPrs#field.etag
-h.Last-Modified:~HTTPrs#field.last-modified
-h.Location:~HTTPrs#field.location
-h.Proxy-Authenticate:~HTTPrs#field.proxy-authenticate
-h.Proxy-Authentication-Info:~HTTPrs#field.proxy-authentication-info
-h.Retry-After:~HTTPrs#field.retry-after
-h.Server:~HTTPrs#field.server
-h.Vary:~HTTPrs#field.vary
-h.WWW-Authenticate:~HTTPrs#field.www-authenticate
+h.Accept-Ranges:~HTTPsem#field.accept-ranges
+h.Allow:~HTTPsem#field.allow
+h.Authentication-Info:~HTTPsem#field.authentication-info
+h.Date:~HTTPsem#field.date
+h.ETag:~HTTPsem#field.etag
+h.Last-Modified:~HTTPsem#field.last-modified
+h.Location:~HTTPsem#field.location
+h.Proxy-Authenticate:~HTTPsem#field.proxy-authenticate
+h.Proxy-Authentication-Info:~HTTPsem#field.proxy-authentication-info
+h.Retry-After:~HTTPsem#field.retry-after
+h.Server:~HTTPsem#field.server
+h.Vary:~HTTPsem#field.vary
+h.WWW-Authenticate:~HTTPsem#field.www-authenticate
 
 	//Cache
 h.Age:~HTTPcache#field.age
@@ -274,68 +274,68 @@ h.Link:~HTTPweblink#field.link
 	h.Alternates:rfc2295#section-8.3
 
 	●request methods
-m.GET:~HTTPrq#GET
-m.HEAD:~HTTPrq#HEAD
-m.POST:~HTTPrq#POST
-m.PUT:~HTTPrq#PUT
-m.DELETE:~HTTPrq#DELETE
-m.CONNECT:~HTTPrq#CONNECT
-m.OPTIONS:~HTTPrq#OPTIONS
-m.TRACE:~HTTPrq#TRACE
+m.GET:~HTTPsem#GET
+m.HEAD:~HTTPsem#HEAD
+m.POST:~HTTPsem#POST
+m.PUT:~HTTPsem#PUT
+m.DELETE:~HTTPsem#DELETE
+m.CONNECT:~HTTPsem#CONNECT
+m.OPTIONS:~HTTPsem#OPTIONS
+m.TRACE:~HTTPsem#TRACE
 m.PATCH:~HTTPpatch#patch
 
 	●status codes
 
-st.1xx:~HTTPrs#status.1xx
-st.2xx:~HTTPrs#status.2xx
-st.3xx:~HTTPrs#status.3xx
-st.4xx:~HTTPrs#status.4xx
-st.5xx:~HTTPrs#status.5xx
-st.100:~HTTPrs#status.100
-st.101:~HTTPrs#status.101
-st.200:~HTTPrs#status.200
-st.201:~HTTPrs#status.201
-st.202:~HTTPrs#status.202
-st.203:~HTTPrs#status.203
-st.204:~HTTPrs#status.204
-st.205:~HTTPrs#status.205
-st.206:~HTTPrs#status.206
-st.300:~HTTPrs#status.300
-st.301:~HTTPrs#status.301
-st.302:~HTTPrs#status.302
-st.303:~HTTPrs#status.303
-st.304:~HTTPrs#status.304
-st.305:~HTTPrs#status.305
-st.306:~HTTPrs#status.306
-st.307:~HTTPrs#status.307
-st.308:~HTTPrs#status.308
-st.400:~HTTPrs#status.400
-st.401:~HTTPrs#status.401
-st.402:~HTTPrs#status.402
-st.403:~HTTPrs#status.403
-st.404:~HTTPrs#status.404
-st.405:~HTTPrs#status.405
-st.406:~HTTPrs#status.406
-st.407:~HTTPrs#status.407
-st.408:~HTTPrs#status.408
-st.409:~HTTPrs#status.409
-st.410:~HTTPrs#status.410
-st.411:~HTTPrs#status.411
-st.412:~HTTPrs#status.412
-st.413:~HTTPrs#status.413
-st.414:~HTTPrs#status.414
-st.415:~HTTPrs#status.415
-st.416:~HTTPrs#status.416
-st.417:~HTTPrs#status.417
-st.418:~HTTPrs#status.418
-st.422:~HTTPrs#status.422
-st.426:~HTTPrs#status.426
-st.500:~HTTPrs#status.500
-st.501:~HTTPrs#status.501
-st.502:~HTTPrs#status.502
-st.503:~HTTPrs#status.503
-st.504:~HTTPrs#status.504
-st.505:~HTTPrs#status.505
+st.1xx:~HTTPsem#status.1xx
+st.2xx:~HTTPsem#status.2xx
+st.3xx:~HTTPsem#status.3xx
+st.4xx:~HTTPsem#status.4xx
+st.5xx:~HTTPsem#status.5xx
+st.100:~HTTPsem#status.100
+st.101:~HTTPsem#status.101
+st.200:~HTTPsem#status.200
+st.201:~HTTPsem#status.201
+st.202:~HTTPsem#status.202
+st.203:~HTTPsem#status.203
+st.204:~HTTPsem#status.204
+st.205:~HTTPsem#status.205
+st.206:~HTTPsem#status.206
+st.300:~HTTPsem#status.300
+st.301:~HTTPsem#status.301
+st.302:~HTTPsem#status.302
+st.303:~HTTPsem#status.303
+st.304:~HTTPsem#status.304
+st.305:~HTTPsem#status.305
+st.306:~HTTPsem#status.306
+st.307:~HTTPsem#status.307
+st.308:~HTTPsem#status.308
+st.400:~HTTPsem#status.400
+st.401:~HTTPsem#status.401
+st.402:~HTTPsem#status.402
+st.403:~HTTPsem#status.403
+st.404:~HTTPsem#status.404
+st.405:~HTTPsem#status.405
+st.406:~HTTPsem#status.406
+st.407:~HTTPsem#status.407
+st.408:~HTTPsem#status.408
+st.409:~HTTPsem#status.409
+st.410:~HTTPsem#status.410
+st.411:~HTTPsem#status.411
+st.412:~HTTPsem#status.412
+st.413:~HTTPsem#status.413
+st.414:~HTTPsem#status.414
+st.415:~HTTPsem#status.415
+st.416:~HTTPsem#status.416
+st.417:~HTTPsem#status.417
+st.418:~HTTPsem#status.418
+st.422:~HTTPsem#status.422
+st.426:~HTTPsem#status.426
+st.500:~HTTPsem#status.500
+st.501:~HTTPsem#status.501
+st.502:~HTTPsem#status.502
+st.503:~HTTPsem#status.503
+st.504:~HTTPsem#status.504
+st.505:~HTTPsem#status.505
 
 	●protocol elements
 
@@ -355,21 +355,133 @@ P.VCHAR:~HTTPcommon#P.VCHAR
 		TODO
 		P.CHAR = %x01-7F
 		P.NUL:
-	//3986
-p.URI-reference:~HTTPsem#p.URI-reference
-p.absolute-URI:~HTTPsem#p.absolute-URI
-p.relative-part:~HTTPsem#p.relative-part
-p.authority:~HTTPsem#p.authority
-p.uri-host:~HTTPsem#p.uri-host
-p.path-abempty:~HTTPsem#p.path-abempty
-p.segment:~HTTPsem#p.segment
-p.query:~HTTPsem#p.query
 
-p.scheme:~HTTPsem#p.scheme
-p.host:~HTTPsem#p.host
-p.port:~HTTPsem#p.port
-p.path:~HTTPsem#p.path
-p.fragment:~HTTPsem#p.fragment
+	//3986
+p.URI-reference:~HTTPinfra#p.URI-reference
+p.absolute-URI:~HTTPinfra#p.absolute-URI
+p.relative-part:~HTTPinfra#p.relative-part
+p.authority:~HTTPinfra#p.authority
+p.uri-host:~HTTPinfra#p.uri-host
+p.path-abempty:~HTTPinfra#p.path-abempty
+p.segment:~HTTPinfra#p.segment
+p.query:~HTTPinfra#p.query
+
+p.scheme:~HTTPinfra#p.scheme
+p.host:~HTTPinfra#p.host
+p.port:~HTTPinfra#p.port
+p.path:~HTTPinfra#p.path
+p.fragment:~HTTPinfra#p.fragment
+
+	//Semantics（infra
+
+p.absolute-path:~HTTPinfra#p.absolute-path
+p.partial-URI:~HTTPinfra#p.partial-URI
+p.http-URI:~HTTPinfra#p.http-URI
+p.https-URI:~HTTPinfra#p.https-URI
+p.userinfo:~HTTPinfra#p.userinfo
+p.field-name:~HTTPinfra#p.field-name
+p.field-value:~HTTPinfra#p.field-value
+p.field-content:~HTTPinfra#p.field-content
+p.field-vchar:~HTTPinfra#p.field-vchar
+p.token:~HTTPinfra#p.token
+p.tchar:~HTTPinfra#p.tchar
+p.BWS:~HTTPinfra#p.BWS
+p.OWS:~HTTPinfra#p.OWS
+p.RWS:~HTTPinfra#p.RWS
+p.quoted-string:~HTTPinfra#p.quoted-string
+p.qdtext:~HTTPinfra#p.qdtext
+p.obs-text:~HTTPinfra#p.obs-text
+p.quoted-pair:~HTTPinfra#p.quoted-pair
+p.comment:~HTTPinfra#p.comment
+p.ctext:~HTTPinfra#p.ctext
+p.parameters:~HTTPinfra#p.parameters
+p.parameter:~HTTPinfra#p.parameter
+p.parameter-name:~HTTPinfra#p.parameter-name
+p.parameter-value:~HTTPinfra#p.parameter-value
+
+p.HTTP-date:~HTTPinfra#p.HTTP-date
+p.IMF-fixdate:~HTTPinfra#p.IMF-fixdate
+p.day-name:~HTTPinfra#p.day-name
+p.date1:~HTTPinfra#p.date1
+p.day:~HTTPinfra#p.day
+p.month:~HTTPinfra#p.month
+p.year:~HTTPinfra#p.year
+p.GMT:~HTTPinfra#p.GMT
+p.time-of-day:~HTTPinfra#p.time-of-day
+p.hour:~HTTPinfra#p.hour
+p.minute:~HTTPinfra#p.minute
+p.second:~HTTPinfra#p.second
+p.obs-date:~HTTPinfra#p.obs-date
+p.rfc850-date:~HTTPinfra#p.rfc850-date
+p.date2:~HTTPinfra#p.date2
+p.day-name-l:~HTTPinfra#p.day-name-l
+p.asctime-date:~HTTPinfra#p.asctime-date
+p.date3:~HTTPinfra#p.date3
+
+
+	//Semantics
+p.byte-content-range:~HTTPsem#p.byte-content-range
+p.byte-range-resp:~HTTPsem#p.byte-range-resp
+p.charset:~HTTPsem#p.charset
+p.complete-length:~HTTPsem#p.complete-length
+p.connection-option:~HTTPsem#p.connection-option
+p.content-coding:~HTTPsem#p.content-coding
+p.first-pos:~HTTPsem#p.first-pos
+p.incl-range:~HTTPsem#p.incl-range
+p.int-range:~HTTPsem#p.int-range
+p.language-tag:~HTTPsem#p.language-tag
+p.last-pos:~HTTPsem#p.last-pos
+p.media-type:~HTTPsem#p.media-type
+p.method:~HTTPsem#p.method
+p.other-content-range:~HTTPsem#p.other-content-range
+p.other-range:~HTTPsem#p.other-range
+p.protocol-name:~HTTPsem#p.protocol-name
+p.protocol-version:~HTTPsem#p.protocol-version
+p.protocol:~HTTPsem#p.protocol
+p.pseudonym:~HTTPsem#p.pseudonym
+p.qvalue:~HTTPsem#p.qvalue
+p.range-resp:~HTTPsem#p.range-resp
+p.range-set:~HTTPsem#p.range-set
+p.range-spec:~HTTPsem#p.range-spec
+p.range-unit:~HTTPsem#p.range-unit
+p.ranges-specifier:~HTTPsem#p.ranges-specifier
+p.rank:~HTTPsem#p.rank
+p.received-by:~HTTPsem#p.received-by
+p.received-protocol:~HTTPsem#p.received-protocol
+p.subtype:~HTTPsem#p.subtype
+p.suffix-length:~HTTPsem#p.suffix-length
+p.suffix-range:~HTTPsem#p.suffix-range
+p.t-codings:~HTTPsem#p.t-codings
+p.t-ranking:~HTTPsem#p.t-ranking
+p.type:~HTTPsem#p.type
+p.unsatisfied-range:~HTTPsem#p.unsatisfied-range
+p.weight:~HTTPsem#p.weight
+
+p.accept-ext:~HTTPsem#p.accept-ext
+p.accept-params:~HTTPsem#p.accept-params
+p.auth-param:~HTTPsem#p.auth-param
+p.auth-scheme:~HTTPsem#p.auth-scheme
+p.challenge:~HTTPsem#p.challenge
+p.codings:~HTTPsem#p.codings
+p.credentials:~HTTPsem#p.credentials
+p.expectation:~HTTPsem#p.expectation
+p.language-range:~HTTPsem#p.language-range
+p.mailbox:~HTTPsem#p.mailbox
+p.media-range:~HTTPsem#p.media-range
+p.product-version:~HTTPsem#p.product-version
+p.product:~HTTPsem#p.product
+p.token68:~HTTPsem#p.token68
+
+p.acceptable-ranges:~HTTPsem#p.acceptable-ranges
+p.delay-seconds:~HTTPsem#p.delay-seconds
+p.entity-tag:~HTTPsem#p.entity-tag
+p.etagc:~HTTPsem#p.etagc
+p.opaque-tag:~HTTPsem#p.opaque-tag
+p.weak:~HTTPsem#p.weak
+
+	//Cache
+p.cache-directive:~HTTPcache#p.cache-directive
+p.delta-seconds:~HTTPcache#p.delta-seconds
 
 	//Messaging
 p.HTTP-message:~HTTPmsg#p.HTTP-message
@@ -393,7 +505,7 @@ p.chunked-body:~HTTPmsg#p.chunked-body
 p.field-line:~HTTPmsg#p.field-line
 p.last-chunk:~HTTPmsg#p.last-chunk
 p.message-body:~HTTPmsg#p.message-body
-p.method:~HTTPmsg#p.method
+	p.method:~HTTPmsg#p.method
 p.obs-fold:~HTTPmsg#p.obs-fold
 p.origin-form:~HTTPmsg#p.origin-form
 p.reason-phrase:~HTTPmsg#p.reason-phrase
@@ -406,314 +518,206 @@ p.trailer-section:~HTTPmsg#p.trailer-section
 p.transfer-coding:~HTTPmsg#p.transfer-coding
 p.transfer-parameter:~HTTPmsg#p.transfer-parameter
 
-	//Semantics
-p.BWS:~HTTPsem#p.BWS
-p.OWS:~HTTPsem#p.OWS
-p.RWS:~HTTPsem#p.RWS
-
-p.Connection:~HTTPsem#p.Connection
-p.Content-Encoding:~HTTPsem#p.Content-Encoding
-p.Content-Language:~HTTPsem#p.Content-Language
-p.Content-Length:~HTTPsem#p.Content-Length
-p.Content-Location:~HTTPsem#p.Content-Location
-p.Content-Range:~HTTPsem#p.Content-Range
-p.Content-Type:~HTTPsem#p.Content-Type
-p.Host:~HTTPsem#p.Host
-p.Trailer:~HTTPsem#p.Trailer
-p.TE:~HTTPsem#p.TE
-p.Upgrade:~HTTPsem#p.Upgrade
-p.Via:~HTTPsem#p.Via
-
-p.absolute-path:~HTTPsem#p.absolute-path
-p.byte-content-range:~HTTPsem#p.byte-content-range
-p.byte-range-resp:~HTTPsem#p.byte-range-resp
-p.charset:~HTTPsem#p.charset
-p.comment:~HTTPsem#p.comment
-p.complete-length:~HTTPsem#p.complete-length
-p.connection-option:~HTTPsem#p.connection-option
-p.content-coding:~HTTPsem#p.content-coding
-p.ctext:~HTTPsem#p.ctext
-p.field-content:~HTTPsem#p.field-content
-p.field-name:~HTTPsem#p.field-name
-p.field-value:~HTTPsem#p.field-value
-p.field-vchar:~HTTPsem#p.field-vchar
-p.first-pos:~HTTPsem#p.first-pos
-p.http-URI:~HTTPsem#p.http-URI
-p.https-URI:~HTTPsem#p.https-URI
-p.incl-range:~HTTPsem#p.incl-range
-p.int-range:~HTTPsem#p.int-range
-p.language-tag:~HTTPsem#p.language-tag
-p.last-pos:~HTTPsem#p.last-pos
-p.media-type:~HTTPsem#p.media-type
-p.obs-text:~HTTPsem#p.obs-text
-p.other-content-range:~HTTPsem#p.other-content-range
-p.other-range:~HTTPsem#p.other-range
-p.parameter-name:~HTTPsem#p.parameter-name
-p.parameter-value:~HTTPsem#p.parameter-value
-p.parameter:~HTTPsem#p.parameter
-p.parameters:~HTTPsem#p.parameters
-p.partial-URI:~HTTPsem#p.partial-URI
-p.protocol-name:~HTTPsem#p.protocol-name
-p.protocol-version:~HTTPsem#p.protocol-version
-p.protocol:~HTTPsem#p.protocol
-p.pseudonym:~HTTPsem#p.pseudonym
-p.qdtext:~HTTPsem#p.qdtext
-p.quoted-pair:~HTTPsem#p.quoted-pair
-p.quoted-string:~HTTPsem#p.quoted-string
-p.qvalue:~HTTPsem#p.qvalue
-p.range-resp:~HTTPsem#p.range-resp
-p.range-set:~HTTPsem#p.range-set
-p.range-spec:~HTTPsem#p.range-spec
-p.range-unit:~HTTPsem#p.range-unit
-p.ranges-specifier:~HTTPsem#p.ranges-specifier
-p.rank:~HTTPsem#p.rank
-p.received-by:~HTTPsem#p.received-by
-p.received-protocol:~HTTPsem#p.received-protocol
-p.subtype:~HTTPsem#p.subtype
-p.suffix-length:~HTTPsem#p.suffix-length
-p.suffix-range:~HTTPsem#p.suffix-range
-p.t-codings:~HTTPsem#p.t-codings
-p.t-ranking:~HTTPsem#p.t-ranking
-p.tchar:~HTTPsem#p.tchar
-p.token:~HTTPsem#p.token
-p.type:~HTTPsem#p.type
-p.unsatisfied-range:~HTTPsem#p.unsatisfied-range
-p.userinfo:~HTTPsem#p.userinfo
-p.weight:~HTTPsem#p.weight
-
-p.HTTP-date:~HTTPsem#p.HTTP-date
-p.IMF-fixdate:~HTTPsem#p.IMF-fixdate
-p.day-name:~HTTPsem#p.day-name
-p.date1:~HTTPsem#p.date1
-p.day:~HTTPsem#p.day
-p.month:~HTTPsem#p.month
-p.year:~HTTPsem#p.year
-p.GMT:~HTTPsem#p.GMT
-p.time-of-day:~HTTPsem#p.time-of-day
-p.hour:~HTTPsem#p.hour
-p.minute:~HTTPsem#p.minute
-p.second:~HTTPsem#p.second
-p.obs-date:~HTTPsem#p.obs-date
-p.rfc850-date:~HTTPsem#p.rfc850-date
-p.date2:~HTTPsem#p.date2
-p.day-name-l:~HTTPsem#p.day-name-l
-p.asctime-date:~HTTPsem#p.asctime-date
-p.date3:~HTTPsem#p.date3
-
-p.Range:~HTTPrq#p.Range
-p.accept-ext:~HTTPrq#p.accept-ext
-p.accept-params:~HTTPrq#p.accept-params
-p.auth-param:~HTTPrq#p.auth-param
-p.auth-scheme:~HTTPrq#p.auth-scheme
-p.challenge:~HTTPrq#p.challenge
-p.codings:~HTTPrq#p.codings
-p.credentials:~HTTPrq#p.credentials
-p.expectation:~HTTPrq#p.expectation
-p.language-range:~HTTPrq#p.language-range
-p.mailbox:~HTTPrq#p.mailbox
-p.media-range:~HTTPrq#p.media-range
-p.product-version:~HTTPrq#p.product-version
-p.product:~HTTPrq#p.product
-p.token68:~HTTPrq#p.token68
-
-p.Location:~HTTPrs#p.Location
-p.acceptable-ranges:~HTTPrs#p.acceptable-ranges
-p.delay-seconds:~HTTPrs#p.delay-seconds
-p.entity-tag:~HTTPrs#p.entity-tag
-p.etagc:~HTTPrs#p.etagc
-p.opaque-tag:~HTTPrs#p.opaque-tag
-p.weak:~HTTPrs#p.weak
-
-	//Cache
-p.cache-directive:~HTTPcache#p.cache-directive
-p.delta-seconds:~HTTPcache#p.delta-seconds
-
 	●code 他
+c.http:~HTTPinfra#http.uri
+c.https:~HTTPinfra#https.uri
+
 c.chunked:~HTTPmsg#chunked.encoding
 c.compress:~HTTPsem#compress.coding
 c.deflate:~HTTPsem#deflate.coding
 c.gzip:~HTTPsem#gzip.coding
-c.identity:~HTTPrq#identity-token
-c.100-continue:~HTTPrq#100-continue
+c.identity:~HTTPsem#identity-token
+c.100-continue:~HTTPsem#100-continue
 
-c.http:~HTTPsem#http.uri
-c.https:~HTTPsem#https.uri
 c.multipart/byteranges:~HTTPsem#multipart.byteranges
 c.multipart:~HTTPsem#multipart.types
 
-c.realm:~HTTPrq#realm
+c.realm:~HTTPsem#realm
 
 
 	●用語
 
-~HTTP11:~HTTPmsg#version-1.1
-転送~符号法:~HTTPmsg#transfer.codings
-転送~符号法の名前:~HTTPmsg#transfer-coding-name
-
 	// -> semantics
-~HTTP要請:~HTTPsem#request
-~stateless:~HTTPsem#stateless
-上流:~HTTPsem#upstream
-下流:~HTTPsem#downstream
-内方:~HTTPsem#inbound
-外方:~HTTPsem#outbound
-端点:~HTTPsem#endpoint
-端点間:~HTTPsem#end-to-end
-隣点間:~HTTPsem#hop-by-hop
-連鎖:~HTTPsem#chain
-~UA:~HTTPsem#user-agent
-~client:~HTTPsem#client
-~server:~HTTPsem#server
-~gateway:~HTTPsem#gateway
-~tunnel:~HTTPsem#tunnel
-~proxy:~HTTPsem#proxy
-~cache:~HTTPsem#cache
-送信者:~HTTPsem#sender
-中継者:~HTTPsem#intermediary
-受信者:~HTTPsem#recipient
-生成され:~HTTPsem#generate
-生成し:~HTTPsem#generate
-生成する:~HTTPsem#generate
-生成元~server:~HTTPsem#origin-server
-	~version法:~HTTPsem#protocol.version
-	~version番号:~HTTPsem#version-number
-~major~version:~HTTPsem#major-version
-~minor~version:~HTTPsem#minor-version
-応答:~HTTPsem#response
-要請:~HTTPsem#request
-完全:~HTTPsem#complete
-不完全:~HTTPsem#complete
-~parameter:~HTTPsem#parameter
 
-素片~識別子:~HTTPsem#uri.fragment.identifiers
+	§#conformance
+適合性:~HTTPinfra#conformance
+生成され:~HTTPinfra#generate
+生成し:~HTTPinfra#generate
+生成する:~HTTPinfra#generate
+	~version番号:~HTTPinfra#version-number
+~major~version:~HTTPinfra#major-version
+~minor~version:~HTTPinfra#minor-version
 
-表現:~HTTPsem#representation
-~field:~HTTPsem#fields
-~field名:~HTTPsem#field-name
-~field値:~HTTPsem#field-value
-	~field:~HTTPsem#header.and.trailer.fields
-	~field値:~HTTPsem#field.values
-	~field名:~HTTPsem#field.names
-~field行l:~HTTPsem#field-line
-~field行l値:~HTTPsem#field-line-value
-単数~field:~HTTPsem#singleton-field
-~listに基づく~field:~HTTPsem#list-based-field
-~header節:~HTTPsem#header-section
-~trailer節:~HTTPsem#trailer-section
-~header:~HTTPsem#header-field
-~trailer:~HTTPsem#trailer-field
-~payload:~HTTPsem#payload
-~message~payload:~HTTPsem#payload
-~payload本体:~HTTPsem#payload.body
-~message本体:~HTTPsem#message-body
+	§#terminology
+資源:~HTTPinfra#resource
+~client:~HTTPinfra#client
+~server:~HTTPinfra#server
+	役割
+	参加者
+	接続
+~message:~HTTPinfra#message
+送信者:~HTTPinfra#sender
+受信者:~HTTPinfra#recipient
+	要請:~HTTPinfra#request
+	応答:~HTTPinfra#response
+~UA:~HTTPinfra#user-agent
+生成元~server:~HTTPinfra#origin-server
+連鎖:~HTTPinfra#chain
+中継者:~HTTPinfra#intermediary
+端点:~HTTPinfra#endpoint
+端点間:~HTTPinfra#end-to-end
+隣点間:~HTTPinfra#hop-by-hop
+上流:~HTTPinfra#upstream
+下流:~HTTPinfra#downstream
+内方:~HTTPinfra#inbound
+外方:~HTTPinfra#outbound
+~proxy:~HTTPinfra#proxy
+~gateway:~HTTPinfra#gateway
+~tunnel:~HTTPinfra#tunnel
+~stateless:~HTTPinfra#stateless
+~cache:~HTTPinfra#cache
+~cache可能:~HTTPinfra#cacheable
 
-~URI:~HTTPsem#uri
+	§#uri
+~URI:~HTTPinfra#uri
+~URI参照:~HTTPinfra#uri-reference
+	~secure化:~HTTPinfra#secured
+	生成元:~HTTPinfra#origin
+
+	§#message.abstraction
+完全:~HTTPinfra#complete
+不完全:~HTTPinfra#complete
+~field:~HTTPinfra#field
+~header:~HTTPinfra#header-field
+~header節:~HTTPinfra#header-section
+~trailer:~HTTPinfra#trailer-field
+~trailer節:~HTTPinfra#trailer-section
+~field名:~HTTPinfra#field-name
+~field値:~HTTPinfra#field-value
+~field行l:~HTTPinfra#field-line
+~field行l値:~HTTPinfra#field-line-value
+単数~field:~HTTPinfra#singleton-field
+~listに基づく~field:~HTTPinfra#list-based-field
+結合-:~HTTPinfra#combine-headers
+~payload:~HTTPinfra#payload
+~message~payload:~HTTPinfra#payload
+~payload~header:~HTTPinfra#payload-headers
+~payload本体:~HTTPinfra#payload-body
+~message本体:~HTTPinfra#message-body
+
+	~token:
+空白:~HTTPinfra#whitespace
+	~comment:~HTTPinfra#comments
+	~parameters:~HTTPinfra#parameter
+~parameter:~HTTPinfra#parameter
+	日時:~HTTPinfra#http.date
+	素片~識別子:~HTTPinfra#uri.fragment.identifiers
+
+	§#routing
 ~target~URI:~HTTPsem#target-URI
 ~target資源:~HTTPsem#target-resource
 要請~target:~HTTPsem#request-target
-空白:~HTTPsem#whitespace
-~charset:~HTTPsem#charset
-内容~符号法:~HTTPsem#content.codings
-内容~符号法の名前:~HTTPsem#p.content-coding
-資源:~HTTPsem#resources
-~MIME型:~HTTPsem#media.type
-	~MIME型:~HTTPsem#media.type
-~MIME型~parameter:~HTTPsem#media-type.parameter
-日時:~HTTPsem#http.date
+	接続~option:~HTTPsem#connection-option
+形式変換-:~HTTPsem#message-transformation
+形式変換:~HTTPsem#message-transformation
 
-複部位:~HTTPsem#multipart
-指紋収集:~HTTPsem#fingerprinting
-資源:~HTTPsem#resources
+	§#representations
 表現:~HTTPsem#representation
 選定された表現:~HTTPsem#selected-representation
 選定される表現:~HTTPsem#selected-representation
-~metadata:~HTTPsem#representation.metadata
-言語~tag:~HTTPsem#language.tags
-表現~data:~HTTPsem#representation.data
-表現~metadata:~HTTPsem#representation.metadata
-表現~header:~HTTPsem#representation.metadata
-内容~折衝:~HTTPsem#content.negotiation
-~proactive折衝:~HTTPsem#proactive.negotiation
-~reactive折衝:~HTTPsem#reactive.negotiation
-要請~payload折衝:~HTTPsem#request.payload.negotiation
-品質値:~HTTPsem#quality.values
-品質~値:~HTTPsem#quality.values
+表現~data:~HTTPsem#representation-data
+表現~header:~HTTPsem#representation-header
+表現~metadata:~HTTPsem#representation-metadata
+~MIME型:~HTTPsem#media-type
+~MIME型~parameter:~HTTPsem#media-type-parameter
+~charset:~HTTPsem#charset
+内容~符号法:~HTTPsem#content.codings
+内容~符号法の名前:~HTTPsem#p.content-coding
+言語~tag:~HTTPsem#language-tag
+検証子~header:~HTTPsem#validator-header
+検証子:~HTTPsem#validator
+強い検証子:~HTTPsem#strong-validator
+弱い検証子:~HTTPsem#weak-validator
+	強い:~HTTPsem#strong-validator
+	弱い:~HTTPsem#weak-validator
+強い比較~関数:~HTTPsem#strong-comparison
+弱い比較~関数:~HTTPsem#weak-comparison
+改変~日時:~HTTPsem#modification-date
 
-形式変換-:~HTTPsem#message.transformations
-形式変換:~HTTPsem#message.transformations
+	§#methods
+~method:~HTTPsem#methods
+要請~method:~HTTPsem#methods
+安全:~HTTPsem#safe-method
+冪等:~HTTPsem#idempotent-method
+冪等~method:~HTTPsem#idempotent-method
+~server-wide:~HTTPsem#server-wide
 
-~payload~header:~HTTPsem#payload-headers
+	§#context
+要請~header:~HTTPsem#request-header
+期待:~HTTPsem#expectation
+製品~識別子:~HTTPsem#product-identifier
+応答~header:~HTTPsem#response-header
+~messageの出生日時:~HTTPsem#origination-date
+時計:~HTTPsem#clock
+首な資源:~HTTPsem#primary-resource
 
-範囲~単位:~HTTPsem#range.units
-~byte範囲:~HTTPsem#byte.ranges
-結合-:~HTTPsem#combine-headers
+	§#authentication
+認証~scheme:~HTTPsem#auth.scheme
+認証~parameter:~HTTPsem#authentication-parameter
+資格証:~HTTPsem#credential
+保護~空間:~HTTPsem#protection-space
+正準的~root~URI:~HTTPsem#canonical-root-URI
 
-~cache可能:~HTTPsem#cacheable.methods
+	§#content.negotiation
+内容~折衝:~HTTPsem#content-negotiation
+~proactive折衝:~HTTPsem#proactive-negotiation
+~proactive折衝~header:~HTTPsem#proactive-negotiation
+~reactive折衝:~HTTPsem#reactive-negotiation
+要請~payload折衝:~HTTPsem#request-payload-negotiation
+品質値:~HTTPsem#quality-value
+品質~値:~HTTPsem#quality-value
+	既定の重み
+	~wildcard値
+選定用~header:~HTTPsem#selecting-header
 
-	範囲~単位:~7233#range.units
-	範囲~要請:~7233#range.requests
-	部分的~要請:~7233#range.requests
+	§#conditional.requests
+条件付き要請:~HTTPsem#conditional-request
+条件付き要請~header:~HTTPsem#conditional-request-header
+事前条件~header:~HTTPsem#conditional-request-header
+事前条件:~HTTPsem#precondition
+更新喪失:~HTTPsem#lost-update
 
-適合性:~HTTPsem#conformance
+	§#field.range
+範囲~要請:~HTTPsem#range-request
+	範囲~指定子
+範囲~単位:~HTTPsem#range-unit
+~byte範囲:~HTTPsem#byte-range
+複部位:~HTTPsem#multipart
 
-		●HTTPrq
-要請~header:~HTTPrq#request.header.fields
-内容~折衝の~subject:~HTTPrq#request.conneg
-~proactive折衝~header:~HTTPrq#request.conneg
-期待:~HTTPrq#field.expect
-~method:~HTTPrq#methods
-~server-wide:~HTTPrq#server-wide
-冪等:~HTTPrq#idempotent.methods
-冪等~method:~HTTPrq#idempotent.methods
-制御~header:~HTTPrq#request.controls
-安全:~HTTPrq#safe.methods
-要請~method:~HTTPrq#methods
-要請の意味論:~HTTPrq#methods
+	§#status.codes
+応答~状態s~code:~HTTPsem#status-code
+状態s~code:~HTTPsem#status-code
+応答class:~HTTPsem#responce-class
 
-条件付き要請:~HTTPrq#preconditions
-事前条件:~HTTPrq#precondition
-条件付き要請~header:~HTTPrq#preconditions
-事前条件~header:~HTTPrq#preconditions
-資格証:~HTTPrq#credentials
-保護~空間:~HTTPrq#protection-space
-認証~scheme:~HTTPrq#authentication-scheme
-認証~parameter:~HTTPrq#authentication-parameter
-正準的~root~URI:~HTTPrq#canonical-root-URI
-製品~識別子:~HTTPrq#product-identifier
-範囲~要請:~HTTPrq#field.range
-更新喪失:~HTTPrq#lost-update
-
-	●HTTPrs
-応答~header:~HTTPrs#response.header.fields
-応答class:~HTTPrs#responce-class
-応答~状態s~code:~HTTPrs#status.codes
-状態s~code:~HTTPrs#status.codes
-	資源:~7231#resources
-	~MIME型:~7231#media.type
-暫定-応答:~HTTPrs#interim-response
-最終-応答:~HTTPrs#final-response
+暫定-応答:~HTTPsem#interim-response
+最終-応答:~HTTPsem#final-response
 	#final-interim
+事由~句:#reason-phrase
 
-時計:~HTTPrs#clock
-検証子~header:~HTTPrs#response.validator
-検証子:~HTTPrs#response.validator
-強い検証子:~HTTPrs#strong-validator
-弱い検証子:~HTTPrs#weak-validator
-	強い:~HTTPrs#strong-validator
-	弱い:~HTTPrs#weak-validator
-強い比較~関数:~HTTPrs#strong-comparison
-弱い比較~関数:~HTTPrs#weak-comparison
-改変~日時:~HTTPrs#modification-date
-~messageの出生日時:~HTTPrs#origination-date
-部分的な応答:~HTTPrs#status.206
-部分的:~HTTPrs#status.206
-首な資源:~HTTPrs#primary-resource
-選定用~header:~HTTPrs#selecting-header
-制御~data:~HTTPrs#response.control.data
-満足可能:~HTTPrs#satisfiable
+部分的な応答:~HTTPsem#status.206
+部分的:~HTTPsem#status.206
+満足可能:~HTTPsem#satisfiable
 	満足不能:~HTTPsem#unsatisfiable
 
-		●HTTPcache
+	§#extending
+
+	§#security.considerations
+指紋収集:~HTTPinfra#fingerprinting
+	権限的な応答
+
+
+
+	●HTTPcache
 経験的に~cache可能:~HTTPcache#heuristically-cacheable
 ~cache検証:~HTTPcache#validation.model
 ~cache検証~要請:~HTTPcache#validation.sent
@@ -722,10 +726,14 @@ c.realm:~HTTPrq#realm
 私用~cache:~HTTPcache#private-cache
 	~cache:~HTTPcache#cache
 
+	●HTTPmsg
+~HTTP11:~HTTPmsg#version-1.1
+転送~符号法:~HTTPmsg#transfer.codings
+転送~符号法の名前:~HTTPmsg#transfer-coding-name
 
-		●
-		著作者連絡先:#_spec_metadata
+	●
 IETF による考査:~RFCx/rfc8126#section-4.8
+
 `
 
 // 
@@ -969,8 +977,6 @@ agent::::エージェント
 不可能:impossible:~
 	無効化-／無力化:disable:無効化
 同義語:synonym:~
-多様:diverse:~
-多様性:diversity:~
 大概は:presumableに:~
 実用性:practicality:~
 遂行:performing:~
@@ -1418,7 +1424,6 @@ stateless::::ステートレス
 算術的:arithmetic:~
 算術:arithmetic:~
 節約-:save:~
-部分範囲:subrange::~
 単位:unit:~
 終了-:terminate:~
 終了:termination:~

@@ -1063,9 +1063,8 @@ RFC7230:RFC7230-ja.html
 RFC7231:RFC7231-ja.html
 RFC7232:RFC7232-ja.html
 RFC7234:RFC7234-ja.html
-HTTPsem:http-semantics-ja.html
-HTTPrq:http-request-ja.html
-HTTPrs:http-response-ja.html
+HTTPinfra:http-semantics-ja.html
+HTTPsem:http-semantics2-ja.html
 HTTPcache:http-cache-ja.html
 HTTPmsg:http-messaging-ja.html
 HTTPweblink:http-web-linking-ja.html
