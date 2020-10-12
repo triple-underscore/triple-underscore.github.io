@@ -2720,7 +2720,6 @@ query::::クエリ
 抽出-:extract::~
 生産-:produce::~
 格納-:store::~
-格納:storage::~
 storage::::ストレージ
 収集-:collect::~
 収集:collection::~
