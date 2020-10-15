@@ -923,7 +923,7 @@ COMMON_DATA.PREMAP = `
 新初:\uE007新たに定義される<a href="~CASCADE#initial-values">初期~値</a>\uE005
 新算:\uE007新たに定義される<a href="~CASCADE#computed">算出d値</a>\uE005
 初:\uE007<a href="~CASCADE#initial-values">初期~値</a>\uE005
-適:\uE007適用対象\uE005
+適:\uE007<a href="~CASCADE#applies-to">適用対象</a>\uE005
 継:\uE007<a href="~CASCADE#inherited-property">継承-</a>\uE005
 百:\uE007<a href="~CSSVAL#percentages">百分率</a>\uE005
 算:\uE007<a href="~CASCADE#computed">算出d値</a>\uE005
