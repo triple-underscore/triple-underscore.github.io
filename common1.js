@@ -1710,7 +1710,6 @@ INDEXEDDB=副          ~/IndexedDB-ja.html
 JLREQ=主              ~TR/jlreq/ja/
 JLREQ=副              w3c.github.io/jlreq/●日本語訳（編集者草案）
 INFRA=副              ~/infra-ja.html
-MIX=副                ~/webappsec-mixed-content-ja.html
 HRTIME2=副            ~/hr-time-ja.html
 NAVIGATIONTIMING2=副  ~/navigation-timing-ja.html
 PAGEVISIBILITY=副     ~/page-visibility-ja.html
@@ -1811,7 +1810,7 @@ SECURECONTEXTS=副     ~/webappsec-secure-contexts-ja.html
 SECURECONTEXTS=副     hashedhyphen.github.io/webappsec-specjp/secure-contexts/index.html
 SRI=副                ~/webappsec-subresource-integrity-ja.html
 UPGRADEINSECUREREQUESTS=副 ~/webappsec-upgrade-insecure-requests-ja.html
-MIXEDCONTENT=副       ~/webappsec-mixed-content-ja.html
+MIXEDCONTENT=副       ~/webappsec-mixed-content-ja.html●Level 2 日本語訳
 SECURITYPRIVACYQUESTIONNAIRE=副 ~/security-questionnaire-ja.html
 STREAMS=副            ~/Streams-ja.html
 SVG2=副               triple-underscore.github.io/index.html#spec-list-svg
@@ -1925,6 +1924,7 @@ CSSOM:CSSOM1
 CSSOMVIEW:CSSOMVIEW1
 MEDIAQ:MEDIAQUERIES4
 MEDIAQUERIES:MEDIAQUERIES4
+MIX:MIXEDCONTENT
 CSS3MEDIAQUERIES:MEDIAQUERIES3
 MEDIAFRAGS:MEDIAFRAG
 SELECT:SELECTORS3
