@@ -2594,6 +2594,7 @@ class::::クラス
 下位class:subclass:下位 class::下位クラス
 
 文脈:context::~
+scope::::スコープ
 視野:scope::~::スコープ
 名前空間:namespace::~
 
