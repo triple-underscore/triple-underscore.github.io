@@ -1215,7 +1215,7 @@ HEscripting:HTML-scripting-ja.html
 HEcanvas:HTML-canvas-ja.html
 HEtables:HTML-tables-ja.html
 WORKERS:Workers-ja.html
-WORKLETS1:worklets-ja.html
+WORKLETS:worklets-ja.html
 WEBSOCKET:WebSocket-ja.html
 STORAGE:storage-ja.html
 WEBSTORAGE:WebStorage-ja.html
