@@ -238,6 +238,9 @@ case 'X':
 case 'idx':
 	return idx_html(key);
 	break;
+case 'smb':
+	text = `(<span class="char-symbol">${text}</span>)`;
+	break;
 case 'en':
 	return `<span lang="en-x-a0">${key}</span>`;
 	break;
@@ -307,8 +310,8 @@ return text;
 ●●options
 
 spec_title:Encoding
-spec_date:2020-09-29
-trans_update:2020-09-22
+spec_date:2020-10-21
+trans_update:2020-10-21
 source_checked:200908
 spec_status:LS
 original_url:https://encoding.spec.whatwg.org/
@@ -340,6 +343,7 @@ i1:i
 V:var
 xA:code
 tA:sub
+c:code
 em:em
 
 ●●mdn_urls
@@ -661,6 +665,7 @@ byte.長さ:~INFRA#byte-sequence-length
 ~scalar値~文字列:~INFRA#scalar-value-string
 ~cu:~INFRA#code-unit
 ~cp:~INFRA#code-point
+cp.値:~INFRA#code-point-value
 ~scalar値:~INFRA#scalar-value
 ~surrogate:~INFRA#surrogate
 ~ASCII~cp:~INFRA#ascii-code-point
@@ -1184,7 +1189,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/encoding/commits
-	<a href="https://encoding.spec.whatwg.org/commit-snapshots/7f1765484aa4fd34fa024300f0e2a1cab61559da/">Snapshot as of this commit</a>
+	<a href="https://encoding.spec.whatwg.org/commit-snapshots/a5e3e115577d71bfdc06bd0f786186cf31dd9c30/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/encodings">@encodings</a>
 
 Tests:
@@ -2012,6 +2017,20 @@ If mode is not given, then set it to "replacement" if encoderDecoderInstance is 
 	<li>
 ~Assert：
 %~coder~instance は`符号化器$の~instanceであるならば、
+%~mode ~NEQ `replacement^l
+◎
+Assert: if encoderDecoderInstance is an encoder instance, mode is not "replacement".
+</li>
+	<li>
+~Assert：
+%~coder~instance は`復号器$の~instanceであるならば、
+%~mode ~NEQ `html^l
+◎
+Assert: if encoderDecoderInstance is a decoder instance, mode is not "html".
+</li>
+	<li>
+~Assert：
+%~coder~instance は`符号化器$の~instanceであるならば、
 %~item は`~surrogate$ではない。
 ◎
 Assert: if encoderDecoderInstance is an encoder instance, item is not a surrogate.
@@ -2037,7 +2056,7 @@ If result is continue, return result.
 %結果 ~EQ `完遂d$
 ］
 ⇒＃
-`入出力~queueに~pushする$( %出力, `~EoQ$ )；
+`入出力~queueに~pushする$( %出力, « `~EoQ$ » )；
 ~RET %結果
 ◎
 Otherwise, if result is finished:
@@ -2089,24 +2108,33 @@ switch on mode and run the associated steps:
 		<dl class="switch">
 			<dt>`replacement^l</dt>
 			<dd>
-`入出力~queueに~pushする$( %出力, `FFFD^U )
+`入出力~queueに~pushする$( %出力, « `FFFD^U » )
 ◎
 Push U+FFFD to output.
 </dd>
 
 			<dt>`html^l</dt>
 			<dd>
-`入出力~queueに前付加する$( %入力, 次に与える~cp列 )
+				<ol>
+					<li>
+%数字列 ~LET ［
+%結果 を成す`~cp$
+］の`値$cpを基数 10 で最短に表現するような，［
+1 個以上の［
+`30^X `0^smb 〜 `39^X `9^smb
+］からなる~byte列
+</li>
+					<li>
+`入出力~queueに~pushする$( %出力, 次の並びが成す~byte列 )
 ⇒＃
-`0026^U,
-`0023^U,
-%結果 の`~cp$を基数 10 により最短で表現する`~ASCII数字$列,
-`003B^U
+`26^X `&amp;^smb,
+`23^X `#^smb,
+%数字列,
+`3B^X `;^smb
+</li>
+				</ol>
 ◎
-Prepend U+0026, U+0023, followed by the shortest sequence of ASCII digits representing result’s code point in base ten, followed by U+003B to input.
-</dd>
-			<dd>
-【すなわち、 `&amp;#<var>数字列</var>;^l 】
+Push 0x26 (&amp;), 0x23 (#), followed by the shortest sequence of 0x30 (0) to 0x39 (9), inclusive, representing result’s code point’s value in base ten, followed by 0x3B (;) to output.
 </dd>
 
 			<dt>`fatal^l</dt>
@@ -7319,14 +7347,32 @@ If pointer is non-null, it is less than 8836 due to the nature of index jis0208 
 </p>
 	</li>
 	<li>
+<p>
 ~IF［
 %~pointer ~EQ ~NULL
+］：
+◎
+If pointer is null, then:
+</p>
+		<ol>
+			<li>
+~IF［
+`~ISO-2022-JP符号化器~状態$ ~EQ `jis0208$i1
 ］
-⇒
+⇒＃
+`入出力~queueに前付加する$( %入出力~queue, %~cp )；
+`~ISO-2022-JP符号化器~状態$ ~SET `ASCII$i1 ；
+~RET ~byte列 [ `1B^X, `28^X, `42^X ]
+◎
+If ISO-2022-JP encoder state is jis0208, then prepend code point to ioQueue, set ISO-2022-JP encoder state to ASCII, and return three bytes 0x1B 0x28 0x42.
+</li>
+			<li>
 ~RET %~cp を伴う`~error$
 ◎
-If pointer is null, return error with code point.
+Return error with code point.
 </li>
+		</ol>
+	</li>
 	<li>
 ~IF［
 `~ISO-2022-JP符号化器~状態$ ~NEQ `jis0208$i1
