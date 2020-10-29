@@ -154,8 +154,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2020-09-29
-trans_update:2020-09-19
+spec_date:2020-10-28
+trans_update:2020-10-29
 	source_checked:200625
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -1252,6 +1252,8 @@ adapter::::アダプタ
 	したまま:leave
 	半ば:half
 	〜を介して作成された新たな:newly-created-via-
+	~~分割代入＋^en:destructure
+	結果:return value
 
 	●仕様
 framework::::フレームワーク
@@ -1796,7 +1798,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/a669248fcbaebbf86f6382be23ebe171a54eeaf3" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/7d866d4c46da8ce3805f5169ca6946247261ea23" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -2540,13 +2542,9 @@ The simplest way to consume a readable stream is to simply pipe it to a writable
 
 <pre class="lang-js">
 %readableStream.pipeTo(%writableStream)
-  .then(() =&gt; console.log(`すべての~dataは成功裡に書込まれました^l))
-  .catch(%e =&gt; console.error(`何かまずいことが起きたようです^l, %e));
+  .then(() =&gt; console.log(`すべての~dataは成功裡に書込まれました^l【！All data successfully written!】))
+  .catch(%e =&gt; console.error(`何かまずいことが起きたようです^l【！Something went wrong!】, %e));
 </pre>
-<!-- 
-"All data successfully written!"
-"Something went wrong!"
--->
 </div>
 
 <div class="example" id="example-pipe-as-chunks-receiver">
@@ -2562,21 +2560,15 @@ If you simply want to be alerted of each new chunk from a readable stream, you c
 <pre class="lang-js">
 %readableStream.pipeTo(new WritableStream({
   write(%chunk) {
-    console.log(`~chunkが受信されました^l, %chunk);
+    console.log(`~chunkが受信されました^l【！Chunk received】, %chunk);
   },
   close() {
-    console.log(`すべての~dataを成功裡に読取りました^l);
+    console.log(`すべての~dataを成功裡に読取りました^l【！All data successfully read!】);
   },
   abort(%e) {
-    console.error(`何かまずいことが起きたようです^l, %e);
+    console.error(`何かまずいことが起きたようです^l【！Something went wrong!】, %e);
   }
 }));
-
-<!-- 
-"Chunk received"
-"All data successfully read!"
-"Something went wrong!"
--->
 </pre>
 
 <p>
@@ -2603,19 +2595,15 @@ const %reader = %readableStream.getReader();
 %reader.read().then(
   ({ %value, %done }) =&gt; {
     if (%done) {
-      console.log(`~streamはすでに~closeされています^l);
+      console.log(`~streamはすでに~closeされています^l【！The stream was already closed】);
     } else {
       console.log(%value);
     }
   },
-  %e =&gt; console.error(`~streamに~errorが生じたので読取れません^l, %e)
+  %e =&gt; console.error(`~streamに~errorが生じたので読取れません^l【！The stream became errored and cannot be read from】, %e)
 );
 </pre>
 
-<!-- 
-"The stream was already closed"
-"The stream became errored and cannot be read from"
--->
 <p>
 この~methodは、~streamを より手動的に読取るとき
 — 主に~library作者にとって、［
@@ -2639,39 +2627,41 @@ The above example showed using the readable stream’s default reader. If the st
 </p>
 
 <pre class="lang-js">
-const %reader = readableStream.getReader({ mode: `byob^l });
+const %reader = readableStream.getReader({ mode: "byob" });
 
 let %startingAB = new ArrayBuffer(1024);
-readInto(%startingAB)
-  .then(%buffer =&gt; console.log(`最初の 1024 ~byte:^l, %buffer))
-  .catch(%e =&gt; console.error(`何かまずいことが起きたようです^l, %e));
+const %buffer = await readInto(%startingAB);
+console.log(`最初の 1024 ~byte: ^l【！The first 1024 bytes: 】, %buffer);
 
-function readInto(%buffer, %offset = 0) {
-  if (%offset === %buffer.byteLength) {
-    return Promise.resolve(%buffer);
+async function readInto(%buffer) {
+  let %offset = 0;
+
+  while (%offset &lt; %buffer.byteLength) {
+    const {value: %view, %done} =
+     await %reader.read(new Uint8Array(%buffer, %offset, %buffer.byteLength - %offset));
+    %buffer = %view.buffer;
+    if (%done) {
+      break;
+    }
+    %offset += %view.byteLength;
   }
 
-  const %view = new Uint8Array(%buffer, %offset, %buffer.byteLength - %offset);
-  return %reader.read(%view).then(%newView =&gt; {
-    return readInto(%newView.buffer, %offset + %newView.byteLength);
-  });
+  return %buffer;
 }
 </pre>
-<!-- 
-"The first 1024 bytes:"
-"Something went wrong!"
- -->
 
 <p>
 ここで重要なことは、~~最終的な %buffer 値は %startingAB と異なるが、それら（および すべての中間的~buffer）は，裏では同じ記憶域の割振りを共有することである。
 ~bufferは、毎回 新たな `ArrayBuffer$I ~objに`転送され$る。
-%newView は、各種~propが次のように設定された，新たな `Uint8Array$I になる
+%view は、［
+各~propが次のように設定された，新たな `Uint8Array$I
+］を読取った結果から~~分割代入（ `destructure^en ）される
 ⇒＃
-`buffer^m ~SET 当の `ArrayBuffer$I ~obj；
-`byteOffset^m ~SET 書込まれた~byte列の~offset；
-`byteLength^m ~SET 書込まれた~byte数
+`buffer^m ~SET 当の `ArrayBuffer$I ~obj,
+`byteOffset^m ~SET 書込んだ~byte列の~offset,
+`byteLength^m ~SET 書込んだ~byte数
 ◎
-An important thing to note here is that the final buffer value is different from the startingAB, but it (and all intermediate buffers) shares the same backing memory allocation. At each step, the buffer is transferred to a new ArrayBuffer object. The newView is a new Uint8Array, with that ArrayBuffer object as its buffer property, the offset that bytes were written to as its byteOffset property, and the number of bytes that were written as its byteLength property.
+An important thing to note here is that the final buffer value is different from the startingAB, but it (and all intermediate buffers) shares the same backing memory allocation. At each step, the buffer is transferred to a new ArrayBuffer object. The view is destructured from the return value of reading a new Uint8Array, with that ArrayBuffer object as its buffer property, the offset that bytes were written to as its byteOffset property, and the number of bytes that were written as its byteLength property.
 </p>
 
 </div>
@@ -3715,14 +3705,10 @@ Promise.all([
   %forRemote.pipeTo(%httpRequestBody)
 ])
 .then(() =&gt; console.log(
-    `~streamは ~cacheに保存され, ~uploadされました^l))
+    `~streamは ~cacheに保存され, ~uploadされました^l【！Saved the stream to the cache and also uploaded it!】))
 .catch(%e =&gt; console.error(
-    `~cache時または~upload時に失敗しました: ^l, %e));
+    `~cache時または~upload時に失敗しました: ^l【！Either caching or uploading failed: 】, %e));
 </pre>
-<!-- 
-"Saved the stream to the cache and also uploaded it!"
-"Either caching or uploading failed: "
- -->
 </div>
 </div>
 
@@ -9129,7 +9115,7 @@ If underlyingSourceDict["start"] exists, then set startAlgorithm to an algorithm
 %underlyingSourceDict[ "`pull$usc" ] ~NEQ ε
 ］
 ⇒
-%pullAlgorithm ~SET に対し，次を走らす~algo
+%pullAlgorithm ~SET m次を走らす~algo
 ⇒
 ~RET `~callback関数を呼出す$( %underlyingSourceDict[ "`pull$usc" ], « %controller », %underlyingSource
 ◎
@@ -11089,13 +11075,9 @@ The usual way to write to a writable stream is to simply pipe a readable stream 
 
 <pre class="lang-js">
 readableStream.pipeTo(%writableStream)
-  .then(() =&gt; console.log(`すべての~dataは成功裡に書込まれました^l))
-  .catch(%e =&gt; console.error(`何かまずいことが起きたようです^l, %e));
+  .then(() =&gt; console.log(`すべての~dataは成功裡に書込まれました^l【！All data successfully written!】))
+  .catch(%e =&gt; console.error(`何かまずいことが起きたようです^l【！Something went wrong!】, %e));
 </pre>
-<!-- 
-"All data successfully written!"
-"Something went wrong!"
- -->
 </div>
 
 <div class="example" id="example-manual-write-batch">
@@ -11154,14 +11136,10 @@ However, if you care about the success of writing a specific chunk, you can use 
 </p>
 
 <pre class="lang-js">
-%writer.write(`~data内のある~chunk^l)
-  .then(() =&gt; console.log(`~chunkは成功裡に書込まれました^l))
+%writer.write(`~data内のある~chunk^l【！i am a chunk of data】)
+  .then(() =&gt; console.log(`~chunkは成功裡に書込まれました^l【！chunk successfully written!】))
   .catch(%e =&gt; console.error(%e));
 </pre>
-<!-- 
-"i am a chunk of data"
-"chunk successfully written!"
--->
 
 <p>
 “成功” が何を意味するかは、所与の~stream~instance（より精確には, その`下層~槽$）が裁定する。
@@ -11208,12 +11186,9 @@ Purposefully don’t await; awaiting writer.ready is enough.
 }
 
 writeRandomBytesForever(myWritableStream).catch(
-    e =&gt; console.error(`何か不具合が生じたようです^l, e)
+    e =&gt; console.error(`何か不具合が生じたようです^l【！Something broke】, e)
 );
 </pre>
-<!--
-"Something broke"
- -->
 
 <p>
 `write()$dw から返される~promiseを `await^c していないことに注意
@@ -15302,14 +15277,10 @@ The natural way to use a transform stream is to place it in a pipe between a rea
 %readableStream
   .pipeThrough(%transformStream)
   .pipeTo(%writableStream)
-  .then(() =&gt; console.log(`すべての~dataは成功裡に形式変換されました^l))
-  .catch(%e =&gt; console.error(`何かまずいことが起きたようです^l, %e));
+  .then(() =&gt; console.log(`すべての~dataは成功裡に形式変換されました^l【！All data successfully transformed!】))
+  .catch(%e =&gt; console.error(`何かまずいことが起きたようです^l【！】, %e));
 </pre>
 </div>
-
-<!-- 
-All data successfully transformed!
- -->
 
 <div class="example" id="example-transform-stream-properties">
 
@@ -20209,7 +20180,7 @@ function makeReadableWebSocketStream(%url, %protocols) {
       %ws.onclose =
           () =&gt; %controller.close();
       %ws.onerror =
-          () =&gt; %controller.error(new Error(`WebSocket に~errorが生じました^l));
+          () =&gt; %controller.error(new Error(`WebSocket に~errorが生じました^l【！The WebSocket errored!】));
     },
 
     cancel() {
@@ -20219,9 +20190,6 @@ function makeReadableWebSocketStream(%url, %protocols) {
 }
 </pre>
 
-<!-- 
-The WebSocket errored!
--->
 <p>
 この関数を利用すれば、~web~socket用の可読~streamを作成して，それを任意な可書~streamへ~pipeできるようになる：
 ◎
@@ -20313,7 +20281,7 @@ The internal queue is full, so propagate the backpressure signal to the underlyi
       %socket.onend =
           () =&gt; %controller.close();
       %socket.onerror =
-          () =&gt; %controller.error(new Error(`~socketに~errorが生じました^l));
+          () =&gt; %controller.error(new Error(`~socketに~errorが生じました^l【！The socket errored!】));
     },
 
     pull() {
@@ -20332,10 +20300,6 @@ This is called if the internal queue has been emptied, but the stream’s consum
   });
 }
 </pre>
-
-<!-- 
-"The socket errored!"
--->
 
 <p>
 この関数を利用すれば、~web~socketのときと同じ仕方で，そのような “背圧~socket” 用の可読~streamを作成できるようになる。
@@ -20599,11 +20563,11 @@ function makeWritableWebSocketStream(%url, %protocols) {
     start(%controller) {
 
       %ws.onerror = () =&gt; {
-        %controller.error(new Error(`WebSocket に~errorが生じました^l));
+        %controller.error(new Error(`WebSocket に~errorが生じました^l【！The WebSocket errored!】));
         %ws.onclose = null;
       };
       %ws.onclose = () =&gt; {
-        %controller.error(new Error(`接続は不意に~serverにより~closeされました^l));
+        %controller.error(new Error(`接続は不意に~serverにより~closeされました^l【！The server closed the connection unexpectedly】));
       }
       return new Promise(%resolve =&gt; %ws.onopen = %resolve);
     },
@@ -20633,7 +20597,7 @@ Return immediately, since the web socket gives us no easy way to tell when the w
         if (%e.wasClean) {
           %resolve();
         } else {
-          %reject(new Error(`接続は~cleanに~closeされませんでした^l));
+          %reject(new Error(`接続は~cleanに~closeされませんでした^l【！The connection was not closed cleanly】));
         }
       };
       %ws.close(%code, %reasonString);
@@ -20641,10 +20605,6 @@ Return immediately, since the web socket gives us no easy way to tell when the w
   }
 }
 </pre>
-<!-- 
-The server closed the connection unexpectedly
-The connection was not closed cleanly
--->
 
 <p>
 この関数を利用すれば、~web~socket用の可書~streamを作成して，任意な可読~streamをそれに~pipeできるようになる：
@@ -20720,21 +20680,15 @@ We can then use this function to create a writable stream for a file, and write 
 const %fileStream = makeWritableFileStream(`/example/path/on/fs.txt^l);
 const %writer = %fileStream.getWriter();
 
-%writer.write(`~streamするか, しないか、\n^l);
-%writer.write(`それが~~問題だ。\n^l);
+%writer.write(`~streamするか, しないか、\n^l【！To stream, or not to stream\n】);
+%writer.write(`それが~~問題だ。\n^l【！That is the question\n】);
 
 %writer.close()
   .then( () =&gt; console.log(
-      `~chunkたちは書込まれ, ~streamは成功裡に~closeされました^l
+      `~chunkたちは書込まれ, ~streamは成功裡に~closeされました^l【！chunks written and stream closed successfully!】
   ))
   .catch(%e =&gt; console.error(%e));
 </pre>
-
-<!-- 
-"To stream, or not to stream\n"
-"That is the question\n"
-"chunks written and stream closed successfully!"
--->
 
 <p>
 特定0の `fileHandle.write^m ~callにて時間がかかる場合、返される~promiseは，~~後に充足されることになることに注意。
@@ -20883,19 +20837,13 @@ const %streamyWS =
 const %writer = %streamyWS.writable.getWriter();
 const %reader = %streamyWS.readable.getReader();
 
-%writer.write(`どうも、^l);
-%writer.write(`web socket さん。^l);
+%writer.write(`どうも、^l【！Hello】);
+%writer.write(`web socket さん。^l【！web socket】);
 
 %reader.read().then(({ %value, %done }) =&gt; {
-  console.log(`こちらこそ、どうもです：^l, %value);
+  console.log(`こちらこそ、どうもです：^l【！The web socket says: 】, %value);
 });
 </pre>
-
-<!-- 
-"Hello"
-"web socket"
-"The web socket says: "
--->
 
 <p>
 このように設定しておけば、［
@@ -21256,6 +21204,7 @@ Jake Archibald,
 Jake Verbaten,
 Janessa Det,
 Jason Orendorff,
+Jeffrey Yasskin,
 Jens Nockert,
 Lennart Grahl,
 Mangala Sadhu Sangeet Singh Khalsa,
@@ -21264,6 +21213,7 @@ Marvin Hagemeister,
 Mattias Buelens,
 Michael Mior,
 Mihai Potra,
+Nidhi Jaju,
 Romain Bellessort,
 Simon Menke,
 Stephen Sugden,
