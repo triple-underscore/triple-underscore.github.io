@@ -588,6 +588,7 @@ c.realm:~HTTPsem#realm
 完全:~HTTPinfra#complete
 不完全:~HTTPinfra#complete
 ~field:~HTTPinfra#field
+~field節:~HTTPinfra#field-section
 ~header:~HTTPinfra#header-field
 ~header節:~HTTPinfra#header-section
 ~trailer:~HTTPinfra#trailer-field
@@ -634,7 +635,7 @@ c.realm:~HTTPsem#realm
 内容~符号法:~HTTPsem#content.codings
 内容~符号法の名前:~HTTPsem#p.content-coding
 言語~tag:~HTTPsem#language-tag
-検証子~header:~HTTPsem#validator-header
+検証子~field:~HTTPsem#validator-field
 検証子:~HTTPsem#validator
 強い検証子:~HTTPsem#strong-validator
 弱い検証子:~HTTPsem#weak-validator
@@ -1074,7 +1075,7 @@ agent::::エージェント
 壊れ:breakされ:~
 壊れた:broken:~
 理論:theory:~
-高度:advance:~
+高度:advanced:~
 類別:category:~
 維持-:retain:~
 維持させ:sustainし:~

@@ -12,8 +12,8 @@
 
 ●●options
 spec_title:HTTP Caching
-spec_date:2020-10-10
-trans_update:2020-10-12
+spec_date:2020-10-30
+trans_update:2020-11-01
 source_checked:200307
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-cache-latest.html
@@ -109,6 +109,7 @@ cite.~cache指令~registry:~IANA-a/http-cache-directives
 3.4:#combining.responses
 4:#constructing.responses.from.caches
 4.1:#caching.negotiated.responses
+4.2.1:#calculating.freshness.lifetime
 4.2.2:#heuristic.freshness
 4.2.3:#age.calculations
 4.2.4:#serving.stale.responses
@@ -201,9 +202,9 @@ V.応答~遅延:#response_delay
 7:#security.considerations
 7.2:#security.timing
 8:#iana.considerations
-	8.1:#
-	8.2:#
-	8.3:#
+	8.1:#field.name.registration
+	8.2:#cache.directive.registration
+	8.3:#warn.code.registration
 9:#rfc.references
 A:#collected.abnf
 B:#changes.from.rfc.7234
@@ -321,6 +322,7 @@ reload:::再読み込み::リロード
 	~~挙げられた:nominate
 	広く行き渡って:widespread
 	面する:surface
+	〜に従う下で:subject to 〜
 
 	●未分類
 並替える:reorderする:並び替える
@@ -368,6 +370,8 @@ asset::::アセット
 	格納できる:caching of
 	引数を伴う:qualified form
 	引数を伴わない:unqualified／:unqualified form
+	生じた方:occurrence
+	〜が無くても:already
 
 	●指示語
 	A:first
@@ -815,7 +819,9 @@ A cache is disconnected when it cannot contact the origin server or otherwise fi
 <h2 title="Storing Responses in Caches">3. ~cache内への応答の格納-法</h2>
 
 <p>
-要請に対する応答を~cacheが格納し得るのは、次のいずれも満たされる場合に限られる
+~cacheが［
+ある要請に対する応答
+］を格納し得るのは、次がすべて満たされる場合に限られる
 — 他の応答は格納してはナラナイ：
 ◎
 A cache MUST NOT store a response to a request unless:
@@ -925,12 +931,11 @@ Note that a cache-control extension can override any of the requirements listed;
 </p>
 
 <p>†
-この文脈においては、~cacheは，［
+この文脈において，~cacheが［
 `要請~method$／`応答~状態s~code$
-を認識した上で，［
+］を “解する” とは、~cacheは，それを認識した上で［
 指定された，~cachingに関係する挙動
-］すべてを実装する
-］ならば、それを “解する” とされる。
+］すべてを実装することをいう。
 ◎
 In this context, a cache has "understood" a request method or a response status code if it recognizes it and implements all specified caching-related behavior.
 </p>
@@ -1444,12 +1449,9 @@ When calculating freshness, to avoid common problems in date parsing:
 </p>
 <ul>
 	<li>
-すべての日時~形式は，文字大小区別として指定されているが、［
-`day, week, time-zone^en
-］の名前†は，文字大小無視で照合するベキである。
-【† `day-name$p, `GMT$p の他に `month$p も含まれる？】
+すべての日時~形式は，文字大小区別として指定されているが、当の`~field値$を文字大小無視で照合するベキである。
 ◎
-• Although all date formats are specified to be case-sensitive, a cache recipient SHOULD match day, week, and time-zone names case-insensitively.
+• Although all date formats are specified to be case-sensitive, a cache recipient SHOULD match the field value case-insensitively.
 </li>
 	<li>
 自身の内部~実装による時刻の分解能が `HTTP-date$p 値のそれより粗い場合、構文解析した `Expires$h 日時を，［
@@ -1468,13 +1470,11 @@ When calculating freshness, to avoid common problems in date parsing:
 • A cache recipient MUST NOT allow local time zones to influence the calculation or comparison of an age or expiration time.
 </li>
 	<li>
-失効時刻の計算-時には、［［
-"`GMT^c", "`UTC^c"
-以外の時間帯 略語
-］が伴われた日時
-］は，無効と見なすベキである。
+失効時刻の計算-時には、［
+"`GMT^c" 以外を時間帯 略語として伴う日時
+］を無効と見なすベキである。
 ◎
-• A cache recipient SHOULD consider a date with a zone abbreviation other than GMT or UTC to be invalid for calculating expiration.
+• A cache recipient SHOULD consider a date with a zone abbreviation other than "GMT" to be invalid for calculating expiration.
 </li>
 </ul>
 
@@ -1540,11 +1540,14 @@ Note that this calculation is not vulnerable to clock skew, since all of the inf
 
 <p>
 所与の指令~用の値が複数~在る場合（例：
-複数の `Expires$h ~header,
-複数の "`Cache-Control: max-age^c" 指令）、その指令の値は，無効と見なされる。
-~cacheは、応答の`鮮度$~情報が無効な場合には，それを`非新鮮$と見なすことが奨励される。
+`Expires$h ~header`~field行l$が複数個／
+"`Cache-Control: max-age^c" 指令が複数個）、［
+最初に生じた方を利用するか，応答は`非新鮮$と見なす
+］べきである。
+複数の指令が競合する場合（例： `max-age$sdir, `no-cache$sdir どちらも在る）、最も制約的な指令が尊守されるべきである。
+~cacheには、無効な鮮度~情報を伴う応答（例： `max-age^dir 指令の内容は整数でない）を`非新鮮$と見なすことが奨励される。
 ◎
-When there is more than one value present for a given directive (e.g., two Expires header fields, multiple Cache-Control: max-age directives), the directive's value is considered invalid. Caches are encouraged to consider responses that have invalid freshness information to be stale.
+When there is more than one value present for a given directive (e.g., two Expires header field lines or multiple Cache-Control: max-age directives), either the first occurrence should be used, or the response should be considered stale. If directives conflict (e.g., both max-age and no-cache are present), the most restrictive directive should be honored. Caches are encouraged to consider responses that have invalid freshness information (e.g., a max-age directive with non-integer content) to be stale.
 </p>
 
 			</section>
@@ -1556,11 +1559,11 @@ When there is more than one value present for a given directive (e.g., two Expir
 したがって，時刻が明示的に指定されていないときは、~cacheは，［
 確からしい`失効時刻$を見積もる
 ］ために［
-他の~header`~field値$（ `Last-Modified$h による時刻など）を利用する~algo
+他の`~field値$（ `Last-Modified$h による時刻など）を利用する~algo
 ］を使役して，`経験的な失効時刻$をアテガってもヨイ。
 この仕様は，特定の~algoは供さないが、それらの結果に対する~~最低限の拘束を課す。
 ◎
-Since origin servers do not always provide explicit expiration times, a cache MAY assign a heuristic expiration time when an explicit time is not specified, employing algorithms that use other header field values (such as the Last-Modified time) to estimate a plausible expiration time. This specification does not provide specific algorithms, but does impose worst-case constraints on their results.
+Since origin servers do not always provide explicit expiration times, a cache MAY assign a heuristic expiration time when an explicit time is not specified, employing algorithms that use other field values (such as the Last-Modified time) to estimate a plausible expiration time. This specification does not provide specific algorithms, but does impose worst-case constraints on their results.
 </p>
 
 <p>
@@ -1609,7 +1612,7 @@ Note: Section 13.9 of [RFC2616] prohibited caches from calculating heuristic fre
 `Age$h ~headerは、［
 応答~messageが~cacheから得されるときに，見積もられた`齢$を伝達する
 ］ために利用される。
-`Age$h ~header`~field値$は、~cacheにより見積もられた，［
+`Age$h ~headerの`~field値$は、~cacheにより見積もられた，［
 `生成元~server$が，その応答を［
 `生成し$た, または`検証-$した
 ］ときからの秒~数
@@ -1784,14 +1787,14 @@ A "stale" response is one that either has explicit expiry information or is allo
 — 例えば，次に挙げる指令 —
 により禁制されている場合は，`非新鮮$な応答を`生成し$てはナラナイ：
 </p>
-<ul><li>`no-store$qdir ／ `no-cache$qdir 要請~cache指令
-</li><li>`no-store$sdir ／ `no-cache$sdir 応答~cache指令
+<ul ><li>`no-cache$qdir 要請~cache指令
+</li><li>`no-cache$sdir 応答~cache指令
 </li><li>`must-revalidate$sdir 応答~cache指令
 </li><li>適用-可能な `s-maxage$sdir ／ `proxy-revalidate$sdir 応答~cache指令
 </li></ul>
 
 ◎
-A cache MUST NOT generate a stale response if it is prohibited by an explicit in-protocol directive (e.g., by a "no-store" or "no-cache" cache directive, a "must-revalidate" cache-response-directive, or an applicable "s-maxage" or "proxy-revalidate" cache-response-directive; see Section 5.2.2).
+A cache MUST NOT generate a stale response if it is prohibited by an explicit in-protocol directive (e.g., by a "no-cache" cache directive, a "must-revalidate" cache-response-directive, or an applicable "s-maxage" or "proxy-revalidate" cache-response-directive; see Section 5.2.2).
 </div>
 
 <p>
@@ -2020,7 +2023,7 @@ When a cache decides to revalidate its own stored responses for a request that c
 </p>
 <ul>
 	<li>
-要請を回送する際に，その `If-None-Match$h ~header`~field値$を［
+要請を回送する際に，その `If-None-Match$h ~headerの`~field値$を［
 `L^V と［
 各［
 自前の格納-済み応答（`新鮮$か否かを問わず）
@@ -2071,14 +2074,14 @@ If an If-None-Match header field is not present, a request containing an If-Modi
 
 <ol>
 	<li>
-`R^V に `Last-Modified$h ~fieldが在るならば、その`~field値$による時刻
+`R^V に `Last-Modified$h ~headerが在るならば、その`~field値$による時刻
 ◎
 1) the selected stored response has a Last-Modified field value that is earlier than or equal to the conditional timestamp;＼
 </li>
 	<li>
 他の場合， `R^V に `Date$h ~fieldが在るならば、その`~field値$による時刻
 ◎
-2) no Last-Modified field is present in the selected stored response, but it has a Date field value that is earlier than or equal to the conditional timestamp; or,＼
+2) no Last-Modified header field is present in the selected stored response, but it has a Date field value that is earlier than or equal to the conditional timestamp; or,＼
 </li>
 	<li>
 他の場合，~cacheにて `R^V を受信した時刻が記録されて［
@@ -2122,10 +2125,12 @@ Cache handling of a response to a conditional request depends upon its status co
 全部的な応答（すなわち，`~payload本体$を伴うもの）は、［
 `条件付き要請$~内に~~挙げられた，どの格納-済み応答
 ］も相応しくないことを指示する。
-代わりに，~cacheは、要請を満足するために，その全部的な応答を利用しなければナラナイ
-— また、格納-済み応答（たち）を置換してもヨイ。
+代わりに，~cacheは、要請を満足するために，その全部的な応答を利用しなければナラナイ。
+~cacheは、そのような全部的な応答を
+— `3$sec による拘束に従う下で —
+格納してもヨイ。
 ◎
-• A full response (i.e., one with a payload body) indicates that none of the stored responses nominated in the conditional request is suitable. Instead, the cache MUST use the full response to satisfy the request and MAY replace the stored response(s).
+• A full response (i.e., one with a payload body) indicates that none of the stored responses nominated in the conditional request is suitable. Instead, the cache MUST use the full response to satisfy the request. The cache MAY store such a full response, subject to its constraints (see Section 3).
 </li>
 	<li>
 <p>
@@ -2143,9 +2148,11 @@ forward this response to the requesting client, or＼
 </li>
 			<li>
 ~serverが応答-に失敗したかのように動作する。
-この場合、以前に格納-済みな応答を送信してもヨイ（`4.2.4$sec を見よ）。
+この場合、以前に格納-済みな応答を
+— `4.2.4$sec による拘束に従う下で —
+送信してもヨイ。
 ◎
-act as if the server failed to respond. In the latter case, the cache MAY send a previously stored response (see Section 4.2.4).
+act as if the server failed to respond. In the latter case, the cache MAY send a previously stored response, subject to its constraints on doing so (see Section 4.2.4).
 </li>
 		</ul>
 	</li>
@@ -2193,7 +2200,7 @@ If none of the stored responses contain the same strong validator, then the cach
 </dd>
 
 	<dt>
-`304 応答^V は`弱い検証子$を包含する場合：
+`304 応答^V は`弱い検証子$【！dfn】を包含する場合：
 ◎
 If the new response contains a weak validator＼
 </dt>
@@ -2310,7 +2317,7 @@ For each of the stored responses that could have been selected,＼
 </p>
 		<ul>
 			<li>
-受信したどの`検証子~header$（ `ETag$h, `Last-Modified$h ）に対しても，
+受信したどの`検証子~field$（ `ETag$h, `Last-Modified$h ）に対しても，
 `応答^V, `HEAD 応答^V には その~headerが在って, 両者の値は合致する。
 </li>
 			<li>
@@ -2433,39 +2440,23 @@ Note that this does not guarantee that all appropriate responses are invalidated
 <h2 title="Field Definitions">5. ~field定義</h2>
 
 <p>
-この節では、次に挙げる［
+この節では、［
 ~cache法に関係する各種~HTTP`~field$
-］の構文と意味論を定義する
-— これらの位置付けは、廃用にされた `Warning^h を除き，どれも `標準^i （ `standard^en ）である
-⇒＃
-`Age$h,
-`Cache-Control$h,
-`Expires$h,
-`Pragma$h,
-`Warning$h
+］の構文と意味論を定義する。
 ◎
 This section defines the syntax and semantics of HTTP fields related to caching.
-◎
-Table 1
-Field Name 	Status 	Ref.
-
-Age 	standard 	5.1
-Cache-Control 	standard 	5.2
-Expires 	standard 	5.3
-Pragma 	standard 	5.4
-Warning 	obsoleted 	5.5
 </p>
 
 		<section id="field.age">
 <h3>5.1. `Age^h</h3>
 
 <p>
-`Age$h ~headerは、応答の`齢$を伝達する。
+`Age$h 応答~headerは、応答の`齢$を伝達する。
 それは、送信者により `4.2.3$sec に従って見積もられた［
 当の応答が`生成元~server$にて，`生成され$たか, 成功裡に`検証-$された
 ］ときからの時間を与える。
 ◎
-The "Age" header field conveys the sender's estimate of the time since the response was generated or successfully validated at the origin server. Age values are calculated as specified in Section 4.2.3.
+The "Age" response header field conveys the sender's estimate of the time since the response was generated or successfully validated at the origin server. Age values are calculated as specified in Section 4.2.3.
 </p>
 
 <pre class="bnf">
@@ -2474,18 +2465,28 @@ The "Age" header field conveys the sender's estimate of the time since the respo
 </pre>
 
 <p>
-`Age$h `~field値$は、秒数を表現する負でない整数である（ `1.3$sec を見よ）。
+`Age^h `~field値$は、秒数を表現する負でない整数である（ `1.3$sec を見よ）。
 ◎
-The Age field value is a non-negative integer, representing time in seconds (see Section 1.3).＼
+The Age field value is a non-negative integer, representing time in seconds (see Section 1.3).
 </p>
 
 <p>
-~cacheは、次に該当する応答は，`非新鮮$と見なすベキである
-⇒
-`Age^h ~fieldが在って，その`~field値$は妥当でない（すなわち，~listまたは負でない整数~以外の何かを包含する）
+`Age^h は`単数~field$として定義されているが、~cacheは，次に従うベキである：
 ◎
-A cache SHOULD consider a response to be stale if an Age field is present and its value is invalid (i.e., contains a list or something other than a non-negative integer).
+Although it is defined as a singleton header field,＼
 </p>
+<ul>
+	<li>
+複数個の `Age^h `~field行l$を伴う~messageに遭遇したときは、最初のものだけ利用して，後続のものは破棄する。
+◎
+a cache encountering a message with multiple Age field lines SHOULD use the first field line, discarding subsequent ones.
+</li>
+	<li>
+（前項を適用した後の）`~field値$が妥当でない（例：~listを包含する／負でない整数~以外の何かを包含する）場合、当の応答を`非新鮮$と見なす。
+◎
+If the field value (after discarding additional lines, as per above) is invalid (e.g., it contains a list or something other than a non-negative integer), a cache SHOULD consider the response to be stale.
+</li>
+</ul>
 
 <p>
 【応答の受信者にとっては，】
@@ -2634,7 +2635,7 @@ For the cache directives defined below, no argument is defined (nor allowed) unl
 </tbody></table>
 
 ◎
-Table 2
+Table 1
 Cache Directive 	Ref.
 max-age 	Section 5.2.1.1, Section 5.2.2.9
 max-stale 	Section 5.2.1.2
@@ -2676,9 +2677,9 @@ Argument syntax:
 </pre>
 
 <p>
-`max-age^qdir 要請~指令は、［
-`~client$は、`齢$が指定された秒~数~以下の応答を選好する
-］ことを指示する。
+`max-age^qdir 要請~指令は、次を指示する
+⇒
+`~client$は、`齢$が指定された秒~数~以下の応答を選好する。
 `max-stale^qdir 要請~指令も在る場合を除き、~clientは，`非新鮮$な応答は受信したくないと望んでいる。
 ◎
 The "max-age" request directive indicates that the client prefers a response whose age is less than or equal to the specified number of seconds. Unless the max-stale request directive is also present, the client does not wish to receive a stale response.
@@ -2712,10 +2713,10 @@ Argument syntax:
 <p>
 `max-stale^qdir 要請~指令は、次を指示する
 ⇒
-`~client$は、`鮮度維持期間$を超過した応答を，引数に値が［
-在るならば それに指定された秒~数まで受容する用意がある／
-無いならば `齢$を問わず，`非新鮮$な応答を受容することになる
-］
+`~client$は、`鮮度維持期間$を超過した`非新鮮$な応答を
+⇒＃
+引数に値が在るならば それに指定された秒~数までは受容する用意がある ／
+~ELSE_ `齢$を問わず 受容する
 ◎
 The "max-stale" request directive indicates that the client will accept a response that has exceeded its freshness lifetime. If a value is present, then the client is willing to accept a response that has exceeded its freshness lifetime by no more than the specified number of seconds. If no value is assigned to max-stale, then the client will accept a stale response of any age.
 </p>
@@ -2746,11 +2747,11 @@ Argument syntax:
 </pre>
 
 <p>
-`min-fresh^qdir 要請~指令は、［
+`min-fresh^qdir 要請~指令は、次を指示する
+⇒
 `~client$は，［
 `鮮度維持期間$が，指定された秒数を応答の現在の`齢$に足した結果~以上
-］である応答を選好する
-］ことを指示する。
+］である応答を選好する。
 すなわち，~clientは、少なくとも指定された秒~数までは，応答が`新鮮$であり続けるよう求めている。
 ◎
 The "min-fresh" request directive indicates that the client prefers a response whose freshness lifetime is no less than its current age plus the specified time in seconds. That is, the client wants a response that will still be fresh for at least the specified number of seconds.
@@ -2772,11 +2773,11 @@ This directive uses the token form of the argument syntax: e.g., 'min-fresh=20' 
 <h5>5.2.1.4. `no-cache^qdir</h5>
 
 <p>
-`no-cache^qdir 要請~指令は、［
+`no-cache^qdir 要請~指令は、次を指示する
+⇒
 `~client$は、［
 格納-済み応答は、`生成元~server$上で成功裡に`検証-$されない限り，要請を満足するために利用しない
-］ことを選好する
-］ことを指示する。
+］ことを選好する。
 ◎
 The "no-cache" request directive indicates that the client prefers stored response not be used to satisfy the request without successful validation on the origin server.
 </p>
@@ -2789,13 +2790,19 @@ The "no-cache" request directive indicates that the client prefers stored respon
 <p>
 `no-store^qdir 要請~指令は、［
 `私用~cache$, `共用~cache$
-］のどちらにも適用され，［
-~cacheは、この要請, 対する応答
-］を成す どの部分も，格納してはナラナイ
-］ことを指示する
-— すなわち，~cacheは：
+］どちらにも適用され，次を指示する
+⇒
+~cacheは、［
+この要請, 対する応答
+］を成す どの部分も格納してはナラナイ。
 ◎
-The "no-store" request directive indicates that a cache MUST NOT store any part of either this request or any response to it. This directive applies to both private and shared caches. "MUST NOT store" in this context means that the cache＼
+The "no-store" request directive indicates that a cache MUST NOT store any part of either this request or any response to it. This directive applies to both private and shared caches.＼
+</p>
+
+<p>
+格納してはナラナイとは、~cacheは：
+◎
+"MUST NOT store" in this context means that the cache＼
 </p>
 <ul>
 	<li>
@@ -2804,7 +2811,9 @@ The "no-store" request directive indicates that a cache MUST NOT store any part 
 MUST NOT intentionally store the information in non-volatile storage, and＼
 </li>
 	<li>
-それを回送したならば、アリな限り迅速に, その情報を揮発 記憶域から除去することに極力努めなければナラナイ。
+応答を回送したならば、［
+アリな限り迅速に，その情報を揮発 記憶域から除去する
+］ことに極力努めなければナラナイ。
 ◎
 MUST make a best-effort attempt to remove the information from volatile storage as promptly as possible after forwarding it.
 </li>
@@ -2831,9 +2840,9 @@ Note that if a request containing this directive is satisfied from a cache, the 
 <h5>5.2.1.6. `no-transform^qdir</h5>
 
 <p>
-`no-transform^qdir 要請~指令は、［
-`~client$は、`~payload$を`形式変換-$するのは避けるよう，`中継者$たちに依頼している
-］ことを指示する。
+`no-transform^qdir 要請~指令は、次を指示する
+⇒
+`~client$は、`~payload$を`形式変換-$するのは避けるよう，`中継者$たちに依頼している。
 ◎
 The "no-transform" request directive indicates that the client is asking for intermediaries to avoid transforming the payload, as defined in Section 6.5 of [Semantics].
 </p>
@@ -2843,14 +2852,20 @@ The "no-transform" request directive indicates that the client is asking for int
 <h5>5.2.1.7. `only-if-cached^qdir</h5>
 
 <p>
-`only-if-cached^qdir 要請~指令は、［
-`~client$は、格納-済み応答を得することのみを望む
-］ことを指示する。
+`only-if-cached^qdir 要請~指令は、次を指示する
+⇒
+`~client$は、格納-済み応答を得することのみを望む。
+◎
+The "only-if-cached" request directive indicates that the client only wishes to obtain a stored response.＼
+</p>
+
+<p>
 この要請を尊守する~cacheは、その受信に対し，［
 要請による他の拘束に整合な，格納-済み応答
-］を利用して応答するか， `504$st で応答するベキである。
+］を利用して応答するか，
+`504$st で応答するベキである。
 ◎
-The "only-if-cached" request directive indicates that the client only wishes to obtain a stored response. Caches that honor this request directive SHOULD, upon receiving it, either respond using a stored response consistent with the other constraints of the request, or respond with a 504 (Gateway Timeout) status code.
+Caches that honor this request directive SHOULD, upon receiving it, either respond using a stored response consistent with the other constraints of the request, or respond with a 504 (Gateway Timeout) status code.
 </p>
 
 				</section>
@@ -2869,11 +2884,11 @@ This section defines cache response directives. A cache MUST obey the Cache-Cont
 <h5>5.2.2.1. `must-revalidate^sdir</h5>
 
 <p>
-`must-revalidate^sdir 応答~指令は、［
-~cacheは、`非新鮮$になった応答を
+`must-revalidate^sdir 応答~指令は、次を指示する
+⇒
+~cacheは、この応答が`非新鮮$になったなら
 — それが`生成元~server$により成功裡に`検証-$されるまでは —
-別の要請を満足するために再利用してはナラナイ
-］ことを指示する。
+別の要請を満足するために再利用してはナラナイ。
 ◎
 The "must-revalidate" response directive indicates that once the response has become stale, a cache MUST NOT reuse that response to satisfy another request until it has been successfully validated by the origin, as defined by Section 4.3.
 </p>
@@ -2901,7 +2916,7 @@ The must-revalidate directive ought to be used by servers if and only if failure
 <p>
 `must-revalidate^sdir 指令は、`共用~cache$が［
 `Authorization$h ~headerを包含している要請に対し，応答を再利用する
-］ことも許可する
+］ことを許可する
 — それは、再検証に対する要件（ `3.3$sec ）の~subjectになる。
 ◎
 The must-revalidate directive also permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the above requirement on revalidation (Section 3.3).
@@ -2912,13 +2927,15 @@ The must-revalidate directive also permits a shared cache to reuse a response to
 <h5>5.2.2.2. `must-understand^sdir</h5>
 
 <p>
-`must-understand^sdir 応答~指令は、応答を格納できる~cacheは［
-応答の状態s~code用の要件を解する, かつ それに適合するもの
-］に制限されることを指示する。
-応答~状態s~codeを解さない~cacheは、
-`must-understand^sdir 指令を包含する応答を格納してはナラナイ。
+`must-understand^sdir 応答~指令は、次を指示する
+⇒
+この応答を格納できる~cacheは、［
+その`状態s~code$用の要件を解する, かつ それに適合するもの
+］に制限される
+— 要件を解さない~cacheは、この応答を格納してはナラナイ。
 ◎
-The "must-understand" response directive limits caching of the response to a cache that understands and conforms to the requirements for that response's status code. A cache MUST NOT store a response containing the must-understand directive if the cache does not understand the response status code.
+The "must-understand" response directive limits caching of the response to a cache that understands and conforms to the requirements for that response's status code.＼
+A cache MUST NOT store a response containing the must-understand directive if the cache does not understand the response status code.
 </p>
 
 				</section>
@@ -2936,9 +2953,9 @@ Argument syntax:
 </pre>
 
 <p>
-引数を伴わない `no-cache^sdir 応答~指令は、［
-応答は、`検証$用に回送して成功裡に応答を受信しない限り，他の要請を満足するために利用してはナラナイ
-］ことを指示する。
+引数を伴わない `no-cache^sdir 応答~指令は、次を指示する
+⇒
+この応答は、`検証$用に回送して成功裡に応答を受信しない限り，他の要請を満足するために利用してはナラナイ。
 ◎
 The "no-cache" response directive, in its unqualified form (without an argument), indicates that the response MUST NOT be used to satisfy any other request without forwarding it for validation and receiving a successful response; see Section 4.3.
 </p>
@@ -2958,7 +2975,7 @@ This allows an origin server to prevent a cache from using the response to satis
 `no-cache^sdir 応答~指令が，引数に 1 個~以上の`~field名$を~listしている場合、次を指示する
 ⇒
 ~cacheは、当の応答に次のいずれかを施したならば，それを
-— ~cachingに対する他の制約の~subjectになる下で —
+— ~cachingに対する他の制約に従う下で —
 後続の要請を満足するために利用してもヨイ：
 </p>
 <ul>
@@ -3010,24 +3027,32 @@ Note: Although it has been back-ported to many implementations, some HTTP/1.0 ca
 <div class="p">
 <p>
 `no-store^sdir 応答~指令は、［
+`私用~cache$, `共用~cache$
+］どちらにも適用され，次を指示する：
+◎
+The "no-store" response directive indicates that a cache＼
+<ul>
+	<li>
 ~cacheは、［
-直の†要請, 応答
-］を成す どの部分も格納してはナラナイ
-］こと, および［
-当の応答を利用して他の要請を満足してはナラナイ
-］を指示する。
+直の†要請, この応答
+］を成す どの部分も格納してはナラナイ。
 【† 当の応答を生じさせた要請が記憶域に残っている場合、それも抹消することと見受けられる。】
 ◎
-The "no-store" response directive indicates that a cache MUST NOT store any part of either the immediate request or response, and MUST NOT use the response to satisfy any other request.
-</p>
+MUST NOT store any part of either the immediate request or response,＼
+</li>
+	<li>
+~cacheは、この応答を利用して他の要請を満足してはナラナイ
+◎
+and MUST NOT use the response to satisfy any other request.＼
+</li>
+</ul>
 
 <p>
-この指令は、［
-`私用~cache$, `共用~cache$
-］のどちらにも適用される
-— ここでの格納してはナラナイとは、~cacheは：
+格納してはナラナイとは、~cacheは：
 ◎
-This directive applies to both private and shared caches. "MUST NOT store" in this context means that the cache＼
+↑This directive applies to both private and shared caches.
+◎
+"MUST NOT store" in this context means that the cache＼
 </p>
 <ul>
 	<li>
@@ -3036,7 +3061,9 @@ This directive applies to both private and shared caches. "MUST NOT store" in th
 MUST NOT intentionally store the information in non-volatile storage, and＼
 </li>
 	<li>
-それを回送したならば、アリな限り迅速に, その情報を揮発 記憶域から除去することに極力努めなければナラナイ。
+応答を回送したなら、［
+アリな限り迅速に，その情報を揮発 記憶域から除去する
+］ことに極力努めなければナラナイ。
 ◎
 MUST make a best-effort attempt to remove the information from volatile storage as promptly as possible after forwarding it.
 </li>
@@ -3055,9 +3082,9 @@ This directive is NOT a reliable or sufficient mechanism for ensuring privacy. I
 <h5>5.2.2.5. `no-transform^sdir</h5>
 
 <p>
-`no-transform^sdir 応答~指令は、［
-`中継者$は（~cacheを実装するかどうかに関わらず），`~payload$を`形式変換-$してはナラナイ
-］ことを指示する。
+`no-transform^sdir 応答~指令は、次を指示する
+⇒
+`中継者$は（~cacheを実装するかどうかに関わらず）、この応答の`~payload$を`形式変換-$してはナラナイ。
 ◎
 The "no-transform" response directive indicates that an intermediary (regardless of whether it implements a cache) MUST NOT transform the payload, as defined in Section 6.5 of [Semantics].
 </p>
@@ -3067,18 +3094,27 @@ The "no-transform" response directive indicates that an intermediary (regardless
 <h5>5.2.2.6. `public^sdir</h5>
 
 <p>
-`public^sdir 応答~指令は、~cacheは，当の応答を格納してもヨイことを指示する
-— 当の応答が `3$sec に定義される拘束の~subjectであり，そうするのは禁制される場合でも。
-言い換えれば， `public^sdir は、応答は~cache可能であるものと明示的に~markする。
-例えば， `public^dir は、`共用~cache$が［
-`Authorization$h ~headerを包含している要請に対し，応答を再利用する
-］ことを許可する（ `3.3$sec ）
+`public^sdir 応答~指令は、次を指示する
+⇒
+~cacheは、この応答を
+— `3$sec に定義される拘束に従う下で —
+格納してもヨイ
+— 他により，そうするのは禁制されていても。
 ◎
-The "public" response directive indicates that a cache MAY store the response even if it would otherwise be prohibited, subject to the constraints defined in Section 3. In other words, public explicitly marks the response as cacheable. For example, public permits a shared cache to reuse a response to a request containing an Authorization header field (Section 3.3).
+The "public" response directive indicates that a cache MAY store the response even if it would otherwise be prohibited, subject to the constraints defined in Section 3.＼
+</p>
+
+<p>
+言い換えれば， `public^sdir は、応答は`~cache可能$であるものと明示的に~markする
+— 例えば、`共用~cache$が［
+`Authorization$h ~headerを包含している要請に対する応答
+］を再利用すること（ `3.3$sec ）も許可する。
+◎
+In other words, public explicitly marks the response as cacheable. For example, public permits a shared cache to reuse a response to a request containing an Authorization header field (Section 3.3).
 </p>
 
 <p class="note">注記：
-`3$sec に則って すでに`~cache可能$である応答には、
+`public^sdir 指令が無くても `3$sec に則って~cache可能になる応答には、
 `public^sdir 指令を追加することは必要とされない。
 ◎
 Note that it is unnecessary to add the public directive to a response that is already cacheable according to Section 3.
@@ -3105,34 +3141,41 @@ Argument syntax:
 </pre>
 
 <p>
-引数を伴わない `private^sdir 応答~指令は、［
-`共用~cache$は、応答を格納してはナラナイ
-］ことを指示する（すなわち、応答は、単独の利用者~用に意図されている）。
-それはまた、［
-`私用~cache$は
-— `3$sec に定義される拘束の~subjectになる下で —
-応答を格納してもヨイ
-］ことを指示する
+引数を伴わない `private^sdir 応答~指令は、次を指示する：
+◎
+The unqualified "private" response directive＼
+</p>
+<ul>
+	<li>
+`共用~cache$は、この応答を格納してはナラナイ（すなわち、応答は，単独の利用者~用に意図されている）。
+◎
+indicates that a shared cache MUST NOT store the response (i.e., the response is intended for a single user).＼
+</li>
+	<li>
+`私用~cache$は、この応答を
+— `3$sec に定義される拘束に従う下で —
+格納してもヨイ
 — 他により，［
-当の応答は、`私用~cache$において`経験的に~cache可能$でない
+この応答は、`私用~cache$により`経験的に~cache可能$でない
 ］とされていても。
 ◎
-The unqualified "private" response directive indicates that a shared cache MUST NOT store the response (i.e., the response is intended for a single user). It also indicates that a private cache MAY store the response, subject the constraints defined in Section 3, even if the response would not otherwise be heuristically cacheable by a private cache.
-</p>
+It also indicates that a private cache MAY store the response, subject the constraints defined in Section 3, even if the response would not otherwise be heuristically cacheable by a private cache.
+</li>
+</ul>
 
 <p>
-`private^sdir 応答~指令が，引数に 1 個~以上の`~field名$を~listしている場合、［
-~listされた~fieldに限り，単独の利用者に制限される
-］ことを指示する。
-`共用~cache$は、~listされた~fieldを
+`private^sdir 応答~指令が，引数に 1 個~以上の`~field名$を~listしている場合、次を指示する
+⇒
+単独の利用者に制限されるのは、~listされた~headerに限られる。
+`共用~cache$は、~listされた~headerを
 — それらが元の応答に在っても —
 格納してはナラナイが，［
 それら以外の，応答~messageを成す残りの部分
 ］は
-— `3$sec に定義される拘束の~subjectになる下で —
+— `3$sec に定義される拘束に従う下で —
 格納してもヨイ。
 ◎
-If a qualified private response directive is present, with an argument that lists one or more field names, then only the listed fields are limited to a single user: a shared cache MUST NOT store the listed fields if they are present in the original response, but MAY store the remainder of the response message without those fields, subject the constraints defined in Section 3.
+If a qualified private response directive is present, with an argument that lists one or more field names, then only the listed header fields are limited to a single user: a shared cache MUST NOT store the listed header fields if they are present in the original response, but MAY store the remainder of the response message without those header fields, subject the constraints defined in Section 3.
 </p>
 
 <p>
@@ -3162,15 +3205,20 @@ Note: This usage of the word "private" only controls where the response can be s
 <h5>5.2.2.8. `proxy-revalidate^sdir</h5>
 
 <p>
-`proxy-revalidate^sdir 応答~指令は、［
-`共用~cache$は、`非新鮮$になった応答を
+`proxy-revalidate^sdir 応答~指令は、次を指示する
+⇒
+`共用~cache$は、この応答が`非新鮮$になったなら
 — それが`生成元~server$により成功裡に`検証-$されるまでは —
-別の要請を満足するために再利用してはナラナイ
-］ことを指示する。
+別の要請を満足するために再利用してはナラナイ。
+◎
+The "proxy-revalidate" response directive indicates that once the response has become stale, a shared cache MUST NOT reuse that response to satisfy another request until it has been successfully validated by the origin, as defined by Section 4.3.＼
+</p>
+
+<p>
 これは、`私用~cache$には適用されないことを除いて，
 `must-revalidate$sdir 応答~指令に相似的である。
 ◎
-The "proxy-revalidate" response directive indicates that once the response has become stale, a shared cache MUST NOT reuse that response to satisfy another request until it has been successfully validated by the origin, as defined by Section 4.3. This is analogous to must-revalidate (Section 5.2.2.1), except that proxy-revalidate does not apply to private caches.
+This is analogous to must-revalidate (Section 5.2.2.1), except that proxy-revalidate does not apply to private caches.
 </p>
 
 <p class="note">注記：
@@ -3197,9 +3245,7 @@ Argument syntax:
 <p>
 `max-age$sdir 応答~指令は、次を指示する
 ⇒
-当の応答は、［
-その`齢$が指定された秒~数を超えた後は，`非新鮮$になる
-］と見なされる
+この応答は、その`齢$が指定された秒~数を超えた後は，`非新鮮$になると見なされる。
 ◎
 The "max-age" response directive indicates that the response is to be considered stale after its age is greater than the specified number of seconds.
 </p>
@@ -3230,14 +3276,11 @@ Argument syntax:
 </pre>
 
 <p>
-`s-maxage^sdir 応答~指令は、`共用~cache$に対しては，次を指示する
+`s-maxage^sdir 応答~指令は、`共用~cache$に対し，次を指示する
 ⇒
-［
-この指令により指定された最大~齢
-］は［
+この指令が指定する最大~齢は、［
 `max-age$sdir 指令／ `Expires$h ~header
-］により指定された最大~齢
-］を上書きする
+］により指定された最大~齢を上書きする
 ◎
 The "s-maxage" response directive indicates that, for a shared cache, the maximum age specified by this directive overrides the maximum age specified by either the max-age directive or the Expires header field.
 </p>
@@ -3428,12 +3471,12 @@ Values to be added to this namespace require IETF Review (see [RFC8126], Section
 <h3>5.3. `Expires^h</h3>
 
 <p>
-`Expires^h ~headerは、［
+`Expires^h 応答~headerは、［
 それ以降は 応答が`非新鮮$になると見なされる，日時／時刻
 ］を与える。
 鮮度~modelについての更なる論点は、`鮮度$secを見よ。
 ◎
-The "Expires" header field gives the date/time after which the response is considered stale. See Section 4.2 for further discussion of the freshness model.
+The "Expires" response header field gives the date/time after which the response is considered stale. See Section 4.2 for further discussion of the freshness model.
 </p>
 
 <p>
@@ -3441,14 +3484,14 @@ The "Expires" header field gives the date/time after which the response is consi
 元の`資源$が，その時刻を境に変化したり, 存在するようになる／しなくなる
 ］ことを含意するものではない。
 ◎
-The presence of an Expires field does not imply that the original resource will change or cease to exist at, before, or after that time.
+The presence of an Expires header field does not imply that the original resource will change or cease to exist at, before, or after that time.
 </p>
 
 <p>
-`Expires^h は、
-`HTTP-date$p による時刻印を値にとる。
+`Expires^h `~field値$は、
+`HTTP-date$p による時刻印をとる。
 ◎
-The Expires value is an HTTP-date timestamp, as defined in Section 5.7.7 of [Semantics].
+The Expires field value is an HTTP-date timestamp, as defined in Section 5.7.7 of [Semantics].
 </p>
 
 【！ Errata ID: 4479 Rejected 】
@@ -3485,7 +3528,7 @@ A cache recipient MUST interpret invalid date formats, especially the value "0",
 `Cache-Control$h ~headerをまだ実装していない`受信者$
 ］用に意図されたものである。
 ◎
-If a response includes a Cache-Control field with the max-age directive (Section 5.2.2.9), a recipient MUST ignore the Expires field. Likewise, if a response includes the s-maxage directive (Section 5.2.2.10), a shared cache recipient MUST ignore the Expires field. In both these cases, the value in Expires is only intended for recipients that have not yet implemented the Cache-Control field.
+If a response includes a Cache-Control header field with the max-age directive (Section 5.2.2.9), a recipient MUST ignore the Expires header field. Likewise, if a response includes the s-maxage directive (Section 5.2.2.10), a shared cache recipient MUST ignore the Expires header field. In both these cases, the value in Expires is only intended for recipients that have not yet implemented the Cache-Control header field.
 </p>
 
 <div class="p">
@@ -3525,10 +3568,10 @@ Historically, HTTP required the Expires field value to be no more than a year in
 <h3>5.4. `Pragma^h</h3>
 
 <p>
-`Pragma^h ~headerは、~HTTP10~cache用に定義された
+`Pragma^h 要請~headerは、~HTTP10~cache用に定義された
 — `~client$が， `no-cache^dir 要請も指定できるようにするために（ `Cache-Control$h が定義されたのは、~HTTP11になってからなので）。
 ◎
-The "Pragma" header field was defined for HTTP/1.0 caches, so that clients could specify a "no-cache" request (as Cache-Control was not defined until HTTP/1.1).
+The "Pragma" request header field was defined for HTTP/1.0 caches, so that clients could specify a "no-cache" request (as Cache-Control was not defined until HTTP/1.1).
 </p>
 
 <p>
@@ -3726,6 +3769,15 @@ Note that the Set-Cookie response header field [RFC6265] does not inhibit cachin
 （ § `Age$h ）
 ◎
 Handling invalid and multiple Age header field values has been clarified. (Section 5.1)
+</p>
+
+<p>
+`~cache指令$が［
+重複-／競合-
+］している場合の取扱いを明確化した。
+（ `4.2.1$sec ）
+◎
+Handling of duplicate and conflicting cache directives has been clarified. (Section 4.2.1)
 </p>
 
 <p>

@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP Semantics
-spec_date:2020-10-02
-trans_update:2020-10-25
+spec_date:2020-10-30
+trans_update:2020-11-01
 source_checked:201002
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html
@@ -366,7 +366,7 @@ sdir.private:~HTTPcache#cache-response-directive.private
 17.1:~HTTPinfra#uri.scheme.registration
 17.2:~HTTPinfra#method.registration
 17.3:~HTTPinfra#status.code.registration
-17.4:~HTTPinfra#header.field.registration
+17.4:~HTTPinfra#field.name.registration
 17.5:~HTTPinfra#auth.scheme.registration
 17.6:~HTTPinfra#content.coding.registration
 17.7:~HTTPinfra#range.unit.registration
@@ -407,6 +407,7 @@ C.14:~HTTPinfra#changes.since.12
 	#rfc.authors
 
 Caching/2:~HTTPcache#caching.overview
+Caching/4.2:~HTTPcache#expiration.model
 Caching/~cache制御~拡張:~HTTPcache#cache.control.extensions
 Caching/7:~HTTPcache#security.considerations
 Messaging/5.1:~HTTPmsg#field.parsing
@@ -814,6 +815,7 @@ listener::::リスナ
 	拘束されない:unconstrained
 	労力:effort required
 	中核を成す:core
+	識別-用:identifying
 
 	識別し直-:re-identify
 	再~識別:re-identification
@@ -947,9 +949,11 @@ RFC8246=副            ~/http-immutable-response-ja.html
     RFC Errata, Erratum ID 5433, RFC 2978, URL: https://www.rfc-editor.org/errata/eid5433
 [Georgiev]
     Georgiev, M., Iyengar, S., Jana, S., Anubhai, R., Boneh, D., and V. Shmatikov, “The Most Dangerous Code in the World: Validating SSL Certificates in Non-browser Software”, DOI 10.1145/2382196.2382204, In Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12), pp. 38-49, October 2012. URL: http://dx.doi.org/10.1145/2382196.2382204
+[HTTP/0.9]
+    Berners-Lee, T., “The Original HTTP as defined in 1991”, October 1996, URL: https://www.w3.org/Protocols/HTTP/AsImplemented.html
 [HTTP3]
-    Bishop, M., “Hypertext Transfer Protocol Version 3 (HTTP/3)”, Internet-Draft draft-ietf-quic-http-29 (work in progress), June 2020.
-    URL: https://tools.ietf.org/html/draft-ietf-quic-http-29
+    Bishop, M., “Hypertext Transfer Protocol Version 3 (HTTP/3)”, Internet-Draft draft-ietf-quic-http-32 (work in progress), October 2020.
+    URL: https://tools.ietf.org/html/draft-ietf-quic-http-32
 [ISO-8859-1]
     International Organization for Standardization, “Information technology -- 8-bit single-byte coded graphic character sets -- Part 1: Latin alphabet No. 1”, ISO/IEC 8859-1:1998, 1998. 
 [Kri2001]
@@ -1096,7 +1100,7 @@ Draft HTTP Core Documents
 この~pageでは、~HTTP意味論を成す内容のうち，
 <a href="~HTTPsem">§ 6 〜 § 14</a>
 以外を成す（概ね、個別の［
-~header／~method／状態s~code
+~field／~method／状態s~code
 ］には関わらない部分）を述べる。
 】</p>
 
@@ -1270,9 +1274,9 @@ If the communication is considered in isolation, then successful actions ought t
 それは、［
 所与の~pathnameで識別され，予め~hypertext文書と見做される資源
 ］の転送を要請するために，単独の~method（ `GET$m ）を伴う低-待時間な要請~用の些細な仕組みとして始まった。
-この元の~protocolは、今では~HTTP09として参照rされている。
+この元の~protocolは、今では~HTTP09として参照rされている（ `HTTP/0.9$r を見よ）。
 ◎
-HTTP has been the primary information transfer protocol for the World Wide Web since its introduction in 1990. It began as a trivial mechanism for low-latency requests, with a single method (GET) to request transfer of a presumed hypertext document identified by a given pathname. This original protocol is now referred to as HTTP/0.9.
+HTTP has been the primary information transfer protocol for the World Wide Web since its introduction in 1990. It began as a trivial mechanism for low-latency requests, with a single method (GET) to request transfer of a presumed hypertext document identified by a given pathname. This original protocol is now referred to as HTTP/0.9 (see [HTTP/0.9]).
 </p>
 
 <div class="p">
@@ -1378,12 +1382,12 @@ HTTP/1.1 was introduced in 1995 and published on the standards track in 1997 [RF
 ~HTTP2（ `RFC7540$r ）は、複数の~HTTP~messageを同時的に交換するため，既存の［
 ~TLS, ~TCP
 ］~protocolの上層に多重化された~session層を導入した
-— 効率的な~header圧縮と~server~pushも伴って。
+— 効率的な~field圧縮と~server~pushも伴って。
 ~HTTP3（ `HTTP3$r ）は、~QUICを［
 ~TCP越しに代えて，~UDP越しの~secureな多重化された~transport
 ］として利用することにより，同時的な~message用に より高い独立性を供する。
 ◎
-HTTP/2 ([RFC7540]) introduced a multiplexed session layer on top of the existing TLS and TCP protocols for exchanging concurrent HTTP messages with efficient header field compression and server push. HTTP/3 ([HTTP3]) provides greater independence for concurrent messages by using QUIC as a secure multiplexed transport over UDP instead of TCP.
+HTTP/2 ([RFC7540]) introduced a multiplexed session layer on top of the existing TLS and TCP protocols for exchanging concurrent HTTP messages with efficient field compression and server push. HTTP/3 ([HTTP3]) provides greater independence for concurrent messages by using QUIC as a secure multiplexed transport over UDP instead of TCP.
 </p>
 
 <p>
@@ -3590,11 +3594,15 @@ HTTP communication is initiated by a user agent for some purpose. The purpose is
 これらの~pairは、
 `~field@
 （ `HTTP field^en ／ 略して `field^en ）†と呼ばれる。
-~fieldは、次の 2 種に大別される：
+~fieldは、
+`~field節@
+（ `field section^en, 略して `section^en ）と呼ばれる~group内に生じる。
+［
+~field／~field節
+］は、次の 2 種に大別される：
 ◎
-HTTP messages use key/value pairs to convey data about the message, its payload, the target resource, or the connection. They are called "HTTP fields" or just "fields".
+HTTP messages use key/value pairs to convey data about the message, its payload, the target resource, or the connection. They are called "HTTP fields" or just "fields". Fields occur in groups called "field sections" or just "sections".
 </p>
-
 <ul>
 	<li>
 <p>
@@ -3653,12 +3661,18 @@ Fields that are sent/received after the header section has ended (usually after 
 </ul>
 
 <p class="trans-note">【†
-この訳では、もっぱら，これらの略称／俗称で表記する。
-`~field$は［
-`~header$／`~trailer$
-］の総称になる。
-これらの用語は、~HTTP以外の文脈においては（あるいは、何かの正式名称の一部を成すときは）， “~HTTP” が接頭されることもある（例： “~HTTP~header” ）。
+この訳では、［
+~header~field／~trailer~field
+］を一律に，その略称（俗称）［
+~header／~trailer
+］で表記する。
+`~field$はこれらの総称になる。
+これらの用語は、~HTTP以外の文脈では，他の意味に解釈されないよう
+“~HTTP” が接頭されることもある（例： “~HTTP~header” ）。
 】【
+`~field節$は［
+`~header節$／`~trailer節$
+］の総称になる。
 原文には、［
 ~header節／~trailer節
 ］をもっと略して，［
@@ -3670,10 +3684,10 @@ Fields that are sent/received after the header section has ended (usually after 
 】</p>
 
 <p>
-どちらの節も，任意個数の
+各`~field節$は、任意個数の
 `~field行l@
 から構成される。
-各~field行lは、~fieldを識別する
+各`~field行l$は、`~field$を識別する
 `~field名@
 （`5.4.3$sec を見よ）, および
 ~field用の~dataを伝達する
@@ -3684,16 +3698,15 @@ Both sections are composed of any number of "field lines", each with a "field na
 </p>
 
 <p>
-［
-`~header節$, `~trailer節$
-］それぞれに対し、その節~内に在る各`~field名$には，対応する
+各`~field節$ `~field節^V に対し、
+`~field節^V 内に在る各`~field名$ `~field名^V には，対応する
 `~field値@
 がある。
-それは、その節~内にある［
-所与の`~field名$を伴う`~field行l値$
-］すべてから構成される
+それは、 `~field節^V を成す`~field行l$のうち［
+`~field名$として `~field名^V を伴うもの
+］すべての`~field行l値$から構成される
 — ~commaで分離されるよう，一緒に連結して。
-~messageを成す~fieldたちの［
+~messageを成す`~field$たちの［
 順序付け／結合
 ］の意味論についての更なる論は `5.4.1$sec を見よ。
 `~field値$についての更なる論は `5.4.4$sec を見よ。
@@ -3703,7 +3716,7 @@ Each field name present in a section has a corresponding "field value" for that 
 
 <div class="example">
 <p>
-例えば，次の一節は：
+例えば，次の`~field節$は：
 ◎
 For example, this section:
 </p>
@@ -3744,9 +3757,7 @@ The interpretation of a field does not change between minor versions of the same
 </p>
 
 <p>
-新たな`~field$を，［
-~protocol~versionを変更する
-］ことなく，導入できる
+新たな`~field$を、~protocol~versionを変更することなく，導入できる
 — ［
 それに定義される意味論
 ］において，［
@@ -3803,7 +3814,7 @@ These requirements allow HTTP's functionality to be enhanced without requiring p
 要請における `Host$h, 応答における `Date$h などの，制御~dataを包含する~header
 ］を最初に送信することは，良い実施とされる
 — 実装は、より早く，~messageを取扱うかどうか裁定できるようになるので。
-`~server$は、要請の`~header節$全体が受信されるまで，要請をその`~target資源$に適用してはナラナイ
+`~server$は、要請の`~header節$全体が受信されるまでは，要請をその`~target資源$に適用してはナラナイ
 —  後に続く~header`~field行l$は、要請~処理に影響iするような［
 `条件付き要請$ ／
 認証~用の`資格証$ ／
@@ -3814,8 +3825,8 @@ The order in which field lines with differing names are received in a message is
 </p>
 
 <p>
-`受信者$は、~messageの意味論を変更することなく［
-`~field名$が同じである複数個の`~field行l$
+`受信者$は、~messageの意味論を変更することなく，同じ`~field節$の中の［
+同じ`~field名$を伴う複数個の`~field行l$
 ］を 1 個の`~field行l$に
 `結合-@
 してもヨイ
@@ -3828,7 +3839,7 @@ The order in which field lines with differing names are received in a message is
 ~comma, `SP$P
 ］並びを利用すること。
 ◎
-A recipient MAY combine multiple field lines with the same field name into one field line, without changing the semantics of the message, by appending each subsequent field line value to the initial field line value in order, separated by a comma and OWS (optional whitespace). For consistency, use comma SP.
+A recipient MAY combine multiple field lines within a field section that have the same field name into one field line, without changing the semantics of the message, by appending each subsequent field line value to the initial field line value in order, separated by a comma and OWS (optional whitespace). For consistency, use comma SP.
 </p>
 
 <p>
@@ -3844,16 +3855,14 @@ The order in which field lines with the same name are received is therefore sign
 
 <p>
 すなわち、よく知られた例外（下に注記される）は別として，および［
-当の~fieldの定義にて，［
-`~field名$が同じである複数個の`~field行l$を（［
-`~header節$または`~trailer節$
-］内で）`結合-$し直す
+当の~fieldの定義にて，（同じ`~field節$内にある）［
+同じ`~field名$を伴う複数個の`~field行l$を`結合-$し直す
 ］ことが許容されている（すなわち、当の`~field値$の定義を成す ある代替が，~ABNF規則
 <code>#(`values^p)</code>
 などとして ~comma区切りの~list（ `5.7.1$sec ）を許容している）場合
-］を除き、`送信者$は，同じ~message内に
+］を除き、`送信者$は，同じ~message【`~field節$】内に
 ⇒＃
-`~field名$が同じ複数個の`~field行l$を`生成し$てはナラナイ／
+同じ`~field名$を伴う複数個の`~field行l$を`生成し$てはナラナイ／
 すでに存在する`~field行l$と同じ`~field名$を伴う`~field行l$を付加してはナラナイ
 ◎
 This means that, aside from the well-known exception noted below, a sender MUST NOT generate multiple field lines with the same name in a message (whether in the headers or trailers), or append a field line when a field line of the same name already exists in the message, unless that field's definition allows multiple field line values to be recombined as a comma-separated list [i.e., at least one alternative of the field's definition allows a comma-separated list, such as an ABNF rule of #(values) defined in Section 5.7.1].
@@ -5142,7 +5151,14 @@ Obsolete formats:
 
 <p>
 `HTTP-date$p は文字大小区別である。
-`送信者$は、 `HTTP-date$p 内に，［
+これは、~cache受信者に対しては，
+`Caching/4.2$sec により緩められることに注意。
+◎
+HTTP-date is case sensitive. Note that Section 4.2 of [Caching] relaxes this for cache recipients.
+</p>
+
+<p>
+`送信者$は、 `HTTP-date$p 内に［
 文法~内に `SP$P として特定的に内包されたもの
 ］以外の 余計な`空白$を`生成し$てはナラナイ。
 ［
@@ -5152,7 +5168,7 @@ Obsolete formats:
 の，対応する名前の構成子
 ］に定義されるそれ（ `RFC5322/3.3$sec ）と同じである。
 ◎
-HTTP-date is case sensitive. A sender MUST NOT generate additional whitespace in an HTTP-date beyond that specifically included as SP in the grammar. The semantics of day-name, day, month, year, and time-of-day are the same as those defined for the Internet Message Format constructs with the corresponding name ([RFC5322], Section 3.3).
+A sender MUST NOT generate additional whitespace in an HTTP-date beyond that specifically included as SP in the grammar. The semantics of day-name, day, month, year, and time-of-day are the same as those defined for the Internet Message Format constructs with the corresponding name ([RFC5322], Section 3.3).
 </p>
 
 <p>
@@ -5834,12 +5850,12 @@ If it is a singleton field, document how to treat messages where the multiple me
 
 <p>
 当の`~field$が`単数~field$として定義されていようが、`中継者$や~software~libraryは，［
-複数個の`~field行l$【！~field~instance】を一つに`結合-$し得る
+複数個の`~field行l$を一つに`結合-$し得る
 ］ことに注意。
 堅牢な形式は、受信者がこれらの状況を発見することを可能化する。
 例えば：
 ◎
-Note that intermediaries and software libraries might combine multiple field instances into a single one, despite the field being defined as a singleton. A robust format enables recipients to discover these situations＼
+Note that intermediaries and software libraries might combine multiple field lines into a single one, despite the field being defined as a singleton. A robust format enables recipients to discover these situations＼
 </p>
 		<ul>
 			<li>
@@ -6988,9 +7004,9 @@ In environments where proxies are used to enhance privacy, user agents ought to 
 `表現$の妥当性を確保する／
 悪意的な変更に抗して防護する／
 経路上の攻撃を検出する
-］ものとして，意図されたものではない。
+］ものとして意図されてはいない。
 それらは~~最善でも、すべての参加者が~~順調に挙動する下で［
-より効率的な~cache更新を可能化したり, 同時的 書込みをより~~適化する
+より効率的な~cache更新を可能化する／同時的な書込みをより~~適化する
 ］だけである。
 ~~最悪でも、条件は失敗し，~clientは［［
 条件付きでない要請による~HTTP交換
@@ -7002,20 +7018,23 @@ The validators defined by this specification are not intended to ensure the vali
 
 <p>
 `entity-tag$p は、~privacy~riskを高める仕方で濫用され得る。
-例えば，~siteが、［
-利用者や~UA間で一意, かつ
-意味論的に妥当でない
-］ような `entity-tag$p を故意に構築して, ［
-~cache可能かつ`鮮度維持期間$の長い，応答
+例えば、ある~siteが，［
+利用者／~UA
+］を識別し直す手段として、意味論的に妥当でない `entity-tag$p を［
+利用者／~UA
+］間で一意になるよう故意に構築して，それを［
+~cache可能かつ`鮮度維持期間$が長い，応答
 ］内に送信した上で，［
-利用者／~UAを識別し直す手段として，今後の`条件付き要請$からその `entity-tag$p を読取る
-］ことも，あり得る。
-そのように識別する~tagは、［
+今後の`条件付き要請$からその `entity-tag$p を読取る
+］こともあり得る。
+そのような識別-用の~tagは、［
 ~UAが元の~cache~entryを維持する限り，持続する
-］ような，識別子になるであろう。
-`表現$を~cacheする~UAは、利用者が，［
-格納されている~cookieを~clearしたり，私的~閲覧~modeに変える
-］などにより，~privacyを保守する動作を遂行したときには、その~cacheが［
+］ような識別子になるであろう。
+`表現$を~cacheする~UAは、利用者が~privacyを保守する動作を遂行したとき
+— ［
+格納された~cookieを~clearする／私的~閲覧~modeに変える
+］など —
+には，その~cacheが［
 ~clearされる／置換される
 ］ことを確保する~OUGHT。
 ◎
@@ -7115,7 +7134,9 @@ HTTP depends on the security properties of the underlying transport- or session-
 得する／管理する
 ］方法については~~関知しないので。
 ［
-`資格証$を 失効させる／廃用にする ための仕組み
+`資格証$を［
+失効させる／廃用にする
+］ための仕組み
 ］は、`認証~scheme$定義の一部として指定し得る。
 ◎
 Existing HTTP clients and user agents typically retain authentication information indefinitely. HTTP does not provide a mechanism for the origin server to direct clients to discard these cached credentials, since the protocol has no awareness of how credentials are obtained or managed by the user agent. The mechanisms for expiring or revoking credentials can be specified as part of an authentication scheme definition.
@@ -7266,11 +7287,11 @@ The description of an origin and authoritative access to origin servers has been
 </p>
 
 <p>
-`~field値$は、今や複数個の~instanceを~commaで結合した後の値を指す
+`~field値$は、今や複数個の~field行lの値を~commaで結合した後の値を指す
 — それが他よりずっと共通的な利用なので。
-単独の~header行lの値を指すときは、`~field行l値$を利用すること。
+単独の`~field行l$【！~header行l】の値を指すときは、`~field行l値$を利用すること。
 ◎
-"Field value" now refers to the value after multiple instances are combined with commas — by far the most common use. To refer to a single header line's value, use "field line value". (Section 5.4)
+"Field value" now refers to the value after multiple field lines are combined with commas — by far the most common use. To refer to a single header line's value, use "field line value". (Section 5.4)
 </p>
 
 <p>
@@ -7332,17 +7353,17 @@ The grammar definition for the Via field's "received-by" was expanded in 7230 du
 </p>
 
 <p>
-状態s~code `308$st0 を追加した（以前は `RFC7538$r にて定義されていた）
+状態s~code `308^st0 を追加した（以前は `RFC7538$r にて定義されていた）
 — 状態s~code `301$st0, `302$st0, `307$st0 の近くに定義されるよう。
-（ § `308^st0 ）
+（ § `308$st0 ）
 ◎
 Added status code 308 (previously defined in [RFC7538]) so that it's defined closer to status codes 301, 302, and 307. (Section 14.4.9)
 </p>
 
 <p>
-状態s~code `422$st0 を追加した（以前は `RFC4918/11.2$sec にて定義されていた）
+状態s~code `422^st0 を追加した（以前は `RFC4918/11.2$sec にて定義されていた）
 — それには、一般的な適用能があるので。
-（ § `422^st0 ）
+（ § `422$st0 ）
 ◎
 Added status code 422 (previously defined in Section 11.2 of [RFC4918]) because of its general applicability. (Section 14.5.20)
 </p>
@@ -7545,11 +7566,10 @@ This specification includes the extension defined in [RFC7694], but leaves out e
 
 <p>
 この節は、 RFC として発行する前に除去されることになる。
+【以下、この節は未訳。】
 ◎
 This section is to be removed before publishing as an RFC.
 </p>
-
-【以下、この節は未訳。】
 
 	</section>
 	<section id="acks">
@@ -7621,3 +7641,4 @@ URI: https://greenbytes.de/tech/webdav/
 
 	</section>
 </main></div>
+
