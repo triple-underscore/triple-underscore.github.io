@@ -2171,13 +2171,14 @@ method::::メソッド
 下位手続き:substeps:~
 被呼出時:被 invoke 時:~
 呼出され:invokeされ:呼び出され
+呼出さな:invokeしな:呼び出さな
 呼出す:invokeする:呼び出す
 呼出した:invokeした:呼び出した
 呼出して:invokeして:呼び出して
 呼出せば:invokeすれば:呼び出せば
-呼出そう:invokeしよう:呼び出そう
-呼出さな:invokeしな:呼び出さな
 呼出せる:invokeできる:呼び出せる
+呼出せな:invokeできな:呼び出せな
+呼出そう:invokeしよう:呼び出そう
 呼出ng:invoking:呼び出し
 呼出n:invocation:呼び出し
 
