@@ -160,8 +160,8 @@ return text;
 ●●options
 
 spec_title:URL
-spec_date:2020-10-08
-trans_update:2020-10-10
+spec_date:2020-11-02
+trans_update:2020-11-03
 source_checked:200511
 spec_status:LS
 original_url:https://url.spec.whatwg.org/
@@ -288,7 +288,6 @@ i.EOF:#eof-code-point
 文字列を~UTF-8~percent-符号化する:#string-utf-8-percent-encode
 文字列を~byte列に~percent-復号する:#string-percent-decode
 ~percent-復号-:#string-percent-decode
-~cpを符号化してから~percent-符号化する:#code-point-percent-encode-after-encoding
 文字列を符号化してから~percent-符号化する:#string-percent-encode-after-encoding
 
 	● host
@@ -478,11 +477,14 @@ cp.値:~INFRA#code-point-value
 ~ISO-2022-JP:~ENCODING#iso-2022-jp
 ~Shift_JIS:~ENCODING#shift_jis
 符号化法から出力~符号化法を取得する:~ENCODING#get-an-output-encoding
-符号化法を利用して符号化する:~ENCODING#encode
 符号化法:~ENCODING#encoding
 ~BOMはそのままに~UTF-8復号する:~ENCODING#utf-8-decode-without-bom
 ~BOMも失敗-もそのままに~UTF-8復号する:~ENCODING#utf-8-decode-without-bom-or-fail
 ~UTF-8符号化する:~ENCODING#utf-8-encode
+符号化器を取得する:~ENCODING#get-an-encoder
+入出力~queue:~ENCODING#concept-stream
+符号化するか失敗する:~ENCODING#encode-or-fail
+~ISO-2022-JP符号化器:~ENCODING#iso-2022-jp-encoder
 
 	●他
 生成元:~ORIGIN#concept-origin
@@ -554,7 +556,9 @@ blob:
 等価性:equivalence::~
 同等:equal::~
 同等性:equality::~
-前更新:pre-update::前-更新
+stateful::::ステートフル
+
+	更なる分岐処理:dispatch ... for further processing
 
 	●文字データ
 BOM:
@@ -581,7 +585,7 @@ piece:::片
 	-:separator
 上書符号化法:encoding override::上書き符号化法::上書きエンコーディング
 上書state:state override::上書き state
-
+符号化器:encoder::~::エンコーダ
 状態機械:state machine:~
 state:
 短縮-:shorten::~
@@ -599,7 +603,7 @@ ignore0::ゼロは読み飛ばす
 	指す:points to
 Shift_JIS:
 ISO-2022-JP:
-
+入出力:I/O:~
 
 	●URL／origin／domain／host
 IP:
@@ -772,6 +776,7 @@ bar::::バー
 	%~counter:counter
 	%~cp:codePoint
 	%~domain
+	%~errorになり得る:potentialError
 	%~hex文字列:-
 	%~host
 	%~ignore0:ignore0
@@ -798,6 +803,7 @@ bar::::バー
 	%値:value
 	%値~文字列:valueString
 	%入力:input
+	%入力~queue:inputQueue
 	%公共~接尾辞:publicSuffix
 	%出力:output
 	%同型な~cp:isomorph
@@ -813,6 +819,7 @@ bar::::バー
 	%特別でない:isNotSpecial
 	%登録-可能な~domain:registrableDomain
 	%符号化-済み~cp:encodedCodePoints
+	%符号化-出力:encodeOutput
 	%符号化法:encoding
 	%素片は除外する~flag:exclude fragment flag
 	%結果:result
@@ -828,8 +835,9 @@ bar::::バー
 変種:variant:~
 hit::::ヒット
 
+	最短:shortest possible
 	含まないので:due to the omission of
-	更なる分岐処理:dispatch ... for further processing
+	~cpごと:code-point-for-code-point
 	-ing
 	残りの部分:remainder
 	率を高める:increase
@@ -909,7 +917,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/url/commits">GitHub whatwg/url/commits</a>
-	<a href="https://url.spec.whatwg.org/commit-snapshots/a19495e27ad95154543b46f751d1a1bf25553808/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://url.spec.whatwg.org/commit-snapshots/2ce49383db3506a3c1a527a775693af1100198ef/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/urlstandard">@urlstandard</a>
 
 Tests:
@@ -1101,7 +1109,10 @@ Some terms used in this specification are defined in the following standards and
 `整数を直列化する@
 ときは、所与の
 ( 整数 %N )
-に対し， %N を 10 進数で表現する最短の文字列を返す。
+に対し，［
+%N を 10 進数で最短に表現する文字列
+］を返す。
+【負符号, `~ASCII数字$からなるが、負符号は，この仕様では生じ得ない。】
 ◎
 To serialize an integer, represent it as the shortest possible decimal number.
 </p>
@@ -1528,65 +1539,26 @@ The application/x-www-form-urlencoded percent-encode set contains all code point
 	</li>
 </ul>
 
-
 <div class="algo">
 <p>
-`~cpを符号化してから~percent-符号化する@
+`文字列を符号化してから~percent-符号化する@
 ときは、所与の
-( `符号化法$ %符号化法, `~cp$ %~cp, ~cpの集合 %~percent-符号化-集合 )
+( `符号化法$ %符号化法, `文字列$ %入力, ~cpの集合 %~percent-符号化-集合, 真偽値 %spaceAsPlus （省略時は ~F ） )
 に対し，次の手続きを走らす：
 ◎
-To percent-encode after encoding, given an encoding encoding, code point codePoint, and a percentEncodeSet, run these steps:
+To percent-encode after encoding, given an encoding encoding, string input, a percentEncodeSet, and an optional boolean spaceAsPlus (default false), run these steps:
 </p>
 <ol>
 	<li>
-%~byte列 ~LET `符号化法を利用して符号化する$( « %~cp », %符号化法 )
+%符号化器 ~LET `符号化器を取得する$( %符号化法 )
 ◎
-Let bytes be the result of encoding codePoint using encoding.
+Let encoder be the result of getting an encoder from encoding.
 </li>
 	<li>
-<p>
-~IF［
-%~byte列 の［
-1 個目, 2 個目, 最後
-］の~byte ~EQ 順に［
-`26^X `&amp;^smb, ❛#, ❛;
-］］：
+%入力~queue ~LET %入力 を`入出力~queue$に変換した結果【！＊】
 ◎
-If bytes starts with 0x26 (&amp;) 0x23 (#) and ends with 0x3B (;), then:
-</p>
-		<ol>
-			<li>
-%出力 ~LET `同型に復号する$( %~byte列 )
-◎
-Let output be bytes, isomorphic decoded.
+Let inputQueue be input converted to an I/O queue.
 </li>
-			<li>
-%出力 ~SET %出力 の［
-1 個目, 2 個目, 最後
-］の~byteを順に［
-`%26^bl, `%23^bl, `%3B^bl
-］に置換した結果
-◎
-Replace the first two code points of output with "%26%23".
-◎
-Replace the last code point of output with "%3B".
-</li>
-			<li>
-~RET %出力
-◎
-Return output.
-</li>
-		</ol>
-
-<p class="note">注記：
-これは［
-%符号化法 ~NEQ `~UTF-8$
-］のときに起こり得る。
-◎
-This can happen when encoding is not UTF-8.
-</p>
-	</li>
 	<li>
 %出力 ~LET 空~文字列
 ◎
@@ -1594,28 +1566,62 @@ Let output be the empty string.
 </li>
 	<li>
 <p>
-%~byte列 を成す
+~WHILE 無条件：
+◎
+Let potentialError be 0.
+◎
+This needs to be a non-null value to initiate the subsequent while loop.
+◎
+While potentialError is non-null:
+◎
+↓↓</p>
+		<ol>
+			<li>
+%符号化-出力 ~LET 空な`入出力~queue$
+◎
+Let encodeOutput be an empty I/O queue.
+</li>
+			<li>
+%~errorになり得る ~LET `符号化するか失敗する$( %入力~queue, %符号化器, %符号化-出力 )
+◎
+Set potentialError to the result of running encode or fail with inputQueue, encoder, and encodeOutput.
+</li>
+			<li>
+<p>
+［
+%符号化-出力 を~byte列に変換した結果【！＊】
+］を成す
 ~EACH( %~byte )
 に対し：
 ◎
-For each byte of bytes:
+For each byte of encodeOutput converted to a byte sequence:
 </p>
-		<ol>
-			<li>
+				<ol>
+					<li>
+~IF［
+%spaceAsPlus ~EQ ~T
+］~AND［
+%~byte ~EQ  0x20 (SP)
+］
+⇒
+%出力 ~APPEND ❝+
+◎
+If spaceAsPlus is true and byte is 0x20 (SP), then append U+002B (+) to output.
+</li>
+					<li>
 %同型な~cp ~LET 次を満たす`~cp$
 ⇒
 その`値$cp ~EQ %~byte の`値$byte
 ◎
 Let isomorph be a code point whose value is byte’s value.
 </li>
-			<li>
+					<li>
 ~Assert：
-%~percent-符号化-集合 は
-`~ASCII~cp$でないすべての~cpを含む。
+%~percent-符号化-集合 は`~ASCII~cp$でないすべての~cpを含む。
 ◎
 Assert: percentEncodeSet includes all non-ASCII code points.
 </li>
-			<li>
+					<li>
 ~IF［
 %同型な~cp ~NIN %~percent-符号化-集合
 ］
@@ -1624,67 +1630,40 @@ Assert: percentEncodeSet includes all non-ASCII code points.
 ◎
 If isomorph is not in percentEncodeSet, then append isomorph to output.
 </li>
-			<li>
+					<li>
 ~ELSE
 ⇒
 %出力 ~APPEND `~byteを文字列に~percent-符号化する$( %~byte )
 ◎
 Otherwise, percent-encode byte and append the result to output.
 </li>
-		</ol>
-	</li>
-	<li>
-~RET %出力
-◎
-Return output.
-</li>
-</ol>
-</div>
-
-<div class="algo">
+				</ol>
+			</li>
+			<li>
 <p>
-`文字列を符号化してから~percent-符号化する@
-ときは、所与の
-( `符号化法$ %符号化法, `文字列$ %入力, ~cpの集合 %~percent-符号化-集合, 真偽値 %spaceAsPlus )
-に対し，次の手続きを走らす：
-◎
-To percent-encode after encoding, given an encoding encoding, string input, a percentEncodeSet, and a boolean spaceAsPlus, run these steps:
-</p>
-
-<ol>
-	<li>
-%出力 ~LET 空~文字列
-◎
-Let output be the empty string.
-</li>
-	<li>
-<p>
-%入力 を成す
-~EACH( %~cp )
-に対し：
-◎
-For each codePoint of input:
-</p>
-
-<ol>
-	<li>
 ~IF［
-%spaceAsPlus ~EQ ~T
-］~AND［
-%~cp ~EQ `0020^U `SPACE^cn
+%~errorになり得る ~NEQ ~NULL
 ］
 ⇒
-%出力 ~APPEND ❝+
+%出力 ~APPEND `%26%23^l
+~APPEND `整数を直列化する$( %~errorになり得る )【！shortest sequence of ASCII digits...】
+~APPEND `%3B^l
 ◎
-If spaceAsPlus is true and codePoint is U+0020, then append U+002B (+) to output.
-</li>
-	<li>
+If potentialError is non-null, then append "%26%23", followed by the shortest sequence of ASCII digits representing potentialError in base ten, followed by "%3B", to output.
+</p>
+
+<p class="note">注記：
+これは、 %符号化法 が`~UTF-8$でないとき起こり得る。
+◎
+This can happen when encoding is not UTF-8.
+</p>
+			</li>
+			<li>
 ~ELSE
 ⇒
-%出力 ~APPEND `~cpを符号化してから~percent-符号化する$( %符号化法, %~cp, %~percent-符号化-集合 )
+~BREAK
 ◎
-Otherwise, run percent-encode after encoding with encoding, codePoint, and percentEncodeSet, and append the result to output.
-</li>
+↑↑</li>
 		</ol>
 	</li>
 	<li>
@@ -1702,9 +1681,9 @@ Return output.
 ( `~cp$ %~cp, ~cpの集合 %~percent-符号化-集合 )
 に対し
 ⇒
-~RET `~cpを符号化してから~percent-符号化する$( `~UTF-8$, %~cp, %~percent-符号化-集合 )
+~RET `文字列を符号化してから~percent-符号化する$( `~UTF-8$, %~cp 1 個からなる`文字列$, %~percent-符号化-集合 )
 ◎
-To UTF-8 percent-encode a code point codePoint using a percentEncodeSet, return the result of running percent-encode after encoding with UTF-8, codePoint, and percentEncodeSet.
+To UTF-8 percent-encode a code point codePoint using a percentEncodeSet, return the result of running percent-encode after encoding with UTF-8, codePoint as a string, and percentEncodeSet.
 </p>
 </div>
 
@@ -1715,9 +1694,9 @@ To UTF-8 percent-encode a code point codePoint using a percentEncodeSet, return 
 ( `文字列$ %入力, ~cpの集合 %~percent-符号化-集合 )
 に対し
 ⇒
-~RET `文字列を符号化してから~percent-符号化する$( `~UTF-8$, %入力, %~percent-符号化-集合, ~F )
+~RET `文字列を符号化してから~percent-符号化する$( `~UTF-8$, %入力, %~percent-符号化-集合 )
 ◎
-To UTF-8 percent-encode a string input using a percentEncodeSet, return the result of running percent-encode after encoding with UTF-8, input, percentEncodeSet, and false.
+To UTF-8 percent-encode a string input using a percentEncodeSet, return the result of running percent-encode after encoding with UTF-8, input, and percentEncodeSet.
 </p>
 </div>
 
@@ -1753,18 +1732,18 @@ Here is a summary, by way of example, of the operations defined above:
 <td>`E2^X `80^X `BD^X `25^X `2E^X
 
 <tr><td rowspan="3">
-`~cpを符号化してから~percent-符号化する$( `~Shift_JIS$, %入力, `~userinfo~percent-符号化-集合$ )
-<td>`0020^U `SPACE^cn
+`文字列を符号化してから~percent-符号化する$( `~Shift_JIS$, %入力, `~userinfo~percent-符号化-集合$ )
+<td>` ^l
 <td>`%20^l
 
-<tr><td>❝≡
+<tr><td>`≡^l
 <td>`%81%DF^l
 
-<tr><td>❝‽
+<tr><td>`‽^l
 <td>`%26%238253%3B^l
 
-<tr><td>`~cpを符号化してから~percent-符号化する$( `~ISO-2022-JP$, %入力, `~userinfo~percent-符号化-集合$ )
-<td>❝¥
+<tr><td>`文字列を符号化してから~percent-符号化する$( `~ISO-2022-JP$, %入力, `~userinfo~percent-符号化-集合$ )
+<td>`¥^l
 <td>`%1B(J\%1B(B^l
 
 <tr><td>`文字列を符号化してから~percent-符号化する$( `~Shift_JIS$, %入力, `~userinfo~percent-符号化-集合$, ~T )
@@ -1786,13 +1765,15 @@ Here is a summary, by way of example, of the operations defined above:
 
 ◎
 Operation｜Input｜Output
-Percent-encode input｜0x7F｜"%23"
+
+Percent-encode input｜0x23｜"%23"
+｜0x7F｜"%7F"
 Percent-decode input｜`%25%s%1G`｜`%%s%1G`
 Percent-decode input｜"‽%25%2E"｜0xE2 0x80 0xBD 0x25 0x2E
-Percent-encode after encoding with Shift_JIS, input, and the userinfo percent-encode set｜U+0020｜"%20"
-U+2261 (≡)｜"%81%DF"
-U+203D (‽)｜"%26%238253%3B"
-Percent-encode after encoding with ISO-2022-JP, input, and the userinfo percent-encode set｜U+00A5 (¥)｜"%1B(J\%1B(B"
+Percent-encode after encoding with Shift_JIS, input, and the userinfo percent-encode set｜" "｜"%20"
+｜"≡"｜"%81%DF"
+｜"‽"｜"%26%238253%3B"
+Percent-encode after encoding with ISO-2022-JP, input, and the userinfo percent-encode set｜"¥"｜"%1B(J\%1B(B"
 Percent-encode after encoding with Shift_JIS, input, the userinfo percent-encode set, and true｜"1+1 ≡ 2%20‽"｜"1+1+%81%DF+2%20%26%238253%3B"
 UTF-8 percent-encode input using the userinfo percent-encode set｜U+2261 (≡)｜"%E2%89%A1"
 U+203D (‽)｜"%E2%80%BD"
@@ -3580,7 +3561,7 @@ Set ignore0 to true and continue.
 			</li>
 			<li>
 %出力 ~APPEND ［
-%~address[ %~piece~index ] を小文字~hexadecimal数で表現する最短の文字列
+%~address[ %~piece~index ] を小文字~hexadecimal数で表現する最短な文字列
 ］
 ◎
 Append address[pieceIndex], represented as the shortest possible lowercase hexadecimal number, to output.
@@ -7025,17 +7006,75 @@ If encoding is not UTF-8 and one of the following is true:
 then set encoding to UTF-8.
 </li>
 			<li>
+<p>
 ~IF［
+次のいずれかが満たされる
+］…：
+◎
+If one of the following is true:
+</p>
+				<ul>
+					<li>
+［
 %上書state ~EQ ε
 ］~AND［
+`C$V ~EQ ❝#
+］
+◎
+state override is not given and c is U+0023 (#)
+</li>
+					<li>
+`C$V ~EQ `EOF$i
+◎
+c is the EOF code point
+</li>
+				</ul>
+<p>
+…ならば：
+◎
+then:
+</p>
+				<ol>
+					<li>
+%~query~percent-符号化-集合 ~LET %~url に応じて
+⇒＃
+`特別$であるならば `特別~query~percent-符号化-集合$ ／
+~ELSE_ `~query~percent-符号化-集合$
+◎
+Let queryPercentEncodeSet be the special-query percent-encode set if url is special; otherwise the query percent-encode set.
+</li>
+					<li>
+<p>
+%~url の`~query$url ~APPEND 次の結果
+⇒
+`文字列を符号化してから~percent-符号化する$( %符号化法, %~buffer, %~query~percent-符号化-集合 )
+◎
+Percent-encode after encoding, with encoding, buffer, and queryPercentEncodeSet, and append the result to url’s query.
+</p>
+
+<p class="note">注記：
+`~ISO-2022-JP符号化器$が~statefulであることに因り、この演算は~cpごとには呼出せない。
+◎
+This operation cannot be invoked code-point-for-code-point due to the stateful ISO-2022-JP encoder.
+</p>
+					</li>
+					<li>
+%~buffer ~SET 空~文字列
+◎
+Set buffer to the empty string.
+</li>
+					<li>
+~IF［
 `C$V ~EQ ❝#
 ］
 ⇒＃
 %url の`素片$url ~SET 空~文字列；
 %state ~SET `素片$st
 ◎
-If state override is not given and c is U+0023 (#), then set url’s fragment to the empty string and state to fragment state.
+If c is U+0023 (#), then set url’s fragment to the empty string and state to fragment state.
 </li>
+				</ol>
+			</li>
 			<li>
 <p>
 ~ELIF［
@@ -7053,17 +7092,9 @@ If c is not a URL code point and not U+0025 (%), validation error.
 If c is U+0025 (%) and remaining does not start with two ASCII hex digits, validation error.
 </li>
 					<li>
-%~query~percent-符号化-集合 ~LET ［
-%~url は`特別$であるならば`特別~query~percent-符号化-集合$／
-~ELSE_ `~query~percent-符号化-集合$
-］
+%~buffer ~APPEND `C$V
 ◎
-Let queryPercentEncodeSet be the special-query percent-encode set if url is special; otherwise the query percent-encode set.
-</li>
-					<li>
-%~url の`~query$url ~APPEND `~cpを符号化してから~percent-符号化する$( %符号化法, `C$V, %~query~percent-符号化-集合 )
-◎
-Percent-encode after encoding, with encoding, c, and queryPercentEncodeSet, and append the result to url’s query.
+Append c to buffer.
 </li>
 				</ol>
 			</li>
