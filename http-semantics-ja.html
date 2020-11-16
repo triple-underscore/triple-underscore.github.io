@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP Semantics
-spec_date:2020-10-30
-trans_update:2020-11-01
+spec_date:2020-11-12
+trans_update:2020-11-16
 source_checked:201002
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html
@@ -632,6 +632,7 @@ noise::::ノイズ
 	無用:needless／:needlessly
 	独り占め:squatting
 	よく知られた:well-known
+	周知の:well-known
 	失敗した所:in the event of 〜 failure
 	限定的に利用される:limited-use
 	略語:abbreviation
@@ -796,6 +797,7 @@ listener::::リスナ
 	切り替え-:shift
 	？:conclude
 	辿り続ける:web-traversing
+	〜列:sequence of
 
 	●言い換え
 	許容する必要がある:cannot disallow
@@ -1048,6 +1050,8 @@ RFC8246=副            ~/http-immutable-response-ja.html
     Nottingham, M. and E. Nygren, “The ORIGIN HTTP/2 Frame”, ~RFC8336, March 2018
 [RFC8446]
     Rescorla, E., “The Transport Layer Security (TLS) Protocol Version 1.3”, ~RFC8446, August 2018
+[RFC8615]
+    Nottingham, M., “Well-Known Uniform Resource Identifiers (URIs)”, ~RFC8615, May 2019
 [Sniffing]
     WHATWG, “MIME Sniffing”, URL: https://mimesniff.spec.whatwg.org
 
@@ -3536,23 +3540,31 @@ When a major version of HTTP does not define any minor versions, the minor versi
 
 <p>
 ~message~frame法は、各~messageが
-— 同じ接続~上の他の~message（または~noise）と判別できるよう —
-どう始まって, どう終端するかを定義する。
-~frame法は、~HTTPの各~major~versionに特有である。
+— 同じ接続~上の他の~messageや~noiseと判別できるよう —
+どう始まり, どう終端するかを指示する。
+~HTTPの各`~major~version$は、自前の~frame法の仕組みを定義する。
 ◎
-[rfc.comment.1: Message framing defines how each message begins and ends, such that the message can be distinguished from other message (or noise) on the same connection. Framing is specific to each major version of HTTP.]
+Message framing indicates how each message begins and ends, such that each message can be distinguished from other messages or noise on the same connection. Each major version of HTTP defines its own framing mechanism.
 </p>
 
 <p>
-~message~frame法には、~messageは
+~HTTP09および ~HTTP10の早期の配備は、下層の接続の~closureを利用して，各~応答を終端していた。
+後方-互換性を得るため、この暗黙的な~frame法は~HTTP11においても許容される。
+しかしながら，当の接続が早く~closeされた場合、暗黙的な~frame法では，不完全な応答と判別するのに失敗し得る。
+この理由から，現代のほぼすべての実装は、長さで区切られた~message~data列の形で，明示的な~frame法を利用する。
+◎
+HTTP/0.9 and early deployments of HTTP/1.0 used closure of the underlying connection to end each response. For backwards compatibility, this implicit framing is also allowed in HTTP/1.1. However, implicit framing can fail to distinguish an incomplete response if the connection closes early. For that reason, almost all modern implementations use explicit framing in the form of length-delimited sequences of message data.
+</p>
+
+<p>
+~messageは、その~frame法により指示される すべての~octetが可用になったとき，
 `完全@
-であることを確約する機能がある。
-~messageは、その~frame法により指示される すべての~octetが可用になったとき，`完全$と見なされる。
-明示的な~frame法が利用されていない場合、~transport接続の~closeにより終端された応答~messageは
+であると見なされる。
+明示的な~frame法が利用されていない場合、下層の接続の~closeにより終端された応答~messageは
 — 不完全な応答と判別-不能であろうが，~transport~levelの~errorにより完全でないものと指示されない限り —
 `完全$と見なされることに注意。
 ◎
-One of the functions of message framing is to assure that messages are complete. A message is considered complete when all of the octets indicated by its framing are available. Note that, when no explicit framing is used, a response message that is ended by the transport connection's close is considered complete even though it might be indistinguishable from an incomplete response, unless a transport-level error indicates that it is not complete.
+A message is considered complete when all of the octets indicated by its framing are available. Note that, when no explicit framing is used, a response message that is ended by the underlying connection's close is considered complete even though it might be indistinguishable from an incomplete response, unless a transport-level error indicates that it is not complete.
 </p>
 
 		</section>
@@ -5601,6 +5613,61 @@ Finally, the definition of a new status code ought to indicate whether the paylo
 		<section id="field-extensibility">
 <h3 title="Field Name Extensibility">15.3. ~field名の拡張能</h3>
 
+<p>
+~HTTPの拡張能を成す地点として最も広範に利用されているのは、新たな［
+~header／~trailer
+］の定義である。
+◎
+HTTP's most widely used extensibility point is the definition of new header and trailer fields.
+</p>
+
+<div class="p">
+<p>
+新たな`~field$は、次に挙げるいくつかを行うように定義できる：
+◎
+New fields can be defined such that,＼
+</p>
+<ul>
+	<li>
+`受信者$により解されるときの［
+以前に定義された`~field$の解釈
+］を［
+上書きする／増強する
+］。
+◎
+when they are understood by a recipient, they override or enhance the interpretation of previously defined fields,＼
+</li>
+	<li>
+要請を評価する際の`事前条件$を定義する。
+◎
+define preconditions on request evaluation, or＼
+</li>
+	<li>
+応答の意味を精緻化する。
+◎
+refine the meaning of responses.
+</li>
+</ul>
+</div>
+
+<p>
+しかしながら，ある~fieldを定義しても、その［
+配備／受信者による認識
+］は保証されない。
+ほとんどの~fieldは、受信者が認識しない~fieldを安全に無視できる（が`下流$へ回送する）とする期待を伴って設計される。
+他にも，所与の~fieldを解する送信者の能は、それに先立つ通信により指示される事例もある
+— たぶん，先立つ~message内に送信者が送信した［
+~protocol~version／~fieldたち
+］により，あるいは特定の~MIME型の利用により。
+同様に，~support有無の直接的な検分は、次のいずれかによりアリかもしれない
+⇒
+`OPTIONS$m 要請を通して／
+定義-済みな周知の~URI `RFC8615$r とヤリトリすることにより
+— そのような検分が，当の~fieldを導入するに伴って定義された場合には。
+◎
+However, defining a field doesn't guarantee its deployment or recognition by recipients. Most fields are designed with the expectation that a recipient can safely ignore (but forward downstream) any field not recognized. In other cases, the sender's ability to understand a given field might be indicated by its prior communication, perhaps in the protocol version or fields that it sent in prior messages, or its use of a specific media type. Likewise, direct inspection of support might be possible through an OPTIONS request or by interacting with a defined well-known URI [RFC8615] if such inspection is defined along with the field being introduced.
+</p>
+
 			<section id="field-name.registry">
 <h4 title="Field Name Registry">15.3.1. ~field名~registry</h4>
 
@@ -5741,41 +5808,6 @@ Note that names can be registered by third parties (including the Expert(s)), if
 			</section>
 			<section id="considerations.for.new.field.names">
 <h4 title="Considerations for New Field Names">15.3.2. 新たな~field名に対する考慮点</h4>
-
-<p>
-新たな`~field名$の導入（大概は新たな意味論を定義する）に制限はない。
-◎
-There is no limit on the introduction of new field names, each presumably defining new semantics.
-</p>
-
-<div class="p">
-<p>
-新たな`~field$は、次のいくつかを行い得るように定義できる：
-◎
-New fields can be defined such that,＼
-</p>
-<ul>
-	<li>
-`受信者$により解されるときの［
-以前に定義された`~field$の解釈
-］を［
-上書きする／増強する
-］。
-◎
-when they are understood by a recipient, they might override or enhance the interpretation of previously defined fields,＼
-</li>
-	<li>
-要請を評価する際の`事前条件$を定義する。
-◎
-define preconditions on request evaluation, or＼
-</li>
-	<li>
-応答の意味を精緻化する。
-◎
-refine the meaning of responses.
-</li>
-</ul>
-</div>
 
 <p>
 新たな`~field$を定義している仕様の策定者には、短いが記述的な`~field名$を選ぶよう勧める。
