@@ -902,8 +902,6 @@ minor::::副:マイナー
 暫定-:interim:~
 最終:final:~
 近過去:recent::~
-近過去の:recentな::~
-
 重複:duplicate:~
 節:section:~
 別個:distinct:~
@@ -1040,6 +1038,7 @@ agent::::エージェント
 総集的:collective:~
 緩めら:relaxさ:~
 緩める:relaxする:~
+緩めた:relaxした:~
 義務化-:mandate:~
 翻訳-:translate::~
 翻訳:translation::~
@@ -1413,7 +1412,6 @@ stateless::::ステートレス
 	登録-済み:registered
 監視器:monitor::~::モニタ
 盲目的:blind::~
-省略:omit:~
 瞬間:moment:~
 知覚-:perceive:~
 知覚:perception:~
