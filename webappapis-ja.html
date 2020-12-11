@@ -111,8 +111,8 @@ return text;
 
 ●●options
 
-spec_date:2020-12-01
-trans_update:2020-11-10
+spec_date:2020-12-10
+trans_update:2020-12-11
 source_checked:200626
 page_state_key:HTML
 spec_status:LS
@@ -837,6 +837,8 @@ sl.Realm:~WEBIDLjs#es-platform-objects
 ~callback関数を呼出す:~WEBIDLjs#invoke-a-callback-function
 x.呼出す:~WEBIDLjs#invoke-a-callback-function
 x.変換-:~WEBIDLjs#es-type-mapping
+却下される~promise:~WEBIDLjs#a-promise-rejected-with
+却下-時:~WEBIDLjs#upon-rejection
 
 	●CSSOMVIEW
 文書の~resize手続き:~CSSOMVIEW#run-the-resize-steps
@@ -1586,6 +1588,7 @@ milli::::ミリ
 	%~task源:source
 	%参照元~scriptまたは~module:referencingScriptOrModule
 	%指定子:specifier
+	%~promise
 	%~promise能力:promiseCapability
 	%~module~record:moduleRecord
 	%~module~script:moduleScript
@@ -1614,6 +1617,9 @@ milli::::ミリ
 	%要請:request
 	%応答:response
 	%completion:completion
+	%評価~状態s:evaluationStatus
+	%評価~promise:evaluationPromise
+	%~error報告ngは防止する:preventErrorReporting
 
 	●指示語
 現在:currently:~
@@ -6274,8 +6280,7 @@ Return script.
 )
 に対し，次を走らす：
 ◎
-To run a classic script given a classic script script and an optional rethrow errors boolean:
-• If rethrow errors is not given, let it be false.
+To run a classic script given a classic script script and an optional boolean rethrow errors (default false):
 </p>
 <ol>
 	<li>
@@ -6443,12 +6448,11 @@ If evaluationStatus is a normal completion, then return evaluationStatus.
 `~module~scriptを走らす@
 ときは、所与の (
 `~module~script$ %~script,
-真偽値 %~errorは再投出する （省略時は ~F ）
+真偽値 %~error報告ngは防止する （省略時は ~F ）
 )
 に対し，次を走らす：
 ◎
-To run a module script given a module script script, with an optional rethrow errors boolean:
-• If rethrow errors is not given, let it be false.
+To run a module script given a module script script and an optional boolean preventErrorReporting (default false):
 </p>
 <ol>
 	<li>
@@ -6461,9 +6465,9 @@ Let settings be the settings object of script.
 `~scriptは走れるかどうか検査する$( %設定群 ) ~EQ `走るな^i
 ］
 ⇒
-~RET `NormalCompletion$jA( `empty^jv )
+~RET `undefined^jv で`却下される~promise$
 ◎
-Check if we can run script with settings. If this returns "do not run" then return NormalCompletion(empty).
+Check if we can run script with settings. If this returns "do not run", then return a promise resolved with undefined.
 </li>
 	<li>
 `~scriptを走らすために準備する$( %設定群 )
@@ -6471,22 +6475,18 @@ Check if we can run script with settings. If this returns "do not run" then retu
 Prepare to run script given settings.
 </li>
 	<li>
-%評価~状態s ~LET ~NULL
+%評価~promise ~LET ~NULL
 ◎
-Let evaluationStatus be null.
+Let evaluationPromise be null.
 </li>
 	<li>
 ~IF［
 %~script の`再投出-用~error$sC ~NEQ ~NULL
 ］
 ⇒
-%評価~状態s ~SET `Completion^js{
-`Type^sl: `throw^js,
-`Value^sl: %~script の`再投出-用~error$sC,
-`Target^sl: `empty^js
-}
+%評価~promise ~SET %~script の`再投出-用~error$sCで`却下される~promise$
 ◎
-If script's error to rethrow is not null, then set evaluationStatus to Completion { [[Type]]: throw, [[Value]]: script's error to rethrow, [[Target]]: empty }.
+If script's error to rethrow is not null, then set evaluationPromise to a promise rejected with script's error to rethrow.
 </li>
 	<li>
 <p>
@@ -6502,9 +6502,9 @@ Let record be script's record.
 </li>
 			<li>
 <p>
-%評価~状態s ~SET %~record . `Evaluate$jA()
+%評価~promise ~SET %~record . `Evaluate$jA()
 ◎
-Set evaluationStatus to record.Evaluate().
+Set evaluationPromise to record.Evaluate().
 </p>
 
 <p class="note">注記：
@@ -6518,53 +6518,35 @@ This step will recursively evaluate all of the module's dependencies.
 ~UAが`走っている~scriptを中止-$したため， `Evaluate$jA は完了しなかった
 ］
 ⇒
-%評価~状態s ~SET `Completion^js{
-`Type^sl: `throw^js,
-`Value^sl:  新たな `QuotaExceededError$E 例外,
-`Target^sl: `empty^js
-}
+%評価~promise ~SET 新たな `QuotaExceededError$E 例外で`却下される~promise$
 ◎
-If Evaluate fails to complete as a result of the user agent aborting the running script, then set evaluationStatus to Completion { [[Type]]: throw, [[Value]]: a new "QuotaExceededError" DOMException, [[Target]]: empty }.
+If Evaluate fails to complete as a result of the user agent aborting the running script, then set evaluationPromise to a promise rejected with a new "QuotaExceededError" DOMException.
 </p>
 			</li>
 		</ol>
 	</li>
 	<li>
-<p>
 ~IF［
-%評価~状態s は`中途完了$である
-］：
-◎
-If evaluationStatus is an abrupt completion, then:
-</p>
-		<ol>
-			<li>
-~IF［
-%~errorは再投出する ~EQ ~T
+%~error報告ngは防止する ~EQ ~F
 ］
 ⇒
-~THROW %評価~状態s . `Value^sl
-◎
-If rethrow errors is true, rethrow the exception given by evaluationStatus.[[Value]].
-</li>
-			<li>
-~ELSE
+%評価~promise の`却下-時$には、所与の
+( 事由 %事由 )
+に対し
 ⇒
-`例外を報告する$( %~script, %評価~状態s . `Value^sl )
+`例外を報告する$( %~script, %事由 )
 ◎
-Otherwise, report the exception given by evaluationStatus.[[Value]] for script.
+If preventErrorReporting is false, then upon rejection of evaluationPromise with reason, report the exception given by reason for script.
 </li>
-		</ol>
-	</li>
 	<li>
 `走らせた~scriptを片付ける$( %設定群 )
 ◎
 Clean up after running script with settings.
 </li>
 	<li>
-~RET %評価~状態s
+~RET %評価~promise
 ◎
-Return evaluationStatus.
+Return evaluationPromise.
 </li>
 </ol>
 </div>
@@ -8040,48 +8022,26 @@ Fetch an import() module script graph given specifier, base URL, settings object
 Wait until the algorithm asynchronously completes with result.
 </li>
 	<li>
-<p>
-%完了 ~LET 次の下位手続きを走らせた結果：
+%~promise ~LET ~NULL
 ◎
-↓</p>
-		<ol>
-			<li>
+Let promise be null.
+</li>
+	<li>
 ~IF［
 %結果 ~EQ ~NULL
 ］
 ⇒
-~RET `Completion^js{
-`Type^sl: `throw^js,
-`Value^sl: 新たな `TypeError$jc,
-`Target^sl: `empty^js
-}
+%~promise ~SET 新たな `TypeError$jc 例外で`却下される~promise$
 ◎
-If result is null, then:
-• Let completion be Completion { [[Type]]: throw, [[Value]]: a new TypeError, [[Target]]: empty }.
-• Perform FinishDynamicImport(referencingScriptOrModule, specifier, promiseCapability, completion).
-• Return.
+If result is null, then set promise to a promise rejected with a new TypeError.
 </li>
-			<li>
-`~module~scriptを走らす$( %結果, ~T )
-◎
-Run the module script result, with the rethrow errors boolean set to true.
-</li>
-			<li>
-~IF［
-前~段で走らせた~module~scriptから例外が投出された
-］
+	<li>
+~ELSE
 ⇒
-~RET 投出された例外~完了
+%~promise ~SET `~module~scriptを走らす$( %結果, ~T )
 ◎
-If running the module script throws an exception, then perform FinishDynamicImport(referencingScriptOrModule, specifier, promiseCapability, the thrown exception completion).
+Otherwise, set promise to the result of running a module script given result and true.
 </li>
-			<li>
-~RET `NormalCompletion$jA( `undefined^jv )
-◎
-Otherwise, perform FinishDynamicImport(referencingScriptOrModule, specifier, promiseCapability, NormalCompletion(undefined)).
-</li>
-		</ol>
-	</li>
 	<li>
 次を遂行する
 ⇒
@@ -8089,10 +8049,11 @@ Otherwise, perform FinishDynamicImport(referencingScriptOrModule, specifier, pro
 %参照元~scriptまたは~module,
 %指定子,
 %~promise能力,
-%完了
+%~promise
 )
 ◎
-↑</li>
+Perform FinishDynamicImport(referencingScriptOrModule, specifier, promiseCapability, promise).
+</li>
 	<li>
 ~RET `undefined^jv
 ◎
@@ -10185,7 +10146,7 @@ IF［
 %解析済み ~EQ `失敗^i
 ］
 ⇒
-~RET `SyntaxError$E 例外で却下される~promise
+~RET `SyntaxError$E 例外で`却下される~promise$
 ◎
 If parsed is failure, return a promise rejected with a "SyntaxError" DOMException.
 </li>
