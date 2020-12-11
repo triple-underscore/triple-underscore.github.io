@@ -544,6 +544,8 @@ c.realm:~HTTPsem#realm
 生成され:~HTTPinfra#generate
 生成し:~HTTPinfra#generate
 生成する:~HTTPinfra#generate
+
+~protocol~version:~HTTPinfra#protocol.version
 	~version番号:~HTTPinfra#version-number
 ~major~version:~HTTPinfra#major-version
 ~minor~version:~HTTPinfra#minor-version
@@ -584,15 +586,9 @@ c.realm:~HTTPsem#realm
 	~secure化:~HTTPinfra#secured
 	生成元:~HTTPinfra#origin
 
-	§#message.abstraction
-完全:~HTTPinfra#complete
-不完全:~HTTPinfra#complete
+	§#fields
 ~field:~HTTPinfra#field
 ~field節:~HTTPinfra#field-section
-~header:~HTTPinfra#header-field
-~header節:~HTTPinfra#header-section
-~trailer:~HTTPinfra#trailer-field
-~trailer節:~HTTPinfra#trailer-section
 ~field名:~HTTPinfra#field-name
 ~field値:~HTTPinfra#field-value
 ~field行l:~HTTPinfra#field-line
@@ -600,11 +596,6 @@ c.realm:~HTTPsem#realm
 単数~field:~HTTPinfra#singleton-field
 ~listに基づく~field:~HTTPinfra#list-based-field
 結合-:~HTTPinfra#combine-headers
-~payload:~HTTPinfra#payload
-~message~payload:~HTTPinfra#payload
-~payload~header:~HTTPinfra#payload-headers
-~payload本体:~HTTPinfra#payload-body
-~message本体:~HTTPinfra#message-body
 
 	~token:
 空白:~HTTPinfra#whitespace
@@ -613,6 +604,20 @@ c.realm:~HTTPsem#realm
 ~parameter:~HTTPinfra#parameter
 	日時:~HTTPinfra#http.date
 	素片~識別子:~HTTPinfra#uri.fragment.identifiers
+
+	§#message.abstraction
+
+	~message:~HTTPinfra#message
+自己-記述的:~HTTPinfra#self-descriptive
+完全:~HTTPinfra#complete
+不完全:~HTTPinfra#complete
+制御~data:~HTTPinfra#control-data
+~header:~HTTPinfra#header-field
+~header節:~HTTPinfra#header-section
+~trailer:~HTTPinfra#trailer-field
+~trailer節:~HTTPinfra#trailer-section
+~payload:~HTTPinfra#message-payload
+~payload~data:~HTTPinfra#payload-data
 
 	§#routing
 ~target~URI:~HTTPsem#target-URI
@@ -654,7 +659,6 @@ c.realm:~HTTPsem#realm
 ~server-wide:~HTTPsem#server-wide
 
 	§#context
-要請~header:~HTTPsem#request-header
 期待:~HTTPsem#expectation
 製品~識別子:~HTTPsem#product-identifier
 応答~header:~HTTPsem#response-header
@@ -667,7 +671,6 @@ c.realm:~HTTPsem#realm
 認証~parameter:~HTTPsem#authentication-parameter
 資格証:~HTTPsem#credential
 保護~空間:~HTTPsem#protection-space
-正準的~root~URI:~HTTPsem#canonical-root-URI
 
 	§#content.negotiation
 内容~折衝:~HTTPsem#content-negotiation
@@ -703,7 +706,7 @@ c.realm:~HTTPsem#realm
 暫定-応答:~HTTPsem#interim-response
 最終-応答:~HTTPsem#final-response
 	#final-interim
-事由~句:#reason-phrase
+事由~句:~HTTPsem#reason-phrase
 
 部分的な応答:~HTTPsem#status.206
 部分的:~HTTPsem#status.206
@@ -731,6 +734,7 @@ c.realm:~HTTPsem#realm
 ~HTTP11:~HTTPmsg#version-1.1
 転送~符号法:~HTTPmsg#transfer.codings
 転送~符号法の名前:~HTTPmsg#transfer-coding-name
+~message本体:~HTTPmsg#message.body
 
 	●
 IETF による考査:~RFCx/rfc8126#section-4.8
@@ -1443,6 +1447,7 @@ stateless::::ステートレス
 
 演算子:operator:~
 過去:past:~
+過去の:pastな:~
 過程:process:~
 遭遇-:encounter:~
 選定用:selecting::~
