@@ -445,14 +445,14 @@ p.range-set:~HTTPsem#p.range-set
 p.range-spec:~HTTPsem#p.range-spec
 p.range-unit:~HTTPsem#p.range-unit
 p.ranges-specifier:~HTTPsem#p.ranges-specifier
-p.rank:~HTTPsem#p.rank
 p.received-by:~HTTPsem#p.received-by
 p.received-protocol:~HTTPsem#p.received-protocol
 p.subtype:~HTTPsem#p.subtype
 p.suffix-length:~HTTPsem#p.suffix-length
 p.suffix-range:~HTTPsem#p.suffix-range
+p.transfer-coding:~HTTPsem#p.transfer-coding
+p.transfer-parameter:~HTTPsem#p.transfer-parameter
 p.t-codings:~HTTPsem#p.t-codings
-p.t-ranking:~HTTPsem#p.t-ranking
 p.type:~HTTPsem#p.type
 p.unsatisfied-range:~HTTPsem#p.unsatisfied-range
 p.weight:~HTTPsem#p.weight
@@ -480,6 +480,10 @@ p.opaque-tag:~HTTPsem#p.opaque-tag
 p.weak:~HTTPsem#p.weak
 
 	//Cache
+p.Age:~HTTPcache#p.Age
+p.Cache-Control:~HTTPcache#p.Cache
+p.Expires:~HTTPcache#p.Expires
+
 p.cache-directive:~HTTPcache#p.cache-directive
 p.delta-seconds:~HTTPcache#p.delta-seconds
 
@@ -488,9 +492,6 @@ p.HTTP-message:~HTTPmsg#p.HTTP-message
 p.HTTP-name:~HTTPmsg#p.HTTP-name
 p.HTTP-version:~HTTPmsg#p.HTTP-version
 p.Transfer-Encoding:~HTTPmsg#p.Transfer-Encoding
-p.Age:~HTTPcache#p.Age
-p.Cache-Control:~HTTPcache#p.Cache
-p.Expires:~HTTPcache#p.Expires
 
 p.absolute-form:~HTTPmsg#p.absolute-form
 p.asterisk-form:~HTTPmsg#p.asterisk-form
@@ -515,8 +516,6 @@ p.start-line:~HTTPmsg#p.start-line
 p.status-code:~HTTPmsg#p.status-code
 p.status-line:~HTTPmsg#p.status-line
 p.trailer-section:~HTTPmsg#p.trailer-section
-p.transfer-coding:~HTTPmsg#p.transfer-coding
-p.transfer-parameter:~HTTPmsg#p.transfer-parameter
 
 	●code 他
 c.http:~HTTPinfra#http.uri

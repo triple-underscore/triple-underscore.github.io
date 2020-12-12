@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP/1.1
-spec_date:2020-12-10
-trans_update:2020-12-11
+spec_date:2020-12-11
+trans_update:2020-12-12
 source_checked:201210
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-messaging-latest.html
@@ -291,7 +291,6 @@ US-ASCII:
 	切落され:truncation
 数字:digit:~
 	桁:digit
-	^p:rank
 	前後:around
 	前後:preface or follow
 	0 個以上の:optional leading
@@ -637,6 +636,7 @@ The following core rules are included by reference, as defined in [RFC5234], App
 `query$p,
 `quoted-string$p,
 `token$p,
+`transfer-coding$p,
 `uri-host$p
 ◎
 The rules below are defined in [Semantics]:
@@ -655,6 +655,8 @@ The rules below are defined in [Semantics]:
   query         = &lt;query, see [RFC3986], Section 3.4&gt;
   quoted-string = &lt;quoted-string, see [Semantics], Section 5.6.4&gt;
   token         = &lt;token, see [Semantics], Section 5.6.2&gt;
+  transfer-coding = 
+                  &lt;transfer-coding, see [Semantics], Section 10.1.4&gt;
   uri-host      = &lt;host, see [RFC3986], Section 3.2.2&gt;
 </p>
 
@@ -2077,6 +2079,10 @@ The Transfer-Encoding header field lists the transfer coding names corresponding
 <pre class="bnf">
 `Transfer-Encoding@p
     = #`transfer-coding$p
+    ; <span class="comment">`Semantics/10.1.4^sec にて定義される。
+◎
+defined in [Semantics], Section 10.1.4
+</span>
 </pre>
 
 <div class="p">
@@ -2435,7 +2441,7 @@ the message framing is invalid and the recipient MUST treat it as an unrecoverab
 </p>
 
 <p class="trans-note">【†
-`Content-Length$h は~list構文を受容しないが、ここでは特別に取扱われている。
+`Content-Length$h は`単数~field$である（値の構文は~listでない）が、ここでは特別に取扱われている。
 加えて、この条件を満たす場合でも，
 <a href="~HTTPsem#invalid-Content-Length">妥当でないものとして扱う</a>
 ことは許容されている。
@@ -2630,35 +2636,17 @@ A client MUST NOT process, cache, or forward such extra data as a separate respo
 Transfer coding names are used to indicate an encoding transformation that has been, can be, or might need to be applied to a payload's data in order to ensure "safe transport" through the network. This differs from a content coding in that the transfer coding is a property of the message rather than a property of the representation that is being transferred.
 </p>
 
-<pre class="bnf">
-`transfer-coding@p
-    = `token$p *( `OWS$p ";" `OWS$p `transfer-parameter$p )
-</pre>
-
 <p>
-`transfer-parameter$p は、
-<code>`name^V=`value^V</code>
-~pairの形をとる：
-◎
-Parameters are in the form of a name=value pair.
-</p>
-
-<pre class="bnf">
-`transfer-parameter@p
-    = `token$p `BWS$p "=" `BWS$p ( `token$p / `quoted-string$p )
-</pre>
-
-<p>
-`transfer-coding$p を成す先頭の `token^p が
+`transfer-coding$p を成す先頭の `token$p が
 `転送~符号法の名前@
 を与える。
 `転送~符号法の名前$は、すべて文字大小無視である。
 それらは、 `7.3$sec に定義されるように，`~HTTP転送~符号法~registry$citeに登録される~OUGHT。
 それらは、［
-`TE$h ／ `Transfer-Encoding$h
-］~header内で利用される。
+`Transfer-Encoding$h ／ `TE$h
+］~header内で利用される（後者は `transfer-coding^p の文法も定義する）。
 ◎
-All transfer-coding names are case-insensitive and ought to be registered within the HTTP Transfer Coding registry, as defined in Section 7.3. They are used in the TE (Section 10.1.4 of [Semantics]) and Transfer-Encoding (Section 6.1) header fields.
+All transfer-coding names are case-insensitive and ought to be registered within the HTTP Transfer Coding registry, as defined in Section 7.3. They are used in the Transfer-Encoding (Section 6.1) and TE (Section 10.1.4 of [Semantics]) header fields (the latter also defining the "transfer-coding" grammar).
 </p>
 
 		<section id="chunked.encoding">
@@ -3062,7 +3050,7 @@ Names of transfer codings MUST NOT overlap with names of content codings (Sectio
 
 <p>
 `TE$h ~headerは、複数の転送~符号法が受容-可能なときに，
-`rank$p 値として名前 "`q^c" の疑似~parameterを利用する。
+順位~値として名前 "`q^c" の疑似~parameterを利用する。
 多義性を避けるため、将来における転送~符号法の登録は、
 "`q^c" （文字大小無視）と呼ばれる~parameterを定義するベキでない。
 ◎
@@ -3119,10 +3107,9 @@ TE: trailers, deflate;q=0.5
 </div>
 
 <p>
-複数の`転送~符号法$が受容-可能なとき、`~client$は，［
-文字大小無視 "`q=^c" ~parameter（ `rank$p ）
-］を利用して，それらの符号法の選好を順位~付けてもヨイ。
-順位~値は、範囲 0 〜 1 の実数を表し，値が大きいほど選好される（`内容~折衝$~fieldにて利用される`品質値$（ “`qvalue^en” ）に類似する）
+`~client$は，複数の`転送~符号法$が受容-可能なときは、文字大小無視な
+"`q=^c" ~parameterを利用して，それらの符号法の選好を順位~付けてもヨイ。
+この “順位” 値は、範囲 0 〜 1 の実数を表し，値が大きいほど選好される（`内容~折衝$~fieldにて利用される`品質値$（ “`qvalue^en” ）に類似する）
 ⇒＃
 `0.001^c は、最も選好されないことを表す【小数部は 3 桁までなので】／
 `1^c は、最も選好されることを表す／
@@ -4836,7 +4823,7 @@ Trailer field semantics now transcend the specifics of chunked encoding. The dec
 </p>
 
 <p>
-`TE$h ~headerにおける `rank$p の利用と競合するのを避けるため、
+`TE$h ~headerにおける `weight$p 【 `RFC7230$r においては `rank^p 】の利用と競合するのを避けるため、
 "`q^c" と呼ばれる転送~符号法~parameterは許容しないようにした。
 （ `7.3$sec ）
 ◎
