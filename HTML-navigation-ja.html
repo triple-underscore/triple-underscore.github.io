@@ -112,7 +112,7 @@ return text;
 ●●options
 
 spec_date:2020-12-11
-trans_update:2020-12-13
+trans_update:2020-12-14
 source_checked:200818
 page_state_key:HTML
 spec_status:LS
@@ -448,6 +448,7 @@ X:
 	%生成元~agent~clusterを要請する:requestsOAC
 	%生成元~agent~cluster~header:oacHeader
 	%新たな文書:newDocument
+	%新たな~entry:newEntry
 	%~hash変化あり:hashChanged
 	%明示的な履歴~navi:explicitHistoryNavigation
 	%履歴の取扱い:historyHandling
@@ -3258,7 +3259,7 @@ Allowed to use
 以下の各~節にて，
 `新たな~pageで~session履歴を更新する@
 よう要求される所では、所与の
-( `~navi~params$ %~navi~params )
+( `~navi~params$ %~navi~params, `文書$ %新たな文書 )
 に対し，次を走らすモノトスル：
 </p>
 <ol>
@@ -3273,22 +3274,17 @@ Allowed to use
 %履歴 ~LET %B の`~session履歴$
 </li>
 	<li>
-%新たな文書 ~LET %B にて`作動中の文書$
+%現在の~entry ~LET %履歴 の`現在の~entry$
 </li>
 	<li>
-%現在の文書 ~SET %履歴 の`現在の~entry$の`文書$shE（ ~NEQ %新たな文書 ）
-◎
-↓</li>
-	<li>
-%大域~obj ~LET %現在の文書 【！the Document object】に`関連な大域~obj$
+%現在の文書 ~SET %現在の~entry の`文書$shE（ ~NEQ %新たな文書 ）
 </li>
 	<li>
-下に与える下位手続きを走らす`大域~taskを~queueする$( `~network用~task源$, %大域~obj )
+`大域~taskを~queueする$( `~network用~task源$, %現在の文書 に`関連な大域~obj$, 下に与える下位手続き )
 </li>
 </ol>
 ◎
-Some of the sections below, to which the above algorithm defers in certain cases, require the user agent to update the session history with the new page, given some navigation params navigationParams. When a user agent is required to do this, it must queue a global task on the networking task source, given the relevant global object of the Document object of the current entry (not the new one), to run the following steps:
-• Let newDocument be navigationParams's browsing context's active document.
+Some of the sections below, to which the above algorithm defers in certain cases, require the user agent to update the session history with the new page, given some navigation params navigationParams and a Document newDocument. When a user agent is required to do this, it must queue a global task on the networking task source, given the relevant global object of the Document object of the current entry (not the new one), to run the following steps:
 </div>
 
 <p>
@@ -3317,10 +3313,10 @@ If this instance of the navigation algorithm is canceled while this step is runn
 	<li>
 <p>
 ~IF［
-%~navi~params の`履歴~取扱い$nvP ~IN { `再読込み$i, `~entry更新$i }
+%~navi~params の`履歴~取扱い$nvP ~IN { `~entry更新$i, `再読込み$i }
 ］：
 ◎
-If navigationParams's history handling is "reload" or "entry update"
+If navigationParams's history handling is "entry update" or "reload"
 </p>
 		<ol>
 			<li>
@@ -3334,23 +3330,26 @@ If navigationParams's history handling is "reload" or "entry update"
 ⇒
 %~entry の`文書$shE ~SET %新たな文書
 ◎
-Replace the document of the current entry, and any other entries that reference the same document as that entry, with newDocument.
+Replace the document of the current entry, and of any other entries that reference the same document as that entry, with newDocument.
 </li>
 			<li>
-%履歴 の`現在の~entry$へ`履歴を辿る$
+%現在の~entry へ`履歴を辿る$
+— 次を与える下で
+⇒＃
+`履歴の取扱い$V ~SET %~navi~params の`履歴~取扱い$nvP
 ◎
-Traverse the history to the current entry.
+Traverse the history to the current entry with historyHandling set to navigationParams's history handling.
 </li>
 		</ol>
 	</li>
 	<li>
 <p>
 ~ELSE：
-</p>
+◎
+↓</p>
 		<ol>
 			<li>
-<p>
-%新たな~entry ~LET 次を伴う新たな`~session履歴~entry$：
+%新たな~entry ~LET 次を伴う新たな`~session履歴~entry$
 ⇒＃
 `~URL$shE ~SET %新たな文書 の`~URL$doc,
 `文書$shE ~SET %新たな文書
@@ -3359,38 +3358,78 @@ Traverse the history to the current entry.
 			<li>
 <p>
 ~IF［
+次のいずれかが満たされる
+］…：
+</p>
+				<ul>
+					<li>
+<p>
+［
 %~navi に渡された引数 %資源 は`~URL$である
 ］~AND［
 ( %資源, %新たな文書 の`~URL$doc )
 は`同等な~URL$である
-］：
-◎
-If the navigation was initiated with a URL that equals newDocument's URL
+］~AND［
+%B にて`作動中の文書$の`~URL$doc
+］
+</p>
+
+<p class="XXX">
+一部の~browserは，この場合に %現在の~entry の`直列形の状態$shEも
+%新たな~entry に複製するが、これは他と一貫でない。
+さらなる論点は、
+<a href="~HTMLissue/6213">課題 #6213</a>
+を見よ。
+</p>
+					</li>
+					<li>
+%~navi~params の`履歴~取扱い$nvP ~EQ `置換-$i
+</li>
+				</ul>
+<p>
+…ならば：
 </p>
 				<ol>
 					<li>
-%履歴 の`現在の~entry$を %新たな~entry に置換する
-◎
-Replace the current entry with a new session history entry whose URL is newDocument's URL and document is newDocument.
+%履歴 内の %現在の~entry の後に %新たな~entry を挿入する
 </li>
 					<li>
 %新たな~entry へ`履歴を辿る$
-◎
-Traverse the history to the current entry.
+— 次を与える下で
+⇒＃
+`履歴の取扱い$V ~SET `置換-$i
 </li>
 				</ol>
-			</li>
+
+◎
+Otherwise, if the navigation was initiated with a URL that equals navigationParams's browsing context's active document's URL
+• ↑Let newEntry be a new session history entry whose URL is newDocument's URL and document is newDocument.
+• Some browsers copy over the serialized state of current entry, but this is inconsistent. See issue #6213 for more discussion on this.
+• Insert newEntry after the current entry in navigationParams's browsing context's session history.
+• Traverse the history to newEntry with historyHandling set to "replace".
+◎
+Otherwise, if navigationParams's history handling is "replace"
+• ↑Let newEntry be a new session history entry whose URL is newDocument's URL and document is newDocument.
+• Insert newEntry after the current entry in navigationParams's browsing context's session history.
+• Traverse the history to newEntry with historyHandling set to "replace".
+</li>
 			<li>
 <p>
-~ELSE
+~ELSE：
 ◎
 Otherwise
 </p>
 				<ol>
 					<li>
+~Assert：
+%~navi~params の`履歴~取扱い$nvP ~EQ `既定$i
+◎
+Assert: navigationParams's history handling is "default".
+</li>
+					<li>
 <p>
 %履歴 から［
-その`現在の~entry$より後にある~entryすべて
+%現在の~entry より後にある~entryすべて
 ］を除去する
 ◎
 Remove all the entries in the session history after the current entry. If the current entry is the last entry in the session history, then no entries are removed.
@@ -3405,15 +3444,13 @@ This doesn't necessarily have to affect the user agent's user interface.
 					<li>
 %履歴 に %新たな~entry を付加する
 ◎
-Append a new session history entry to the session history, whose URL is newDocument's URL and document is newDocument.
+Append a new session history entry to the session history,＼
+↑↑whose URL is newDocument's URL and document is newDocument.
 </li>
 					<li>
 %新たな~entry へ`履歴を辿る$
-— 次を与える下で
-⇒＃
-`履歴の取扱い$V ~SET %~navi~params の`履歴~取扱い$nvP
 ◎
-Traverse the history to the new entry, with historyHandling set to navigationParams's history handling.
+Traverse the history to the new entry.
 </li>
 				</ol>
 			</li>
@@ -3556,11 +3593,11 @@ The input byte stream converts bytes into characters for use in the tokenizer. T
 When no more bytes are available, the user agent must queue a global task on the networking task source given the newly-created Document's relevant global object for the parser to process the implied EOF character, which eventually causes a load event to be fired.
 </li>
 	<li>
-`文書$を作成した後, かつ ~scriptが実行される前の, ほぼ間違いなく構文解析器が`停止-$する前に
+`文書$ %文書 を作成した後, かつ ~scriptが実行される前の, ほぼ間違いなく構文解析器が`停止-$する前に
 ⇒
-`新たな~pageで~session履歴を更新する$( %~navi~params )
+`新たな~pageで~session履歴を更新する$( %~navi~params, %文書 )
 ◎
-After creating the Document object, but before any script execution, certainly before the parser stops, the user agent must update the session history with the new page given navigationParams.
+After creating the Document object, but before any script execution, certainly before the parser stops, the user agent must update the session history with the new page given navigationParams and the newly-created Document.
 </li>
 </ul>
 
@@ -3624,7 +3661,7 @@ The actual HTTP headers and other metadata, not the headers as mutated or implie
 <p>
 次を走らすモノトスル
 ⇒
-`新たな~pageで~session履歴を更新する$( %~navi~params )
+`新たな~pageで~session履歴を更新する$( %~navi~params, %文書 )
 </p>
 
 <p>
@@ -3634,7 +3671,7 @@ The actual HTTP headers and other metadata, not the headers as mutated or implie
 どの~script実行よりも前に行うモノトスル
 </p>
 ◎
-Then, with the newly created Document, the user agent must update the session history with the new page given navigationParams. User agents may do this before the complete document has been parsed (thus achieving incremental rendering), and must do this before any scripts are to be executed.
+Then, with the newly created Document, the user agent must update the session history with the new page given navigationParams and the newly-created Document. User agents may do this before the complete document has been parsed (thus achieving incremental rendering), and must do this before any scripts are to be executed.
 </li>
 	<li>
 構文解析-時の~error（例えば ~XML名前空間 整形式性~error）に際しては、
@@ -3711,18 +3748,19 @@ The document's character encoding must be set to the character encoding used to 
 可用な~byte列が尽きたときは、次を走らすモノトスル（これは、最終的に `load$et ~eventを発火させることになる）
 ⇒
 構文解析器が暗黙の~EOF文字を処理するための
-`大域~taskを~queueする$( `~network用~task源$, 新たに作成された`文書$に`関連な大域~obj$ )
+`大域~taskを~queueする$( `~network用~task源$, 新たに作成した`文書$に`関連な大域~obj$ )
 ◎
 When no more bytes are available, the user agent must queue a global task on the networking task source given the newly-created Document's relevant global object for the parser to process the implied EOF character, which eventually causes a load event to be fired.
 </li>
 	<li>
 <p>
-%資源 から`文書$を作成した後, かつ
+%資源 から`文書$ %文書 を作成した後, かつ
 ~pageを構文解析し終えて`なければその前に$，次を走らすモノトスル
 ⇒
-`新たな~pageで~session履歴を更新する$( %~navi~params )
+`新たな~pageで~session履歴を更新する$( %~navi~params, %文書 )
 ◎
-After creating the Document object, but potentially before the page has finished parsing, the user agent must update the session history with the new page given navigationParams.
+After creating the Document object, but potentially before the page has finished parsing, the user agent must update the session history with the new page given navigationParams and the newly-created Document.
+.
 </p>
 
 <p class="trans-note">【
@@ -3898,12 +3936,12 @@ Then, the user agent must act as if it had stopped parsing.
 </p>
 
 <p>
-~UAは、`文書$を作成した後, かつ
+~UAは、`文書$ %文書 を作成した後, かつ
 ~pageを構文解析し終えて`なければその前に$，次を走らすモノトスル
 ⇒
-`新たな~pageで~session履歴を更新する$( %~navi~params )
+`新たな~pageで~session履歴を更新する$( %~navi~params, %文書 )
 ◎
-After creating the Document object, but potentially before the page has finished fully loading, the user agent must update the session history with the new page given navigationParams.
+After creating the Document object, but potentially before the page has finished fully loading, the user agent must update the session history with the new page given navigationParams and the newly-created Document.
 </p>
 
 <p>
@@ -3989,12 +4027,12 @@ Then, the user agent must act as if it had stopped parsing.
 </p>
 
 <p>
-~UAは、`文書$を作成した後, かつ
+~UAは、`文書$ %文書 を作成した後, かつ
 ~pageを構文解析し終えて`なければその前に$，次を走らすモノトスル
 ⇒
-`新たな~pageで~session履歴を更新する$( %~navi~params )
+`新たな~pageで~session履歴を更新する$( %~navi~params, %文書 )
 ◎
-After creating the Document object, but potentially before the page has finished fully loading, the user agent must update the session history with the new page given navigationParams.
+After creating the Document object, but potentially before the page has finished fully loading, the user agent must update the session history with the new page given navigationParams and the newly-created Document.
 </p>
 
 <p>
@@ -4095,12 +4133,12 @@ Once the page has been set up, the user agent must act as if it had stopped pars
 </p>
 
 <p>
-~UAは、`文書$を作成した後, かつ
+~UAは、`文書$ %文書 を作成した後, かつ
 ~pageを完全に設定して`なければその前に$，次を走らすモノトスル
 ⇒
-`新たな~pageで~session履歴を更新する$( %~navi~params )
+`新たな~pageで~session履歴を更新する$( %~navi~params, %文書 )
 ◎
-After creating the Document object, but potentially before the page has been completely set up, the user agent must update the session history with the new page given navigationParams.
+After creating the Document object, but potentially before the page has been completely set up, the user agent must update the session history with the new page given navigationParams and the newly-created Document.
 </p>
 
 			</section>
@@ -4499,6 +4537,12 @@ If entry's document is null, then:
 </p>
 		<ol>
 			<li>
+~Assert：
+履歴の取扱い ~EQ `既定$i
+◎
+Assert: historyHandling is "default".
+</li>
+			<li>
 %要請 ~LET 次のようにされた新たな`要請$
 ⇒
 `~URL$rq ~SET %~entry の`~URL$shE
@@ -4513,12 +4557,6 @@ Let request be a new request whose url is entry's URL.
 %要請 の`履歴~navi~flag$rq ~SET ~T
 ◎
 If explicitHistoryNavigation is true, then set request's history-navigation flag.
-</li>
-			<li>
-~Assert：
-%履歴の取扱い ~NEQ `置換-$i
-◎
-Assert: historyHandling is not "replace".
 </li>
 			<li>
 <p>
@@ -4585,9 +4623,11 @@ Let newDocument be entry's document.
 <p>
 ~IF［
 %新たな文書 ~NEQ %現在の文書
+］~OR［
+%履歴~取扱い ~IN { `~entry更新$i, `再読込み$i }
 ］：
 ◎
-If newDocument is different than the current entry's document, then:
+If newDocument is different than the current entry's document, or historyHandling is "entry update" or "reload", then:
 </p>
 		<ol>
 			<li>
