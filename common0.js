@@ -2576,7 +2576,7 @@ node::::ノード
 内容:content::~
 容器:container:::コンテナ
 入子に:nest::入れ子に
-入子の:nested::入れ子の
+入子な:nestedな::入れ子な
 入子ng:nesting::入れ子
 
 順序:order:~
