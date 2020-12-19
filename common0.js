@@ -1980,6 +1980,7 @@ tool::::ツール
 デモる:demonstrateする::~
 デモられ:demonstrateされ::~
 デモっ:demonstrateし::~
+デモれ:demonstrateでき::~
 デモ:demonstration::~
 	デモ:demo
 基盤:infrastructure:~:::インフラ
