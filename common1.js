@@ -1609,9 +1609,9 @@ CSSBOX3=副            ~/css-box-ja.html●Level 4 日本語訳
 CSSBOX4=副            ~/css-box-ja.html
 CSSBREAK3=副          ~/css-break-ja.html●Level 4 日本語訳
 CSSBREAK4=副          ~/css-break-ja.html
-CSSCASCADE4=副         ~/css-cascade-ja.html
-CSSCASCADE3=副         ~/css-cascade-ja.html●Level 4 日本語訳
-CSSCASCADE5=副         ~/css-cascade-ja.html●Level 4 日本語訳
+CSSCASCADE3=副        ~/css-cascade-ja.html●Level 5 日本語訳
+CSSCASCADE4=副        ~/css-cascade-ja.html●Level 5 日本語訳
+CSSCASCADE5=副        ~/css-cascade-ja.html
 CSSCOLOR3=主          ~mitsue/css3-color/
 CSSCOLOR3=副          ~/css-color-ja.html●Level 4 日本語訳
 CSSCOLOR4=副          ~/css-color-ja.html
@@ -1871,7 +1871,6 @@ CSSBG:CSSBACKGROUNDS3
 CSS3BG:CSSBACKGROUNDS3
 CSS3BREAK:CSSBREAK3
 CSS3CASCADE:CSSCASCADE3
-CSSCASCADE:CSSCASCADE4
 CSS3COLOR:CSSCOLOR3
 CSSCOLOR:CSSCOLOR4
 CSS3CONDITIONAL:CSSCONDITIONAL3
