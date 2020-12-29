@@ -996,7 +996,6 @@ EACH:<b>各</b>
 GOTO:<b>GOTO</b>
 BREAK:<b>BREAK</b>
 CONTINUE:<b>CONTINUE</b>
-此れ:<b>これ°</b>
 コレ:<b>これ°</b>
 Assert:<b>Assert</b>
 ABRUPT:<b>?</b>
