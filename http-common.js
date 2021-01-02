@@ -457,8 +457,6 @@ p.type:~HTTPsem#p.type
 p.unsatisfied-range:~HTTPsem#p.unsatisfied-range
 p.weight:~HTTPsem#p.weight
 
-p.accept-ext:~HTTPsem#p.accept-ext
-p.accept-params:~HTTPsem#p.accept-params
 p.auth-param:~HTTPsem#p.auth-param
 p.auth-scheme:~HTTPsem#p.auth-scheme
 p.challenge:~HTTPsem#p.challenge
@@ -898,12 +896,10 @@ minor::::副:マイナー
 側:side:~
 尾部:trailing:~
 頭部:leading:~
-末尾:end:~
 巨大:large:~
 広範:wide:~
-広範囲:extensive:~
 暫定-:interim:~
-最終:final:~
+最終-:final:~
 近過去:recent::~
 重複:duplicate:~
 節:section:~

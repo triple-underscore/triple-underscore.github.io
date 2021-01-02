@@ -13,7 +13,7 @@
 ●●options
 
 spec_title:HTTP Semantics
-trans_update:2020-12-20
+trans_update:2021-01-02
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html
 abbr_url:HTTPsem
@@ -458,6 +458,7 @@ scale::::スケール
 拡げる:expandする:~
 演繹-:deduce:~
 	演繹-法:method
+複雑化-:complicate:~
 
 	IESG
 	実効:effective
@@ -6009,8 +6010,9 @@ The "TE" header field in a request can be used to indicate that the sender will 
 `TE^h は，［
 `~client$が応答にて受容する用意がある`転送~符号法$
 ］を指示するためにも利用できる。
+この仕様の発行~時点では、~HTTP11のみが`転送~符号法$を利用する。
 ◎
-Additionally, specific HTTP versions can use it to indicate the transfer codings the client is willing to accept in the response.
+Additionally, specific HTTP versions can use it to indicate the transfer codings the client is willing to accept in the response. As of publication, only HTTP/1.1 uses transfer codings (see Section 7 of [Messaging]).
 </p>
 
 <p>
@@ -7878,17 +7880,13 @@ When sent by a server in a response, Accept provides information about what cont
 
 <pre class="bnf">
 `Accept@p
-    = #( `media-range$p [ `accept-params$p ] )
+    = #( `media-range$p [ `weight$p ] )
 
 `media-range@p
     = ( "*/*"
         / ( `type$p "/" "*" )
         / ( `type$p "/" `subtype$p )
       ) `parameters$p
-`accept-params@p
-    = `weight$p *( `accept-ext$p )
-`accept-ext@p
-    = `OWS$p ";" `OWS$p `token$p [ "=" ( `token$p / `quoted-string$p ) ]
 </pre>
 
 <p>
@@ -7914,45 +7912,46 @@ Each media-range might be followed by＼
 </p>
 <ol>
 	<li>
-0 個以上の，
-適用-可能な`~MIME型~parameter$（ `parameter$p ）（例： "`charset^c" ）
+0 個以上の，適用-可能な`~MIME型~parameter$（ `parameter$p ）（例： "`charset^c" ）
 ◎
-zero or more applicable media type parameters (e.g., charset),＼
+optional applicable media type parameters (e.g., charset),＼
 </li>
 	<li>
 0 〜 1 個の，（ `weight$p を成す） `q$c ~parameter
 — 相対的な重み（`品質~値$）を指示する
 ◎
-an optional "q" parameter for indicating a relative weight (Section 12.4.2), and then＼
-</li>
-	<li>
-0 個以上の，拡張~parameter（ `accept-ext$p ）
-◎
-zero or more extension parameters.＼
+followed by an optional "q" parameter for indicating a relative weight (Section 12.4.2).
 </li>
 </ol>
-
-<p>
-`q$c ~parameterは，その前後の~parameter集合の分離子として~~働くので、拡張（ `accept-ext$p ）が在るならば，必要とされる。
-◎
-The "q" parameter is necessary if any extensions (accept-ext) are present, since it acts as a separator between the two parameter sets.
-</p>
 </div>
 
+<p>
+以前の仕様は、
+`weight$p ~parameterの後に，追加的な拡張~parameter（ `accept-ext^p ）が出現することを許容していた。
+この拡張~文法は、除去された
+— それは、定義を複雑化しており，実施において利用されておらず，新たな~headerを通して もっと容易に配備できるので。
+`weight$p を利用している`送信者$は、最後に
+"`q^c" を送信するベキである（ `media-range$p の末尾を成す すべての~parameterの後に）。
+`受信者$は、~parameterの順序付けを問わず，
+"`q^c" と命名される~parameterが在れば `weight$p として処理するベキである。
+【 `parameters$p は `weight$p の構文も包摂するので。】
+◎
+Previous specifications allowed additional extension parameters to appear after the weight parameter. The accept extension grammar (accept-ext) has been removed because it had a complicated definition, was not being used in practice, and is more easily deployed through new header fields. Senders using weights SHOULD send "q" last (after all media-range parameters). Recipients SHOULD process any parameter named "q" as weight, regardless of parameter ordering.
+</p>
+
 <p class="note">注記：
-［
-`Accept^h の拡張~parameter（ `accept-params$p ）から`~MIME型~parameter$を分離する，~parameter名 "`q^c"
-］の利用は、歴史的な実施に因る。
-これにより， `media-range$p においては［
+`内容~折衝$を制御するための~parameter名 "`q^c" の利用は、歴史的な実施に因る。
+これにより， `media-range$p 内では［
 "`q^c" と命名される`~MIME型~parameter$
 ］は利用できなくなるが、［
 ~IANA~MIME型~registryには， `q$c ~parameterはまだ無いこと
 ］および［
 `Accept^h における`~MIME型~parameter$の利用eは稀である
 ］下では、そのような出来事は，まずないと予見されている。
-将来の~MIME型においては、"`q^c" と命名されるどのような~parameterも登録しないことが奨励される。
+将来の~MIME型においては、
+"`q^c" と命名されるどのような~parameterも登録しないことが奨励される。
 ◎
-Note: Use of the "q" parameter name to separate media type parameters from Accept extension parameters is due to historical practice. Although this prevents any media type parameter named "q" from being used with a media range, such an event is believed to be unlikely given the lack of any "q" parameters in the IANA media type registry and the rare usage of any media type parameters in Accept. Future media types are discouraged from registering any parameter named "q".
+Note: Use of the "q" parameter name to control content negotiation is due to historical practice. Although this prevents any media type parameter named "q" from being used with a media range, such an event is believed to be unlikely given the lack of any "q" parameters in the IANA media type registry and the rare usage of any media type parameters in Accept. Future media types are discouraged from registering any parameter named "q".
 </p>
 
 <div class="example">
@@ -10479,13 +10478,20 @@ If a 206 (Partial Content) response contains a Content-Range header field with a
 </p>
 
 <p>
+`~server$は、受信した要請の~methodが `Content-Range^h ~headerを~supportするものと定義されていない限り，要請~内の `Content-Range^h ~headerを無視しなければナラナイ。
+この仕様が定義する`要請~method$には、要請~内の `Content-Range^h を~supportするものは無い。
+◎
+A server MUST ignore a Content-Range header field received in a request with a method for which Content-Range support is not defined. No request method in this specification is defined to support Content-Range in a request.
+</p>
+
+<p>
 `~byte範囲$に対しては、`送信者$は，［
 抽出された範囲の表現
 ］の完全な長さを指示するベキである
 — その長さが未知, または それを決定するのが困難である場合は除き。
 `range-resp$p における，
 `complete-length$p に代わる ~asterisk （ "`*^c" ）は、［
-この~headerが生成されたとき，表現の長さが未知であった
+この~headerが`生成され$た時点では，表現の長さは未知であった
 ］ことを指示する。
 ◎
 For byte ranges, a sender SHOULD indicate the complete length of the representation from which the range has been extracted, unless the complete length is unknown or difficult to determine. An asterisk character ("*") in place of the complete-length indicates that the representation length was unknown when the header field was generated.
@@ -13015,12 +13021,12 @@ Content-Range: bytes */47022
 `200$st 応答において，`選定された表現$ ~~全体で応答する。
 その~~理由の一部は、ほとんどの~clientが，（たとえ~~効率が落ちるとしても）
 `200$st を受信して~taskを完了するように準備されているためであり、また，~clientには［
-`完全$な表現を受信するまで，妥当でない部分的~要請【`範囲~要請$】を為すのを停止しない
+`完全$な表現を受信するまで，妥当でない`範囲~要請$を為すのを停止しない
 ］ものもあるためである。
 したがって，~clientは、それが最も適切になるときでも，
 `416$st 応答の受信には依存できない。
 ◎
-Note: Because servers are free to ignore Range, many implementations will respond with the entire selected representation in a 200 (OK) response. That is partly because most clients are prepared to receive a 200 (OK) to complete the task (albeit less efficiently) and partly because clients might not stop making an invalid partial request until they have received a complete representation. Thus, clients cannot depend on receiving a 416 (Range Not Satisfiable) response even when it is most appropriate.
+Note: Because servers are free to ignore Range, many implementations will respond with the entire selected representation in a 200 (OK) response. That is partly because most clients are prepared to receive a 200 (OK) to complete the task (albeit less efficiently) and partly because clients might not stop making an invalid range request until they have received a complete representation. Thus, clients cannot depend on receiving a 416 (Range Not Satisfiable) response even when it is most appropriate.
 </p>
 
 			</section>
