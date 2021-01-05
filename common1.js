@@ -1181,7 +1181,8 @@ Util.dfnInit = () => {
 		dfnMDN.style.display = 'none';
 		const href = mdn_urls[id];
 		if(!href) return;
-		dfnMDN.href = `https://developer.mozilla.org/docs/Web/${href}`;
+		dfnMDN.href = `https://developer.mozilla.org/en-US/docs/Web/${href}`;
+//		dfnMDN.href = `https://developer.mozilla.org/docs/Web/${href}`;
 		dfnMDN.style.display = '';
 	}
 
@@ -1722,6 +1723,7 @@ RESOURCEHINTS=副      ~/resource-hints-ja.html
 PERMISSIONSPOLICY1=副 ~/webappsec-permissions-policy-ja.html
 REFERRERPOLICY=副     ~/webappsec-referrer-policy-ja.html
 REPORTING1=副         ~/reporting1-ja.html
+SCREENORIENTATION=副  ~/screen-orientation-ja.html
 PERMISSIONS=副        ~/webappsec-permissions-ja.html
 GEOLOCATIONAPI=・     ~TR/geolocation-API/
 GEOLOCATIONAPI=副     ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-API-20161108.html
