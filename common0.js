@@ -1682,6 +1682,8 @@ risk::::リスク
 中核:core:~
 中核の:coreな:~
 予約-:reserve:~
+文書化-:document:~
+文書化:documentation:~
 
 	●拡張／互換
 version::::バージョン

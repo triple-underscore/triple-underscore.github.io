@@ -1476,7 +1476,6 @@ stateless::::ステートレス
 /*
 	●仕様（他
 logging
-	文書~化:document
 	高い:high
 	〜する用意がない:unwilling
 	思しきもの:supposedly:

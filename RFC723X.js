@@ -1425,7 +1425,6 @@ redirection::::リダイレクト
 給さな:supplyしな:~
 改変子:modifier::~
 
-文書化:document 化:~
 族:family::~::ファミリ
 日付時刻:date and time::~
 日時:date::~
