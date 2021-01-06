@@ -193,6 +193,7 @@ source_data.st_phrase = {
 '416': 'Range Not Satisfiable',
 '417': 'Expectation Failed',
 '418': '(Unused)',
+'421': 'Misdirected Request',
 '422': 'Unprocessable Payload',
 '426': 'Upgrade Required',
 '451': 'Unavailable For Legal Reasons', // RFC7725
@@ -328,6 +329,7 @@ st.415:~HTTPsem#status.415
 st.416:~HTTPsem#status.416
 st.417:~HTTPsem#status.417
 st.418:~HTTPsem#status.418
+st.421:~HTTPsem#status.421
 st.422:~HTTPsem#status.422
 st.426:~HTTPsem#status.426
 st.500:~HTTPsem#status.500
