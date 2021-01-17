@@ -187,14 +187,14 @@ source_data.st_phrase = {
 '410': 'Gone',
 '411': 'Length Required',
 '412': 'Precondition Failed',
-'413': 'Payload Too Large',
+'413': 'Content Too Large',
 '414': 'URI Too Long',
 '415': 'Unsupported Media Type',
 '416': 'Range Not Satisfiable',
 '417': 'Expectation Failed',
 '418': '(Unused)',
 '421': 'Misdirected Request',
-'422': 'Unprocessable Payload',
+'422': 'Unprocessable Content',
 '426': 'Upgrade Required',
 '451': 'Unavailable For Legal Reasons', // RFC7725
 '500': 'Internal Server Error',
@@ -551,6 +551,9 @@ c.realm:~HTTPsem#realm
 
 	§#terminology
 資源:~HTTPinfra#resource
+表現:~HTTPinfra#representation
+選定された表現:~HTTPinfra#selected-representation
+選定される表現:~HTTPinfra#selected-representation
 ~client:~HTTPinfra#client
 ~server:~HTTPinfra#server
 	役割
@@ -615,8 +618,7 @@ c.realm:~HTTPsem#realm
 ~header節:~HTTPinfra#header-section
 ~trailer:~HTTPinfra#trailer-field
 ~trailer節:~HTTPinfra#trailer-section
-~payload:~HTTPinfra#message-payload
-~payload~data:~HTTPinfra#payload-data
+内容:~HTTPinfra#message-content
 
 	§#routing
 ~target~URI:~HTTPsem#target-URI
@@ -626,10 +628,7 @@ c.realm:~HTTPsem#realm
 形式変換-:~HTTPsem#message-transformation
 形式変換:~HTTPsem#message-transformation
 
-	§#representations
-表現:~HTTPsem#representation
-選定された表現:~HTTPsem#selected-representation
-選定される表現:~HTTPsem#selected-representation
+	§#representation-md
 表現~data:~HTTPsem#representation-data
 表現~header:~HTTPsem#representation-header
 表現~metadata:~HTTPsem#representation-metadata
@@ -676,7 +675,7 @@ c.realm:~HTTPsem#realm
 ~proactive折衝:~HTTPsem#proactive-negotiation
 ~proactive折衝~header:~HTTPsem#proactive-negotiation
 ~reactive折衝:~HTTPsem#reactive-negotiation
-要請~payload折衝:~HTTPsem#request-payload-negotiation
+要請~内容~折衝:~HTTPsem#request-content-negotiation
 品質値:~HTTPsem#quality-value
 品質~値:~HTTPsem#quality-value
 	既定の重み
@@ -800,6 +799,7 @@ COMMON_DATA.words_table += `
 書込み:write::書き込み
 書込め:writeでき::書き込め
 書込んで:writeして::書き込んで
+書込まれ:writeされ::書き込まれ
 書換え:rewriteし::書き換え
 書換える:rewriteする::書き換える
 読取っ:readし::読み取っ
@@ -1069,7 +1069,6 @@ agent::::エージェント
 解決策:solution:~
 英語:English:~
 偶発的:accidental:~
-偽:false:~
 収束-:converge:~
 壊す:breakする:~
 壊れ:breakされ:~
@@ -1143,6 +1142,7 @@ agent::::エージェント
 hypertext::::ハイパーテキスト
 pathname::::パス名
 packet::::パケット
+content:
 payload::::ペイロード
 percent::::パーセント
 subtag::::下位タグ
