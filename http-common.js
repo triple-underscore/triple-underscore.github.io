@@ -294,6 +294,7 @@ st.4xx:~HTTPsem#status.4xx
 st.5xx:~HTTPsem#status.5xx
 st.100:~HTTPsem#status.100
 st.101:~HTTPsem#status.101
+st.103:~HTTPearlyhints#early-hints
 st.200:~HTTPsem#status.200
 st.201:~HTTPsem#status.201
 st.202:~HTTPsem#status.202
@@ -747,6 +748,7 @@ COMMON_DATA.words_table1 += `
 RFC8246:http-immutable-response-ja.html
 RFC7538:http-status-code-308-ja.html
 HTTPpatch:http-patch-ja.html
+HTTPearlyhints:http-status-code-103-ja.html
 
 IANA-a:https://www.iana.org/assignments
 	ERRATA:https://www.rfc-editor.org/errata_search.php
@@ -1096,6 +1098,7 @@ agent::::エージェント
 	再試行-法:retrying
 過度の:excessiveな:~
 確約-:assure:~
+メモ:memo:::~
 
 	:be aware of
 	適切でない:inappropriate
@@ -1221,12 +1224,10 @@ caching:::cache 処理:キャッシュ処理
 gateway::::ゲートウェイ
 内方:inbound::~::インバウンド
 外方:outbound::~::アウトバウンド
-portal::::ポータル
 provider::::プロバイダ
 server-wide::server 全般::サーバ全般
 spider::::スパイダー
 robot::::ロボット
-robotic::::ロボット的
 transaction::::トランザクション
 tunnel::::トンネル
 close:
@@ -1397,8 +1398,7 @@ reactive::::リアクティブ
 準備-:prepare:~
 状態変更:state-changing::~::ステート変更
 stateless::::ステートレス
-	無状態の:statelessな:::ステートレスな
-	状態を持たない
+stateful::::ステートフル
 生の:raw:~
 疑似:pseudo:~
 発行-:publish:~
@@ -1466,6 +1466,10 @@ stateless::::ステートレス
 領域:region:~
 頻繁:frequent:~
 鮮度:freshness::~
+新鮮:fresh::~
+	新鮮~化-:freshen
+	新鮮~化法:freshening
+非新鮮:stale::~
 重合する:overlapする:重なり合う
 重合しな:overlapしな:重なり合わな
 重合して:overlapして:重なり合って
