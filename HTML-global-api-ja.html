@@ -70,6 +70,9 @@ case 'sl':
 case 'U':
 	text = `U+${key}`;
 	break;
+case 'en':
+	return `<span lang="en-x-a0">${key}</span>`;
+	break;
 }
 
 let tag = tag_map[klass];
@@ -110,8 +113,8 @@ return text;
 
 ●●options
 
-spec_date:2021-01-27
-trans_update:2021-01-28
+spec_date:2021-01-29
+trans_update:2021-01-30
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -562,7 +565,7 @@ batch::::バッチ
 log::::ログ
 為さな:makeしな:~
 
-	完了-:run to completion
+	完了まで走った:run to completion
 
 	■仕様
 	避けれる:avoidable
@@ -583,9 +586,7 @@ log::::ログ
 	なるべく早く:as soon as possible
 	見てとれる:can be seen
 
-	制御を戻すことなく:but without yielding control back
-	現在の~taskを成す~codeのうち，~queueしなかった部分:queued code immediately after the current task's worth of non-queued JavaScript
-	回:turn
+	〜することなく:doesn't yield 〜
 	~~構成しておく:architecture
 
 	利用者にとって:users to experience
@@ -758,6 +759,7 @@ processor::::プロセッサ
 	いくつもの:a lot of
 	たくさんの:lots of
 	直後:immediately after
+	~~後続して何回か:multiple subsequent
 
 
 
@@ -1682,54 +1684,51 @@ The queueMicrotask(callback) method must queue a microtask to invoke callback, a
 </div>
 
 <p>
-`queueMicrotask()$m ~methodにより、作者は，自身の~callbackを`小task~queue$上に~scheduleできるようになる。
-これは、［
-現在~実行-中の`~task$が完了して，`~JS実行~文脈~stack$は空になった
-］後に, かつ［
-例えば `setTimeout()$m を利用したときのように，`~event~loop$に制御を戻す
-］ことなく，~callbackを走らす。
+`queueMicrotask()$m ~methodは、作者の~callbackを`小task~queue$上に~scheduleすることを許容する。
+これは、当の~callbackの~codeを
+— 例えば， `setTimeout(f, 0)$m を利用したときのように、`~event~loop$に制御を戻すことなく —
+`~JS実行~文脈~stack$が次回に空になったとき，走らすことを許容する
+— それが起こるのは、現在~実行-中の同期的な~JSすべてが完了まで走ったときである。
 ◎
-The queueMicrotask() method allows authors to schedule a callback on the microtask queue. This allows their code to run after the currently-executing task has run to completion and the JavaScript execution context stack is empty, but without yielding control back to the event loop, as would be the case when using, for example, setTimeout(f, 0).
+The queueMicrotask() method allows authors to schedule a callback on the microtask queue. This allows their code to run once the JavaScript execution context stack is next empty, which happens once all currently executing synchronous JavaScript has run to completion. This doesn't yield control back to the event loop, as would be the case when using, for example, setTimeout(f, 0).
 </p>
 
 <p>
 作者は、［
 いくつもの小taskを~scheduleするのは、いくつもの同期的~codeを走らすのと同じ悪影響を処理能に及ぼす
 ］ことを，自覚すること。
-どちらも，~browserが自前の作業
-— ~scrollしたり描画するなど —
-を行うのを~~妨げる。
+どちらも，~browserが描画などの自前の作業を行うのを~~妨げる。
 多くの事例では、［
 `requestAnimationFrame()$m ／ `requestIdleCallback()$m
 ］を選ぶ方が良い。
 特に，次回の描画~周回より前に~codeを走らすのが目標なら、
 `requestAnimationFrame()$m がその目的を果たす。
 ◎
-Authors ought to be aware that scheduling a lot of microtasks has the same performance downsides as running a lot of synchronous code. Both will prevent the browser from doing its own work, such as rendering or scrolling. In many cases, requestAnimationFrame() or requestIdleCallback() is a better choice. In particular, if the goal is to run code before the next rendering cycle, that is the purpose of requestAnimationFrame().
+Authors ought to be aware that scheduling a lot of microtasks has the same performance downsides as running a lot of synchronous code. Both will prevent the browser from doing its own work, such as rendering. In many cases, requestAnimationFrame() or requestIdleCallback() is a better choice. In particular, if the goal is to run code before the next rendering cycle, that is the purpose of requestAnimationFrame().
 </p>
 
 <p>
 `queueMicrotask()$m は、次の例から見てとれるように，同期的な~codeを配列し直す仕組みと捉えるのが最も良い
 — 実質的に、~queueした~codeを［
-現在の~taskを成す~codeのうち，~queueしなかった部分
-］の直後に配置するような。
+現在~実行-中の同期的な~JSが完了まで走った直後
+］に配置するような。
 ◎
-As can be seen from the following examples, the best way of thinking about queueMicrotask() is as a mechanism for rearranging synchronous code, effectively placing the queued code immediately after the current task's worth of non-queued JavaScript.
+As can be seen from the following examples, the best way of thinking about queueMicrotask() is as a mechanism for rearranging synchronous code, effectively placing the queued code immediately after the currently executing synchronous JavaScript has run to completion.
 </p>
 
 <div class="example">
 <p>
 `queueMicrotask()$m を利用する最も共通的な理由として、［
-情報が同期的に可用になる事例でも，過度な遅延は導入されない
-］よう，順序を一貫させることが挙げられる。
+情報が同期的に可用になる事例でも，過度な遅延が導入される
+］ことはないよう，順序を一貫させることが挙げられる。
 ◎
 The most common reason for using queueMicrotask() is to create consistent ordering, even in the cases where information is available synchronously, without introducing undue delay.
 </p>
 
 <p>
-例えば、ある~custom要素
-— それは、 `load^et ~eventを発火することに加え，以前に読込んだ~dataも内部~cacheに保守する —
-を考える。
+例えば、ある~custom要素を考える
+— それは、
+`load^et ~eventを発火することに加え，以前に読込んだ~dataも内部~cacheに保守する。
 素朴に実装するなら、次の様になろう：
 ◎
 For example, consider a custom element firing a load event, that also maintains an internal cache of previously-loaded data. A naïve implementation might look like:
@@ -1764,9 +1763,11 @@ console.log("2");
 </pre>
 
 <p>
-`1, 2, loaded^l を~logすることもあれば（~dataを~fetchする必要がある場合）、
-`1, loaded, 2^l を~logすることもある（~dataはすでに~cacheされている場合）。
-同様に、 `loadData()^c を~callした直後の時点で，要素~上に~dataが設定されるかどうかも一貫しなくなる。
+`1^l, `2^l, `loaded^l
+の順に~logすることもあれば（~dataを~fetchする必要がある場合）、
+`1^l, `loaded^l, `2^l
+の順に~logすることもある（~dataは すでに~cacheされている場合）。
+同様に、 `loadData()^c を~callした直後の時点で，要素に~dataが設定されるかどうかも一貫しなくなる。
 ◎
 will sometimes log "1, 2, loaded" (if the data needs to be fetched), and sometimes log "1, loaded, 2" (if the data is already cached). Similarly, after the call to loadData(), it will be inconsistent whether or not the data is set on the element.
 </p>
@@ -1795,9 +1796,11 @@ MyElement.prototype.loadData = function (%url) {
 </pre>
 
 <p>
-これは、本質的に，~queueされた~codeを現在~実行-中の~taskの後に走らすよう配列し直して、順序や要素~状態の更新が一貫することを確保する。
+これは、本質的に，~queueされた~codeを［
+`~JS実行~文脈~stack$が空になった後に走らす
+］よう配列し直して、要素~状態の順序付けや更新が一貫することを確保する。
 ◎
-By essentially rearranging the queued code to be after the currently-executing task, this ensures a consistent ordering and update of the element's state.
+By essentially rearranging the queued code to be after the JavaScript execution context stack empties, this ensures a consistent ordering and update of the element's state.
 </p>
 </div>
 
@@ -1832,10 +1835,12 @@ function sendData(%data) {
 </pre>
 
 <p>
-このように~~構成しておけば、 `sendData()^c に対する後続の複数の~callは，~event~loopにおける同じ回の中で 1 回の `fetch()$m ~callにまとめるように~batchされる
-— ~fetchに先んじるような介在する~event~loop~taskなしに（これは、代わりに `setTimeout()$m を利用した類似な~codeでは，起こることになる）。
+このように~~構成しておけば、
+`sendData()^c を現在~実行-中の同期的な~JSの中で~~後続して何回か~callしても，
+1 回の `fetch()$m ~callにまとめるよう~batchされる
+— ~fetchに先んじるような介在する~event~loop~taskを経ずに（代わりに `setTimeout()$m を利用した類似な~codeでは、そのような~taskが起こることになる）。
 ◎
-With this architecture, multiple subsequent calls to sendData() within the same turn of the event loop will be batched together into one fetch() call, but with no intervening event loop tasks preempting the fetch (as would have happened with similar code that instead used setTimeout()).
+With this architecture, multiple subsequent calls to sendData() within the currently executing synchronous JavaScript will be batched together into one fetch() call, but with no intervening event loop tasks preempting the fetch (as would have happened with similar code that instead used setTimeout()).
 </p>
 </div>
 
