@@ -1743,6 +1743,10 @@ internet::::インターネット
 	%第二~key:secondKey
 	%処置:disposition
 	-:ignoreType
+	%入力~本体:inputBody
+	%最終-本体:finalBody
+	%最終-本体:inputOrInitBody
+	%初期~本体:initBody
 
 	%~pull~algo:pullAlgorithm
 	%取消~algo:cancelAlgorithm
@@ -15224,9 +15228,9 @@ Let inputBody be input’s request’s body if input is a Request object; otherw
 If either init["body"] exists and is non-null or inputBody is non-null, and request’s method is `GET` or `HEAD`, then throw a TypeError.
 </li>
 	<li>
-%本体 ~LET %入力~本体
+%初期~本体 ~LET ~NULL
 ◎
-Let body be inputBody.
+Let initBody be null.
 </li>
 	<li>
 <p>
@@ -15243,7 +15247,7 @@ If init["body"] exists and is non-null, then:
 Let Content-Type be null.
 </li>
 			<li>
-( %本体, %内容~型 ) ~SET %要請 の`~keepalive$rq に応じて
+( %初期~本体, %内容~型 ) ~SET %要請 の`~keepalive$rq に応じて
 ⇒＃
 ~T ならば `本体と内容~型を抽出する$( %本体~member, `~keepalive$i ) ／
 ~F ならば `本体と内容~型を抽出する$( %本体~member )
@@ -15269,14 +15273,22 @@ If Content-Type is non-null and this’s headers’s header list does not contai
 		</ol>
 	</li>
 	<li>
+%最終-本体【！inputOrInitBody（不要）】 ~LET ［
+%初期~本体 ~NEQ ~NULL ならば %初期~本体 ／
+~ELSE_ %入力~本体
+］
+◎
+Let inputOrInitBody be initBody if it is non-null; otherwise inputBody.
+</li>
+	<li>
 <p>
 ~IF［
-%本体 ~NEQ ~NULL
+%最終-本体 ~NEQ ~NULL
 ］~AND［
-%本体 の`~source$bd ~EQ ~NULL
+%最終-本体 の`~source$bd ~EQ ~NULL
 ］：
 ◎
-If body is non-null and body’s source is null, then:
+If inputOrInitBody is non-null and inputOrInitBody’s source is null, then:
 </p>
 		<ol>
 			<li>
@@ -15296,31 +15308,38 @@ Set this’s request’s use-CORS-preflight flag.
 		</ol>
 	</li>
 	<li>
+<p>
 ~IF［
-%入力~本体 ~EQ %本体
+%初期~本体 ~EQ ~NULL
 ］~AND［
+%入力~本体 ~NEQ ~NULL
+］：
+◎
+↑Let finalBody be inputOrInitBody.
+◎
+If initBody is null and inputBody is non-null, then:
+</p>
+		<ol>
+			<li>
+~IF［
 %input は`利用-不能$Bdである
 ］
 ⇒
 ~THROW `TypeError$E
 ◎
-If inputBody is body and input is unusable, then throw a TypeError.
+If input is unusable, then throw a TypeError.
 </li>
-	<li>
-~IF［
-%入力~本体 ~EQ %本体
-］~AND［
-%入力~本体 ~NEQ ~NULL
-］
-⇒
-%本体 ~SET %入力~本体 用の`~proxyを作成する$RS()
+		<li>
+%最終-本体 ~SET `~proxyを作成する$RS( %入力~本体 )
 ◎
-If inputBody is body and inputBody is non-null, then set body to the result of creating a proxy for inputBody.
+Set finalBody to the result of creating a proxy for inputBody.
 </li>
+		</ol>
+	</li>
 	<li>
-コレの`要請$Rqの`本体$rq ~SET %本体
+コレの`要請$Rqの`本体$rq ~SET %最終-本体
 ◎
-Set this’s request’s body to body.
+Set this’s request’s body to finalBody.
 </li>
 	<li>
 コレの`通達$Rq ~SET コレに`関連な~Realm$に属する`新たな$ `AbortSignal$I ~obj
