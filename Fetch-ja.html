@@ -186,7 +186,7 @@ return (
 spec_title:Fetch
 spec_date:2021-02-02
 trans_update:2021-02-04
-source_checked:200806
+source_checked:210202
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -634,7 +634,6 @@ at.import:~CASCADE#at-ruledef-import
 局所~scheme:#local-scheme
 局所的:#is-local
 応答~URL:#response-url
-i.素片は除外する:~URL1#url-serializer-exclude-fragment
 i.~keepalive:#keepalive
 
 	●message 構成子
@@ -789,7 +788,7 @@ rs.~CSP~list:#concept-response-csp-list
 rs.~CORSに公開される~header名~list:#concept-response-cors-exposed-header-name-list
 rs.範囲が要請された~flag:#concept-response-range-requested-flag
 rs.計時許容に合格した~flag:#concept-response-timing-allow-passed
-rs.~Location~header~URL:#concept-response-location-url
+~Location~URLを得る:#concept-response-location-url
 
 応答を~cloneする:#concept-response-clone
 
@@ -1087,14 +1086,14 @@ url.~username:~URL1#concept-url-username
 url.~password:~URL1#concept-url-password
 url.~blob~URL~entry:~URL1#concept-url-blob-entry
 url.資格証を含む:~URL1#include-credentials
-
 ~form_urlencoded直列化器:~URL1#concept-urlencoded-serializer
 ~form_urlencoded構文解析器:~URL1#concept-urlencoded-parser
 名値~pair~list:~URL1#concept-urlsearchparams-list
-
+i.素片は除外する:~URL1#url-serializer-exclude-fragment
 ~URLの~usernameを設定する:~URL1#set-the-username
 ~URLの~passwordを設定する:~URL1#set-the-password
 文字列を~byte列に~percent-復号する:~URL1#string-percent-decode
+素片~付き絶対~URL文字列:~URL1#absolute-url-with-fragment-string
 
 xhr.~entry:~XHR#concept-formdata-entry
 	xhr.~entryを作成する:~XHR#create-an-entry
@@ -1638,6 +1637,7 @@ helper:
 	興味を引く:interesting
 	調べて:looking at
 	際どい:edge
+	〜以外にない:exclusively
 
 	●未分類
 log::::ログ
@@ -1747,6 +1747,8 @@ internet::::インターネット
 	%最終-本体:finalBody
 	%最終-本体:inputOrInitBody
 	%初期~本体:initBody
+	%~Location~URL:locationURL
+	%~Location:location
 
 	%~pull~algo:pullAlgorithm
 	%取消~algo:cancelAlgorithm
@@ -1918,7 +1920,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/cb9d2a19f79a6f1dd4cad7996e337285cdf8c263/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/78b6527526eabc0324a2ea0891d9247131bf8be0/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -5808,35 +5810,6 @@ A response has an associated timing allow passed flag, which is initially unset.
 ◎
 This is used so that the caller to a fetch can determine if sensitive timing data is allowed on the resource fetched by looking at the flag of the response returned. Because the flag on the response of a redirect has to be set if it was set for previous responses in the redirect chain, this is also tracked internally using the request’s timing allow failed flag.
 </dd>
-
-	<dt>`~Location~header~URL@rs （ ~NULL †）</dt>
-	<dd>
-次のいずれか
-⇒＃
-~NULL,
-`失敗^i,
-`~URL$
-◎
-A response can have an associated location URL (null, failure, or a URL). Unless specified otherwise, response has no location URL.
-</dd>
-	<dd class="note">注記：
-この概念は、~Fetchおよび~HTMLの`~navigate~algo$††にて，~redirectを取扱うために利用される。
-それは、一度だけ, かつ一貫するように `Location$h ~headerから`値を抽出-$することを確保する。
-`HTML$r
-◎
-This concept is used for redirect handling in Fetch and in HTML’s navigate algorithm. It ensures `Location` has its value extracted consistently and only once. [HTML]
-</dd>
-	<dd class="trans-note">【
-“~Location~header~URL” は原文では `location URL^en であるが、
-`Location^h ~headerに基づくことを明確化するため，冗長に記すことにする。
-】【†
-原文では，既定では
-“`has no location URL^en”
-（ “~Location~header~URLは無い” ）という句として記されているが、暗に ~NULL を指していると見受けられる。
-“無い” を表現する ~NULL と異なる値をとることも~~考えられなくはないが。
-】【††
-特に、その中で`~navigate~fetchを処理する$とき。
-】</dd>
 </dl>
 
 <hr>
@@ -6088,6 +6061,72 @@ A stale response is a response that is not a fresh response or a stale-while-rev
 <a href="~HTTPcache#stale">~HTTPが定義する非新鮮</a>
 （新鮮の否定）より狭義になる。
 】</p>
+
+<hr>
+
+<div class="algo">
+<p>
+`~Location~URLを得る@
+ときは、所与の
+( `応答$ %応答 )
+に対し，［
+~NULL ／ `失敗^i ／ `~URL$
+］を返す：
+◎
+The location URL algorithm of given a response response is the following steps. They return null, failure, or a URL.
+</p>
+<ol>
+	<li>
+~IF［
+%応答 の`状態s$rsは`~redirect状態s$でない
+］
+⇒
+~RET ~NULL
+◎
+If response’s status is not a redirect status, then return null.
+</li>
+	<li>
+%~Location ~LET `~header~listから値を抽出する$( %応答 の`~header~list$rs, `Location$h )
+◎
+Let location be the result of extracting header list values given `Location` and response’s header list.
+</li>
+	<li>
+<p>
+~IF［
+%~Location は`値$hdである
+］
+⇒
+%~Location ~SET `~URL構文解析する$( %~Location, %応答 の`~URL$rs )
+◎
+If location is a value, then set location to the result of parsing location with response’s URL.
+</p>
+
+<p class="note">注記：
+%応答 が `new Response()$m 構築子を通して構築されていた場合、
+%応答 の`~URL$rsは ~NULL になる
+— その結果，
+%~Location が成功裡に構文解析されるのは、それが`素片~付き絶対~URL文字列$である場合に限られることになる。
+◎
+If response was constructed through the Response constructor, response’s URL will be null, meaning that location will only parse successfully if it is an absolute-URL-with-fragment string.
+</p>
+	</li>
+	<li>
+~RET %~Location
+◎
+Return location.
+</li>
+</ol>
+
+<p class="note">注記：
+`~Location~URLを得る$ ~algoが利用されるのは、次のいずれか以外にない
+⇒＃
+この標準における~redirectの取扱い／
+`~HTML^cite `HTML$r の~navigate~algo†（それは、~redirectを手動で取扱う）
+【†特に、その中で`~navigate~fetchを処理する$とき。】
+◎
+The location URL algorithm is exclusively used for redirect handling in this standard and in HTML’s navigate algorithm which handles redirects manually. [HTML]
+</p>
+</div>
 
 			</section>
 			<section id="miscellaneous">
@@ -9985,27 +10024,7 @@ If actualResponse’s status is not 303, request’s body is not null, and the c
 ◎
 303 is excluded as certain communities ascribe special status to it.
 </p>
-
 			</li>
-			<li>
-%所在 ~LET `~header~listから値を抽出する$( %実際の応答 の`~header~list$rs, `Location$h )
-◎
-Let location be the result of extracting header list values given `Location` and actualResponse’s header list.
-</li>
-			<li>
-~IF［
-%所在 は`値$hdである
-］
-⇒
-%所在 ~SET `~URL構文解析する$( %所在, %実際の応答 の`~URL$rs )
-◎
-If location is a value, then set location to the result of parsing location with actualResponse’s URL.
-</li>
-			<li>
-%実際の応答 の`~Location~header~URL$rs ~SET %所在
-◎
-Set actualResponse’s location URL to location.
-</li>
 			<li>
 <p>
 %要請 の`~redirect~mode$rq に応じて：
@@ -10085,35 +10104,36 @@ To perform an HTTP-redirect fetch using request and response, run these steps:
 Let actualResponse be response, if response is not a filtered response, and response’s internal response otherwise.
 </li>
 	<li>
-%所在 ~LET %実際の応答 の`~Location~header~URL$rs
+%~Location~URL ~LET `~Location~URLを得る$( %実際の応答 )
 ◎
-↓</li>
+Let locationURL be actualResponse’s location URL.
+</li>
 	<li>
 ~IF［
-%所在 ~EQ ~NULL
+%~Location~URL ~EQ ~NULL
 ］
 ⇒
 ~RET %応答
 ◎
-If actualResponse’s location URL is null, then return response.
+If locationURL is null, then return response.
 </li>
 	<li>
 ~IF［
-%所在 ~EQ `失敗^i
+%~Location~URL ~EQ `失敗^i
 ］
 ⇒
 ~RET `~network~error$
 ◎
-If actualResponse’s location URL is failure, then return a network error.
+If locationURL is failure, then return a network error.
 </li>
 	<li>
 ~IF［
-%所在 の`~scheme$urlは`~HTTP_S~scheme$でない
+%~Location~URL の`~scheme$urlは`~HTTP_S~scheme$でない
 ］
 ⇒
 ~RET `~network~error$
 ◎
-If actualResponse’s location URL’s scheme is not an HTTP(S) scheme, then return a network error.
+If locationURL’s scheme is not an HTTP(S) scheme, then return a network error.
 </li>
 	<li>
 ~IF［
@@ -10133,27 +10153,27 @@ Increase request’s redirect count by one.
 ~IF［
 %要請 の`~mode$rq ~EQ `cors^l
 ］~AND［
-%所在 は`資格証を含む$url
+%~Location~URL は`資格証を含む$url
 ］~AND［
-( %要請 の`生成元$rq, %所在 の`生成元$url )
+( %要請 の`生成元$rq, %~Location~URL の`生成元$url )
 は`同一-生成元$`でない^em
 ］
 ⇒
 ~RET `~network~error$
 ◎
-If request’s mode is "cors", actualResponse’s location URL includes credentials, and request’s origin is not same origin with actualResponse’s location URL’s origin, then return a network error.
+If request’s mode is "cors", locationURL includes credentials, and request’s origin is not same origin with locationURL’s origin, then return a network error.
 </li>
 	<li>
 <p>
 ~IF［
 %要請 の`応答~tainting$rq ~EQ `cors^l
 ］~AND［
-%所在 は`資格証を含む$url
+%~Location~URL は`資格証を含む$url
 ］
 ⇒
 ~RET `~network~error$
 ◎
-If request’s response tainting is "cors" and actualResponse’s location URL includes credentials, then return a network error.
+If request’s response tainting is "cors" and locationURL includes credentials, then return a network error.
 </p>
 
 <p class="note">注記：
@@ -10177,7 +10197,7 @@ If actualResponse’s status is not 303, request’s body is non-null, and reque
 </li>
 	<li>
 ~IF［
-( %所在 の`生成元$url, %要請 の`現在の~URL$rqの`生成元$rq )
+( %~Location~URL の`生成元$url, %要請 の`現在の~URL$rqの`生成元$rq )
 は`同一-生成元$でない
 ］~AND［
 ( %要請 の`生成元$url, %要請 の`現在の~URL$rqの`生成元$rq )
@@ -10186,7 +10206,7 @@ If actualResponse’s status is not 303, request’s body is non-null, and reque
 ⇒
 %要請 の`~tainted生成元~flag$rq ~SET ~T
 ◎
-If actualResponse’s location URL’s origin is not same origin with request’s current URL’s origin and request’s origin is not same origin with request’s current URL’s origin, then set request’s tainted origin flag.
+If locationURL’s origin is not same origin with request’s current URL’s origin and request’s origin is not same origin with request’s current URL’s origin, then set request’s tainted origin flag.
 </li>
 	<li>
 <p>
@@ -10246,9 +10266,9 @@ request’s body’s source’s nullity has already been checked.
 </p>
 	</li>
 	<li>
-%要請 の`~URL~list$rqに %所在 を付加する
+%要請 の`~URL~list$rqに %~Location~URL を付加する
 ◎
-Append actualResponse’s location URL to request’s URL list.
+Append locationURL to request’s URL list.
 </li>
 	<li>
 `~referrer施策を設定する$( %要請, %実際の応答 )
@@ -12903,8 +12923,7 @@ This can be a pointer to the header list of something else, e.g., of a request a
 	<dd>
 `~Headers用の~guard$。
 ◎
-A Headers object also has an associated guard,
-which is a headers guard.
+A Headers object also has an associated guard, which is a headers guard.
 </dd>
 	<dd>
 `~Headers用の~guard@
