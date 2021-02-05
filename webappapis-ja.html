@@ -111,8 +111,8 @@ return text;
 
 ●●options
 
-spec_date:2021-02-03
-trans_update:2021-01-26
+spec_date:2021-02-04
+trans_update:2021-02-05
 source_checked:200626
 page_state_key:HTML
 spec_status:LS
@@ -168,6 +168,8 @@ cite:cite
 
 	script-structs:definitions-2
 	scripting-processing-model:processing-model-7
+	hostenqueuepromisejob:integration-with-the-javascript-job-queue
+	hostenqueuepromisejob:enqueuejob(queuename,-job,-arguments)
 
 ●●mdn_urls
 	documentandelementeventhandlers:API/DocumentAndElementEventHandlers
@@ -910,9 +912,9 @@ rs.種別:~FETCH#concept-response-type
 実行候補:~TC39#sec-candidate-executions
 抽象-~closure:~TC39#sec-abstract-closure
 前方-進捗:~TC39#sec-forward-progress
-
 ~source~text~Module-Record:~TC39#sec-source-text-module-records
 循環な~Module-Record:~TC39#sec-cyclic-module-records
+~JobCallback~Record:~TC39#sec-jobcallback-records
 
 jc.TypeError:~TC39#sec-native-error-types-used-in-this-standard-typeerror
 jc.Atomics:~TC39#sec-atomics-object
@@ -925,6 +927,8 @@ jI.Function.prototype:~TC39#sec-properties-of-the-function-prototype-object
 
 	●抽象演算
 jA.HostEnqueuePromiseJob:~TC39#sec-hostenqueuepromisejob
+jA.HostCallJobCallback:~TC39#sec-hostcalljobcallback
+jA.HostMakeJobCallback:~TC39#sec-hostmakejobcallback
 jA.OrdinaryFunctionCreate:~TC39#sec-ordinaryfunctioncreate
 jA.GetActiveScriptOrModule:~TC39#sec-getactivescriptormodule
 jA.HostEnsureCanCompileStrings:~TC39#sec-hostensurecancompilestrings
@@ -942,6 +946,7 @@ jA.NormalCompletion:~TC39#sec-normalcompletion
 jA.InitializeHostDefinedRealm:~TC39#sec-initializehostdefinedrealm
 jA.FinishDynamicImport:~TC39#sec-finishdynamicimport
 jA.HostGetImportMetaProperties:~TC39#sec-hostgetimportmetaproperties
+jA.Call:~TC39#sec-call
 
 jA.HostImportModuleDynamically:~JSIMPORT#sec-hostimportmoduledynamically
 
@@ -950,6 +955,8 @@ jA.EnsureCSPDoesNotBlockStringCompilation:~CSP3#can-compile-strings
 jA.IsPlatformObjectSameOrigin:~HTMLWPROXY#isplatformobjectsameorigin-(-o-)
 
 A.HostEnqueuePromiseJob:#hostenqueuepromisejob
+A.HostMakeJobCallback:#hostmakejobcallback
+A.HostCallJobCallback:#hostcalljobcallback
 A.HostImportModuleDynamically:#hostimportmoduledynamically(referencingscriptormodule,-specifier,-promisecapability)
 A.HostResolveImportedModule:#hostresolveimportedmodule(referencingscriptormodule,-specifier)
 
@@ -1039,6 +1046,7 @@ CSP:Content Security Policy:CSP
 
 	●IDL / JS
 Record:
+JobCallback:
 片:fragment::~
 型強制-:coerce::強制
 設定下:setup::~
@@ -1102,7 +1110,9 @@ checkpoint:
 schedule::::スケジュール
 	~scriptによる:scripted
 job::::ジョブ
+	~job／^en:Job
 現任の:incumbent:~
+callable:
 	~call元:caller
 	~call法:calling
 post::::ポスト
@@ -1219,6 +1229,8 @@ memory::::メモリ
 協力的:cooperative:~
 投函-:post::~::ポスト
 宛先:target::~
+保存-:save::~
+復旧-:restore::~
 
 	-:successful
 	成功しな:unsuccessful
@@ -1234,6 +1246,7 @@ memory::::メモリ
 	~~伝送中:in flight
 	~loopするように戻る:loops back
 	何もしない:no-op
+	伴わせる:attach
 
 
 	●event
@@ -1383,7 +1396,7 @@ encapsulate:::カプセル化
 	status
 	役立つ何か:helpful manner
 	以上をふまえた下で，:With all this in place
-	〜が在れば:With 〜 in place
+	〜経ることで:With 〜 in place
 	あまりに:excessively
 	hope
 	:emphatically
@@ -1502,6 +1515,7 @@ encapsulate:::カプセル化
 	答え:answer
 	よく似る:very similar
 	引き締め可能:able to tighten
+	に任せる:to let 〜
 
 	●未分類（動詞）
 持続的な:persisted:~
@@ -1520,7 +1534,6 @@ encapsulate:::カプセル化
 展開:expansion:~
 現れる:appearする:~
 検索-:look up:~
-保存-:save:~
 暗号化-:encrypt::~
 暗号化:encryption::~
 暗号形:encrypted::~
@@ -1627,6 +1640,8 @@ milli::::ミリ
 	%評価~promise:evaluationPromise
 	%~error報告ngは防止する:preventErrorReporting
 	%構文解析した~URL:paresed
+	%引数~list:argumentsList
+	%~callable:callable
 
 	●指示語
 現在:currently:~
@@ -3935,7 +3950,6 @@ An environment is a non-secure context if it is not a secure context.
 
 				<section id="script-structs">
 <h4 title="Scripts">8.1.4.1. ~script</h4>
-
 
 <p>
 `~script@
@@ -7216,279 +7230,8 @@ It represents the rejection reason for the promise.
 The JavaScript specification contains a number of implementation-defined abstract operations, that vary depending on the host environment. This section defines them for user agent hosts.
 </p>
 
-				<section id="hostenqueuepromisejob">
-<h4 title="HostEnqueuePromiseJob(job, realm)">8.1.5.1. `HostEnqueuePromiseJob^A(%~job, %~realm)</h4>
-
-<div class="algo">
-<p>
-~JS `JAVASCRIPT$r は、
-`Promise^jc に関係する演算を~scheduleするための抽象-演算
-`HostEnqueuePromiseJob$jA
-を`実装定義$としている。
-~HTMLは、それらの演算を小task~queue内で~scheduleする。
-~UAは、次の実装を利用するモノトスル：
-◎
-JavaScript contains an implementation-defined HostEnqueuePromiseJob(job, realm) abstract operation to schedule Promise-related operations. HTML schedules these operations in the microtask queue. User agents must use the following implementation: [JAVASCRIPT]
-</p>
-<ol>
-	<li>
-<p>
-%~job設定群 ~LET %~realm に応じて
-⇒＃
-~NULL ならば ~NULL ／
-~ELSE_ %~realm 用の`設定群~obj$rM
-◎
-If realm is not null, then let job settings be the settings object for realm. Otherwise, let job settings be null.
-</p>
-
-<div class="note">
-<p>注記：
-%~realm ~NEQ ~NULL の場合、
-%~realm は走らすことになる作者~codeが属する`~realm$になる
-— それは， %~job が［
-`NewPromiseReactionJob$jA から返されたなら，当の~promiseの~handler関数 ／
-`NewPromiseResolveThenableJob$jA から返されたなら，~promiseの `then^c 関数
-］が属する~realmになる。
-◎
-If realm is not null, it is the Realm of the author code that will run. When job is returned by NewPromiseReactionJob, it is the realm of the promise's handler function. When job is returned by NewPromiseResolveThenableJob, it is the realm of the then function.
-</p>
-
-<p>
-%~realm ~EQ ~NULL 場合、走らす作者~codeは無いか, 作者~codeは投出することが保証される。
-前者は、作者が走らすものを~code内で渡さなかったからであろう
-— `promise.then(null, null)^c など。
-後者は、廃止された `Proxy^jc が渡されたからである。
-どちらの事例でも、以下において %~job設定群 を利用する段は，すべて飛ばされることになる。
-◎
-If realm is null, either no author code will run or author code is guaranteed to throw. For the former, the author may not have passed in code to run, such as in promise.then(null, null). For the latter, it is because a revoked Proxy was passed. In both cases, all the steps below that would otherwise use job settings get skipped.
-</p>
-</div>
-	</li>
-	<li>
-%現任の設定群 ~LET `現任の設定群~obj$
-◎
-Let incumbent settings be the incumbent settings object.
-</li>
-	<li>
-%作動中の~script ~LET `作動中の~script$
-◎
-Let active script be the active script.
-</li>
-	<li>
-%~script実行~文脈 ~LET ~NULL
-◎
-Let script execution context be null.
-</li>
-	<li>
-<p>
-~IF［
-%作動中の~script ~NEQ ~NULL
-］
-⇒
-%~script実行~文脈 ~SET 次のようにされた新たな`~JS実行~文脈$
-⇒＃
-~Function~field ~SET ~NULL,
-~Realm~field ~SET %作動中の~script の`設定群~obj$sCの`~Realm$enV,
-~ScriptOrModule成分 ~SET %作動中の~script の`~record$sC
-◎
-If active script is not null, set script execution context to a new JavaScript execution context, with its Function field set to null, its Realm field set to active script's settings object's Realm, and its ScriptOrModule set to active script's record.
-</p>
-
-<p class="note">注記：
-下に見られるように，これは、現在の`作動中の~script$を，後で~jobを実行する時点まで伝播するために利用される。
-◎
-As seen below, this is used in order to propagate the current active script forward to the time when the job is executed.
-</p>
-
-<div class="example">
-
-<p>
-%作動中の~script ~NEQ ~NULL のときに，この仕方でそれを保存することは、次の事例で有用になる：
-◎
-A case where active script is non-null, and saving it in this way is useful, is the following:
-</p>
-
-<pre class="lang-js">
-Promise.resolve('import(``^./example.mjs``^)').then(eval);
-</pre>
-
-<p>
-この段（および，それを利用する下の手続き）が無い場合、
-`import()$m 式を評価するときに`作動中の~script$は無いことになる
-— `eval()$m は特定0の`~script$を出自にしない組込みの関数なので。
-◎
-Without this step (and the steps below that use it), there would be no active script when the import() expression is evaluated, since eval() is a built-in function that does not originate from any particular script.
-</p>
-
-<p>
-この段が在れば， %作動中の~script は 上の~codeから~jobの中へ伝播され、
-`import()$m は，元の~scriptの`基底~URL$sCを適切に利用できるようになる。
-◎
-With this step in place, the active script is propagated from the above code into the job, allowing import() to use the original script's base URL appropriately.
-</p>
-
-</div>
-
-<div class="example">
-
-<p>
-%作動中の~script は、利用者が次のような~buttonを~clickした場合には， ~NULL になり得る：
-◎
-active script can be null if the user clicks on the following button:
-</p>
-
-<pre class="lang-html">
-&lt;button onclick="Promise.resolve('import(``^./example.mjs``^)').then(eval)"&gt;Click me&lt;/button&gt;
-</pre>
-
-<p>
-この事例では、`~event~handler$用の~JS関数は，`~event~handlerの現在の値を取得する$~algoにより作成され、それは［
-`ScriptOrModule^sl が ~NULL 値にされた関数
-］を作成することになる。
-したがって、~promise機構が `HostEnqueuePromiseJob$A を~callするときも，渡される`作動中の~script$は無いことになる。
-◎
-In this case, the JavaScript function for the event handler will be created by the get the current value of the event handler algorithm, which creates a function with null [[ScriptOrModule]] value. Thus, when the promise machinery calls HostEnqueuePromiseJob, there will be no active script to pass along.
-</p>
-
-<p>
-その帰結として、このことは，［
-`import()$m 式が評価される時点でも，`作動中の~script$は依然として無い
-］ことを意味する。
-幸いにも、それは，この仕様による［
-`HostResolveImportedModule$A,
-`HostImportModuleDynamically$A
-］の実装により取扱われる
-— `現在の設定群~obj$の`~API用~基底~URL$enVを利用するよう~fall-backすることにより。
-◎
-As a consequence, this means that when the import() expression is evaluated, there will still be no active script. Fortunately that is handled by our implementations of HostResolveImportedModule and HostImportModuleDynamically, by falling back to using the current settings object's API base URL.
-</p>
-
-</div>
-	</li>
-	<li>
-<p>
-`~surrounding~agent$の`~event~loop$aGの中で，次の手続きを走らす`小taskを~queueする$：
-◎
-Queue a microtask on the surrounding agent's event loop to perform the following steps:
-</p>
-		<ol>
-			<li>
-<p>
-~IF［
-%~job設定群 ~NEQ ~NULL
-］：
-◎
-↓</p>
-				<ol>
-					<li>
-~IF［
-`~scriptは走れるかどうか検査する$( %~job設定群 ) ~EQ `走るな^i
-］
-⇒
-~RET
-◎
-If job settings is not null, then check if we can run script with job settings. If this returns "do not run" then return.
-</li>
-					<li>
-<p>
-`~scriptを走らすために準備する$( %~job設定群 )
-◎
-If job settings is not null, then prepare to run script with job settings.
-</p>
-
-<p class="note">注記：
-これは、当の~jobが走っている間，`入口~某$の概念に影響する。
-◎
-This affects the entry concept while the job runs.
-</p>
-					</li>
-				</ol>
-			</li>
-			<li>
-<p>
-`~callbackを走らすために準備する$( %現任の設定群 )
-◎
-Prepare to run a callback with incumbent settings.
-</p>
-
-<p class="note">注記：
-これは、当の~jobが走っている間，`現任の某$の概念に影響する。
-◎
-This affects the incumbent concept while the job runs.
-</p>
-			</li>
-			<li>
-<p>
-~IF［
-%~script実行~文脈 ~NEQ ~NULL
-］
-⇒
-`~JS実行~文脈~stack$に %~script実行~文脈 を`~push$する
-◎
-If script execution context is not null, then push script execution context onto the JavaScript execution context stack.
-</p>
-
-<p class="note">注記：
-上で説明したように、これは，当の~jobが走っている間に`作動中の~script$に影響する。
-◎
-As explained above, this affects the active script while the job runs.
-</p>
-			</li>
-			<li>
-<p>
-%結果 ~LET %~job()
-◎
-Let result be job().
-</p>
-
-<p class="note">注記：
-%~job は［
-`NewPromiseReactionJob$jA ／ `NewPromiseResolveThenableJob$jA
-］から返された`抽象-~closure$である。
-◎
-job is an abstract closure returned by NewPromiseReactionJob or NewPromiseResolveThenableJob.
-</p>
-			</li>
-			<li>
-~IF［
-%~script実行~文脈 ~NEQ ~NULL
-］
-⇒
-`~JS実行~文脈~stack$から %~script実行~文脈 を`~pop$する
-◎
-If script execution context is not null, then pop script execution context from the JavaScript execution context stack.
-</li>
-			<li>
-`走らせた~callbackを片付ける$( %現任の設定群 )
-◎
-Clean up after running a callback with incumbent settings.
-</li>
-			<li>
-~IF［
-%~job設定群 ~NEQ ~NULL
-］
-⇒
-`走らせた~scriptを片付ける$( %~job設定群 )
-◎
-If job settings is not null, then clean up after running script with job settings.
-</li>
-			<li>
-~IF［
-%結果 は`中途完了$である
-］
-⇒
-`例外を報告する$( 当の~script, %結果 . `Value^sl )
-◎
-If result is an abrupt completion, then report the exception given by result.[[Value]].
-</li>
-		</ol>
-	</li>
-</ol>
-</div>
-
-				</section>
 				<section id="hostensurecancompilestrings(callerrealm,-calleerealm)">
-<h4 title="HostEnsureCanCompileStrings(callerRealm, calleeRealm)">8.1.5.2. `HostEnsureCanCompileStrings^jA( %callerRealm, %calleeRealm )</h4>
+<h4 title="HostEnsureCanCompileStrings(callerRealm, calleeRealm)">8.1.5.1. `HostEnsureCanCompileStrings^jA( %callerRealm, %calleeRealm )</h4>
 
 <div class="algo">
 <p>
@@ -7511,7 +7254,7 @@ Perform ? EnsureCSPDoesNotBlockStringCompilation(callerRealm, calleeRealm). [CSP
 
   				</section>
 					<section id="the-hostpromiserejectiontracker-implementation">
-<h4 title="HostPromiseRejectionTracker(promise, operation)">8.1.5.3. `HostPromiseRejectionTracker^jA( %promise, %演算 )</h4>
+<h4 title="HostPromiseRejectionTracker(promise, operation)">8.1.5.2. `HostPromiseRejectionTracker^jA( %promise, %演算 )</h4>
 
 <div class="algo">
 <p>
@@ -7621,6 +7364,381 @@ Queue a global task on the DOM manipulation task source given global to fire an 
 </ol>
 </div>
 
+				</section>
+				<section id="integration-with-javascript-jobs">
+<h5 title="Job-related host hooks">8.1.5.3. ~jobに関係する~host用の~hook</h5>
+
+<p>
+~JS仕様は、~job（ `Job^en ）を定義する
+— それは、後で~hostが走らすよう~scheduleされる。
+また，`~JobCallback~Record$を定義する
+— それは、~job（ `job^en ）の一部として~callされる~JS関数を~encapsulateする。
+~JS仕様には、［
+各~jobがどう~scheduleされるか, 各~JobCallbackがどう取扱われるか
+］を定義することを~hostに任せるための，`実装定義$な抽象-演算がいくつかある。
+この節は、~UA~host用にそれらを定義する。
+◎
+The JavaScript specification defines Jobs to be scheduled and run later by the host, as well as JobCallback Records which encapsulate JavaScript functions that are called as part of jobs. The JavaScript specification contains a number of implementation-defined abstract operations that lets the host define how jobs are scheduled and how JobCallbacks are handled. This section defines them for user agent hosts.
+</p>
+
+					<section id="hostcalljobcallback">
+<h6 title="HostCallJobCallback(callback, V, argumentsList)">8.1.5.3.1. `HostCallJobCallback^A(%~callback, %V, %引数~list)</h6>
+
+<div class="algo">
+<p>
+~JS `JAVASCRIPT$r は、その抽象-演算
+`HostCallJobCallback$jA 
+を`実装定義$としている
+— それは、~taskの内側から~JS~callbackを呼出すとき，状態を復旧することを~hostに任せるためにある。
+~HTMLは、［
+`現任の設定群~obj$, `作動中の~script$
+］を復旧する。
+~UAは、次の実装を利用するモノトスル：
+◎
+JavaScript contains an implementation-defined HostCallJobCallback(callback, V, argumentsList) abstract operation to let hosts restore state when invoking JavaScript callbacks from inside tasks. HTML restores the incumbent settings object and the active script. User agents must use the following implementation: [JAVASCRIPT]
+</p>
+<ol>
+	<li>
+%現任の設定群 ~LET %~callback . `HostDefined^sl . `IncumbentSettings^sl
+◎
+Let incumbent settings be callback.[[HostDefined]].[[IncumbentSettings]].
+</li>
+	<li>
+%~script実行~文脈 ~LET %~callback . `HostDefined^sl . `ActiveScriptContext^sl
+◎
+Let script execution context be callback.[[HostDefined]].[[ActiveScriptContext]].
+</li>
+	<li>
+<p>
+`~callbackを走らすために準備する$( %現任の設定群 )
+◎
+Prepare to run a callback with incumbent settings.
+</p>
+
+<p class="note">注記：
+これは、当の~callbackが走っている間，`現任の某$の概念に影響する。
+◎
+This affects the incumbent concept while the callback runs.
+</p>
+	</li>
+	<li>
+<p>
+~IF［
+%~script実行~文脈 ~NEQ ~NULL
+］
+⇒
+`~JS実行~文脈~stack$に %~script実行~文脈 を`~push$する
+◎
+If script execution context is not null, then push script execution context onto the JavaScript execution context stack.
+</p>
+
+<p class="note">注記：
+これは、当の~callbackが走っている間，`作動中の~script$に影響する。
+◎
+This affects the active script while the callback runs.
+</p>
+	</li>
+	<li>
+%結果 ~LET `Call$jA( %~callback . `Callback^sl, %V, %引数~list )
+◎
+Let result be Call(callback. `Callback^sl, V, argumentsList).
+</li>
+	<li>
+~IF［
+%~script実行~文脈 ~NEQ ~NULL
+］
+⇒
+`~JS実行~文脈~stack$から %~script実行~文脈 を`~pop$する
+◎
+If script execution context is not null, then pop script execution context from the JavaScript execution context stack.
+</li>
+	<li>
+`走らせた~callbackを片付ける$( %現任の設定群 )
+◎
+Clean up after running a callback with incumbent settings.
+</li>
+	<li>
+~RET %結果
+◎
+Return result.
+</li>
+</ol>
+</div>
+
+					</section>
+					<section id="hostenqueuepromisejob">
+<h6 title="HostEnqueuePromiseJob(job, realm)">8.1.5.3.2. `HostEnqueuePromiseJob^A(%~job, %~realm)</h6>
+
+<div class="algo">
+<p>
+~JS `JAVASCRIPT$r は、その抽象-演算
+`HostEnqueuePromiseJob$jA
+を`実装定義$としている
+— それは、 `Promise^jc に関係する演算を~scheduleするためにある。
+~HTMLは、そのような演算を`小task~queue$において~scheduleする。
+~UAは、次の実装を利用するモノトスル：
+◎
+JavaScript contains an implementation-defined HostEnqueuePromiseJob(job, realm) abstract operation to schedule Promise-related operations. HTML schedules these operations in the microtask queue. User agents must use the following implementation: [JAVASCRIPT]
+</p>
+<ol>
+	<li>
+<p>
+%~job設定群 ~LET %~realm に応じて
+⇒＃
+~NULL ならば ~NULL ／
+~ELSE_ %~realm 用の`設定群~obj$rM
+◎
+If realm is not null, then let job settings be the settings object for realm. Otherwise, let job settings be null.
+</p>
+
+<div class="note">
+<p>注記：
+%~realm ~NEQ ~NULL の場合、
+%~realm は走らすことになる作者~codeが属する`~realm$になる
+— それは， %~job が［
+`NewPromiseReactionJob$jA から返されたなら，当の~promiseの~handler関数 ／
+`NewPromiseResolveThenableJob$jA から返されたなら，当の~promiseの `then^c 関数
+］が属する~realmになる。
+◎
+If realm is not null, it is the Realm of the author code that will run. When job is returned by NewPromiseReactionJob, it is the realm of the promise's handler function. When job is returned by NewPromiseResolveThenableJob, it is the realm of the then function.
+</p>
+
+<p>
+%~realm ~EQ ~NULL 場合、走らす作者~codeは無いか, 作者~codeは投出することが保証される。
+前者は、作者が走らすものを~code内で渡さなかったからであろう
+— `promise.then(null, null)^c など。
+後者は、廃止された `Proxy^jc が渡されたからである。
+どちらの事例でも、以下において %~job設定群 を利用する段は，すべて飛ばされることになる。
+◎
+If realm is null, either no author code will run or author code is guaranteed to throw. For the former, the author may not have passed in code to run, such as in promise.then(null, null). For the latter, it is because a revoked Proxy was passed. In both cases, all the steps below that would otherwise use job settings get skipped.
+</p>
+</div>
+	</li>
+	<li>
+<p>
+`~surrounding~agent$の`~event~loop$aGの中で，次の手続きを走らす`小taskを~queueする$：
+◎
+Queue a microtask on the surrounding agent's event loop to perform the following steps:
+</p>
+		<ol>
+			<li>
+<p>
+~IF［
+%~job設定群 ~NEQ ~NULL
+］：
+◎
+↓</p>
+				<ol>
+					<li>
+~IF［
+`~scriptは走れるかどうか検査する$( %~job設定群 ) ~EQ `走るな^i
+］
+⇒
+~RET
+◎
+If job settings is not null, then check if we can run script with job settings. If this returns "do not run" then return.
+</li>
+					<li>
+<p>
+`~scriptを走らすために準備する$( %~job設定群 )
+◎
+If job settings is not null, then prepare to run script with job settings.
+</p>
+
+<p class="note">注記：
+これは、当の~jobが走っている間，`入口~某$の概念に影響する。
+◎
+This affects the entry concept while the job runs.
+</p>
+					</li>
+				</ol>
+			</li>
+			<li>
+<p>
+%結果 ~LET %~job()
+◎
+Let result be job().
+</p>
+
+<p class="note">注記：
+%~job は［
+`NewPromiseReactionJob$jA ／ `NewPromiseResolveThenableJob$jA
+］から返された`抽象-~closure$である。
+［
+前者／後者
+］から返されたときの，当の~promiseの［
+~handler関数 ／ `then^c 関数
+］は、`~JobCallback~Record$内に包装される。
+~HTMLは、
+`HostMakeJobCallback$A において`作動中の~script$用に［
+`現任の設定群~obj$, `~JS実行~文脈$
+］を保存した上で，
+`HostCallJobCallback$A において それらを復旧する。
+◎
+job is an abstract closure returned by NewPromiseReactionJob or NewPromiseResolveThenableJob. The promise's handler function when job is returned by NewPromiseReactionJob, and the then function when job is returned by NewPromiseResolveThenableJob, are wrapped in JobCallback Records. HTML saves the incumbent settings object and a JavaScript execution context for to the active script in HostMakeJobCallback and restores them in HostCallJobCallback.
+</p>
+			</li>
+			<li>
+~IF［
+%~job設定群 ~NEQ ~NULL
+］
+⇒
+`走らせた~scriptを片付ける$( %~job設定群 )
+◎
+If job settings is not null, then clean up after running script with job settings.
+</li>
+			<li>
+~IF［
+%結果 は`中途完了$である
+］
+⇒
+`例外を報告する$( 当の~script, %結果 . `Value^sl )
+◎
+If result is an abrupt completion, then report the exception given by result.[[Value]].
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+					</section>
+					<section id="hostmakejobcallback">
+<h6 title="HostMakeJobCallback(callable)">8.1.5.3.3. `HostMakeJobCallback^A(%~callable)</h6>
+
+<div class="algo">
+<p>
+~JS `JAVASCRIPT$r は、その抽象-演算
+`HostMakeJobCallback$jA
+を`実装定義$としている
+— それは、［
+`~task$の内側から~callされた~JS~callbackに，状態を伴わせる
+］ことを~hostに任せるためにある。
+~HTMLは、`作動中の~script$用の［
+`現任の設定群~obj$, `~JS実行~文脈$
+］を保存することにより，
+<span id="incumbent-settings-object-tracking-in-promises">
+`現任の設定群~obj$を~promise内で追跡する
+</span>。
+~UAは、次の実装を利用するモノトスル：
+◎
+JavaScript contains an implementation-defined HostMakeJobCallback(callable) abstract operation to let hosts attach state to JavaScript callbacks that are called from inside tasks. HTML tracks the incumbent settings object in promises by saving the incumbent settings object and a JavaScript execution context for the active script. User agents must use the following implementation: [JAVASCRIPT]
+</p>
+<ol>
+	<li>
+%現任の設定群 ~LET `現任の設定群~obj$
+◎
+Let incumbent settings be the incumbent settings object.
+</li>
+	<li>
+%作動中の~script ~LET `作動中の~script$
+◎
+Let active script be the active script.
+</li>
+	<li>
+%~script実行~文脈 ~LET ~NULL
+◎
+Let script execution context be null.
+</li>
+	<li>
+<p>
+~IF［
+%作動中の~script ~NEQ ~NULL
+］
+⇒
+%~script実行~文脈 ~SET 次のようにされた新たな`~JS実行~文脈$
+⇒＃
+~Function~field ~SET ~NULL,
+~Realm~field ~SET %作動中の~script の`設定群~obj$sCの`~Realm$enV,
+~ScriptOrModule成分 ~SET %作動中の~script の`~record$sC
+◎
+If active script is not null, set script execution context to a new JavaScript execution context, with its Function field set to null, its Realm field set to active script's settings object's Realm, and its ScriptOrModule set to active script's record.
+</p>
+
+<p class="note">注記：
+下に見られるように，これは、現在の`作動中の~script$を
+— 後で当の~job~callback【 %~callable 】が呼出される時点まで —
+伝播するために利用される。
+◎
+As seen below, this is used in order to propagate the current active script forward to the time when the job callback is invoked.
+</p>
+
+<div class="example">
+
+<p>
+%作動中の~script ~NEQ ~NULL のときに，それを この仕方で保存することは、次の事例で有用になる：
+◎
+A case where active script is non-null, and saving it in this way is useful, is the following:
+</p>
+
+<pre class="lang-js">Promise.resolve('import(``^./example.mjs``^)').then(eval);
+</pre>
+
+<p>
+この段（および， `HostCallJobCallback$A 内でそれを利用する手続き）を経ない限り、
+`import()$m 式を評価するときに，`作動中の~script$は無いことになる
+— `eval()$m は、特定0の`~script$を出自にしない組込みの関数なので。
+◎
+Without this step (and the steps that use it in HostCallJobCallback), there would be no active script when the import() expression is evaluated, since eval() is a built-in function that does not originate from any particular script.
+</p>
+
+<p>
+この段が経ることで，
+%作動中の~script は 上の~codeから~jobの中へ伝播され、
+`import()$m は，元の~scriptの`基底~URL$sCを適切に利用できるようになる。
+◎
+With this step in place, the active script is propagated from the above code into the job, allowing import() to use the original script's base URL appropriately.
+</p>
+</div>
+
+<div class="example">
+
+<p>
+%作動中の~script は、利用者が次のような~buttonを~clickした場合には，
+~NULL になり得る：
+◎
+active script can be null if the user clicks on the following button:
+</p>
+
+<pre class="lang-html">&lt;button onclick="Promise.resolve('import(``^./example.mjs``^)').then(eval)"&gt;Click me&lt;/button&gt;
+</pre>
+
+<p>
+この事例では、`~event~handler$用の~JS関数は，`~event~handlerの現在の値を取得する$~algoにより作成され、それは［
+`ScriptOrModule^sl が ~NULL 値にされた関数
+］を作成することになる。
+したがって、~promise機構が `HostMakeJobCallback$A を~callするときも，渡される`作動中の~script$は無いことになる。
+◎
+In this case, the JavaScript function for the event handler will be created by the get the current value of the event handler algorithm, which creates a function with null [[ScriptOrModule]] value. Thus, when the promise machinery calls HostMakeJobCallback, there will be no active script to pass along.
+</p>
+
+<p>
+その帰結として、このことは，［
+`import()$m 式が評価される時点でも，`作動中の~script$は依然として無い
+］ことを意味する。
+幸いにも、それは，この仕様による［
+`HostResolveImportedModule$A,
+`HostImportModuleDynamically$A
+］の実装により取扱われる
+— `現在の設定群~obj$の`~API用~基底~URL$enVを利用するよう~fall-backすることにより。
+◎
+As a consequence, this means that when the import() expression is evaluated, there will still be no active script. Fortunately that is handled by our implementations of HostResolveImportedModule and HostImportModuleDynamically, by falling back to using the current settings object's API base URL.
+</p>
+</div>
+
+	</li>
+	<li>
+~RET `~JobCallback~Record${
+`Callback^sl: %~callable, `HostDefined^sl: {
+`IncumbentSettings^sl: %現任の設定群,
+`ActiveScriptContext^sl: %~script実行~文脈
+} }
+◎
+Return the JobCallback Record { [[Callback]]: callable, [[HostDefined]]: { [[IncumbentSettings]]: incumbent settings, [[ActiveScriptContext]]: script execution context } }.
+</li>
+</ol>
+</div>
+
+					</section>
 				</section>
 				<section id="integration-with-the-javascript-module-system">
 <h4 title="Module-related host hooks">8.1.5.4 ~moduleに関係する~host~hook</h4>
