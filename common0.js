@@ -1701,8 +1701,8 @@ registry::::レジストリ
 	非互換:breaking
 	互換でない:incompatible
 	非互換性:incompatibility
-後方-:backward:~
-前方-:forward:~
+後方-:backwards:~
+前方-:forwards:~
 過去互換:quirks:~
 非推奨に:deprecate:~
 非推奨d:deprecated:非推奨
