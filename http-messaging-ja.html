@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP/1.1
-spec_date:2021-01-16
-trans_update:2021-01-17
+spec_date:2021-02-06
+trans_update:2021-02-08
 source_checked:201210
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-messaging-latest.html
@@ -85,6 +85,7 @@ p.method:~HTTPmsg#p.method
 7.1.2:#chunked.trailer.section
 7.1.3:#decoding.chunked
 9.6:#persistent.tear-down
+9.8:#tls.connection.closure
 11:#security.considerations
 A:#collected.abnf
 B:#differences.between.http.and.mime
@@ -2570,16 +2571,15 @@ Unless a transfer coding other than chunked has been applied, a client that send
 </p>
 
 <p>
-［
-`~message本体$を包含している要請
-］を送信する`~UA$は、［
+`~UA$は、［
+`~message本体$を包含する要請
+］を送信するときは，妥当な `Content-Length$h ~headerを送信するか`~chunked転送~符号法$を利用しなければナラナイ。
+`~client$は、［
 `~server$が`~HTTP11$（以上の~version）の要請を取扱える
-］ことを知っていない場合には，［
-妥当な `Content-Length$h ~header
-］を送信しなければナラナイ
+］ことを知っている場合を除き，`~chunked転送~符号法$を利用してはナラナイ
 — そのような知識は、特定の利用者~環境設定や, ~~直前に受信した応答の`~version$を記憶する形をとるであろう。
 ◎
-A user agent that sends a request containing a message body MUST send a valid Content-Length header field if it does not know the server will handle HTTP/1.1 (or later) requests; such knowledge can be in the form of specific user configuration or by remembering the version of a prior received response.
+A user agent that sends a request that contains a message body MUST send either a valid Content-Length header field or use the chunked transfer coding. A client MUST NOT use the chunked transfer encoding unless it knows the server will handle HTTP/1.1 (or later) requests; such knowledge can be in the form of specific user configuration or by remembering the version of a prior received response.
 </p>
 
 <div class="p">
@@ -4342,11 +4342,6 @@ This specification has introduced new requirements on request parsing, particula
 長さ／~chunkで区切られる~frame法
 ］の利用
 ］に依拠する。
-完全性を得るための追加的な仕組み
-— ~hash関数や, 内容に適用される~digital署名など —
-は、各種［
-拡張-可能な~metadata~field
-］を介して，選択的に~messageに追加できる。
 歴史的に、［
 単一な，完全性の仕組み
 ］の欠如は，［
@@ -4358,15 +4353,17 @@ This specification has introduced new requirements on request parsing, particula
 ~message完全性の検証yが不可欠な環境
 ］下での利用は増えている。
 ◎
-HTTP does not define a specific mechanism for ensuring message integrity, instead relying on the error-detection ability of underlying transport protocols and the use of length or chunk-delimited framing to detect completeness. Additional integrity mechanisms, such as hash functions or digital signatures applied to the content, can be selectively added to messages via extensible metadata fields. Historically, the lack of a single integrity mechanism has been justified by the informal nature of most HTTP communication. However, the prevalence of HTTP as an information access mechanism has resulted in its increasing use within environments where verification of message integrity is crucial.
+HTTP does not define a specific mechanism for ensuring message integrity, instead relying on the error-detection ability of underlying transport protocols and the use of length or chunk-delimited framing to detect completeness. Historically, the lack of a single integrity mechanism has been justified by the informal nature of most HTTP communication. However, the prevalence of HTTP as an information access mechanism has resulted in its increasing use within environments where verification of message integrity is crucial.
 </p>
 
 <p>
-`~UA$には、［
-~messageの完全性の失敗を検出して報告するための，環境設定-可能な手段
-］を［
-完全性が必要とされる環境~用に可能化できる
-］ように実装することが奨励される。
+"`https$c" ~schemeで供される仕組みは、認証された暗号化など，~messageの改変に抗する保護を供する。
+しかしながら，［
+接続の~closureが利用されても，~messageは切落され得ない
+］ことを確保するよう~careする必要がある（ `9.8$sec を見よ）。
+`~UA$は、不完全な~messageに対し，［
+受容するのを拒否する／特別に扱う
+］かもしれない。
 例えば，［
 医療~履歴や薬剤相互作用についての情報
 ］を視るために利用されている~browserは、［
@@ -4377,11 +4374,27 @@ HTTP does not define a specific mechanism for ensuring message integrity, instea
 そのような仕組みは、［
 ~UA拡張や, 応答~内に~message完全性~metadataが在ること
 ］を介して，選択的に可能化できるであろう。
-`~UA$は、そのような検証yが欲されるときは，最低でも［
-応答~messageは完全か`不完全$かを，利用者が判別できる
-］ような，何らかの指示を供する~OUGHT。
 ◎
-User agents are encouraged to implement configurable means for detecting and reporting failures of message integrity such that those means can be enabled within environments for which integrity is necessary. For example, a browser being used to view medical history or drug interaction information needs to indicate to the user when such information is detected by the protocol to be incomplete, expired, or corrupted during transfer. Such mechanisms might be selectively enabled via user agent extensions or the presence of message integrity metadata in a response. At a minimum, user agents ought to provide some indication that allows a user to distinguish between a complete and incomplete response message (Section 8) when such verification is desired.
+The mechanisms provided with the "https" scheme, such as authenticated encryption, provide protection against modification of messages. Care is needed however to ensure that connection closure cannot be used to truncate messages (see Section 9.8). User agents might refuse to accept incomplete messages or treat them specially. For example, a browser being used to view medical history or drug interaction information needs to indicate to the user when such information is detected by the protocol to be incomplete, expired, or corrupted during transfer. Such mechanisms might be selectively enabled via user agent extensions or the presence of message integrity metadata in a response.
+</p>
+
+<p>
+"`http$c" ~schemeは、~messageに対する［
+偶発的／悪意的
+］な改変に抗する保護は、供さない。
+◎
+The "http" scheme provides no protection against accidental or malicious modification of messages.
+</p>
+
+<p>
+"`https$c" ~schemeが利用されているときでも、［
+中継者による，~messageに対する求まれない改変
+］の~riskを軽減するために，~protocolに対する拡張が利用されるかもしれない。
+完全性は、拡張-可能な~metadata~fieldを介して~messageに選択的に追加された［
+~hash関数／~digital署名
+］を利用して確約されることもあろう。
+◎
+Extensions to the protocol might be used to mitigate the risk of unwanted modification of messages by intermediaries, even when the "https" scheme is used. Integrity might be assured by using hash functions or digital signatures that are selectively added to messages via extensible metadata fields.
 </p>
 
 		</section>
@@ -4405,7 +4418,7 @@ HTTP relies on underlying transport protocols to provide message confidentiality
 </p>
 
 <p>
-機密的~接続を要求する`資源$を識別するためには、 "`https$c" `scheme^p を利用できる。
+機密的~接続を要求する`資源$を識別するためには、 "`https$c" ~schemeを利用できる。
 ◎
 The "https" scheme can be used to identify resources that require a confidential connection, as described in Section 4.2.2 of [Semantics].
 </p>
@@ -4867,9 +4880,3 @@ See Appendix "Acknowledgments" of [Semantics].
 
 	</section>
 </main></div>
-＊
-payload data
-payload
-	content
-Payload
-	Content
