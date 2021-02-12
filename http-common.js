@@ -425,7 +425,6 @@ p.date3:~HTTPinfra#p.date3
 	//Semantics
 p.byte-content-range:~HTTPsem#p.byte-content-range
 p.byte-range-resp:~HTTPsem#p.byte-range-resp
-p.charset:~HTTPsem#p.charset
 p.complete-length:~HTTPsem#p.complete-length
 p.connection-option:~HTTPsem#p.connection-option
 p.content-coding:~HTTPsem#p.content-coding
@@ -1178,8 +1177,6 @@ escaping::::エスケープ処理
 単数:singleton:::~
 桁:digit::~
 	構文~上:syntactical
-正準-:canonical::~
-	正準-化:canonicalization
 移行:transition::~
 稀:rare:~
 番号:number:~

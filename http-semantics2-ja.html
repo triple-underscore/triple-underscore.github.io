@@ -13,7 +13,7 @@
 ●●options
 
 spec_title:HTTP Semantics
-trans_update:2021-02-08
+trans_update:2021-02-12
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html
 abbr_url:HTTPsem
@@ -247,6 +247,8 @@ base16:~4648#section-8
 空~行l:~HTTPmsg#empty-line
 
 要請~密入~攻撃:~HTTPmsg#request.smuggling
+応答~分割~攻撃:~HTTPmsg#response.splitting
+
 
 cite.内容~符号法~registry:~IANA-a/http-parameters
 cite.~HTTP範囲~単位~registry:~IANA-a/http-parameters
@@ -262,7 +264,6 @@ r.REST:~HTTPinfra#REST
 r.RFC1950:~HTTPinfra#RFC1950
 r.RFC1951:~HTTPinfra#RFC1951
 r.RFC1952:~HTTPinfra#RFC1952
-r.RFC2045:~HTTPinfra#RFC2045
 r.RFC2046:~HTTPinfra#RFC2046
 r.RFC2068:~HTTPinfra#RFC2068
 r.RFC2295:~HTTPinfra#RFC2295
@@ -335,8 +336,8 @@ Caching/4:~HTTPcache#constructing.responses.from.caches
 Caching/4.4:~HTTPcache#invalidation
 Messaging/3.3:~HTTPmsg#reconstructing.target.uri
 Messaging/6.2:~HTTPmsg#body.content-length
+Messaging/9.5:~HTTPmsg#persistent.failures
 Messaging/9.6:~HTTPmsg#persistent.tear-down
-Messaging/B:~HTTPmsg#differences.between.http.and.mime
 
 RFC7231/B:~RFC7231#appendix-B
 
@@ -534,7 +535,7 @@ scale::::スケール
 	~~強いるものではない:not prevent
 	~~望ましくない:unfortunate
 	~~落と:markdown
-	反し:contrary
+	反し／反する:contrary
 	大きく:highly
 	It knows that:わかっている
 	~~特徴がある:distinguished
@@ -688,7 +689,6 @@ sniff:
 自動解凍-:automatic に decompress:~
 視聴者:audience:~
 話者:-literate audience:~
-配達:deployment:~
 遅い:slowな:~
 選好順:descending preference の order:選好度の高い順
 再検証:revalidation::~
@@ -803,6 +803,7 @@ real-time:::リアルタイム
 	〜の場合でも:including 〜
 	~robot的:robotic
 	入らない:outside
+	区切るため:for delimitation
 
 	●他の語
 	一種／:variation
@@ -823,7 +824,6 @@ real-time:::リアルタイム
 	圧縮-済み:compressed
 	~~一過性の:transitory
 	~~正常に~~処理されました。:It worked!
-	~~単独の:bare
 	~~伝える:tell
 	~~直前:-
 	~~直前:just prior to
@@ -1198,12 +1198,23 @@ A connection might be used for multiple request/response exchanges. The mechanis
 </p>
 
 <p>
-応答は（`最終-応答$, `暫定-応答$どちらも）、要請を受信した後のいつでも
+すべての応答は、`状態s~code$に関わらず（すなわち，`暫定-応答$も含む），要請を受信し始めた後のいつでも
 — 要請がまだ完了していなくとも —
-送信できる。
-しかしながら，`~client$（`中継者$も含む）は、応答が適度な時間内に来なければ，要請を放棄することもある。
+送信され得る。
+応答は、対応する要請が完了する前に完了し得る。
+同様に，`~client$には、応答に対し特定の量の時間だけ待機することは期待されない。
+~client（`中継者$も含む）は、応答が適度な時間内に来なければ，要請を放棄することもある。
 ◎
-Responses (both final and interim) can be sent at any time after a request is received, even if it is not yet complete. However, clients (including intermediaries) might abandon a request if the response is not forthcoming within a reasonable period of time.
+All responses, regardless of the status code (including interim responses) can be sent at any time after a request is received, even if the request is not yet complete. A response can complete before its corresponding request is complete. Likewise, clients are not expected to wait any specific amount of time for a response. Clients (including intermediaries) might abandon a request if the response is not forthcoming within a reasonable period of time.
+</p>
+
+<p>
+`~client$は、要請を送信し終える前に 対する応答を受信したときでも，要請の送信を継続するベキである
+— ただし、それに反する明示的な指示を受信した場合は除く（例：
+`Messaging/9.5$sec ／ `RFC7540/6.4$sec
+を見よ）。
+◎
+A client that receives a response while the associated request is still being sent SHOULD continue sending that request, unless it receives an explicit indication to the contrary (see, e.g., Section 9.5 of [Messaging] and Section 6.4 of [RFC7540]).
 </p>
 
 		</section>
@@ -1260,7 +1271,7 @@ An intermediary MUST NOT forward a message to itself unless it is protected from
 ~HTTP~messageは、［
 増分的に処理する／`下流$へ回送する
 ］ときには，~streamとして構文解析できる。
-しかしながら，`受信者$は、増分的~送達による部分的~messageには，依拠できない
+しかしながら，`受信者$は、増分的な送達による部分的~messageには依拠できない
 — 一部の実装は、［
 ~network効率性,
 ~security検査,
@@ -2334,17 +2345,16 @@ Media types ought to be registered with IANA according to the procedures defined
 
 <p>
 ~HTTPでは、［
-~textな表現の，文字~符号化~scheme `RFC6365$r
-］を指示したり折衝するときに，~charset名（ `charset$p ）を利用する。
-`charset$p は、文字大小無視~tokenにより識別される。
+~textな表現の，文字~符号化~scheme `RFC6365/1.3$sec
+］を指示したり折衝するときに，~charset名を利用する。
+この文書に定義される~fieldにおいては、~charset名は［
+`Content-Type$h の `parameters$p 内に／
+`Accept-Encoding$p 用に素な~token形として
+］出現する。
+どちらの事例でも、~charset名は文字大小無視で照合される。
 ◎
-HTTP uses charset names to indicate or negotiate the character encoding scheme of a textual representation [RFC6365]. A charset is identified by a case-insensitive token.
+HTTP uses charset names to indicate or negotiate the character encoding scheme ([RFC6365], Section 1.3) of a textual representation. In the fields defined by this document, charset names appear either in parameters (Content-Type), or, for Accept-Encoding, in the form of a plain token. In both cases, charset names are matched case-insensitively.
 </p>
-
-<pre class="bnf">
-`charset@p
-    = `token$p
-</pre>
 
 <p>
 ~charset名は、`RFC2978/2$sec にて定義される手続きに則って，~IANA
@@ -2362,64 +2372,8 @@ Note: In theory, charset names are defined by the "mime-charset" ABNF rule defin
 </p>
 
 			</section>
-			<section id="canonicalization.and.text.defaults">
-<h4 title="Canonicalization and Text Defaults">8.3.3. 正準-化, ~textにおける既定</h4>
-
-<p>
-~MIME型は、［
-~native符号化~形式が様々な~system
-］間でも相互運用-可能にするため，正準-形で登録される。
-［
-MIME（ `Multipurpose Internet Mail Extensions^en ）`RFC2045$r
-］にて述べられている多くの理由と同じ理由から、［
-~HTTPを介して 選定される／転送される`表現$
-］は正準-形にされる~OUGHT。
-しかしながら，［
-~email配達（すなわち，~messageを格納して~peerへ回送する）の処理能 特性
-］は、［
-~HTTPや~Web（~serverに基づく情報~service）において共通的なそれ
-］からは有意に異なる。
-更には、~MIMEによる拘束は，古い~mail転送~protocolとの互換性を~~目的にしており、~HTTPには適用されない（ `Messaging/B$sec を見よ）。
-◎
-Media types are registered with a canonical form in order to be interoperable among systems with varying native encoding formats. Representations selected or transferred via HTTP ought to be in canonical form, for many of the same reasons described by the Multipurpose Internet Mail Extensions (MIME) [RFC2045]. However, the performance characteristics of email deployments (i.e., store and forward messages to peers) are significantly different from those common to HTTP and the Web (server-based information services). Furthermore, MIME's constraints for the sake of compatibility with older mail transfer protocols do not apply to HTTP (see Appendix B of [Messaging]).
-</p>
-
-<p>
-~MIMEの正準-形では、［
-"`text^c" `~MIME型$を成すすべての下位型
-］において，~text改行に `CRLF$P を利用することが要求される。
-一方で，~HTTPでは、［
-改行が~~単独の `CR$P ／ `LF$P で表現された，~text~media
-］の転送も，［
-そのような改行が`表現$ 全体で~~一貫している
-］ときには 許容される。
-~HTTP［
-`送信者$／`受信者$
-］は、~text~media内に［
-`CRLF$P 並びや, ~~単独の `CR$P ／ `LF$P による改行
-］を`生成し$てもヨイ
-— また，構文解析できなければナラナイ。
-加えて，~HTTPにおける~text~mediaは、［
-`CR$P, `LF$P に，~octet `0D^X, `0A^X 【！ 13, 10】（同順）を利用する`~charset$
-］に制限されない。
-この，改行に関する柔軟性は、［
-`表現$の中に， "`text^c" ~MIME型としてアテガわれた~text
-］のみに適用され，［
-"`multipart$c" 型や, `内容$の外側の~HTTP要素（例：`~header$）
-］には適用されない。
-◎
-MIME's canonical form requires that media subtypes of the "text" type use CRLF as the text line break. HTTP allows the transfer of text media with plain CR or LF alone representing a line break, when such line breaks are consistent for an entire representation. An HTTP sender MAY generate, and a recipient MUST be able to parse, line breaks in text media that consist of CRLF, bare CR, or bare LF. In addition, text media in HTTP is not limited to charsets that use octets 13 and 10 for CR and LF, respectively. This flexibility regarding line breaks applies only to text within a representation that has been assigned a "text" media type; it does not apply to "multipart" types or HTTP elements outside the content (e.g., header fields).
-</p>
-
-<p>
-`表現$が ある`内容~符号法$により符号化される場合、下層の~dataは，符号化されるに先立って，上で定義した形にされる~OUGHT。
-◎
-If a representation is encoded with a content-coding, the underlying data ought to be in a form defined above prior to being encoded.
-</p>
-
-			</section>
 			<section id="multipart.types">
-<h4 title="Multipart Types">8.3.4. `multipart^c 型</h4>
+<h4 title="Multipart Types">8.3.3. `multipart^c 型</h4>
 
 <p>
 ~MIMEは、［
@@ -2956,16 +2910,41 @@ Aside from the cases defined above, in the absence of Transfer-Encoding, an orig
 Any Content-Length field value greater than or equal to zero is valid. Since there is no predefined limit to the length of content, a recipient MUST anticipate potentially large decimal numerals and prevent parsing errors due to integer conversion overflows (Section 17.5).
 </p>
 
-<div class="p">
 <p>
-受信した~message内に `Content-Length^h ~headerが在って，［
-その`~field値$は、~comma区切りの~list（ `5.6.1$sec ）として，複数個の同じ~decimal値からなる場合（例： `Content-Length: 42, 42^c ）
-］†、`上流$の~message処理器が［
-`Content-Length^h ~headerを重複して`生成し$たか, または`結合-$した
-］ことを指示している。
-そのような場合，`受信者$は、次のいずれかを行わなければナラナイ：
+`Content-Length^h は、~HTTP11においては~messageを区切るために利用されるので，その`~field値$は［
+`下流$の`受信者$が，~messageを どう構文解析するか
+］に影響iし得る
+— 直近の接続が~HTTP11を利用していないときでも。
+下流の ある`中継者$が~messageを回送している下で、受信した~messageにおいて
+`Content-Length^h の~field値が その~frame法と整合でない場合，［
+`要請~密入~攻撃$／`応答~分割~攻撃$
+］に因る~securityの失敗をもたらすかもしれない。
 ◎
-If a message is received that has a Content-Length header field value consisting of the same decimal value as a comma-separated list (Section 5.6.1) — for example, "Content-Length: 42, 42" — indicating that duplicate Content-Length header fields have been generated or combined by an upstream message processor, then the recipient MUST either＼
+Because Content-Length is used for message delimitation in HTTP/1.1, its field value can impact how the message is parsed by downstream recipients even when the immediate connection is not using HTTP/1.1. If the message is forwarded by a downstream intermediary, a Content-Length field value that is inconsistent with the received message framing might cause a security failure due to request smuggling or response splitting.
+</p>
+
+<p>
+よって，`送信者$は、受信した~messageに `Content-Length^h ~headerが在って その`~field値$が次のいずれかに該当する場合には，当の~messageを回送してはナラナイ
+⇒＃
+(A) 不正であることが既知である／
+(B) 上の~ABNFに合致していない
+◎
+As a result, a sender MUST NOT forward a message with a Content-Length header field value that is known to be incorrect.
+◎
+Likewise, a sender MUST NOT forward a message with a Content-Length header field value that does not match the ABNF above,＼
+</p>
+
+<div>
+<p>
+ただし， (A) には該当しないが (B) に該当する場合、次の例外がある：
+~field値が［
+~commaで分離された~list（ `5.6.1$sec ）として，複数個の同じ~decimal値からなる
+］場合（例： `Content-Length: 42, 42^c ）†、`上流$の~message処理器が［
+`Content-Length^h ~headerを重複して`生成し$たか, または`結合-$した
+］ことを指示している
+— そのような場合，`受信者$は、次のいずれかを行わなければナラナイ：
+◎
+with one exception: If a message is received that has a Content-Length header field value consisting of the same decimal value as a comma-separated list (Section 5.6.1) — for example, "Content-Length: 42, 42" — indicating that duplicate Content-Length header fields have been generated or combined by an upstream message processor, then the recipient MUST either＼
 </p>
 <ul>
 	<li id="invalid-Content-Length">
@@ -2983,13 +2962,10 @@ replace the duplicated field values with a single valid Content-Length field con
 </ul>
 
 <p class="trans-note">【†
-`Content-Length^h は`~listに基づく~field$ではないが、ここでは受容することも許容されている。
-異なる数や妥当でない値が混じっている場合、`~HTTP11$においては，
-<a href="~HTTPmsg#invalid-Content-Length">~message~frame法は妥当でない</a>
-とされ，回復-不能な~errorになる。
-】【†
+`Content-Length^h は`~listに基づく~field$ではないが、この場合に限り，許容され得る。
 同じ数を表現する異なる値（ "`042^c" と "`42^c" など）でも，同様になると思われる。
 】</p>
+
 </div>
 
 		</section>
@@ -5816,10 +5792,9 @@ A robotic user agent SHOULD send a valid From header field so that the person re
 <p>
 `~server$は、 `From^h ~headerを［
 ~access制御や認証
-］用に利用するベキでない
-— ほとんどの受信者は、この~headerの値を公な情報であると見做すことになるので。
+］用に利用するベキでない。
 ◎
-A server SHOULD NOT use the From header field for access control or authentication, since most recipients will assume that the field value is public information.
+A server SHOULD NOT use the From header field for access control or authentication.
 </p>
 
 			</section>
@@ -8056,7 +8031,7 @@ text/html;level=3 	0.7
 </div>
 
 <p class="note">注記：
-~UAは、一定 範囲の~media用に，`品質~値$の既定の集合を供し得る。
+~UAは、一定 範囲の~media用に，`品質~値$の既定の集合を供するかもしれない。
 しかしながら，~UAが［
 他の具現化~agentとヤリトリし得ない閉な~system
 ］でない限り、この既定の集合は，利用者により環境設定できる~OUGHT。
@@ -8084,10 +8059,11 @@ The "Accept-Charset" header field can be sent by a user agent to indicate its pr
 
 <pre class="bnf">
 `Accept-Charset@p
-    = #( ( `charset$p / "*" ) [ `weight$p ] )
+    = #( ( `token$p / "*" ) [ `weight$p ] )
 </pre>
+
 <p>
-各~charset名は、`8.3.2$sec にて定義される。
+~charset名（ `token^p ）は、`8.3.2$sec にて定義される。
 `~UA$は、各~charsetに［
 利用者の相対的~選好を指示する`品質~値$
 ］を結付けてもヨイ。

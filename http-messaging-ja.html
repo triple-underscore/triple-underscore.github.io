@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP/1.1
-spec_date:2021-02-06
-trans_update:2021-02-08
+spec_date:2021-02-11
+trans_update:2021-02-12
 source_checked:201210
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-messaging-latest.html
@@ -56,7 +56,7 @@ p.method:~HTTPmsg#p.method
 空~行l:~HTTPmsg#empty-line
 応答待ち要請:~HTTPmsg#outstanding-request
 
-~message本体:#message.body
+~message本体:#message-body
 ~message本体の長さ:~HTTPmsg#message.body.length
 
 ~chunked:~HTTPmsg#chunked.encoding
@@ -84,6 +84,7 @@ p.method:~HTTPmsg#p.method
 7.3:#transfer.coding.registry
 7.1.2:#chunked.trailer.section
 7.1.3:#decoding.chunked
+8:#incomplete.messages
 9.6:#persistent.tear-down
 9.8:#tls.connection.closure
 11:#security.considerations
@@ -220,7 +221,6 @@ D.4:#changes.since.02
 順位:rank:~
 壊れて:corruptして:~
 免除-:exempt:~
-無頓着:oblivious:~
 流儀:fashion:~
 超越-:transcend:~
 古代の:ancientな:~
@@ -231,9 +231,7 @@ D.4:#changes.since.02
 	分野:areas
 	~~確立:making
 	備えておく:prepare
-	つもりはない:unprepared
 	用意はない:unwilling to
-	必要とあらば，:be willing to
 	疑いを示すもの:call into question
 	目を向け:regard
 	最低でも:at a minimum
@@ -256,6 +254,7 @@ D.4:#changes.since.02
 被害:damage:~
 迂回-:bypass:~
 checksum::::チェックサム
+	晒され:expose
 
 	●network
 IP:
@@ -292,6 +291,9 @@ US-ASCII:
 	切落され:truncation
 数字:digit:~
 	桁:digit
+正準-:canonical::~
+	正準-化:canonicalization
+
 	前後:around
 	前後:preface or follow
 	0 個以上の:optional leading
@@ -342,6 +344,7 @@ multibyte::::マルチバイト
 	格納-:storage
 	書込み側のみ~close:half-close
 	場合:potential
+	終了させる:terminal
 
 	●他の語
 	一度:once
@@ -900,9 +903,9 @@ The presence of such whitespace in a request might be an attempt to trick a serv
 ］ときに，［
 `HTTP-message$p 文法に合致しない~octet列
 ］を受信したときには、上に挙げた堅牢性の例外を除き，
-`400$st 応答で応答するベキである。
+`400$st 応答で応答した上で接続を~closeするベキである。
 ◎
-When a server listening only for HTTP request messages, or processing what appears from the start-line to be an HTTP request message, receives a sequence of octets that does not match the HTTP-message grammar aside from the robustness exceptions listed above, the server SHOULD respond with a 400 (Bad Request) response.
+When a server listening only for HTTP request messages, or processing what appears from the start-line to be an HTTP request message, receives a sequence of octets that does not match the HTTP-message grammar aside from the robustness exceptions listed above, the server SHOULD respond with a 400 (Bad Request) response and close the connection.
 </p>
 
 		</section>
@@ -2023,7 +2026,9 @@ replace each received obs-fold with one or more SP octets prior to interpreting 
 <h2 title="Message Body">6. ~message本体</h2>
 
 <p>
-~HTTP11~messageの~message本体（もし在れば）は、当の［
+~HTTP11~messageの
+`~message本体@
+は、（もし在れば）当の［
 要請／応答
 ］の`内容$を運ぶために利用される。
 `Transfer-Encoding$h に述べるように，`転送~符号法$が適用されていない限り、~message本体は，`内容$に一致する。
@@ -2164,7 +2169,7 @@ Transfer-Encoding: gzip, chunked
 </pre>
 
 <p>
-`内容$が，~message本体を形成する際に［
+`内容$は、`~message本体$を形成する際に［
 "`gzip$c" 符号法を利用して圧縮された上で，
 ~chunked符号法を利用して~chunk化されている
 ］ことを指示する。
@@ -2191,7 +2196,7 @@ Unlike Content-Encoding (Section 8.4.1 of [Semantics]), Transfer-Encoding is a p
 `HEAD$m 要請に対する応答 ／
 `GET$m 要請に対する `304$st 応答
 ］内に送信されてもヨイ。
-どちらの応答も，~message本体を内包しない
+どちらの応答も，`~message本体$を内包しない
 — それは、［
 要請が条件付きでない `GET$m であったとするとき，`生成元~server$が~message本体に適用することになる`転送~符号法$
 ］を指示する。
@@ -2428,7 +2433,7 @@ the message body length cannot be determined reliably; the server MUST respond w
 If a message is received without Transfer-Encoding and with an invalid Content-Length header field, then＼
 </dt>
 	<dd>
-<p id="invalid-Content-Length">
+<p>
 ~message~frame法は妥当でない。
 その`~field値$が［
 ~comma区切りの~list（ `Semantics/5.6.1$sec ）として成功裡に構文解析でき、~list内のすべての値は，妥当かつ互いに同じである場合
@@ -3186,20 +3191,16 @@ If a response terminates in the middle of the header section (before the empty l
 
 <div class="p">
 <p>
-次のとき、~messageは
-`不完全@
-とされる：
+次のどちらにも該当しない~messageは、`不完全$とされる：
 </p>
 <ul>
 	<li>
-`~message本体$の`転送~符号法$に`~chunked$が利用されていて，符号化を終了させる［
+`~message本体$の`転送~符号法$に`~chunked$が利用されていて、符号化を終了させる［
 ~size 0 の~chunk
-］が受信されなかったとき。
+］は，すでに受信した。
 </li>
 	<li>
-`Content-Length$h が利用されていて，その値より［
-受信した~message本体の（~octet数による）~size
-］が小さいとき。
+妥当な `Content-Length$h が利用されていて、その`~field値$は，受信した`~message本体$の（~octet数による）~size以下である。
 </li>
 </ul>
 ◎
@@ -3207,13 +3208,11 @@ A message body that uses the chunked transfer coding is incomplete if the zero-s
 </div>
 
 <p>
-`~chunked転送~符号法$も `Content-Length$h も持たない応答は，［
-接続の~closure
-］により終了されるので
-— 受信した~message本体の~octet数に関わらず —
-`~header節$を欠損なく受信した時点から完全と見なされる。
+`~chunked転送~符号法$も `Content-Length$h も伴わない応答は，接続の~closureにより終了されるので、`~header節$を欠損なく受信した場合には，`完全$と見なされる
+— 下層の接続により~errorが指示されない限り（例： ~TLSにおける “不完全な~close” は、
+`9.8$sec にて述べるとおり，応答を不完全なままにする）。
 ◎
-A response that has neither chunked transfer coding nor Content-Length is terminated by closure of the connection and, thus, is considered complete regardless of the number of message body octets received, provided that the header section was received intact.
+A response that has neither chunked transfer coding nor Content-Length is terminated by closure of the connection and, if the header section was received intact, is considered complete unless an error was indicated by the underlying connection (e.g., an "incomplete close" in TLS would leave the response incomplete, as described in Section 9.8).
 </p>
 
 	</section>
@@ -3466,7 +3465,7 @@ A client MAY send additional requests on a persistent connection until it sends 
 
 <p>
 持続的であり続けるためには、接続~上の どの~messageも
-— §`~message本体$に述べたように —
+— § `~message本体$に述べたように —
 その長さが~message自身により定義される必要がある（すなわち，長さは接続の~closureにより定義されるものではない）。
 `~server$は、［
 要請`~message本体$全体を読取る
@@ -3649,11 +3648,11 @@ Note that a server might reject traffic that it deems abusive or characteristic 
 <p>
 `~server$は、通例的に，何らかの時間制限~値を持つ
 — それを超過したときには，作動中でない接続を もはや保守しなくなるような。
-`~proxy$~serverは、この値をより高くすることもある
+~proxy~serverは、この値をより高くすることもある
 — `~client$は、同じ~proxy~serverを通して，更なる接続を~~確立する見込みが高いので。
 `持続的な接続$の利用は、［
 `~client$／`~server$
-］いずれに対しても，［
+］どちらに対しても［
 この時間制限の長さ（または その有無）
 ］に要件を設置しない。
 ◎
@@ -3924,60 +3923,58 @@ The HTTP client also acts as the TLS client. It initiates a connection to the se
 <h3 title="TLS Connection Closure">9.8. ~TLS接続の~closure</h3>
 
 <p>
-~TLSは、~secure接続の~closure用の便宜性を供する。
+~TLSは、~secureな接続の~closure用の便宜性を供する。
 妥当な~closure~alertを受信した実装は、その接続~上では，それ以上~dataは受信されないことを確約できる。
 ~TLS実装は、接続を~closeする前に，~closure~alertの交換を起動しなければナラナイ。
 ~closure~alertを送信した~TLS実装は、~peerから~closure~alertが送信されてくるのを待機することなく，接続を~closeしてもヨイ
 — これは、 “不完全な~close” を生成することになる。
-これを行う実装は、当の~sessionを再利用することにしてもヨイことに注意。
-これを行うのは、当の応用が~careする~message~dataは，すべて受信したものと（概して，~HTTP~message境界の検出-法を通して）知れたときに限るベキである。
+これを行うのは、当の応用が~careする~message~dataは，すべて［
+送信した／受信した
+］ものと（概して，~HTTP~message境界の検出-法を通して）知れたときに限るベキである。
 ◎
-TLS provides a facility for secure connection closure. When a valid closure alert is received, an implementation can be assured that no further data will be received on that connection. TLS implementations MUST initiate an exchange of closure alerts before closing a connection. A TLS implementation MAY, after sending a closure alert, close the connection without waiting for the peer to send its closure alert, generating an "incomplete close". Note that an implementation which does this MAY choose to reuse the session. This SHOULD only be done when the application knows (typically through detecting HTTP message boundaries) that it has received all the message data that it cares about.
+TLS provides a facility for secure connection closure. When a valid closure alert is received, an implementation can be assured that no further data will be received on that connection. TLS implementations MUST initiate an exchange of closure alerts before closing a connection. A TLS implementation MAY, after sending a closure alert, close the connection without waiting for the peer to send its closure alert, generating an "incomplete close". This SHOULD only be done when the application knows (typically through detecting HTTP message boundaries) that it has sent or received all the message data that it cares about.
 </p>
 
 <p>
-`RFC8446$r に指定されるように、実装は，［
-最初に妥当な~closure~alertを受信することなく，接続の~closeを受信した（ “尚早な~close” ）
-］ときは、その~sessionを再利用してはナラナイ。
-尚早な~closeは、すでに受信した~dataの~securityについて疑いを示すものではない
-— 単純に，後続の~dataは切落されたかもしれないことを指示することに注意。
-~TLSは，~HTTPの［
-要請／応答
-］境界には無頓着なので、［
-~messageの内側／ 2 つの~messageの合間
-］のどちらで切落されたかは，~HTTP~data（特定的には `Content-Length$h ~header）を精査して決定することが必要とされる。
+不完全な~closeは、すでに受信した~dataの~securityについて疑いを示すものではないが，後続の~dataは切落されたかもしれないことを指示することもある。
+~TLSは，~HTTP~message~frame法を直に自覚しないので、~HTTP~data自体を精査して，~messageたちは完全であったかどうか決定することが必要とされる。
+不完全な~messageの取扱い【！Handing】は、 `8$sec にて定義される。
 ◎
-As specified in [RFC8446], any implementation which receives a connection close without first receiving a valid closure alert (a "premature close") MUST NOT reuse that session. Note that a premature close does not call into question the security of the data already received, but simply indicates that subsequent data might have been truncated. Because TLS is oblivious to HTTP request/response boundaries, it is necessary to examine the HTTP data itself (specifically the Content-Length header) to determine whether the truncation occurred inside a message or between messages.
+An incomplete close does not call into question the security of the data already received, but it could indicate that subsequent data might have been truncated. As TLS is not directly aware of HTTP message framing, it is necessary to examine the HTTP data itself to determine whether messages were complete. Handing of incomplete messages is defined in Section 8.
 </p>
 
 <p>
-尚早な~closeに遭遇した`~client$は、自身が受信した `Content-Length$h ~headerにて指定された分の~dataを成す要請については，すべて完了したものと扱うベキである。
+不完全な~closeに遭遇した~clientは、［
+`Content-Length$h ~headerに指定された分の~dataを受信した／
+`~chunked転送~符号法$【！Transfer-Encoding of chunked】が利用されていて，それを終了させる長さ 0 の~chunkを受信した
+］ならば，すべての要請は完了したものと扱うベキである。
+`~chunked転送~符号法$も `Content-Length$h も伴わない応答が`完全$になるのは、妥当な~closure~alertを受信した場合に限られる。
+不完全な~messageを完全なものとして扱う実装は、攻撃に晒され得る。
 ◎
-When encountering a premature close, a client SHOULD treat as completed all requests for which it has received as much data as specified in the Content-Length header.
+When encountering an incomplete close, a client SHOULD treat as completed all requests for which it has received as much data as specified in the Content-Length header or, when a Transfer-Encoding of chunked is used, for which the terminal zero-length chunk has been received. A response that has neither chunked transfer coding nor Content-Length is complete only if a valid closure alert has been received. Treating an incomplete message as complete could expose implementations to attack.
 </p>
 
 <p>
-不完全な~closeを検出した`~client$は、それを上品に回復するベキであり，この流儀で~closeされた~TLS~sessionを再開してもヨイ。
+不完全な~closeを検出した`~client$は、それを上品に回復するベキである。
 ◎
-A client detecting an incomplete close SHOULD recover gracefully. It MAY resume a TLS session closed in this fashion.
+A client detecting an incomplete close SHOULD recover gracefully.
 </p>
 
 <p>
 `~client$は、接続を~closeする前に，~closure~alertを送信しなければナラナイ。
-~clientは、それ以上の~dataを受信するつもりはないならば，［
+~clientは、それ以上の~dataを受信するものと期待しないならば，［
 `~server$の~closure~alertを待機することなく，単純に接続を~closeする
 ］ことにしてもヨイ
 — それは、~server側にとって不完全な~closeを生成することになる。
 ◎
-Clients MUST send a closure alert before closing the connection. Clients which are unprepared to receive any more data MAY choose not to wait for the server's closure alert and simply close the connection, thus generating an incomplete close on the server side.
+Clients MUST send a closure alert before closing the connection. Clients that do not expect to receive any more data MAY choose not to wait for the server's closure alert and simply close the connection, thus generating an incomplete close on the server side.
 </p>
 
 <p>
 `~server$は、`~client$から不完全な~closeを受信することに備えておくベキである
 — ~clientは、~serverからの~dataがいつ終端するか決定できることが多いので。
-~serverは、必要とあらば，この流儀で~closeされた~TLS~sessionを再開するベキである。
 ◎
-Servers SHOULD be prepared to receive an incomplete close from the client, since the client can often determine when the end of server data is. Servers SHOULD be willing to resume TLS sessions closed in this fashion.
+Servers SHOULD be prepared to receive an incomplete close from the client, since the client can often determine when the end of server data is.
 </p>
 
 <p>
