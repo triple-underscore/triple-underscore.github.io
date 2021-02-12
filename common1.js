@@ -303,11 +303,12 @@ REC: 'W3C Recommendation',
 NOTE: 'W3C Working Group Note',
 LS: 'Living Standard',
 IETFPR: 'IETF PROPOSED STANDARD',
-IETFID: 'IETF Internet-Draft'
+IETFID: 'IETF Internet-Draft',
+IETFEX: 'IETF Experimental',
 	}[key];
 	if(!text) return;
 
-	const color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', IETFID: 'green', LS: 'green' }[key];
+	const color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', IETFID: 'green', IETFEX: 'green', LS: 'green' }[key];
 	const div = C('div');
 	div.id = '_sideways-logo';
 	if(color) div.style.background = color;
