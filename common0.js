@@ -2846,7 +2846,7 @@ pixel::::ピクセル
 表示-:display:~
 呈示-:present:~
 呈示:presentation:~
-
+	呈示~用:presentational
 具現化-:render::~::レンダー
 具現化:rendering::~::レンダリング
 具現化器:renderer::~::レンダラ
