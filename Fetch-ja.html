@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-02-19
-trans_update:2021-02-20
+spec_date:2021-02-24
+trans_update:2021-02-26
 source_checked:210202
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -709,13 +709,15 @@ md.正規化-:#concept-method-normalize
 
 	●本体
 本体:#concept-body
-bd.伝送-済み~byte数:#concept-body-transmitted
 bd.総~byte数:#concept-body-total-bytes
 bd.~source:#concept-body-source
 bd.~stream:#concept-body-stream
-bd.~done:#concept-body-done
-本体を待機する:#concept-body-wait
 本体を~cloneする:#concept-body-clone
+
+本体を全部的に読取る:#body-fully-read
+本体を増分的に読取る:#body-incrementally-read
+本体を増分的に読取る~loop:#incrementally-read-loop
+本体を~promiseとして全部的に読取る:#fully-reading-body-as-promise
 
 	●要請
 要請:#concept-request
@@ -765,8 +767,6 @@ rq.計時許容に失敗した~flag:#timing-allow-failed
 
 要請を~cloneする:#concept-request-clone
 ~scriptに類する:#request-destination-script-like
-要請の本体を伝送する:#concept-request-transmit-body
-要請の本体を伝送する~loop:#transmit-request-body-loop
 範囲~headerを追加する:#concept-request-add-range-header
 
 下位資源~要請:#subresource-request
@@ -845,6 +845,7 @@ fP.応答の本体の終端を処理する:#fetch-params-process-response-end-of
 ~HTTP~network-or-cache~fetch:#concept-http-network-or-cache-fetch
 ~HTTP~network~fetch:#concept-http-network-fetch
 ~CORS予行~fetch:#cors-preflight-fetch-0
+~fetch終結:#fetch-finale
 
 終了され:#concept-fetch-terminate
 終了させ:#concept-fetch-terminate
@@ -861,14 +862,14 @@ V.要請の本体の終端を処理する:#process-request-end-of-body
 V.応答を処理する:#process-response
 V.応答の本体の終端を処理する:#process-response-end-of-body
 V.応答の~doneを処理する:#process-response-done
-V.並列~queueを利用する:#fetch-useparallelqueue
+V.並列~queueを利用する？:#fetch-useparallelqueue
 
 	i.要請の本体を処理する:#process-request-body
 	i.要請の本体の終端を処理する:#process-request-end-of-body
 i.応答を処理する:#process-response
 	i.応答の本体の終端を処理する:#process-response-end-of-body
 	i.応答の~doneを処理する:#process-response-done
-i.並列~queueを利用する:#fetch-useparallelqueue
+i.並列~queueを利用する？:#fetch-useparallelqueue
 
 
 内容~符号法sを取扱う:#handle-content-codings
@@ -1077,7 +1078,6 @@ set.付加する:~INFRA#set-append
 関連な設定群~obj:~WAPI#relevant-settings-object
 環境~設定群~obj:~WAPI#environment-settings-object
 環境:~WAPI#environment
-enV.担当の文書:~WAPI#responsible-document
 enV.~API用~基底~URL:~WAPI#api-base-url
 enV.~id:~WAPI#concept-environment-id
 enV.~target閲覧文脈:~WAPI#concept-environment-target-browsing-context
@@ -1092,9 +1092,10 @@ enV.~top-level作成時の~URL:~WAPI#concept-environment-top-level-creation-url
 ~script~fetch~options:~WAPI#script-fetch-options
 
 閲覧文脈:~BROWSERS#browsing-context
-属する閲覧文脈:~BROWSERS#concept-document-bc
 先祖~閲覧文脈:~BROWSERS#ancestor-browsing-context
 作動中の文書:~BROWSERS#active-document
+
+対応する閲覧文脈:~WINDOW#window-bc
 
 生成元:~ORIGIN#concept-origin
 同一-生成元:~ORIGIN#same-origin
@@ -1136,14 +1137,15 @@ l.unsafe-none:~ORIGIN#coep-unsafe-none
 ~record型:~WEBIDL#idl-record
 反復される値~pairたち:~WEBIDL#dfn-value-pairs-to-iterate-over
 新たな:~WEBIDLjs#new
+複製を取得する:~WEBIDL#dfn-get-buffer-source-copy
 
 新たな~promise:~WEBIDLjs#a-new-promise
 却下する:~WEBIDLjs#reject
 解決する:~WEBIDLjs#resolve
 却下される~promise:~WEBIDLjs#a-promise-rejected-with
 解決される~promise:~WEBIDLjs#a-promise-resolved-with
-反応-:~WEBIDLjs#dfn-perform-steps-once-promise-is-settled
 充足-時:~WEBIDLjs#upon-fulfillment
+反応する:~WEBIDLjs#dfn-perform-steps-once-promise-is-settled
 
 
 enc.~UTF-8:~ENCODING#utf-8
@@ -1296,7 +1298,7 @@ Request:
 close:
 open:
 chunk::::チャンク
-二叉化:tee::~
+二叉化-:tee::~
 限界水位:high water mark::~
 function:
 done:
@@ -1324,8 +1326,6 @@ ok:
 読取る:readする::読み取る
 読取っ:readし::読み取っ
 読取器:reader::読み取り器
-読取れる:readできる::読み取れる
-消費:consumption::~
 梱包-:package::~
 割振る:allocateする::割り振る
 	構築-法:constructing
@@ -1338,6 +1338,9 @@ ok:
 計時許容:timing allow::計時の許容
 合格-:pass::~
 並列:parallel::~
+策:strategy::~
+増分的:incremental::~
+終結:finale::~
 
 	highWaterMark
 	時点が来る:moment arrives
@@ -1808,6 +1811,14 @@ internet::::インターネット
 	%~CORS予行を為すか？:makeCORSPreflight
 	%資格証を含めるか？:includeCredentials
 	%認証~fetchか？:isAuthenticationFetch
+	%~NULLまたは~byte列:nullOrBytes
+	%本体~chunkを処理する:processBodyChunk
+	%本体の終端を処理する:processEndOfBody
+	%本体~errorを処理する:processBodyError
+	%本体を処理する:processBody
+	%充足-時の手続き:fulfilledSteps
+	%却下-時の手続き:rejectedSteps
+	-:continueAlgorithm
 
 	●指示語
 
@@ -1964,7 +1975,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/00344d2296658f9dcf5e3f5cdcebebd2f3a4d102/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/48b67c7b85a34ac808aa7396746692b737474bfc/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -2218,6 +2229,7 @@ process response end-of-body (default null)
 </dt>
 	<dd>
 ~NULL ／~algo
+【これらの~algoがとる引数については、`~fetching$を見よ。】
 ◎
 Null or an algorithm.
 </dd>
@@ -4096,17 +4108,9 @@ A body consists of:
 <dl class="def-list">
 	<dt>`~stream@bd</dt>
 	<dd>
-~NULL または `ReadableStream$I ~obj。
+`ReadableStream$I ~obj。
 ◎
-A stream (null or a ReadableStream object).
-</dd>
-
-	<dt>`伝送-済み~byte数@bd</dt>
-	<dd>
-整数
-— 初期~時は 0 。
-◎
-A transmitted bytes (an integer), initially 0.
+A stream (a ReadableStream object).
 </dd>
 
 	<dt>`総~byte数@bd</dt>
@@ -4128,39 +4132,6 @@ A source, initially null.
 <p class="trans-note">【
 本体は、~HTTPにおける~messageの`内容$に対応する。
 】</p>
-
-<div class="p">
-<p>
-`本体$ %本体 は、次のいずれかを満たすならば，
-`~done@bd
-であるという：
-</p>
-
-<ul>
-	<li>
-%本体 ~EQ ~NULL
-</li>
-	<li>
-%本体 の`~stream$bd は［
-`~closeされた$RS ／ `~errorした$RS
-］
-</li>
-</ul>
-
-◎
-A body body is said to be done if body is null or body’s stream is closed or errored.
-</div>
-
-<div class="algo">
-<p>
-`本体を待機する@
-ときは、所与の
-( `本体$ %本体 )
-に対し %本体 が`~done$bdになるまで，待機する
-◎
-To wait for a body body, wait for body to be done.
-</p>
-</div>
 
 <div class="algo">
 <p>
@@ -4193,6 +4164,286 @@ Return a body whose stream is out2 and other members are copied from body.
 </li>
 </ol>
 </div>
+
+<hr>
+
+<div class="algo">
+<p>
+`本体を増分的に読取る@
+ときは、所与の
+( %本体, %本体~chunkを処理する, %本体の終端を処理する, %本体~errorを処理する, %~taskの行先 )
+に対し，次の手続きを走らす：
+◎
+To incrementally read a body body, given an algorithm processBodyChunk, an algorithm processEndOfBody, an algorithm processBodyError, and an optional null, parallel queue, or global object taskDestination (default null), run these steps.＼
+</p>
+<ol>
+	<li>
+~Assert
+⇒＃
+%本体 は `本体$である／
+%本体~chunkを処理する は `~byte列$を受容する~algoである／
+%本体の終端を処理する は 引数をとらない~algoである／
+%本体~errorを処理する は 例外を受容する~algoである／
+%~taskの行先 （省略時は ~NULL ）は ［~NULL／`並列~queue$／`大域~obj$］である
+◎
+processBodyChunk must be an algorithm accepting a byte sequence. processEndOfBody must be an algorithm accepting no arguments. processBodyError must be an algorithm accepting an exception.
+</li>
+	<li>
+~IF［
+%~taskの行先 ~EQ ~NULL
+］
+⇒
+%~taskの行先 ~SET `新たな並列~queueを開始する$()
+◎
+If taskDestination is null, then set taskDestination to the result of starting a new parallel queue.
+</li>
+	<li>
+<p>
+%読取器 ~LET %本体 の`~stream$bd用の`読取器を取得する$RS()
+◎
+Let reader be the result of getting a reader for body’s stream.
+</p>
+
+<p class="note">注記：
+この演算は例外を投出しない。
+◎
+This operation will not throw an exception.
+</p>
+	</li>
+	<li>
+`本体を増分的に読取る~loop$( 次に挙げる引数 )
+⇒＃
+%読取器,
+%~taskの行先,
+%本体~chunkを処理する,
+%本体の終端を処理する,
+%本体~errorを処理する
+◎
+Perform the incrementally-read loop given reader, taskDestination, processBodyChunk, processEndOfBody, and processBodyError.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`本体を増分的に読取る~loop@
+を遂行するときは、所与の
+( 
+%読取器,
+%~taskの行先,
+~algo %本体~chunkを処理する,
+~algo %本体の終端を処理する,
+~algo %本体~errorを処理する
+)
+に対し：
+◎
+To perform the incrementally-read loop, given a ReadableStreamDefaultReader object reader, parallel queue or global object taskDestination, algorithm processBodyChunk, algorithm processEndOfBody, and algorithm processBodyError:
+</p>
+<ol>
+	<li>
+~Assert
+⇒＃
+%読取器 は `ReadableStreamDefaultReader$I ~objである／
+%~taskの行先 は ［ `並列~queue$／`大域~obj$ ］である
+</li>
+	<li>
+<p>
+%読取n要請 ~LET 新たな`読取n要請$
+— その：
+◎
+Let readRequest be the following read request:
+</p>
+		<ul>
+			<li class="algo">
+<p>
+`~chunk手続き$rRは、所与の
+( %~chunk )
+に対し：
+◎
+chunk steps, given chunk
+• Let continueAlgorithm be null.
+</p>
+				<ol>
+					<li>
+~IF［
+%~chunk は `Uint8Array$I ~objでない
+］
+⇒
+次を走らす`~fetch~taskを~queueする$( %~taskの行先 )
+⇒
+%本体~errorを処理する( `TypeError$E )
+◎
+If chunk is not a Uint8Array object, then set continueAlgorithm to this step: run processBodyError given a TypeError.
+</li>
+					<li>
+<p>
+~ELSE：
+</p>
+						<ol>
+							<li>
+<p>
+%~byte列 ~LET %~chunk の`複製を取得する$
+</p>
+
+<p class="note">注記：
+実装には、［
+アリな所では，この複製を避ける策を利用する
+］ことが，強く奨励される。
+</p>
+							</li>
+							<li>
+<p>
+次を走らす`~fetch~taskを~queueする$( %~taskの行先 )：
+</p>
+								<ol>
+									<li>
+%本体~chunkを処理する( %~byte列 )
+</li>
+									<li>
+`本体を増分的に読取る~loop$( 次に挙げる引数 )
+⇒＃
+%読取器,
+%~taskの行先,
+%本体~chunkを処理する,
+%本体の終端を処理する,
+%本体~errorを処理する
+</li>
+								</ol>
+							</li>
+						</ol>
+◎
+Otherwise:
+• Let bytes be a copy of chunk.
+• Implementations are strongly encouraged to use an implementation strategy that avoids this copy where possible.
+• Set continueAlgorithm to these steps:
+•• Run processBodyChunk given bytes.
+•• Perform the incrementally-read loop given reader, taskDestination, processBodyChunk, processEndOfBody, and processBodyError.
+◎
+Queue a fetch task given continueAlgorithm and taskDestination.
+</li>
+				</ol>
+			</li>
+			<li class="algo">
+`~close手続き$rRは：
+⇒
+`~fetch~taskを~queueする$( %~taskの行先, %本体の終端を処理する )
+◎
+close steps
+• Queue a fetch task given processEndOfBody and taskDestination.
+</li>
+			<li class="algo">
+`~error手続き$rRは、所与の
+( %~error )
+に対し
+⇒
+次を走らす`~fetch~taskを~queueする$( %~taskの行先 )
+⇒
+%本体~errorを処理する( %e )
+◎
+error steps, given e
+• Queue a fetch task to run processBodyError given e, with taskDestination.
+</li>
+		</ul>
+	</li>
+	<li>
+%読取器 から`~chunkを読取る$RSR( %読取n要請 )
+◎
+Read a chunk from reader given readRequest.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`本体を全部的に読取る@
+ときは、所与の
+( %本体, %本体を処理する, %本体~errorを処理する, %~taskの行先 )
+に対し，次の手続きを走らす：
+◎
+To fully read a body body, given an algorithm processBody, an algorithm processBodyError, and an optional null, parallel queue, or global object taskDestination (default null), run these steps.＼
+</p>
+<ol>
+	<li>
+~Assert
+⇒＃
+%本体 は `本体$である／
+%本体を処理する は `~byte列$を受容する~algoである／
+%本体~errorを処理する は 引数をとらない~algoである／
+%~taskの行先 （省略時は ~NULL ）は ［~NULL／`並列~queue$／`大域~obj$］である
+◎
+processBody must be an algorithm accepting a byte sequence. processBodyError must be an algorithm accepting no arguments.
+</li>
+	<li>
+~IF［
+%~taskの行先 ~EQ ~NULL
+］
+⇒
+%~taskの行先 ~SET `新たな並列~queueを開始する$()
+◎
+If taskDestination is null, then set taskDestination to the result of starting a new parallel queue.
+</li>
+	<li>
+%~promise ~LET `本体を~promiseとして全部的に読取る$( %本体 )
+◎
+Let promise be the result of fully reading body as promise given body.
+</li>
+	<li>
+%充足-時の手続き ~LET 
+所与の
+( `~byte列$ %~byte列 )
+に対し，次を走らす手続き
+⇒
+次を走らす`~fetch~taskを~queueする$( %~taskの行先 )
+⇒
+%本体を処理する( %~byte列 )
+◎
+Let fulfilledSteps given a byte sequence bytes be to queue a fetch task to run processBody given bytes, with taskDestination.
+</li>
+	<li>
+%却下-時の手続き ~LET 次を走らす手続き
+⇒
+次を走らす`~fetch~taskを~queueする$( %~taskの行先 )
+⇒
+%本体~errorを処理する()
+◎
+Let rejectedSteps be to queue a fetch task to run processBodyError, with taskDestination.
+</li>
+	<li>
+%~promise に`反応する$( %充足-時の手続き, %却下-時の手続き )
+◎
+React to promise with fulfilledSteps and rejectedSteps.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`本体を~promiseとして全部的に読取る@
+ときは、所与の
+( `本体$ %本体 )
+に対し，次の手続きを走らす:
+◎
+To fully read body as promise, given a body body, run these steps:
+</p>
+<ol>
+	<li>
+%読取器 ~LET %本体 の`~stream$bd用の`読取器を取得する$RS()
+⇒
+例外が投出された場合は
+⇒
+~RET その例外で`却下される~promise$
+◎
+Let reader be the result of getting a reader for body’s stream. If that threw an exception, then return a promise rejected with that exception.
+</li>
+	<li>
+~RET %読取器 から`すべての~byteを読取る$RSR()
+◎
+Return the result of reading all bytes from reader.
+</li>
+</ol>
+</div>
+
+<hr>
 
 <div class="algo">
 <p>
@@ -4675,10 +4926,10 @@ CSP’s form-action needs to be a hook directly in HTML’s navigate or form sub
 
 <p>
 ~CSPは、各種~CSP指令~用に，［
-`要請$の`~client$rqの`担当の文書$enVが`属する閲覧文脈$
+`要請$の`~client$rqの`大域~obj$enVに`対応する閲覧文脈$
 ］の各 `先祖~閲覧文脈$についても検査する必要がある。
 ◎
-CSP will also need to check request’s client’s responsible document’s browsing context’s ancestor browsing contexts for various CSP directives.
+CSP will also need to check request’s client’s global object’s browsing context’s ancestor browsing contexts for various CSP directives.
 </p>
 
 	</dd>
@@ -5338,271 +5589,6 @@ If request’s body is non-null, set newRequest’s body to the result of clonin
 ~RET %新~要請
 ◎
 Return newRequest.
-</li>
-</ol>
-</div>
-
-<hr>
-
-<div class="algo">
-
-<p>
-`要請の本体を伝送する@
-ときは、所与の
-( `~fetch~params$ %~fetch~params )
-に対し，次の手続きを走らす：
-◎
-To transmit request body, given a fetch params fetchParams, run these steps:
-</p>
-<ol>
-	<li>
-%本体 ~LET %~fetch~params の`要請$fP の`本体$rq
-◎
-Let body be fetchParams’s request’s body.
-</li>
-	<li>
-%要請の本体の終端を処理する ~LET %~fetch~params の`要請の本体の終端を処理する$fP
-◎
-↓</li>
-	<li>
-<p>
-~IF［
-%本体 ~EQ ~NULL
-］
-⇒
-~IF［
-%要請の本体の終端を処理する ~NEQ ~NULL
-］
-⇒
-次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
-⇒
-%要請の本体の終端を処理する( %~fetch~params の`要請$fP )
-◎
-If body is null and fetchParams’s process request end-of-body is non-null, then:
-• Let processRequestEndOfBody be this step: run fetchParams’s process request end-of-body given fetchParams’s request.
-• Queue a fetch task given processRequestEndOfBody and fetchParams’s task destination.
-</li>
-	<li>
-<p>
-【！原文入子markup誤】
-~ELSE：
-◎
-Otherwise, if body is non-null:
-</p>
-		<ol>
-			<li>
-<p>
-%読取器 ~LET %本体 の`~stream$bd用の`読取器を取得する$RS()
-◎
-Let reader be the result of getting a reader for body’s stream.
-</p>
-
-<p class="note">注記：
-この演算は例外を投出し得ない。
-◎
-This operation cannot throw an exception.
-</p>
-			</li>
-			<li>
-`要請の本体を伝送する~loop$( %~fetch~params, %本体, %読取器 )
-◎
-Perform the transmit-request-body loop given fetchParams, body, and reader.
-</li>
-		</ol>
-	</li>
-</ol>
-</div>
-
-<div class="algo">
-<p>
-`要請の本体を伝送する~loop@
-を遂行するときは、所与の
-( `~fetch~params$ %~fetch~params, `本体$ %本体, `ReadableStreamDefaultReader$I ~obj %読取器 )
-に対し：
-◎
-To perform the transmit-request-body loop, given a fetch params fetchParams, body body, and ReadableStreamDefaultReader object reader:
-</p>
-
-<ol>
-	<li>
-<p>
-%読取n要請 ~LET 新たな`読取n要請$
-— その：
-◎
-Let readRequest be the following read request:
-</p>
-		<ul>
-			<li class="algo">
-<p>
-`~chunk手続き$rRは、所与の
-( %~chunk )
-に対し：
-◎
-chunk steps, given chunk
-</p>
-				<ol>
-					<li>
-~IF［
-進行中の~fetchは`終了され$た
-］
-⇒
-~RET
-◎
-If the ongoing fetch is terminated, then abort these steps.
-</li>
-					<li>
-~IF［
-%~chunk は `Uint8Array$I ~objでない
-］
-⇒＃
-進行中の~fetchを`終了させる$()；
-~RET
-◎
-If chunk is not a Uint8Array object, terminate the ongoing fetch and abort these steps.
-</li>
-					<li>
-%~byte列 ~LET %~chunk が表現している`~byte列$
-◎
-Let bs be the byte sequence represented by the Uint8Array object.
-</li>
-					<li>
-%要請の本体を処理する ~LET %~fetch~params の`要請の本体を処理する$fP
-◎
-Let processRequestBody be null.
-◎
-↓↓If fetchParams’s process request body is non-null, then set processRequestBody to this step: run fetchParams’s process request body given fetchParams’s request.
-</li>
-					<li>
-<p>
-この段は`並列的$に走らす：
-◎
-In parallel:
-</p>
-						<ol>
-							<li>
-<p>
-%~byte列 を伝送する
-— 1 個 以上の~byteが伝送される度に：
-◎
-Transmit bs. Whenever one or more bytes are transmitted,＼
-</p>
-								<ol>
-									<li>
-%本体 の`伝送-済み~byte数$bd ~INCBY 伝送された~byte数
-◎
-increase body’s transmitted bytes by the number of transmitted bytes and＼
-</li>
-									<li>
-~IF［
-%要請の本体を処理する ~NEQ ~NULL
-］
-⇒
-次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
-⇒
-%要請の本体を処理する( %~fetch~params の`要請$fP )
-</li>
-								</ol>
-
-<p class="note">注記：
-%~byte列 が全部的に伝送されるまでは、この段に留まり続ける。
-◎
-This step blocks until bs is fully transmitted.
-</p>
-							</li>
-							<li>
-~IF［
-進行中の~fetchは`終了され$ていない
-］
-⇒
-次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
-⇒
-`要請の本体を伝送する~loop$( %~fetch~params, %本体, %読取器 )
-◎
-Let continueAlgorithm be this step: perform the transmit-request-body loop given fetchParams, body, and reader.
-◎
-If the ongoing fetch is not terminated, then queue a fetch task given continueAlgorithm and fetchParams’s task destination.
-</li>
-						</ol>
-					</li>
-				</ol>
-			</li>
-			<li class="algo">
-<p>
-`~close手続き$rRは：
-◎
-close steps
-</p>
-				<ol>
-					<li>
-~IF［
-進行中の~fetchは`終了され$た
-］
-⇒
-~RET
-◎
-If the ongoing fetch is terminated, then abort these steps.
-</li>
-					<li>
-%要請の本体の終端を処理する ~LET %~fetch~params の`要請の本体の終端を処理する$fP
-◎
-↓</li>
-					<li>
-~IF［
-%要請の本体の終端を処理する ~NEQ ~NULL
-］
-⇒
-次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
-⇒
-%要請の本体の終端を処理する( %~fetch~params の`要請$fP )
-◎
-If fetchParams’s process request end-of-body is non-null, then:
-• Let processRequestEndOfBody be this step: run fetchParams’s process request end-of-body given fetchParams’s request.
-• Queue a fetch task given processRequestEndOfBody and fetchParams’s task destination.
-</li>
-				</ol>
-			</li>
-			<li class="algo">
-<p>
-`~error手続き$rRは、所与の
-( %~error )
-に対し：
-◎
-error steps, given e
-</p>
-				<ol>
-					<li>
-~IF［
-進行中の~fetchは`終了され$た
-］
-⇒
-~RET
-◎
-If the ongoing fetch is terminated, then abort these steps.
-</li>
-					<li>
-~IF［
-%~error は `AbortError$E 例外である
-］
-⇒
-進行中の~fetchを`終了させる$( `中止する^i )
-◎
-If e is an "AbortError" DOMException, then terminate the ongoing fetch with the aborted flag set.
-</li>
-					<li>
-~ELSE
-⇒
-進行中の~fetchを`終了させる$()
-◎
-Otherwise, terminate the ongoing fetch.
-</li>
-				</ol>
-			</li>
-		</ul>
-	</li>
-	<li>
-%読取器 から`~chunkを読取る$RSR( %読取n要請 )
-◎
-Read a chunk from reader given readRequest.
 </li>
 </ol>
 </div>
@@ -8429,21 +8415,60 @@ The algorithm below defines fetching. In broad strokes, it takes a request and o
 
 <div class="algo">
 
+<div class="p">
+
 <p>
 所与の`要請$ %要請 を
 `~fetchする@
-ときは、所与の
-⇒＃
-`要請$を受容する~algo `要請の本体を処理する@V （省略時は ~NULL ）,
-`要請$を受容する~algo `要請の本体の終端を処理する@V （省略時は ~NULL ）,
-`応答$を受容する~algo `応答を処理する@V （省略時は ~NULL ）,
-`応答$を受容する~algo `応答の本体の終端を処理する@V （省略時は ~NULL ）,
-真偽値 `並列~queueを利用する@V （省略時は ~F ）
-◎終
-に対し，以下の手続きを走らす：
-◎
-To fetch, given a request request, an optional algorithm processRequestBody, an optional algorithm processRequestEndOfBody, an optional algorithm processResponse, an optional algorithm processResponseEndOfBody, and an optional boolean useParallelQueue (default false), run the steps below. If given, processRequestBody and processRequestEndOfBody must be an algorithm accepting a request; processResponse and processResponseEndOfBody must be an algorithm accepting a response.
+ときは、所与の：
 </p>
+<ul>
+	<li>
+`要請の本体を処理する@V
+⇒
+~NULL（省略時）／
+伝送される~byte数を表現する整数を受容する~algo
+</li>
+	<li>
+`要請の本体の終端を処理する@V
+⇒
+~NULL（省略時）／
+引数をとらない~algo
+</li>
+	<li>
+`応答を処理する@V
+⇒
+~NULL（省略時）／
+`応答$を受容する~algo
+</li>
+	<li>
+`応答の本体の終端を処理する@V
+⇒
+~NULL（省略時）／［
+`応答$ ／ ~NULL／ `失敗^i ／ `~byte列$
+］を受容する~algo
+</li>
+	<li>
+`並列~queueを利用する？@V
+⇒
+真偽値（省略時は ~F ）
+</li>
+</ul>
+<p>
+に対し，以下の手続きを走らす：
+</p>
+◎
+To fetch, given a request request,＼
+an optional algorithm processRequestBody,＼
+an optional algorithm processRequestEndOfBody,＼
+an optional algorithm processResponse, an optional algorithm processResponseEndOfBody,＼
+and an optional boolean useParallelQueue (default false),＼
+run the steps below.＼
+If given, processRequestBody must be an algorithm accepting an integer representing the number of bytes transmitted.＼
+If given, processRequestEndOfBody must be an algorithm accepting no arguments.＼
+If given, processResponse must be an algorithm accepting a response.＼
+If given, processResponseEndOfBody must be an algorithm accepting a response and null, failure, or a byte sequence.
+</div>
 
 <ul>
 	<li>
@@ -8499,7 +8524,7 @@ Let taskDestination be null.
 %並列~queueを利用する？ ~EQ ~T
 ］
 ⇒
-%~taskの行先 ~SET `新たな並列~queueを開始する$
+%~taskの行先 ~SET `新たな並列~queueを開始する$()
 ◎
 If useParallelQueue is true, then set taskDestination to the result of starting a new parallel queue.
 </li>
@@ -8534,9 +8559,7 @@ Let fetchParams be a new fetch params whose request is request, process request 
 ⇒
 `本体と内容~型を安全に抽出する$( %要請 の`本体$rq )
 ◎
-If request’s body is a byte sequence, then:
-• Let body and ignoreType be the result of safely extracting request’s body.
-• Set request’s body to body.
+If request’s body is a byte sequence, then set request’s body to the first return value of safely extracting request’s body.
 </li>
 	<li>
 ~IF［
@@ -9352,53 +9375,103 @@ This standardizes the error handling for servers that violate HTTP.
 	<li>
 <p>
 ~IF［
-%応答 は`~network~error$でない
-］~AND［
 %要請 の`完全性~metadata$rq ~NEQ 空~文字列
 ］：
 ◎
-If response is not a network error and request’s integrity metadata is not the empty string, then:
+If request’s integrity metadata is not the empty string, then:
 </p>
 		<ol>
 			<li>
-`本体を待機する$( %応答 の`本体$rs )
+%本体~errorを処理する ~LET 次を走らす手続き
+⇒
+`~fetch終結$( %~fetch~params, `~network~error$ )
 ◎
-Wait for response’s body.
+Let processBodyError be this step: run fetch finale given fetchParams and a network error.
 </li>
 			<li>
-~IF［［
-%応答 の`本体$rsの`~stream$bdは`~errorした$RS
-］でない
-］~AND［
-`応答は~metadata~listに合致するか？$( %応答, %要請 の`完全性~metadata$rq ) ~EQ ~F
+~IF［
+%要請 の`応答~tainting$rq ~EQ `opaque^l
+］~OR［
+%応答 は`~network~error$である
+］~OR［
+%応答 の`本体$rs ~EQ ~NULL
 ］
-⇒
-( %応答, %内部~応答 ) ~SET ( `~network~error$, `~network~error$ )
+⇒＃
+%本体~errorを処理する( )；
+~RET
 ◎
-If response’s body’s stream has not errored, and response does not match request’s integrity metadata, set response and internalResponse to a network error. [SRI]
+If request’s response tainting is "opaque", response is a network error, or response’s body is null, then run processBodyError and abort these steps.
+</li>
+			<li>
+<p>
+%本体を処理する ~LET
+所与の
+( %~byte列 )
+に対し，次を走らす手続き：
+◎
+Let processBody given bytes be these steps:
+</p>
+				<ol>
+					<li>
+~IF［
+`応答は~metadata~listに合致するか？$( %~byte列, %要請 の`完全性~metadata$rq ) ~EQ ~F
+`SRI$r
+］
+⇒＃
+%本体~errorを処理する()；
+~RET
+◎
+If bytes do not match request’s integrity metadata, then run processBodyError and abort these steps. [SRI]
+</li>
+					<li>
+%応答 の`本体$rs ~SET 次の結果を成す`本体$
+⇒
+`本体と内容~型を安全に抽出する$( %~byte列 )
+◎
+Set response’s body to the first return value of safely extracting bytes.
+</li>
+					<li>
+`~fetch終結$( %~fetch~params, %応答 )
+◎
+Run fetch finale given fetchParams and response.
+</li>
+				</ol>
+			</li>
+			<li>
+`本体を全部的に読取る$( %応答 の`本体$rs, %本体を処理する, %本体~errorを処理する )
+◎
+Fully read response’s body given processBody and processBodyError.
 </li>
 		</ol>
-
-<p class="note">注記：
-これは %応答 上で演算する
-— この~algoは %内部~応答 を観測するように想定されていないので。
-それを許容すると、攻撃者が~hashを神託機械†（ `oracle^en ）として利用できるようになる。
-<span class="trans-note">【†
-— 参考：
-<a href="http://security.stackexchange.com/questions/10617/what-is-a-cryptographic-oracle">cryptographic oracle</a>,
-<a href="https://en.wikipedia.org/wiki/Padding_oracle_attack">padding oracle attack</a>,
-`<a href="https://ja.wikipedia.org/wiki/%E3%83%A9%E3%83%B3%E3%83%80%E3%83%A0%E3%82%AA%E3%83%A9%E3%82%AF%E3%83%AB">ランダムオラクル</a>^
-】</span>
-◎
-This operates on response as this algorithm is not supposed to observe internalResponse. That would allow an attacker to use hashes as an oracle.
-</p>
 	</li>
+	<li>
+~ELSE
+⇒
+`~fetch終結$( %~fetch~params, %応答 )
+◎
+Otherwise, run fetch finale given fetchParams and response.
+</li>
+</ol>
+</div>
+
+
+<hr>
+
+<div class="algo">
+<p>
+`~fetch終結@
+は、所与の
+( `~fetch~params$ %~fetch~params, `応答$ %応答 )
+に対し，次の手続きを走らす：
+◎
+The fetch finale, given a fetch params fetchParams and a response response, run these steps:
+</p>
+<ol>
 	<li>
 %応答を処理する ~LET %~fetch~params の`応答を処理する$fP
 ◎
 ↓</li>
 	<li>
-<p>
 ~IF［
 %応答を処理する ~NEQ ~NULL
 ］
@@ -9407,14 +9480,7 @@ This operates on response as this algorithm is not supposed to observe internalR
 ⇒
 %応答を処理する( %応答 )
 ◎
-If fetchParams’s process response is non-null, then:
-• Let processResponse be this step: run fetchParams’s process response given response.
-• Queue a fetch task given processResponse and fetchParams’s task destination.
-</li>
-	<li>
-`本体を待機する$( %内部~応答 の`本体$rs )
-◎
-Wait for internalResponse’s body.
+If fetchParams’s process response is non-null, then queue a fetch task to run fetchParams’s process response given response, with fetchParams’s task destination.
 </li>
 	<li>
 %応答の本体の終端を処理する ~LET %~fetch~params の`応答の本体の終端を処理する$fP
@@ -9422,26 +9488,70 @@ Wait for internalResponse’s body.
 ↓</li>
 	<li>
 <p>
-次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
+~IF［
+%応答の本体の終端を処理する ~NEQ ~NULL
+］：
+◎
+If fetchParams’s process response end-of-body is non-null, then:
 </p>
 		<ol>
 			<li>
-%要請 の`~done~flag$rq ~SET ~T
+%本体を処理する ~LET 所与の
+( %~NULLまたは~byte列 )
+に対し，次を走らす手続き
+⇒
+%応答の本体の終端を処理する( %応答, %~NULLまたは~byte列 )
+◎
+Let processBody given nullOrBytes be this step: run fetchParams’s process response end-of-body given response and nullOrBytes.
+</li>
+			<li>
+%本体~errorを処理する ~LET 次を走らす手続き
+⇒
+%応答の本体の終端を処理する( %応答, `失敗^i )
+◎
+Let processBodyError be this step: run fetchParams’s process response end-of-body given response and failure.
 </li>
 			<li>
 ~IF［
-%応答の本体の終端を処理する ~NEQ ~NULL
+%応答 の`本体$rs ~EQ ~NULL
 ］
 ⇒
-%応答の本体の終端を処理する( %応答 )
+次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
+⇒
+%本体を処理する( ~NULL )
+◎
+If response’s body is null, then queue a fetch task to run processBody given null, with fetchParams’s task destination.
+</li>
+			<li>
+~ELSE
+⇒
+`本体を全部的に読取る$( %応答 の`本体$rs, %本体を処理する, %本体~errorを処理する, %~fetch~params の`~taskの行先$fP )
+◎
+Otherwise, fully read response’s body given processBody, processBodyError, and fetchParams’s task destination.
 </li>
 		</ol>
+	</li>
+	<li>
+<p>
+次のいずれかが満たされるまで待機する：
+</p>
+		<ul>
+			<li>
+%応答 の`本体$rs ~EQ ~NULL
+</li>
+			<li>
+%応答 の`本体$rs の`~stream$bd は［
+`~closeされた$RS ／ `~errorした$RS
+］
+</li>
+		</ul>
 ◎
-Let doneAlgorithm be these steps:
-• Set request’s done flag.
-• If fetchParams’s process response end-of-body is non-null, then run fetchParams’s process response end-of-body given response.
+Wait for either response’s body to be null, or response’s body’s stream to be closed or errored,＼
+</li>
+	<li>
+%要請 の`~done~flag$rq ~SET ~T
 ◎
-Queue a fetch task given doneAlgorithm and fetchParams’s task destination.
+and then set request’s done flag.
 </li>
 </ol>
 </div>
@@ -10391,32 +10501,23 @@ Otherwise:
 </p>
 				<ol>
 					<li>
-%~http要請 ~SET %要請 の`本体$rqを除いた部分の複製
+<p>
+%~http要請 ~SET `要請を~cloneする$( %要請 )
 ◎
-Set httpRequest to a copy of request except for its body.
-</li>
-					<li>
-%本体 ~LET %要請 の`本体$rq
+Set httpRequest to a clone of request.
+</p>
+
+<p class="note">注記：
+実装は、［
+%要請 の`本体$rq の`~source$bd ~EQ ~NULL
+］のときは，［
+%要請 の`本体$rq の`~stream$bdを二叉化するのを避ける
+］ことが奨励される
+— その事例では、必要になる本体は 1 個だけなので（例えば、~redirectや認証は，~fetchを失敗させることになる）。
 ◎
-Let body be request’s body.
-</li>
-					<li>
-%~http要請 の`本体$rq ~SET %本体
-◎
-Set httpRequest’s body to body.
-</li>
-					<li>
-~IF［
-%本体 ~NEQ ~NULL
-］
-⇒
-%要請 の`本体$rq ~SET 次のようにされた新たな`本体$
-⇒＃
-`~stream$bd ~SET ~NULL；
-`~source$bd ~SET %本体 の`~source$bd
-◎
-If body is non-null, then set request’s body to a new body whose stream is null and whose source is body’s source.
-</li>
+Implementations are encouraged to avoid teeing request’s body’s stream when request’s body’s source is null as only a single body is needed in that case. E.g., when request’s body’s source is null, redirects and authentication will end up failing the fetch.
+</p>
+					</li>
 					<li>
 %~http~fetch~params ~SET %~fetch~params の複製
 ◎
@@ -10428,22 +10529,6 @@ Set httpFetchParams to a copy of fetchParams.
 Set httpFetchParams’s request to httpRequest.
 </li>
 				</ol>
-
-<p class="note">注記：
-%要請 は複製される
-— ここでの %~http要請 は、 %要請 に影響させずに， ~headerを追加できたり, その`本体$rqを読取れるようにする必要があるので。
-すなわち、 %要請 は［
-~redirect ／ 認証 ／ ~proxy認証
-］にて再利用できる。
-また，~memory消費を抑制するため、~cloneせずに複製する。
-［
-%要請 の`本体$rqの`~source$bd ~EQ ~NULL
-］の事例で［
-~redirect ／ 認証
-］が生じた場合、~fetchは失敗することになる。
-◎
-request is copied as httpRequest here as we need to be able to add headers to httpRequest and read its body without affecting request. Namely, request can be reused with redirects, authentication, and proxy authentication. We copy rather than clone in order to reduce memory consumption. In case request’s body’s source is null, redirects and authentication will end up failing the fetch.
-</p>
 			</li>
 			<li>
 <p>
@@ -11566,9 +11651,8 @@ These kind of responses are eventually followed by a "final" response.
 ◎
 The exact layering between Fetch and HTTP still needs to be sorted through and therefore response represents both a response and an HTTP response here.
 </p>
-
 				<ul>
-					<li>
+					<li class="algo">
 %応答 は HTTP/1.0 以下の~versionを介して転送されていて、
 %要請 の`~header~list$rqは
 ( `Transfer-Encoding$h / `chunked^bl )
@@ -11578,7 +11662,7 @@ The exact layering between Fetch and HTTP still needs to be sorted through and t
 ◎
 If request’s header list contains `Transfer-Encoding`/`chunked` and response is transferred via HTTP/1.0 or older, then return a network error.
 </li>
-					<li>
+					<li class="algo">
 <p>
 ~HTTP要請による結果，~TLS~client証明書~dialogになるときは：
 ◎
@@ -11603,11 +11687,160 @@ Otherwise, return a network error.
 </li>
 						</ol>
 					</li>
-					<li>
-`要請の本体を伝送する$( %~fetch~params )
+					<li class="algo">
+<p>
+%要請 の`本体$rq %本体 を伝送するときは，次の手続きを走らす：
 ◎
-Transmit request body given fetchParams.
+To transmit request’s body body, run these steps:
+</p>
+						<ol>
+							<li>
+%要請の本体の終端を処理する ~LET %~fetch~params の`要請の本体の終端を処理する$fP
+◎
+↓</li>
+							<li>
+~IF［
+%本体 ~EQ ~NULL
+］
+⇒
+~IF［
+%要請の本体の終端を処理する ~NEQ ~NULL
+］
+⇒
+次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
+⇒
+%要請の本体の終端を処理する( %~fetch~params の`要請$fP )
+◎
+If body is null and fetchParams’s process request end-of-body is non-null, then queue a fetch task given fetchParams’s process request end-of-body and fetchParams’s task destination.
 </li>
+							<li>
+<p>
+~ELSE：
+◎
+Otherwise, if body is non-null:
+</p>
+								<ol>
+									<li>
+<p>
+%本体~chunkを処理する ~LET
+所与の
+( %~byte列 )
+に対し，次を走らす手続き：
+◎
+Let processBodyChunk given bytes be these steps:
+</p>
+										<ol>
+											<li>
+~IF［
+進行中の~fetchは`終了され$た
+］
+⇒
+~RET
+◎
+If the ongoing fetch is terminated, then abort these steps.
+</li>
+											<li>
+この段は`並列的$に走らす
+⇒
+%~byte列 を伝送する
+【この段は具体的に何をする？】
+◎
+Run this step in parallel: transmit bytes.
+</li>
+											<li>
+%要請の本体を処理する ~LET %~fetch~params の`要請の本体を処理する$fP
+◎
+↓</li>
+											<li>
+~IF［
+%要請の本体を処理する ~NEQ ~NULL
+］
+⇒
+%要請の本体を処理する( %~byte列 の`長さ$ )
+◎
+If fetchParams’s process request body is non-null, then run fetchParams’s process request body given bytes’s length.
+</li>
+										</ol>
+									</li>
+									<li>
+<p>
+%本体の終端を処理する ~LET 次を走らす手続き：
+◎
+Let processEndOfBody be these steps:
+</p>
+										<ol>
+											<li>
+~IF［
+進行中の~fetchは`終了され$た
+］
+⇒
+~RET
+◎
+If the ongoing fetch is terminated, then abort these steps.
+</li>
+											<li>
+~IF［
+%要請の本体を処理する ~NEQ ~NULL
+］
+⇒
+%要請の本体を処理する( 【 %本体 の`総~byte数$bd？】 )
+◎
+If fetchParams’s process request end-of-body is non-null, then run fetchParams’s process request end-of-body.
+</li>
+										</ol>
+									</li>
+									<li>
+<p>
+%本体~errorを処理する ~LET
+所与の
+( %~error )
+に対し，次を走らす手続き：
+◎
+Let processBodyError given e be these steps:
+</p>
+										<ol>
+											<li>
+~IF［
+進行中の~fetchは`終了され$た
+］
+⇒
+~RET
+◎
+If the ongoing fetch is terminated, then abort these steps.
+</li>
+											<li>
+~IF［
+%~error は `AbortError$E 例外である
+］
+⇒
+進行中の~fetchを`終了させる$( `中止する^i )
+◎
+If e is an "AbortError" DOMException, then terminate the ongoing fetch with the aborted flag set.
+</li>
+											<li>
+~ELSE
+⇒
+進行中の~fetchを`終了させる$()
+◎
+Otherwise, terminate the ongoing fetch.
+</li>
+										</ol>
+									</li>
+									<li>
+`本体を増分的に読取る$( 次に挙げる引数 )
+⇒＃
+%要請 の`本体$rq,
+%本体~chunkを処理する,
+%本体の終端を処理する,
+%本体~errorを処理する,
+%~fetch~params の`~taskの行先$fP
+◎
+Incrementally read request’s body given processBodyChunk, processEndOfBody, processBodyError, and fetchParams’s task destination.
+</li>
+								</ol>
+							</li>
+						</ol>
+					</li>
 				</ul>
 			</li>
 		</ol>
@@ -11815,11 +12048,8 @@ If one or more bytes have been transmitted from response’s message body, then:
 Let bytes be the transmitted bytes.
 </li>
 							<li>
-［
-%応答 の`本体$rsの`伝送-済み~byte数$bd
-］ ~INCBY ［
-%~byte列 の長さ
-］
+%応答 の`本体$rsの伝送-済み~byte数† ~INCBY %~byte列 の長さ
+【†この用語は、この仕様から除去された（削除漏れ？）。＊】
 ◎
 Increase response’s body’s transmitted bytes with bytes’ length.
 </li>
@@ -13692,8 +13922,7 @@ Set action to an action that returns object.
 					<li>
 %動作 ~SET 次を走らす動作
 ⇒
-~RET %~obj が保持している
-<a href="~WEBIDL#dfn-get-buffer-source-copy">~byte列の複製</a>
+~RET %~obj が保持している~byte列の`複製を取得する$
 ◎
 Set action to an action that returns a copy of the bytes held by object.
 </li>
@@ -14212,36 +14441,14 @@ If object is unusable, then return a promise rejected with a TypeError.
 Let promise be a promise resolved with an empty byte sequence.
 </li>
 	<li>
-<p>
 ~IF［
 %~obj の`本体$Bd ~NEQ ~NULL
-］：
-◎
-If object’s body is non-null, then:
-</p>
-		<ol>
-			<li>
-%~stream ~LET %~obj の`本体$Bdの`~stream$bd
-◎
-Let stream be object’s body’s stream.
-</li>
-			<li>
-%読取器 ~LET %~stream 用の`読取器を取得する$RS()
+］
 ⇒
-例外が投出されたときは
-⇒
-~RET その例外で`却下される~promise$
+%~promise ~SET `本体を~promiseとして全部的に読取る$( %~obj の`本体$Bd )
 ◎
-Let reader be the result of getting a reader from stream. If that threw an exception, then return a promise rejected with that exception.
+If object’s body is non-null, then set promise to the result of fully reading body as promise given object’s body.
 </li>
-			<li>
-%~promise ~SET
-%読取器 から`すべての~byteを読取る$RSR()
-◎
-Set promise to the result of reading all bytes from reader.
-</li>
-		</ol>
-	</li>
 	<li>
 %手続き ~LET 次を走らす手続き
 ⇒
@@ -16813,7 +17020,7 @@ Append `Sec-WebSocket-Extensions`/permessageDeflate to request’s header list.
 </p>
 		<ul>
 			<li>
-`並列~queueを利用する$i ~SET ~T
+`並列~queueを利用する？$i ~SET ~T
 </li>
 			<li>
 <p>
