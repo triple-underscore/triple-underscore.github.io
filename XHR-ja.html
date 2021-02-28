@@ -113,9 +113,9 @@ return text;
 ●●options
 
 spec_title:XMLHttpRequest
-spec_date:2021-02-14
-trans_update:2021-02-26
-source_checked:200930
+spec_date:2021-02-26
+trans_update:2021-02-28
+source_checked:210226
 original_url:https://xhr.spec.whatwg.org/
 spec_status:LS
 ref_id_prefix:biblio-
@@ -189,8 +189,6 @@ filename:::file 名:ファイル名
 
 chunk::::チャンク
 読取る:readする::読み取る
-読取n:read::読み取り
-読取器:reader::読み取り器::リーダ
 close:
 open:
 	~openした:opened:
@@ -203,7 +201,6 @@ done:
 	headers::::ヘッダリスト
 	~network用:networking
 	受信-済み:received
-	伝送-済み:transmitted
 
 	●一般処理
 	発火-法:firing
@@ -220,6 +217,7 @@ done:
 	今:now
 並列:parallel::~
 静止-:pause:~
+増分的:incremental::~
 
 	●仕様
 opt-in::::オプトイン
@@ -306,9 +304,7 @@ milli::::ミリ
 	%長さ:length
 	%応答:response
 	%本体:-
-	%読取n要請:readRequest
 	%~chunk:chunk
-	%読取器:reader
 	%制限時間:-
 	%~promise:promise
 	%~byte列:bytes
@@ -341,8 +337,15 @@ milli::::ミリ
 	%要請の本体を処理する:processRequestBody
 	%要請の本体の終端を処理する:processRequestEndOfBody
 	%応答を処理する:processResponse
+	%応答の本体の終端を処理する:processResponseEndOfBody
 	%~fetch応答:fetchResponse
 	%応答は処理した？:processedResponse
+	%本体~chunkを処理する:processBodyChunk
+	%本体の終端を処理する:processEndOfBody
+	%本体~errorを処理する:processBodyError
+	%~NULLまたは失敗または~byte列:nullOrFailureOrBytes
+	%~byte列~長さ:bytesLength
+	%~upload済み~byte列~長さ:uploadedBytesLength
 
 
 	●指示語
@@ -571,6 +574,7 @@ fe.値:#concept-formdata-entry-value
 
 	●用語（外部
 i.応答を処理する:~FETCH#process-response
+i.応答の本体の終端を処理する:~FETCH#process-response-end-of-body
 i.要請の本体を処理する:~FETCH#process-request-body
 i.要請の本体の終端を処理する:~FETCH#process-request-end-of-body
 i.並列~queueを利用する？:~FETCH#fetch-useparallelqueue
@@ -622,24 +626,17 @@ rs.状態s~message:~FETCH#concept-response-status-message
 
 ~CORS~protocol:~FETCH#cors-protocol
 
-bd.伝送-済み~byte数:#concept-body-transmitted
-	廃）bd.伝送-済み~byte数:~FETCH#concept-body-transmitted
 bd.総~byte数:~FETCH#concept-body-total-bytes
 bd.~stream:~FETCH#concept-body-stream
 
 資格証:~FETCH#credentials
+本体を増分的に読取る:~FETCH#body-incrementally-read
 
-読取n要請:~STREAMS#read-request
-rR.~chunk手続き:~STREAMS#read-request-chunk-steps
-rR.~close手続き:~STREAMS#read-request-close-steps
-rR.~error手続き:~STREAMS#read-request-error-steps
-RS.読取器を取得する:~STREAMS#readablestream-get-a-reader
+
 RS.~errorした:~STREAMS#readablestream-errored
-RSR.すべての~byteを読取る:~STREAMS#readablestreamdefaultreader-read-all-bytes
-readablestream
-RSR.~chunkを読取る:~STREAMS#readablestreamdefaultreader-read-a-chunk
 
 ~byte列:~INFRA#byte-sequence
+byte.長さ:~INFRA#byte-sequence-length
 ~byte文字大小無視:~INFRA#byte-case-insensitive
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 ~JSON~byte列を~JS値に構文解析する:~INFRA#parse-json-bytes-to-a-javascript-value
@@ -698,6 +695,7 @@ url.~host:~URL1#concept-url-host
 静止する:~WAPI#pause
 
 現在の大域~obj:~WAPI#current-global-object
+関連な大域~obj:~WAPI#concept-relevant-global
 関連な設定群~obj:~WAPI#relevant-settings-object
 enV.生成元:~WAPI#concept-settings-object-origin
 enV.担当の文書:~WAPI#responsible-document
@@ -781,7 +779,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/xhr/commits
-	<a href="https://xhr.spec.whatwg.org/commit-snapshots/20d9f165cb42a79f5a0b4fba2c1c7439ff661209/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://xhr.spec.whatwg.org/commit-snapshots/26f974f0ab0f868c92f4dae7d4c5c10e1a702a5a/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/xhrstandard">@xhrstandard</a>
 
 Tests:
@@ -940,8 +938,7 @@ The XMLHttpRequest object was initially defined as part of the WHATWG’s HTML e
 <p>
 現在の草案までに至る経緯は、次のメーリングリストにて見られる：
 ◎
-Discussion that led to the current draft can be found in the following mailing list
-archives:
+Discussion that led to the current draft can be found in the following mailing list archives:
 </p>
 
 <ul><li><a href="https://lists.w3.org/Archives/Public/public-whatwg-archive/">whatwg@whatwg.org</a>
@@ -987,14 +984,6 @@ This specification uses terminology from DOM, DOM Parsing and Serialization, Enc
 
 <p>
 この訳の，~algoや定義の記述に利用されている各種記号（ ~LET, コレ, ~IF, ~THROW, 等々）の意味や定義の詳細は、~SYMBOL_DEF_REFを~~参照されたし。
-</p>
-
-<p>
-この仕様に現れる用語
-`伝送-済み~byte数@
-は、
-`FETCH$r にて定義されていたが，今や廃された。
-この用語を利用している箇所は、更新される必要がある。
 </p>
 
 	</section>
@@ -2441,15 +2430,25 @@ If this’s upload complete flag is unset and this’s upload listener flag is s
 ◎
 If this’s state is not opened or this’s send() flag is unset, then return.
 </li>
+			<li>
+%~upload済み~byte列~長さ ~LET 0
+◎
+Let uploadedBytesLength be 0.
+</li>
 			<li class="algo">
 <p>
 %要請の本体を処理する ~LET 所与の
-( %要請 )
+( %~byte列~長さ )
 に対し，次を走らす手続き：
 ◎
-Let processRequestBody, given a request, be these steps:
+Let processRequestBody, given a bytesLength, be these steps:
 </p>
 				<ol>
+					<li>
+%~upload済み~byte列~長さ ~INCBY %~byte列~長さ
+◎
+Increase uploadedBytesLength by bytesLength.
+</li>
 					<li>
 ~IF［
 この手続きが最後に呼出されたときから，まだ およそ 50ms 以上 経過していない
@@ -2464,9 +2463,9 @@ If not roughly 50ms have passed since these steps were last invoked, then return
 コレの`~upload~listener~flag$xhr ~EQ ~T
 ］
 ⇒
-コレの`~upload~obj$xhrに向けて，名前 `progress$et の`進捗~eventを発火する$( %要請 の`本体$rqの`伝送-済み~byte数$bd, %要請 の`本体$rqの`総~byte数$bd )
+コレの`~upload~obj$xhrに向けて，名前 `progress$et の`進捗~eventを発火する$( %~upload済み~byte列~長さ, %要請 の`本体$rqの`総~byte数$bd )
 ◎
-If this’s upload listener flag is set, then fire a progress event named progress at this’s upload object with request’s body’s transmitted bytes and request’s body’s total bytes.
+If this’s upload listener flag is set, then fire a progress event named progress at this’s upload object with uploadedBytesLength and req’s body’s total bytes.
 </li>
 </ol>
 
@@ -2479,11 +2478,9 @@ These steps are only invoked when new bytes are transmitted.
 			</li>
 			<li class="algo">
 <p>
-%要請の本体の終端を処理する ~LET 所与の
-( %要請 )
-に対し，次を走らす手続き：
+%要請の本体の終端を処理する ~LET 次を走らす手続き：
 ◎
-Let processRequestEndOfBody, given a request, be these steps:
+Let processRequestEndOfBody be these steps:
 </p>
 				<ol>
 					<li>
@@ -2501,31 +2498,24 @@ Set this’s upload complete flag.
 If this’s upload listener flag is unset, then return.
 </li>
 					<li>
-%伝送量 ~LET
-%要請 の`本体$rqの`伝送-済み~byte数$bd
+%長さ ~LET %要請 の`本体$rqの`総~byte数$bd
 ◎
-Let transmitted be request’s body’s transmitted bytes.
+Let length be req’s body’s total bytes.
 </li>
 					<li>
-%長さ ~LET
-%要請 の`本体$rqの`総~byte数$bd
+コレの`~upload~obj$xhrに向けて，名前 `progress$et の`進捗~eventを発火する$( %~upload済み~byte列~長さ, %長さ )
 ◎
-Let length be request’s body’s total bytes.
+Fire a progress event named progress at this’s upload object with uploadedBytesLength and length.
 </li>
 					<li>
-コレの`~upload~obj$xhrに向けて，名前 `progress$et の`進捗~eventを発火する$( %伝送量, %長さ )
+コレの`~upload~obj$xhrに向けて，名前 `load$et の`進捗~eventを発火する$( %~upload済み~byte列~長さ, %長さ )
 ◎
-Fire a progress event named progress at this’s upload object with transmitted and length.
+Fire a progress event named load at this’s upload object with uploadedBytesLength and length.
 </li>
 					<li>
-コレの`~upload~obj$xhrに向けて，名前 `load$et の`進捗~eventを発火する$( %伝送量, %長さ )
+コレの`~upload~obj$xhrに向けて，名前 `loadend$et の`進捗~eventを発火する$( %~upload済み~byte列~長さ, %長さ )
 ◎
-Fire a progress event named load at this’s upload object with transmitted and length.
-</li>
-					<li>
-コレの`~upload~obj$xhrに向けて，名前 `loadend$et の`進捗~eventを発火する$( %伝送量, %長さ )
-◎
-Fire a progress event named loadend at this’s upload object with transmitted and length.
+Fire a progress event named loadend at this’s upload object with uploadedBytesLength and length.
 </li>
 				</ol>
 			</li>
@@ -2590,41 +2580,21 @@ If this’s state is not headers received, then return.
 ◎
 If this’s response’s body is null, then run handle response end-of-body for this and this’s response, and then return.
 </li>
-					<li>
+					<li class="algo">
 <p>
-%読取器 ~LET %本体 の`~stream$bd用の`読取器を取得する$RS()
+%本体~chunkを処理する ~LET 所与の
+( %~byte列 )
+に対し，次を走らす手続き：
 ◎
-Let reader be the result of getting a reader for this’s response’s body’s stream.
+Let processBodyChunk given bytes be these steps:
 </p>
-
-<p class="note">注記：
-この演算が例外を投出することはない。
+						<ol>
+							<li>
+コレの`受信した~byte列$xhrに %~byte列 を付加する
 ◎
-This operation will not throw an exception.
-</p>
-					</li>
-					<li>
-<p>
-%読取n要請 ~LET 次を伴う新たな`読取n要請$：
-◎
-Let readRequest be the following read request:
-</p>
-						<ul>
-							<li class="algo">
-<p>
-その`~chunk手続き$rRは、所与の
-( %~chunk )
-に対し：
-◎
-chunk steps, given chunk
-</p>
-								<ol>
-									<li>
-コレの`受信した~byte列$xhrに %~chunk を付加する
-◎
-Append chunk to this’s received bytes.
+Append bytes to this’s received bytes.
 </li>
-									<li>
+							<li>
 ~IF［
 この手続きが前回に呼出されたときから，まだ およそ 50ms 以上 経過していない
 ］
@@ -2633,7 +2603,7 @@ Append chunk to this’s received bytes.
 ◎
 If not roughly 50ms have passed since these steps were last invoked, then return.
 </li>
-									<li>
+							<li>
 ~IF［
 コレの`状態$xhr ~EQ `全~headerを受信した^i
 ］
@@ -2642,7 +2612,7 @@ If not roughly 50ms have passed since these steps were last invoked, then return
 ◎
 If this’s state is headers received, then set this’s state to loading.
 </li>
-									<li>
+							<li>
 <p>
 コレに向けて名前 `readystatechange$et の`~eventを発火する$
 ◎
@@ -2655,40 +2625,36 @@ Fire an event named readystatechange at this.
 ◎
 Web compatibility is the reason readystatechange fires more often than this’s state changes.
 </p>
-									</li>
-									<li>
+							</li>
+							<li>
 %本体 ~LET コレの`応答$xhrの`本体$rs
 ◎
 ↓</li>
-									<li>
-コレに向けて名前 `progress$et の`進捗~eventを発火する$( %本体 の`伝送-済み~byte数$bd, %本体 の`総~byte数$bd )
+							<li>
+コレに向けて名前 `progress$et の`進捗~eventを発火する$( コレの`受信した~byte列$xhrの`長さ$byte, %本体 の`総~byte数$bd )
 ◎
-Fire a progress event named progress at this with this’s response’s body’s transmitted bytes and this’s response’s body’s total bytes.
+Fire a progress event named progress at this with this’s received bytes’s length and this’s response’s body’s total bytes.
 </li>
-								</ol>
-							</li>
-							<li class="algo">
-その`~close手続き$rRは
+						</ol>
+					</li>
+					<li class="algo">
+%本体の終端を処理する ~LET 次を走らす手続き
 ⇒
 `本体の終端を取扱う$( コレ, コレの`応答$xhr )
 ◎
-close steps
-• Run handle response end-of-body for this and this’s response.
+Let processEndOfBody be this step: run handle response end-of-body for this and this’s response.
 </li>
-							<li class="algo">
-その`~error手続き$rRは
+					<li class="algo">
+%本体~errorを処理する ~LET 次を走らす手続き
 ⇒
 `~errorを取扱う$( コレ, コレの`応答$xhr )
 ◎
-error steps
-• Run handle errors for this and this’s response.
+Let processBodyError be this step: run handle errors for this and this’s response.
 </li>
-						</ul>
-					</li>
 					<li>
-%読取器 から`~chunkを読取る$RSR( %読取n要請 )
+`本体を増分的に読取る$( コレの`応答$xhrの`本体$rs, %本体~chunkを処理する, %本体の終端を処理する, %本体~errorを処理する, コレに`関連な大域~obj$ )
 ◎
-Read a chunk from reader given readRequest.
+Incrementally read this’s response’s body, given processBodyChunk, processEndOfBody, processBodyError, and this’s relevant global object.
 </li>
 				</ol>
 			</li>
@@ -2782,18 +2748,31 @@ Let processedResponse be false.
 </li>
 			<li class="algo">
 <p>
-%応答を処理する ~LET 所与の
-( %~fetch応答 )
+%応答の本体の終端を処理する ~LET 所与の
+( %~fetch応答, %~NULLまたは失敗または~byte列 )
 に対し，次を走らす手続き：
 ◎
-Let processResponse, given a fetchResponse, be these steps:
+Let processResponseEndOfBody, given a fetchResponse and nullOrFailureOrBytes, be these steps:
 </p>
 				<ol>
 					<li>
 %応答 ~SET %~fetch応答
+◎
+Set response to fetchResponse.
+</li>
+					<li>
+~IF［
+%~NULLまたは失敗または~byte列 は`~byte列$である
+］
+⇒
+コレの`受信した~byte列$xhrに %~NULLまたは失敗または~byte列 を付加する
+◎
+If nullOrFailureOrBytes is a byte sequence, then append nullOrFailureOrBytes to this’s received bytes.
 </li>
 					<li>
 %応答は処理した？ ~SET ~T
+◎
+Set processedResponse to true.
 </li>
 				</ol>
 			</li>
@@ -2801,10 +2780,10 @@ Let processResponse, given a fetchResponse, be these steps:
 %要請 を`~fetchする$
 — 次を与える下で
 ⇒＃
-`応答を処理する$i ~SET %応答を処理する,
+`応答の本体の終端を処理する$i ~SET %応答の本体の終端を処理する,
 `並列~queueを利用する？$i ~SET ~T
 ◎
-Fetch req with processResponse set to processResponse and useParallelQueue set to true.
+Fetch req with processResponseEndOfBody set to processResponseEndOfBody and useParallelQueue set to true.
 </li>
 			<li>
 %今 ~LET 現時刻
@@ -2839,51 +2818,10 @@ this’s timeout is not 0 and this’s timeout milliseconds have passed since no
 %応答は処理した？ ~EQ ~F
 ］
 ⇒＃
-コレの`時間切れ~flag$xhr ~SET ~T
+コレの`時間切れ~flag$xhr ~SET ~T；
 この`~fetchを終了させる$
 ◎
 If processedResponse is false, then set this’s timed out flag and terminate fetching.
-</li>
-			<li>
-~IF［
-%応答 の`本体$rs ~EQ ~NULL
-］
-⇒＃
-`本体の終端を取扱う$( コレ, %応答 )；
-~RET
-◎
-If response’s body is null, then run handle response end-of-body for this and response, and then return.
-</li>
-			<li>
-<p>
-%読取器 ~LET %応答 の`本体$rsの`~stream$bd用の`読取器を取得する$RS()
-◎
-Let reader be the result of getting a reader for response’s body’s stream.
-</p>
-
-<p class="note">注記：
-この演算が例外を投出することはない。
-◎
-This operation will not throw an exception.
-</p>
-			</li>
-			<li>
-%~promise ~LET %読取器 から`すべての~byteを読取る$RSR()
-◎
-Let promise be the result of reading all bytes from reader.
-</li>
-			<li>
-%~promise が充足されるか却下されるまで`静止する$
-⇒
-~IF［
-%~promise は %~byte列 で充足された
-］
-⇒
-コレの`受信した~byte列$xhrに %~byte列 を付加する
-◎
-Wait for promise to be fulfilled or rejected.
-◎
-If promise is fulfilled with bytes, then append bytes to this’s received bytes.
 </li>
 			<li>
 `本体の終端を取扱う$( コレ, %応答 )
@@ -2938,9 +2876,9 @@ If xhr’s response is a network error, then return.
 If xhr’s synchronous flag is unset, then update xhr’s response’s body using response.
 </li>
 	<li>
-%伝送量 ~LET %応答 の`本体$rsの`伝送-済み~byte数$bd
+%伝送量 ~LET %xhr の`受信した~byte列$xhrの`長さ$byte
 ◎
-Let transmitted be response’s body’s transmitted bytes.
+Let transmitted be xhr’s received bytes’s length.
 </li>
 	<li>
 %長さ ~LET %応答 の`本体$rsの`総~byte数$bd
@@ -5145,7 +5083,7 @@ Copyright © WHATWG (Apple, Google, Mozilla, Microsoft). This work is licensed u
 </p>
 
 <p>
-This is the Living Standard. Those interested in the patent-review version should view the <a href="https://xhr.spec.whatwg.org/review-drafts/2020-08/">Living Standard Review Draft</a>.
+This is the Living Standard. Those interested in the patent-review version should view the <a href="https://xhr.spec.whatwg.org/review-drafts/2021-02/">Living Standard Review Draft</a>.
 </p>
 </div>
 
