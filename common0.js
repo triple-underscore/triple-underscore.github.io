@@ -2836,7 +2836,6 @@ literal::::リテラル
 
 媒体:media::~::メディア
 media::::メディア
-file::::ファイル
 画像:image::~::イメージ
 画素:pixel::~::ピクセル
 pixel::::ピクセル
@@ -2893,6 +2892,8 @@ icon::::アイコン
 widget::::ウィジェット
 caption::::キャプション
 pointer::::ポインタ
+file::::ファイル
+filename::::ファイル名
 外観:appearance:~
 手入力-:enter:~
 手入力:entry:~
