@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-02-28
-trans_update:2021-03-01
+spec_date:2021-03-04
+trans_update:2021-03-05
 source_checked:210202
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -662,6 +662,7 @@ i.~keepalive:#keepalive
 ~header~listから値を抽出する:#extract-header-list-values
 ~header~listから値を取得して復号して分割する:#concept-header-list-get-decode-split
 ~header~listから~MIME型を抽出する:#concept-header-extract-mime-type
+~header~listから長さを抽出する:#header-list-extract-a-length
 
 要請~Origin~headerを付加する:#append-a-request-origin-header
 
@@ -1001,9 +1002,11 @@ Bd.~MIME型:#concept-body-mime-type
 ~JSON~byte列を~JS値に構文解析する:~INFRA#parse-json-bytes-to-a-javascript-value
 文字列:~INFRA#string
 ~scalar値~文字列:~INFRA#scalar-value-string
+文字:~INFRA#code-point
 ~ASCII空白:~INFRA#ascii-whitespace
 ~ASCII文字列:~INFRA#ascii-string
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
+~ASCII数字:~INFRA#ascii-digit
 符号位置:~INFRA#code-point
 位置~変数:~INFRA#string-position-variable
 符号位置~並びを収集する:~INFRA#collect-a-sequence-of-code-points
@@ -1260,6 +1263,7 @@ forgiving-base64:
 区切子:delimiter:~
 分割-:split:~
 引用符付き:quoted::~
+数字:digit::~
 
 	頭部:leading／:start
 	尾部:trailing／:end
@@ -1341,6 +1345,7 @@ ok:
 増分的:incremental::~
 終結:finale::~
 合成な:syntheticな:~
+候補:candidate:~
 
 	highWaterMark
 	時点が来る:moment arrives
@@ -1735,6 +1740,7 @@ internet::::インターネット
 	%内部~応答:internalResponse
 	%範囲~値:rangeValue
 	%~header名:headerName
+	%~header~list:headers
 	%~http要請:httpRequest
 	%~http~cache:httpCache
 	%再検証-要請:revalidateRequest
@@ -1751,6 +1757,7 @@ internet::::インターネット
 	%一時的~MIME型:temporaryMimeType
 	-:quoteOrBackslash
 	%値~list:values
+	%候補~値:candidateValue
 	%直列化した生成元:serializedOrigin
 	%有構造~値:structuredValue
 	%直列化した値:serializedValue
@@ -3604,7 +3611,7 @@ A CORS-unsafe request-header byte is a byte byte for which one of the following 
 <p>
 `~CORS非安全な要請~header名たち@
 は、所与の
-( `~header~list$ %~headerたち )
+( `~header~list$ %~header~list )
 に対し，次に従って決定される：
 ◎
 The CORS-unsafe request-header names, given a header list headers, are determined as follows:
@@ -3627,7 +3634,7 @@ Let safelistValueSize be 0.
 </li>
 	<li>
 <p>
-%~headerたち を成す
+%~header~list を成す
 ~EACH( %~header )
 に対し：
 ◎
@@ -7589,15 +7596,104 @@ Specifications should avoid introducing new exceptions and should only do so wit
 
 			</section>
 		</section>
+		<section id="content-length-header">
+<h3 title="Content-Length header">3.3. `Content-Length^h ~header</h3>
+
+<p>
+`Content-Length$h ~headerは，大部分は~HTTPにて定義されているが、その処理~modelは，ここに定義される
+— ~HTTPが定義する~modelは、~web内容と互換でないので。
+`HTTP$r
+◎
+The `Content-Length` header is largely defined in HTTP. Its processing model is defined here as the model defined in HTTP is not compatible with web content. [HTTP]
+</p>
+
+<div class="algo">
+<p>
+`~header~listから長さを抽出する@
+ときは、所与の
+( `~header~list$ %~header~list )
+に対し，次の手続きを走らす：
+◎
+To extract a length from a header list headers, run these steps:
+</p>
+<ol>
+	<li>
+%値~list ~LET `~header~listから値を取得して復号して分割する$( %~header~list, `Content-Length^h )
+◎
+Let values be the result of getting, decoding, and splitting `Content-Length` from headers.
+</li>
+	<li>
+~IF［
+%値~list ~EQ ~NULL
+］
+⇒
+~RET ~NULL
+◎
+If values is null, then return null.
+</li>
+	<li>
+%候補~値 ~LET ~NULL
+◎
+Let candidateValue be null.
+</li>
+	<li>
+<p>
+%値~list を成す
+~EACH( %値 )
+に対し：
+◎
+For each value of values:
+</p>
+		<ol>
+			<li>
+~IF［
+%候補~値 ~EQ ~NULL
+］
+⇒
+%候補~値 ~SET %値
+◎
+If candidateValue is null, then set candidateValue to value.
+</li>
+			<li>
+~ELIF［
+%値 ~NEQ %候補~値
+］
+⇒
+~RET `失敗^i
+◎
+Otherwise, if value is not candidateValue, return failure.
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+%候補~値 ~EQ 空~文字列
+］~OR［
+%候補~値 内に`~ASCII数字$でない`文字$がある
+］
+⇒
+~RET ~NULL
+◎
+If candidateValue is the empty string or has a code point that is not an ASCII digit, then return null.
+</li>
+	<li>
+~RET %候補~値 を 10 進数として解釈した結果。
+◎
+Return candidateValue, interpreted as decimal number.
+</li>
+</ol>
+</div>
+
+		</section>
 		<section id="content-type-header">
-<h3 title="Content-Type header">3.3. `Content-Type^h ~header</h3>
+<h3 title="Content-Type header">3.4. `Content-Type^h ~header</h3>
 
 <p>
 `Content-Type$h ~headerは，大部分は~HTTPにて定義されているが、その処理~modelは，ここに定義される
-— ~HTTPが定義する~ABNFは、~web内容と互換でないので。
+— ~HTTPが定義する~modelは、~web内容と互換でないので。
 `HTTP$r
 ◎
-The `Content-Type` header is largely defined in HTTP. Its processing model is defined here as the ABNF defined in HTTP is not compatible with web content. [HTTP]
+The `Content-Type` header is largely defined in HTTP. Its processing model is defined here as the model defined in HTTP is not compatible with web content. [HTTP]
 </p>
 
 <div class="algo">
@@ -7804,7 +7900,7 @@ Content-Type:
 
 		</section>
 		<section id="x-content-type-options-header">
-<h3 title="X-Content-Type-Options header">3.4. `X-Content-Type-Options^h ~header</h3>
+<h3 title="X-Content-Type-Options header">3.5. `X-Content-Type-Options^h ~header</h3>
 
 <p>
 `X-Content-Type-Options@h
@@ -7870,7 +7966,7 @@ X-Content-Type-Options = "nosniff" ; <span class="comment">大小無視</span>
 </pre>
 
 			<section id="should-response-to-request-be-blocked-due-to-nosniff?">
-<h4 title="Should response to request be blocked due to nosniff?">3.4.1. %要請 に対する %応答 は，~nosniffに因り阻止されるべきか？</h4>
+<h4 title="Should response to request be blocked due to nosniff?">3.5.1. %要請 に対する %応答 は，~nosniffに因り阻止されるべきか？</h4>
 
 <p>
 次の手続きを走らす：
@@ -7945,7 +8041,7 @@ Only request destinations that are script-like or "style" are considered as any 
 			</section>
 		</section>
 		<section id="corb">
-<h3 title="CORB">3.5. ~CORB</h3>
+<h3 title="CORB">3.6. ~CORB</h3>
 
 <p class="note">注記：
 ~CORBとも~~略称される，非同一-生成元からの読取nの阻止-法（ `Cross-Origin Read Blocking^en ）は、疑わしい非同一-生成元~資源~fetchを識別する~algoであり（例： `img^e 要素の内側で~JSONを具現化しようと試みる様な~fetchは、どうやっても失敗することになる），そのような資源が~web~pageに達する前に阻止する。
@@ -8090,7 +8186,7 @@ Return allowed.
 
 		</section>
 		<section id="cross-origin-resource-policy-header">
-<h3 title="Cross-Origin-Resource-Policy header">3.6. `Cross-Origin-Resource-Policy^h ~header</h3>
+<h3 title="Cross-Origin-Resource-Policy header">3.7. `Cross-Origin-Resource-Policy^h ~header</h3>
 
 <p>
 `Cross-Origin-Resource-Policy@h
