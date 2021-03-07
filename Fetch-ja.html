@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-03-04
-trans_update:2021-03-05
+spec_date:2021-03-05
+trans_update:2021-03-07
 source_checked:210202
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -398,6 +398,7 @@ st.308:~HTTPsem#status.308
 st.401:~HTTPsem#status.401
 st.403:~HTTPsem#status.403
 st.407:~HTTPsem#status.407
+st.421:~HTTPsem#status.421
 
 	●HTML 要素
 e.head:~HEmetadata#the-head-element
@@ -1844,6 +1845,9 @@ internet::::インターネット
 	%接続たち:connections
 	%専用？:dedicated
 	%~HTTP3のみ？:http3Only
+	%新たな接続~fetch？:isNewConnectionFetch
+	%新たな接続を強制するか？:forceNewConnection
+	%新たな接続を強制するか？:forceNew
 
 	●指示語
 
@@ -2008,7 +2012,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/51a664dc8284e79349652e7680f29ac0168b862e/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/c5eb6214af9ac03bac0cff2b7de7d2e39f2d422f/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -6439,25 +6443,24 @@ A user agent has an associated connection pool. A connection pool consists of ze
 <p>
 `接続を得する@
 ときは、所与の
-( %~key, %生成元, %資格証？ )
-および，所与の
-(
+( %~key, %生成元, %資格証？,
+真偽値 %新たな接続を強制するか？（省略時は ~F ）,
 真偽値
 `~HTTP3のみ？@i
-（省略時は ~F ）
+（省略時は ~F ）,
 真偽値
 `専用？@i
 （省略時は ~F ）
 )
 に対し，次を走らす：
 ◎
-To obtain a connection, given a key, origin, credentials, an optional boolean http3Only (default: false), and an optional boolean dedicated (default: false), run these steps:
+To obtain a connection, given a key, origin, credentials, an optional boolean forceNew (default false), an optional boolean http3Only (default false), and an optional boolean dedicated (default false), run these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%専用？ ~EQ ~F
+%新たな接続を強制するか？ ~EQ ~F
 ］：
 ◎
 If dedicated is false, then:
@@ -6522,14 +6525,14 @@ Set connection to the result of establishing an HTTP connection to origin. [HTTP
 					<li>
 ［
 %~HTTP3のみ？ ~EQ ~T
-］の場合、~HTTP3接続を確立すること。
+］の場合、~HTTP3接続を確立する
 `HTTP3$r
 ◎
 If http3Only is true, then establish an HTTP/3 connection. [HTTP3]
 </li>
 					<li>
 <p>
-~HTTP3接続を確立するときは、初期 `SETTINGS^i ~frame内に次を内包すること
+~HTTP3接続を確立するときは、初期 `SETTINGS^i ~frame内に次を内包する
 ⇒＃
 1 を値に伴う `SETTINGS_ENABLE_WEBTRANSPORT^i,
 1 を値に伴う `H3_DATAGRAM^i
@@ -6544,7 +6547,7 @@ When establishing an HTTP/3 connection, include SETTINGS_ENABLE_WEBTRANSPORT wit
 					<li>
 ［
 %資格証？ ~EQ ~F
-］の場合、~TLS~client証明書は`送信しない^emこと
+］の場合、~TLS~client証明書は`送信しない^em
 ◎
 If credentials is false, then do not send a TLS client certificate.
 </li>
@@ -8514,7 +8517,7 @@ Otherwise, return blocked.
 </li>
 				</ul>
 ◎
-If the following are true
+If all of the following are true
 • origin is schemelessly same site with response’s URL’s origin
 • origin’s scheme is "https" or response’s URL’s scheme is not "https"
 then return allowed.
@@ -10638,10 +10641,13 @@ Return the result of running HTTP-redirect fetch given fetchParams and response.
 <p>
 `~HTTP~network-or-cache~fetch@
 を遂行するときは、所与の
-( `~fetch~params$ %~fetch~params, 真偽値 %認証~fetchか？（省略時は ~F ） )
+( `~fetch~params$ %~fetch~params,
+真偽値 %認証~fetchか？（省略時は ~F ）,
+真偽値 %新たな接続~fetch？（省略時は ~F ）
+)
 に対し，次の手続きを走らす：
 ◎
-To HTTP-network-or-cache fetch, given a fetch params fetchParams and an optional boolean isAuthenticationFetch (default false), run these steps:
+To HTTP-network-or-cache fetch, given a fetch params fetchParams, an optional boolean isAuthenticationFetch (default false), and an optional boolean isNewConnectionFetch (default false), run these steps:
 </p>
 
 <p class="note">注記：
@@ -11418,9 +11424,9 @@ If response is null, then:
 If httpRequest’s cache mode is "only-if-cached", then return a network error.
 </li>
 			<li>
-%回送-応答 ~LET `~HTTP~network~fetch$( %~http~fetch~params, %資格証を含めるか？ )
+%回送-応答 ~LET `~HTTP~network~fetch$( %~http~fetch~params, %資格証を含めるか？, %新たな接続~fetch？ )
 ◎
-Let forwardResponse be the result of running HTTP-network fetch given httpFetchParams and includeCredentials.
+Let forwardResponse be the result of running HTTP-network fetch given httpFetchParams, includeCredentials, and isNewConnectionFetch.
 </li>
 			<li>
 <p>
@@ -11699,8 +11705,67 @@ Set response to the result of running HTTP-network-or-cache fetch given fetchPar
 		</ol>
 	</li>
 	<li>
+<p>
 ~IF［
-%認証~fetchか？ ~EQ T
+次が すべて満たされる
+］…：
+◎
+If all of the following are true
+</p>
+		<ul>
+			<li>
+%応答 の`状態s$rs ~EQ `421$st
+◎
+response’s status is 421
+</li>
+			<li>
+%新たな接続~fetch？ ~EQ ~F
+◎
+isNewConnectionFetch is false
+</li>
+			<li>
+［
+%要請 の`本体$rq ~EQ ~NULL
+］~OR［［
+%要請 の`本体$rq ~NEQ ~NULL
+］~AND［
+%要請 の`本体$rqの`~source$bd ~NEQ ~NULL
+］］
+◎
+request’s body is null, or request’s body is non-null and request’s body’s source is non-null
+</li>
+		</ul>
+<p>
+…ならば：
+◎
+then:
+</p>
+		<ol>
+			<li>
+~IF［
+進行中の~fetchは`終了され$た
+］
+⇒
+~RET `終了時$の %中止~flag に応じて
+⇒＃
+`中止する^i ならば`中止~network~error$／
+~ELSE_ `~network~error$
+◎
+If the ongoing fetch is terminated, then:
+• Let aborted be the termination’s aborted flag.
+• If aborted is set, then return an aborted network error.
+• Return a network error.
+</li>
+			<li>
+%応答 ~SET `~HTTP~network-or-cache~fetch$( %~fetch~params, %認証~fetchか？, ~T )
+◎
+Set response to the result of running HTTP-network-or-cache fetch given fetchParams, isAuthenticationFetch, and true.
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+%認証~fetchか？ ~EQ ~T
 ］
 ⇒
 ［
@@ -11732,10 +11797,13 @@ Return response. Typically response’s body’s stream is still being enqueued 
 <p>
 `~HTTP~network~fetch@
 を遂行するときは、所与の
-( `~fetch~params$ %~fetch~params, 真偽値 %資格証を含めるか？（省略時は ~F ） )
+( `~fetch~params$ %~fetch~params,
+真偽値 %資格証を含めるか？（省略時は ~F ）,
+真偽値 %新たな接続を強制するか？（省略時は ~F ）
+)
 に対し，次の手続きを走らす：
 ◎
-To HTTP-network fetch, given a fetch params fetchParams and an optional boolean includeCredentials (default false), run these steps:
+To HTTP-network fetch, given a fetch params fetchParams, an optional boolean includeCredentials (default false), and an optional boolean forceNewConnection (default false), run these steps:
 </p>
 <ol>
 	<li>
@@ -11785,10 +11853,10 @@ Switch on request’s mode:
 			<li>
 ~ELSE_
 ⇒
-`接続を得する$( %~network区分~key, %要請 の`現在の~URL$rqの`生成元$url, %資格証を含めるか？ )
+`接続を得する$( %~network区分~key, %要請 の`現在の~URL$rqの`生成元$url, %資格証を含めるか？, %新たな接続を強制するか？ )
 ◎
 Otherwise
-• Let connection be the result of obtaining a connection, given networkPartitionKey, request’s current URL’s origin, and includeCredentials.
+• Let connection be the result of obtaining a connection, given networkPartitionKey, request’s current URL’s origin, includeCredentials, and forceNewConnection.
 </li>
 		</ul>
 	</li>
