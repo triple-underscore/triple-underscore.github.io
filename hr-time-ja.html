@@ -87,8 +87,8 @@ return text;
 
 ●●options
 
-spec_date:2021-02-18
-trans_update:2021-02-24
+spec_date:2021-03-04
+trans_update:2021-03-07
 source_checked:210212
 page_state_key:TIMING
 original_url:https://w3c.github.io/hr-time/
@@ -164,7 +164,8 @@ c.Date.now():~TC39#sec-date.now
 相対的な高分解能~時刻:#dfn-relative-high-resolution-time
 現在の高分解能~時刻:#dfn-current-high-resolution-time
 単調増加~時計:#dfn-monotonic-clock
-大域的な単調増加~時計:#dfn-global-monotonic-clock
+共有される単調増加~時計:#dfn-shared-monotonic-clock
+安全でない共有される現在の時刻:#dfn-unsafe-shared-current-time
 
 	●用語（外部
 実装定義:~INFRA#implementation-defined
@@ -183,7 +184,9 @@ enV.非同一-生成元~隔離-済み能力:~WAPI#concept-settings-object-cross-
 ~unloadを~promptする:~NAVI#prompt-to-unload-a-document
 
 既定の~toJSON手続き:~WEBIDLjs#default-tojson-steps
-~JS時刻:~TC39#sec-time-values-and-time-range
+
+~JS時刻:#_js-time
+	~JS時刻:~TC39#sec-time-values-and-time-range
 
 cite.User Timing:~USER-TIMING#user-timing-ja.html
 
@@ -261,7 +264,7 @@ timer::::タイマー
 協調-:coordinate:~
 退歩:regressions:~
 分析:analysis:~
-分析-:analyse:~
+分析-:analyze:~
 音:sound:~
 見積もり:estimate:~
 機密的:confidential:~
@@ -473,12 +476,22 @@ This specification defines an API that provides the time origin, and current tim
 の総称として，この語を利用する
 — この仕様が定義する~modelにおいては、これらを区別する必要はないので。
 原文には説明されていないが、
-`system clock adjustments^en は、 NTP などの外部の時計と~system時計とのずれを
+`system clock adjustments^en は、 NTP などの外部の基準~時計と~system時計とのずれを
 — 自動的に，場合によっては利用者が —
-補正することを意味するようだ。
+調整することを意味するようだ。
 `clock skew^en は、 Wikipedia によれば［
 熱などの物理的な／回路構成などの機械的な
-］要因による，~system内の複数箇所の間の~driftを意味するようだが、この語の用法から，それに対処するために~system時計を補正することを表すと見受けられる。
+］要因による，~system内の複数箇所の間の~driftを意味するようだが、この語の用法から，それに対処するために~system時計を調整することを表すと見受けられる。
+</li>
+	<li>
+`~JS時刻@
+は、
+`ECMA-262$r に定義される
+<a href="~TC39#sec-time-values-and-time-range">時刻</a>
+を指す（単に “時刻（ `time^en ）” では汎用に過ぎるので、この訳では，このように言い換える）。
+~JS時刻は、以前までは（公式的な定義がない）
+<a href="https://en.wikipedia.org/wiki/Unix_time">Unix 時刻</a>
+と称されていた。
 </li>
 </ul>
 
@@ -492,7 +505,7 @@ This specification defines an API that provides the time origin, and current tim
 ECMAScript 言語~仕様 `ECMA-262$r は、
 1970 年 1 月 1 日 UTC からの~milli秒~単位による時間を表現する時刻~値として，
 `Date$c ~objを定義する。
-この値は， 1970 年 1 月 1 日 UTC から約 28 万 5616 年間のどの時刻も~milli秒~単位で表現でき、ほとんどの目的においては，この定義で足りる。
+この値は， 1970 年 1 月 1 日 UTC から約 285616 年間のどの時刻も~milli秒~単位で表現でき、ほとんどの目的においては，この定義で足りる。
 `DOMTimeStamp$I `WEBIDL$r も同様に定義されている。
 ◎
 The ECMAScript Language specification [ECMA-262] defines the Date object as a time value representing time in milliseconds since 01 January, 1970 UTC. For most purposes, this definition of time is sufficient as these values represent time to millisecond precision for any instant that is within approximately 285,616 years from 01 January, 1970 UTC. The DOMTimeStamp is defined similarly [WEBIDL].
@@ -527,9 +540,10 @@ var %duration = Date.now() - %mark_start;
 
 <p>
 この定義による時刻は、ある種の~taskには不足になろう
-⇒＃
-安定的な`単調増加~時計$を成さず，`外的な時計~調整$の~subjectになるので／
-~milli秒より細かい分解能を供さないので
+— ［
+安定的な`単調増加~時計$を成さず，`外的な時計~調整$の~subjectになる／
+~milli秒より細かい分解能を供さない
+］ので。
 ◎
 For certain tasks this definition of time may not be sufficient as it:
 • Does not have a stable monotonic clock, and as a result, it is subject to system clock skew.
@@ -538,7 +552,9 @@ For certain tasks this definition of time may not be sufficient as it:
 
 <p>
 この仕様は、 `Date.now()$c `ECMA-262$r の挙動を変更するよう提案するものではない。
-それは、暦における現在の時刻~値を決定する点においては生粋に有用であり，長い利用の歴史がある。
+それは、［
+暦における現在の時刻~値を決定すること
+］においては生粋に有用であり，長い利用の歴史がある。
 `DOMHighResTimeStamp$I 型と［
 `performance.now()$m  ~method／
 `timeOrigin$m 属性
@@ -784,54 +800,54 @@ Otherwise, the time origin is undefined.
 
 <p>
 `時刻起点~時刻印@
-は、`時刻起点$を指す
-【大域的な】
-時刻を与える，高分解能な時刻~値である。
+は、`時刻起点$を指す時刻を与える，高分解能な時刻~値である。
 所与の`大域~obj$rM %G の`時刻起点~時刻印$は：
 ◎
 The time origin timestamp is the high resolution time value at which time origin is zero. To obtain the time origin timestamp given a global object (global):
+</p>
+<ol>
+	<li>
+~Assert：
+%G の`時刻起点$は未定義でない。
 ◎
 Assert that global's time origin is not undefined.
-</p>
-
-<ul>
-	<li>
-%G の`時刻起点$が未定義な場合は定義されない。
 </li>
 	<li>
 <p>
-他の場合、次の 2 つを加算した結果として定義される：
+~RET 次の 2 つを加算した結果：
 </p>
 		<ul>
 			<li>
 ［
-`大域的な単調増加~時計$が時刻 0 を指す時点
-］を高分解能な`~JS時刻$で表現している `DOMHighResTimeStamp$I 値
+`共有される単調増加~時計$が時刻 0 を指す時点
+］を高分解能な時刻【絶対的な時刻（`~JS時刻$）】で表現している `DOMHighResTimeStamp$I 値
 ◎
-Let t1 be the DOMHighResTimeStamp representing the high resolution time at which the global monotonic clock is zero.
+Let t1 be the DOMHighResTimeStamp representing the high resolution time at which the shared monotonic clock is zero.
 </li>
 			<li>
-`大域的な単調増加~時計$による［
-%G の`時刻起点$
-］の時刻を，高分解能で表現している `DOMHighResTimeStamp$I 値
+［
+`共有される単調増加~時計$が %G の`時刻起点$を指す時点
+］を高分解能な時刻で表現している `DOMHighResTimeStamp$I 値
 ◎
-Let t2 be the DOMHighResTimeStamp representing the high resolution time value of the global monotonic clock at global's time origin.
+Let t2 be the DOMHighResTimeStamp representing the high resolution time value of the shared monotonic clock at global's time origin.
 ◎
 Return the sum of t1 and t2.
 </li>
 		</ul>
 	</li>
-</ul>
+</ol>
 
 <p class="note">注記：
-`時刻起点~時刻印$は、`外的な時計~調整$の~subjectでない`大域的な単調増加~時計$を基準に記録されるので，［
+`時刻起点~時刻印$は、［
+`外的な時計~調整$の~subjectでない`共有される単調増加~時計$
+］を基準に記録されるので，［
 `Date.now()$c を “~zero時刻”
-【すなわち、時刻起点】
-に実行したときの結果と相違し得る。
+【すなわち、時刻起点】に実行したときの結果
+］と相違し得る。
 <a href="#sec-monotonic-clock">§ 単調増加~時計</a>
 を見よ。
 ◎
-The time origin timestamp and the value returned by Date.now() executed at "zero time" can differ because the former is recorded with respect to a global monotonic clock that is not subject to system and user clock adjustments, clock skew, and so on—see § 6. Monotonic Clock.
+The time origin timestamp and the value returned by Date.now() executed at "zero time" can differ because the former is recorded with respect to a shared monotonic clock that is not subject to system and user clock adjustments, clock skew, and so on—see § 6. Monotonic Clock.
 </p>
 
 <div class="algo">
@@ -861,9 +877,9 @@ The current high resolution time given a global object current global must run t
 </p>
 <ol>
 	<li>
-%現在の時刻 ~LET 現~時刻
+%現在の時刻 ~LET `安全でない共有される現在の時刻$
 ◎
-Let current time be the present time.
+Let current time be the unsafe shared current time.
 </li>
 	<li>
 %時間~分解能 ~LET %G に`関連な設定群~obj$の`非同一-生成元~隔離-済み能力$enVに応じて
@@ -898,6 +914,13 @@ Return the result of relative high resolution time given current time and curren
 
 </div>
 
+<p>
+`安全でない共有される現在の時刻@
+は、`共有される単調増加~時計$の現在の値を返すモノトスル。
+◎
+The unsafe shared current time must return the current value of the shared monotonic clock.
+</p>
+
 	</section>
 	<section id="sec-domhighrestimestamp">
 <h2 title="The DOMHighResTimeStamp typedef">3. `DOMHighResTimeStamp^I ~typedef</h2>
@@ -909,11 +932,11 @@ Return the result of relative high resolution time given current time and curren
 </p>
 
 <ul ><li>`時刻起点$から相対的に測定された時刻
-</li><li>`大域的な単調増加~時計$から相対的に測定された時刻
+</li><li>`共有される単調増加~時計$から相対的に測定された時刻
 </li><li>2 つの `DOMHighResTimeStamp$I 値の時間~差
 </li></ul>
 ◎
-The DOMHighResTimeStamp type is used to store a time value in milliseconds, measured relative from the time origin, global monotonic clock, or a time value that represents a duration between two DOMHighResTimeStamps.
+The DOMHighResTimeStamp type is used to store a time value in milliseconds, measured relative from the time origin, shared monotonic clock, or a time value that represents a duration between two DOMHighResTimeStamps.
 </div>
 
 <pre class="idl">
@@ -1035,10 +1058,9 @@ The time values returned when calling the now() method on Performance objects wi
 
 <div class="p">
 <p>
-`timeOrigin$m が返す時刻~値には、同じ`大域的な単調増加~時計$を利用するモノトスル†。
-`大域的な単調増加~時計@
-とは、
-`ECMA-262$r に定義される`~JS時刻$††を基準にする`単調増加~時計$であり，いくつかの`時刻起点$から共有される。
+`timeOrigin$m が返す時刻~値には、同じ`共有される単調増加~時計$を利用するモノトスル†。
+`共有される単調増加~時計@
+とは、`~JS時刻$を基準にする`単調増加~時計$であり，いくつかの`時刻起点$から共有される。
 <a href="#sec-privacy-security">~privacyと~security</a>
 を見よ。
 `test_cross_frame_start$test
@@ -1047,41 +1069,36 @@ The time values returned when calling the now() method on Performance objects wi
 <p class="trans-note">【
 どの`時刻起点$
 — 言い換えれば、`大域~obj$rM —
-たちが同じこの時計を共有するものとされるかは，ここには定義されていないが、下の注記に見られるように，互いに情報をやりとりできる`大域~obj$rMどうしは共有することになるであろう。
+たちが同じこの時計を共有するものとされるかは，この仕様には定義されていないが、下の注記に見られるように，互いに情報をやりとりできる`大域~obj$rMどうしは共有することになるであろう。
 】【†
 この要件をより詳細に述べるなら、
-“2 つの`大域~obj$rM %G1, %G2 が同じ`大域的な単調増加~時計$を共有するならば、
+“2 つの`大域~obj$rM %G1, %G2 が同じ`共有される単調増加~時計$を共有するならば、
 %G1, %G2 の［
 `performance$m 属性が返す `Performance$I ~objの `timeOrigin$m が返す時刻~値
 ］には，その時計を利用するモノトスル”
 となるであろう。
-】【††
-原文では単に `time^en だが、一般過ぎるので，この訳では “~JS” を付与する。
-~JS時刻は、以前までは（公式的な定義がない）
-<a href="https://en.wikipedia.org/wiki/Unix_time">Unix 時間</a>
-と称されていた。
 】</p>
 
 ◎
-The time values returned when getting performance.timeOrigin MUST use the same global monotonic clock that is shared by time origins, is monotonically increasing and not subject to system clock adjustments or system clock skew, and whose reference point is the [ECMA-262] time definition - see § 7. Privacy and Security.
+The time values returned when getting performance.timeOrigin MUST use the same shared monotonic clock that is shared by time origins, is monotonically increasing and not subject to system clock adjustments or system clock skew, and whose reference point is the [ECMA-262] time definition - see § 7. Privacy and Security.
 </div>
 
 <p class="note">注記：
 ~UAは、［
 ~browserの各~再起動 ／
 他から隔離された閲覧~session（例：~~私的（ `incognito or similar^en ）閲覧~mode）の各~開始
-］ごとに，自身の`大域的な単調増加~時計$を設定し直せる。
+］ごとに，自身の`共有される単調増加~時計$を設定し直せる。
 そのため，開発者は、［［
 過去現在未来すべての文脈にわたり，単調増加するような~prop
 ］を保持する，絶対的な時刻
-］には，大域的な時刻印を利用するベキでない。
+］には，共有される時刻印を利用するベキでない。
 実施において，単調増加する~propを適用できる用途は、［
 供されている~message法の仕組み
 — 例： `postMessage()^m, `BroadcastChannel$I, 等々 —
 を介して~messageを交換することにより，互いに他へ到達できるような文脈
 ］に限られる。
 ◎
-The user agent can reset its global monotonic clock across browser restarts, or whenever starting an isolated browsing session—e.g. incognito or similar browsing mode. As a result, developers should not use global timestamps as absolute time that holds its monotonic properties across all past, present, and future contexts; in practice, the monotonic properties only apply for contexts that can reach each other by exchanging messages via one of the provided messaging mechanisms - e.g. postMessage, BroadcastChannel, etc.
+The user agent can reset its shared monotonic clock across browser restarts, or whenever starting an isolated browsing session—e.g. incognito or similar browsing mode. As a result, developers should not use shared timestamps as absolute time that holds its monotonic properties across all past, present, and future contexts; in practice, the monotonic properties only apply for contexts that can reach each other by exchanging messages via one of the provided messaging mechanisms - e.g. postMessage, BroadcastChannel, etc.
 </p>
 
 <p class="note">注記：
@@ -1216,18 +1233,18 @@ Clock resolution is an unsolved and evolving area of research, with no existing 
 分解能が~milli秒より細かい`時刻起点~時刻印$
 ］を供する~APIも定義する。
 ~APIには［
-すべての~browser文脈にわたって共有されなければナラナイ，`大域的な単調増加~時計$
+すべての~browser文脈にわたって共有されなければナラナイ，`共有される単調増加~時計$
 ］が要求され，それを~appに公開する。
 この時計は，物理的な時刻に縛られる必要はないが、新たな［
 利用者についての指紋収集-
-］~entropyを公開するのを避けるため，`~JS時刻$ `ECMA-262$r を基準に設定することが推奨される。
-~JS時刻は，すでに~appにより容易に得される一方で、新たな論理的~時計を公開するのは，新たな情報を供するに等しいので。
+］~entropyを公開するのを避けるため，`~JS時刻$を基準に設定することが推奨される。
+~JS時刻は，すでに~appにより容易に得される一方で、新たな論理-時計を公開するのは，新たな情報を供するに等しいので。
 ◎
-This specification also defines an API that provides sub-millisecond time resolution of the zero time of the time origin, which requires and exposes a global monotonic clock to the application, and that must be shared across all the browser contexts. The global monotonic clock does not need to be tied to physical time, but is recommended to be set with respect to the [ECMA-262] definition of time to avoid exposing new fingerprint entropy about the user — e.g. this time can already be easily obtained by the application, whereas exposing a new logical clock provides new information.
+This specification also defines an API that provides sub-millisecond time resolution of the zero time of the time origin, which requires and exposes a shared monotonic clock to the application, and that must be shared across all the browser contexts. The shared monotonic clock does not need to be tied to physical time, but is recommended to be set with respect to the [ECMA-262] definition of time to avoid exposing new fingerprint entropy about the user — e.g. this time can already be easily obtained by the application, whereas exposing a new logical clock provides new information.
 </p>
 
 <p>
-しかしながら，上述した仕組みの下でも、`大域的な単調増加~時計$は，
+しかしながら，上述した仕組みの下でも、`共有される単調増加~時計$は，
 <a href="https://en.wikipedia.org/wiki/Clock_drift">時計の~drift</a>
 （ `clock drift^en, “遅れ／進み” ）に関する分解能も供し得る。
 今日の~appは、同じ文脈の中の複数の時点で，［
@@ -1237,14 +1254,14 @@ This specification also defines an API that provides sub-millisecond time resolu
 を観測できる。
 攻撃者はまた、
 `timeOrigin$m 属性から得られる［
-`大域的な単調増加~時計$から報告される`時刻起点~時刻印$
+`共有される単調増加~時計$から報告される`時刻起点~時刻印$
 ］と, 従来の時計により［
-`大域的な単調増加~時計$が 0 を指すと現在~見積もられる時刻
+`共有される単調増加~時計$が 0 を指すと現在~見積もられる時刻
 ］（すなわち，
 `Date.now()^c − `performance.now()^m
 ）とを，長時間にわたり比較して、これらの時計どうしの~driftを観測できる~~可能性がある。
 ◎
-However, even with the above mechanism in place, the global monotonic clock may provide additional clock drift resolution. Today, the application can timestamp the time-of-day and monotonic time values (via Date.now() and Performance.now()) at multiple points within the same context and observe drift between them—e.g. due to automatic or user clock adjustments. With the Performance.timeOrigin attribute, the attacker can also compare the time at which time origin is zero, as reported by the global monotonic clock, against the current time-of-day estimate of when it is zero (i.e. the difference between Date.now()-performance.now() and performance.timeOrigin) and potentially observe clock drift between these clocks over a longer time period.
+However, even with the above mechanism in place, the shared monotonic clock may provide additional clock drift resolution. Today, the application can timestamp the time-of-day and monotonic time values (via Date.now() and Performance.now()) at multiple points within the same context and observe drift between them—e.g. due to automatic or user clock adjustments. With the Performance.timeOrigin attribute, the attacker can also compare the time at which time origin is zero, as reported by the shared monotonic clock, against the current time-of-day estimate of when it is zero (i.e. the difference between Date.now()-performance.now() and performance.timeOrigin) and potentially observe clock drift between these clocks over a longer time period.
 </p>
 
 <p class="trans-note">【
@@ -1255,7 +1272,7 @@ However, even with the above mechanism in place, the global monotonic clock may 
 
 <p>
 実施においては、~appは，同じ時刻~driftを複数回の~naviにわたり観測できる：
-~appは、各~文脈における論理的な時刻を記録し，
+~appは、各~文脈における論理-時刻を記録し，
 ~client／~server
 時刻~同期法の仕組みを利用して、利用者の時計における変化を推定できる。
 同様に~TCP時刻印などの低層の仕組みは、複数回の訪問を要することなく，同じ高分解能な情報を~serverに露呈し得る。
