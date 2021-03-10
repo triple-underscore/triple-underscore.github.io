@@ -264,7 +264,7 @@ Util.del_j = () => {
 			p.removeChild(p.firstChild);
 		}
 	});
-	repeat('h2,h3,h4,h5', (e) => {
+	repeat('h2,h3,h4,h5,h6', (e) => {
 		const text = e.title;
 		if(text){
 			e.textContent = `${e.textContent.match(/[ABC\d\.]+/) || ''} ${text}`;
@@ -1204,6 +1204,7 @@ HEmetadata:HTML-metadata-ja.html
 HEgrouping:HTML-grouping-ja.html
 HEedits:HTML-edits-ja.html
 HEimages:HTML-images-ja.html
+HEimageAlt:HTML-image-alt-ja.html
 HEembed:HTML-embed-ja.html
 HEmedia:HTML-media-ja.html
 HEtrack:HTML-track-ja.html
