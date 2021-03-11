@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-03-05
-trans_update:2021-03-07
+spec_date:2021-03-10
+trans_update:2021-03-11
 source_checked:210202
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -473,7 +473,7 @@ I.FormData:~XHR#formdata
 I.XMLHttpRequest:~XHR#xmlhttprequest
 I.XMLHttpRequestUpload:~XHR#xmlhttprequestupload
 I.WebSocket:~WEBSOCKET#websocket
-I.URLSearchParams:~URL1#dom-urlsearchparams
+I.URLSearchParams:~URL1#urlsearchparams
 I.Window:~WINDOW#window
 I.Worker:~WORKERS#worker
 I.SharedWorker:~WORKERS#sharedworker
@@ -709,7 +709,7 @@ md.正規化-:#concept-method-normalize
 
 	●本体
 本体:#concept-body
-bd.総~byte数:#concept-body-total-bytes
+bd.長さ:#concept-body-total-bytes
 bd.~source:#concept-body-source
 bd.~stream:#concept-body-stream
 本体を~cloneする:#concept-body-clone
@@ -821,6 +821,7 @@ fg.終了させる:#concept-fetch-group-terminate
 
 ~network区分~key:#network-partition-key
 ~network区分~keyを決定する:#determine-the-network-partition-key
+要請の~network区分~keyを決定する:#request-determine-the-network-partition-key
 ~HTTP~cache区分を決定する:#determine-the-http-cache-partition
 不良~port:#bad-port
 ~fetchingは，不良~portに因り阻止されるべきか？:#block-bad-port
@@ -1184,6 +1185,7 @@ i.素片は除外する:~URL1#url-serializer-exclude-fragment
 文字列を~byte列に~percent-復号する:~URL1#string-percent-decode
 素片~付き絶対~URL文字列:~URL1#absolute-url-with-fragment-string
 
+~entry~list:~XHR#concept-formdata-entry-list
 xhr.~entry:~XHR#concept-formdata-entry
 	xhr.~entryを作成する:~XHR#create-an-entry
 
@@ -1848,6 +1850,8 @@ internet::::インターネット
 	%新たな接続~fetch？:isNewConnectionFetch
 	%新たな接続を強制するか？:forceNewConnection
 	%新たな接続を強制するか？:forceNew
+	%Content-Length~header値:contentLengthHeaderValue
+	%内容~長さ:contentLength
 
 	●指示語
 
@@ -2012,7 +2016,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/c5eb6214af9ac03bac0cff2b7de7d2e39f2d422f/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/26ae89f6f4833510b3be5e12695fd47e7c19b310/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -4130,30 +4134,38 @@ A redirect status is a status that is 301, 302, 303, 307, or 308.
 ◎
 A body consists of:
 </p>
-
-<dl class="def-list">
-	<dt>`~stream@bd</dt>
-	<dd>
+<ul>
+	<li>
+`~stream@bd
+⇒
 `ReadableStream$I ~obj。
 ◎
 A stream (a ReadableStream object).
-</dd>
-
-	<dt>`総~byte数@bd</dt>
-	<dd>
-整数
-— 初期~時は 0 。
+</li>
+	<li>
+`~source@bd
+⇒
+次に挙げるいずれか
+— 初期~時は ~NULL
+⇒
+~NULL／
+`~byte列$ ／
+`Blob$I ~obj／
+`FormData$I ~obj
 ◎
-A total bytes (an integer), initially 0.
-</dd>
-
-	<dt>`~source@bd</dt>
-	<dd>
-初期~時は ~NULL 。
+A source (null, a byte sequence, a Blob object, or a FormData object), initially null.
+</li>
+	<li>
+`長さ@bd
+⇒
+次に挙げるいずれか
+— 初期~時は 0
+⇒
+~NULL ／ 整数
 ◎
-A source, initially null.
-</dd>
-</dl>
+A length (null or an integer), initially null.
+</li>
+</ul>
 
 <p class="trans-note">【
 本体は、~HTTPにおける~messageの`内容$に対応する。
@@ -5153,7 +5165,7 @@ Always includes credentials with this request, and always use any credentials se
 `要請$の`資格証~mode$rqは、`~fetch$の間，`資格証$の~flowを制御する。
 `要請$の`~mode$rq が `navigate^l のときは、その`資格証~mode$rqは `include^l と見做される
 — 他の値は、現時点では，`~fetch$に織り込まれていない。
-`~HTML^cite がここの所で変更された場合、この標準も対応する変更が必要になる。
+`HTML^cite がここの所で変更された場合、この標準も対応する変更が必要になる。
 ◎
 Request’s credentials mode controls the flow of credentials during a fetch. When request’s mode is "navigate", its credentials mode is assumed to be "include" and fetch does not currently account for other values. If HTML changes here, this standard will need corresponding changes.
 </dd>
@@ -5854,6 +5866,13 @@ A response has an associated header list (a header list). Unless stated otherwis
 ◎
 A response has an associated body (null or a body). Unless stated otherwise it is null.
 </dd>
+	<dd class="note">注記：
+~networkの`応答$の`本体$rsにおいては、その［
+`~source$bd ／ `長さ$bd
+］の概念は常に ~NULL になる。
+◎
+The source and length concepts of a network’s response’s body are always null.
+</dd>
 
 	<dt>`~cache状態@rs（ 空~文字列 ）</dt>
 	<dd>
@@ -6257,7 +6276,7 @@ Return location.
 `~Location~URLを得る$ ~algoが利用されるのは、次のいずれか以外にない
 ⇒＃
 この標準における~redirectの取扱い／
-`~HTML^cite `HTML$r の~navigate~algo†（それは、~redirectを手動で取扱う）
+`HTML^cite `HTML$r の~navigate~algo†（それは、~redirectを手動で取扱う）
 【†特に、その中で`~navigate~fetchを処理する$とき。】
 ◎
 The location URL algorithm is exclusively used for redirect handling in this standard and in HTML’s navigate algorithm which handles redirects manually. [HTML]
@@ -6639,65 +6658,25 @@ A network partition key is a tuple consisting of a site and null or an implement
 <p>
 `~network区分~keyを決定する@
 ときは、所与の
-( %要請 )
+( `環境~設定群~obj$ %設定群 )
 に対し，次の手続きを走らす：
 ◎
-To determine the network partition key, given request, run these steps:
+To determine the network partition key, given an environment settings object settings, run these steps:
 </p>
 <ol>
 	<li>
-%~top-level生成元 ~LET ~NULL
+%~top-level生成元 ~LET %設定群 の`~top-level生成元$enV
 ◎
-Let topLevelOrigin be null.
+Let topLevelOrigin be settings’s top-level origin.
 </li>
 	<li>
-<p>
-~IF［
-%要請 の`予約-済み~client$rq ~NEQ ~NULL
-］：
-◎
-If request’s reserved client is non-null, then:
-</p>
-		<ol>
-			<li>
-%~top-level生成元 ~SET %要請 の`予約-済み~client$rqの`~top-level生成元$enV
-◎
-Set topLevelOrigin to request’s reserved client’s top-level origin.
-</li>
-			<li>
-<p>
 ~IF［
 %~top-level生成元 ~EQ ~NULL
 ］
 ⇒
-%~top-level生成元 ~SET %要請 の`予約-済み~client$rqの`~top-level作成時の~URL$enVの`生成元$url
+%~top-level生成元 ~SET %設定群 の`~top-level作成時の~URL$enVの`生成元$url
 ◎
-If topLevelOrigin is null, then set topLevelOrigin to request’s reserved client’s top-level creation URL’s origin.
-</p>
-
-<p class="note">注記：
-これが起こるのは、~top-level~naviに限られる。
-◎
-This happens for top-level navigations only.
-</p>
-			</li>
-		</ol>
-	</li>
-	<li>
-~ELIF［
-%要請 の`~client$rq ~NEQ ~NULL
-］
-⇒
-%~top-level生成元 ~SET %要請 の`~client$rqの`~top-level生成元$enV
-◎
-Otherwise, if request’s client is non-null, set topLevelOrigin to request’s client’s top-level origin.
-</li>
-	<li>
-~ELSE
-⇒
-~RET ~NULL
-◎
-Otherwise, return null.
+If topLevelOrigin is null, then set topLevelOrigin to settings’s top-level creation URL’s origin.
 </li>
 	<li>
 ~Assert：
@@ -6725,10 +6704,47 @@ Let secondKey be null or an implementation-defined value.
 ◎
 The second key is intentionally a little vague as the finer points are still evolving. See issue #1035.
 </p>
+	</li>
 	<li>
 ~RET ( %~top-level~site, %第二~key )
 ◎
 Return (topLevelSite, secondKey).
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`要請の~network区分~keyを決定する@
+ときは、所与の
+( %要請 )
+に対し，次の手続きを走らす：
+◎
+To determine the network partition key, given request, run these steps:
+</p>
+<ol>
+	<li>
+~IF［
+%要請 の`予約-済み~client$rq ~NEQ ~NULL
+］
+⇒
+~RET `~network区分~keyを決定する$( %要請 の`予約-済み~client$rq )
+◎
+If request’s reserved client is non-null, then return the result of determining the network partition key given request’s reserved client.
+</li>
+	<li>
+~IF［
+%要請 の`~client$rq ~NEQ ~NULL
+］
+⇒
+~RET `~network区分~keyを決定する$( %要請 の`~client$rq )
+◎
+If request’s client is non-null, then return the result of determining the network partition key given request’s client.
+</li>
+	<li>
+~RET ~NULL 
+◎
+Return null.
 </li>
 </ol>
 </div>
@@ -6748,7 +6764,7 @@ To determine the HTTP cache partition, given request, run these steps:
 </p>
 <ol>
 	<li>
-%~key ~LET `~network区分~keyを決定する$( %要請 )
+%~key ~LET `要請の~network区分~keyを決定する$( %要請 )
 ◎
 Let key be the result of determining the network partition key given request.
 </li>
@@ -10593,7 +10609,8 @@ This has to invoke main fetch to get request’s response tainting correct.
 <h3 title="Navigate-redirect fetch">4.5. ~navigate~redirect~fetch</h3>
 
 <p class="note">注記：
-この~algoは、`~HTML^citeの`~navigate~algo$から利用される。
+この~algoは、
+`HTML^cite の`~navigate~algo$から利用される。
 これは、`並列的$に呼出されるものと期待される。
 `HTML$r
 ◎
@@ -10777,59 +10794,64 @@ Let includeCredentials be true if one of
 is true; otherwise false.
 </li>
 			<li>
-%Content-Length値 ~LET ~NULL
+%内容~長さ ~LET %~http要請 の`本体$rqに応じて
+⇒＃
+~NULL ならば ~NULL ／
+~ELSE_ その`長さ$bd
 ◎
-Let contentLengthValue be null.
+Let contentLength be httpRequest’s body’s length, if httpRequest’s body is non-null; otherwise null.
+</li>
+			<li>
+%Content-Length~header値 ~LET ~NULL
+◎
+Let contentLengthHeaderValue be null.
 </li>
 			<li>
 ~IF［
 %~http要請 の`本体$rq ~EQ ~NULL
 ］~AND［
-%~http要請 の`~method$rq ~IN
-{ `POST$hm, `PUT$hm }
+%~http要請 の`~method$rq ~IN { `POST$hm, `PUT$hm }
 ］
 ⇒
-%Content-Length値 ~SET `0^bl
+%Content-Length~header値 ~SET `0^bl
 ◎
-If httpRequest’s body is null and httpRequest’s method is `POST` or `PUT`, then set contentLengthValue to `0`.
+If httpRequest’s body is null and httpRequest’s method is `POST` or `PUT`, then set contentLengthHeaderValue to `0`.
 </li>
 			<li>
 ~IF［
-%~http要請 の`本体$rq ~NEQ ~NULL
-］~AND［
-%~http要請 の`本体$rqの`~source$bd ~NEQ ~NULL
+%内容~長さ ~NEQ ~NULL
 ］
 ⇒
-%Content-Length値 ~SET `同型に符号化する$( `整数を直列化する$( %~http要請 の`本体$rqの`総~byte数$bd ) )
+%Content-Length~header値 ~SET `同型に符号化する$( `整数を直列化する$( %内容~長さ ) )
 ◎
-If httpRequest’s body is non-null and httpRequest’s body’s source is non-null, then set contentLengthValue to httpRequest’s body’s total bytes, serialized and isomorphic encoded.
+If contentLength is non-null, then set contentLengthHeaderValue to contentLength, serialized and isomorphic encoded.
 </li>
 			<li>
 ~IF［
-%Content-Length値 ~NEQ ~NULL
+%Content-Length~header値 ~NEQ ~NULL
 ］
 ⇒
 %~http要請 の`~header~list$rqに`~headerを付加する$(
-`Content-Length$h / %Content-Length値
+`Content-Length$h / %Content-Length~header値
 )
 ◎
-If contentLengthValue is non-null, append `Content-Length`/contentLengthValue to httpRequest’s header list.
+If contentLengthHeaderValue is non-null, then append `Content-Length`/contentLengthHeaderValue to httpRequest’s header list.
 </li>
 			<li>
 <p>
 ~IF［
-%Content-Length値 ~NEQ ~NULL
+%内容~長さ ~NEQ ~NULL
 ］~AND［
 %~http要請 の`~keepalive$rq ~EQ ~T
 ］：
 ◎
-If contentLengthValue is non-null and httpRequest’s keepalive is true, then:
+If contentLength is non-null and httpRequest’s keepalive is true, then:
 </p>
 				<ol>
 					<li>
 %~inflight~keepalive~byte数 ~LET 0
 ◎
-Let inflightKeepaliveBytes be zero.
+Let inflightKeepaliveBytes be 0.
 </li>
 					<li>
 %~group ~LET %~http要請 の`~client$rqの`~fetch~group$
@@ -10865,21 +10887,21 @@ Let inflightRequest be fetchRecord’s request.
 </li>
 							<li>
 %~inflight~keepalive~byte数 ~INCBY
-%~inflight要請 の`本体$rqの`総~byte数$bd
+%~inflight要請 の`本体$rqの`長さ$bd
 ◎
-Increment inflightKeepaliveBytes by inflightRequest’s body’s total bytes.
+Increment inflightKeepaliveBytes by inflightRequest’s body’s length.
 </li>
 						</ol>
 					</li>
 					<li>
 <p>
 ~IF［
-( %Content-Length値 ~PLUS %~inflight~keepalive~byte数 ) ~GT 64 KiB
+( %内容~長さ ~PLUS %~inflight~keepalive~byte数 ) ~GT 64 KiB
 ］
 ⇒
 ~RET `~network~error$
 ◎
-If the sum of contentLengthValue and inflightKeepaliveBytes is greater than 64 kibibytes, then return a network error.
+If the sum of contentLength and inflightKeepaliveBytes is greater than 64 kibibytes, then return a network error.
 </p>
 
 <p class="note">注記：
@@ -11831,7 +11853,7 @@ Let httpCache be the result of determining the HTTP cache partition, given httpR
 If httpCache is null, then set request’s cache mode to "no-store".
 </li>
 	<li>
-%~network区分~key ~LET `~network区分~keyを決定する$( %要請 )
+%~network区分~key ~LET `要請の~network区分~keyを決定する$( %要請 )
 ◎
 Let networkPartitionKey be the result of determining the network partition key given request.
 </li>
@@ -12071,7 +12093,7 @@ If the ongoing fetch is terminated, then abort these steps.
 %要請の本体を処理する ~NEQ ~NULL
 ］
 ⇒
-%要請の本体を処理する( 【 %本体 の`総~byte数$bd？】 )
+%要請の本体を処理する( 【 %本体 の`長さ$bd？】 )
 ◎
 If fetchParams’s process request end-of-body is non-null, then run fetchParams’s process request end-of-body.
 </li>
@@ -12214,23 +12236,6 @@ Run these steps, but abort when the ongoing fetch is terminated:
 ◎
 Set response’s body to a new body whose stream is stream.
 </li>
-			<li>
-<p>
-~IF［
-%応答 には`内容$の長さがある
-］
-⇒
-%応答 の`本体$rsの`総~byte数$bd ~SET その長さ
-◎
-If response has a payload body length, then set response’s body’s total bytes to that payload body length.
-</p>
-
-<p class="trans-note">【
-この条件 “長さがある” の詳細は述べられていないが、例えば `Content-Length$h ~headerにより明示的に指示されている場合が該当するであろう（他にもあり得る）。
-HTTP/1.1 においては、
-<a href="~HTTPmsg#message.body.length">~message本体の長さを決定できる</a>かどうかに対応すると見受けられる（接続が~closeされるまで判明しない場合もある）。
-】</p>
-			</li>
 			<li>
 ~IF［
 %応答 は`~network~error$でない
@@ -12944,7 +12949,7 @@ Cache entries must be removed after the seconds specified in their max-age field
 次のように初期化された，新たな`~cache~entry$
 ］を`付加する$
 ⇒＃
-`~key$cc ~SET `~network区分~keyを決定する$( %要請 ),
+`~key$cc ~SET `要請の~network区分~keyを決定する$( %要請 ),
 `~byte直列化した生成元$cc ~SET `要請の生成元を~byte直列化する$( %要請 ),
 `~URL$cc ~SET %要請 の`現在の~URL$rq,
 `寿命$cc ~SET %寿命,
@@ -12988,7 +12993,7 @@ Append entry to the user agent’s CORS-preflight cache.
 </p>
 		<ul>
 			<li>
-`~key$cc ~EQ `~network区分~keyを決定する$( %要請 )
+`~key$cc ~EQ `要請の~network区分~keyを決定する$( %要請 )
 </li>
 			<li>
 `~byte直列化した生成元$cc ~EQ `要請の生成元を~byte直列化する$( %要請 )
@@ -13012,7 +13017,7 @@ There is a cache entry match for a cache entry entry with request if＼
 </p>
 <ul>
 	<li>
-`~key$cc ~EQ `~network区分~keyを決定する$( %要請 )
+`~key$cc ~EQ `要請の~network区分~keyを決定する$( %要請 )
 ◎
 entry’s key is the result of determining the network partition key given request,
 </li>
@@ -14065,14 +14070,18 @@ typedef (`ReadableStream$I or `XMLHttpRequestBodyInit$I) `BodyInit@I;
 `本体と内容~型を安全に抽出する@
 ときは、所与の
 ( %~obj )
-に対し，次を走らす
-— この手続きは
-( `本体$, `Content-Type$h 用の`値$hd )
-の組を返す：
+に対し，次を走らす：
 ◎
-To safely extract a body and a `Content-Type` value from object, run these steps:
+To safely extract a body and a `Content-Type` value from a byte sequence or BodyInit object object, run these steps:
 </p>
 <ol>
+	<li>
+~Assert：
+%~obj は［
+`~byte列$ ／ `BodyInit$I ~obj
+］である。
+◎
+↑</li>
 	<li>
 ~IF［
 %~obj は `ReadableStream$I ~objである
@@ -14108,19 +14117,25 @@ The safely extract operation is a subset of the extract operation that is guaran
 <p>
 `本体と内容~型を抽出する@
 ときは、所与の
-(
-%~obj,
+( %~obj,
 %~keepalive~flag ~IN { `~keepalive@i, ε }（省略時は ε ）
 【！boolean keepalive (default false)】
 )
 に対し，次を走らす
-— この手続きは
-( `本体$, `Content-Type$h 用の`値$hd )
-の組を返す：
+【この手続きは、~tuple ( `本体$, `Content-Type$h 用の`値$hd ) を返す】
+：
 ◎
 To extract a body and a `Content-Type` value from object, with an optional boolean keepalive (default false), run these steps:
 </p>
+
 <ol>
+	<li>
+~Assert：
+%~obj は［
+`~byte列$ ／ `BodyInit$I ~obj
+］である。
+◎
+↑</li>
 	<li>
 %~stream ~LET %~obj に応じて
 ⇒＃
@@ -14130,22 +14145,24 @@ To extract a body and a `Content-Type` value from object, with an optional boole
 Let stream be object if object is a ReadableStream object; otherwise the result of creating a ReadableStream.
 </li>
 	<li>
-%内容~型 ~LET ~NULL
-◎
-Let Content-Type be null.
-</li>
-	<li>
 %動作 ~LET ~NULL
 ◎
 Let action be null.
 </li>
 	<li>
-%~source ~LET %~obj に応じて
-⇒＃
-`ReadableStream$I ~objであるならば ~NULL ／
-~ELSE_ %~obj
+%~source ~LET ~NULL
 ◎
-Let source be null if object is a ReadableStream object; otherwise object.
+Let source be null.
+</li>
+	<li>
+%長さ ~LET ~NULL
+◎
+Let length be null.
+</li>
+	<li>
+%内容~型 ~LET ~NULL
+◎
+Let Content-Type be null.
 </li>
 	<li>
 <p>
@@ -14158,11 +14175,21 @@ Switch on object:
 			<dd>
 				<ol>
 					<li>
-%動作 ~SET 次を走らす動作
+%動作 ~SET 次を走らす手続き
 ⇒
 ~RET %~obj を読取った結果†
 ◎
-Set action to an action that reads object.
+Set action to this step: read object.
+</li>
+					<li>
+%~source ~SET %~obj
+◎
+Set source to object.
+</li>
+					<li>
+%長さ ~SET %~obj の `size$mF
+◎
+Set length to object’s size.
 </li>
 					<li>
 ~IF［
@@ -14177,7 +14204,7 @@ If object’s type attribute is not the empty byte sequence, set Content-Type to
 
 <p class="trans-note">【†
 明確には指定されていないが、以降の処理は，
-`FILEAPI$r に定義される`~streamを取得する$ ~algoと同じ結果になると見受けられる。
+`FILEAPI$r に定義される`~streamを取得する$のと同じ結果になると見受けられる。
 】</p>
 			</dd>
 
@@ -14187,39 +14214,43 @@ If object’s type attribute is not the empty byte sequence, set Content-Type to
 byte sequence
 </dt>
 			<dd>
-				<ol>
-					<li>
-%動作 ~SET 次を走らす動作
-⇒
-~RET %~obj
+%~source ~SET %~obj
 ◎
-Set action to an action that returns object.
-</li>
-				</ol>
-			</dd>
+Set source to object.
+</dd>
 
 			<dt>`BufferSource$I</dt>
 			<dd>
-				<ol>
-					<li>
-%動作 ~SET 次を走らす動作
-⇒
-~RET %~obj が保持している~byte列の`複製を取得する$
+%~source ~SET %~obj が保持している~byte列の`複製を取得する$
 ◎
-Set action to an action that returns a copy of the bytes held by object.
-</li>
-				</ol>
-			</dd>
+Set source to a copy of the bytes held by object.
+</dd>
 
 			<dt>`FormData$I</dt>
 			<dd>
 				<ol>
 					<li>
-%動作 ~SET 次を走らす動作
+%動作 ~SET 次を走らす手続き
 ⇒
-~RET `~mp_form_dataとして符号化する$( %~obj, `~UTF-8$enc )
+~RET `~mp_form_dataとして符号化する$( %~obj の`~entry~list$, `~UTF-8$enc )
 ◎
-Set action to an action that runs the multipart/form-data encoding algorithm, with object as form data set and with UTF-8 as the explicit character encoding.
+Set action to this step: run the multipart/form-data encoding algorithm, with object’s entry list and UTF-8.
+</li>
+					<li>
+%~source ~SET %~obj
+◎
+Set source to object.
+</li>
+					<li>
+%長さ ~SET 
+<span class="XXX">
+不明瞭
+— これを改善することについては
+<a href="~HTMLissue/6424">~HTML 課題 #6424</a>
+を見よ
+</span>
+◎
+Set length to unclear, see html/6424 for improving this.
 </li>
 					<li>
 %内容~型 ~SET `multipart/form-data; boundary=^bl
@@ -14240,11 +14271,9 @@ followed by the multipart/form-data boundary string generated by the multipart/f
 			<dd>
 				<ol>
 					<li>
-%動作 ~SET 次を走らす動作
-⇒
-~RET `~form_urlencoded直列化器$( %~obj の`名値~pair~list$ )
+%~source ~SET `~form_urlencoded直列化器$( %~obj の`名値~pair~list$ )
 ◎
-Set action to an action that runs the application/x-www-form-urlencoded serializer with object’s list.
+Set source to the result of running the application/x-www-form-urlencoded serializer with object’s list.
 </li>
 					<li>
 %内容~型 ~SET `application/x-www-form-urlencoded;charset=UTF-8^bl
@@ -14254,19 +14283,13 @@ Set Content-Type to `application/x-www-form-urlencoded;charset=UTF-8`.
 				</ol>
 			</dd>
 
-			<dt>
-`~scalar値~文字列$
-◎
-scalar value string
-</dt>
+			<dt>`~scalar値~文字列$</dt>
 			<dd>
 				<ol>
 					<li>
-%動作 ~SET 次を走らす動作
-⇒
-~RET `~UTF-8符号化する$( %~obj )
+%~source ~SET `~UTF-8符号化する$( %~obj )
 ◎
-Set action to an action that runs UTF-8 encode on object.
+Set source to the UTF-8 encoding of object.
 </li>
 					<li>
 %内容~型 ~SET `text/plain;charset=UTF-8^bl
@@ -14299,6 +14322,19 @@ If object is disturbed or locked, then throw a TypeError.
 		</dl>
 	</li>
 	<li>
+~IF［
+%~source は`~byte列$である
+］
+⇒
+%動作 ~SET 次を走らす手続き
+⇒
+~RET %~source
+`and length to source’s length^en
+【意図不明。 %長さ ~SET %~source の`長さ$？】
+◎
+If source is a byte sequence, then set action to a step that returns source and length to source’s length.
+</li>
+	<li>
 <p>
 ~IF［
 %動作 ~NEQ ~NULL
@@ -14306,11 +14342,12 @@ If object is disturbed or locked, then throw a TypeError.
 ⇒
 次に従う下で %動作 を`並列的$に走らす：
 ◎
-If action is non-null, run action in parallel:
+If action is non-null, then run these steps in in parallel:
+• Run action.
 </p>
 		<ul>
 			<li>
-【 %動作 の結果から】
+【 %動作 の途中結果から】
 1 個以上の~byte %~byte列 が可用になるたびに
 ⇒
 %~stream に`~chunkを~enqueueする$RS( %~byte列 を包含している `ArrayBuffer$I を包装している `Uint8Array$I )
@@ -14336,10 +14373,11 @@ When running action is done, close stream.
 	<li>
 %本体 ~LET 次のようにされた新たな`本体$
 ⇒＃
-`~stream$bd ~SET %~stream；
-`~source$bd ~SET %~source
+`~stream$bd ~SET %~stream,
+`~source$bd ~SET %~source,
+`長さ$bd ~SET %長さ
 ◎
-Let body be a body whose stream is stream and whose source is source.
+Let body be a body whose stream is stream, source is source, and length is length.
 </li>
 	<li>
 ~RET
@@ -14565,43 +14603,54 @@ If mimeType’s essence is "multipart/form-data", then:
 を与える下で，
 %~byte列 を構文解析する
 — それにより得られた各 部位 %部位 に対しては、［
-%部位 の中の `Content-Disposition^h ~headerが `filename^bl ~parameterを包含するかどうかに応じて，次で与えられる値
-］を値とする`~entry$xhrに構文解析するモノトスル：
+%部位 の中の `Content-Disposition^h ~headerが `filename^bl ~parameterを包含するかどうか
+］に応じて，［
+次に与える値を値にとる`~entry$xhr
+］に構文解析するモノトスル：
 ◎
 Parse bytes, using the value of the `boundary` parameter from mimeType, per the rules set forth in Returning Values from Forms: multipart/form-data. [RFC7578]
 </p>
-						<dl class="switch">
-							<dt>包含する場合</dt>
-							<dd>
+						<ul class="switch">
+							<li>
 <p>
-次のようにされた `File$I ~obj：
+包含する場合、次のようにされた `File$I ~obj：
 </p>
-<ul ><li>その内容 ~SET %部位 の内容
-</li><li>`name$mF 属性の値 ~SET `filename^bl ~parameterの値
-</li><li>`type$mF 属性の値 ~SET %部位 内に `Content-Type$h ~headerが［
+								<ul>
+									<li>
+その内容【<a href="~FILEAPI#_ref-bytes">~byte列~data</a>】 ~SET %部位 の内容
+</li>
+									<li>
+`name$mF 属性の値 ~SET `filename^bl ~parameterの値
+</li>
+									<li>
+`type$mF 属性の値 ~SET %部位 内に `Content-Type$h ~headerが［
 あれば その~header値 ／
 なければ `text/plain^bl （ `RFC7578$r § 4.4 に定義される既定）
 ］
-</li></ul>
-
+</li>
+								</ul>
 ◎
 Each part whose `Content-Disposition` header contains a `filename` parameter must be parsed into an entry whose value is a File object whose contents are the contents of the part. The name attribute of the File object must have the value of the `filename` parameter of the part. The type attribute of the File object must have the value of the `Content-Type` header of the part if the part has such header, and `text/plain` (the default defined by [RFC7578] section 4.4) otherwise.
-</dd>
+</li>
 
-							<dt>包含しない場合</dt>
-							<dd>
-`~BOMはそのままに~UTF-8復号する$( %部位 の内容 ) の結果
+							<li>
+<p>
+包含しない場合、次の結果
+⇒
+`~BOMはそのままに~UTF-8復号する$( %部位 の内容 )
 ◎
 Each part whose `Content-Disposition` header does not contain a `filename` parameter must be parsed into an entry whose value is the UTF-8 decoded without BOM content of the part.＼
-</dd>
-							<dd class="note">注記：
+</p>
+
+<p class="note">注記：
 これは、［
 `Content-Type$h ~header ／ `charset^bl ~parameter
 ］の有無やその値に関わらず行われる。
 ◎
 This is done regardless of the presence or the value of a `Content-Type` header and regardless of the presence or the value of a `charset` parameter.
-</dd>
-						</dl>
+</p>
+							</li>
+						</ul>
 
 <p class="note">注記：
 ［
