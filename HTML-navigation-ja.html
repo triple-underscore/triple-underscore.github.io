@@ -113,8 +113,8 @@ return text;
 
 ●●options
 
-spec_date:2021-03-11
-trans_update:2021-03-11
+spec_date:2021-03-12
+trans_update:2021-03-12
 source_checked:210301
 page_state_key:HTML
 spec_status:LS
@@ -290,6 +290,7 @@ params::::パラメタ群
 	渡-:pass
 	以降:onward
 	終わらす:finish
+	もしあれば:If the current entry ... removed.
 
 	●UI
 	右~click:right-click
@@ -417,6 +418,8 @@ package::::パッケージ
 
 	●変数
 X:
+旧-:old:~
+新-:new:~
 	`S$V:sourceBrowsingContext
 	%B:browsingContext
 	%~navi~params:navigationParams
@@ -449,18 +452,20 @@ X:
 	%生成元~agent~clusterを要請する:requestsOAC
 	%生成元~agent~cluster~header:oacHeader
 	%新たな文書:newDocument
+	%旧-文書:oldDocument
 	%新たな~entry:newEntry
 	%~hash変化あり:hashChanged
 	%明示的な履歴~navi:explicitHistoryNavigation
 	%履歴の取扱い:historyHandling
 	%宛先~realm:targetRealm
-	%旧~URL:oldURL
-	%新~URL:newURL
+	%旧-~URL:oldURL
+	%新-~URL:newURL
 	%状態~変化あり:stateChanged
 	%~eventは他を阻まない:nonBlockingEvents
 	-:entryToUpdate
 	-:entriesToUpdate
 	%現在の文脈は~sourceか？:currentContextIsSource
+	%~session履歴:sessionHistory
 
 	●指示語
 最近の:latest:~
@@ -690,11 +695,15 @@ doc.回復可能~状態:#concept-document-salvageable
 ~session履歴~文書の可視性を変更する手続き:#session-history-document-visibility-change-steps
 
 V.履歴~取扱い:#navigation-hh
-V.~navi種別:#navigation-navigationtype
+i.履歴~取扱い:#navigation-hh
 V.履歴の取扱い:#traverse-history-hh
+i.履歴の取扱い:#traverse-history-hh
+V.~navi種別:#navigation-navigationtype
 V.例外を可能化する:#exceptions-enabled
 V.~eventは他を阻まない:#nonblockingevents
+i.~eventは他を阻まない:#nonblockingevents
 V.明示的な履歴~navi:#explicithistorynavigation
+
 
 持続された状態を復旧する:#restore-persisted-state
 持続される状態を保存する:#save-persisted-state
@@ -957,6 +966,7 @@ sub.大小無視:~INFRA#ascii-case-insensitive
 同型に復号する:~INFRA#isomorphic-decode
 構造体:~INFRA#struct
 sct.~item:~INFRA#struct-item
+付加する:~INFRA#list-append
 集合:~INFRA#ordered-set
 set.付加する:~INFRA#set-append
 和集合:~INFRA#set-union
@@ -1430,37 +1440,48 @@ If there is a preexisting attempt to navigate browsingContext, and the source br
 ◎
 If the prompt to unload algorithm is being run for the active document of browsingContext, then return without affecting the prompt to unload algorithm.
 </li>
-	<li id="navigate-fragid-step">
+	<li>
 <p>
 ~IF［
-%履歴~取扱い ~NEQ `再読込み$i
-］~AND［
 %資源 は`要請$である
 ］：
 ◎
-If historyHandling is not "reload", resource is a request,＼
-</p>
+↓</p>
 		<ol>
 			<li>
 %~URL ~LET %資源 の`~URL$rq
 ◎
 ↓</li>
-			<li>
+			<li id="navigate-fragid-step">
 ~IF［
+%履歴~取扱い ~NEQ `再読込み$i
+］~AND［
 ( %~URL, %文書 の`~URL$doc )
 は `素片は除外する^i 下で`同等な~URL$である
-］
-⇒
-~IF［
+］~AND［
 %~URL の`素片$url ~NEQ ~NULL
 ］
 ⇒＃
 `素片へ~navigateする$( %B, %~URL, %履歴~取扱い )；
 ~RET
 ◎
-resource's url equals browsingContext's active document's URL with exclude fragments set to true, and resource's url's fragment is non-null, then:
+If historyHandling is not "reload", resource is a request, resource's url equals browsingContext's active document's URL with exclude fragments set to true, and resource's url's fragment is non-null, then:
 • Navigate to a fragment given browsingContext, resource's url, and historyHandling.
 • Return.
+</li>
+			<li>
+~IF［
+`履歴の取扱い$V ~EQ `既定$i
+］~AND［［
+( %~URL, %文書 の`~URL$doc )
+は`同等な~URL$である
+］~OR［
+%~URL の`~scheme$url ~EQ `javascript$l
+］］
+⇒
+`履歴の取扱い$V ~SET `置換-$i
+◎
+If historyHandling is "default", resource is a request, and either resource's url equals browsingContext's active document's URL or resource's url's scheme is "javascript"', then set historyHandling to "replace".
 </li>
 		</ol>
 	</li>
@@ -3277,49 +3298,36 @@ Allowed to use
 </div>
 
 <div class="algo">
-<div class="p">
 <p>
 以下の各~節にて，
 `新たな~pageで~session履歴を更新する@
 よう要求される所では、所与の
 ( `~navi~params$ %~navi~params, `文書$ %新たな文書 )
-に対し，次を走らすモノトスル：
+に対し，次を行うモノトスル
+⇒
+`大域~taskを~queueする$( `~network用~task源$, %現在の文書 に`関連な大域~obj$, 次に与える手続き )：
+◎
+Some of the sections below, to which the above algorithm defers in certain cases, require the user agent to update the session history with the new page, given some navigation params navigationParams and a Document newDocument. When a user agent is required to do this, it must queue a global task on the networking task source, given the relevant global object of the Document object of the current entry (not the new one), to run the following steps:
 </p>
 <ol>
 	<li>
+%~session履歴 ~LET %~navi~params の`閲覧文脈$nvPの`~session履歴$
+◎
+Let sessionHistory be navigationParams's browsing context's session history.
+</li>
+	<li>
+%現在の~entry ~LET %~session履歴 の`現在の~entry$
+◎
+↓</li>
+	<li>
+`文書を~unloadする$( %現在の~entry の`文書$shE )
+◎
+Unload sessionHistory's current entry's document.
+</li>
+	<li>
 %~navi ~LET この~algoを呼出した`~navi$~algoの~instance
-【この段は、この訳による補完。】
-</li>
-	<li>
-%B ~LET %~navi~params の`閲覧文脈$nvP
-</li>
-	<li>
-%履歴 ~LET %B の`~session履歴$
-</li>
-	<li>
-%現在の~entry ~LET %履歴 の`現在の~entry$
-</li>
-	<li>
-%現在の文書 ~SET %現在の~entry の`文書$shE（ ~NEQ %新たな文書 ）
-</li>
-	<li>
-`大域~taskを~queueする$( `~network用~task源$, %現在の文書 に`関連な大域~obj$, 下に与える下位手続き )
-</li>
-</ol>
 ◎
-Some of the sections below, to which the above algorithm defers in certain cases, require the user agent to update the session history with the new page, given some navigation params navigationParams and a Document newDocument. When a user agent is required to do this, it must queue a global task on the networking task source, given the relevant global object of the Document object of the current entry (not the new one), to run the following steps:
-</div>
-
-<p>
-上で利用される下位手続きは：
-◎
-↑</p>
-<ol>
-	<li>
-`文書を~unloadする$( %現在の文書 )
-◎
-Unload the document of the current entry.
-</li>
+↓</li>
 	<li>
 ~IF［
 前~段の~unloadを走らせている間に %~navi は取消された
@@ -3335,127 +3343,108 @@ If this instance of the navigation algorithm is canceled while this step is runn
 </li>
 	<li>
 <p>
-~IF［
-%~navi~params の`履歴~取扱い$nvP ~IN { `~entry更新$i, `再読込み$i }
-］：
+%~navi~params の`履歴~取扱い$nvPに応じて：
 ◎
-If navigationParams's history handling is "entry update" or "reload"
+Switch on navigationParams's history handling:
 </p>
-		<ol>
+		<ul class="switch">
 			<li>
-%履歴 内の
+<p>
+`~entry更新$i／`再読込み$i：
+◎
+"entry update"
+◎
+"reload"
+</p>
+				<ol>
+					<li>
+%旧-文書 ~LET %現在の~entry の`文書$shE
+◎
+Let oldDocument be sessionHistory's current entry's document.
+</li>
+					<li>
+%~session履歴 内の
 ~EACH( %~entry )
 に対し
 ⇒
 ~IF［
-%~entry の`文書$shE ~EQ %現在の文書
+%~entry の`文書$shE ~EQ %旧-文書
 ］
 ⇒
 %~entry の`文書$shE ~SET %新たな文書
 ◎
-Replace the document of the current entry, and of any other entries that reference the same document as that entry, with newDocument.
+For each entry of sessionHistory: if entry's document is oldDocument, then set entry's document to newDocument.
 </li>
-			<li>
+					<li>
 %現在の~entry へ`履歴を辿る$
 — 次を与える下で
 ⇒＃
-`履歴の取扱い$V ~SET %~navi~params の`履歴~取扱い$nvP
+`履歴の取扱い$i ~SET %~navi~params の`履歴~取扱い$nvP
 ◎
-Traverse the history to the current entry with historyHandling set to navigationParams's history handling.
+Traverse the history to sessionHistory's current entry with historyHandling set to navigationParams's history handling.
 </li>
-		</ol>
-	</li>
-	<li>
-<p>
-~ELSE：
-◎
-↓</p>
-		<ol>
+				</ol>
+			</li>
 			<li>
+<p>
+`置換-$i：
+◎
+"replace"
+</p>
+				<ol>
+					<li>
+<p>
 %新たな~entry ~LET 次を伴う新たな`~session履歴~entry$
 ⇒＃
 `~URL$shE ~SET %新たな文書 の`~URL$doc,
 `文書$shE ~SET %新たな文書
 ◎
-↓</li>
-			<li>
-<p>
-~IF［
-次のいずれかが満たされる
-］…：
-</p>
-				<ul>
-					<li>
-<p>
-［
-%~navi に渡された引数 %資源 は`~URL$である
-］~AND［
-( %資源, %新たな文書 の`~URL$doc )
-は`同等な~URL$である
-］~AND［
-%B にて`作動中の文書$の`~URL$doc
-］
+Let newEntry be a new session history entry whose URL is newDocument's URL and document is newDocument.
 </p>
 
 <p class="XXX">
-一部の~browserは，この場合に %現在の~entry の`直列形の状態$shEも
-%新たな~entry に複製するが、これは他と一貫でない。
+一部の~browserは，
+( %現在の~entry の`~URL$shE, %新たな文書 の`~URL$doc )
+は`同等な~URL$である事例で［
+%現在の~entry の`直列形の状態$shEも
+%新たな~entry に複製する
+］が、これは他と一貫でない。
 さらなる論点は、
 <a href="~HTMLissue/6213">課題 #6213</a>
 を見よ。
+◎
+Some browsers copy over the serialized state sessionHistory's current entry in cases where its URL equals that of newDocument, but this is inconsistent. See issue #6213 for more discussion on this.
 </p>
 					</li>
 					<li>
-%~navi~params の`履歴~取扱い$nvP ~EQ `置換-$i
+%~session履歴 内の %現在の~entry の後に %新たな~entry を挿入する
+◎
+Insert newEntry into sessionHistory after its current entry.
 </li>
-				</ul>
-<p>
-…ならば：
-</p>
-				<ol>
-					<li>
-%履歴 内の %現在の~entry の後に %新たな~entry を挿入する
-</li>
-					<li>
+	<li>
 %新たな~entry へ`履歴を辿る$
 — 次を与える下で
 ⇒＃
-`履歴の取扱い$V ~SET `置換-$i
+`履歴の取扱い$i ~SET `置換-$i
+◎
+Traverse the history to newEntry with historyHandling set to "replace".
 </li>
 				</ol>
-
-◎
-Otherwise, if the navigation was initiated with a URL that equals navigationParams's browsing context's active document's URL
-• ↑Let newEntry be a new session history entry whose URL is newDocument's URL and document is newDocument.
-• Some browsers copy over the serialized state of current entry, but this is inconsistent. See issue #6213 for more discussion on this.
-• Insert newEntry after the current entry in navigationParams's browsing context's session history.
-• Traverse the history to newEntry with historyHandling set to "replace".
-◎
-Otherwise, if navigationParams's history handling is "replace"
-• ↑Let newEntry be a new session history entry whose URL is newDocument's URL and document is newDocument.
-• Insert newEntry after the current entry in navigationParams's browsing context's session history.
-• Traverse the history to newEntry with historyHandling set to "replace".
-</li>
+			</li>
 			<li>
 <p>
-~ELSE：
+`既定$i：
 ◎
-Otherwise
+"default"
 </p>
 				<ol>
 					<li>
-~Assert：
-%~navi~params の`履歴~取扱い$nvP ~EQ `既定$i
-◎
-Assert: navigationParams's history handling is "default".
-</li>
-					<li>
 <p>
-%履歴 から［
-%現在の~entry より後にある~entryすべて
-］を除去する
+%~session履歴 から［
+%現在の~entry より後にある~entryをすべて
+］を除去する（もしあれば）
 ◎
-Remove all the entries in the session history after the current entry. If the current entry is the last entry in the session history, then no entries are removed.
+Remove all the entries in sessionHistory after its current entry. (If the current entry is the last entry in the session history, then no entries are removed.)
 </p>
 
 <p class="note">注記：
@@ -3463,21 +3452,28 @@ Remove all the entries in the session history after the current entry. If the cu
 ◎
 This doesn't necessarily have to affect the user agent's user interface.
 </p>
-					</li>
+				 </li>
 					<li>
-%履歴 に %新たな~entry を付加する
+%新たな~entry ~LET 次を伴う新たな`~session履歴~entry$
+⇒＃
+`~URL$shE ~SET %新たな文書 の`~URL$doc,
+`文書$shE ~SET %新たな文書
 ◎
-Append a new session history entry to the session history,＼
-↑↑whose URL is newDocument's URL and document is newDocument.
+Let newEntry be a new session history entry whose URL is newDocument's URL and document is newDocument.
+</li>
+					<li>
+%~session履歴 に %新たな~entry を`付加する$
+◎
+Append newEntry to sessionHistory.
 </li>
 					<li>
 %新たな~entry へ`履歴を辿る$
 ◎
-Traverse the history to the new entry.
+Traverse the history to newEntry.
 </li>
 				</ol>
 			</li>
-		</ol>
+		</ul>
 	</li>
 	<li>
 この時点で、 %~navi は
@@ -4250,8 +4246,8 @@ Append a new session history entry to the session history whose URL is url, docu
 %~entry へ`履歴を辿る$
 — 次を与える下で
 ⇒＃
-`履歴の取扱い$V ~SET %履歴~取扱い,
-`~eventは他を阻まない$V ~SET ~T
+`履歴の取扱い$i ~SET %履歴~取扱い,
+`~eventは他を阻まない$i ~SET ~T
 ◎
 Traverse the history to the new entry, with historyHandling set to historyHandling and with nonBlockingEvents set to true.＼
 </p>
@@ -4605,7 +4601,7 @@ If explicitHistoryNavigation is true, then set request's history-navigation flag
 %B を %要請 へ`~navigate$する
 — 次を与える下で
 ⇒＃
-`履歴~取扱い$V ~SET `~entry更新$i
+`履歴~取扱い$i ~SET `~entry更新$i
 `~source閲覧文脈$ ~SET %~entry を最初に作成したときに利用した`~source閲覧文脈$
 ◎
 Navigate the browsing context to request with historyHandling set to "entry update". The navigation must be done using the same source browsing context as was used the first time entry was created.
@@ -4843,12 +4839,12 @@ Set newDocument's URL to entry's URL.
 Let hashChanged be false,＼
 </li>
 			<li>
-%旧~URL ~LET ~NULL
+%旧-~URL ~LET ~NULL
 ◎
 and let oldURL＼
 </li>
 			<li>
-%新~URL ~LET ~NULL
+%新-~URL ~LET ~NULL
 ◎
 and newURL be null.
 </li>
@@ -4861,8 +4857,8 @@ and newURL be null.
 ］
 ⇒＃
 %~hash変化あり ~SET ~T；
-%旧~URL ~SET %現在の~entry の`~URL$shE；
-%新~URL ~SET %~entry の`~URL$shE；
+%旧-~URL ~SET %現在の~entry の`~URL$shE；
+%新-~URL ~SET %~entry の`~URL$shE；
 ◎
 If entry's URL's fragment is not identical to the current entry's URL's fragment, and entry's document equals the current entry's document, then set hashChanged to true, set oldURL to the current entry's URL, and set newURL to entry's URL.
 </li>
@@ -4984,8 +4980,8 @@ Restore persisted state from entry.
 %B にて`作動中の~window$に向けて，名前 `hashchange$et の`~eventを発火する$
 — `HashChangeEvent$I を利用し，次のように初期化して
 ⇒＃
-`oldURL$m 属性 ~SET %旧~URL,
-`newURL$m 属性 ~SET %新~URL
+`oldURL$m 属性 ~SET %旧-~URL,
+`newURL$m 属性 ~SET %新-~URL
 ◎
 If hashChanged is true, then fire an event named hashchange at the browsing context's active window, using HashChangeEvent, with the oldURL attribute initialized to oldURL and the newURL attribute initialized to newURL.
 </li>
