@@ -1837,6 +1837,7 @@ WEBSTORAGE=副         ~/WebStorage-ja.html
 WORKERS=副            ~/Workers-ja.html
 WORKLETS1=副          ~/worklets-ja.html
 XHR=副                ~/XHR-ja.html
+MIMESNIFF=副          ~/mimesniff-ja.html
 XML11=副              ＃w4ard.eplusx.net/translation/W3C/REC-xml11-20060816/
 XML10=・              ~TR/xml/
 XML10=主              ＃w4ard.eplusx.net/translation/W3C/REC-xml-20081126/
