@@ -113,8 +113,8 @@ return text;
 ●●options
 
 spec_title:XMLHttpRequest
-spec_date:2021-03-03
-trans_update:2021-03-04
+spec_date:2021-03-11
+trans_update:2021-03-13
 source_checked:210226
 original_url:https://xhr.spec.whatwg.org/
 spec_status:LS
@@ -343,7 +343,8 @@ milli::::ミリ
 	%本体~errorを処理する:processBodyError
 	%~NULLまたは失敗または~byte列:nullOrFailureOrBytes
 	%~byte列~長さ:bytesLength
-	%~upload済み~byte列~長さ:uploadedBytesLength
+	%伝送-済み要請~本体:requestBodyTransmitted
+	%要請~本体~長さ:requestBodyLength
 
 
 	●指示語
@@ -592,6 +593,7 @@ hd.名前:~FETCH#concept-header-name
 hd.値:~FETCH#concept-header-value
 値を正規化する:~FETCH#concept-header-value-normalize
 ~header~listから値を取得する:~FETCH#concept-header-list-get
+~header~listから長さを抽出する:~FETCH#header-list-extract-a-length
 ~header:~FETCH#concept-header
 ~header~list:~FETCH#concept-header-list
 ~headerを設定する:~FETCH#concept-header-list-set
@@ -772,7 +774,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/xhr/commits
-	<a href="https://xhr.spec.whatwg.org/commit-snapshots/231e2821da03ca30f49100c51ab9b5122be0aa79/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://xhr.spec.whatwg.org/commit-snapshots/afd98f1336f8b637f700797006079a66e4d2c24a/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/xhrstandard">@xhrstandard</a>
 
 Tests:
@@ -2393,7 +2395,7 @@ Set this’s send() flag.
 コレの`同期~flag$xhr ~EQ ~F
 ］：
 ◎
-If this’s synchronous flag is unset, then: 
+If this’s synchronous flag is unset, then:
 </p>
 		<ol>
 			<li>
@@ -2402,15 +2404,34 @@ If this’s synchronous flag is unset, then:
 Fire a progress event named loadstart at this with 0 and 0.
 </li>
 			<li>
+%伝送-済み要請~本体 ~LET 0
+◎
+Let requestBodyTransmitted be 0.
+</li>
+			<li>
+%要請~本体~長さ ~LET 
+
+%要請 の`本体$rq ~NEQ ~NULL ならば %要請 の`本体$rqの`長さ$bd／
+~ELSE_ 0
+◎
+Let requestBodyLength be req’s body’s length, if req’s body is non-null; otherwise 0.
+</li>
+			<li>
+~Assert：
+%要請~本体~長さ は整数である。
+◎
+Assert: requestBodyLength is an integer.
+</li>
+			<li>
 ~IF［
 コレの`~upload完了-~flag$xhr ~EQ ~F
 ］~AND［
 コレの`~upload~listener~flag$xhr ~EQ ~T
 ］
 ⇒
-コレの`~upload~obj$xhrに向けて，名前 `loadstart$et の`進捗~eventを発火する$( 0, %要請 の`本体$rqの`長さ$bd )
+コレの`~upload~obj$xhrに向けて，名前 `loadstart$et の`進捗~eventを発火する$( %伝送-済み要請~本体, %要請~本体~長さ )
 ◎
-If this’s upload complete flag is unset and this’s upload listener flag is set, then fire a progress event named loadstart at this’s upload object with 0 and req’s body’s total bytes.
+If this’s upload complete flag is unset and this’s upload listener flag is set, then fire a progress event named loadstart at this’s upload object with requestBodyTransmitted and requestBodyLength.
 </li>
 			<li>
 ~IF［
@@ -2423,11 +2444,6 @@ If this’s upload complete flag is unset and this’s upload listener flag is s
 ◎
 If this’s state is not opened or this’s send() flag is unset, then return.
 </li>
-			<li>
-%~upload済み~byte列~長さ ~LET 0
-◎
-Let uploadedBytesLength be 0.
-</li>
 			<li class="algo">
 <p>
 %要請の本体を処理する ~LET 所与の
@@ -2438,9 +2454,9 @@ Let processRequestBody, given a bytesLength, be these steps:
 </p>
 				<ol>
 					<li>
-%~upload済み~byte列~長さ ~INCBY %~byte列~長さ
+%伝送-済み要請~本体 ~INCBY %~byte列~長さ
 ◎
-Increase uploadedBytesLength by bytesLength.
+Increase requestBodyTransmitted by bytesLength.
 </li>
 					<li>
 ~IF［
@@ -2456,9 +2472,9 @@ If not roughly 50ms have passed since these steps were last invoked, then return
 コレの`~upload~listener~flag$xhr ~EQ ~T
 ］
 ⇒
-コレの`~upload~obj$xhrに向けて，名前 `progress$et の`進捗~eventを発火する$( %~upload済み~byte列~長さ, %要請 の`本体$rqの`長さ$bd )
+コレの`~upload~obj$xhrに向けて，名前 `progress$et の`進捗~eventを発火する$( %伝送-済み要請~本体, %要請~本体~長さ )
 ◎
-If this’s upload listener flag is set, then fire a progress event named progress at this’s upload object with uploadedBytesLength and req’s body’s total bytes.
+If this’s upload listener flag is set, then fire a progress event named progress at this’s upload object with requestBodyTransmitted and requestBodyLength.
 </li>
 </ol>
 
@@ -2491,24 +2507,24 @@ Set this’s upload complete flag.
 If this’s upload listener flag is unset, then return.
 </li>
 					<li>
-%長さ ~LET %要請 の`本体$rqの`長さ$bd
+コレの`~upload~obj$xhrに向けて，名前 `progress$et の`進捗~eventを発火する$( %伝送-済み要請~本体, %要請~本体~長さ )
 ◎
-Let length be req’s body’s total bytes.
+Fire a progress event named progress at this’s upload object with requestBodyTransmitted and requestBodyLength.
+
+ length.
 </li>
 					<li>
-コレの`~upload~obj$xhrに向けて，名前 `progress$et の`進捗~eventを発火する$( %~upload済み~byte列~長さ, %長さ )
+コレの`~upload~obj$xhrに向けて，名前 `load$et の`進捗~eventを発火する$( %伝送-済み要請~本体, %要請~本体~長さ )
 ◎
-Fire a progress event named progress at this’s upload object with uploadedBytesLength and length.
+Fire a progress event named load at this’s upload object with requestBodyTransmitted and requestBodyLength.
+
+Fire a progress event named load 
+length.
 </li>
 					<li>
-コレの`~upload~obj$xhrに向けて，名前 `load$et の`進捗~eventを発火する$( %~upload済み~byte列~長さ, %長さ )
+コレの`~upload~obj$xhrに向けて，名前 `loadend$et の`進捗~eventを発火する$( %伝送-済み要請~本体, %要請~本体~長さ )
 ◎
-Fire a progress event named load at this’s upload object with uploadedBytesLength and length.
-</li>
-					<li>
-コレの`~upload~obj$xhrに向けて，名前 `loadend$et の`進捗~eventを発火する$( %~upload済み~byte列~長さ, %長さ )
-◎
-Fire a progress event named loadend at this’s upload object with uploadedBytesLength and length.
+Fire a progress event named loadend at this’s upload object with requestBodyTransmitted and requestBodyLength.
 </li>
 				</ol>
 			</li>
@@ -2560,18 +2576,28 @@ Fire an event named readystatechange at this.
 If this’s state is not headers received, then return.
 </li>
 					<li>
-%本体 ~LET %応答 の`本体$rs
-◎
-↓</li>
-					<li>
 ~IF［
-%本体 ~EQ ~NULL
+%応答 の`本体$rs ~EQ ~NULL
 ］
 ⇒＃
 `応答~本体の終端を取扱う$( コレ )；
 ~RET
 ◎
 If this’s response’s body is null, then run handle response end-of-body for this and return.
+</li>
+					<li>
+%長さ ~LET `~header~listから長さを抽出する$( コレの`応答$xhrの`~header~list$rs )
+◎
+Let length be the result of extracting a length from this’s response’s header list.
+</li>
+					<li>
+~IF［
+%長さ は整数でない
+］
+⇒
+%長さ ~SET 0
+◎
+If length is not an integer, then set it to 0.
 </li>
 					<li class="algo">
 <p>
@@ -2620,13 +2646,9 @@ Web compatibility is the reason readystatechange fires more often than this’s 
 </p>
 							</li>
 							<li>
-%本体 ~LET コレの`応答$xhrの`本体$rs
+コレに向けて名前 `progress$et の`進捗~eventを発火する$( コレの`受信した~byte列$xhrの`長さ$byte, %長さ )
 ◎
-↓</li>
-							<li>
-コレに向けて名前 `progress$et の`進捗~eventを発火する$( コレの`受信した~byte列$xhrの`長さ$byte, %本体 の`長さ$bd )
-◎
-Fire a progress event named progress at this with this’s received bytes’s length and this’s response’s body’s total bytes.
+Fire a progress event named progress at this with this’s received bytes’s length and length.
 </li>
 						</ol>
 					</li>
@@ -2867,9 +2889,18 @@ If xhr’s response is a network error, then return.
 Let transmitted be xhr’s received bytes’s length.
 </li>
 	<li>
-%長さ ~LET %xhr の`本体$rsの`長さ$bd
+%長さ ~LET `~header~listから長さを抽出する$( コレの`応答$xhrの`~header~list$rs )
 ◎
-Let length be xhr’s response’s body’s total bytes.
+Let length be the result of extracting a length from this’s response’s header list.
+</li>
+	<li>
+~IF［
+%長さ は整数でない
+］
+⇒
+%長さ ~SET 0
+◎
+If length is not an integer, then set it to 0.
 </li>
 	<li>
 ~IF［
