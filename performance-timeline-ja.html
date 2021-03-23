@@ -99,8 +99,8 @@ return text;
 ●●options
 
 spec_title:Performance Timeline Level 2
-spec_date:2021-03-08
-trans_update:2020-09-24
+spec_date:2021-03-15
+trans_update:2020-03-23
 source_checked:190511
 page_state_key:TIMING
 original_url:https://w3c.github.io/performance-timeline/
@@ -178,6 +178,7 @@ I.PerformanceObserver:#dom-performanceobserver
 I.PerformanceObserverCallback:#dom-performanceobservercallback
 I.PerformanceObserverEntryList:#dom-performanceobserverentrylist
 I.PerformanceObserverInit:#dom-performanceobserverinit
+I.PerformanceObserverCallbackOptions:#dom-performanceobservercallbackoptions
 
 DOMString:~WEBIDL#idl-DOMString
 undefined:~WEBIDL#idl-undefined
@@ -213,6 +214,8 @@ d.entryTypes:#dom-performanceobserverinit-entrytypes
 d.type:#dom-performanceobserverinit-type
 d.buffered:#dom-performanceobserverinit-buffered
 
+d.droppedEntriesCount:#dom-performanceobservercallbackoptions-droppedentriescount
+
 	m.PerformanceObserverInit.entryTypes:#dom-performanceobserverinit-entrytypes
 
 ~buffer~mapを名前と型で絞込む:#dfn-filter-buffer-map-by-name-and-type
@@ -229,7 +232,7 @@ pO.~options~list:#dfn-options-list
 処理能~entry~buffer:#dfn-performance-entry-buffer
 最大~buffer~size:#dfn-maxbuffersize
 時列線から可用？:#dfn-availablefromtimeline
-落とした~entryはある？:#dfn-has-dropped-entry
+落とした~entry数:#dfn-dropped-entries-count
 
 処理能~entry~tupleを得る:#dfn-relevant-performance-entry-tuple
 
@@ -385,7 +388,7 @@ alphabet-:alphabetical:::アルファベット
 [HR-TIME-2]
     High Resolution Time Level 2. Ilya Grigorik. W3C. 21 November 2019. W3C Recommendation. URL: https://www.w3.org/TR/hr-time-2/
 [hr-time-3]
-    High Resolution Time. Ilya Grigorik. W3C. 1 October 2020. W3C Working Draft. URL: https://www.w3.org/TR/hr-time-3/
+    High Resolution Time. Yoav Weiss; Ilya Grigorik; James Simonsen; Jatinder Mann. W3C. 16 March 2021. W3C Working Draft. URL: https://www.w3.org/TR/hr-time-3/
 [HTML]
     HTML Standard. Anne van Kesteren; Domenic Denicola; Ian Hickson; Philip Jägenstedt; Simon Pieters. WHATWG. Living Standard. URL: https://html.spec.whatwg.org/multipage/
 [INFRA]
@@ -404,7 +407,7 @@ alphabet-:alphabetical:::アルファベット
 [PERFORMANCE-TIMELINE]
     Performance Timeline. Jatinder Mann; Zhiheng Wang. W3C. 12 December 2013. W3C Recommendation. URL: https://www.w3.org/TR/performance-timeline/
 [RESOURCE-TIMING-2]
-    Resource Timing Level 2. Todd Reifsteck; Ilya Grigorik; Yoav Weiss; Arvind Jain; Jatinder Mann; Zhiheng Wang; Anderson Quach. W3C. 18 August 2020. W3C Working Draft. URL: https://www.w3.org/TR/resource-timing-2/
+    Resource Timing Level 2. Yoav Weiss; Ilya Grigorik; Todd Reifsteck; Arvind Jain; Jatinder Mann; Zhiheng Wang; Anderson Quach. W3C. 1 March 2021. W3C Working Draft. URL: https://www.w3.org/TR/resource-timing-2/
 [USER-TIMING-2]
     User Timing Level 2. Ilya Grigorik. W3C. 26 February 2019. W3C Recommendation. URL: https://www.w3.org/TR/user-timing-2/
 [WORKERS]
@@ -839,11 +842,13 @@ An integer maxBufferSize, initialized to the registry value for this entry type.
 A boolean availableFromTimeline, initialized to the registry value for this entry type.
 </li>
 			<li>
-`落とした~entryはある？@
+`落とした~entry数@
 ⇒
-真偽値をとる。
-初期~時は ~F とする。
+整数
+— 初期~時は 0 とする。
 ◎
+An integer dropped entries count that is initially 0.
+
 A boolean has dropped entry that is initially false.
 </li>
 		</ul>
@@ -1146,7 +1151,7 @@ The PerformanceObserver(callback) constructor must create a new PerformanceObser
 callback `PerformanceObserverCallback@I = `undefined$ (
     `PerformanceObserverEntryList$I %entries,
     `PerformanceObserver$I %observer,
-    optional boolean %hasDroppedEntry = false
+    optional `PerformanceObserverCallbackOptions$I %options = {}
 );
 
 [Exposed=(Window,Worker)]
@@ -1172,8 +1177,29 @@ Note
 To keep the performance overhead to minimum the application ought to only subscribe to event types that it is interested in, and disconnect the observer once it no longer needs to observe the performance data. Filtering by name is not supported, as it would implicitly require a subscription for all event types — this is possible, but discouraged, as it will generate a significant volume of events.
 </p>
 
+		<section id="performanceobservercallbackoptions-dictionary">
+<h3 title="PerformanceObserverCallbackOptions dictionary">5.1. `PerformanceObserverCallbackOptions^I 辞書</h3>
+
+<pre class="idl">
+dictionary `PerformanceObserverCallbackOptions@I {
+  unsigned long long `droppedEntriesCount$d;
+};
+</pre>
+
+<dl>
+	<dt>`droppedEntriesCount@d</dt>
+	<dd>
+次を表現している整数
+⇒
+~callbackが走っているときに当の観測器が観測している`~entry型$の~entryのうち落とされたものの個数
+◎
+An integer representing the dropped entries count for the entry types that the observer is observing when its callback is run. 
+</dd>
+</dl>
+
+		</section>
 		<section id="observe-method">
-<h3 title="observe() method">5.1. `observe()^m ~method</h3>
+<h3 title="observe() method">5.2. `observe()^m ~method</h3>
 
 <p id="dfn-register-the-observer">
 `observe()$m ~methodは、コレが`登録-済み$であれば コレを更新し，そうでなければコレを`登録-済み$にする。
@@ -1458,7 +1484,7 @@ On the other hand, when using type, calls will stack because a single call can o
 </div>
 
 			<section id="performanceobserverinit-dictionary">
-<h4 title="PerformanceObserverInit dictionary">5.1.1. `PerformanceObserverInit^I 辞書</h4>
+<h4 title="PerformanceObserverInit dictionary">5.2.1. `PerformanceObserverInit^I 辞書</h4>
 
 <pre class="idl">
 dictionary `PerformanceObserverInit@I {
@@ -1499,7 +1525,7 @@ A flag to indicate whether buffered entries should be queued into observer's buf
 
 			</section>
 			<section id="performanceobserverentrylist-interface">
-<h4 title="PerformanceObserverEntryList interface">5.1.2. `PerformanceObserverEntryList^I ~interface</h4>
+<h4 title="PerformanceObserverEntryList interface">5.2.2. `PerformanceObserverEntryList^I ~interface</h4>
 
 <pre class="idl">
 [`Exposed$=(Window,Worker)]
@@ -1573,7 +1599,7 @@ Returns a PerformanceEntryList object returned by filter buffer by name and type
 			</section>
 		</section>
 		<section id="takerecords-method">
-<h3 title="takeRecords() method">5.2. `takeRecords()^m</h3>
+<h3 title="takeRecords() method">5.3. `takeRecords()^m</h3>
 
 <div class="algo">
 <p>
@@ -1597,7 +1623,7 @@ The takeRecords() method must return a copy of the context object's observer buf
 
 		</section>
 		<section id="disconnect-method">
-<h3 title="disconnect() method">5.3. `disconnect()^m ~method</h3>
+<h3 title="disconnect() method">5.4. `disconnect()^m ~method</h3>
 
 <div class="algo">
 <p>
@@ -1838,41 +1864,51 @@ Let observerEntryList be a new PerformanceObserverEntryList,＼
 with its entry list set to entries.
 </li>
 					<li>
-%~buffer~map ~LET %大域~obj の`処理能~entry~buffer~map$
+%落とした~entry数 ~LET 0
 ◎
-↓</li>
+Let droppedEntriesCount be 0.
+</li>
 					<li>
 <p>
-%落とした~entryはある ~LET 次をすべて満たす文字列 %~entry型 は［
-在るならば ~T ／
-無いならば ~F
-］：
+%大域~obj の`処理能~entry~buffer~map$を成す
+~EACH( %~entry型 → %~tuple )
+に対し：
 </p>
-						<ul>
+						<ol>
 							<li>
-%~buffer~map[ %~entry型 ] ~NEQ ε
-</li>
-							<li>
-%~buffer~map[ %~entry型 ] の`落とした~entryはある？$ ~EQ ~T
-</li>
-							<li>
-%観測器 の`~options~list$pOを成す ある~item %~options は次を満たす
-⇒
-［
+<p>
+~IF［
+%観測器 の`~options~list$pO内に，次のいずれかを満たす~item %~options は在る
+］…：
+</p>
+								<ul>
+									<li>
 %~entry型 ~IN %~options[ "`entryTypes$d" ] ~NEQ ε
-］~OR［
-%~entry型 ~EQ %~options[ "`type$d" ] ~NEQ ε
-］
 </li>
-						</ul>
-◎
-Let hasDroppedEntry be false.
+									<li>
+%~entry型 ~EQ %~options[ "`type$d" ] ~NEQ ε
+</li>
+								</ul>
+<p>
+…ならば
+⇒
+%落とした~entry数 ~INCBY %~tuple の`落とした~entry数$
+</p>
+							</li>
+						</ol>
 ◎
 For each PerformanceObserverInit item in registeredObserver's options list:
 • For each DOMString entryType that appears either as item's type or in item's entryTypes:
 •• Let map be relevantGlobal's performance entry buffer map.
 •• Let tuple be the result of getting the value of entry on map given entryType as key.
-•• If tuple's has dropped entry is true, set hasDroppedEntry to true.
+•• Increase droppedEntriesCount by tuple's dropped entries count.
+</li>
+					<li>
+%~callback~options ~LET 次を伴う新たな `PerformanceObserverCallbackOptions$I
+⇒
+その `droppedEntriesCount$d ~SET %落とした~entry数
+◎
+Let callbackOptions be a PerformanceObserverCallbackOptions with its droppedEntriesCount set to droppedEntriesCount.
 </li>
 					<li>
 <p>
@@ -1880,7 +1916,7 @@ For each PerformanceObserverInit item in registeredObserver's options list:
 【！原文は単に “Call” 】
 ⇒＃
 %観測器 の`~callback$pO,
-« %観測器~entry~list, %観測器, %落とした~entryはある »,
+« %観測器~entry~list, %観測器, %~callback~options »,
 %観測器
 </p>
 
@@ -1890,7 +1926,7 @@ For each PerformanceObserverInit item in registeredObserver's options list:
 その`例外を報告する$
 </p>
 ◎
-Call po’s observer callback with observerEntryList as the first argument, with po as the second argument and as callback this value, and with hasDroppedEntry as the third argument. If this throws an exception, report the exception.
+Call po’s observer callback with observerEntryList as the first argument, with po as the second argument and as callback this value, and with callbackOptions as the third argument. If this throws an exception, report the exception. 
 </li>
 				</ol>
 			</li>
@@ -2075,9 +2111,9 @@ Let num current entries be the size of tuple's performance entry buffer.
 If num current entries is less than tuples's maxBufferSize, return false.
 </li>
 	<li>
-%~tuple の`落とした~entryはある？$ ~SET ~T
+%~tuple の`落とした~entry数$ ~INCBY 1
 ◎
-Set tuple's has dropped entry to true.
+Increase tuple's dropped entries count by 1.
 </li>
 	<li>
 ~RET ~T
