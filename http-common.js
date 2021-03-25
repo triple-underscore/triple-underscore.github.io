@@ -703,7 +703,7 @@ c.realm:~HTTPsem#realm
 
 暫定-応答:~HTTPsem#interim-response
 最終-応答:~HTTPsem#final-response
-	#final-interim
+	#final.interim
 事由~句:~HTTPsem#reason-phrase
 
 部分的な応答:~HTTPsem#status.206
