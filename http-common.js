@@ -1059,8 +1059,6 @@ agent::::エージェント
 承認-:acknowledge:~
 誤解:mistake:~
 責務:responsibility:~
-誤解釈:misinterpret:~
-性向:nature:~
 開示-:disclose:~
 開示:disclosure:~
 関心:interest:~
