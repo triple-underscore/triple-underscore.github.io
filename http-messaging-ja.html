@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP/1.1
-spec_date:2021-03-25
-trans_update:2021-03-06
+spec_date:2021-03-26
+trans_update:2021-03-29
 source_checked:201210
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-messaging-latest.html
@@ -41,7 +41,7 @@ h.MIME-Version:#mime-version
 h.Keep-Alive:#compatibility.with.http.1.0.persistent.connections
 	h.Proxy-Connection:#compatibility.with.http.1.0.persistent.connections
 h.Content-Transfer-Encoding:~RFCx/rfc2045#section-6
-	h.Close:#field.close → § #IANA.considerations
+	h.Close:#field.close
 
 c.close:#close-connection-option
 c.1.1:#version-1.1
@@ -81,6 +81,7 @@ p.method:~HTTPmsg#p.method
 	●§
 ~message構文解析:#message.parsing
 
+3.2.3:#authority-form
 7.3:#transfer.coding.registry
 7.1.2:#chunked.trailer.section
 7.1.3:#decoding.chunked
@@ -102,6 +103,7 @@ Semantics/5.6.1:~HTTPinfra#abnf.extension
 Semantics/5.6.7:~HTTPinfra#http.date
 Semantics/6.4:~HTTPinfra#content
 Semantics/7.3:~HTTPsem#routing.inbound
+Semantics/7.4:~HTTPsem#routing.reject
 Semantics/7.6:~HTTPsem#message.forwarding
 Semantics/8.3.3:~HTTPsem#canonicalization.and.text.defaults
 Semantics/9.2.2:~HTTPsem#idempotent.methods
@@ -109,7 +111,7 @@ Semantics/謝辞:~HTTPinfra#acks
 
 Caching/3:~HTTPcache#response.cacheability
 
-cite.~HTTP転送~符号法~registry:~IANA-a/http-parameters
+cite.~HTTP転送~符号法~registry:~IANA-a/http-parameters#transfer-coding
 
 	既定の~TCP~port
 	p.userinfo:3986#section-3.2.1
@@ -226,6 +228,9 @@ D.4:#changes.since.02
 超越-:transcend:~
 古代の:ancientな:~
 際どい:edge:~
+実効性:effectiveness:~
+性向:nature:~
+誤解釈-:misinterpret:~
 
 	欲されない:not desirable
 	自由度を高める:greater freedom
@@ -236,7 +241,6 @@ D.4:#changes.since.02
 	疑いを示すもの:call into question
 	目を向け:regard
 	最低でも:at a minimum
-	機会:chance／
 	~~由来:out of deference to
 	称され:referred to as
 	見え難い:obscure
@@ -256,7 +260,9 @@ D.4:#changes.since.02
 被害:damage:~
 迂回-:bypass:~
 checksum::::チェックサム
+
 	晒され:expose
+	信じ込ませる:believing
 
 	●network
 IP:
@@ -273,17 +279,17 @@ handshake::::ハンドシェイク
 混雑-:congest:~
 混雑:congestion:~
 相互通信:interaction::~
-自動訂正:autocorrect:~
 解体:tear-down:~
 	^en:head-of-line blocking
 起動:initiation:~
 
 	^i:ClientHello
+	入って来る:incoming
 
 	●構文
 space:
 転化-:translate::~
-不正形な:malformed:不正な形の
+不正形な:malformedな:不正な形の
 US-ASCII:
 単語:word:~
 終了子:terminator::~
@@ -316,7 +322,6 @@ multibyte::::マルチバイト
 	~random化:randomization
 付番方式:numbering scheme:~
 保って:keepして:~
-入力用:incoming:~
 再整形:reformatting:~
 医療:medical:~
 同時並行性:concurrency:~
@@ -325,11 +330,16 @@ multibyte::::マルチバイト
 復唱:echo:~
 一対一:one-to-one:~
 数的:numeric:~
+scale::::スケール
+	~scaleが巨大:large-scale
+識別情報:identity:~
 
 	base64
 	sprintf
 
 	●他の語（言い換え
+正して:correctして:~
+	自動的に正して:autocorrect
 	~frame法:framing
 	内包する:inclusion
 	抽出する:extraction
@@ -367,6 +377,7 @@ multibyte::::マルチバイト
 	それ以上:no further
 	~~各部:portions
 	前もって:in advance
+	半分:half
 
 ●●ref_normative
 [Caching]
@@ -658,11 +669,15 @@ The rules below are defined in [Semantics]:
 ⇒＃
 `absolute-URI$p,
 `authority$p,
+`uri-host$p,
+`port$p,
 `query$p,
 ◎
 The rules below are defined in [RFC3986]:
 • absolute-URI  = &lt;absolute-URI, see [RFC3986], Section 4.3&gt;
 • authority     = &lt;authority, see [RFC3986], Section 3.2&gt;
+• uri-host      = &lt;host, see [RFC3986], Section 3.2.2&gt;
+• port          = &lt;port, see [RFC3986], Section 3.2.3&gt;
 • query         = &lt;query, see [RFC3986], Section 3.4&gt;
 </p>
 
@@ -986,9 +1001,9 @@ Intermediaries that process HTTP messages (i.e., all intermediaries other than t
 <div class="p">
 <p>
 `~server$は、`~client$による~HTTP11要請に対し，［
-その~clientが，~HTTP仕様を不正に実装していて，後継~versionの応答を正しく処理できない
+その~clientは、~HTTP仕様を不正に実装していて，後継~versionの応答を正しく処理できない
 ］ことが［
-既知または疑わしい
+既知である／疑わしい
 ］ならば、~HTTP10応答を送信してもヨイ
 — 例えば、次が既知であるときなど：
 ◎
@@ -1005,7 +1020,8 @@ when a client fails to parse the version number correctly or＼
 	<li>
 `中継者$が、所与の［
 ~protocolの`~minor~version$
-］に自身が適合しないときにも， `HTTP-version$p を盲目的に回送する。
+］に自身が適合しないときにも，
+`HTTP-version$p を盲目的に回送する。
 ◎
 when an intermediary is known to blindly forward the HTTP-version even when it doesn't conform to the given minor version of the protocol.＼
 </li>
@@ -1014,14 +1030,12 @@ when an intermediary is known to blindly forward the HTTP-version even when it d
 <p>
 そのような［
 ~protocolの降格
-］は、［
-特定の~client属性により誘発されたもの
-］でない限り，遂行されるベキでない
-— 例えば：
-1 個~以上の要請~header（例： `User-Agent$h ）が、［
-~errorにあることが既知である，ある~client
+］は、特定の~client属性により誘発されない限り，遂行されるベキでない
+— 例えば、要請~内の 1 個~以上の~header（例： `User-Agent$h ）【の値たちが成す組】が［
+~errorにあることが既知な，ある~client
 【~client実装~version】
-］が送信する値に，一意に合致するときなど。
+が送信する値
+］に一意に合致するときなど。
 ◎
 Such protocol downgrades SHOULD NOT be performed unless triggered by specific client attributes, such as when one or more of the request header fields (e.g., User-Agent) uniquely match the values sent by a client known to be in error.
 </p>
@@ -1045,23 +1059,28 @@ A request-line begins with a method token, followed by a single space (SP), the 
 
 <p>
 文法~規則 `request-line$p は，［
-各種~成分~要素どうしが 1 個の `SP$P ~octetで分離される
+各~成分~要素どうしが 1 個の `SP$P ~octetで分離される
 ］ことを要求しているが、`受信者$は，代わりに
 空白で区切られる単語~境界を構文解析した上で
 — 行l終了子の `CRLF$P は別として —
-頭部／尾部を成す空白は無視し，他のどの形による空白も `SP$P 分離子と扱ってもヨイ
-— そのような空白は、 1 個~以上の，次の~octetからなり得る：［
+頭部／尾部を成す空白は無視して，他のどの形による空白も `SP$P 分離子として扱ってもヨイ
+— そのような空白は、 1 個~以上の，次に挙げる~octetからなり得る
+⇒＃
 `SP$P,
 `HTAB$P,
 `VT^P (`0B^X),
 `FF^P (`0C^X), ［
 `CRLF$P の一部を成さない `CR$P
-］］。
-しかしながら，寛容な構文解析-法は、［
+◎
+Although the request-line grammar rule requires that each of the component elements be separated by a single SP octet, recipients MAY instead parse on whitespace-delimited word boundaries and, aside from the CRLF terminator, treat any form of whitespace as the SP separator while ignoring preceding or trailing whitespace; such whitespace includes one or more of the following octets: SP, HTAB, VT (%x0B), FF (%x0C), or bare CR.＼
+</p>
+
+<p>
+しかしながら，そのような寛容な構文解析-法は、［
 ~messageに対し複数の`受信者$が居て、堅牢性のための解釈が，それぞれに異なる場合
 ］に，~securityの脆弱性になり得る（§`要請~密入$を見よ）。
 ◎
-Although the request-line grammar rule requires that each of the component elements be separated by a single SP octet, recipients MAY instead parse on whitespace-delimited word boundaries and, aside from the CRLF terminator, treat any form of whitespace as the SP separator while ignoring preceding or trailing whitespace; such whitespace includes one or more of the following octets: SP, HTAB, VT (%x0B), FF (%x0C), or bare CR. However, lenient parsing can result in request smuggling security vulnerabilities if there are multiple recipients of the message and each has its own unique interpretation of robustness (see Section 11.2).
+However, lenient parsing can result in request smuggling security vulnerabilities if there are multiple recipients of the message and each has its own unique interpretation of robustness (see Section 11.2).
 </p>
 
 <div class="p">
@@ -1136,11 +1155,10 @@ The request methods defined by this specification can be found in Section 9 of [
 
 <p>
 `request-target$p は、要請を どの~target資源に適用するかを識別する。
-`~client$は、欲された`~target~URI$から `request-target$p を導出する。
+`~client$は、欲される`~target~URI$から `request-target$p を導出する。
 要請~targetには、［
-要請された~method,
-要請は`~proxy$向けかどうか
-］の両者に依存して， 4 種の別個な形式がある：
+要請される~method, 要請は`~proxy$向けかどうか
+］の両者に依存して，次に挙げる 4 種の別個な形式がある：
 ◎
 The request-target identifies the target resource upon which to apply the request. The client derives a request-target from its desired target URI. There are four distinct formats for the request-target, depending on both the method being requested and whether the request is to a proxy.
 </p>
@@ -1155,7 +1173,7 @@ The request-target identifies the target resource upon which to apply the reques
 
 <p>
 `request-target$p 内には、空白は許容されない。
-あいにく，一部の`~UA$は［
+あいにく，一部の`~UA$は、［
 ~hypertext参照に見出される空白
 ］を適正に［
 符号化する／除外する
@@ -1194,7 +1212,7 @@ a 301 (Moved Permanently) redirect with the request-target properly encoded.＼
 		</ul>
 	</li>
 	<li>
-~redirectせずに，要請を自動訂正して処理しようと試みるベキでない
+~redirectせずに，要請を自動的に正して処理しようと試みるベキでない
 — 妥当でない `request-line$p は、要請の`連鎖$沿いにある~security~filterを迂回するために，故意に細工された~~可能性もあるので。
 ◎
 A recipient SHOULD NOT attempt to autocorrect and then process the request without a redirect, since the invalid request-line might be deliberately crafted to bypass security filters along the request chain.
@@ -1263,7 +1281,8 @@ a Host header field with an invalid field value.
 <h4 title="origin-form">3.2.1. `origin-form^p</h4>
 
 <p>
-`request-target$p の最も共通的な形は、 `origin-form$p である：
+`request-target$p の最も共通的な形は、
+`origin-form$p である：
 ◎
 The most common form of request-target is the origin-form.
 </p>
@@ -1273,22 +1292,38 @@ The most common form of request-target is the origin-form.
     = `absolute-path$p [ "?" `query$p ]
 </pre>
 
+<div class="p">
 <p>
 `~client$は、［
 `CONNECT$m ／`~server-wide$な `OPTIONS$m
-］（詳細は後述）以外の要請を，`生成元~server$へ直に為すときは、
+］（詳細は後述）以外の要請を`生成元~server$へ直に為すときは：
+◎
+When making a request directly to an origin server, other than a CONNECT or server-wide OPTIONS request (as detailed below), a client＼
+</p>
+<ul>
+	<li>
 `request-target$p として，`~target~URI$の［
 `absolute-path$p, `query$p
 ］成分のみを送信しなければナラナイ。
-`~target~URI$の `path$p 成分が空な場合、~clientは，［
-`request-target$p の `origin-form$p の中の `path$p
-］として
+◎
+MUST send only the absolute path and query components of the target URI as the request-target.＼
+</li>
+	<li>
+`~target~URI$の `path$p 成分が空な場合、［
+`request-target$p を成す `origin-form$p の中の `path$p
+］として，
 "`/^c"
 を送信しなければナラナイ。
+◎
+If the target URI's path component is empty, the client MUST send "/" as the path within the origin-form of request-target.＼
+</li>
+	<li>
 また、 `Host$h ~headerも，その定義に従って送信することになる。
 ◎
-When making a request directly to an origin server, other than a CONNECT or server-wide OPTIONS request (as detailed below), a client MUST send only the absolute path and query components of the target URI as the request-target. If the target URI's path component is empty, the client MUST send "/" as the path within the origin-form of request-target. A Host header field is also sent, as defined in Section 7.2 of [Semantics].
-</p>
+A Host header field is also sent, as defined in Section 7.2 of [Semantics].
+</li>
+</ul>
+</div>
 
 <div class="example">
 
@@ -1318,7 +1353,7 @@ Host: www.example.org
 </pre>
 
 <p>
-および，後続して要請~messageの残りの部分を，送信することになろう。
+および，後続して要請~messageを成す残りの部分を送信することになろう。
 ◎
 followed by the remainder of the request message.
 </p>
@@ -1375,8 +1410,8 @@ GET http://www.example.org/pub/WWW/TheProject.html HTTP/1.1
 `~client$は、
 `request-target$p が `absolute-form$p であっても，
 `~HTTP11$要請においては `Host$h ~headerを送信しなければナラナイ。
-これにより、 `Host$h 情報を［
-`Host$h を実装していない古代の~HTTP10~proxy
+これにより、 `Host^h 情報を［
+`Host^h を実装していない古代の~HTTP10~proxy
 ］を通して回送することも可能になるので。
 ◎
 A client MUST send a Host header field in an HTTP/1.1 request even if the request-target is in the absolute-form, since this allows the Host information to be forwarded through ancient HTTP/1.0 proxies that might not have implemented Host.
@@ -1384,15 +1419,13 @@ A client MUST send a Host header field in an HTTP/1.1 request even if the reques
 
 <div class="p">
 <p>
-`~proxy$は、［
-`absolute-form$p による `request-target$p
-］を伴う要請を受信したときは、要請~内に `Host$h ~headerを受信したとしても：
+`~proxy$は、受信した要請の `request-target$p が `absolute-form$p である場合には，要請~内に `Host$h ~headerを受信したとしても：
 ◎
 When a proxy receives a request with an absolute-form of request-target,＼
 </p>
 <ul>
 	<li>
-`Host$h ~headerは無視して、代わりにそれを［
+`Host^h ~headerは無視して、代わりにそれを［
 `request-target$p を成す `host$p 情報
 ］に置換しなければナラナイ。
 【例えば、自身が使役する~cache用に】
@@ -1401,9 +1434,9 @@ the proxy MUST ignore the received Host header field (if any) and instead replac
 </li>
 	<li>
 その要請を回送するときは、
-`Host$h ~header`~field値$は そのまま回送せずに，［
-受信した `request-target$p に基づく，新たな `Host$h `~field値$
-］を`生成し$なければナラナイ。
+`Host^h ~headerの`~field値$は，そのまま回送せずに、
+受信した `request-target$p に基づいて，
+`Host^h 用の新たな`~field値$を`生成し$なければナラナイ。
 ◎
 A proxy that forwards such a request MUST generate a new Host field value based on the received request-target rather than forward the received Host field value.
 </li>
@@ -1411,9 +1444,7 @@ A proxy that forwards such a request MUST generate a new Host field value based 
 </div>
 
 <p>
-`生成元~server$は，［
-`absolute-form$p による `request-target$p
-］を伴う要請を受信したときは、要請~内に `Host$h ~headerを受信したとしても無視して，代わりに `request-target$p を成す `host$p 情報を利用しなければナラナイ。
+`生成元~server$は、受信した要請の `request-target$p が `absolute-form$p である場合は，要請~内に `Host$h ~headerを受信したとしても無視して，代わりに `request-target$p を成す `host$p 情報を利用しなければナラナイ。
 この事例では、
 `request-target$p に `authority$p 成分が無い場合，空な `Host$h ~headerが送信されることになることに注意。
 ◎
@@ -1437,32 +1468,47 @@ To allow for transition to the absolute-form for all requests in some future ver
 
 <p>
 `authority-form$p による `request-target$p が利用されるのは、
-`CONNECT$m 要請に限られる：
+`CONNECT$m 要請に限られる。
+それは、`~tunnel$の行先を成す［
+~colon（ "`:^c" ）で分離された
+`uri-host$p と `port$p 番号
+］のみからなる：
 ◎
-The authority-form of request-target is only used for CONNECT requests (Section 9.3.6 of [Semantics]).
+The authority-form of request-target is only used for CONNECT requests (Section 9.3.6 of [Semantics]). It consists of only the uri-host and port number of the tunnel destination, separated by a colon (":").
 </p>
 
 <pre class="bnf">
 `authority-form@p
-    = `authority$p
+    = `uri-host$p ":" `port$p
 </pre>
 
 <p>
 `~client$は，［
-1 個~以上の`~proxy$
-］を通した`~tunnel$を確立するために， `CONNECT$m 要請を為すときは、
-`request-target$p として，`~target~URI$の `authority$p 成分（ただし， `userinfo$p および, その "`@^c" 区切子は除外する）のみを送信しなければナラナイ。
+1 個~以上の`~proxy$を通した`~tunnel$を確立するために，
+`CONNECT$m 要請を為すとき
+］は、
+`request-target$p として，当の~tunnelの行先を成す［
+`host$p, `port$p
+］のみを送信しなければナラナイ。
+`~client$は，`~target~URI$の `authority$p 成分から［
+`host$p, `port$p
+］を得することになるが、~target~URIの `port$p が省かれていた場合でも，その~scheme用の既定の~portを送信することになる。
 ◎
-When making a CONNECT request to establish a tunnel through one or more proxies, a client MUST send only the target URI's authority component (excluding any userinfo and its "@" delimiter) as the request-target. For example,
+When making a CONNECT request to establish a tunnel through one or more proxies, a client MUST send only the host and port of the tunnel destination as the request-target. The client obtains the host and port from the target URI's authority component, except that the scheme's default port is sent if the target URI elides the port.＼
 </p>
 
 <div class="example">
 <p>
-`authority-form$p による `request-target$p を伴う `request-line$p の例：
+例えば，
+"`http://www.example.com^c"
+へ向けた `CONNECT$m 要請は、次の様になる：
+◎
+For example, a CONNECT request to "http://www.example.com" looks like
 </p>
 
 <pre class="lang-http">
 CONNECT www.example.com:80 HTTP/1.1
+Host: www.example.com
 </pre>
 </div>
 
@@ -1471,7 +1517,7 @@ CONNECT www.example.com:80 HTTP/1.1
 <h4 title="asterisk-form">3.2.4. `asterisk-form^p</h4>
 
 <p>
-`asterisk-form$p による `request-target$p が利用されるのは、`~server-wide$に適用される `OPTIONS$m 要請に限られる。
+`asterisk-form$p による `request-target$p が利用されるのは、`~server-wide$な `OPTIONS$m 要請に限られる。
 ◎
 The asterisk-form of request-target is only used for a server-wide OPTIONS request (Section 9.3.7 of [Semantics]).
 </p>
@@ -1502,16 +1548,16 @@ OPTIONS * HTTP/1.1
 </div>
 
 <p>
-`OPTIONS$m 要請を受信した`~proxy$は、［
+`OPTIONS$m 要請を受信した`~proxy$は，［
 要請の `request-target$p は［
 `path$p は空, かつ `query$p 成分は無い`~URI$
 ］を与える `absolute-form$p
-］であって，［
+］であって［
 自身が要請の`連鎖$上にある最後の`~proxy$である
 ］ならば、その要請を指示された`生成元~server$へ向けて回送するときに，
 `request-target$p として
 "`*^c" を送信しなければナラナイ。
-【自身が最後の~proxyかどうか決定できない場合、どうなる？】
+【自身が最後の~proxyであるかどうかは、どう決定される？】
 ◎
 If a proxy receives an OPTIONS request with an absolute-form of request-target in which the URI has an empty path and no query component, then the last proxy on the request chain MUST send a request-target of "*" when it forwards the request to the indicated origin server.
 </p>
@@ -1553,71 +1599,80 @@ after connecting to port 8001 of host "www.example.org".
 <h3 title="Reconstructing the Target URI">3.3. ~target~URIの再構築-法</h3>
 
 <p>
-`request-target$p は，［
-`~UA$の`~target~URI$の一部分のみ
-］を包含することが多いので、`~server$は，要請に対し適正に~serviceするために その値を構築する。
+`~server$は、`~target資源$を識別するために，要請から`~target~URI$を得ることになる。
+それは、要請の
+`request-target$p 【`要請~target$】
+— 以下， `要請~target^V と記す —
+が `absolute-form$p である場合は `要請~target^V になる
+— この事例では，~serverは、更に評価するために，この~URIを汎用な各~成分に構文解析することになる。
 ◎
-Since the request-target often contains only part of the user agent's target URI, a server constructs its value to properly service the request (Section 7.1 of [Semantics]).
+The target URI is the request-target when the request-target is in absolute-form. In that case, a server will parse the URI into its generic components for further evaluation.
 </p>
 
 <p>
-所与の
-( `request-target$p `要請~target^V )
-に対し，`~target~URI$は、［
-`要請~target^V は `absolute-form$p である
-］ならば `要請~target^V と同じであり，他の場合は 次に従って構築される：
+他の場合，`~server$は、接続~文脈と要請~messageを成す様々な各部から，以下に従って`~target~URI$を再構築する：
 ◎
-If the request-target is in absolute-form, the target URI is the same as the request-target. Otherwise, the target URI is constructed as follows:
+Otherwise, the server reconstructs the target URI from the connection context and various parts of the request message in order to identify the target resource (Section 7.1 of [Semantics]):
 </p>
-<ol>
+<ul>
 	<li>
 <p>
 その `scheme$p 成分は：
-</p>
+◎
+↓</p>
 		<ol>
 			<li>
-`~server$の環境設定（または`外方$にある`~gateway$）にて，固定的な~URI~schemeが供されているならば
+`~server$の環境設定が固定的な~URI~schemeを供しているならば
 ⇒
 その~scheme
+◎
+If the server's configuration provides for a fixed URI scheme,＼
 </li>
 			<li>
-他の場合，要請は［
-~secure化された接続
-］越しに受信されたならば
+<p>
+他の場合，信用-済みな`外方$にある`~gateway$から~schemeが供されているならば
+⇒
+その~scheme
+◎
+or a scheme is provided by a trusted outbound gateway, that scheme is used for the target URI.＼
+</p>
+
+<p>
+これは、~scaleが巨大な配備に共通的にある
+— ~gateway~serverは、`~client$の接続~文脈を受信して，それを`内方$にある~serverへ自前の接続で置換することになるので。
+◎
+This is common in large-scale deployments because a gateway server will receive the client's connection context and replace that with their own connection to the inbound server.＼
+</p>
+			</li>
+			<li>
+他の場合，要請は~secure化された接続~越しに受信されたならば
 ⇒
 "`https$c"
+◎
+Otherwise, if the request is received over a secured connection, the target URI's scheme is "https";＼
 </li>
 			<li>
 他の場合
 ⇒
 "`http$c"
+◎
+if not, the scheme is "http".
 </li>
 		</ol>
-
-◎
-If the server's configuration (or outbound gateway) provides a fixed URI scheme, that scheme is used for the target URI.＼
-Otherwise, if the request is received over a secured connection, the target URI's scheme is "https"; if not, the scheme is "http".
-</li>
+	</li>
 	<li>
 <p>
 その `authority$p 成分は：
 </p>
 		<ol>
 			<li>
-`~server$の環境設定（または`外方$にある`~gateway$）にて，固定的な~URI `authority$p 成分が供されているならば
+`要請~target^V は `authority-form$p であるならば
 ⇒
-その `authority$p
+`要請~target^V
 </li>
 			<li>
-他の場合，［
-`要請~target^V は `authority-form$p である
-］ならば
-⇒
-`要請~target^V と同じ
-</li>
-			<li>
-他の場合，［
-`Host$h ~headerが給されていて，その`~field値$は空でない
+他の場合，要請には `Host$h ~headerが在って，その`~field値$は［
+空でない, かつ妥当である
 ］ならば
 ⇒
 その~field値
@@ -1625,90 +1680,56 @@ Otherwise, if the request is received over a secured connection, the target URI'
 			<li>
 他の場合
 ⇒
-`~server$に環境設定された既定の名前
-— 更に，［
-接続の入力用~TCP~port番号が［
-`~target~URI$の `scheme$p 用の既定の~port
-］と相違する場合は，［
-~colon （"`:^c"）, および（~decimal形による）その入力用~port番号
-］も付加する。
+空
 </li>
 		</ol>
-
 ◎
-If the server's configuration (or outbound gateway) provides a fixed URI authority component, that authority is used for the target URI. If not, then if the request-target is in authority-form, the target URI's authority component is the same as the request-target.＼
-If not, then if a Host header field is supplied with a non-empty field value, the authority component is the same as the Host field value.＼
-Otherwise, the authority component is assigned the default name configured for the server and, if the connection's incoming TCP port number differs from the default port for the target URI's scheme, then a colon (":") and the incoming port number (in decimal form) are appended to the authority component.
+If the request-target is in authority-form, the target URI's authority component is the request-target. Otherwise, the target URI's authority component is the field value of the Host header field. If there is no Host header field or if its field value is empty or invalid, the target URI's authority component is empty.
 </li>
 	<li>
 <p>
 その結合された［
 `path$p, `query$p
-］成分は、 `要請~target^V の形式に応じて：
+］成分は：
 </p>
-		<dl class="switch">
-			<dt>`authority-form$p</dt>
-			<dt>`asterisk-form$p </dt>
-			<dd>
+		<ol>
+			<li>
+`要請~target^V は［
+`authority-form$p ／ `asterisk-form$p
+］であるならば
+⇒
 空
-</dd>
-
-			<dt>`origin-form$p</dt>
-			<dd>
-`要請~target^V と同じ
-</dd>
-		</dl>
-
+</li>
+			<li>
+他の場合【すなわち， `要請~target^V は `origin-form$p 】
+⇒
+`要請~target^V
+</li>
+		</ol>
 ◎
-If the request-target is in authority-form or asterisk-form, the target URI's combined path and query component is empty. Otherwise, the combined path and query component is the same as the request-target.
+If the request-target is in authority-form or asterisk-form, the target URI's combined path and query component is empty. Otherwise, the target URI's combined path and query component is the request-target.
 </li>
 	<li>
-`~target~URI$は、［
-上で決定された各~成分, および 文字列 "`://^c"
-］を，次の順に連結した結果の `absolute-URI$p 形
-【 `absolute-form$p 】
-になる
+再構築される`~target~URI$は、上で決定した各~成分（および文字列 "`://^c" ）を，次の順に結合し直した結果の `absolute-URI$p 【 `absolute-form$p 】になる
 ⇒＃
 `scheme$p,
 "`://^c",
 `authority$p,
-結合された `path$p, `query$p 成分
+結合された［ `path$p, `query$p ］成分
 ◎
-The components of the target URI, once determined as above, can be combined into absolute-URI form by concatenating the scheme, "://", authority, and combined path and query component.
+The components of a reconstructed target URI, once determined as above, can be recombined into absolute-URI form by concatenating the scheme, "://", authority, and combined path and query component.
 </li>
-</ol>
+</ul>
 
 <div class="example">
-
 <p>
-~secureでない~TCP接続~越しに受信された，次の~messageの：
+~secureな接続~越しに，次の~messageを受信したなら：
 ◎
-Example 1: the following message received over an insecure TCP connection
+Example 1: the following message received over a secure connection
 </p>
 
 <pre class="lang-http">
 GET /pub/WWW/TheProject.html HTTP/1.1
-Host: www.example.org:8080
-</pre>
-
-<p>
-`~target~URI$は：
-◎
-has a target URI of
-</p>
-
-<pre>
-http://www.example.org:8080/pub/WWW/TheProject.html
-</pre>
-
-<p>
-~secure化された接続~越しに受信された，次の~messageの：
-◎
-Example 2: the following message received over a secured connection
-</p>
-
-<pre class="lang-http">
-OPTIONS * HTTP/1.1
 Host: www.example.org
 </pre>
 
@@ -1718,19 +1739,74 @@ Host: www.example.org
 has a target URI of
 </p>
 
-<pre>
-https://www.example.org
+<pre class="lang-http">
+https://www.example.org/pub/WWW/TheProject.html
+</pre>
+</div>
+
+<div class="example">
+<p>
+~secureでない接続~越しに，次の~messageを受信したなら：
+◎
+Example 2: the following message received over an insecure connection
+</p>
+
+<pre class="lang-http">
+OPTIONS * HTTP/1.1
+Host: www.example.org:8080
+</pre>
+
+<p>
+`~target~URI$は：
+◎
+has a target URI of
+</p>
+
+<pre class="lang-http">
+http://www.example.org:8080
 </pre>
 </div>
 
 <p>
-［
-`Host$h ~headerを欠如する~HTTP10要請
-］の`受信者$は、［
-`~target~URI$の `authority$p 成分
-］を推測するために，経験則（例： 特定0の~hostに一意な何かに対する，~URI~pathの精査）の利用が必要になることもある。
+`~target~URI$の `scheme$p 用には空でない `authority$p が要求されるが（
+"`http$c" ／ "`https$c"
+の事例は、これに該当する），その `authority^p 成分は空な場合、`~server$は，当の要請を却下できる
+— あるいは、［
+入って来る接続の文脈に整合な，環境設定された既定
+］を適用するかどうか決定することもできる。
+文脈は、［
+~addressや~portの様な接続の詳細／
+~securityとして何が適用されたか／
+当の~serverの環境設定に特有な，局所的に定義された情報
+］を含むこともある。
+空な `authority$p は、要請を更に処理する前に，環境設定された既定で置換される。
 ◎
-Recipients of an HTTP/1.0 request that lacks a Host header field might need to use heuristics (e.g., examination of the URI path for something unique to a particular host) in order to guess the target URI's authority component.
+If the target URI's authority component is empty and its URI scheme requires a non-empty authority (as is the case for "http" and "https"), the server can reject the request or determine whether a configured default applies that is consistent with the incoming connection's context. Context might include connection details like address and port, what security has been applied, and locally-defined information specific to that server's configuration. An empty authority is replaced with the configured default before further processing of the request.
+</p>
+
+<p>
+~secure化された接続の文脈の中で，
+`authority$p 用に既定の名前を給することは、［
+~UAが意図した `authority$p が選定される既定と相違する
+］かもしれない機会がある場合には，内来的に安全でない。
+`~server$は、［
+この~riskを伴わずに，要請~文脈から `authority$p を一意に識別できる
+］ならば，その識別情報を既定として利用してもヨイ。
+別法として、当の要請を［
+新たな`~client$を得する【~client~softwareを更新する？】方法を説明する安全な`資源$
+］へ~redirectする方が良いこともある。
+◎
+Supplying a default name for authority within the context of a secured connection is inherently unsafe if there is any chance that the user agent's intended authority might differ from the selected default. A server that can uniquely identify an authority from the request context MAY use that identity as a default without this risk. Alternatively, it might be better to redirect the request to a safe resource that explains how to obtain a new client.
+</p>
+
+<p>
+`~client$の`~target~URI$を再構築することは、`~target資源$を識別する処理nの半分しか成さないことに注意。
+もう半分は、当の~target~URIは［
+`~server$が応答を送信する用意がある, かつ送信-可能な資源
+］を識別するかどうか決定することであり，
+`Semantics/7.4$sec にて定義される。
+◎
+Note that reconstructing the client's target URI is only half of the process for identifying a target resource. The other half is determining whether that target URI identifies a resource for which the server is willing and able to send a response, as defined in Section 7.4 of [Semantics].
 </p>
 
 		</section>
@@ -1879,7 +1955,7 @@ Most HTTP field names and the rules for parsing within field values are defined 
 ~messageは、［
 個々の`~field名$に依存しない，汎用~algo
 ］を利用して構文解析される。
-所与の`~field行l値$の内容は、~message解釈の今後の段階（通例的に，~messageの【当の~field行lを包含している】`~field節$全体が処理された後になる）まで，構文解析されない。
+所与の`~field行l値$の内容は、~message解釈の今後の段階（通例的に，~messageの【当の`~field行l$を包含している】`~field節$全体が処理された後になる）まで，構文解析されない。
 ◎
 Messages are parsed using a generic algorithm, independent of the individual field names. The contents within a given field line value are not parsed until a later stage of message interpretation (usually after the message's entire field section has been processed).
 </p>
@@ -2546,7 +2622,7 @@ the message body length is determined by the number of octets received prior to 
 【 `Transfer-Encoding$h または `Content-Length$h 】
 ］で区切るベキである。
 ~closeで区切る特能は、首に［
-~HTTP10との後方~互換性
+~HTTP10との後方-互換性
 ］用に存在する。
 ◎
 Since there is no way to distinguish a successfully completed, close-delimited response message from a partially received message interrupted by network failure, a server SHOULD generate encoding or length-delimited messages whenever possible. The close-delimiting feature exists primarily for backwards compatibility with HTTP/1.0.
@@ -2612,16 +2688,13 @@ If the final response to the last request on a connection has been completely re
 discard the remaining data or＼
 </li>
 	<li>
-その~dataが~~直前の`~message本体$の一部を成す†かどうか，決定することを試みる。
+その~dataが~~直前の`~message本体$の一部を成すかどうか，決定しようと試みる
+— これには、~~直前の~messageの `Content-Length$h 値が不正である事例が該当し得る。
 ◎
 attempt to determine if that data belongs as part of the prior message body, which might be the case if the prior message's Content-Length value is incorrect.＼
 </li>
 </ul>
-
-<p>†
-これが~~起こるのは、［
-~~直前の~messageの `Content-Length$h 値が不正である
-］事例が該当し得る。
+<p>
 `~client$は、そのような余分な~dataを，別々の応答として［
 処理-／~cache／回送-
 ］してはナラナイ
@@ -2749,7 +2822,7 @@ A recipient MUST be able to parse and decode the chunked transfer coding.
 加えて，~chunk~sizeが巨大~過ぎる場合、受信している実装が~sizeを正確aに表現できないと，桁溢れや精度の損失が生じ得る。
 したがって，`受信者$は、［
 ~decimal数字列が巨大になり得ること／整数~変換の桁溢れ／整数~変換に因る精度~損失
-］を見越して，それらによる~errorを防がなければナラナイ
+］を見越して，それらによる~errorを防止しなければナラナイ
 ◎
 HTTP/1.1 does not define any means to limit the size of a chunked response such that an intermediary can be assured of buffering the entire response. Additionally, very large chunk sizes may cause overflows or loss of precision if their values are not represented accurately in a receiving implementation. Therefore, recipients MUST anticipate potentially large decimal numerals and prevent parsing errors due to integer conversion overflows or precision loss due to integer representation.
 </p>
@@ -2971,9 +3044,6 @@ A process for decoding the chunked transfer coding can be represented in pseudo-
 `Transfer-Encoding$h から "`chunked$c" を除去する
 </li>
 	<li>
-既存の`~header節$から `Trailer$h を除去する
-</li>
-	<li>
 ~RET `内容^V
 </li>
 </ol>
@@ -3002,7 +3072,6 @@ while (trailer field is not empty) {
 }
 Content-Length := length
 Remove "chunked" from Transfer-Encoding
-Remove Trailer from existing header fields
 </pre>
 </div>
 
@@ -3143,7 +3212,7 @@ a value of 0 means "not acceptable".
 
 <p>
 ［
-`TE$h の`~field値$が空【（構文として妥当でない）空な要素のみからなる？】または，
+`TE$h の`~field値$が空, または
 `TE$h ~header【！~field】は無い
 ］場合、受容-可能な`転送~符号法$は "`chunked$c" に限られる。
 転送~符号法を伴わない~messageは、常に受容-可能である。
@@ -3162,7 +3231,7 @@ The keyword "trailers" indicates that the sender will not discard trailer fields
 `TE$h の`送信者$は
 — ［
 `TE$h の意味論を~supportしない`中継者$による `TE$h ~headerの回送
-］を防ぐため —
+］を防止するため —
 `Connection$h ~headerの中に "`TE^c" `接続~option$も送信しなければナラナイ。
 ◎
 Since the TE header field only applies to the immediate connection, a sender of TE MUST also send a "TE" connection option within the Connection header field (Section 7.6.1 of [Semantics]) in order to prevent the TE header field from being forwarded by intermediaries that do not support its semantics.
@@ -3385,14 +3454,9 @@ If an HTTP/1.1 client receives data on a connection that doesn't have any outsta
 — これは、単独の接続~越しに，複数の［
 要請や応答
 ］を運べるようにする。
-"`close$c" `接続~option$は、［
-接続が現在の［
-要請／応答
-］の後に持続しない
-］ことを通達するために利用される。
 ~HTTP実装は、`持続的な接続$を~supportするベキである。
 ◎
-HTTP/1.1 defaults to the use of persistent connections, allowing multiple requests and responses to be carried over a single connection. The "close" connection option is used to signal that a connection will not persist after the current request/response. HTTP implementations SHOULD support persistent connections.
+HTTP/1.1 defaults to the use of persistent connections, allowing multiple requests and responses to be carried over a single connection. HTTP implementations SHOULD support persistent connections.
 </p>
 
 <p>
@@ -3410,9 +3474,9 @@ A recipient determines whether a connection is persistent or not based on the mo
 </p>
 <ol>
 	<li>
-"`close$c" `接続~option$が在るならば、持続しない。
+`close$c `接続~option$が在るならば、持続しない。
 ◎
-If the "close" connection option is present, the connection will not persist after the current response; else,
+If the close connection option is present (Section 9.6), the connection will not persist after the current response; else,
 </li>
 	<li>
 他の場合，［
@@ -3455,28 +3519,30 @@ The connection will close after the current response.
 ［
 `持続的な接続$を~supportしない`~client$
 ］は、各~要請~messageごとに，
-"`close$c" `接続~option$を送信しなければナラナイ。
+`close$c `接続~option$を送信しなければナラナイ。
 ◎
-A client that does not support persistent connections MUST send the "close" connection option in every request message.
+A client that does not support persistent connections MUST send the close connection option in every request message.
 </p>
 
 <p>
 ［
 `持続的な接続$を~supportしない`~server$
-］は、【！状態s~codeが `1xx$st でない応答】`最終-応答$を成す各~messageごとに，
-"`close$c" `接続~option$を送信しなければナラナイ。
+］は、各［
+`最終-応答$を成す~message
+］ごとに，
+`close$c `接続~option$を送信しなければナラナイ。
 ◎
-A server that does not support persistent connections MUST send the "close" connection option in every response message that does not have a 1xx (Informational) status code.
+A server that does not support persistent connections MUST send the close connection option in every response message that does not have a 1xx (Informational) status code.
 </p>
 
 <p>
 `~client$は、自身が，［
-"`close$c" `接続~option$を送信する, または受信する
+`close$c `接続~option$を送信する, または受信する
 ］または［
-`keep-alive$c" `接続~option$を伴わない~HTTP10応答を受信する
+"`keep-alive$c" `接続~option$を伴わない~HTTP10応答を受信する
 ］まで、`持続的な接続$上に，追加的な要請を送信してもヨイ。
 ◎
-A client MAY send additional requests on a persistent connection until it sends or receives a "close" connection option or receives an HTTP/1.0 response without a "keep-alive" connection option.
+A client MAY send additional requests on a persistent connection until it sends or receives a close connection option or receives an HTTP/1.0 response without a "keep-alive" connection option.
 </p>
 
 <p>
@@ -3507,15 +3573,7 @@ A proxy server MUST NOT maintain a persistent connection with an HTTP/1.0 client
 </p>
 
 <p>
-`~field名$ `Close^h は、予約-済みであることに注意
-— その名前を~HTTP~headerとして利用すると、上で定義した
-"`close$c" `接続~option$と競合するかもしれないので。
-◎
-Note that the field name "Close" is reserved, since using that name as an HTTP header field might conflict with the "close" connection defined above.
-</p>
-
-<p>
-~HTTP10~clientに対する後方~互換性についての更なる情報は、
+~HTTP10~clientに対する後方-互換性についての更なる情報は、
 § `Keep-Alive$h を見よ。
 ◎
 See Appendix C.2.2 for more information on backwards compatibility with HTTP/1.0 clients.
@@ -3725,29 +3783,55 @@ A client sending a message body SHOULD monitor the network connection for an err
 <h3 title="Tear-down">9.6. 解体</h3>
 
 <p>
-`Connection$h ~headerは、`接続~option$として
 "`close@c"
-を供する
-— `送信者$は、［
-現在の［
-要請/応答
-］~pair
-］の後に，接続を~closeしたいと望むとき それを送信するベキである。
+`接続~option$は、［
+`送信者$は、応答の完了~後に，この接続を~closeすることになる
+］ことの通達として定義される。
+`送信者$は、接続を~closeするよう意図するときは，
+`close$c `接続~option$を包含している `Connection$h ~headerを送信するベキである。
 ◎
-The Connection header field (Section 7.6.1 of [Semantics]) provides a "close" connection option that a sender SHOULD send when it wishes to close the connection after the current request/response pair.
+The "close" connection option is defined as a signal that the sender will close this connection after completion of the response. A sender SHOULD send a Connection header field (Section 7.6.1 of [Semantics]) containing the close connection option when it intends to close a connection.＼
+</p>
+
+<div class="example">
+<p>
+例えば：
+◎
+For example,
+</p>
+
+<pre class="lang-http">
+Connection: close
+</pre>
+
+<p>
+これは、要請~headerとしては，~clientがこの接続に対し送信する最後の要請であることを指示する。
+一方で，応答においては、~serverは当の応答~messageを完了した後に，この接続を~closeしようとしていることを指示する。
+◎
+as a request header field indicates that this is the last request that the client will send on this connection, while in a response the same field indicates that the server is going to close this connection after the response message is complete.
+</p>
+
+</div>
+
+<p id="field.close">
+`~field名$ `Close^h は、予約-済みであることに注意
+— その名前を~headerとして利用すると、
+`close$c `接続~option$と競合するかもしれないので。
+◎
+Note that the field name "Close" is reserved, since using that name as a header field might conflict with the close connection option.
 </p>
 
 <div class="p">
 <p>
-"`close$c" `接続~option$を伴う要請を送信した`~client$は：
+`close$c `接続~option$を伴う要請を送信した`~client$は：
 ◎
-A client that sends a "close" connection option＼
+A client that sends a close connection option＼
 </p>
 <ul>
 	<li>
 当の接続に対し更なる要請を送信してはナラナイ。
 ◎
-MUST NOT send further requests on that connection (after the one containing "close") and＼
+MUST NOT send further requests on that connection (after the one containing the close) and＼
 </li>
 	<li>
 この要請に対応する`最終-応答$を成す~messageを読取ったときは，当の接続を~closeしなければナラナイ。
@@ -3759,24 +3843,22 @@ MUST close the connection after reading the final response message corresponding
 
 <div class="p">
 <p>
-"`close$c" `接続~option$を伴う要請を受信した`~server$は：
+`close$c `接続~option$を伴う要請を受信した`~server$は：
 ◎
-A server that receives a "close" connection option＼
+A server that receives a close connection option＼
 </p>
 <ul>
 	<li>
-［
-その要請に対する`最終-応答$
-］を送信した後に，当の接続の~close（下を見よ）を起動しなければナラナイ。
+その要請に対する`最終-応答$を送信した後に，当の接続の~closure（下を見よ）を起動しなければナラナイ。
 ◎
-MUST initiate a close of the connection (see below) after it sends the final response to the request that contained "close".＼
+MUST initiate closure of the connection (see below) after it sends the final response to the request that contained the close connection option.＼
 </li>
 	<li>
 前項の`最終-応答$内には［
-"`close$c" `接続~option$
+`close$c `接続~option$
 ］を送信するベキである。
 ◎
-The server SHOULD send a "close" connection option in its final response on that connection.＼
+The server SHOULD send a close connection option in its final response on that connection.＼
 </li>
 	<li>
 当の接続から更なる要請を受信しても、処理してはナラナイ。
@@ -3788,15 +3870,15 @@ The server MUST NOT process any further requests received on that connection.
 
 <div class="p">
 <p>
-"`close$c" `接続~option$を伴う応答を送信した`~server$は：
+`close$c `接続~option$を伴う応答を送信した`~server$は：
 ◎
-A server that sends a "close" connection option＼
+A server that sends a close connection option＼
 </p>
 <ul>
 	<li>
-当の接続の~close（下を見よ）を起動しなければナラナイ。
+その後に，当の接続の~closure（下を見よ）を起動しなければナラナイ。
 ◎
-MUST initiate a close of the connection (see below) after it sends the response containing "close".＼
+MUST initiate closure of the connection (see below) after it sends the response containing the close connection option.＼
 </li>
 	<li>
 当の接続から更なる要請を受信しても、処理してはナラナイ。
@@ -3808,20 +3890,19 @@ The server MUST NOT process any further requests received on that connection.
 
 <div class="p">
 <p>
-"`close$c" `接続~option$を伴う応答~messageを受信した`~client$は：
+`close$c `接続~option$を伴う応答~messageを受信した`~client$は：
 ◎
-A client that receives a "close" connection option＼
+A client that receives a close connection option＼
 </p>
 <ul>
 	<li>
 当の接続に対する要請の送信を止めた上で、その応答を読取った後に，当の接続を~closeしなければナラナイ
 ◎
-MUST cease sending requests on that connection and close the connection after reading the response message containing the "close";＼
+MUST cease sending requests on that connection and close the connection after reading the response message containing the close connection option;＼
 </li>
 	<li>
-【その応答を受信する前に】
-当の接続に対し，追加的な［
-~pipeline化された要請
+当の接続に対し，［
+~pipeline化された追加的な要請
 ］を送信していた場合、［
 それらが`~server$により処理される
 ］ものと見做すベキでない。
@@ -4293,19 +4374,14 @@ For example, a parameter within the request-target might be read by an applicati
 符号化-済みな `CR$P `LF$P 並びに見せかけた~data
 ］を~filterするものであるが、それは［
 応用~serverが~URIの復号しか遂行していない
-］ことを前提にしている
-— より見え難い~data形式変換：［
-~charset符号変換,
-~XML実体~翻訳,
-base64 復号,
-sprintf 再整形,
-等々
-］は~~考慮されていない。
+］ことを前提にしており，より見え難い~data形式変換
+— ~charset符号変換, ~XML実体~翻訳, base64 復号, sprintf 再整形, 等々 —
+は~~考慮されていない。
 それより，［
 ~serverの中核~protocol~library
-］以外のどこであれ，［
+］以外のどこであれ［
 `~header節$の中に `CR$P や `LF$P を送信する
-］ことを防ぐ方が、効果的な軽減策になる
+］のを防止する方が、効果的な軽減策になる
 — それは、~headerの出力を［
 不良~octetを~filterする~API
 ］に制約して，［
@@ -4825,6 +4901,17 @@ Most of the sections introducing HTTP's design goals, history, architecture, con
 （ `~message構文解析$sec ）
 ◎
 Prohibited generation of bare CRs outside of content. (Section 2.2)
+</p>
+
+<p>
+`authority-form$p の~ABNF定義を［
+~URIを成す より一般的な（ `port$p を省略可能な） `authority$p 成分
+］から［
+`CONNECT$m により要求される，より特定的な `host:port^c 形式
+］に変更した。
+（ `3.2.3$sec ）
+◎
+The ABNF definition of authority-form has changed from the more general authority component of a URI (in which port is optional) to the specific host:port format that is required by CONNECT. (Section 3.2.3)
 </p>
 
 <p>
