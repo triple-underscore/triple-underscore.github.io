@@ -1350,9 +1350,6 @@ reactive::::リアクティブ
 無効化:invalidation::~
 容量:capacity:~
 対応-:correspond:~
-対応ng:corresponding:対応する
-	対応付け:mapping:~
-対応関係:mappings::~
 尚早:premature:~
 	局所的な
 展開-:expand:~
