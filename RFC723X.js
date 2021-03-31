@@ -784,17 +784,17 @@ ERRATA:https://www.rfc-editor.org/errata_search.php
 723Xabnf:RFC723X-ABNF-ja.html
 7538:http-status-code-308-ja.html
 HTTPpatch:http-patch-ja.html
-	7238:https://tools.ietf.org/html/rfc7238
-2045:https://tools.ietf.org/html/rfc2045
-2068:https://tools.ietf.org/html/rfc2068
-2616:https://tools.ietf.org/html/rfc2616
-2817:https://tools.ietf.org/html/rfc2817
-2818:https://tools.ietf.org/html/rfc2818
+	7238:https://www.rfc-editor.org/rfc/rfc7238
+2045:https://www.rfc-editor.org/rfc/rfc2045
+2068:https://www.rfc-editor.org/rfc/rfc2068
+2616:https://www.rfc-editor.org/rfc/rfc2616
+2817:https://www.rfc-editor.org/rfc/rfc2817
+2818:https://www.rfc-editor.org/rfc/rfc2818
 	3986:rfc-others/RFC3986-ja.html
-3986:https://tools.ietf.org/html/rfc3986
-4648:https://tools.ietf.org/html/rfc4648
-5226:https://tools.ietf.org/html/rfc5226
-5322:https://tools.ietf.org/html/rfc5322
+3986:https://www.rfc-editor.org/rfc/rfc3986
+4648:https://www.rfc-editor.org/rfc/rfc4648
+5226:https://www.rfc-editor.org/rfc/rfc5226
+5322:https://www.rfc-editor.org/rfc/rfc5322
 
 ナラナイ:<em class="rfc2119">ならない</em>
 ベキ:<em class="rfc2119">べき</em>
