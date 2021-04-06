@@ -757,8 +757,6 @@ viewAs:View this example as SVG (SVG-enabled browsers only):この例を SVG で
 数量的:numerical:~
 
 	●構文
-space:
-comma::::カンマ
 展開-:expand::~
 内包-:include::~
 内包:inclusion::~
@@ -791,7 +789,6 @@ CTM:
 幾何的:geometric::~
 下位path:subpath:::下位パス
 区分:segment::~
-vector::::ベクター
 span:
 重合して:overlapして::重なり合って
 重合しな:overlapしな::重なり合わな
@@ -852,8 +849,6 @@ alpha::::アルファ
 fill::::フィル
 stroke::::ストローク
 	~stroke時の:stroking
-filter::::フィルタ
-	~filter法:filtering
 gradient:
 graphics::::グラフィックス
 grayscale::::グレイスケール
@@ -958,7 +953,6 @@ multimedia::::マルチメディア
 強調-:highlight:~
 指示書き:instructions:~
 採用-:adopt:~
-正した:correctした:~
 禁制-:prohibit:~
 義務:mandatory:~
 未解決:unresolved::~
@@ -969,8 +963,6 @@ multimedia::::マルチメディア
 設置-:place:~
 補足-:supplement:~
 補足的:supplemental:~
-
-	指定されていない:unspecified
 	適合する:are conformant
 	見よ:refer to
 
@@ -987,9 +979,6 @@ multimedia::::マルチメディア
 
 	●未分類
 ナシ:none:なし
-
-時列線:timeline::~
-時刻:time::~
 時機:timing::~
 単位:unit:~
 

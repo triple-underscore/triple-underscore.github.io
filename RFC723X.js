@@ -911,11 +911,9 @@ folder::::フォルダ
 guide::::ガイド
 	~hypertext:hypertext note
 key::::キー
-log::::ログ
 machine::::マシン
 mail::::メール
 mark::::マーク
-memory::::メモリ
 email:
 句:phrase::~::フレーズ
 	pipe-and-filter:パイプ＆フィルタ
@@ -929,7 +927,6 @@ repository::::リポジトリ
 reset::::リセット
 schedule::::スケジュール
 subset::::サブセット
-table::::テーブル
 textによる／~textからなる
 major::::主:メジャー
 minor::::副:マイナー
@@ -1055,7 +1052,6 @@ app:application:::アプリケーション
 権利:right:~
 欠如:lack:~
 欠如する:lackする:欠く
-正した:correctした:~
 手続き:procedure:~
 手順:steps:~
 抽象化-:abstract 化:~
@@ -1077,8 +1073,6 @@ app:application:::アプリケーション
 相互運用-:interoperate:~
 	相互運用-可能:interoperable
 相当:substantial:~
-省略可:optional::~::オプション
-省略可能な:optionalな::~::オプションの
 禁制-:prohibit::~
 競合-:conflict:~
 競合:conflict:~
@@ -1137,7 +1131,6 @@ app:application:::アプリケーション
 
 縛られ:tieされ:~
 背後:behind:~
-自動:automatic:~
 自動化-:automate:~
 自動化:automated:~
 協調的:collaborative:~
@@ -1200,21 +1193,16 @@ subtag::::下位タグ
 trailer::::トレイラ
 chunk::::チャンク
 chunked:::chunk 化:チャンク化
-octet::::オクテット
 hex::16 進
 hexadecimal::16 進数
 asterisk::::アスタリスク
 backslash::::バックスラッシュ
-colon::::コロン
-comma::::カンマ
-	comma区切りの:comma-separated
 decimal::10 進
 escaping::::エスケープ処理
 	引用符~付き:quoted
 二重引用符:double quote::~
 区切られ:delimitされ::~
 区切り:delimitation::~
-区切りの:-separated:~
 区切る:delimitする::~
 区切子:delimiter::~
 合致:match::~::マッチ
@@ -1223,8 +1211,6 @@ escaping::::エスケープ処理
 実数:real number:~
 
 桁:digit::~
-正準-:canonical::~
-	正準-化:canonicalization
 移行:transition::~
 稀:rare:~
 番号:number:~
@@ -1252,14 +1238,12 @@ escaping::::エスケープ処理
 分割-:split:~
 分割:splitting:~
 分解-:decompose:~
-分離子:separator:~
 
 	●network
 
 challenge::::チャレンジ
 digest::::ダイジェスト
 hash::::ハッシュ
-filter::::フィルタ
 firewall::::ファイアウォール
 桁溢れ:overflow::~::オーバーフロー
 password::::パスワード
@@ -1348,7 +1332,6 @@ redirection::::リダイレクト
 係数:factor:~
 促進-:promote:~
 保存-:save:~
-修正:fix:~
 優先度:priority:~
 優先順:precedence:~
 先行-:precede:~
@@ -1428,8 +1411,6 @@ redirection::::リダイレクト
 族:family::~::ファミリ
 日付時刻:date and time::~
 日時:date::~
-時刻:time::~
-時間制限:timeout::~::タイムアウト
 時計:clock::~::クロック
 昇順:ascending order:~
 降順:decreaseing order:~
@@ -1481,10 +1462,8 @@ stateless::::ステートレス
 終了-:terminate:~
 
 終了:termination:~
-結合-:combine:~
 続行-:proceed:~
 
-計測:measure:~
 記憶-:remember:~
 再試行-:retry::~
 再試行:retrying::~
@@ -1562,7 +1541,6 @@ stateless::::ステートレス
 近い:near
 総:total
 小さな:small
-時経過:over time
 
 	●動詞
 高める:increase させる

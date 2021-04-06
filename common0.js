@@ -1272,6 +1272,8 @@ OS:operating system:OS
 ●指示語
 特定0の:particular:ある特定の
 自前の:own:~
+複-:multi-:~
+単-:single-:~
 単独の:single:~
 現在の:current:~
 元の:original:~
@@ -1347,6 +1349,7 @@ resize::::リサイズ
 text::::テキスト
 textな:textual::textな:テキストな
 scalar::::スカラー
+vector::::ベクター
 素な:plain::~
 	素な~text:plaintext
 包装-:wrap::~
@@ -1544,6 +1547,8 @@ risk::::リスク
 指定:specification:~
 指定d:specified:指定
 指定通り:as specified:指定どおり
+未指定:unspecified:~
+	指定されない:unspecified
 特定に:specificに:特定的に
 特定な:specificな:特定的な
 特定の:specificな:~
@@ -1603,6 +1608,9 @@ risk::::リスク
 目標:goal:~
 	目指して:aimして:~
 	目指す:aimする:~
+修正点:fixes:~
+修正s:fixes:修正
+修正-:fix:~
 
 意味論:semantics:~
 意味論上の:semanticな:~
@@ -1827,6 +1835,8 @@ registry::::レジストリ
 期待:expectation:~
 予期-:expect:~
 予期:expectation:~
+省略可能:optional:~
+	省略時は:optional
 任意選択:optional:~
 任意選択の:optionalな:~
 任意選択で:optionalに:~
@@ -1882,6 +1892,10 @@ registry::::レジストリ
 正しい:correctな:~
 正しく:correctに:~
 不正:incorrect:~
+正す:correctする:~
+正され:correctされ:~
+正した:correctした:~
+正して:correctして:~
 
 一貫性:consistency:~
 一貫であ:consistentであ:一貫してい
@@ -1918,6 +1932,9 @@ library::::ライブラリ
 plugin::::プラグイン
 	~plugin:plug-in
 tool::::ツール
+memory::::メモリー
+install::::インストール
+log::::ログ
 
 義務付けら:mandateさ:~
 義務付けな:mandateしな:~
@@ -2139,7 +2156,9 @@ programming::::プログラミング
 駆動な:drivenな:駆動の
 駆動-:drive:~
 導出-:derive:~
-正準的:canonical:~
+正準的:canonical::~
+正準-:canonical::~
+	正準-化:canonicaliz-
 側面:aspect:~
 手段:means:~
 相応しく:suitableに:~
@@ -2158,6 +2177,8 @@ care::::ケア
 国際的:international:~
 国際-:international:~
 	国際-化:internationalization／:internationalized
+測定-:measure:~
+測定:measurement:~
 
 	貢献-:contribute
 	貢献:contribution
@@ -2223,6 +2244,7 @@ handler::::ハンドラ
 target::::ターゲット
 listen::::リッスン
 listener::::リスナ
+filter::::フィルタ
 誘発-:trigger:~
 発火:firing::~
 発火-:fire::~
@@ -2416,7 +2438,12 @@ promise:
 待時間:latency::待ち時間
 所要時間:duration::~
 時刻印:timestamp::~::タイムスタンプ
+時刻:time::~
+時間:time:~
+	時間~越し:over time
 計時:timing::~
+時列線:timeline::~::タイムライン
+日付:date::~
 準備済み:ready::~
 進捗-:progress::~
 進捗:progress::~
@@ -2533,6 +2560,7 @@ list::::リスト
 辞書:dictionary::~::ディクショナリ
 collection::::コレクション
 record::::レコード
+table::::テーブル
 field::::フィールド
 slot::::スロット
 prop:property:::プロパティ
@@ -2587,6 +2615,7 @@ node::::ノード
 無順序:unordered:~
 順序付け:ordering:~
 順序付けら:orderさ:~
+	順序付ける
 並替ng:reordering:並び替え
 
 空:empty:~
@@ -2642,6 +2671,10 @@ scope::::スコープ
 隔離:isolation::~
 分離:separation:~
 分離-:separate:~
+分離子:separator:~
+	〜で分離された:-separated
+	~space等で分離され:space-separated
+区切子:delimiter:~
 
 等価:equivalent:~
 比較:comparison:~
@@ -2658,13 +2691,15 @@ code::::コード
 data::::データ
 stream::::ストリーム
 byte::::バイト
+octet::::オクテット
 bit::::ビット
 本体:body::~::ボディ
 binary::::バイナリ
 source::::ソース
+源:source::~::ソース
 query::::クエリ
 	pointer::::ポインタ
-源:source::~::ソース
+scalar::::スカラー
 値:value:~
 範囲:range:~
 真偽-:boolean::~
@@ -2735,6 +2770,10 @@ enqueue::::エンキュー
 dequeue::::デキュー
 clone::::クローン
 sort::::ソート
+結合-:combine::~
+結合:combining::~
+結合n:combination::結合
+結合子:combinator::~
 
 正規化-:normalize::~
 正規化:normalization::~
@@ -2791,6 +2830,7 @@ sort::::ソート
 読込め:loadでき::読み込め::ロードでき
 読込もう:loadしよう::読み込もう::ロードしよう
 
+
 ●構文
 
 文字:character:~
@@ -2803,6 +2843,16 @@ mark-up:mark up:::マークアップ
 成分:component:~
 空白:whitespace::~
 	空白:white space
+comma::::カンマ
+space::::スペース
+tab::::タブ
+colon::::コロン
+semicolon::::セミコロン
+slash::::スラッシュ
+hyphen::::ハイフン
+	~hyphen化:hyphenation／:hyphenate
+改行文字:newline::~
+	改行文字:newline character
 token::::トークン
 comment::::コメント
 escape::::エスケープ
@@ -2887,6 +2937,7 @@ Key:key:::キー
 keyboard::::キーボード
 view::::ビュー
 UIwindow:window:::ウィンドウ
+UItab:tab:::タブ
 menu::::メニュー
 dialog::::ダイアログ
 icon::::アイコン
@@ -3045,6 +3096,7 @@ sandbox::::サンドボックス
 ●CSS 全般
 
 style::::スタイル
+	~style上の:stylistic
 stylesheet:style sheet:::スタイルシート
 cascade::::カスケード
 at-rule:::at-規則
@@ -3299,8 +3351,6 @@ FOO間:inter-FOO
 いつでも:at any time
 時点:at the time
 この時点:at this point
-時間とともに:over time
-時経過にわたり:over time
 時を経:over time
 
 ●その他の定訳（仕様レベル

@@ -871,11 +871,9 @@ folder::::フォルダ
 guide::::ガイド
 	~hypertext:hypertext note
 	key::::キー
-log::::ログ
 machine::::マシン
 mail::::メール
 mark::::マーク
-memory::::メモリ
 email:
 句:phrase::~::フレーズ
 	pipe-and-filter:パイプ＆フィルタ
@@ -887,7 +885,6 @@ random::::ランダム
 	rendering::::レンダリング
 repository::::リポジトリ
 schedule::::スケジュール
-table::::テーブル
 major::::主:メジャー
 minor::::副:マイナー
 
@@ -998,8 +995,6 @@ agent::::エージェント
 権利:right:~
 欠如:lack:~
 欠如する:lackする:欠く
-正した:correctした:~
-正され:correctされ:~
 手続き:procedure:~
 手順:steps:~
 抽象化-:abstract 化:~
@@ -1022,11 +1017,6 @@ agent::::エージェント
 
 相当:substantial:~
 相応しく:suitableで:~
-
-任意選択の:optionalな::~::オプションの
-省略可:optional::~::オプション
-省略可能:optional::~::オプション
-省略可能な:optionalな::~::オプションの
 禁制-:prohibit::~
 競合-:conflict:~
 競合:conflict:~
@@ -1079,7 +1069,6 @@ agent::::エージェント
 維持させ:sustainし:~
 縛られ:tieされ:~
 背後:behind:~
-自動:automatic:~
 自動化-:automate:~
 自動化:automated:~
 協調的:collaborative:~
@@ -1149,27 +1138,20 @@ subtag::::下位タグ
 trailer::::トレイラ
 	trailer節:trailers
 chunked:::chunk 化:チャンク化
-octet::::オクテット
 hex::16 進
 hexadecimal::16 進数
 asterisk::::アスタリスク
 backslash::::バックスラッシュ
 chunk::::チャンク
-colon::::コロン
-comma::::カンマ
-	comma区切りの:comma-separated
 decimal::10 進
 escaping::::エスケープ処理
 	引用符~付き:quoted
 	~message法:messaging:
 	~frame法:framing
 二重引用符:double quote::~
-区切られ:delimitされ::~
-区切り:delimitation::~
-区切りの:-separated:~
-区切る:delimitする::~
-区切子:delimiter::~
-分離子:separator:~
+区切られ:delimitされ:~
+区切り:delimitation:~
+区切る:delimitする:~
 合致:match::~::マッチ
 実数:real number:~
 単数:singleton:::~
@@ -1208,7 +1190,6 @@ escaping::::エスケープ処理
 challenge::::チャレンジ
 digest::::ダイジェスト
 hash::::ハッシュ
-filter::::フィルタ
 firewall::::ファイアウォール
 桁溢れ:overflow::~::オーバーフロー
 password::::パスワード
@@ -1298,7 +1279,6 @@ reactive::::リアクティブ
 係数:factor:~
 促進-:promote:~
 保存-:save:~
-修正:fix:~
 優先度:priority:~
 優先順:precedence:~
 先行-:precede:~
@@ -1371,8 +1351,6 @@ reactive::::リアクティブ
 族:family::~::ファミリ
 日付時刻:date and time::日時
 日時:date::~
-時刻:time::~
-時間制限:timeout::~::タイムアウト
 時計:clock::~::クロック
 昇順:ascending order:~
 降順:decreaseing order:~
@@ -1419,10 +1397,7 @@ stateful::::ステートフル
 単位:unit:~
 終了-:terminate:~
 終了:termination:~
-結合-:combine:~
-結合:combination:~
 続行-:proceed:~
-計測:measure:~
 記憶-:remember:~
 	識別-法:identifying
 	識別されない:unidentified
