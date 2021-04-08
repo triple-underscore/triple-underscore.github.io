@@ -2682,7 +2682,8 @@ scope::::スコープ
 関与-:participate:~
 関与:participation:~
 一意:unique:~
-
+単位:unit:~
+	単位なし:unitless
 
 ●データ／操作
 
@@ -2829,6 +2830,26 @@ sort::::ソート
 読込んだ:loadした::読み込んだ::ロードした
 読込め:loadでき::読み込め::ロードでき
 読込もう:loadしよう::読み込もう::ロードしよう
+
+読取n:read::読み取り
+	読取n法:reading
+	読取n可能:readable
+読取る:readする::読み取る
+読取られ:readされ::読み取られ
+読取らな:readしな::読み取らな
+読取れ:readでき::読み取れ
+読取っ:readし::読み取っ
+読取り:reading::読み取り
+読取器:reader::読み取り器
+
+加算:addition::~
+加算-:add::~
+減算:subtraction::~
+減算-:subtract::~
+除算:division::~
+除算-:divide::~
+乗算:multiplication::~
+乗算-:multiply::~
 
 
 ●構文

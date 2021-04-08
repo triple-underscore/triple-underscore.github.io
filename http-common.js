@@ -797,19 +797,8 @@ COMMON_DATA.words_table += `
 指す:referする:~
 指し:referし:~
 指され:referされ:~
-書込み:write::書き込み
-書込め:writeでき::書き込め
-書込んで:writeして::書き込んで
-書込まれ:writeされ::書き込まれ
 書換え:rewriteし::書き換え
 書換える:rewriteする::書き換える
-読取っ:readし::読み取っ
-読取ら:readし::読み取ら
-読取られ:readされ::読み取られ
-読取り:read::読み取り
-読取る:readする::読み取る
-読取れ:readでき::読み取れ
-読取可能:readable::読み取り可能
 繰返し:repetition:繰り返し
 繰返した:repeatした:繰り返した
 繰返して:repeatして:繰り返して
@@ -1394,7 +1383,6 @@ stateful::::ステートフル
 算術的:arithmetic:~
 算術:arithmetic:~
 節約-:save:~
-単位:unit:~
 終了-:terminate:~
 終了:termination:~
 続行-:proceed:~

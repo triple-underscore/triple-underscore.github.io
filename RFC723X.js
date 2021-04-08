@@ -744,7 +744,7 @@ IETF Review:~5226#section-4.1
 
 	■7233
 
-範囲単位:~7233#range.units
+範囲~単位:~7233#range.units
 範囲~要請:~7233#range.requests
 部分的~要請:~7233#range.requests
 部分的~応答:~7233#status.206
@@ -830,23 +830,12 @@ COMMON_DATA.words_table += `
 内包-:include:~
 
 呼出し:invoking:呼び出し
-
-埋込ん:embedし:埋め込ん
 始まる:beginする:~
 指す:referする:~
 指し:referし:~
 指され:referされ:~
-書込み:write::書き込み
-書込め:writeでき::書き込め
 書換え:rewriteし::書き換え
 書換える:rewriteする::書き換える
-読取っ:readし::読み取っ
-読取ら:readし::読み取ら
-読取られ:readされ::読み取られ
-読取り:read::読み取り
-読取る:readする::読み取る
-読取れ:readでき::読み取れ
-読取可能:readable::読み取り可能
 繰返し:repetition:繰り返し
 繰返した:repeatした:繰り返した
 繰返して:repeatして:繰り返して
@@ -1457,8 +1446,7 @@ stateless::::ステートレス
 算術:arithmetic:~
 組織:organization:~
 節約-:save:~
-範囲単位:range unit::~
-部分範囲:subrange::~
+部分範囲:subrange:~
 終了-:terminate:~
 
 終了:termination:~
