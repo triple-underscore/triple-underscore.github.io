@@ -1323,7 +1323,10 @@ resize::::リサイズ
 論理-:logical::~
 論理的:logical::~
 移動-:move:~
+開始:start:~
 開始-:start:~
+終了:end:~
+	終了-:terminate
 整数:integer:~
 正な:positiveな:~
 正で:positiveで:~
@@ -2296,7 +2299,9 @@ parameters:::parameter 群:パラメタ群
 中止-:abort::~
 再開-:resume::~
 休止-:suspend::~
-	終了-:terminate:~
+終了-:terminate::~
+終了n:termination::終了
+	終了:end
 完遂-:finish::~
 完遂d:finished::完遂
 完了-:complete::~
@@ -2317,9 +2322,8 @@ parameters:::parameter 群:パラメタ群
 
 例外:exception::~
 catch:
-投出:throw:~
-投出-:throw:~
-
+投出:throw::~
+投出-:throw::~
 即時:immediate::~
 並列的:parallel::~
 同期c:sync::同期

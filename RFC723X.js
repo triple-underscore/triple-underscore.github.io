@@ -1447,9 +1447,6 @@ stateless::::ステートレス
 組織:organization:~
 節約-:save:~
 部分範囲:subrange:~
-終了-:terminate:~
-
-終了:termination:~
 続行-:proceed:~
 
 記憶-:remember:~

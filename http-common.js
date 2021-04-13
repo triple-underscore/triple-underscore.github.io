@@ -1383,8 +1383,6 @@ stateful::::ステートフル
 算術的:arithmetic:~
 算術:arithmetic:~
 節約-:save:~
-終了-:terminate:~
-終了:termination:~
 続行-:proceed:~
 記憶-:remember:~
 	識別-法:identifying
