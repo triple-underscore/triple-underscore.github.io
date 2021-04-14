@@ -701,7 +701,7 @@ c.realm:~HTTPsem#realm
 状態s~code:~HTTPsem#status-code
 応答class:~HTTPsem#responce-class
 
-暫定-応答:~HTTPsem#interim-response
+非最終-応答:~HTTPsem#interim-response
 最終-応答:~HTTPsem#final-response
 	#final.interim
 事由~句:~HTTPsem#reason-phrase
@@ -887,7 +887,7 @@ minor::::副:マイナー
 頭部:leading:~
 巨大:large:~
 広範:wide:~
-暫定-:interim:~
+非最終-:interim:~
 最終-:final:~
 近過去:recent::~
 重複:duplicate:~
