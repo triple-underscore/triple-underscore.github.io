@@ -453,6 +453,7 @@ I.Headers:#headers
 I.HeadersInit:#typedefdef-headersinit
 I.ReadableStream:~STREAMS#readablestream
 I.ReadableStreamDefaultReader:~STREAMS#readablestreamdefaultreader
+I.TransformStream:~STREAMS#transformstream
 I.Request:#request
 I.RequestCache:#requestcache
 I.RequestCredentials:#requestcredentials
@@ -996,6 +997,8 @@ RS.もっと~dataが必要:~STREAMS#readablestream-need-more-data
 RSR.~chunkを読取る:~STREAMS#readablestreamdefaultreader-read-a-chunk
 RSR.すべての~byteを読取る:~STREAMS#readablestreamdefaultreader-read-all-bytes
 
+RS.通して~pipeする:~STREAMS#readablestream-pipe-through
+TS.設定しておく:~STREAMS#transformstream-set-up
 
 
 	●Fetch API
@@ -1316,7 +1319,7 @@ forgiving-base64:
 	頭部:leading／:start
 	尾部:trailing／:end
 	-:end
-	順に連結-:prepend
+	順に~~連結-:prepend
 	10 進数:decimal number
 
 	●data型／操作／構造
@@ -1333,6 +1336,8 @@ multimap:
 昇順:ascending order:~
 単数:singleton:::~
 内包-:include::~
+連結-:concatenate::~
+
 	作成-時:creation
 	初期~時:initially
 	有限:non-infinite
@@ -1386,6 +1391,9 @@ ok:
 検索:lookup::~
 計時情報:timing info::~
 mark:
+pipe::::パイプ
+形式変換-:transform::~
+
 	~mark::::マーク
 	終了-時:termination
 	読取n可能:readable::読み取り可能
@@ -1917,6 +1925,9 @@ internet::::インターネット
 	%起動元~種別:initiatorType
 	%~sw開始~時刻:serviceWorkerStartTime
 	%-:handleFetchDone
+	%形式変換した~stream:transformedStream
+	%形式変換-~stream:transformStream
+	%形式変換-~algo:transformAlgorithm
 
 	●指示語
 
@@ -2100,7 +2111,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/c46ebb91cd1ea5b28882f96e17785455b5752d16/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/fc6f26fce25d8628f84c34a6b136c78373a7ce40/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -3155,7 +3166,7 @@ If list does not contain name, then return null.
 %名前 を`名前に持つ~header$
 ］すべての`値$hdを互いに［
 `2C^X `20^X
-］並びで分離して順に連結した結果
+］並びで分離して順に~~連結した結果
 ◎
 Return the values of all headers in list whose name is a byte-case-insensitive match for name, separated from each other by 0x2C 0x20, in order.
 </li>
@@ -10715,7 +10726,88 @@ If request’s service-workers mode is "all", then:
 ◎
 Let requestForServiceWorker be a clone of request.
 </li>
-	<li>
+			<li>
+<p>
+~IF［
+%~sw用の要請 の`本体$ ~NEQ ~NULL
+］：
+◎
+If requestForServiceWorker’s body is non-null, then:
+</p>
+				<ol>
+					<li class="algo">
+<p>
+%形式変換-~algo ~LET 所与の
+( %~chunk )
+に対し，次を走らす手続き：
+◎
+Let transformAlgorithm given chunk be these steps:
+</p>
+						<ol>
+							<li>
+~IF［
+進行中の~fetchは`終了され$た
+］
+⇒
+~RET
+◎
+If the ongoing fetch is terminated, then abort these steps.
+</li>
+							<li>
+~IF［
+%~chunk は `Uint8Array$I ~objでない
+］
+⇒
+進行中の~fetchを`終了させる$
+◎
+If chunk is not a Uint8Array object, then terminate the ongoing fetch.
+</li>
+							<li>
+<p>
+~ELSE
+⇒
+`~chunkを~enqueueする$RS( %~chunk )
+◎
+Otherwise, enqueue chunk.＼
+</p>
+
+<p>
+この段においては、~UAは，次を行ってもヨイ
+⇒＃
+~chunkを`実装定義$な実用的な~sizeに分割した上で，結果の各`~chunkを~enqueueする$RS／
+~chunkたちを`実装定義$な実用的な~sizeに連結した上で，結果の`~chunkを~enqueueする$RS
+◎
+The user agent may split the chunk into implementation-defined practical sizes and enqueue each of them.＼
+The user agent also may concatenate the chunks into an implementation-defined practical size and enqueue it.
+</p>
+							</li>
+						</ol>
+					</li>
+					<li>
+%形式変換-~stream ~LET `新たな$ `TransformStream$I
+◎
+↓</li>
+					<li>
+%形式変換-~stream を`設定しておく$TS( %形式変換-~algo )
+◎
+Let transformStream be the result of setting up a TransformStream with transformAlgorithm.
+</li>
+					<li>
+%形式変換した~stream ~LET ［
+%~sw用の要請 の`本体$の`~stream$bd
+］を
+%形式変換-~stream を`通して~pipeする$RS
+◎
+Let transformedStream be the result of requestForServiceWorker’s body’s stream piped through transformStream.
+</li>
+					<li>
+%~sw用の要請 の`本体$の`~stream$bd ~SET %形式変換した~stream
+◎
+Set requestForServiceWorker’s body’s stream to transformedStream.
+</li>
+				</ol>
+			</li>
+			<li>
 %~sw開始~時刻 ~LET `細かさを抑えた共有される現在の時刻$( %~fetch~params の`非同一-生成元~能力は隔離-済み？$fP )
 ◎
 Let serviceWorkerStartTime be the coarsened shared current time given fetchParams’s cross-origin isolated capability.
@@ -13372,7 +13464,7 @@ If headers is not empty, then:
 </p>
 		<ol>
 			<li>
-%値 ~LET %~header~list 内の各~itemを順に， `,^bl で分離して連結した結果
+%値 ~LET %~header~list 内の各~itemを順に， `,^bl で分離して~~連結した結果
 ◎
 Let value be the items in headers separated from each other by `,`.
 </li>
@@ -18422,7 +18514,7 @@ Remove the last U+003B (;) code point from mimeType.
 %~MIME型 の先頭の符号位置 ~EQ `003B^U `;^smb
 ］
 ⇒
-%~MIME型 ~SET 次を順に連結した結果
+%~MIME型 ~SET 次を順に~~連結した結果
 ⇒＃
 `text/plain^l,
 %~MIME型
@@ -18837,6 +18929,7 @@ Xabier Rodríguez,
 Yehuda Katz,
 Yoav Weiss,
 Youenn Fablet,
+Yoichi Osato,
 <span lang="ja">平野裕</span> (Yutaka Hirano), and
 Zhenbin Xu
 
