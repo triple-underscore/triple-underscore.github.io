@@ -111,8 +111,8 @@ return text;
 
 ●●options
 
-spec_date:2020-07-14
-trans_update:2020-07-16
+spec_date:2021-04-16
+trans_update:2021-04-17
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -228,6 +228,7 @@ I.Element:~DOM4#interface-element
 	●m
 
 m.appendChild:~DOM4#dom-node-appendchild
+m.assign:#dom-slot-assign
 m.assignedNodes:#dom-slot-assignednodes
 m.assignedElements:#dom-slot-assignedelements
 
@@ -241,6 +242,7 @@ m.defer:#dom-script-defer
 m.document.createElementNS:~DOM4#dom-document-createelementns
 m.document.importNode:~DOM4#dom-document-importnode
 m.document.write:~HTMLdynamic#dom-document-write
+m.flatten:#dom-assignednodesoptions-flatten
 m.innerHTML:~DOM-Parsing#dom-innerhtml-innerhtml
 m.outerHTML:~DOM-Parsing#dom-element-outerhtml
 m.noModule:#dom-script-nomodule
@@ -290,7 +292,7 @@ sl.CryptographicNonce:~HTMLurl#cryptographicnonce
 外部~fileから:#concept-script-external
 
 
-	●terms
+	●用語
 ~data~block:#data-block
 ~script種別:#concept-script-type
 ~script:#concept-script-script
@@ -313,12 +315,13 @@ sl.CryptographicNonce:~HTMLurl#cryptographicnonce
 	適切な~template内容~所有者~文書
 不活~template文書:#associated-inert-template-document
 
-
 ~data~block:#data-block
 ~form提出:~HTMLforms#form-submission
 
 ~script内容~制約:#restrictions-for-contents-of-script-elements
 ~script文書化:#inline-documentation-for-external-scripts
+
+手動で割当された~nodeたち:#manually-assigned-nodes
 
 	●terms DOM4
 ~nodeを受入する:~DOM4#concept-node-adopt
@@ -326,19 +329,23 @@ sl.CryptographicNonce:~HTMLurl#cryptographicnonce
 ~XML文書:~DOM4#xml-document
 	文書種別:~DOM4#concept-document-type
 受入-時の手続き:~DOM4#concept-node-adopt-ext
-割当された~nodeたち:~DOM4#slot-assigned-nodes
-~slotに割当する:~DOM4#assign-a-slot
-
 ~nodeを~cloneする:~DOM4#concept-node-clone
 ~clone時の手続き:~DOM4#concept-node-clone-ext
-~slot用に平坦~化された~slottableたちを見出す:~DOM4#find-flattened-slotables
 ~host:~DOM4#concept-documentfragment-host
 文書~tree内:~DOM4#in-a-document-tree
 接続されて:~DOM4#connected
-~slot名:~DOM4#slot-name
 ~node文書:~DOM4#concept-node-document
 ~shadow~tree:~DOM4#concept-shadow-tree
+
 ~slot:~DOM4#concept-slot
+~slotに割当する:~DOM4#assign-a-slot
+~slot名:~DOM4#slot-name
+~slot用に平坦~化された~slottableたちを見出す:~DOM4#find-flattened-slotables
+~treeに~slottableたちを割当する:~DOM4#assign-slotables-for-a-tree
+~slottable:~DOM4#concept-slotable
+手動~割当-先~slot:~DOM4#slottable-manual-slot-assignment
+割当された~nodeたち:~DOM4#slot-assigned-nodes
+
 doc.符号化法:~DOM4#concept-document-encoding
 ~tree順序:~DOM4#concept-tree-order
 根:~DOM4#concept-tree-root
@@ -352,6 +359,8 @@ doc.符号化法:~DOM4#concept-document-encoding
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 前後の~ASCII空白~列を剥ぐ:~INFRA#strip-leading-and-trailing-ascii-whitespace
 ~scalar値:~INFRA#scalar-value
+有順序~集合:~INFRA#ordered-set
+set.付加する:~INFRA#set-append
 
 	●HTMLINFRA
 
@@ -507,9 +516,9 @@ shadow:
 slot:
 slottable:
 	スロット
+割当-:assign::あてがい
 割当され:assignされ::あてがわれ
 割当する:assignする::あてがう
-割当済み:assign 済み::あてがい済み
 
 	●処理
 	~scriptなしを前提に:scriptless
@@ -541,6 +550,7 @@ slottable:
 	評価-:evaluation
 	そのまま:onward
 	%~URL:url
+	%~node集合:nodesSet
 
 	●fetch／network／保安
 	事前~fetching:prefetching
@@ -655,6 +665,7 @@ video::::ビデオ
 処理命令:processing instruction:~
 探索:search::検索
 ニュースサイト:news site::~
+弱い:weakな:~
 
 	-:destination
 	増減
@@ -4242,10 +4253,11 @@ interface `HTMLSlotElement@I : `HTMLElement$I {
   [`CEReactions$] attribute DOMString `name$m;
   sequence&lt;Node&gt; `assignedNodes$m(optional `AssignedNodesOptions$I %options = {});
   sequence&lt;Element&gt; `assignedElements$m(optional `AssignedNodesOptions$I %options = {});
+  undefined `assign$m((`Element$I or `Text$I)... %nodes);
 };
 
 dictionary `AssignedNodesOptions@I {
-  boolean flatten = false;
+  boolean `flatten@m = false;
 };
 </pre>
 	</dd>
@@ -4332,6 +4344,13 @@ slot . assignedElements({ flatten: true })
 ◎
 Returns the same as assignedNodes({ flatten: true }), limited to elements.
 </dd>
+
+	<dt>%slot . `assign(...nodes)$m</dt>
+	<dd>
+%~slot に`手動で割当された~nodeたち$を所与の %nodes に設定する。
+◎
+Set slot's manually assigned nodes to the given nodes.
+</dd>
 </dl>
 
 <p>
@@ -4342,23 +4361,41 @@ Returns the same as assignedNodes({ flatten: true }), limited to elements.
 The name IDL attribute must reflect the content attribute of the same name.
 </p>
 
+<p>
+各 `slot$e 要素には
+`手動で割当された~nodeたち@
+がある
+— それは、`~slottable$たちが成す`有順序~集合$であり，初期~時は空とする。
+この集合は、
+`assign()$m により設定される。
+◎
+The slot element has manually assigned nodes, which is an ordered set of slottables set by assign(). This set is initially empty.
+</p>
+
+<p class="note">注記：
+`手動で割当された~nodeたち$は、~scriptからは直に~access可能でないので，
+`~slottable$への弱い参照を利用して実装できる／され得る。
+◎
+The manually assigned nodes set can be implemented using weak references to the slottables, because this set is not directly accessible from script.
+</p>
+
 <div class="algo">
 <p>
 `assignedNodes(options)@m
 ~method~手続きは：
 ◎
-The assignedNodes(options) method, when invoked, must run these steps:
+The assignedNodes(options) method steps are:
 </p>
 <ol>
 	<li>
-~RET %options の `flatten^m ~member値に応じて
+~RET %options[ "`flatten$m" ] に応じて
 ⇒＃
 ~F ならば コレに`割当された~nodeたち$ ／
 ~T ならば `~slot用に平坦~化された~slottableたちを見出す$( コレ )
 ◎
-If the value of options's flatten member is false, then return this element's assigned nodes.
+If options["flatten"] is false, then return this's assigned nodes.
 ◎
-Return the result of finding flattened slottables with this element.
+Return the result of finding flattened slottables with this.
 </li>
 </ol>
 </div>
@@ -4367,23 +4404,94 @@ Return the result of finding flattened slottables with this element.
 <p>
 `assignedElements(options)@m
 ~method~手続きは：
+◎
+The assignedElements(options) method steps are:
 </p>
+
 <ol>
 	<li>
-%結果 ~LET %options の `flatten^m ~member値に応じて
+%結果 ~LET %options[ "`flatten$m" ] に応じて
 ⇒＃
 ~F ならば コレに`割当された~nodeたち$ ／
 ~T ならば `~slot用に平坦~化された~slottableたちを見出す$( コレ )
+◎
+If options["flatten"] is false, then return this's assigned nodes, filtered to contain only Element nodes.
+◎
+Return the result of finding flattened slottables with this, filtered to contain only Element nodes.
 </li>
 	<li>
-~RET
-%結果 を `Element$I ~nodeのみを包含するように絞込んだ結果
+~RET %結果 を `Element$I ~nodeのみを包含するように絞込んだ結果
+◎
+↑</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`assign(...nodes)@m
+~method手続きは：
+◎
+The assign(...nodes) method steps are:
+</p>
+<ol>
+	<li>
+コレに`手動で割当された~nodeたち$を成す
+~EACH( %~node )
+に対し
+⇒
+%~node の`手動~割当-先~slot$ ~SET ~NULL
+◎
+For each node of this's manually assigned nodes, set node's manual slot assignment to null.
+</li>
+	<li>
+%~node集合 ~LET 新たな`有順序~集合$
+◎
+Let nodesSet be a new ordered set.
+</li>
+	<li>
+<p>
+%nodes を成す
+~EACH( %~node )
+に対し：
+◎
+For each node of nodes:
+</p>
+		<ol>
+			<li>
+%~slot ~LET %~node の`手動~割当-先~slot$
+</li>
+			<li>
+~IF［
+%~slot ~NEQ ~NULL
+］
+⇒
+%~slot に`手動で割当された~nodeたち$から %~node を除去する
+◎
+If node's manual slot assignment refers to a slot, then remove node from that slot's manually assigned nodes.
+</li>
+			<li>
+%~node の`手動~割当-先~slot$ ~SET コレ
+◎
+Set node's manual slot assignment to this.
+</li>
+			<li>
+%~node集合 に %~node を`付加する$set
+◎
+Append node to nodesSet.
+</li>
+		</ol>
+	</li>
+	<li>
+コレに`手動で割当された~nodeたち$ ~SET %~node集合
+◎
+Set this's manually assigned nodes to nodesSet.
+</li>
+	<li>
+`~treeに~slottableたちを割当する$( コレの`根$ )
+◎
+Run assign slottables for a tree for this's root.
 </li>
 </ol>
-◎
-The assignedElements(options) method, when invoked, must run these steps:
-• If the value of options's flatten member is false, then return this element's assigned nodes, filtered to contain only Element nodes.
-• Return the result of finding flattened slottables with this element, filtered to contain only Element nodes.
 </div>
 
 		</section>
