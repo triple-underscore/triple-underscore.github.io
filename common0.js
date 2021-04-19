@@ -2183,9 +2183,10 @@ care::::ケア
 測定-:measure:~
 測定:measurement:~
 
-	貢献-:contribute
-	貢献:contribution
-	貢献者:contributor
+貢献-:contribute:~
+貢献:contribution:~
+貢献者:contributor:~
+	貢献された方々:contributor
 	謝意／感謝:thank
 
 ●制御／処理
