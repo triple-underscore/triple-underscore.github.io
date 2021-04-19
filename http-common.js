@@ -900,8 +900,6 @@ framework::::フレームワーク
 proprietary::::プロプライエタリ
 十分:enough:~
 説明d:description:説明
-取戻せ:reclaimでき:取り戻せ
-取戻され:reclaimされ:取り戻され
 導かれ:leadされ:~
 導き:leadし:~
 導く:leadする:~
@@ -912,44 +910,30 @@ proprietary::::プロプライエタリ
 agent::::エージェント
 応用-:apply::~
 一般用:general-purpose:~
-中立的:neutral:~
 	事実:In fact
-理由付け:reasoning:~
-乏しい:poorな:~
 見越す:anticipateする:~
 見越して:anticipateして:~
 見越され:anticipateされ:~
 見越さな:anticipateしな:~
 上品:graceful::~
-不利:disadvantage:~
 不可欠:crucial:~
-不明瞭に:obscure:~
 保守的:conservative:~
 適度:reasonable:~
-見合う:reasonableな:~
-適応的:adaptive:~
 適時:timely:~
-有利:advantageous:~
 有意度:significance:~
 有意性:significance:~
-分類上の:categorization:~
+不利:disadvantage:~
 利点:advantage:~
+有利:advantageous:~
 利用e:usage:利用
 誤用-:misuse:~
 濫用:abuse:~
-制定-:prescribe:~
 上限:limit:~
-副次的:secondary:~
 創出-:mint:~
-非効率:inefficient:~
-包括的:comprehensive:~
-参照文献:references:~
-参考:informative:~
 合意:consensus:~
 同意-:agree:~
 回答:answer:~
 
-損なう:loseする:~
 損失:loss:~
 対処-:work around:~
 対処法:workaround:~
@@ -957,8 +941,6 @@ agent::::エージェント
 堅牢性:robustness:~
 図:figure:~
 増強-:enhance:~
-強化-:enhance:~
-
 古い:older:~
 可用性:availability:~
 不可能:impossible:~
@@ -969,47 +951,34 @@ agent::::エージェント
 遂行:performing:~
 導入:introduction:~
 履行-:fulfill:~
-強要-:insist:~
 必要十分:adequate:~
 必要性:needs:~
 恒久的:permanent:~
 意向:intention:~
 慣行:convention::~
 早期の:early:~
-明らか:obvious:~
 柔軟:flexible:~
 柔軟性:flexibility:~
-根本的:fundamental:~
-	本質的でない:nonessential
-権利:right:~
 欠如:lack:~
 欠如する:lackする:欠く
 手続き:procedure:~
 手順:steps:~
-抽象化-:abstract 化:~
-抽象化:abstraction:~
 採用-:adopt:~
 採用:adoption:~
 推測-:guess:~
 推測:guess:~
 支援-:assist:~
 故意:deliberate:~
-方針:strategy:~
 深刻:serious:~
 準拠-:comply::~
 準拠:compliant::~
-
 特性:characteristic:~
-
 位置付け:status:~
 相互運用-:interoperate:~
-
 相当:substantial:~
-相応しく:suitableで:~
 禁制-:prohibit::~
 競合-:conflict:~
 競合:conflict:~
-簡潔:compact:~
 精緻化:refinement:~
 経験的:heuristic::~::ヒューリスティック
 結論-:conclude:~
@@ -1023,7 +992,6 @@ agent::::エージェント
 義務化-:mandate:~
 翻訳-:translate::~
 翻訳:translation::~
-自由:free:~
 補助:help:~
 複雑化-:complicate:~
 表記規約:notational conventions:~
@@ -1047,16 +1015,11 @@ agent::::エージェント
 解決策:solution:~
 英語:English:~
 偶発的:accidental:~
-収束-:converge:~
-壊す:breakする:~
-壊れ:breakされ:~
-壊れた:broken:~
 理論:theory:~
 高度:advanced:~
 類別:category:~
 維持-:retain:~
 維持させ:sustainし:~
-縛られ:tieされ:~
 背後:behind:~
 自動化-:automate:~
 自動化:automated:~
@@ -1074,6 +1037,9 @@ agent::::エージェント
 過度の:excessiveな:~
 確約-:assure:~
 メモ:memo:::~
+発行-:publish:~
+発行:publication:~
+稀:rare:~
 
 	:be aware of
 	適切でない:inappropriate
@@ -1102,10 +1068,8 @@ agent::::エージェント
 認証用の:authentication::~
 機密性:confidentiality::~
 機密的:confidential::~
-欠陥:flaw:~
 汚染-:poison::~
 汚染:poisoning::~
-特権拡大:privilege escalation:~
 盗聴:theft:~
 脆弱:vulnerable::~
 署名:signature:~
@@ -1141,27 +1105,17 @@ escaping::::エスケープ処理
 区切られ:delimitされ:~
 区切り:delimitation:~
 区切る:delimitする:~
-合致:match::~::マッチ
 実数:real number:~
 単数:singleton:::~
 桁:digit::~
 	構文~上:syntactical
-移行:transition::~
-稀:rare:~
 番号:number:~
-空行:blank line::~
-英字:letter::~
 圧縮-:compress::~
 圧縮:compression::~
 下位成分:subcomponent::~
-折返-:fold::~
-折返さな:foldしな::~
-折返し:folding::折り返し
 記号:symbol:~
 符号化:encoding::~::エンコーディング
 	符号化-済み:encoded
-符号変換:transcoding::~::トランスコーディング
-符号変換器:transcoder::~::トランスコーダ
 符号法:coding::~::コーディング
 復号:decoding::~::デコーディング
 暗号化-:encrypt::~
@@ -1200,7 +1154,6 @@ closure:
 open:
 route::::ルート
 	~route法:routing
-経路制御:routing::~:ルーティング
 direct::::ダイレクト
 redirection::::リダイレクト
 	ディレクティブ
@@ -1208,7 +1161,6 @@ redirection::::リダイレクト
 	directional:
 双方向:bidirectional::~
 主体:party::~
-責任主体:responsible party:~
 上流:upstream::~
 下流:downstream::~
 中継:intermediate::~
@@ -1222,7 +1174,6 @@ redirection::::リダイレクト
 伝送路:wire::~
 伝達-:convey::~
 分散型の:distributedな::~
-到着-:arrive:~
 携わる:engageする:~
 携わっ:engageし:~
 参加者:participant:~
@@ -1239,12 +1190,9 @@ redirection::::リダイレクト
 端点:endpoint::~::エンドポイント
 端点間:end-to-end::~::エンドツーエンド
 隣点間:hop-by-hop::~::ホップバイホップ
-連絡-:contact:~
-連絡:contact:~
 連結-:concatenate:~
 実体:entity:~
 応答class:class:::クラス
-応答待ち:outstanding::~
 
 所在-:locate::~
 経路:path::~
@@ -1252,9 +1200,7 @@ redirection::::リダイレクト
 
 	●未分類
 root::::ルート
-企業:corporate:~
 個人-:personal:~
-一掃-:purge:~
 不定:indefinite:~
 中断:interruption:~
 
@@ -1265,16 +1211,13 @@ root::::ルート
 proactive::::プロアクティブ
 reactive::::リアクティブ
 併合-:merge:~
-係数:factor:~
 促進-:promote:~
 保存-:save:~
 優先度:priority:~
 優先順:precedence:~
 先行-:precede:~
-	共有:shared:~
 内来的:inherent:~
 冪等:idempotent::~
-冪等性:idempotent property::~
 
 出現:appearance:~
 出現し:appearし:現れ
@@ -1283,7 +1226,6 @@ reactive::::リアクティブ
 出生日時:origination date::~
 出生時:origination::~
 出生時の:origination::~
-分岐:divergent:~
 割合:percentage:~
 割当-:allocate:~
 事前条件:precondition::~
@@ -1299,17 +1241,12 @@ reactive::::リアクティブ
 固定的な:fixed:~
 下位型:subtype::~
 回復:recovery::~
-
-変更s:changes:変更
-
-外向けの:outgoing:~
 失効:expiration:~
 失効-:expire:~
 弱い:weakな::~
 弱さ:weakness::~
 強い:strongな::~
 強さ:strength::~
-
 検証y-:verify:検証°
 検証y:verification:検証°
 検証子:validator::~
@@ -1320,7 +1257,6 @@ reactive::::リアクティブ
 容量:capacity:~
 対応-:correspond:~
 尚早:premature:~
-	局所的な
 展開-:expand:~
 帯域幅:bandwidth::~::バンド幅
 形:form:~
@@ -1360,8 +1296,6 @@ stateless::::ステートレス
 stateful::::ステートフル
 生の:raw:~
 疑似:pseudo:~
-発行-:publish:~
-発行:publication:~
 為す:makeする:~
 為され:makeされ:~
 為さな:makeしな:~
@@ -1370,18 +1304,13 @@ stateful::::ステートフル
 為せる:makeできる:~
 為せな:makeできな:~
 	登録-済み:registered
-監視器:monitor::~::モニタ
 盲目的:blind::~
-瞬間:moment:~
 知覚-:perceive:~
 知覚:perception:~
 
 短縮-:shorten:~
 種類:kind:~
 稼働-:run:~
-稼働中の:running:~
-算術的:arithmetic:~
-算術:arithmetic:~
 節約-:save:~
 続行-:proceed:~
 記憶-:remember:~
@@ -1392,13 +1321,9 @@ stateful::::ステートフル
 過負荷:overload:~
 超過-:exceed:~
 近似:approximation:~
-連合-:federate:~
-進捗状況:progress:~
-
 演算子:operator:~
 過去:past:~
 過去の:pastな:~
-過程:process:~
 遭遇-:encounter:~
 選定用:selecting::~
 被選定:selected::~
@@ -1411,13 +1336,10 @@ stateful::::ステートフル
 複部位:multipart::~
 重み:weight::~
 量:amount:~
-
 開く:openする::~
 閲覧-:browse:~:::ブラウズ
 閲覧:browsing:~:::ブラウジング
-隣接点:neighbor::~
 領域:region:~
-頻繁:frequent:~
 鮮度:freshness::~
 新鮮:fresh::~
 	新鮮~化-:freshen

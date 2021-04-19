@@ -757,7 +757,7 @@ c.multipart/byteranges:~7233#internet.media.type.multipart.byteranges
 ~cache:~7234#cache
 ~cache検証:~7234#validation.model
 ~cache検証~要請:~7234#validation.sent
-共有~cache:~7234#shared-cache
+共用~cache:~7234#shared-cache
 私用~cache:~7234#private-cache
 ~cache制御~指令:~7234#cache-directive
 警告~text:~7234#warning-text
@@ -944,8 +944,6 @@ based:-based:に基づく:::ベースの
 proprietary::::プロプライエタリ
 十分:enough:~
 説明d:description:説明
-取戻せ:reclaimでき:取り戻せ
-取戻され:reclaimされ:取り戻され
 導かれ:leadされ:~
 導き:leadし:~
 メモ:memo::~
@@ -958,51 +956,36 @@ app:application:::アプリケーション
 	応用-:apply:::
 	適用すること:application
 一般用:general-purpose:~
-中立的:neutral:~
 事実:fact:~
-理由付け:reasoning:~
-乏しい:poorな:~
 見越す:anticipateする:~
 見越して:anticipateして:~
 見越され:anticipateされ:~
 上品:graceful::~
 不利:disadvantage:~
 不可欠:crucial:~
-不明瞭に:obscure:~
 依存:dependent:~
 保守的:conservative:~
 	適合:conformant:~
 適度:reasonable:~
-見合う:reasonableな:~
-適応的:adaptive:~
 適時:timely:~
 選好順:descending preference の order:選好度の高い順
 有利:advantageous:~
 有意度:significance:~
 有意性:significance:~
-分類上の:categorization:~
 利点:advantage:~
 用立てる:make useする:~
 利用e:usage:利用
 再利用性:reusability:~
 誤用-:misuse:~
 濫用:abuse:~
-制定-:prescribe:~
 上限:limit:~
 副次的:secondary:~
 創出-:mint:~
-非効率:inefficient:~
 実効:effective::~
-実効性:effectiveness:~
-包括的:comprehensive:~
 参照文献:references:~
-参考:informative:~
 合意:consensus:~
 同意-:agree:~
 回答:answer:~
-
-損なう:loseする:~
-損失:loss:~
 失われ:lostし:~
 対処-:work around:~
 対処法:workaround:~
@@ -1010,50 +993,37 @@ app:application:::アプリケーション
 堅牢性:robustness:~
 図:figure:~
 増強-:enhance:~
-強化-:enhance:~
 
 古い:older:~
 可用性:availability:~
 不可能:impossible:~
 同義語:synonym:~
-多様:diverse:~
-多様性:diversity:~
 大概は:presumably:~
-	〜ないことを奨励discouraged
+	〜ないことを奨励:discourage
 実用性:practicality:~
 遂行:performing:~
 導入:introduction:~
 履行-:fulfill:~
-強要-:insist:~
-影響:impact:~
 必要十分:adequate:~
 必要性:needs:~
 恒久的:permanent:~
 意向:intention:~
-慣行:convention::~
 早期の:early:~
-明らか:obvious:~
 暫定的:interim:~
 	本質的でない:nonessential
 柔軟:flexible:~
 柔軟性:flexibility:~
 根本的:fundamental:~
-権利:right:~
 欠如:lack:~
 欠如する:lackする:欠く
 手続き:procedure:~
 手順:steps:~
-抽象化-:abstract 化:~
-抽象化:abstraction:~
-拡張0-:expand:拡張
-	拡張-可能:extensible
 採用-:adopt:~
 採用:adoption:~
 推測-:guess:~
 推測:guess:~
 支援-:assist:~
 故意:deliberate:~
-方針:strategy:~
 深刻:serious:~
 準拠-:comply::~
 準拠:compliant::~
@@ -1065,7 +1035,6 @@ app:application:::アプリケーション
 禁制-:prohibit::~
 競合-:conflict:~
 競合:conflict:~
-簡潔:compact:~
 精緻化:refinement:~
 結論:conclusion:~
 統一的:uniform:~
@@ -1076,12 +1045,10 @@ app:application:::アプリケーション
 義務化-:mandate:~
 翻訳-:translate::~
 翻訳:translation::~
-自由:free:~
 衝突-:collide:~
 衝突:collision:~
 補助:help:~
 複雑化-:complicate:~
-表記規約:notational conventions:~
 著作者:author:~
 機会:chance:~
 設置-:place:~
@@ -1095,8 +1062,6 @@ app:application:::アプリケーション
 責務:responsibility:~
 誤解釈:misinterpret:~
 性向:nature:~
-開示-:disclose:~
-開示:disclosure:~
 関心:interest:~
 限度:extent:~
 公共:public:~
@@ -1105,20 +1070,14 @@ app:application:::アプリケーション
 英語:English:~
 偶発的:accidental:~
 偽:false:~
-収束-:converge:~
-壊す:breakする:~
-壊れ:breakされ:~
-壊れた:broken:~
 理論:theory:~
 透過性:transparency::~
 透過的:transparent::~
 高度:advance:~
 類別:category:~
-逐語的:verbatim:~
 維持-:retain:~
 維持させ:sustainし:~
 
-縛られ:tieされ:~
 背後:behind:~
 自動化-:automate:~
 自動化:automated:~
@@ -1128,6 +1087,7 @@ app:application:::アプリケーション
 運用-:operate:~
 運用:operation:~
 運用者:operator:~
+稀:rare:~
 
 	●保安
 sensitive:
@@ -1159,7 +1119,6 @@ sensitive:
 盗聴:theft:~
 脆弱:vulnerable::~
 署名:signature:~
-防御策:defense:~
 露呈-:reveal:露に
 中間者:man-in-the-middle::~
 相関-:correlate:~
@@ -1194,17 +1153,9 @@ escaping::::エスケープ処理
 区切り:delimitation::~
 区切る:delimitする::~
 区切子:delimiter::~
-合致:match::~::マッチ
-数字:numeral:~
-数的:numeric:~
 実数:real number:~
-
 桁:digit::~
-移行:transition::~
-稀:rare:~
 番号:number:~
-空行:blank line::~
-英字:letter::~
 圧縮-:compress::~
 圧縮:compression::~
 下位成分:subcomponent::~
@@ -1214,8 +1165,6 @@ escaping::::エスケープ処理
 記号:symbol:~
 符号化:encoding::~::エンコーディング
 	符号化-済み:encoded
-符号変換:transcoding::~::トランスコーディング
-符号変換器:transcoder::~::トランスコーダ
 符号法:coding::~::コーディング
 復号:decoding::~::デコーディング
 暗号化-:encrypt::~
@@ -1263,7 +1212,6 @@ redirection::::リダイレクト
 	directional:
 双方向:bidirectional::~
 主体:party::~
-責任主体:responsible party:~
 上流:upstream::~
 下流:downstream::~
 中継:intermediate::~
@@ -1278,10 +1226,8 @@ redirection::::リダイレクト
 伝達-:convey::~
 分散-:balance:~
 分散型の:distributed::~
-到着-:arrive:~
 参加-:engage:~
 参加者:participant:~
-参照元:referring:refer 元:~
 受信:receiving::~
 受信者:recipient::~
 受領:receipt::~
@@ -1294,22 +1240,16 @@ redirection::::リダイレクト
 端点:endpoint::~::エンドポイント
 端点間:end-to-end::~::エンドツーエンド
 隣点間:hop-by-hop::~::ホップバイホップ
-連絡-:contact:~
-連絡:contact:~
 連結-:concatenate:~
 実体:entity:~
 応答class:class:::クラス
-応答待ちの:outstanding::~
 
 所在-:locate::~
 経路:path:~
 遠隔:remote::~::リモート
 
 	●未分類
-
-企業:corporate:~
-個人:personal:~
-一掃-:purge:~
+個人-:personal:~
 不定:indefinite:~
 中断:interruption:~
 
@@ -1318,16 +1258,12 @@ redirection::::リダイレクト
 遊休:idle:~
 	遊休~中:idle
 併合-:merge:~
-係数:factor:~
-促進-:promote:~
 保存-:save:~
 優先度:priority:~
 優先順:precedence:~
 先行-:precede:~
-共有:shared:~
 内来的:inherent:~
 冪等:idempotent::~
-冪等性:idempotent property::~
 
 出現:appearance:~
 出現し:appearし:現れ
@@ -1336,7 +1272,6 @@ redirection::::リダイレクト
 出生日時:origination date::~
 出生時:origination::~
 出生時の:origination::~
-分岐:divergent:~
 割合:percentage:~
 割当-:allocate:~
 区分-:partition:~
@@ -1358,8 +1293,6 @@ redirection::::リダイレクト
 増加-:increase:~
 増大-:increase:~
 回復:recovery::~
-変更s:changes:変更
-外向けの:outgoing:~
 失効:expiration:~
 失効-:expire:~
 弱い:weakな::~
@@ -1431,19 +1364,13 @@ stateless::::ステートレス
 為せる:makeできる:~
 為せな:makeできな:~
 	登録-済み:registered
-監視器:monitor::~::モニタ
 盲目的:blind::~
-省略:omit:~
-瞬間:moment:~
 知覚-:perceive:~
 
 短縮-:shorten:~
 確立:establishing:~
 種類:kind:~
 稼働-:run:~
-稼働中の:running:~
-算術的:arithmetic:~
-算術:arithmetic:~
 組織:organization:~
 節約-:save:~
 部分範囲:subrange:~
@@ -1462,13 +1389,9 @@ stateless::::ステートレス
 過負荷:overload:~
 超過-:exceed:~
 近似:approximation:~
-連合-:federate:~
-進捗状況:progress:~
-
 演算子:operator:~
 過去:past:~
 過度の:excessiveな:~
-過程:process:~
 遭遇-:encounter:~
 選定用:selecting::~
 被選定:selected::~
@@ -1483,16 +1406,14 @@ stateless::::ステートレス
 開く:openする::~
 閲覧-:browse:~:::ブラウズ
 閲覧:browsing:~:::ブラウジング
-隣接点:neighbor::~
 領域:region:~
 鮮度:freshness::~
 
-	別の:another:~
+	別の:another
 	別個の:distinct:~
-	一定の:certain:~
-	今後の:later:~
-	以前:previous:~
-	以前の:previous:~
+	一定の:certain
+	今後の:later
+	以前の:previous
 
 ●●
 
@@ -1946,7 +1867,7 @@ IETF Review:~5226#section-4.1
 〜~cache:~7234#cache
 ／~cache検証:~7234#section-4.3
 ／~cache検証~要請:~7234#section-4.3.1
-〜共有~cache:~7234#shared-cache
+〜共用~cache:~7234#shared-cache
 〜私用~cache:~7234#private-cache
 〜~cache制御~指令:~7234#cache-directive
 〜警告~text:~7234#warning-text
