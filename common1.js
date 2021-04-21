@@ -582,7 +582,7 @@ css: '<a href="css-snapshot-ja.html#conformance">CSS Snapshot ページ</a>',
 	sec.id = 'conformance';
 	sec.innerHTML = `
 <h2 title="Conformance">適合性</h2>
-<p class="trans-note">【この節の内容は ${link}に委譲。】</p>
+<p class="trans-note">【この節の内容は ${link}に移譲。】</p>
 `;
 	document.body.appendChild(sec);
 }
