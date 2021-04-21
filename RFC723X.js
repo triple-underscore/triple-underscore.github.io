@@ -1315,7 +1315,6 @@ redirection::::リダイレクト
 	局所的な
 展開-:expand:~
 帯域幅:bandwidth::~::バンド幅
-形:form:~
 役割:role::~::ロール
 後処理:post-processing:~
 復帰-:revert:~
