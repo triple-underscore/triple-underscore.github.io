@@ -120,8 +120,8 @@ return text;
 
 ●●options
 
-spec_date:2021-04-08
-trans_update:2021-04-12
+spec_date:2021-04-15
+trans_update:2021-04-21
 source_checked:210408
 page_state_key:TIMING
 original_url:https://w3c.github.io/resource-timing/
@@ -292,6 +292,7 @@ v.stylesheet:~HTMLlinks#link-type-stylesheet
 
 pT.起動元~種別:#dfn-initiator-type
 pT.要請~URL:#dfn-requested-url
+pT.~cache~mode:#dfn-cache-mode
 pT.計時情報:#dfn-timing-info
 
 	●用語（外部
@@ -323,7 +324,6 @@ fT.~redirect後からの開始~時刻:~FETCH#fetch-timing-info-post-redirect-sta
 fT.~redirect終了~時刻:~FETCH#fetch-timing-info-redirect-end-time
 fT.~redirect開始~時刻:~FETCH#fetch-timing-info-redirect-start-time
 fT.開始~時刻:~FETCH#fetch-timing-info-start-time
-
 fT.符号化された本体の~size:~FETCH#fetch-timing-info-encoded-body-size
 fT.復号した本体の~size:~FETCH#fetch-timing-info-decoded-body-size
 
@@ -407,6 +407,9 @@ mark::::マーク
 現-:current:~
 副-:secondary:~
 
+	総:total
+	定数:constant number
+
 	●仕様
 包括的:comprehensive:~
 様相:picture:~
@@ -456,6 +459,7 @@ toJSON:
 	最初の:oldest
 	見込まれ:might
 	末尾:the end
+	有無:presence
 
 	%~buffer:buffer
 	%~entry:entry
@@ -464,6 +468,7 @@ toJSON:
 	%起動元~種別:initiatorType
 	%時刻印:ts
 	%大域~obj:global
+	%~cache~mode:cacheMode
 	%移動したか:-
 
 ●●ref_normative
@@ -894,6 +899,16 @@ A PerformanceResourceTiming has an associated DOMString initiator type.
 A PerformanceResourceTiming has an associated DOMString requested URL.
 </li>
 	<li>
+`~cache~mode@pT
+⇒
+`文字列$
+— 次のいずれか
+⇒
+空~文字列 ／ `local^l
+◎
+A PerformanceResourceTiming has an associated DOMString cache mode (the empty string or "local").
+</li>
+	<li>
 `計時情報@pT
 ⇒
 `~fetch計時情報$
@@ -1176,12 +1191,65 @@ See HTTP fetch for more info.
 ◎
 The responseEnd getter steps are to convert fetch timestamp for this's timing info's end time and the relevant global object for this.＼
 </p>
+</div>
 
-<p class="note">
-更なる情報は、`~fetch$を見よ。
+<div class="algo">
+<p>
+`encodedBodySize@m
+取得子~手続きは
+⇒
+~RET コレの`計時情報$pTの`符号化された本体の~size$fT
 ◎
-See fetch for more info.
+The encodedBodySize getter steps are to return this's timing info's encoded body size.
 </p>
+</div>
+
+<div class="algo">
+<p>
+`decodedBodySize@m
+取得子~手続きは
+⇒
+~RET コレの`計時情報$pTの`復号した本体の~size$fT
+◎
+The decodedBodySize getter steps are to return this's timing info's decoded body size.
+</p>
+</div>
+
+<div class="algo">
+<p>
+`transferSize@m
+取得子~手続きは：
+◎
+The transferSize getter steps are to perform the following steps:
+</p>
+<ol>
+	<li>
+~IF［
+コレの`~cache~mode$pT ~EQ `local^l
+］
+⇒
+~RET 0
+◎
+If this's cache mode is "local", then return 0.
+</li>
+	<li>
+<p>
+~RET コレの`計時情報$pTの`符号化された本体の~size$fT ~PLUS 300
+◎
+Return this's timing info's encoded body size plus 300.
+</p>
+
+<p class="note">注記：
+`transferSize^m に加算される定数は、~HTTP~messageの~header節の総~byte~sizeを置換するものであり，ある種の~cookieの有無が公開されないようにするためである。
+<a href="https://github.com/w3c/resource-timing/issues/238">課題 #238</a>
+を見よ。
+◎
+Note
+The constant number added to transferSize replaces exposing the total byte size of the HTTP headers, as that may expose the presence of certain cookies. See this issue.
+</p>
+	</li>
+</ol>
+</div>
 
 <p class="note">注記：
 `PerformanceResourceTiming$I を実装する~UAは、その~supportを開発者が検出できるよう，
@@ -1190,20 +1258,6 @@ See fetch for more info.
 Note
 A user agent implementing PerformanceResourceTiming would need to include "resource" in supportedEntryTypes. This allows developers to detect support for Resource Timing.
 </p>
-</div>
-
-<p class="trans-note">【
-`transferSize@m ／
-`encodedBodySize@m ／
-`decodedBodySize@m
-取得子~手続きは、未策定（更新により除去された）。
-順に，［
-~HTTP応答を成す全~data（~headerも含む）の~size／
-`計時情報$pTの`符号化された本体の~size$fT／
-`計時情報$pTの`復号した本体の~size$fT
-］に基づくことになろう。
-】</p>
-
 
 		</section>
 		<section id="sec-extensions-performance-interface">
@@ -1770,10 +1824,10 @@ Resource Timing attributes
 <p>
 `資源~計時を~markする@
 ときは、所与の
-( `~fetch計時情報$ %計時情報, `文字列$ %要請された~URL, `文字列$ %起動元~種別, `大域~obj$enV %大域~obj )
+( `~fetch計時情報$ %計時情報, `文字列$ %要請された~URL, `文字列$ %起動元~種別, `大域~obj$enV %大域~obj, `文字列$ %~cache~mode )
 に対し：
 ◎
-To mark resource timing given a fetch timing info timingInfo, a DOMString requestedURL, a DOMString initiatorType and a global object global:
+To mark resource timing given a fetch timing info timingInfo, a DOMString requestedURL, a DOMString initiatorType a global object global, and a string cacheMode, perform the following steps:
 </p>
 <ol>
 	<li>
@@ -1782,9 +1836,9 @@ To mark resource timing given a fetch timing info timingInfo, a DOMString reques
 Create a PerformanceResourceTiming object entry in global's realm.
 </li>
 	<li>
-`資源~計時~entryを設定しておく$( %~entry, %起動元~種別, %要請された~URL, %計時情報 )
+`資源~計時~entryを設定しておく$( %~entry, %起動元~種別, %要請された~URL, %計時情報, %~cache~mode )
 ◎
-Setup the resource timing entry for entry, given initiatorType, requestedURL and timingInfo.
+Setup the resource timing entry for entry, given initiatorType, requestedURL, timingInfo, and cacheMode.
 </li>
 	<li id="dfn-step-final-queue">
 `処理能~entryを~queueする$( %~entry )
@@ -1805,25 +1859,42 @@ Add entry to global's performance entry buffer.
 <p>
 `資源~計時~entryを設定しておく@
 ときは、所与の
-( 
+⇒＃
 `PerformanceResourceTiming$I %~entry,
 `文字列$ %起動元~種別,
 `文字列$ %要請された~URL,
-`~fetch計時情報$ %計時情報
-)
+`~fetch計時情報$ %計時情報,
+`文字列$ %~cache~mode
+◎終
 に対し，次を遂行する
 ⇒
+◎
+To setup the resource timing entry for PerformanceResourceTiming entry given DOMString initiatorType, DOMString requestedURL, fetch timing info timingInfo, and a DOMString cacheMode, perform the following steps:
+</p>
+<ol>
+	<li>
+~Assert：
+%~cache~mode ~IN { 空~文字列, `local^l }
+◎
+Assert that cacheMode is the empty string or "local".
+</li>
+	<li>
 %~entry の
 ⇒＃
 `起動元~種別$pT ~SET %起動元~種別,
 `要請~URL$pT ~SET %要請された~URL,
-`計時情報$pT ~SET %計時情報
+`計時情報$pT ~SET %計時情報,
+`~cache~mode$pT ~SET %~cache~mode
 ◎
-To setup the resource timing entry for PerformanceResourceTiming entry given DOMStrring initiatorType, DOMString requestedURL, and fetch timing info timingInfo, perform the following steps:
-• Set entry's initiator type to initiatorType.
-• Set entry's requested URL to requestedURL.
-• Set entry's timing info to timingInfo.
-</p>
+Set entry's initiator type to initiatorType.
+◎
+Set entry's requested URL to requestedURL.
+◎
+Set entry's timing info to timingInfo.
+◎
+Set entry's cache mode to cacheMode.
+</li>
+</ol>
 </div>
 
 <div class="algo">
