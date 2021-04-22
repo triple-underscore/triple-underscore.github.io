@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-04-19
-trans_update:2021-04-21
+spec_date:2021-04-21
+trans_update:2021-04-22
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -1252,6 +1252,8 @@ bU.~obj:~FILEAPI#blob-url-entry-object
 
 報告を~queueする:~REPORTING#queue-report
 
+資源~計時を~markする:~RESOURCE-TIMING#dfn-mark-resource-timing
+
 通達に~algoを追加する:~DOM4#abortsignal-add
 中止-を通達する:~DOM4#abortsignal-signal-abort
 通達に追従させる:~DOM4#abortsignal-follow
@@ -1934,6 +1936,7 @@ internet::::インターネット
 	%形式変換-~algo:transformAlgorithm
 	%再帰的か:recursive
 	%局所的に中止されたか:locallyAborted
+	%~cache状態:cacheState
 
 	●指示語
 
@@ -2042,6 +2045,8 @@ FETCHMETADATA=副       ~/webappsec-fetch-metadata-ja.html
     Jochen Eisinger; Emily Stark. Referrer Policy. URL: https://w3c.github.io/webappsec-referrer-policy/ 
 [REPORTING]
     Douglas Creager; et al. Reporting API. URL: https://w3c.github.io/reporting/ 
+[RESOURCE-TIMING-2]
+    Yoav Weiss; et al. Resource Timing Level 2. URL: https://w3c.github.io/resource-timing/ 
 [RFC7405]
     P. Kyzivat. Case-Sensitive String Support in ABNF. December 2014. Proposed Standard. URL: https://datatracker.ietf.org/doc/html/rfc7405 
 [RFC7578]
@@ -2117,7 +2122,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/645394795b4c4ea4d126e6ecebf478453dc1b7c2/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/5fac9e8091886bce60add290478abb5a0fe83e2c/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -6150,10 +6155,11 @@ The source and length concepts of a network’s response’s body are always nul
 A response has an associated cache state (the empty string or "local"). Unlesss stated otherwise, it is the empty string.
 </dd>
 	<dd class="note">注記：
-これは もっぱら、~sw用途に意図される
-`SW$r
+これは、
+`SW$r ／ `RESOURCE-TIMING$r
+用途に意図される。
 ◎
-This is intended solely for usage by service workers. [SW]
+This is intended for usage by Service Workers and Resource Timing. [SW] [RESOURCE-TIMING]
 </dd>
 
 	<dt>`~CSP~list@rs（空~list）</dt>
@@ -9239,7 +9245,7 @@ The algorithm below defines fetching. In broad strokes, it takes a request and o
 `応答の~doneを処理する@V
 ⇒
 ~NULL（省略時）／
-引数をとらない~algo
+`応答$を受容する~algo
 </li>
 	<li>
 `並列~queueを利用するか@V
@@ -9263,7 +9269,7 @@ If given, processRequestBody must be an algorithm accepting an integer represent
 If given, processRequestEndOfBody must be an algorithm accepting no arguments.＼
 If given, processResponse must be an algorithm accepting a response.＼
 If given, processResponseEndOfBody must be an algorithm accepting a response and null, failure, or a byte sequence.＼
-If given, processResponseDone must be an algorithm accepting no arguments.
+If given, processResponseDone must be an algorithm accepting a response. 
 </div>
 
 <ul>
@@ -10382,9 +10388,11 @@ Set fetchParams’s request’s done flag.
 %~fetch~params の`応答の~doneを処理する$fP ~NEQ ~NULL
 ］
 ⇒
-`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP, %~fetch~params の`応答の~doneを処理する$fP )
+次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
+⇒
+%~fetch~params の`応答の~doneを処理する$fP( %応答 )
 ◎
-If fetchParams’s process response done is not null, then queue a fetch task given fetchParams’s process response done and fetchParams’s task destination.
+If fetchParams’s process response done is not null, then queue a fetch task to run fetchParams’s process response done given response, with fetchParams’s task destination.
 </li>
 </ol>
 </div>
@@ -10425,6 +10433,11 @@ Let originalURL be response’s URL list[0].
 Let timingInfo be response’s timing info.
 </li>
 	<li>
+%~cache状態 ~LET %応答 の`~cache状態$rs
+◎
+Let cacheState be response’s cache state.
+</li>
+	<li>
 ~IF［
 %計時情報 ~EQ ~NULL
 ］
@@ -10434,17 +10447,29 @@ Let timingInfo be response’s timing info.
 If timingInfo is null, then return.
 </li>
 	<li>
+<p>
 ~IF［
 %応答 の`計時許容に合格した~flag$rs ~EQ ~F
-］
-⇒
+］：
+◎
+If response’s timing allow passed flag is not set, then:
+</p>
+		<ol>
+			<li>
 %計時情報 ~SET 新たな`~fetch計時情報$
 ⇒＃
 `開始~時刻$fT ~SET %計時情報 の`開始~時刻$fT,
 `~redirect後からの開始~時刻$fT ~SET %計時情報 の`開始~時刻$fT
 ◎
-If response’s timing allow passed flag is not set, then set timingInfo to a new fetch timing info whose start time and post-redirect start time are timingInfo’s start time.
+Set timingInfo to a new fetch timing info whose start time and post-redirect start time are timingInfo’s start time.
 </li>
+			<li>
+%~cache状態 ~SET 空~文字列
+◎
+Set cacheState to the empty string.
+</li>
+		</ol>
+	</li>
 	<li>
 %計時情報 の`終了~時刻$fT ~SET `細かさを抑えた共有される現在の時刻$( %大域~obj に`関連な設定群~obj$の`非同一-生成元~能力は隔離-済みか？$enV )
 ◎
@@ -10456,15 +10481,15 @@ Set timingInfo’s end time to the coarsened shared current time given global’
 Set response’s timing info to timingInfo.
 </li>
 	<li>
-次に挙げるもの用に
-<a href="https://github.com/w3c/resource-timing/pull/261">資源~計時を~markする</a>
+`資源~計時を~markする$( 次に挙げる引数 )
 ⇒＃
 %計時情報,
 %元の~URL,
 %起動元~種別,
-%大域~obj
+%大域~obj,
+%~cache状態
 ◎
-Mark resource timing for timingInfo, originalURL, initiatorType, and global.
+Mark resource timing for timingInfo, originalURL, initiatorType, global, and cacheState.
 </li>
 </ol>
 </div>
@@ -17836,11 +17861,13 @@ Terminate the ongoing fetch with the aborted flag set.
 ↓</p>
 		<ul>
 			<li class="algo">
-`応答の~doneを処理する$i ~SET 次を走らす下位手続き
+`応答の~doneを処理する$i ~SET 所与の
+( `応答$ %応答 )
+に対し，次を走らす手続き
 ⇒
 `計時を完結して報告する$( %応答, %大域~obj, `fetch^l )
 ◎
-Let handleFetchDone be to finalize and report timing with response, globalObject, and "fetch".
+Let handleFetchDone given response response be to finalize and report timing with response, globalObject, and "fetch".
 ◎
 Fetch request with processResponseDone set to handleFetchDone,＼
 </li>
