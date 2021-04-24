@@ -2309,7 +2309,6 @@ parameters:::parameter 群:パラメタ群
 完了:completion::~
 取消n:cancellation::取り消し::キャンセル
 取消:cancel::取り消し::キャンセル
-取消d:canceld::取消::キャンセル
 取消す:cancelする::取り消す::キャンセルする
 取消され:cancelされ::取り消され::キャンセルされ
 取消せ:cancelでき::取り消せ::キャンセルでき
