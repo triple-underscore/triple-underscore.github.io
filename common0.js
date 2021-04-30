@@ -2901,8 +2901,10 @@ literal::::リテラル
 生成規則:production::~
 
 構文:syntax::~
-構文上は:syntacticには::~
+構文-:syntactic::~
 構文上の:syntacticな::~
+構文上は:syntacticには::~
+	構文上は:syntactically
 
 構文解析-:parse::~::パース
 構文解析器:parser::~::パーサ

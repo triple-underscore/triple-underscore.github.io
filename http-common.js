@@ -1108,7 +1108,6 @@ escaping::::エスケープ処理
 実数:real number:~
 単数:singleton:::~
 桁:digit::~
-	構文~上:syntactical
 番号:number:~
 圧縮-:compress::~
 圧縮:compression::~
