@@ -60,6 +60,7 @@ case 'r':
 	break;
 case 't':
 	text = `&lt;${key}&gt;`;
+	key = key.replace(/\s?\[.+/, '');
 	break;
 case 'f':
 	text = `${key}()`;
@@ -132,8 +133,8 @@ return text;
 ●●options
 
 spec_title:CSS Color Module Level 5
-spec_date:2021-04-20
-trans_update:2021-04-26
+spec_date:2021-04-29
+trans_update:2021-04-30
 source_checked:200301
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-color-5/
@@ -378,15 +379,16 @@ grayscale::::グレイスケール
 	~~分布:spaced
 実数:number:~
 改変子:modifier::~
-調整子:adjuster:~
+調整子:adjuster::~
 一様:uniform:~
 量:amount:~
 変形-:transform::~
 丸める:roundする:~
-平面:plain:~
-線形:linear:~
-拡縮-:scale:~
-拡縮率:scale:~
+平面:plain::~
+線形:linear::~
+拡縮-:scale::~
+拡縮率:scale::~
+乗算子:multiplier::~
 中間:intermediate:~
 端点:endpoint:~
 math:
@@ -394,6 +396,7 @@ math:
 	およそ:approximately
 半分:half:~
 ズラす:shiftする:ずらす
+総和:sum:~
 
 	〜内に~~収まる:no 〜 clipping
 	最も高い:highest
@@ -413,6 +416,7 @@ math:
 	0 化する:zeroes out
 	抑えて:cut
 	2 個目の 〜 占めるような:at 〜 along the progression
+	50% ずつ:50-50
 
 	●仕様
 支援-:assist:~
@@ -427,6 +431,8 @@ math:
 参照r:refer:参照
 高度:advanced:~
 稀:rare:~
+際どい:corner:~
+義務的:mandatory:~
 
 	単に:merely
 	他にも:besides
@@ -476,6 +482,7 @@ picker:
 未解決:unresolved::~
 theme::::テーマ
 知覚:perception:~
+保存-:save:~
 
 	一定:constant
 	~~情報は失われない:lossless
@@ -737,11 +744,19 @@ This function takes two &lt;color&gt; specifications and returns the result of m
 
 <pre class="prod">
 `color-mix@f
-    = color-mix( in `color-space$t, [ `color$t &amp;&amp; `percentage$t? ]#{2})
+    = color-mix( in `color-space$t, [ `color$t &amp;&amp; `percentage [0,100]$t? ]#{2})
 </pre>
 
 <p>
-百分率は、次に従って正規化される：
+百分率は、 0% 以上 100% 以下の範囲に入ることが要求され，
+特定的に負な百分率は許容されない†。
+【†したがって、関数は無効な値を表現することになろう。構文から， 100% を超える値も同様であろう。】
+◎
+Percentages are required to be in the range 0% to 100%. Negative percentages are specifically disallowed.＼
+</p>
+
+<p>
+百分率は、以下に従って正規化される：
 ◎
 The percentages are normalized as follows:
 </p>
@@ -794,13 +809,17 @@ Otherwise, if p2 is omitted, it becomes 100% - p1
 Otherwise, if p1 is omitted, it becomes 100% - p2
 </li>
 	<li>
+%総和 ~LET %p1 ~PLUS %p2
+◎
+↓</li>
+	<li>
 ~IF［
-%p1 ~PLUS %p2 ~EQ 0%
+%総和 ~EQ 0%
 ］
 ⇒
-何か行う（未策定）
+関数は妥当でない
 ◎
-If the percentages sum to zero do something, tbd
+If the percentages sum to zero, the function is invalid.
 </li>
 	<li>
 <p>
@@ -808,7 +827,7 @@ If the percentages sum to zero do something, tbd
 </p>
 		<ol>
 			<li>
-%拡縮率 ~LET 100% ~DIV ( %p1 ~PLUS %p2 )
+%拡縮率 ~LET 100% ~DIV %総和
 </li>
 			<li>
 %p1 ~SET %p1 ~MUL %拡縮率
@@ -816,22 +835,71 @@ If the percentages sum to zero do something, tbd
 			<li>
 %p2 ~SET %p2 ~MUL %拡縮率
 </li>
+			<li>
+~IF［
+%総和 ~LT 100%
+］
+⇒
+%総和 を “~alpha乗算子” として保存する
+【以下で利用される】
+</li>
 		</ol>
 ◎
-Otherwise, if both are provided but do not add up to 100%, they are scaled accordingly so that they add up to 100%.
+Otherwise, if both are provided and add up to greater than 100%, they are scaled accordingly so that they add up to 100%.
+◎
+Otherwise, if both are provided and add up to less than 100%, the sum is saved as an alpha multiplier. They are then scaled accordingly so that they add up to 100%.
 ◎
 This means that p1 becomes p1 / (p1 + p2) and p2 becomes p2 / (p1 + p2).
 </li>
 </ol>
 
-<p class="issue">
-［
-%p1 ~PLUS %p2 ~LT 100% 
-］の場合を他と異なるように取扱うべきか？
-（例： “透明” と混合するなど。）
+<div class="example">
+
+<p>
+したがって，次の各~構文-形は、互いに等価になる：
 ◎
-Should we handle p1 + p2 &lt; 100% differently? E.g. a mix with `transparent`?
+These syntactic forms are thus all equivalent:
 </p>
+
+<pre class="lang-css">
+color-mix(in lch, purple 50%, plum 50%)
+color-mix(in lch, purple 50%, plum)
+color-mix(in lch, purple, plum 50%)
+color-mix(in lch, purple, plum)
+color-mix(in lch, plum, purple)
+color-mix(in lch, purple 80%, plum 80%)
+</pre>
+
+<p>
+これらはどれも，~LCH内で［
+`purple^vc, `plum^vc
+］を 50% ずつ混合した結果を生産する
+⇒
+`lch(51.51% 52.21 325.8)^v
+（ `rgb(68.51% 36.01% 68.29%)^vc ）
+◎
+All produce a 50-50 mix of purple and plum, in lch: lch(51.51% 52.21 325.8) which is rgb(68.51% 36.01% 68.29%).
+</p>
+
+<p>
+しかしながら，次の形は、その~alphaは 1 未満になるので，`同じでない^em：
+◎
+However, this form is not the same, as the alpha is less than one:
+</p>
+
+<pre class="lang-css">
+color-mix(in lch, purple 30%, plum 30%)
+</pre>
+
+<p>
+これが生産する結果は
+⇒
+`lch(51.51% 52.21 325.8 / 0.6)^v
+（ `rgb(68.51% 36.01% 68.29% / 0.6)^vc ）
+◎
+This produces lch(51.51% 52.21 325.8 / 0.6) which is rgb(68.51% 36.01% 68.29% / 0.6).
+</p>
+</div>
 
 <p>
 両~百分率とも正規化したなら、結果は，次の~algoにより生産される：
@@ -852,6 +920,12 @@ Both colors are converted to the specified &lt;color-space&gt;. If the specified
 。
 ◎
 Colors are then interpolated in the specified color space.
+</li>
+	<li>
+百分率を正規化するときに “~alpha乗算子” が生産された場合、
+補間した結果の~alpha成分を~alpha乗算子で乗算する。
+◎
+If an alpha multiplier was produced during percentage normalization, the alpha component of the interpolated result is multiplied by the alpha multiplier.
 </li>
 </ol>
 
@@ -885,7 +959,7 @@ color-mix(in lch, peru 40%, palegoldenrod)
 </pre>
 
 <p>
-混合するときは、 `lch$f 色~空間にて行われる。
+混合するときは、~LCH色~空間~内で行われる。
 中立な L 軸~~方向から見た俯瞰図は：
 ◎
 The mixing is done in lch() color space. Here is a top-down view, looking along the neutral L axis:
@@ -1762,6 +1836,7 @@ r, g, and b are all &lt;percentage&gt;s that correspond to the origin color’s 
 ⇒
 `起点~色$の~alpha透明度に対応する
 `percentage$t を与える。
+【 “~alpha透明度（ `alpha transparency^en ）” は、その字義に反して，実際には不透明度（ `opacity^en ）を表す（以下同様）。】
 ◎
 alpha is a &lt;percentage&gt; that corresponds to the origin color’s alpha transparency
 </li>
@@ -2207,6 +2282,116 @@ This specification introduces a new feature to help stylesheet authors write sty
 ◎
 9.1. Since the FPWD of 10 June 2020
 </dt>
+	<dd>
+`color-mix$f における百分率の正規化に関する例を追加した。
+◎
+Added examples of percentage normalization in color-mix()
+</dd>
+	<dd>
+`color-mix$f における負な百分率は明示的に除外した。
+◎
+Explicitly excluded negative percentages in color-mix()
+</dd>
+	<dd>
+`color-mix$f における百分率の総和が 100% 未満になるときは、
+1【！100%】 未満の~alpha透明度を生産するようにした。
+◎
+Percentages in color-mix() summing to less than 100% produce an alpha transparency less than 100%
+</dd>
+	<dd>
+`color-space$t ~tokenにて定義される用語には、
+`colorspace^en ではなく，
+`color space^en を一貫して利用するようにした。
+◎
+Consistently used the term color space rather than colorspace, defined &lt;color-space&gt; token
+</dd>
+	<dd>
+`color-contrast$f の文法を正した。
+◎
+Corrected color-contrast grammar
+</dd>
+	<dd>
+`color-contrast$f に省略可能な~target~contrast比を追加した。
+◎
+Added an optional target contrast ratio to color-contrast()
+</dd>
+	<dd>
+調整子の文法を正した。
+◎
+Corrected adjuster grammar
+</dd>
+	<dd>
+百分率の総和が 0 になる際どい事例を取扱う必要があることをを注記した。
+◎
+Noted that the corner case of percentages summing to zero needs to be handled
+</dd>
+	<dd>
+`color-mix$f における演算の順序を明確化した。
+◎
+Clarified order of operations in color-mix()
+</dd>
+	<dd>
+各~例を現在の文法に合致するよう更新した。
+◎
+Updated examples to match current grammar
+</dd>
+	<dd>
+百分率がどう正規化されるかを定義した。
+◎
+Defined how percentages are normalized
+</dd>
+	<dd>
+`color-mix$f における［
+0% ／ 100%
+］の意味を明確化した。
+◎
+Clarify meaning of 0% and 100% in color-mix()
+</dd>
+	<dd>
+調整子の定義を `color-mix$f から `color-adjust$f へ移動した。
+◎
+Definition of adjusters moved from color-mix() to color-adjust()
+</dd>
+	<dd>
+`color-mix$f に与える引数には任意の順序を許容した。
+◎
+Allow arguments to color-mix() to be in any order
+</dd>
+	<dd>
+`color-mix$f 用の色~空間は義務的とした。
+◎
+Mandatory color space for color-mix()
+</dd>
+	<dd>
+`color-mix$f における百分率は、色より前に来ることを許容した。
+◎
+Allowed the percentage in color-mix() to come before the color
+</dd>
+	<dd>
+`color-mix$f 用の明示的な~algoを追加した。
+◎
+Added explicit algorithm for color-mix()
+</dd>
+	<dd>
+`color-mix$f から調整子を除去して，文法を単純~化した。
+◎
+Removed adjusters from color-mix() and simplified the grammar
+</dd>
+	<dd>
+混合するために利用される色~空間を指定するための `in^v ~keywordを追加した。
+◎
+Added the "in" keyword to specify the color space used for mixing
+</dd>
+	<dd>
+`color-contrast$f ~listには 2 個以上の~itemが要求されるようにした。
+◎
+Required color-contrast() list to have at least two items
+</dd>
+	<dd>
+相対-色~構文の説明を改善した。
+◎
+Improved explanation of the relative color syntax
+</dd>
 	<dd>
 ~level 4 による，色の直列化の定義へ~linkした。
 ◎
