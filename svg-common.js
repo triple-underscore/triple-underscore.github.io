@@ -283,8 +283,6 @@ I.SVGViewElement:~SVGlinking#InterfaceSVGViewElement
 
 I.Animation:~WANIMapi#the-animation-interface
 	~TR/web-animations-1/#the-animation-interface
-I.Animatable:~WANIMapi#animatable
-	~SVGanim#Animatable
 I.ShadowAnimation:~SVGstruct#InterfaceShadowAnimation
 I.DOMMatrix:~GEOMETRY#dommatrix
 	~TR/geometry-1/#dom-dommatrix
@@ -304,6 +302,7 @@ I.DOMTokenList:~DOM4#interface-domtokenlist
 I.Document:~DOM4#document
 I.DocumentAndElementEventHandlers:~WAPI#documentandelementeventhandlers
 I.Element:~DOM4#element
+I.CSSPseudoElement:~CSSPSEUDO#csspseudoelement
 I.GlobalEventHandlers:~WAPI#globaleventhandlers
 I.HTMLHyperlinkElementUtils:~HTMLlinks#htmlhyperlinkelementutils
 I.HTMLOrSVGElement:~HTMLdom#htmlorsvgelement
