@@ -146,8 +146,8 @@ return text;
 
 ●●options
 
-spec_date:2021-05-03
-trans_update:2021-05-04
+spec_date:2021-05-05
+trans_update:2021-05-05
 source_checked:210112
 page_state_key:HTML
 spec_status:LS
@@ -713,7 +713,7 @@ doc.~load計時情報:#load-timing-info
 ~load~event終了~時刻:#load-event-end-time
 ~unload~event開始~時刻:#unload-event-start-time
 ~unload~event終了~時刻:#unload-event-end-time
-文書の現在の準備度を設定する:#set-the-current-document-readiness
+文書の現在の準備度を更新する:#update-the-current-document-readiness
 
 	●INFRA
 ~HTML名前空間:~INFRA#html-namespace
@@ -899,6 +899,7 @@ x.停止-:~HTMLparsing#stop-parsing
 施策~容器:~ORIGIN#policy-container
 
 ~navigate:~NAVI#navigate
+文書を作成して初期化する:~NAVI#initialise-the-document-object
 
 	●scripting
 ~custom化された組込みの要素:~HEcustom#customized-built-in-element
@@ -2276,8 +2277,7 @@ partial interface mixin `DocumentOrShadowRoot@I {
 			<section id="resource-metadata-management">
 <h4 title="Resource metadata management">3.1.3. 資源~metadataの管理</h4>
 
-  <dl class="domintro">
-
+<dl class="domintro">
 	<dt>%document . `referrer$m</dt>
 	<dd>
 利用者がこの文書へ~navigateした~~元の`文書$の`~URL$docを返す。
@@ -2304,7 +2304,6 @@ The referrer attribute must return the document's referrer.
 <hr>
 
 <dl class="domintro">
-
 	<dt>%document . `cookie$m [ = %value ]</dt>
 	<dd>
 `文書$に適用されている一連の~HTTP~cookieを返す。
@@ -2457,7 +2456,6 @@ The cookie attribute's getter and setter synchronously access shared state. Sinc
 <hr>
 
 <dl class="domintro">
-
 	<dt>%document . `lastModified$m</dt>
 	<dd>
 ~serverから報告された文書の最終改変~日時を 利用者の地域標準時に換算した結果を，
@@ -2538,10 +2536,11 @@ The Document's source file's last modification date and time must be derived fro
 </ul>
 </div>
 
-<hr>
+			</section>
+			<section id="reporting-document-loading-status">
+<h4 title="Reporting document loading status">3.1.4 文書~読込ng状態sの報告-法</h4>
 
 <dl class="domintro">
-
 	<dt>%document . `readyState$m</dt>
 	<dd>
 `文書$を読込んでいる間は `loading^l を返す。
@@ -2570,31 +2569,21 @@ The DOMContentLoaded event fires after the transition to "interactive" but befor
 <p>
 各 `文書$は、
 `現在の準備度@doc
-を持つ。
-`文書$の作成-時には、［
-文書が［
-`~HTML構文解析器$ ／ `~XML構文解析器$ ／ XSLT 処理器
-］のいずれかに結付けられているならば 文字列 `loading^l ／
-~ELSE_ `complete^l
-］に設定するモノトスル。
-~pageを読込んでいる間、種々の~algoがこの値に影響する。
-値が設定されるときは、~UAは，次を行うモノトスル
-⇒
-`文書の現在の準備度を設定する$( `文書$, 所与の値 )
+を持つ
+— それは、文字列であり，初期~時は `complete^l とする。
 ◎
-Each document has a current document readiness. When a Document object is created, it must have its current document readiness set to the string "loading" if the document is associated with an HTML parser, an XML parser, or an XSLT processor, and to the string "complete" otherwise. Various algorithms during page loading affect this value. When the value is set, the user agent must set the current document readiness for the Document with the given value.
+Each Document has a current document readiness, a string, initially "complete".
 </p>
 
-<p>
-まだ［
-`停止-$xされても, `中止-$xされても
-］いない［
-`~HTML構文解析器$ ／ `~XML構文解析器$
-］に結付けられている`文書$には、
-`作動中の構文解析器@
-があるとされる。
+<p class="note">注記：
+`文書を作成して初期化する$ ~algoを介して作成された`文書$に対しては、これは，即時に
+— ~scriptが当の文書の `readyState$m を観測できるようになる前に —
+`loading^l に設定し直されることになる。
+この既定は、他の事例
+— `初期~about_blank な文書$や`属する閲覧文脈$が無い`文書$など —
+にも適用される。
 ◎
-A Document is said to have an active parser if it is associated with an HTML parser or an XML parser that has not yet been stopped or aborted.
+For Document objects created via the create and initialize a Document object algorithm, this will be immediately reset to "loading" before any script can observe the value of document.readyState. This default applies to other cases such as initial about:blank Documents or Documents without a browsing context.
 </p>
 
 <div class="algo">
@@ -2603,12 +2592,89 @@ A Document is said to have an active parser if it is associated with an HTML par
 ⇒
 ~RET コレの`現在の準備度$doc
 ◎
-The readyState IDL attribute must, on getting, return the current document readiness.
+The readyState getter steps are to return this's current document readiness.
 </div>
 
-			</section>
-			<section id="reporting-document-loading-status">
-<h4 title="Reporting document loading status">3.1.4 文書~読込ng状態sの報告-法</h4>
+<div class="algo">
+<p>
+`文書の現在の準備度を更新する@
+ときは、所与の
+( `文書$ %文書, %準備度~値 )
+に対し：
+◎
+To update the current document readiness for Document document to readinessValue:
+</p>
+<ol>
+	<li>
+~IF［
+%文書 の`現在の準備度$doc ~EQ %準備度~値
+］
+⇒
+~RET
+◎
+If document's current document readiness equals readinessValue, then return.
+</li>
+	<li>
+<p>
+~IF［
+%文書 には`~HTML構文解析器$が結付けられている
+］：
+◎
+If document is associated with an HTML parser, then:
+</p>
+		<ol>
+			<li>
+%今 ~LET `現在の高分解能~時刻$( %文書 に`関連な大域~obj$ )
+◎
+Let now be the current high resolution time given document's relevant global object.
+</li>
+			<li>
+~IF［
+%準備度~値 ~EQ `complete^l
+］~AND［
+%文書 の`~load計時情報$docの`~DOM完了-時刻$ ~EQ 0
+］
+⇒
+%文書 の`~load計時情報$docの`~DOM完了-時刻$ ~SET %今
+◎
+If readinessValue is "complete", and document's load timing info's DOM complete time is 0, then set document's load timing info's DOM complete time to now.
+</li>
+			<li>
+~ELIF［
+%準備度~値 ~EQ `interactive^l,
+］~AND［
+%文書 の`~load計時情報$docの`~DOM対話的~時刻$ ~EQ 0
+］
+⇒
+%文書 の`~load計時情報$docの`~DOM対話的~時刻$ ~SET %今
+◎
+Otherwise, if readinessValue is "interactive", and document's load timing info's DOM interactive time is 0, then set document's load timing info's DOM interactive time to now.
+</li>
+		</ol>
+	</li>
+	<li>
+`~eventを発火する$( %文書, `readystatechange$et )
+◎
+Fire an event named readystatechange at document.
+</li>
+</ol>
+</div>
+
+<hr>
+
+<p>
+`文書$は、まだ［
+`停止-$xされても, `中止-$xされても
+］いない［
+`~HTML構文解析器$ ／ `~XML構文解析器$
+］が結付けられている間は，
+`作動中の構文解析器@
+があるとされる。
+◎
+A Document is said to have an active parser if it is associated with an HTML parser or an XML parser that has not yet been stopped or aborted.
+</p>
+
+<hr>
 
 <div class="p">
 <p>
@@ -2716,62 +2782,6 @@ DOMHighResTimeStamp values
 </dd>
 </dl>
 
-<div class="algo">
-<p>
-`文書の現在の準備度を設定する@
-ときは、所与の
-( `文書$ %文書, %準備度~値 )
-に対し：
-◎
-To set the current document readiness for Document document given readinessValue:
-</p>
-<ol>
-	<li>
-<p>
-~IF［
-%文書 には`~HTML構文解析器$が結付けられている
-］：
-◎
-If document is associated with an HTML parser, then:
-</p>
-		<ol>
-			<li>
-%今 ~LET `現在の高分解能~時刻$( %文書 に`関連な大域~obj$ )
-◎
-Let now be the current high resolution time given document's relevant global object.
-</li>
-			<li>
-~IF［
-%準備度~値 ~EQ `complete^l
-］~AND［
-%文書 の`~load計時情報$docの`~DOM完了-時刻$ ~EQ 0
-］
-⇒
-%文書 の`~load計時情報$docの`~DOM完了-時刻$ ~SET %今
-◎
-If readinessValue is "complete", and document's load timing info's DOM complete time is 0, then set document's load timing info's DOM complete time to now.
-</li>
-			<li>
-~ELIF［
-%準備度~値 ~EQ `interactive^l,
-］~AND［
-%文書 の`~load計時情報$docの`~DOM対話的~時刻$ ~EQ 0
-］
-⇒
-%文書 の`~load計時情報$docの`~DOM対話的~時刻$ ~SET %今
-◎
-Otherwise, if readinessValue is "interactive", and document's load timing info's DOM interactive time is 0, then set document's load timing info's DOM interactive time to now.
-</li>
-		</ol>
-	</li>
-	<li>
-`~eventを発火する$( %文書, `readystatechange$et )
-◎
-Fire an event named readystatechange at document.
-</li>
-</ol>
-</div>
-
 			</section>
 			<section id="dom-tree-accessors">
 <h4 title="DOM tree accessors">3.1.4. ~DOM~tree~accessor</h4>
@@ -2802,7 +2812,6 @@ The html element of a document is its document element, if it's an html element,
 <hr>
 
 <dl class="domintro">
-
 	<dt>%document . `head$m</dt>
 	<dd>
 `~head要素$を返す。
@@ -2859,7 +2868,6 @@ The head attribute, on getting, must return the head element of the document (a 
 <hr>
 
 <dl class="domintro">
-
 	<dt>%document . `title$m [ = %value ]</dt>
 	<dd>
 文書の~titleを返す
@@ -3221,7 +3229,6 @@ In this example, the setter successfully inserts a body element (though this is 
 <hr>
 
 <dl class="domintro">
-
 	<dt>%document . `images$m</dt>
 	<dd>
 `文書$内の `img$e 要素たち
@@ -3327,7 +3334,6 @@ The scripts attribute must return an HTMLCollection rooted at the Document node,
 <hr>
 
 <dl class="domintro">
-
 	<dt>%collection = %document . `getElementsByName$m(%name)</dt>
 	<dd>
 `文書$内の要素のうち，［
@@ -3365,7 +3371,6 @@ When the method is invoked on a Document object again with the same argument, th
 <hr>
 
 <dl class="domintro">
-
 	<dt>%document . `currentScript$m</dt>
 	<dd>
 現在~実行している［
@@ -7592,7 +7597,6 @@ For example, a library called "DoQuery" could use attribute names like data-doqu
 <hr>
 
 <dl class="domintro">
-
 	<dt>%element . `dataset$m</dt>
 	<dd>
 要素が有している一連の `data-*$a 属性~用の簡便な~accessorを `DOMStringMap$I ~objとして返す。
