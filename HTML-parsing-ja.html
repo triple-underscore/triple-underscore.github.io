@@ -203,8 +203,8 @@ return text;
 
 ●●options
 
-spec_date:2021-05-05
-trans_update:2021-05-05
+spec_date:2021-05-06
+trans_update:2021-05-07
 source_checked:210301
 page_state_key:HTML
 spec_status:LS
@@ -733,7 +733,7 @@ M.GET:~HTTPsem#GET
 
 作動中の整形~要素~list:#list-of-active-formatting-elements
 作動中の整形~要素~listに~pushする:#push-onto-the-list-of-active-formatting-elements
-作動中の整形~要素たちを再構築する:#reconstruct-the-active-formatting-elements
+作動中の整形~要素たちを構築し直す:#reconstruct-the-active-formatting-elements
 ~marker:#concept-parser-marker
 作動中の整形~要素~listを最後の~markerまで~clearする:#clear-the-list-of-active-formatting-elements-up-to-the-last-marker
 
@@ -834,6 +834,9 @@ V.戻先~状態:#return-state
 符号化法を変更する:#change-the-encoding
 符号化法を~sniffする~algo:#encoding-sniffing-algorithm
 ~byte~streamを予走査して符号化法を決定する:#prescan-a-byte-stream-to-determine-its-encoding
+V.終了~条件:#prescan-end-condition
+~XML符号化法を取得する:#concept-get-xml-encoding-when-sniffing
+
 	#documentEncoding
 	#utf-8
 	#iso-8859-2
@@ -990,6 +993,7 @@ sub.大小無視:~INFRA#ascii-case-insensitive
 ~ASCII小文字~化する:~INFRA#ascii-lowercase
 ~byte小文字~化する:~INFRA#byte-lowercase
 改行文字を正規化する:~INFRA#normalize-newlines
+同型に復号する:~INFRA#isomorphic-decode
 
 ~HTML名前空間:~INFRA#html-namespace
 ~MathML名前空間:~INFRA#mathml-namespace
@@ -1119,7 +1123,6 @@ checkpoint:
 observer:
 遅い:slowな:~
 	長時間:long time
-不成功:unsuccessful::~
 検索-:look up::~
 回す:spinする:~
 	skip over
@@ -1192,11 +1195,13 @@ LTsign:less-than sign::小なり記号
 PLAINTEXT:
 RAWTEXT:
 RCDATA:
+little-endian:
+big-endian:
+
 一掃-:flush::~
 戻先:return:戻り先
 	後で戻る:return
 	戻-:back
-
 
 perror:parse error::構文解析 error:構文解析エラー:パースエラー
 	構文解析し直-:re-parse
@@ -1227,36 +1232,24 @@ publicID:public identifier::public 識別子
 systemID:system identifier::system 識別子
 public-keyword:public keyword:::public キーワード
 system-keyword:system keyword:system キーワード
-再構築-:reconstruct::~
 配送器:dispatcher::~
-	〜に出くわした／出くわす:seen
-	親を違える:foster parent
 走査:scan::~
 予走査:prescan::~
 	予走査-:pre-scan
-
+同型:isomorphic::~
 承認-:acknowledge::~
 自己閉じ:self-closing::~
-	尽きる:runs out of
-	〜に流し込まれる:make their way into
-
 閉じる:closeする::~
 閉じら:closeさ::~
 閉じな:closeしな::~
 開かれ:openされ::~
 	再び開かれ:reopening
-	符号化法:character encoding
-	〜数として解釈した結果:numeric version
-	-:in increasing numeric order
-	ε:undefined
 void:
 	~void要素:void element
-	局所~名:localName
 条項:clause:~
 分岐:clause:~
-	と記される分岐:clause
 普通の:ordinary::~
-整形式の:well-formed::~
+整形式:well-formed::~
 
 	builder
 段階:stage::~::ステージ
@@ -1266,9 +1259,35 @@ void:
 確か:certain::~
 無関連:irrelevant::関連しない
 似非:bogus::~
+
+
+	と記される分岐:clause
 	調整-済み:adjusted
 	遡って:back して
 	弾き出される:dropped on the floor
+	尽きる:runs out of
+	〜に流し込まれる:make their way into
+	構築し直す:reconstruct
+	〜に出くわした／出くわす:seen
+	親を違える:foster parent
+	符号化法:character encoding
+	〜数として解釈した結果:numeric version
+	-:in increasing numeric order
+	ε:undefined
+	探し出す:looking for
+	位置:encodingPosition
+	~XML宣言~終端:xmlDeclarationEnd
+	最初に生じた:first occurrence
+	~INCBY 1:advance 〜 at the next
+	直後:past
+	から:inclusive
+	直前まで:exlusive
+
+	%局所~名:localName
+	%引用符:quoteMark
+	%符号化法~終端~位置:encodingEndPosition
+	%符号化法かも:potentialEncoding
+
 
 	●環境／保安
 locale::::ロケール
@@ -1298,6 +1317,7 @@ toolchain::::ツール鎖
 重み:weight:~
 類似性:resemblance:~
 真似る:resembleする:~
+真似て:resembleして:~
 共通部分:intersection:~
 捏造:fake:~
 参考:informational:~
@@ -3138,30 +3158,28 @@ If the transport layer specifies a character encoding, and it is supported, retu
 	<li>
 <p>
 任意選択で、次を走らす
-— ~UAは，~byteを`まったく走査しない^em方が効率的であると裁定してもヨイ —
-その場合、この段は まるごと飛ばされる：
+— ~UAは，~byte列を`まったく走査しない^em方が効率的であると裁定してもヨイ（その場合、この段は まるごと飛ばす）：
 ◎
 Optionally＼
 </p>
-
 		<ol>
 			<li>
-`~byte~streamを予走査して符号化法を決定する$
-— その %終了~条件 は、~UAが［
-それ以上~byteを走査しても効率的にならない
+%符号化法 ~LET `~byte~streamを予走査して符号化法を決定する$
+— その `終了~条件$V は、~UAが［
+それ以上~byte列を走査しても効率的にならない
 ］と裁定した所までとする。
-~UAには、最初の 1024~byteのみ予走査することが奨励される。
+~UAには、最初から 1024 個までの~byteに限り予走査することが奨励される。
 ◎
-prescan the byte stream to determine its encoding. The end condition is that the user agent decides that scanning further bytes would not be efficient. User agents are encouraged to only prescan the first 1024 bytes. User agents may decide that scanning any bytes is not efficient, in which case these substeps are entirely skipped.
+prescan the byte stream to determine its encoding, with the end condition being when the user agent decides that scanning further bytes would not be efficient. User agents are encouraged to only prescan the first 1024 bytes. User agents may decide that scanning any bytes is not efficient, in which case these substeps are entirely skipped.
 </li>
 			<li>
 ~IF［
-前~段にて成功裡に符号化法が得られた
+%符号化法 ~NEQ `失敗^i
 ］
-⇒＃
-~RET ( その符号化法, `暫定的^i )
+⇒
+~RET ( %符号化法, `暫定的^i )
 ◎
-The aforementioned algorithm either aborts unsuccessfully or returns a character encoding. If it returns a character encoding, then return the same encoding, with confidence tentative.
+The aforementioned algorithm returns either a character encoding or failure. If it returns a character encoding, then return the same encoding, with confidence tentative.
 </li>
 		</ol>
 	</li>
@@ -3281,16 +3299,17 @@ In other environments, the default encoding is typically dependent on the user's
 </p>
 
 <table><thead><tr><th>言語~tag `BCP47$r
-<th>~locale言語
+<th>
+~locale言語
 ◎
 Locale language
-</th><th id="_suggested-encodings">
+<th>
 示唆される既定の符号化法 `ENCODING$r
 ◎
 Suggested default encoding 
-</th></thead>
+</thead><tbody>
 
-<tbody><tr><td>ar
+<tr><td>ar
 <td>Arabic
 <td>`windows-1256$enc
 
@@ -3466,18 +3485,25 @@ The document's character encoding must immediately be set to the value returned 
 </p>
 <ul>
 	<li>
-符号化法を返すか, 不成功として中止する。
+符号化法を返すか，どこかで中止される。
+中止された場合、次を適用した結果を返すとする
+⇒
+`~XML符号化法を取得する$( この~algoが中止されるまで走査した~byte列 )
 </li>
 	<li>
-入力~byte~stream内のどこかを指す， %位置 と記される~pointerを利用する
-— 初期~時には最初の~byteを指しているとする。
-また， %位置↗ という表記は、 %位置 が指している~byteを表すとする。
+入力~byte~stream内のどこかを指す，
+%位置 と記される~pointerを利用する
+— 初期~時は最初の~byteを指すとする。
+また， %位置↗ という表記は、
+%位置 が指している~byteを表すとする。
 </li>
 	<li>
-ある定義-済みな %終了~条件 が与えられる。
+ある定義-済みな
+`終了~条件@V
+が与えられる。
 ~UAは、［
 この手続きの間のある地点にて（この手続きが呼出す`属性を取得する$も含めて），
-%終了~条件 に達した場合、この~algoを不成功として中止する
+%終了~条件 に達した場合、この~algoを中止する
 — ~byte列が尽きた場合も %終了~条件 に達したものと見なす。
 すなわち， %終了~条件 は、手続き内の %位置↗ が現れるすべての箇所で検査され，達した時点で中止する。
 </li>
@@ -3492,18 +3518,69 @@ The document's character encoding must immediately be set to the value returned 
 </li>
 </ul>
 ◎
-When an algorithm requires a user agent to prescan a byte stream to determine its encoding, given some defined end condition, then it must run the following steps. These steps either abort unsuccessfully or return a character encoding. If at any point during these steps (including during instances of the get an attribute algorithm invoked by this one) the user agent either runs out of bytes (meaning the position pointer created in the first step below goes beyond the end of the byte stream obtained so far) or reaches its end condition, then abort the prescan a byte stream to determine its encoding algorithm unsuccessfully.
-◎
-Let position be a pointer to a byte in the input byte stream, initially pointing at the first byte.
+When an algorithm requires a user agent to prescan a byte stream to determine its encoding, given some defined end condition, then it must run the following steps. If at any point during these steps (including during instances of the get an attribute algorithm invoked by this one) the user agent either runs out of bytes (meaning the position pointer created in the first step below goes beyond the end of the byte stream obtained so far) or reaches its end condition, then abort the prescan a byte stream to determine its encoding algorithm and return the result get an XML encoding applied to the same bytes that the prescan a byte stream to determine its encoding algorithm was applied to. Otherwise, these steps will return a character encoding.
+• Let fallback encoding be null.（以下で利用されない意図不明な変数）
+• Let position be a pointer to a byte in the input byte stream, initially pointing at the first byte.
 </div>
-
 <ol>
 	<li>
+<p>
+（この段は、~UTF-16~XML宣言を予走査する）：
+◎
+Prescan for UTF-16 XML declarations: If position points to:
+</p>
+		<ol>
+			<li>
+%~XML宣言~開始 ~LET 入力~byte~streamの先頭から 6 個までの~byteが成す~byte列
+</li>
+			<li>
+~IF［
+%~XML宣言~開始 ~EQ ［
+`3C^X, `0^X, `3F^X, `0^X, `78^X, `0^X
+］（~UTF-16 ~little-endian `&lt;?x^bl ）
+］
+⇒
+~RET `UTF-16LE$enc
+◎
+A sequence of bytes starting with: 0x3C, 0x0, 0x3F, 0x0, 0x78, 0x0 (case-sensitive UTF-16 little-endian '&lt;?x')
+◎
+Return UTF-16LE.
+</li>
+			<li>
+~IF［
+%~XML宣言~開始 ~EQ ［
+`0^X, `3C^X, `0^X, `3F^X, `0^X, `78^X
+］（~UTF-16 ~big-endian `&lt;?x^bl ）
+］
+⇒
+~RET `UTF-16BE$enc
+◎
+A sequence of bytes starting with: 0x0, 0x3C, 0x0, 0x3F, 0x0, 0x78 (case-sensitive UTF-16 big-endian '&lt;?x')
+</li>
+		</ol>
+
+<p class="note">注記：
+歴史的~理由から、次は検査されない
+⇒
+<span lang="en-x-a0">
+the prefix is two bytes longer than in
+<a href="~TR/REC-xml/#sec-guessing">Appendix F</a> of `XML^cite
+</span>【？】,
+および符号化法の名前。
+◎
+For historical reasons, the prefix is two bytes longer than in Appendix F of XML and the encoding name is not checked.
+</p>
+
+	</li>
+	<li>
+`~loop先頭^i：
+<p>
 ~WHILE［
 %位置↗ ~NEQ `3C^X ( `&lt;^bl )
 ］
 ⇒
 %位置 ~INCBY 1
+</p>
 ◎
 ↓</li>
 	<li>
@@ -3530,11 +3607,7 @@ Let position be a pointer to a byte in the input byte stream, initially pointing
 表内の `小文字^i は `61^X 〜 `7A^X を表す。
 表内の空欄は無条件を表す（当の~byteが存在しない場合も含む）。
 </caption>
-<thead><tr><th>1 個目
-<th>2 個目
-<th>3 個目
-<th>4 個目
-<th>5 個目
+<thead><tr><th>1 個目<th>2 個目<th>3 個目<th>4 個目<th>5 個目
 <th>~label
 </thead><tbody>
 
@@ -3630,7 +3703,7 @@ Let attribute list be an empty list of strings.
 Let got pragma be false.
 </li>
 					<li>
-%~pragmaが必要か ~LET ε
+%~pragmaは必要か ~LET ε
 ◎
 Let need pragma be null.
 </li>
@@ -3683,29 +3756,23 @@ Add the attribute's name to attribute list.
 ◎
 Run the appropriate step from the following list, if one applies:
 </p>
-
-								<dl class="switch">
-									<dt>
-`http-equiv^l 
-◎
-If the attribute's name is "http-equiv"
-</dt>
-									<dd>
+								<ul class="switch">
+									<li>
+`http-equiv^l
+⇒
 ~IF［
 %属性~値 ~EQ `content-type^l
 ］
 ⇒
 %~pragmaは得られたか ~SET ~T
 ◎
-If the attribute's value is "content-type", then set got pragma to true.
-</dd>
-
-									<dt>
-`content^l 
-◎
-If the attribute's name is "content"
-</dt>
-									<dd>
+If the attribute's name is "http-equiv"
+• If the attribute's value is "content-type", then set got pragma to true.
+</li>
+									<li>
+<p>
+`content^l ：
+</p>
 										<ol>
 											<li>
 ~IF［
@@ -3728,31 +3795,29 @@ If the attribute's name is "content"
 %~charset ~LET %符号化法
 </li>
 											<li>
-%~pragmaが必要か ~SET ~T
+%~pragmaは必要か ~SET ~T
 </li>
 										</ol>
 ◎
-Apply the algorithm for extracting a character encoding from a meta element, giving the attribute's value as the string to parse. If a character encoding is returned, and if charset is still set to null, let charset be the encoding returned, and set need pragma to true.
-</dd>
-
-									<dt>
+If the attribute's name is "content"
+• Apply the algorithm for extracting a character encoding from a meta element, giving the attribute's value as the string to parse. If a character encoding is returned, and if charset is still set to null, let charset be the encoding returned, and set need pragma to true.
+</li>
+									<li>
 `charset^l
+⇒＃
+%~charset ~LET `~labelから符号化法を取得する$( %属性~値 )；
+%~pragmaは必要か ~SET ~F
 ◎
 If the attribute's name is "charset"
-</dt>
-									<dd>
-										<ol>
-											<li>
-%~charset ~LET `~labelから符号化法を取得する$( %属性~値 )
+• Let charset be the result of getting an encoding from the attribute's value, and set need pragma to false.
 </li>
-											<li>
-%~pragmaが必要か ~SET ~F
-</li>
-										</ol>
+									<li>
+その他
+⇒
+何もしない
 ◎
-Let charset be the result of getting an encoding from the attribute's value, and set need pragma to false.
-</dd>
-								</dl>
+↑↑</li>
+								</ul>
 							</li>
 							<li>
 （ ~CONTINUE ）
@@ -3763,7 +3828,7 @@ Return to the step labeled attributes.
 					</li>
 					<li>
 ~IF［
-%~pragmaが必要か ~EQ ε
+%~pragmaは必要か ~EQ ε
 ］
 ⇒
 ~GOTO `次n~byte^i
@@ -3772,7 +3837,7 @@ Processing: If need pragma is null, then jump to the step below labeled next byt
 </li>
 					<li>
 ~IF［
-%~pragmaが必要か ~EQ ~T
+%~pragmaは必要か ~EQ ~T
 ］~AND［
 %~pragmaは得られたか ~EQ ~F
 ］
@@ -3801,7 +3866,7 @@ If charset is UTF-16BE/LE, then set charset to UTF-8.
 ◎
 If charset is x-user-defined, then set charset to windows-1252.
 ◎
-Abort the prescan a byte stream to determine its encoding algorithm, returning the encoding given by charset.
+Return charset.
 </li>
 				</ol>
 			</dd>
@@ -3859,7 +3924,7 @@ Advance the position pointer so that it points at the first 0x3E byte (&gt;) tha
 `次n~byte^i
 ⇒＃
 %位置 ~INCBY 1；
-~GOTO この手続きの最初の段
+~GOTO `~loop先頭^i
 ◎
 Any other byte
 • Do nothing with that byte.
@@ -4145,6 +4210,167 @@ Advance position to the next byte and return to the previous step.
 </ol>
 </div>
 
+<div class="algo">
+<p>
+`~XML符号化法を取得する@
+ときは、所与の
+( %入力~byte列 )
+に対し，以下に従う（この手続きは、`~byte~streamを予走査して符号化法を決定する$ ~algoが中止されたとき，適用される）：
+◎
+When the prescan a byte stream to determine its encoding algorithm is aborted without returning an encoding, get an XML encoding means doing this.
+</p>
+
+<p class="note">
+~XML宣言を真似ている構文を探し出すことは、
+`text/html$mt においても，既存の内容との互換性を得るために必要とされる。
+◎
+Looking for syntax resembling an XML declaration, even in text/html, is necessary for compatibility with existing content.
+</p>
+<ol>
+	<li>
+~IF［［
+%入力~byte列 の先頭から 5 個までの~byteが成す~byte列
+］ ~NEQ ［
+`3C^X, `3F^X, `78^X, `6D^X, `6C^X (`&lt;?xml^bl)
+］］
+⇒
+~RET `失敗^i
+◎
+↓Let encodingPosition be a pointer to the start of the stream.
+◎
+If encodingPosition does not point to the start of a byte sequence 0x3C, 0x3F, 0x78, 0x6D, 0x6C (`&lt;?xml`), then return failure.
+</li>
+	<li>
+~IF［
+%入力~byte列 内に `3E^X (`&gt;^bl) ~byte（~XML宣言~終端）は無い
+］
+⇒
+~RET `失敗^i
+◎
+Let xmlDeclarationEnd be a pointer to the next byte in the input byte stream which is 0x3E (&gt;). If there is no such byte, then return failure.
+</li>
+	<li>
+~IF［
+%入力~byte列 内に~byte列［
+`65^X, `6E^X, `63^X, `6F^X, `64^X, `69^X, `6E^X, `67^X (`encoding^bl)
+］は無い
+］
+⇒
+~RET `失敗^i
+◎
+Set encodingPosition to the position of the first occurrence of the subsequence of bytes 0x65, 0x6E, 0x63, 0x6F, 0x64, 0x69, 0x6E, 0x67 (`encoding`) at or after the current encodingPosition. If there is no such sequence, then return failure.
+</li>
+	<li>
+<p>
+%位置 ~LET %入力~byte列 内で最初に生じた［
+前~段に挙げた~byte列
+］の直後を指す位置
+— 以下に現れる “%位置↗” は、
+`~byte~streamを予走査して符号化法を決定する$ ~algoのそれと同様とする。
+◎
+↑
+◎
+Advance encodingPosition past the 0x67 (g) byte.
+</p>
+
+<p class="trans-note">【
+先頭の `&lt;?xml^bl と `encoding^bl の間に何が挟まれるかは問われていない（誤りかも？）。
+】</p>
+
+	</li>
+	<li>
+~WHILE［
+%位置↗ ~LTE `20^X （すなわち，~ASCII［
+~space／制御~文字
+］）
+］
+⇒
+%位置 ~INCBY 1
+◎
+While the byte at encodingPosition is less than or equal to 0x20 (i.e., it is either an ASCII space or control character), advance encodingPosition to the next byte.
+</li>
+	<li>
+~IF［
+%位置↗ ~NEQ `3D^X (`=^bl)
+］
+⇒
+~RET `失敗^i
+◎
+If the byte at encodingPosition is not 0x3D (=), then return failure.
+</li>
+	<li>
+~WHILE［
+%位置↗ ~LTE `20^X
+］
+⇒
+%位置 ~INCBY 1
+◎
+While the byte at encodingPosition is less than or equal to 0x20 (i.e., it is either an ASCII space or control character), advance encodingPosition to the next byte.
+</li>
+	<li>
+%引用符 ~LET %位置↗
+◎
+Let quoteMark be the byte at encodingPosition.
+</li>
+	<li>
+~IF［
+%引用符 ~NIN { `22^X (`"^bl), `27^X (`'^bl) }
+］
+⇒
+~RET `失敗^i
+◎
+If quoteMark is not either 0x22 (") or 0x27 ('), then return failure.
+</li>
+	<li>
+%位置 ~INCBY 1
+◎
+Advance encodingPosition to the next byte.
+</li>
+	<li>
+~IF［
+%入力~byte列 内の %位置 より後に %引用符 は無い
+］
+⇒
+~RET `失敗^i
+◎
+Let encodingEndPosition be the position of the next occurence of quoteMark at or after encodingPosition. If quoteMark does not occur again, then return failure.
+</li>
+	<li>
+%符号化法かも ~LET %入力~byte列 内の［
+%位置 から［
+%位置 より後に生じる最初の %引用符 の直前
+］まで
+］を成す~byte列
+◎
+Let potentialEncoding be the sequence of the bytes between encodingPosition (inclusive) and encodingEndPosition (exlusive).
+</li>
+	<li>
+~IF［
+%符号化法かも を成す ある~byte ~LTE `20^X
+］
+⇒
+~RET `失敗^i
+◎
+If potentialEncoding contains one or more bytes whose byte value is 0x20 or below, then return failure.
+</li>
+	<li>
+%符号化法 ~LET `~labelから符号化法を取得する$( `同型に復号する$( %符号化法かも ) )
+◎
+Let encoding be the result of getting an encoding given potentialEncoding isomorphic decoded.
+</li>
+	<li>
+~RET %符号化法 に応じて
+⇒＃
+`UTF-16BE/LE$enc であるならば `UTF-8$enc ／
+~ELSE_ %符号化法
+◎
+If the encoding is UTF-16BE/LE, then change it to UTF-8.
+◎
+Return encoding.
+</li>
+</ol>
+</div>
+
 <p>
 相互運用能を得るため、~UAは，上に述べたものと異なる結果を返すような予走査~algoを利用するべきでない。
 （もし，そうする場合は、少なくとも我々に知らしめたし
@@ -4159,11 +4385,34 @@ For the sake of interoperability, user agents should not use a pre-scan algorith
 <h5 title="Character encodings">13.2.3.3. 符号化法</h5>
 
 <p>
-~UAは、 `Encoding^cite に定義される各種~符号化法
-— 例えば，<a href="#_suggested-encodings">前~節の表に挙げたもの</a> —
-は~supportし，他の符号化法は~supportしないモノトスル。
+~UAは、
+`Encoding^cite に定義される各種~符号化法
+— 次に挙げるものを含む —
+は~supportし，他の符号化法は~supportしないモノトスル
+⇒＃
+`UTF-8$enc,
+`ISO-8859-2$enc,
+`ISO-8859-7$enc,
+`ISO-8859-8$enc,
+`windows-874$enc,
+`windows-1250$enc,
+`windows-1251$enc,
+`windows-1252$enc,
+`windows-1254$enc,
+`windows-1255$enc,
+`windows-1256$enc,
+`windows-1257$enc,
+`windows-1258$enc,
+`gb18030$enc,
+`Big5$enc,
+`ISO-2022-JP$enc,
+`Shift_JIS$enc,
+`EUC-KR$enc,
+`UTF-16BE$enc,
+`UTF-16LE$enc,【！`UTF-16BE/LE$enc,】
+`x-user-defined$enc
 ◎
-User agents must support the encodings defined in Encoding, including, but not limited to, UTF-8, ISO-8859-2, ISO-8859-7, ISO-8859-8, windows-874, windows-1250, windows-1251, windows-1252, windows-1254, windows-1255, windows-1256, windows-1257, windows-1258, gb18030, Big5, ISO-2022-JP, Shift_JIS, EUC-KR, UTF-16BE/LE, and x-user-defined. User agents must not support other encodings.
+User agents must support the encodings defined in Encoding, including, but not limited to, UTF-8, ISO-8859-2, ISO-8859-7, ISO-8859-8, windows-874, windows-1250, windows-1251, windows-1252, windows-1254, windows-1255, windows-1256, windows-1257, windows-1258, gb18030, Big5, ISO-2022-JP, Shift_JIS, EUC-KR, UTF-16BE, UTF-16LE, UTF-16BE/LE, and x-user-defined. User agents must not support other encodings.
 </p>
 
 <div class="note">
@@ -5384,7 +5633,7 @@ Add element to the list of active formatting elements.
 <div class="algo">
 <p>
 以下の手続きにて
-`作動中の整形~要素たちを再構築する@
+`作動中の整形~要素たちを構築し直す@
 ときは、次を走らすモノトスル：
 ◎
 When the steps below require the UA to reconstruct the active formatting elements, the UA must perform the following steps:
@@ -5441,7 +5690,7 @@ Advance: Let entry be the element one later than entry in the list of active for
 ］
 ⇒
 ~RET
-— 再構築するものは何もない
+— 構築し直すものは何もない
 ◎
 ↑</li>
 	<li>
@@ -10570,13 +10819,11 @@ then find the row with that number in the first column, and set the character re
 数
 ◎
 Number
-</th><th colspan="2">
+<th colspan="2">
 ~cp
 ◎
 Code point
-</th></thead>
-
-<tbody>
+</thead><tbody>
 
 <tr><td>`80^X<td>`20AC^X<td>EURO SIGN (€)
 
@@ -11411,11 +11658,17 @@ When the steps below require the user agent to adjust MathML attributes for a to
 When the steps below require the user agent to adjust SVG attributes for a token, then, for each attribute on the token whose attribute name is one of the ones in the first column of the following table, change the attribute's name to the name given in the corresponding cell in the second column. (This fixes the case of SVG attributes that are not all lowercase.)
 </p>
 
-<table><thead><tr><th>~token上の属性~名◎ Attribute name on token
-</th><th>要素~上の属性~名◎ Attribute name on element
-</th></thead>
+<table><thead><tr><th>
+~token上の属性~名
+◎
+Attribute name on token
+<th>
+要素~上の属性~名
+◎
+Attribute name on element
+</thead><tbody>
 
-<tbody><tr><td>`attributename^c
+<tr><td>`attributename^c
 <td>`attributeName^c
 
 <tr><td>`attributetype^c
@@ -11623,14 +11876,22 @@ When the steps below require the user agent to adjust foreign attributes for a t
 (This fixes the use of namespaced attributes, in particular lang attributes in the XML namespace.)
 </p>
 
-<table><thead><tr><th>属性~名◎ Attribute name
-</th><th>接頭辞◎ Prefix
-</th><th>局所~名◎ Local name
-</th><th>名前空間◎ Namespace
+<table><thead><tr><th>
+属性~名
+◎
+Attribute name
+<th>接頭辞
+◎
+Prefix
+<th>局所~名
+◎
+Local name
+<th>名前空間
+◎
+Namespace
+</thead><tbody>
 
-</th></thead>
-
-<tbody><tr><td>`xlink:actuate^l
+<tr><td>`xlink:actuate^l
 <td>`xlink^l
 <td>`actuate^l
 <td>`~XLink名前空間$
@@ -11676,7 +11937,9 @@ When the steps below require the user agent to adjust foreign attributes for a t
 <td>`~XML名前空間$
 
 <tr><td>`xmlns^l
-<td>（なし）◎ (none)
+<td>（なし）
+◎
+(none)
 <td>`xmlns^l
 <td>`~XMLNS名前空間$
 
@@ -11765,12 +12028,17 @@ Otherwise, create a new Text node whose data is data and whose node document is 
 Here are some sample inputs to the parser and the corresponding number of Text nodes that they result in, assuming a user agent that executes scripts.
 </p>
 
-<table><thead><tr><th>入力◎ Input
-</th><th>`Text$I ~nodeの個数◎ Number of Text nodes
+<table><thead><tr><th>
+入力
+◎
+Input
+<th>
+`Text$I ~nodeの個数
+◎
+Number of Text nodes
+</thead><tbody id="_text-node-sample1">
 
-</th></thead>
-
-<tbody id="_text-node-sample1"><tr><td>
+<tr><td>
 <pre class="lang-html">
 A&lt;script&gt;
 var %script = document.getElementsByTagName('script')[0];
@@ -13646,7 +13914,7 @@ A character token that is one of U+0009 CHARACTER TABULATION, U+000A LINE FEED (
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -13666,7 +13934,7 @@ Any other character token
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -14527,7 +14795,7 @@ Pop elements from the stack of open elements until a button element has been pop
 				</ol>
 			</li>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -14934,7 +15202,7 @@ In the non-conforming stream &lt;a href="a"&gt;a&lt;table&gt;&lt;a href="b"&gt;b
 </p>
 			</li>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -14959,7 +15227,7 @@ A start tag whose tag name is one of: "b", "big", "code", "em", "font", "i", "s"
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -14984,7 +15252,7 @@ A start tag whose tag name is "nobr"
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -14997,7 +15265,7 @@ Reconstruct the active formatting elements, if any.
 
 <ol ><li>`~perror$
 </li><li>`養子縁組~algo$を走らす( 現token )
-</li><li>`作動中の整形~要素たちを再構築する$
+</li><li>`作動中の整形~要素たちを構築し直す$
 </li></ol>
 
 ◎
@@ -15036,7 +15304,7 @@ A start tag whose tag name is one of: "applet", "marquee", "object"
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -15165,7 +15433,7 @@ A start tag whose tag name is one of: "area", "br", "embed", "img", "keygen", "w
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -15204,7 +15472,7 @@ A start tag whose tag name is "input"
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -15404,7 +15672,7 @@ A start tag whose tag name is "xmp"
 If the stack of open elements has a p element in button scope, then close a p element.
 </li>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -15484,7 +15752,7 @@ A start tag whose tag name is "select"
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -15526,7 +15794,7 @@ A start tag whose tag name is one of: "optgroup", "option"
 If the current node is an option element, then pop the current node off the stack of open elements.
 </li>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -15621,7 +15889,7 @@ A start tag whose tag name is "math"
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -15669,7 +15937,7 @@ A start tag whose tag name is "svg"
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -15729,7 +15997,7 @@ Any other start tag
 	<dd>
 		<ol>
 			<li>
-`作動中の整形~要素たちを再構築する$
+`作動中の整形~要素たちを構築し直す$
 ◎
 Reconstruct the active formatting elements, if any.
 </li>
@@ -19585,12 +19853,17 @@ If the adjusted current node is an element in the MathML namespace, adjust MathM
 If the adjusted current node is an element in the SVG namespace, and the token's tag name is one of the ones in the first column of the following table, change the tag name to the name given in the corresponding cell in the second column. (This fixes the case of SVG elements that are not all lowercase.)
 </p>
 
-<table><thead><tr><th>~tag名◎ Tag name
-</th><th>要素~名◎ Element name
+<table><thead><tr><th>
+~tag名
+◎
+Tag name
+<th>
+要素~名
+◎
+Element name
+</thead><tbody>
 
-</th></thead>
-
-<tbody><tr><td>`altglyph^c
+<tr><td>`altglyph^c
 <td>`altGlyph^e
 
 <tr><td>`altglyphdef^c
@@ -20253,8 +20526,8 @@ If the XML API being used restricts the allowable characters in the local names 
 </div>
 
 <p class="example">
-例えば`~HTML構文解析器$は，合法な~HTML要素~名でも整形式の~XML要素~名でもない
-要素~名 `foo&lt;bar^c を出力し得るが、それは `fooU00003Cbar^c に変換され，`整形式の^em ~XML要素~名になる（それでも、~HTMLにおいて合法になることはない）。
+例えば`~HTML構文解析器$は，合法な~HTML要素~名でも整形式な~XML要素~名でもない
+要素~名 `foo&lt;bar^c を出力し得るが、それは `fooU00003Cbar^c に変換され，`整形式な^em ~XML要素~名になる（それでも、~HTMLにおいて合法になることはない）。
 ◎
 For example, the element name foo&lt;bar, which can be output by the HTML parser, though it is neither a legal HTML element name nor a well-formed XML element name, would be converted into fooU00003Cbar, which is a well-formed XML element name (though it's still not legal in HTML by any means).
 </p>
@@ -20424,7 +20697,7 @@ Upon receiving the end tag token with the tag name "b", the "adoption agency alg
 </p>
 
 <p>
-次n~tokenは文字 `4^l であり、`作動中の整形~要素たちを再構築する$
+次n~tokenは文字 `4^l であり、`作動中の整形~要素たちを構築し直す$
 — この事例では、 `i$e 要素だけ —
 を誘発する。
 したがって， `Text$I ~node `4^l 用に新たな `i$e 要素が作成される。
@@ -20765,7 +21038,7 @@ Thus it is that the "bbb" character tokens are found. These trigger the "in tabl
 </p>
 
 <p>
-`作動中の整形~要素たちを再構築する$ときには、`親を違える$ように `b$e 要素が作成され，
+`作動中の整形~要素たちを構築し直す$ときには、`親を違える$ように `b$e 要素が作成され，
 `Text$I ~node `bbb^l はそれに付加される：
 ◎
 When the active formatting elements are reconstructed, a b element is created and foster parented, and then the "bbb" Text node is appended to it:
@@ -21060,7 +21333,7 @@ The resulting DOM tree is as follows:
 </li></ul>
 
 <p>
-この~markup内の 2 個目の `p$e 要素は，明示的な `b$e 要素を持たないが、結果の~DOM内では，要素の `X^l の前にて 3 個までの各~種類の整形~要素（この事例では、 `class^a 属性を有する 3 個の `b$e 要素と, 有さない 2 個の `b$e 要素）が再構築されることになる様子に注意。
+この~markup内の 2 個目の `p$e 要素は，明示的な `b$e 要素を持たないが、結果の~DOM内では，要素の `X^l の前にて 3 個までの各~種類の整形~要素（この事例では、 `class^a 属性を有する 3 個の `b$e 要素と, 有さない 2 個の `b$e 要素）が構築し直されることになる様子に注意。
 ◎
 Note how the second p element in the markup has no explicit b elements, but in the resulting DOM, up to three of each kind of formatting element (in this case three b elements with the class attribute, and two unadorned b elements) get reconstructed before the element's "X".
 </p>
