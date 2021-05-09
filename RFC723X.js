@@ -983,7 +983,6 @@ app:application:::アプリケーション
 創出-:mint:~
 実効:effective::~
 参照文献:references:~
-合意:consensus:~
 同意-:agree:~
 回答:answer:~
 失われ:lostし:~

@@ -930,7 +930,6 @@ agent::::エージェント
 濫用:abuse:~
 上限:limit:~
 創出-:mint:~
-合意:consensus:~
 同意-:agree:~
 回答:answer:~
 
