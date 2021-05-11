@@ -113,7 +113,7 @@ return text;
 
 ●●options
 
-spec_date:2021-05-10
+spec_date:2021-05-11
 trans_update:2021-05-12
 source_checked:210301
 page_state_key:HTML
@@ -413,7 +413,6 @@ package::::パッケージ
 	seamless:
 	time:
 	word processor
-	~unload中の~openは無視する:ignore-opens-during-unload
 	現れる:appearする
 	表:table
 	当の外部~software:target software
@@ -700,6 +699,7 @@ doc.回復可能~状態:#concept-document-salvageable
 完全に読込まれた:#completely-loaded
 完全に読込まれた時刻:#completely-loaded-time
 読込ngを完全に終わらす:#completely-finish-loading
+~unload~counter:#unload-counter
 文書を~unloadする:#unload-a-document
 文書を~unload:#unload-a-document
 文書の~unloadを~promptする:#prompt-to-unload-a-document
@@ -881,7 +881,6 @@ enV.~secureな文脈:~WAPI#secure-context
 環境を破棄する手続き:~WAPI#environment-discarding-steps
 新たな~JS~realmを作成する:~WAPI#creating-a-new-javascript-realm
 
-~unload中の~openは無視する~counter:~HTMLdynamic#ignore-opens-during-unload-counter
 登録-済み~handler:~HTMLnavigator#dom-navigator-registerprotocolhandler
 
 
@@ -1469,37 +1468,13 @@ Doing so, however, can be dangerous, as it means that the user is overriding the
 ◎
 ↓</li>
 	<li>
-<p>
 ~IF［
-次のいずれも満たすような，［
-%B を~navigateしようとする在来の %試み
-］がある
-］…：
-</p>
-
-<ul><li>%試み における`~source閲覧文脈$ ~EQ %B
-</li><li>%試み は`文書を~unloadする$~algoを現在~走らせている
-</li></ul>
-
-<p>
-…ならば
-⇒
-~RET
-— %試み やそれが走らせている~algoは、影響されない。
-</p>
-
-◎
-If there is a preexisting attempt to navigate browsingContext, and the source browsing context is the same as browsingContext, and that attempt is currently running the unload a document algorithm, then return without affecting the preexisting attempt to navigate browsingContext.
-</li>
-	<li>
-~IF［
-%文書 に対し，`文書の~unloadを~promptする$~algoが走っている
+%B にて`作動中の文書$の`~unload~counter$ ~GT 0
 ］
 ⇒
 ~RET
-— その~algoは、影響されない。
 ◎
-If the prompt to unload algorithm is being run for the active document of browsingContext, then return without affecting the prompt to unload algorithm.
+If browsingContext's active document's unload counter is greater than 0, then return.
 </li>
 	<li>
 <p>
@@ -5700,6 +5675,16 @@ A Document has a salvageable state, which must initially be true, and a page sho
 Event loops have a termination nesting level counter, which must initially be 0.
 </p>
 
+<p id="ignore-opens-during-unload-counter">
+各 `文書$は、
+`~unload~counter@
+を持つ
+— 初期~時は 0 に設定するモノトスル。
+それは、以下の各種~algoが走っている間，ある種の演算を無視するために利用される。
+◎
+Document objects have an unload counter, which is used to ignore certain operations while the below algorithms run. Initially, the counter must be set to zero.
+</p>
+
 <div class="algo">
 <p>
 `文書の~unloadを~promptする@
@@ -5716,9 +5701,9 @@ To prompt to unload, given a Document object document and optionally a recursive
 Increase the event loop's termination nesting level by 1.
 </li>
 	<li>
-%文書 の`~unload中の~openは無視する~counter$ ~INCBY 1
+%文書 の`~unload~counter$ ~INCBY 1
 ◎
-Increase the document's ignore-opens-during-unload counter by 1.
+Increase the document's unload counter by 1.
 </li>
 	<li>
 %event ~LET `~eventを作成する$( `BeforeUnloadEvent$I )
@@ -5853,9 +5838,9 @@ If the user refused to allow the document to be unloaded, then the user implicit
 		</ol>
 	</li>
 	<li>
-%文書 の`~unload中の~openは無視する~counter$ ~DECBY 1
+%文書 の`~unload~counter$ ~DECBY 1
 ◎
-Decrease the document's ignore-opens-during-unload counter by 1.
+Decrease the document's unload counter by 1.
 </li>
 </ol>
 </div>
@@ -5880,9 +5865,9 @@ To unload a Document document, given an optional recursiveFlag and a document un
 Increase the event loop's termination nesting level by one.
 </li>
 	<li>
-%文書 の`~unload中の~openは無視する~counter$ ~INCBY 1
+%文書 の`~unload~counter$ ~INCBY 1
 ◎
-Increase document's ignore-opens-during-unload counter by one.
+Increase document's unload counter by 1.
 </li>
 	<li>
 <p>
@@ -6032,9 +6017,9 @@ If document's salvageable state is false, then discarddocument.
 		</ol>
 	</li>
 	<li>
-%文書 の`~unload中の~openは無視する~counter$ ~DECBY 1
+%文書 の`~unload~counter$ ~DECBY 1
 ◎
-Decrease document's ignore-opens-during-unload counter by one.
+Decrease document's unload counter by 1.
 </li>
 </ol>
 </div>
@@ -6299,12 +6284,12 @@ Let browsingContext be document's browsing context.
 ~IF［
 %閲覧文脈 を`~navigate$しようとする既存の試みがある
 ］~AND［
-その試みは`文書を~unloadする$~algoを現在~走らせていない
+%文書 の`~unload~counter$ ~EQ 0
 ］
 ⇒
 その`~navi$を取消す
 ◎
-If there is an existing attempt to navigate browsingContext and that attempt is not currently running the unload a document algorithm, then cancel that navigation.
+If there is an existing attempt to navigate browsingContext and document's unload counter is 0, then cancel that navigation.
 </li>
 	<li>
 `文書を中止する$( %文書 )
