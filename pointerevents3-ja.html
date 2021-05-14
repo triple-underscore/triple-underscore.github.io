@@ -1,16 +1,17 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
 <title>Pointer Events Level 3 （日本語訳）</title>
 
-<link rel="stylesheet" href="common.css" type="text/css" />
-<link rel="stylesheet" href="common-w3c.css" type="text/css" />
+<link rel="stylesheet" href="common.css" type="text/css">
+<link rel="stylesheet" href="common-w3c.css" type="text/css">
 
-<script src="common0.js" ></script>
+<script src="common0.js"></script>
 <script src="common1.js" async></script>
 
 <script>
 Util.ready = function(){
 	const source_data = {
 		toc_main: 'MAIN0',
+		collectParts: Util.collectParts,
 		generate: expand
 	}
 
@@ -66,6 +67,9 @@ case 'ex':
 	href = `#example_${key}`;
 	text = `例 ${key}`;
 	break;
+case 'dgm':
+	return `<a id="_dgm-${key}">＊</a>`;
+	break;
 case 'en':
 	return `<span lang="en-x-a0">${key}</span>`;
 	break;
@@ -110,8 +114,8 @@ return text;
 
 ●●options
 spec_title:Pointer Events Level 3
-spec_date:2021-05-03
-trans_update:2021-05-06
+spec_date:2021-05-13
+trans_update:2021-05-14
 	source_checked:210219
 page_state_key:UIEVENTS
 original_url:https://w3c.github.io/pointerevents/
@@ -173,6 +177,12 @@ valdef-touch-action-manipulation:
 	the-gotpointercapture-event:dfn-gotpointercapture-event
 	the-lostpointercapture-event:dfn-lostpointercapture-event
 	the-pointerrawupdate-event:dfn-pointerrawupdate-event
+
+	predicted-events:dfn-predicted-events
+	coalesced-events:dfn-coalesced-events
+	coalesced-and-predicted-events:dfn-coalesced-and-predicted-events
+	populating-and-maintaining-the-coalesced-and-predicted-event-lists:dfn-populating-and-maintaining-the-coalesced-and-predicted-event-lists
+
 
 	pointer-capture:dfn-pointer-capture
 	compatibility-mapping-with-mouse-events:dfn-compatibility-mouse-events
@@ -278,8 +288,6 @@ m.detail:~UIEVENTS#dom-uievent-detail
 
 	m.ownerDocument:~DOM4#dom-node-ownerdocument
 
-m.InputDeviceCapabilities.pointerMovementScrolls:https://wicg.github.io/InputDeviceCapabilities/#dom-inputdevicecapabilities-pointermovementscrolls
-
 m.screenY:~CSSOMVIEW#dom-mouseevent-screeny
 m.screenX:~CSSOMVIEW#dom-mouseevent-screenx
 
@@ -351,6 +359,8 @@ e.span:~HEtextlevel#the-span-element
 ~pointer型:#dom-pointerevent-pointertype
 捕捉~込みの~pointing先:#_pointing-with-capture
 境界~event:#_boundary-event
+直な操作:#dfn-direct-manipulation
+直な~pan-zoom:#_direct-manipulation-for-panning/zooming
 
 ~UA:#dfn-user-agent
 ~mouse~event:#_mouse-event
@@ -360,8 +370,10 @@ e.span:~HEtextlevel#the-span-element
 	#chorded-button-interactions
 
 首~pointer:#dfn-primary-pointer
+合体された~event群:#coalesced-events
 合体d~event~list:#dfn-coalesced-event-list
 合体d~event標的は~dirtyか:#dfn-coalesced-events-targets-dirty
+予測された~event群:#predicted-events
 予測d~event~list:#dfn-predicted-event-list
 予測d~event標的は~dirtyか:#dfn-predicted-events-targets-dirty
 ~pointer~eventを発火する:#dfn-fire-a-pointer-event
@@ -421,7 +433,6 @@ e.span:~HEtextlevel#the-span-element
 	●補完
 互換性~mouse~eventも込みで配送する:#_fire-compatibility-mouse-events
 ~mouse~eventは防止するか:#_prevent-mouse-event-flag
-~touch用の挙動:#_touch-behavior
 
 置換され:~CSSDISP#replaced-element
 行内~要素:~CSSDISP#inline
@@ -483,12 +494,13 @@ hover::::
 machine::::マシン
 trackpad::::トラックパッド
 laptop::::ラップトップ
+desktop::::デスクトップ
 pen::::ペン
 reader:::読取り器::リーダ
 pan::::パン
 zoom::::ズーム
 panning::::パン操作
-pan-zoom:panning or zooming:::パン／ズーム操作
+pan-zoom:panning／zooming:::パン／ズーム操作
 scrolling::::スクロール操作
 zooming::::ズーム操作
 slide::::スライド
@@ -512,6 +524,7 @@ wheel::::ホイール
 twist::::ツィスト
 touch::::タッチ
 touchscreen::::タッチスクリーン
+touchpad::::タッチパッド
 transducer::::
 voice::::ボイス
 感知:sense::~
@@ -551,6 +564,9 @@ tablet::::タブレット
 
 動き:movement:~
 動いて:moveして:~
+動いた:moveした:~
+動かす:moveする:~
+掴んで:grabして:~
 
 制動-:counteract:~
 制動:counteraction:~
@@ -560,6 +576,7 @@ tablet::::タブレット
 遅める:slow downする:~
 勢い:momentum:~
 知覚:perception:~
+知覚-:perceive:~
 clean::::クリーン
 選択-:select:~
 強調-:highlight:~
@@ -567,7 +584,7 @@ clean::::クリーン
 	もっと勢いをつける:provide further momentum
 	置いて:place
 	投げつけ:fling
-	錯覚させるような:providing a physical illusion
+	錯覚させる:providing a physical illusion
 	出た:leave
 	なくなった:leave
 	なった:enter
@@ -610,6 +627,8 @@ trusted:
 	~pointer捕捉:pointer-capture
 合体d:coalesced::合体
 合体-:coalesce::合体
+	合体されない:un-coalesced
+	合体されない:non-coalesced
 予測d:predicted::予測
 予測-:predict::~
 予測:prediction::~
@@ -629,15 +648,19 @@ radian::::ラジアン
 仰角:altitude::~
 方位角:azimuth angle::~
 	方位角:azimuth
-接線方向:tangential::~
 接線:tangent::~
+接線方向:tangential::~
+曲線:curve:~
+線:line:~
+点群:points:~
+点:point:~
+法線:normal::~
 平面:plane::~
 幾何:geometry::形状
 回転:rotation::~
 回転-:rotate::~
 変形:transform::~
 領域:region:~
-法線:normal::~
 時計回り:clockwise::~
 	そこから時計回りに:progressively 〜 going clockwise
 平行:parallel::~
@@ -645,6 +668,9 @@ radian::::ラジアン
 横方向:horizontal::~
 縦方向:vertical::~
 分解能:resolution::~
+滑らか:smooth:~
+	より滑らか:smoother
+軌跡:trajectory:~
 
 	右側:
 	右方:
@@ -654,7 +680,24 @@ radian::::ラジアン
 	正な~X軸~方向:direction of increasing X values
 	真上から見て:looking straight down
 	〜時:o'clock"
+	角張った様子が目立つ:noticeably angular and jagged
+	左下から右上へ:from the bottom left to the top right
+	きめ細かな:granular
+	速く:fast
+	速さ:speed
+	大きな:large
+	近く:closely
+	~~地点を囲う矩形域:bounding box
 
+	●処理
+	複-~thread化:multi-threaded
+	し続ける:continue
+	何もしない:fails silently
+	速く:fast
+	逆:reverse
+	一定時間内に:within a set period of time
+	あらゆる回:every time
+	事前に:ahead
 
 	●仕様
 overhead::::オーバーヘッド
@@ -677,7 +720,6 @@ overhead::::オーバーヘッド
 用語集:glossary:~
 不問な:agnosticな:依らない
 	OPTIONAL
-直接:direct:~
 慣行:convention:~
 支配的:dominant:~
 特質:property:~:::プロパティ
@@ -692,14 +734,14 @@ opt-in:
 減らす:reduceする:~
 翻訳-:translate:~
 周知:known:~
-浮動-:float:~
 出荷-:ship:~
 採用-:adopt:~
 採用:adoption:~
 相補的:complementary:~
 	もう片方:complementary
 相関-:correlate:~
-
+捏造な:fakeな:捏造された
+直接間接:direct or indirect:~
 	あり得る／可能性もある:possible
 	節:section:~
 	視野から外れる:out of scope
@@ -761,6 +803,13 @@ opt-in:
 	情報:info
 	書き直し:reword
 	~~許可された:opt-in
+	事実においては:it does in fact
+	見受けられ:appears to
+	にもかかわらず:despite
+	選んで:choose
+	助けに:help
+	数えられ:count
+	もっと詳しく言えば:more aptly
 
 	●未分類
 iframe:
@@ -768,12 +817,14 @@ iframe:
 始まる:beginする:~
 稼働中の:runしている:~
 移動:movement:~
-給-:supply:~
 競合-:conflict:~
 超過-:exceed:~
 構成-:compose:~
 描く:drawする:~
 描いた:drawした:~
+描かれ:drawされ:~
+描き:drawing:~
+塗る:paintする:~
 消す:clearする:~
 
 computing::::コンピューティング
@@ -791,16 +842,21 @@ Window:
 似せる:resemebleする:~
 頭頂:cap:~
 丸める:roundする:~
+併合-:merge::~
+粒度:granularity:~
+忠実度:fidelity:~
+近似-:approximate:~
+	近似-:approximation
+投機的:speculative::~
+生の:raw:~
+確認-:confirm:~
+過去:past:~
 
-	複-~thread化:multi-threaded
 	横切った:cross
 	出入り:entry/exit
-	終わらせ:end
-	何もしない:fails silently
 	^en:concatenation
 	-:COULD
 	-:turn to get
-	速く:fast
 	表:table
 	挟まれている:intermediate
 	重ねて:overlapping
@@ -814,30 +870,27 @@ Window:
 	:nothing
 	:greater
 	:back
-	し続ける:continue
 	:forward
 	:further
 	:get
 	:likely
 	:look
 	:made
-	NEQ:equal
+	~NEQ:equal
 	:point
 	~~性質:qualities
 	:space
 	~time:time
-	逆:reverse
 	数:number
 	へ向かう:toward
+
 	単に:simply
-	近い:near
+	:nearest
 	°:degree
 	属性:property
 	〜組:sets of／:set of
 	指して:pointing
 	指す:point
-	地点:point
-	~~地点を囲う矩形域~bounding~box
 	直前に指していた:whose bounds the pointer just left
 	直後に指している:whose bounds the pointer is entering
 	touch-action^p:touch-action
@@ -847,7 +900,14 @@ Window:
 	Microsoft Edge
 	Mozilla Firefox
 	tilt2spherical^c:tilt to spherical
-	一定時間内に:within a set period of time
+	量:amount
+	黒っぽい:grey
+	赤い:red
+	丸:circle
+	丸:dot
+	近接図:close-up view
+	`touch-action^p が指定されていなければ 〜 に至る:otherwise lead to 
+	一連の:series of
 
 	●保安
 推定-:infer:~
@@ -886,7 +946,7 @@ random::::ランダム
 旧-:old:~
 新-:new:~
 	-:intrinsic
-	途中:in the middle
+	途中:is taking place
 	次回:next
 	全く:at all
 	以前の:previous
@@ -915,9 +975,10 @@ random::::ランダム
 	:no longer
 	よく:a lot
 	たくさん:lots of
-	別個の:separate discrete
+	別個な:separate discrete
 	残りの:rest
 	最終-:final
+	最終的:final
 	最終的に:final
 	その端:extent
 	~~右端:right-most extent
@@ -1005,6 +1066,69 @@ Mailing list:
 </head>
 
 <body>
+
+<div id="_persisted_parts" hidden>
+<img
+	id="_dgm-martini_glass"
+	src="pointerevents/pointer.png"
+	style="height:280px;"
+	alt="Pointer input combines input from mouse, pen, touch, etc."
+>
+
+<img
+	id="_dgm-tiltX"
+	style="height:360px;"
+	src="pointerevents/tiltX_600px.png"
+	alt="tiltX explanation diagram"
+>
+
+<img
+	id="_dgm-tiltY"
+	style="height:450px;"
+	src="pointerevents/tiltY_600px.png"
+	alt="tiltY explanation diagram"
+>
+
+<div
+	id="_dgm-slider"
+	style="margin: 0.5em;">
+<span style="vertical-align:middle;">音量：</span>
+<div style="vertical-align:middle;
+	display:inline-block;
+	position:relative;
+	border:solid silver 0.2em;
+	width:15em;"
+><div style="position:absolute;
+	left:8em;
+	top:-0.8em;
+	width:1em;
+	height:1.6em;
+	background: black;
+"></div></div>
+</div>
+<!-- 
+<img
+	id="_dgm-slider"
+	style="height:40px;"
+	src="pointerevents/slider.png"
+	alt="Custom Volume Slider"
+-->
+
+<img
+	id="_dgm-coalesced"
+	src="pointerevents/coalesced-points.png"
+	style="height:257px;"
+	alt="合体された／合体されない点群を示している曲線の近接図／Close-up view of a curve, showing coalesced and un-coalesced points"
+>
+
+<img
+	id="_dgm-predicted"
+	src="pointerevents/predicted-points.png"
+	style="height:325px;"
+	alt="合体された点群を利用して描かれた線は、予測された未来の点群を示している／A line drawn using coalesced points, showing predicted future points"
+>
+
+</div>
 
 <header>
 	<hgroup>
@@ -1107,11 +1231,13 @@ The primary goal is to provide a single set of events and interfaces that allow 
 </p>
 
 <p>
-~~第二の目標は、［
-~UAが，~script実行を阻むことなく, 既定の~touch動作（~scrollingなど）を取扱える
-］ように，複-~thread化も可能化することである。
+~~第二の目標は、~UAが，［
+`直な~pan-zoom$（一例として，~touchscreenに対し，手指や~stylusで）用の既定の動作
+］を
+— ~script実行を阻むことなく —
+取扱えるよう，複-~thread化も可能化することである。
 ◎
-An additional key goal is to enable multi-threaded user agents to handle default touch actions, such as scrolling, without blocking on script execution.
+An additional key goal is to enable multi-threaded user agents to handle default direct manipulation actions for panning and zooming (for instance, with a finger or stylus on a touchscreen), without blocking on script execution.
 </p>
 
 <p class="note">注記：
@@ -1141,11 +1267,8 @@ Note
 In the first instance, authors are encouraged to provide equivalent functionality for all forms of input by responding to high-level events such as focus, blur and click. However, when using low-level events (such as Pointer Events), authors are encouraged to ensure that all types of input are supported. In the case of keyboards and keyboard-like interfaces, this might require the addition of explicit keyboard event handling. See WCAG Guideline 2.1 Keyboard Accessible for further details.
 </p>
 
-<figure id="figure_martini_glass"><img
-	style="width:264px; height:280px;"
-	src="pointerevents/pointer.png"
-	alt="Pointer input combines input from mouse, pen, touch, etc."
-><figcaption>
+<figure id="figure_martini_glass">`martini_glass^dgm
+<figcaption>
 ~pointerは、~screen上の特定の座標（または座標の集合）を標的に捉えられる入力~装置の，~hardwareに不問な表現である。
 ◎
 A pointer is a hardware agnostic representation of input devices that can target a specific coordinate (or set of coordinates) on a screen.
@@ -1223,13 +1346,13 @@ This specification does not provide any advice on the expected behavior of user 
 ~INFORMATIVE
 
 <p>
-この仕様に定義される~APIの利用を以下の作者~code例にデモる。
+以下では、この仕様における一部の~APIを作者がどう利用し得るかをデモる基本的な例を与える。
+さらには、より特定的な例も，この文書を成す関連な節に供される。
 ◎
-The following are example author code that demonstrates how the APIs in this specification might be used.
+The following are basic examples that demonstrates how some of the APIs in this specification might be used by authors. Further, more specific examples are provided in the relevant sections of this document.
 </p>
 
 <div class="example">
-
 <p>`1@ex：
 ~pointer~event特能を検出して，~eventを~bindする：
 ◎
@@ -1343,125 +1466,9 @@ pointerType is empty (could not be detected) or UA-specific custom type
 
 <div class="example">
 <p>`3@ex：
-基本的な HTML5 Canvas の~app：
-◎
-Example 3: Basic HTML5 Canvas painting application
-</p>
-
-<pre class="lang-html">
-&lt;style&gt;
-  /* <span class="comment">
-`~touch用の挙動$（~pan-zoomなど）を不能化して、
-`canvas$e 要素~上のすべての~eventを，~appに仕向ける。
-◎
-Disable intrinsic user agent touch behaviors (such as panning or zooming) so that all events on the canvas element are given to the application instead.
-</span> */
-
-  canvas { 
-    `touch-action$p: none; 
-  }
-&lt;/style&gt;
-
-&lt;canvas
-    id="drawSurface"
-    width="500px" height="500px"
-    style="border:1px solid black;"
-&gt;&lt;/canvas&gt;
-
-&lt;script&gt;
-    var %canvas = document.getElementById("drawSurface"),
-    %context = %canvas.getContext("2d");
-
-    if (window.PointerEvent) {
-        %canvas.addEventListener("pointermove", (%e)=&gt; {
-          /* <span class="comment">
-この仕様の~level 3 にて導入された `getCoalescedEvents()$m 用の特能~検出
-◎
-Feature detection for getCoalescedEvents as it was introduced in PointerEvents V3
-</span> */
-          if (%e.getCoalescedEvents)
-            for (let %coalesced_event of %e.getCoalescedEvents())
-              paint(%coalesced_event);
-          else
-            paint(%e);
-        });
-        if(window.navigator.maxTouchPoints&gt;1)
-           /* <span class="comment">
-~UAと~hardwareは複-~touchを~supportする
-◎
-user agent and hardware support multi-touch
-</span> */
-           ...
-    } else {
-        /* <span class="comment">
-`~pointer~event$を~supportしない~UA用の~fallback
-◎
-provide fallback for user agents that do not support Pointer Events
-</span> */
-        %canvas.addEventListener("mousemove", paint);
-    }
-
-    function paint(%event) {
-        if(%event.buttons &gt; 0)
-    	   %context.fillRect(%event.clientX, %event.clientY, 5, 5);
-    }
-
-    /* <span class="comment">
-~keyboardを取扱うための，追加的な~event~listener／関数
-◎
-additional event listeners/functions for keyboard handling
-</span> */
-    ...
-
-&lt;/script&gt;
-</pre>
-</div>
-
-<div class="example">
-
-<p>`4@ex：
-合体d~event, 予測d~eventを利用して何か描く。
-◎
-Example 4: Drawing using coalesced events and predicted events
-</p>
-
-<pre class="lang-js">
-var %predicted_points = [];
-window.addEventListener("pointermove", function(%event) {
-  /* <span class="comment">
-それまでに描いた予測d地点を消す。
-◎
-Clear the previously drawn predicted points.
-</span> */
-  for (let %e of %predicted_points.reverse())
-    clearPoint(%e.pageX, %e.pageY);
-
-  /* <span class="comment">
-最後に受取った~event以降に起きた，実際の動きを描く。
-◎
-Draw the actual movements that happened since the last received event.
-</span> */
-  for (let %e of %event.getCoalescedEvents())
-    drawPoint(%e.pageX, %e.pageY);
-
-  /* <span class="comment">
-待時間の知覚を抑制するため，現在の予測d地点を描く。
-◎
-Draw the current predicted points to reduce the perception of latency.
-</span> */
-  %predicted_points = %event.getPredictedEvents();
-  for (let %e of %predicted_points)
-    drawPoint(%e.pageX, %e.pageY);
-});
-</pre>
-
-</div>
-
-<div class="example">
-<p>`5@ex：
 要素~sizeを`接触~幾何$に合わせる例：
 ◎
-Example 5: Resizing an element to match the contact geometry
+Example 3: Resizing an element to match the contact geometry
 </p>
 
 <pre class="lang-html">
@@ -1482,10 +1489,10 @@ function checkPointerSize(%event) {
 </div>
 
 <div class="example">
-<p>`6@ex：
+<p>`4@ex：
 ~scriptから`非trusted$~pointer~eventを発火する例：
 ◎
-Example 6: Firing untrusted pointer events from script
+Example 4: Firing untrusted pointer events from script
 </p>
 
 <pre class="lang-js">
@@ -1679,11 +1686,9 @@ For hardware and platforms that do not report tilt or angle, the value MUST be 0
 どう影響するのかについては、この仕様には述べられていない。
 】</dd>
 
-	<dd><figure id="figure_tiltX"><img
-	style="width:600px; height:360px;"
-	src="pointerevents/tiltX_600px.png"
-	alt="tiltX explanation diagram"
-><figcaption>
+	<dd>
+<figure id="figure_tiltX">`tiltX^dgm
+<figcaption>
 正な `tiltX$m 。
 ◎
 Positive tiltX.
@@ -1712,11 +1717,8 @@ For hardware and platforms that do not report tilt or angle, the value MUST be 0
 GUI の文脈にて通例的な Y 軸の向き（ ~screenの下方向が正な向き）においては、正な方向。
 】</dd>
 
-	<dd><figure id="figure_tiltY"><img
-	style="width:600px; height:450px;"
-	src="pointerevents/tiltY_600px.png"
-	alt="tiltY explanation diagram"
-><figcaption>
+	<dd><figure id="figure_tiltY">`tiltY^dgm
+<figcaption>
 負な `tiltY$m 。
 ◎
 Negative tiltY.
@@ -1846,86 +1848,38 @@ Indicates if the pointer represents the primary pointer of this pointer type.
 
 	<dt>`getCoalescedEvents()@m</dt>
 	<dd>
-<p>
-`合体d~event~list$を返す。
-その~method手続きは、次を走らすモノトスル：
+`合体された~event群$を返す。
 ◎
-coalesced event list's getter, when invoked, must run these steps:
-</p>
-		<ol>
-			<li>
-~IF［
-`合体d~event標的は~dirtyか$ ~EQ ~T
-］
-⇒
-`合体d~event~list$を成す
-~EACH( %~event )
-に対し
-⇒
-%~event の`標的$ ~SET コレの`標的$
-◎
-If the coalesced events targets dirty is true: for each event in the coalesced event list, set the event's target to this PointerEvent's target.
-</li>
-			<li>
-コレの`合体d~event標的は~dirtyか$ ~SET ~F
-◎
-Set the coalesced events targets dirty to false.
-</li>
-			<li>
-~RET コレの`合体d~event~list$
-◎
-Return the coalesced event list.
-</li>
-		</ol>
-	</dd>
+A method that returns the list of coalesced events.
+</dd>
+	<dd class="trans-note">【
+~method手続きは、
+<a href="#populating-and-maintaining-the-coalesced-and-predicted-event-lists">別の節</a>に与えられる。
+】</dd>
 
 	<dt>`getPredictedEvents()@m</dt>
 	<dd>
-<p>
-`予測d~event~list$を返す。
-その~method手続きは、次を走らすモノトスル：
+`予測された~event群$を返す。
 ◎
-predicted event list's getter, when invoked, must run these steps:
-</p>
-		<ol>
-			<li>
-~IF［
-`予測d~event標的は~dirtyか$ ~EQ ~T
-］
-⇒
-`予測d~event~list$を成す
-~EACH( %~event )
-に対し
-⇒
-%~event の`標的$ ~SET コレの`標的$
-◎
-If the predicted events targets dirty is true: for each event in the predicted event list, set the event's target to this PointerEvent's target.
-</li>
-			<li>
-コレの`予測d~event標的は~dirtyか$ ~SET ~F
-◎
-Set the predicted events targets dirty to false.
-</li>
-			<li>
-~RET コレの`予測d~event~list$
-◎
-Return the predicted event list
-</li>
-		</ol>
-	</dd>
+A method that returns the list of predicted events.
+</dd>
+	<dd class="trans-note">【
+~method手続きは、
+<a href="#populating-and-maintaining-the-coalesced-and-predicted-event-lists">別の節</a>に与えられる。
+】</dd>
 </dl>
 
 <p>
-`PointerEventInit$I 辞書は、 `PointerEvent$I ~interfaceの構築子に，`非trusted$（合成な）`~pointer~event$を構築する仕組みを供する。
+`PointerEventInit$I 辞書は、
+`PointerEvent$I ~interfaceの構築子に，`非trusted$（合成な）`~pointer~event$を構築する仕組みを供する。
 それは `UI-EVENTS$r にて定義される `MouseEventInit$I 辞書を継承する。
 ~eventを構築する手続きは、 `DOM$r にて定義される。
-`6$ex に、`非trusted$ `~pointer~eventを発火する$方法をデモる見本~codeがある。
+`4$ex に、`非trusted$ `~pointer~eventを発火する$方法をデモる見本~codeがある。
 ◎
 The PointerEventInit dictionary is used by the PointerEvent interface's constructor to provide a mechanism by which to construct untrusted (synthetic) pointer events. It inherits from the MouseEventInit dictionary defined in [UI-EVENTS]. The steps for constructing an event are defined in [DOM]. See the examples for sample code demonstrating how to fire an untrusted pointer event.
 </p>
 
 <div class="note">
-
 <p>注記：
 `~pointer~event$は、~transducerに相対的な~X-Z平面の方位を表出するためとして，
 2 つの相補的な属性~組を含む：
@@ -1991,218 +1945,6 @@ When the user agent calculates tiltX / tiltY from azimuthAngle / altitudeAngle i
 </p>
 </div>
 
-<p>
-各 `PointerEvent$I ~obj %O には
-`合体d~event~list@
-が結付けられる
-— それは 0 個以上の `PointerEvent$I ~objからなる~listである。
-%O の~event型が［
-`pointermove$et ／ `pointerrawupdate$et
-］である場合、この~listは，この~eventの中に合体された すべての `PointerEvent^I ~objが成す連列になる
-— 他の場合、この~listは空になる。
-【理論上は，合体された各~eventも空でない合体d~event~listを持ち得ることになるが、それについては触れられていない。】
-◎
-A PointerEvent has an associated coalesced event list (a list of zero or more PointerEvents). If this event is a pointermove or pointerrawupdate event, it is a sequence of all PointerEvent that were coalesced into this event; otherwise it is an empty list.
-</p>
-
-<p>
-`合体d~event~list$を成す各~eventの `timeStamps$m `DOM$r は、先頭から順に増大する。
-◎
-The events in the coalesced event list will have increasing timeStamps ([WHATWG-DOM]), so the first event will have the smallest timeStamp.
-</p>
-
-<p class="note">注記：
-`PointerEvent$I の各~属性は、［
-合体d~event~listを成す すべての~eventを最良に表現する仕方
-］で初期化されることになる。
-例えば，その［
-`movementX$m, `movementY$m
-］ `POINTERLOCK$r は、合体された すべての~eventの同じ属性の総和にもされ得る。
-◎
-Note
-The PointerEvent's attributes will be initalized in a way that best represents all events in the coalesced event list. For example its movementX and movementY ([POINTERLOCK]) COULD be the sum of those of all the coalesced events.
-</p>
-
-<div class="note">
-<p>注記：
-これらの~eventが配送される順序は、実際の~eventの順序に似せるベキである。
-例えば，
-【~pointerの~buttonが押されることにより】
-`pointerdown$et ~eventに加え，合体された `pointermove$et ~eventたちも配送される場合、~UAは最初に，それらの合体された［
-同じ `pointerId$m を伴う~event
-］すべてを伴う 1 個の `pointermove$et ~eventを配送してから、
-`pointerdown$et ~eventを配送するベキである。
-次の例に、実際に起きた~event列と，~UAにより配送される~event列を時系列順に（すなわち各~eventの `timestamp$m は順に増大する）示す：
-◎
-Note
-The order of all these dispatched events should resemble the actual order of the original events' order. For example if a pointerdown event causes the dispatch for the coalesced pointermove events the user agent SHOULD first dispatch one pointermove event with all those coalesced events of a pointerId followed by the pointerdown event. Here is an example of the actual events happening with increasing timestamps and the events dispatched by the user agent:
-</p>
-
-<div>
-<table>
-<caption>
-カッコ内の数字は~pointerの `pointerId$m
-</caption>
-
-<thead>
-<tr><th>実際の~pointerの状態~変化
-<th>配送される~event／合体される~eventの個数
-</thead><tbody>
-
-<tr><td>（ 2 ）座標~変化
-<td>`pointerrawupdate$et（ 2 ）／ 1 個【 0 個？】
-
-<tr><td>（ 1 ）座標~変化
-<td>`pointerrawupdate$et（ 1 ）／ 1 個
-
-<tr><td>（ 2 ）座標~変化
-<td>`pointerrawupdate$et（ 2 ）／ 1 個
-
-<tr><td>（ 2 ）座標~変化
-<td>`pointerrawupdate$et（ 2 ）／ 1 個
-
-<tr><td>（ 1 ）座標~変化
-<td>`pointerrawupdate$et（ 1 ）／ 1 個
-
-<tr><td>（ 2 ）座標~変化
-<td>`pointerrawupdate$et（ 2 ）／ 1 個
-
-<tr><td>（ 1 ）~buttonが押された
-<td>
-`pointermove$et（ 1 ）／ 2 個<br>
-`pointermove$et（ 2 ）／ 4 個<br>
-`pointerdown$et（ 1 ）／ 0 個<br>
-
-<tr><td>（ 2 ）座標~変化
-<td>`pointerrawupdate$et（ 2 ）／ 1 個
-
-<tr><td>（ 2 ）座標~変化
-<td>`pointerrawupdate$et（ 2 ）／ 1 個
-
-<tr><td>（ 1 ）~buttonが離された
-<td>
-`pointermove$et（ 2 ）／ 2 個<br>
-`pointerup$et（ 1 ）／ 0 個<br>
-</tbody>
-</table>
-
-◎
-Actual events｜Dispatched events
-pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
-pointer (pointerId=1) coordinate change｜pointerrawupdate (pointerId=1) w/ one coalesced event
-pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
-pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
-pointer (pointerId=1) coordinate change｜pointerrawupdate (pointerId=1) w/ one coalesced event
-pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
-pointer (pointerId=1) button press｜pointermove (pointerId=1) w/ two coalesced events
-pointermove (pointerId=2) w/ four coalesced events
-pointerdown (pointerId=1) w/ zero coalesced events
-pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
-pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
-pointer (pointerId=1) button release｜pointermove (pointerId=2) w/ two coalesced events
-pointerup (pointerId=1) w/ zero coalesced events
-</div>
-</div>
-
-<p>
-各 `PointerEvent$I ~obj %O には
-`予測d~event~list@
-が結付けられる
-— それは 0 個以上の `PointerEvent$I ~objからなる~listである。
-%O の~event型が `pointermove$et である場合、この~listは，~UAが未来に［
-`合体d~event~list$に後続することになる
-］ものと予測する `PointerEvent^I ~objが成す連列になる
-— 他の場合、この~listは空になる。
-この~listを成す~eventの［
-個数, および それらが現在の時刻印から どれほど離れるか
-］は、［
-~UA, および ~UAが利用する予測~algo
-］により決定される。
-◎
-A PointerEvent has an associated predicted event list (a list of zero or more PointerEvents). If this event is a pointermove event, it is a sequence of PointerEvents that the user agent predicts will follow the events in the coalesced event list in the future; otherwise it is the empty list. The number of events in the list and how far they are from the current timestamp are determined by the user agent and the prediction algorithm it uses.
-</p>
-
-<p>
-`予測d~event~list$を成す各~eventの `timeStamps$m `DOM$r は、先頭から順に増大する, かつ［
-`合体d~event~list$を成す最後の~eventのそれ
-］より大きくなるベキである。
-◎
-The events in the predicted event list will have increasing timeStamps ([WHATWG-DOM]), so the first event will have the smallest timeStamp which should still be greater than the last event in the coalesced event list.
-</p>
-
-<div class="algo">
-<p>
-所与の `PointerEvent$I %~pointer~event の作成-時には、その［
-`合体d~event~list$, `予測d~event~list$
-］を成す
-~EACH( %~event )
-に対し，次の手続きを走らす：
-◎
-When a PointerEvent is created, run the following steps for each event in the coalesced event list and predicted event list:
-</p>
-<ol>
-	<li>
-%~event の
-⇒＃
-`pointerId^m ~SET %~pointer~event の `pointerId^m,
-`pointerType^m ~SET %~pointer~event の `pointerType^m,
-`isPrimary^m ~SET %~pointer~event の `isPrimary^m,
-`isTrusted^m ~SET %~pointer~event の `isTrusted^m
-`cancelable^m ~SET ~F
-`bubbles^m ~SET ~F
-◎
-Set the event's pointerId, pointerType, isPrimary and isTrusted to the PointerEvent's pointerId, pointerType, isPrimary and isTrusted.
-◎
-Set the event's cancelable and bubbles attributes to false.
-</li>
-	<li>
-%~event の`合体d~event~list$ ~SET 空~list
-◎
-Set the event's coalesced event list and predicted event list to an empty list.
-</li>
-	<li>
-%~event の`予測d~event~list$ ~SET 空~list
-◎
-↑</li>
-	<li>
-%~event の残りの属性を `PointerEvent$I と同じ仕方で初期化する
-◎
-Initialize the rest of the attributes the same way as PointerEvent.
-</li>
-</ol>
-</div>
-
-<div class="p">
-<p>
-各 `PointerEvent$I ~objには、次が結付けられる：
-</p>
-<ul>
-	<li>
-`合体d~event標的は~dirtyか@
-⇒
-真偽値
-— 初期-時は ~F をとるモノトスル。
-</li>
-	<li>
-`予測d~event標的は~dirtyか@
-⇒
-真偽値
-— 初期-時は ~F をとるモノトスル。
-</li>
-</ul>
-◎
-A PointerEvent has an associated coalesced events targets dirty and an associated predicted events targets dirty flag. When an event is created they must be initialized to false.
-</div>
-
-<p>
-`PointerEvent$I ~objの`標的$が変化したときは、次を行うとする
-⇒＃
-`合体d~event標的は~dirtyか$ ~SET ~T；
-`予測d~event標的は~dirtyか$ ~SET ~T
-◎
-When the PointerEvent's target is changed, set coalesced events targets dirty and predicted events targets dirty to true.
-</p>
-
 <p class="note">注記：
 `PointerEvent$I ~interfaceは、 `MouseEvent$I `UI-EVENTS$r を継承し， `CSSOM-VIEW$r により拡張される。
 ◎
@@ -2213,7 +1955,7 @@ The PointerEvent interface inherits from MouseEvent, defined in [UIEVENTS] and e
 		<section id="button-states">
 <h4 title="Button States">4.1.1. ~button状態</h4>
 			<section id="chorded-button-interactions">
-<h5 title="Chorded Button Interactions">4.1.1.1. ~buttonの追加押下げヤリトリ</h5>
+<h5 title="Chorded Button Interactions">4.1.1.1. ~buttonの追加押下げ</h5>
 
 <p>
 ~mouseや~penなどの一部の~pointer装置は、複数の~buttonを~supportする。
@@ -2497,7 +2239,7 @@ In some cases, it is possible for the user agent to fire pointer events in which
 <p class="note" id="multiple-mouse-inputs">注記：
 現在の~OSや~UAは、通例的に複数の~mouseによる入力の概念を備えていない。
 複数の~mouse装置が在る場合（一例として、~trackpadと外部~mouseを備える~laptopなど）、一般に，それら一まとめに単独の装置に扱われる
-— どの装置による移動も，単独の~mouse~pointerの移動に翻訳され、異なる~mouse装置で押される~buttonは~~区別されない。
+— どの装置による動きも，単独の~mouse~pointerの動きに翻訳され、異なる~mouse装置で押される~buttonは~~区別されない。
 この理由から、~mouse~pointerは，通例的に一つだけあって，その~pointerが首になることになる。
 <span class="trans-note">【
 したがって、 2 つの~mouseがあって，それぞれの左~buttonが順に押されてから, 同じ順に離されたとき， 2 番目に押されたときと, 最初に離されたときは，無視されることになるであろう。
@@ -2576,18 +2318,16 @@ If the event is pointerdown, pointermove, or pointerup set active document for t
 ~IF［
 %e ~EQ `pointerdown$et
 ］~AND［
-%~pointer を動かしている装置は、
-<a href="#implicit-pointer-capture">直接~操作~装置</a>
-である
+%~pointer を動かしている装置は、`直な操作$を~~為すものである
 ］~AND［
 %標的 は `Element^I である
 ］
 ⇒
-`暗黙的な~pointer捕捉$に従って
+§ `暗黙的な~pointer捕捉$に従って
 ⇒
 %~pointer の `pointerId$m を渡して，~pointer捕捉を %標的 に`設定-$する
 ◎
-If the event is pointerdown event, the associated device is a direct manipulation device and the target is an Element, then set pointer capture for this pointerId to the target element as described in implicit pointer capture.
+If the event is pointerdown, the associated device is a direct manipulation device, and the target is an Element, then set pointer capture for this pointerId to the target element as described in implicit pointer capture.
 </li>
 	<li>
 `~eventを発火する$【`~eventを配送する$】( %標的, %~event )
@@ -2859,7 +2599,7 @@ A user agent MUST also fire this event prior to firing a pointerdown event for d
 			<section id="the-pointerenter-event">
 <h4 title="The pointerenter event">4.2.2. `pointerenter^et ~event</h4>
 
-<div >
+<div>
 <p>
 `捕捉~込みの~pointing先$が
 — ~pointerが~~操作されたか, または［
@@ -2884,7 +2624,7 @@ A user agent MUST fire a pointer event named pointerenter when a pointing device
 
 <p>
 この型の~eventは、
-`pointerover$et に類似するが，浮上しない点で相違する。
+`pointerover$et に類似するが，浮上しない~~点で相違する。
 ◎
 This event type is similar to pointerover, but differs in that it does not bubble.
 </p>
@@ -2984,15 +2724,15 @@ A user agent MUST fire a pointer event named pointermove when a pointer changes 
 ］ときは、その`~pointing先$に向けて
 — そのような~~連続性を備える変化を一つにした —
 名前 `pointermove$et の`~pointer~eventを発火する$モノトスル。
-すなわち，それらの~eventは、~UAの裁定に基づいて
-— 例えば <a href="~WAPI#event-loop-processing-model">~animation~frame~callback</a>
-に揃うように —
-合体されてもヨイ。
-合体された~eventたちの情報は、配送される 1 個の `pointermove^et ~eventにおいて，
-`getCoalescedEvents()$m ~APIを介して公開されることになる。
-~UAは、この~eventの標的を，合体された~eventたちの最終-座標を利用して見出すベキである。
+~UAは、これらの~eventを［
+<a href="~WAPI#event-loop-processing-model">~animation~frame~callback</a>
+に揃える, あるいはそうなるよう合体する
+］ものと裁定してもヨイ。
+`合体された~event群$の情報は、それ用に配送される 1 個の `pointermove$et ~event内に，
+`getCoalescedEvents()$m を介して公開されることになる。
+~UAは、この~eventの標的を合体された~event群の最終-座標を利用して見出すベキである。
 ◎
-Additionally one pointermove MUST be fired when pointer changes coordinates, pressure, tangential pressure, tilt, twist, or contact geometry (e.g. width and height) and the circumstances produce no other pointer events defined in this specification. These events may be coalesced or aligned to animation frame callbacks based on UA decision. The coalesced events information will be exposed via getCoalescedEvents API for the single dispatched pointermove event. The final coordinates of such events should be used for finding the target of the event.
+Additionally one pointermove MUST be fired when pointer changes coordinates, pressure, tangential pressure, tilt, twist, or contact geometry (e.g. width and height) and the circumstances produce no other pointer events defined in this specification. User agents may decide to coalesce or align these events to animation frame callbacks. The coalesced events information will be exposed via getCoalescedEvents for the single dispatched pointermove event. The final coordinates of such events should be used for finding the target of the event.
 </p>
 
 			</section>
@@ -3033,7 +2773,7 @@ The target of pointerrawupdate events might be different from the pointermove ev
 — 新たな`~task$を作成する代わりに —
 その~eventに新たな `pointerrawupdate$et を合体してもヨイことに注意。
 よって，それらの~eventは、`~task~queue$内で処理される時点で，［
-1 個の `pointerrawupdate$et ~eventに合体された~event
+1 個の `pointerrawupdate$et ~eventに`合体された~event群$
 ］として送達され得ることになる。
 さらなる情報は `getCoalescedEvents()$m を見よ。
 ◎
@@ -3181,7 +2921,6 @@ After firing the pointercancel event, a user agent MUST also fire a pointer even
 </p>
 
 <div class="note">
-
 <p>注記：
 ［
 当の~pointerは、それ以上~eventを生産し続ける見込みは低い
@@ -3190,6 +2929,7 @@ After firing the pointercancel event, a user agent MUST also fire a pointer even
 This section is non-normative.
 ◎
 Note
+
 Examples of scenarios in which a user agent might determine that a pointer is unlikely to continue to produce events include:
 </p>
 
@@ -3273,7 +3013,6 @@ When a pen stylus leaves the hover range detectable by the digitizer.
 <h4 title="The pointerleave event">4.2.9. `pointerleave^et ~event</h4>
 
 <div class="p">
-
 <p>
 `捕捉~込みの~pointing先$が
 — ~pointerが~~操作されたか, または［
@@ -3303,7 +3042,7 @@ When a pen stylus leaves the hover range detectable by the digitizer.
 この型の~eventは `pointerout$et に類似するが、浮上しないこと, および
 ~pointing装置が［
 要素と そのすべての子孫が成す境界
-］を出るまでは，発火されないモノトスル点で相違する。
+］を出るまでは，発火されないモノトスル~~点で相違する。
 </p>
 
 ◎
@@ -3592,34 +3331,35 @@ maxTouchPoints is often used to ensure that the interaction model of the content
 </p>
 
 	</section>
-	<section id="declaring-candidate-regions-for-default-touch-behaviors">
-<h2 title="Declaring candidate regions for default touch behaviors">8. 既定の~touch用の挙動~用の候補~領域の宣言-法</h2>
-
+	<section id="declaring-candidate-regions-for-default-direct-manipulation-behaviors">
+<h2 title="Declaring candidate regions for default direct manipulation behaviors">8. 直な操作~用の既定の挙動~用の候補~領域の宣言-法</h2>
 <!-- `PointerEvent!I -->
 
 <p>
-~touch入力に対しては、どの`~pointer~event$であれ，その`既定~動作$は表示域の操作（例： ~pan-zoom）にならないモノトスル。
+`直な操作$に対しては、どの`~pointer~event$であれ，その`既定~動作$は表示域の操作（例： ~pan-zoom）にならないモノトスル。
 ◎
-For touch input, the default action of any and all pointer events MUST NOT be a manipulation of the viewport (e.g. panning or zooming).
+For direct manipulation interactions, the default action of any and all pointer events MUST NOT be a manipulation of the viewport (e.g. panning or zooming).
 </p>
 
 <p class="note">注記：
-~touch操作は、意図的に，~pointer~eventの`既定~動作$にされていない。
+表示域の操作は、意図的に，~pointer~eventの`既定~動作$にされていない。
 この，［
 ~eventの取消nに対する依存関係
 ］を除去することは、~UAによる処理能の最適化を手助けするためである。
 ◎
 Note
-Touch manipulations are intentionally not a default action of pointer events. Removing this dependency on the cancellation of events facilitates performance optimizations by the user agent.
+Viewport manipulations are intentionally not a default action of pointer events. Removing this dependency on the cancellation of events facilitates performance optimizations by the user agent.
 </p>
 
 <p class="note">注記：
-表示域の操作-時に利用される~pointerに関する課題は，一般に~touch入力に限られるが（利用者の手指が，内容とのヤリトリ-にも, ~pageの~pan／~zoomにも利用され得る所で）、他の`~pointer型$に対しても（直接的／間接的を問わず）同じ型の操作を許容する~UAも中にはある。
-一例として，携帯~装置／~tablet装置においては、利用者は~stylusを利用して~panすることもできるかもしれない。
-この節は、そのような局面にも適用される（この仕様における語 “~touch” の用-法にかかわらず）。
+表示域の操作-時に利用される~pointerに関する課題は，一般に~touch入力に限られるが（利用者の手指が，内容とのヤリトリ-にも, ~pageの~pan／~zoomにも利用され得る所で）、他の`~pointer型$に対しても（直接間接を問わず）同じ型の操作を許容する~UAも中にはある。
+一例として，携帯~装置／~tablet装置においては、利用者は~stylusを利用して~scroll可能かもしれない。
+歴史的な理由から、この仕様に定義される `touch-action$p ~CSS~propは，~touch入力のみを指すように見受けられるが、事実においては，［
+`直な~pan-zoom$を許容する，すべての形の~pointer入力
+］に適用される。
 ◎
 Note
-While the issue of pointers used to manipulate the viewport is generally limited to touch input (where a user's finger can both interact with content and pan/zoom the page), certain user agents may also allow the same types of (direct or indirect) manipulation for other pointer types. For instance, on mobile/tablet devices, users may also be able to pan using a stylus. This section applies to these scenarios as well (despite the specification's use of "touch").
+While the issue of pointers used to manipulate the viewport is generally limited to touch input (where a user's finger can both interact with content and pan/zoom the page), certain user agents may also allow the same types of (direct or indirect) manipulation for other pointer types. For instance, on mobile/tablet devices, users may also be able to scroll using a stylus. While, for historical reasons, the touch-action CSS property defined in this specification appears to refer only to touch inputs, it does in fact apply to all forms of pointer inputs that allow direct manipulation for panning and zooming.
 </p>
 
 		<section id="the-touch-action-css-property">
@@ -3646,37 +3386,26 @@ all elements except: non-replaced inline elements, table rows, row groups, table
 ◎表終
 
 <p>
-`touch-action$p ~propは、~touch入力により，
-`~touch用の挙動@
-— ~UAが給する既定の挙動 —
-が誘発されてよいかどうかを決定する。
-これには、少なくとも，~pan-zoomなどの挙動が含まれる。
-§ <a href="#details-of-touch-action-values">`touch-action^p 値</a>
+`touch-action$p ~propは、`直な操作$（~propの名前にもかかわらず，~touchのみに制限されない）により，~UAによる~pan-zoom用の挙動が誘発されてよいかどうかを決定する。
+<a href="#details-of-touch-action-values">§ `touch-action^p 値</a>
 を見よ。
 ◎
-The touch-action CSS property determines whether touch input MAY trigger default behavior supplied by user agent. This includes, but is not limited to, behaviors such as panning or zooming. See the section on touch-action values.
-</p>
-
-<p class="note">注記：
-先に注記したように、~touch以外の`~pointer型$にも既定の挙動（~pan-zoomなど）を許容する~UAは，その種の~pointer型にも~touchと同じように適用するモノトスル。
-一例として，~stylusによる~pan-zoomを許容する~UAは、どの既定の挙動を取扱うかを決定する際に，関連な `touch-action^p 値を織り込むモノトスル。
-◎
-Note
-As noted previously, in the case of user agents that allow default behaviors (such as panning or zooming) for other pointer types, these user agents MUST apply the same consideration for those pointer types. For instance, if a user agent allows panning/zooming with a stylus, the user agent must take into account the relevant touch-action value when determining which default behaviors it should handle.
+The touch-action CSS property determines whether direct manipulation interactions (which are not limited to touch, despite the property's name) MAY trigger the user agent's panning and zooming behavior. See the section on touch-action values.
 </p>
 
 <p>
-~UAは、`~touch用の挙動$を実行している間は，その~pointerよる後続の`~pointer~eventを発火-$しないモノトスル。
-~UAは、次のすべてが成立するときは、~pointerによる`~event連列$を終わらせるため，名前 `pointercancel$et の`~pointer~eventを発火する$モノトスル（それに伴い， `pointerout$et ~event, 1 個以上の `pointerleave$et ~eventも発火されることになる）：
+~UAは、~pan-zoomの間は，その~pointerよる後続の`~pointer~eventを発火-$しないモノトスル。
+~UAは，次のすべてが満たされるときは、~pointerによる`~event連列$を終了するために，
+名前 `pointercancel$et の`~pointer~eventを発火する$モノトスル（それに伴い，
+`pointerout$et ~event, 1 個以上の `pointerleave$et ~eventも発火されることになる）：
 ◎
-During the execution of a user agent touch behavior, the user agent MUST NOT fire subsequent pointer events for the pointer. The user agent MUST fire a pointer event named pointercancel (and subsequently a pointerout event and one or more pointerleave events) whenever all of the following are true, in order to end the stream of events for the pointer:
+While panning and zooming, the user agent MUST NOT fire subsequent pointer events for the pointer. In order to end the stream of events for the pointer, the user agent MUST fire a pointer event named pointercancel (and subsequently a pointerout event and one or more pointerleave events) whenever all of the following are true:
 </p>
-
 <ul>
 	<li>
-~UAは、その~touch入力を，`~touch用の挙動$用に消費するものと決定した（その決定-法は、この仕様の視野から外れる）。
+~UAは、`直な操作$を~pan-zoom用に消費するものと決定した（その決定-法は、この仕様の視野から外れる）。
 ◎
-The user agent has determined (via methods out of scope for this specification) that touch input is to be consumed for a touch behavior,
+The user agent has determined (via methods out of scope for this specification) that a direct manipulation interaction is to be consumed for panning or zooming,
 </li>
 	<li>
 【その`~event連列$において】
@@ -3695,20 +3424,24 @@ a pointerup or pointercancel event (following the above mentioned pointerdown) h
 </ul>
 
 <p class="note">注記：
-~UAは、既定の挙動~用に［
-一連の別個の~gestureを孕むが，それらすべてが単独の継続的な~gestureを成すものとして扱われる
-］ような複階的な~gestureを実装してもヨイ。
+~UAは、［
+一連の別個な~gestureを孕むが，それらが継続的な単独の~gestureを成すものとして扱われる
+］ような挙動~用に，複階的な~gestureを実装してもヨイ。
 例えば、利用者が~touchscreen上で “投げつける” ように~scrollする（ “`fling to scroll^en” ）~gestureを考える
-— 敏捷な手指の動きで，文書の~panningを開始して, ~touchscreenから手指を~~離したとき，文書は惰性で~scrollし続けるような。
+— 敏捷な手指の動きで，文書の~panningを開始して, ~touchscreenから手指を~~離したとき，文書は惰性で~panし続けるような。
 文書がまだ動いている間、利用者は，~touchscreenに手指を置いて別の “投げつけ” を実行するかもしれない
-— 現在の~scrollingに対し、もっと勢いをつけるか，制動して［
+— 現在の~panningに対し、もっと勢いをつけるか，制動して［
 遅める／停止する／逆~方向にする
 ］ような。
-この仕様は、~gestureと既定の挙動がどう実装されるかは、規範的に定義しない
-— 2 度目の~touchが（現在の~scrollingに対する 2 度目の “投げつけ” ／制動として解釈される前に）~pointer~eventを発火するべきかどうか裁定するのは、~UAに委ねられる。
+この仕様は、［
+~gestureと既定の挙動を どう実装するか，規範的に定義する
+］ことはない
+— 2 度目の~touchが（現在の~panningに対する 2 度目の［
+“投げつけ” ／制動
+］として解釈される前に）~pointer~eventを発火するべきかどうか裁定するのは、~UAに委ねられる。
 ◎
 Note
-User agents may implement complex gestures for default behaviors that involve a series of separate discrete gestures, but which are all treated as part of a single continuous gesture. For example, consider a "fling to scroll" gesture on a touchscreen: a user starts panning the document with a rapid finger movement, lifts the finger from the touchscreen, and the document continues scrolling with simulated inertia. While the document is still moving, the user may place their finger on the touchscreen and execute another "fling" to provide further momentum for the scrolling, or counteract the current scrolling to slow it down, stop scrolling altogether, or reverse the direction of the scrolling. As this specification does not normatively define how gestures and default behaviors are implemented, it is left up to the user agent to decide whether or not the second touch (before it is interpreted as a second "fling" or counteraction of the current scrolling) should fire pointer events or not.
+User agents may implement complex gestures for behaviors that involve a series of separate discrete gestures, but which are all treated as part of a single continuous gesture. For example, consider a "fling to scroll" gesture on a touchscreen: a user starts panning the document with a rapid finger movement, lifts the finger from the touchscreen, and the document continues panning with simulated inertia. While the document is still moving, the user may place their finger on the touchscreen and execute another "fling" to provide further momentum for the panning, or counteract the current panning to slow it down, stop panning altogether, or reverse the direction of the panning. As this specification does not normatively define how gestures and default behaviors are implemented, it is left up to the user agent to decide whether or not the second touch (before it is interpreted as a second "fling" or counteraction of the current panning) should fire pointer events or not.
 </p>
 
 <p class="note">注記：
@@ -3716,95 +3449,94 @@ User agents may implement complex gestures for default behaviors that involve a 
 【！~cascadeしないのは他の~propも同様】
 一例として、
 `iframe$e 上の `touch-action^p が，
-`iframe^e の中で【 `iframe^e が埋込んでいる文書において】~touch入力の既定の挙動に効果を及ぼすことはない。
+`iframe^e の中で【 `iframe^e が埋込んでいる文書において】`直な~pan-zoom$用の挙動に効果を及ぼすことはない。
 ◎
-touch-action does not apply/cascade through to embedded browsing contexts. For instance, even applying touch-action to an &lt;iframe&gt; won't have any effect on the default behavior of touch inputs within the &lt;iframe&gt; itself.
+touch-action does not apply/cascade through to embedded browsing contexts. For instance, even applying touch-action to an &lt;iframe&gt; won't have any effect on the behavior of direct manipulation interactions for panning and zooming within the &lt;iframe&gt; itself.
 </p>
 
 		</section>
-		<section id="determining-supported-touch-behavior">
-<h3 title="Determining supported touch behavior">8.2. ~touch用の挙動の決定-法</h3>
+		<section id="determining-supported-direct-manipulation-behavior">
+<h3 title="Determining supported direct manipulation behavior">8.2. ~supportされる直な操作~用の挙動の決定-法</h3>
 
 <p>
-利用者による~touchに対する効果は、［
+利用者が要素に対し，`直な操作$による~pointer（~touchscreen上の~touchや~stylusなど）を利用してヤリトリするとき，その入力による効果は、［
 要素とその各~先祖
 ］上の［
 `touch-action$p ~propの値, および
-既定の`~touch用の挙動$
+`直な~pan-zoom$用の既定の挙動
 ］により，次に従って決定される：
 ◎
-When a user touches an element, the effect of that touch is determined by the value of the touch-action property, and the default touch behaviors of the element and its ancestors, as follows:
+When a user interacts with an element using a direct manipulation pointer (such as touch or stylus on a touchscreen), the effect of that input is determined by the value of the touch-action property, and the default direct manipulation behaviors of the element and its ancestors, as follows:
 </p>
-
 <ul>
 	<li>
-`~touch用の挙動$は、要素の座標~空間において許容されるならば，要素の `touch-action$p に
+`直な~pan-zoom$は、要素の座標~空間において許容されるならば，要素の `touch-action$p に
 `適合する@
 とされる。
 ~CSS変形が適用されている場合、要素の座標~空間は，ここでの適合-度に影響する仕方で~screen座標から異なり得ることに注意。
 例えば，要素の X 軸が~screenを基準に 90° 回転されている場合、~screen座標~空間の Y 軸に平行になる。
 ◎
-A touch behavior conforms to an element's touch-action if the behavior is allowed in the coordinate space of the element. Note that if CSS transforms have been applied, the element's coordinate space may differ from the screen coordinate in a way to affect the conformity here; for example, the X axis of an element rotated by 90 degrees with respect to the screen will be parallel to the Y-axis of the screen coordinate.
+A direct manipulation interaction for panning and zooming conforms to an element's touch-action if the behavior is allowed in the coordinate space of the element. Note that if CSS transforms have been applied, the element's coordinate space may differ from the screen coordinate in a way to affect the conformity here; for example, the X axis of an element rotated by 90 degrees with respect to the screen will be parallel to the Y-axis of the screen coordinate.
 </li>
 	<li>
 <p>
-~UAが`~touch用の挙動$を~supportするのは、その挙動が，次を満たす どの要素の `touch-action$p ~propにも`適合する$ときになる：
+~UAが`~pointing先$の要素に対し`直な~pan-zoom$を~supportするのは、次を満たす どの要素も，その挙動が `touch-action$p ~propにも`適合する$ときになる：
 </p>
 		<ul>
 			<li>
-~touchの`~pointing先$か その先祖である
+`~pointing先$，または その先祖である
 </li>
 			<li>
 ［
 要素, その先祖たち
-］のうちいずれかは、既定の`~touch用の挙動$を備える
+］のうちいずれかは、`直な~pan-zoom$用の既定の挙動を備える
 </li>
 			<li>
 次を満たす別の要素は無い
 ⇒
 ［
-要素の子孫である
+要素 の子孫である
 ］~AND［
-~touchの`~pointing先$の先祖である
+`~pointing先$の先祖である
 ］~AND［
-既定の`~touch用の挙動$を備える
+`直な~pan-zoom$用の既定の挙動を備える
 ］
 </li>
 		</ul>
 ◎
-A touch behavior is supported if it conforms to the touch-action property of each element between the hit tested element and its nearest ancestor with the default touch behavior (including both the hit tested element and the element with the default touch behavior).
+A direct manipulation interaction for panning and zooming is supported if it conforms to the touch-action property of each element between the hit tested element and its nearest ancestor with the default direct manipulation behavior (including both the hit tested element and the element with the default direct manipulation behavior).
 </li>
 	<li>
-~touch動作が開始され，［
-その動作を`~touch用の挙動$として取扱うべきかどうか
+~pan-zoomが開始され，［
+その~gestureを`直な操作$による挙動として取扱うべきかどうか
 ］を~UAが決定して以降は、その動作が終わるまでは，関連な `touch-action$p 値を変更しても無視されることになる。
-一例として、要素~上の `touch-action$p 値を，~scriptの `pointerdown$et ~handlerの中で~program的に `auto^v から `none^v に変更しても、~pointerが作動中にある限り，~UAが要素の既定の~touch用の挙動を中止したり抑止することはない。
+一例として、要素~上の `touch-action$p 値を，~scriptの `pointerdown$et ~handlerの中で~program的に `auto^v から `none^v に変更しても、~pointerが作動中にある限り，~UAが当の入力に対する［
+~pan／~zoom
+］用の挙動を中止したり抑止することはない。
 ◎
-Once a touch action has been started, and the user agent has already determined whether or not the action should be handled as a user agent touch behavior, any changes to the relevant touch-action value will be ignored for the duration of the touch action. For instance, programmatically changing the touch-action value for an element from auto to none as part of a pointerdown handler script will not result in the user agent aborting or suppressing any default touch behavior for that touch for as long as that pointer is active.
+Once panning or zooming has been started, and the user agent has already determined whether or not the gesture should be handled as a user agent direct manipulation behavior, any changes to the relevant touch-action value will be ignored for the duration of the action. For instance, programmatically changing the touch-action value for an element from auto to none as part of a pointerdown handler script will not result in the user agent aborting or suppressing any of the pan or zoom behavior for that input for as long as that pointer is active.
 </li>
 	<li>
 類似に，
 `touch-action$p 用の各種 `pan-*^v 値の事例では、~UAは，~gestureの開始-時に~gestureを直に取扱うかどうか決定したなら，後続して当の~gestureの方向が変化しても
 — 当の~pointerが作動中にある限り —
 無視するベキである。
-一例として、ある要素の `touch-action^p が `pan-y*^v に設定されている下で（すなわち、~UAは縦方向への~scrollingしか取扱わない），~touchによる~gestureが横方向から開始された場合、その~gestureの方向が
+一例として、ある要素の `touch-action^p が `pan-y*^v に設定されている下で（すなわち、~UAは縦方向への~panningしか取扱わない），~touchによる~gestureが横方向から開始された場合、その~gestureの方向が
 — 利用者の手指が まだ~screenに~touchしている間に —
-縦方向に変化しても，縦方向への~scrollingは生じるべきでない。
+縦方向に変化しても，縦方向への~panningは生じるべきでない。
 ◎
-Similarly, in the case of the various touch-action values of pan-*, once the user agent has determined whether to handle a gesture directly or not at the start of the gesture, a subsequent change in the direction of the same gesture SHOULD be ignored by the user agent for as long as that pointer is active. For instance, if an element has been set to touch-action: pan-y (meaning that only vertical scrolling is handled by the user agent), and a touch gesture starts off horizontally, no vertical scrolling should occur if the user changes the direction of their gesture to be vertical while their finger is still touching the screen.
+Similarly, in the case of the various touch-action values of pan-*, once the user agent has determined whether to handle a gesture directly or not at the start of the gesture, a subsequent change in the direction of the same gesture SHOULD be ignored by the user agent for as long as that pointer is active. For instance, if an element has been set to touch-action: pan-y (meaning that only vertical panning is handled by the user agent), and a touch gesture starts off horizontally, no vertical panning should occur if the user changes the direction of their gesture to be vertical while their finger is still touching the screen.
 </li>
 </ul>
 
 <p class="note">注記：
-一部の~UAは、［
-複数の同時的~pointerによるヤリトリ
-］により誘発される~touch動作も~supportする（例： 複-~touch）。
-複数の同時的~pointerに対し `touch-action$p 値を
-処理したり／結付ける
-ための手法は、この仕様の視野から外れる。
+一部の~UAは、複数の同時的な~pointerを孕むような~pan-zoomも~supportする（例： 複-~touch）。
+複数の同時的~pointerに対し， `touch-action$p 値を［
+処理する／結付ける
+］ための手法は、この仕様の視野から外れる。
 ◎
 Note
-Some user agents support touch actions triggered by interactions of multiple concurrent pointers (e.g. multi-touch). Methods for processing or associating the touch-action values of multiple concurrent pointers are out of scope for this specification.
+Some user agents support panning and zooming interactions involving multiple concurrent pointers (e.g. multi-touch). Methods for processing or associating the touch-action values of multiple concurrent pointers is out of scope for this specification.
 </p>
 
 		</section>
@@ -3812,10 +3544,7 @@ Some user agents support touch actions triggered by interactions of multiple con
 <h3 title="Details of touch-action values">8.3. `touch-action^p 値の詳細</h3>
 
 <p>
-`touch-action$p ~propは、~touch用の挙動のうち［
-表示域の~pan-zoom／~zooming
-］に関係する挙動を受持つ
-— 以下、この節における`~touch用の挙動$は，これらの挙動を指す。
+`touch-action$p ~propは、`直な操作$用の挙動のうち，表示域の~pan-zoomに関係するものを受持つ。
 この~propは、他の追加的な~UAの挙動
 — ［
 ~textを選択したり強調する／
@@ -3823,22 +3552,46 @@ Some user agents support touch actions triggered by interactions of multiple con
 ］など —
 には影響しないモノトスル。
 ◎
-The touch-action property covers touch behaviors related to viewport panning/scrolling and zooming. Any additional user agent behaviors, such as text selection/highlighting, or activating links and form controls, MUST NOT be affected by this CSS property.
+The touch-action property covers direct manipulation behaviors related to viewport panning and zooming. Any additional user agent behaviors, such as text selection/highlighting, or activating links and form controls, MUST NOT be affected by this CSS property.
+</p>
+
+<p class="note">注記：
+用語
+“~panning” と “~scrolling”
+は、同義語と見なされる（もっと詳しく言うなら、
+“~panning” とは`直な操作$による入力を利用している “~scrolling” である）。
+［
+~panningや~scrollingを誘発する［
+ヤリトリや~gesture
+］を定義すること ／
+`auto$v や `none$v 値~用の誘発の挙動
+］は、この仕様の視野から外れる。
+◎
+Note
+The terms "panning" and "scrolling" are considered synonymous (or, more aptly, "panning" is "scrolling" using a direct manipulation input). Defining an interaction or gesture for triggering panning/scrolling, or for triggering behavior for the auto or none values, are out of scope for this specification.
 </p>
 
 <dl>
 	<dt>`auto@v</dt>
 	<dd>
-~UAは、要素~上から始まる`~touch用の挙動$のうち許可されるものを考慮してもヨイ。
+~UAは、［
+要素~上から始まる`直な操作$
+］に対し，［
+表示域の~pan-zoomに関係する挙動
+］のうち許可されるものを考慮してもヨイ。
 ◎
-The user agent MAY consider any permitted touch behaviors related to viewport panning/scrolling and zooming for touches that begin on the element.
+The user agent MAY consider any permitted direct manipulation behaviors related to panning and zooming of the viewport that begin on the element.
 </dd>
 
 	<dt>`none@v</dt>
 	<dd>
-~UAは、要素~上から始まる`~touch用の挙動$を誘発しないモノトスル。
+~UAは、［
+要素~上から始まる`直な操作$
+］に対し，［
+表示域の~pan-zoomに関係する挙動
+］を誘発しないモノトスル。
 ◎
-Touches that begin on the element MUST NOT trigger touch behaviors related to viewport panning/scrolling and zooming.
+Direct manipulation interactions that begin on the element MUST NOT trigger behaviors related to viewport panning and zooming.
 </dd>
 
 	<dt>`pan-x@v</dt>
@@ -3848,35 +3601,37 @@ Touches that begin on the element MUST NOT trigger touch behaviors related to vi
 	<dt>`pan-up@v</dt>
 	<dt>`pan-down@v</dt>
 	<dd>
-これらの~~成分~値の組み合わせに対しては、~UAは、要素~上から始まる~touchを，［
-指定された各~~成分が表す方向への［
-~panning／~scrolling
-］を開始する目的
+これらの~~成分~値の組み合わせに対しては、~UAは，［
+要素~上から始まる`直な操作$
+］を［
+指定された各~~成分が表す方向への~panningを開始する目的
 ］に限って考慮してもヨイ。
 【例： `pan-y^v のみなら縦のみ， `pan-x pan-up^v なら縦と上方。】
 ◎
-The user agent MAY consider touches that begin on the element only for the purposes of panning/scrolling that starts in any of the directions specified by all of the listed values.＼
+The user agent MAY consider direct manipulation interactions that begin on the element only for the purposes of panning that starts in any of the directions specified by all of the listed values.＼
 </dd>
 	<dd>
-逆~方向が許容されていない場合でも【例： `pan-right^v のときの左方】、~scrollingが開始されたなら，利用者は逆~方向にも~scrollできる。
-対照的に，単独の軸に制約されている場合には（例： `pan-y^v のみ）、利用者が~scrollできる方向は，常にその軸に限られる。
+逆~方向が許容されていない場合でも【例： `pan-right^v のときの左方】、~panningが開始されたなら，利用者は逆~方向にも~panできる。
+対照的に，単独の軸に制約されている場合には（例： `pan-y^v のみ）、利用者が~panできる方向は，常にその軸に限られる。
 ◎
-Once scrolling is started, the direction may be reversed by the user even if scrolls that start in the reversed direction are disallowed. In contrast, when scrolling is restricted to starting along a single axis (eg. pan-y), the axis cannot be changed during the scroll.
+Once panning has started, the direction may be reversed by the user even if panning that starts in the reversed direction are disallowed. In contrast, when panning is restricted to a single axis (eg. pan-y), the axis cannot be changed during panning.
 </dd>
 
 	<dt>`manipulation@v</dt>
 	<dd>
-~UAは、要素~上で始まる~touchを［
-~panning／~scrolling／継続的な~zooming
+~UAは、［
+要素~上から始まる`直な操作$
+］を［
+~panning／<strong>継続的</strong>な~zooming
 ］の目的において考慮してもヨイ
-— ただし，~touchに関係する他の挙動のうち［
+— ただし，関係する他の挙動のうち［
 一定時間内に起こらなければならない複数の作動化
 ］に依拠するもの（
 二連-~tapで~zoomする／
 二連-~tapの最後に手指を離さず（ `double-tap and hold^en ）動かして~zoomする
 など）は、誘発しないモノトスル。
 ◎
-The user agent MAY consider touches that begin on the element for the purposes of panning/scrolling and continuous zooming (such as pinch-zoom), but MUST NOT trigger other related touch behaviors that rely on multiple activations that must happen within a set period of time (such as double-tap to zoom, or double-tap and hold for single-finger zoom).
+The user agent MAY consider direct manipulation interactions that begin on the element only for the purposes of panning and continuous zooming (such as pinch-zoom), but MUST NOT trigger other related behaviors that rely on multiple activations that must happen within a set period of time (such as double-tap to zoom, or double-tap and hold for single-finger zoom).
 </dd>
 </dl>
 
@@ -3889,33 +3644,20 @@ Note
 Additional touch-action values common in implementations are defined in [COMPAT].
 </p>
 
-<p class="note">注記：
-用語
-“~pan” と “~scroll”
-は、同義語と見なされる。
-［
-~panningや~scrollingを誘発するヤリトリや~gestureを定義すること ／
-`auto$v や `none$v 値~用の誘発の挙動
-］は、この仕様の視野から外れる。
-◎
-Note
-The terms "pan" and "scroll" are considered synonymous. Defining an interaction or gesture for triggering panning or scrolling, or for triggering behavior for the auto or none values is out of scope for this specification.
-</p>
 
 <p class="note">注記：
 `touch-action$p ~propを適用し得る要素は、~CSS `width$p, `height$p ~prop `CSS21$r のいずれも適用し得るものに限られる。
-この制約は、~UAが~touch動作の応答性を最適化し易くするための設計である。
+この制約は、~UAが`直な~pan-zoom$に対する応答性を最適化し易くするための設計である。
 `span$e などの`置換され$ない`行内~要素$など，既定では~supportされない要素~用には、作者は，~CSS `display$p ~propに［
 `block^v などの `width^p, `height^p を適用し得る値
 ］を設定できる。
 将来の仕様は、この~APIをすべての要素にまで拡張し得る。
 ◎
 Note
-The touch-action property only applies to elements that support both the CSS width and height properties (see [CSS21]). This restriction is designed to facilitate user agent optimizations for low-latency touch actions. For elements not supported by default, such as &lt;span&gt; which is a non-replaced inline element, authors can set the display CSS property to a value, such as block, that supports width and height. Future specifications could extend this API to all elements.
+The touch-action property only applies to elements that support both the CSS width and height properties (see [CSS21]). This restriction is designed to facilitate user agent optimizations for low-latency direct manipulation panning and zooming. For elements not supported by default, such as &lt;span&gt; which is a non-replaced inline element, authors can set the display CSS property to a value, such as block, that supports width and height. Future specifications could extend this API to all elements.
 </p>
 
 <div class="note">
-
 <p>注記：
 方向に特有な~pan値は、一部の
 “過~scroll（ `overscroll^en ）” 時の挙動†を~custom化するときに有用になる。
@@ -3926,11 +3668,14 @@ The touch-action property only applies to elements that support both the CSS wid
 “引っ張ったら~~更新する（ `pull-to-refresh^en ）”
 効果††を実装できる。
 これにより、~pointer~event~handlerは［
-文書の上端から上方への~scrollが開始されたときの挙動
+文書の上端から上方への［
+~panning／~scrolling
+］が開始されたときの挙動
 ］を定義できるようになる。
 ◎
 Note
-The direction-specific pan values are useful for customizing some overscroll behaviors. For example, to implement a simple pull-to-refresh effect the document's touch-action can be set to pan-x pan-down whenever the scroll position is 0 and pan-x pan-y otherwise. This allows pointer event handlers to define the behavior for upward scrolls that start from the top of the document.
+
+The direction-specific pan values are useful for customizing some overscroll behaviors. For example, to implement a simple pull-to-refresh effect the document's touch-action can be set to pan-x pan-down whenever the scroll position is 0 and pan-x pan-y otherwise. This allows pointer event handlers to define the behavior for upward panning/scrolling that start from the top of the document.
 </p>
 
 <p class="trans-note">【†
@@ -3945,17 +3690,19 @@ The direction-specific pan values are useful for customizing some overscroll beh
 ~nativeに~scrollする要素の中で，~pointer~eventの取扱いを伴う（あるいは，その逆にする）
 ］ような，~customな~panningを実装する~componentを構成するためにも利用できる。
 例えば，ある “画像~回転台” に `pan-y$v を利用すれば、［
-文書の縦方向への~scrollingに干渉することなく，横方向の~pan操作oに対し~pointer~eventを受取る
+文書の縦方向への~panningに干渉することなく，横方向の~pan操作oに対し~pointer~eventを受取る
 ］ことを確保できるようになる。
-回転台が~~右端に達したとき，その `touch-action$p を `pan-y pan-right^v に変更すれば、その端を超える後続の~pan操作oは，アリなら表示域の中で文書を~scrollできるようになる。
-操作oの途中で~panの挙動を変更することは、アリでない。
+回転台が~~右端に達したとき，その `touch-action$p を `pan-y pan-right^v に変更すれば、その端を超える後続の~scroll操作oは，アリなら表示域の中で文書を~scrollできるようになる。
+［
+~panning／~scrolling
+］の挙動を途中で変更することは、アリでない。
 ◎
-The direction-specific pan values can also be used for composing a component that implements custom panning with pointer event handling within an element that scrolls natively (or vice-versa). For example, an image carousel may use pan-y to ensure it receives pointer events for any horizontal pan operations without interfering with vertical scrolling of the document. When the carousel reaches its right-most extent, it may change its touch-action to pan-y pan-right so that a subsequent pan operation beyond its extent can scroll the document within the viewport if possible. It's not possible to change the behavior of a pan in the middle of an operation.
+The direction-specific pan values can also be used for composing a component that implements custom panning with pointer event handling within an element that scrolls natively (or vice-versa). For example, an image carousel may use pan-y to ensure it receives pointer events for any horizontal pan operations without interfering with vertical panning of the document. When the carousel reaches its right-most extent, it may change its touch-action to pan-y pan-right so that a subsequent scroll operation beyond its extent can scroll the document within the viewport if possible. It's not possible to change the behavior of a panning/scrolling operation while it is taking place.
 </p>
 </div>
 
 <p class="note">注記：
-一部の既定の`~touch用の挙動$を不能化すると、~UAによる他の挙動に対する応答が素早くなることもある。
+一部の`直な~pan-zoom$用の既定の挙動を不能化すると、~UAによる他の挙動に対する応答が素早くなることもある。
 例えば，~UAによっては、二連-~tap~gestureを取扱えるようにするため，
 `click$et の前に 300ms ほどの遅延を自動的に入れるものもある。
 そのような事例では、
@@ -3965,34 +3712,36 @@ The direction-specific pan values can also be used for composing a component tha
 ~tapや二連-~tap~gestureを決定するための手法については、この仕様の視野から外れることに注意。
 ◎
 Note
-Disabling some default touch behaviors may allow user agents to respond to other behaviors more quickly. For example, with auto user agents typically add 300ms of delay before click to allow for double-tap gestures to be handled. In these cases, explicitly setting touch-action: none or touch-action: manipulation will remove this delay. Note that the methods for determining a tap or double-tap gesture are out of scope for this specification.
+Disabling some default direct manipulation behaviors for panning and zooming may allow user agents to respond to other behaviors more quickly. For example, with auto user agents typically add 300ms of delay before click to allow for double-tap gestures to be handled. In these cases, explicitly setting touch-action: none or touch-action: manipulation will remove this delay. Note that the methods for determining a tap or double-tap gesture are out of scope for this specification.
 </p>
 
 		</section>
 
 <div class="example">
-<p>`7@ex：
-~touch用の挙動をすべて許容しない例：
+<p>`5@ex：
+`直な操作$用の挙動をすべて許容しない例：
 ◎
-Example 7: Disallowing all touch behaviors
+Example 5: Disallowing all direct manipulation behaviors
 </p>
 
 <pre class="lang-html">
 &lt;div style="touch-action: none;"&gt;
 <span class="comment">
-この要素は、すべての~touchに対し~pointer~eventを受取る。
+この要素は、`直な操作$のうち［
+`touch-action^p が指定されていなければ~pan-zoomに至るもの
+］に対しても，~pointer~eventを受取る。
 ◎
-This element receives pointer events for all touches.
+This element receives pointer events for all direct manipulation interactions that otherwise lead to panning or zooming.
 </span>
 &lt;/div&gt;
 </pre>
 </div>
 
 <div class="example">
-<p>`8@ex：
+<p>`6@ex：
 横方向への~panningに限り許容する例：
 ◎
-Example 8: Allowing horizontal panning only
+Example 6: Allowing horizontal panning only
 </p>
 
 <pre class="lang-html">
@@ -4007,26 +3756,29 @@ This element receives pointer events when not panning in the horizontal directio
 </div>
 
 <div class="example">
-<p>`9@ex：
-~touch用の挙動を許容しない子~領域がある例：
+<p>`7@ex：
+`直な~pan-zoom$用の挙動を許容しない子~領域がある例：
 ◎
-Example 9: Child regions that disallow touch behaviors
+Example 7: Child regions that disallow direct manipulation behaviors for panning and zooming
+touch behaviors
 </p>
 
 <pre class="lang-html">
 &lt;div style="overflow: auto;"&gt;
     &lt;div style="touch-action: none;"&gt;
 <span class="comment">
-この要素は、すべての~touchに対し~pointer~eventを受取る。
+この要素は、`直な操作$のうち［
+`touch-action^p が指定されていなければ~pan-zoomに至るもの
+］に対しても，~pointer~eventを受取る。
 ◎
-This element receives pointer events for all touches.
+This element receives pointer events for all direct manipulation interactions that otherwise lead to panning or zooming.
 </span>
     &lt;/div&gt;
     &lt;div&gt;
 <span class="comment">
-この要素~上の~touchは、親を操作するために消費され得る。
+この要素に対する`直な操作$は、親を操作するために消費されてもヨイ。
 ◎
-Touches on this element MAY be consumed for manipulating the parent.
+Direct manipulation interactions on this element MAY be consumed for manipulating the parent.
 </span>
     &lt;/div&gt;
 &lt;/div&gt;
@@ -4034,10 +3786,10 @@ Touches on this element MAY be consumed for manipulating the parent.
 </div>
 
 <div class="example">
-<p>`10@ex：
-~touch用の挙動を許容しない親が挟まれている例：
+<p>`8@ex：
+`直な~pan-zoom$用の挙動を許容しない親が挟まれている例：
 ◎
-Example 10: Intermediate parent that disallows touch behaviors
+Example 8: Intermediate parent that disallows direct manipulation behaviors for panning and zooming
 </p>
 
 <pre class="lang-html">
@@ -4045,14 +3797,15 @@ Example 10: Intermediate parent that disallows touch behaviors
     &lt;div style="touch-action: pan-y;"&gt;
         &lt;div style="touch-action: pan-x;"&gt;
 <span class="comment">
-この要素は、すべての~touchに対し~pointer~eventを受取る
-— 横方向への~panningのみを許容する要素と `auto$v 先祖との間には，縦方向の~panningのみを許容する先祖があるので。
-したがって、要素に対しては，`~touch用の挙動$は許容されない。
+この要素は、すべての`直な操作$に対し~pointer~eventを受取る
+— 横方向への~panningに限り許容する要素と~scroll可能な要素（ `overflow: auto^css ）との間には，縦方向の~panningに限り許容する先祖があるので。
+したがって、`直な~pan-zoom$用の挙動は，~UAにより取扱われない。
 ◎
-This element receives pointer events for all touches because
-it allows only horizontal panning yet an intermediate ancestor 
-(between it and the pannable element) only allows vertical panning. 
-Therefore, no touch behaviors are allowed.
+This element receives pointer events for all direct manipulation interactions because
+it allows only horizontal panning yet an intermediate ancestor
+(between it and the scrollable element) only allows vertical panning.
+Therefore, no direct manipulation behaviors for panning/zooming are
+handled by the user agent.
 </span>
         &lt;/div&gt;
     &lt;/div&gt;
@@ -4061,10 +3814,10 @@ Therefore, no touch behaviors are allowed.
 </div>
 
 <div class="example">
-<p>`11@ex：
-許容される~touch用の挙動を制約する親が挟まれている例：
+<p>`9@ex：
+許容される`直な~pan-zoom$用の挙動を制約する親が挟まれている例：
 ◎
-Example 11: Intermediate parent that restricts allowed touch behaviors
+Example 9: Intermediate parent that restricts allowed direct manipulation behaviors for panning and zooming
 </p>
 
 <pre class="lang-html">
@@ -4099,31 +3852,8 @@ This element receives pointer events when not panning to the left.
 Pointer capture allows the events for a particular pointer (including any compatibility mouse events) to be retargeted to a particular element other than the normal hit test result of the pointer's location. This is useful in scenarios like a custom slider control (e.g. similar to the [HTML] &lt;input type="range"&gt; control). Pointer capture can be set on the slider thumb element, allowing the user to slide the control back and forth even if the pointer slides off of the thumb.
 </p>
 
-<figure id="figure_slider">
+<figure id="figure_slider">`slider^dgm
 
-<div style="margin: 0.5em;">
-<span style="vertical-align:middle;">音量：</span>
-<div style="vertical-align:middle;
-	display:inline-block;
-	position:relative;
-	border:solid silver 0.2em;
-	width:15em;"
-><div style="position:absolute;
-	left:8em;
-	top:-0.8em;
-	width:1em;
-	height:1.6em;
-	background: black;
-"></div></div>
-</div>
-
-<!-- 
-<img
-	style="width:404px; height:40px;"
-	src="pointerevents/slider.png"
-	alt="Custom Volume Slider"
->
- -->
 <figcaption>
 ~thumb要素を前後に~slideして値を選ぶような，~custom~slider~controlの例。
 ~thumb上で `pointerdown$et が生じたとき，~pointer捕捉を利用すれば、利用者は，~pointerが~sliderからそれても ~slideできるようになる。
@@ -4250,23 +3980,14 @@ For the specified pointerId, clear the pending pointer capture target override, 
 <h3 title="Implicit Pointer Capture">9.4. 暗黙的な~pointer捕捉</h3>
 
 <p>
-一部の入力~装置（~touchscreenなど）は、
-“直接~操作” の~metaphorを実装する 
-— そこでの~pointerは、首に~UI要素~上で作動中になるように動作するものと意図される（ ~cursorを介して，~UI上を概念的に浮動する間接的な接触に代わって，物理的な直接~接触に錯覚させるような）。
-そのような装置は、 `InputDeviceCapabilities.pointerMovementScrolls$m ~propにより識別され、次のような “暗黙的な~pointer捕捉” の挙動を備えるべきである。
-◎
-Some input devices (such as touchscreens) implement a "direct manipulation" metaphor where a pointer is intended to act primarily on the UI element it became active upon (providing a physical illusion of direct contact, instead of indirect contact via a cursor that conceptually floats above the UI). Such devices are identified by the InputDeviceCapabilities.pointerMovementScrolls property and should have "implicit pointer capture" behavior as follows.
-</p>
-
-<p>
-直接~操作 装置は、正確に，［
+`直な~pan-zoom$（~touchscreen上の~touchや~stylusなど）を実装する入力は、正確に，［
 `pointerdown$et 用の~listenerが呼出される直前に，標的~要素~上で `setPointerCapture()$m が~callされた
-］かのように挙動するべきである。
+］かのように挙動するベキである。
 これが生じたかどうかは、
 `hasPointerCapture()$m ~APIを利用して決定できる（例えば `pointerdown$et ~listenerの中で）。
 次回に~pointer~eventが発火される前に，~pointerに対し `releasePointerCapture()$m が~callされなかった場合、 `gotpointercapture$et ~eventは，標的に（通常通り）配送されることになり、その捕捉が作動中であることを指示する。
 ◎
-Direct manipulation devices should behave exactly as if setPointerCapture was called on the target element just before the invocation of any pointerdown listeners. The hasPointerCapture API may be used (eg. within any pointerdown listener) to determine whether this has occurred. If releasePointerCapture is not called for the pointer before the next pointer event is fired, then a gotpointercapture event will be dispatched to the target (as normal) indicating that capture is active.
+Inputs that implement direct manipulation interactions for panning and zooming (such as touch or stylus on a touchscreen) SHOULD behave exactly as if setPointerCapture was called on the target element just before the invocation of any pointerdown listeners. The hasPointerCapture API may be used (eg. within any pointerdown listener) to determine whether this has occurred. If releasePointerCapture is not called for the pointer before the next pointer event is fired, then a gotpointercapture event will be dispatched to the target (as normal) indicating that capture is active.
 </p>
 
 <p class="note">注記：
@@ -4366,8 +4087,476 @@ When a pointer lock ([PointerLock]) is successfully applied on an element, a use
 
 		</section>
 	</section>
+	<section id="coalesced-and-predicted-events">
+<h2 title="Coalesced and predicted events">10. 合体された~event群と予測された~event群</h2>
+
+<p class="note">注記：
+この仕様は~UAが，~pointerの動き~dataをどう［
+合体する／予測する
+］べきかは定義しない。
+この情報へ~accessするための~APIを指定するだけである。
+◎
+Note
+This specification does not define how user agents should coalesce or predict pointer movement data. It only specifies the API for accessing this information.
+</p>
+
+		<section id="coalesced-events">
+<h3 title="Coalesced events">10.1 合体された~event群</h3>
+
+<p>
+処理能の理由から、~UAは，~pointerの位置が更新される あらゆる回には
+`pointermove$et ~eventを送信しないことを選んでもヨイ
+— 代わりに，それら複数回の位置~変化を 1 個の `pointermove$et 【！move】~eventの中に合体する（結合する／併合する）ことになる。
+この~approachは，~UAが遂行しなければならない~event取扱い量を抑制する助けになるが、
+~pointer位置を追跡するときの粒度と忠実度も
+— 特に，速く大きな動きに対し —
+自然に抑制されることになる。
+`getCoalescedEvents()$m ~methodを利用すれば、
+~appは，合体されない生の位置~変化への~accessがアリになる
+— これは、~pointerの動き~dataに対し，もっと精確な取扱いを許容する。
+一例として，描き~appの事例では、合体されない~event群を，~pointer実際の動きに より近く合致する滑らかな曲線を描くために利用できる。
+◎
+For performance reasons, user agents may choose not to send a pointermove event every time the position of a pointer is updated. Instead, they will coalesce (combine/merge) multiple position changes into a single move event. While this approach helps in reducing the amount of event handling the user agent must perform, it will naturally reduce the granularity and fidelity when tracking a pointer position, particularly for fast and large movements. Using the getCoalescedEvents method it is possible for applications to access the raw, un-coalesced position changes. These allow for a more precise handling of pointer movement data. In the case of drawing applications, for instance, the un-coalesced events can be used to draw smoother curves that more closely match the actual movement of a pointer.
+</p>
+
+<figure id="figure_coalesced">`coalesced^dgm
+
+<figcaption>
+描き~appにおける曲線の例。
+`pointermove$et ~eventからの合体された座標のみを利用して（黒っぽい丸）描いた曲線は，角張った様子が目立つ。
+同じ線を `getCoalescedEvents()$m が供する もっと きめ細かな点群（赤い丸）利用して描いた結果は，~pointerの動きを もっと滑らかに近似する。
+◎
+Figure 5 Example of a curve in a drawing application – using only the coalesced coordinates from pointermove events (the grey dots), the curve is noticeably angular and jagged; the same line drawn using the more granular points provided by getCoalescedEvents (the red circles) results in a smoother approximation of the pointer movement.
+</figcaption></figure>
+
+<p>
+各 `PointerEvent$I ~obj %O には
+`合体d~event~list@
+が結付けられる
+— それは 0 個以上の `PointerEvent$I ~objからなる~listである。
+%O の~event型が［
+`pointermove$et ／ `pointerrawupdate$et
+］である場合、この~listは，この~eventの中に合体された すべての `PointerEvent^I ~objが成す連列になる
+— 他の場合、この~listは空になる。
+【理論上は，この~listを成す各~eventも空でない`合体d~event~list$を持ち得ることになるが、それについては触れられていない。】
+◎
+A PointerEvent has an associated coalesced event list (a list of zero or more PointerEvents). If this event is a pointermove or pointerrawupdate event, the list is a sequence of all PointerEvents that were coalesced into this event; otherwise it is an empty list.
+</p>
+
+<p>
+`合体d~event~list$を成す各~eventの `timeStamps$m `DOM$r は、先頭から順に増大する。
+◎
+The events in the coalesced event list will have increasing timeStamps ([WHATWG-DOM]), so the first event will have the smallest timeStamp.
+</p>
+
+<div class="example">
+<p>`10@ex：
+合体d~event~listを利用している
+基本的な~canvasの描き~app
+◎
+Example 10: Basic canvas drawing application using the coalesced events list
+</p>
+
+<pre class="lang-html">
+&lt;style&gt;
+  /* <span class="comment">
+直な操作による挙動（~pan-zoomなど）を不能化して、
+`canvas$e 要素~上のすべての~eventを，~appに仕向ける。
+◎
+Disable intrinsic user agent direct manipulation behaviors (such as panning or zooming) so that all events on the canvas element are given to the application instead.
+</span> */
+
+  canvas { `touch-action$p: none; }
+&lt;/style&gt;
+
+&lt;canvas
+    id="drawSurface"
+    width="500px" height="500px"
+    style="border:1px solid black;"
+&gt;&lt;/canvas&gt;
+
+&lt;script&gt;
+    var %canvas = document.getElementById("drawSurface"),
+    %context = %canvas.getContext("2d");
+
+    %canvas.addEventListener("pointermove", (%e)=&gt; {
+
+        if (%e.getCoalescedEvents) {
+            for (let %coalesced_event of %e.getCoalescedEvents()) {
+                paint(%coalesced_event); /* <span class="comment">
+合体されない生の点群をすべて塗る
+◎
+Paint all raw/non-coalesced points
+</span> */
+            }
+        } else {
+            paint(%e); /* <span class="comment">
+合体された最終的な点を塗る
+◎
+Paint the final coalesced point
+</span> */
+        }
+    });
+
+    function paint(%event) {
+        if(%event.buttons&gt;0) {
+            %context.fillRect(%event.clientX, %event.clientY, 5, 5);
+        }
+    }
+
+&lt;/script&gt;
+</pre>
+
+</div>
+
+<p class="note">注記：
+`PointerEvent$I の各~属性は、［
+合体d~event~listを成す~eventを最良に表現する仕方
+］で初期化されることになる。
+例えば，その［
+`movementX$m, `movementY$m
+］ `POINTERLOCK$r は、合体された すべての~eventの同じ属性の総和にもされ得る。
+◎
+Note
+
+The PointerEvent's attributes will be initalized in a way that best represents the events in the coalesced event list. For example its movementX and movementY ([POINTERLOCK]) COULD be the sum of those of all the coalesced events.
+</p>
+
+<div class="note">
+<p>注記：
+これらの~eventが配送される順序は、実際の~eventの順序に似せるベキである。
+例えば，
+【~pointerの~buttonが押されることにより】
+`pointerdown$et ~eventに加え，合体された `pointermove$et ~eventたちも配送される場合、~UAは最初に，それらの合体された［
+同じ `pointerId$m を伴う~event
+］すべてを伴う 1 個の `pointermove$et ~eventを配送してから、
+`pointerdown$et ~eventを配送するベキである。
+次の例に、実際に起きた~event列と，~UAにより配送される~event列を時系列順に（すなわち各~eventの `timestamp$m は順に増大する）示す：
+◎
+Note
+
+The order of all these dispatched events should resemble the actual order of the original events' order. For example if a pointerdown event causes the dispatch for the coalesced pointermove events the user agent SHOULD first dispatch one pointermove event with all those coalesced events of a pointerId followed by the pointerdown event. Here is an example of the actual events happening with increasing timestamps and the events dispatched by the user agent:
+</p>
+
+<div>
+<table>
+<caption>
+カッコ内の数字は~pointerの `pointerId$m
+</caption>
+
+<thead>
+<tr><th>実際の~pointerの状態~変化
+</th><th>配送される~event／合体される~eventの個数
+</th></tr></thead><tbody>
+
+<tr><td>（ 2 ）座標~変化
+</td><td>`pointerrawupdate$et（ 2 ）／ 1 個【 0 個？】
+
+</td></tr><tr><td>（ 1 ）座標~変化
+</td><td>`pointerrawupdate$et（ 1 ）／ 1 個
+
+</td></tr><tr><td>（ 2 ）座標~変化
+</td><td>`pointerrawupdate$et（ 2 ）／ 1 個
+
+</td></tr><tr><td>（ 2 ）座標~変化
+</td><td>`pointerrawupdate$et（ 2 ）／ 1 個
+
+</td></tr><tr><td>（ 1 ）座標~変化
+</td><td>`pointerrawupdate$et（ 1 ）／ 1 個
+
+</td></tr><tr><td>（ 2 ）座標~変化
+</td><td>`pointerrawupdate$et（ 2 ）／ 1 個
+
+</td></tr><tr><td>（ 1 ）~buttonが押された
+</td><td>
+`pointermove$et（ 1 ）／ 2 個<br>
+`pointermove$et（ 2 ）／ 4 個<br>
+`pointerdown$et（ 1 ）／ 0 個<br>
+
+</td></tr><tr><td>（ 2 ）座標~変化
+</td><td>`pointerrawupdate$et（ 2 ）／ 1 個
+
+</td></tr><tr><td>（ 2 ）座標~変化
+</td><td>`pointerrawupdate$et（ 2 ）／ 1 個
+
+</td></tr><tr><td>（ 1 ）~buttonが離された
+</td><td>
+`pointermove$et（ 2 ）／ 2 個<br>
+`pointerup$et（ 1 ）／ 0 個<br>
+</td></tr></tbody>
+</table>
+
+◎
+Actual events｜Dispatched events
+pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
+pointer (pointerId=1) coordinate change｜pointerrawupdate (pointerId=1) w/ one coalesced event
+pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
+pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
+pointer (pointerId=1) coordinate change｜pointerrawupdate (pointerId=1) w/ one coalesced event
+pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
+pointer (pointerId=1) button press｜pointermove (pointerId=1) w/ two coalesced events
+pointermove (pointerId=2) w/ four coalesced events
+pointerdown (pointerId=1) w/ zero coalesced events
+pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
+pointer (pointerId=2) coordinate change｜pointerrawupdate (pointerId=2) w/ one coalesced event
+pointer (pointerId=1) button release｜pointermove (pointerId=2) w/ two coalesced events
+pointerup (pointerId=1) w/ zero coalesced events
+</div>
+</div>
+
+		</section>
+		<section id="predicted-events">
+<h3 title="Predicted events">10.2 予測された~event群</h3>
+
+<p>
+一部の~UAは、［
+~pointerに確認された一連の動きの後に，未来の~pointerの動きを成す位置は どうなるか
+］について（過去の点群, 当の動きの速さや軌跡に基づいて）予測を為せるような，組込みの~algoを備える。
+この情報は `getPredictedEvents()$m ~methodから得られ、~appは，それを利用して
+予測された位置を “事前に” 投機的に描くことにより，知覚される待時間を抑制できる
+— 予測されたこれらの点群は、実際の点群を受取った時点で破棄するようにして。
+◎
+Some user agents have built-in algorithms which, after a series of confirmed pointer movements, can make a prediction (based on past points, and the speed/trajectory of the movement) what the position of future pointer movements may be. Applications can use this information with the getPredictedEvents method to speculatively "draw ahead" to a predicted position to reduce perceived latency, and then discarding these predicted points once the actual points are received.
+</p>
+
+<figure id="figure_predicted">`predicted^dgm
+<figcaption>
+描き~appにおける線の例（
+`pointermove$et ~eventからの合体された座標~群を利用して，左下から右上へ~gestureを描いた結果）
+— ~UAが予測した未来の点群（黒っぽい丸)を示している。
+◎
+Example of a line in a drawing application (the result of a drawing gesture 
+from the bottom left to the top right), using the coalesced coordinates 
+from `pointermove^c events, showing the user agent's predicted future points (the grey circles).
+◎
+Figure 6 Example of a line in a drawing application (the result of a drawing gesture from the bottom left to the top right), using the coalesced coordinates from pointermove events, showing the user agent's predicted future points (the grey circles).
+</figcaption></figure>
+
+<p>
+各 `PointerEvent$I ~obj %O には
+`予測d~event~list@
+が結付けられる
+— それは 0 個以上の `PointerEvent$I ~objからなる~listである。
+%O の~event型が `pointermove$et である場合、この~listは，~UAが未来に［
+`合体d~event~list$に後続することになる
+］ものと予測する `PointerEvent^I ~objが成す連列になる
+— 他の場合、この~listは空になる。
+◎
+A PointerEvent has an associated predicted event list (a list of zero or more PointerEvents). If this event is a pointermove event, it is a sequence of PointerEvents that the user agent predicts will follow the events in the coalesced event list in the future; otherwise it is an empty list.
+</p>
+
+<p>
+この~listを成す~eventの［
+個数, および それらが現在の時刻印から どれほど離れるか
+］は、［
+~UA, および ~UAが利用する予測~algo
+］により決定される。
+◎
+The number of events in the list and how far they are from the current timestamp are determined by the user agent and the prediction algorithm it uses.
+</p>
+
+<p>
+`予測d~event~list$を成す各~eventの `timeStamps$m `DOM$r は、先頭から順に増大する, かつ［
+`合体d~event~list$を成す最後の~eventのそれ
+］より大きくなるベキである。
+◎
+The events in the predicted event list will have increasing timeStamps([WHATWG-DOM]), so the first event will have the smallest timeStamp which should still be greater than the last event in the coalesced event list.
+</p>
+
+<div class="example">
+
+<p>`11@ex：
+合体された~event群, 予測された~event群を利用して何か描く概念的な~approach。
+◎
+Example 11: Conceptual approach to drawing using coalesced events and predicted events
+</p>
+
+<pre class="lang-js">
+var %predicted_points = [];
+window.addEventListener("pointermove", function(%event) {
+  /* <span class="comment">
+それまでに描いた予測された点群を消す。
+◎
+Clear the previously drawn predicted points.
+</span> */
+  for (let %e of %predicted_points.reverse())
+    clearPoint(%e.pageX, %e.pageY);
+
+  /* <span class="comment">
+最後に受取った~event以降に起きた，実際の動きを描く。
+◎
+Draw the actual movements that happened since the last received event.
+</span> */
+  for (let %e of %event.getCoalescedEvents())
+    drawPoint(%e.pageX, %e.pageY);
+
+  /* <span class="comment">
+待時間の知覚を抑制するため，現在の予測された点群を描く。
+◎
+Draw the current predicted points to reduce the perception of latency.
+</span> */
+  %predicted_points = %event.getPredictedEvents();
+  for (let %e of %predicted_points)
+    drawPoint(%e.pageX, %e.pageY);
+});
+</pre>
+</div>
+
+
+		</section>
+		<section id="populating-and-maintaining-the-coalesced-and-predicted-event-lists">
+<h3 title="Populating and maintaining the coalesced and predicted event lists">10.3 合体d~event~list, 予測d~event~listの拡充-法と保守-法</h3>
+
+<div class="algo">
+<p>
+所与の `PointerEvent$I %~pointer~event の作成-時には、その［
+`合体d~event~list$, `予測d~event~list$
+］を成す
+~EACH( %~event )
+に対し，次の手続きを走らす：
+◎
+When a PointerEvent is created, run the following steps for each event in the coalesced event list and predicted event list:
+</p>
+<ol>
+	<li>
+%~event の
+⇒＃
+`pointerId^m ~SET %~pointer~event の `pointerId^m,
+`pointerType^m ~SET %~pointer~event の `pointerType^m,
+`isPrimary^m ~SET %~pointer~event の `isPrimary^m,
+`isTrusted^m ~SET %~pointer~event の `isTrusted^m
+`cancelable^m ~SET ~F
+`bubbles^m ~SET ~F
+◎
+Set the event's pointerId, pointerType, isPrimary and isTrusted to the PointerEvent's pointerId, pointerType, isPrimary and isTrusted.
+◎
+Set the event's cancelable and bubbles attributes to false.
+</li>
+	<li>
+%~event の`合体d~event~list$ ~SET 空~list
+◎
+Set the event's coalesced event list and predicted event list to an empty list.
+</li>
+	<li>
+%~event の`予測d~event~list$ ~SET 空~list
+◎
+↑</li>
+	<li>
+%~event の残りの属性を `PointerEvent$I と同じ仕方で初期化する
+◎
+Initialize the rest of the attributes the same way as PointerEvent.
+</li>
+</ol>
+</div>
+
+<div class="p">
+<p>
+各 `PointerEvent$I ~objには、次が結付けられる：
+</p>
+<ul>
+	<li>
+`合体d~event標的は~dirtyか@
+⇒
+真偽値
+— 初期-時は ~F をとるモノトスル。
+</li>
+	<li>
+`予測d~event標的は~dirtyか@
+⇒
+真偽値
+— 初期-時は ~F をとるモノトスル。
+</li>
+</ul>
+◎
+A PointerEvent has an associated coalesced events targets dirty and an associated predicted events targets dirty flag. When an event is created they must be initialized to false.
+</div>
+
+<div class="algo">
+<p>
+`PointerEvent$I ~objの`標的$が変化したときは、次を行うとする
+⇒＃
+`合体d~event標的は~dirtyか$ ~SET ~T；
+`予測d~event標的は~dirtyか$ ~SET ~T
+◎
+When the PointerEvent's target is changed, set coalesced events targets dirty and predicted events targets dirty to true.
+</p>
+</div>
+
+<div class="algo">
+<p>
+`getCoalescedEvents()$m
+~method手続きは：
+◎
+When the getCoalescedEvents method is called:
+</p>
+<ol>
+	<li>
+~IF［
+`合体d~event標的は~dirtyか$ ~EQ ~T
+］
+⇒
+`合体d~event~list$を成す
+~EACH( %~event )
+に対し
+⇒
+%~event の`標的$ ~SET コレの`標的$
+
+
+この `PointerEvent^c
+◎
+If the coalesced events targets dirty is true: for each event in the coalesced event list, set the event's target to this PointerEvent's target.
+</li>
+	<li>
+コレの`合体d~event標的は~dirtyか$ ~SET ~F
+◎
+Set the coalesced events targets dirty to false.
+</li>
+	<li>
+~RET コレの`合体d~event~list$
+◎
+Return the coalesced event list.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`getPredictedEvents()$m
+~method手続きは：
+◎
+When the getPredictedEvents method is called:
+</p>
+<ol>
+	<li>
+~IF［
+`予測d~event標的は~dirtyか$ ~EQ ~T
+］
+⇒
+`予測d~event~list$を成す
+~EACH( %~event )
+に対し
+⇒
+%~event の`標的$ ~SET コレの`標的$
+◎
+If the predicted events targets dirty is true: for each event in the predicted event list, set the event's target to this PointerEvent's target.
+</li>
+	<li>
+コレの`予測d~event標的は~dirtyか$ ~SET ~F
+◎
+Set the predicted events targets dirty to false.
+</li>
+	<li>
+~RET コレの`予測d~event~list$
+◎
+Return the predicted event list
+</li>
+</ol>
+</div>
+
+		</section>
+	</section>
 	<section id="compatibility-mapping-with-mouse-events">
-<h2 title="Compatibility Mapping with Mouse Events">10. ~mouse~eventとの互換性を得るための対応付け</h2>
+<h2 title="Compatibility Mapping with Mouse Events">11. ~mouse~eventとの互換性を得るための対応付け</h2>
 
 <p>
 今日の~web内容では、`~mouse~event$向けのみに書かれている~codeが大勢を占めている。
@@ -4393,6 +4582,7 @@ The compatibility mapping with mouse events are an OPTIONAL feature of this spec
 それらは、概して~UIの作動化と束ねられており，~keyboardの様な他の入力~装置からも発火されるので。
 ◎
 Note
+
 The click event, defined in [UIEVENTS], and the contextmenu event are not considered compatibility mouse events as they are typically tied to user interface activation and are fired from other input devices, like keyboards.
 </p>
 
@@ -4495,7 +4685,7 @@ Mouse events can only be prevented when the pointer is down. Hovering pointers (
 </p>
 
 		<section id="tracking-the-effective-position-of-the-legacy-mouse-pointer">
-<h3 title="Tracking the effective position of the legacy mouse pointer">10.1. 旧来の~mouse~pointerに対する位置の追跡-法</h3>
+<h3 title="Tracking the effective position of the legacy mouse pointer">11.1. 旧来の~mouse~pointerに対する位置の追跡-法</h3>
 
 <p>
 `互換性~mouse~event$を生産し得るのは`首~pointer$に限られるが、
@@ -4579,7 +4769,7 @@ Set effective legacy mouse pointer position to T.
 
 		</section>
 		<section id="mapping-for-devices-that-support-hover">
-<h3 title="Mapping for devices that support hover">10.2. ~hoverを~supportする装置~用の対応付け</h3>
+<h3 title="Mapping for devices that support hover">11.2. ~hoverを~supportする装置~用の対応付け</h3>
 
 <div class="algo">
 <p>
@@ -4707,7 +4897,7 @@ If the pointer event dispatched was pointerup or pointercancel, clear the PREVEN
 
 		</section>
 		<section id="mapping-for-devices-that-do-not-support-hover">
-<h3 title="Mapping for devices that do not support hover">10.3. ~hoverを~supportしない装置~用の対応付け</h3>
+<h3 title="Mapping for devices that do not support hover">11.3. ~hoverを~supportしない装置~用の対応付け</h3>
 
 <p>
 ほとんどの~touchscreenなど、`作動中$でない間は，座標（または座標の集合）に対する~hoverを~supportしない装置もある。
@@ -4856,6 +5046,7 @@ If the user agent supports both Touch Events (as defined in [TOUCH-EVENTS]) and 
 
 ◎
 Note
+
 The activation of an element (click) with a primary pointer that does not support hover (e.g. single finger on a touchscreen) would typically produce the following event sequence:
 • mousemove
 • pointerover
@@ -4892,7 +5083,7 @@ If, however, the pointerdown event is canceled during this interaction then the 
 		</section>
 	</section>
 	<section id="converting-between-tiltx-tilty-and-altitudeangle-azimuthangle">
-<h2 title="Converting between tiltX / tiltY and altitudeAngle / azimuthAngle">11. ［ `tiltX^m, `tiltY^m ］と［ `altitudeAngle^m, `azimuthAngle^m ］の間の変換-法</h2>
+<h2 title="Converting between tiltX / tiltY and altitudeAngle / azimuthAngle">12. ［ `tiltX^m, `tiltY^m ］と［ `altitudeAngle^m, `azimuthAngle^m ］の間の変換-法</h2>
 
 ~INFORMATIVE
 
@@ -5068,7 +5259,7 @@ Non-boundary case: neither tiltX nor tiltY is equal to 0 or +-90
 
 	</section>
 	<section id="security-and-privacy-considerations">
-<h2 title="Security and privacy considerations">12. ~securityと~privacyの考慮点</h2>
+<h2 title="Security and privacy considerations">13. ~securityと~privacyの考慮点</h2>
 
 <p>
 この付録では、 Pointer Events 実装における［
@@ -5218,7 +5409,7 @@ Does not allow downgrading default security characteristics.
 
 	</section>
 	<section id="glossary">
-<h2 title="Glossary">13. 用語集</h2>
+<h2 title="Glossary">14. 用語集</h2>
 
 ~INFORMATIVE
 
@@ -5351,6 +5542,58 @@ A type of input sensing device in which a surface can detect input which is in c
 </dd>
 
 	<dt>
+`直な操作@
+（ `direct manipulation^en ／ `direct manipulation interaction^en† ）
+◎
+direct manipulation
+</dt>
+	<dd>
+ある種の~UA（~touchscreen装置~上の~browserなど）は、
+“直な操作” の~metaphorを実装する
+— そこでの~pointerは、各種~controlとヤリトリするのみならず，
+現在の~pageを直に［
+~panする／~zoomする
+］ためにも利用され、物理的に直に接触しているかのように錯覚させる。
+例として，~touchscreen装置の利用者は、一般に［
+手指や~stylusを利用して~pointerを動かすことにより，~pageを “掴んで” いるかのように~panする
+］ことで，~pageを直に操作できる。
+対照的に，定例の［
+~desktop／~laptop
+］用の~mouse~pointerでは、~panningは~scrollbarを利用して行われる
+— ~pageを “~dragする” のではなく。
+◎
+Certain user agents (such as browsers on a touchscreen device) implement a "direct manipulation" metaphor where a pointer not only interacts with controls, but is also used to directly pan or zoom the current page, providing the illusion of direct physical contact. As an example, users on a touchscreen device are generally able to use a finger or a stylus to "grab" a page and pan it by moving the pointer, directly manipulating the page. Contrast this with a mouse pointer on a regular desktop/laptop, where panning is done by using a scrollbar, rather than by "dragging" the page.
+</dd>
+	<dd class="note">注記：
+“~dragする” ことにより~scrollすることを利用者に許容する事例には、（~laptop上に見出される様な）~touchpadも挙げられる。
+しかしながら，これは、一般に［
+“捏造な” ~mouse~wheel~eventを生成することにより達成される
+］ので，直な操作には数えられない。
+◎
+Note
+
+In some cases, touchpads (like those found on a laptop) will allow the user to scroll by "dragging" on the touchpad. However, this is generally achieved by the touchpad generating "fake" mouse wheel events, so this wouldn't count as a direct manipulation.
+</dd>
+	<dd class="trans-note">【†
+この訳では、
+`direct manipulation interaction^en
+（`直な操作$によるヤリトリ）も単に “`直な操作$” と略記する
+— この仕様における`直な操作$は、常に，それによる（~pageとの）ヤリトリを含意するので。
+</dd>
+
+	<dt>
+`直な~pan-zoom@
+（ `direct manipulation for panning and zooming^en ）
+</dt>
+	<dd>
+“~pan-zoom用の`直な操作$”
+の【この訳による】略記。
+</dd>
+	<dd class="trans-note">【
+`直な操作$のうち，何が~pan-zoom用とされるかは、~UAに委ねられる。
+】</dd>
+
+	<dt>
 `接触判定@
 （ `hit test^en ）
 </dt>
@@ -5374,7 +5617,6 @@ The process by which a user agent determines a target element for a pointer even
 ~screen上の特定の座標（または座標の集合）を標的に捉えられる入力~装置
 — ~mouse, ~pen, ~touch接触 など —
 の，~hardwareに不問な表現。
-
 ◎
 A hardware agnostic representation of input devices that can target a specific coordinate (or set of coordinates) on a screen, such as a mouse, pen, or touch contact.
 </dd>
@@ -5463,16 +5705,10 @@ A program, such as a browser or content authoring tool, normally running on a cl
 `pointerover$et, `pointerout$et, `pointerenter$et, `pointerleave$et
 </dd>
 
-	<dt>~touch （ `touch^en ）
-</dt>
-	<dd>
-~penなどの装置を介さない、人の手指による入力。
-</dd>
-
 	<dt>接触（ `contact^en ）
 </dt>
 	<dd>
-`~digitizer$が検出できる程に，物理的に接触-／近接している状態を意味する。
+`~digitizer$が検出できる程に，物理的に接触-／近接していることを意味する。
 【！ touch と contact の概念的な相違は、前者には，何らかの~~操作が含意されることにある？】
 </dd>
 
