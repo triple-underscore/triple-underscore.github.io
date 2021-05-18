@@ -899,7 +899,6 @@ RFC:
 framework::::フレームワーク
 proprietary::::プロプライエタリ
 十分:enough:~
-説明d:description:説明
 導かれ:leadされ:~
 導き:leadし:~
 導く:leadする:~

@@ -943,7 +943,7 @@ programmatic::::プログラム的
 based:-based:に基づく:::ベースの
 proprietary::::プロプライエタリ
 十分:enough:~
-説明d:description:説明
+記述:description:説明
 導かれ:leadされ:~
 導き:leadし:~
 メモ:memo::~
