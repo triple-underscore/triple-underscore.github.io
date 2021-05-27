@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-05-12
-trans_update:2021-05-13
+spec_date:2021-05-25
+trans_update:2021-05-27
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -237,7 +237,6 @@ dir:code
 s:samp
 V:var
 i:i
-cN:i
 X:span
 U:span
 cn:span
@@ -824,6 +823,9 @@ fg.終了させる:#concept-fetch-group-terminate
 接続~pool:#concept-connection-pool
 接続を得する:#concept-connection-obtain
 接続:#concept-connection
+cN.~key:#connection-key
+cN.生成元:#connection-origin
+cN.資格証？:#connection-credentials
 
 ~network区分~key:#network-partition-key
 ~network区分~keyを決定する:#determine-the-network-partition-key
@@ -2017,8 +2019,6 @@ FETCHMETADATA=副       ~/webappsec-fetch-metadata-ja.html
     Mike West. Fetch Metadata Request Headers. URL: https://w3c.github.io/webappsec-fetch-metadata/ 
 [FILEAPI]
     Marijn Kruisselbrink; Arun Ranganathan. File API. URL: https://w3c.github.io/FileAPI/ 
-[HR-TIME-2]
-    Ilya Grigorik. High Resolution Time Level 2. URL: https://w3c.github.io/hr-time/ 
 [HR-TIME-3]
     Yoav Weiss; et al. High Resolution Time. URL: https://w3c.github.io/hr-time/ 
 [HSTS]
@@ -2083,7 +2083,7 @@ FETCHMETADATA=副       ~/webappsec-fetch-metadata-ja.html
 ●●ref_informative
 
 [EXPECT-CT]
-    Emily Stark. Expect-CT Extension for HTTP. URL: https://tools.ietf.org/html/draft-ietf-httpbis-expect-ct-02 
+    Emily Stark. Expect-CT Extension for HTTP. URL: https://tools.ietf.org/html/draft-ietf-httpbis-expect-ct 
 [HTTP-RANGE]
     R. Fielding, Ed.; Y. Lafon, Ed.; J. Reschke, Ed.. Hypertext Transfer Protocol (HTTP/1.1): Range Requests. June 2014. Proposed Standard. URL: https://httpwg.org/specs/rfc7233.html 
 [HTTPVERBSEC1]
@@ -2124,7 +2124,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/b6c62836f427ab83654215d1488633a0f6b2bdc5/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/0fe0e238a588fa81114ad2d2e68c5d50a41c7714/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -6743,12 +6743,19 @@ When a fetch group is terminated, for each associated fetch record whose request
 `接続~pool$は、
 0 個以上の
 `接続@
-からなる。
-各 `接続$は、
-( `~key^cN（`~network区分~key$）, `生成元^cN（`生成元$）, `資格証？^cN（真偽値） )
+からなる`有順序~集合$である。
+各 `接続$は、それに結付けられる
+(
+`~key@cN
+（`~network区分~key$）,
+`生成元@cN
+（`生成元$）,
+`資格証？@cN
+（真偽値）
+)
 が成す組で識別される。
 ◎
-A user agent has an associated connection pool. A connection pool consists of zero or more connections. Each connection is identified by a key (a network partition key), an origin (an origin), and credentials (a boolean).
+A user agent has an associated connection pool. A connection pool is an ordered set of zero or more connections. Each connection is identified by an associated key (a network partition key), origin (an origin), and credentials (a boolean).
 </p>
 
 <p>
@@ -6866,18 +6873,17 @@ Return a new connection timing info whose domain lookup start time is the result
 <p>
 `接続を得する@
 ときは、所与の
-( %~key, %生成元, %資格証？,
+⇒＃
+`~network区分~key$ %~key,
+`生成元$ %生成元,
+真偽値 %資格証？,
 真偽値 %新たな接続を強制するか（省略時は ~F ）,
-真偽値
-`~HTTP3のみか@i
-（省略時は ~F ）,
-真偽値
-`専用か@i
-（省略時は ~F ）
-)
+真偽値 `~HTTP3のみか@i （省略時は ~F ）,
+真偽値 `専用か@i （省略時は ~F ）
+◎終
 に対し，次を走らす：
 ◎
-To obtain a connection, given a key, origin, credentials, an optional boolean forceNew (default false), an optional boolean http3Only (default false), and an optional boolean dedicated (default false), run these steps:
+To obtain a connection, given a network partition key key, origin, origin, boolean credentials, an optional boolean forceNew (default false), an optional boolean http3Only (default false), and an optional boolean dedicated (default false), run these steps:
 </p>
 <ol>
 	<li>
@@ -6892,9 +6898,9 @@ If dedicated is false, then:
 			<li>
 %接続たち ~LET ~UAの`接続~pool$を成す`接続$のうち，次を満たすものからなる集合
 ⇒
-( `~key^cN, `生成元^cN, `資格証？^cN ) ~EQ ( %~key, %生成元, %資格証？ )
+( `~key$cN, `生成元$cN, `資格証？$cN ) ~EQ ( %~key, %生成元, %資格証？ )
 ◎
-Let connections be a set of connections in the user agent’s connection pool each of whose key is key, origin is origin, and credentials is credentials.
+Let connections be a set of connections in the user agent’s connection pool whose key is key, origin is origin, and credentials is credentials.
 </li>
 			<li>
 ~IF［
@@ -6931,9 +6937,13 @@ Run these steps, but abort when the ongoing fetch is terminated:
 </p>
 		<ol>
 			<li>
-%接続 ~SET 新たな`接続$
+%接続 ~SET 次のようにされた新たな`接続$
+⇒＃
+`~key$cN ~SET %~key,
+`生成元$cN ~SET %生成元,
+`資格証？$cN ~SET %資格証？
 ◎
-Set connection to a new connection.＼
+Set connection to a new connection whose key is key, origin is origin, and credentials is credentials.＼
 </li>
 			<li>
 <p>
@@ -7020,11 +7030,9 @@ Return failure.
 %専用か ~EQ ~F
 ］
 ⇒
-~UAの`接続~pool$に，次のようにされた %接続 を追加する
-⇒
-( `~key^cN, `生成元^cN, `資格証？^cN ) ~SET ( %~key, %生成元, %資格証？ )
+~UAの`接続~pool$に %接続 を`付加する$set＊
 ◎
-If dedicated is false, then add connection to the user agent’s connection pool with key being key, origin being origin, and credentials being credentials.
+If dedicated is false, then append connection to the user agent’s connection pool.
 </li>
 	<li>
 ~RET %接続
@@ -7038,9 +7046,9 @@ Return connection.
 — 細かい点で，まだ発展し続けているので。
 これを述べることは、
 `link rel=preconnect^e
-による特能を説明する助けになり、また，`接続$は `資格証？^cN 別に分けられることを明瞭に~~規定する。
+による特能を説明する助けになり、また，`接続$は `資格証？$cN 別に分けられることを明瞭に~~規定する。
 後者は、例えば~TLS~session識別子が［
-`資格証？^cN ~EQ ~F の`接続$
+`資格証？$cN ~EQ ~F の`接続$
 ］と［
 ~EQ ~T のそれ
 ］とにまたがって再利用されないことを明確化する。
