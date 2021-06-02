@@ -130,8 +130,8 @@ return text;
 
 ●●options
 
-spec_date:2021-05-06
-trans_update:2021-05-17
+spec_date:2021-05-27
+trans_update:2021-06-02
 original_url:https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html
 source_checked:201215
 spec_status:IETFID
@@ -222,6 +222,7 @@ l.Strict:#samesite-strict
 l.Lax:#samesite-lax
 l.None:#samesite-none
 l.Default:#samesite-default
+l.Lax-allowing-unsafe:#lax-allowing-unsafe
 
 ~cookie保管庫:#cookie-store
 要請~URI:#request-uri
@@ -258,9 +259,17 @@ rq.同一-~site:#request-same-site
 ~secure:#secure
 ~top-level~navi:#top-level-navigation
 
-	●§
+生成元:#origin
+~top-level生成元:#top-level-origin
+~secure:#secure
 
-第三者主体:#third-party-cookies
+検索取得:#retrieval
+rT.要請:#retrieval-request
+rT.~URI:#retrieval-uri
+rT.同一-~site状態s:#retrieval-same-site-status
+rT.種別:#retrieval-type
+
+	●§
 
 4.1:#sane-set-cookie
 4.1.1:#abnf-syntax
@@ -273,12 +282,21 @@ rq.同一-~site:#request-same-site
 4.1.2.6:#attribute-httponly
 4.1.2.7:#attribute-samesite
 4.1.3:#cookie-name-prefixes
-5.3:#set-cookie
+5.3:#ignoring-cookies
+5.4:#set-cookie
 5.1.4:#cookie-path
-5.3.7:#the-samesite-attribute
-5.5:#cookie
+5.4.7:#the-samesite-attribute
+5.6.1:#cookie
 6.3:#idna-migration
 8.8:#samesite-cookies
+8.8.2:#top-level-navigations
+
+8.8.6:#unsafe-top-level-requests
+5.2.1:#document-requests
+利用者による制御:#user-controls
+5.4.7.1:#strict-lax
+5.4.7.2:#lax-allowing-unsafe
+
 同一-~site要請:#same-site-requests
 各種用語:#terminology
 ~server要件:#sane-profile
@@ -290,13 +308,13 @@ rq.同一-~site:#request-same-site
 日付:#cookie-date
 第三者主体~cookie:#third-party-cookies
 専用／共用~worker:#dedicated-and-shared-requests
-8.8.2:#top-level-navigations
 文書に基づく要請:#document-requests
 ~securityの考慮点:#security-considerations
 
-生成元:#origin
-~top-level生成元:#top-level-origin
-~secure:#secure
+
+~cookie施策:#cookie-policy
+~cookieを検索取得する:#retrieve-a-cookie
+
 
 	●外部（HTTP
 
@@ -312,7 +330,6 @@ rq.同一-~site:#request-same-site
 
 状態s~code:~HTTPsem#status-code
 
-要請~target:~HTTPsem#request-target
 HTTPSEM/5.6.3:~HTTPinfra#
 HTTPSEM/7.1:~HTTPinfra#
 	RFC6265/7.1:~HTTPcookie#third-party-cookies
@@ -430,24 +447,30 @@ url.~host:~URL1#concept-url-host
 5.2:#same-site-requests
 5.2.1:#document-requests
 5.2.2:#worker-requests
-5.3:#set-cookie
-5.3.1:#the-expires-attribute
-5.3.2:#the-max-age-attribute
-5.3.3:#the-domain-attribute
-5.3.4:#the-path-attribute
-5.3.5:#the-secure-attribute
-5.3.6:#the-httponly-attribute
-5.3.7:#the-samesite-attribute
-5.4:#storage-model
-5.5:#cookie
+5.3:#ignoring-cookies
+5.4:#set-cookie
+5.4.1:#the-expires-attribute
+5.4.2:#the-max-age-attribute
+5.4.3:#the-domain-attribute
+5.4.4:#the-path-attribute
+5.4.5:#the-secure-attribute
+5.4.6:#the-httponly-attribute
+5.4.7:#the-samesite-attribute
+5.4.7.1:#strict-lax
+5.4.7.2:#lax-allowing-unsafe
+5.5:#storage-model
+5.6.1:#cookie
+5.6.2:#non-http
+5.6.3:#retrieval-algorithm
 6:#implementation-considerations
 6.1:#limits
 6.2:#application-programming-interfaces
 6.3:#idna-migration
 7:#privacy-considerations
 7.1:#third-party-cookies
-7.2:#user-controls
-7.3:#expiration-dates
+7.2:#cookie-policy
+7.3:#user-controls
+7.4:#expiration-dates
 8:#security-considerations
 8.1:#overview-1
 8.2:#ambient-authority
@@ -461,6 +484,8 @@ url.~host:~URL1#concept-url-host
 8.8.2:#top-level-navigations
 8.8.3:#mashups-and-widgets
 8.8.4:#server-controlled
+8.8.5:#reload-navigations
+8.8.6:#unsafe-top-level-requests
 9:#iana-considerations
 9.1:#iana-cookie
 9.2:#iana-set-cookie
@@ -495,7 +520,6 @@ SSL:
 URI:
 IP:
 非HTTP: “non-HTTP” :: “非 HTTP” 
-uri:
 IDNA:
 公共:public::~
 internet::::インターネット
@@ -533,6 +557,7 @@ directory::::ディレクトリ
 失効日時:expiry-time::~
 有効期限:expiration date::~
 	有効期限:expiry date
+	有効期限:expiry
 有効期間:expiration period::~
 内包-:include::~
 	これ:removing
@@ -552,12 +577,15 @@ directory::::ディレクトリ
 再起動:restart:~
 上限:limit:~
 	~~上限:upper bound
+	~~上限以下:at most a duration
 
 	容量:capabilities／
 	総容量
 	少なくかつ小容量:few and as small
 	期間:duration
 	期間内:time period
+	時間:amount of time
+	期間:maximum amount of time
 	期限
 	最長:maximum
 	終了
@@ -624,6 +652,9 @@ directory::::ディレクトリ
 	^en:collation
 
 	●一般処理／構文解析
+近過去:recent:~
+経過-:elapse:~
+
 	認識されない／できない:unrecognized
 	外す:omit
 	直前まで
@@ -634,6 +665,8 @@ directory::::ディレクトリ
 	-:output
 	-:creation
 	~CONTINUE:continue
+	分:minute
+	~call元:caller
 
 	●保安
 	:ambient
@@ -676,7 +709,6 @@ side-channel::::サイドチャネル
 固定化-:fix:~
 	固定化-:-fixing
 欠陥:infelicities:~
-	~privacy意識の高い:privacy-conscious
 	秘匿情報:secret information
 秘匿情報:secrets::~
 	セッション強制:session fixation
@@ -706,6 +738,7 @@ side-channel::::サイドチャネル
 差止めら:withholdさ:差し止めら
 破損:breakage:~
 破損-:break:~
+login::::ログイン
 
 	安全でない:unsafe
 	抗する:against
@@ -751,13 +784,11 @@ project::::プロジェクト
 考えて:considerして:~
 行使-:exercise:~
 最大化する:maximizeする:最大限に得る
-厳密さ:strictness:~
 慣行:common practice:~
 相互運用-:interoperate:~
 	~~寛容:liberal／permissive
 恒久的:permanent:~
 等価性:equivalence:~
-利用e:usage:利用
 位置付け:status:~
 一般用:general-use:~
 著作者:author:~
@@ -795,6 +826,16 @@ mashup::機能の組み合わせ
 当日最新の:up-to-dateな:~
 満足する:satisfyする:満たす
 収容-:accommodate:~
+措置:measure:~
+寛容:permissive:~
+変種:variant:~
+供給:provision:~
+採用:adoption:~
+一時的:temporary:~
+過渡的:transitional:~
+究極的:ultimate:~
+IANA:
+放棄-:waive:~
 
 	効果的でない:ineffective
 	ほぼ無意味と化す:largely moot
@@ -828,6 +869,7 @@ mashup::機能の組み合わせ
 	notice
 	well
 	ある種の:certain kinds of
+	ある種の:certain
 	~~可能性:potential
 	すべてを成すには至らない:prudent to ensure that this designation is not the 
 	価する:worth
@@ -852,7 +894,8 @@ mashup::機能の組み合わせ
 	呼ばれる／知られ:known as
 	移行:transition, moving, Migration
 	促す:facilitate their
-	犠牲にするであろう:reduces the likelihood
+	抑制するものにもなり得る:may reduce the likelihood
+	相互運用能:will be able to interoperate with
 	思慮深く応用:judicious application
 	資料:references
 	呼ばれ:called
@@ -895,7 +938,6 @@ mashup::機能の組み合わせ
 	呼称:names
 	~~別名:or
 	名称:name
-	是非を~~設定:approve
 	~~情報:signal
 	それ以外の:as a general category
 	それ以外のとき:or otherwise
@@ -911,12 +953,20 @@ mashup::機能の組み合わせ
 	当初:first place
 	とする:suppose
 	いらついて:frustrated
-	~click:press
+	容易にする:ease
+	望ましくない:not be desirable
+	~UAが選んだ〜:user agent's choosing
+	必要とされ得る:may necessitate
+	指す:refer
+	導入される以前から在る:prior to the introduction
+	少なくすることが必要とされる:necessarily provides fewer
+	問わず:regardless
+	該当する段:the penultimate bullet point
+	-:reading
 
 	●未分類
 UTC:
 pop-up:pop up
-入力指示:prompt:~
 欠如:lack:~
 subset::::サブセット
 mail::::メール
@@ -937,6 +987,7 @@ toolbar::::ツールバー
 
 	以外の:except
 	:omit, exclude
+	~click:press
 	~web~mail:webmail
 	~web~site:website
 	~web解析:web analytics
@@ -988,6 +1039,7 @@ toolbar::::ツールバー
 	同時に:at once
 	~form提出:submission
 	別個な:distinct
+	指定し得る:distinct
 	~domain合致-:domain-match
 	~path合致-:path-match
 	複数階に入子にされた:multiple-nested
@@ -999,6 +1051,9 @@ toolbar::::ツールバー
 	^p:request-uri
 	名前空間:name space
 	伴わせる:marked as X=Y
+	文書:Document
+	総数:total
+	作成してから 2 分 以下のもの:a cookie age of 2 minutes or less
 
 	●指示語
 部位:portion:~
@@ -1042,14 +1097,14 @@ toolbar::::ツールバー
 HTTPSEM=副     ~/http-semantics-ja.html
 
 ●●ref_normative
-
+[DOM-DOCUMENT-COOKIE]
+    WHATWG, "HTML - Living Standard", 18 May 2021, URL: https://html.spec.whatwg.org/#dom-document-cookie
 [FETCH]
     van Kesteren, A., "Fetch", n.d., URL: https://fetch.spec.whatwg.org/
 [HTML]
     Hickson, I., Pieters, S., van Kesteren, A., Jägenstedt, P., and D. Denicola, "HTML", n.d., URL: https://html.spec.whatwg.org/
 [HTTPSEM]
     Fielding, R. T., Nottingham, M., and J. Reschke, "HTTP Semantics", Work in Progress, Internet-Draft, URL: https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-semantics
-
 [RFC1034]
     Mockapetris, P., "Domain names - concepts and facilities", STD 13, RFC 1034, November 1987, URL: https://tools.ietf.org/html/rfc1034
 [RFC1123]
@@ -1394,10 +1449,9 @@ The request-host is the name of the host, as known by the user agent, to which t
 
 <p>
 `要請~URI@
-（ `request-uri^en ）は、
-`要請~target$【`~target~URI$？】 `HTTPSEM$r を指す。
+（ `request-uri^en ）は、`~target~URI$ `HTTPSEM$r を指す。
 ◎
-The term request-uri refers to "request target" as defined in Section 7.1 of [HTTPSEM].
+The term request-uri refers to "target URI" as defined in Section 7.1 of [HTTPSEM].
 </p>
 
 <p>
@@ -1538,6 +1592,18 @@ The term "request", as well as a request's "client", "current url", "method", "t
 </p>
 
 <p>
+用語
+`非HTTP~API@
+は、~cookieを［
+設定する／検索取得する
+］ために利用される ~HTTP以外の仕組みを指す
+— ~scriptに~cookieを公開する~web~browser~APIなど。
+【具体的には、 `document.cookie$dom 】
+◎
+The term "non-HTTP APIs" refers to non-HTTP mechanisms used to set and retrieve cookies, such as a web browser API that exposes cookies to scripts.
+</p>
+
+<p>
 【以下は、各所を集約するための，この訳による追加。】
 </p>
 
@@ -1603,11 +1669,10 @@ To store state, the origin server includes a Set-Cookie header in an HTTP respon
 
 <p>
 `生成元~server$は、どの応答にも `Set-Cookie^h 応答~headerを送信してヨイ。
-`~UA$は、応答が包含する `Set-Cookie^h ~headerを，応答の`状態s~code$が `100 番台$である場合は無視してもヨイが，他の場合は（ `400 番台$, `500 番台$も含む）処理しなければナラナイ。
 生成元~serverは、単独の応答に複数の `Set-Cookie^h ~headerを内包できる。
 `Cookie^h や `Set-Cookie^h ~headerが在っても，~HTTP~cacheが応答を格納したり再利用する~~妨げにはならない。
 ◎
-Origin servers MAY send a Set-Cookie response header with any response. User agents MAY ignore Set-Cookie headers contained in responses with 100-level status codes but MUST process Set-Cookie headers contained in other responses (including responses with 400- and 500-level status codes). An origin server can include multiple Set-Cookie header fields in a single response. The presence of a Cookie or a Set-Cookie header field does not preclude HTTP caches from storing and reusing a response.
+Origin servers MAY send a Set-Cookie response header with any response. An origin server can include multiple Set-Cookie header fields in a single response. The presence of a Cookie or a Set-Cookie header field does not preclude HTTP caches from storing and reusing a response.
 </p>
 
 <p>
@@ -1616,6 +1681,14 @@ Origin servers MAY send a Set-Cookie response header with any response. User age
 `Set-Cookie^h における `,^ch の利用と衝突するので， `Set-Cookie^h ~headerの意味論を変更し得る。
 ◎
 Origin servers SHOULD NOT fold multiple Set-Cookie header fields into a single header field. The usual mechanism for folding HTTP headers fields (i.e., as defined in Section 5.3 of [HTTPSEM]) might change the semantics of the Set-Cookie header field because the %x2C (",") character is used by Set-Cookie in a way that conflicts with such folding.
+</p>
+
+<p>
+~UAは、 `Set-Cookie^h ~headerを［
+応答の`状態s~code$／~UAの`~cookie施策$
+］に基づいて，無視してもヨイ（ `5.3$sec を見よ）。
+◎
+User agents MAY ignore Set-Cookie headers based on response status codes or the user agent's cookie policy (see Section 5.3).
 </p>
 
 		<section id="examples">
@@ -1914,14 +1987,14 @@ Per the grammar above, the cookie-value MAY be wrapped in DQUOTE characters. Not
 と称される。
 ~UAとの互換性を最大化するためには、~serverは，同じ `set-cookie-string$p の中に同じ名前の 2 個の属性を生産するベキでない（~UAがこの場合をどう取扱うかについては、`保管~model$secを見よ）。
 ◎
-The portions of the set-cookie-string produced by the cookie-av term are known as attributes. To maximize compatibility with user agents, servers SHOULD NOT produce two attributes with the same name in the same set-cookie-string. (See Section 5.4 for how user agents handle this case.)
+The portions of the set-cookie-string produced by the cookie-av term are known as attributes. To maximize compatibility with user agents, servers SHOULD NOT produce two attributes with the same name in the same set-cookie-string. (See Section 5.5 for how user agents handle this case.)
 </p>
 
 <p>
 ~serverは、同じ応答~内に同じ `cookie-name$p の複数の `Set-Cookie^h ~headerを内包するベキでない。
-（~UAがこの場合をどう取扱うかについては、 `5.3$sec を見よ。）
+（~UAがこの場合をどう取扱うかについては、 `5.4$sec を見よ。）
 ◎
-Servers SHOULD NOT include more than one Set-Cookie header field in the same response with the same cookie-name. (See Section 5.3 for how user agents handle this case.)
+Servers SHOULD NOT include more than one Set-Cookie header field in the same response with the same cookie-name. (See Section 5.4 for how user agents handle this case.)
 </p>
 
 <p>
@@ -2076,7 +2149,7 @@ The user agent will reject cookies unless the Domain attribute specifies a scope
 であるものを却下することになる。
 （~~詳細は `保管~model$secを見よ。）
 ◎
-NOTE: For security reasons, many user agents are configured to reject Domain attributes that correspond to "public suffixes". For example, some user agents will reject Domain attributes of "com" or "co.uk". (See Section 5.4 for more information.)
+NOTE: For security reasons, many user agents are configured to reject Domain attributes that correspond to "public suffixes". For example, some user agents will reject Domain attributes of "com" or "co.uk". (See Section 5.5 for more information.)
 </p>
 
 				</section>
@@ -2129,14 +2202,9 @@ Although seemingly useful for protecting cookies from active network attackers, 
 
 <p>
 `HttpOnly$a 属性は、~cookieの視野を~HTTP要請に制限する。
-特に，この属性は、
-`非HTTP~API@
-— ~scriptに~cookieを公開する~web~browser~APIなどの，~UAにより定義される~API
-【具体的には、 `document.cookie$dom 】
-—
-を介して~cookieへの~accessを供するときは，当の~cookieを省略することを~UAに指図する。
+特に，この属性は、`非HTTP~API$を介して~cookieへの~accessを供するときは，当の~cookieを省略することを~UAに指図する。
 ◎
-The HttpOnly attribute limits the scope of the cookie to HTTP requests. In particular, the attribute instructs the user agent to omit the cookie when providing access to cookies via "non-HTTP" APIs (such as a web browser API that exposes cookies to scripts).
+The HttpOnly attribute limits the scope of the cookie to HTTP requests. In particular, the attribute instructs the user agent to omit the cookie when providing access to cookies via non-HTTP APIs.
 </p>
 
 <p>
@@ -2198,7 +2266,7 @@ value is "Strict", the cookie will only be sent along with "same-site" requests.
 `同一-~site$rqであるか、`~top-level~navi$によるもの（ `8.8.2$sec ）である
 — <a href="#strict-lax">§ `Lax^l の施行</a>を見よ。
 ◎
-If the value is "Lax", the cookie will be sent with same-site requests, and with "cross-site" top-level navigations, as described in Section 5.3.7.1.＼
+If the value is "Lax", the cookie will be sent with same-site requests, and with "cross-site" top-level navigations, as described in Section 5.4.7.1.＼
 </li>
 	<li>
 `None@l
@@ -2217,9 +2285,12 @@ If the value is "None", the cookie will be sent with same-site and cross-site re
 <p class="trans-note">【
 この仕様の中では、値
 `Default@l
-として表現される（
-`Lax$l と等価になるにもかかわらず，異なる値を用意しているのはなぜ？
-）。
+として表現される。
+】【
+“ `Lax^l に等価”
+とは、場合によっては，
+`Lax-allowing-unsafe$l 施行~modeの~subjectになることを意味する
+（ `Lax^l と同じになるとは限らない）。
 】</p>
 ◎
 If the "SameSite" attribute's value is something other than these three known keywords, the attribute's value will be subject to a default enforcement mode that is equivalent to "Lax".
@@ -2264,7 +2335,7 @@ Section 8.5 and Section 8.6 of this document spell out some of the drawbacks of 
 <p>
 以下に述べる接頭辞~用の規範的な要件は、`保管~model$secに与える~algoにて，詳細に定義される。
 ◎
-The normative requirements for the prefixes described below are detailed in the storage model algorithm defined in Section 5.4.
+The normative requirements for the prefixes described below are detailed in the storage model algorithm defined in Section 5.5.
 </p>
 
 				<section id="the-secure-prefix">
@@ -2460,10 +2531,10 @@ This section specifies the Cookie and Set-Cookie headers in sufficient detail th
 </p>
 
 <p>
-~UAは、ここで指定されるものより多くの制約を施行し得る（例えば，~securityを改善するための）。
-しかしながら，その種の厳密さは、既存の~serverとの相互運用能を犠牲にするであろうことが実験から知られている。
+~UAは、ここで指定されるものより多くの制約（例：~UAの`~cookie施策$）を施行し得る。
+しかしながら，そのような追加の制約は、既存の~serverとの相互運用能を抑制するものにもなり得る。
 ◎
-A user agent could enforce more restrictions than those specified herein (e.g., for the sake of improved security); however, experiments have shown that such strictness reduces the likelihood that a user agent will be able to interoperate with existing servers.
+A user agent could enforce more restrictions than those specified herein (e.g., restrictions specified by its cookie policy, described in Section 7.2). However, such additional restrictions may reduce the likelihood that a user agent will be able to interoperate with existing servers.
 </p>
 
 		<section id="subcomponent-algorithms">
@@ -2487,7 +2558,6 @@ This section defines some algorithms used by user agents to process specific sub
 ◎
 The user agent MUST use an algorithm equivalent to the following algorithm to parse a cookie-date.＼
 </p>
-
 <ol>
 	<li>
 ( %年t値, %月t値, %日t値, %時t値, %分t値, %秒t値 ) ~LET ( ε, ε, ε, ε, ε, ε )
@@ -2727,7 +2797,6 @@ Return the parsed-cookie-date as the result of this algorithm.
 ◎
 A canonicalized host name is the string generated by the following algorithm:
 </p>
-
 <ol>
 	<li>
 %~label~list ~LET %~host名 を個々の~domain名~labelからなる~listに変換した結果
@@ -2757,8 +2826,8 @@ Concatenate the resulting labels, separated by a %x2E (".") character.
 
 <div class="algo">
 <p>
-所与の`文字列$
-( %文字列, %~domain文字列 )
+所与の
+( `文字列$ %文字列, `文字列$ %~domain文字列 )
 は、次のいずれかを満たすならば，
 `~domain合致して@
 いるとされる（この時点では、 %~domain文字列, %文字列 両者とも，小文字に正準-化されていることに注意）
@@ -2811,34 +2880,25 @@ The string is a host name (i.e., not an IP address).
 ◎
 The user agent MUST use an algorithm equivalent to the following algorithm to compute the default-path of a cookie:
 </p>
-
 <ol>
 	<li>
-<p>
-%~uri~path ~SET `要請~URI$が~path部位を［
+%~URI~path ~SET `要請~URI$が~path部位を［
 包含するならば その部位 ／
 包含しないならば 空~文字列
 ］
 ◎
-Let uri-path be the path portion of the request-uri if such a portion exists (and empty otherwise).＼
-</p>
-
-<p class="example">
-例えば、`要請~URI$が~path（および省略可能な~query文字列）のみからなるならば，
-%~uri~path は `?^ch や~query文字列を除いた）その~pathになり、全部的な絶対~URIであるならば，
-%~uri~path は その~URIの~path成分になる。
-◎
-For example, if the request-uri contains just a path (and optional query string), then the uri-path is that path (without the %x3F ("?") character or query string), and if the request-uri contains a full absoluteURI, the uri-path is the path component of that URI.
-</p>
-	</li>
+Let uri-path be the path portion of the request-uri if such a portion exists (and empty otherwise).
+</li>
 	<li>
 ~IF［
-%~uri~path の最初の文字 ~EQ `/^ch
+%~URI~path の最初の文字 ~EQ `/^ch
 ］~AND［
-%~uri~path は他にも文字 `/^ch を包含する
+%~URI~path は他にも文字 `/^ch を包含する
 ］
 ⇒
-~RET %~uri~path の最初の文字から最後の `/^ch の直前までを成す文字列
+~RET %~URI~path の［
+最初の文字から最後の `/^ch の直前まで
+］を成す文字列
 ◎
 If the uri-path is empty or if the first character of the uri-path is not a %x2F ("/") character, output %x2F ("/") and skip the remaining steps.
 ◎
@@ -2908,6 +2968,11 @@ The cookie-path is a prefix of the request-path, and the first character of the 
 ◎
 Two origins are same-site if they satisfy the "same site" criteria defined in [SAMESITE].＼
 </p>
+
+<p class="trans-note">【
+`非同一-~site@
+（ `cross-site^en ）は、`同一-~site$の否定を意味する。
+】</p>
 
 <p>
 所与の`要請$ %要請 は、［
@@ -2982,7 +3047,7 @@ Requests which are the result of a reload navigation triggered through a user in
 <p>
 `要請$の`~client$rqの
 `~cookie用~site@
-は，以下の下位~節に述べるように，`~client$rqの型†に依存して計算される`生成元$である。
+（ `site for cookies^en ）は，以下の下位~節に述べるように，`~client$rqの型†に依存して計算される`生成元$である。
 【† すなわち、`~client$rqは，どの型の~objに`関連な設定群~obj$であるか。】
 ◎
 The request's client's "site for cookies" is calculated depending upon its client's type, as described in the following subsections:
@@ -3040,7 +3105,6 @@ For documents which are displayed in nested browsing contexts, we need to audit 
 ◎
 Given a Document (document), the following algorithm returns its "site for cookies":
 </p>
-
 <ol>
 	<li>
 %~top文書 ~LET %文書 が`属する閲覧文脈$の`~top-level閲覧文脈$にて`作動中の文書$
@@ -3159,7 +3223,6 @@ Shared workers may be bound to multiple documents at once. As it is quite possib
 ◎
 Given a WorkerGlobalScope (worker), the following algorithm returns its "site for cookies":
 </p>
-
 <ol>
 	<li>
 %~site ~LET %~worker 【に`関連な設定群~obj$】の`生成元$
@@ -3254,18 +3317,42 @@ Given a ServiceWorkerGlobalScope (worker), the following algorithm returns its "
 				</section>
 			</section>
 		</section>
-		<section id="set-cookie">
-<h3 title="The Set-Cookie Header">5.3. `Set-Cookie^h ~header</h3>
+		<section id="ignoring-cookies">
+<h3 title="Ignoring Set-Cookie Headers">5.3. `Set-Cookie^h ~headerの無視-法</h3>
 
 <p>
-~UAは、~HTTP応答にて受信した `Set-Cookie^h ~headerを，まるごと無視してもヨイ。
-例えば~UAは、 “第三者主体” への要請に対する応答による，~cookieの設定に対し、阻止したいと望むかもしれない（`第三者主体~cookie$secを見よ）。
+`~UA$は、［
+応答の`状態s~code$は `100 番台$である場合
+］には，応答が包含する `Set-Cookie^h ~headerを無視してもヨイ。
+加えて、自身の`~cookie施策$に基づいて無視してもヨイ（ `~cookie施策$sec を見よ）。
 ◎
-When a user agent receives a Set-Cookie header field in an HTTP response, the user agent MAY ignore the Set-Cookie header field in its entirety. For example, the user agent might wish to block responses to "third-party" requests from setting cookies (see Section 7.1).
+User agents MAY ignore Set-Cookie headers contained in responses with 100-level status codes or based on its cookie policy (see Section 7.2).
 </p>
 
 <p>
-~UAは `Set-Cookie^h ~headerをまるごと無視しない場合、以下で定義されるように，
+他のすべての `Set-Cookie^h ~headerは、
+`5.4$sec に則って処理するベキである。
+すなわち，応答の`状態s~code$が`100 番台$以外（ `400 番台$, `500 番台$も含む）である場合、
+応答に包含される `Set-Cookie^h ~headerを
+— `~UA$の`~cookie施策$に則って無視されないならば —
+処理するベキである。
+◎
+All other Set-Cookie headers SHOULD be processed according to Section 5.4. That is, Set-Cookie headers contained in responses with non-100-level status codes (including those in responses with 400- and 500-level status codes) SHOULD be processed unless ignored according to the user agent's cookie policy.
+</p>
+
+		</section>
+		<section id="set-cookie">
+<h3 title="The Set-Cookie Header">5.4. `Set-Cookie^h ~header</h3>
+
+<p>
+`~UA$は、~HTTP応答~内に受信した `Set-Cookie^h ~headerを まるごと無視してもヨイ（ `5.3$sec を見よ）。
+◎
+When a user agent receives a Set-Cookie header field in an HTTP response, the user agent MAY ignore the Set-Cookie header field in its entirety (see Section 5.3).
+</p>
+
+<p>
+`~UA$は，
+`Set-Cookie^h ~headerをまるごと無視しない場合には、以下で定義されるとおり，
 `Set-Cookie^h ~headerの値を `set-cookie-string$p として構文解析しなければナラナイ。
 ◎
 If the user agent does not ignore the Set-Cookie header field in its entirety, the user agent MUST parse the field-value of the Set-Cookie header field as a set-cookie-string (defined below).
@@ -3290,7 +3377,6 @@ NOTE: The algorithm below is more permissive than the grammar in Section 4.1. Fo
 ◎
 A user agent MUST use an algorithm equivalent to the following algorithm to parse a set-cookie-string:
 </p>
-
 <ol>
 	<li>
 ~IF［
@@ -3422,7 +3508,7 @@ Return to Step 1 of this algorithm.
 とされる
 （~cookieを受信したことにより誘発される追加的な要件については、`保管~model$secを見よ。）
 ◎
-When the user agent finishes parsing the set-cookie-string, the user agent is said to "receive a cookie" from the request-uri with name cookie-name, value cookie-value, and attributes cookie-attribute-list. (See Section 5.4 for additional requirements triggered by receiving a cookie.)
+When the user agent finishes parsing the set-cookie-string, the user agent is said to "receive a cookie" from the request-uri with name cookie-name, value cookie-value, and attributes cookie-attribute-list. (See Section 5.5 for additional requirements triggered by receiving a cookie.)
 </li>
 </ol>
 </div>
@@ -3433,7 +3519,6 @@ When the user agent finishes parsing the set-cookie-string, the user agent is sa
 `二分@
 するときは、次で与えられる 2 個の`文字列$が成す（順序付けられた）~pairを返すとする：
 </p>
-
 <ol>
 	<li>
 %S の先頭から連続する， %c でない文字からなる，最長な`文字列$（ %S が空~文字列，または %S の先頭が %c ならば，空~文字列）
@@ -3449,7 +3534,7 @@ When the user agent finishes parsing the set-cookie-string, the user agent is sa
 </div>
 
 			<section id="the-expires-attribute">
-<h4 title="The Expires Attribute">5.3.1. `Expires^a 属性</h4>
+<h4 title="The Expires Attribute">5.4.1. `Expires^a 属性</h4>
 
 <div class="algo">
 <p>
@@ -3459,7 +3544,6 @@ When the user agent finishes parsing the set-cookie-string, the user agent is sa
 ◎
 If the attribute-name case-insensitively matches the string "Expires", the user agent MUST process the cookie-av as follows.
 </p>
-
 <ol>
 	<li>
 %失効日時 ~LET 
@@ -3512,7 +3596,7 @@ Append an attribute to the cookie-attribute-list with an attribute-name of Expir
 
 			</section>
 			<section id="the-max-age-attribute">
-<h4 title="The Max-Age Attribute">5.3.2. `Max-Age^a 属性</h4>
+<h4 title="The Max-Age Attribute">5.4.2. `Max-Age^a 属性</h4>
 
 <div class="algo">
 <p>
@@ -3522,7 +3606,6 @@ Append an attribute to the cookie-attribute-list with an attribute-name of Expir
 ◎
 If the attribute-name case-insensitively matches the string "Max-Age", the user agent MUST process the cookie-av as follows.
 </p>
-
 <ol>
 	<li>
 <p>
@@ -3577,7 +3660,7 @@ Append an attribute to the cookie-attribute-list with an attribute-name of Max-A
 
 			</section>
 			<section id="the-domain-attribute">
-<h4 title="The Domain Attribute">5.3.3. `Domain^a 属性</h4>
+<h4 title="The Domain Attribute">5.4.3. `Domain^a 属性</h4>
 
 <div class="algo">
 <p>
@@ -3596,7 +3679,6 @@ If the attribute-name case-insensitively matches the string "Domain", the user a
 ◎
 If the attribute-value is empty, the behavior is undefined. However, the user agent SHOULD ignore the cookie-av entirely.
 </p>
-
 <ol>
 	<li>
 %~cookie~domain ~LET ［
@@ -3627,7 +3709,7 @@ Append an attribute to the cookie-attribute-list with an attribute-name of Domai
 
 			</section>
 			<section id="the-path-attribute">
-<h4 title="The Path Attribute">5.3.4. `Path^a 属性</h4>
+<h4 title="The Path Attribute">5.4.4. `Path^a 属性</h4>
 
 <div class="algo">
 <p>
@@ -3637,7 +3719,6 @@ Append an attribute to the cookie-attribute-list with an attribute-name of Domai
 ◎
 If the attribute-name case-insensitively matches the string "Path", the user agent MUST process the cookie-av as follows.
 </p>
-
 <ol>
 	<li>
 %~cookie~path ~LET %属性~値
@@ -3670,7 +3751,7 @@ Append an attribute to the cookie-attribute-list with an attribute-name of Path 
 
 			</section>
 			<section id="the-secure-attribute">
-<h4 title="The Secure Attribute">5.3.5. `Secure^a 属性</h4>
+<h4 title="The Secure Attribute">5.4.5. `Secure^a 属性</h4>
 
 <div class="algo">
 <p>
@@ -3688,7 +3769,7 @@ If the attribute-name case-insensitively matches the string "Secure", the user a
 
 			</section>
 			<section id="the-httponly-attribute">
-<h4 title="The HttpOnly Attribute">5.3.6. `HttpOnly^a 属性</h4>
+<h4 title="The HttpOnly Attribute">5.4.6. `HttpOnly^a 属性</h4>
 
 <div class="algo">
 <p>
@@ -3706,7 +3787,7 @@ If the attribute-name case-insensitively matches the string "HttpOnly", the user
 
 			</section>
 			<section id="the-samesite-attribute">
-<h4 title="The SameSite Attribute">5.3.7. `SameSite^a 属性</h4>
+<h4 title="The SameSite Attribute">5.4.7. `SameSite^a 属性</h4>
 
 <div class="algo">
 <p>
@@ -3716,7 +3797,6 @@ If the attribute-name case-insensitively matches the string "HttpOnly", the user
 ◎
 If the attribute-name case-insensitively matches the string "SameSite", the user agent MUST process the cookie-av as follows:
 </p>
-
 <ol>
 	<li>
 %値 ~LET %属性~値 に応じて
@@ -3745,7 +3825,7 @@ Append an attribute to the cookie-attribute-list with an attribute-name of "Same
 </div>
 
 				<section id="strict-lax">
-<h5 title="Strict and Lax enforcement">5.3.7.1. `Strict^l ／ `Lax^l の施行</h5>
+<h5 title="Strict and Lax enforcement">5.4.7.1. `Strict^l ／ `Lax^l の施行</h5>
 
 <p>
 `同一-~siteな~cookie$のうち `Strict$l 施行~modeにされたものは、`非同一-~site$rqな文書~文脈から誘発された`~top-level~navi$に伴って送信されることはない。
@@ -3794,10 +3874,87 @@ When possible, developers should use a session management mechanism such as that
 </p>
 
 				</section>
+				<section id="lax-allowing-unsafe">
+<h5 title="'Lax-Allowing-Unsafe' enforcement">5.4.7.2. `Lax-allowing-unsafe^l の施行</h5>
+
+<p>
+`8.8.6$sec にて論じられるとおり、互換性の懸念により，
+`Lax-allowing-unsafe$l 施行~modeの利用が必要とされ得る
+— それは、要請~methodを問わず，
+`~top-level~navi$による要請【！~top-level要請】である場合, そのときに限り［
+~cookieが`非同一-~site$rqな~HTTP要請に伴って送信される
+］ことを許容する。
+すなわち， `Lax-allowing-unsafe$l 施行~modeは、【その場合に対し，】［
+`~cookieを検索取得する$~algoの
+<a href="#step-for-same-site">`SameSite^a 施行~段</a>
+における要件
+“要請の~methodは`安全$である”
+を放棄する。
+（［
+`SameSite$a にて供された施行~mode,
+~HTTP要請~method
+］を問わず，`~top-level~navi$に対しては，どの~cookieも
+— `保管~model$secにて指定されるとおり —
+設定され得る。）
+◎
+As discussed in Section 8.8.6, compatibility concerns may necessitate the use of a "Lax-allowing-unsafe" enforcement mode that allows cookies to be sent with a cross-site HTTP request if and only if it is a top-level request, regardless of request method. That is, the "Lax-allowing-unsafe" enforcement mode waives the requirement for the HTTP request's method to be "safe" in the SameSite enforcement step of the retrieval algorithm in Section 5.6.3. (All cookies, regardless of SameSite enforcement mode, may be set for top-level navigations, regardless of HTTP request method, as specified in Section 5.5.)
+</p>
+
+<p>
+`Lax-allowing-unsafe$l は、
+`SameSite$a 属性に指定し得る【！distinct】値ではない。
+~UAは、
+`SameSite$a 属性を明示的に指定していない~cookie（すなわち，`same-site-flag$cK は既定で `Default$l に設定されたもの）に限り，
+`Lax-allowing-unsafe$l の施行を適用してもヨイ。
+この互換性~modeの視野を制限するため、
+`Lax-allowing-unsafe$l の施行を適用する~UAは，その施行を近過去に作成された~cookieに制約するベキである。
+配備~経験から、適度な上限として，作成してから 2 分 以下のものに限ることが示されている。
+◎
+"Lax-allowing-unsafe" is not a distinct value of the SameSite attribute. Rather, user agents MAY apply "Lax-allowing-unsafe" enforcement only to cookies that did not explicitly specify a SameSite attribute (i.e., those whose same-site-flag was set to "Default" by default). To limit the scope of this compatibility mode, user agents which apply "Lax-allowing-unsafe" enforcement SHOULD restrict the enforcement to cookies which were created recently. Deployment experience has shown a cookie age of 2 minutes or less to be a reasonable limit.
+</p>
+
+<p>
+~UAは `Lax-allowing-unsafe$l 施行を利用する場合には、［
+`~cookieを検索取得する$ ~algoに対し，次の改変を適用しなければナラナイ
+⇒
+~algo内の［
+<a href="#step-for-same-site">該当する段</a>
+の中に与えた，次の条件 (1)
+］を次の条件 (2) に置換する：
+◎
+If the user agent uses "Lax-allowing-unsafe" enforcement, it MUST apply the following modification to the retrieval algorithm defined in Section 5.6.3:
+◎
+Replace the condition in the penultimate bullet point of step 1 of the retrieval algorithm reading
+</p>
+
+<ul>
+	<li>
+(1)
+%検索取得 の`要請$rTの~methodは`安全$である
+◎
+• The HTTP request associated with the retrieval uses a "safe" method.
+with
+</li>
+	<li>
+(2) ［
+%検索取得 の`要請$rTの~methodは`安全$である
+］］~OR［［
+%~cookie の `same-site-flag$cK ~EQ `Default$l
+］~AND［
+%~cookie の `creation-time$cK から経過した時間は、~UAが選んだ~~上限以下である
+］］
+◎
+• At least one of the following is true:
+•• 1. The HTTP request associated with the retrieval uses a "safe" method.
+•• 2. The cookie's same-site-flag is "Default" and the amount of time elapsed since the cookie's creation-time is at most a duration of the user agent's choosing.
+</li>
+</ul>
+
+				</section>
 			</section>
 		</section>
 		<section id="storage-model">
-<h3 title="Storage Model">5.4. 保管~model</h3>
+<h3 title="Storage Model">5.5. 保管~model</h3>
 
 <p>
 ~UAは、受信した~cookieを格納するための大域的な
@@ -3825,19 +3982,17 @@ The user agent stores the following fields about each cookie: name, value, expir
 <p>
 ~UAは、`要請~URI$から
 ( 名前: %~cookie名, 値: %~cookie値, 属性~list: %~cookie属性~list )
-を伴う`~cookieを受信した$ときは、その~cookieを，次に従って処理しなければナラナイ（この~algoの最後の段に達する前に現れる ~RET は、受信した~cookieをまるごと無視することを意味する）：
+を伴う`~cookieを受信した$ときは、その~cookieを，以下に従って処理しなければナラナイ（この~algoの最後の段に達する前に現れる ~RET は、受信した~cookieをまるごと無視することを意味する）：
 ◎
 When the user agent "receives a cookie" from a request-uri with name cookie-name, value cookie-value, and attributes cookie-attribute-list, the user agent MUST process the cookie as follows:
 </p>
-
 <ol>
 	<li>
-~UAは次をしてもヨイ
+~UAは次をしてもヨイ（ `5.3$secを見よ）
 ⇒
 ~RET
-— 例えば~UAは、 "第三者主体" からの応答に伴って受信した~cookieを阻止したいと望んだり，何らかの~sizeを超える~cookieを格納したいと望まないかもしれない。
 ◎
-A user agent MAY ignore a received cookie in its entirety. For example, the user agent might wish to block receiving cookies from "third-party" responses or the user agent might not wish to store cookies that exceed some size.
+A user agent MAY ignore a received cookie in its entirety. See Section 5.3.
 </li>
 	<li>
 ~IF［
@@ -4384,7 +4539,6 @@ At any time, the user agent MAY "remove excess cookies" from the cookie store if
 ◎
 When the user agent removes excess cookies from the cookie store, the user agent MUST evict cookies in the following priority order:
 </p>
-
 <ol>
 	<li>
 `失効した$もの
@@ -4431,47 +4585,182 @@ When "the current session is over" (as defined by the user agent), the user agen
 </p>
 
 		</section>
-		<section id="cookie">
-<h3 title="The Cookie Header">5.5. `Cookie^h ~header</h3>
+		<section id="retrieval-model">
+<h3 title="Retrieval Model">5.6. 検索取得~model</h3>
 
 <p>
-~UAは、以前に格納した~cookieを `Cookie^h ~HTTP要請~headerに内包する。
+この節は、`~cookie保管庫$から~cookieを
+— `cookie-string$p の形で —
+どう検索取得するかを定義する。
+`検索取得@
+は、
+`cookie-string$p を生成するよう要求する~eventである。
+それは、例えば，［
+ある~HTTP要請~用に `Cookie^h ~headerを築くために生じる
+］ことも［
+~cookieへの~accessを供する`非HTTP~API$の~callに対し，
+`cookie-string$p を返すために要求される
+］こともある。
+各 `検索取得$には、［
+`要請@rT,
+`~URI@rT,
+`同一-~site状態s@rT,
+`種別@rT
+］が結付けられる。
+これらは、以下に定義され，検索取得の`種別$rTに依存する。
+◎
+This section defines how cookies are retrieved from a cookie store in the form of a cookie-string. A "retrieval" is any event which requires generating a cookie-string. For example, a retrieval may occur in order to build a Cookie header for an HTTP request, or may be required in order to return a cookie-string from a call to a "non-HTTP" API that provides access to cookies. A retrieval has an associated URI, same-site status, and type, which are defined below depending on the type of retrieval.
+</p>
+
+<p class="trans-note">【
+`検索取得$の`要請$rTは、明確化するための，この訳による追加。
+条件［
+`要請$rT ~EQ ε
+］は、条件［
+`種別$rT ~EQ `非~HTTP^i
+］と同義になる。
+】</p>
+
+			<section id="cookie">
+<h4 title="The Cookie Header">5.6.1. `Cookie^h ~header</h4>
+
+<p>
+~UAは、以前に格納した~cookieを `Cookie^h ~HTTP要請~headerに内包することになる。
 ◎
 The user agent includes stored cookies in the Cookie HTTP request header.
 </p>
 
 <p>
-~UAは、~HTTP要請を生成するときに、複数の `Cookie^h ~headerを添付してはナラナイ。
+`~UA$は、~HTTP要請を生成するときに、複数個の `Cookie^h ~headerを添付してはナラナイ。
 ◎
 When the user agent generates an HTTP request, the user agent MUST NOT attach more than one Cookie header field.
 </p>
 
 <p>
-~UAは、 `Cookie^h ~headerをまるごと省略してもヨイ。
+`~UA$は、 `Cookie^h ~headerをまるごと省略してもヨイ。
 例えば，~UAは、 “第三者主体” 要請の間，~cookieの送信を~cookieの設定から阻止したいと望むかもしれない（`第三者主体~cookie$secを見よ）。
-<!--  -->
 ◎
 A user agent MAY omit the Cookie header in its entirety. For example, the user agent might wish to block sending cookies during "third-party" requests from setting cookies (see Section 7.1).
 </p>
 
+<div class="algo">
 <p>
-~UAは，~HTTP要請に `Cookie^h ~headerを添付するときは、その~header値として（下に定義する）`cookie-string$p を送信しなければナラナイ。
+`~UA$は，~HTTP要請 %要請 に `Cookie^h ~headerを添付する場合は、
+その `cookie-string$p を次に従って算出しなければナラナイ：
+</p>
+<ol>
+	<li>
+<p>
+%検索取得 ~LET 次を伴う新たな`検索取得$：
+</p>
+		<ul>
+			<li>
+`要請$rT ~SET %要請
+</li>
+			<li>
+`~URI$rT ~SET `要請~URI$
+</li>
+			<li>
+`同一-~site状態s$rT ~SET %要請 は［
+`同一-~site$rqであるならば `同一-~site^i ／
+`非同一-~site$rqであるならば `非同一-~site^i
+］
+</li>
+			<li>
+`種別$rT ~SET `~HTTP^i
+</li>
+		</ul>
+	</li>
+	<li>
+~RET `~cookieを検索取得する$( %検索取得 )
+</li>
+</ol>
 ◎
-If the user agent does attach a Cookie header field to an HTTP request, the user agent MUST send the cookie-string (defined below) as the value of the header field.
+If the user agent does attach a Cookie header field to an HTTP request, the user agent MUST compute the cookie-string following the algorithm defined in Section 5.6.3, where the retrieval's URI is the request-uri, the retrieval's same-site status is computed for the HTTP request as defined in Section 5.2, and the retrieval's type is "HTTP".
+</div>
+
+			</section>
+			<section id="non-http">
+<h4 title="Non-HTTP APIs">5.6.2. 非~HTTP~API</h4>
+
+<p>
+`~UA$は、格納した~cookieに~accessするために利用できる`非HTTP~API$を実装してもヨイ。
+◎
+The user agent MAY implement "non-HTTP" APIs that can be used to access stored cookies.
+</p>
+
+<p>
+`~UA$は、ある種の文脈においては，【`非HTTP~API$が】空な `cookie-string$p を返すようにしてもヨイ
+— 第三者主体~文脈の中で`検索取得$が生じたときなど（`第三者主体~cookie$sec を見よ）。
+◎
+A user agent MAY return an empty cookie-string in certain contexts, such as when a retrieval occurs within a third-party context (see Section 7.1).
 </p>
 
 <div class="algo">
 <p>
-~UAは，［
-`~cookie保管庫$と`要請~URI$
-］から %要請 用に `cookie-string$p を算出するときは、次と等価な~algoを利用しなければナラナイ：
-◎
-The user agent MUST use an algorithm equivalent to the following algorithm to compute the cookie-string from a cookie store and a request-uri:
+`~UA$は、`非HTTP~API$の~callに対し~cookieを返す場合には、
+`cookie-string$p を次に従って算出しなければナラナイ：
 </p>
-
 <ol>
 	<li>
-%要請~host ~LET `~host名を正準-化する$( `要請~host$ )
+%文書 ~LET 当の~APIに結付けられている`文書$
+</li>
+	<li>
+<p>
+%検索取得 ~LET 次を伴う新たな`検索取得$：
+</p>
+		<ul>
+			<li>
+`要請$rT ~SET ε
+</li>
+			<li>
+`~URI$rT ~SET ~call元により定義されるもの（
+`document.cookie$dom `DOM-DOCUMENT-COOKIE$r
+を見よ）
+◎
+the retrieval's URI is defined by the caller (see [DOM-DOCUMENT-COOKIE]),＼
+</li>
+			<li>
+`同一-~site状態s$rT ~SET ［
+次は`同一-~site$であるならば `同一-~site^i ／
+~ELSE_ `非同一-~site^i
+］
+⇒＃
+%文書 の`~cookie用~site$,
+`~top-level生成元$
+</li>
+			<li>
+`種別$rT ~SET `非~HTTP^i
+</li>
+		</ul>
+	</li>
+	<li>
+~RET `~cookieを検索取得する$( %検索取得 )
+</li>
+</ol>
+◎
+If a user agent does return cookies for a given call to a "non-HTTP" API with an associated Document, then the user agent MUST compute the cookie-string following the algorithm defined in Section 5.6.3, where＼
+the retrieval's URI is defined by the caller (see [DOM-DOCUMENT-COOKIE]),＼
+the retrieval's same-site status is "same-site" if the Document's "site for cookies" is same-site with the top-level origin as defined in Section 5.2.1 (otherwise it is "cross-site"),＼
+and the retrieval's type is "non-HTTP".
+</div>
+
+			</section>
+			<section>
+<h4 title="Retrieval Algorithm">5.6.3. 検索取得~algo</h4>
+
+<div class="algo">
+<p>
+`~cookieを検索取得する@
+ときは、所与の
+( `検索取得$ %検索取得 )
+に対し，`~cookie保管庫$から `cookie-string$p を返す：
+◎
+Given a cookie store and a retrieval, the following algorithm returns a cookie-string from a given cookie store.
+</p>
+<ol>
+	<li>
+%~URI~host ~LET `~host名を正準-化する$( %検索取得 の`~URI$rT )
 ◎
 ↓</li>
 	<li>
@@ -4493,90 +4782,83 @@ Let cookie-list be the set of cookies from the cookie store that meets all of th
 ］
 ⇒
 ~IF［
-%~cookie の `domain$cK ~NEQ %要請~host
+%~cookie の `domain$cK ~NEQ %~URI~host
 ］
 ⇒
 ~CONTINUE
 ◎
 Either:
-• The cookie's host-only-flag is true and the canonicalized request-host is identical to the cookie's domain.
+• The cookie's host-only-flag is true and the canonicalized host of the retrieval's URI is identical to the cookie's domain.
 </li>
 			<li>
 ~ELIF［
-( %要請~host, %~cookie の `domain$cK )
+( %~URI~host, %~cookie の `domain$cK )
 は`~domain合致して$いない
 ］
 ⇒
 ~CONTINUE
 ◎
 Or:
-• The cookie's host-only-flag is false and the canonicalized request-host domain-matches the cookie's domain.
+• The cookie's host-only-flag is false and the canonicalized host of the retrieval's URI domain-matches the cookie's domain.
 </li>
 			<li>
 ~IF［
-( `要請~URI$の~path, %~cookie の `path$cK )
+( %検索取得 の`~URI$rTの~path, %~cookie の `path$cK )
 は`~path合致して$いない
 ］
 ⇒
 ~CONTINUE
 ◎
-The request-uri's path path-matches the cookie's path.
+The retrieval's URI's path path-matches the cookie's path.
 </li>
 			<li>
 ~IF［
 %~cookie の `secure-only-flag$cK ~EQ ~T
 ］~AND［
-`要請~URI$は “`~secure$” でない
+%検索取得 の`~URI$rTの~schemeは “`~secure$” でない
 ］
 ⇒
 ~CONTINUE
 ◎
-If the cookie's secure-only-flag is true, then the request-uri's scheme must denote a "secure" protocol (as defined by the user agent).
+If the cookie's secure-only-flag is true, then the retrieval's URI's scheme must denote a "secure" protocol (as defined by the user agent).
 ◎
 （§ 各種用語に集約）
 NOTE: The notion of a "secure" protocol is not defined by this document. Typically, user agents consider a protocol secure if the protocol makes use of transport-layer security, such as SSL or TLS. For example, most user agents consider "https" to be a scheme that denotes a secure protocol.
 </li>
 			<li>
-<p>
 ~IF［
 %~cookie の `http-only-flag$cK ~EQ ~T
 ］~AND［
-`cookie-string$p は非HTTP~API用に生成されている（~UAにより定義される†）
+%検索取得 の`種別$rT ~EQ `非~HTTP^i
 ］
 ⇒
 ~CONTINUE
-</p>
-
-<p class="trans-note">【†
-何をもって，
-“〜 <em>用に生成されている</em>”
-とするか（~cookieへの~accessに関して，~UAにより定義される`非HTTP~API$と紛らわしいが）。
-具体的には， `fetch()$dom などの~APIにより送信される要請~用に生成しているときが該当しそうだが、実際に該当するかどうかは，~UAや当の~APIが定義することになる（例えば、文脈や~APIの~optionに依存することもあろう）。
-】</p>
-
 ◎
-If the cookie's http-only-flag is true, then exclude the cookie if the cookie-string is being generated for a "non-HTTP" API (as defined by the user agent).
+If the cookie's http-only-flag is true, then exclude the cookie if the retrieval's type is "non-HTTP".
 </li>
 			<li>
-<p>
+<p id="step-for-same-site">
 ~IF［
 %~cookie の `same-site-flag$cK ~NEQ `None$l
 ］~AND［
-%要請 【！~HTTP要請】は`非同一-~site$rqである【！(as defined in Section 5.2)】
+%検索取得 の`同一-~site状態s$rT ~EQ `非同一-~site^i
 ］~AND［
-次のいずれかが満たされる
+次のいずれかが満たされない
 ］…：
 </p>
 				<ul>
 					<li>
-%~cookie の `same-site-flag$cK ~NIN { `Lax$l, `Default$l }
+%検索取得 の`種別$rT ~EQ `~HTTP^i
 </li>
 					<li>
-%要請 【！~HTTP要請】の`~method$rqは`安全$でない
+%~cookie の `same-site-flag$cK ~IN { `Lax$l, `Default$l }
 </li>
 					<li>
-%要請 【！~HTTP要請】は`~top-level~navi$でない
-【！~target閲覧文脈は、`~top-level閲覧文脈$でない】
+%検索取得 の`要請$rTの~methodは`安全$である
+</li>
+					<li>
+%検索取得 の`要請$rTは`~top-level~navi$である
+【！の~target閲覧文脈は`~top-level閲覧文脈$である】
 </li>
 				</ul>
 <p>
@@ -4585,10 +4867,11 @@ If the cookie's http-only-flag is true, then exclude the cookie if the cookie-st
 ~CONTINUE
 </p>
 ◎
-If the cookie's same-site-flag is not "None", and the HTTP request is cross-site (as defined in Section 5.2) then exclude the cookie unless all of the following statements hold:
+If the cookie's same-site-flag is not "None" and the retrieval's same-site status is "cross-site", then exclude the cookie unless all of the following conditions are met:
+• The retrieval's type is "HTTP".
 • The same-site-flag is "Lax" or "Default".
-• The HTTP request's method is "safe".
-• The HTTP request's target browsing context is a top-level browsing context.
+• The HTTP request associated with the retrieval uses a "safe" method.
+• The target browsing context of the HTTP request associated with the retrieval is a top-level browsing context.
 </li>
 			<li>
 %~cookie~list に %~cookie を付加する
@@ -4693,6 +4976,7 @@ If there is an unprocessed cookie in the cookie-list, output the characters %x3B
 NOTE: Despite its name, the cookie-string is actually a sequence of octets, not a sequence of characters. To convert the cookie-string (or components thereof) into a sequence of characters (e.g., for presentation to the user), the user agent might wish to try using the UTF-8 character encoding [RFC3629] to decode the octet sequence. This decoding might fail, however, because not every sequence of octets is valid UTF-8.
 </p>
 
+			</section>
 		</section>
 	</section>
 	<section id="implementation-considerations">
@@ -4837,11 +5121,49 @@ Third-party cookie blocking policies are often ineffective at achieving their pr
 </p>
 
 		</section>
-		<section id="user-controls">
-<h3 title="User Controls">7.2. 利用者による制御</h3>
+		<section id="cookie-policy">
+<h3 title="Cookie policy">7.2. ~cookie施策</h3>
 
 <p>
-~UAは、`~cookie保管庫$に格納されている~cookieを管理するための仕組みを，利用者に供するベキである。
+`~UA$は、~cookie施策を施行してもヨイ
+— それは、~cookieをどう［
+利用し得る／無視し得る
+］かについての制約からなる（ `5.3$sec を見よ）。
+◎
+User agents MAY enforce a cookie policy consisting of restrictions on how cookies may be used or ignored (see Section 5.3).
+</p>
+
+<p>
+~cookie施策は、どの~domain, あるいは どの主体に対し
+— 後者は当事者主体, 第三者主体どちらなのかに応じて（`第三者主体~cookie$secを見よ） —
+［
+~UAが~cookie~accessを許容するかどうか
+］を統治し得る。
+施策は、~cookieの［
+~size,
+有効期限,
+~domainごとの個数 ／
+【全~domainにわたる】総数
+］に対しても制限sを定義し得る。
+◎
+A cookie policy may govern which domains or parties, as in first and third parties (see Section 7.1), for which the user agent will allow cookie access. The policy can also define limits on cookie size, cookie expiry, and the number of cookies per domain or in total.
+</p>
+
+<p>
+制約的な~cookie施策は、［
+~security／~privacy
+］を改善することを目標とすることが多い。
+~UAは、~cookie施策を変更することを利用者に許容することが多い（`利用者による制御$sec を見よ）。
+◎
+The goal of a restrictive cookie policy is often to improve security or privacy. User agents often allow users to change the cookie policy (see Section 7.3).
+</p>
+
+		</section>
+		<section id="user-controls">
+<h3 title="User Controls">7.3. 利用者による制御</h3>
+
+<p>
+`~UA$は、`~cookie保管庫$に格納されている~cookieを管理するための仕組みを，利用者に供するベキである。
 例えば、~cookieのうち［
 指定された期間内に受信されたもの ／
 特定0の~domainに関係するもの
@@ -4852,7 +5174,7 @@ User agents SHOULD provide users with a mechanism for managing the cookies store
 </p>
 
 <p>
-~UAは、~cookieを不能化する仕組みを，利用者に供するベキである。
+`~UA$は、~cookieを不能化する仕組みを，利用者に供するベキである。
 ~cookieが不能化されている場合、~UAは
 ⇒＃
 ~serverへの~HTTP要請に `Cookie^h ~headerを内包してはナラナイ／
@@ -4862,7 +5184,15 @@ User agents SHOULD provide users with a mechanism for disabling cookies. When co
 </p>
 
 <p>
-一部の~UAは、複数~sessionにわたる~cookieの持続的な保管を防ぐ~optionを，利用者に供する。
+`~UA$は、`~cookie施策$を変更する仕方を提供してもヨイ（ `~cookie施策$sec を見よ）。
+◎
+User agents MAY offer a way to change the cookie policy (see Section 7.2).
+</p>
+
+<p>
+`~UA$は、［
+複数~sessionにわたる~cookieの持続的な保管を防ぐ~option
+］を利用者に供してもヨイ。
 そのように環境設定されている場合、~UAは，受信したすべての~cookieを［
 その `persistent-flag$cK は ~F にされていた
 ］かのように扱わなければナラナイ。
@@ -4870,26 +5200,16 @@ User agents SHOULD provide users with a mechanism for disabling cookies. When co
 `Aggarwal2010$r
 。
 ◎
-Some user agents provide users the option of preventing persistent storage of cookies across sessions. When configured thusly, user agents MUST treat all received cookies as if the persistent-flag were set to false. Some popular user agents expose this functionality via "private browsing" mode [Aggarwal2010].
-</p>
-
-<p>
-一部の~UAは、［
-`~cookie保管庫$への個々の書込nについて，その是非を~~設定する能
-］を利用者に供する。
-共通的な多くの利用e局面において、これらの制御は，多数の入力指示を生成する。
-それでもなお、~privacy意識の高い一部の利用者は，これらの制御に有用さを見いだす。
-◎
-Some user agents provide users with the ability to approve individual writes to the cookie store. In many common usage scenarios, these controls generate a large number of prompts. However, some privacy-conscious users find these controls useful nonetheless.
+User agents MAY provide users the option of preventing persistent storage of cookies across sessions. When configured thusly, user agents MUST treat all received cookies as if the persistent-flag were set to false. Some popular user agents expose this functionality via "private browsing" mode [Aggarwal2010].
 </p>
 
 		</section>
 		<section id="expiration-dates">
-<h3 title="Expiration Dates">7.3. 有効期限</h3>
+<h3 title="Expiration Dates">7.4. 有効期限</h3>
 
 <p>
-~serverは，~cookieの有効期限を遠い未来に設定できるが、ほとんどの~UAは，実際に~cookieを何十年も維持することはない。
-~serverは、無用に長い有効期間を設定せずに，~cookieの目的に基づく，適度な有効期間にすることにより、利用者~privacyを~~向上させるベキである。
+`~server$は，~cookieの有効期限を遠い未来に設定できるが、ほとんどの`~UA$は，実際に~cookieを何十年も維持することはない。
+`~server$は、無用に長い有効期間を設定せずに，~cookieの目的に基づく，適度な有効期間にすることにより、利用者~privacyを~~向上させるベキである。
 例えば，~session識別子の代表的な期限は、 2 週間くらいが適度であろう。
 ◎
 Although servers can set the expiration date for cookies to the distant future, most user agents do not actually retain cookies for multiple decades. Rather than choosing gratuitously long expiration periods, servers SHOULD promote user privacy by selecting reasonable cookie expiration periods based on the purpose of the cookie. For example, a typical session identifier might reasonably be set to expire in two weeks.
@@ -4938,7 +5258,7 @@ In particular, cookies encourage developers to rely on ambient authority for aut
 】</p>
 
 <p>
-~cookie~protocolには，それ自体に様々な脆弱性があるので（下の
+~cookie~protocolには，それ自体に様々な脆弱性があるので（
 `機密性の弱点$sec,
 `完全性の弱点$sec
 を見よ）、
@@ -5004,7 +5324,6 @@ Instead of using cookies for authorization, server operators might wish to consi
 ◎
 Unless sent over a secure channel (such as TLS), the information in the Cookie and Set-Cookie headers is transmitted in the clear.
 </p>
-
 <ol>
 	<li>
 これらの~headerにより運ばれる，~securityに敏感な情報すべてが、盗聴者に公開される。
@@ -5205,7 +5524,9 @@ Cookies rely upon the Domain Name System (DNS) for security. If the DNS is parti
 <h4 title="Defense in depth">8.8.1. 多層防御</h4>
 
 <p>
-`SameSite$a を `Strict$l ~modeにして~cookieを配備した場合、`~client$rqが~supportするならば，`~CSRF攻撃$に抗する堅牢な防御を提供する。
+~cookieを配備するにあたって，
+`SameSite$a を `Strict$l ~modeに設定した場合、
+`~client$rqが それを~supportするならば，`~CSRF攻撃$に抗する堅牢な防御を提供する。
 しかしながら，それだけでは、~CSRFに抗する~siteの防御~すべてを成すには至らない
 — `同一-~site$rqな［
 ~navi／~form提出
@@ -5215,7 +5536,9 @@ Cookies rely upon the Domain Name System (DNS) for security. If the DNS is parti
 </p>
 
 <p>
-~riskをもっと全部的に軽減するため、開発者には，通例の~server側~防御（`安全$な~HTTP~methodは`冪等$になることを確保するような，~CSRF~token, 等々）を配備することが強く奨励される。
+~riskをもっと全部的に軽減するため、開発者には，通例の~server側~防御（［
+`安全$な~HTTP~methodは`冪等$になることを確保するための，~CSRF~token
+］, 等々）を配備することが強く奨励される。
 ◎
 Developers are strongly encouraged to deploy the usual server-side defenses (CSRF tokens, ensuring that "safe" HTTP methods are idempotent, etc) to mitigate the risk more fully.
 </p>
@@ -5223,7 +5546,8 @@ Developers are strongly encouraged to deploy the usual server-side defenses (CSR
 <p>
 加えて，~client側の技法には
 — `app-isolation$r 【 “~appどうしの隔離” 】に述べられるものなど —
-~CSRFに抗して有効果なことを立証できるものもあり、当然ながら `SameSite$a ~cookieとの組合nで探求するに価しよう。
+~CSRFに抗して有効果なことを立証できるものもあり、当然ながら，
+`SameSite$a ~cookieとの組合nで探求するに価しよう。
 ◎
 Additionally, client-side techniques such as those described in [app-isolation] may also prove effective against CSRF, and are certainly worth exploring in combination with "SameSite" cookies.
 </p>
@@ -5233,7 +5557,8 @@ Additionally, client-side techniques such as those described in [app-isolation] 
 <h4 title="Top-level Navigations">8.8.2. ~top-level~navi</h4>
 
 <p>
-`SameSite$a 属性を `Strict$l ~modeに設定することは，`~CSRF攻撃$に抗する堅牢な多層防御を供するが、~siteの開発者が［
+`SameSite$a 属性を `Strict$l ~modeに設定することは，`~CSRF攻撃$に抗する堅牢な多層防御を供するが、
+~siteの開発者が［
 ~cookieに基づく~session管理~systemが，`~top-level~navi$を適度にきちんと処すること
 ］を注意深く確保していない限り，利用者を惑わす~~可能性がある。
 ◎
@@ -5380,6 +5705,88 @@ For example, suppose the user clicks on a link from https://attacker.example/ to
 </p>
 
 			</section>
+			<section id="unsafe-top-level-requests">
+<h4 title="Top-level requests with 'unsafe' methods">8.8.6. 安全でない~methodを伴う~top-level~navi要請【！~top-level要請】</h4>
+
+<p>
+`5.4.7.1$sec に述べた `Lax$l 施行~modeは、［
+`安全$な~HTTP~methodを伴う`~top-level~navi$である
+］場合, その時に限り，［
+~cookieが`非同一-~site$rqな~HTTP要請に伴って送信される
+］ことを許容する。
+実装~経験により、これを既定の挙動として適用するのは，困難であることが示されている
+— 一部の~site（ `SameSite$a 属性が導入される以前から在る~siteなど）には、次に該当する~cookieに依拠するものもあるので
+⇒
+［
+`SameSite$a 属性を明示的に指定していない
+］~AND［
+それを含んでいる要請は、次を満たす
+］
+⇒
+［
+`~top-level~navi$である
+］~AND［
+`非同一-~site$rqである
+］~AND［
+その~HTTP~methodは`安全$でない
+］
+◎
+The "Lax" enforcement mode described in Section 5.4.7.1 allows a cookie to be sent with a cross-site HTTP request if and only if it is a top-level navigation with a "safe" HTTP method. Implementation experience shows that this is difficult to apply as the default behavior, as some sites may rely on cookies not explicitly specifying a SameSite attribute being included on top-level cross-site requests with "unsafe" HTTP methods (as was the case prior to the introduction of the SameSite attribute).
+</p>
+
+<p>
+例えば，ある~login~flowは、［
+~login情報を伴う~cookieを期待する端点
+］への［
+`非同一-~site$rqな~top-level `POST$m 要請
+］を孕むこともある。
+そのような~cookie用には：
+◎
+For example, a login flow may involve a cross-site top-level POST request to an endpoint which expects a cookie with login information. For such a cookie,＼
+</p>
+<ul>
+	<li>
+`Lax$l の施行は適切でない
+— そうすると、~HTTP要請~methodが`安全$でないことに因り，当の~cookieは除外されるので。
+◎
+"Lax" enforcement is not appropriate, as it would cause the cookie to be excluded due to the unsafe HTTP request method.＼
+</li>
+	<li>
+他方， `None$l の施行は、［
+すべての`非同一-~site$rqな要請に当の~cookieを伴わせて送信する
+］ことを許容することになるが、当の~cookieが敏感な内容であることに因り，望ましくないであろう。
+◎
+On the other hand, "None" enforcement would allow the cookie to be sent with all cross-site requests, which may not be desirable due to the cookie's sensitive contents.
+</li>
+</ul>
+
+<p>
+【！`5.4.7.2$sec にて述べた】
+`Lax-allowing-unsafe$l 施行~modeは，
+`Lax$l の施行を成す保護の一部を（ `None$l に比較して）維持するが、それでも，［
+~cookieが［
+`非同一-~site$rqな`安全$でない`~top-level~navi$による要請【！~top-level要請】
+］に伴って送信される
+］ことを許容する。
+◎
+The "Lax-allowing-unsafe" enforcement mode described in Section 5.4.7.2 retains some of the protections of "Lax" enforcement (as compared to "None") while still allowing cookies to be sent cross-site with unsafe top-level requests.
+</p>
+
+<p>
+`Lax-allowing-unsafe$l ~modeは，
+`Lax$l ~modeの［
+より寛容な変種
+］であり、~CSRFに抗する保護を少なくすることが必要とされる。
+そのような施行~modeの供給は、究極的には，［
+既定では、 `Lax$l 施行~modeにすること
+］の採用を容易にするための［
+一時的かつ過渡的な措置
+］と見るべきである。
+◎
+As a more permissive variant of "Lax" mode, "Lax-allowing-unsafe" mode necessarily provides fewer protections against CSRF. Ultimately, the provision of such an enforcement mode should be seen as a temporary, transitional measure to ease adoption of "Lax" enforcement by default.
+</p>
+
+			</section>
 		</section>
 	</section>
 	<section id="iana-considerations">
@@ -5408,7 +5815,7 @@ The permanent message header field registry (see [RFC3864]) needs to be updated 
 <tr><th>変更管理者
 <td>IETF
 <tr><th>仕様~文書
-<td>この仕様の `5.5$sec
+<td>この仕様の `5.6.1$sec
 </tbody></table>
 ◎
 Header field name:
@@ -5420,7 +5827,7 @@ Status:
 Author/Change controller:
 • IETF
 Specification document:
-• this specification (Section 5.5)
+• this specification (Section 5.6.1)
 </div>
 
 		</section>
@@ -5445,7 +5852,7 @@ The permanent message header field registry (see [RFC3864]) needs to be updated 
 <tr><th>変更管理者
 <td>IETF
 <tr><th>仕様~文書
-<td>この仕様の `5.3$sec
+<td>この仕様の `5.4$sec
 </tbody></table>
 ◎
 Header field name:
@@ -5457,7 +5864,7 @@ Status:
 Author/Change controller:
 • IETF
 Specification document:
-• this specification (Section 5.3)
+• this specification (Section 5.4)
 </div>
 
 		</section>
@@ -5465,15 +5872,16 @@ Specification document:
 <h3 title="Cookie Attribute Registry">9.3. ~cookie属性~registry</h3>
 
 <p>
-“~cookie属性~registry”
-は、［
+~IANAには、
+“~cookie属性~registry” を作成することが要請される。
+この~registryは、［
 ~cookieの挙動を制御するために利用される属性たち
 ］が成す名前空間を定義する。
-この~registryは
+この~registryは、
 <a href="https://www.iana.org/assignments/cookie-attribute-names">https://www.iana.org/assignments/cookie-attribute-names</a>
-にて保守されている。
+にて保守されるべきである。
 ◎
-The "Cookie Attribute Registry" defines the name space of attribute used to control cookies' behavior. The registry is maintained at https://www.iana.org/assignments/cookie-attribute-names.
+IANA is requested to create the "Cookie Attribute Registry", defining the name space of attribute used to control cookies' behavior. The registry should be maintained at https://www.iana.org/assignments/cookie-attribute-names.
 </p>
 
 			<section id="procedure">
@@ -5496,7 +5904,7 @@ Each registered attribute name is associated with a description, and a reference
 に基づいて行われる。
 登録される属性は、
 `extension-av$p 構文に合致しなければナラナイ。
-属性の名前は、一般には `CamelCase^en で定義されるが，形上では文字大小無視に受容されることに注意。
+属性の名前は、一般には `CamelCase^en で定義されるが，技術的には文字大小無視として受容されることに注意。
 ◎
 New registrations happen on a "RFC Required" basis (see Section 4.7 of [RFC8126]). The attribute to be registered MUST match the extension-av syntax defined in Section 4.1.1. Note that attribute names are generally defined in CamelCase, but technically accepted case-insensitively.
 </p>
@@ -5505,10 +5913,10 @@ New registrations happen on a "RFC Required" basis (see Section 4.7 of [RFC8126]
 <h4 title="Registration">9.3.2. 登録</h4>
 
 <p>
-“~cookie属性~registry”
-は、以下の登録で更新されることになる：
+“~cookie属性~registry” は、
+以下の登録を伴って作成されるべきである：
 ◎
-The "Cookie Attribute Registry" will be updated with the registrations below:
+The "Cookie Attribute Registry" should be created with the registrations below:
 </p>
 
 <div>
@@ -5556,7 +5964,7 @@ Secure	Section 4.1.2.5 of this document
 `SameSite$a 属性, ~cookie名前~接頭辞（`4.1.3$sec）, およびそれらに関係する［
 定義（`各種用語$secの一部, `同一-~site要請$sec 他）／
 構文／
-処理~要件（ `5.3.7$sec, 他）／
+処理~要件（ `5.4.7$sec, 他）／
 ~securityの考慮点（ `8.8$sec ）
 ］などがある。
 】</p>
@@ -5625,3 +6033,4 @@ RFC 6265 was written by Adam Barth. This document is an update of RFC 6265, addi
 
 	</section>
 </main></div>
+
