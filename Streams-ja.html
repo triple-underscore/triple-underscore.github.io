@@ -154,8 +154,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2021-05-26
-trans_update:2021-05-28
+spec_date:2021-06-02
+trans_update:2021-06-03
 source_checked:210331
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -1023,8 +1023,6 @@ in-flight:
 	施錠
 	開錠／解錠
 側:side:~
-包装:wrapping::~
-	包装を外す:unwrapping
 入出力:I/O:~
 静止-:pause::~
 close:::::クローズ
@@ -1137,6 +1135,8 @@ truthy:
 prototype::::プロトタイプ
 内包-:include::~
 集成-:aggregate::~
+包装:wrapping::~
+	包装を外す:unwrapping
 包装体:wrapper::~
 	〜を包装する:wrapper
 倍精度:double-precision::~
@@ -1740,7 +1740,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/033c6d900c438371083785828c659e3150cf4847" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/8a7d92b559c2b3f5028d9f48b49de90044be35c1" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -2431,7 +2431,7 @@ This specification depends on the Infra Standard. [INFRA]
 
 <p>
 この仕様は、その内部~algo用に，~JS仕様による`抽象-演算$の概念を利用する。
-これは、それらの返り値を`完了~record$として扱った上で，完了~recordを包装を外すための［
+これは、それらの返り値を`完了~record$として扱うことに加え，完了~recordによる包装を外すための［
 ~NOABRUPT ／ ~ABRUPT
 ］接頭辞の利用を含む。
 `ECMASCRIPT$r
@@ -4563,10 +4563,12 @@ An algorithm taking a chunk, called when a chunk is available for reading
 close steps
 </dt>
 	<dd>
-`~chunk$をとる~algo
+［
+1 個の`~chunk$／ `undefined^jv
+］をとる~algo
 — ~streamは~closeされたため，可用な`~chunk$は無いとき~callされる。
 ◎
-An algorithm taking a chunk, called when no chunks are available because the stream is closed
+An algorithm taking a chunk or undefined, called when no chunks are available because the stream is closed
 </dd>
 
 	<dt>
@@ -4583,17 +4585,18 @@ An algorithm taking a JavaScript value, called when no chunks are available beca
 </dl>
 
 <p class="note">注記：
-`~close手続き$riRが`~chunk$をとるのは、アリなら，~call元に裏~memoryを返せるようにするためである。
+`~close手続き$riRが`~chunk$をとるのは、
+アリなら，~call元に裏~memoryを返せるようにするためである。
 例えば
 <code>%byobReader.`read(chunk)$byob</code>
 は、~closeされた~streamに対しては
-— より伝統的な
-`{ value: undefined, done: true }^c
-ではなく —
 <code>{ value: %newViewOnSameMemory, done: true }</code>
 で充足されることになる。
+当の~streamが`取消され$た場合、裏~memoryは破棄され，代わりに より伝統的な
+<code>{ value: undefined, done: true }</code>
+で充足される。
 ◎
-The close steps take a chunk so that it can return the backing memory to the caller if possible. For example, byobReader.read(chunk) will fulfill with { value: newViewOnSameMemory, done: true } for closed streams, instead of the more traditional { value: undefined, done: true }.
+The close steps take a chunk so that it can return the backing memory to the caller if possible. For example, byobReader.read(chunk) will fulfill with { value: newViewOnSameMemory, done: true } for closed streams. If the stream is canceled, the backing memory is discarded and byobReader.read(chunk) fulfills with the more traditional { value: undefined, done: true } instead.
 </p>
 
 			</section>
@@ -4656,6 +4659,15 @@ If the chunk does become available, the promise will be fulfilled with an object
 — その~memoryが~call元に返されることを確保するため，改変を加えずに。
 ◎
 If the stream becomes closed, the promise will be fulfilled with an object of the form { value: theChunk, done: true }. In this case, view will be detached and no longer usable, but theChunk will be a new view (of the same type) onto the same backing memory region, with no modifications, to ensure the memory is returned to the caller.
+</li>
+			<li>
+%reader が`取消され$た場合、~promiseは
+<code>{ value: undefined, done: true }</code>
+の形による~objで充足されることになる。
+この事例では、
+%view の裏~memory領域は破棄され，~call元には返されない。
+◎
+If the reader is canceled, the promise will be fulfilled with an object of the form { value: undefined, done: true }. In this case, the backing memory region of view is discarded and not returned to the caller.
 </li>
 			<li>
 ~streamが~errorしたときは、関連な~errorで却下されることになる。
@@ -5827,26 +5839,10 @@ The following are internal methods implemented by each ReadableByteStreamControl
 </p>
 <ol>
 	<li>
-<p>
-~IF［
-コレ.`pendingPullIntos$rbsC は`空$でない
-］：
+~NOABRUPT `ReadableByteStreamControllerClearPendingPullIntos$A( コレ )
 ◎
-If this.[[pendingPullIntos]] is not empty,
-</p>
-		<ol>
-			<li>
-%firstDescriptor ~LET コレ.`pendingPullIntos$rbsC[0]
-◎
-Let firstDescriptor be this.[[pendingPullIntos]][0].
+Perform ! ReadableByteStreamControllerClearPendingPullIntos(this).
 </li>
-			<li>
-%firstDescriptor の`~fill済み~byte数$pD ~SET 0
-◎
-Set firstDescriptor’s bytes filled to 0.
-</li>
-		</ol>
-	</li>
 	<li>
 ~NOABRUPT `ResetQueue$A( コレ )
 ◎
@@ -7622,6 +7618,39 @@ If stream.[[state]] is "errored", return a promise rejected with stream.[[stored
 ◎
 Perform ! ReadableStreamClose(stream).
 </li>
+	<li>
+%reader ~LET %stream.`reader$rS
+◎
+Let reader be stream.[[reader]].
+</li>
+	<li>
+<p>
+~IF［
+%reader ~NEQ `undefined^jv
+］~AND［
+%reader は `ReadableStreamBYOBReader$I を`実装する$
+］：
+◎
+If reader is not undefined and reader implements ReadableStreamBYOBReader,
+</p>
+		<ol>
+			<li>
+%reader.`readIntoRequests$rsR を成す
+~EACH( %readIntoRequest )
+に対し
+⇒
+%readIntoRequest の`~close手続き$riR( `undefined^jv )
+◎
+For each readIntoRequest of reader.[[readIntoRequests]],
+• Perform readIntoRequest’s close steps, given undefined.
+</li>
+			<li>
+%reader.`readIntoRequests$rsR ~SET 空`~list$
+◎
+Set reader.[[readIntoRequests]] to an empty list.
+</li>
+		</ol>
+	</li>
 	<li>
 %sourceCancelPromise ~LET
 ~NOABRUPT %stream.`controller$rS.`CancelSteps$sl( %reason )
