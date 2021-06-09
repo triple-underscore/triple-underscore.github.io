@@ -98,7 +98,7 @@ case 'ACTION':
 	href = `http://www.w3.org/Graphics/SVG/WG/track/actions/${key}`;
 	break;
 case 'en': // english words
-	return `<span lang="en-x-a0">${key}</span>`;
+	return `<span lang="en">${key}</span>`;
 	break;
 default:
 	if(classname.slice(0, 3) === 'dom'){

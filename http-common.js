@@ -73,7 +73,7 @@ case 'X':
 	text = `%x${key}`;
 	break;
 case 'en': // english words
-	return `<span lang="en-x-a0">${key}</span>`;
+	return `<span lang="en">${key}</span>`;
 	break;
 default:
 }
