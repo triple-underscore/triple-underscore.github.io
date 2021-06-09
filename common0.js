@@ -248,7 +248,7 @@ Util.del_j = () => {
 		e.open = true;
 	});
 
-	repeat('*[lang="en"]', (en) => {
+	repeat('._en', (en) => {
 		const p = en.parentNode;
 		if(en.tagName === 'SPAN'){
 			const en1 = C('P');
@@ -629,7 +629,7 @@ Util.switchWordsInit = (source_data) => {
 		// html 内容の前処理：英文を抽出して placeholder に置換など
 		const en_list = source_data.en_text_list = [
 '</span>', // \uE000
-'<span lang="en">', // \uE001
+'<span lang="en" class="_en">', // \uE001
 '<span class="trans-note">', // \uE002
 '：<span class="block">', // \uE003
 '：<span class="block preline">', // \uE004
@@ -1032,7 +1032,7 @@ NIN: <span class="op">∉</span>
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>
 ABSTRACT:<h2 title="Abstract">要約</h2>
 STATUSofTHIS:<h2 title="Status of this Document">この文書の位置付け</h2>
-INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en">This section is non-normative.</span></p>
+INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en" class="_en">This section is non-normative.</span></p>
 FINGERPRINTING:<a class="fingerprinting" href="infra-ja.html#tracking-vector" title="（ここには、利用者の追跡に利用され得るものがある。／There is a tracking vector here.）"></a>
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
 TR:https://www.w3.org/TR
