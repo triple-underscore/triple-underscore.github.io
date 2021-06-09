@@ -490,7 +490,7 @@ const fillCopyright = () => {
 
 	let html = `
 <small>このページは、次による原文の許諾の下で翻訳されています：
-<br><span lang="en-x-a0">
+<br><span lang="en">
 `;
 	switch( license ){
 	case 'whatwg': // whatwg は year なし
@@ -695,11 +695,11 @@ Util.CLICK_HANDLERS._view_control = (event) => {
 
 /** 原文表示開閉（個別）*/
 Util.toggleSource = (target) => {
-	if(target.lang === 'en') return;
+	if(target.classList.contains('_en')) return;
 	for(let e = target; e; e = e.parentNode){
 		if(e.tagName === 'SECTION') return;
 		const c = e.lastElementChild;
-		if(c && c.lang === 'en'){
+		if(c && c.classList.contains('_en')){
 			e.classList.toggle('show-original');
 			return;
 		}
@@ -1495,7 +1495,7 @@ informative: '<h3>文献（参考）</h3>'
 				'\n<dd><a href="$1">$1</a></dd>'
 			).replace(
 				/\n +(.+)/g,
-				'\n<dd lang="en-x-a0">$1</dd>'
+				'\n<dd lang="en">$1</dd>'
 			);
 			html += last_key;
 			return html;
