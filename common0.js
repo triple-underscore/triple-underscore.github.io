@@ -213,8 +213,15 @@ Util.get_header = (section) => {
 
 Util.collectParts = (parts) => {
 	// 既定の収集器
-	repeat('#_persisted_parts > *[id]', (e) => {
-		parts[e.id] = e;
+	let container = E('_persisted_parts');
+	if(!container) return;
+	if(container.tagName === 'TEMPLATE'){
+		container = container.content;
+	}
+	Array.from(container.children).forEach( e => {
+		if(e.id){
+			parts[e.id] = e;
+		}
 	});
 };
 
