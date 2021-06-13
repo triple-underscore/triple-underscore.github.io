@@ -1624,7 +1624,7 @@ risk::::リスク
 
 意味論:semantics:~
 意味論上の:semanticな:~
-意味論的:semantic:~
+意味論的:semantical:~
 意味:meaning:~
 意味され:meanされ:意図され
 意味-:mean:~
