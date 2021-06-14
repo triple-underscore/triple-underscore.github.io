@@ -1000,7 +1000,6 @@ agent::::エージェント
 設置-:place:~
 設置しな:placeしな:課さな
 設置する:placeする:課す
-診断:diagnostic:~
 承認-:acknowledge:~
 誤解:mistake:~
 責務:responsibility:~
