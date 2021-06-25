@@ -144,8 +144,8 @@ return text;
 <script type="text/plain" id="_source_data">
 
 ●●options
-spec_date:2021-05-18
-trans_update:2021-05-19
+spec_date:2021-06-24
+trans_update:2021-06-25
 source_checked:210301
 page_state_key:HTML
 spec_status:LS
@@ -502,6 +502,7 @@ m.transferFromImageBitmap:#dom-imagebitmaprenderingcontext-transferfromimagebitm
 m.canvas:#dom-imagebitmaprenderingcontext-canvas
 
 mb.alpha:#dom-canvasrenderingcontext2dsettings-alpha
+mb.willReadFrequently:#dom-canvasrenderingcontext2dsettings-willreadfrequently
 mb.desynchronized:#dom-canvasrenderingcontext2dsettings-desynchronized
 mb.colorSpace:#dom-canvasrenderingcontext2dsettings-colorspace
 mb1.colorSpace:#dom-imagedatasettings-colorspace
@@ -698,6 +699,8 @@ V.既定の色~空間:#initialize-imagedata-defaultcolorspace
 
 2D.色~空間:#concept-canvas-color-space
 2D.非同期化されるか:#concept-canvas-desynchronized
+2D.高頻度に読取ることになるか:#concept-canvas-will-read-frequently
+読戻n用に最適化する:#concept-canvas-will-read-frequently
 2D.出力~bitmap:#output-bitmap
 2D.~alpha:#concept-canvas-alpha
 2D.~fill~style:#concept-canvasfillstrokestyles-fill-style
@@ -1408,6 +1411,11 @@ busy:
 割振れな:allocateできな:割り振れな
 消去-:clear::~
 入替える:swapする:入れ替える
+読戻n:readback::読み戻し
+読戻され:readback::読み戻され
+高頻度:frequent:~
+加速-:accelerate::~
+高処理能:performant:~
 
 	~~実行した後に:after the following statement
 	黙して:silently
@@ -1484,6 +1492,7 @@ critical:
 枯渇-:exhaust:~
 機能:function:~
 裁量:discretion:~
+有利:advantageous:~
 
 	未~supportな:unsupported
 	整合するように:consistently
@@ -1538,9 +1547,12 @@ critical:
 	分類:categories
 	必然的に:entail
 	為され:made
+	伝える:tell
+	〜するよう~~指示:marked for 
 
 	●未分類
 CPU:
+GPU:
 	NaN:
 OffscreenCanvas:
 ImageBitmapRenderingContext:
@@ -1619,6 +1631,7 @@ slate:
 	こと以外に:beyond, at most,
 	全体を~viewとする: a zero start offset and a length equal to the length of its storage 〜 correct size to store
 	始まる:begin
+	~web~page:webpage
 
 	●指示語
 
@@ -1670,6 +1683,7 @@ slate:
 	節:section
 	だけ:just a
 	すべて:everything
+	何回も:many
 
 ●●trans_metadata
 <p>
@@ -2711,6 +2725,7 @@ dictionary `CanvasRenderingContext2DSettings@I {
   boolean `alpha$mb = true;
   boolean `desynchronized$mb = false;
   `PredefinedColorSpace$I `colorSpace$mb = "srgb";
+  boolean `willReadFrequently$mb = false;
 };
 
 enum `ImageSmoothingQuality@I { `low$l, `medium$l, `high$l };
@@ -3166,7 +3181,7 @@ To maintain compatibility with existing web content, user agents need to enumera
 </p>
 
 <dl class="domintro">
-	<dt>%context = %canvas . `getContext$m('2d' [, { [ `alpha$mb: true ] [, `desynchronized$mb: false ] [, `colorSpace$mb: 'srgb'] } ] )</dt>
+	<dt>%context = %canvas . `getContext$m('2d' [, { [ `alpha$mb: true ] [, `desynchronized$mb: false ] [, `colorSpace$mb: 'srgb'] [, `willReadFrequently$mb: false ] } ] )</dt>
 
 	<dd>
 特定0の `canvas$e 要素が永続的に束縛している
@@ -3180,7 +3195,7 @@ Returns a CanvasRenderingContext2D object that is permanently bound to a particu
 If the alpha member is false, then the context is forced to always be opaque.
 </dd>
 	<dd>
-`desynchronized$mb が ~T の場合、当の文脈の`非同期化されるか$2Dは ~T にされ得る。
+`desynchronized$mb ~memberが ~T の場合、当の文脈の`非同期化されるか$2Dは ~T にされ得る。
 ◎
 If the desynchronized member is true, then the context might be desynchronized.
 </dd>
@@ -3188,6 +3203,12 @@ If the desynchronized member is true, then the context might be desynchronized.
 `colorSpace$mb ~memberは、当の描画~文脈の`色~空間$2Dを指定する。
 ◎
 The colorSpace member specifies the color space of the rendering context.
+</dd>
+	<dd>
+`willReadFrequently$mb ~memberが ~T の場合、
+当の文脈を`読戻n用に最適化する$よう~~指示する。
+◎
+If the willReadFrequently member is true, then the context is marked for readback optimization.
 </dd>
 
 	<dt>%context . `canvas$2d</dt>
@@ -3227,12 +3248,19 @@ desynchronized member is true if the context can be desynchronized.
 ◎
 colorSpace member is a string indicating the context's color space.
 </li>
+			<li>
+`willReadFrequently$mb ~memberは
+⇒
+当の文脈は`読戻n用に最適化する$よう~~指示されているならば ~T
+◎
+willReadFrequently member is true if the context is marked for readback optimization.
+</li>
 		</ul>
 	</dd>
 </dl>
 
 <p>
-各 `CanvasRenderingContext2D$I ~objは、次のものを持つ：
+各 `CanvasRenderingContext2D$I ~objは、次に挙げるものを持つ：
 </p>
 
 <dl class="def-list">
@@ -3278,27 +3306,28 @@ boolean. When a CanvasRenderingContext2D object's alpha is false, then its alpha
 ◎
 Thus, the bitmap of such a context starts off as opaque black instead of transparent black; clearRect() always results in opaque black pixels, every fourth byte from getImageData() is always 255, the putImageData() method effectively ignores every fourth byte in its input, and so on. However, the alpha component of styles and images drawn onto the canvas are still honoured up to the point where they would impact the output bitmap's alpha channel; for instance, drawing a 50% transparent white square on a freshly created output bitmap with its alpha set to false will result in a fully-opaque gray square.
 </dd>
-</dl>
 
-<p>
-`CanvasRenderingContext2D$I ~objは、真偽値をとる
+	<dt>
 `非同期化されるか@2D
-も持つ。
+◎
+The CanvasRenderingContext2D object also has a desynchronized boolean.＼
+</dt>
+	<dd>
+真偽値。
 ~T の場合、~UAは当の~canvasの描画を最適化してもヨイ
 — すなわち、［
 ~canvas塗り~cycleを~event~loopから非同期化したり，普通の~UA描画~algoを迂回する
 ］ことにより，入力~eventから~raster化までの待時間を抑制してもヨイ。
 この~modeは、［
-通例の塗りの仕組み／~raster化
+通例的な塗りの仕組み／~raster化
 ］を迂回することを孕む場合には，可視な
 `tearing artifacts^en
 【画面上の ある~~境目を挟んで，異なる~frameが同時に表示される現象】
 を導入し得る。
 ◎
-The CanvasRenderingContext2D object also has a desynchronized boolean. When a CanvasRenderingContext2D object's desynchronized is true, then the user agent may optimize the rendering of the canvas to reduce the latency, as measured from input events to rasterization, by desynchronizing the canvas paint cycle from the event loop, bypassing the ordinary user agent rendering algorithm, or both. Insofar as this mode involves bypassing the usual paint mechanisms, rasterization, or both, it might introduce visible tearing artifacts.
-</p>
-
-<p class="note">
+When a CanvasRenderingContext2D object's desynchronized is true, then the user agent may optimize the rendering of the canvas to reduce the latency, as measured from input events to rasterization, by desynchronizing the canvas paint cycle from the event loop, bypassing the ordinary user agent rendering algorithm, or both. Insofar as this mode involves bypassing the usual paint mechanisms, rasterization, or both, it might introduce visible tearing artifacts.
+</dd>
+	<dd class="note">注記：
 ~UAは通例的に，表示されない~buffer上に描画し、呈示~用に，それを `scan out^en されている~buffer
 【~display装置へ直に転送するための~buffer】
 と素早く入替える
@@ -3311,23 +3340,55 @@ The CanvasRenderingContext2D object also has a desynchronized boolean. When a Ca
 `MULTIPLEBUFFERING$r
 ◎
 The user agent usually renders on a buffer which is not being displayed, quickly swapping it and the one being scanned out for presentation; the former buffer is called back buffer and the latter front buffer. A popular technique for reducing latency is called front buffer rendering, also known as single buffer rendering, where rendering happens in parallel and racily with the scanning out process. This technique reduces the latency at the price of potentially introducing tearing artifacts and can be used to implement in total or part of the desynchronized boolean. [MULTIPLEBUFFERING]
-</p>
-
-<p class="note">注記：
-`非同期化されるか$2Dは、描き~appなど，入力から~raster化までの待時間が~criticalになる，ある種の~appを実装するときに有用になり得る。
+</dd>
+	<dd class="note">注記：
+`非同期化されるか$2Dは、描き~appなど，［
+入力から~raster化までの待時間が~criticalになる，ある種の~app
+］を実装するときに有用になり得る。
 ◎
 The desynchronized boolean can be useful when implementing certain kinds of applications, such as drawing applications, where the latency between input and rasterization is critical.
-</p>
+</dd>
 
-<p>
-各 `CanvasRenderingContext2D$I ~objには、
+	<dt>
+`高頻度に読取ることになるか@2D
+◎
+The CanvasRenderingContext2D object also has a will read frequently boolean.＼
+</dt>
+	<dd>
+真偽値。
+~T ならば、~UAは，当の~canvasを読戻n演算~用に最適化してもヨイ。
+◎
+When a CanvasRenderingContext2D object's will read frequently is true, the user agent may optimize the canvas for readback operations.
+</dd>
+	<dd class="note">注記：
+ほとんどの機器では，~UAは、~canvasの`出力~bitmap$2Dを［
+~GPU, ~CPU
+］どちらに格納するかどうか裁定する必要がある
+（前者は “~hardwareで加速された（ `accelerated^en ）”,
+後者は “~softwareで” とも呼ばれる）。
+ほとんどの描画~演算は，加速された~canvasの方が高処理能になるが、
+例外として［
+`getImageData$2d ／ `toDataURL$m ／ `toBlob$m
+］で読戻されている場合，そうならない。
+`高頻度に読取ることになるか$2D ~EQ ~T の場合、次を~UAに伝える
+⇒
+当の~web~pageは、読戻n演算を何回も遂行すると見込まれるので，
+~software~canvasを利用する方が有利である。
+◎
+On most devices the user agent needs to decide whether to store the canvas's output bitmap on the GPU (this is also called "hardware accelerated"), or on the CPU (also called "software"). Most rendering operations are more performant for accelerated canvases, with the major exception being readback with getImageData(), toDataURL(), or toBlob(). CanvasRenderingContext2D objects with will read frequently equal to true tell the user agent that the webpage is likely to perform many readback operations and that it is advantageous to use a software canvas.
+</dd>
+
+	<dt>
 `色~空間@2D
-が設定される
-— それは、
+◎
+The CanvasRenderingContext2D object also has a color space setting＼
+</dt>
+	<dd>
 `PredefinedColorSpace$I 型の値であり，`出力~bitmap$2D用の色~空間を指示する。
 ◎
-The CanvasRenderingContext2D object also has a color space setting of type PredefinedColorSpace. The CanvasRenderingContext2D object's color space indicates the color space for the output bitmap.
-</p>
+of type PredefinedColorSpace. The CanvasRenderingContext2D object's color space indicates the color space for the output bitmap.
+</dd>
+</dl>
 
 <div class="algo">
 `getContextAttributes()@2d
@@ -3336,10 +3397,11 @@ The CanvasRenderingContext2D object also has a color space setting of type Prede
 ~RET «[ 次に挙げる~entry ]»
 ⇒＃
 `alpha$mb → コレの`~alpha$2D,
-`desynchronized$mb → コレの`非同期化されるか$2D
-`colorSpace$mb → コレの`色~空間$2D
+`desynchronized$mb → コレの`非同期化されるか$2D,
+`colorSpace$mb → コレの`色~空間$2D,
+`willReadFrequently$mb → コレの`高頻度に読取ることになるか$2D
 ◎
-The getContextAttributes() method steps are to return «[ "alpha" → this's alpha, "desynchronized" → this's desynchronized, "colorSpace" → this's color space ]».
+The getContextAttributes() method steps are to return «[ "alpha" → this's alpha, "desynchronized" → this's desynchronized, "colorSpace" → this's color space, "willReadFrequently" → this's will read frequently ]».
 </div>
 
 <hr>
@@ -3459,6 +3521,13 @@ Set context's desynchronized to settings["desynchronized"].
 ]
 ◎
 Set context's color space to settings["colorSpace"].
+</li>
+	<li>
+%文脈 の`高頻度に読取ることになるか$2D ~SET %設定群[
+"`willReadFrequently@mb"
+]
+◎
+Set context's will read frequently to settings["willReadFrequently"].
 </li>
 	<li>
 ~RET %文脈
@@ -4667,7 +4736,7 @@ When the object implementing the CanvasTextDrawingStyles interface is created, t
 			<li>
 <p>
 その時点における`~font~style源$の その~propの`算出d値$に相対的に解釈する
-— 次のものが、相対的な値に該当する：
+— 次に挙げるものが、相対的な値に該当する：
 ◎
 ↓</p>
 				<ul>
@@ -7949,7 +8018,7 @@ Patterns are represented by objects implementing the opaque CanvasPattern interf
 
 <div>
 <p>
-各~patternには、次のものが結付けられる：
+各~patternには、次に挙げるものが結付けられる：
 </p>
 
 <p class="trans-note">【
@@ -11334,7 +11403,7 @@ The canvas attribute must return the value it was initialized to when the object
 </div>
 
 <p>
-各 `ImageBitmapRenderingContext$I ~obj %文脈 は、次のものを持つ：
+各 `ImageBitmapRenderingContext$I ~obj %文脈 は、次に挙げるものを持つ：
 ◎
 ↓</p>
 
@@ -12303,7 +12372,7 @@ it has a commit() method for pushing the rendered image to the context's Offscre
 </ul>
 
 <p>
-各 `OffscreenCanvasRenderingContext2D$I ~objは、次のものを持つ：
+各 `OffscreenCanvasRenderingContext2D$I ~objは、次に挙げるものを持つ：
 ◎
 ↓</p>
 
