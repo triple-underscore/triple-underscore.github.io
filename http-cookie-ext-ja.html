@@ -130,8 +130,8 @@ return text;
 
 ●●options
 
-spec_date:2021-06-04
-trans_update:2021-06-02
+spec_date:2021-06-25
+trans_update:2021-06-26
 original_url:https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html
 source_checked:201215
 spec_status:IETFID
@@ -665,8 +665,10 @@ directory::::ディレクトリ
 	-:output
 	-:creation
 	~CONTINUE:continue
+	~CONTINUE:ignore ... return to Step ...
 	分:minute
 	~call元:caller
+	~PLUS:total
 
 	●保安
 	:ambient
@@ -900,7 +902,6 @@ IANA:
 	資料:references
 	呼ばれ:called
 	なりすまして:impersonating
-	~~指示:order
 	意味-:mean／
 	意味:meaning／
 	~~向上させ:promote
@@ -1053,6 +1054,7 @@ toolbar::::ツールバー
 	伴わせる:marked as X=Y
 	文書:Document
 	総数:total
+	総:total
 	作成してから 2 分 以下のもの:a cookie age of 2 minutes or less
 
 	●指示語
@@ -3373,7 +3375,9 @@ NOTE: The algorithm below is more permissive than the grammar in Section 4.1. Fo
 <p>
 ~UAは、所与の
 ( `set-cookie-string$p %~cookie文字列 )
-を構文解析するときは、次と等価な~algoを利用しなければナラナイ：
+を構文解析するときは、次と等価な~algoを利用しなければナラナイ
+（この~algoの最後の段に達する前に現れる ~RET は、
+%~cookie文字列 をまるごと無視することを意味する）：
 ◎
 A user agent MUST use an algorithm equivalent to the following algorithm to parse a set-cookie-string:
 </p>
@@ -3394,7 +3398,7 @@ If the set-cookie-string contains a %x0D (CR), %x0A (LF), or %x00 (NUL) octet, t
 %~cookie文字列 は `CTL^P を包含する
 ］
 ⇒
-~RET （ %~cookie文字列 をまるごと無視する）
+~RET
 ◎
 If the set-cookie-string contains a %x00-1F / %x7F (CTL) character: Abort these steps and ignore the set-cookie-string entirely.
 </li>
@@ -3441,10 +3445,18 @@ Remove any leading or trailing WSP characters from the name string and the value
 ↑↑The cookie-name is the name string, and the cookie-value is the value string.
 </li>
 	<li>
+~IF［
+%~cookie名 の~byte数 ~PLUS %~cookie値 の~byte数 ~GT 4096
+］
+⇒
+~RET
+◎
+If the sum of the lengths of the name string and the value string is more than 4096 bytes, abort these steps and ignore the set-cookie-string entirely.
+</li>
+	<li>
 %~cookie属性~list ~LET 空~list
-— 0 個以上の［
-( 名前, 値 ) が成す~pairで表現される`属性$
-］からなる~list
+（この~listを成す各~itemは、
+( 名前, 値 ) が成す~pairで表現される`属性$を与えることになる）
 ◎
 The user agent MUST use an algorithm equivalent to the following algorithm to parse the unparsed-attributes:
 </li>
@@ -3489,10 +3501,19 @@ Otherwise:
 Remove any leading or trailing WSP characters from the attribute-name string and the attribute-value string.
 </li>
 			<li>
+~IF［
+%属性~値 の~byte数 ~GT 1024
+］
+⇒
+~CONTINUE
+◎
+If the attribute-value is longer than 1024 bytes, ignore the cookie-av string and return to Step 1 of this algorithm.
+</li>
+			<li>
 この節の各 下位~節に与える要件に従って，
 %属性~名, %属性~値
 を処理する（ %属性~名 が下位~節のどの~algoからも認識されない属性は無視する）
-【その結果， %~cookie属性~list に属性が追加されることになる】
+【その結果， %~cookie属性~list に`属性$が追加され得る】
 ◎
 Process the attribute-name and attribute-value according to the requirements in the following subsections. (Notice that attributes with unrecognized attribute-names are ignored.)
 ◎
@@ -3506,7 +3527,7 @@ Return to Step 1 of this algorithm.
 を伴う
 `~cookieを受信した@
 とされる
-（~cookieを受信したことにより誘発される追加的な要件については、`保管~model$secを見よ。）
+（~cookieを受信したことにより誘発される追加的な要件については、`保管~model$secを見よ）。
 ◎
 When the user agent finishes parsing the set-cookie-string, the user agent is said to "receive a cookie" from the request-uri with name cookie-name, value cookie-value, and attributes cookie-attribute-list. (See Section 5.5 for additional requirements triggered by receiving a cookie.)
 </li>
@@ -4986,20 +5007,13 @@ NOTE: Despite its name, the cookie-string is actually a sequence of octets, not 
 <h3 title="Limits">6.1. 制限s</h3>
 
 <p>
-実用的な~UA実装には、格納し得る~cookieの個数と~sizeに制限sがある。
+実用的な~UA実装には、格納し得る~cookieの個数と~sizeに上限がある。
 一般用~UAは、最小でも次に与える容量は供するベキである：
 ◎
 Practical user agent implementations have limits on the number and size of cookies that they can store. General-use user agents SHOULD provide each of the following minimum capabilities:
 </p>
 
 <ul>
-	<li>
-1 ~cookieあたり，少なくとも 4096 ~byte（~cookieの［
-名前, 値, 属性たち
-］の長さの総和で）
-◎
-At least 4096 bytes per cookie (as measured by the sum of the length of the cookie's name, value, and attributes).
-</li>
 	<li>
 1 ~domainあたり，少なくとも 50 個の~cookie
 ◎
@@ -5013,6 +5027,22 @@ At least 3000 cookies total.
 </ul>
 
 <p>
+~UAは、自身が格納する~cookieの最大~個数を制限してもヨイ。
+~UAは、いつでも, どの~cookieを抹消してもヨイ
+（利用者からの要請に応じて，あるいは実装の制限に因り）。
+◎
+User agents MAY limit the maximum number of cookies they store, and may evict any cookie at any time (whether at the request of the user or due to implementation limitations).
+</p>
+
+<p>
+~cookieの最大~個数に対する上限は、格納される全~cookieの総~sizeも制限することに注意
+— 各~cookieには、
+`5.4$sec にて施行しなければナラナイ長さ制限sがあるので。
+◎
+Note that a limit on the maximum number of cookies also limits the total size of the stored cookies, due to the length limits which MUST be enforced in Section 5.4.
+</p>
+
+<p>
 ~serverは、これらの実装~制限sに達しないように, かつ［
 各 要請に `Cookie^h ~headerが内包されることによる，~network帯域幅を最小限にする
 ］ために，できるだけ少数かつ小容量の~cookieを利用するベキである。
@@ -5021,11 +5051,12 @@ Servers SHOULD use as few and as small cookies as possible to avoid reaching the
 </p>
 
 <p>
-~UAは利用者からの~~指示により~cookieを抹消し得るので、~serverは、
-~UAが `Cookie^h ~header内に 1 個以上の~cookieを返すことに失敗したときには，
+~UAは~cookieをいつでも抹消し得るので、~serverは，［
+~UAが `Cookie^h ~header内に 1 個以上の~cookieを返すことに失敗したとき
+］には
 “上品に退行する（ `gracefull degrade^en ）”ベキである。
 ◎
-Servers SHOULD gracefully degrade if the user agent fails to return one or more cookies in the Cookie header field because the user agent might evict any cookie at any time on orders from the user.
+Servers SHOULD gracefully degrade if the user agent fails to return one or more cookies in the Cookie header field because the user agent might evict any cookie at any time.
 </p>
 
 		</section>
