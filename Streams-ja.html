@@ -154,8 +154,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2021-06-15
-trans_update:2021-06-18
+spec_date:2021-06-24
+trans_update:2021-06-25
 source_checked:210331
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -446,7 +446,9 @@ dw.releaseLock:#default-writer-release-lock
 dw.write:#default-writer-write
 
 m.new WritableStreamDefaultController:#ws-default-controller-constructor
+wsdc.abortReason:#ws-default-controller-abort-reason
 wsdc.error:#ws-default-controller-error
+wsdc.signal:#ws-default-controller-signal
 
 wsdc.[[AbortSteps]]:#ws-default-controller-private-abort
 wsdc.[[ErrorSteps]]:#ws-default-controller-private-error
@@ -613,9 +615,11 @@ wsW.readyPromise:#writablestreamdefaultwriter-readypromise
 wsW.stream:#writablestreamdefaultwriter-stream
 
 wsdC.abortAlgorithm:#writablestreamdefaultcontroller-abortalgorithm
+wsdC.abortReason:#writablestreamdefaultcontroller-abortreason
 wsdC.closeAlgorithm:#writablestreamdefaultcontroller-closealgorithm
 wsdC.queue:#writablestreamdefaultcontroller-queue
 wsdC.queueTotalSize:#writablestreamdefaultcontroller-queuetotalsize
+wsdC.signal:#writablestreamdefaultcontroller-signal
 wsdC.started:#writablestreamdefaultcontroller-started
 wsdC.strategyHWM:#writablestreamdefaultcontroller-strategyhwm
 wsdC.strategySizeAlgorithm:#writablestreamdefaultcontroller-strategysizealgorithm
@@ -931,6 +935,7 @@ sct.~item:~INFRA#struct-item
 ~port~message~queue:~HTMLcomms#port-message-queue
 
 aB.中止されたか:~DOM4#abortsignal-aborted-flag
+中止-を通達する:~DOM4#abortsignal-signal-abort
 通達に~algoを追加する:~DOM4#abortsignal-add
 通達から~algoを除去する:~DOM4#abortsignal-remove
 
@@ -1741,7 +1746,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/c5ca8837c0b50ad1057351a7676824013c36538e" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/d0bd912c2c1547aabee61c950ff624e0937d8779" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -12754,6 +12759,8 @@ The Web IDL definition for the WritableStreamDefaultController class is given as
 <pre class="idl">
 [`Exposed$=(Window,Worker,Worklet)]
 interface `WritableStreamDefaultController@I {
+  readonly attribute `any$ `abortReason$wsdc;
+  readonly attribute `AbortSignal$I `signal$wsdc;
   `undefined$ `error$wsdc(optional `any$ %e);
 };
 </pre>
@@ -12786,6 +12793,13 @@ Description (non-normative)
 ◎
 A promise-returning algorithm, taking one argument (the abort reason), which communicates a requested abort to the underlying sink
 
+<tr><td>`abortReason@wsdC
+<td>
+`WritableStreamAbort$A に与えられた %reason 引数,
+または `undefined^jv 。
+◎
+The argument given to WritableStreamAbort, or undefined.
+
 <tr><td>`closeAlgorithm@wsdC
 <td>
 ~promiseを返す~algo
@@ -12795,9 +12809,10 @@ A promise-returning algorithm which communicates a requested close to the underl
 
 <tr><td>`queue@wsdC
 <td>
-~streamの［
+`~list$
+— ~streamの［
 `~chunk$たちからなる内部~queue
-］を表現する`~list$。
+］を表現する。
 ◎
 A list representing the stream’s internal queue of chunks
 
@@ -12806,6 +12821,15 @@ A list representing the stream’s internal queue of chunks
 `queue$wsdC 内に格納されている すべての~chunkの合計~size（`個別~size付き~queue$secを見よ）
 ◎
 The total size of all the chunks stored in [[queue]] (see § 8.1 Queue-with-sizes)
+
+<tr><td>`signal@wsdC
+<td>
+`AbortSignal$I
+— ~streamが`中止-$されたとき、処理待ちな［
+書込n／~close
+］演算を中止するために利用され得る。
+◎
+An AbortSignal that can be used to abort the pending write or close operation when the stream is aborted.
 
 <tr><td>`started@wsdC
 <td>
@@ -12852,9 +12876,18 @@ The close sentinel is a unique value enqueued into [[queue]], in lieu of a chunk
 
 			</section>
 			<section id="ws-default-controller-prototype">
-<h4 title="Methods">5.4.3. ~method</h4>
+<h4 title="Methods and properties">5.4.3. ~methodと~prop</h4>
 
 <dl class="domintro">
+	<dt>%controller.`signal$wsdc</dt>
+	<dd>
+~streamが`中止-$されたとき，処理待ちな［
+書込n／~close
+］演算を中止するために利用できる `AbortSignal$I 。
+◎
+An AbortSignal that can be used to abort the pending write or close operation when the stream is aborted.
+</dd>
+
 	<dt>%controller.`error(e)$wsdc</dt>
 	<dd>
 制御先の可書~streamを~closeする
@@ -12870,6 +12903,26 @@ Closes the controlled writable stream, making all future interactions with it fa
 This method is rarely used, since usually it suffices to return a rejected promise from one of the underlying sink's methods. However, it can be useful for suddenly shutting down a stream in response to an event outside the normal lifecycle of interactions with the underlying sink.
 </dd>
 </dl>
+
+<div class="algo">
+`abortReason@wsdc
+取得子~手続きは
+⇒
+~RET コレ.`abortReason$wsdC
+◎
+The abortReason getter steps are:
+• Return this.[[abortReason]].
+</div>
+
+<div class="algo">
+`signal@wsdc
+取得子~手続きは
+⇒
+~RET コレ.`signal$wsdC
+◎
+The signal getter steps are:
+• Return this.[[signal]].
+</div>
 
 <div class="algo">
 <p>
@@ -13282,11 +13335,31 @@ WritableStreamAbort(stream, reason) performs the following steps:
 </p>
 <ol>
 	<li>
+~IF［
+%stream.`state$wS ~IN { `closed^l, `errored^l }
+］
+⇒
+~RET `undefined^jv で`解決される~promise$
+◎
+If stream.[[state]] is "closed" or "errored", return a promise resolved with undefined.
+</li>
+	<li>
+%stream.`controller$wS.`abortReason$wsdC ~SET %reason
+◎
+Set stream.[[controller]].[[abortReason]] to reason.
+</li>
+	<li>
+`中止-を通達する$( %stream.`controller$wS.`signal$wsdC )
+◎
+Signal abort on stream.[[controller]].[[signal]].
+</li>
+	<li>
 %state ~LET %stream.`state$wS
 ◎
 Let state be stream.[[state]].
 </li>
 	<li>
+<p>
 ~IF［
 %state ~IN { `closed^l, `errored^l }
 ］
@@ -13294,7 +13367,17 @@ Let state be stream.[[state]].
 ~RET `undefined^jv で`解決される~promise$
 ◎
 If state is "closed" or "errored", return a promise resolved with undefined.
-</li>
+</p>
+
+<p class="note">注記：
+ここでは、 %state を検査し直す
+— `中止-を通達する$ときに走らせた作者~codeは、
+%state を変更したかもしれないので。
+◎
+We re-check the state because signaling abort runs author code and that might have changed the state.
+</p>
+
+	</li>
 	<li>
 ~IF［
 %stream.`pendingAbortRequest$wS ~NEQ `undefined^jv
@@ -14764,6 +14847,16 @@ Set stream.[[controller]] to controller.
 ~NOABRUPT `ResetQueue$A( %controller )
 ◎
 Perform ! ResetQueue(controller).
+</li>
+	<li>
+%controller.`abortReason$wsdC ~SET `undefined^jv
+◎
+Set controller.[[abortReason]] to undefined.
+</li>
+	<li>
+%controller.`signal$wsdC ~SET 新たな `AbortSignal$I
+◎
+Set controller.[[signal]] to a new AbortSignal.
 </li>
 	<li>
 %controller の
@@ -20188,23 +20281,23 @@ interface mixin `GenericTransformStream@I {
 Any platform object that includes the GenericTransformStream mixin has an associated transform, which is an actual TransformStream.
 </p>
 
-<p>
+<div class="algo">
 `readable@gts
 取得子~手続きは
 ⇒
 ~RET コレの`形式変換$GRS.`readable$tS
 ◎
 The readable getter steps are to return this's transform.[[readable]].
-</p>
+</div>
 
-<p>
+<div class="algo">
 `writable@gts
 取得子~手続きは
 ⇒
 ~RET コレの`形式変換$GRS.`writable$tS
 ◎
 The writable getter steps are to return this's transform.[[writable]].
-</p>
+</div>
 
 <hr>
 
