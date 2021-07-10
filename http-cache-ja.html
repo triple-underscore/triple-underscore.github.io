@@ -12,8 +12,8 @@
 
 ●●options
 spec_title:HTTP Caching
-spec_date:2021-07-06
-trans_update:2021-07-07
+spec_date:2021-07-09
+trans_update:2021-07-11
 source_checked:201210
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-cache-latest.html
@@ -30,7 +30,6 @@ trans_1st_pub:2019-11-22
 
 
 ●●original_id_map
-terminology:terminoly
 
 ●●mdn_urls
 field.age:HTTP/Headers/Age
@@ -221,11 +220,6 @@ V.応答~遅延:#response_delay
 A:#collected.abnf
 B:#changes.from.rfc.7234
 C.17:#change.log
-
-
-Acknowledgments
-Index
-Authors' Addresses
 
 ●●words_table1
 
@@ -1305,12 +1299,12 @@ the request method associated with the stored response allows it to be used for 
 selecting header fields nominated by the stored response (if any) match those presented (see Section 4.1), and
 </li>
 	<li>
-`応答^V は成功裡に`検証-$されている, または
+`応答^V は成功裡に`検証-$された, または
 `応答^V は、 `no-cache$sdir 応答~cache指令を包含しない。
 ◎
 the stored response does not contain the no-cache cache directive (Section 5.2.2.4), unless it is successfully validated (Section 4.3), and
 </li>
-	<li>
+	<li id="_ecxluded-condition-for-freshening">
 <p>
 `応答^V は、次のいずれかを満たす：
 ◎
@@ -1329,7 +1323,7 @@ fresh (see Section 4.2), or
 allowed to be served stale (see Section 4.2.4), or
 </li>
 			<li>
-成功裡に`検証-$されている。
+成功裡に`検証-$された。
 ◎
 successfully validated (see Section 4.3).
 </li>
@@ -2384,76 +2378,92 @@ or act as if the server failed to respond. In the latter case, the cache can sen
 <p>
 `304$st 応答
 — 以下，この節を通して `304 応答^V と記す —
-を受信した~cacheは、適用~可能な要請~URIに~~対応する格納-済み `200$st 応答が 1 個~以上あるときは
-— 以下，それらの集合を `S^V と記す —
-`S^V の中のどれを［
-`304 応答^V から供された新たな情報
-］により更新することになるか識別して，それを行う必要がある。
+を受信した~cacheは、格納-済み応答のうち［
+`304 応答^V から供される新たな情報
+］で更新するのに相応しいものを識別して，それを行う必要がある
+— そのような格納-済み応答の集合は、次に従って決定される：
 ◎
-When a cache receives a 304 (Not Modified) response and already has one or more stored 200 (OK) responses for the applicable request URI, the cache needs to identify which (if any) are to be updated by the new information provided, and then do so.
+When a cache receives a 304 (Not Modified) response, it needs to identify stored responses that are suitable for updating with the new information provided, and then do so.
 </p>
+<ol>
+	<li>
+`初期~集合^V ~LET 格納-済み応答のうち［
+`4$sec の冒頭に与えた要件~listをすべて満たすもの
+— すなわち，［
+`304 応答^V が応対した要請
+］用に選定し得たもの —
+あるいは、それらの要件のうち
+<a href="#_ecxluded-condition-for-freshening">最後の要件</a>に限り満たさないもの
+］からなる集合
+◎
+The initial set of stored responses to update are those that could have been selected for that request — i.e., those that meet the requirements in Section 4, except the last requirement to be fresh, able to be served stale or just validated.
+◎
+Then, that initial set of stored response(s) is further filtered by the first match of:
+</li>
+	<li>
+~IF［
+`304 応答^V は 1 個以上の`強い検証子$を包含する
+（これらの各 強い検証子は、更新する，ある`選定された表現$を識別する）
+］
+⇒
+~RET `初期~集合^V を成す応答のうち［
+`304 応答^V が包含する いずれかの`強い検証子$と同じ`強い検証子$を伴うもの
+］からなる集合（無いならば空）
+◎
+If the new response contains one or more strong validators (see Section 8.8.1 of [Semantics]), then each of those strong validators identify a selected representation for update.＼
+All the stored responses in the initial set with one of those same strong validators are identified for update.
+◎
+If none of the initial set contain at least one of the same strong validators, then the cache MUST NOT use the new response to update any stored responses.
+</li>
+	<li>
+~IF［
+`304 応答^V は 1 個以上の`弱い検証子$を包含する
+］
+⇒
+~IF［
+`初期~集合^V 内に［
+`304 応答^V が包含する いずれかの`弱い検証子$に合致する応答
+］は在る
+］
+⇒
+~RET ［
+該当する応答のうち，最も近過去なもの
+］のみからなる集合
+◎
+If the new response contains no strong validators but does contain one or more weak validators, and those validators correspond to one of the initial set's stored responses, then the most recent of those matching stored responses is identified for update.
+</li>
+	<li>
+~ELSE
+（ `304 応答^V は`検証子$を含まない
+— 例： `304 応答^V が応対した要請は、
+`~client$が `Last-Modified$h 応答~header以外の~sourceから`生成し$た
+`If-Modified-Since$h 要請である）
+⇒
+~IF［
+`初期~集合^V は唯一つの格納-済み応答からなっていて，その応答も`検証子$を欠如する
+］
+⇒
+~RET `初期~集合^V
+◎
+If the new response does not include any form of validator (such as where a client generates an If-Modified-Since request from a source other than the Last-Modified response header field),＼
+and there is only one stored response in the initial set,＼
+and that stored response also lacks a validator,＼
+then that stored response is identified for update.
+</li>
+	<li>
+~RET 空~集合
+◎
+↑</li>
+</ol>
 
 <p>
-更新~対象として選定される格納-済み応答（たち）は、 `304 応答^V の検証子に応じて，次で与えられる：
-◎
-The stored response(s) to update are identified by using the first match (if any) of:
-</p>
-
-<dl class="switch">
-	<dt>
-`304 応答^V は 1 個以上の`強い検証子$を包含する場合：
-◎
-If the new response contains one or more strong validators (see Section 8.8.1 of [Semantics]), then＼
-</dt>
-	<dd>
-それらの各 強い検証子は、更新する`選定された表現$を識別する
-— すなわち、 `S^V 内の［
-それらのうち，いずれかと同じ強い検証子を伴うもの
-］は，すべて更新するものと識別される。
-◎
-each of those strong validators identify the selected representation for update. All the stored responses with one of those same strong validators are identified for update.＼
-</dd>
-	<dd>
-そのような格納-済み応答は無い場合、~cacheは， `304 応答^V を どの格納-済み応答の更新にも利用してはナラナイ。
-【この記述から、仮に `304 応答^V が弱い検証子も包含していたとしても，次項は適用されないと見受けられる。】
-◎
-If none of the stored responses contain at least one of the same strong validators, then the cache MUST NOT use the new response to update any stored responses.
-</dd>
-
-	<dt>
-`304 応答^V は`弱い検証子$【！dfn】を包含する場合：
-◎
-If the new response contains a weak validator＼
-</dt>
-	<dd>
-`S^V 内にその検証子に合致するものがあれば、それらのうち最も近過去なものが，更新するものと識別される。
-◎
-and that validator corresponds to one of the cache's stored responses, then the most recent of those matching stored responses is identified for update.
-</dd>
-
-	<dt>
-`304 応答^V は`検証子$を含まない場合：
-◎
-If the new response does not include any form of validator＼
-</dt>
-	<dd>
-（例えば、~clientが `Last-Modified$h 応答~header以外の~sourceから， `If-Modified-Since$h 要請を`生成し$たなど。）
-◎
-(such as where a client generates an If-Modified-Since request from a source other than the Last-Modified response header field),＼
-</dd>
-	<dd>
-`S^V が唯一つの格納-済み応答からなっていて，その応答も`検証子$を欠如するならば、その応答が，更新するものと識別される。
-◎
-and there is only one stored response, and that stored response also lacks a validator, then that stored response is identified for update.
-</dd>
-</dl>
-
-<p>
-~cacheは，【更新~対象として】識別された各 格納-済み応答に対し、
+~cacheは、上で決定した集合を成す各［
+更新-対象として識別された格納-済み応答 `応答^V
+］に対し、
 `3.2$sec に従う下で，［
 `304 応答^V 内に供された各~header
 ］を利用して［
-格納-済み応答~内の各~header
+`応答^V 内の各~header
 ］を更新しなければナラナイ。
 ◎
 For each stored response identified, the cache MUST update its header fields with the header fields provided in the 304 (Not Modified) response, as per Section 3.2.
@@ -4020,12 +4030,12 @@ This section is to be removed before publishing as an RFC.
 
 	</section>
 	<section id="acks">
-<h2 title="Acknowledgments">謝辞</h2>
+<h2 title="Acknowledgements">謝辞</h2>
 
 <p>
 `Semantics/謝辞$sec を見よ。
 ◎
-See Appendix "Acknowledgments" of [Semantics].
+See Appendix "Acknowledgements" of [Semantics].
 </p>
 
 	</section>
