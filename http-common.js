@@ -585,7 +585,7 @@ c.realm:~HTTPsem#realm
 	§#uri
 ~URI:~HTTPinfra#uri
 ~URI参照:~HTTPinfra#uri-reference
-	~secure化:~HTTPinfra#secured
+~secure化:~HTTPinfra#secured
 	生成元:~HTTPinfra#origin
 
 	§#fields
