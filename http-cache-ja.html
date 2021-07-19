@@ -12,9 +12,9 @@
 
 ●●options
 spec_title:HTTP Caching
-spec_date:2021-07-09
-trans_update:2021-07-11
-source_checked:201210
+spec_date:2021-07-15
+trans_update:2021-07-19
+source_checked:210715
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-cache-latest.html
 abbr_url:HTTPcache
@@ -124,13 +124,13 @@ cite.~cache指令~registry:~IANA-a/http-cache-directives
 7.2:#security.timing
 A:#collected.abnf
 B:#changes.from.rfc.7234
-C.17:#change.log
+C.18:#change.log
 
 Messaging/6.3:~HTTPmsg#message.body.length
 Messaging/11:~HTTPmsg#security.considerations
 Semantics/3:~HTTPinfra#terminology
 Semantics/5.2:~HTTPinfra#field.lines
-Semantics/13.2:~HTTPsem#evaluation
+Semantics/13.2.2:~HTTPsem#precedence
 Semantics/15.1:~HTTPsem#overview.of.status.codes
 Semantics/範囲の結合-法:~HTTPsem#combining.byte.ranges
 Semantics/17:~HTTPinfra#security.considerations
@@ -515,7 +515,7 @@ Draft HTTP Core Documents
 ~cache可能な応答~messageを指示する
 ］各種~headerを定義する。
 ◎
-The Hypertext Transfer Protocol (HTTP) is a stateless application- level protocol for distributed, collaborative, hypertext information systems. This document defines HTTP caches and the associated header fields that control cache behavior or indicate cacheable response messages.
+The Hypertext Transfer Protocol (HTTP) is a stateless application-level protocol for distributed, collaborative, hypertext information systems. This document defines HTTP caches and the associated header fields that control cache behavior or indicate cacheable response messages.
 </p>
 
 <p>
@@ -543,9 +543,9 @@ Working Group information can be found at &lt;https://httpwg.org/&gt;; source co
 </p>
 
 <p>
-この草案における変更点は、 `C.17$sec に要約されている。
+この草案における変更点は、 `C.18$sec に要約されている。
 ◎
-The changes in this draft are summarized in Appendix C.17.
+The changes in this draft are summarized in Appendix C.18.
 </p>
 
 	</section>
@@ -1421,15 +1421,17 @@ A cache that does not have a clock available MUST NOT use stored responses witho
 
 <p>
 ~cacheが［
-格納-済み応答により満足できるような，要請
-］を受信したとき，その応答に `Vary$h ~headerが在る場合には、［
-その`~field値$に~~挙げられた，すべての`選定用~header$
-］について［
-元の要請（すなわち，格納-済み応答が応対した要請）と
-今の要請が，以下に述べるように合致する
-］場合を除き，その応答を利用してはナラナイ：
+ある格納-済み応答 `格納-済み応答^V により満足できるような，要請
+］を受信したとき，
+`格納-済み応答^V が `Vary$h ~headerを包含する場合には、
+~cacheは，`再検証$を伴うことなく `格納-済み応答^V を利用してはナラナイ
+— ただし、
+`格納-済み応答^V の `Vary$h `~field値$に~~挙げられた，すべての`選定用~header$に関して、［
+当の要請~内の それらの~field,
+元の要請（すなわち，`格納-済み応答^V を~cacheに格納させた要請）内の それらの~field
+］が，以下に述べるように合致する場合は除く：
 ◎
-When a cache receives a request that can be satisfied by a stored response that has a Vary header field (Section 12.5.5 of [Semantics]), it MUST NOT use that response unless all the selecting header fields nominated by the Vary header field match in both the original request (i.e., that associated with the stored response), and the presented request.
+When a cache receives a request that can be satisfied by a stored response and that stored response contains a Vary header field (Section 12.5.5 of [Semantics]), the cache MUST NOT use that stored response without revalidation unless all the selecting header fields (nominated by that Vary field value) in the present request match those fields in the original request (i.e., the request that caused the cached response to be stored).
 </p>
 <ul>
 	<li>
@@ -1475,9 +1477,10 @@ The selecting header fields from two requests are defined to match if and only i
 If (after any normalization that might take place) a header field is absent from a request, it can only match another request if it is also absent there.
 </li>
 	<li>
-どちらかの要請に `Vary$h ~headerが在って，その`~field値$を成す ある~memberに "`*^c" が在る場合、常に合致しない。
+`格納-済み応答^V の `Vary$h `~field値$を成す ある~memberが "`*^c" の場合、
+この合致-は常に失敗するとする。
 ◎
-A Vary header field value containing a member "*" always fails to match.
+A stored response with a Vary header field value containing a member "*" always fails to match.
 </li>
 </ul>
 
@@ -1622,12 +1625,12 @@ freshness_lifetime is defined in Section 4.2.1; current_age is defined in Sectio
 <p>
 `~client$は、［
 `max-age$qdir や `min-fresh$qdir
-］要請~指令を送信して，対応する応答に対する`鮮度$の計算を［
-拘束する／緩める
-］ことができる。
+］要請~指令を送信して，［
+対応する応答に対する`鮮度$の計算
+］に対する制限sを示唆できる。
 しかしながら，~cacheには、それらを尊守するよう要求されてはいない。
 ◎
-Clients can send the max-age or min-fresh request directives (Section 5.2.1) to constrain or relax freshness calculations for the corresponding response. However, caches are not required to honor them.
+Clients can send the max-age or min-fresh request directives (Section 5.2.1) to suggest limits on the freshness calculations for the corresponding response. However, caches are not required to honor them.
 </p>
 
 <p>
@@ -1722,10 +1725,11 @@ A cache can calculate the freshness lifetime (denoted as freshness_lifetime) of 
 </ul>
 
 <p class="note">注記：
-この計算は，時計~同期調整に脆弱でない
-— すべての情報は、`生成元~server$から来るので。
+この計算には、次が意図される
+⇒
+アリなときは、`生成元~server$から供された時計~情報を利用して，時計~同期調整を抑制する。
 ◎
-Note that this calculation is not vulnerable to clock skew, since all of the information comes from the origin server.
+Note that this calculation is intended to reduce clock skew by using the clock information provided by the origin server whenever possible.
 </p>
 
 <p>
@@ -2219,9 +2223,9 @@ such preconditions are likely intended for some other (inbound) server.
 ］は、~cacheには適用-可能でなく，
 `If-None-Match$h は `If-Modified-Since$h より優先される。
 事前条件の優先順についての完全な仕様は、
-`Semantics/13.2$sec を見よ。
+`Semantics/13.2.2$sec を見よ。
 ◎
-The proper evaluation of conditional requests by a cache depends on the received precondition header fields and their precedence. In summary, the If-Match and If-Unmodified-Since conditional header fields are not applicable to a cache, and If-None-Match takes precedence over If-Modified-Since. See Section 13.2 of [Semantics] for a complete specification of precondition precedence.
+The proper evaluation of conditional requests by a cache depends on the received precondition header fields and their precedence. In summary, the If-Match and If-Unmodified-Since conditional header fields are not applicable to a cache, and If-None-Match takes precedence over If-Modified-Since. See Section 13.2.2 of [Semantics] for a complete specification of precondition precedence.
 </p>
 
 <p>
@@ -2412,8 +2416,7 @@ Then, that initial set of stored response(s) is further filtered by the first ma
 ］からなる集合（無いならば空）
 ◎
 If the new response contains one or more strong validators (see Section 8.8.1 of [Semantics]), then each of those strong validators identify a selected representation for update.＼
-All the stored responses in the initial set with one of those same strong validators are identified for update.
-◎
+All the stored responses in the initial set with one of those same strong validators are identified for update.＼
 If none of the initial set contain at least one of the same strong validators, then the cache MUST NOT use the new response to update any stored responses.
 </li>
 	<li>
@@ -2494,7 +2497,7 @@ if the more efficient conditional GET request mechanism is not available (due to
 	<li>
 `内容$が変化したときでも，その伝送は欲されない場合。
 ◎
-if transmission of the content is not desired even if it has changed
+if transmission of the content is not desired even if it has changed.
 </li>
 </ul>
 </div>
@@ -3195,6 +3198,7 @@ Note: The qualified form of the directive is often handled by caches as if an un
 ］どちらにも適用され，次を指示する：
 ◎
 The "no-store" response directive indicates that a cache＼
+</p>
 <ul>
 	<li>
 ~cacheは、［
@@ -3207,7 +3211,7 @@ MUST NOT store any part of either the immediate request or response,＼
 	<li>
 ~cacheは、この応答を利用して他の要請を満足してはナラナイ
 ◎
-and MUST NOT use the response to satisfy any other request.＼
+and MUST NOT use the response to satisfy any other request.
 </li>
 </ul>
 
