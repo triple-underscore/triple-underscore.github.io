@@ -1824,6 +1824,7 @@ SECURITYPRIVACYQUESTIONNAIRE=副 ~/security-questionnaire-ja.html
 STREAMS=副            ~/Streams-ja.html
 SVG2=副               triple-underscore.github.io/index.html#spec-list-svg
 SVG11=副              triple-underscore.github.io/SVG11/
+MATHML=副             ＃takamu.sakura.ne.jp/mathml3-ja/index.html
 SW1=副                ~/service-workers-ja.html
 TOUCHEVENTS=副        ~/touch-events-ja.html
 URL=副                ~/URL-ja.html
