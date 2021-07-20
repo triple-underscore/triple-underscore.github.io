@@ -154,8 +154,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2021-07-08
-trans_update:2021-07-09
+spec_date:2021-07-15
+trans_update:2021-07-20
 source_checked:210331
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -238,6 +238,7 @@ I:code
 A:span
 Ax:span
 VRSs:var
+VRSsB:var
 VRSp:var
 VRSh:var
 VWSs:var
@@ -723,8 +724,8 @@ Ax.Get:~TC39#sec-get-o-p
 読取器:#reader
 非同期c読取器:#readablestream-async-iterator-reader
 取消-を防止するか:#readablestream-async-iterator-prevent-cancel
-既定の読取器:#default-readers
-~BYOB読取器:#byob-readers
+既定の読取器:#default-reader
+~BYOB読取器:#byob-reader
 
 可書~stream書込器:#writer
 書込器:#writer
@@ -794,6 +795,10 @@ VRSs.取消~algo:#readablestream-set-up-cancelalgorithm
 VRSs.限界水位:#readablestream-set-up-highwatermark
 VRSs.~pull~algo:#readablestream-set-up-pullalgorithm
 VRSs.~size~algo:#readablestream-set-up-sizealgorithm
+RS.~byte読取り~support付きで設定しておく:#readablestream-set-up-with-byte-reading-support
+VRSsB.取消~algo:#readablestream-set-up-with-byte-reading-support-cancelalgorithm
+VRSsB.限界水位:#readablestream-set-up-with-byte-reading-support-highwatermark
+VRSsB.~pull~algo:#readablestream-set-up-with-byte-reading-support-pullalgorithm
 RS.取消す:#readablestream-cancel
 RS.~closeする:#readablestream-close
 RS.~proxyを作成する:#readablestream-create-a-proxy
@@ -808,6 +813,8 @@ RS.もっと~dataが必要:#readablestream-need-more-data
 RS.読取n可能:#readablestream-readable
 RS.二又化する:#readablestream-tee
 RS.妨げられて:#is-readable-stream-disturbed
+RS.現在の~BYOB要請~view:#readablestream-current-byob-request-view
+RS.限界水位までの~queueの残り~size:#readablestream-desired-size-to-fill-up-to-the-high-water-mark
 
 RS.~pipe:#readablestream-pipe
 RS.~pipeする:#readablestream-pipe
@@ -903,7 +910,15 @@ i.反復~終端-:~WEBIDL#end-of-iteration
 充足-時:~WEBIDLjs#upon-fulfillment
 却下-時:~WEBIDLjs#upon-rejection
 反応-:~WEBIDLjs#dfn-perform-steps-once-promise-is-settled
-切離され:~WEBIDLjs#dfn-detach
+
+BS.切離され:~WEBIDLjs#dfn-detach
+BS.切離す:~WEBIDLjs#dfn-detach
+BS.~byte長さ:~WEBIDLjs#buffersource-byte-length
+BS.下層~buffer:~WEBIDLjs#buffersource-underlying-buffer
+BS.転送する:~WEBIDLjs#arraybuffer-transfer
+BS.作成する:~WEBIDLjs#arraybufferview-create
+BS.中へ~byte列を書込んで:~WEBIDLjs#arraybufferview-write
+BS.中へ書込んで:~WEBIDLjs#arraybuffer-write
 
 新たな:~WEBIDLjs#new
 ~Web~IDLを介して新たに作成した:~WEBIDLjs#new
@@ -991,6 +1006,7 @@ BYOB:
 書込んだ:writeした::書き込んだ
 書込んで:writeして::書き込んで
 書込まな:writeしな::書き込まな
+書込みた:writeした::書き込みた
 書込も:writeしよ::書き込も
 書込む:writeする::書き込む
 書込め:writeでき::書き込め
@@ -1178,6 +1194,7 @@ return:
 置換s-:substitute::置換
 置換s:substitution::置換
 切離され:detachされ::切り離され
+切離す:detachする::切り離す
 連結-:concatenate::~
 連結:concatenation::~
 弱い:weakな::~
@@ -1373,6 +1390,7 @@ encapsulate::::カプセル化
 透過的:transparent::~
 背後:behind:~
 機会:chance:~
+望み:wishes:~
 
 	方法:how to
 	目的をもって:purposefully
@@ -1462,6 +1480,7 @@ encapsulate::::カプセル化
 	~~想定:imagine／-
 	-:involvement
 	made
+	施す:makeする
 	させ:cause
 	になる前に:cause 〜 to go
 	-:consider
@@ -1518,6 +1537,8 @@ encapsulate::::カプセル化
 	いようが:despite
 	OS:OS
 	なるはず:has to be
+	仕様の領分:specification-land
+	単に許容されない:just disallow
 
 	●未分類
 ECMAScript:
@@ -1588,10 +1609,13 @@ template::::テンプレート
 	小さ:small
 	大き:large
 	低く:low
+	手元:on hand
 
 	●変数（§#other-specs
 	%~byte列:bytes
 	%~chunk:chunk
+	%~BYOB~view:byobView
+	%~BYOB要請:byobRequest
 	%制御器:controller
 	%恒等変換:identityTransform
 	%promise:promise
@@ -1753,7 +1777,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/cada8129edcc4803b2878a7a3f5e1d8325dc0c23" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/109f1d4f9fba4eed42238f8de5b9201b8769cd8c" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -4650,7 +4674,7 @@ Attempts to reads bytes into view, and returns a promise resolved with the resul
 可用な~chunkが無くなったときは、
 <code>{ value: %theChunk, done: false }</code>
 の形による~objで充足されることになる。
-この事例では、 %view は`切離され$るので，もはや利用-可能でなくなるが、
+この事例では、 %view は`切離され$BSるので，もはや利用-可能でなくなるが、
 %theChunk は同じ裏~memory領域への新たな（かつ同じ型の）~viewになり，~chunkの~dataは その中へ書込まれるようになる。
 ◎
 If the chunk does become available, the promise will be fulfilled with an object of the form { value: theChunk, done: false }. In this case, view will be detached and no longer usable, but theChunk will be a new view (of the same type) onto the same backing memory region, with the chunk’s data written into it.
@@ -4659,7 +4683,7 @@ If the chunk does become available, the promise will be fulfilled with an object
 ~streamが~closeされたときは、
 <code>{ value: %theChunk, done: true }</code>
 の形による~objで充足されることになる。
-この事例では %view は`切離され$，もはや利用-可能でなくなるが、
+この事例では %view は`切離され$BS，もはや利用-可能でなくなるが、
 %theChunk は同じ裏~memory領域への新たな（かつ同じ型の）~viewになる
 — その~memoryが~call元に返されることを確保するため，改変を加えずに。
 ◎
@@ -6439,13 +6463,13 @@ ReadableStreamPipeTo(source, dest, preventClose, preventAbort, preventCancel[, s
 <ol>
 	<li>
 ~Assert：
-%source は `ReadableStream$I を`実装する$。
+%source は `ReadableStream$I を`実装する$
 ◎
 Assert: source implements ReadableStream.
 </li>
 	<li>
 ~Assert：
-%dest は `WritableStream$I を`実装する$。
+%dest は `WritableStream$I を`実装する$
 ◎
 Assert: dest implements WritableStream.
 </li>
@@ -6455,7 +6479,7 @@ Assert: dest implements WritableStream.
 %preventClose,
 %preventAbort,
 %preventCancel
-］は、どれも真偽値である。
+］は、どれも真偽値である
 ◎
 Assert: preventClose, preventAbort, and preventCancel are all booleans.
 </li>
@@ -6546,7 +6570,7 @@ If signal is not undefined,
 		<ol>
 			<li class="algo">
 <p>
-%abortAlgorithm ~LET 次を走らす手続き：
+%abortAlgorithm ~LET 次を走らす~algo：
 ◎
 Let abortAlgorithm be the following steps:
 </p>
@@ -6565,14 +6589,17 @@ Let actions be an empty ordered set.
 <p>
 ~IF［
 %preventAbort ~EQ ~F
-］
-⇒
-%actions に次を走らす動作を`付加する$set：
+］：
 ◎
 If preventAbort is false, append the following action to actions:
 </p>
 						<ol>
-							<li>
+							<li class="algo">
+<p>
+%actions に次を走らす動作を`付加する$set：
+</p>
+								<ol>
+									<li>
 ~IF［
 %dest.`state$wS ~EQ `writable^l
 ］
@@ -6582,25 +6609,30 @@ If preventAbort is false, append the following action to actions:
 ◎
 If dest.[[state]] is "writable", return ! WritableStreamAbort(dest, error).
 </li>
-							<li>
+									<li>
 ~RET `undefined^jv で`解決される~promise$
 ◎
 Otherwise, return a promise resolved with undefined.
 </li>
+								</ol>
+							</li>
 						</ol>
 					</li>
 					<li>
 <p>
 ~IF［
 %preventCancel ~EQ ~F
-］
-⇒
-%actions に次を走らす動作を`付加する$set：
+］：
 ◎
 If preventCancel is false, append the following action action to actions:
 </p>
 						<ol>
-							<li>
+							<li class="algo">
+<p>
+%actions に次を走らす動作を`付加する$set：
+</p>
+								<ol>
+									<li>
 ~IF［
 %source.`state$rS ~EQ `readable^l
 ］
@@ -6610,14 +6642,16 @@ If preventCancel is false, append the following action action to actions:
 ◎
 If source.[[state]] is "readable", return ! ReadableStreamCancel(source, error).
 </li>
-							<li>
+									<li>
 ~RET `undefined^jv で`解決される~promise$
 ◎
 Otherwise, return a promise resolved with undefined.
 </li>
+								</ol>
+							</li>
 						</ol>
 					</li>
-					<li>
+					<li class="algo">
 `~shutdownする$( %error, 次を走らす動作 )
 ⇒
 `すべてを待機する~promiseを取得する$( %actions 内の動作たち )
@@ -6740,7 +6774,7 @@ Shutdown must stop activity: if shuttingDown becomes true, the user agent must n
 Error and close states must be propagated: the following conditions must be applied in order.
 </p>
 				<ol>
-					<li>
+					<li class="algo">
 <p>
 `~errorは前方へ伝播するモノトスル^strong
 — %source.`state$rS ~EQ `errored^l のとき, または そうなったときは：
@@ -6768,7 +6802,7 @@ Otherwise, shutdown with source.[[storedError]].
 </li>
 						</ol>
 					</li>
-					<li>
+					<li class="algo">
 <p>
 `~errorは後方へ伝播するモノトスル^strong
 — %dest.`state$wS ~EQ `errored^l のとき, または そうなったときは：
@@ -6797,7 +6831,7 @@ Otherwise, shutdown with dest.[[storedError]].
 </li>
 						</ol>
 					</li>
-					<li>
+					<li class="algo">
 <p>
 `~closingは前方へ伝播するモノトスル^strong
 — %source.`state$rS ~EQ `closed^l のとき, または そうなったときは：
@@ -6825,7 +6859,7 @@ Otherwise, shutdown.
 </li>
 						</ol>
 					</li>
-					<li>
+					<li class="algo">
 <p>
 `~closingは後方へ伝播するモノトスル^strong
 —
@@ -6873,7 +6907,7 @@ Otherwise, shutdown with destClosed.
 					</li>
 				</ol>
 			</li>
-			<li>
+			<li class="algo">
 <p id="rs-pipeTo-shutdown">
 上のいずれかの要件／手続きにより，
 `~shutdownする@
@@ -6981,7 +7015,7 @@ Shutdown: if any of the above requirements or steps ask to shutdown, optionally 
 • Finalize, passing along error if it was given.
 </div>
 			</li>
-			<li>
+			<li class="algo">
 <p>
 `完結する@
 下位手続きは、所与の
@@ -7090,13 +7124,13 @@ It performs the following steps:
 <ol>
 	<li>
 ~Assert：
-%stream は `ReadableStream$I を`実装する$。
+%stream は `ReadableStream$I を`実装する$
 ◎
 Assert: stream implements ReadableStream.
 </li>
 	<li>
 ~Assert：
-%cloneForBranch2 は真偽値である。
+%cloneForBranch2 は真偽値である
 ◎
 Assert: cloneForBranch2 is a boolean.
 </li>
@@ -7130,13 +7164,13 @@ ReadableStreamDefaultTee(stream, cloneForBranch2) performs the following steps:
 <ol>
 	<li>
 ~Assert：
-%stream は `ReadableStream$I を`実装する$。
+%stream は `ReadableStream$I を`実装する$
 ◎
 Assert: stream implements ReadableStream.
 </li>
 	<li>
 ~Assert：
-%cloneForBranch2 は真偽値である。
+%cloneForBranch2 は真偽値である
 ◎
 Assert: cloneForBranch2 is a boolean.
 </li>
@@ -7188,7 +7222,7 @@ Let cancelPromise be a new promise.
 </li>
 	<li class="algo">
 <p>
-%pullAlgorithm ~LET 次を走らす手続き：
+%pullAlgorithm ~LET 次を走らす~algo：
 ◎
 Let pullAlgorithm be the following steps:
 </p>
@@ -7393,7 +7427,7 @@ Return a promise resolved with undefined.
 	</li>
 	<li class="algo">
 <p>
-%cancel1Algorithm ~LET 所与の ( %reason ) に対し，次を走らす手続き：
+%cancel1Algorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
 ◎
 Let cancel1Algorithm be the following steps, taking a reason argument:
 </p>
@@ -7446,7 +7480,7 @@ Return cancelPromise.
 	</li>
 	<li class="algo">
 <p>
-%cancel2Algorithm ~LET 所与の ( %reason ) に対し，次を走らす手続き：
+%cancel2Algorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
 ◎
 Let cancel2Algorithm be the following steps, taking a reason argument:
 </p>
@@ -7565,14 +7599,14 @@ ReadableByteStreamTee(stream) performs the following steps:
 <ol>
 	<li>
 ~Assert：
-%stream は `ReadableStream$I を`実装する$。
+%stream は `ReadableStream$I を`実装する$
 ◎
 Assert: stream implements ReadableStream.
 </li>
 	<li>
 ~Assert：
 %stream.`controller$rS は
-`ReadableByteStreamController$I を`実装する$。
+`ReadableByteStreamController$I を`実装する$
 ◎
 Assert: stream.[[controller]] implements ReadableByteStreamController.
 </li>
@@ -7624,7 +7658,7 @@ Let cancelPromise be a new promise.
 </li>
 	<li class="algo">
 <p>
-%forwardReaderError ~LET 所与の ( %thisReader ) に対し，次を走らす手続き：
+%forwardReaderError ~LET 所与の ( %thisReader ) に対し，次を走らす~algo：
 ◎
 Let forwardReaderError be the following steps, taking a thisReader argument:
 </p>
@@ -7672,7 +7706,7 @@ If canceled1 is false or canceled2 is false, resolve cancelPromise with undefine
 	</li>
 	<li class="algo">
 <p>
-%pullWithDefaultReader ~LET 次を走らす手続き：
+%pullWithDefaultReader ~LET 次を走らす~algo：
 ◎
 Let pullWithDefaultReader be the following steps:
 </p>
@@ -7688,7 +7722,7 @@ If reader implements ReadableStreamBYOBReader,
 				<ol>
 					<li>
 ~Assert：
-%reader.`readIntoRequests$rsR は`空$である。
+%reader.`readIntoRequests$rsR は`空$である
 ◎
 Assert: reader.[[readIntoRequests]] is empty.
 </li>
@@ -7909,7 +7943,7 @@ Perform ! ReadableStreamDefaultReaderRead(reader, readRequest).
 	<li class="algo">
 <p>
 %pullWithBYOBReader ~LET 
-所与の ( %view, %forBranch2 ) に対し，次を走らす手続き：
+所与の ( %view, %forBranch2 ) に対し，次を走らす~algo：
 ◎
 Let pullWithBYOBReader be the following steps, given view and forBranch2:
 </p>
@@ -7925,7 +7959,7 @@ If reader implements ReadableStreamDefaultReader,
 				<ol>
 					<li>
 ~Assert：
-%reader.`readRequests$rsR は`空$である。
+%reader.`readRequests$rsR は`空$である
 ◎
 Assert: reader.[[readRequests]] is empty.
 </li>
@@ -7941,7 +7975,6 @@ Perform ! ReadableStreamReaderGenericRelease(reader).
 Set reader to ! AcquireReadableStreamBYOBReader(stream).
 </li>
 					<li>
-遂行-
 %forwardReaderError( %reader )
 ◎
 Perform forwardReaderError, given reader.
@@ -8210,7 +8243,7 @@ Perform ! ReadableStreamBYOBReaderRead(reader, view, readIntoRequest).
 	</li>
 	<li class="algo">
 <p>
-%pull1Algorithm ~LET 次を走らす手続き：
+%pull1Algorithm ~LET 次を走らす~algo：
 ◎
 Let pull1Algorithm be the following steps:
 </p>
@@ -8240,7 +8273,6 @@ Let byobRequest be ! ReadableByteStreamControllerGetBYOBRequest(branch1.[[contro
 %byobRequest ~EQ ~NULL
 ］
 ⇒
-遂行-
 %pullWithDefaultReader()
 ◎
 If byobRequest is null, perform pullWithDefaultReader.
@@ -8261,7 +8293,7 @@ Return a promise resolved with undefined.
 	</li>
 	<li class="algo">
 <p>
-%pull2Algorithm ~LET 次を走らす手続き：
+%pull2Algorithm ~LET 次を走らす~algo：
 ◎
 Let pull2Algorithm be the following steps:
 </p>
@@ -8311,7 +8343,7 @@ Return a promise resolved with undefined.
 	</li>
 	<li class="algo">
 <p>
-%cancel1Algorithm ~LET 所与の ( %reason ) に対し，次を走らす手続き：
+%cancel1Algorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
 ◎
 Let cancel1Algorithm be the following steps, taking a reason argument:
 </p>
@@ -8366,7 +8398,7 @@ Return cancelPromise.
 	</li>
 	<li class="algo">
 <p>
-%cancel2Algorithm ~LET 所与の ( %reason ) に対し，次を走らす手続き：
+%cancel2Algorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
 ◎
 Let cancel2Algorithm be the following steps, taking a reason argument:
 </p>
@@ -8523,7 +8555,7 @@ ReadableStreamAddReadIntoRequest(stream, readRequest) performs the following ste
 <ol>
 	<li>
 ~Assert：
-%stream.`reader$rS は `ReadableStreamBYOBReader$I を`実装する$。
+%stream.`reader$rS は `ReadableStreamBYOBReader$I を`実装する$
 ◎
 Assert: stream.[[reader]] implements ReadableStreamBYOBReader.
 </li>
@@ -8551,7 +8583,7 @@ ReadableStreamAddReadRequest(stream, readRequest performs the following steps:
 <ol>
 	<li>
 ~Assert：
-%stream.`reader$rS は `ReadableStreamDefaultReader$I を`実装する$。
+%stream.`reader$rS は `ReadableStreamDefaultReader$I を`実装する$
 ◎
 Assert: stream.[[reader]] implements ReadableStreamDefaultReader.
 </li>
@@ -8806,7 +8838,7 @@ Otherwise,
 		<ol>
 			<li>
 ~Assert：
-%reader は `ReadableStreamBYOBReader$I を`実装する$。
+%reader は `ReadableStreamBYOBReader$I を`実装する$
 ◎
 Assert: reader implements ReadableStreamBYOBReader.
 </li>
@@ -8851,7 +8883,7 @@ Let reader be stream.[[reader]].
 </li>
 	<li>
 ~Assert：
-%reader.`readIntoRequests$rsR は`空$でない。
+%reader.`readIntoRequests$rsR は`空$でない
 ◎
 Assert: reader.[[readIntoRequests]] is not empty.
 </li>
@@ -8905,7 +8937,7 @@ Let reader be stream.[[reader]].
 </li>
 	<li>
 ~Assert：
-%reader.`readRequests$rsR は`空$でない。
+%reader.`readRequests$rsR は`空$でない
 ◎
 Assert: reader.[[readRequests]] is not empty.
 </li>
@@ -10524,7 +10556,6 @@ Otherwise,
 			<li>
 ~Assert：
 %pullIntoDescriptor の`読取器~型$pD ~EQ `byob^l
-：
 ◎
 Assert: pullIntoDescriptor’s reader type is "byob".
 </li>
@@ -15857,7 +15888,7 @@ SetUpWritableStreamDefaultController(stream, controller, startAlgorithm, writeAl
 <ol>
 	<li>
 ~Assert：
-%stream は `WritableStream$I を`実装する$。
+%stream は `WritableStream$I を`実装する$
 ◎
 Assert: stream implements WritableStream.
 </li>
@@ -17568,7 +17599,7 @@ InitializeTransformStream(stream, startPromise, writableHighWaterMark, writableS
 Let startAlgorithm be an algorithm that returns startPromise.
 </li>
 	<li class="algo">
-%writeAlgorithm ~LET 所与の ( %chunk ) に対し，次を走らす手続き
+%writeAlgorithm ~LET 所与の ( %chunk ) に対し，次を走らす~algo
 ⇒
 ~RET
 ~NOABRUPT `TransformStreamDefaultSinkWriteAlgorithm$A( %stream, %chunk )
@@ -17577,7 +17608,7 @@ Let writeAlgorithm be the following steps, taking a chunk argument:
 • Return ! TransformStreamDefaultSinkWriteAlgorithm(stream, chunk).
 </li>
 	<li class="algo">
-%abortAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす手続き
+%abortAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo
 ⇒
 ~RET
 ~NOABRUPT `TransformStreamDefaultSinkAbortAlgorithm$A( %stream, %reason )
@@ -17586,7 +17617,7 @@ Let abortAlgorithm be the following steps, taking a reason argument:
 • Return ! TransformStreamDefaultSinkAbortAlgorithm(stream, reason).
 </li>
 	<li class="algo">
-%closeAlgorithm ~LET 次を走らす手続き
+%closeAlgorithm ~LET 次を走らす~algo
 ⇒
 ~RET
 ~NOABRUPT `TransformStreamDefaultSinkCloseAlgorithm$A( %stream )
@@ -17601,7 +17632,7 @@ Let closeAlgorithm be the following steps:
 Set stream.[[writable]] to ! CreateWritableStream(startAlgorithm, writeAlgorithm, closeAlgorithm, abortAlgorithm, writableHighWaterMark, writableSizeAlgorithm).
 </li>
 	<li class="algo">
-%pullAlgorithm ~LET 次を走らす手続き
+%pullAlgorithm ~LET 次を走らす~algo
 ⇒
 ~RET
 ~NOABRUPT `TransformStreamDefaultSourcePullAlgorithm$A( %stream )
@@ -17611,7 +17642,7 @@ Let pullAlgorithm be the following steps:
 </li>
 	<li class="algo">
 <p>
-%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす手続き：
+%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
 ◎
 Let cancelAlgorithm be the following steps, taking a reason argument:
 </p>
@@ -17793,7 +17824,7 @@ SetUpTransformStreamDefaultController(stream, controller, transformAlgorithm, fl
 <ol>
 	<li>
 ~Assert：
-%stream は `TransformStream$I を`実装する$。
+%stream は `TransformStream$I を`実装する$
 ◎
 Assert: stream implements TransformStream.
 </li>
@@ -17841,7 +17872,7 @@ Let controller be a new TransformStreamDefaultController.
 </li>
 	<li class="algo">
 <p>
-%transformAlgorithm ~LET 所与の ( %chunk ) に対し，次を走らす手続き：
+%transformAlgorithm ~LET 所与の ( %chunk ) に対し，次を走らす~algo：
 ◎
 Let transformAlgorithm be the following steps, taking a chunk argument:
 </p>
@@ -18167,7 +18198,7 @@ Let backpressureChangePromise be stream.[[backpressureChangePromise]].
 ◎
 Assert: backpressureChangePromise is not undefined.
 </li>
-			<li>
+			<li class="algo">
 <p>
 ~RET ［
 次を走らす充足~手続き
@@ -18563,7 +18594,7 @@ Additionally, every global object globalObject has an associated byte length que
 </p>
 <ol>
 	<li class="algo">
-%手続き ~LET 所与の ( %chunk ) に対し，次を走らす手続き
+%手続き ~LET 所与の ( %chunk ) に対し，次を走らす~algo
 ⇒
 ~RET
 ~ABRUPT `GetV$Ax( %chunk, `byteLength^l )
@@ -18775,7 +18806,7 @@ Additionally, every global object globalObject has an associated count queuing s
 </p>
 <ol>
 	<li class="algo">
-%手続き ~LET 次を走らす手続き
+%手続き ~LET 次を走らす~algo
 ⇒
 ~RET 1
 ◎
@@ -19355,7 +19386,7 @@ Perform ! InitializeReadableStream(stream).
 ◎
 Let controller be a new ReadableStreamDefaultController.
 </li>
-	<li>
+	<li class="algo">
 <p>
 %port の `message$et ~event用に［
 次の手続きを伴う~handler
@@ -19447,7 +19478,7 @@ Disentangle port.
 			</li>
 		</ol>
 	</li>
-	<li>
+	<li class="algo">
 <p>
 %port の `messageerror$et ~event用に［
 次の手続きを伴う~handler
@@ -19492,7 +19523,7 @@ Let startAlgorithm be an algorithm that returns undefined.
 </li>
 	<li class="algo">
 <p>
-%pullAlgorithm ~LET 次を走らす手続き：
+%pullAlgorithm ~LET 次を走らす~algo：
 ◎
 Let pullAlgorithm be the following steps:
 </p>
@@ -19511,7 +19542,7 @@ Return a promise resolved with undefined.
 	</li>
 	<li class="algo">
 <p>
-%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす手続き：
+%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
 ◎
 Let cancelAlgorithm be the following steps, taking a reason argument:
 </p>
@@ -19590,7 +19621,7 @@ Let controller be a new WritableStreamDefaultController.
 ◎
 Let backpressurePromise be a new promise.
 </li>
-	<li>
+	<li class="algo">
 <p>
 %port の `message$et ~event用に［
 次の手続きを伴う~handler
@@ -19701,7 +19732,7 @@ Set backpressurePromise to undefined.
 			</li>
 		</ol>
 	</li>
-	<li>
+	<li class="algo">
 <p>
 %port の `messageerror$et ~event用に［
 次の手続きを伴う~handler
@@ -19746,7 +19777,7 @@ Let startAlgorithm be an algorithm that returns undefined.
 </li>
 	<li class="algo">
 <p>
-%writeAlgorithm ~LET 所与の ( %chunk ) に対し，次を走らす手続き：
+%writeAlgorithm ~LET 所与の ( %chunk ) に対し，次を走らす~algo：
 ◎
 Let writeAlgorithm be the following steps, taking a chunk argument:
 </p>
@@ -19760,7 +19791,7 @@ Let writeAlgorithm be the following steps, taking a chunk argument:
 ◎
 If backpressurePromise is undefined, set backpressurePromise to a promise resolved with undefined.
 </li>
-			<li>
+			<li class="algo">
 <p>
 ~RET 次を走らす充足~手続きで %backpressurePromise に`反応-$した結果：
 ◎
@@ -19812,7 +19843,7 @@ Otherwise, return a promise resolved with undefined.
 	</li>
 	<li class="algo">
 <p>
-%closeAlgorithm ~LET 次を走らす手続き：
+%closeAlgorithm ~LET 次を走らす~algo：
 ◎
 Let closeAlgorithm be the folowing steps:
 </p>
@@ -20164,7 +20195,7 @@ If your specification wants to interface with streams in a way not supported her
 )
 に対し，次の手続きを遂行する：
 ◎
-To set up a newly-created-via-Web IDL ReadableStream object stream, given an optional algorithm pullAlgorithm, an optional algorithm cancelAlgorithm, an optional number highWaterMark (default 1), an optional algorithm sizeAlgorithm, perform the following steps.＼
+To set up a newly-created-via-Web IDL ReadableStream object stream, given an optional algorithm pullAlgorithm, an optional algorithm cancelAlgorithm, an optional number highWaterMark (default 1), and an optional algorithm sizeAlgorithm, perform the following steps.＼
 </p>
 <ol>
 	<li>
@@ -20182,7 +20213,7 @@ To set up a newly-created-via-Web IDL ReadableStream object stream, given an opt
 — ~algoは、~promiseを返してもヨイ。
 </li>
 			<li>
-%限界水位 は負でも `NaN^jv でもない ~numberである。
+%限界水位 は負でも `NaN^jv でもない~numberである。
 </li>
 			<li>
 %~size~algoは、 ε または［
@@ -20225,16 +20256,12 @@ Let pullAlgorithmWrapper be an algorithm that runs these steps:
 Let result be the result of running pullAlgorithm, if pullAlgorithm was given, or null otherwise. If this throws an exception e, return a promise rejected with e.
 </li>
 			<li>
-~IF［
-%結果 は `Promise$I である
-］
-⇒
-~RET %結果
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `undefined^jv で`解決される~promise$
 ◎
 If result is a Promise, then return result.
-</li>
-			<li>
-~RET `undefined^jv で`解決される~promise$
 ◎
 Return a promise resolved with undefined.
 </li>
@@ -20265,16 +20292,12 @@ Let cancelAlgorithmWrapper be an algorithm that runs these steps:
 Let result be the result of running cancelAlgorithm, if cancelAlgorithm was given, or null otherwise. If this throws an exception e, return a promise rejected with e.
 </li>
 			<li>
-~IF［
-%結果 は `Promise$I である
-］
-⇒
-~RET %結果
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `undefined^jv で`解決される~promise$
 ◎
 If result is a Promise, then return result.
-</li>
-			<li>
-~RET `undefined^jv で`解決される~promise$
 ◎
 Return a promise resolved with undefined.
 </li>
@@ -20292,9 +20315,9 @@ Return a promise resolved with undefined.
 If sizeAlgorithm was not given, then set it to an algorithm that returns 1.
 </li>
 	<li>
-【~NOABRUPT】 `InitializeReadableStream$A( %~stream )
+~NOABRUPT `InitializeReadableStream$A( %~stream )
 ◎
-Perform InitializeReadableStream(stream).
+Perform ! InitializeReadableStream(stream).
 </li>
 	<li>
 %制御器 ~LET `新たな$ `ReadableStreamDefaultController$I
@@ -20307,6 +20330,151 @@ Let controller be a new ReadableStreamDefaultController.
 Perform ! SetUpReadableStreamDefaultController(stream, controller, startAlgorithm, pullAlgorithmWrapper, cancelAlgorithmWrapper, highWaterMark, sizeAlgorithm).
 </li>
 </ol>
+</div>
+
+<div class="algo">
+<p>
+`~Web~IDLを介して新たに作成した$ `ReadableStream$I ~obj %~stream を
+`~byte読取り~support付きで設定しておく@RS
+ときは、所与の
+(
+`~pull~algo@VRSsB
+（省略時は ε ）,
+`取消~algo@VRSsB
+（省略時は ε ）,
+`限界水位@VRSsB
+（省略時は 0 ）
+)
+に対し，次の手続きを遂行する：
+◎
+To set up with byte reading support a newly-created-via-Web IDL ReadableStream object stream, given an optional algorithm pullAlgorithm, an optional algorithm cancelAlgorithm, and an optional number highWaterMark (default 0), perform the following steps.＼
+</p>
+<ol>
+	<li>
+<p>
+~Assert：
+各 引数は、次を満たす：
+</p>
+		<ul>
+			<li>
+%~pull~algo は、 ε または~algoである
+— ~algoは、~promiseを返してもヨイ。
+</li>
+			<li>
+%取消~algoは、 ε または~algoである
+— ~algoは、~promiseを返してもヨイ。
+</li>
+			<li>
+%限界水位 は負でも `NaN^jv でもない ~numberである。
+</li>
+		</ul>
+◎
+If given, pullAlgorithm and cancelAlgorithm may return a promise. If given, highWaterMark must be a non-negative, non-NaN number.
+</li>
+	<li class="algo">
+%開始~algo ~LET 次を走らす~algo
+⇒
+~RET `undefined^jv
+◎
+Let startAlgorithm be an algorithm that returns undefined.
+</li>
+	<li class="algo">
+<p>
+%~pull~algo包装体 ~LET 次を走らす~algo：
+◎
+Let pullAlgorithmWrapper be an algorithm that runs these steps:
+</p>
+		<ol>
+			<li>
+%結果 ~LET ~NULL
+◎
+↓</li>
+			<li>
+~IF［
+%~pull~algo ~NEQ ε
+］
+⇒
+%結果 ~SET %~pull~algo()
+⇒
+例外 %e が投出されたときは
+⇒
+~RET %e で`却下される~promise$
+◎
+Let result be the result of running pullAlgorithm, if pullAlgorithm was given, or null otherwise. If this throws an exception e, return a promise rejected with e.
+</li>
+			<li>
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `undefined^jv で`解決される~promise$
+◎
+If result is a Promise, then return result.
+◎
+Return a promise resolved with undefined.
+</li>
+		</ol>
+	</li>
+	<li class="algo">
+<p>
+%取消~algo包装体 ~LET 次を走らす~algo：
+◎
+Let cancelAlgorithmWrapper be an algorithm that runs these steps:
+</p>
+		<ol>
+			<li>
+%結果 ~LET ~NULL
+◎
+↓</li>
+			<li>
+~IF［
+%取消~algo ~NEQ ε
+］
+⇒
+%結果 ~SET %取消~algo()
+⇒
+例外 %e が投出されたときは
+⇒
+~RET %e で`却下される~promise$
+◎
+Let result be the result of running cancelAlgorithm, if cancelAlgorithm was given, or null otherwise. If this throws an exception e, return a promise rejected with e.
+</li>
+			<li>
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `undefined^jv で`解決される~promise$
+◎
+If result is a Promise, then return result.
+◎
+Return a promise resolved with undefined.
+</li>
+		</ol>
+	</li>
+	<li>
+~NOABRUPT `InitializeReadableStream$A( %~stream )
+◎
+Perform ! InitializeReadableStream(stream).
+</li>
+	<li>
+%制御器 ~LET `新たな$ `ReadableByteStreamController$I
+◎
+Let controller be a new ReadableByteStreamController.
+</li>
+	<li>
+~NOABRUPT `SetUpReadableByteStreamController$A( 次に挙げる引数 )
+⇒＃
+%~stream,
+%制御器,
+%開始~algo,
+%~pull~algo包装体,
+%取消~algo包装体,
+%限界水位,
+`undefined^jv
+◎
+Perform ! SetUpReadableByteStreamController(stream, controller, startAlgorithm, pullAlgorithmWrapper, cancelAlgorithmWrapper, highWaterMark, undefined).
+</li>
+</ol>
+</div>
 
 <div class="example">
 <p>
@@ -20330,66 +20498,358 @@ Set up readableStream given….
 </div>
 
 <p class="note">注記：
-`ReadableStream$I の下位classは、その構築子~手続きの内側にて，コレを`設定しておく$RS演算を直に利用することになる。
+`ReadableStream$I の下位classは、その構築子~手続きの内側にて，コレを［
+`設定しておく$RS／
+`~byte読取り~support付きで設定しておく$RS
+］演算を直に利用することになる。
 ◎
-Subclasses of ReadableStream will use the set up operation directly on the this value inside their constructor steps.
+Subclasses of ReadableStream will use the set up or set up with byte reading support operations directly on the this value inside their constructor steps.
 </p>
+
+<hr>
+
+<p>
+以下に与える~algoは、上の［
+`設定しておく$RS／
+`~byte読取り~support付きで設定しておく$RS
+］~algoを介して初期化されたもの以外の `ReadableStream$I ~instance
+（例：~web開発者が作成した~instance）には，利用してはナラナイ。
+◎
+The following algorithms must only be used on ReadableStream instances initialized via the above set up or set up with byte reading support algorithms (not, e.g., on web-developer-created instances):
+</p>
+
+<div class="algo">
+<p>
+`ReadableStream$I %~stream の
+`限界水位までの~queueの残り~size@RS
+（ `desired size to fill up to the high water mark^en ）
+は、次の手続きを走らせた結果になる：
+◎
+A ReadableStream stream’s desired size to fill up to the high water mark is the result of running the following steps:
+</p>
+<ol>
+	<li>
+~IF［
+%~stream は`読取n可能$RSでない
+］
+⇒
+~RET 0
+◎
+If stream is not readable, then return 0.
+</li>
+	<li>
+~IF［
+%~stream.`controller$rS は
+`ReadableByteStreamController$I を`実装する$
+］
+⇒
+~RET 
+~NOABRUPT `ReadableByteStreamControllerGetDesiredSize$A( %~stream.`controller$rS )
+◎
+If stream.[[controller]] implements ReadableByteStreamController, then return ! ReadableByteStreamControllerGetDesiredSize(stream.[[controller]]).
+</li>
+	<li>
+~RET
+~NOABRUPT `ReadableStreamDefaultControllerGetDesiredSize$A( %~stream.`controller$rS )
+◎
+Return ! ReadableStreamDefaultControllerGetDesiredSize(stream.[[controller]]).
+</li>
+</ol>
+</div>
+
+<p class="algo">
+`ReadableStream$I %~stream は、次を満たすならば
+`もっと~dataが必要@RS
+（ `needs more data^en ）とされる
+⇒
+%~stream の`限界水位までの~queueの残り~size$RS ~GT 0
+◎
+A ReadableStream needs more data if its desired size to fill up to the high water mark is greater than zero.
+</p>
+
+<div class="algo">
+<p>
+`ReadableStream$I %~stream を
+`~closeする@RS
+ときは：
+◎
+To close a ReadableStream stream:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%~stream.`controller$rS は
+`ReadableByteStreamController$I を`実装する$
+］：
+◎
+If stream.[[controller]] implements ReadableByteStreamController,
+</p>
+		<ol>
+			<li>
+~NOABRUPT `ReadableByteStreamControllerClose$A( %~stream.`controller$rS )
+◎
+Perform ! ReadableByteStreamControllerClose(stream.[[controller]]).
+</li>
+			<li>
+~IF［
+%~stream.`controller$rS.`pendingPullIntos$rbsC は`空$でない
+］
+⇒
+~NOABRUPT `ReadableByteStreamControllerRespond$A( %~stream.`controller$rS, 0 )
+◎
+If stream.[[controller]].[[pendingPullIntos]] is not empty, perform ! ReadableByteStreamControllerRespond(stream.[[controller]], 0).
+</li>
+		</ol>
+	</li>
+	<li>
+~ELSE
+⇒
+~NOABRUPT `ReadableStreamDefaultControllerClose$A( %~stream.`controller$rS )
+◎
+Otherwise, perform ! ReadableStreamDefaultControllerClose(stream.[[controller]]).
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`ReadableStream$I %~stream を
+`~errorにする@RS
+ときは、所与の
+( ~JS値 %e )
+に対し：
+◎
+To error a ReadableStream stream given a JavaScript value e:
+</p>
+<ol>
+	<li>
+~IF［
+%~stream.`controller$rS は
+`ReadableByteStreamController$I を`実装する$
+］
+⇒
+~NOABRUPT `ReadableByteStreamControllerError$A( %~stream.`controller$rS, %e )
+◎
+If stream.[[controller]] implements ReadableByteStreamController, then perform ! ReadableByteStreamControllerError(stream.[[controller]], e).
+</li>
+	<li>
+~ELSE
+⇒
+~NOABRUPT `ReadableStreamDefaultControllerError$A( %~stream.`controller$rS, %e )
+◎
+Otherwise, perform ! ReadableStreamDefaultControllerError(stream.[[controller]], e).
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`ReadableStream$I %~stream に
+`~chunkを~enqueueする@RS
+ときは、所与の
+( ~JS値 %~chunk )
+に対し：
+◎
+To enqueue the JavaScript value chunk into a ReadableStream stream:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%~stream.`controller$rS は
+`ReadableStreamDefaultController$I を`実装する$
+］：
+◎
+If stream.[[controller]] implements ReadableStreamDefaultController,
+</p>
+		<ol>
+			<li>
+~NOABRUPT `ReadableStreamDefaultControllerEnqueue$A( %~stream.`controller$rS, %~chunk )
+◎
+Perform ! ReadableStreamDefaultControllerEnqueue(stream.[[controller]], chunk).
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~ELSE：
+◎
+Otherwise,
+</p>
+		<ol>
+			<li>
+~Assert：
+%~stream.`controller$rS は
+`ReadableByteStreamController$I を`実装する$
+◎
+Assert: stream.[[controller]] implements ReadableByteStreamController.
+</li>
+			<li>
+~Assert：
+%~chunk は `ArrayBufferView$I である
+◎
+Assert: chunk is an ArrayBufferView.
+</li>
+			<li>
+%~BYOB~view ~LET %~stream 用の`現在の~BYOB要請~view$RS
+◎
+Let byobView be the current BYOB request view for stream.
+</li>
+			<li>
+<p>
+~IF［
+%~BYOB~view ~NEQ ~NULL
+］~AND［
+%~chunk.`ViewedArrayBuffer^sl ~EQ %~BYOB~view.`ViewedArrayBuffer^sl
+］：
+◎
+If byobView is non-null, and chunk.[[ViewedArrayBuffer]] is byobView.[[ViewedArrayBuffer]], then:
+</p>
+				<ol>
+					<li>
+~Assert：
+%~chunk.`ByteOffset^sl ~EQ %~BYOB~view.`ByteOffset^sl
+◎
+Assert: chunk.[[ByteOffset]] is byobView.[[ByteOffset]].
+</li>
+					<li>
+<p>
+~Assert：
+%~chunk.`ByteLength^sl ~LTE %~BYOB~view.`ByteLength^sl
+◎
+Assert: chunk.[[ByteLength]] ≤ byobView.[[ByteLength]].
+</p>
+
+<p class="note">注記：
+これらの ~Assert は、次を確保する
+⇒
+~call元は、［
+`現在の~BYOB要請~view$RS内の要請された範囲
+］の外側には書込まない
+◎
+These asserts ensure that the caller does not write outside the requested range in the current BYOB request view.
+</p>
+					</li>
+					<li>
+~ABRUPT `ReadableByteStreamControllerRespond$A( %~stream.`controller$rS, %~chunk.`ByteLength^sl )
+◎
+Perform ? ReadableByteStreamControllerRespond(stream.[[controller]], chunk.[[ByteLength]]).
+</li>
+				</ol>
+			</li>
+			<li>
+~ELSE
+⇒
+~ABRUPT `ReadableByteStreamControllerEnqueue$A( %~stream.`controller$rS, %~chunk )
+◎
+Otherwise, perform ? ReadableByteStreamControllerEnqueue(stream.[[controller]], chunk).
+</li>
+		</ol>
+	</li>
+</ol>
 </div>
 
 <hr>
 
 <p>
-以下に与える~algoは、上の`設定しておく$RS~algoを介して初期化されたもの以外の `ReadableStream$I ~instanceには，利用してはナラナイ。
+以下に与える~algoは、上の
+`~byte読取り~support付きで設定しておく$RS
+~algoを介して初期化されたもの以外の `ReadableStream$I ~instanceには，
+利用してはナラナイ。
 ◎
-The following algorithms must only be used on ReadableStream instances initialized via the above set up algorithm:
+The following algorithm must only be used on ReadableStream instances initialized via the above set up with byte reading support algorithm:
 </p>
 
-<p class="algo">
-`ReadableStream$I %~stream は、次を満たすならば
-`もっと~dataが必要@RS
-とされる
+<div class="algo">
+<p>
+`ReadableStream$I %~stream 用の
+`現在の~BYOB要請~view@RS
+は、［
+`ArrayBufferView$I ／ ~NULL
+］であり，次の手続きにより決定される：
+◎
+The current BYOB request view for a ReadableStream stream is either an ArrayBufferView or null, determined by the following steps:
+</p>
+<ol>
+	<li>
+~Assert：
+%~stream.`controller$rS は
+`ReadableByteStreamController$I を`実装する$
+◎
+Assert: stream.[[controller]] implements ReadableByteStreamController.
+</li>
+	<li>
+%~BYOB要請 ~LET 
+~NOABRUPT `ReadableByteStreamControllerGetBYOBRequest$A( %~stream.`controller$rS )
+◎
+Let byobRequest be ! ReadableByteStreamControllerGetBYOBRequest(stream.[[controller]]).
+</li>
+	<li>
+~RET %~BYOB要請 に応じて
+⇒＃
+~NULL ならば ~NULL ／
+~ELSE_ %~BYOB要請.`view$bbrQ
+◎
+If byobRequest is null, then return null.
+◎
+Return byobRequest.[[view]].
+</li>
+</ol>
+</div>
+
+<p>
+仕様は、`現在の~BYOB要請~view$RSに対しては，次をしてはナラナイ
 ⇒
-［
-%~stream は`読取n可能$RSである
-］~AND［
-次の結果 ~GT 0
+その`下層~buffer$BSを［
+`転送する$BS／`切離す$BS
 ］
-⇒
-~NOABRUPT `ReadableStreamDefaultControllerGetDesiredSize$A( %~stream.`controller$rS )
 ◎
-A ReadableStream stream needs more data if stream is readable and ! ReadableStreamDefaultControllerGetDesiredSize(stream.[[controller]]) returns a positive number.
+Specifications must not transfer or detach the underlying buffer of the current BYOB request view.
 </p>
 
-<p class="algo">
-`ReadableStream$I %~stream に
-`~chunkを~enqueueする@RS
-ときは、所与の
-( ~JS値 %~chunk )
-に対し
-⇒
-~NOABRUPT `ReadableStreamDefaultControllerEnqueue$A( %~stream.`controller$rS, %~chunk )
+
+<p class="note">注記：
+実装は
+— 例えば，別の~threadから~memoryの中へ書込みたいと求めるなら —
+転送ngに等価な何かを行うこともできる。
+が、観測-可能な帰結が同じになることを保つため、［
+`~chunkを~enqueueする$RS, `~closeする$RS
+］~algoを実装する際に，少数の調整を施す必要があろう。
+仕様の領分においては、［
+転送する／切離す
+］ことは，単に許容されない。
 ◎
-To enqueue the JavaScript value chunk into a ReadableStream stream, perform ! ReadableStreamDefaultControllerEnqueue(stream.[[controller]], chunk).
+Implementations could do something equivalent to transferring, e.g. if they want to write into the memory from another thread. But they would need to make a few adjustments to how they implement the enqueue and close algorithms to keep the same observable consequences. In specification-land, transferring and detaching is just disallowed.
 </p>
 
-<p class="algo">
-`ReadableStream$I %~stream を
-`~closeする@RS
-ときは
-⇒
-~NOABRUPT `ReadableStreamDefaultControllerClose$A( %~stream.`controller$rS )
+<p>
+仕様は、
+`現在の~BYOB要請~view$RS %~view が ~NULL でないときは、
+アリなら，
+%~view の`中へ~byte列を書込んで$BSから
+`~chunkを~enqueueする$RS( %~view )
+を~callするべきである。
+仕様は、［
+`~chunkを~enqueueする$RSに渡すためとして，
+新たな `ArrayBufferView$I を`作成する$BS
+］のは、［
+%~view が ~NULL のとき
+］または［
+`現在の~BYOB要請~view$RSの`~byte長さ$BSより多くの~byteが，
+それら【どれ？】の手元に有るとき
+］に限るベキである。
+これは、不必要な複製を避けて，当の~streamの`消費器$の望みをより良く尊重する。
 ◎
-To close a ReadableStream stream, perform ! ReadableStreamDefaultControllerClose(stream.[[controller]]).
+Specifications should, when possible, write into the current BYOB request view when it is non-null, and then call enqueue with that view. They should only create a new ArrayBufferView to pass to enqueue when the current BYOB request view is null, or when they have more bytes on hand than the current BYOB request view's byte length. This avoids unnecessary copies and better respects the wishes of the stream’s consumer.
 </p>
 
-<p class="algo">
-`ReadableStream$I %~stream を所与の~JS値 %e で
-`~errorにする@RS
-ときは
-⇒
-~NOABRUPT `ReadableStreamDefaultControllerError$A( %~stream.`controller$rS, %e )
+<p>
+仕様は、
+`ReadableStream$I を<a href="#readablestream-close">~closeして</a>以降は、
+その`現在の~BYOB要請~view$RSの`中へ書込んで$BSはナラナイ。
 ◎
-To error a ReadableStream stream given a JavaScript value e, perform ! ReadableStreamDefaultControllerError(stream.[[controller]], e).
+Specifications must not write into the current BYOB request view after closing the corresponding ReadableStream.
 </p>
 
 			</section>
@@ -20568,10 +21028,14 @@ Perform ! ReadableStreamDefaultReaderRead(reader, readRequest).
 </div>
 
 <p class="note">注記：
-%読取器 は，それに対応している `ReadableStream$I に対し排他的な~accessを是認するので、読取る方法を成す実際の仕組みは，観測され得ない。
+%読取器 は，それに対応している `ReadableStream$I に対し排他的な~accessを是認するので、
+読取る方法を成す実際の仕組みは，観測され得ない。
 実装は、自身に好都合な もっと直接的な仕組みも利用できる。
+`ReadableStreamDefaultReader$I に代えて
+`ReadableStreamBYOBReader$I を獲得して利用するか，
+各~chunkに直に~accessするなど。
 ◎
-Because reader grants exclusive access to its corresponding ReadableStream, the actual mechanism of how to read cannot be observed. Implementations could use a more direct mechanism if convenient.
+Because reader grants exclusive access to its corresponding ReadableStream, the actual mechanism of how to read cannot be observed. Implementations could use a more direct mechanism if convenient, such as acquiring and using a ReadableStreamBYOBReader instead of a ReadableStreamDefaultReader, or accessing the chunks directly.
 </p>
 </div>
 
@@ -20819,16 +21283,12 @@ Let closeAlgorithmWrapper be an algorithm that runs these steps:
 Let result be the result of running closeAlgorithm, if closeAlgorithm was given, or null otherwise. If this throws an exception e, return a promise rejected with e.
 </li>
 			<li>
-~IF［
-%結果 は `Promise$I である
-］
-⇒
-~RET %結果
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `undefined^jv で`解決される~promise$
 ◎
 If result is a Promise, then return result.
-</li>
-			<li>
-~RET `undefined^jv で`解決される~promise$
 ◎
 Return a promise resolved with undefined.
 </li>
@@ -20859,16 +21319,12 @@ Let abortAlgorithmWrapper be an algorithm that runs these steps:
 Let result be the result of running abortAlgorithm, if abortAlgorithm was given, or null otherwise. If this throws an exception e, return a promise rejected with e.
 </li>
 			<li>
-~IF［
-%結果 は `Promise$I である
-］
-⇒
-~RET %結果
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `undefined^jv で`解決される~promise$
 ◎
 If result is a Promise, then return result.
-</li>
-			<li>
-~RET `undefined^jv で`解決される~promise$
 ◎
 Return a promise resolved with undefined.
 </li>
@@ -20886,9 +21342,9 @@ Return a promise resolved with undefined.
 If sizeAlgorithm was not given, then set it to an algorithm that returns 1.
 </li>
 	<li>
-【~NOABRUPT】 `InitializeWritableStream$A( %~stream )
+~NOABRUPT `InitializeWritableStream$A( %~stream )
 ◎
-Perform InitializeWritableStream(stream).
+Perform ! InitializeWritableStream(stream).
 </li>
 	<li>
 %制御器 ~LET `新たな$ `WritableStreamDefaultController$I
@@ -21143,16 +21599,12 @@ Let transformAlgorithmWrapper be an algorithm that runs these steps given a valu
 Let result be the result of running transformAlgorithm given chunk. If this throws an exception e, return a promise rejected with e.
 </li>
 			<li>
-~IF［
-%結果 は `Promise$I である
-］
-⇒
-~RET %結果
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `undefined^jv で`解決される~promise$
 ◎
 If result is a Promise, then return result.
-</li>
-			<li>
-~RET `undefined^jv で`解決される~promise$
 ◎
 Return a promise resolved with undefined.
 </li>
@@ -21183,16 +21635,12 @@ Let flushAlgorithmWrapper be an algorithm that runs these steps:
 Let result be the result of running flushAlgorithm, if flushAlgorithm was given, or null otherwise. If this throws an exception e, return a promise rejected with e.
 </li>
 			<li>
-~IF［
-%結果 は `Promise$I である
-］
-⇒
-~RET %結果
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `undefined^jv で`解決される~promise$
 ◎
 If result is a Promise, then return result.
-</li>
-			<li>
-~RET `undefined^jv で`解決される~promise$
 ◎
 Return a promise resolved with undefined.
 </li>
@@ -22861,8 +23309,7 @@ for their contributions to this specification. Community involvement in this spe
 </p>
 
 <p>
-This standard is written by Adam Rice (<a href="https://google.com">Google</a>, <a href="mailto:ricea@chromium.org">ricea@chromium.org</a>), <a href="https://domenic.me/">Domenic Denicola</a> (<a href="https://google.com">Google</a>, <a href="mailto:d@domenic.me">d@domenic.me</a>), and 
-<span lang="ja">吉野剛史</span> (Takeshi Yoshino, <a href="https://google.com">Google</a>, <a href="mailto:tyoshino@chromium.org">tyoshino@chromium.org</a>).
+This standard is written by Adam Rice (<a href="https://google.com">Google</a>, <a href="mailto:ricea@chromium.org">ricea@chromium.org</a>), <a href="https://domenic.me/">Domenic Denicola</a> (<a href="https://google.com">Google</a>, <a href="mailto:d@domenic.me">d@domenic.me</a>), and Mattias Buelens, <span lang="ja">吉野剛史</span> (Takeshi Yoshino, <a href="mailto:tyoshino@chromium.org">tyoshino@chromium.org</a>).
 </p>
 </div>
 
