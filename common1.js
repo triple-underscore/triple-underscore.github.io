@@ -1713,7 +1713,7 @@ JLREQ=主              ~TR/jlreq/ja/
 JLREQ=副              w3c.github.io/jlreq/●日本語訳（編集者草案）
 INFRA=副              ~/infra-ja.html
 APPMANIFEST=副        ~/appmanifest-ja.html
-HRTIME2=副            ~/hr-time-ja.html
+HRTIME=副             ~/hr-time-ja.html
 NAVIGATIONTIMING=副   ~/navigation-timing-ja.html●Level 2 日本語訳
 NAVIGATIONTIMING2=副  ~/navigation-timing-ja.html
 PAGEVISIBILITY=副     ~/page-visibility-ja.html
@@ -1965,7 +1965,8 @@ FEATUREPOLICY:PERMISSIONSPOLICY1
 PERMISSIONSPOLICY:PERMISSIONSPOLICY1
 UPGRADE:UPGRADEINSECUREREQUESTS
 PAGEVISIBILITY2:PAGEVISIBILITY
-HRTIME:HRTIME2
+HRTIME2:HRTIME
+HRTIME3:HRTIME
 `;
 
 /* END REF_KEY_MAP*/
