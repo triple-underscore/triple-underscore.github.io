@@ -78,6 +78,10 @@ case 'viewAs':
 case 'dgm':
 	return `<a id="_dgm-${key}">＊</a>`;
 	break;
+case 'issue':
+	text = `課題 #${key}`;
+	href = `~SVGissue/${key}`;
+	break;
 case 'refer':
 	text = '~~参照先';
 	href = key;
