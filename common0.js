@@ -1063,6 +1063,7 @@ WEBIDL:WebIDL-ja.html
 WEBIDLjs:WebIDL-JS-ja.html
 XHR:XHR-ja.html
 UIEVENTS:uievents-ja.html
+POINTEREVENTS:pointerevents3-ja.html
 SELECTIONAPI:selection-api-ja.html
 HTTPcommon:http-common-ja.html
 RFC7230:RFC7230-ja.html
