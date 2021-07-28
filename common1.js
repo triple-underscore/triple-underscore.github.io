@@ -1656,6 +1656,7 @@ CSSSIZING3=副         ~/css-sizing-ja.html
 CSSOM1=副             ~/cssom-ja.html
 CSSOMVIEW1=副         ~/cssom-view-ja.html
 CSSPAINTAPI1=副       ~/css-paint-api-ja.html
+CSSPROPERTIESVALUESAPI1=副  ~/css-properties-values-api-ja.html
 CSSPSEUDO4=副         ~/css-pseudo-ja.html
 CSSSCOPING1=副        ~/css-scoping-ja.html
 CSSSHADOWPARTS1=副    ~/css-shadow-parts-ja.html
