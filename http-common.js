@@ -12,9 +12,9 @@ Util.ready = function(){
 	Util.switchWordsInit(source_data);
 
 	PAGE_DATA.ref_data = (PAGE_DATA.ref_data || '') + `
-MESSAGING=主          ~/http-messaging-ja.html
-SEMANTICS=主          ~/http-semantics-ja.html
-CACHING=主            ~/http-cache-ja.html
+HTTP=副               ~/http-semantics-ja.html
+HTTP11=副             ~/http-messaging-ja.html
+CACHING=副            ~/http-cache-ja.html
 `
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
 	repeat('script[src="http-common.js"]', function(e){
@@ -761,16 +761,15 @@ OUGHT:べき.である
 Ps:%s
 	Pi:%i
 
-HTTP09: HTTP/0.9 
-HTTP10: HTTP/1.0 
-HTTP11: HTTP/1.1 
-	HTTP1x:
-
 `
 
 COMMON_DATA.words_table += `
 
 ●●words_table
+HTTP09:HTTP/0.9
+HTTP10:HTTP/1.0
+HTTP11:HTTP/1.1
+	HTTP1x:
 伝え:informし:~
 伝える:informする:~
 切替:switching::切り替え
@@ -891,7 +890,6 @@ minor::::副:マイナー
 最終-:final:~
 近過去:recent::~
 重複:duplicate:~
-節:section:~
 別個:distinct:~
 
 	●仕様
@@ -1123,6 +1121,7 @@ escaping::::エスケープ処理
 分割-:split:~
 分割:splitting:~
 分解-:decompose:~
+節:section::~::セクション
 
 	●network
 
