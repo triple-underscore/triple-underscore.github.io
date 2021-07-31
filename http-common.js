@@ -1065,7 +1065,6 @@ agent::::エージェント
 機密的:confidential::~
 汚染-:poison::~
 汚染:poisoning::~
-盗聴:theft:~
 脆弱:vulnerable::~
 署名:signature:~
 防御策:defense:~
