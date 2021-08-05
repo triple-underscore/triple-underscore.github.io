@@ -699,7 +699,7 @@ c.realm:~HTTPsem#realm
 	§#status.codes
 応答~状態s~code:~HTTPsem#status-code
 状態s~code:~HTTPsem#status-code
-応答class:~HTTPsem#responce-class
+~class:~HTTPsem#status-code-class
 
 非最終-応答:~HTTPsem#interim-response
 最終-応答:~HTTPsem#final-response
@@ -1186,7 +1186,6 @@ redirection::::リダイレクト
 隣点間:hop-by-hop::~::ホップバイホップ
 連結-:concatenate:~
 実体:entity:~
-応答class:class:::クラス
 
 所在-:locate::~
 経路:path::~
