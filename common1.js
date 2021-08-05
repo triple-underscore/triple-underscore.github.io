@@ -1468,6 +1468,10 @@ informative: '<h3>文献（参考）</h3>'
 			}
 
 			let html = data
+			.replace(
+				/＜(.+?)＞/g,
+				'<cite>$1</cite>'
+			)
 			.replace(/\n\[(.+)\]/g, (match, ref_name) => {
 				const id = ref_id_prefix +
 					(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
