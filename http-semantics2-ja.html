@@ -13,7 +13,7 @@
 ●●options
 
 spec_title:HTTP Semantics
-trans_update:2021-08-04
+trans_update:2021-08-07
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html
 abbr_url:HTTPsem
@@ -333,6 +333,8 @@ CACHING/4.3.2:~HTTPcache#validation.received
 CACHING/4.3.5:~HTTPcache#head.effects
 CACHING/4:~HTTPcache#constructing.responses.from.caches
 CACHING/4.4:~HTTPcache#invalidation
+HTTP11/3.2.1:~HTTPmsg#origin-form
+HTTP11/3.2.4:~HTTPmsg#asterisk-form
 HTTP11/3.3:~HTTPmsg#reconstructing.target.uri
 HTTP11/6.2:~HTTPmsg#body.content-length
 HTTP11/9.5:~HTTPmsg#persistent.failures
@@ -341,6 +343,7 @@ HTTP2/6.4:~RFCx/rfc7540#section-6.4
 
 RFC7231/B:~RFC7231#appendix-B
 
+URI/2.3:~RFCx/rfc3986#section-2.3
 URI/3.5:~RFCx/rfc3986#section-3.5
 URI/5:~RFCx/rfc3986#section-5
 URI/1.2.2:~RFCx/rfc3986#section-1.2.2
@@ -369,6 +372,7 @@ trace::::トレース
 portal::::ポータル
 応答待ち:outstanding::~
 帯域:band::~
+通過中:transit 中:~
 
 	●構文
 US-ASCII:
@@ -656,6 +660,7 @@ scale::::スケール
 	誰からも:anyone
 	どの情報も:anything
 	自覚しない:unaware
+	従い続ける:follow through
 
 	●事例
 分析:analysis:~
@@ -920,6 +925,7 @@ real-time:::リアルタイム
 	直後:immediately after
 	小さな:small
 	より大き:larger
+	だけ:alone
 
 
 ●●trans_metadata
@@ -1942,11 +1948,14 @@ A proxy MUST NOT change the host name if the target URI contains a fully qualifi
 受信した`~target~URI$を，`内方$にある次の`~server$へ回送するときには、その［
 `absolute-path$p, `query$p
 ］を成す部分を改変してはナラナイ
-— ただし，上に注記された［
-空な~pathを "`/^c" または "`*^c" に置換する
-］場合を除く。
+— ただし、回送している~protocolにより要求される場合を除く。
+例えば，~HTTP11を介して要請を`生成元~server$へ回送している`~proxy$は、
+空な `path$p を要請~methodに応じて，次のいずれかに置換することになる
+⇒＃
+"`/^c" （ `HTTP11/3.2.1$sec により要求される）／
+"`*^c" （ `HTTP11/3.2.4$sec により要求される）
 ◎
-A proxy MUST NOT modify the "absolute-path" and "query" parts of the received target URI when forwarding it to the next inbound server, except as noted above to replace an empty path with "/" or "*".
+A proxy MUST NOT modify the "absolute-path" and "query" parts of the received target URI when forwarding it to the next inbound server except as required by that forwarding protocol. For example, a proxy forwarding a request to an origin server via HTTP/1.1 will replace an empty path with "/" (Section 3.2.1 of [HTTP/1.1]) or "*" (Section 3.2.4 of [HTTP/1.1]), depending on the request method.
 </li>
 	<li>
 <p>
@@ -2353,23 +2362,27 @@ A sender that generates a message containing content SHOULD generate a Content-T
 一部の~UAは、`内容$を精査して，ある種の事例で，指定された型を上書きする
 （例えば `Sniffing$r を見よ）。
 この “~MIME~sniff法” には、~dataについて不正な結論に至る~riskがあり，追加的な~security~riskに利用者を晒し得る（例： “特権拡大” ）。
-更には、~data形式を精査して 送信者が意図する処理~modelを決定するのは，不可能である
-— 多くの~data形式は、処理の意味論においてのみ相違するような，複数の`~MIME型$に合致する。
-実装者には、そのような~sniff法を不能化する手段を供することが奨励される。
+更には、別個な`~MIME型$たちが，共通な~data形式を共有していて，［
+当の~dataはどう処理されるものと意図されるか
+］しか相違しないことが多い
+— ~dataだけを検分して，それを判別することは、不可能である。
+~sniff法を実装する実装者には、
+それを不能化する手段を利用者に供することが奨励される。
 ◎
-In practice, resource owners do not always properly configure their origin server to provide the correct Content-Type for a given representation. Some user agents examine the content and, in certain cases, override the received type (for example, see [Sniffing]). This "MIME sniffing" risks drawing incorrect conclusions about the data, which might expose the user to additional security risks (e.g., "privilege escalation"). Furthermore, it is impossible to determine the sender's intended processing model by examining the data format: many data formats match multiple media types that differ only in processing semantics. Implementers are encouraged to provide a means to disable such sniffing.
+In practice, resource owners do not always properly configure their origin server to provide the correct Content-Type for a given representation. Some user agents examine the content and, in certain cases, override the received type (for example, see [Sniffing]). This "MIME sniffing" risks drawing incorrect conclusions about the data, which might expose the user to additional security risks (e.g., "privilege escalation"). Furthermore, distinct media types often share a common data format, differing only in how the data is intended to be processed, which is impossible to distinguish by inspecting the data alone. When sniffing is implemented, implementers are encouraged to provide a means for the user to disable it.
 </p>
 
 <p>
-更には，
-`Content-Type^h は`単数~field$として定義されるが、不正に複数回 `生成され$，その結果 `結合-$された`~field値$が~listのように出現することもある。
+`Content-Type^h は`単数~field$として定義されるが、
+不正に複数回 `生成され$，その結果 `結合-$された`~field値$が~listのように出現することもある。
 受信者は，この~errorを［
 ~listを成す構文上は妥当な~memberのうち，最後のものを利用して取扱う
-］よう試みることが多いが、一部の実装は異なる挙動で この~errorを取扱うかもしれず，［
+］よう試みることが多く、
+この~errorを取扱う挙動が実装に応じて異なる場合，［
 相互運用能／~security
-］の課題へ導くことに注意。
+］の課題へ導くことになり得る。
 ◎
-Furthermore, although Content-Type is defined as a singleton field, it is sometimes incorrectly generated multiple times, resulting in a combined field value that appears to be a list. Recipients often attempt to handle this error by using the last syntactically valid member of the list, but note that some implementations might have different error handling behaviors, leading to interoperability and/or security issues.
+Although Content-Type is defined as a singleton field, it is sometimes incorrectly generated multiple times, resulting in a combined field value that appears to be a list. Recipients often attempt to handle this error by using the last syntactically valid member of the list, leading to potential interoperability and security issues if different implementations have different error handling behaviors.
 </p>
 
 			<section id="media.type">
@@ -6228,17 +6241,24 @@ For example, a sender might indicate that a signature will be computed as the co
 </p>
 
 <p>
-`Trailer$h ~fieldは、`中継者$により除去されないので，［
-`~trailer$が いつ~messageから除去されたか，`下流$の`受信者$が発見する
-］ためにも利用できる。
+~message内に`~trailer$を`生成し$ようと意図する`送信者$は、
+当の~messageの`~header節$内に `Trailer$h ~headerを`生成し$て，
+そのような`~field$が`~trailer節$内に在るかもしれないことを指示するベキである。
 ◎
-Because the Trailer field is not removed by intermediaries, it can also be used by downstream recipients to discover when a trailer field has been removed from a message.
+A sender that intends to generate one or more trailer fields in a message SHOULD generate a Trailer header field in the header section of that message to indicate which fields might be present in the trailers.
 </p>
 
 <p>
-~message内に`~trailer$を`生成し$ようと意図する`送信者$は、当の~messageの`~header節$内に `Trailer$h ~headerを`生成し$て，そのような`~field$が`~trailer節$内に在るかもしれないことを指示するベキである。
+ある`中継者$が通過中の`~trailer節$を破棄する場合、
+`Trailer$h ~fieldが，［
+どの~metadataが失われたかについて，~hintを供する
+］こともある
+— `Trailer^h の送信者が，［
+当の【その~field値に挙げられた】名前の~fieldを送信すること
+］に常に従い続ける保証は無いが。
+【したがって、~trailerを中継者が破棄したか送信者が送信しなかったかは，この~hintからは依拠-可能に判別できない。】
 ◎
-A sender that intends to generate one or more trailer fields in a message SHOULD generate a Trailer header field in the header section of that message to indicate which fields might be present in the trailers.
+If an intermediary discards the trailer section in transit, the Trailer field could provide a hint of what metadata was lost, though there is no guarantee that a sender of Trailer will always follow through by sending the named fields.
 </p>
 
 			</section>
@@ -8360,15 +8380,15 @@ An "identity" token is used as a synonym for "no encoding" in order to communica
 </pre>
 
 <p>
-各 符号法~値（ `codings$p ）には、［
-その符号化法に結付けられる選好~度を表現する，`品質~値$
-］も与えられてもヨイ。
+各 符号法~値（ `codings$p ）には、
+`品質~値$（ `weight$p ）を与えてもヨイ
+— それは、その符号化法に結付けられる選好~度を表現する。
 `Accept-Encoding^h ~header内の記号~asterisk "`*^c"
 は、可用な`内容~符号法$のうち［
 その~field内に明示的に~listされていないもの
 ］すべてに合致する。†a
 ◎
-Each codings value MAY be given an associated quality value representing the preference for that encoding, as defined in Section 12.4.2. The asterisk "*" symbol in an Accept-Encoding field matches any available content coding not explicitly listed in the field.
+Each codings value MAY be given an associated quality value (weight) representing the preference for that encoding, as defined in Section 12.4.2. The asterisk "*" symbol in an Accept-Encoding field matches any available content coding not explicitly listed in the field.
 </p>
 
 <div class="example">
@@ -8478,7 +8498,7 @@ If an Accept-Encoding header field is present in a request and none of the avail
 <div class="trans-note">
 
 <p>【
-~serverが，選好される内容~符号法を選定する手続きは、以下のように定式化できるであろう：
+~serverが，選好される内容~符号法を選定する手続きは、以下のように定式化できよう：
 】</p>
 
 <p>
