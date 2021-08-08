@@ -220,7 +220,7 @@ h.Content-Range:~HTTPsem#field.content-range
 h.Content-Type:~HTTPsem#field.content-type
 h.Host:~HTTPsem#field.host
 h.TE:~HTTPsem#field.te
-h.Trailer:~HTTPsem#field.trailer
+h.Trailer:~HTTPinfra#field.trailer
 h.Upgrade:~HTTPsem#field.upgrade
 h.Via:~HTTPsem#field.via
 
@@ -245,7 +245,7 @@ h.User-Agent:~HTTPsem#field.user-agent
 h.Accept-Ranges:~HTTPsem#field.accept-ranges
 h.Allow:~HTTPsem#field.allow
 h.Authentication-Info:~HTTPsem#field.authentication-info
-h.Date:~HTTPsem#field.date
+h.Date:~HTTPinfra#field.date
 h.ETag:~HTTPsem#field.etag
 h.Last-Modified:~HTTPsem#field.last-modified
 h.Location:~HTTPsem#field.location
@@ -619,6 +619,8 @@ c.realm:~HTTPsem#realm
 ~trailer:~HTTPinfra#trailer-field
 ~trailer節:~HTTPinfra#trailer-section
 内容:~HTTPinfra#message-content
+~messageの出生日時:~HTTPinfra#origination-date
+時計:~HTTPinfra#clock
 
 	§#routing
 ~target~URI:~HTTPsem#target-URI
@@ -660,8 +662,6 @@ c.realm:~HTTPsem#realm
 期待:~HTTPsem#expectation
 製品~識別子:~HTTPsem#product-identifier
 応答~header:~HTTPsem#response-header
-~messageの出生日時:~HTTPsem#origination-date
-時計:~HTTPsem#clock
 首な資源:~HTTPsem#primary-resource
 
 	§#authentication
