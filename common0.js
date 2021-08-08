@@ -2483,6 +2483,9 @@ counter::::カウンタ
 折衝:negotiation::~::ネゴシエーション
 
 garbage::::ガーベジ
+探索:search::~::サーチ
+探索-:search::~::サーチ
+探索処理:searching::~::サーチ処理
 
 ●構造／関係／IDL
 
