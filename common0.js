@@ -1361,7 +1361,7 @@ text::::テキスト
 textな:textual::textな:テキストな
 scalar::::スカラー
 vector::::ベクター
-素な:plain::~
+素な:plainな::~
 	素な~text:plaintext
 包装-:wrap::~
 
