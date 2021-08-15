@@ -1092,7 +1092,6 @@ CSSBOX:css-box-ja.html
 CSS2BOX:css22-box-ja.html
 CSS2CONFORM:css-common-ja.html
 CSS2VISUDET:css22-visudet-ja.html
-CSS2VISUFX:css22-visufx-ja.html
 CSS2VISUREN:css22-visuren-ja.html
 CSSALIGN:css-align-ja.html
 CSSANIM:css-animations-ja.html
