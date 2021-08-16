@@ -12,8 +12,8 @@
 
 ●●options
 spec_title:HTTP Caching
-spec_date:2021-08-07
-trans_update:2021-07-29
+spec_date:2021-08-14
+trans_update:2021-08-16
 source_checked:210715
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-cache-latest.html
@@ -449,8 +449,6 @@ asset::::アセット
     Fielding, R., Gettys, J., Mogul, J., Frystyk, H., Masinter, L., Leach, P., and T. Berners-Lee, “Hypertext Transfer Protocol -- HTTP/1.1”, ~RFC2616, June 1999
 [RFC5861]
     Nottingham, M., “HTTP Cache-Control Extensions for Stale Content”, ~RFC5861, April 2010
-[RFC5905]
-    Mills, D., Martin, J., Ed., Burbank, J., and W. Kasch, “Network Time Protocol Version 4: Protocol and Algorithms Specification”, ~RFC5905, June 2010
 [RFC7234]
     Fielding, R., Ed., Nottingham, M., Ed., and J. Reschke, Ed., “Hypertext Transfer Protocol (HTTP): Caching”, ~RFC7234, June 2014
 [RFC8126]
@@ -1410,11 +1408,11 @@ This enables caches to collapse requests — or combine multiple incoming reques
 When more than one suitable response is stored, a cache MUST use the most recent one (as determined by the Date header field). It can also forward the request with "Cache-Control: max-age=0" or "Cache-Control: no-cache" to disambiguate which response to use.
 </li>
 	<li>
-`時計$が可用でないときは、格納-済み応答を
-— どの利用においても —
-`再検証-$することなく利用してはナラナイ。
+`時計$を備えていない~cacheは、格納-済み応答を
+— どの利用に際しても —
+`再検証-$しなければナラナイ。
 ◎
-A cache that does not have a clock available MUST NOT use stored responses without revalidating them upon every use.
+A cache without a clock (Section 5.6.7 of [HTTP]) MUST revalidate stored responses upon every use.
 </li>
 </ul>
 
@@ -1837,37 +1835,33 @@ Note: Section 13.9 of [RFC2616] prohibited caches from calculating heuristic fre
 The Age header field is used to convey an estimated age of the response message when obtained from a cache. The Age field value is the cache's estimate of the number of seconds since the origin server generated or validated the response. The Age value is therefore the sum of the time that the response has been resident in each of the caches along the path from the origin server, plus the time it has been in transit along network paths.
 </p>
 
+<div class="p">
 <p>
-`齢$の計算には次の~dataが利用される：
+`齢$の計算には、以下に挙げる~dataが利用される
+— まず，以下の記述に利用される語の意味を与える：
+</p>
+<ul>
+	<li>
+`応答^V
+⇒
+齢を計算する対象である，格納-済み応答。
+</li>
+	<li>
+`要請^V
+⇒
+`応答^V が応対した（ `応答^V を格納-済みにさせた）要請。
+【原文の記述からは，はっきりしないが、成功裡に再検証させた要請があれば，それを指すようにも思われる。】
+</li>
+	<li>
+`時計^V
+⇒
+当の~cache実装の`時計$。
+</li>
+</ul>
 ◎
 Age calculation uses the following data:
-</p>
-
+</div>
 <dl>
-	<dt>【まず，以下の記述に利用される語の意味を補足する：】</dt>
-	<dd class="trans-note">
-		<dl>
-			<dt>`応答^V</dt>
-			<dd>
-齢を計算する対象の，格納-済み応答。
-</dd>
-			<dt>`要請^V</dt>
-			<dd>
-`応答^V が応対した（ `応答^V を格納-済みにさせた）要請。
-（原文の記述からは，はっきりしないが、成功裡に再検証させた要請があれば，それを指すようにも思われる。）
-</dd>
-			<dt>`~host^V</dt>
-			<dd>
-当の~cacheを使役している~HTTP通信の参加者。
-</dd>
-			<dt>`時計^V</dt>
-			<dd>
-`~host^V に局所的な時計。
-</dd>
-
-		</dl>
-	</dd>
-
 	<dt>`齢~値@V</dt>
 	<dd>
 `応答^V の `Age$h ~headerの値を，算術-演算に適切な形で表す値
@@ -1888,26 +1882,23 @@ The term "date_value" denotes the value of the Date header field, in a form appr
 
 	<dt>`現在時@V</dt>
 	<dd>
-`~host^V がこの計算を遂行している時点での， `時計^V の現在の値。
-`~host^V は、［
-NTP `RFC5905$r, または何らかの類似な~protocol
-］を利用して， `時計^V を UTC（協定世界時, `Coordinated Universal Time^en ）に同期させる~OUGHT。
+`時計^V の現在の値。
 ◎
-The term "now" means "the current value of the clock at the host performing the calculation". A host ought to use NTP ([RFC5905]) or some similar protocol to synchronize its clocks to Coordinated Universal Time.
+The term "now" means the current value of this implementation's clock (Section 5.6.7 of [HTTP]).
 </dd>
 
 	<dt>`要請~時刻@V</dt>
 	<dd>
-`要請^V が受信された時点での， `時計^V の値。
+`要請^V を受信した時点における， `時計^V の値。
 ◎
-The current value of the clock at the host at the time the request resulting in the stored response was made.
+The value of the clock at the time of the request that resulted in the stored response.
 </dd>
 
 	<dt>`応答~時刻@V</dt>
 	<dd>
-`応答^V が受信された時点での， `時計^V の値。
+`応答^V を受信した時点における， `時計^V の値。
 ◎
-The current value of the clock at the host at the time the response was received.
+The value of the clock at the time the response was received.
 </dd>
 </dl>
 
@@ -1920,11 +1911,12 @@ A response's age can be calculated in two entirely independent ways:
 	<li>
 `見かけ齢@V
 ⇒
-`時計^V と`生成元~server$の`時計$とが，適度にきちんと同期されている場合に限り、次で与えられる
+`時計^V と`生成元~server$の`時計$とが，適度にきちんと同期されている場合に限り、
+次で与えられる
 ⇒
 `max^op( 0, `応答~時刻$V ~MINUS `日時~値$V )
 ◎
-the "apparent_age": response_time minus date_value, if the local clock is reasonably well synchronized to the origin server's clock. If the result is negative, the result is replaced by zero.
+the "apparent_age": response_time minus date_value, if the implementation's clock is reasonably well synchronized to the origin server's clock. If the result is negative, the result is replaced by zero.
 </li>
 	<li>
 <p>
@@ -3684,9 +3676,9 @@ If a response includes a Cache-Control header field with the max-age directive (
 <p>
 `時計$を備えていない`生成元~server$は、
 `Expires^h ~headerを`生成し$てはナラナイ
-— ただし、その値が次のいずれかの値をとる場合は除く：
+— ただし、それが次に挙げるいずれかの値をとる場合は除く：
 ◎
-An origin server without a clock MUST NOT generate an Expires header field unless its value＼
+An origin server without a clock (Section 5.6.7 of [HTTP]) MUST NOT generate an Expires header field unless its value＼
 </p>
 <ul>
 	<li>
@@ -3695,11 +3687,9 @@ An origin server without a clock MUST NOT generate an Expires header field unles
 represents a fixed time in the past (always expired) or＼
 </li>
 	<li>
-依拠-可能な`時計$を備える［
-~system／【ヒトでない】利用者
-］により，`資源$に結付けられた値。
+`時計$を備える~systemにより，`資源$に結付けられた値。
 ◎
-its value has been associated with the resource by a system or user with a reliable clock.
+its value has been associated with the resource by a system with a clock.
 </li>
 </ul>
 </div>
