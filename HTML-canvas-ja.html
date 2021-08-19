@@ -145,8 +145,8 @@ return text;
 
 ●●options
 
-spec_date:2021-07-30
-trans_update:2021-07-31
+spec_date:2021-08-18
+trans_update:2021-08-19
 source_checked:210301
 page_state_key:HTML
 spec_status:LS
@@ -341,6 +341,7 @@ I.Document:~HTMLdom#document
 ~node文書:~DOM4#concept-node-document
 I.Element:~DOM4#interface-element
 I.EventTarget:~DOM4#interface-eventtarget
+I.EventHandler:~WAPI#eventhandler
 I.Window:~WINDOW#window
 I.WorkerGlobalScope:~WORKERS#workerglobalscope
 
@@ -408,6 +409,7 @@ m.new FontFace:~CSSFONTLOADING#dom-fontface-fontface
 2d.globalCompositeOperation:#dom-context-2d-globalcompositeoperation
 2d.imageSmoothingEnabled:#dom-context-2d-imagesmoothingenabled
 2d.imageSmoothingQuality:#dom-context-2d-imagesmoothingquality
+2d.isContextLost:#dom-context-2d-iscontextlost
 2d.isPointInPath:#dom-context-2d-ispointinpath
 2d.isPointInStroke:#dom-context-2d-ispointinstroke
 2d.lineCap:#dom-context-2d-linecap
@@ -484,6 +486,9 @@ oC.width:#dom-offscreencanvas-width
 
 o2d.canvas:#offscreencontext2d-canvas
 o2d.commit:#offscreencontext2d-commit
+
+m.oncontextlost:#handler-offscreencanvas-oncontextlost
+m.oncontextrestored:#handler-offscreencanvas-oncontextrestored
 
 m.setTransform:#dom-canvaspattern-settransform
 m.addColorStop:#dom-canvasgradient-addcolorstop
@@ -647,6 +652,9 @@ mt.image/svg+xml:indices.html#image/svg+xml
 sl.display width:~WEBCODECS#dom-videoframe-display-width-slot
 sl.display height:~WEBCODECS#dom-videoframe-display-height-slot
 
+et.contextlost:~HTMLindex#event-contextlost
+et.contextrestored:~HTMLindex#event-contextrestored
+
 	●CSS
 
 p.border-radius:~CSSBG#propdef-border-radius
@@ -713,6 +721,9 @@ sl.Detached:~HTMLcloning#detached
 V.設定群:#initialize-imagedata-settings
 V.~source:#initialize-imagedata-source
 V.既定の色~空間:#initialize-imagedata-defaultcolorspace
+
+
+文脈~喪失dか:#concept-canvas-context-lost
 
 2D.色~空間:#concept-canvas-color-space
 2D.非同期化されるか:#concept-canvas-desynchronized
@@ -888,6 +899,10 @@ vD.内在的~横幅:~HEmedia#concept-video-intrinsic-width
 ~scriptingは不能化されて:~WAPI#concept-n-noscript
 ~scriptingは可能化されて:~WAPI#concept-n-script
 描画を更新する:~WAPI#update-the-rendering
+~event~handler:~WAPI#event-handlers
+~event~handler~event型:~WAPI#event-handler-event-type
+~event~handler~IDL属性:~WAPI#event-handler-idl-attributes
+文脈~喪失d時の手続き:~WAPI#context-lost-steps
 
 閲覧文脈:~BROWSERS#browsing-context
 生成元:~ORIGIN#concept-origin
@@ -1448,6 +1463,9 @@ busy:
 高頻度:frequent:~
 加速-:accelerate::~
 高処理能:performant:~
+喪失d:lost::喪失
+喪失:loss::~
+喪失-:lose::~
 
 	~~実行した後に:after the following statement
 	黙して:silently
@@ -1462,6 +1480,7 @@ busy:
 	jump
 	-:rethrow
 	を~~渡して:handle to
+	使い切った:running out
 
 	%線~幅:lineWidth
 	%最大-横幅:%maxWidth
@@ -1488,6 +1507,8 @@ busy:
 
 	●環境
 agent:
+driver:
+crash:
 
 	●UI
 art::::アート
@@ -2868,6 +2889,11 @@ pop state stack and restore state
 ◎
 reset the rendering context to its default state
 </span> */
+  boolean `isContextLost$2d(); /* <span class="comment">
+文脈を喪失したかどうかを返す
+◎
+return whether context is lost
+</span> */
 };
 
 interface mixin `CanvasTransform@I {
@@ -3949,6 +3975,16 @@ The current dash list.
 The rendering context's bitmaps are not part of the drawing state, as they depend on whether and how the rendering context is bound to a canvas element.
 </p>
 
+<p>
+`CanvasState$I ~mixinを実装する各~objは、真偽値をとる
+`文脈~喪失dか@
+を持つ
+— 当の~objの作成-時には、 ~F に初期化される。
+これは、`文脈~喪失d時の手続き$にて更新される。
+◎
+Objects that implement the CanvasState mixin have a context lost boolean, that is initialized to false when the object is created. The context lost value is updated in the context lost steps.
+</p>
+
 <dl class="domintro">
 	<dt>%context.`save()$2d</dt>
 	<dd>
@@ -3974,6 +4010,19 @@ Pops the top state on the stack, restoring the context to that state.
 ］も含めて設定し直す。
 ◎
 Resets the rendering context, which includes the backing buffer, the drawing state stack, path, and styles.
+</dd>
+
+	<dt>%context.`isContextLost()$2d</dt>
+	<dd>
+描画~文脈を喪失した場合に ~T を返す。
+文脈の喪失は、
+~driver~crash, ~memoryを使い切った, 等々
+に因り生じ得る。
+これらの事例では、
+当の~canvasは，その裏~storageを喪失するので，
+`描画~文脈を既定の状態に設定し直す$ことになる。
+◎
+Returns true if the rendering context was lost. Context loss can occur due to driver crashes, running out of memory, etc. In these cases, the canvas loses its backing storage and takes steps to reset the rendering context to its default state.
 </dd>
 </dl>
 
@@ -4051,6 +4100,15 @@ Clear the context's drawing state stack.
 Reset everything that drawing state consists of to their initial values.
 </li>
 </ol>
+</div>
+
+<div class="algo">
+`isContextLost@2d
+~method手続きは
+⇒
+~RET コレの`文脈~喪失dか$
+◎
+The isContextLost() method steps are to return this's context lost.
 </div>
 
 					</section>
@@ -12202,6 +12260,9 @@ interface `OffscreenCanvas@I : `EventTarget$I {
   `OffscreenRenderingContext$I? `getContext$oC(`OffscreenRenderingContextId$I %contextId, optional any %options = null);
   `ImageBitmap$I `transferToImageBitmap$oC();
   Promise&lt;`Blob$I&gt; `convertToBlob$oC(optional `ImageEncodeOptions$I %options = {});
+
+  attribute `EventHandler$I `oncontextlost$m;
+  attribute `EventHandler$I `oncontextrestored$m;
 };
 </pre>
 
@@ -12880,6 +12941,26 @@ Return image.
 </ol>
 </div>
 
+<p>
+`OffscreenCanvas$I ~interfaceを実装しているすべての~objは、
+以下に挙げる`~event~handler$, および
+対応する`~event~handler~event型$を
+`~event~handler~IDL属性$として~supportするモノトスル：
+◎
+The following are the event handlers (and their corresponding event handler event types) that must be supported, as event handler IDL attributes, by all objects implementing the OffscreenCanvas interface:
+</p>
+
+<table><thead>
+<tr><th>`~event~handler$
+<th>`~event~handler~event型$
+</thead><tbody>
+
+<tr><td>`oncontextlost@m
+<td>`contextlost$et
+
+<tr><td>`oncontextrestored@m
+<td> `contextrestored$et
+</tbody></table>
 
 					<section id="the-offscreen-2d-rendering-context">
 <h6 title="The offscreen 2D rendering context">4.12.5.3.1. ~offscreen~2D描画~文脈</h6>
