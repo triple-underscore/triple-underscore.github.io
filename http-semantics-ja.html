@@ -13,8 +13,8 @@
 ●●options
 
 spec_title:HTTP Semantics
-spec_date:2021-08-14
-trans_update:2021-08-16
+spec_date:2021-08-18
+trans_update:2021-08-22
 source_checked:210709
 page_state_key:HTTP
 original_url:https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html
@@ -198,7 +198,6 @@ sdir.private:~HTTPcache#cache-response-directive.private
 8.8.3.1:~HTTPsem#entity.tag.generation
 8.8.3.2:~HTTPsem#entity.tag.comparison
 8.8.3.3:~HTTPsem#example.entity.tag.vs.conneg
-8.8.4:~HTTPsem#when.to.use.entity.tags.and.last-modified.dates
 9:~HTTPsem#methods
 9.1:~HTTPsem#method.overview
 9.2:~HTTPsem#method.properties
@@ -398,7 +397,7 @@ B.6:~HTTPinfra#changes.from.rfc.7235
 B.7:~HTTPinfra#changes.from.rfc.7538
 B.8:~HTTPinfra#changes.from.rfc.7615
 B.9:~HTTPinfra#changes.from.rfc.7694
-C.19:~HTTPinfra#change.log
+C.20:~HTTPinfra#change.log
 
 	C:~HTTPinfra#change.log
 	C.1:~HTTPinfra#changes.since.publication.as.rfc
@@ -1310,7 +1309,7 @@ Working Group information can be found at &lt;https://httpwg.org/&gt;; source co
 
 <p>
 この草案における変更点は、
-`C.19$sec に要約されている。
+`C.20$sec に要約されている。
 ◎
 The changes in this draft are summarized in Appendix C.19.
 </p>
@@ -2567,6 +2566,14 @@ Although the diagram is linear, each participant might be engaged in multiple, s
 ◎
 The terms upstream and downstream are used to describe directional requirements in relation to the message flow: all messages flow from upstream to downstream. The terms "inbound" and "outbound" are used to describe directional requirements in relation to the request route: inbound means toward the origin server and outbound means toward the user agent.
 </p>
+
+<p class="trans-note">【
+~messageが応答ならば［
+上流／下流
+］は［
+内方／外方
+］と同義になり、要請ならば，その逆になる。
+】</p>
 
 <p>
 `~proxy@
@@ -4211,15 +4218,14 @@ ISO-8859-1 ~charset `ISO-8859-1$r
 `VCHAR$P（可視な~US-ASCII~octet）, `SP$P, `HTAB$P
 ］に制限するベキである。
 `受信者$は、
-`field-content$p 【！field content】内の他の~octet（ `obs-text$p ）を
-不透明な~dataとして扱うベキである。
+`field-content$p 【！field content】内で許容される他の~octet（すなわち `obs-text$p ）を不透明な~dataとして扱うベキである。
 ◎
-Field values are usually constrained to the range of US-ASCII characters [USASCII]. Fields needing a greater range of characters can use an encoding, such as the one defined in [RFC8187]. Historically, HTTP allowed field content with text in the ISO-8859-1 charset [ISO-8859-1], supporting other charsets only through use of [RFC2047] encoding. Specifications for newly defined fields SHOULD limit their values to visible US-ASCII octets (VCHAR), SP, and HTAB. A recipient SHOULD treat other octets in field content (obs-text) as opaque data.
+Field values are usually constrained to the range of US-ASCII characters [USASCII]. Fields needing a greater range of characters can use an encoding, such as the one defined in [RFC8187]. Historically, HTTP allowed field content with text in the ISO-8859-1 charset [ISO-8859-1], supporting other charsets only through use of [RFC2047] encoding. Specifications for newly defined fields SHOULD limit their values to visible US-ASCII octets (VCHAR), SP, and HTAB. A recipient SHOULD treat other allowed octets in field content (i.e., obs-text) as opaque data.
 </p>
 
 <p>
 ［
-`CR$P ／ `NUL^P
+`CR$P ／ `LF$P ／ `NUL^P
 ］文字を包含している`~field値$は、妥当でない
 — 加えて、［
 それらの文字を構文解析して解釈する仕方は、
@@ -4228,14 +4234,13 @@ Field values are usually constrained to the range of US-ASCII characters [USASCI
 そのような~field値の`受信者$は、当の~messageを却下するか，~messageを［
 処理する／回送する
 ］前に~field値の中にある各［
-`CR$P ／ `NUL^P
+`CR^P ／ `LF^P ／ `NUL^P
 ］を `SP$P に置換しなければナラナイ。
 他の `CTL$P 文字を包含している`~field値$も，妥当でない
-— しかしながら，`受信者$は、堅牢性を得るためとして，そのような文字のうち［
-安全な~field値の文脈の中でしか出現しないもの（例：不透明な~data）
-］は維持してもヨイ。
+— しかしながら，`受信者$は、堅牢性を得るためとして，そのような文字が安全な文脈の中で出現したときは維持してもヨイ
+（例：`下流$にある どの~HTTP構文解析器も処理しない，応用に特有な `quoted-string$p の中）。
 ◎
-Field values containing CR or NUL characters are invalid and dangerous, due to the varying ways that implementations might parse and interpret those characters; a recipient of CR or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid; however, recipients MAY retain such characters for the sake of robustness if they only appear within safe field value contexts (e.g., opaque data).
+Field values containing CR, LF, or NUL characters are invalid and dangerous, due to the varying ways that implementations might parse and interpret those characters; a recipient of CR, LF, or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid; however, recipients MAY retain such characters for the sake of robustness when they appear within a safe context (e.g., an application-specific quoted string that will not be processed by any downstream HTTP parser).
 </p>
 
 <p>
@@ -4315,19 +4320,6 @@ Note that double-quote delimiters are almost always used with the quoted-string 
 どちらの形で受信しようが，~parameter値の意味は同じになる~OUGHT。
 ◎
 Many fields (such as Content-Type, defined in Section 8.3) use a common syntax for parameters that allows both unquoted (token) and quoted (quoted-string) syntax for a parameter value (Section 5.6.6). Use of common syntax allows recipients to reuse existing parser components. When allowing both forms, the meaning of a parameter value ought to be the same whether it was received as a token or a quoted string.
-</p>
-
-<p>
-歴史的に，~HTTP`~field値$は、
-複数~行lにも渡れるように拡張されていた
-— 2 行l目 以降の各~行lに， 1 個~以上の［
-`SP$P や `HTAB$P
-］を先行させること（ `obs-fold$p ）により。
-この文書は、`~field値$を解釈するに先立って，
-そのような廃用にされた行l折返しは除去-済みと見做す
-（例： `HTTP11/5.2$sec に述べるように）。
-◎
-Historically, HTTP field values could be extended over multiple lines by preceding each extra line with at least one space or horizontal tab (obs-fold). This document assumes that any such obsolete line folding has been removed prior to interpreting the field value (e.g., as described in Section 5.2 of [HTTP/1.1]).
 </p>
 
 <p class="note">注記：
@@ -6609,11 +6601,10 @@ Field names are registered on the advice of a Designated Expert (appointed by th
 </p>
 
 <p>
-登録~要請は、少なくとも次に挙げる情報からなる：
+登録~要請は、次に挙げる情報からなる：
 ◎
-Registration requests consist of at least the following information:
+Registration requests consist of the following information:
 </p>
-
 <dl>
 	<dt>
 `Field name:^en
@@ -6650,9 +6641,10 @@ The requested field name. It MUST conform to the field-name syntax defined in Se
 	<dd>
 当の`~field$を指定する文書への参照。
 文書の複製を検索取得するために利用できる~URIを含める方が好ましい。
+`暫定的^i な登録~用には、任意選択であるが，奨励される。
 関連な各~節の指示も含ませれるが、要求されてはいない。
 ◎
-Reference to the document that specifies the field, preferably including a URI that can be used to retrieve a copy of the document. An indication of the relevant section(s) can also be included, but is not required.
+Reference to the document that specifies the field, preferably including a URI that can be used to retrieve a copy of the document. Optional but encouraged for provisional registrations. An indication of the relevant section(s) can also be included, but is not required.
 </dd>
 </dl>
 
@@ -6694,10 +6686,10 @@ Standards-defined names have a status of "permanent". Other names can also be re
 </p>
 
 <p>
-専門家（たち）は、`暫定的^i ~entryを除去できる
+専門家（たち）は、`暫定的^i な~entryを除去できる
 — ~communityとの協議の下で、利用-中でないものと見出したならば。
 当の専門家（たち）は、
-`暫定的^i ~entryの位置付けを，いつでも `恒久的^i に変更できる。
+`暫定的^i な~entryの位置付けを，いつでも `恒久的^i に変更できる。
 ◎
 Provisional entries can be removed by the Expert(s) if — in consultation with the community — the Expert(s) find that they are not in use. The Experts can change a provisional entry's status to permanent at any time.
 </p>

@@ -680,7 +680,6 @@ c.realm:~HTTPsem#realm
 品質~値:~HTTPsem#quality-value
 	既定の重み
 	~wildcard値
-選定用~header:~HTTPsem#selecting-header
 
 	§#conditional.requests
 条件付き要請:~HTTPsem#conditional-request
@@ -1317,8 +1316,6 @@ stateful::::ステートフル
 過去:past:~
 過去の:pastな:~
 遭遇-:encounter:~
-選定用:selecting::~
-被選定:selected::~
 選択的:selective::~
 選択:choice:~
 選択肢:choice:~
