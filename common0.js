@@ -1116,6 +1116,7 @@ CSSINLINE:css-inline-ja.html
 CSSLIST:css-lists-ja.html
 CSSLOGICAL:css-logical-ja.html
 CSSMCOL:css-multicol-ja.html
+CSSNESTING:css-nesting-ja.html
 CSSNS:css-namespaces-ja.html
 CSSOM1:cssom-ja.html
 CSSOMVIEW:cssom-view-ja.html
@@ -1131,6 +1132,7 @@ CSSSCROLLSNAP:css-scroll-snap-ja.html
 CSSSHAPES:css-shapes-ja.html
 CSSSNAPSHOT:css-snapshot-ja.html
 CSSPSEUDO:css-pseudo-ja.html
+CSSSPEECH:css-speech-ja.html
 CSSSTYLEATTR:css-style-attr-ja.html
 CSSSYN:css-syntax-ja.html
 CSSTABLE:https://drafts.csswg.org/css-tables-3/
