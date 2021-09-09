@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-08-31
-trans_update:2021-09-02
+spec_date:2021-09-09
+trans_update:2021-09-10
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -827,6 +827,7 @@ fg.終了させる:#concept-fetch-group-terminate
 cN.~key:#connection-key
 cN.生成元:#connection-origin
 cN.資格証？:#connection-credentials
+新たな接続~用の設定:#new-connection-setting
 
 ~network区分~key:#network-partition-key
 ~network区分~keyを決定する:#determine-the-network-partition-key
@@ -922,7 +923,6 @@ i.応答の~doneを処理する:#fetch-processresponsedone
 i.並列~queueを利用するか:#fetch-useparallelqueue
 
 i.~HTTP3のみか:#obtain-a-connection-http3only
-i.専用か:#obtain-a-connection-dedicated
 
 
 内容~符号法sを取扱う:#handle-content-codings
@@ -1790,9 +1790,9 @@ helper:
 	~~仔細:the particulars
 	~~縁遠い:not pertinent
 	に転換する:turn into
-	自前で:own
 	選び取る:pick
 	選り好む:favor
+	絡んでくる:come into play
 
 	●未分類
 	格納-済み:stored
@@ -1959,11 +1959,11 @@ internet::::インターネット
 	-:continueAlgorithm
 	%要請~素片:requestFragment
 	%接続~群:connections
-	%専用か:dedicated
 	%~HTTP3のみか:http3Only
 	%新たな接続~fetchか:isNewConnectionFetch
 	%新たな接続を強制するか:forceNewConnection
 	%新たな接続を強制するか:forceNew
+	%新たな接続:newConnection
 	%Content-Length~header値:contentLengthHeaderValue
 	%内容~長さ:contentLength
 	%計時情報:timingInfo
@@ -2168,7 +2168,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/4c1c5b01a3e8e79056fc34ad6ba4a394e3c80744/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/b2f04e20b68c09e8ad279220bd5dc3c3f1168258/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -6874,15 +6874,6 @@ To resolve an origin, given a network partition key key and an origin origin:
 If origin’s host is an IP address, then return « origin’s host ».
 </li>
 	<li>
-~IF［
-~UAは、~domainを自前で解決する~proxyを利用するよう環境設定されている
-］
-⇒
-~RET « %~host »
-◎
-If the user agent is configured to use a proxy that resolves domains on its own, then return « origin’s host ».
-</li>
-	<li>
 ~RET `~domainを解決する$( %~key, %~host )
 ◎
 Return the result of running resolve a domain given key and origin’s host.
@@ -7034,40 +7025,48 @@ Return a new connection timing info whose domain lookup start time is the result
 
 <hr>
 
+<p>
+`新たな接続~用の設定@
+は、次に挙げるいずれかをとる
+⇒＃
+`no^l,
+`yes^l,
+`yes-and-dedicated^l
+◎
+A new connection setting is "no", "yes", or "yes-and-dedicated".
+</p>
+
 <div class="algo">
 <p>
 `接続を得する@
 ときは、所与の
 ⇒＃
 `~network区分~key$ %~key,
-`生成元$ %生成元,
+`~URL$ %~URL,
 真偽値 %資格証？,
-真偽値 %新たな接続を強制するか（省略時は ~F ）,
+`新たな接続~用の設定$ %新たな（省略時は `no^l ）,
 真偽値 `~HTTP3のみか@i （省略時は ~F ）,
-真偽値 `専用か@i （省略時は ~F ）
 ◎終
 に対し，次を走らす：
 ◎
-To obtain a connection, given a network partition key key, origin origin, boolean credentials, an optional boolean forceNew (default false), an optional boolean http3Only (default false), and an optional boolean dedicated (default false), run these steps:
+To obtain a connection, given a network partition key key, URL url, boolean credentials, an optional new connection setting new (default "no"), and an optional boolean http3Only (default false), run these steps:
 </p>
 <ol>
 	<li>
 <p>
 ~IF［
-%新たな接続を強制するか ~EQ ~F
-］~OR［
-%専用か ~EQ ~F
+%新たな ~EQ `no^l
 ］：
 ◎
-If forceNew is false or dedicated is false, then:
+If new is "no", then:
 </p>
 		<ol>
 			<li>
 %接続~群 ~LET ~UAの`接続~pool$を成す`接続$のうち，次を満たすものからなる集合
 ⇒
-( `~key$cN, `生成元$cN, `資格証？$cN ) ~EQ ( %~key, %生成元, %資格証？ )
+( `~key$cN, `生成元$cN, `資格証？$cN ) ~EQ ( %~key, %~URL の`生成元$url, %資格証？ )
 ◎
-Let connections be a set of connections in the user agent’s connection pool whose key is key, origin is origin, and credentials is credentials.
+Let connections be a set of connections in the user agent’s connection pool whose key is key, origin is url’s origin, and credentials is credentials.
 </li>
 			<li>
 ~IF［
@@ -7092,42 +7091,79 @@ If there is an HTTP/3 connection in connections, then return that connection.
 		</ol>
 	</li>
 	<li>
+<p>
+%~proxy群 ~LET %~URL 用の~proxyたちを`実装定義$な方式で見出した結果
+— 無い場合は « `DIRECT^l »
+◎
+Let proxies be the result of finding proxies for url in an implementation-defined manner. If there are no proxies, let proxies be « "DIRECT" ».
+</p>
+
+<p class="note">注記：
+ここは、［
+<a lang="en" href="https://en.wikipedia.org/wiki/Web_Proxy_Auto-Discovery_Protocol">Web Proxy Auto-Discovery Protocol (WPAD)</a>,
+<a lang="en" href="https://en.wikipedia.org/wiki/Proxy_auto-config">proxy auto-config (PAC)</a>
+］などの標準でない技術が絡んでくる所である。
+`DIRECT^l 値は、
+この特定0の %~URL 用には~proxyを利用しないことを意味する。
+◎
+This is where non-standard technology such as Web Proxy Auto-Discovery Protocol (WPAD) and proxy auto-config (PAC) come into play. The "DIRECT" value means to not use a proxy for this particular url.
+</p>
+	</li>
+	<li>
 %計時情報 ~LET 新たな`接続~計時情報$
 ◎
 Let timingInfo be a new connection timing info.
 </li>
 	<li>
+<p>
+%~proxy群 を成す
+~EACH( %~proxy )
+に対し：
+◎
+For each proxy of proxies:
+</p>
+		<ol>
+			<li>
 %計時情報 の`~domain検索~開始~時刻$cT ~SET `安全でない共有される現在の時刻$
 ◎
 Set timingInfo’s domain lookup start time to the unsafe shared current time.
 </li>
-	<li>
-%~host群 ~LET `生成元を解決する$( %~key, %生成元 )
+			<li>
+%~host群 ~LET « %生成元 の`~host$o »
 ◎
-Let hosts be the result of running resolve an origin given key and origin.
+Let hosts be « origin’s host ».
 </li>
-	<li>
+			<li>
+~IF［
+%~proxy ~EQ `DIRECT^l
+］
+⇒
+%~host群 ~SET `生成元を解決する$( %~key, %~URL の`生成元$url ) 
+◎
+If proxy is "DIRECT", then set hosts to the result of running resolve an origin given key and url’s origin.
+</li>
+			<li>
 ~IF［
 %~host群 ~EQ `失敗^i
 ］
 ⇒
-~RET `失敗^i
+~CONTINUE
 ◎
-If hosts is failure, then return failure.
+If hosts is failure, then continue.
 </li>
-	<li>
+			<li>
 %計時情報 の`~domain検索~終了~時刻$cT ~SET `安全でない共有される現在の時刻$
 ◎
 Set timingInfo’s domain lookup end time to the unsafe shared current time.
 </li>
-	<li>
+			<li>
 <p>
 %接続 ~LET 次に従って得られる`接続$：
 ◎
 Let connection be the result of running this step:＼
 </p>
-		<ul>
-			<li>
+				<ul>
+					<li>
 次を
 — `実装定義$な回数だけ，互いに`並列的$に —
 走らす
@@ -7135,15 +7171,16 @@ Let connection be the result of running this step:＼
 `接続を作成する$( 次に挙げる引数 )
 ⇒＃
 %~key,
-%生成元,
+%~URL の`生成元$url,
 %資格証,
+%~proxy,
 %~host群 の中から`実装定義$に選ばれた`~host$,
 %計時情報,
 %~HTTP3のみか
 ◎
-run create a connection given key, origin, credentials, an implementation-defined host from hosts, timingInfo, and http3Only an implementation-defined number of times, in parallel from each other,＼
+run create a connection given key, url’s origin, credentials, proxy, an implementation-defined host from hosts, timingInfo, and http3Only an implementation-defined number of times, in parallel from each other,＼
 </li>
-			<li>
+					<li>
 前項にて走らせた 少なくとも一つが値を返すまで待機した上で、
 返された値たちから，`実装定義$な方式で一つを選定する
 — 他の値のうち`接続$である（ `失敗^i でない）ものは、~closeしてもヨイ。
@@ -7152,13 +7189,13 @@ and wait for at least 1 to return a value.＼
 In an implementation-defined manner, select a value to return from the returned values and return it.＼
 Any other returned values that are connections may be closed.
 </li>
-		</ul>
+				</ul>
 
 <p class="note">注記：
 この段は、本質的には，［
 `~domainを解決-$した結果から，
 1 個以上の`~IP~address$を選び取ること
-］を実装に許容する（~proxyは無いと見做す）
+］を実装に許容する（ %~proxy ~EQ `DIRECT^l と見做すなら）
 — ［
 それらを互いに競争させる,
 `~IPv6~address$を選り好む,
@@ -7166,31 +7203,38 @@ Any other returned values that are connections may be closed.
 等々
 ］の下で。
 ◎
-Essentially this allows an implementation to pick one or more IP addresses from the return value of resolve a domain (assuming no proxy) and race them against each other, favor IPv6 addresses, retry in case of a timeout, etc.
+Essentially this allows an implementation to pick one or more IP addresses from the return value of resolve a domain (assuming proxy is "DIRECT") and race them against each other, favor IPv6 addresses, retry in case of a timeout, etc.
 </p>
-	</li>
-	<li>
+			</li>
+			<li>
 ~IF［
 %接続 ~EQ `失敗^i
 ］
 ⇒
-~RET `失敗^i
+~CONTINUE
 ◎
-If connection is failure, then return failure.
+If connection is failure, then continue.
 </li>
-	<li>
+			<li>
 ~IF［
-%専用か ~EQ ~F
+%新たな ~NEQ `yes-and-dedicated^l
 ］
 ⇒
 ~UAの`接続~pool$に %接続 を`付加する$set
 ◎
-If dedicated is false, then append connection to the user agent’s connection pool.
+If new is not "yes-and-dedicated", then append connection to the user agent’s connection pool.
 </li>
-	<li>
+			<li>
 ~RET %接続
 ◎
 Return connection.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET `失敗^i
+◎
+Return failure.
 </li>
 </ol>
 
@@ -7222,13 +7266,14 @@ This is intentionally a little vague as there are a lot of nuances to connection
 `~network区分~key$ %~key,
 `生成元$ %生成元,
 真偽値 %資格証,
+文字列 %~proxy,
 `~host$ %~host,
 `接続~計時情報$ %計時情報,
 真偽値 %~HTTP3のみか,
 ◎終
 に対し，次の手続きを走らす：
 ◎
-To create a connection, given a network partition key key, origin origin, boolean credentials, host host, connection timing info timingInfo, and boolean http3Only, run these steps:
+To create a connection, given a network partition key key, origin origin, boolean credentials, string proxy, host host, connection timing info timingInfo, and boolean http3Only, run these steps:
 </p>
 <ol>
 	<li>
@@ -7250,7 +7295,9 @@ Let connection be a new connection whose key is key, origin is origin, credentia
 <p>
 次に従う下で，
 %接続 を利用して,
-%生成元 も織り込んで,
+［
+%~proxy, %生成元
+］も織り込んで,
 %~host への~HTTP接続を確立する
 `HTTP$r
 `HTTP-SEMANTICS$r
@@ -7261,7 +7308,7 @@ Let connection be a new connection whose key is key, origin is origin, credentia
 — それに伴い、
 %接続 に対し`接続~計時情報を記録する$：
 ◎
-Record connection timing info given connection and use connection to establish an HTTP connection to host, taking origin into account. [HTTP] [HTTP-SEMANTICS] [HTTP-COND] [HTTP-CACHING] [HTTP-AUTH] [TLS]
+Record connection timing info given connection and use connection to establish an HTTP connection to host, taking proxy and origin into account. [HTTP] [HTTP-SEMANTICS] [HTTP-COND] [HTTP-CACHING] [HTTP-AUTH] [TLS]
 </p>
 		<ul>
 			<li>
@@ -13004,6 +13051,14 @@ If httpCache is null, then set request’s cache mode to "no-store".
 Let networkPartitionKey be the result of determining the network partition key given request.
 </li>
 	<li>
+%新たな接続 ~LET %新たな接続を強制するか に応じて
+⇒＃
+~T ならば `yes^l ／
+~F ならば `no^l
+◎
+Let newConnection be "yes" if forceNewConnection is true; otherwise "no".
+</li>
+	<li>
 <p>
 %接続 ~LET %要請 の`~mode$rqに応じて，次を遂行した結果：
 ◎
@@ -13021,10 +13076,10 @@ Switch on request’s mode:
 			<li>
 ~ELSE_
 ⇒
-`接続を得する$( %~network区分~key, %要請 の`現在の~URL$rqの`生成元$url, %資格証を含めるか, %新たな接続を強制するか )
+`接続を得する$( %~network区分~key, %要請 の`現在の~URL$rq, %資格証を含めるか, %新たな接続 )
 ◎
 Otherwise
-• Let connection be the result of obtaining a connection, given networkPartitionKey, request’s current URL’s origin, includeCredentials, and forceNewConnection.
+• Let connection be the result of obtaining a connection, given networkPartitionKey, request’s current URL, includeCredentials, and newConnection.
 </li>
 		</ul>
 	</li>
