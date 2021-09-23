@@ -2287,9 +2287,7 @@ filter::::フィルタ
 mode::::モード
 flag::::フラグ
 option::::オプション
-options:::option 群:オプション群
 parameter::::パラメタ
-parameters:::parameter 群:パラメタ群
 入力:input:~
 引数:argument:~
 変数:variable:~

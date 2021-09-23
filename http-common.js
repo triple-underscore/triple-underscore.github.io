@@ -602,7 +602,6 @@ c.realm:~HTTPsem#realm
 	~token:
 空白:~HTTPinfra#whitespace
 	~comment:~HTTPinfra#comments
-	~parameters:~HTTPinfra#parameter
 ~parameter:~HTTPinfra#parameter
 	日時:~HTTPinfra#http.date
 	素片~識別子:~HTTPinfra#uri.fragment.identifiers
