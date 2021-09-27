@@ -817,6 +817,7 @@ HTTP11:HTTP/1.1
 見出させ:findさせ:~
 運ばせ:carryさせ::~
 運ばれ:carryされ::~
+運ばな:carryしな::~
 運ぶ:carryする::~
 運べる:carryできる:~
 運んで:carryして:~
@@ -1164,7 +1165,6 @@ redirection::::リダイレクト
 回送:forwarding::~
 	回送-法:forwarding
 伝送路:wire::~
-伝達-:convey::~
 分散型の:distributedな::~
 携わる:engageする:~
 携わっ:engageし:~

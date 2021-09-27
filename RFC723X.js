@@ -1222,7 +1222,6 @@ redirection::::リダイレクト
 回送:forwarding::~
 	回送-法:forwarding
 伝送路:wire::~
-伝達-:convey::~
 分散-:balance:~
 分散型の:distributed::~
 参加-:engage:~

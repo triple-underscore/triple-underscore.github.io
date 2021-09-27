@@ -2191,6 +2191,7 @@ care::::ケア
 	国際-化:internationalization／:internationalized
 測定-:measure:~
 測定:measurement:~
+伝達-:convey:~
 
 貢献-:contribute:~
 貢献:contribution:~
