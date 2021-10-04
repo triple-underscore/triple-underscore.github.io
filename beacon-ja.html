@@ -89,8 +89,8 @@ return text;
 ●●options
 
 spec_title:Beacon
-spec_date:2021-08-25
-trans_update:2020-02-01
+spec_date:2021-10-03
+trans_update:2021-10-04
 source_checked:160204
 page_state_key:TIMING
 original_url:https://w3c.github.io/beacon/
@@ -156,16 +156,22 @@ h.Access-Control-Allow-Origin:~FETCH#http-access-control-allow-origin
 	文書:~DOM4#concept-document
 
 enV.~API用~基底~URL:~WAPI#api-base-url
+enV.大域~obj:~WAPI#concept-settings-object-global
 入口~設定群~obj:~WAPI#entry-settings-object
 生成元:~ORIGIN#concept-origin
 
 ~CORS予行~要請:~FETCH#cors-preflight-request
 要請:~FETCH#concept-request
-~fetch:~FETCH#concept-fetch
+応答:~FETCH#concept-response
+新たな~header:~FETCH#_new-header
+~fetchする:~FETCH#concept-fetch
 ~HTTP~network-or-cache~fetch:~FETCH#http-network-or-cache-fetch
 ~UAによる制限s:#_limits-on-amount-of-data
 本体と内容~型を抽出する:~FETCH#concept-bodyinit-extract
 ~CORS安全とされる要請~header:~FETCH#cors-safelisted-request-header
+計時を完結して報告する:~FETCH#finalize-and-report-timing
+i.応答の~doneを処理する:~FETCH#fetch-processresponsedone
+
 ~URL構文解析する:~URL1#concept-url-parser
 ~scheme:~URL1#concept-url-scheme
 ~header~list:~FETCH#concept-header-list
@@ -173,6 +179,7 @@ enV.~API用~基底~URL:~WAPI#api-base-url
 	i.~keepalive:~FETCH#keepalive
 
 rq.~method:~FETCH#concept-request-method
+rq.~client:~FETCH#concept-request-client
 rq.~URL:~FETCH#concept-request-url
 rq.~header~list:~FETCH#concept-request-header-list
 rq.生成元:~FETCH#concept-request-origin
@@ -235,9 +242,23 @@ schedule::::スケジュール
 時間厳守な:time-criticalな:時間に厳しい
 処理待ちの:pending::~
 実行ng:executing:実行
+完結-:finalize::~
+done:
 
 	何もしない~loopを回す:inserting no-op busy loops
 	回す:spinning
+
+	%設定群:-
+	%基底~URL:base
+	%生成元:origin
+	%構文解析した~URL:parsedUrl
+	%~header~list:headerList
+	%~CORS~mode:corsMode
+	%伝送d~data:transmittedData
+	%内容~型:contentType
+	%要請:req
+	%応答:res
+	-:handleBeaconDone
 
 	●UX／保安／環境
 background::::バックグラウンド
@@ -254,7 +275,7 @@ homescreen:
 携帯:mobile::~::モバイル
 電力:energy:~
 	interactive
-in-flight:
+	^en:in-flight
 quota::::クォータ
 喪失:loss:~
 解析:analytics:~
@@ -311,16 +332,9 @@ property::::プロパティ
 	起-:happen
 	量:amount
 	高い／高:high／higher
-	field
-	lead
-	leave
-	ほとんど:most
-	parameter
-
-	run
-
-	true
-
+	かもしれない:leads to
+	-:leave
+	-:parameter
 
 ●●ref_normative
 
@@ -333,9 +347,9 @@ property::::プロパティ
 [PAGE-VISIBILITY-2]
     Page Visibility Level 2. Ilya Grigorik; Marcos Caceres. W3C. 18 May 2021. W3C Candidate Recommendation. URL: https://www.w3.org/TR/page-visibility-2/
 [RFC2119]
-    Key words for use in RFCs to Indicate Requirement Levels. S. Bradner. IETF. March 1997. Best Current Practice. URL: https://tools.ietf.org/html/rfc2119
+    Key words for use in RFCs to Indicate Requirement Levels. S. Bradner. IETF. March 1997. Best Current Practice. URL: https://www.rfc-editor.org/rfc/rfc2119
 [RFC8174]
-    Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words. B. Leiba. IETF. May 2017. Best Current Practice. URL: https://tools.ietf.org/html/rfc8174
+    Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words. B. Leiba. IETF. May 2017. Best Current Practice. URL: https://www.rfc-editor.org/rfc/rfc8174
 [URL]
     URL Standard. Anne van Kesteren. WHATWG. Living Standard. URL: https://url.spec.whatwg.org/
 [WEBIDL]
@@ -644,9 +658,11 @@ partial interface `Navigator$I {
 <p>
 `sendBeacon()@m
 ~methodは、次の規則に則って，［
-`data@v 引数（ `BodyInit$I 型）に供された~data
+`data@v
+引数（ `BodyInit$I 型）に供された~data
 ］を［
-`url@v 引数（ `USVString$I 型）に供された~URL
+`url@v
+引数（ `USVString$I 型）に供された~URL
 ］へ向けて伝送する：
 ◎
 The sendBeacon() method transmits data provided by the data parameter to the URL provided by the url parameter:
@@ -737,16 +753,16 @@ On calling the sendBeacon() method with url and optional data, the following ste
 
 <ol>
 	<li>
-%O ~LET `入口~設定群~obj$
+%設定群 ~LET `入口~設定群~obj$
 ◎
 ↓</li>
 	<li>
-%基底~URL ~LET %O の `~API用~基底~URL$enV
+%基底~URL ~LET %設定群 の`~API用~基底~URL$enV
 ◎
 Set base to the entry settings object's API base URL.
 </li>
 	<li>
-%生成元 ~LET %O の`生成元$
+%生成元 ~LET %設定群 の`生成元$
 ◎
 Set origin to the entry settings object's origin.
 </li>
@@ -811,7 +827,7 @@ If the amount of data that can be queued to be sent by keepalive enabled request
 ~Beacon~APIを介して起動された要請に対しては、
 `~keepaliveか$rq は自動的に ~T にされる。
 開発者は、~Fetch~APIの利用-時にも同じ~flagを手動で設定できる。
-この~flagが ~T にされたすべての要請は、~Fetch~APIの中で施行される，同じ~in-flight~quota制約を共有する。
+この~flagが ~T にされたすべての要請は、~Fetch~APIの中で施行される，同じ `in-flight^en な~quota制約を共有する。
 【すなわち、これらの処理待ち要請たちの総量にも一定の上限がある。】
 ◎
 Requests initiated via the Beacon API automatically set the keepalive flag, and developers can similarly set the same flag manually when using the Fetch API. All requests with this flag set share the same in-flight quota restrictions that is enforced within the Fetch API.
@@ -827,9 +843,12 @@ If contentType is not null:
 </p>
 				<ol>
 					<li>
+%~header ~LET `新たな~header$( `Content-Type^h / %内容~型 )
+◎
+↓</li>
+					<li>
 ~IF［
-%内容~型 は
-`Content-Type^h ~headerに対する`~CORS安全とされる要請~header$値でない
+%~header は`~CORS安全とされる要請~header$でない
 ］
 ⇒
 %~CORS~mode ~SET `cors^l
@@ -839,7 +858,7 @@ Set corsMode to "cors".
 If contentType value is a CORS-safelisted request-header value for the Content-Type header, set corsMode to "no-cors".
 </li>
 					<li>
-を %~header~list に`~headerを付加する$( `Content-Type^h / %内容~型 )
+%~header~list に`~headerを付加する$( %~header )
 ◎
 Append a Content-Type header with value contentType to headerList.
 </li>
@@ -857,6 +876,7 @@ Set the return value to true, return the sendBeacon() call, and continue to run 
 %要請 ~LET 次の様に初期化された，新たな`要請$
 ⇒＃
 `~method$rq ~SET `POST^M,
+`~client$rq ~SET %設定群,
 `~URL$rq ~SET %構文解析した~URL,
 `~header~list$rq ~SET %~header~list,
 `生成元$rq ~SET %生成元,
@@ -869,6 +889,8 @@ Let req be a new request, initialized as follows:
 ◎
 method
 • POST
+client
+• The entry settings object
 url
 • parsedUrl
 header list
@@ -885,9 +907,18 @@ credentials mode
 • include
 </li>
 	<li>
-%要請 を用いて`~fetch$する
+%要請 を`~fetchする$
+— 次を与える下で
+⇒
+`応答の~doneを処理する$i ~SET 所与の
+( `応答$ %応答 )
+に対し，次を遂行する手続き
+⇒
+`計時を完結して報告する$( %応答, %設定群 【の`大域~obj$enV】, `beacon^l )
 ◎
-Fetch req.
+Let handleBeaconDone given response res be a call to finalize and report timing with res, the entry settings object, and "beacon".
+◎
+Fetch req, with processResponseDone set to handleBeaconDone.
 </li>
 </ol>
 
