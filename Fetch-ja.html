@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-09-30
-trans_update:2021-10-01
+spec_date:2021-10-05
+trans_update:2021-10-06
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -772,6 +772,7 @@ rq.計時許容に失敗したか:#timing-allow-failed
 要請を~cloneする:#concept-request-clone
 ~scriptに類する:#request-destination-script-like
 範囲~headerを追加する:#concept-request-add-range-header
+単純な範囲~header値:#simple-range-header-value
 
 下位資源~要請:#subresource-request
 非~下位資源~要請:#non-subresource-request
@@ -1050,6 +1051,7 @@ Bd.~MIME型:#concept-body-mime-type
 	~BREAK:~INFRA#iteration-break
 	~CONTINUE:~INFRA#iteration-continue
 
+真偽値:~INFRA#boolean
 ~byte列:~INFRA#byte-sequence
 長さ:~INFRA#byte-sequence-length
 ~byte小文字~化する:~INFRA#byte-lowercase
@@ -1057,6 +1059,7 @@ Bd.~MIME型:#concept-body-mime-type
 ~byte大小無視:~INFRA#byte-case-insensitive
 ~JSON~byte列を~JS値に構文解析する:~INFRA#parse-json-bytes-to-a-javascript-value
 文字列:~INFRA#string
+str.長さ:~INFRA#string-length
 ~scalar値~文字列:~INFRA#scalar-value-string
 文字:~INFRA#code-point
 ~ASCII空白:~INFRA#ascii-whitespace
@@ -1066,6 +1069,7 @@ Bd.~MIME型:#concept-body-mime-type
 符号位置:~INFRA#code-point
 位置~変数:~INFRA#string-position-variable
 符号位置~並びを収集する:~INFRA#collect-a-sequence-of-code-points
+から開始して:~INFRA#string-starts-with
 ~forgiving-base64復号する:~INFRA#forgiving-base64-decode
 ~forgiving-base64符号化する:~INFRA#forgiving-base64-encode
 同型に符号化する:~INFRA#isomorphic-encode
@@ -1332,7 +1336,7 @@ tab-or-space:tab or space:tab／space
 forgiving-base64:
 文字大小:case::~
 	文字大小~法:casing:~
-同型に:isomorphic::~
+同型:isomorphic::~
 改行:newline::~
 部位:part:~
 	成功した:successful
@@ -1986,6 +1990,8 @@ internet::::インターネット
 	%局所的に中止されたか:locallyAborted
 	%~cache状態:cacheState
 	%~host群:hosts
+	%範囲~始端:rangeStart
+	%範囲~終端:rangeEnd
 
 	●指示語
 
@@ -2088,7 +2094,7 @@ FETCHMETADATA=副       ~/webappsec-fetch-metadata-ja.html
 [MIMESNIFF]
     Gordon P. Hemsley. ＜MIME Sniffing Standard＞. Living Standard. URL: https://mimesniff.spec.whatwg.org/
 [MIX]
-    Emily Stark; Mike West; Carlos IbarraLopez. ＜Mixed Content Level 2＞. URL: https://w3c.github.io/webappsec-mixed-content/
+    Emily Stark; Mike West; Carlos IbarraLopez. ＜Mixed Content＞. URL: https://w3c.github.io/webappsec-mixed-content/
 [REFERRER]
     Jochen Eisinger; Emily Stark. ＜Referrer Policy＞. URL: https://w3c.github.io/webappsec-referrer-policy/
 [REPORTING]
@@ -2170,7 +2176,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/8659a25e2dcad911a372f74ac70b60607a264e42/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/6f37b51ecf23f974d08578ba07088e3faee634ac/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -3806,7 +3812,7 @@ To normalize a potentialValue, remove any leading and trailing HTTP whitespace b
 <p>
 所与の`~header$ %~header が
 `~CORS安全とされる要請~header@
-かどうか決定するときは、次を走らす：
+であるか否か決定するときは、次を走らす：
 ◎
 To determine whether a header header is a CORS-safelisted request-header, run these steps:
 </p>
@@ -3815,6 +3821,15 @@ To determine whether a header header is a CORS-safelisted request-header, run th
 %値 ~LET %~header の`値$hd
 ◎
 Let value be header’s value.
+</li>
+	<li>
+~IF［
+%値 の`長さ$ ~GT 128
+］
+⇒
+~RET ~F
+◎
+If value’s length is greater than 128, then return false.
 </li>
 	<li>
 <p>
@@ -3914,6 +3929,12 @@ fetch("https://victim.example/naïve-endpoint", {
 
 </div>
 
+<tr><td>`Range$h
+<td>
+%値 は`単純な範囲~header値$でない
+◎
+If value is not a simple range header value, then return false.
+
 <tr><td>その他
 ◎
 Otherwise
@@ -3924,15 +3945,6 @@ Return false.
 </tbody></table>
 
 	</li>
-	<li>
-~IF［
-%値 の`長さ$ ~GT 128
-］
-⇒
-~RET ~F
-◎
-If value’s length is greater than 128, then return false.
-</li>
 	<li>
 ~RET ~T
 ◎
@@ -4389,6 +4401,117 @@ Return values.
 `単数~field$である場合、この手続きを呼出している所では，結果の %値~list は暗黙的に その最初の値と同一視されている。
 】</p>
 
+</div>
+
+<div class="algo">
+<p>
+所与の`~byte列$ %値 が
+`単純な範囲~header値@
+であるか否か決定するときは、
+次の手続きを遂行する
+— これは、`真偽値$を返す：
+◎
+To determine if a byte sequence value is a simple range header value, perform the following steps. They return a boolean.
+</p>
+<ol>
+	<li>
+%~data ~LET `同型に復号する$( %値 )
+◎
+Let data be the isomorphic decoding of value.
+</li>
+	<li>
+~IF［
+%~data は `bytes=^l `から開始して$いない
+］
+⇒
+~RET ~F
+◎
+If data does not start with "bytes=", then return false.
+</li>
+	<li>
+%位置 ~LET %~data 内の 6 番の`文字$を指している`位置~変数$
+◎
+Let position be a position variable for data, initially pointing at the 6th code point of data.
+</li>
+	<li>
+%範囲~始端 ~LET %~data 内の %位置 から`~ASCII数字$からなる`符号位置~並びを収集する$
+◎
+Let rangeStart be the result of collecting a sequence of code points that are ASCII digits, from data given position.
+</li>
+	<li>
+~IF［
+%位置↗ ~NEQ `002D^U `-^smb
+］
+⇒
+~RET ~F
+◎
+If the code point at position within data is not U+002D (-), then return false.
+</li>
+	<li>
+%位置 ~INCBY 1
+◎
+Advance position by 1.
+</li>
+	<li>
+%範囲~終端 ~LET %~data 内の %位置 から`~ASCII数字$からなる`符号位置~並びを収集する$
+◎
+Let rangeEnd be the result of collecting a sequence of code points that are ASCII digits, from data given position.
+</li>
+	<li>
+~IF［
+%位置↗ ~NEQ ε
+］
+⇒
+~RET ~F
+◎
+If position is not past the end of data, then return false.
+</li>
+	<li>
+<p>
+~IF［
+%範囲~終端 の`長さ$str ~EQ 0
+］
+⇒
+~RET ~T
+◎
+If rangeEnd’s length is 0, then return true.
+</p>
+
+<p class="note">注記：
+範囲の終端は省略できる
+— 例： `bytes 0-^bl は妥当になる。
+◎
+The range end can be omitted, e.g., `bytes 0-` is valid.
+</p>
+	</li>
+	<li>
+~IF［
+%範囲~始端 を 10 進数として解釈した結果
+~GT
+%範囲~終端 を 10 進数として解釈した結果
+］
+⇒
+~RET ~F
+◎
+If rangeStart, interpreted as decimal number, is greater than rangeEnd, interpreted as decimal number, then return false.
+</li>
+	<li>
+~RET ~T
+◎
+Return true.
+</li>
+</ol>
+
+<p class="note">注記：
+`単純な範囲~header値$は，
+`Range$h ~headerに許容される値の下位集合を成すが、
+~UAが［
+~mediaを要請する／~downloadを再開する
+］ときに最も共通的に利用される形である。
+この形式による範囲~header値は、`範囲~headerを追加する$を利用して設定できる。
+◎
+A simple range header value is a subset of allowed range header values, but it is the most common form used by user agents when requesting media or resuming downloads. This format of range header value can be set using add a range header.
+</p>
 </div>
 
 <hr>
@@ -5999,9 +6122,19 @@ To add a range header to a request request, with an integer first, and an option
 </p>
 <ol>
 	<li>
-%範囲~値 ~LET `bytes ^bl
+~Assert：
+［
+%末尾 ~EQ ε
+］~OR［
+%先頭 ~LTE %末尾
+］
 ◎
-Let rangeValue be `bytes `.
+Assert: last is not given, or first is less than or equal to last.
+</li>
+	<li>
+%範囲~値 ~LET `bytes=^bl
+◎
+Let rangeValue be `bytes=`.
 </li>
 	<li>
 %範囲~値 に次の結果を付加する
