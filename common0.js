@@ -1268,6 +1268,7 @@ API:
 XML:
 SVG:
 ID:
+	~ID:id
 UTF-8:
 JSON:
 ABNF:
