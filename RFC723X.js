@@ -10,7 +10,7 @@ Util.ready = () => {
 
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
 	repeat('script[src="RFC723X.js"]', (e) => {
-		e.parentNode.removeChild(e);
+		e.remove();
 	});
 };
 

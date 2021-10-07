@@ -17,8 +17,8 @@ HTTP11=副             ~/http-messaging-ja.html
 CACHING=副            ~/http-cache-ja.html
 `
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
-	repeat('script[src="http-common.js"]', function(e){
-		e.parentNode.removeChild(e);
+	repeat('script[src="http-common.js"]', (e) => {
+		e.remove();
 	});
 };
 

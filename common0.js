@@ -244,12 +244,12 @@ Util.dump = (s) => {
 	area.scrollIntoView();
 };
 
-// 訳文消去（ diff 比較用）
+// 訳文消去（原文 diff 比較用）
 Util.del_j = () => {
 	let parent;
 
 	repeat('.trans-note', (e) => {
-		e.parentNode.removeChild(e);
+		e.remove();
 	});
 	repeat('details', (e) => {
 		e.open = true;
@@ -259,7 +259,7 @@ Util.del_j = () => {
 		const p = en.parentNode;
 		if(en.tagName === 'SPAN'){
 			const en1 = C('P');
-			p.insertBefore(en1, en);
+			en.before(en1);
 			en1.appendChild(en);
 			en = en1;
 			if(p === parent){
@@ -268,7 +268,7 @@ Util.del_j = () => {
 			parent = p;
 		}
 		while(p.firstChild !== en) {
-			p.removeChild(p.firstChild);
+			p.firstChild.remove();
 		}
 	});
 	repeat('h2,h3,h4,h5,h6', (e) => {
@@ -348,7 +348,7 @@ Util.setState = (key, val) => {
 		const elem = E('_source_data');
 		if(elem){
 			Object.assign(PAGE_DATA, Util.parseBlocks(elem.textContent));
-			elem.parentNode.removeChild(elem);
+			elem.remove();
 		}
 
 		const options =
@@ -370,7 +370,7 @@ Util.setState = (key, val) => {
 			// ページは展開状態で保存されている
 			PAGE_DATA.options.expanded = true;
 			repeat('._hide_if_expanded', (e) => {
-//				e.parentNode.removeChild(e);
+//				e.remove();
 				e.style.display = 'none';
 			});
 		} else {
@@ -436,7 +436,7 @@ Util.rebuildToc = (main_id, list_id) => {
 	if(toc_list && main) {
 		const new_list = Util.buildTocList(main);
 		new_list.id = list_id;
-		toc_list.parentNode.replaceChild(new_list, toc_list);
+		toc_list.replaceWith(new_list);
 	}
 	return toc_list;
 }
@@ -475,7 +475,7 @@ Util.buildTocList = (root) => {
 	if(toc) { // a 要素の入れ子を除去
 		repeat('a a', (e) => {
 			range.selectNodeContents(e);
-			e.parentNode.replaceChild(range.extractContents(), e);
+			e.replaceWith(range.extractContents());
 		}, toc);
 		repeat('[id]', (e) => { // 重複 id を除去
 			e.removeAttribute('id');
@@ -729,9 +729,9 @@ Util.switchWordsInit = (source_data) => {
 
 		const parent = root.parentNode;
 		if(parent.tagName === 'MAIN'){
-			parent.parentNode.insertBefore(nav, parent);
+			parent.before(nav);
 		} else {
-			parent.insertBefore(nav, root);
+			root.before(nav);
 		}
 	}
 
@@ -754,10 +754,7 @@ Util.switchWordsInit = (source_data) => {
 		let parts = this.persisted_parts;
 		if(parts){
 			for( const id of Object.keys(parts) ){
-				const e = parts[id];
-				if(e.parentNode){
-					e.parentNode.removeChild(e);
-				}
+				parts[id].remove();
 			};
 		}
 
@@ -772,7 +769,7 @@ Util.switchWordsInit = (source_data) => {
 				const part = parts[id];
 				const e = E(id);
 				if(e) {
-					e.parentNode.replaceChild(part, e);
+					e.replaceWith(part);
 				} else {
 					console.log( `replaceParts: place holder not found for id=${id}` );
 				}

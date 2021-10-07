@@ -612,7 +612,7 @@ const altLinkInit = () => {
 		const alt_url = altURL(a.getAttribute('href'));
 		if(!alt_url) return;
 		ja_link.href = alt_url;
-		a.parentNode.insertBefore(ja_link, a.nextSibling);
+		a.after(ja_link);
 	}
 
 	root.addEventListener('mouseover', insert_ja_link, false);
@@ -652,9 +652,7 @@ Util.removeAdditionalNodes = (refresh) => {
 	Util.dfnHide(refresh);
 	Util.indexHide(refresh);
 	for( const node of Util.ADDITIONAL_NODES ){
-		if(node.parentNode){
-			node.parentNode.removeChild(node);
-		}
+		node.remove();
 	}
 };
 
@@ -817,7 +815,7 @@ Util.indexInit = () => {
 			list_box.textContent = '';
 		}
 		if(parent){
-			parent.removeChild(index_node);
+			index_node.remove();
 			return true;
 		}
 	};
@@ -1196,7 +1194,7 @@ Util.dfnInit = () => {
 		dfnLinks = 
 		dfnStart = null;
 		if(dfnPanel.parentNode){
-			dfnPanel.parentNode.removeChild(dfnPanel);
+			dfnPanel.remove();
 		}
 	}
 

@@ -12,8 +12,8 @@ Util.ready = function(){
 	Util.switchWordsInit(source_data);
 
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
-	repeat('script[src="svg-common.js"]', function(e){
-		e.parentNode.removeChild(e);
+	repeat('script[src="svg-common.js"]', (e) => {
+		e.remove();
 	});
 };
 
