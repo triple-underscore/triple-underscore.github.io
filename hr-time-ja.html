@@ -87,8 +87,8 @@ return text;
 
 ●●options
 
-spec_date:2021-06-07
-trans_update:2021-04-01
+spec_date:2021-10-09
+trans_update:2021-10-10
 source_checked:210212
 page_state_key:TIMING
 original_url:https://w3c.github.io/hr-time/
@@ -133,12 +133,17 @@ Replaceable:~WEBIDLjs#Replaceable
 Exposed:~WEBIDLjs#Exposed
 Default:~WEBIDLjs#Default
 
+unsigned long long:~WEBIDL#idl-unsigned-long-long
+double:~WEBIDL#idl-double
+object:~WEBIDL#idl-object
+
 I.DOMHighResTimeStamp:#dom-domhighrestimestamp
 I.Performance:#dom-performance
 I.WindowOrWorkerGlobalScope:~HTMLGAPI#windoworworkerglobalscope
 	#dom-windoworworkerglobalscope-windoworworkerglobalscope
 I.WorkerGlobalScope:~WORKERS#workerglobalscope
 I.DOMTimeStamp:~WEBIDL#DOMTimeStamp
+I.EpochTimeStamp:#dom-epochtimestamp
 
 I.Window:~WINDOW#window
 I.Worker:~WORKERS#worker
@@ -167,6 +172,7 @@ c.Date.now():~TC39#sec-date.now
 共有される単調増加~時計:#dfn-shared-monotonic-clock
 細かさを抑えた共有される現在の時刻:#dfn-coarsened-shared-current-time
 安全でない共有される現在の時刻:#dfn-unsafe-shared-current-time
+~epochに相対的な時刻印:#dfn-epoch-relative-timestamp
 
 	●用語（外部
 実装定義:~INFRA#implementation-defined
@@ -211,10 +217,12 @@ zero::::ゼロ
 高分解能:high resolution::~
 時計:clock::~::クロック
 	従来の時計:time-of-day
+日時:date-time::~
 milli:milli-:::ミリ
 micro:micro-:::マイクロ
 	~milli秒:milliseconds
 	~milli秒数:in milliseconds
+	~milli秒数:the number of milliseconds
 	~milli秒より細かい:sub-millisecond
 	~micro秒:microseconds
 	秒:seconds
@@ -372,13 +380,13 @@ cue:
 [infra]
     Infra Standard. Anne van Kesteren; Domenic Denicola. WHATWG. Living Standard. URL: https://infra.spec.whatwg.org/
 [RFC2119]
-    Key words for use in RFCs to Indicate Requirement Levels. S. Bradner. IETF. March 1997. Best Current Practice. URL: https://tools.ietf.org/html/rfc2119
+    Key words for use in RFCs to Indicate Requirement Levels. S. Bradner. IETF. March 1997. Best Current Practice. URL: https://www.rfc-editor.org/rfc/rfc2119
 [RFC8174]
-    Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words. B. Leiba. IETF. May 2017. Best Current Practice. URL: https://tools.ietf.org/html/rfc8174
+    Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words. B. Leiba. IETF. May 2017. Best Current Practice. URL: https://www.rfc-editor.org/rfc/rfc8174
 [SPECTRE]
     Spectre Attacks: Exploiting Speculative Execution. Paul Kocher; Jann Horn; Anders Fogh; Daniel Genkin; Daniel Gruss; Werner Haas; Mike Hamburg; Moritz Lipp; Stefan Mangard; Thomas Prescher; Michael Schwarz; Yuval Yarom. January 2018. URL: https://spectreattack.com/spectre.pdf
 [WEBIDL]
-    Web IDL. Boris Zbarsky. W3C. 15 December 2016. W3C Editor's Draft. URL: https://heycam.github.io/webidl/
+    Web IDL Standard. Edgar Chen; Timothy Gu. WHATWG. Living Standard. URL: https://webidl.spec.whatwg.org/
 
 ●●ref_informative
 
@@ -574,6 +582,8 @@ This specification does not propose changing the behavior of Date.now() [ECMA-26
 ~privacyと~securityの理由から，実装は、自身が公開する~timerの分解能を制限して，~milli秒より細かい~timerは公開しないことにしてもヨイ。
 それが起きた下では、~milli秒より細かい分解能に依拠する利用事例は，満足されないであろう。
 ◎
+Note
+
 Providing sub-millisecond resolution is not a mandatory part of this specification. Implementations may choose to limit the timer resolution they expose for privacy and security reasons, and not expose sub-millisecond timers. Use-cases that rely on sub-millisecond resolution may not be satisfied when that happens.
 </p>
 
@@ -857,7 +867,9 @@ Return the result of calling coarsen time with total and global's relevant setti
 — <a href="#sec-monotonic-clock">§ 単調増加~時計</a>
 を見よ。
 ◎
-The value returned by get time origin timestamp is the high resolution time value at which time origin is zero. It may differ from the value returned by Date.now() executed at "zero time", because the former is recorded with respect to a shared monotonic clock that is not subject to system and user clock adjustments, clock skew, and so on — see § 6. Monotonic Clock.
+Note
+
+The value returned by get time origin timestamp is the high resolution time value at which time origin is zero. It may differ from the value returned by Date.now() executed at "zero time", because the former is recorded with respect to a shared monotonic clock that is not subject to system and user clock adjustments, clock skew, and so on — see § 7 Monotonic Clock.
 </p>
 </div>
 
@@ -958,13 +970,56 @@ The coarsened shared current time given an optional boolean crossOriginIsolatedC
 The unsafe shared current time must return the current value of the shared monotonic clock.
 </div>
 
+<div class="algo">
+<p>
+`~epochに相対的な時刻印@
+は、所与の
+( 日時 %時刻 （省略時は現在の時刻） )
+に対し：
+◎
+To get an epoch-relative timestamp, optionally with a date-time time:
+• If time was not passed, set time to the current time.
+</p>
+<ol>
+	<li>
+%~epoch ~LET 1 `January 1970 00:00:00 UTC^ 【 1970 年 1 月 1 日】
+◎
+↓</li>
+	<li>
+~Assert：
+%時刻 ~GTE %~epoch
+【 “%時刻 は %~epoch より過去でない” 】
+◎
+Assert: time is greater than or equal to 1 January 1970 00:00:00 UTC.
+</li>
+	<li>
+~RET %~epoch から %時刻 までの~milli秒数
+◎
+Return the number of milliseconds from 1 January 1970 00:00:00 UTC to time.
+</li>
+</ol>
+
+<p class="trans-note">【
+この~algoは抽象的な記述を含んでいるが
+（例：
+%時刻 の型を指示する “日時（ `date-time^en ）” とは何か？ ／
+“〜までの~milli秒数” に閏秒は含まれるのか？）、
+いずれにせよ，結果は負でない整数になる。
+これらの仔細は、この~algoを利用する個別の仕様に委ねられよう
+（<a href="#the-epochtimestamp-typedef">§ `EpochTimeStamp^I ~typedef</a>を見よ）
+— 多くの場合、~JS `Date$c に整合するように定義される
+（例： “現在の時刻” は `Date.now()$c に一致する）
+と思われるが。
+】</p>
+</div>
+
 	</section>
 	<section id="sec-domhighrestimestamp">
 <h2 title="The DOMHighResTimeStamp typedef">3. `DOMHighResTimeStamp^I ~typedef</h2>
 
 <div class="p">
 <p>
-`DOMHighResTimeStamp@I
+`DOMHighResTimeStamp$I
 型は、次のいずれかを表現する，~milli秒数による値を格納するために利用される：
 </p>
 
@@ -977,7 +1032,7 @@ The DOMHighResTimeStamp type is used to store a time value in milliseconds, meas
 </div>
 
 <pre class="idl">
-typedef double `DOMHighResTimeStamp$I;
+typedef `double$ `DOMHighResTimeStamp@I;
 </pre>
 
 <p id="desired-resolution">
@@ -988,19 +1043,53 @@ typedef double `DOMHighResTimeStamp$I;
 <a href="#clock-resolution">§ 時計の分解能</a>
 を見よ。
 ◎
-A DOMHighResTimeStamp SHOULD represent a time in milliseconds accurate enough to allow measurement while preventing timing attacks - see § 7.1 Clock resolution for additional considerations.
+A DOMHighResTimeStamp SHOULD represent a time in milliseconds accurate enough to allow measurement while preventing timing attacks - see § 8.1 Clock resolution for additional considerations.
+</p>
+
+	</section>
+	<section id="the-epochtimestamp-typedef">
+<h2 title="The EpochTimeStamp typedef">4. `EpochTimeStamp^I ~typedef</h2>
+
+<pre class="idl">
+typedef `unsigned long long$ `EpochTimeStamp@I;
+</pre>
+
+<p class="note">注記：
+`EpochTimeStamp$I は、
+旧来の~platform特能であり，以前まで `DOMTimeStamp$I として知られていた。
+`EpochTimeStamp^I の利用は、忌避される
+— アリなときは、代わりに `DOMHighResTimeStamp$I を利用すること。
+◎
+Note: Legacy platform feature
+
+The use of EpochTimeStamp, known previously as DOMTimeStamp, is discouraged. Wherever possible use DOMHighResTimeStamp instead.
+</p>
+
+<p>
+`EpochTimeStamp$I は、
+`01 January, 1970 00:00:00 UTC^ から
+所与の時刻まで~~経過した~milli秒数を表現する。
+この~milli秒数がどう解釈されるかは、
+この型を利用する仕様が定義することになる。
+`EpochTimeStamp$I は、
+`~epochに相対的な時刻印$を引数を伴わずに~callすることにより初期化され，
+既定では現在の時刻になる。
+異なる相対的な時刻を要求する仕様は、
+必要なら，引数に日時を伴わせて`~epochに相対的な時刻印$を~callできる。
+◎
+A EpochTimeStamp represents the number of milliseconds from a given time to 01 January, 1970 00:00:00 UTC. Specifications that use this type define how the number of milliseconds are interpreted. An EpochTimeStamp is initialized by calling epoch-relative timestamp with no arguments, which defaults to the current time. Specifications that require a different relative time can call epoch-relative timestamp with a date-time as an argument, if needed.
 </p>
 
 	</section>
 	<section id="sec-performance">
-<h2 title="The Performance interface">4. `Performance^I ~interface</h2>
+<h2 title="The Performance interface">5. `Performance^I ~interface</h2>
 
 <pre class="idl">
 [`Exposed$=(Window,Worker)]
 interface `Performance@I : `EventTarget$I {
     `DOMHighResTimeStamp$I `now()$m;
     readonly attribute `DOMHighResTimeStamp$I `timeOrigin$m;
-    [`Default$] object `toJSON()$m;
+    [`Default$] `object$ `toJSON()$m;
 };
 </pre>
 
@@ -1010,7 +1099,7 @@ interface `Performance@I : `EventTarget$I {
 `basic.any$test
 `basic.any.worker$test
 ◎
-4.1 now() method
+§ 5.1 now() method
 ◎
 The now() method MUST return the current high resolution time.
 </div>
@@ -1023,7 +1112,7 @@ The now() method MUST return the current high resolution time.
 `timeOrigin$test
 `window-worker-timeOrigin.window$test
 ◎
-4.2 timeOrigin attribute
+§ 5.2 timeOrigin attribute
 ◎
 The timeOrigin attribute MUST return the value returned by get time origin timestamp for the relevant global object of this.
 </div>
@@ -1033,14 +1122,14 @@ The timeOrigin attribute MUST return the value returned by get time origin times
 ~method~手続きは、`既定の~toJSON手続き$ `WEBIDL$r で与えられる。
 `performance-tojson$test
 ◎
-4.3 toJSON() method
+§ 5.3 toJSON() method
 ◎
 When toJSON() is called, run [WEBIDL]'s default toJSON steps.
 </div>
 
 	</section>
 	<section id="extensions-to-windoworworkerglobalscope-mixin">
-<h2 title="Extensions to WindowOrWorkerGlobalScope mixin">5. `WindowOrWorkerGlobalScope^I ~mixinに対する拡張</h2>
+<h2 title="Extensions to WindowOrWorkerGlobalScope mixin">6. `WindowOrWorkerGlobalScope^I ~mixinに対する拡張</h2>
 
 <p id="the-performance-attribute">
 `WindowOrWorkerGlobalScope$I の
@@ -1062,7 +1151,7 @@ partial interface mixin `WindowOrWorkerGlobalScope$I {
 
 	</section>
 	<section id="sec-monotonic-clock">
-<h2 title="Monotonic Clock">6. 単調増加~時計</h2>
+<h2 title="Monotonic Clock">7. 単調増加~時計</h2>
 
 <div class="p">
 <p>
@@ -1113,7 +1202,7 @@ The time values returned when calling the now() method on Performance objects wi
 】</p>
 
 ◎
-The time values returned when getting Performance.timeOrigin MUST use the same shared monotonic clock that is shared by time origins, is monotonically increasing and not subject to system clock adjustments or system clock skew, and whose reference point is the [ECMA-262] time definition - see § 7. Privacy and Security.
+The time values returned when getting Performance.timeOrigin MUST use the same shared monotonic clock that is shared by time origins, is monotonically increasing and not subject to system clock adjustments or system clock skew, and whose reference point is the [ECMA-262] time definition - see § 8. Privacy and Security.
 </div>
 
 <p class="note">注記：
@@ -1131,6 +1220,8 @@ The time values returned when getting Performance.timeOrigin MUST use the same s
 を介して~messageを交換することにより，互いに他へ到達できるような文脈
 ］に限られる。
 ◎
+Note
+
 The user agent can reset its shared monotonic clock across browser restarts, or whenever starting an isolated browsing session—e.g. incognito or similar browsing mode. As a result, developers should not use shared timestamps as absolute time that holds its monotonic properties across all past, present, and future contexts; in practice, the monotonic properties only apply for contexts that can reach each other by exchanging messages via one of the provided messaging mechanisms - e.g. postMessage, BroadcastChannel, etc.
 </p>
 
@@ -1140,15 +1231,17 @@ The user agent can reset its shared monotonic clock across browser restarts, or 
 ］ことにする，あるいは まるごと凍結することさえあろう。
 そのようにしたときでも、単調増加~時計が返す時刻の分解能や正確aさには影響するベキでない。
 ◎
+Note
+
 In certain scenarios (e.g. when a tab is backgrounded), the user agent may choose to throttle timers and periodic callbacks run in that context or even freeze them entirely. Any such throttling should not affect the resolution or accuracy of the time returned by the monotonic clock.
 </p>
 
 	</section>
 	<section id="sec-privacy-security">
-<h2 title="Privacy and Security">7. ~privacyと~security</h2>
+<h2 title="Privacy and Security">8. ~privacyと~security</h2>
 
 		<section id="clock-resolution">
-<h3 title="Clock resolution">7.1. 時計の分解能</h3>
+<h3 title="Clock resolution">8.1. 時計の分解能</h3>
 
 <p>
 正確aな計時~情報への~accessは、測定と~schedule法の両~目的において，多くの~appに共通な要件である。
@@ -1254,12 +1347,14 @@ Mitigating such timing side-channel attacks entirely is practically impossible: 
 <a href="https://github.com/w3c/hr-time/issues/79">課題 #79</a>
 にて，論点を追跡できる。
 ◎
+Note
+
 Clock resolution is an unsolved and evolving area of research, with no existing industry consensus or definitive set of recommendations that applies to all browsers. To track the discussion, refer to Issue 79.
 </p>
 
 		</section>
 		<section id="clock-drift">
-<h3 title="Clock drift">7.2. 時計の~drift</h3>
+<h3 title="Clock drift">8.2. 時計の~drift</h3>
 
 <p>
 この仕様は、［
