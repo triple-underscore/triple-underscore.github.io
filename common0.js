@@ -46,6 +46,7 @@ tag_map: tag 名 対応表
 link_map: リンク先 対応表
 abbr_url: ページ URL 略称コード（ "INFRA" 等）
 html_code_list: HTML 例示コード
+images: 画像データ
 */
 
 // see common1.js for possible members
@@ -213,18 +214,46 @@ Util.get_header = (section) => {
 
 Util.collectParts = (parts) => {
 	// 既定の収集器
-	let container = E('_persisted_parts');
-	if(!container) return;
-	if(container.tagName === 'TEMPLATE'){
-		container = container.content;
-	}
-	Array.from(container.children).forEach( e => {
-		const id = e.getAttribute('aria-describedby') || e.id;
-		// aria-describedby 用の id は 1 個だけが前提
-		if(id){
-			parts[id] = e;
+
+	if(PAGE_DATA.images){
+		// 画像データから img を生成
+		const data = PAGE_DATA.images.replace(/＼\n/g, ''); // 行継続
+		const rxp = /\n([\w\-]+)｜(.*?)｜(.*?)｜(.+)/g;
+		// 形式： key｜style｜alt｜src
+		// 例：foo｜height:10rem｜fooのデモ｜images/foo.png
+		let m;
+		while(m = rxp.exec(data)){
+			const id = `_dgm-${m[1]}`; // 常に _dgm- を接頭
+			const style = m[2];
+			const alt = m[3];
+			const src = m[4];
+
+			const img = C('img');
+			img.loading = 'lazy'; // 常に lazy
+			img.src = src;
+			if(style){
+				img.setAttribute('style', style);
+			}
+			if(alt){
+				img.alt = alt;
+			} else {
+				// 代替テキストは img の外（直後）
+				img.setAttribute('aria-describedby', id);
+			}
+			parts[id] = img;
 		}
-	});
+	}
+
+	const container = E('_persisted_parts');
+	if(container && (container.tagName === 'TEMPLATE')){
+		Array.from(container.content.children).forEach( e => {
+			const id = e.getAttribute('aria-describedby') || e.id;
+			// aria-describedby 用の id は 1 個だけが前提
+			if(id){
+				parts[id] = e;
+			}
+		});
+	}
 };
 
 Util.dump = (s) => {
