@@ -152,11 +152,13 @@ const initEvents = () => {
 			for(let e = target; e; e = e.parentNode){
 				switch(e.tagName){
 				case 'BODY':
-					// 両端 click でも原文開閉
-					const e1 = document.elementFromPoint(
-						window.innerWidth /2, event.clientY);
-					if(e1){
-						Util.toggleSource(e1);
+					{
+						// 両端 click でも原文開閉
+						const e1 = document.elementFromPoint(
+							window.innerWidth /2, event.clientY);
+						if(e1){
+							Util.toggleSource(e1);
+						}
 					}
 					break;
 				case 'SECTION':
@@ -166,6 +168,15 @@ const initEvents = () => {
 				case 'UL':
 				case 'OL':
 				case 'NAV':
+					break;
+				case 'IMG':
+					{
+						// 外部代替テキストを表示（TODO: img 以外にも適用する
+						const e1 = e.nextElementSibling;
+						if(e1 && (e1.classList.contains('alt'))){
+							e1.hidden = !e1.hidden;
+						}
+					}
 					break;
 				case 'A':
 					if(e.href) break;

@@ -219,8 +219,10 @@ Util.collectParts = (parts) => {
 		container = container.content;
 	}
 	Array.from(container.children).forEach( e => {
-		if(e.id){
-			parts[e.id] = e;
+		const id = e.getAttribute('aria-describedby') || e.id;
+		// aria-describedby 用の id は 1 個だけが前提
+		if(id){
+			parts[id] = e;
 		}
 	});
 };
@@ -253,6 +255,9 @@ Util.del_j = () => {
 	});
 	repeat('details', (e) => {
 		e.open = true;
+	});
+	repeat('.alt', (e) => {
+		e.hidden = false;
 	});
 
 	repeat('._en', (en) => {
@@ -769,9 +774,13 @@ Util.switchWordsInit = (source_data) => {
 				const part = parts[id];
 				const e = E(id);
 				if(e) {
-					e.replaceWith(part);
+					if(part.hasAttribute('aria-describedby')){
+						e.before(part); // e の内容は代替テキスト
+					} else {
+						e.replaceWith(part); // e は placeholder
+					}
 				} else {
-					console.log( `replaceParts: place holder not found for id=${id}` );
+					console.log( `replaceParts: placeholder not found for id=${id}` );
 				}
 			}
 		}
