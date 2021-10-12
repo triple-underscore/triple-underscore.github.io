@@ -217,20 +217,21 @@ Util.collectParts = (parts) => {
 
 	if(PAGE_DATA.images){
 		// 画像データから img を生成
+		let image_path = '';
 		const data = PAGE_DATA.images.replace(/＼\n/g, ''); // 行継続
-		const rxp = /\n([\w\-]+)｜(.*?)｜(.*?)｜(.+)/g;
-		// 形式： key｜style｜alt｜src
-		// 例：foo｜height:10rem｜fooのデモ｜images/foo.png
-		let m;
-		while(m = rxp.exec(data)){
-			const id = `_dgm-${m[1]}`; // 常に _dgm- を接頭
-			const style = m[2];
-			const alt = m[3];
-			const src = m[4];
+		data.split('\n').forEach( (line) => {
+			if(line[0] === '＠'){
+				image_path = line.slice(1); // 例： images/
+				return;
+			}
+			const [id, style, alt, src] = line.split('｜');
+			// 例：foo｜height:10rem｜fooのデモ｜foo.png
+			if(!src) return;
+			if(! /^[\w\-\.]+$/.test(id)) return;
 
 			const img = C('img');
 			img.loading = 'lazy'; // 常に lazy
-			img.src = src;
+			img.src = `${image_path}${src}`;
 			if(style){
 				img.setAttribute('style', style);
 			}
@@ -240,8 +241,8 @@ Util.collectParts = (parts) => {
 				// 代替テキストは img の外（直後）
 				img.setAttribute('aria-describedby', id);
 			}
-			parts[id] = img;
-		}
+			parts[`_dgm-${id}`] = img; // 常に _dgm- を接頭
+		});
 	}
 
 	const container = E('_persisted_parts');

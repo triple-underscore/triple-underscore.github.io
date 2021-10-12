@@ -23,7 +23,6 @@ ref_informative:
 ref_key_map:
 ref_data:
 	参照文献追加リンク用（ REF_DATA
-
 link_map:#
 words_table:#
 words_table1:#
@@ -946,6 +945,7 @@ Util.ref_position = {
 			while(
 				(!e.id && e.offsetParent )
 				|| (e.offsetHeight === 0 ) /* 例：tbody */
+				|| (e.classList.contains('alt')) /* 代替テキスト（既定で隠される） */
 			){
 				e = e.parentNode;
 			}
