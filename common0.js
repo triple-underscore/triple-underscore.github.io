@@ -221,13 +221,14 @@ Util.collectParts = (parts) => {
 		const data = PAGE_DATA.images.replace(/＼\n/g, ''); // 行継続
 		data.split('\n').forEach( (line) => {
 			if(line[0] === '＠'){
-				image_path = line.slice(1); // 例： images/
+				image_path = line.slice(1); // 例： '＠images/'
 				return;
 			}
-			const [id, style, alt, src] = line.split('｜');
+			let [id, style, alt, src] = line.split('｜');
 			// 例：foo｜height:10rem｜fooのデモ｜foo.png
 			if(!src) return;
 			if(! /^[\w\-\.]+$/.test(id)) return;
+			id = `_dgm-${id}`; // 常に _dgm- を接頭
 
 			const img = C('img');
 			img.loading = 'lazy'; // 常に lazy
@@ -235,13 +236,20 @@ Util.collectParts = (parts) => {
 			if(style){
 				img.setAttribute('style', style);
 			}
+			let is_ext = (alt === '');
+			if(alt[0] === '＝'){
+				// 代替テキストの内容は本文と重複
+				is_ext = true;
+				alt = alt.slice(1);
+			}
 			if(alt){
 				img.alt = alt;
-			} else {
+			}
+			if(is_ext){
 				// 代替テキストは img の外（直後）
 				img.setAttribute('aria-describedby', id);
 			}
-			parts[`_dgm-${id}`] = img; // 常に _dgm- を接頭
+			parts[id] = img;
 		});
 	}
 
