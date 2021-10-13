@@ -228,6 +228,9 @@ Util.collectParts = (parts) => {
 			// 例：foo｜height:10rem｜fooのデモ｜foo.png
 			if(!src) return;
 			if(! /^[\w\-\.]+$/.test(id)) return;
+			if(src[0] === '.'){
+				src = id + src; // src は拡張子のみ
+			}
 			id = `_dgm-${id}`; // 常に _dgm- を接頭
 
 			const img = C('img');
@@ -243,7 +246,7 @@ Util.collectParts = (parts) => {
 				alt = alt.slice(1);
 			}
 			if(alt){
-				img.alt = alt;
+				img.alt = (alt === '＋')? '' : alt; // '＋' は明示的な空文字列
 			}
 			if(is_ext){
 				// 代替テキストは img の外（直後）
