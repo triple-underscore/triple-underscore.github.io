@@ -154,8 +154,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2021-09-07
-trans_update:2021-09-08
+spec_date:2021-10-12
+trans_update:2021-10-13
 source_checked:210331
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -1753,8 +1753,8 @@ template::::テンプレート
     ＜IEEE Standard for Floating-Point Arithmetic＞. 29 August 2008. URL: http://ieeexplore.ieee.org/servlet/opac?punumber=4610933
 [INFRA]
     Anne van Kesteren; Domenic Denicola. ＜Infra Standard＞. Living Standard. URL: https://infra.spec.whatwg.org/
-[WebIDL]
-    Boris Zbarsky. ＜Web IDL＞. URL: https://heycam.github.io/webidl/
+[WEBIDL]
+    Edgar Chen; Timothy Gu. ＜Web IDL Standard＞. Living Standard. URL: https://webidl.spec.whatwg.org/
 
 ●●ref_informative
 
@@ -1782,7 +1782,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/8bbfbf83ad06a8b9224bbe1cfbcbbbdbdd827a19" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/02de71a67fbc6babd022f066529eae2843636b5f" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -10665,7 +10665,7 @@ Return.
 	<li>
 <p>
 ~IF［
-%controller.`pendingPullIntos$rbsC は空でない
+%controller.`pendingPullIntos$rbsC は`空$でない
 ］：
 ◎
 If controller.[[pendingPullIntos]] is not empty,
@@ -10913,10 +10913,7 @@ If controller.[[pendingPullIntos]] is not empty,
 </p>
 		<ol>
 			<li>
-%firstPendingPullInto ~LET
-
-%controller.`pendingPullIntos$rbsC
-[0]。
+%firstPendingPullInto ~LET %controller.`pendingPullIntos$rbsC[0]
 ◎
 Let firstPendingPullInto be controller.[[pendingPullIntos]][0].
 </li>
@@ -10961,6 +10958,12 @@ If ! ReadableStreamGetNumReadRequests(stream) is 0,
 </p>
 				<ol>
 					<li>
+~Assert：
+%controller.`pendingPullIntos$rbsC は`空$である
+◎
+Assert: controller.[[pendingPullIntos]] is empty.
+</li>
+					<li>
 ~NOABRUPT `ReadableByteStreamControllerEnqueueChunkToQueue$A( %controller, %transferredBuffer, %byteOffset, %byteLength )
 ◎
 Perform ! ReadableByteStreamControllerEnqueueChunkToQueue(controller, transferredBuffer, byteOffset, byteLength).
@@ -10980,6 +10983,28 @@ Otherwise,
 ◎
 Assert: controller.[[queue]] is empty.
 </li>
+					<li>
+<p>
+~IF［
+%controller.`pendingPullIntos$rbsC は`空$でない
+］：
+◎
+If controller.[[pendingPullIntos]] is not empty,
+</p>
+						<ol>
+							<li>
+~Assert：
+%controller.`pendingPullIntos$rbsC[0] の`読取器~型$pD ~EQ `default^l
+◎
+Assert: controller.[[pendingPullIntos]][0]'s reader type is "default".
+</li>
+							<li>
+~NOABRUPT `ReadableByteStreamControllerShiftPendingPullInto$A( %controller )
+◎
+Perform ! ReadableByteStreamControllerShiftPendingPullInto(controller).
+</li>
+						</ol>
+					</li>
 					<li>
 %transferredView ~LET
 ~NOABRUPT `Construct$Ax( `Uint8Array$jI, « %transferredBuffer, %byteOffset, %byteLength » )
@@ -12260,15 +12285,20 @@ If firstDescriptor’s buffer byte length is not view.[[ViewedArrayBuffer]].[[By
 If firstDescriptor’s bytes filled + view.[[ByteLength]] &gt; firstDescriptor’s byte length, throw a RangeError exception.
 </li>
 	<li>
+%viewByteLength ~LET %view.`ByteLength^sl
+◎
+Let viewByteLength be view.[[ByteLength]].
+</li>
+	<li>
 %firstDescriptor の`~buffer$pD ~SET
 ~ABRUPT `TransferArrayBuffer$A( %view.`ViewedArrayBuffer^sl )
 ◎
 Set firstDescriptor’s buffer to ? TransferArrayBuffer(view.[[ViewedArrayBuffer]]).
 </li>
 	<li>
-~ABRUPT `ReadableByteStreamControllerRespondInternal$A( %controller, %view.`ByteLength^sl )
+~ABRUPT `ReadableByteStreamControllerRespondInternal$A( %controller, %viewByteLength )
 ◎
-Perform ? ReadableByteStreamControllerRespondInternal(controller, view.[[ByteLength]]).
+Perform ? ReadableByteStreamControllerRespondInternal(controller, viewByteLength).
 </li>
 </ol>
 </div>
@@ -22894,7 +22924,8 @@ function makeUDPSocketStream(%host, %port) {
       function readRepeatedly() {
         return %socket.select2().then(() =&gt; {
           /* <span class="comment">
-処理待ち~BYOB要請（ `byobRequest$rbsc ）がないときでも， %socket は読取n可能になり得るので、
+処理待ち~BYOB要請（ `byobRequest$rbsc ）がないときでも，
+%socket は読取n可能になり得るので、
 両~事例とも取扱う必要がある。
 ◎
 Since the socket can become readable even when there’s no pending BYOB requests, we need to handle both cases.
@@ -22903,15 +22934,21 @@ Since the socket can become readable even when there’s no pending BYOB request
           if (%controller.byobRequest) {
             const %v = %controller.byobRequest.view;
             %bytesRead = %socket.readInto(%v.buffer, %v.byteOffset, %v.byteLength);
+            if (%bytesRead === 0) {
+              %controller.close();
+            }
             %controller.byobRequest.respond(%bytesRead);
           } else {
             const %buffer = new ArrayBuffer(%DEFAULT_CHUNK_SIZE);
             %bytesRead = %socket.readInto(%buffer, 0, %DEFAULT_CHUNK_SIZE);
-            %controller.enqueue(new Uint8Array(%buffer, 0, %bytesRead));
+            if (%bytesRead === 0) {
+              %controller.close();
+            } else {
+              %controller.enqueue(new Uint8Array(%buffer, 0, %bytesRead));
+            }
           }
 
           if (%bytesRead === 0) {
-            %controller.close();
             return;
           }
 
@@ -23037,6 +23074,7 @@ Even when the consumer is using the default reader, the auto-allocation feature 
       if (%bytesRead === 0) {
         await %fileHandle.close();
         %controller.close();
+        %controller.byobRequest.respond(0);
       } else {
         %position += %bytesRead;
         %controller.byobRequest.respond(%bytesRead);
