@@ -228,14 +228,20 @@ Util.collectParts = (parts) => {
 			// 例：foo｜height:10rem｜fooのデモ｜foo.png
 			if(!src) return;
 			if(! /^[\w\-\.]+$/.test(id)) return;
-			if(src[0] === '.'){
-				src = id + src; // src は拡張子のみ
+			if(src.startsWith('data:image/')){
+				// data URL
+			} else {
+				if(src[0] === '.'){
+					// src は拡張子のみ
+					src = id + src;
+				}
+				src = `${image_path}${src}`;
 			}
 			id = `_dgm-${id}`; // 常に _dgm- を接頭
 
 			const img = C('img');
 			img.loading = 'lazy'; // 常に lazy
-			img.src = `${image_path}${src}`;
+			img.src = src;
 			if(style){
 				img.setAttribute('style', style);
 			}
