@@ -169,8 +169,9 @@ const initEvents = () => {
 				case 'NAV':
 					break;
 				case 'IMG':
+				case 'X-DIAGRAM': // 画像等を表現する汎用の図式コンテナ
 					{
-						// 外部代替テキストを表示（TODO: img 以外にも適用する
+						// 外部代替テキストを表示
 						const e1 = e.nextElementSibling;
 						if(e1 && (e1.classList.contains('alt'))){
 							e1.hidden = !e1.hidden;
