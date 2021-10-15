@@ -2,7 +2,7 @@
 
 const source_data = {
 	toc_main: 'MAIN',
-	collectParts: Util.collectParts,
+	persisted_parts: Object.create(null),
 	init: EMPTY_FUNC,
 };
 
