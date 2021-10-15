@@ -77,7 +77,8 @@ const Util = {
 	replaceWords1: EMPTY_FUNC,
 	rxp_wordsX: null,
 	rxp_words1: null,
-	collectParts: EMPTY_FUNC,
+	collectParts: EMPTY_FUNC, // 今や無用
+	collectDeclaredParts: EMPTY_FUNC,
 	replaceParts: EMPTY_FUNC,
 	collectHtmlCodeList: EMPTY_FUNC,
 
@@ -212,7 +213,7 @@ Util.get_header = (section) => {
 };
 
 
-Util.collectParts = (parts) => {
+Util.collectDeclaredParts = (parts) => {
 	// 既定の収集器
 
 	if(PAGE_DATA.images){
@@ -643,7 +644,7 @@ source_data メンバ：
 .generate(): ページが定義する .html 生成関数
 .populate(): DOM 構築後に呼ばれる
 .persisted_parts: HTML 再生成（用語切り替え）時にも DOM に保たれる部品
-.collectParts(): persisted_parts 生成用
+.collectParts(): JS による persisted_parts 生成用
 .switchWords: HTML 生成処理の本体
 .en_text_list: 原文データ／静的置換データ
 .level: 用語切り替えレベル
@@ -656,6 +657,9 @@ source_data メンバ：
 
 Util.switchWordsInit = (source_data) => {
 	source_data = source_data || {};
+	if(!source_data.persisted_parts){
+		source_data.persisted_parts = Object.create(null);
+	}
 	const main_id =
 	PAGE_DATA.options.main_id =
 	source_data.main_id = source_data.main_id || 'MAIN';
@@ -804,41 +808,36 @@ Util.switchWordsInit = (source_data) => {
 		}
 
 		let parts = this.persisted_parts;
-		if(parts){
-			for( const id of Object.keys(parts) ){
-				parts[id].remove();
-			};
-		}
+		for( const id of Object.keys(parts) ){
+			parts[id].remove();
+		};
 
 		generateHTML(mapping);
 		if( source_data.populate ){
 			source_data.populate();
 		}
 
-		parts = this.persisted_parts;
-		if(parts){
-			for( const id of Object.keys(parts) ){
-				const part = parts[id];
-				const e = E(id);
-				if(e) {
-					if(part.hasAttribute('aria-describedby')){
-						e.before(part); // e の内容は代替テキスト
-					} else {
-						e.replaceWith(part); // e は placeholder
-					}
+		parts = this.persisted_parts;/// 
+		for( const id of Object.keys(parts) ){
+			const part = parts[id];
+			const e = E(id);
+			if(e) {
+				if(part.hasAttribute('aria-describedby')){
+					e.before(part); // e の内容は代替テキスト
 				} else {
-					console.log( `replaceParts: placeholder not found for id=${id}` );
+					e.replaceWith(part); // e は placeholder
 				}
+			} else {
+				console.log( `replaceParts: placeholder not found for id=${id}` );
 			}
 		}
 		createToc(this.toc_main);
 		this.level = level;
 	}
 
+	Util.collectDeclaredParts(source_data.persisted_parts);
 	if(source_data.collectParts){
-		const parts = source_data.persisted_parts || Object.create(null);
-		source_data.collectParts(parts);
-		source_data.persisted_parts = parts;
+		source_data.collectParts(source_data.persisted_parts);
 	}
 
 	// 語彙レベルを初期化
