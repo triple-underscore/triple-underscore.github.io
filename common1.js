@@ -1823,6 +1823,7 @@ RFC7233=副            ~/http-semantics2-ja.html#range.requests●日本語訳�
 RFC7234=副            ~/http-cache-ja.html●日本語訳（改訂中）
 RFC7235=副            ~/http-semantics2-ja.html#authentication●日本語訳（改訂中）
 RFC7301=副            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
+RFC8259=副            ＃www.asahi-net.or.jp/~ax2s-kmtn/internet/rfc8259j.html
 RFC8941=副            ~/http-header-structure-ja.html
 RFC8942=副            ~/http-client-hints-ja.html
 SELECTORS4=副         ~/selectors4-ja.html
@@ -1951,6 +1952,7 @@ CSS3VAL:CSSVALUES3
 CSS3WRITINGMODES:CSSWRITINGMODES3
 CSSOM:CSSOM1
 CSSOMVIEW:CSSOMVIEW1
+JSON:RFC8259
 MEDIAQ:MEDIAQUERIES4
 MEDIAQUERIES:MEDIAQUERIES4
 MIX:MIXEDCONTENT
