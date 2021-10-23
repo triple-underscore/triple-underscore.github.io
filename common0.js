@@ -1614,20 +1614,17 @@ risk::::リスク
 指定通り:as specified:指定どおり
 未指定:unspecified:~
 	指定されない:unspecified
-特定に:specificに:特定的に
-特定な:specificな:特定的な
-特定の:specificな:~
-特定的な:specificalな:~
-特定的に:specificalに:特に
-特定的には:specificalには:具体的には
+指定子:specifier:~
 特有:specific:~
 	に特有:-specific
-指定子:specifier:~
-
+特定の:specificな:~
+特定な:specificな:特定的な
+特定に:specificに:特定的に
+特定的に:specificalに:特に
+特定的には:specificalには:具体的には
 特別:special:~
-特化-:specialize:~
 特殊:special:~
-
+特化-:specialize:~
 指示-:indicate:~
 指示:indication:~
 指示子:indicator:~
