@@ -832,7 +832,6 @@ HTTP11:HTTP/1.1
 
 Cookie:
 DoS:denial-of-service:DoS
-IANA:
 Internet:
 TCP:
 TLS:
@@ -892,7 +891,6 @@ minor::::副:マイナー
 別個:distinct:~
 
 	●仕様
-RFC:
 framework::::フレームワーク
 proprietary::::プロプライエタリ
 十分:enough:~

@@ -1306,9 +1306,6 @@ COMMON_DATA.words_table = `
 
 ●略語
 UA:user agent:UA
-WG:
-	WG:Working Group／:the working group／:working group
-	~CSS~WG:CSSWG
 Web:
 web:
 JS:JavaScript
@@ -1330,6 +1327,12 @@ HTTPS:
 MIME:
 Unicode:
 OS:operating system:OS
+W3C:
+IANA:
+RFC:
+WG:
+	WG:Working Group／:the working group／:working group
+	~CSS~WG:CSSWG
 
 ●指示語
 特定0の:particular:ある特定の

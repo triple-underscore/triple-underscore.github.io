@@ -874,7 +874,6 @@ COMMON_DATA.words_table += `
 	HTTP1x:
 Cookie:
 DoS:denial-of-service:DoS
-IANA:
 Internet:
 TCP:
 TLS:
