@@ -38,8 +38,16 @@ if(!indicator) {//%
 	return `<var>${match.slice(1)}</var>`;
 }
 
-let text = key;
 let href = '';
+let href1 = '';
+{
+	const n = key.indexOf('＠');
+	if(n > 0) {
+		href1 = key.slice(n + 1);
+		key = key.slice(0, n);
+	}
+}
+let text = key;
 let classname = class_map[klass] || '';
 
 switch(klass){
@@ -82,10 +90,6 @@ case 'issue':
 	text = `課題 #${key}`;
 	href = `~SVGissue/${key}`;
 	break;
-case 'refer':
-	text = '~~参照先';
-	href = key;
-	break;
 case 'I0':
 	context_ifc0 = `#__svg__${key}__`;
 	klass = 'I';
@@ -127,7 +131,7 @@ if(tag) {
 }
 
 if(indicator !== '^'){
-	href = link_map[ klass ? `${klass}.${key}` : key ] || href;
+	href = href1 || link_map[ klass ? `${klass}.${key}` : key ] || href;
 	if(!href){
 		console.log(match); // check error
 		return match;
@@ -924,9 +928,6 @@ WOFF:
 OpenType:
 JPEG:
 PNG:
-	~fetch法:fetching
-linking::::リンク法
-	navigate法:navigating
 遠隔:remote::~::リモート
 multimedia::::マルチメディア
 
