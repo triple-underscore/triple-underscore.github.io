@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-11-01
-trans_update:2021-10-26
+spec_date:2021-11-03
+trans_update:2021-11-05
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -243,6 +243,7 @@ cn:span
 jv:code
 cite:cite
 em:em
+sub:sub
 
 ●●original_id_map
 
@@ -779,6 +780,8 @@ rq.計時許容に失敗したか:#timing-allow-failed
 非~下位資源~要請:#non-subresource-request
 ~navi要請:#navigation-request
 
+~Cross-Origin-Embedder-Policyは資格証を許容するか？:#cross-origin-embedder-policy-allows-credentials
+
 	●応答
 応答:#concept-response
 rs.種別:#concept-response-type
@@ -792,6 +795,7 @@ rs.本体:#concept-response-body
 rs.~cache状態:#concept-response-cache-state
 rs.~CORSに公開される~header名~list:#concept-response-cors-exposed-header-name-list
 rs.範囲が要請されたか:#concept-response-range-requested-flag
+rs.要請は資格証を含むか:#response-request-includes-credentials
 rs.計時許容に合格したか:#concept-response-timing-allow-passed
 rs.計時情報:#concept-response-timing-info
 rs.~sw計時情報:#response-service-worker-timing-info
@@ -1171,6 +1175,7 @@ enV.非同一-生成元~能力は隔離-済みか？:~WAPI#concept-settings-obje
 生成元:~ORIGIN#concept-origin
 o.~host:~ORIGIN#concept-origin-host
 同一-生成元:~ORIGIN#same-origin
+sub.生成元:~ORIGIN#same-origin
 成分組~生成元:~ORIGIN#concept-origin-tuple
 不透明な生成元:~ORIGIN#concept-origin-opaque
 生成元を直列化-:~ORIGIN#ascii-serialisation-of-an-origin
@@ -1194,6 +1199,7 @@ i.~coep報告~種別:~ORIGIN#coep-report-type
 
 l.require-corp:~ORIGIN#coep-require-corp
 l.unsafe-none:~ORIGIN#coep-unsafe-none
+l.credentialless:~ORIGIN#coep-credentialless
 
 並列的:~HTMLINFRA#in-parallel
 並列~queue:~HTMLINFRA#parallel-queue
@@ -1571,6 +1577,7 @@ coep:
 TAO:
 	~CORSなし:no-CORS:
 Origin:
+Cross-Origin-Embedder-Policy:
 tainting:
 taint:
 nonce::::ナンス
@@ -1930,7 +1937,7 @@ internet::::インターネット
 	%rs:rs
 	%報告先:endpoint
 	%設定群~obj:settingsObject
-	%~navi用:forNavigation
+	%~navi用か:forNavigation
 	%埋込元~施策:embedderPolicy
 	%報告のみ:reportOnly
 	%回送-応答:forwardResponse
@@ -2209,7 +2216,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/09acae88ed9e16b842b20b3d464da22f78443367/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/061351538ccc373da775bab255fb30bf3cf4aa98/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -6262,6 +6269,50 @@ Return the serialization of url with exclude fragment set to true.
 </ol>
 </div>
 
+<div class="algo">
+<p>
+`~Cross-Origin-Embedder-Policyは資格証を許容するか？@
+は、所与の
+( `要請$ %要請 )
+に対し，［
+次のいずれかが満たされるならば ~T ／
+~ELSE_ ~F
+］を返す：
+◎
+To check if Cross-Origin-Embedder-Policy allows credentials, given a request request, run these steps:
+</p>
+<ul>
+	<li>
+%要請 の`~mode$rq ~NEQ `no-cors^l
+◎
+If request’s mode is not "no-cors", then return true.
+</li>
+	<li>
+%要請 の`~client$rq ~EQ ~NULL
+◎
+If request’s client is null, then return true.
+</li>
+	<li>
+%要請 の`~client$rqの`施策~容器$enVの`埋込元~施策$pCの`値$embP ~NEQ `credentialless$l
+◎
+If request’s client’s policy container’s embedder policy’s value is not "credentialless", then return true.
+</li>
+	<li>
+［
+%要請 の`生成元$rq
+~EQ`生成元$sub
+%要請 の`現在の~URL$rqの`生成元$url
+］~AND［
+%要請 の`生成元は~taintされたか$rq ~EQ ~F
+］
+◎
+If request’s origin is same origin with request’s current URL’s origin and request’s tainted origin flag is not set, then return true.
+◎
+Return false.
+</li>
+</ul>
+</div>
+
 			</section>
 			<section id="responses">
 <h3 title="Responses">2.2.6. 応答</h3>
@@ -6424,6 +6475,13 @@ A response has an associated range-requested flag, which is initially unset.
 This is used to ensure to prevent a partial response from an earlier ranged request being provided to an API that didn’t make a range request. See the flag’s usage for a detailed description of the attack.
 </dd>
 
+	<dt>`要請は資格証を含むか@rs （ ~T ）</dt>
+	<dd>
+真偽値。
+◎
+A response has an associated request-includes-credentials (a boolean), which is initially true.
+</dd>
+
 	<dt>`計時許容に合格したか@rs （ ~F ）</dt>
 	<dd>
 真偽値。
@@ -6511,11 +6569,14 @@ A filtered response is a limited view on a response that is not a network error.
 </p>
 
 <p class="note">注記：
-`~fetch$ ~algoは、~APIが不用意に情報を漏洩させなくするために，その種の~viewを返す。
+`~fetch$ ~algoは、
+~APIが不用意に情報を漏洩しないことを確保するため，その種の~viewを返す。
 旧来の理由から，情報を公開させる必要がある場合
 — 例：画像~dataを復号器に渡すためなど —
 は、結付けられている`内部~応答$を利用できる。
-内部~応答は、仕様の内部~algoからのみ “~access可能” であり，決して`絞込み応答$自身にはならない。
+内部~応答は、
+仕様の内部~algoからのみ “~access可能” であり，
+それ自身も`絞込み応答$になることは決してない。
 ◎
 The fetch algorithm returns such a view to ensure APIs do not accidentally leak information. If the information needs to be exposed for legacy reasons, e.g., to feed image data to a decoder, the associated internal response can be used, which is only "accessible" to internal specification algorithms and is never a filtered response itself.
 </p>
@@ -8150,8 +8211,9 @@ If request’s origin is a tuple origin, its scheme is "https", and request’s 
 			<dt>`same-origin^l</dt>
 			<dd>
 ~IF［
-( %要請 の`生成元$rq, %要請 の`現在の~URL$rqの`生成元$url )
-は`同一-生成元$でない
+%要請 の`生成元$rq
+~NEQ`生成元$sub
+%要請 の`現在の~URL$rqの`生成元$url
 ］
 ⇒
 %直列化した生成元 ~SET `null^bl
@@ -9475,7 +9537,7 @@ Cross-Origin-Resource-Policy
 <p>
 `非同一-生成元~資源~施策~検査@
 を遂行するときは、所与の
-( `生成元$【！`生成元$url】 %生成元, `環境~設定群~obj$ %設定群~obj, 文字列 %行先, `応答$ %応答, 真偽値 %~navi用 （省略時は ~F ）)
+( `生成元$【！`生成元$url】 %生成元, `環境~設定群~obj$ %設定群~obj, 文字列 %行先, `応答$ %応答, 真偽値 %~navi用か （省略時は ~F ）)
 に対し，次の手続きを走らす：
 ◎
 To perform a cross-origin resource policy check, given an origin origin, an environment settings object settingsObject, a string destination, a response response, and an optional boolean forNavigation, run these steps:
@@ -9490,7 +9552,7 @@ Let embedderPolicy be settingsObject’s policy container’s embedder policy.
 	<li>
 <p>
 ~IF［
-`非同一-生成元~資源~施策~内部~検査$( %生成元, `unsafe-none$l, %応答, %~navi用 )
+`非同一-生成元~資源~施策~内部~検査$( %生成元, `unsafe-none$l, %応答, %~navi用か )
 ~EQ `阻止される^i
 ］
 ⇒
@@ -9507,7 +9569,7 @@ This step is needed because we don’t want to report violations not related to 
 	</li>
 	<li>
 ~IF［
-`非同一-生成元~資源~施策~内部~検査$( %生成元 , %埋込元~施策 の`報告のみの値$embP, %応答, %~navi用 )
+`非同一-生成元~資源~施策~内部~検査$( %生成元 , %埋込元~施策 の`報告のみの値$embP, %応答, %~navi用か )
 ~EQ `阻止される^i
 ］
 ⇒
@@ -9517,7 +9579,7 @@ If the cross-origin resource policy internal check with origin, embedderPolicy�
 </li>
 	<li>
 ~IF［
-`非同一-生成元~資源~施策~内部~検査$( %生成元, %埋込元~施策 の`値$embP, %応答, %~navi用 )
+`非同一-生成元~資源~施策~内部~検査$( %生成元, %埋込元~施策 の`値$embP, %応答, %~navi用か )
 ~EQ `許容される^i
 ］
 ⇒
@@ -9538,7 +9600,7 @@ Return blocked.
 </ol>
 
 <p class="note">注記：
-~HTMLの`~navigate~algo$に限り，この検査を %~navi用 に ~T を与える下で利用する
+~HTMLの`~navigate~algo$に限り，この検査を %~navi用か に ~T を与える下で利用する
 — それはまた、この検査を，常に入子な【閲覧文脈に対する】~navi用に利用する。
 他の場合、 %応答 は［
 `不透明な絞込み応答$の`内部~応答$か，そうなるもの
@@ -9553,7 +9615,7 @@ Only HTML’s navigate algorithm uses this check with forNavigation set to true,
 <p>
 `非同一-生成元~資源~施策~内部~検査@
 を遂行するときは、所与の
-( `生成元$【！`生成元$url】 %生成元, `埋込元~施策~値$ %埋込元~施策~値, `応答$ %応答, 真偽値 %~navi用 )
+( `生成元$【！`生成元$url】 %生成元, `埋込元~施策~値$ %埋込元~施策~値, `応答$ %応答, 真偽値 %~navi用か )
 に対し，次の手続きを走らす：
 ◎
 To perform a cross-origin resource policy internal check, given an origin origin, an embedder policy value embedderPolicyValue, a response response, and a boolean forNavigation, run these steps:
@@ -9561,7 +9623,7 @@ To perform a cross-origin resource policy internal check, given an origin origin
 <ol>
 	<li>
 ~IF［
-%~navi用 ~EQ ~T
+%~navi用か ~EQ ~T
 ］~AND［
 %埋込元~施策~値 ~EQ `unsafe-none$l
 ］
@@ -9599,15 +9661,45 @@ This means that `Cross-Origin-Resource-Policy: same-site, same-origin` ends up a
 If policy is neither `same-origin`, `same-site`, nor `cross-origin`, then set policy to null.
 </li>
 	<li>
+<p>
 ~IF［
 %施策 ~EQ ~NULL
 ］~AND［
+次のいずれかが満たされる
+］…：
+</p>
+		<ul>
+			<li>
+［
+%埋込元~施策~値 ~EQ `credentialless$l
+］~AND［［
+%応答 の`要請は資格証を含むか$rs ~EQ ~T
+］~OR［
+%~navi用か ~EQ ~T
+］］
+</li>
+			<li>
 %埋込元~施策~値 ~EQ `require-corp$l
-］
+</li>
+		</ul>
+<p>
+…ならば
 ⇒
 %施策 ~SET `same-origin^bl
+</p>
 ◎
-If policy is null and embedderPolicyValue is "require-corp", then set policy to `same-origin`.
+If policy is null, then switch on embedderPolicyValue:
+◎
+"unsafe-none"
+• Do nothing.
+◎
+"credentialless"
+• Set policy to `same-origin` if:
+•• response’s request-includes-credentials is true, or
+•• forNavigation is true. 
+◎
+"require-corp"
+• Set policy to `same-origin`.
 </li>
 	<li>
 <p>
@@ -9630,8 +9722,9 @@ Return allowed.
 ~ELSE_ `阻止される^i
 ］
 ⇒
-( %生成元, %応答 の`~URL$rsの`生成元$url )
-は、`同一-生成元$である
+%生成元
+~EQ`生成元$sub
+%応答 の`~URL$rsの`生成元$url
 ◎
 If origin is same origin with response’s URL’s origin, then return allowed.
 ◎
@@ -9839,13 +9932,12 @@ If given, processResponseDone must be an algorithm accepting a response.
 
 <ul>
 	<li>
-進行中の`~fetch$は，
+進行中の`~fetch$は、［
+%中止~flag ~IN { `中止する^i, ε } （省略時は ε ）
+］を伴って，
 `終了され@
 ることもある。
-また，各 終了nには
-%中止~flag
-~IN { `中止する^i, ε } が伴われ、指定されない限り ε とする。
-【同じ~fetchに対し，複数の終了nが生じた場合、どの %中止~flag が優先される？】
+【同じ~fetchに対し，複数の終了nは生じ得るか？（その場合、どの %中止~flag が優先されるか？）】
 ◎
 An ongoing fetch can be terminated with flag aborted, which is unset unless otherwise specified.
 </li>
@@ -10325,8 +10417,9 @@ If response is null, then set response to the result of running the steps corres
 				<ul>
 					<li>
 ［
-( %要請 の`現在の~URL$rqの`生成元$, %要請 の`生成元$rq )
-は`同一-生成元$である
+%要請 の`現在の~URL$rqの`生成元$
+~EQ`生成元$sub
+%要請 の`生成元$rq
 ］~AND［
 %要請 の`応答~tainting$rq ~EQ `basic^l
 ］
@@ -11860,8 +11953,9 @@ Increase request’s redirect count by one.
 ］~AND［
 %~Location~URL は`資格証を含んで$いる
 ］~AND［
-( %要請 の`生成元$rq, %~Location~URL の`生成元$url )
-は`同一-生成元$`でない^em
+%要請 の`生成元$rq
+<em>~NEQ`生成元$sub</em>
+%~Location~URL の`生成元$url
 ］
 ⇒
 ~RET `~network~error$
@@ -11902,11 +11996,13 @@ If actualResponse’s status is not 303, request’s body is non-null, and reque
 </li>
 	<li>
 ~IF［
-( %~Location~URL の`生成元$url, %要請 の`現在の~URL$rqの`生成元$rq )
-は`同一-生成元$でない
+%~Location~URL の`生成元$url
+~NEQ`生成元$sub
+ %要請 の`現在の~URL$rqの`生成元$rq
 ］~AND［
-( %要請 の`生成元$url, %要請 の`現在の~URL$rqの`生成元$rq )
-は`同一-生成元$でない
+%要請 の`生成元$url
+~NEQ`生成元$sub
+ %要請 の`現在の~URL$rqの`生成元$rq
 ］
 ⇒
 %要請 の`生成元は~taintされたか$rq ~SET ~T
@@ -12210,6 +12306,15 @@ Let includeCredentials be true if one of
 • request’s credentials mode is "same-origin" and request’s response tainting is "basic"
 ◎
 is true; otherwise false.
+</li>
+			<li>
+~IF［
+`~Cross-Origin-Embedder-Policyは資格証を許容するか？$( %要請 ) ~EQ ~F
+］
+⇒
+%資格証を含めるか ~SET ~F
+◎
+If Cross-Origin-Embedder-Policy allows credentials with request returns false, then set includeCredentials to false.
 </li>
 			<li>
 %内容~長さ ~LET %~HTTP要請 の`本体$rqに応じて
@@ -13011,6 +13116,11 @@ Set response’s URL list to a clone of httpRequest’s URL list.
 %応答 の`範囲が要請されたか$rs ~SET ~T
 ◎
 If httpRequest’s header list contains `Range`, then set response’s range-requested flag.
+</li>
+	<li>
+%応答 の`要請は資格証を含むか$rs ~SET %資格証を含めるか
+◎
+Set response’s request-includes-credentials to includeCredentials.
 </li>
 	<li>
 <p>
@@ -17016,8 +17126,9 @@ Let window be "client".
 ~IF［
 %要請 の`~window$rqは`環境~設定群~obj$である
 ］~AND［
-( %要請 の`~window$rqの`生成元$enV, %生成元 )
-は`同一-生成元$である
+%要請 の`~window$rqの`生成元$enV
+~EQ`生成元$sub
+%生成元
 ］
 ⇒
 %~window ~SET %要請 の`~window$rq
@@ -17224,8 +17335,9 @@ If one of the following is true
 parsedReferrer’s scheme is "about" and path is the string "client"
 </li>
 							<li>
-( %構文解析した~referrer の`生成元$url, %生成元 )
-は`同一-生成元$でない
+%構文解析した~referrer の`生成元$url
+~NEQ`生成元$sub
+%生成元
 ◎
 parsedReferrer’s origin is not same origin with origin
 </li>
@@ -19582,6 +19694,7 @@ Arkadiusz Michalski,
 Arne Johannessen,
 Artem Skoretskiy,
 Arthur Barstow,
+Arthur Sonzogni,
 Asanka Herath,
 Axel Rauschmayer,
 Ben Kelly,
