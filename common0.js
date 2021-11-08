@@ -2260,6 +2260,7 @@ method::::メソッド
 段:step:~
 手続き:steps:~
 下位手続き:substeps:~
+手続-:procedure:手続き
 呼出され:invokeされ:呼び出され
 呼出さな:invokeしな:呼び出さな
 呼出す:invokeする:呼び出す

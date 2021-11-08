@@ -1014,8 +1014,6 @@ app:application:::アプリケーション
 根本的:fundamental:~
 欠如:lack:~
 欠如する:lackする:欠く
-手続き:procedure:~
-手順:steps:~
 採用-:adopt:~
 採用:adoption:~
 推測-:guess:~
