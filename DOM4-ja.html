@@ -260,8 +260,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2021-10-18
-trans_update:2021-10-21
+spec_date:2021-11-08
+trans_update:2021-11-09
 source_checked:210831
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -1080,6 +1080,7 @@ LegacyUnforgeable:~WEBIDLjs#LegacyUnforgeable
 LegacyUnenumerableNamedProperties:~WEBIDLjs#LegacyUnenumerableNamedProperties
 LegacyNullToEmptyString:~WEBIDLjs#LegacyNullToEmptyString
 
+any:~WEBIDL#idl-any
 unsigned short:~WEBIDL#idl-unsigned-short
 unsigned long:~WEBIDL#idl-unsigned-long
 unrestricted double:~WEBIDL#idl-unrestricted-double
@@ -1183,8 +1184,9 @@ evL.removed:#event-listener-removed
 
 	●abort
 aB.通達:#abortcontroller-signal
+aB.中止-事由:#abortsignal-abort-reason
+aB.中止された:#abortsignal-aborted
 aB.中止する~algo群:#abortsignal-abort-algorithms
-aB.中止されたか:#abortsignal-aborted-flag
 中止-を通達する:#abortsignal-signal-abort
 通達に~algoを追加する:#abortsignal-add
 通達から~algoを除去する:#abortsignal-remove
@@ -1720,7 +1722,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/3a3973ddc53c6d52d8e6cb93d251ab79c3505527/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/4ca187f9ccd4b1548d87293307ee58430ef4908b/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -4170,12 +4172,12 @@ If eventTarget is a ServiceWorkerGlobalScope object, its service worker’s scri
 ~IF［
 %通達 ~NEQ ~NULL
 ］~AND［
-%通達 の`中止されたか$aB ~EQ ~T
+%通達 は`中止された$aB ~EQ ~T
 ］
 ⇒
 ~RET
 ◎
-If signal is not null and its aborted flag is set, then return.
+If listener’s signal is not null and is aborted, then return.
 </li>
 	<li>
 ~IF［
@@ -5590,7 +5592,7 @@ interface @AbortController {
   `AbortController$mc();
   [`SameObject$] ~RA $AbortSignal $signal;
 
-  $undefined $abort();
+  $undefined $abort(optional $any %reason);
 };
 ！
 
@@ -5610,11 +5612,15 @@ Returns a new controller whose signal is set to a newly created AbortSignal obje
 ◎
 Returns the AbortSignal object associated with this object.
 </dd>
-	<dt>%controller . $abort()</dt>
+	<dt>%controller . $abort(reason)</dt>
 	<dd>
-この~methodを呼出すと、この~objの $AbortSignal の`中止されたか$aBを ~T にした上で、結付けられている活動が中止されることになるよう，観測器たちにも通達することになる。
+この~methodを呼出すと、
+この~objの $AbortSignal の`中止-事由$aB %reason を格納した上で、
+結付けられている活動が中止されることになるよう，観測器たちにも通達することになる。
+%reason が ε の場合（省略したか明示的に `undefined^jv を与えた場合）、
+`AbortError$E 例外が格納されることになる。
 ◎
-Invoking this method will set this object’s AbortSignal's aborted flag and signal to any observers that the associated activity is to be aborted.
+Invoking this method will store reason in this object’s AbortSignal's abort reason, and signal to any observers that the associated activity is to be aborted. If reason is undefined, then an "AbortError" DOMException will be stored.
 </dd>
 </dl>
 
@@ -5648,12 +5654,12 @@ The signal getter steps are to return this’s signal.
 </div>
 
 <div class="algo">
-@abort()
+@abort(reason)
 ~method~手続きは
 ⇒
-`中止-を通達する$( コレの`通達$aB )
+`中止-を通達する$( コレの`通達$aB, %reason )
 ◎
-The abort() method steps are to signal abort on this’s signal.
+The abort(reason) method steps are to signal abort on this’s signal with reason if it is given.
 </div>
 
 		</section>
@@ -5663,21 +5669,25 @@ The abort() method steps are to signal abort on this’s signal.
 ！！
 [`Exposed$=(Window,Worker)]
 interface @AbortSignal : $EventTarget {
-  [`NewObject$] static $AbortSignal $abort();
+  [`NewObject$] static $AbortSignal $abort(optional $any %reason);
 
   ~RA $boolean $aborted;
+  ~RA $any $reason;
 
   attribute $EventHandler $onabort;
 };
 ！
 
 <dl class="domintro">
-	<dt>AbortSignal . $abort()</dt>
+	<dt>AbortSignal . $abort(reason)</dt>
 	<dd>
 $AbortSignal ~instanceを返す
-— その`中止されたか$aB は ~T に設定される。
+— その`中止-事由$aBは［
+%reason が ε の場合（省略したか明示的に `undefined^jv を与えた場合）は `AbortError$E 例外／
+~ELSE_ %reason
+］に設定される。
 ◎
-Returns an AbortSignal instance whose aborted flag is set. 
+Returns an AbortSignal instance whose abort reason is set to reason if not undefined; otherwise to an "AbortError" DOMException.
 </dd>
 
 	<dt>%signal . $aborted</dt>
@@ -5689,6 +5699,13 @@ Returns an AbortSignal instance whose aborted flag is set.
 ◎
 Returns true if this AbortSignal's AbortController has signaled to abort; otherwise false.
 </dd>
+
+	<dt>%signal . $reason</dt>
+	<dd>
+この $AbortSignal の`中止-事由$aBを返す。
+◎
+Returns this AbortSignal's abort reason.
+</dd>
 </dl>
 
 <p>
@@ -5698,15 +5715,24 @@ Returns true if this AbortSignal's AbortController has signaled to abort; otherw
 
 <dl class="def-list">
 	<dt>
-`中止されたか@aB
+`中止-事由@aB
 ◎
-An AbortSignal object has an associated aborted flag.＼
+An AbortSignal object has an associated abort reason,＼
 </dt>
 	<dd>
-真偽値。
-他が指定されない限り， ~F をとるとする。
+~JS値。
+他が指定されない限り， `undefined^jv をとるとする。
 ◎
-It is unset unless specified otherwise.
+which is a JavaScript value. It is undefined unless specified otherwise.
+</dd>
+	<dd>
+$AbortSignal ~objが
+`中止された@aB
+とは、次が満たされることをいう
+⇒
+その`中止-事由$aB ~NEQ `undefined^jv
+◎
+An AbortSignal object is aborted when its abort reason is not undefined.
 </dd>
 
 	<dt>
@@ -5717,11 +5743,10 @@ An AbortSignal object has associated abort algorithms,＼
 	<dd>
 何個かの~algoからなる`有順序~集合$。
 他が指定されない限り，`空$とする。
-これらの~algoは、［
-`中止されたか$aB ~SET ~T
-］にされたとき，実行されることになる。
+これらの~algoは、
+当の $AbortSignal が`中止された$aBとき，実行されることになる。
 ◎
-which is a set of algorithms which are to be executed when its aborted flag is set. Unless specified otherwise, its value is the empty set.
+which is a set of algorithms which are to be executed when it is aborted. Unless specified otherwise, its value is the empty set.
 </dd>
 	<dd class="trans-note">【
 集合なので，同じ~algoは重ねて現れ得ないことになるが、
@@ -5743,12 +5768,12 @@ To add an algorithm algorithm to an AbortSignal object signal, run these steps:
 <ol>
 	<li>
 ~IF［
-%通達 の`中止されたか$aB ~EQ ~T
+%通達 は`中止された$aB
 ］
 ⇒
 ~RET
 ◎
-If signal’s aborted flag is set, then return.
+If signal is aborted, then return.
 </li>
 	<li>
 %通達 の`中止する~algo群$aBに %~algo を`付加する$set
@@ -5774,18 +5799,19 @@ To remove an algorithm algorithm from an AbortSignal signal, remove algorithm fr
 <p class="note">注記：
 `中止する~algo群$aBは、
 $abort() に対し適度な仕方で反応するような，複階的な要件を伴う~APIを可能化する。
-例えば，所与の~APIの`中止されたか$aBは、~swなどの別~thread環境へ伝播される必要があるかもしれない。
+例えば，所与の~APIの`中止-事由$aBは、
+~swなどの別~thread環境へ伝播される必要があるかもしれない。
 ◎
-The abort algorithms enable APIs with complex requirements to react in a reasonable way to abort(). For example, a given API’s aborted flag might need to be propagated to a cross-thread environment, such as a service worker.
+The abort algorithms enable APIs with complex requirements to react in a reasonable way to abort(). For example, a given API’s abort reason might need to be propagated to a cross-thread environment, such as a service worker.
 </p>
 
 <div class="algo">
 <p>
 静的な
-@abort()
+@abort(reason)
 ~method手続きは：
 ◎
-The static abort() method steps are:
+The static abort(reason) method steps are:
 </p>
 <ol>
 	<li>
@@ -5794,9 +5820,12 @@ The static abort() method steps are:
 Let signal be a new AbortSignal object.
 </li>
 	<li>
-%通達 の`中止されたか$aB ~SET ~T
+%通達 の`中止-事由$aB ~SET %reason に応じて
+⇒＃
+ε ならば新たな `AbortError$E 例外 ／
+~ELSE_ %reason
 ◎
-Set signal’s aborted flag.
+Set signal’s abort reason to reason if it is given; otherwise to a new "AbortError" DOMException.
 </li>
 	<li>
 ~RET %通達
@@ -5810,9 +5839,21 @@ Return signal.
 @aborted
 取得子~手続きは
 ⇒
-~RET コレの`中止されたか$aB
+~RET ［
+コレは`中止された$aBならば ~T ／
+~ELSE_ ~F
+］
 ◎
-The aborted getter steps are to return true if this’s aborted flag is set; otherwise false.
+The aborted getter steps are to return true if this is aborted; otherwise false.
+</div>
+
+<div class="algo">
+@reason
+取得子~手続きは
+⇒
+~RET コレの`中止-事由$aB
+◎
+The reason getter steps are to return this’s abort reason.
 </div>
 
 <p>
@@ -5838,25 +5879,28 @@ Changes to an AbortSignal object represent the wishes of the corresponding Abort
 <p>
 `中止-を通達する@
 ときは、所与の
-( $AbortSignal ~obj %通達 )
+( $AbortSignal ~obj %通達, %事由（省略時は ε ） )
 に対し，次を走らす：
 ◎
-To signal abort, given an AbortSignal object signal, run these steps:
+To signal abort, given an AbortSignal object signal and an optional reason, run these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%通達 の`中止されたか$aB ~EQ ~T
+%通達 は`中止された$aB
 ］
 ⇒
 ~RET
 ◎
-If signal’s aborted flag is set, then return.
+If signal is aborted, then return.
 </li>
 	<li>
-%通達 の`中止されたか$aB ~SET ~T
+%通達 の`中止-事由$aB ~SET %事由 に応じて
+⇒＃
+ε ならば新たな `AbortError$E 例外 ／
+~ELSE_ %事由
 ◎
-Set signal’s aborted flag.
+Set signal’s abort reason to reason if it is given; otherwise to a new "AbortError" DOMException.
 </li>
 	<li>
 %通達 の`中止する~algo群$aBを成す
@@ -5892,22 +5936,22 @@ A followingSignal (an AbortSignal) is made to follow a parentSignal (an AbortSig
 <ol>
 	<li>
 ~IF［
-%追従する通達 の`中止されたか$aB ~EQ ~T
+%追従する通達 は`中止された$aB
 ］
 ⇒
 ~RET
 ◎
-If followingSignal’s aborted flag is set, then return.
+If followingSignal is aborted, then return.
 </li>
 	<li>
 ~IF［
-%親~通達 の`中止されたか$aB ~EQ ~T
+%親~通達 は`中止された$aB
 ］
 ⇒＃
-`中止-を通達する$( %追従する通達 )；
+`中止-を通達する$( %追従する通達, %親~通達 の`中止-事由$aB )；
 ~RET
 ◎
-If parentSignal’s aborted flag is set, then signal abort on followingSignal.
+If parentSignal is aborted, then signal abort on followingSignal with parentSignal’s abort reason.
 </li>
 	<li>
 <p>
@@ -5917,9 +5961,9 @@ Otherwise, add the following abort steps to parentSignal:
 </p>
 		<ol>
 			<li>
-`中止-を通達する$( %追従する通達 )
+`中止-を通達する$( %追従する通達, %親~通達 の`中止-事由$aB )
 ◎
-Signal abort on followingSignal.
+Signal abort on followingSignal with parentSignal’s abort reason.
 </li>
 		</ol>
 	</li>
@@ -5943,37 +5987,38 @@ Any web platform API using promises to represent operations that can be aborted 
 Accept AbortSignal objects through a signal dictionary member.
 </li>
 	<li>
-演算が中止されたときは、 `AbortError$E 例外で~promiseを却下することにより，それを~~伝えること。
+演算が中止されたときは、
+$AbortSignal ~objの`中止-事由$aBで~promiseを却下することにより，それを~~伝えること。
 ◎
-Convey that the operation got aborted by rejecting the promise with an "AbortError" DOMException.
+Convey that the operation got aborted by rejecting the promise with AbortSignal object’s abort reason.
 </li>
 	<li>
 <p>
-$AbortSignal の`中止されたか$aBに応じて：
-</p>
-		<ul>
-			<li>
-すでに ~T の場合：
+$AbortSignal は`中止された$aB場合
+⇒
 即時に却下すること。
 ◎
-Reject immediately if the AbortSignal's aborted flag is already set, otherwise:
-</li>
-			<li>
-他の場合：
-$AbortSignal ~objの変化を観測するときは、`中止する~algo群$aBによる仕組みを，他の観測器と衝突し得ない方式で利用すること。
+Reject immediately if the AbortSignal is already aborted, otherwise:
+</p>
+
+<p>
+他の場合
+⇒
+$AbortSignal ~objの変化を観測するときは、
+`中止する~algo群$aBによる仕組みを，他の観測器と衝突し得ない方式で利用すること。
 ◎
 Use the abort algorithms mechanism to observe changes to the AbortSignal object and do so in a manner that does not lead to clashes with other observers.
-</li>
-		</ul>
+<p>
 	</li>
 </ul>
 
 <div class="example" id="aborting-ongoing-activities-spec-example">
 
 <p>
-~promiseを返す ある~method ^doAmazingness(options) 用の手続きは、次のように記すこともできる：
+~promiseを返す ある~method ^doAmazingness(options) 用の~method手続きは、
+次のように記すこともできる：
 ◎
-The steps for a promise-returning method doAmazingness(options) could be as follows:
+The method steps for a promise-returning method doAmazingness(options) could be as follows:
 </p>
 <ol>
 	<li>
@@ -5995,31 +6040,33 @@ Let p be a new promise.
 %通達 ~NEQ ε
 ］：
 ◎
-If options’ signal member is present, then:
+If options["signal"] member is present, then:
 </p>
 		<ol>
 			<li>
 <p>
 ~IF［
-%通達 の`中止されたか$aB ~EQ ~T
+%通達 は`中止された$aB
 ］：
 </p>
 				<ol>
 					<li>
-`AbortError$E 例外で %~promise を`却下する$
+%通達 の`中止-事由$aBで %~promise を`却下する$
 </li>
 					<li>
 ~RET %~promise
 </li>
 				</ol>
 ◎
-If options’ signal’s aborted flag is set, then reject p with an "AbortError" DOMException and return p.
+Let signal be options["signal"].
+◎
+If signal is aborted, then reject p with signal’s abort reason and return p.
 </li>
 			<li>
 <p>
 `通達に~algoを追加する$( %通達, 次に与える中止-手続き )：
 ◎
-Add the following abort steps to options’ signal:
+Add the following abort steps to signal:
 </p>
 				<ol>
 					<li>
@@ -6028,9 +6075,9 @@ Add the following abort steps to options’ signal:
 Stop doing amazing things.
 </li>
 					<li>
-`AbortError$E 例外で %~promise を`却下する$
+%通達 の`中止-事由$aBで %~promise を`却下する$
 ◎
-Reject p with an "AbortError" DOMException.
+Reject p with signal’s abort reason.
 </li>
 				</ol>
 			</li>
@@ -22651,6 +22698,7 @@ Mike Champion,
 Mike Taylor,
 Mike West,
 Nicolás Peña Moreno,
+Nidhi Jaju,
 Ojan Vafai,
 Oliver Nightingale,
 Olli Pettay,
