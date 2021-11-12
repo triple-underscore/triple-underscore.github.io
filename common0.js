@@ -592,13 +592,14 @@ Util.fillHeader = () => {
 			const status = options.spec_status;
 			if(status){
 				header_text = {
-WD: '作業草案',
-ED: '編集者草案',
-EDCG: 'W3C Community Group Draft Report',
-PR: '勧告案',
-CR: '勧告候補',
-REC: '勧告',
+ED: '<a href="https://www.w3.org/standards/types#ED">編集者草案</a>',
+WD: '<a href="https://www.w3.org/standards/types#WD">作業草案</a>',
+PR: '<a href="https://www.w3.org/standards/types#PR">勧告案</a>',
+CRD: '<a href="https://www.w3.org/standards/types#CRD">勧告候補草案</a>',
+CR: '<a href="https://www.w3.org/standards/types#CR">勧告候補スナップショット</a>',
+REC: '<a href="https://www.w3.org/standards/types#REC">勧告</a>',
 NOTE: 'Working Group Note',
+EDCG: 'W3C Community Group Draft Report',
 LS: 'Living Standard',
 LD: 'Living Document',
 //IETFPR: 'IETF PROPOSED STANDARD',
@@ -606,7 +607,6 @@ IETFID: 'Internet Draft',
 				}[status] || status;
 			}
 		}
-
 		const html = `<h2>${header_text} — ${date}</h2>`;
 		hgroup.insertAdjacentHTML('beforeend', html);
 	}
