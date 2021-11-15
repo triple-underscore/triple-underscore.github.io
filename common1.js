@@ -1596,10 +1596,12 @@ COMMON_DATA.JA_BASIS = {
 
 COMMON_DATA.REF_DATA = `
 ARIA=・               w3c.github.io/aria/
-ARIA=主               ~momdoG/wai-aria-1.1/
 ARIA=・               ~TR/wai-aria-1.1/
-GRAPHICSARIA10=主     ~momdoG/graphics-aria-1.0/
+ARIA=・               ~TR/wai-aria-1.2/
+ARIA=主               ~momdoG/wai-aria-1.2/
+	ARIA=主               ~momdoG/wai-aria-1.1/
 GRAPHICSARIA10=・     ~TR/graphics-aria-1.0/
+GRAPHICSARIA10=主     ~momdoG/graphics-aria-1.0/
 ARIAHTML=・           w3c.github.io/html-aria/
 ARIAHTML=主           ~momdoG/html-aria/
 ATOM=副               ＃momdo.s35.xrea.com/web-html-test/spec/rfc4287j.html
