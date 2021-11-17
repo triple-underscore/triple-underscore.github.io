@@ -112,8 +112,8 @@ return text;
 
 ●●options
 
-spec_date:2021-11-04
-trans_update:2021-11-05
+spec_date:2021-11-15
+trans_update:2021-11-17
 source_checked:210831
 page_state_key:HTML
 spec_status:LS
@@ -277,6 +277,9 @@ params::::パラメタ群
 往来-:roundtrip::~
 random::::ランダム
 処理待ち:pending::~
+handle:
+休止:suspension::~
+clear::::クリア
 
 	-:step labeled
 	取消されても:cancelation
@@ -493,6 +496,10 @@ X:
 	%持続されるか:persisted
 	%起動元~生成元:initiatorOrigin
 	%資源~URL:要請の~URL／応答の~URL
+	%休止-所要時間:suspendDuration
+	%作動中の~timer群:activeTimers
+	%~handle:handle
+	%大域~obj:-
 
 	●指示語
 最近の:latest:~
@@ -553,6 +560,7 @@ I.WebSocket:~WEBSOCKET#websocket
 I.Event:~DOM4#interface-event
 I.EventInit:~DOM4#dictdef-eventinit
 I.EventSource:~HTMLsse#eventsource
+I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
 I.History:~HISTORY#history-3
 I.WebSocket:~WEBSOCKET#websocket
 I.Window:~WINDOW#window
@@ -717,6 +725,9 @@ i.非~文書~内容として取扱う:#navigate-non-Document
 doc.指示された部位:#the-indicated-part-of-the-document
 doc.~pageを示しているか:#page-showing
 doc.回復可能~状態:#concept-document-salvageable
+doc.休止された~timer~handle群:#suspended-timer-handles
+doc.休止~時刻:#suspension-time
+
 回復可能:#concept-document-salvageable
 文書を中止する:#abort-a-document
 文書を中止-:#abort-a-document
@@ -758,6 +769,7 @@ V.明示的な履歴~naviか:#explicithistorynavigation
 ~inline内容を表示する:#read-ua-inline
 
 ~HTML文書が読込まれる:#navigate-html
+
 	#read-html
 	#read-xml
 	#read-plugin
@@ -768,6 +780,7 @@ V.明示的な履歴~naviか:#explicithistorynavigation
 	#read-multipart-x-mixed-replace
 
 ~navi応答の~X-Frame-Optionsに対する固守を検査する:#check-a-navigation-response's-adherence-to-x-frame-options
+
 
 
 	●用語（HTML
@@ -1018,7 +1031,7 @@ st.Text:~HEinput#text-(type=text)-state-and-search-state-(type=search)
 ~downloadは許容される:~HTMLlinks#allowed-to-download
 
 具現化されて:~HTMLrendering#being-rendered
-作動中の~timer~list:~HTMLGAPI#list-of-active-timers
+作動中の~timer群が成す~map:~HTMLGAPI#map-of-active-timers
 
 作動中の構文解析器は中止されたか:~HTMLdynamic#active-parser-was-aborted
 
@@ -1030,6 +1043,11 @@ sub.大小無視:~INFRA#ascii-case-insensitive
 	~INFRA#string-is
 同型に復号する:~INFRA#isomorphic-decode
 ~surrogate:~INFRA#surrogate
+~list:~INFRA#list
+空:~INFRA#list-is-empty
+	空にする:~INFRA#list-empty
+map.~clearする:~INFRA#map-clear
+~key群を取得する:~INFRA#map-getting-the-keys
 構造体:~INFRA#struct
 sct.~item:~INFRA#struct-item
 付加する:~INFRA#list-append
@@ -5198,6 +5216,50 @@ If newDocument is different than the current entry's document, or historyHandlin
 </p>
 		<ol>
 			<li>
+<p>
+~IF［
+%新たな文書 の`休止された~timer~handle群$docは`空$でない
+］：
+◎
+If newDocument's suspended timer handles is not empty:
+</p>
+				<ol>
+					<li>
+~Assert：
+%新たな文書 の`休止~時刻$doc ~NEQ 0
+◎
+Assert: newDocument's suspension time is not zero.
+</li>
+					<li>
+%大域~obj ~LET %新たな文書 に`関連な大域~obj$
+◎
+↓</li>
+					<li>
+%休止-所要時間 ~LET `現在の高分解能~時刻$( 【 %大域~obj 】) ~MINUS %新たな文書 の`休止~時刻$doc
+◎
+Let suspendDuration be the current high resolution time minus newDocument's suspension time.
+</li>
+					<li>
+%作動中の~timer群 ~LET %大域~obj の`作動中の~timer群が成す~map$
+◎
+Let activeTimers be newDocument's relevant global object's map of active timers.
+</li>
+					<li>
+%新たな文書 の`休止された~timer~handle群$docを成す
+~EACH( %~handle )
+に対し
+⇒
+~IF［
+%作動中の~timer群[ %~handle ] ~NEQ ε
+］
+⇒
+%作動中の~timer群[ %~handle ] ~INCBY %休止-所要時間
+◎
+For each handle in newDocument's suspended timer handles, if activeTimers[handle] exists, then increase activeTimers[handle] by suspendDuration.
+</li>
+				</ol>
+			</li>
+			<li>
 `履歴~辿り~task源$から~queueされた`~task$のうち，次を満たすものすべてを除去する
 ⇒
 `~task$の`文書$tK ~IN %B の`~top-level閲覧文脈$の`文書~族$
@@ -5964,32 +6026,56 @@ Otherwise, if container is non-null, then queue an element task on the DOM manip
 			<section id="unloading-documents">
 <h4 title="Unloading documents">7.11.12. 文書の~unload法</h4>
 
-<div class="p">
 <p>
 各 `文書$は、次に挙げるものを持つ：
 </p>
-<dl>
-	<dt>`回復可能~状態@doc</dt>
-	<dd>
+<ul>
+	<li>
+`回復可能~状態@doc
+⇒
 真偽値
 — 初期~時は ~T になるモノトスル。
-</dd>
-
-	<dt>`~pageを示しているか@doc</dt>
-	<dd>
+◎
+A Document has a salvageable state, which must initially be true,＼
+</li>
+	<li>
+<p>
+`~pageを示しているか@doc
+⇒
 真偽値
 — 初期~時は ~F になるモノトスル。
-</dd>
-	<dd>
-これは、~scriptが［
-`pageshow$et, `pagehide$et
-］~eventを整合的に受取る（例： `pageshow$et を間に挟むことなく 2 つの `pagehide$et ~eventを続けて受取ったり，その逆が生じることは決してない）ことを確保するために利用される。
-</dd>
-</dl>
-
 ◎
-A Document has a salvageable state, which must initially be true, and a page showing flag, which must initially be false. The page showing flag is used to ensure that scripts receive pageshow and pagehide events in a consistent manner (e.g. that they never receive two pagehide events in a row without an intervening pageshow, or vice versa).
-</div>
+and a page showing flag, which must initially be false.＼
+</p>
+
+<p>
+これは、次を確保するために利用される
+⇒
+~scriptが［
+`pageshow$et, `pagehide$et
+］~eventを整合的に受取る
+（例： `pageshow$et を間に挟むことなく 2 つの `pagehide$et ~eventを続けて受取ったり，その逆が生じることは決してない）。
+◎
+The page showing flag is used to ensure that scripts receive pageshow and pagehide events in a consistent manner (e.g. that they never receive two pagehide events in a row without an intervening pageshow, or vice versa).
+</p>
+	</li>
+	<li>
+`休止~時刻@doc
+⇒
+`DOMHighResTimeStamp$I 値
+— 初期~時は 0 とする。
+◎
+A Document has a DOMHighResTimeStamp suspension time, initially 0.
+</li>
+	<li>
+`休止された~timer~handle群@doc
+⇒
+`~list$
+— 初期~時は空とする。
+◎
+A Document has a list of suspended timer handles, initially empty.
+</li>
+</ul>
 
 <p>
 各`~event~loop$は、
@@ -6232,11 +6318,15 @@ Update the visibility state of newDocument to "hidden".
 		</ol>
 	</li>
 	<li>
+%大域~obj ~LET %文書 に`関連な大域~obj$
+◎
+↓</li>
+	<li>
 ~IF［
 %~unload計時情報 ~NEQ ~NULL
 ］
 ⇒
-%~unload計時情報 の`~unload~event開始~時刻$ ~SET `現在の高分解能~時刻$( %文書 に`関連な大域~obj$ )
+%~unload計時情報 の`~unload~event開始~時刻$ ~SET `現在の高分解能~時刻$( %大域~obj )
 ◎
 If unloadTimingInfo is not null, then set unloadTimingInfo's unload event start time to the current high resolution time given document's relevant global object.
 </li>
@@ -6255,7 +6345,7 @@ If document's salvageable state is false, then fire an event named unload at doc
 %~unload計時情報 ~NEQ ~NULL
 ］
 ⇒
-%~unload計時情報 の`~unload~event終了~時刻$ ~SET `現在の高分解能~時刻$( %文書 の`関連な大域~obj$ )
+%~unload計時情報 の`~unload~event終了~時刻$ ~SET `現在の高分解能~時刻$( %大域~obj )
 ◎
 If unloadTimingInfo is not null, then set unloadTimingInfo's unload event end time to the current high resolution time given document's relevant global object.
 </li>
@@ -6263,6 +6353,16 @@ If unloadTimingInfo is not null, then set unloadTimingInfo's unload event end ti
 `~event~loop$の`終了n入子ng~level$ ~DECBY 1
 ◎
 Decrease the event loop's termination nesting level by one.
+</li>
+	<li>
+%文書 の`休止~時刻$doc ~SET `現在の高分解能~時刻$(【 %大域~obj 】)
+◎
+Set document's suspension time to the current high resolution time.
+</li>
+	<li>
+%文書 の`休止された~timer~handle群$doc ~SET `~key群を取得する$( 【 %大域~obj の】`作動中の~timer群が成す~map$ )
+◎
+Set document's suspended timer handles to the result of getting the keys for the map of active timers.
 </li>
 	<li>
 この仕様も含む`適用-可能な仕様$にて定義される
@@ -6393,9 +6493,9 @@ If document's salvageable state is false, then:
 For each EventSource object eventSource whose relevant global object is equal to window, forcibly close eventSource.
 </li>
 			<li>
-%文書 の`~window$にて`作動中の~timer~list$を空にする
+%~window の`作動中の~timer群が成す~map$を`~clearする$map
 ◎
-Empty window's list of active timers.
+Clear window's map of active timers.
 </li>
 		</ol>
 	</li>

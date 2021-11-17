@@ -114,8 +114,8 @@ return text;
 
 ●●options
 
-spec_date:2021-11-04
-trans_update:2021-11-05
+spec_date:2021-11-15
+trans_update:2021-11-17
 source_checked:210301
 page_state_key:HTML
 spec_status:LS
@@ -216,6 +216,7 @@ I.CSSStyleSheet:~CSSOM1#cssstylesheet
 I.DedicatedWorkerGlobalScope:~WORKERS#dedicatedworkerglobalscope
 I.Document:~HTMLdom#document
 I.DocumentAndElementEventHandlers:#documentandelementeventhandlers
+I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
 I.ErrorEvent:#errorevent
 I.ErrorEventInit:#erroreventinit
 I.Event:~DOM4#interface-event
@@ -684,6 +685,11 @@ aG.~event~loop:#concept-agent-event-loop
 	~event~loopの~spinning:#spin-the-event-loop
 同期区間:#synchronous-section
 
+最後の描画-機会~時刻:#last-render-opportunity-time
+最後の遊休期間~開始-時刻:#last-idle-period-start-time
+同じ~loop内の~window群:#same-loop-windows
+
+
 ~task:#concept-task
 tK.手続き:#concept-task-steps
 tK.文書:#concept-task-document
@@ -761,6 +767,7 @@ eH.~target:#event-handler-target
 描画~機会:#rendering-opportunity
 ~animation~frame~callback~map:~HTMLGAPI#list-of-animation-frame-callbacks
 各~animation~frame~callbackを走らす:~HTMLGAPI#run-the-animation-frame-callbacks
+作動中の~timer群が成す~map:~HTMLGAPI#map-of-active-timers
 
 	#validate-requested-module-specifiers
 
@@ -1029,6 +1036,9 @@ sct.~item:~INFRA#struct-item
 	有順序~map
 	~key集合:~INFRA#map-getting-the-keys
 ~entry:~INFRA#map-entry
+値~listを取得する:~INFRA#map-getting-the-values
+map.空:~INFRA#map-is-empty
+
 空:~INFRA#list-is-empty
 	~NIN:~INFRA#list-contain
 	~IN:~INFRA#list-contain
@@ -1193,6 +1203,7 @@ import:
 close:
 未compile:uncompiled:::未コンパイル
 timer::::タイマー
+timeout::::タイムアウト
 出自に:originate::~
 片付け:cleanup::~
 	cleanup
@@ -1292,6 +1303,9 @@ clear::::クリア
 	~~空にする:clear
 喪失d:lost::喪失
 喪失-:lose::~
+処理待ち:pending:~
+見積もり:estimate:~
+刻限:deadline::~
 
 	-:successful
 	成功しな:unsuccessful
@@ -1340,10 +1354,14 @@ prompt:
 	更新率:rate
 quota::::クォータ
 押下げ:pressing:~
-機会:opportunities:~
+機会:opportunity:~
 描く:drawする:~
 減速:throttling:~
 塗り:paint:~
+知覚-:perceive:~
+	知覚され:perception
+閾値:threshold:~
+応答性:responsiveness:~
 
 	~UI:mouse and key ／ keyboard and mouse
 	半分以上:three quarters of the time
@@ -1351,6 +1369,7 @@ quota::::クォータ
 	毎秒 60 回:every 60th of a second
 	より低速:slower
 	ずっと低速:much slower
+	後の〜まで:the cap of
 
 	●仕様
 理想的:ideal:~
@@ -1741,6 +1760,14 @@ OffscreenCanvas:
 	%~stylesheet:sheet
 	%要請~record:requested
 	%復旧するべきか:shouldRestore
+	%刻限を算出する手続き:computeDeadline
+	%刻限:deadline
+	%処理待ち描画-はあるか:hasPendingRenders
+	%同じ~loop内の~window:windowInSameLoop
+	%~timer~callback見積もり群:timerCallbackEstimates
+	%~timeout刻限:timeoutDeadline
+	%次回の描画-刻限:nextRenderDeadline
+	%~window:win
 
 	●指示語
 現在:currently:~
@@ -9424,7 +9451,6 @@ For example, a user agent could have one task queue for mouse and key events (to
 各`~event~loop$には、次に挙げるものが結付けられる：
 ◎
 ↓</p>
-
 <dl class="def-list">
 	<dt>
 `現在~走っている~task@
@@ -9482,6 +9508,43 @@ boolean, which is initially false.＼
 It is used to prevent reentrant invocation of the perform a microtask checkpoint algorithm.
 </dd>
 </dl>
+
+<p>
+各`~window~event~loop$には、次に挙げるものが結付けられる：
+◎
+↓</p>
+<ul>
+	<li>
+`最後の描画-機会~時刻@
+⇒
+`DOMHighResTimeStamp$I 値
+— 初期~時は 0 とする。
+◎
+Each window event loop has a DOMHighResTimeStamp last render opportunity time, initially set to zero.
+</li>
+	<li>
+`最後の遊休期間~開始-時刻@
+⇒
+`DOMHighResTimeStamp$I 値
+— 初期~時は 0 とする。
+◎
+Each window event loop has a DOMHighResTimeStamp last idle period start time, initially set to zero.
+</li>
+</ul>
+
+<div class="algo">
+<p>
+`~window~event~loop$ %~loop 用の
+`同じ~loop内の~window群@
+を取得するときは
+⇒
+~RET 次を満たす すべての`~window$
+⇒
+`関連な~agent$の`~event~loop$aG ~EQ %~loop
+◎
+To get the same-loop windows for a window event loop loop, return all Window objects whose relevant agent's event loop is loop.
+</p>
+</div>
 
 				</section>
 				<section id="queuing-tasks">
@@ -10056,10 +10119,11 @@ This specification does not mandate any particular model for selecting rendering
 ~IF［
 %文書~群 は空でない
 ］
-⇒
-%描画~機会はあるか ~SET ~T
+⇒＃
+%描画~機会はあるか ~SET ~T；
+%~event~loop の`最後の描画-機会~時刻$ ~SET %~task開始~時刻
 ◎
-If docs is not empty, then set hasARenderingOpportunity to true.
+If docs is not empty, then set hasARenderingOpportunity to true and set this event loop's last render opportunity time to taskStartTime.
 </li>
 			<li>
 <p>
@@ -10357,19 +10421,142 @@ hasARenderingOpportunity is false
 </li>
 		</ul>
 <p>
-…ならば
+…ならば：
+◎
+then:
+</p>
+		<ol>
+			<li>
+<p>
+%刻限を算出する手続き ~LET 次を走らす手続き：
+◎
+Let computeDeadline be the following steps:
+</p>
+				<ol>
+					<li>
+<p>
+%刻限 ~LET %~event~loop の`最後の遊休期間~開始-時刻$ ~PLUS 50
+◎
+Let deadline be this event loop's last idle period start time plus 50.
+</p>
+
+<p class="note">注記：
+50ms 後の未来までにしているのは、
+新たな利用者~入力に対し，ヒトから知覚される閾値~内に~~収まる応答性を確保するためである。
+◎
+The cap of 50ms in the future is to ensure responsiveness to new user input within the threshold of human perception.
+</p>
+					</li>
+					<li>
+%処理待ち描画-はあるか ~LET ~F
+◎
+Let hasPendingRenders be false.
+</li>
+					<li>
+<p>
+%~event~loop 用の`同じ~loop内の~window群$を成す
+~EACH( %同じ~loop内の~window )
+に対し：
+◎
+For each windowInSameLoop of the same-loop windows for this event loop:
+</p>
+						<ol>
+							<li>
+~IF［
+%同じ~loop内の~window の`~animation~frame~callback~map$は`空$mapでない
+］~OR［
+~UAは［
+%同じ~loop内の~window には、処理待ち描画~更新があり得る
+］と予見する
+］
 ⇒
-`~window$のうち［
-それに`関連な~agent$の`~event~loop$aG ~EQ %~event~loop
-］を満たす
-~EACH(  %~window )
+%処理待ち描画-はあるか ~SET ~T
+◎
+If windowInSameLoop's map of animation frame callbacks is not empty, or if the user agent believes that the windowInSameLoop might have pending rendering updates, set hasPendingRenders to true.
+</li>
+							<li>
+%~timer~callback見積もり群 ~LET 
+%同じ~loop内の~window の`作動中の~timer群が成す~map$から`値~listを取得する$
+◎
+Let timerCallbackEstimates be the result of getting the values of windowInSameLoop's map of active timers.
+</li>
+							<li>
+%~timer~callback見積もり群 を成す
+~EACH( %~timeout刻限 )
 に対し
 ⇒
-`遊休期間を開始する$( %~window )
-`REQUESTIDLECALLBACK$r
+~IF［
+%~timeout刻限 ~LT %刻限
+］
+⇒
+%刻限 ~SET %~timeout刻限
 ◎
-then for each Window object whose relevant agent's event loop is this event loop, run the start an idle period algorithm, passing the Window. [REQUESTIDLECALLBACK]
+For each timeoutDeadline of timerCallbackEstimates, if timeoutDeadline is less than deadline, set deadline to timeoutDeadline.
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
+~IF［
+%処理待ち描画-はあるか ~EQ ~T
+］：
+◎
+If hasPendingRenders is true, then:
 </p>
+						<ol>
+							<li>
+<p>
+%次回の描画-刻限 ~LET
+%~event~loop の`最後の描画-機会~時刻$ ~PLUS ( 1000 ~DIV 現在の更新率 )
+◎
+Let nextRenderDeadline be this event loop's last render opportunity time plus (1000 divided by the current refresh rate).
+</p>
+
+<p class="note">注記：
+更新率は、~hardwareや実装に特有になり得る。
+更新率が 60Hz なら、
+%次回の描画-刻限 は `最後の描画-機会~時刻$より約 16.67ms 後になろう。
+◎
+The refresh rate can be hardware- or implementation-specific. For a refresh rate of 60Hz, the nextRenderDeadline would be about 16.67ms after the last render opportunity time.
+</p>
+							</li>
+							<li>
+~IF［
+%次回の描画-刻限 ~LT %刻限
+］
+⇒
+~RET %次回の描画-刻限
+◎
+If nextRenderDeadline is less than deadline, then return nextRenderDeadline.
+</li>
+						</ol>
+					</li>
+					<li>
+~RET %刻限
+◎
+Return deadline.
+</li>
+				</ol>
+			</li>
+			<li>
+<p>
+%~event~loop 用の`同じ~loop内の~window群$を成す
+~EACH( %~window )
+に対し
+⇒
+`遊休期間を開始する$( %~window, %刻限を算出する手続き )
+`REQUESTIDLECALLBACK$r
+</p>
+
+<p class="trans-note">【
+遊休期間を開始する~algoは，（まだ） 2 個目の引数を受容するよう定義されていないが、［
+その中の %刻限 を算出する所で利用される
+］ことが意図されていると見受けられる。
+】</p>
+◎
+For each win of the same-loop windows for this event loop, perform the start an idle period algorithm for win with computeDeadline. [REQUESTIDLECALLBACK]
+</li>
+		</ol>
 	</li>
 	<li>
 <p>
@@ -10413,13 +10600,16 @@ Let now be the current high resolution time. [HRT]
 Run the animation frame callbacks for that DedicatedWorkerGlobalScope, passing in now as the timestamp.
 </li>
 					<li>
-%~worker の描画を，現在の状態を反映するよう更新する
+%~worker の描画を［
+現在の状態を反映する
+］よう更新する
 ◎
 Update the rendering of that dedicated worker to reflect the current state.
 </li>
 				</ol>
 <p class="note">注記：
-`~window~event~loop$における`描画を更新する$ときの注記と同様に、~UAは，専用~workerにおける描画の更新率を決定できる。
+`~window~event~loop$における`描画を更新する$ときの注記と同様に、
+~UAは，専用~workerにおける描画の更新率を決定できる。
 ◎
 Similar to the notes for updating the rendering in a window event loop, a user agent can determine the rate of rendering in the dedicated worker.
 </p>
