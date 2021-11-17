@@ -887,7 +887,6 @@ overhead::::オーバーヘッド
 account::::アカウント
 archive::::アーカイブ
 bookmark::::ブックマーク
-clear::::クリア
 component::::コンポーネント
 container:::コンテナ
 crash::::クラッシュ

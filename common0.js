@@ -2826,6 +2826,8 @@ scalar::::スカラー
 複製:copy::~
 削除-:delete::~
 削除:deletion::~
+clear::::クリア
+	空にする:clear
 抽出-:extract::~
 生産-:produce::~
 格納-:store::~
