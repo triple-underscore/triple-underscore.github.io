@@ -1474,10 +1474,9 @@ informative: '<h3>文献（参考）</h3>'
 			let last_key = '';
 			if(ref_rfc) {
 				data = data.replace(/~RFC(\d+)\b(.*)/g,
-'RFC $1$2 URL: https://datatracker.ietf.org/doc/html/rfc$1'
+'RFC $1$2 URL: https://www.rfc-editor.org/rfc/rfc$1'
 				);
 			}
-
 			let html = data
 			.replace(
 				/＜(.+?)＞/g,
