@@ -46,6 +46,9 @@ case 'r':
 case 'l':
 	text = `"<code class="literal">${text}</code>"`;
 	break;
+case 'bl':
+	text = `\`<code class="literal">${text}</code>\``;
+	break;
 case 'h':
 	text = `\`<code class="header">${key}</code>\``;
 	break;
@@ -62,6 +65,9 @@ case 'm':
 		key = text.slice(0, n);
 		text = key + text.slice(n).replace(/\w+/g, '<var>$&</var>');
 	}
+	break;
+case 'U':
+	text = `U+${key}`
 	break;
 case '0x': // escape '%'
 	return `%x${key}`;
@@ -125,7 +131,8 @@ P:production
 et:event-type
 st:attr-state
 jA:abstract
-v:value
+U:code-point
+cn:cp-name
 
 ●●tag_map
 I:code
@@ -137,6 +144,8 @@ et:code
 mt:code
 st:span
 jA:span
+U:span
+cn:span
 P:code
 i:i
 em:em
@@ -189,7 +198,7 @@ et.error:~HTMLindex#event-error
 et.message:~HTMLindex#event-message
 et.open:~HTMLindex#event-open
 
-h.Last-Event-ID:~HTMLiana#last-event-id
+h.Last-Event-ID:#last-event-id
 h.Accept:~HTTPsem#field.accept
 	h.Accept:~RFC7231#section-5.3.2
 h.Content-Type:~HTMLurl#content-type
@@ -1248,8 +1257,34 @@ The task source for any tasks that are queued by EventSource objects is the remo
 </p>
 
 			</section>
+			<section id="the-last-event-id-header">
+<h4 title="The Last-Event-ID header">9.2.4. `Last-Event-ID^h ~header</h4>
+
+<p>
+`Last-Event-ID@h
+~HTTP要請~headerは、
+~UAが`接続を確立し直す$ときに，
+`EventSource$I ~objの`最後の~event~ID文字列$eSを~serverへ報告する。
+◎
+The Last-Event-ID` HTTP request header reports an EventSource object's last event ID string to the server when the user agent is to reestablish the connection.
+</p>
+
+<p class="XXX">
+値~空間を もっと良く定義することについては、
+<a href="~HTMLissue/7363">課題 #7363</a>
+を見よ。
+それは、本質的には，~UTF-8に符号化された文字列であって［
+`0000^U `NULL^cn,
+`000A^U `LF^cn,
+`000D^U `CR^cn
+］を包含しないものである。
+◎
+See whatwg/html issue #7363 to define the value space better. It is essentially any UTF-8 encoded string, that does not contain U+0000 NULL, U+000A LF, or U+000D CR.
+</p>
+
+			</section>
 			<section id="parsing-an-event-stream">
-<h4 title="Parsing an event stream">9.2.4. ~event~streamの構文解析</h4>
+<h4 title="Parsing an event stream">9.2.5. ~event~streamの構文解析</h4>
 
 <p>
 この~event~stream形式の`~MIME型$は、
@@ -1319,7 +1354,7 @@ Since connections established to remote servers for such resources are expected 
 
 			</section>
 			<section id="event-stream-interpretation">
-<h4 title="Interpreting an event stream">9.2.5. ~event~streamの解釈-法</h4>
+<h4 title="Interpreting an event stream">9.2.6. ~event~streamの解釈-法</h4>
 
 <p>
 ~streamは、`~UTF-8復号する$~algoで復号するモノトスル。
@@ -1487,9 +1522,7 @@ If the field name is "id"
 	<dd>
 <p>
 ~IF［
-%値 は
-<span class="code-point">U+0000</span> <span class="cp-name">NULL</span>
-を包含しない
+%値 は `0000^U `NULL^cn を包含しない
 ］
 ⇒
 %最後の~event~ID~buffer ~SET %値
@@ -1735,7 +1768,7 @@ function updateStocks(symbol, delta, value) { ... }
 2 個目の~blockに対しては、~eventが発火されることになる
 — そこには、名前 `data^l の~field（値に `first event^l を伴う）に加え，名前
 `id^l の~fieldもあり、`最後の~event~ID文字列$eS を `1^l に設定することになる。
-この~blockと次の~blockの合間で接続が切れた場合、再接続-時に，~serverに向けて値 `1^l を伴う `Last-Event-ID$h ~headerが送信されることになる。
+この~blockと次の~blockの合間で接続が切れた場合、再接続-時に，~serverに向けて値 `1^bl を伴う `Last-Event-ID$h ~headerが送信されることになる。
 3 個目の~blockも~eventを発火し， `data^l の値に `second event^l を伴うが、
 `id^l ~fieldには値は伴われていない
 — それは、`最後の~event~ID文字列$eS を空~文字列に再設定する（今度は、再接続が試みられる場合には， `Last-Event-ID$h ~headerは送信されないことを意味する）。
@@ -1743,7 +1776,7 @@ function updateStocks(symbol, delta, value) { ... }
 最後の~blockであっても，空行で終端させる必要があることに注意
 — ~streamが終端するだけでは，最後の~blockに対する~event配送を誘発するには十分でない。
 ◎
-The following stream contains four blocks. The first block has just a comment, and will fire nothing. The second block has two fields with names "data" and "id" respectively; an event will be fired for this block, with the data "first event", and will then set the last event ID to "1" so that if the connection died between this block and the next, the server would be sent a `Last-Event-ID` header with the value "1". The third block fires an event with data "second event", and also has an "id" field, this time with no value, which resets the last event ID to the empty string (meaning no `Last-Event-ID` header will now be sent in the event of a reconnection being attempted). Finally, the last block just fires an event with the data " third event" (with a single leading space character). Note that the last still has to end with a blank line, the end of the stream is not enough to trigger the dispatch of the last event.
+The following stream contains four blocks. The first block has just a comment, and will fire nothing. The second block has two fields with names "data" and "id" respectively; an event will be fired for this block, with the data "first event", and will then set the last event ID to "1" so that if the connection died between this block and the next, the server would be sent a `Last-Event-ID` header with the value `1`. The third block fires an event with data "second event", and also has an "id" field, this time with no value, which resets the last event ID to the empty string (meaning no `Last-Event-ID` header will now be sent in the event of a reconnection being attempted). Finally, the last block just fires an event with the data " third event" (with a single leading space character). Note that the last still has to end with a blank line, the end of the stream is not enough to trigger the dispatch of the last event.
 </p>
 
 <pre class="presentation">
@@ -1813,7 +1846,7 @@ This is because the space after the colon is ignored if present.
 
 			</section>
 			<section id="authoring-notes">
-<h4 title="Authoring notes">9.2.6. 著作~上の注記</h4>
+<h4 title="Authoring notes">9.2.7. 著作~上の注記</h4>
 
 <p>
 旧来の~proxy~serverは、ある種の事例では、短い制限時間~後に~HTTP接続を落とすことが知られている。
@@ -1862,7 +1895,7 @@ Clients that support HTTP's per-server connection limitation might run into trou
 
 			</section>
 			<section id="eventsource-push">
-<h4 title="Connectionless push and other features">9.2.7. 無接続~pushと他の特能</h4>
+<h4 title="Connectionless push and other features">9.2.8. 無接続~pushと他の特能</h4>
 
 <p>
 制御~下にある環境で走っている~UA
@@ -1960,7 +1993,7 @@ As well as implementing the existing API and text/event-stream wire format as de
 
 			</section>
 			<section id="garbage-collection">
-<h4 title="Garbage collection">9.2.8. ~garbage収集</h4>
+<h4 title="Garbage collection">9.2.9. ~garbage収集</h4>
 
 <p>
 ［
@@ -2030,7 +2063,7 @@ If an EventSource object is garbage collected while its connection is still open
 
 			</section>
 			<section id="implementation-advice">
-<h4 title="Implementation advice">9.2.9. 実装への~advice</h4>
+<h4 title="Implementation advice">9.2.10. 実装への~advice</h4>
 
 ~INFORMATIVE
 
