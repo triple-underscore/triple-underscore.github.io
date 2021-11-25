@@ -110,6 +110,9 @@ case 'm':
 	key = key.replace(/\(.+/, '');
 	text = key + text.replace(/^[^\(]+/, '').replace(/\w+/g, '<var>$&</var>' );
 	break;
+case 'en':
+	return `<span lang="en">${key}</span>`;
+	break;
 }
 
 let tag = tag_map[klass];
@@ -154,8 +157,8 @@ return text;
 ●●options
 
 spec_title:Cooperative Scheduling of Background Tasks
-spec_date:2021-06-17
-trans_update:2021-11-17
+spec_date:2021-11-22
+trans_update:2021-11-26
 source_checked:210617
 page_state_key:TIMING
 original_url:https://w3c.github.io/requestidlecallback/
@@ -176,7 +179,6 @@ m:code
 d:code
 c:code
 E:code
-l:code
 V:var
 b:b
 i:i
@@ -209,6 +211,7 @@ I.IdleRequestOptions:#dom-idlerequestoptions
 
 I.Window:~WINDOW#window
 	I.Window:#dom-window
+I.WindowProxy:~WINDOW#windowproxy
 
 I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
 
@@ -222,7 +225,6 @@ m.didTimeout:#dom-idledeadline-didtimeout
 m.performance.now:~HRTIME#dom-performance-now
 
 m.requestAnimationFrame:~HTMLGAPI#dom-animationframeprovider-requestanimationframe
-m.setInterval:~HTMLGAPI#dom-setinterval
 m.setTimeout:~HTMLGAPI#dom-settimeout
 
 	●用語（他
@@ -230,16 +232,16 @@ m.setTimeout:~HTMLGAPI#dom-settimeout
 遊休~callback:#_idle-callback
 ~callback:#_callback
 ~handle:#_handle
-稼働-可能:#_runnable
+稼働-可能か:#_runnable
 
 ~timeoutか:#dfn-timeout
 
-刻限~時刻:#dfn-time
+刻限~時刻を取得する~algo:#dfn-get-deadline-time
 遊休~callback~list:#_list-of-idle-callbacks
 要請-済み遊休~callback~list:#dfn-list-of-idle-request-callbacks
 稼働-可能な遊休~callback~list:#dfn-list-of-runnable-idle-callbacks
 遊休~callback識別子:#dfn-idle-callback-identifier
-最後の遊休~期間~刻限:#dfn-last-idle-period-deadline
+	廃）最後の遊休~期間~刻限:#dfn-last-idle-period-deadline
 
 遊休task~task源:#dfn-idle-task-task-source
 遊休~期間:#dfn-idle-period
@@ -247,7 +249,7 @@ m.setTimeout:~HTMLGAPI#dom-settimeout
 遊休~期間を開始する:#dfn-start-an-idle-period-algorithm
 遊休~callbackを呼出す:#dfn-invoke-idle-callbacks-algorithm
 ~timeoutした遊休~callbackを呼出す:#dfn-invoke-idle-callback-timeout-algorithm
-遊休~callbackを内部的に呼出す:#_invoke-idle-callback
+遊休~刻限を作成して遊休~callbackを呼出す:#_invoke-idle-callback
 
 	50ms:#why50
 	:#figure1
@@ -259,7 +261,8 @@ m.setTimeout:~HTMLGAPI#dom-settimeout
 	●用語（他
 時刻起点:~HRTIME#dfn-time-origin
 現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
-非可視:~PAGE-VISIBILITY#dfn-hidden
+
+可視性~状態:~HTMLinteraction#visibility-state
 ~task:~WAPI#concept-task
 ~taskを~queueする:~WAPI#queue-a-task
 ~task源:~WAPI#task-source
@@ -267,10 +270,8 @@ m.setTimeout:~HTMLGAPI#dom-settimeout
 	~event~loop処理~model:~WAPI#event-loop-processing-model
 ~errorを報告する:~WAPI#report-the-error
 
-作動中の~timer群が成す~map:~HTMLGAPI#map-of-active-timers
-	廃）作動中の~timer~list:~HTMLGAPI#list-of-active-timers
+~callback関数を呼出す:~WEBIDLjs#invoke-a-callback-function
 
-	conforming implementation:~WEBIDL/#dfn-conforming-implementation
 	~privacyと~security:~HRTIME#privacy-security
 
 ●●words_table1
@@ -302,7 +303,6 @@ mark::::マーク
 
 作業:work:::タスク
 処理待ち:pending:~
-処理待ちの:pending:~
 遅延
 刻限:deadline::~
 協力的:cooperative:~
@@ -311,7 +311,6 @@ mark::::マーク
 	先送り:postpone／yield／get called back／to be performed／ to be repeatedly executed
 負荷:load:~
 	負荷が高い~heavy page load
-応答性:responsiveness:~
 早期:early:~
 今:now:~
 時刻起点:time origin::~
@@ -322,7 +321,6 @@ mark::::マーク
 瞬間的:instantaneous:~
 稼働-:run::~
 	稼働-可能:runnable
-稼働時:runtime::~
 粒度:granularity:~
 	終わった:finish
 背景:background:~
@@ -333,15 +331,13 @@ mark::::マーク
 
 遊休:idle::~::アイドル
 遊休task:idle-task::遊休タスク::アイドルタスク
-
-閾値:threshold:~
 高頻度:frequent:~
 競争:race:~
 
 	〜に厳しい:-critical
 	予測-不能:unpredictable
 	間引くthrottle〜rather than continuously
-	~~静止:quiescence
+	静かな:quiescence
 	不定期:unbounded amount of time
 	生じ:occur
 	-:pop
@@ -363,6 +359,7 @@ mark::::マーク
 	continuation
 	continue
 	周期:cycle
+	~~延長:pad
 
 	●仕様
 欠点:disadvantage:~
@@ -388,7 +385,6 @@ mark::::マーク
 高分解能:high resolution:~
 
 	●未分類
-非可視:hidden:~
 	事前に具現化:pre-rendering
 知覚-:perceive:~
 	perception
@@ -414,13 +410,14 @@ mark::::マーク
 
 片:fragment:~
 優先度:priority:~
-電力消費:power-usage:~
+電力消費:power usage:~
 節電:low-power:~
 
-jank:::カクつき
+カクつき:jank:::~
 templating:::テンプレート処理
 overhead::::オーバーヘッド
-processor::::プロセッサ
+収まる:fitする:~
+
 	〜式:style
 	client側:client-side
 
@@ -442,7 +439,6 @@ processor::::プロセッサ
 	差し迫った:upcoming
 	very
 	自由:free
-	見合う:fit
 	負荷:load
 	数:number
 	最も容易な:easiest
@@ -493,22 +489,20 @@ processor::::プロセッサ
 ●●ref_normative
 
 [HR-TIME]
-    High Resolution Time. Yoav Weiss; Ilya Grigorik; James Simonsen; Jatinder Mann. W3C. 7 June 2021. W3C Working Draft. URL: https://www.w3.org/TR/hr-time-3/
+    High Resolution Time. Yoav Weiss; Ilya Grigorik; James Simonsen; Jatinder Mann. W3C. 12 October 2021. W3C Working Draft. URL: https://www.w3.org/TR/hr-time-3/
 [HTML]
     HTML Standard. Anne van Kesteren; Domenic Denicola; Ian Hickson; Philip Jägenstedt; Simon Pieters. WHATWG. Living Standard. URL: https://html.spec.whatwg.org/multipage/
 [RFC2119]
-    Key words for use in RFCs to Indicate Requirement Levels. S. Bradner. IETF. March 1997. Best Current Practice. URL: https://tools.ietf.org/html/rfc2119
+    Key words for use in RFCs to Indicate Requirement Levels. S. Bradner. IETF. March 1997. Best Current Practice. URL: https://www.rfc-editor.org/rfc/rfc2119
 [RFC8174]
-    Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words. B. Leiba. IETF. May 2017. Best Current Practice. URL: https://tools.ietf.org/html/rfc8174
+    Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words. B. Leiba. IETF. May 2017. Best Current Practice. URL: https://www.rfc-editor.org/rfc/rfc8174
 [webidl]
-    Web IDL. Boris Zbarsky. W3C. 15 December 2016. W3C Editor's Draft. URL: https://heycam.github.io/webidl/
+    Web IDL Standard. Edgar Chen; Timothy Gu. WHATWG. Living Standard. URL: https://webidl.spec.whatwg.org/
 
 ●●ref_informative
 
 [dom]
     DOM Standard. Anne van Kesteren. WHATWG. Living Standard. URL: https://dom.spec.whatwg.org/
-[page-visibility-2]
-    Page Visibility Level 2. Ilya Grigorik; Marcos Caceres. W3C. 18 May 2021. W3C Candidate Recommendation. URL: https://www.w3.org/TR/page-visibility-2/
 [RESPONSETIME]
     Response time in man-computer conversational transactions. Robert B. Miller. December 1968. Fall Joint Computer Conference. URL: http://yusufarslan.net/sites/yusufarslan.net/files/upload/content/Miller1968.pdf
 
@@ -566,18 +560,22 @@ Mailing list
 ~ABSTRACT
 
 <p>
-この文書は、~web~page作者が，背景~taskたちを協力的に~scheduleするために
+この文書は、
+~web~page作者が，背景~taskたちを協力的に~scheduleするために
 — すなわち，［
 入力~処理／~animation／~frame組成-法
 ］などの，同じ~event~loopを共有する高~優先度~taskに遅延をもたらさないように — 
 利用できる~APIを定義する。
 ~UAは、［
 現在~scheduleされている~task, ~vsync刻限, 利用者~対話, 等々
-］の知識を有するので、背景~taskを［
+］の知識を有するので、
+背景~taskを［
 ~animationや入力~応答にて
-利用者が知覚し得る遅延や~jank
-］をもたらすことなく，いつ稼働できるかを決定するにあたって、~~有利な立場にある。
-したがって，この~APIを利用すれば、背景~taskは，~UAが遊休~中のときに稼働されるように，より適切に~scheduleされるはずである。
+利用者が知覚し得る遅延やカクつき
+］をもたらすことなく，いつ稼働できるかを決定するにあたって、
+~~有利な立場にある。
+したがって，この~APIを利用すれば、
+背景~taskは，~UAが遊休~中のときに稼働されるように，より適切に~scheduleされるはずである。
 ◎
 This document defines an API that web page authors can use to cooperatively schedule background tasks such that they do not introduce delays to other high priority tasks that share the same event loop, such as input processing, animations and frame compositing. The user agent is in a better position to determine when background tasks can be run without introducing user-perceptible delays or jank in animations and input response, based on its knowledge of currently scheduled tasks, vsync deadlines, user-interaction and so on. Using this API should therefore result in more appropriate scheduling of background tasks during times when the browser would otherwise be idle.
 </p>
@@ -588,7 +586,7 @@ This document defines an API that web page authors can use to cooperatively sche
 
 <p>
 これは、編集者草案の公な複製です…
-【以下，この節の内容は、<a href="w3c-common-ja.html#status">W3C 日本語訳~共通~page</a>／冒頭の仕様~metadataに移譲。】
+【以下，この節の内容は、<a href="w3c-common-ja.html#status">~W3C日本語訳~共通~page</a>／冒頭の仕様~metadataに移譲。】
 </p>
 
 	</section>
@@ -600,24 +598,28 @@ This document defines an API that web page authors can use to cooperatively sche
 ~INFORMATIVE
 
 <p>
-~web~pageでは、~UAの~event~loop上で，背景~taskを実行することが求まれることが多い。
+~web~pageでは、
+~UAの~event~loop上で，背景~taskを実行することが求まれることが多い。
 背景~taskとは、
 “時間に厳しい”
-~task
-【 time-critical — 所定の刻限までに終えることが求まれる~task 】
-ではないが，有意な時間はかかるような、計算~taskである。
+【 `time-critical^en — 所定の刻限までに終えることが求まれる】
+~taskではないが，有意な時間はかかる計算~taskである。
 そのような~taskの例には、［
-解析~dataを記録する ／
-長時間~稼働し続けるような~data処理~演算 ／
-~client側~templating ／
-近い未来に可視になると見込まれる内容を 事前に具現化しておく
+解析~dataを記録する／
+長時間~稼働し続ける~data処理~演算／
+~client側~templating／
+近い未来に可視になると見込まれる内容を事前に具現化しておく
 ］などが挙げられる。
-これらの~taskは、~event~loopを，時間に厳しい他の演算（例えば［
+これらの~taskは、
+同じ~event~loopを時間に厳しい他の演算
+（例：
 利用者~入力に反応する ／
-`requestAnimationFrame()$m を利用する ~scriptに基づく~animation
-］など）と共有しなければならない。
-これらの背景~taskは、概して，［
-`setTimeout()$m を利用して~callbackを~scheduleして，その~callbackにて背景~taskを稼働する
+`requestAnimationFrame()$m を利用する，~scriptに基づく~animation ）
+と共有しなければならない。
+これらの背景~taskは、
+概して，［
+`setTimeout()$m を利用して~callbackを~scheduleして，
+その~callbackにて背景~taskを稼働する
 ］ことにより遂行されている。
 ◎
 Web pages often want to execute computation tasks on the browser's event loop which are not time-critical, but might take a significant portion of time to perform. Examples of such background tasks include recording analytics data, long running data processing operations, client-side templating and pre-rendering of content likely to become visible in the near future. These tasks must share the event loop with other time-critical operations, such as reacting to input and performing script-based animations using requestAnimationFrame(). These background tasks are typically performed by scheduling a callback using setTimeout() and running the background task during that callback.
@@ -628,67 +630,81 @@ Web pages often want to execute computation tasks on the browser's event loop wh
 ◎
 A disadvantage of this approach is that＼
 </p>
-
 <ul>
 	<li>
-~scriptの作者には、
-`setTimeout()$m に与えた~callbackが［
+~scriptの作者は、
+次について~UAに伝えるすべがない
+⇒
+`setTimeout()$m に与えた~callbackは、
 時間に厳しいのか，~UAが遊休~中になるまで遅延できるのか
-］について，~UAに伝えるすべがない。
 ◎
 the author of the script has no way to inform the user-agent as to whether a given setTimeout() callback is time-critical or could be delayed until the browser is otherwise idle.
 ＼
 </li>
 	<li>
-~UAは、［［
-時間に厳しい演算の遅延や，~jankその他の利用者が知覚し得るような遅延
+~UAは、次についての情報を~callbackに供せない
+⇒
+［
+時間に厳しい演算の遅延／
+カクつきその他の利用者が知覚し得るような遅延
 ］をもたらすことなく，いつまで~callbackを実行し続けられるか
-］についての情報を，~callbackに供せない。
 ◎
 In addition, the user agent isn't able to provide the callback with any information about how long it can continue to execute without delaying time-critical operations and causing jank or other user-perceptible delays.＼
 </li>
 </ul>
 
 <p>
-その結果，作者にとっては、単純に［
-微小な値を引数に `setTimeout()$m を~callして，その~callbackの中でアリな限り小分けした作業をこなし，追加的な作業を `setTimeout()$m への別の~callで~scheduleし直す
-］のが，最も容易になるが、これは：
+その結果，作者にとっては、
+単純に［
+微小な値を引数に `setTimeout()$m を~callして，
+その~callbackの中でアリな限り小分けした作業をこなし，
+追加的な作業を `setTimeout()$m への別の~callで~scheduleし直す
+］のが最も容易になるが，これは：
 ◎
 As a result, the easiest way forward is for the author is to simply call setTimeout() with a very small value, and then execute the minimum possible chunk of work in the resulting callback and reschedule additional work with another call to setTimeout().＼
 </p>
 
 <ul>
 	<li>
-多数の小さな~taskを~UAの~event~loopに~postして，それらの実行を~scheduleすることによる，余計な~overheadがあるので、最適とは言えない。
+多数の小さな~taskを~UAの~event~loopに~postして，
+それらの実行を~scheduleすることによる，余計な~overheadがあるので、
+最適とは言えない。
 ◎
 This is less than optimal because there is extra overhead from having to post many small tasks on the user agent's event loop and schedule their execution.＼
 </li>
 	<li>
 ~UAが［
 時間に厳しい他の作業の合間に，これら各~callbackを適切に差挟む
-］ことに依拠しているが、そうするのは困難である
-— ~UAは、各~callbackに要する~~時間について正確aな前提を置けないので。
+］ことに依拠しているが、
+そうするのは困難である
+— ~UAは、
+各~callbackに要する~~時間について正確aな前提を置けないので。
 ◎
 It also relies on the user-agent interleaving other time-critical work between each of these callbacks appropriately, which is difficult since the user-agent can't make accurate assumptions on how long each of these callbacks are likely to take.
 </li>
 </ul>
 
 <p>
-この文書にて述べる~APIにより、~script作者は，［
-~callbackを，~UAが遊休~中になったなら~callされるように~scheduleする
-］よう，~UAに要請することが可能になる。
-~UAは、その~callbackに［
+この文書にて述べる~APIは、［
+~callbackを［
+~UAが遊休~中になったなら~callされる
+］よう~scheduleするよう，~UAに要請する
+］ことを~script作者に許容する。
+~UAは、
+その~callbackに［
 自身の見積もりによる，自身が遊休~中であり続ける時間
-］を，刻限（ deadline ）として渡す。
-~page作者は、その刻限を利用して，［
-~callbackが実行する背景~taskが，~animationや, 利用者~入力に対する応答などの待時間に厳しい~eventには影響iしない
-］ことを確保できる。
+］を刻限（ `deadline^en ）として渡す。
+~page作者は、
+その刻限を利用して，~callbackが実行する背景~taskが待時間に厳しい~event
+— ~animation, 利用者~入力に対する応答など —
+には影響iしないことを確保できる。
 ◎
 The API described in this document allows script authors to request the user-agent to schedule a callback when it would otherwise be idle. The user agent provides an estimation of how long it expects to remain idle as a deadline passed to the callback. The page author can use the deadline to ensure that these background tasks don't impact latency-critical events such as animation and input response.
 </p>
 
 <p>
-この~APIを利用して、背景~taskを書く例を示す：
+この~APIを利用して、
+背景~taskを書く例を示す：
 ◎
 Here is an example of using the API to write a background task.
 </p>
@@ -697,7 +713,8 @@ Here is an example of using the API to write a background task.
 <pre class="lang-html">
 &lt;!DOCTYPE html&gt;
 &lt;title&gt;<span class="comment">
-`requestIdleCallback()$m を利用して、背景~taskを~scheduleする
+`requestIdleCallback()$m を利用して、
+背景~taskを~scheduleする
 ◎
 Scheduling background tasks using requestIdleCallback
 </span>&lt;/title&gt;
@@ -749,7 +766,8 @@ Not started
 <h2>【この訳に特有な表記規約】</h2>
 
 <p>
-この訳の~algoや定義の記述に利用されている各種記号（ ~LET, コレ, ~IF, ~THROW 等々）の意味や定義の詳細は、~SYMBOL_DEF_REFを~~参照されたし。
+この訳の~algoや定義の記述に利用されている各種記号（ ~LET, コレ, ~IF, ~THROW 等々）の意味や定義の詳細は、
+~SYMBOL_DEF_REFを~~参照されたし。
 </p>
 
 	</section>
@@ -766,29 +784,39 @@ Not started
 次回の~frameが始まる ／
 別の処理待ち~taskが稼働-可能になる ／
 利用者からの入力を受取る
-］のいずれかが生じるまでは、遊休~中になることが多い。
-この仕様は、この遊休~中の間に ~callbackの実行を~scheduleする手段を， `requestIdleCallback()$m を介して供する。
+］のいずれかが生じるまでは、
+遊休~中になることが多い。
+この仕様は、［
+~callbackの実行を，この遊休~中の間に~scheduleする手段
+］を `requestIdleCallback()$m を介して供する。
 ◎
 After input processing, rendering and compositing for a given frame has been completed, the user agent's main thread often becomes idle until either: the next frame begins; another pending task becomes eligible to run; or user input is received. This specification provides a means to schedule execution of callbacks during this otherwise idle time via a requestIdleCallback() API.
 </p>
 
 <p>
-`requestIdleCallback()$m を介して~postされた~callbackには、~UAにより定義される遊休~期間にて稼働-可能になる。
+`requestIdleCallback()$m を介して~postされた~callbackには、
+~UAにより定義される遊休~期間にて稼働-可能になる。
 遊休~callback
 【 “~UAの遊休~期間に~callされるものとして，作者が与える~callback関数” 】
-の稼働-時には、現在の遊休~期間の終端に対応する刻限が渡される。
+の稼働-時には、
+現在の遊休~期間の終端に対応する刻限が渡される。
 何をもって遊休~期間と裁定するかは，~UAにより定義されるが、［
-~UA自身が遊休~中にあると予期するような， “~~静止” 期間
+~UA自身が遊休~中にあると予期するような， “静かな” 期間
 ］に生じるものと期待される。
 ◎
 Callbacks posted via the requestIdleCallback() API become eligible to run during user agent defined idle periods. When an idle callback is run it will be given a deadline which corresponds to the end of the current idle period. The decision as to what constitutes an idle period is user agent defined, however the expectation is that they occur in periods of quiescence where the browser expects to be idle.
 </p>
 
 <p>
-遊休~期間の一例として、次の図に示されるような，［
-所与の~frameを~screenへ~commitしてから，作動中の~animationの間に次回の~frameの処理を開始するまで
+遊休~期間の一例として、
+次の図に示されるような［
+所与の~frameを~screenへ~commitしてから，
+作動中の~animationの間に次回の~frameの処理を開始するまで
 ］の時区間が挙げられる。
-そのような遊休~期間は，~animationが作動中にあり, ~screenが更新され続ける間に，高頻度に生じるが、概して とても短くなる（すなわち、~vsync周期が 60Hz の機器においては約 16ms 以下）。
+そのような遊休~期間は、［
+~animationが作動中にあり, ~screenが更新され続ける
+］間に高頻度に生じるが，概して ごく短くなる
+（すなわち、~vsync周期が 60Hz の機器においては約 16ms 以下）。
 ◎
 One example of an idle period is the time between committing a given frame to the screen and starting processing on the next frame during active animations, as shown in Figure 1. Such idle periods will occur frequently during active animations and screen updates, but will typically be very short (i.e., less than 16ms for devices with a 60Hz vsync cycle).
 </p>
@@ -797,6 +825,7 @@ One example of an idle period is the time between committing a given frame to th
 <!-- requestidlecallback/image01.png
 Image source avaliable at
 https://docs.google.com/document/d/1zGgKAJVTDVgq0LpZDL3HD0jNiveivHb_V2Wb8C3jsEE/edit
+alt=（figcaption と同じ）
 -->
 
 <div style="padding: 1em 0;">
@@ -838,29 +867,44 @@ Example of an inter-frame idle period
 </figcaption></figure>
 
 <p class="note">注記：
-~web開発者は、遊休~callbackの間に その演算が遂行するすべての作業を【非同期的なものも含めて】勘定に入れるよう，注意深くなるべきである。
+~web開発者は、
+遊休~callbackの間に その演算が遂行するすべての作業を【非同期的なものも含めて】勘定に入れるよう，注意深くなるべきである。
 一部の演算
-— 例えば、~promiseを解決する, あるいは~page~layoutを誘発するものなど —
+— 例：~promiseを解決する, ~page~layoutを誘発するものなど —
 は、遊休~callbackが終わった後にも，後続の~taskを~scheduleさせ得る。
-そのような事例では、刻限を過ぎる前に，これらの演算を次回の~frame刻限の前に遂行できるように先送りするべきである。
+そのような事例では、
+刻限を過ぎる前に，［
+これらの演算を，次回の~frame刻限の前に遂行できるよう先送りする
+］べきである。
 ◎
 The web-developer should be careful to account for all work performed by operations during an idle callback. Some operations, such as resolving a promise or triggering a page layout, may cause subsequent tasks to be scheduled to run after the idle callback has finished. In such cases, the application should account for this additional work by yielding before the deadline expires to allow these operations to be performed before the next frame deadline.
 </p>
 
 <p>
-遊休~期間の別の例として、~screenの更新がないときの遊休~~状態が挙げられる。
-そのような状況では、~UAが遊休~期間を早々に終端させ得るような差し迫った~taskがないときでも、いつ起きるか予測-不能な~task
+遊休~期間の別の例として、［
+~screenの更新が生じていないため，~UAは遊休~中にあるとき
+］が挙げられる。
+そのような状況では、［
+遊休~期間を早々に終端させ得るような差し迫った~task
+］は~UAには無いときでも［
+いつ起きるか予測-不能な~task
 — 利用者~入力の処理など —
-により，利用者が知覚し得る遅延が起きないようにするため、遊休~期間の長さは，
+により，利用者が知覚し得る遅延が生じること
+］を避けるため，
+遊休~期間の長さは
 <a href="#why50">50ms を上限にする</a>べきである。
-遊休~期間が終わり，まだ遊休~中にあるならば、~UAは，次の図に示されるように，別の遊休~期間を~scheduleできる
-— 背景~作業は、複数の遊休~期間にわたり，何回でも存続し続けられる。
+遊休~期間が終わり，まだ遊休~中にあるならば、
+~UAは，次の図に示されるように別の遊休~期間を~scheduleできる
+— 背景~作業は、
+複数の遊休~期間にわたり，何回でも存続し続けられる。
 ◎
 Another example of an idle period is when the user agent is idle with no screen updates occurring. In such a situation the user agent may have no upcoming tasks with which it can bound the end of the idle period. In order to avoid causing user-perceptible delays in unpredictable tasks, such as processing of user input, the length of these idle periods should be capped to a maximum value of 50ms. Once an idle period is finished the user agent can schedule another idle period if it remains idle, as shown in Figure 2, to enable background work to continue to occur over longer idle time periods.
 </p>
 
 <figure id="figure2">
-<!-- requestidlecallback/image00.png -->
+<!-- requestidlecallback/image00.png
+alt=（figcaption と同じ）
+-->
 <div style="padding-bottom: 1em;">
 	<div class="_frames1">
 …
@@ -894,37 +938,58 @@ Another example of an idle period is when the user agent is idle with no screen 
 	</div>
 </div>
 <figcaption>
-処理待ちの~frame更新はないときの遊休~期間の例
+処理待ち~frame更新はないときの遊休~期間の例
 ◎
 Example of an idle period when there are no pending frame updates
 </figcaption></figure>
 
 <p>
-遊休~期間の間，~UAは、各 遊休~callbackを［
+遊休~期間の間，~UAは、
+各 遊休~callbackを［
 遊休~期間が終端するか, または
 稼働-可能とされている遊休~callbackをすべて稼働し終える
-］まで、要請された順に稼働することになる。
-すなわち、~UAは必ずしも，~postされた遊休~callbackすべてを単独の遊休~期間~内に稼働させることはない。
-残りの遊休~taskは、次回の遊休~期間にも稼働-可能であり続ける。
+］まで，要請された順に稼働することになる。
+すなわち，~UAは、
+必ずしも［
+~postされた遊休~callbackすべてを単独の遊休~期間~内に稼働させる
+］ことはない。
+残りの遊休~taskは、
+次回の遊休~期間にも稼働-可能であり続ける。
 ◎
 During an idle period the user agent will run idle callbacks in FIFO order until either the idle period ends or there are no more idle callbacks eligible to be run. As such, the user agent will not necessarily run all currently posted idle callbacks within a single idle period. Any remaining idle tasks are eligible to run during the next idle period.
 </p>
 
 <p class="note">注記：
-最良な処理能を発揮させるためには、開発者には，有意義な作業を遂行しない不必要な~callback（例：
-`requestAnimationFrame()^m,
-`setTimeout()^m, 等々）は排することが奨励される
-— そのような~callbackを発火させ続けて，各~eventに反応するのを待機するのでなく、各~eventに反応する~callbackを，可用になり次第 必要に応じて~scheduleするほうがよい。
-この~patternにより、全体的な効率性は改善され、~UAは，背景~作業の巨大~blockをより効率的に遂行できるような，長い（ 50ms までの）遊休~callbackを~scheduleすることが可能になる。
+最良な処理能を発揮させるためには、
+開発者には，有意義な作業を遂行しない不必要な~callback
+（例： `requestAnimationFrame()^m, `setTimeout()^m, 等々）
+は排することが奨励される
+— そのような~callbackを発火させ続けて，各~eventに反応するのを待機するのでなく、
+各~eventに反応する~callbackを［
+可用になり次第 必要に応じて~scheduleする
+］方がよい。
+この~patternにより，全体的な効率性は改善され、
+~UAは，背景~作業の巨大~blockをより効率的に遂行できるよう［
+長い（ 50ms までの）遊休~callbackを~scheduleする
+］ことが可能になる。
 ◎
 To deliver the best performance developers are encouraged to eliminate unnecessary callbacks (e.g. requestAnimationFrame, setTimeout, and so on) that do not perform meaningful work; do not keep such callbacks firing and waiting for events to react, instead schedule them as necessary to react to events once they become available. Such pattern improves overall efficiency, and enables the user agent to schedule long idle callbacks (up to 50ms) that can be used to efficiently perform large blocks of background work.
 </p>
 
 <p>
-現在の遊休~期間にて稼働-可能であるとされる遊休~taskは、その遊休~期間が開始される前に~postされたものに限られる。
-したがって、ある遊休~callbackが `requestIdleCallback()$m を利用して別の~callbackを~postしたならば、その~callbackは，現在の遊休~期間においては稼働しないことになる。
-これにより、遊休~callbackは，自身の作業を所与の刻限までに完了できない場合には，未来の遊休~期間にまた稼働させるように自身を再度~postできるようになる。
-すなわち、次の例の様に，遊休~期間が短か過ぎるときは先送りする~code~patternも可能になる：
+現在の遊休~期間にて稼働-可能とされる遊休~taskは、
+その遊休~期間が開始される前に~postされたものに限られる。
+したがって、［
+ある遊休~callbackが `requestIdleCallback()$m を利用して別の~callbackを~postした
+］ならば，［
+その~callbackは，現在の遊休~期間においては稼働しない
+］ことになる。
+これにより，遊休~callbackは、
+自身の作業を所与の刻限までに完了できない場合には，
+未来の遊休~期間にまた稼働させるように自身を再度~postできるようになる。
+すなわち、
+遊休~期間が短か過ぎるときは先送りする~code~patternも可能になる
+— 次の例の様に：
 ◎
 Only idle tasks which posted before the start of the current idle period are eligible to be run during the current idle period. As a result, if an idle callback posts another callback using requestIdleCallback(), this subsequent callback won't be run during the current idle period. This enables idle callbacks to re-post themselves to be run in a future idle period if they cannot complete their work by a given deadline - i.e., allowing code patterns like the following example, without causing the callback to be repeatedly executed during a too-short idle period:
 </p>
@@ -934,7 +999,8 @@ Only idle tasks which posted before the start of the current idle period are eli
 function doWork(%deadline) {
   if (%deadline.timeRemaining() &lt;= 5) {
     /* <span class="comment">
-この作業は 5ms 以上かかるので、刻限の余裕が十分になるまで，先送りする。
+この作業は 5ms 以上かかるので、
+刻限の余裕が十分になるまで，先送りする。
 ◎
 This will take more than 5ms so wait until we get called back with a long enough deadline.
 </span> */
@@ -951,8 +1017,11 @@ do work...
 </div>
 
 <p>
-新たに~postされた遊休~callbackは、`遊休~callback~list$の末尾に付加され，次回の遊休~期間の開始-時に`稼働-可能$にされる。
-したがって，再~postされる~callbackたちは、~round-robin式に
+新たに~postされた遊休~callbackは，
+`遊休~callback~list$の末尾に付加され、
+その`稼働-可能か$ は，次回の遊休~期間の開始-時に ~T にされる。
+したがって，再~postされる~callbackたちは、
+~round-robin式に
 — 各~callbackが［
 同じ遊休~期間における，より早期の~taskにより再~postされた~callback
 ］より前に稼働する機会が得られるように —
@@ -962,37 +1031,53 @@ At the start of the next idle period newly posted idle callbacks are appended to
 </p>
 
 <p class="note">注記：
-この仕様の将来~versionでは、他の~schedule策も許容され得る。
-例えば、遊休~callbackを同じ遊休~期間の中で~scheduleしたり、少なくとも X ~milli秒 以上の遊休~期間, 等々。
-現在の仕様は、~callbackが［
+この仕様の将来~versionでは、
+他の~schedule策も許容され得る。
+例えば、
+遊休~callbackを同じ遊休~期間の中で~scheduleしたり，
+少なくとも X ~milli秒 以上の遊休~期間, 等々。
+現在の仕様は、
+~callbackが［
 自身の~logicを実行したり，次回の遊休~期間に自身を再~postできる
-］ような，次回の遊休~期間に~scheduleする事例のみを~supportする
+］ような［
+次回の遊休~期間に~scheduleする事例
+］のみを~supportする
 ◎
 Future versions of this specification could allow other scheduling strategies. For example, schedule idle callback within the same idle period, a period that has at least X milliseconds of idle time, and so on. Current specification only supports the case for scheduling into the next idle period, at which time the callback can execute its logic, or repost itself into the next idle period.
 </p>
 
 <p>
-~UAは、~web~pageが利用者から可視でない下では、機器の電力消費を抑制するためなど，遊休~期間の生成を間引くこともできる
-— 例えば，毎 10 秒ごとに一回にするなど。
+~UAは、
+~web~pageが利用者から可視でないと決定した場合には，
+機器の電力消費を抑制するためなど，
+遊休~期間の生成を間引くこともできる
+— 例えば、 10 秒ごとに一回にするなど。
 ◎
 When the user agent determines that the web page is not user visible it can throttle idle periods to reduce the power usage of the device, for example, only triggering an idle period every 10 seconds rather than continuously.
 </p>
 
 <p>
-最後に，目立たないが~~重要な点として、~pageの負荷が高い間は，~UAが遊休~期間として可用な CPU 時間をあてがう保証-はないことに注意。
-~UAが遊休~期間を何ら~scheduleしないことも，まったく受容-可能であり、その場合，
-`requestIdleCallback()$m を介して~postされた遊休~callbackは、不定期に先送りされることにもなり得る。
-作者は、~callbackを遊休~期間~内に実行させたいが，ある時間までに実行することを要する場合には、
+最後に，目立たないが~~重要な点として、
+~pageの負荷が高い間は，~UAが遊休~期間として可用な CPU 時間をあてがう保証-はないことに注意。
+~UAが遊休~期間を何ら~scheduleしないことも，まったく受容-可能であり、
+その場合， `requestIdleCallback()$m を介して~postされた遊休~callbackは、
+不定期に先送りされることにもなり得る。
+作者は、
+~callbackを遊休~期間~内に実行させたいが，ある時間までに実行することを要する場合には、
 `requestIdleCallback()$m の %options 引数に `timeout$m ~memberを供せる
-— 遊休~期間~内に~callbackが実行される前に，指定された~timeoutに達した場合、それを実行する~taskが~queueされる。
+— 遊休~期間~内に~callbackが実行される前に，指定された~timeoutに達した場合、
+それを実行する~taskが~queueされる。
 ◎
 A final subtlety to note is that there is no guarantee that a user agent will have any idle CPU time available during heavy page load. As such, it is entirely acceptable that the user agent does not schedule any idle period, which would result in the idle callbacks posted via the requestIdleCallback API being postponed for a potentially unbounded amount of time. For cases where the author prefers to execute the callback within an idle period, but requires a time bound within which it can be executed, the author can provide the timeout property in the options argument to requestIdleCallback: if the specified timeout is reached before the callback is executed within an idle period, a task is queued to execute it.
 </p>
 
 <p class="note" id="why50">
-刻限の上限 50ms は、 `RESPONSETIME$r の研究から導出されたものである
-— そこでは、利用者~入力に対する 100ms 内の応答は，一般にヒトにとっては瞬間的であると知覚されることが示されている。
-したがって，遊休~taskが始まった直後に利用者~入力が生じたとしても、~UAには，［
+刻限の上限 50ms は、
+`RESPONSETIME$r の研究から導出されたものである
+— そこでは、
+利用者~入力に対する 100ms 内の応答は，一般にヒトにとっては瞬間的であると知覚されることが示されている。
+したがって，遊休~taskが始まった直後に利用者~入力が生じたとしても、
+~UAには，［
 利用者から知覚されることなく 入力に応答するための猶予
 ］として， 50ms が残されることになる。
 ◎
@@ -1014,7 +1099,8 @@ The maximum deadline of 50ms is derived from studies [RESPONSETIME] which show t
 <h2 title="Window interface extensions">4. `Window^I ~interfaceに対する拡張</h2>
 
 <p>
-`requestIdleCallback()$m 演算は、次の~IDL片による部分的~interfaceにより，
+`requestIdleCallback()$m 演算は、
+次の~IDL片による部分的~interfaceにより，
 `Window$I ~objに公開される。
 ◎
 The partial interface in the IDL fragment below is used to expose the requestIdleCallback() operation on the Window object.
@@ -1043,45 +1129,52 @@ callback `IdleRequestCallback@I = `undefined$ (`IdleDeadline$I %deadline);
 </pre>
 
 <p>
-各 `Window$I ~objは、次のものを持つ：
+各 `Window$I ~objは、
+次に挙げるものを持つ：
 ◎
 Each Window has:
 </p>
+<ul>
+	<li>
+<p>
+`遊休~callback~list@
+⇒
+一連の`遊休~callback$からなる~listであり，
+初期~時は空になるモノトスル。
+この~list内の各 `遊休~callback$の`~handle$は、
+当の `Window^I ~objが存続する限り，~list内で一意になるモノトスル。
+</p>
 
-<dl class="def-list">
-	<dt>`遊休~callback~list@</dt>
-	<dd>
-一連の`遊休~callback$からなる~listであり，初期~時は空になるモノトスル。
-~list内の各 `遊休~callback$の`~handle$は、当の `Window^I ~objが存続する限り，一意になるモノトスル。
+<p class="trans-note">【
+この~listは、
+原文では， 2 つの~list
+`要請-済み遊休~callback~list@,
+`稼働-可能な遊休~callback~list@
+に分けて管理されているが、
+この訳では 1 つの~listに集約した上で，各`遊休~callback$の`稼働-可能か$により管理する。
+そうした方がずっと簡潔に記述できるので。
+】</p>
 ◎
 A list of idle request callbacks. The list MUST be initially empty and each entry in this list is identified by a number, which MUST be unique within the list for the lifetime of the Window object.
 ◎
 A list of runnable idle callbacks. The list MUST be initially empty and each entry in this list is identified by a number, which MUST be unique within the list of the lifetime of the Window object.
-</dd>
-	<dd class="trans-note">【
-この~listは、原文では， 2 つの~list
-`要請-済み遊休~callback~list@,
-`稼働-可能な遊休~callback~list@
-に分けて管理されているが、この訳では 1 つの~listに集約した上で，各`遊休~callback$の`稼働-可能$により管理する。
-そうした方がずっと簡潔に記述できるので。
-】</dd>
-
-	<dt>`遊休~callback識別子@</dt>
-	<dd>
+</li>
+	<li>
+`遊休~callback識別子@
+⇒
 整数。
 初期~時は 0 になるモノトスル。
 ◎
 An idle callback identifier, which is a number which MUST initially be zero.
-</dd>
-
-	<dt>`最後の遊休~期間~刻限@</dt>
-	<dd>
-`DOMHighResTimeStamp$I 値。
-初期~時は 0 になるモノトスル。
+</li>
+	<li>
+最後の遊休~期間~刻限
+⇒
+【この用語は、もはや利用されなくなったので，和訳は省略する。】
 ◎
 A last idle period deadline, which is a DOMHighResTimeStamp which MUST initially be zero.
-</dd>
-</dl>
+</li>
+</ul>
 
 		<section id="the-requestidlecallback-method">
 <h3 title="The requestIdleCallback() method">4.1. `requestIdleCallback()^m ~method</h3>
@@ -1123,8 +1216,12 @@ Return handle and then continue running this algorithm asynchronously.
 </p>
 
 <p class="note">注記：
-以降，手続きは並列的に走るが、任意選択の `timeout^m ~memberが供されていれば， `setTimeout()^m に似た~timerも~queueする。
-ここからは，遊休~callbackと~timeout~callbackの競争になり、先に~scheduleされた方がもう片方（例えば 遊休~callbackが先なら、~timeout~callbackの方）を取消すことになる。
+以降，手続きは並列的に走るが、
+任意選択の `timeout^m ~memberが供されていれば， `setTimeout()^m に似た~timerも~queueする。
+ここからは，遊休~callbackと~timeout~callbackの競争になり、
+先に~scheduleされた方がもう片方
+（例えば，遊休~callbackが先なら、~timeout~callbackの方）
+を取消すことになる。
 ◎
 The following steps run in parallel and queue a timer similar to setTimeout() if the optional timeout property is provided. From here, the idle and timeout callbacks are raced and cancel each other—e.g. if the idle callback is scheduled first, then it cancels the timeout callback, and vice versa.
 </p>
@@ -1164,24 +1261,24 @@ Wait until all invocations of this algorithm, whose timeout added to their poste
 </li>
 			<li>
 <p>
-任意選択で、~UAが定義する時間だけ更に待機する
+任意選択で
+⇒
+~UAが定義する時間だけ更に待機する
 ◎
 Optionally, wait a further user-agent defined length of time.
 </p>
 
 <p class="note">注記：
 この段には、［
-~UAが、機器の電力消費を最適化する必要に応じて，~timeoutを pad できるようにする
-］ことが意図されている。
-例えば、~timerの粒度を抑制するような節電~modeを備える~processorも中にはあり、そのような~platform上では，~UAは，より正確aな非~節電~modeを利用することを要求する代わりに，この~scheduleに見合うように~timerを slow down できる。
+機器の電力消費を最適化する必要に応じて，~timeoutを~~延長する
+］ことを~UAに許容することが意図される。
+例えば，~timerの粒度を抑制するような節電~modeを備える処理器も中にはある
+— そのような~platformでは、
+~UAは，より正確aな非~節電~modeを利用することを要求する代わりに，
+この~scheduleに収まるよう~timerを遅くできる。
 ◎
 This is intended to allow user agents to pad timeouts as needed to optimise the power usage of the device. For example, some processors have a low-power mode where the granularity of timers is reduced; on such platforms, user agents can slow timers down to fit this schedule instead of requiring the processor to use the more accurate mode with its associated higher power usage.
 </p>
-
-<p class="trans-note">【
-“pad”, “slow down” が，時間の進行を遅らすのか, 実装が保有する すべての［ 刻限／~timeout ］を延期する（遅延を加算する）のかは、明確に述べられていない
-— いずれにせよ、その違いは~APIには現れないためと見られる。
-】</p>
 
 			</li>
 			<li>
@@ -1199,7 +1296,11 @@ Queue a task on the queue associated with the idle-task task source, which perfo
 `requestIdleCallback()$m は、［
 単独の`遊休~期間$~内に実行されることになる，~callbackの一回の~call
 ］のみを~scheduleする。
-その~callbackは， %刻限 までに自身の作業を完了できないならば、再度 `requestIdleCallback()$m を~callした上で（これは，~callback自身の中で行える），制御を即時に`~event~loop$に返して、自身の~taskを継続するための未来の~callを~scheduleするべきである。
+その~callbackは， %刻限 までに自身の作業を完了できないならば、
+再度 `requestIdleCallback()$m を~callした上で
+（これは，~callback自身の中で行える），
+制御を即時に`~event~loop$に返して、
+自身の~taskを継続するための未来の~callを~scheduleするべきである。
 ◎
 requestIdleCallback() only schedules a single callback, which will be executed during a single idle period. If the callback cannot complete its work before the given deadline then it should call requestIdleCallback() again (which may be done from within the callback) to schedule a future callback for the continuation of its task, and exit immediately to return control back to the event loop.
 </p>
@@ -1210,7 +1311,8 @@ requestIdleCallback() only schedules a single callback, which will be executed d
 <h3 title="The cancelIdleCallback() method">4.2. `cancelIdleCallback()^m ~method</h3>
 
 <p>
-この~methodは、以前に行った`遊休~callback$を~scheduleする要請を取消す。
+この~methodは、
+以前に行った`遊休~callback$を~scheduleする要請を取消す。
 ◎
 The cancelIdleCallback() method is used to cancel a previously made request to schedule an idle callback.＼
 </p>
@@ -1244,8 +1346,9 @@ If there is such an entry, remove it from both window's list of idle request cal
 </ol>
 
 <p class="note">注記：
-`cancelIdleCallback()$m
-は、`稼働-可能$かどうかにかかわらず，`遊休~callback~list$から`遊休~callback$を除去する。
+`cancelIdleCallback()$m は、
+`稼働-可能か$どうかにかかわらず，
+`遊休~callback~list$から`遊休~callback$を除去する。
 ◎
 cancelIdleCallback might be invoked for an entry in window's list of idle request callbacks or the list of runnable idle callbacks. In either case the entry should be removed from the list so that the callback does not run.
 </p>
@@ -1255,87 +1358,85 @@ cancelIdleCallback might be invoked for an entry in window's list of idle reques
 		<section id="the-idledeadline-interface">
 <h3 title="The IdleDeadline interface">4.3. `IdleDeadline^I ~interface</h3>
 
-<div class="p">
 <p>
-各 `IdleDeadline$I ~objには、次のものが結付けられる：
-</p>
-
-<dl class="def-list">
-	<dt>`刻限~時刻@</dt>
-	<dd>
-刻限の絶対的な時刻
+各 `IdleDeadline$I ~objには、
+`刻限~時刻を取得する~algo@
+が結付けられる。
+それは、
+`DOMHighResTimeStamp$I 値を返す~algoであり，
+初期~時は 0 を返す~algoとする。
+その結果は、刻限の絶対的な時刻
 — すなわち，`時刻起点$から刻限までの時間~差 —
-を表現する `DOMHighResTimeStamp$I 値を保持する。
-<!-- 
-~objの作成-時に拡充されるモノトスル。
- -->
-</dd>
-	<dd class="trans-note">【
-この用語は，原文では `time^c と記され, ~markupされているが、
-`IdleDeadline$I の~IDL~memberではなく紛らわしいので，この語で表すことにする。
-】</dd>
-
-	<dt>`~timeoutか@</dt>
-	<dd>
-現在の時刻が`刻限~時刻$を過ぎたかどうかを指示する真偽-値。
-</dd>
-	<dd class="trans-note">【
-原文では 単に “~timeout” であるが、~timeoutの時刻を表す変数／語と同じ名前で紛らわしいので，この訳では "か" を付けることにする。
-】</dd>
-</dl>
-
+を表現する。
 ◎
-Each IdleDeadline has an associated time which holds a DOMHighResTimeStamp representing the absolute time in milliseconds of the deadline. This MUST be populated when the IdleDeadline is created.
-◎
-↓↓</div>
+Each IdleDeadline has an associated get deadline time algorithm, which returns a DOMHighResTimeStamp representing the absolute time in milliseconds of the deadline. The deadline is initially set to return zero.
+</p>
 
 <div class="algo">
 <p>
 `timeRemaining()@m
 ~method~手続きは：
+◎
+When the timeRemaining() method is invoked on an IdleDeadline object it MUST＼
+↓return the remaining duration before the deadline expires as a DOMHighResTimeStamp, which SHOULD be enough to allow measurement while preventing timing attack - see "Privacy and Security" section of [HR-TIME]. This value is calculated by performing the following steps:
 </p>
 <ol>
 	<li>
-~IF［
-時間に厳しい処理待ち~taskが~UAに在る
-］
-⇒
-~RET 0
+%今 ~LET `現在の高分解能~時刻$()
+◎
+Let now be a DOMHighResTimeStamp representing current high resolution time in milliseconds.
 </li>
 	<li>
-~RET ( コレの`刻限~時刻$ − `現在の高分解能~時刻$ ) を 0 以上に切り上げた結果
+%刻限 ~LET コレの`刻限~時刻を取得する~algo$()
+◎
+Let deadline be the result of calling IdleDeadline's get deadline time algorithm.
+</li>
+	<li>
+~RET ( %刻限 ~MINUS %今 ) を 0 以上に切り上げた結果
+◎
+Let timeRemaining be deadline - now.
+◎
+If timeRemaining is negative, set it to 0.
+◎
+Return timeRemaining.
 </li>
 </ol>
 
 <p>
-この~methodは、`刻限~時刻$までの残り時間を表現する `DOMHighResTimeStamp$I 値を返す。
-結果の正確度は、測定は許容しつつ，計時~攻撃を防止するに十分な~~程度に抑えるベキである（
-<a href="~HRTIME#sec-privacy-security">~privacyと~security</a>
-`HR-TIME-2$r
+この~methodは、
+%刻限 までの残り時間を表現する `DOMHighResTimeStamp$I 値を返す。
+結果の正確度は、
+測定は許容しつつ，計時~攻撃を防止するに十分な~~程度に抑えるベキである
+（ `HR-TIME-2$r <a href="~HRTIME#sec-privacy-security">§ ~privacyと~security</a>
 を見よ）。
-</p>
-
 ◎
-When the timeRemaining() method is invoked on an IdleDeadline object it MUST return the remaining duration before the deadline expires as a DOMHighResTimeStamp, which SHOULD be enough to allow measurement while preventing timing attack - see "Privacy and Security" section of [HR-TIME]. This value is calculated by performing the following steps:
-◎
-• Let now be a DOMHighResTimeStamp representing current high resolution time in milliseconds.
-• Let deadline be the time associated with the IdleDeadline object.
-• Let timeRemaining be deadline - now.
-• If the user agent now has a time-critical task pending, set timeRemaining to 0.
-• If timeRemaining is negative, set it to 0.
-• Return timeRemaining.
+↑</p>
 </div>
+
+<p>
+各 `IdleDeadline$I ~objには、
+`~timeoutか@
+【！原文では 単に “~timeout” 】
+が結付けられる。
+それは、真偽値であり，初期~時は ~F とする。
+◎
+Each IdleDeadline has an associated timeout, which is initially false.＼
+</p>
 
 <div class="algo">
 <p>
 `didTimeout@m
-取得子~手続きは、コレの`~timeoutか$を返す。
+取得子~手続きは
+⇒
+~RET コレの`~timeoutか$
 ◎
-Each IdleDeadline has an associated timeout, which is initially false. The didTimeout getter MUST return timeout.
+The didTimeout getter MUST return timeout.
 </p>
 
 <p class="note">注記：
-`~timeoutした遊休~callbackを呼出す$~algoは、~callbackの登録-時に渡された `IdleRequestOptions$I ~objの `timeout^m 値を超過したときには、`~timeoutか$を ~T に設定して，~callbackが遊休~期間の外側で実行されていることを指示する。
+`~timeoutした遊休~callbackを呼出す$~algoは、
+~callbackの登録-時に渡された `IdleRequestOptions$I の `timeout^m 値を超過したときには、
+`~timeoutか$を ~T に設定して，~callbackが遊休~期間の外側で実行されていることを指示する。
 ◎
 The invoke idle callback timeout algorithm sets timeout to true to specify that the callback is being executed outside an idle period, due to it having exceeded the value of the IdleRequestOptions's timeout property which was passed when the callback was registered.
 </p>
@@ -1350,13 +1451,14 @@ The invoke idle callback timeout algorithm sets timeout to true to specify that 
 <h3>5.X. 遊休~callback</h3>
 
 <p class="trans-note">【
-この訳では、~modelを明確かつ簡潔に記述するため，この節にて，以下の各種~用語／~algoを導入する。
+~modelを明確かつ簡潔に記述するため、
+この訳では，以下の各種~用語／~algoを導入する。
 】</p>
 
 <p>
 各
 `遊休~callback@
-は、次のものからなる：
+は、次に挙げるものからなる：
 </p>
 
 <dl class="def-list">
@@ -1370,44 +1472,51 @@ The invoke idle callback timeout algorithm sets timeout to true to specify that 
 この遊休~callbackを`遊休~callback~list$内で一意に識別する整数。
 </dd>
 
-	<dt>`稼働-可能@</dt>
+	<dt>`稼働-可能か@</dt>
 	<dd>
-真偽-値。
-初期~時は ~F 。
-~F の間は、次回の遊休~期間まで，`~callback$の~callは先送りされる。
+真偽値
+— 初期~時は ~F とする。
+~F の間は、
+次回の遊休~期間まで，`~callback$の~callは先送りされる。
 </dd>
 </dl>
 
 <div class="algo">
 <p>
-`遊休~callbackを内部的に呼出す@
+`遊休~刻限を作成して遊休~callbackを呼出す@
 ときは、所与の
 (
 `遊休~callback$ %遊休~callback,
-`DOMHighResTimeStamp$I 値 %刻限,
-真偽-値 %~timeoutか
+`DOMHighResTimeStamp$I を返す~algo %刻限を取得する,
+真偽値 %~timeoutか
 )
 に対し，次を走らす：
 </p>
 <ol>
 	<li>
-%刻限~引数 ~LET
-次のように設定された，新たな `IdleDeadline$I ~obj
+%遊休~刻限 ~LET 新たな `IdleDeadline$I ~obj
+</li>
+	<li>
+%遊休~刻限 の
 ⇒＃
-`刻限~時刻$ ~SET %刻限,
+`刻限~時刻を取得する~algo$ ~SET %刻限を取得する,
 `~timeoutか$ ~SET %~timeoutか
 </li>
 	<li>
 <p>
-%刻限~引数 を引数に，
-%遊休~callback の`~callback$を~callする
+%遊休~刻限 を引数に %遊休~callback の`~callback$を~callする†
 </p>
 
 <p>
-この段にて~scriptから例外が投出されたときは、~catchして
+この段にて~scriptから例外が投出されたときは、
+~catchして
 ⇒
 その`~errorを報告する$
 </p>
+
+<p class="trans-note">【†
+これは、`~callback関数を呼出す$を利用するよう，もっと精緻化する必要があろう。
+】</p>
 	</li>
 </ol>
 </div>
@@ -1419,36 +1528,23 @@ The invoke idle callback timeout algorithm sets timeout to true to specify that 
 <div class="algo">
 <p>
 `遊休~期間を開始する@
-~algoは，［
-<a href="~WAPI#event-loop-processing-model">~event~loop処理~model</a>において，~event~loopは他でもない遊休~中にあるものと決定されたとき
-］に~callされ、所与の
-( %window )
+ときは、
+所与の
+( `Window$I %window, `DOMHighResTimeStamp$I を返す~algo %刻限を取得する )
 に対し，次を走らす：
 ◎
-The start an idle period algorithm, which is called by the event loop processing model when it determines that the event loop is otherwise idle:
+To start an idle period given Window window and getDeadline, an algorithm that returns a DOMHighResTimeStamp: [HR-TIME]
 </p>
 
-<p class="trans-note">【
-この~algoの一部は、
-今や，~HTMLの~event~loop処理~modelの中で定義される
-— この~algoは、それを反映するよう更新される必要がある。
-】</p>
+<p class="note">注記：
+この~algoは，［
+<a href="~WAPI#event-loop-processing-model">~event~loop処理~model</a>において，~event~loopは他でもない遊休~中にあるものと決定されたとき
+］に~callされる。
+◎
+The algorithm is called by the event loop processing model when it determines that the event loop is otherwise idle.
+</p>
 
 <ol>
-	<li>
-%最後の刻限 ~LET %window の`最後の遊休~期間~刻限$
-◎
-Let last_deadline be the last idle period deadline associated with window
-</li>
-	<li>
-~IF［
-現在の時刻 ~LT %最後の刻限
-］
-⇒
-~RET
-◎
-If last_deadline is greater than the current time, return from this algorithm.
-</li>
 	<li>
 <p>
 任意選択で
@@ -1463,67 +1559,17 @@ Optionally, if the user agent determines the idle period should be delayed, retu
 </p>
 
 <p class="note">注記：
-これには、~UAが，機器の電力消費を最適化するために［
+これには、
+~UAが，機器の電力消費を最適化するために［
 必要に応じて，遊休~期間を開始するのを遅延できるようにする
 ］ことが意図されている。
-`文書$が`非可視$の下では、~UAは，文書に対し遊休~期間の生成を間引くこともできる
-— 例えば、一回の遊休~期間を毎 10 秒ごとに制限するなど。
-`page-visibility$r
-◎
-This is intended to allow user agents to delay the start of idle periods as needed to optimise the power usage of the device. For example, if the Document is hidden then the user agent can throttle idle period generation, for example limiting the Document to one idle period every 10 seconds to optimize for power usage.
-</p>
-	</li>
-	<li>
-%今 ~LET 現在の時刻
-◎
-Let now be the current time.
-</li>
-	<li>
-<p>
-%刻限 ~LET ~UAがその時点までは遊休~中であり続けるものと予期する，時列線~上のある時点
-— ~UAは、［
-~callbackが %今 から %刻限 までの期間~全体にわたって稼働するとしても，時間に厳しい~taskは遅延されない
-］ように， %刻限 を選ぶべきである。
-そのようなわけで、次のうちの最小に設定するべきである：
-◎
-Let deadline be a time in the future until which the browser expects to remain idle.＼
-The user agent SHOULD choose deadline to ensure that no time-critical tasks will be delayed even if a callback runs for the whole time period from now to deadline. As such, it should be set to the minimum of:＼
-</p>
-		<ul>
-			<li>
-［［
-`setTimeout()$m ／ `setInterval()$m
-］を介して設定された`作動中の~timer群が成す~map$
-］内の，最も近未来の~timeout
-◎
-the closest timeout in the list of active timers as set via setTimeout() and setInterval();＼
-</li>
-			<li>
 ［
-`requestAnimationFrame()$m を介して~postされた，処理待ちの~animation~callback
-］用に~scheduleされた稼働時
+`文書$の`可視性~状態$ ~EQ `hidden^l
+］の下では、
+~UAは，文書に対し遊休~期間の生成を間引くこともできる
+— 例：遊休~期間が 10 秒ごとに一回になるよう制限するなど。
 ◎
-the scheduled runtime for pending animation callbacks posted via requestAnimationFrame();＼
-</li>
-			<li>
-内部的な処理待ち~timeout
-— 次回の~frame描画の開始-刻限, 音声~処理, ~UAが重要と判断する他の内部的~taskなど。
-◎
-pending internal timeouts such as deadlines to start rendering the next frame, process audio or any other internal task the user agent deems important.
-</li>
-		</ul>
-	</li>
-	<li>
-<p>
-%刻限 ~SET min( %今 + 50ms, %刻限 )
-◎
-If deadline - now is greater than 50ms, then cap deadline by setting it to be now + 50ms.
-</p>
-
-<p class="note">注記：
-50ms 後の未来までにしているのは、新たな利用者~入力に対し，ヒトから知覚される閾値~内に~~収まる応答性を確保するためである。
-◎
-The cap of 50ms in the future is to ensure responsiveness to new user input within the threshold of human perception.
+This is intended to allow user agents to delay the start of idle periods as needed to optimise the power usage of the device. For example, if the Document's visibility state is "hidden" then the user agent can throttle idle period generation, for example limiting the Document to one idle period every 10 seconds to optimize for power usage.
 </p>
 	</li>
 	<li>
@@ -1531,7 +1577,7 @@ The cap of 50ms in the future is to ensure responsiveness to new user input with
 ~EACH( %遊休~callback )
 に対し
 ⇒
-%遊休~callback の`稼働-可能$ ~SET ~T
+%遊休~callback の`稼働-可能か$ ~SET ~T
 ◎
 Let pending_list be window's list of idle request callbacks.
 ◎
@@ -1544,14 +1590,9 @@ Clear pending_list.
 	<li>
 次を走らす`~taskを~queueする$( `遊休task~task源$ )
 ⇒
-`遊休~callbackを呼出す$( %刻限, %window )
+`遊休~callbackを呼出す$( %window, %刻限を取得する )
 ◎
-Queue a task on the queue associated with the idle-task task source, which performs the steps defined in the invoke idle callbacks algorithm with deadline and window as parameters.
-</li>
-	<li>
-%window の`最後の遊休~期間~刻限$ ~SET %刻限
-◎
-Save deadline as the last idle period deadline associated with window.
+Queue a task on the queue associated with the idle-task task source, which performs the steps defined in the invoke idle callbacks algorithm with window and getDeadline as parameters.
 </li>
 </ol>
 
@@ -1564,14 +1605,20 @@ The task source for these tasks is the idle-task task source.
 </p>
 
 <p class="note">注記：
-%今 から %刻限 までの時区間を指して，
+今から刻限まで
+【上の~algoが呼出された時点から，~UAが［自身が遊休~中でなくなる］と予期する時点まで】
+の時区間
+を指して，
 `遊休~期間@
 という。
-どの `Window$I ~objにおいても、ある時点で作動中の遊休~期間は，一つに限られる。
-遊休~期間は、~UAが最早~遊休~中でないと決定した場合には，早期に終端し得る。
-そうなった場合でも、次回の遊休~期間は， %刻限 を過ぎるまで開始できない。
+どの `Window$I ~objにおいても、
+ある時点で作動中の遊休~期間は，一つに限られる。
+遊休~期間は、
+~UAが最早~遊休~中でないと決定した場合には，早期に終端し得る。
+そうなった場合でも、
+次回の遊休~期間は，刻限を過ぎるまで開始できない。
 ◎
-The time between now and deadline is referred to as the idle period. There can only be one idle period active at a given time for any given Window. The idle period can end early if the user agent determines that it is no longer idle. If so, the next idle period cannot start until after deadline.
+The time between now and the deadline is referred to as the idle period. There can only be one idle period active at a given time for any given Window. The idle period can end early if the user agent determines that it is no longer idle. If so, the next idle period cannot start until after deadline.
 </p>
 </div>
 
@@ -1583,15 +1630,16 @@ The time between now and deadline is referred to as the idle period. There can o
 <p>
 `遊休~callbackを呼出す@
 ときは、所与の
-( %刻限, %window )
+( `Window$I %window, `DOMHighResTimeStamp$I を返す~algo %刻限を取得する )
 に対し，次を走らす：
 ◎
-The invoke idle callbacks algorithm:
+To invoke idle callbacks algorithm given Window window and getDeadline, an algorithm returning a DOMHighResTimeStamp: [HR-TIME].
 </p>
 <ol>
 	<li>
 ~IF［
-高~優先度な作業が新たに~scheduleされたことに因り，遊休~期間は早々に終端すべきと予見される
+高~優先度な作業が新たに~scheduleされたことに因り，
+遊休~期間は早々に終端すべきと予見される
 ］
 ⇒
 ~RET
@@ -1600,14 +1648,12 @@ If the user-agent believes it should end the idle period early due to newly sche
 </li>
 	<li>
 ~IF［
-現在の時刻 ~GTE %刻限
+現在の時刻 ~GTE %刻限を取得する()
 ］
 ⇒
 ~RET
 ◎
-Let now be the current time.
-◎
-If now is less than deadline and＼
+If now is less than the result of calling getDeadline and＼
 </li>
 	<li>
 %遊休~callback~list ~LET %window の`遊休~callback~list$
@@ -1615,7 +1661,7 @@ If now is less than deadline and＼
 ↓</li>
 	<li>
 %遊休~callback ~LET %遊休~callback~list 内に［
-`稼働-可能$ ~EQ ~T
+`稼働-可能か$ ~EQ ~T
 ］を満たす`遊休~callback$は［
 在るならば それらのうち最初のもの ／
 無いならば ε
@@ -1637,30 +1683,32 @@ the window's list of runnable idle callbacks is not empty:
 Pop the top callback from window's list of runnable idle callbacks.
 </li>
 	<li>
-`遊休~callbackを内部的に呼出す$( %遊休~callback, %刻限, ~F )
+`遊休~刻限を作成して遊休~callbackを呼出す$( %遊休~callback, %刻限を取得する, ~F )
 ◎
-Let deadlineArg be a new IdleDeadline. Set the time associated with deadlineArg to deadline and set the timeout associated with deadlineArg to false.
+Let deadlineArg be a new IdleDeadline whose is getDeadline.
 ◎
 Call callback with deadlineArg as its argument. If an uncaught runtime script error occurs, then report the exception.
 </li>
 	<li>
 ~IF［
 %遊休~callback~list 内に［
-`稼働-可能$ ~EQ ~T
+`稼働-可能か$ ~EQ ~T
 ］を満たす`遊休~callback$は在る
 ］
 ⇒
-次を走らす`~taskを~queueする$( 【`遊休task~task源$？】 )
+次を走らす`~taskを~queueする$( 【`遊休task~task源$】 )
 ⇒
-`遊休~callbackを呼出す$( %刻限, %window )
+`遊休~callbackを呼出す$( %window, %刻限を取得する )
 ◎
-If window's list of runnable idle callbacks is not empty, queue a task which performs the steps in the invoke idle callbacks algorithm with deadline and window as a parameters and return from this algorithm
+If window's list of runnable idle callbacks is not empty, queue a task which performs the steps in the invoke idle callbacks algorithm with getDeadline and window as a parameters and return from this algorithm
 </li>
 </ol>
 
 <p class="note">注記：
-~UAは、 %刻限 がまだ来ていなくても，上の~algoの最初の段で終わらすものと裁定して 遊休~期間を早々に終端させれる。
-例えば~UAは、より優先度の高い稼働-可能な作業があれば，そうするものと裁定してもヨイ。
+~UAは、刻限がまだ来ていなくても，
+上の~algoの最初の段で終わらすものと裁定して 遊休~期間を早々に終端させれる。
+例えば~UAは、
+より優先度の高い稼働-可能な作業があれば，そう裁定してもヨイ。
 ◎
 The user agent is free to end an idle period early, even if deadline has not yet occurred, by deciding return from the algorithm in step 1. For example, the user agent may decide to do this if it determines that higher priority work has become runnable.
 </p>
@@ -1681,17 +1729,19 @@ The invoke idle callback timeout algorithm:
 </p>
 <ol>
 	<li>
-%遊休~callback ~LET［
-%window の`遊休~callback~list$内の［
+%遊休~callback ~LET
+%window の`遊休~callback~list$内に［
 `~handle$ ~EQ %~handle
-］なる`遊休~callback$
+］を満たす`遊休~callback$は［
+在るならば それ ／
+無いならば ε
 ］
 ◎
 Let callback be the result of finding the entry in window's list of idle request callbacks or the list of runnable idle callbacks that is associated with the value given by the handle argument passed to the algorithm.
 </li>
 	<li>
 ~IF［
-そのような %遊休~callback はない
+%遊休~callback ~EQ ε
 ］
 ⇒
 ~RET
@@ -1704,11 +1754,18 @@ If callback is not undefined:
 Remove callback from both window's list of idle request callbacks and the list of runnable idle callbacks.
 </li>
 	<li>
-`遊休~callbackを内部的に呼出す$( %遊休~callback, 現在の時刻, ~T )
+%今 ~LET 現在の時刻
 ◎
 Let now be the current time.
+</li>
+	<li>
+%刻限を取得する ~LET %今 を返す~algo
 ◎
-Let deadlineArg be a new IdleDeadline. Set the time associated with deadlineArg to now and set the timeout associated with deadlineArg to true.
+↓</li>
+	<li>
+`遊休~刻限を作成して遊休~callbackを呼出す$( %遊休~callback, %刻限を取得する, ~T )
+◎
+Let deadlineArg be a new IdleDeadline. Set the get deadline time algorithm associated with deadlineArg to an algorithm returning now and set the timeout associated with deadlineArg to true.
 ◎
 Call callback with deadlineArg as its argument. If an uncaught runtime script error occurs, then report the exception.
 </li>
