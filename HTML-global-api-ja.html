@@ -309,6 +309,7 @@ h.Cross-Origin-Embedder-Policy:~ORIGIN#cross-origin-embedder-policy
 
 単純~dialogを示せない:#cannot-show-simple-dialogs
 作動中の~timer群が成す~map:#map-of-active-timers
+手続きを~timeout後に走らす:#run-steps-after-a-timeout
 
 ~animation~frame~callback~map:#list-of-animation-frame-callbacks
 ~target~obj:#concept-animationframeprovider-target-object
@@ -326,7 +327,7 @@ doc.印刷-時の手続き:#printing-steps
 	●用語（HTML
 ~task源:~WAPI#task-source
 ~task:~WAPI#concept-task
-~taskを~queueする:~WAPI#queue-a-task
+大域~taskを~queueする:~WAPI#queue-a-global-task
 小task:~WAPI#microtask
 小task~queue:~WAPI#microtask-queue
 小taskを~queueする:~WAPI#queue-a-microtask
@@ -482,6 +483,9 @@ Record:
 
 	~~整数:number
 	数:number
+	数値:number
+	数値:numeric value
+	数値:numeric
 	in 〜s:〜数
 	挿入-時:insertion
 	順序:ordering
@@ -505,7 +509,9 @@ surrounding:
 	現在~実行-中の:currently-executeing
 高分解能:high resolution::~
 失効:expiry:~
-
+遊休:idle::~
+刻限:deadline::~
+	切り上げる:clamping
 
 	%大域~obj:global
 	%前回の~ID:previousId
@@ -556,6 +562,10 @@ surrounding:
 	%~callback~map:callbacks
 	%now:%now
 	%~callback~handle群:callbackHandles
+	%順序付け識別子:orderingIdentifier
+	%~milli秒数:~milliseconds:#1
+	%完了~手続き:completionSteps
+	%~timer~key:~timerKey:
 
 	●btoa
 base64:
@@ -620,9 +630,8 @@ milli::::ミリ
 	~~延長 pad
 	時点を過ぎて~pointを~past
 	なることはない not 〜 one way or the other
-	存続する限り:lifetime
 繰返な:repeating:繰り返し続ける
-	遅める＊ slow down
+	遅め:slow 〜 down
 	間断なくback to back
 	予め~schedule:preschedule
 	前回の:previous
@@ -748,7 +757,6 @@ sprite-sheet:sprite sheet:::スプライトシート
 	目安:guide
 	利用時:making use
 	efficient
-	選ばれ:chosen
 	何もしない:no extra step is required
 
 	●仕様
@@ -759,6 +767,8 @@ sprite-sheet:sprite sheet:::スプライトシート
 粒度:granularity:~
 	-:avoid
 過度:undue:~
+寄与-:contribute:~
+給-:supply:~
 
 	易く:easy
 	~~考える:Imagine
@@ -766,6 +776,8 @@ sprite-sheet:sprite sheet:::スプライトシート
 	主に:primarily
 	~~可能性:potential
 	ちっぽけな:rather silly
+	選ばれ:chosen
+	選べる:chooseでき
 
 	●未分類
 agent:
@@ -801,6 +813,7 @@ processor::::プロセッサ
 	-:passing
 	now:now
 	左から右へ動く:moving from left to right
+	~~作成され:put
 
 
 	●指示語
@@ -1245,20 +1258,39 @@ Objects that implement the WindowOrWorkerGlobalScope mixin have a map of active 
 </p>
 <ul>
 	<li>
-`~key$mapは、数【正な整数】で識別される。
-この数は、~objが存続する限り，この~map【！~list】の中で一意になるモノトスル。
-【！~mapなので、一意性を要件として述べる必要は無いが。】
+`~key$mapは、
+ある~timer用の識別子である。
 ◎
-Each key in this map is identified by a number, which must be unique within the list for the lifetime of the object that implements the WindowOrWorkerGlobalScope mixin,＼
+Each key in this map is an identifier for a timer,＼
 </li>
 	<li>
 `値$mapは、
 `DOMHighResTimeStamp$I であり，
-当の~entryに対応する~timer用の失効~時刻を表現する。
+当の~timer用の失効~時刻を表現する。
 ◎
 and each value is a DOMHighResTimeStamp, representing the expiry time for that timer.
 </li>
 </ul>
+
+<p class="note">注記：
+`作動中の~timer群が成す~map$を成す~entryのうち，
+その~keyが数値になるものは、
+`~timer初期化~手続き$により
+— すなわち，［
+`setTimeout()$m ／ `setInterval()$m
+］により —
+~~作成されたものに限られる。
+他の仕様が`手続きを~timeout後に走らす$~algoを利用するときは、
+当の識別子は，数値~以外の一意な値になる。
+［
+`clearTimeout()$m ／ `clearInterval()$m
+］が影響するのは，数値を~keyとする~timer限られるが、
+すべての~timerは，
+<a href="~WAPI#idle-deadline-computation">遊休~刻限の算出</a>に寄与することに加え，
+関連な大域~objが破壊されるとき~clearされる。
+◎
+For entries put in the map of active timers by the timer initialization steps, i.e., by setTimeout() and setInterval(), the keys are numbers. For other specifications that use the run steps after a timeout algorithm, the identifier is a unique non-numeric value. Only the numeric-keyed timers are affected by clearTimeout() and clearInterval(), but all timers contribute to idle deadline computation, and are cleared when the relevant global is destroyed.
+</p>
 
 <hr>
 
@@ -1357,10 +1389,9 @@ If previousId was given, let id be previousId;＼
 正である
 ］~AND［
 %大域~obj の`作動中の~timer群が成す~map$[ %~ID ] ~EQ ε
-【この条件は、この訳による補完／言い換え】
 ］
 ◎
-otherwise, let id be an implementation-defined integer that is greater than zero that will identify the timeout to be set by this call in global's map of active timers.
+otherwise, let id be an implementation-defined integer that is greater than zero and does not already exist in global's map of active timers.
 </li>
 	<li>
 %入子ng~level ~LET 0
@@ -1588,88 +1619,26 @@ Increment nesting level by one.
 Set task's timer nesting level to nesting level.
 </li>
 	<li>
-%開始-時刻 ~LET `現在の高分解能~時刻$(【 %大域~obj 】)
+%完了~手続き ~LET 次を走らす~algo
+⇒
+`大域~taskを~queueする$(
+`~timer~task源@
+,
+%大域~obj, %~task )
 ◎
-Let startTime be the current high resolution time.
+Let completionStep be an algorithm step which queues a global task on the timer task source given global to run task.
 </li>
 	<li>
-%大域~obj の`作動中の~timer群が成す~map$[ %~ID ] ~SET %開始-時刻 ~PLUS %~timeout
-◎
-Set global's map of active timers[id] to startTime plus timeout.
-</li>
-	<li class="algo">
 <p>
-この段は`並列的$に走らす：
+`手続きを~timeout後に走らす$( 次に挙げる引数 )
+⇒＃
+%大域~obj,
+`setTimeout/setInterval^l,
+%~timeout,
+%完了~手続き,
+%~ID
 ◎
-Run the following steps in parallel:
-</p>
-		<ol>
-			<li>
-<p>
-%大域~obj に応じて：
-</p>
-				<dl class="switch">
-					<dt>`Window$I ~objである場合：</dt>
-					<dd>
-%大域~obj に`結付けられている文書$が`全部的に作動中$になるまで
-更に %~timeout ~milli秒~待機する（連続的でなくともよい 【？】 ）。
-</dd>
-
-					<dt>`WorkerGlobalScope$I ~objである場合：</dt>
-					<dd>
-~workerを休止せずに %~timeout ~milli秒~待機する（連続的でなくともよい）。
-</dd>
-				</dl>
-
-◎
-If global is a Window object, wait until global's associated Document has been fully active for a further timeout milliseconds (not necessarily consecutively).
-◎
-Otherwise, global is a WorkerGlobalScope object; wait until timeout milliseconds have passed with the worker not suspended (not necessarily consecutively).
-</li>
-			<li>
-<p>
-この~algoのこの呼出n %A とは別の，この~algoの呼出n %B のうち，次をすべて満たすものがあれば，それらが完了するまで待機する：
-</p>
-
-<ul ><li>%B は完了していない
-</li><li>( %B における %大域~obj ) ~EQ ( %A における %大域~obj )
-</li><li>%B は %A より先に呼出された
-</li><li>( %B における %~timeout ) ~LTE ( %A における %~timeout ) †
-</li></ul>
-
-<p class="trans-note">【†
-例えば ( %A, %B ) における %~timeout が ( 1, 2 ) の場合、
-%B が %A より 100 ~milli秒~早く呼出されていても，
-%A から先に実行される余地があることになる。
-（ひょっとして、この段の %~timeout は時間長そのままではなく，それが指す時点を意図している？）
-】</p>
-
-◎
-Wait until any invocations of this algorithm that had the same global, that started before this one, and whose timeout is equal to or less than this one's, have completed.
-</li>
-			<li>
-<p>
-任意選択で
-⇒
-`実装定義$な長さの時間だけ待機する
-◎
-Optionally, wait a further implementation-defined length of time.
-</p>
-
-<p class="note">注記：
-この段が意図する所は、~UAが機器の電力消費を最適化する必要に応じて，~timeoutを~~延長できるようにするためである。
-例えば、~timerの粒度を抑えるような節電~modeを有する~processorも中にはあり、そのような~platform上では，~UAは，より正確aな非~節電~modeを利用することを要求する代わりに，この~scheduleに見合うように~timerを遅めれる。
-◎
-This is intended to allow user agents to pad timeouts as needed to optimize the power usage of the device. For example, some processors have a low-power mode where the granularity of timers is reduced; on such platforms, user agents can slow timers down to fit this schedule instead of requiring the processor to use the more accurate mode with its associated higher power usage.
-</p>
-			</li>
-			<li>
-<p>
-`~taskを~queueする$(
-`~timer~task源@
-, %~task )
-◎
-Queue a global task on the timer task source given global to run task.
+Run steps after a timeout given global, "setTimeout/setInterval", timeout, completionStep, and id.
 </p>
 
 <p class="note">注記：
@@ -1682,8 +1651,6 @@ Queue a global task on the timer task source given global to run task.
 ◎
 Once the task has been processed, if repeat is false, it is safe to remove the entry for id from the map of active timers (there is no way for the entry's existence to be detected past this point, so it does not technically matter one way or the other).
 </p>
-			</li>
-		</ol>
 	</li>
 	<li>
 ~RET %~ID
@@ -1770,6 +1737,149 @@ queues a task to do lots of work
 </span> */
 </pre>
 </div>
+
+<div class="algo">
+<p>
+`手続きを~timeout後に走らす@
+ときは、所与の
+⇒＃
+`WindowOrWorkerGlobalScope$I %大域~obj,
+文字列 %順序付け識別子,
+数値 %~milli秒数,
+手続き %完了~手続き,
+値 %~timer~key （省略時は ε ）
+◎終
+に対し：
+◎
+To run steps after a timeout, given a WindowOrWorkerGlobalScope global, a string orderingIdentifier, a number milliseconds, a set of steps completionSteps, and an optional value timerKey:
+</p>
+<ol>
+	<li>
+~Assert：
+［
+%~timer~key ~NEQ ε
+］ならば、
+この~algoの~call元は`~timer初期化~手続き$である
+（他の仕様は、 %~timer~key として ε 以外を渡してはナラナイ）。
+◎
+Assert: if timerKey is given, then the caller of this algorithm is the timer initialization steps. (Other specifications must not pass timerKey.)
+</li>
+	<li>
+~IF［
+%~timer~key ~EQ ε
+］
+⇒
+%~timer~key ~SET 新たな数値~以外の一意な値
+◎
+If timerKey is not given, then set it to a new unique non-numeric value.
+</li>
+	<li>
+%開始-時刻 ~LET `現在の高分解能~時刻$(【 %大域~obj 】)
+◎
+Let startTime be the current high resolution time.
+</li>
+	<li>
+%大域~obj の`作動中の~timer群が成す~map$[ %~timer~key ] ~SET 
+( %開始-時刻 ~PLUS %~milli秒数 )
+◎
+Set global's map of active timers[timerKey] to startTime plus milliseconds.
+</li>
+
+	<li class="algo">
+<p>
+この段は`並列的$に走らす：
+◎
+Run the following steps in parallel:
+</p>
+		<ol>
+			<li>
+<p>
+%大域~obj に応じて：
+</p>
+				<ul class="switch">
+					<li>
+`Window$I ~objである場合
+⇒
+%大域~obj に`結付けられている文書$が`全部的に作動中$になるまで
+更に %~milli秒数 ~milli秒~待機する（連続的でなくともよい 【？】 ）。
+</li>
+					<li>
+`WorkerGlobalScope$I ~objである場合
+⇒
+~workerを休止せずに %~milli秒数 ~milli秒~待機する（連続的でなくともよい）。
+</li>
+				</ul>
+
+◎
+If global is a Window object, wait until global's associated Document has been fully active for a further milliseconds milliseconds (not necessarily consecutively).
+◎
+Otherwise, global is a WorkerGlobalScope object; wait until milliseconds milliseconds have passed with the worker not suspended (not necessarily consecutively).
+</li>
+			<li>
+<p>
+［
+この~algoのこの呼出n %A より先に呼出された，この~algoの他の呼出n %B
+］のうち，次をすべて満たすものがあれば、
+それらが完了するまで待機する：
+</p>
+
+<ul><li>完了していない
+</li><li>%B における %大域~obj ~EQ %A における %大域~obj
+</li><li>%B における %順序付け識別子 ~EQ %A における %順序付け識別子
+</li><li>%B における %~milli秒数 ~LTE %A における %~milli秒数 †
+</li></ul>
+
+<p class="trans-note">【†
+例えば ( %A, %B ) における %~milli秒数 が ( 1, 2 ) の場合、
+%B が %A より 100 ~milli秒~早く呼出されていても，
+%A から先に実行される余地があることになる。
+】</p>
+
+◎
+Wait until any invocations of this algorithm that had the same global and orderingIdentifier, that started before this one, and whose milliseconds is equal to or less than this one's, have completed.
+</li>
+			<li>
+<p>
+任意選択で
+⇒
+`実装定義$な長さの時間だけ待機する
+◎
+Optionally, wait a further implementation-defined length of time.
+</p>
+
+<p class="note">注記：
+この段が意図する所は、~UAが機器の電力消費を最適化する必要に応じて，~timeoutを~~延長できるようにするためである。
+例えば、~timerの粒度を抑えるような節電~modeを有する処理器も中にはあり、そのような~platform上では，~UAは，より正確aな非~節電~modeを利用することを要求する代わりに，この~scheduleに見合うように~timerを遅めれる。
+◎
+This is intended to allow user agents to pad timeouts as needed to optimize the power usage of the device. For example, some processors have a low-power mode where the granularity of timers is reduced; on such platforms, user agents can slow timers down to fit this schedule instead of requiring the processor to use the more accurate mode with its associated higher power usage.
+</p>
+			</li>
+			<li>
+%完了~手続き を遂行する
+◎
+Perform completionSteps.
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+<p class="note">
+`手続きを~timeout後に走らす$に意味される利用は、
+他の仕様が `setTimeout()$m と類似な方式で［
+開発者が給した~codeを開発者が給した~timeout後に実行したい
+］と求めるときである
+（しかしながら、それには `setTimeout()$m の［
+入子にする／【 %~timeout を】切り上げる
+］挙動はないことに注意）。
+そのような仕様は、
+%順序付け識別子 を選ぶことで，
+自身の仕様の~timeoutたちの順序付けを［
+他の仕様の~timeoutとの順序付けを拘束しない
+］よう確保できる。
+◎
+Run steps after a timeout is meant to be used by other specifications that want to execute developer-supplied code after a developer-supplied timeout, in a similar manner to setTimeout(). (Note, however, it does not have the nesting and clamping behavior of setTimeout().) Such specifications can choose an orderingIdentifier to ensure ordering within their specification's timeouts, while not constraining ordering with respect to other specification's timeouts.
+</p>
 
 		</section>
 		<section id="microtask-queuing">
