@@ -139,8 +139,8 @@ return text;
 
 ●●options
 
-spec_date:2021-10-18
-trans_update:2021-11-17
+spec_date:2021-11-10
+trans_update:2021-12-07
 source_checked:211018
 	page_state_key:＊
 original_url:https://wicg.github.io/sanitizer-api/
@@ -504,11 +504,13 @@ I.HTMLPortalElement:https://wicg.github.io/portals/
 
 I.Sanitizer:#sanitizer
 I.SanitizerConfig:#dictdef-sanitizerconfig
+I.SetHTMLOptions:#dictdef-sethtmloptions
 I.Text:~DOM4#text
 
 m.new Sanitizer:#dom-sanitizer-sanitizer
 mc.Sanitizer:#dom-sanitizer-sanitizer
 	%config:#dom-sanitizer-sanitizer-config-config
+m.sanitizer:#dom-sethtmloptions-sanitizer
 m.sanitize:#dom-sanitizer-sanitize
 	%input:#dom-sanitizer-sanitize-input-input
 m.sanitizeFor:#dom-sanitizer-sanitizefor
@@ -517,8 +519,9 @@ m.sanitizeFor:#dom-sanitizer-sanitizefor
 m.getConfiguration:#dom-sanitizer-getconfiguration
 m.getDefaultConfiguration:#dom-sanitizer-getdefaultconfiguration
 m.setHTML:#dom-element-sethtml
-	%input:#dom-element-sethtml-input-sanitizer-input
-	%sanitizer:#dom-element-sethtml-input-sanitizer-sanitizer
+	:#dom-element-sethtml-input-sanitizer
+	%input:#dom-element-sethtml-input-options-input
+	%options:#dom-element-sethtml-input-options-options
 m.allowElements:#dom-sanitizerconfig-allowelements
 m.blockElements:#dom-sanitizerconfig-blockelements
 m.dropElements:#dom-sanitizerconfig-dropelements
@@ -580,9 +583,8 @@ V.to_node:#_to_node
 
 ~sanitizeする:#sanitize
 要素~用に~sanitizeする:#sanitizefor
-~sanitizeする~for:#sanitizefor
 	~sanitizeFor:#sanitizefor
-~sanitizeして設定する:#sanitizeandset
+要素~用に~sanitizeして設定する:#sanitizeandset
 	~sanitizeAndSet:#sanitizeandset
 
 要素~名を正規化する:#normalize-element-name
@@ -2519,10 +2521,13 @@ The value of the static getDefaultConfiguration() method steps are to return the
 ◎
 The Element interface gains an additional method, setHTML which applies a string using a Sanitizer directly to an existing element node.
 </p>
-
+	
 <pre class="idl">
+dictionary `SetHTMLOptions$I {
+  `Sanitizer$I `sanitizer$m;
+};
 partial interface `Element$I {
-  `undefined$ `setHTML$m(`DOMString$ %input, `Sanitizer$I %sanitizer);
+  `undefined$ `setHTML$m(`DOMString$ %input, `SetHTMLOptions$I %options = {});
 };
 </pre>
 
@@ -2530,7 +2535,7 @@ partial interface `Element$I {
 `setHTML(input, sanitizer)@m
 ~method手続きは
 ⇒
-%sanitizer で`~sanitizeして設定する$( %input, コレ )
+`要素~用に~sanitizeして設定する$( コレ, %input, %sanitizer )
 ◎
 The setHTML(input, sanitizer) method steps are to run the sanitizeAndSet algorithm on input and sanitizer.
 ◎
@@ -2693,7 +2698,16 @@ If the markup to be sanitized is already available as a tree, for example from a
 If the markup to be sanitized is present in string form, but we already have the element we want to insert in available:
 </span> */
   const %untrusted_input = "....";
-  document.getElementById("someelement").setHTML(%untrusted_input, %sanitizer);
+  document.getElementById("someelement").setHTML(
+    %untrusted_input, {sanitizer: %sanitizer});
+
+  /* <span class="comment">
+上と同じだが、
+既定の~Sanitizer環境設定を利用するときは：
+◎
+Same as above, but using the default Sanitizer configuration:
+</span> */
+  document.getElementById("somelement").setHTML(%untrusted_input);
 
   /* <span class="comment">
 ~sanitizeされることになる~markupは，文字列の形で在るが、
@@ -2776,7 +2790,7 @@ sanitizeFor, based on SetInnerHTML.
 </span> */
 function sanitizeFor(%element, %input) {
   const %elem = document.createElement(%element);
-  %elem.setHTML(%input, this);
+  %elem.setHTML(%input, {sanitizer: this});
   return %elem;
 }
 
@@ -2786,7 +2800,8 @@ function sanitizeFor(%element, %input) {
 ◎
 setHTML, based on sanitizeFor.
 </span> */
-function setHTML(%input, %sanitizer) {
+function setHTML(%input, %options) {
+  const %sanitizer = %options?.sanitizer ?? new Sanitizer();
   this.replaceChildren(...%sanitizer.sanitizeFor(this.localName, %input).childNodes);
 }
 </pre>
@@ -3467,23 +3482,47 @@ Return node.
 
 <div class="algo">
 <p>
-`Sanitizer$I %~sanitizer で
-`~sanitizeして設定する@
+`要素~用に~sanitizeして設定する@
 ときは、所与の
-( `文字列$ %値, `要素$ %要素 )
+( `要素$ %要素, `文字列$ %値, `SetHTMLOptions$I %~option群 )
 に対し，次の手続きを走らす：
 ◎
-To sanitize and set a value using a Sanitizer sanitizer on an Element node this, run these steps:
+To sanitize and set a value using an SetHTMLOptions options dictionary on an Element node this, run these steps:
 </p>
 <ol>
 	<li>
 ~IF［
-`要素~用の~baseline環境設定を決定する$( %要素 ) ~NEQ `保つ^i
+%要素 の`種類$elm ~EQ `正則^i
+］~AND［
+%要素 【の`局所-名$】 ~NIN `要素~用の~baseline許容-~list$
 ］
 ⇒
-~THROW `TypeError$E
+~THROW`TypeError$E
 ◎
-If the result of running the steps of the determine the baseline configuration for an element algorithm for the element this is anything other than keep, then throw a TypeError and return.
+If the element kind of this is regular and this does not match any name in the baseline element allow list, then throw a TypeError and return.
+</li>
+	<li>
+%~sanitizer ~LET %~option群[ "`sanitizer$m" ]
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%~sanitizer ~EQ ε
+］：
+</p>
+		<ol>
+			<li>
+%~sanitizer ~SET 新たな `Sanitizer$I ~obj
+</li>
+			<li>
+`~Sanitizerを初期化する$( %~sanitizer )
+</li>
+		</ol>
+◎
+If the sanitizer member exists in the options SetHTMLOptions dictionary,
+• then let sanitizer be the value of the sanitizer member of the options SetHTMLOptions dictionary,
+• otherwise let sanitizer be the result of the create a Sanitizer algorithm without a config parameter.
 </li>
 	<li>
 %文書片 ~LET `素片を構文解析する$( %値, %要素 )
