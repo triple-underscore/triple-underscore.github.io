@@ -260,8 +260,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2021-12-06
-trans_update:2021-12-07
+spec_date:2021-12-10
+trans_update:2021-12-11
 source_checked:210831
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -395,6 +395,9 @@ composed:
 委譲-:delegate:~
 形式変換-:transform::~
 内部特能:internals::~
+検査地点:checkpoint::~::チェックポイント
+poll:
+	~pollしている:polling
 
 	通達-時:signaling
 	通達-法:signaling
@@ -507,6 +510,7 @@ portable::可搬::ポータブル
 支払う:payする:~
 警告:warning:~
 処する:dealする:~
+機会:opportunity:~
 
 	互換でない:incompatible
 	な限り:as much as
@@ -1719,7 +1723,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/982c7e2b710326167d718b85f83a5734fdb5619d/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/cfe2f1e5870aa2f905dc665c34e4278558b9ab1a/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -5552,12 +5556,10 @@ doAmazingness could be implemented as follows:
 
 <pre class="lang-js">
 function doAmazingness({%signal}) {
-  if (%signal.aborted) {
-    return Promise.reject(%signal.reason);
-  }
-
   return new Promise((%resolve, %reject) =&gt; {
-  	/* <span class="comment">
+    %signal.throwIfAborted();
+
+    /* <span class="comment">
 “すごいこと” を行うのを始める
 — 済んだなら %resolve(%result) を~callする。
 加えて、 %signal も注視する。
@@ -5700,6 +5702,7 @@ interface @AbortSignal : $EventTarget {
 
   ~RA $boolean $aborted;
   ~RA $any $reason;
+  $undefined $throwIfAborted();
 
   attribute $EventHandler $onabort;
 };
@@ -5719,19 +5722,28 @@ Returns an AbortSignal instance whose abort reason is set to reason if not undef
 
 	<dt>%signal . $aborted</dt>
 	<dd>
-この $AbortSignal の $AbortController が，中止するよう通達されて［
+%signal の $AbortController が中止するよう通達されて［
 いれば ~T ／
 いなければ ~F
 ］を返す。
 ◎
-Returns true if this AbortSignal's AbortController has signaled to abort; otherwise false.
+Returns true if signal’s AbortController has signaled to abort; otherwise false.
 </dd>
 
 	<dt>%signal . $reason</dt>
 	<dd>
-この $AbortSignal の`中止-事由$aBを返す。
+%signal の`中止-事由$aBを返す。
 ◎
-Returns this AbortSignal's abort reason.
+Returns signal’s abort reason.
+</dd>
+
+	<dt>%signal . $throwIfAborted()</dt>
+	<dd>
+%signal の $AbortController が中止するよう通達された場合、
+%signal の`中止-事由$aBを投出する
+— 他の場合は何もしない。
+◎
+Throws signal’s abort reason, if signal’s AbortController has signaled to abort; otherwise, does nothing.
 </dd>
 </dl>
 
@@ -5881,6 +5893,51 @@ The aborted getter steps are to return true if this is aborted; otherwise false.
 ~RET コレの`中止-事由$aB
 ◎
 The reason getter steps are to return this’s abort reason.
+</div>
+
+<div class="algo">
+<p>
+@throwIfAborted()
+~method手続きは
+⇒
+~IF［
+コレは`中止された$aB
+］
+⇒
+コレの`中止-事由$aBを投出する
+◎
+The throwIfAborted() method steps are to throw this’s abort reason, if this is aborted.
+</p>
+
+<div class="example">
+<p>
+この~methodが首に有用になるのは、［
+$AbortSignal を受容している関数が，
+特定の検査地点で例外を投出する（または、却下された~promiseを返す）
+］よう求まれるときである
+— 当の $AbortSignal を他の~methodに渡す代わりに。
+例えば，次の関数は、
+条件を~pollする各~試みの間に中止することを許容する。
+これは、
+実際の非同期な演算（すなわち， `await func()^c ）が $AbortSignal を受容しない場合でも，
+~pollしている処理nを中止する機会を与える。
+◎
+This method is primarily useful for when functions accepting AbortSignals want to throw (or return a rejected promise) at specific checkpoints, instead of passing along the AbortSignal to other methods. For example, the following function allows aborting in between each attempt to poll for a condition. This gives opportunities to abort the polling process, even though the actual asynchronous operation (i.e., await func()) does not accept an AbortSignal.
+</p>
+
+<pre class="lang-js">
+async function waitForCondition(%func, %targetValue, { %signal } = {}) {
+  while (true) {
+    %signal?.throwIfAborted();
+
+    const %result = await %func();
+    if (%result === %targetValue) {
+      return;
+    }
+  }
+}
+</pre>
+</div>
 </div>
 
 <p>
