@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-12-02
-trans_update:2021-12-03
+spec_date:2021-12-13
+trans_update:2021-12-16
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -891,7 +891,7 @@ fP.要請の本体~chunk長さを処理する:#fetch-params-process-request-body
 fP.要請の本体の終端を処理する:#fetch-params-process-request-end-of-body
 fP.応答を処理する:#fetch-params-process-response
 fP.応答の本体の終端を処理する:#fetch-params-process-response-end-of-body
-fP.応答の~doneを処理する:#fetch-params-process-response-done
+fP.応答の本体~消費-を処理する:#fetch-params-process-response-consume-body
 fP.非同一-生成元~能力は隔離されるか:#fetch-params-cross-origin-isolated-capability
 fP.計時情報:#fetch-params-timing-info
 
@@ -904,7 +904,6 @@ fP.計時情報:#fetch-params-timing-info
 ~HTTP~network~fetch:#concept-http-network-fetch
 ~CORS予行~fetch:#cors-preflight-fetch-0
 ~fetch終結:#fetch-finale
-応答を完結する:#finalize-response
 
 終了され:#concept-fetch-terminate
 終了させ:#concept-fetch-terminate
@@ -919,15 +918,15 @@ fP.計時情報:#fetch-params-timing-info
 V.要請の本体~chunk長さを処理する:#process-request-body
 V.要請の本体の終端を処理する:#process-request-end-of-body
 V.応答を処理する:#process-response
-V.応答の本体の終端を処理する:#process-response-end-of-body
-V.応答の~doneを処理する:#fetch-processresponsedone
+V.応答の本体の終端を処理する:#fetch-processresponseendofbody
+V.応答の本体~消費-を処理する:#fetch-processresponsedone
 V.並列~queueを利用するか:#fetch-useparallelqueue
 
 i.要請の本体~chunk長さを処理する:#process-request-body
 i.要請の本体の終端を処理する:#process-request-end-of-body
 i.応答を処理する:#process-response
-i.応答の本体の終端を処理する:#process-response-end-of-body
-i.応答の~doneを処理する:#fetch-processresponsedone
+i.応答の本体の終端を処理する:#fetch-processresponseendofbody
+i.応答の本体~消費-を処理する:#fetch-processresponsedone
 i.並列~queueを利用するか:#fetch-useparallelqueue
 
 i.~HTTP3のみか:#obtain-a-connection-http3only
@@ -1015,7 +1014,10 @@ RSR.~chunkを読取る:~STREAMS#readablestreamdefaultreader-read-a-chunk
 RSR.すべての~byteを読取る:~STREAMS#readablestreamdefaultreader-read-all-bytes
 
 RS.通して~pipeする:~STREAMS#readablestream-pipe-through
+
 TS.設定しておく:~STREAMS#transformstream-set-up
+TS.~chunkを~enqueueする:~STREAMS#transformstream-enqueue
+恒等変換~stream:~STREAMS#identity-transform-stream
 
 
 	●Fetch API
@@ -1087,6 +1089,7 @@ str.長さ:~INFRA#string-length
 ~tuple:~INFRA#tuple
 sct.~item:~INFRA#struct-item
 空:~INFRA#list-is-empty
+~clone:~INFRA#list-clone
 ~cloneする:~INFRA#list-clone
 map.空:~INFRA#map-is-empty
 ~list:~INFRA#list
@@ -1398,8 +1401,6 @@ chunk::::チャンク
 限界水位:high water mark::~
 function:
 済んだ:done:~
-done:
-	~doneを処理する
 main:
 process::::プロセス
 params::::パラメタ群
@@ -1436,6 +1437,7 @@ ok:
 mark:
 pipe::::パイプ
 形式変換-:transform::~
+恒等変換:identity transform::~
 競争-:race:~
 時間切れ:timeout:~
 呼出法:invoke 法:呼び出し法
@@ -1989,6 +1991,7 @@ internet::::インターネット
 	%応答:response
 	%応答を処理する:processResponse
 	%応答の本体の終端を処理する:processResponseEndOfBody
+	%応答の本体~消費-を処理する:processResponseConsumeBody
 	-:doneAlgorithm
 	%~CORS予行を為すか:makeCORSPreflight
 	%資格証を含めるか:includeCredentials
@@ -2025,6 +2028,7 @@ internet::::インターネット
 	%形式変換した~stream:transformedStream
 	%形式変換-~stream:transformStream
 	%形式変換-~algo:transformAlgorithm
+	%恒等変換~algo:identityTransformAlgorithm
 	%再帰的か:recursive
 	%局所的に中止されたか:locallyAborted
 	%~cache状態:cacheState
@@ -2216,7 +2220,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/6257e220d70f560a037e46f1b4206325400db8dc/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/573df553901e89a0ae315f4a57d932db9207605a/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -2476,10 +2480,10 @@ process response (default null)
 process response end-of-body (default null)
 </dt>
 	<dt>
-`応答の~doneを処理する@fP
+`応答の本体~消費-を処理する@fP
 （既定は ~NULL ）
 ◎
-process response done (default null)
+process response consume body (default null)
 </dt>
 	<dd>
 ~NULL ／~algo
@@ -6530,8 +6534,8 @@ A response has an associated range-requested flag, which is initially unset.
 </dd>
 	<dd class="note">注記：
 これは、［
-過去の範囲~付き要請からの部分的~応答が，範囲~要請を為していなかった~APIに供される
-］ことを防止することを確保するために利用される。
+過去の範囲~付き要請からの部分的~応答が，範囲~要請を為さなかった~APIに供される
+］のを防止することを確保するために利用される。
 これの用途については、その攻撃の詳細な記述を見よ。
 ◎
 This is used to ensure to prevent a partial response from an earlier ranged request being provided to an API that didn’t make a range request. See the flag’s usage for a detailed description of the attack.
@@ -9953,15 +9957,15 @@ The algorithm below defines fetching. In broad strokes, it takes a request and o
 	<li>
 `応答の本体の終端を処理する@V
 ⇒
+~NULL（省略時）／
+`応答$を受容する~algo
+</li>
+	<li>
+`応答の本体~消費-を処理する@V
+⇒
 ~NULL（省略時）／［
 `応答$ ／ ~NULL／ `失敗^i ／ `~byte列$
 ］を受容する~algo
-</li>
-	<li>
-`応答の~doneを処理する@V
-⇒
-~NULL（省略時）／
-`応答$を受容する~algo
 </li>
 	<li>
 `並列~queueを利用するか@V
@@ -9978,14 +9982,14 @@ an optional algorithm processRequestBodyChunkLength,＼
 an optional algorithm processRequestEndOfBody,＼
 an optional algorithm processResponse,＼
 an optional algorithm processResponseEndOfBody,＼
-an optional algorithm processResponseDone,＼
+an optional algorithm processResponseConsumeBody,＼
 and an optional boolean useParallelQueue (default false),＼
 run the steps below.＼
 If given, processRequestBodyChunkLength must be an algorithm accepting an integer representing the number of bytes transmitted.＼
 If given, processRequestEndOfBody must be an algorithm accepting no arguments.＼
 If given, processResponse must be an algorithm accepting a response.＼
-If given, processResponseEndOfBody must be an algorithm accepting a response and null, failure, or a byte sequence.＼
-If given, processResponseDone must be an algorithm accepting a response. 
+If given, processResponseEndOfBody must be an algorithm accepting a response.＼
+If given, processResponseConsumeBody must be an algorithm accepting a response and null, failure, or a byte sequence.
 </div>
 
 <ul>
@@ -10093,12 +10097,12 @@ whose start time and post-redirect start time are the coarsened shared current t
 `要請の本体~chunk長さを処理する$fP ~SET %要請の本体~chunk長さを処理する
 `要請の本体の終端を処理する$fP ~SET %要請の本体の終端を処理する,
 `応答を処理する$fP ~SET %応答を処理する,
+`応答の本体~消費-を処理する$fP ~SET %応答の本体~消費-を処理する,
 `応答の本体の終端を処理する$fP ~SET %応答の本体の終端を処理する,
-`応答の~doneを処理する$fP ~SET %応答の~doneを処理する,
 `~taskの行先$fP ~SET %~taskの行先,
 `非同一-生成元~能力は隔離されるか$fP ~SET %非同一-生成元~能力は隔離されるか
 ◎
-Let fetchParams be a new fetch params whose request is request, timing info is timingInfo, process request body chunk length is processRequestBodyChunkLength, process request end-of-body is processRequestEndOfBody, process response is processResponse, process response end-of-body is processResponseEndOfBody, process response done is processResponseDone, task destination is taskDestination, and cross-origin isolated capability is crossOriginIsolatedCapability.
+Let fetchParams be a new fetch params whose request is request, timing info is timingInfo, process request body chunk length is processRequestBodyChunkLength, process request end-of-body is processRequestEndOfBody, process response is processResponse, process response consume body is processResponseConsumeBody, process response end-of-body is processResponseEndOfBody, task destination is taskDestination, and cross-origin isolated capability is crossOriginIsolatedCapability.
 </li>
 	<li>
 ~IF［
@@ -10951,15 +10955,13 @@ Let processBodyError be this step: run fetch finale given fetchParams and a netw
 ~IF［
 %要請 の`応答~tainting$rq ~EQ `opaque^l
 ］~OR［
-%応答 は`~network~error$である
-］~OR［
 %応答 の`本体$rs ~EQ ~NULL
 ］
 ⇒＃
-%本体~errorを処理する( )；
+%本体~errorを処理する()；
 ~RET
 ◎
-If request’s response tainting is "opaque", response is a network error, or response’s body is null, then run processBodyError and abort these steps.
+If request’s response tainting is "opaque" or response’s body is null, then run processBodyError and abort these steps.
 </li>
 			<li>
 <p>
@@ -11027,48 +11029,146 @@ The fetch finale, given a fetch params fetchParams and a response response, run 
 </p>
 <ol>
 	<li>
-%応答を処理する ~LET %~fetch~params の`応答を処理する$fP
-◎
-↓</li>
-	<li>
+<p>
 ~IF［
-%応答を処理する ~NEQ ~NULL
+%応答 は`~network~error$である
+］：
+◎
+If response is a network error, then:
+</p>
+		<ol>
+			<li>
+<p>
+%応答 の`~URL~list$rs ~SET 
+« %~fetch~params の`要請$fPの`~URL~list$rq[ 0 ] »
+◎
+Set response’s URL list to « fetchParams’s request’s URL list[0] ».
+</p>
+
+<p class="note">注記：
+この段は、必要になる
+— %応答 は、
+%~fetch~params の`要請$fPの`~URL~list$rqを`~clone$した後に，`~network~error$に設定されたかもしれないので。
+◎
+This is needed as after cloning fetchParams’s request’s URL list earlier, response might have been set to a network error.
+</p>
+			</li>
+			<li>
+%応答 の`計時情報$rs ~SET `不透明な計時情報を作成する$( %~fetch~params の`計時情報$fP )
+◎
+Set response’s timing info to the result of creating an opaque timing info for fetchParams’s timing info.
+</li>
+		</ol>
+	</li>
+	<li class="algo">
+<p>
+%応答の本体の終端を処理する ~LET 次を走らす手続き：
+◎
+Let processResponseEndOfBody be the following steps:
+</p>
+		<ol>
+			<li>
+%~fetch~params の`要請$fPの`済んだか$rq ~SET ~T
+◎
+Set fetchParams’s request’s done flag.
+</li>
+			<li>
+~IF［
+%~fetch~params の`応答の本体の終端を処理する$fP ~NEQ ~NULL
 ］
 ⇒
 次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
 ⇒
-%応答を処理する( %応答 )
+%~fetch~params の`応答の本体の終端を処理する$fP( %応答 )
+◎
+If fetchParams’s process response end-of-body is not null, then queue a fetch task to run fetchParams’s process response end-of-body given response with fetchParams’s task destination.
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+%~fetch~params の`応答を処理する$fP ~NEQ ~NULL
+］
+⇒
+次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
+⇒
+%~fetch~params の`応答を処理する$fP( %応答 )
 ◎
 If fetchParams’s process response is non-null, then queue a fetch task to run fetchParams’s process response given response, with fetchParams’s task destination.
 </li>
 	<li>
-%応答の本体の終端を処理する ~LET %~fetch~params の`応答の本体の終端を処理する$fP
+~IF［
+%応答 の`本体$rs ~EQ ~NULL
+］
+⇒
+%応答の本体の終端を処理する()
 ◎
-↓</li>
+If response’s body is null, then run processResponseEndOfBody.
+</li>
 	<li>
 <p>
-~IF［
-%応答の本体の終端を処理する ~NEQ ~NULL
-］：
+~ELSE：
 ◎
-If fetchParams’s process response end-of-body is non-null, then:
+Otherwise:
 </p>
 		<ol>
 			<li>
+%形式変換-~stream ~LET 新たな `TransformStream$I
+◎
+Let transformStream be a new a TransformStream.
+</li>
+			<li class="algo">
+%恒等変換~algo ~LET 所与の
+( %~chunk ) に対し，次を走らす~algo
+⇒
+%形式変換-~stream に`~chunkを~enqueueする$TS( %~chunk )
+◎
+Let identityTransformAlgorithm be an algorithm which, given chunk, enqueues chunk in transformStream.
+</li>
+			<li>
+%形式変換-~stream を`設定しておく$TS( %恒等変換~algo, %応答の本体の終端を処理する )
+◎
+Set up transformStream with transformAlgorithm set to identityTransformAlgorithm and flushAlgorithm set to processResponseEndOfBody.
+</li>
+			<li>
+%応答 の`本体$rs ~SET %応答 の`本体$rs を %形式変換-~stream を`通して~pipeする$RS
+◎
+Set response’s body to the result of piping response’s body through transformStream.
+</li>
+		</ol>
+
+<p class="note">注記：
+この `TransformStream$I は、
+当の~streamが終端に達したとき通知を受信する目的に必要になる
+— それ以外については`恒等変換~stream$になる。
+◎
+This TransformStream is needed for the purpose of receiving a notification when the stream reaches its end, and is otherwise an identity transform stream.
+</p>
+	</li>
+	<li>
+<p>
+~IF［
+%~fetch~params の`応答の本体~消費-を処理する$fP ~NEQ ~NULL
+］：
+◎
+If fetchParams’s process response consume body is non-null, then:
+</p>
+		<ol>
+			<li class="algo">
 %本体を処理する ~LET 所与の
 ( %~NULLまたは~byte列 )
 に対し，次を走らす手続き
 ⇒
-%応答の本体の終端を処理する( %応答, %~NULLまたは~byte列 )
+%~fetch~params の`応答の本体~消費-を処理する$fP( %応答, %~NULLまたは~byte列 )
 ◎
-Let processBody given nullOrBytes be this step: run fetchParams’s process response end-of-body given response and nullOrBytes.
+Let processBody given nullOrBytes be this step: run fetchParams’s process response consume body given response and nullOrBytes.
 </li>
-			<li>
+			<li class="algo">
 %本体~errorを処理する ~LET 次を走らす手続き
 ⇒
-%応答の本体の終端を処理する( %応答, `失敗^i )
+%~fetch~params の`応答の本体~消費-を処理する$fP( %応答, `失敗^i )
 ◎
-Let processBodyError be this step: run fetchParams’s process response end-of-body given response and failure.
+Let processBodyError be this step: run fetchParams’s process response consume body given response and failure.
 </li>
 			<li>
 ~IF［
@@ -11095,35 +11195,6 @@ Otherwise, fully read response’s body given processBody, processBodyError, and
 
 <div class="algo">
 <p>
-`応答を完結する@
-ときは、所与の
-( `~fetch~params$ %~fetch~params, `応答$ %応答 )
-に対し，次の手続きを走らす：
-◎
-To finalize response given a fetch params fetchParams and a response response, run these steps:
-</p>
-<ol>
-	<li>
-%~fetch~params の`要請$fPの`済んだか$rq ~SET ~T
-◎
-Set fetchParams’s request’s done flag.
-</li>
-	<li>
-~IF［
-%~fetch~params の`応答の~doneを処理する$fP ~NEQ ~NULL
-］
-⇒
-次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
-⇒
-%~fetch~params の`応答の~doneを処理する$fP( %応答 )
-◎
-If fetchParams’s process response done is not null, then queue a fetch task to run fetchParams’s process response done given response, with fetchParams’s task destination.
-</li>
-</ol>
-</div>
-
-<div class="algo">
-<p>
 `計時を完結して報告する@
 ときは、所与の
 ( `応答$ %応答, `大域~obj$ %大域~obj, `文字列$ %起動元~種別（省略時は `other^l )
@@ -11132,6 +11203,15 @@ If fetchParams’s process response done is not null, then queue a fetch task to
 To finalize and report timing given a response response, a global object global, and a string initiatorType (default "other"), run these steps:
 </p>
 <ol>
+	<li>
+~IF［
+%応答 は`中止~network~error$である
+］
+⇒
+~RET
+◎
+If response is an aborted network error, then return.
+</li>
 	<li>
 %~URL~list ~LET %応答 の`~URL~list$rs
 ◎
@@ -11161,6 +11241,15 @@ Let timingInfo be response’s timing info.
 %~cache状態 ~LET %応答 の`~cache状態$rs
 ◎
 Let cacheState be response’s cache state.
+</li>
+	<li>
+~IF［
+%元の~URL の`~scheme$urlは`~HTTP_S~scheme$でない
+］
+⇒
+~RET
+◎
+If originalURL’s scheme is not an HTTP(S) scheme, then return.
 </li>
 	<li>
 ~IF［
@@ -14107,10 +14196,9 @@ If stream doesn’t need more data ask the user agent to suspend the ongoing fet
 ］
 ⇒＃
 %~stream を`~closeする$RS()；
-`応答を完結する$( %~fetch~params, %応答 )；
 ~BREAK
 ◎
-Otherwise, if the bytes transmission for response’s message body is done normally and stream is readable, then close stream, finalize response for fetchParams and response, and abort these in-parallel steps.
+Otherwise, if the bytes transmission for response’s message body is done normally and stream is readable, then close stream, and abort these in-parallel steps.
 </li>
 				</ol>
 			</li>
@@ -14121,11 +14209,6 @@ Otherwise, if the bytes transmission for response’s message body is done norma
 If aborted, then:
 </p>
 				<ol>
-					<li>
-`応答を完結する$( %~fetch~params, %応答 )
-◎
-Finalize response for fetchParams and response.
-</li>
 					<li>
 <p>
 ~IF［
@@ -18642,7 +18725,7 @@ Terminate the ongoing fetch with the aborted flag set.
 ↓</p>
 		<ul>
 			<li class="algo">
-`応答の~doneを処理する$i ~SET 所与の
+`応答の本体の終端を処理する$i ~SET 所与の
 ( `応答$ %応答 )
 に対し，次を走らす手続き
 ⇒
@@ -18650,7 +18733,7 @@ Terminate the ongoing fetch with the aborted flag set.
 ◎
 Let handleFetchDone given response response be to finalize and report timing with response, globalObject, and "fetch".
 ◎
-Fetch request with processResponseDone set to handleFetchDone,＼
+Fetch request with processResponseEndOfBody set to handleFetchDone,＼
 </li>
 
 			<li class="algo">
@@ -19668,6 +19751,20 @@ Takes an algorithm that will be passed a response. Indicates response’s header
 processResponseEndOfBody
 </dt>
 	<dd>
+これがとる~algoには、
+`応答$が渡されることになる。
+~networkが応答を伝送し終えたことを指示する。
+これは、`応答$の`本体$rsを読取らない。
+◎
+Takes an algorithm that will be passed a response. Indicates the network is done transmitting the response. This does not read response’s body.
+</dd>
+
+	<dt>
+`応答の本体~消費-を処理する$i
+◎
+processResponseConsumeBody
+</dt>
+	<dd>
 <p>
 これがとる~algoには、
 `応答$ %応答 と［
@@ -19718,20 +19815,6 @@ a byte sequence
 — この引数を供することは，本体が読取られるようにするが、読取れるのは一度限りなので。
 ◎
 A standard that uses this argument cannot operate on response’s body itself as providing this argument will cause it to be read and it can be read only once.
-</dd>
-
-	<dt>
-`応答の~doneを処理する$i
-◎
-processResponseDone
-</dt>
-	<dd>
-これがとる~algoには、
-`応答$が渡されることになる。
-~networkが応答を伝送し終えたことを指示する。
-これは、`応答$の`本体$rsを読取らない。
-◎
-Takes an algorithm that will be passed a response. Indicates the network is done transmitting the response. This does not read response’s body.
 </dd>
 
 	<dt>
