@@ -1118,6 +1118,7 @@ UIEVENTS:uievents-ja.html
 POINTEREVENTS:pointerevents3-ja.html
 SELECTIONAPI:selection-api-ja.html
 HTTPcommon:http-common-ja.html
+IETFcommon:ietf-common-ja.html
 RFC7230:RFC7230-ja.html
 RFC7231:RFC7231-ja.html
 RFC7232:RFC7232-ja.html
@@ -1329,6 +1330,7 @@ MIME:
 Unicode:
 OS:operating system:OS
 W3C:
+IETF:
 IANA:
 RFC:
 WG:

@@ -581,7 +581,7 @@ c.message/http:~7230#internet.media.type.message.http
 c.application/http:~7230#internet.media.type.application.http
 
 	■XXXX
-IETF Review:~5226#section-4.1
+~IETFによる考査:~5226#section-4.1
 著作者連絡先:~723X#authors-addresses
 二重引用符:~HTTPcommon#P.DQUOTE
 	■7230
