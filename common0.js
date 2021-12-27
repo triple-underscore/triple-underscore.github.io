@@ -592,14 +592,14 @@ Util.fillHeader = () => {
 			const status = options.spec_status;
 			if(status){
 				header_text = {
-ED: '<a href="https://www.w3.org/standards/types#ED">編集者草案</a>',
-WD: '<a href="https://www.w3.org/standards/types#WD">作業草案</a>',
-PR: '<a href="https://www.w3.org/standards/types#PR">勧告案</a>',
-CRD: '<a href="https://www.w3.org/standards/types#CRD">勧告候補草案</a>',
-CR: '<a href="https://www.w3.org/standards/types#CR">勧告候補スナップショット</a>',
-REC: '<a href="https://www.w3.org/standards/types#REC">勧告</a>',
-NOTE: '<a href="https://www.w3.org/standards/types#NOTE">W3C Group Note</a>',
-EDCG: '<a href="https://www.w3.org/standards/types#CG-DRAFT">Draft Community Group Report</a>',
+ED: '<a href="w3c-standards-types-ja.html#ED">編集者草案</a>',
+WD: '<a href="w3c-standards-types-ja.html#WD">作業草案</a>',
+PR: '<a href="w3c-standards-types-ja.html#PR">勧告案</a>',
+CRD: '<a href="w3c-standards-types-ja.html#CRD">勧告候補草案</a>',
+CR: '<a href="w3c-standards-types-ja.html#CR">勧告候補スナップショット</a>',
+REC: '<a href="w3c-standards-types-ja.html#REC">勧告</a>',
+NOTE: '<a href="w3c-standards-types-ja.html#NOTE">W3C Group Note</a>',
+EDCG: '<a href="w3c-standards-types-ja.html#CG-DRAFT">Draft Community Group Report</a>',
 LS: 'Living Standard',
 LD: 'Living Document',
 //IETFPR: 'IETF PROPOSED STANDARD',
