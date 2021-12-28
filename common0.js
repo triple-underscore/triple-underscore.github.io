@@ -617,7 +617,7 @@ IETFID: 'Internet Draft',
 '<details id="_trans_metadata"><summary><strong>この日本語訳は非公式な文書です…</strong></summary></details>';
 		if(PAGE_DATA.spec_metadata){
 			html += 
-'<details id="_spec_metadata"><summary>仕様メタデータ</summary></details>';
+'<details id="_spec_metadata"><summary>この文書についての詳細</summary></details>';
 		}
 		if(options.copyright){
 			html += 
@@ -1091,6 +1091,8 @@ NIN: <span class="op">∉</span>
 SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>
 ABSTRACT:<h2 title="Abstract">要約</h2>
 STATUSofTHIS:<h2 title="Status of this Document">この文書の位置付け</h2>
+SOTD-CSS:<a href="css-common-ja.html#sotd">CSS 日本語訳 共通ページ</a>／<a href="#_spec_metadata">この文書についての詳細</a>
+SOTD-W3C:<a href="w3c-common-ja.html#sotd">W3C 日本語訳 共通ページ</a>／<a href="#_spec_metadata">この文書についての詳細</a>
 INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en" class="_en">This section is non-normative.</span></p>
 FINGERPRINTING:<a class="fingerprinting" href="infra-ja.html#tracking-vector" title="（ここには、利用者の追跡に利用され得るものがある。／There is a tracking vector here.）"></a>
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
@@ -1117,6 +1119,8 @@ XHR:XHR-ja.html
 UIEVENTS:uievents-ja.html
 POINTEREVENTS:pointerevents3-ja.html
 SELECTIONAPI:selection-api-ja.html
+W3Ccommon:w3c-common-ja.html
+CSScommon:css-common-ja.html
 HTTPcommon:http-common-ja.html
 IETFcommon:ietf-common-ja.html
 RFC7230:RFC7230-ja.html
