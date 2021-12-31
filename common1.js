@@ -1710,6 +1710,7 @@ COMPAT=副             ~/compat-ja.html
 DOM=副                ~/DOM4-ja.html
 DOMPARSING=副         ~/DOM-Parsing-ja.html
 DOMLEVEL2STYLE=副     ~adagio/tr_dom2_style/expanded-toc.html
+ECMASCRIPT=副         ecmascript2020言語仕様.com/●日本語訳（2020）
 ENCODING=副           ~/Encoding-ja.html
 FETCH=副              ~/Fetch-ja.html
 FILEAPI=副            ~/File_API-ja.html
