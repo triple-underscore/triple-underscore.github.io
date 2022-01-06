@@ -1814,7 +1814,9 @@ registry::::レジストリ
 歴史:history:~
 歴史的:historical:~
 変更点:changes:~
-発行版:publication:~
+公表-:publish:~
+公表:publication:~
+公表版:publication:~
 正誤表:errata:~
 謝辞:acknowledgements:~
 知的財産権:intellectual property rights:~

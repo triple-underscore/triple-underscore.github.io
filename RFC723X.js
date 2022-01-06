@@ -1347,8 +1347,6 @@ stateless::::ステートレス
 	状態を持たない
 生の:raw:~
 疑似:pseudo:~
-発行-:publish:~
-発行:publication:~
 為す:makeする:~
 為され:makeされ:~
 為さな:makeしな:~

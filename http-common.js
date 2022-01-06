@@ -1026,8 +1026,6 @@ agent::::エージェント
 過度の:excessiveな:~
 確約-:assure:~
 メモ:memo:::~
-発行-:publish:~
-発行:publication:~
 稀:rare:~
 
 	:be aware of
