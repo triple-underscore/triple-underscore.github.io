@@ -112,8 +112,8 @@ return text;
 
 ●●options
 
-spec_date:2022-01-04
-trans_update:2021-12-01
+spec_date:2022-01-12
+trans_update:2022-01-13
 source_checked:210831
 page_state_key:HTML
 spec_status:LS
@@ -418,6 +418,7 @@ package::::パッケージ
 	引用用の:quoting
 		成す:comprise
 	消え去る:going away
+	去る:away
 	終え:finish:
 	間に挟む:intervening
 	戻る:back
@@ -855,7 +856,7 @@ shE.持続される利用者~状態:~HISTORY#she-other
 shE.直列形の状態:~HISTORY#she-serialized-state
 shE.~scroll位置~data:~HISTORY#she-scroll-position
 shE.施策~容器:~HISTORY#she-policy-container
-履歴を前／後に辿る:~HISTORY#traverse-the-history-by-a-delta
+履歴を前／後へ辿る:~HISTORY#traverse-the-history-by-a-delta
 現在の~entry:~HISTORY#current-entry
 最近の~entry:~HISTORY#latest-entry
 hsT.状態:~HISTORY#concept-history-state
@@ -1656,48 +1657,85 @@ If navigationId is null:
 ◎
 If browsingContext's active document's unload counter is greater than 0, then invoke WebDriver BiDi navigation failed with a WebDriver BiDi navigation status whose id is navigationId, status is "canceled", and url is resource's url, and return.
 </li>
-
-	<li>
+	<li id="navigate-convert-to-replace">
 <p>
 ~IF［
-%資源 は`要請$である
-］：
-◎
-↓</p>
-		<ol>
-			<li id="navigate-fragid-step">
-~IF［
-%履歴~取扱い ~NEQ `再読込み$i
+%履歴~取扱い ~EQ `既定$i
 ］~AND［
+次のいずれかが満たされる
+］…：
+◎
+If historyHandling is "default", and any of the following are true:
+</p>
+		<ul>
+			<li>
+%B は`まだ初期~about_blank 文書である$
+◎
+browsingContext is still on its initial about:blank Document
+</li>
+			<li>
+<p>
+［
+%資源 は`要請$である
+］~AND［
+次のいずれかが満たされる
+］：
+</p>
+				<ul>
+					<li>
+( %資源~URL, %文書 の`~URL$doc )
+は`同等な~URL$である
+</li>
+					<li>
+%資源~URL の`~scheme$url ~EQ `javascript$l
+</li>
+				</ul>
+◎
+resource is a request whose URL equals browsingContext's active document's URL
+◎
+resource is a request whose URL's scheme is "javascript"
+</li>
+		</ul>
+<p>
+…ならば
+⇒
+%履歴~取扱い ~SET `置換-$i
+◎
+then set historyHandling to "replace".
+</p>
+	</li>
+	<li id="navigate-fragid-step">
+<p>
+~IF［
+次がすべて満たされる
+］…
+</p>
+		<ul>
+			<li>
+%履歴~取扱い ~NEQ `再読込み$i
+</li>
+			<li>
+%資源 は`要請$である
+</li>
+			<li>
 ( %資源~URL, %文書 の`~URL$doc )
 は `素片は除外する^i 下で`同等な~URL$である
-］~AND［
+</li>
+			<li>
 %資源~URL の`素片$url ~NEQ ~NULL
-］
+</li>
+		</ul>
+<p>
+…ならば
 ⇒＃
 `素片へ~navigateする$( %B, %資源~URL, %履歴~取扱い, %~navi~ID )；
 ~RET
+</p>
 ◎
 If historyHandling is not "reload", resource is a request, resource's URL equals browsingContext's active document's URL with exclude fragments set to true, and resource's URL's fragment is non-null, then:
 • Navigate to a fragment given browsingContext, resource's URL, historyHandling, and navigationId.
 • Return.
 </li>
-			<li>
-~IF［
-`履歴の取扱い$V ~EQ `既定$i
-］~AND［［
-( %資源~URL, %文書 の`~URL$doc )
-は`同等な~URL$である
-］~OR［
-%資源~URL の`~scheme$url ~EQ `javascript$l
-］］
-⇒
-`履歴の取扱い$V ~SET `置換-$i
-◎
-If historyHandling is "default", resource is a request, and either resource's URL equals browsingContext's active document's URL or resource's URL's scheme is "javascript", then set historyHandling to "replace".
-</li>
-		</ol>
-	</li>
 	<li>
 %現任な~navi生成元 ~LET ［
 %~navi には `script$e 【`~script$？】が孕まれるならば `現任な設定群~obj$の`生成元$enV【！`生成元$】 ／
@@ -5176,7 +5214,7 @@ To traverse the history to a session history entry entry, with an optional histo
 </div>
 
 <p class="note">注記：
-この~algoは、明示的に`履歴を前／後に辿る$ときのみならず，他の状況においても呼出される
+この~algoは、明示的に`履歴を前／後へ辿る$ときのみならず，他の状況においても呼出される
 — 例えば、閲覧文脈を`~navigate$するときに，`新たな~pageで~session履歴を更新する$一部として。
 ◎
 This algorithm is not just invoked when explicitly going back or forwards in the session history — it is also invoked in other situations, for example when navigating a browsing context, as part of updating the session history with the new page.
@@ -5268,6 +5306,17 @@ Save persisted state to the current entry.
 %新たな文書 ~LET %~entry の`文書$shE
 ◎
 Let newDocument be entry's document.
+</li>
+	<li>
+~Assert：
+%新たな文書 の`初期~about_blankか$doc ~EQ ~F
+— すなわち
+⇒
+`初期~about_blank な文書$へ戻るよう辿ることは決してない
+— それは、
+そこから~navigateして去るとき，常に<a href="#navigate-convert-to-replace">置換される</a>ので。
+◎
+Assert: newDocument's is initial about:blank is false, i.e., we never traverse back to the initial about:blank Document because it always gets replaced when we navigate away from it.
 </li>
 	<li>
 %現在の文書 ~LET %B にて`作動中の文書$
@@ -5482,26 +5531,6 @@ Fire a page transition event named pageshow at newDocument's relevant global obj
 ◎
 Set newDocument's URL to entry's URL.
 </li>
-			<li>
-<p>
-%新たな文書 の`初期~about_blankか$doc ~SET ~F
-◎
-Set newDocument's is initial about:blank to false.
-</p>
-
-<p class="XXX">
-この仕様は、現時点では，~session履歴~内に`初期~about_blank な文書$を保つことを許容するが、これは，おそらく~bugである
-— <a href="~HTMLissue/6491">課題 #6491</a>（とりわけ
-<a href="~HTMLissue/6491#issuecomment-799866620">この~comment</a>
-）を見よ。
-それが修正されたときには、この段は，次の表明-に変換できる
-⇒
-%新たな文書 の`初期~about_blankか$doc ~EQ ~F
-（すなわち、`初期~about_blank な文書$へ戻るよう辿ることは決してない）
-◎
-The spec currently allows keeping the initial about:blank Document in session history, but this is probably a bug: see issue #6491 (and especially this comment). If we fix that then we can convert this step into an assert that newDocument's is initial about:blank is false, i.e., an assert that we never traverse back to the initial about:blank Document.
-</p>
-			</li>
 			<li>
 %~hashは変化したか ~LET ~F
 ◎
