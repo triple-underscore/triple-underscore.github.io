@@ -1278,7 +1278,7 @@ reactive::::リアクティブ
 stateless::::ステートレス
 stateful::::ステートフル
 生の:raw:~
-疑似:pseudo:~
+疑似:pseudo-:~
 為す:makeする:~
 為され:makeされ:~
 為さな:makeしな:~
