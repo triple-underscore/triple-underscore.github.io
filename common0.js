@@ -1779,9 +1779,10 @@ registry::::レジストリ
 互換:compatible:~
 互換性:compatibility:~
 	非互換:incompatible
-	非互換:breaking
 	互換でない:incompatible
 	非互換性:incompatibility
+非互換化-:break:~
+非互換化:breakage:~
 後方-:backwards:~
 前方-:forwards:~
 過去互換:quirks:~
