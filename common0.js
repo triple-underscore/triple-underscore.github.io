@@ -2224,6 +2224,7 @@ programming::::プログラミング
 依頼-:ask:~
 保全-:preserve:~
 発見-:discover:~
+発見:discovery:~
 恣意的:arbitrary:~
 任意な:arbitraryな:任意の
 任意に:arbitraryに:~
