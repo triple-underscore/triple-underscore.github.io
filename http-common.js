@@ -718,6 +718,7 @@ c.realm:~HTTPsem#realm
 
 
 	●HTTPcache
+~cache指令:~HTTPcache#cache-directive
 経験的に~cache可能:~HTTPcache#heuristically-cacheable
 ~cache検証:~HTTPcache#validation.model
 ~cache検証~要請:~HTTPcache#validation.sent
