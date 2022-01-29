@@ -1736,6 +1736,7 @@ HRTIME=副             ~/hr-time-ja.html
 NAVIGATIONTIMING=副   ~/navigation-timing-ja.html●Level 2 日本語訳
 NAVIGATIONTIMING2=副  ~/navigation-timing-ja.html
 PAGEVISIBILITY=副     ~/page-visibility-ja.html
+PERFORMANCETIMELINE=副     ~/performance-timeline-ja.html●Level 2 日本語訳
 PERFORMANCETIMELINE2=副    ~/performance-timeline-ja.html
 USERTIMING2=副        ~/user-timing-ja.html
 RESOURCETIMING2=副     ~/resource-timing-ja.html
