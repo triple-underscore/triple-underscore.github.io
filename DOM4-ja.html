@@ -260,8 +260,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2022-01-24
-trans_update:2022-01-25
+spec_date:2022-02-02
+trans_update:2022-02-04
 source_checked:210831
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -409,18 +409,25 @@ poll:
 	走り終えた
 	引数:parameter
 
+	%大域~obj:global
+
 	●計時
 時計:clock:~
 時刻起点:time origin::~
 高分解能:high resolution::高分解能
+milli:milli-:::ミリ
+	~milli秒数:number of milliseconds
+	~milli秒後:in milliseconds
+timeout::::タイムアウト
+timer::::タイマー
 
 	現在時:now
 	差分:offset
-	ミリ秒数:milliseconds
 	までの細かさ:minimum
 	何かが生じた:occurrence／:something has occurred
 	~~発生:occurrence
 	次に起きる出来事:what happens next
+	〜までの間:duration
 
 	●名前空間
 	局所~名:local name
@@ -1073,6 +1080,7 @@ l.named:#dom-slotassignmentmode-named
 
 	●IDL
 CEReactions:~HEcustom#cereactions
+EnforceRange:~WEBIDLjs#EnforceRange
 Exposed:~WEBIDLjs#Exposed
 SameObject:~WEBIDLjs#SameObject
 Unscopable:~WEBIDLjs#Unscopable
@@ -1086,6 +1094,7 @@ LegacyNullToEmptyString:~WEBIDLjs#LegacyNullToEmptyString
 any:~WEBIDL#idl-any
 unsigned short:~WEBIDL#idl-unsigned-short
 unsigned long:~WEBIDL#idl-unsigned-long
+unsigned long long:~WEBIDL#idl-unsigned-long-long
 unrestricted double:~WEBIDL#idl-unrestricted-double
 
 E.TypeError:~WEBIDL#exceptiondef-typeerror
@@ -1100,6 +1109,7 @@ E.NamespaceError:~WEBIDL#namespaceerror
 E.NotFoundError:~WEBIDL#notfounderror
 E.NotSupportedError:~WEBIDL#notsupportederror
 E.SyntaxError:~WEBIDL#syntaxerror
+E.TimeoutError:~WEBIDL#timeouterror
 E.WrongDocumentError:~WEBIDL#wrongdocumenterror
 
 m.click():~HTMLinteraction#dom-click
@@ -1614,12 +1624,16 @@ prod.PrefixedName:~XNLNS10#NT-PrefixedName
 関連な~Realm:~WAPI#concept-relevant-realm
 関連な~agent:~WAPI#relevant-agent
 rM.大域~obj:~WAPI#concept-realm-global
+大域~taskを~queueする:~WAPI#queue-a-global-task
 小task:~WAPI#microtask
 小taskを~queueする:~WAPI#queue-a-microtask
 ~event~handler:~WAPI#event-handlers
 ~event~handler~IDL属性:~WAPI#event-handler-idl-attributes
 ~event~handler~event型:~WAPI#event-handler-event-type
 生成元が類似な~window~agent:~WAPI#similar-origin-window-agent
+
+手続きを~timeout後に走らす:~HTMLGAPI#run-steps-after-a-timeout
+~timer~task源:~HTMLGAPI#timer-task-source
 
 生成元:~ORIGIN#concept-origin
 不透明な生成元:~ORIGIN#concept-origin-opaque
@@ -1723,7 +1737,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/16a01dd0807d57d35bbeea649cf06afcc8faa583/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/db4088aa5db674a150e19d2055a426456ec415bd/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -2836,7 +2850,7 @@ Returns true if event was dispatched by the user agent, and false otherwise.
 
 	<dt>%event . $timeStamp</dt>
 	<dd>
-%event の時刻印を`時刻起点$からのミリ秒数で返す。
+%event の時刻印を`時刻起点$からの~milli秒数で返す。
 ◎
 Returns the event’s timestamp as the number of milliseconds measured relative to the time origin.
 </dd>
@@ -5699,6 +5713,7 @@ The abort(reason) method steps are to signal abort on this’s signal with reaso
 [`Exposed$=*]
 interface @AbortSignal : $EventTarget {
   [`NewObject$] static $AbortSignal $abort(optional $any %reason);
+  [`NewObject$] static $AbortSignal $timeout([`EnforceRange$] `unsigned long long$ %milliseconds);
 
   ~RA $boolean $aborted;
   ~RA $any $reason;
@@ -5718,6 +5733,16 @@ $AbortSignal ~instanceを返す
 ］に設定される。
 ◎
 Returns an AbortSignal instance whose abort reason is set to reason if not undefined; otherwise to an "AbortError" DOMException.
+</dd>
+
+	<dt>AbortSignal . $timeout(milliseconds)</dt>
+	<dd>
+$AbortSignal ~instanceを返す
+— それは、
+%milliseconds ~milli秒後に中止され，
+その`中止-事由$aBは `TimeoutError$E 例外に設定されることになる。
+◎
+Returns an AbortSignal instance which will be aborted in milliseconds milliseconds. Its abort reason will be set to a "TimeoutError" DOMException.
 </dd>
 
 	<dt>%signal . $aborted</dt>
@@ -5866,6 +5891,54 @@ Let signal be a new AbortSignal object.
 ◎
 Set signal’s abort reason to reason if it is given; otherwise to a new "AbortError" DOMException.
 </li>
+	<li>
+~RET %通達
+◎
+Return signal.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+静的な
+@timeout(milliseconds)
+~method手続きは：
+◎
+The static timeout(milliseconds) method steps are:
+</p>
+<ol>
+	<li>
+%通達 ~LET 新たな $AbortSignal ~obj
+◎
+Let signal be a new AbortSignal object.
+</li>
+	<li>
+%大域~obj ~LET %通達 に`関連な大域~obj$
+◎
+Let global be signal’s relevant global object.
+</li>
+	<li>
+<p>
+`手続きを~timeout後に走らす$( %大域~obj, `AbortSignal-timeout^l, %milliseconds, 次を走らす手続き )
+⇒
+次を走らす`大域~taskを~queueする$( `~timer~task源$, %大域~obj )
+⇒
+`中止-を通達する$( %通達, 新たな `TimeoutError$E 例外 )
+◎
+Run steps after a timeout given global, "AbortSignal-timeout", milliseconds, and the following step:
+•
+Queue a global task on the timer task source given global to signal abort given signal and a new "TimeoutError" DOMException.
+</p>
+
+<p>
+この~timeoutまでの間は、
+%通達 の `abort$et ~event用に~event~listenerが登録されている限り，
+%大域~obj から %通達 への強い参照があるモノトスル。
+◎
+For the duration of this timeout, if signal has any event listeners registered for its abort event, there must be a strong reference from global to signal.
+</p>
+	</li>
 	<li>
 ~RET %通達
 ◎
