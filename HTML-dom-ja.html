@@ -145,8 +145,8 @@ return text;
 
 ●●options
 
-spec_date:2022-01-21
-trans_update:2022-01-23
+spec_date:2022-02-11
+trans_update:2022-02-12
 source_checked:210112
 page_state_key:HTML
 spec_status:LS
@@ -670,6 +670,7 @@ doc.現在の準備度:#current-document-readiness
 doc.非同一-生成元~opener施策:#concept-document-coop
 doc.初期~about_blankか:#is-initial-about:blank
 doc.~navi~ID:#concept-document-navigation-id
+
 初期~about_blank な文書:#is-initial-about:blank
 まだ初期~about_blank 文書である:#still-on-its-initial-about:blank-document
 
@@ -721,7 +722,15 @@ doc.~load計時情報:#load-timing-info
 ~unload~event終了~時刻:#unload-event-end-time
 文書の現在の準備度を更新する:#update-the-current-document-readiness
 
+doc.構文解析器により挿入される~bodyを待受けているか:#awaiting-parser-inserted-body-flag
+doc.具現化を阻む要素~集合:#render-blocking-element-set
+具現化は阻まれて:#render-blocked
+具現化を阻む:#block-rendering
+具現化を阻まなくする:#unblock-rendering
+
 	●INFRA
+実装定義:~INFRA#implementation-defined
+
 ~HTML名前空間:~INFRA#html-namespace
 ~SVG名前空間:~INFRA#svg-namespace
 ~XML名前空間:~INFRA#xml-namespace
@@ -748,6 +757,8 @@ str.長さ:~INFRA#string-length
 置換する:~INFRA#list-replace
 付加する:~INFRA#list-append
 前付加する:~INFRA#list-prepend
+集合:~INFRA#ordered-set
+set.付加する:~INFRA#set-append
 構造体:~INFRA#struct
 sct.~item:~INFRA#struct-item
 
@@ -795,6 +806,7 @@ sct.~item:~INFRA#struct-item
 ~ID:~DOM4#concept-id
 doc.生成元:~DOM4#concept-document-origin
 doc.~URL:~DOM4#concept-document-url
+doc.内容~型:~DOM4#concept-document-content-type
 子~群:~DOM4#concept-tree-child
 ~HTML文書:~DOM4#html-document
 ~XML文書:~DOM4#xml-document
@@ -1096,6 +1108,7 @@ dash::::ダッシュ
 時間切れ:timeout::~
 割込まれ:interruptされ:割り込まれ
 再入的:reentrant::~
+待受けて:awaitして::待ち受けて
 
 同等性:equality:~
 	空でない:non-empty
@@ -1111,6 +1124,7 @@ unload:
 高分解能:high resolution::~
 	今:now
 	今や:now
+	~LTE:has not exceeded
 
 	●UI ／ CSS ／ 呈示
 支援技術:assistive technology:~
@@ -1486,6 +1500,7 @@ credit:::
 	%body:-
 	%要素:-
 	%要素:element
+	%要素:el
 	%名前:name
 	%要素~list:elements
 	%B:-
@@ -2159,7 +2174,8 @@ also has obsolete members
 </pre>
 
 <p>
-各 `文書$は、次に挙げるものを持つ：
+各`文書$は、
+次に挙げるものを持つ：
 ◎
 ↓</p>
 <dl class="def-list">
@@ -2566,7 +2582,7 @@ The DOMContentLoaded event fires after the transition to "interactive" but befor
 </dl>
 
 <p>
-各 `文書$は、
+各`文書$は、
 `現在の準備度@doc
 を持つ
 — それは、文字列であり，初期~時は `complete^l とする。
@@ -2682,7 +2698,8 @@ A Document is said to have an active parser if it is associated with an HTML par
 
 <div class="p">
 <p>
-各 `文書$は、次に挙げるものを持つ：
+各`文書$は、
+次に挙げるものを持つ：
 </p>
 <dl class="def-list">
 	<dt>
@@ -2793,8 +2810,120 @@ DOMHighResTimeStamp values
 </dl>
 
 			</section>
+			<section id="render-blocking-mechanism">
+<h4 title="Render-blocking mechanism">3.1.5. 具現化を阻む仕組み</h4>
+
+<p>
+各`文書$は、
+`具現化を阻む要素~集合@doc
+（ `render-blocking element set^en ）を持つ
+— それは、
+要素~群が成す`集合$であり，初期~時は空とする。
+◎
+Each Document has a render-blocking element set, a set of elements, initially the empty set.
+</p>
+
+<p>
+各`文書$は、
+`構文解析器により挿入される~bodyを待受けているか@doc
+（ `awaiting parser-inserted body flag^en ）を持つ
+— それは、
+真偽値をとり，初期~時は［
+当の文書の`内容~型$doc ~EQ "`text/html$c" ならば ~T ／
+~ELSE_ ~F
+］とする。
+◎
+Each Document has an awaiting parser-inserted body flag, a boolean, initially true if the document's content type is "text/html"; otherwise false.
+</p>
+
+<p id="await-parser-inserted-body-flag-flip" class="note">注記：
+この~flagは、
+<a href="~HTMLparsing#the-after-head-insertion-mode">構文解析器が［
+`body^e ／ `frameset^e
+］要素を挿入する</a>とき，
+~F に設定されることになる。
+◎
+The flag will be set to false when the parser inserts a body or a frameset element.
+</p>
+
+<p>
+`文書$ %文書 の
+`具現化は阻まれて@
+いる（ `render-blocked^en ）とは、
+次のいずれも満たされることをいう：
+◎
+A Document document is render-blocked if both of the following are true:
+</p>
+<ul>
+	<li>
+［
+%文書 の`具現化を阻む要素~集合$docは空でない
+］~OR［
+%文書 の`構文解析器により挿入される~bodyを待受けているか$doc ~EQ ~T
+］
+◎
+document's render-blocking element set is non-empty, or document's awaiting parser-inserted body flag is true.
+</li>
+	<li>
+`現在の高分解能~時刻$( %文書 に`関連な大域~obj$ ) ~LTE `実装定義$な時間切れ値
+◎
+The current high resolution time given document's relevant global object has not exceeded an implementation-defined timeout value.
+</li>
+</ul>
+
+<div class="algo">
+<p>
+`具現化を阻む@
+ときは、所与の
+( 要素 %要素 )
+に対し：
+◎
+To block rendering on an element el:
+</p>
+<ol>
+	<li>
+%文書 ~LET %要素 の`~node文書$
+◎
+Let document be el's node document.
+</li>
+	<li>
+~IF［
+%文書 の`構文解析器により挿入される~bodyを待受けているか$doc ~EQ ~T
+］
+⇒
+%文書 の`具現化を阻む要素~集合$docに %要素 を`付加する$set
+◎
+If document's awaiting parser-inserted body flag is true, then append el to document's render-blocking element set.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`具現化を阻まなくする@
+ときは、所与の
+( 要素 %要素 )
+に対し：
+◎
+To unblock rendering on an element el:
+</p>
+<ol>
+	<li>
+%文書 ~LET %要素 の`~node文書$
+◎
+Let document be el's node document.
+</li>
+	<li>
+%文書 の`具現化を阻む要素~集合$docから %要素 を`除去する$
+◎
+Remove el from document's render-blocking element set.
+</li>
+</ol>
+</div>
+
+			</section>
 			<section id="dom-tree-accessors">
-<h4 title="DOM tree accessors">3.1.4. ~DOM~tree~accessor</h4>
+<h4 title="DOM tree accessors">3.1.6. ~DOM~tree~accessor</h4>
 
 <div class="algo">
 <p>

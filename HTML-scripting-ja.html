@@ -114,8 +114,8 @@ return text;
 
 ●●options
 
-spec_date:2022-01-04
-trans_update:2021-10-21
+spec_date:2022-02-11
+trans_update:2022-02-12
 source_checked:210714
 page_state_key:HTML
 spec_status:LS
@@ -193,6 +193,7 @@ e.details:~HEinteractive#the-details-element
 
 	●attr
 a.async:#attr-script-async
+a.blocking:#attr-script-blocking
 a.charset:~HTMLobs#attr-script-charset
 a.crossorigin:#attr-script-crossorigin
 a.defer:#attr-script-defer
@@ -239,6 +240,7 @@ m.assignedNodes:#dom-slot-assignednodes
 m.assignedElements:#dom-slot-assignedelements
 
 m.async:#dom-script-async
+m.blocking:#dom-script-blocking
 m.cloneNode:~DOM4#dom-node-clonenode
 m.content:#dom-template-content
 m.createDocument:~DOM4#dom-domimplementation-createdocument
@@ -264,6 +266,7 @@ m.text:#dom-script-text
 m.transformToDocument:~HTMLdep#dom-xsltprocessor-transformtodocument
 m.transformToFragment:~HTMLdep#dom-xsltprocessor-transformtofragment
 m.type:#dom-script-type
+m.value:~DOM4#dom-domtokenlist-value
 
 m.new Worker:~WORKERS#dom-worker
 
@@ -330,7 +333,7 @@ sl.CryptographicNonce:~HTMLurl#cryptographicnonce
 
 手動で割当された~node群:#manually-assigned-nodes
 
-	●terms DOM4
+	●用語 DOM
 ~nodeを受入する:~DOM4#concept-node-adopt
 ~HTML文書:~DOM4#html-document
 ~XML文書:~DOM4#xml-document
@@ -389,7 +392,8 @@ node.挿入された:~HTMLINFRA#nodes-are-inserted
 相対的に~URL構文解析する:~HTMLurl#parse-a-url
 文書~基底~URL:~HTMLurl#document-base-url
 前後~空白~可の妥当かつ空でない~URL:~HTMLurl#valid-non-empty-url-potentially-surrounded-by-spaces
-
+具現化を阻んで:~HTMLurl#render-blocking
+他を阻む属性:~HTMLurl#blocking-attribute
 
 
 	●HTMLdom
@@ -408,6 +412,9 @@ node.挿入された:~HTMLINFRA#nodes-are-inserted
 text/html における~tag省略:~HTMLdom#concept-element-tag-omission
 透過的:~HTMLdom#transparent
 表現-:~HTMLdom#represents
+具現化を阻まなくする:~HTMLdom#unblock-rendering
+具現化を阻む:~HTMLdom#block-rendering
+
 
 	●WAPI
 x.~script:~WAPI#concept-script
@@ -1118,7 +1125,7 @@ defer — Defer script execution
 </dd>
 	<dd>
 `crossorigin$a
-— 要素が非同一-生成元 要請をどう取扱うか
+— 要素は非同一-生成元 要請をどう取扱うか
 ◎
 crossorigin — How the element handles crossorigin requests
 </dd>
@@ -1128,12 +1135,17 @@ crossorigin — How the element handles crossorigin requests
 ◎
 integrity — Integrity metadata used in Subresource Integrity checks [SRI]
 </dd>
-
 	<dd>
 `referrerpolicy$a
 — 要素により起動された`~fetch$用の`~referrer施策$
 ◎
 referrerpolicy — Referrer policy for fetches initiated by the element
+</dd>
+	<dd>
+`blocking$a
+— 要素は`具現化を阻んで$いるかどうか。
+◎
+blocking — Whether the element is render-blocking
 </dd>
 
 	<dt>`~accessibilityの考慮点$</dt>
@@ -1160,6 +1172,7 @@ interface `HTMLScriptElement@I : `HTMLElement$I {
   [`CEReactions$] attribute DOMString `text$m;
   [`CEReactions$] attribute DOMString `integrity$m;
   [`CEReactions$] attribute DOMString `referrerPolicy$m;
+  [SameObject, PutForwards=`value$m] readonly attribute `DOMTokenList$I `blocking$m;
 
   static boolean `supports$m(DOMString %type);
 
@@ -1547,6 +1560,14 @@ is fetched with &lt;script&gt;'s referrer policy ("origin" in this case)
 </div>
 
 <p>
+`blocking@a
+属性は、
+`他を阻む属性$である。
+◎
+The blocking attribute is a blocking attribute.
+</p>
+
+<p>
 次に挙げる内容~属性を動的に変更しても，直接的な効果はない
 — これらの属性は、下に述べる特定の時点に限り利用される
 ⇒
@@ -1586,8 +1607,14 @@ Changing the src, type, nomodule, async, defer, crossorigin, integrity, and refe
 ~IDL属性は、
 `integrity$a 内容~属性を`反映する$モノトスル。
 </p>
+
+<p>
+`blocking@m
+~IDL属性は、
+`blocking$a 内容~属性を`反映する$モノトスル。
+</p>
 ◎
-The IDL attributes src, type, defer, and integrity, must each reflect the respective content attributes of the same name.
+The IDL attributes src, type, defer, integrity, and blocking, must each reflect the respective content attributes of the same name.
 </div>
 
 <p>
@@ -2599,6 +2626,15 @@ Parse src relative to the element's node document.
 If the previous step failed, queue a task to fire an event named error at the element, and return. Otherwise, let url be the resulting URL record.
 </li>
 			<li>
+~IF［
+%S は`具現化を阻んで$いる
+］
+⇒
+`具現化を阻む$( %S )
+◎
+If the element is render-blocking, block rendering on the element.
+</li>
+			<li>
 <p>
 %S の`~script種別$に応じて：
 ◎
@@ -2903,8 +2939,6 @@ If the script's type is "module", and the element is "parser-inserted", and the 
 Add the element to the end of the list of scripts that will execute when the document has finished parsing associated with the Document of the parser that created the element.
 </dd>
 			<dd>
-</dd>
-			<dd>
 <p>
 %S が`準備済み$になったときは
 ⇒
@@ -2913,6 +2947,7 @@ Add the element to the end of the list of scripts that will execute when the doc
 ◎
 When the script is ready, set the element's "ready to be parser-executed" flag. The parser will handle executing the script.
 </dd>
+
 			<dt>
 【！id="script-processing-parser-inserted"】
 `構文解析器を阻む^i
@@ -2923,6 +2958,11 @@ If the script's type is "classic", and the element has a src attribute, and the 
 %準備~時点の文書 の`構文解析器を阻んでいる~script$ ~SET %S
 ◎
 The element is the pending parsing-blocking script of the Document of the parser that created the element. (There can only be one such script per Document at a time.)
+</dd>
+			<dd>
+`具現化を阻む$( %S )
+◎
+Block rendering on the element.
 </dd>
 			<dd>
 %S が`準備済み$になったときは
@@ -3153,6 +3193,11 @@ Let document be scriptElement's node document.
 ~RET
 ◎
 If scriptElement's preparation-time document is not equal to document, then return.
+</li>
+	<li>
+`具現化を阻まなくする$( %S )
+◎
+Unblock rendering on scriptElement.
 </li>
 	<li>
 ~IF［
