@@ -1635,6 +1635,7 @@ CSSCOLOR3=主          ~mitsue/css3-color/
 CSSCOLOR3=副          ~/css-color-ja.html●Level 4 日本語訳
 CSSCOLOR4=副          ~/css-color-ja.html
 CSSCOLOR5=副          ~/css-color5-ja.html
+CSSCOLORADJUST1=副    ~/css-color-adjust-ja.html
 CSSCOUNTERSTYLES3=副  ~/css-counter-styles-ja.html
 CSSCONDITIONAL3=副    ~/css-conditional-ja.html
 CSSCONTAIN2=副        ~/css-contain-ja.html
