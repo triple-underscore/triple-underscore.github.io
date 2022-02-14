@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2021-12-19
-trans_update:2021-12-20
+spec_date:2022-02-11
+trans_update:2022-02-14
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -1204,6 +1204,8 @@ l.credentialless:~ORIGIN#coep-credentialless
 新たな並列~queueを開始する:~HTMLINFRA#starting-a-new-parallel-queue
 手続きを~enqueueする:~HTMLINFRA#enqueue-the-following-steps
 
+~preloadされる資源を消費する:~HTMLlinks#consume-a-preloaded-resource
+
 ~mp_form_data境界~文字列:~HTMLforms#multipart/form-data-boundary-string
 ~mp_form_dataとして符号化する:~HTMLforms#multipart/form-data-encoding-algorithm
 
@@ -1486,6 +1488,7 @@ Location:
 keepalive:
 network-or-cache::::ネットワーク-or-キャッシュ
 ping:
+preload:
 再読込み:reload::再読み込み::リロード
 	~download法:downloading
 trailer::::トレイラ
@@ -1959,6 +1962,7 @@ helper:
 	%予行~fetch~params:-
 	%~HTTP~fetch~params:httpFetchParams
 	%要請:request
+	%要請:req（誤 request
 	%要請の本体~終了の処理n:processRequestEndOfBody
 	%要請の本体~chunk長さの処理n:processRequestBodyChunkLength
 	-:continueAlgorithm
@@ -2011,6 +2015,8 @@ helper:
 	%範囲~始端:rangeStart
 	%範囲~終端:rangeEnd
 	%最後の~URL:lastURL
+	%~preloadされる応答~可用~時の手続き:onPreloadedResponseAvailable
+	%~preloadされる資源を見出したか:foundPreloadedResource
 
 	●指示語
 
@@ -2118,7 +2124,7 @@ FETCHMETADATA=副       ~/webappsec-fetch-metadata-ja.html
 [REPORTING]
     Douglas Creager; et al. ＜Reporting API＞. URL: https://w3c.github.io/reporting/
 [RESOURCE-TIMING]
-    Yoav Weiss; et al. ＜Resource Timing Level 2＞. URL: https://w3c.github.io/resource-timing/
+    Yoav Weiss; Noam Rosenthal. ＜Resource Timing Level 2＞. URL: https://w3c.github.io/resource-timing/
 [RFC7405]
     P. Kyzivat. ＜Case-Sensitive String Support in ABNF＞. December 2014. Proposed Standard. URL: https://www.rfc-editor.org/rfc/rfc7405
 [RFC7578]
@@ -2196,7 +2202,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/435c5ecc34c18d49aa6c96e45d90de03d52428a2/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/8ebf2fd5f700b8a23a8fb4697c3a6a213beb77b7/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -10478,6 +10484,91 @@ If request’s window is "client", then set request’s window to request’s cl
 ◎
 If request’s origin is "client", then set request’s origin to request’s client’s origin.
 </li>
+	<li>
+<p>
+~IF［
+次に挙げる条件はすべて満たされる
+］…：
+◎
+If all of the following conditions are true:
+</p>
+		<ul>
+			<li>
+%要請 の`~URL$rqの`~scheme$urlは`~HTTP_S~scheme$である
+◎
+request’s URL’s scheme is an HTTP(S) scheme
+</li>
+			<li>
+%要請 の`~mode$rq ~IN { `same-origin^l, `cors^l, `no-cors^l }
+◎
+request’s mode is "same-origin", "cors", or "no-cors"
+</li>
+			<li>
+%要請 の`~window$rq ~NEQ ~NULL
+◎
+request’s window is not null
+</li>
+			<li>
+%要請 の`~method$rq ~EQ `GET^bl
+◎
+request’s method is `GET`
+</li>
+			<li>
+［
+%要請 の`非安全~要請か$rq ~EQ ~F
+］~OR［
+%要請 の`~header~list$rqは`空$である
+］
+◎
+request’s unsafe-request flag is not set or request’s header list is empty
+</li>
+		</ul>
+<p>
+…ならば：
+◎
+then:
+</p>
+		<ol>
+			<li>
+~Assert：
+%要請 の`生成元$rq ~EQ`生成元$sub  %要請 の`~client$rqの`生成元$enV
+◎
+Assert: request’s origin is same origin with request’s client’s origin.
+</li>
+			<li>
+%~preloadされる応答~可用~時の手続き ~LET 
+所与の
+( `応答$ %応答 )
+に対し，次を`並列的$に走らす~algo
+⇒
+`~fetch終結$( %~fetch~params, %応答 )【！引数順序逆】
+◎
+Let onPreloadedResponseAvailable be an algorithm that runs the following step in parallel given a response response: run fetch finale given response and fetchParams.
+</li>
+			<li>
+%~preloadされる資源を見出したか ~LET 
+%要請【！req】 の`~window$rq用に`~preloadされる資源を消費する$( 次に挙げる引数 )
+⇒＃
+%要請 の`~URL$rq,
+%要請 の`行先$rq,
+%要請 の`~mode$rq,
+%要請 の`資格証~mode$rq,
+%要請 の`完全性~metadata$rq,
+%~preloadされる応答~可用~時の手続き
+◎
+Let foundPreloadedResource be the result of invoking consume a preloaded resource for req’s window, given req’s URL, req’s destination, req’s mode, req’s credentials mode, req’s integrity metadata, and onPreloadedResponseAvailable.
+</li>
+			<li>
+~IF［
+%~preloadされる資源を見出したか ~EQ ~T
+］
+⇒
+~RET
+◎
+If foundPreloadedResource is true, then return.
+</li>
+		</ol>
+	</li>
 	<li>
 <p>
 ~IF［
