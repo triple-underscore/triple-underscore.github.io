@@ -740,6 +740,7 @@ composed:
 load:
 持続-:persist:~
 復旧-:restore::~
+完結-:finalize::~
 
 	●例
 仮名:kana:~
@@ -1355,13 +1356,16 @@ enV.~top-level生成元:~WAPI#concept-environment-top-level-origin
 	●外部
 故意的な違反:~INFRA#willful-violation
 
-~fetch:~FETCH#concept-fetch
+~fetchする:~FETCH#concept-fetch
+i.応答の本体~終了~時の処理n:~FETCH#fetch-processresponseendofbody
 要請:~FETCH#concept-request
 rq.~client:~FETCH#concept-request-client
 rq.資格証~mode:~FETCH#concept-request-credentials-mode
 rq.行先:~FETCH#concept-request-destination
 rq.~URL:~FETCH#concept-request-url
 rq.~URL資格証を利用するか:~FETCH#concept-request-use-url-credentials-flag
+応答:~FETCH#concept-response
+計時を完結して報告する:~FETCH#finalize-and-report-timing
 
 ~CSS~pixel:~CSSVAL#px
 内在的~寸法:~CSSIMAGE#natural-dimensions
@@ -6762,14 +6766,23 @@ the input element's type attribute is in the Image Button state, and the src att
 “除外される~UA”
 とは、次のいずれかを意味する：
 </p>
-
-<ul><li>画像を~supportしていない
-</li><li>画像の~supportは不能化されている
-</li><li>画像をその場（ `on demand^en ）で~fetchすることにしている
-</li></ul>
+		<ul>
+			<li>
+画像を~supportしていない
+</li>
+			<li>
+画像の~supportは不能化されている
+</li>
+			<li>
+画像をその場（ `on demand^en ）で~fetchすることにしている
+</li>
+		</ul>
 
 <p class="trans-note">【
-“その場” とは、画像が実際の呈示に必要になることが判明する時点まで画像の~fetch時機を遅らせることを意味すると思われるが、その挙動は，ここには述べられていない。
+“その場” とは，［
+画像が実際の呈示に必要になることが判明する時点まで画像の~fetch時機を遅らせる
+］ことを意味すると思われるが、
+その挙動は，ここには述べられていない。
 】</p>
 
 ◎
@@ -6777,19 +6790,24 @@ then unless the user agent cannot support images, or its support for images has 
 </li>
 	<li class="algo">
 <p>
-“画像を~fetchする”
-ときは、次を走らす：
+“画像を~fetchする” ための手続きは：
 ◎
-＼
-</p>
+↓</p>
 		<ol>
+			<li>
+%要素 ~LET 当の `input$e 要素
+◎
+↓</li>
+			<li>
+%文書 ~LET %要素 の`~node文書$
+</li>
 			<li>
 <p>
 （次に従って画像~URLを検査する）：
 </p>
 				<ol>
 					<li>
-%src ~LET `src$a 属性の値
+%src ~LET %要素 の `src$a 属性の値
 </li>
 					<li>
 ~IF ［
@@ -6797,9 +6815,6 @@ then unless the user agent cannot support images, or its support for images has 
 ］
 ⇒
 ~RET
-</li>
-					<li>
-%文書 ~LET 要素の`~node文書$
 </li>
 					<li>
 %~URL ~LET `相対的に~URL構文解析する$( %src, %文書 )
@@ -6828,17 +6843,55 @@ or the src attribute's value is the empty string, the user agent must parse the 
 Let request be a new request whose URL is the resulting URL record, client is the element's node document's relevant settings object, destination is "image", credentials mode is "include", and whose use-URL-credentials flag is set.
 </li>
 			<li>
-%要請 を`~fetch$する
+<p>
+%要請 を`~fetchする$
+— 次を与える下で：
 ◎
-Fetch request.
+Fetch request, with＼
+</p>
+				<ul>
+					<li class="algo">
+<p>
+`応答の本体~終了~時の処理n$i ~SET 所与の
+( `応答$ %応答 )
+に対し，次を走らす手続き：
+◎
+processResponseEndOfBody set to the following steps given response response:
+</p>
+						<ol>
+							<li>
+`計時を完結して報告する$( %応答, %要素 の`~node文書$に`関連な大域~obj$, `input^l )
+◎
+Finalize and report timing with response, the input element's node document's relevant global object, and "input".
 </li>
+							<li>
+%~event型 ~LET ［
+次が満たされるならば `load$et ／
+~ELSE_ `error$et
+］
+⇒
+画像は（成功裡に~downloadされ，）`可用$である
+◎
+↓</li>
+							<li>
+次を走らす`要素~taskを~queueする$( `利用者~対話~task源$, %要素 )
+⇒
+`~eventを発火する$( %要素, %~event型 )
+◎
+If the download was successful and the image is available, queue an element task on the user interaction task source given the input element to fire an event named load at the input element;＼
+and otherwise, if the fetching process fails without a response from the remote server, or completes but the image is not a valid or supported image, queue an element task on the user interaction task source given the input element to fire an event named error on the input element.
+</li>
+						</ol>
+					</li>
+				</ul>
+			</li>
 		</ol>
 
 <p>
 画像の~fetchingは、［
-資源を~fetchして（下に定義される）
-`~network用~task源$から`~queueされ$た`~task$
-］を走らすときまで，要素の`~node文書$の`~load~eventを遅延-$するモノトスル。
+（上で定義した【！defined below】）
+資源を~fetchして`~network用~task源$から`~queueされ$る`~task$
+］を走らすときまで，当の要素の`~node文書$の`~load~eventを遅延-$するモノトスル。
 ◎
 Fetching the image must delay the load event of the element's node document until the task that is queued by the networking task source once the resource has been fetched (defined below) has been run.
 </p>
@@ -6916,37 +6969,6 @@ User agents must not allow the resource to act in an interactive fashion, but＼
 should honor any animation in the resource.
 </li>
 </ul>
-
-<div class="algo">
-<p>
-資源が~fetchされたときに `~network用~task源$から`~queueされ$た`~task$は、次を行うモノトスル：
-◎
-The task that is queued by the networking task source once the resource has been fetched, must,＼
-</p>
-
-<ol>
-	<li>
-~IF［
-資源による画像は`可用$である
-］
-⇒
-次を走らす`要素~taskを~queueする$( `利用者~対話~task源$, 要素 )
-⇒
-`~eventを発火する$( 要素, `load$et )
-◎
-if the download was successful and the image is available, queue an element task on the user interaction task source given the input element to fire an event named load at the input element;＼
-</li>
-	<li>
-~ELSE
-⇒
-次を走らす`要素~taskを~queueする$( `利用者~対話~task源$, 要素 )
-⇒
-`~eventを発火する$( 要素, `error$et )
-◎
-and otherwise, if the fetching process fails without a response from the remote server, or completes but the image is not a valid or supported image, queue an element task on the user interaction task source given the input element to fire an event named error on the input element.
-</li>
-</ol>
-</div>
 
 <hr>
 
