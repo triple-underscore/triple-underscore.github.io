@@ -53,8 +53,8 @@ figure > pre {
 ●●options
 
 spec_title:Digest Fields
-spec_date:2022-02-16
-trans_update:2022-02-19
+spec_date:2022-02-20
+trans_update:2022-02-21
 source_checked:210915
 original_url:https://httpwg.org/http-extensions/draft-ietf-httpbis-digest-headers.html
 abbr_url:HTTPdigest
@@ -140,25 +140,22 @@ cite.~HTTP~digest~field用~hash~algo~registry:~IANA-a/http-dig-alg/
 1.3:#obsolete-3230
 1.4:#notational-conventions
 2:#representation-digest
+2.1:#state-changing-requests
+2.2:#digest-and-content-location
 3:#content-digest
 4:#want-fields
 5:#algorithms
-6:#state-changing-requests
-6.1:#digest-and-content-location
-7:#security-considerations
-7.1:#http-messages-are-not-protected-in-full
-7.2:#end-to-end-integrity
-7.3:#usage-in-signatures
-7.4:#usage-in-trailer-fields
-7.5:#usage-with-encryption
-7.6:#algorithm-agility
-7.7:#resource-exhaustion
-8:#iana-considerations
-8.1:#establish-hash-algorithm-registry
-8.2:#representation-digest-field-registration
-8.3:#content-digest-field-registration
-8.4:#want-representation-digest-field-registration
-8.5:#want-content-digest-field-registration
+6:#security-considerations
+6.1:#sec-limitations
+6.2:#end-to-end-integrity
+6.3:#usage-in-signatures
+6.4:#usage-in-trailer-fields
+6.5:#usage-with-encryption
+6.6:#algorithm-agility
+6.7:#resource-exhaustion
+7:#iana-considerations
+7.1:#http-field-name-registration
+7.2:#establish-hash-algorithm-registry
 
 A:#resource-representation
 B:#examples-unsolicited
@@ -251,20 +248,26 @@ hashing::::ハッシュ化
 	●保安
 暗号用:cryptographic::~
 破損:corruption:~
-衝突:collision:~
+衝突:collision::~
+耐性:resistance::~
+原像:preimage::~
 改ざん:tampering:~
 晒し:exposeし:~
 敵対者:adversary:~
 	敵対者に~~晒され得る:potentially adversarial
+	敵対者に~~晒される:adversarial
 真正性:authenticity::~
 署名-:sign:~
 代用:substitution::~
 
+	第一-:first-
+	第二-:second-
 	暗号化されてない:unencrypted
 	抗する:against
 	非~secure:insecure
 	~secureでなくなる:insecure
 	~secureでない:insecure
+	最も弱い:weakest
 
 	●仕様
 順応-:adapt:~
@@ -306,11 +309,13 @@ hashing::::ハッシュ化
 有用性:utility:~
 普遍的:universal:~
 有益:beneficial:~
+廃用d:obsoleted:廃用
 
 	至らす:cause
 	併せて:in conjunction with
 	他の場面でも:Other places
 	〜ないと見込まれる:less likely
+	見込みが高い:likely
 	基づくこと:basing
 	一方では:on one hand
 	十分:enough
@@ -359,6 +364,8 @@ hashing::::ハッシュ化
 	かそうでないのか:unintentional
 	明瞭に表す:clearly articulate
 	可能性:possibility
+	用意がある:willing to
+	~~必要とされる:demand
 
 	●未分類
 消費:consumption::~
@@ -752,10 +759,10 @@ Section 4 defines the Want-Representation-Digest and Want-Content-Digest request
 Section 5 describes algorithms and their relation to the fields defined in this document,
 </li>
 	<li>
-`6$sec では、
+`2.1$sec では、
 表現~digestの算出-法の詳細を与える。
 ◎
-Section 6 details computing representation digests,
+Section 2.1 details computing representation digests,
 </li>
 	<li>
 ［
@@ -837,7 +844,7 @@ There are use-cases where a simple digest of the HTTP content bytes is required.
 ［
 `Representation-Digest$h ／ `Content-Digest$h
 ］~fieldは、
-`~hashing~algo$の即応性【 `7.6$sec 】を~supportする。
+`~hashing~algo$の即応性【 `6.6$sec 】を~supportする。
 ［
 `Want-Representation-Digest$h ／ `Want-Content-Digest$h
 ］~fieldは、［
@@ -1083,9 +1090,9 @@ Representations take into account the effect of the HTTP semantics on messages. 
 空~文字列に対する表現~digestを算出して，［
 表現~dataは送信されなかったことを表明する
 ］ことはアリである
-（ `7.3$sec を見よ）。
+（ `6.3$sec を見よ）。
 ◎
-When a message has no representation data it is still possible to assert that no representation data was sent computing the representation digest on an empty string (see Section 7.3).
+When a message has no representation data it is still possible to assert that no representation data was sent computing the representation digest on an empty string (see Section 6.3).
 </p>
 
 <p>
@@ -1153,9 +1160,9 @@ Representation-Digest: \
 ］を添えることにも利用できる。
 そのような~approachは、
 より弱い~algoから離れるよう移行tすることも~supportし得る
-（ `7.6$sec を見よ）。
+（ `6.6$sec を見よ）。
 ◎
-Since Representation-Digest is a Dictionary, it can contain multiple members. This could be used, for example, to attach multiple digests calculated using different hashing algorithms in order to support a population of endpoints with different or evolving capabilities. Such an approach could support transitions away from weaker algorithms (see Section 7.6).
+Since Representation-Digest is a Dictionary, it can contain multiple members. This could be used, for example, to attach multiple digests calculated using different hashing algorithms in order to support a population of endpoints with different or evolving capabilities. Such an approach could support transitions away from weaker algorithms (see Section 6.6).
 </p>
 
 <div class="example">
@@ -1200,6 +1207,82 @@ A sender MAY send a Representation-Digest member without knowing whether the rec
 Representation-Digest can be sent in a trailer section. In this case, Representation-Digest MAY be merged into the header section; see Section 6.5.1 of [SEMANTICS].
 </p>
 
+		<section id="state-changing-requests">
+<h3 title="Using Representation-Digest in State-Changing Requests">2.1. 状態変更~要請における `Representation-Digest^h の利用-法</h3>
+
+<p>
+状態変更~要請~内に同封された表現が`~target資源$を述べるものでないときは、
+表現~digestは，`表現~data$から算出されなければナラナイ。
+これは、唯一アリな選択になる
+— 表現~digestは、完全な`表現~metadata$を要求するので
+（ `2$sec を見よ）。
+◎
+When the representation enclosed in a state-changing request does not describe the target resource, the representation digest MUST be computed on the representation data. This is the only possible choice because representation digest requires complete representation metadata (see Section 2).
+</p>
+
+<p>
+応答においては：
+◎
+In responses,
+</p>
+<ul>
+	<li>
+当の`表現$が要請の状態sを述べる場合、
+`Representation-Digest$h は，同封された`表現$から算出されなければナラナイ
+（ `B.8$sec を見よ）
+◎
+if the representation describes the status of the request, Representation-Digest MUST be computed on the enclosed representation (see Appendix B.8 );
+</li>
+	<li>
+参照-先の`資源$が在る場合、
+`Representation-Digest$h は，その資源に`選定される表現$から算出されなければナラナイ
+— それが当の`~target資源$と異なっていようが。
+`Representation-Digest$h は、
+同封された`表現$から算出された結果であることも，
+そうでないこともある。
+◎
+if there is a referenced resource Representation-Digest MUST be computed on the selected representation of the referenced resource even if that is different from the target resource. That might or might not result in computing Representation-Digest on the enclosed representation.
+</li>
+</ul>
+
+<p>
+後者の事例は、
+所与の`~method$の意味論に則って行われる
+— 例えば， `Content-Location$h ~header `SEMANTICS$r を利用して。
+対照的に，
+`Location$h ~headerは、
+`表現~metadata$ではないので，
+`Representation-Digest$h には影響しない。
+◎
+The latter case is done according to the HTTP semantics of the given method, for example using the Content-Location header field (see Section 8.7 of [SEMANTICS]). In contrast, the Location header field does not affect Representation-Digest because it is not representation metadata.
+</p>
+
+<p>
+例えば `PATCH$m 要請においては、
+表現~digestは~patch文書から算出されることになる
+— `表現~metadata$は、
+`~target資源$ではなく，~patch文書を指すので
+（ `PATCH$r § `PATCH$m を見よ）。
+対する応答においては、
+表現~digestは，代わりに~patchされた`資源$の`選定された表現$から算出されることになる。
+◎
+For example, in PATCH requests, the representation digest will be computed on the patch document because the representation metadata refers to the patch document and not to the target resource (see Section 2 of [PATCH]). In responses, instead, the representation digest will be computed on the selected representation of the patched resource.
+</p>
+
+		</section>
+		<section id="digest-and-content-location">
+<h3 title="Representation-Digest and Content-Location in Responses">2.2. 応答~内の `Representation-Digest^h と `Content-Location^h</h3>
+
+<p>
+ある状態変更~methodに対する応答が `Content-Location$h ~headerを返すとき、
+応答に同封された表現は，その`~field値$により識別される`資源$を指す
+— `Representation-Digest$h はそれに則って算出される。
+その例は `B.7$sec にて与える。
+◎
+When a state-changing method returns the Content-Location header field, the enclosed representation refers to the resource identified by its value and Representation-Digest is computed accordingly. An example is given in Appendix B.7.
+</p>
+
+		</section>
 	</section>
 	<section id="content-digest">
 <h2 title="The Content-Digest Field">3. `Content-Digest^h ~field</h2>
@@ -1275,9 +1358,9 @@ Content-Digest: \
 ］を添えることにも利用できる。
 そのような~approachは、
 より弱い~algoから離れるよう移行tすることも~supportし得る
-（ `7.6$sec を見よ）。
+（ `6.6$sec を見よ）。
 ◎
-Since Content-Digest is a Dictionary, it can contain multiple members. This could be used, for example, to attach multiple digests calculated using different hashing algorithms in order to support a population of endpoints with different or evolving capabilities. Such an approach could support transitions away from weaker algorithms (see Section 7.6).
+Since Content-Digest is a Dictionary, it can contain multiple members. This could be used, for example, to attach multiple digests calculated using different hashing algorithms in order to support a population of endpoints with different or evolving capabilities. Such an approach could support transitions away from weaker algorithms (see Section 6.6).
 </p>
 
 <div class="example">
@@ -1563,8 +1646,7 @@ The entries in Table 1 are registered by this document.
 表 1
 — 初期~hash~algo
 </caption>
-<thead>
-<tr>
+<thead><tr>
 <th>~algo~key
 <th>位置付け
 <th>記述
@@ -1640,87 +1722,11 @@ crc32c｜insecure｜The CRC32c algorithm.｜[RFC4960] appendix B, this document.
 </div>
 
 	</section>
-	<section id="state-changing-requests">
-<h2 title="Using Representation-Digest in State-Changing Requests">6. 状態変更~要請における `Representation-Digest^h の利用-法</h2>
-
-<p>
-状態変更~要請~内に同封された表現が`~target資源$を述べるものでないときは、
-表現~digestは，`表現~data$から算出されなければナラナイ。
-これは、唯一アリな選択になる
-— 表現~digestは、完全な`表現~metadata$を要求するので
-（ `2$sec を見よ）。
-◎
-When the representation enclosed in a state-changing request does not describe the target resource, the representation digest MUST be computed on the representation-data. This is the only possible choice because representation digest requires complete representation metadata (see Section 2).
-</p>
-
-<p>
-応答においては：
-◎
-In responses,
-</p>
-<ul>
-	<li>
-当の`表現$が要請の状態sを述べる場合、
-`Representation-Digest$h は，同封された`表現$から算出されなければナラナイ
-（ `B.8$sec を見よ）
-◎
-if the representation describes the status of the request, Representation-Digest MUST be computed on the enclosed representation (see Appendix B.8 );
-</li>
-	<li>
-参照-先の`資源$が在る場合、
-`Representation-Digest$h は，その資源に`選定される表現$から算出されなければナラナイ
-— それが当の`~target資源$と異なっていようが。
-`Representation-Digest$h は、
-同封された`表現$から算出された結果であることも，
-そうでないこともある。
-◎
-if there is a referenced resource Representation-Digest MUST be computed on the selected representation of the referenced resource even if that is different from the target resource. That might or might not result in computing Representation-Digest on the enclosed representation.
-</li>
-</ul>
-
-<p>
-後者の事例は、
-所与の`~method$の意味論に則って行われる
-— 例えば， `Content-Location$h ~header `SEMANTICS$r を利用して。
-対照的に，
-`Location$h ~headerは、
-`表現~metadata$ではないので，
-`Representation-Digest$h には影響しない。
-◎
-The latter case is done according to the HTTP semantics of the given method, for example using the Content-Location header field (see Section 8.7 of [SEMANTICS]). In contrast, the Location header field does not affect Representation-Digest because it is not representation metadata.
-</p>
-
-<p>
-例えば `PATCH$m 要請においては、
-表現~digestは~patch文書から算出されることになる
-— `表現~metadata$は、
-`~target資源$ではなく，~patch文書を指すので
-（ `PATCH$r § `PATCH$m を見よ）。
-対する応答においては、
-表現~digestは，代わりに~patchされた`資源$の`選定された表現$から算出されることになる。
-◎
-For example, in PATCH requests, the representation digest will be computed on the patch document because the representation metadata refers to the patch document and not to the target resource (see Section 2 of [PATCH]). In responses, instead, the representation digest will be computed on the selected representation of the patched resource.
-</p>
-
-		<section id="digest-and-content-location">
-<h3 title="Representation-Digest and Content-Location in Responses">6.1. 応答~内の `Representation-Digest^h と `Content-Location^h</h3>
-
-<p>
-ある状態変更~methodに対する応答が `Content-Location$h ~headerを返すとき、
-応答に同封された表現は，その`~field値$により識別される`資源$を指す
-— `Representation-Digest$h はそれに則って算出される。
-その例は `B.7$sec にて与える。
-◎
-When a state-changing method returns the Content-Location header field, the enclosed representation refers to the resource identified by its value and Representation-Digest is computed accordingly. An example is given in Appendix B.7.
-</p>
-
-		</section>
-	</section>
 	<section id="security-considerations">
-<h2 title="Security Considerations">7. ~securityの考慮点</h2>
+<h2 title="Security Considerations">6. ~securityの考慮点</h2>
 
-		<section id="http-messages-are-not-protected-in-full">
-<h3 title="HTTP Messages Are Not Protected In Full">7.1. ~HTTP~messageは全部的には保護されない</h3>
+		<section id="sec-limitations">
+<h3 title="HTTP Messages Are Not Protected In Full">6.1. ~HTTP~messageは全部的には保護されない</h3>
 
 <p>
 この文書は、
@@ -1747,7 +1753,7 @@ Digest fields are not intended to be a general protection against malicious tamp
 
 		</section>
 		<section id="end-to-end-integrity">
-<h3 title="End-to-End Integrity">7.2. 端点間の完全性</h3>
+<h3 title="End-to-End Integrity">6.2. 端点間の完全性</h3>
 
 <p>
 ［
@@ -1777,14 +1783,14 @@ Representation-Digest and Content-Digest can help detect representation data or 
 供さないことに注意
 — その~metadataは、どの段階でも操作され得るので。
 ~metadataを保護する手法は、
-`7.3$sec にて論じられる。
+`6.3$sec にて論じられる。
 ◎
-Note that using these mechanisms alone does not provide end-to-end integrity of HTTP messages over multiple hops, since metadata could be manipulated at any stage. Methods to protect metadata are discussed in Section 7.3.
+Note that using these mechanisms alone does not provide end-to-end integrity of HTTP messages over multiple hops, since metadata could be manipulated at any stage. Methods to protect metadata are discussed in Section 6.3.
 </p>
 
 		</section>
 		<section id="usage-in-signatures">
-<h3 title="Usage in Signatures">7.3. 署名における用法</h3>
+<h3 title="Usage in Signatures">6.3. 署名における用法</h3>
 
 <p>
 ~digital署名は、
@@ -1815,33 +1821,20 @@ Digital signatures are widely used together with checksums to provide the certai
 当の応用が`表現$へ~accessするのを防止する。
 そのような攻撃は、
 両~端点の資源を消費する。
-`6.1$sec も見よ。
+`2.2$sec も見よ。
 ◎
-Digests explicitly depend on the "representation metadata" (e.g. the values of Content-Type, Content-Encoding etc). A signature that protects Representation-Digest but not other "representation metadata" can expose the communication to tampering. For example, an actor could manipulate the Content-Type field-value and cause a digest validation failure at the recipient, preventing the application from accessing the representation. Such an attack consumes the resources of both endpoints. See also Section 6.1.
+Digests explicitly depend on the "representation metadata" (e.g. the values of Content-Type, Content-Encoding etc). A signature that protects Representation-Digest but not other "representation metadata" can expose the communication to tampering. For example, an actor could manipulate the Content-Type field-value and cause a digest validation failure at the recipient, preventing the application from accessing the representation. Such an attack consumes the resources of both endpoints. See also Section 2.2.
 </p>
 
 <p>
-~digest~fieldは、
-常に，［
-`~field$を保護する完全性を~transport層にて供する接続
-］越しに利用されるベキである。
-◎
-Digest fields SHOULD always be used over a connection that provides integrity at the transport layer that protects HTTP fields.
-</p>
-
-<p>
-`推奨されない^2119`~hashing~algo$を利用している `Representation-Digest$h ~fieldは、
-署名においては利用するベキでない。
-◎
-A Representation-Digest field using NOT RECOMMENDED hashing algorithms SHOULD NOT be used in signatures.
-</p>
-
-<p>
+署名は、
+`完全性~field$を適用するときに，敵対者に~~晒される見込みが高いと判断される
+— `5$sec を見よ。
 署名を利用して，空な表現の~checksumを保護することは、［
 最終的な`内容$において，何かが剥がされたり追加されたかどうか検出する
 ］ことを，受信している端点に許容する。
 ◎
-Using signatures to protect the checksum of an empty representation allows receiving endpoints to detect if an eventual payload has been stripped or added.
+Signatures are likely to be deemed an adversarial setting when applying Integrity fields; see Section 5. Using signatures to protect the checksum of an empty representation allows receiving endpoints to detect if an eventual payload has been stripped or added.
 </p>
 
 <p>
@@ -1857,7 +1850,7 @@ Any mangling of digest fields, including de-duplication of representation-data-d
 
 		</section>
 		<section id="usage-in-trailer-fields">
-<h3 title="Usage in Trailer Fields">7.4. ~trailerにおける用法</h3>
+<h3 title="Usage in Trailer Fields">6.4. ~trailerにおける用法</h3>
 
 <p>
 `送信者$は、
@@ -1890,7 +1883,7 @@ Not every hashing algorithm is suitable for use in the trailer section, some may
 
 		</section>
 		<section id="usage-with-encryption">
-<h3 title="Usage with Encryption">7.5. 暗号化を伴う用法</h3>
+<h3 title="Usage with Encryption">6.5. 暗号化を伴う用法</h3>
 
 <p>
 暗号化された`内容$の~checksumは、
@@ -1905,24 +1898,47 @@ The checksum of an encrypted payload can change between different messages depen
 
 		</section>
 		<section id="algorithm-agility">
-<h3 title="Algorithm Agility">7.6. ~algo即応性</h3>
+<h3 title="Algorithm Agility">6.6. ~algo即応性</h3>
 
 <p>
 `~hashing~algo$の~securityの特質は、
 固定的でない【時を経れば変化し得る】。
 `~algo即応性^cite（ `Algorithm Agility^en, `RFC7696$r ）は、［
 `~hashing~algo$を［
-`~HTTP~digest~field用~hash~algo~registry$cite（ `8.1$sec ）
+`~HTTP~digest~field用~hash~algo~registry$cite（ `7.2$sec ）
 ］から選ぶ柔軟性
 ］を備える実装を供することにより達成される。
 ◎
-The security properties of hashing algorithms are not fixed. Algorithm Agility (see [RFC7696]) is achieved by providing implementations with flexibility to choose hashing algorithms from the IANA Hash Algorithms for HTTP Digest Fields registry; see Section 8.1.
+The security properties of hashing algorithms are not fixed. Algorithm Agility (see [RFC7696]) is achieved by providing implementations with flexibility to choose hashing algorithms from the IANA Hash Algorithms for HTTP Digest Fields registry; see Section 7.2.
 </p>
 
 <p>
-端点には、
-どの~algoにするか選好があるかもしれない
-— `非~secure^i とされた~algoより `標準^i とされたものを選好するなど。
+この文書~内に挙げられる `標準^i ~algoは、
+多くの目的に相応しくなる
+— 敵対者に~~晒される状況も含めて
+（そこでは、~hash関数は，［
+衝突~攻撃, 第一-原像~攻撃, 第二-原像~攻撃
+］に対する耐性を供する必要があるかもしれない）。
+`非~secure^i として挙げられる~algoは、
+これらの特質を何も供さないか，弱いことが既知である
+（ `NO-MD5$r, `NO-SHA$r を見よ）。
+◎
+The "standard" algorithms listed in this document are suitable for many purposes, including adversarial situations where hash functions might need to provide resistance to collision, first-preimage and second-preimage attacks. Algorithms listed as "insecure" either provide none of these properties, or are known to be weak (see [NO-MD5] and [NO-SHA]).
+</p>
+
+<p>
+敵対者に~~晒される状況において，
+`標準^i ~algoのうち どれが受容-可能かは、
+当の状況下で~~必要とされる保護~levelに依存することになる。
+折衝は無いので、
+~security用の~digestに依存する端点は，［
+受容する用意がある~algoのうち最も弱いもの
+］に対する攻撃に対し脆弱になる。
+◎
+For adversarial situations, which of the "standard" algorithms are acceptable will depend on the level of protection the circumstances demand. As there is no negotiation, endpoints that depend on a digest for security will be vulnerable to attacks on the weakest algorithm they are willing to accept.
+</p>
+
+<p>
 弱い~algoからの移行tは、［
 `~hashing~algo$を［
 `Want-Representation-Digest$h ／ `Want-Content-Digest$h
@@ -1933,7 +1949,7 @@ The security properties of hashing algorithms are not fixed. Algorithm Agility (
 `受信者$【！receiver】から無視された場合には，浪費されることになる
 （ `2$sec を見よ）。
 ◎
-An endpoint might have a preference for algorithms, such as preferring "standard" algorithms over "insecure" ones. Transition from weak algorithms is supported by negotiation of hashing algorithm using Want-Representation-Digest or Want-Content-Digest (see Section 4) or by sending multiple representation-data-digest values from which the receiver chooses. Endpoints are advised that sending multiple values consumes resources, which may be wasted if the receiver ignores them (see Section 2).
+Transition from weak algorithms is supported by negotiation of hashing algorithm using Want-Representation-Digest or Want-Content-Digest (see Section 4) or by sending multiple representation-data-digest values from which the receiver chooses. Endpoints are advised that sending multiple values consumes resources, which may be wasted if the receiver ignores them (see Section 2).
 </p>
 
 <p>
@@ -1954,7 +1970,7 @@ While algorithm agility allows the migration to stronger algorithms it does not 
 
 		</section>
 		<section id="resource-exhaustion">
-<h3 title="Resource exhaustion">7.7. 資源の枯渇</h3>
+<h3 title="Resource exhaustion">6.7. 資源の枯渇</h3>
 
 <p>
 ~digest~fieldの検証は、計算l資源を消費する。
@@ -1968,10 +1984,68 @@ Digest fields validation consumes computational resources. In order to avoid res
 		</section>
 	</section>
 	<section id="iana-considerations">
-<h2 title="IANA Considerations">8. ~IANA考慮点</h2>
+<h2 title="IANA Considerations">7. ~IANA考慮点</h2>
 
+		<section id="http-field-name-registration">
+<h3 title="HTTP Field Name Registration">7.1. ~HTTP~field名の登録</h3>
+
+<p>
+~IANAには、
+下の表に則って，
+`~HTTP~field名~registry^cite `SEMANTICS$r を更新するよう依頼される：
+◎
+IANA is asked to update the "Hypertext Transfer Protocol (HTTP) Field Name Registry" registry ([SEMANTICS]) according to the table below:
+</p>
+
+<div>
+<table id="table-2">
+<caption>表 2</caption>
+<thead><tr>
+<th>`~field名$
+<th>位置付け
+<th>参照
+</thead><tbody>
+
+<tr><td>`Representation-Digest$h
+<td>`恒久的^i
+<td>この文書の `2$sec
+
+<tr><td>`Content-Digest$h
+<td>`恒久的^i
+<td>この文書の `3$sec
+
+<tr><td>`Want-Representation-Digest$h
+<td>`恒久的^i
+<td>この文書の `4$sec
+
+<tr><td>`Want-Content-Digest$h
+<td>`恒久的^i
+<td>この文書の `4$sec
+
+<tr><td>`Digest^h
+<td>`廃用d^i
+<td>`RFC3230$r, この文書の `1.3$sec
+
+<tr><td>`Want-Digest^h
+<td>`廃用d^i
+<td>`RFC3230$r, この文書の `1.3$sec
+
+</tbody></table>
+◎
+Table 2
+◎
+Field Name｜Status｜Reference
+Representation-Digest｜permanent｜Section 2 of this document
+Content-Digest｜permanent｜Section 3 of this document
+Want-Representation-Digest｜permanent｜Section 4 of this document
+Want-Content-Digest｜permanent｜Section 4 of this document
+Digest｜obsoleted｜[RFC3230], Section 1.3 of this document
+Want-Digest｜obsoleted｜[RFC3230], Section 1.3 of this document
+</div>
+
+		</section>
 		<section id="establish-hash-algorithm-registry">
-<h3 title="Establish the Hash Algorithms for HTTP Digest Fields Registry">8.1. ~HTTP~digest~field用~hash~algo~registryを確立する</h3>
+<h3 title="Establish the Hash Algorithms for HTTP Digest Fields Registry">7.2. ~HTTP~digest~field用~hash~algo~registryを確立する</h3>
 
 <p>
 このメモは、
@@ -1991,146 +2065,6 @@ This memo sets this specification to be the establishing document for the Hash A
 ◎
 IANA is asked to initialize the registry with the entries in Table 1.
 </p>
-
-		</section>
-		<section id="representation-digest-field-registration">
-<h3 title="Representation-Field Registration">8.2. `Representation-Digest^h ~fieldの登録</h3>
-
-<p>
-この節では、
-`~HTTP~field名~registry^cite `SEMANTICS$r
-に `Representation-Digest$h ~fieldを登録する。
-◎
-This section registers the Representation-Digest field in the "Hypertext Transfer Protocol (HTTP) Field Name Registry" [SEMANTICS].
-</p>
-<ul>
-	<li>
-~field名
-⇒
-`Representation-Digest$h
-◎
-Field name: Representation-Digest
-</li>
-	<li>
-位置付け
-⇒
-`恒久的^i
-◎
-Status: permanent
-</li>
-	<li>
-仕様~文書
-⇒
-この文書の `2$sec
-◎
-Specification document(s): Section 2 of this document
-</li>
-</ul>
-
-		</section>
-		<section id="content-digest-field-registration">
-<h3 title="Content-Digest Field Registration">8.3. `Content-Digest^h ~fieldの登録</h3>
-
-<p>
-この節では、
-`~HTTP~field名~registry^cite `SEMANTICS$r
-に `Content-Digest$h ~fieldを登録する。
-◎
-This section registers the Content-Digest field in the "Hypertext Transfer Protocol (HTTP) Field Name Registry" [SEMANTICS].
-</p>
-<ul>
-	<li>
-~field名
-⇒
-`Content-Digest$h
-◎
-Field name: Content-Digest
-</li>
-	<li>
-位置付け
-⇒
-`恒久的^i
-◎
-Status: permanent
-</li>
-	<li>
-仕様~文書
-⇒
-この文書の `3$sec
-◎
-Specification document(s): Section 3 of this document
-</li>
-</ul>
-
-		</section>
-		<section id="want-representation-digest-field-registration">
-<h3 title="Want-Representation-Digest Field Registration">8.4. `Want-Representation-Digest^h ~fieldの登録</h3>
-
-<p>
-この節では、
-`~HTTP~field名~registry^cite `SEMANTICS$r
-に `Want-Representation-Digest$h ~fieldを登録する。
-◎
-This section registers the Want-Representation-Digest field in the "Hypertext Transfer Protocol (HTTP) Field Name Registry" [SEMANTICS].
-</p>
-<ul>
-	<li>
-~field名
-⇒
-`Want-Representation-Digest^h
-◎
-Field name: Want-Representation-Digest
-</li>
-	<li>
-位置付け
-⇒
-`恒久的^i
-◎
-Status: permanent
-</li>
-	<li>
-仕様~文書
-⇒
-この文書の `4$sec
-◎
-Specification document(s): Section 4 of this document
-</li>
-</ul>
-
-		</section>
-		<section id="want-content-digest-field-registration">
-<h3 title="Want-Content-Digest Field Registration">8.5. `Want-Content-Digest^h ~fieldの登録</h3>
-
-<p>
-この節では、
-`~HTTP~field名~registry^cite `SEMANTICS$r
-に `Want-Content-Digest$h ~fieldを登録する。
-◎
-This section registers the Want-Content-Digest field in the "Hypertext Transfer Protocol (HTTP) Field Name Registry" [SEMANTICS].
-</p>
-<ul>
-	<li>
-~field名
-⇒
-`Want-Content-Digest^h
-◎
-Field name: Want-Content-Digest
-</li>
-	<li>
-位置付け
-⇒
-`恒久的^i
-◎
-Status: permanent
-</li>
-	<li>
-仕様~文書
-⇒
-この文書の `4$sec
-◎
-Specification document(s): Section 4 of this document
-</li>
-</ul>
 
 		</section>
 	</section>
@@ -2364,11 +2298,15 @@ Checksum mechanisms defined in this document are media-type agnostic and do not 
 
 <p>
 この例では、
-~messageの`内容$は完全な`表現~data$を伝達するので，［
+~messageの`内容$は完全な`表現~data$を伝達する。
+すなわち，応答~内の［
 `Representation-Digest$h, `Content-Digest$h
-］の値は同じになる。
+］は、
+どちらも~JSON~obj
+`{"hello": "world"}^c
+から計算されるので，同じ値をとる。
 ◎
-In this example, the message content conveys complete representation data, so Representation-Digest and Content-Digest have the same value.
+In this example, the message content conveys complete representation data. This means that in the response, Representation-Digest and Content-Digest are both computed over the JSON object {"hello": "world"}, and thus have the same value.
 </p>
 
 <div class="example">
@@ -2384,7 +2322,7 @@ Host: foo.example
 Figure 10: GET request for an item
 </figcaption></figure>
 
-<figure id="figure-name-response-with-content-diges">
+<figure id="figure-name-response-with-identical-rep">
 <pre class="lang-http">
 `~SBS-ST$
 
@@ -2398,9 +2336,12 @@ Content-Digest: \
 {"hello": "world"}
 </pre>
 <figcaption>
-対する応答は `Content-Digest$h を伴う
+対する応答は、
+互いに一致する［
+`Representation-Digest$h, `Content-Digest$h
+］を伴う
 ◎
-Figure 11: Response with Content-Digest
+Figure 11: Response with identical Representation-Digest and Content-Digest
 </figcaption></figure>
 </div>
 
@@ -2466,15 +2407,10 @@ Figure 13: Response with both Content-Digest and Digest; empty content
 <p>
 この例では、
 `~client$は、`範囲~要請$を為す
-— 対して`~server$は、部分的な内容で応答する。
-応答の `Representation-Digest$h `~field値$は、
-~JSON~obj全体
-`{"hello": "world"}^c
-を表現する。
-一方で `Content-Digest$h の`~field値$は、
-~messageの`内容$ "`hello^c" に対し算出される。
+— 対して`~server$は、
+部分的な内容で応答する。
 ◎
-In this example, the client makes a range request and the server responds with partial content. The Representation-Digest field-value represents the entire JSON object {"hello": "world"}, while the Content-Digest field-value is computed on the message content "hello".
+In this example, the client makes a range request and the server responds with partial content.
 </p>
 
 <div class="example">
@@ -2508,9 +2444,52 @@ Content-Digest: \
 <figcaption>
 `Content-Digest$h, `Representation-Digest$h 両者を伴う`部分的な応答$
 ◎
-Figure 15: Partial response with both Content-Digest and Digest
+Figure 15: Partial response with both Content-Digest and Representation-Digest
 </figcaption></figure>
 </div>
+
+<p>
+上の応答~messageにおける［
+`Representation-Digest$h, `Content-Digest$h
+］は、
+異なることに注意：
+◎
+In the response message above, note that the Representation-Digest and Content-Digests are different.＼
+</p>
+<ul>
+	<li>
+`Representation-Digest$h の`~field値$は、
+~JSON~obj全体
+`{"hello": "world"}^c
+から計算される
+⇒
+`sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:^c【！`】
+◎
+The Representation-Digest field-value is calculated across the entire JSON object {"hello": "world"}, and the field is
+◎
+NOTE: '\' line wrapping per RFC 8792
+
+Representation-Digest: \
+  sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:`
+</li>
+	<li>
+一方で， `Content-Digest$h の`~field値$は、［
+当の~messageの`内容$は、
+`bytes 1-7^c 【 0 から数えて 1 番 から 7 番までの，~byte単位による範囲】
+に拘束される
+］ので，
+~byte列 `"hello"^c から計算される
+⇒
+`sha-256=:Wqdirjg/u3J688ejbUlApbjECpiUUtIwT8lY/z81Tno=:^c
+◎
+However, since the message content is constrained to bytes 1-7, the Content-Digest field-value is calculated over the byte sequence "hello", thus resulting in
+◎
+NOTE: '\' line wrapping per RFC 8792
+
+Content-Digest: \
+  sha-256=:Wqdirjg/u3J688ejbUlApbjECpiUUtIwT8lY/z81Tno=:
+</li>
+</ul>
 
 		</section>
 		<section id="client-and-server-provide-full-representation-data">
@@ -2711,9 +2690,9 @@ Figure 20: Response with Digest of Encoded Content
 <p>
 要請 `Representation-Digest$h `~field値$は、
 同封された表現から算出される
-（ `6$sec を見よ）。
+（ `2.1$sec を見よ）。
 ◎
-The request Representation-Digest field-value is computed on the enclosed representation (see Section 6).
+The request Representation-Digest field-value is computed on the enclosed representation (see Section 2.1).
 </p>
 
 <p>
@@ -2787,9 +2766,9 @@ Note that a 204 No Content response without content but with the same Representa
 <p>
 要請 `Representation-Digest$h `~field値$は、
 同封された表現から算出される
-（ `6$sec を見よ）。
+（ `2.1$sec を見よ）。
 ◎
-The request Representation-Digest field-value is computed on the enclosed representation (see Section 6).
+The request Representation-Digest field-value is computed on the enclosed representation (see Section 2.1).
 </p>
 
 <p>
