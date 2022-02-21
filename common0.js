@@ -599,7 +599,7 @@ CRD: '<a href="w3c-standards-types-ja.html#CRD">勧告候補草案</a>',
 CR: '<a href="w3c-standards-types-ja.html#CR">勧告候補スナップショット</a>',
 REC: '<a href="w3c-standards-types-ja.html#REC">勧告</a>',
 NOTE: '<a href="w3c-standards-types-ja.html#NOTE">W3C Group Note</a>',
-EDCG: '<a href="w3c-standards-types-ja.html#CG-DRAFT">Draft Community Group Report</a>',
+EDCG: '<a href="w3c-standards-types-ja.html#reports">Draft Community Group Report</a>', // #CG-DRAFT
 LS: 'Living Standard',
 LD: 'Living Document',
 //IETFPR: 'IETF PROPOSED STANDARD',
