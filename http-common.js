@@ -734,7 +734,7 @@ c.realm:~HTTPsem#realm
 ~message本体:~HTTPmsg#message.body
 
 	●
-IETF による考査:~RFCx/rfc8126#section-4.8
+~IETFによる考査:~RFCx/rfc8126#section-4.8
 
 `
 
