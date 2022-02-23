@@ -1133,7 +1133,7 @@ HTTPcache:http-cache-ja.html
 HTTPmsg:http-messaging-ja.html
 HTTPweblink:http-web-linking-ja.html
 HTTPcookie:http-cookie-ja.html
-HEADER-STRUCTURE:http-structured-fields-ja.html
+STRUCTURED-FIELDS:http-structured-fields-ja.html
 CSSWG:https://drafts.csswg.org
 CSSissue:https://github.com/w3c/csswg-drafts/issues
 HTMLissue:https://github.com/whatwg/html/issues
