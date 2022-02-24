@@ -1401,7 +1401,6 @@ stateless::::ステートレス
 鮮度:freshness::~
 
 	別の:another
-	別個の:distinct:~
 	一定の:certain
 	今後の:later
 	以前の:previous

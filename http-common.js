@@ -888,7 +888,6 @@ minor::::副:マイナー
 最終-:final:~
 近過去:recent::~
 重複:duplicate:~
-別個:distinct:~
 
 	●仕様
 framework::::フレームワーク

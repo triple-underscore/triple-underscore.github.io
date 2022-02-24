@@ -1351,6 +1351,8 @@ WG:
 元の:original:~
 	ナシ:none:なし
 subject::対象
+別個:distinct:~
+	別物:distinct:~
 直に:directに:~
 直な:directな:~
 首な:primaryな:主たる
@@ -3355,7 +3357,6 @@ FOO間:inter-FOO
 
 同じ:same
 一致:identical
-別個:distinct
 各:each
 個々の:individual
 自身:itself
