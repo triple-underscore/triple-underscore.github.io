@@ -43,8 +43,16 @@ source_data.generate = function(){
 
 	function create_html(match, key, indicator, klass){
 
-let text = key;
 let href = '';
+let href1 = '';
+{
+	const n = key.indexOf('＠');
+	if(n > 0) {
+		href1 = key.slice(n + 1);
+		key = key.slice(0, n);
+	}
+}
+let text = key;
 let tag = tag_map[klass];
 
 switch(klass){
@@ -97,7 +105,7 @@ if(tag) {
 }
 
 if(indicator !== '^'){
-	href = link_map[ klass ? `${klass}.${key}` : key ] || href;
+	href = href1 || link_map[ klass ? `${klass}.${key}` : key ] || href;
 	if(!href){
 		console.log(match); // check error
 		return match;
