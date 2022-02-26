@@ -103,7 +103,7 @@ case 'I1':
 	break;
 case 'ACTION':
 	text = `ACTION-${key}`;
-	href = `http://www.w3.org/Graphics/SVG/WG/track/actions/${key}`;
+	href = `https://www.w3.org/Graphics/SVG/WG/track/actions/${key}`;
 	break;
 case 'en': // english words
 	return `<span lang="en">${key}</span>`;
