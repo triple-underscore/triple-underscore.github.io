@@ -1568,7 +1568,6 @@ COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
 // 短縮形 URL の接頭辞 対応表
 COMMON_DATA.JA_BASIS = {
 	'':        'triple-underscore.github.io',
-	XML:       'triple-underscore.github.io/XML',
 	mitsue:    'standards.mitsue.co.jp/resources/w3c/TR',
 	momdo:     '＃momdo.s35.xrea.com/web-html-test/spec',
 	momdoG:    'momdo.github.io',
@@ -1603,7 +1602,7 @@ GRAPHICSARIA10=・     ~TR/graphics-aria-1.0/
 GRAPHICSARIA10=主     ~momdoG/graphics-aria-1.0/
 ARIAHTML=・           w3c.github.io/html-aria/
 ARIAHTML=主           ~momdoG/html-aria/
-ATOM=副               ＃momdo.s35.xrea.com/web-html-test/spec/rfc4287j.html
+ATOM=副               ~momdo/rfc4287j.html
 ATOM=副2              www.futomi.com/lecture/japanese/rfc4287.html
 COMPOSITING1=副       ~/compositing-ja.html●Level 2 日本語訳
 COMPOSITING2=副       ~/compositing-ja.html
@@ -1612,7 +1611,6 @@ CORS=副               ~/Fetch-ja.html●Fetch 日本語訳
 CSP3=副               ~/CSP3-ja.html
 CSP3=副2              hashedhyphen.github.io/webappsec-specjp/csp/index.html
 CSP2=副               ~/CSP-ja.html
-
 CSS1=副               ＃www.doraneko.org/webauth/css1/19961217/Overview.html
 CSS21=・              ~TR/CSS2/
 CSS21=・              ~CSSWG/css2/
@@ -1873,10 +1871,8 @@ XML10=・              ~TR/xml/
 XML10=主              ＃w4ard.eplusx.net/translation/W3C/REC-xml-20081126/
 XMLNS=副              ~/xml-names-ja.html
 XMLSS=副              ~/xml-stylesheet-ja.html
-XSLT=副               ~adagio/tr_xslt10/toc.htm
-XSLT=副2              ~XML/xslt10-ja.html
-PROMISES=副           ~/promises-guide-ja.html
-PROMISES=・           www.w3.org/2001/tag/doc/promises-guide
+XSLT=副               ~/XML/xslt10-ja.html
+XSLT=副2              ~adagio/tr_xslt10/toc.htm
 PRELOAD=副            ~/preload-ja.html
 STORAGE=副            ~/storage-ja.html
 `;
