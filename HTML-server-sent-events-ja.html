@@ -111,9 +111,9 @@ return text;
 
 ●●options
 
-spec_date:2021-10-25
-trans_update:2021-10-26
-source_checked:191126
+spec_date:2022-02-27
+trans_update:2022-03-01
+source_checked:220227
 page_state_key:HTML
 original_url:https://html.spec.whatwg.org/multipage/server-sent-events.html
 spec_status:LS
@@ -188,7 +188,6 @@ m.~withCredentials0:#dom-eventsourceinit-withcredentials
 m.lastEventId:~HTMLcomms#dom-messageevent-lasteventid
 m.origin:~HTMLcomms#dom-messageevent-origin
 m.data:~HTMLcomms#dom-messageevent-data
-m.window.stop:~WINDOW#dom-window-stop
 m.type:~DOM4#dom-event-type
 
 mt.text/event-stream:~HTMLiana#text/event-stream
@@ -233,7 +232,9 @@ eS.要請:#concept-event-stream-request
 ast.Anonymous:~HTMLurl#attr-crossorigin-anonymous
 ast.Use Credentials:~HTMLurl#attr-crossorigin-use-credentials
 ~CORSになり得る要請を作成する:~HTMLurl#create-a-potential-cors-request
+~Content-Type~metadata:~HTMLurl#content-type
 
+enV.大域~obj:~WAPI#concept-settings-object-global
 enV.~API用~基底~URL:~WAPI#api-base-url
 enV.~API用~URL文字~符号化法:~WAPI#api-url-character-encoding
 
@@ -241,10 +242,8 @@ enV.~API用~URL文字~符号化法:~WAPI#api-url-character-encoding
 ~event~handler~IDL属性:~WAPI#event-handler-idl-attributes
 ~event~handler~event型:~WAPI#event-handler-event-type
 ~task:~WAPI#concept-task
-~network用~task源:~WAPI#networking-task-source
 ~taskを~queueする:~WAPI#queue-a-task
 ~queueされ:~WAPI#queue-a-task
-~task~queue:~WAPI#task-queue
 ~task源:~WAPI#task-source
 関連な~Realm:~WAPI#concept-relevant-realm
 関連な設定群~obj:~WAPI#relevant-settings-object
@@ -266,15 +265,23 @@ enV.~API用~URL文字~符号化法:~WAPI#api-url-character-encoding
 ~eventを発火する:~DOM4#concept-event-fire
 ~eventを配送する:~DOM4#concept-event-dispatch
 
+要請:~FETCH#concept-request
 rq.~cache~mode:~FETCH#concept-request-cache-mode
 rq.資格証~mode:~FETCH#concept-request-credentials-mode
 rq.~client:~FETCH#concept-request-client
 rq.~header~list:~FETCH#concept-request-header-list
-
-~headerを設定する:~FETCH#concept-header-list-set
+応答:~FETCH#concept-response
+rs.状態s:~FETCH#concept-response-status
+rs.本体:~FETCH#concept-response-body
+~network~error:~FETCH#concept-network-error
+中止~network~error:~FETCH#concept-aborted-network-error
 ~fetch:~FETCH#concept-fetch
-要請:~FETCH#concept-request
-	
+~fetchする:~FETCH#concept-fetch
+i.応答の本体~終了~時の処理n:~FETCH#fetch-processresponseendofbody
+i.応答の処理n:~FETCH#process-response
+~headerを設定する:~FETCH#concept-header-list-set
+計時を完結して報告する:~FETCH#finalize-and-report-timing
+
 url.生成元:~URL1#concept-url-origin
 ~URL~record:~URL1#concept-url
 ~URLを直列化する:~URL1#concept-url-serializer
@@ -297,7 +304,6 @@ withCredentials0:withCredentials
 模倣-:emulate:~
 助言:advice:~
 panel::::パネル
-条態:condition:~
 診断:diagnostic:~
 無益:futile:~
 
@@ -331,13 +337,11 @@ panel::::パネル
 	判って:know
 
 	●network / messaging
-DNS:
 TCP:
+IP:
+Content-Type:
 chunk::::チャンク
 	~chunk法:chunking
-	url~record:urlRecord
-
-IP:
 	~serverから送信される:server-sent
 	server-push
 	server側:server-side
@@ -363,12 +367,10 @@ remote::::リモート
 消去っ:go awayし:消え去っ
 
 	●保安
-上品:graceful:~
 信頼性:reliability:~
 
 
-	●処理model
-
+	●処理
 公告-:announce::~
 	cancelation
 強制的:forcible:~
@@ -384,17 +386,20 @@ sleep::::スリープ
 milli::::ミリ
 	~milli秒数:in millisecond
 	数秒:few seconds
+完結-:finalize::~
+中止:aborted::~
 
 	短い:short
-	最初の~~段階:in the first place
 	~~寿命:life
 	長く生き残る:long-lived
 	中途:in the middle of
 	残り続ける:remain
 	最終的:final
-	最終-:final
 	%~URL:url
 	%~URL~record:urlRecord
+	%~event~source~fetchを完結する:finalizeEventSourceFetch
+	%~event~source本体~終了~時の処理n:~processEventSourceEndOfBody
+	%応答:res
 
 	●構文／stream
 buffering:::buffer 方式:バッファ方式
@@ -880,14 +885,104 @@ Set request's cache mode to "no-store".
 ◎
 Set ev's request to request.
 </li>
-	<li>
-この段は`並列的$に走らす
+	<li class="algo">
+%~event~source~fetchを完結する ~LET 所与の
+( `応答$ %応答 )
+に対し，次を走らす手続き
 ⇒
-%要請 を`~fetch$する
+`計時を完結して報告する$( %応答, %設定群 の`大域~obj$enV, `other^l )
 ◎
-Run this step in parallel:
-• Fetch request.
+Let finalizeEventSourceFetch given response res be to finalize and report timing with res, settings's global object, and "other".
 </li>
+	<li class="algo">
+%~event~source本体~終了~時の処理n ~LET 
+所与の
+( `応答$ %応答 )
+に対し，次を走らす手続き
+⇒
+~IF［
+%応答 は`~network~error$でない
+］
+⇒＃
+%~event~source~fetchを完結する( %応答 )；
+`接続を確立し直す$
+◎
+Let processEventSourceEndOfBody given response res be the following step: if res is not a network error, then finalizeEventSourceFetch with res, and reestablish the connection.
+</li>
+	<li>
+<p>
+%要請 を`~fetchする$
+— 次を与える下で：
+◎
+Fetch request with＼
+</p>
+		<ul>
+			<li>
+`応答の本体~終了~時の処理n$i ~SET %~event~source本体~終了~時の処理n
+◎
+processResponseEndOfBody set to processEventSourceEndOfBody＼
+</li>
+			<li class="algo">
+<p>
+`応答の処理n$i ~SET 所与の
+( `応答$ %応答 )
+に対し，次を走らす手続き
+◎
+and processResponse set to the following steps given response res:
+</p>
+				<ol>
+					<li>
+~IF［
+%応答 は`中止~network~error$である
+］
+⇒
+`接続を失敗させ$る
+◎
+If res is an aborted network error, then fail the connection.
+</li>
+					<li>
+<p>
+~ELIF［
+%応答 は`~network~error$である
+］：
+</p>
+						<ol>
+							<li>
+%~event~source~fetchを完結する( %応答 )
+</li>
+							<li>
+`接続を確立し直す$
+— ただし、
+そうしても無益なことが判っている場合は，`接続を失敗させ$てもヨイ。
+</li>
+						</ol>
+◎
+Otherwise, if res is a network error, then call finalizeEventSourceFetch given res, and reestablish the connection, unless the user agent knows that to be futile, in which case the user agent may fail the connection.
+</li>
+					<li>
+~ELIF［
+%応答 の`状態s$rs ~NEQ `200^st
+］~OR［
+%応答 の`~Content-Type~metadata$ ~NEQ 
+``^`text/event-stream$mt``^
+］
+⇒
+`接続を失敗させ$る
+◎
+Otherwise, if res's status is not 200, or if res's `Content-Type` is not `text/event-stream`, then fail the connection.
+</li>
+					<li>
+~ELSE
+⇒＃
+`接続を公告する$；
+%応答 の`本体$rsを<a href="#event-stream-interpretation">行lごとに解釈する</a>
+◎
+Otherwise, announce the connection and interpret res's body line by line.
+</li>
+				</ol>
+			</li>
+		</ul>
+	</li>
 	<li>
 ~RET %event
 ◎
@@ -1014,87 +1109,6 @@ The following are the event handlers (and their corresponding event handler even
 			</section>
 			<section id="sse-processing-model">
 <h4 title="Processing model">9.2.3. 処理~model</h4>
-
-<span id="processing-model-9"></span>
-<p>
-`new EventSource()$m 構築子の引数にて指示される資源は、
-その構築子が走るときに~fetchされる。
-◎
-The resource indicated in the argument to the EventSource constructor is fetched when the constructor is run.
-</p>
-
-<p>
-~dataが受信されるに伴い，それを取扱うために`~network用~task源$から~queueされる`~task$は、
-以下に従って動作するモノトスル：
-◎
-As data is received, the tasks queued by the networking task source to handle the data must act as follows.
-</p>
-
-<p>
-~HTTP `200^st "OK" 応答に対しては、
-`Content-Type$h ~header値が
-— `~MIME型$ ~parameterは無視して —
-型 ``^`text/event-stream$mt``^ を指定しているならば，
-<a href="#event-stream-interpretation">§ ~event~streamの解釈-法</a>
-に従って 行lごとに処理するモノトスル。
-◎
-HTTP 200 OK responses with a `Content-Type` header specifying the type `text/event-stream`, ignoring any MIME type parameters, must be processed line by line as described below.
-</p>
-
-<p>
-~UAは、
-自身が~supportする`~MIME型$を伴う応答を成功裡に受信したときは，
-~streamの内容を構文解析し始めるときに`接続を公告する$モノトスル。
-◎
-When a successful response with a supported MIME type is received, such that the user agent begins parsing the contents of the stream, the user agent must announce the connection.
-</p>
-
-<p>
-`~network用~task源$から`~task~queue$に設置された`~task$が，
-そのような（正しい`~MIME型$を伴う）資源~用の~fetchingを完了したなら、
-~UAは，`並列的$に`接続を確立し直す$モノトスル。
-これは、
-接続が上品に~closeされようが予期せず~closeされようが，適用される
-（が、
-~UAが~fetchingを取消したとき（例： `window.stop()$m に呼応して）には適用されない
-— そのような事例では、
-当の最終-`~task$は実際に破棄されるので）。
-ただし，以下に挙げる~error条態~用には、
-明示的に指定されない限り，適用されない。
-◎
-The task that the networking task source places on the task queue once fetching for such a resource (with the correct MIME type) has completed must cause the user agent to reestablish the connection in parallel. This applies whether the connection is closed gracefully or unexpectedly (but does not apply when fetching is canceled by the user agent, e.g., in response to window.stop(), since in those cases the final task is actually discarded). It doesn't apply for the error conditions listed below except where explicitly specified.
-</p>
-
-<p>
-~HTTP `200^st "OK" 応答に対しては、
-応答の `Content-Type$h は［
-無いか，その値は未~supportな型を指定している
-］場合，
-~UAは`接続を失敗させ$るモノトスル。
-◎
-HTTP 200 OK responses that have a Content-Type specifying an unsupported type, or that have no Content-Type at all, must cause the user agent to fail the connection.
-</p> 
-
-<p id="event-source-network-errors-reconnect">
-最初の~~段階で接続を確立できなくするような，~network~error（例： ~DNS~error）に対しては、~UAは，`並列的$に`接続を確立し直す$べきである
-— ただし、そうしても無益なことが判っている場合は，`接続を失敗させ$てもヨイ。
-◎
-Network errors that prevents the connection from being established in the first place (e.g. DNS errors), should cause the user agent to reestablish the connection in parallel, unless the user agent knows that to be futile, in which case the user agent may fail the connection.
-</p>
-
-<p id="event-source-fail-reasons">
-［
-ここに挙げなかった他の~HTTP応答~code
-］に対しては, および［
-~UAが~fetch~algoを取消した場合
-（例： `window.stop()$m に呼応して, あるいは利用者が~network接続を手動で取消した）
-］は、
-~UAは`接続を失敗させ$るモノトスル。
-◎
-Any other HTTP response code not listed here, as well as the cancelation of the fetch algorithm by the user agent (e.g. in response to window.stop() or the user canceling the network connection manually) must cause the user agent to fail the connection.
-</p>
-
-<hr>
 
 <div class="algo">
 <p>
@@ -1243,10 +1257,18 @@ If the EventSource object's last event ID string is not the empty string, then:
 • Set (`Last-Event-ID`, lastEventIDValue) in request's header list.
 </li>
 			<li>
-%要請 を`~fetch$する
+<p>
+%要請 を`~fetchする$
 ⇒
 この~fetchに対し得された応答は、
-この節の最初あたりで述べたように処理する
+この節の最初あたり†に述べたとおりに処理する
+</p>
+
+<p class="trans-note">【†
+該当する箇所は、
+更新により除去され，
+`new EventSource()$m 構築子~手続き~内の “~fetchする” 箇所に組入れられた。
+】</p>
 ◎
 Fetch request and process the response obtained in this fashion, if any, as described earlier in this section.
 </li>
