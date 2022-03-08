@@ -112,8 +112,8 @@ return text;
 
 ●●options
 
-spec_date:2022-01-12
-trans_update:2022-01-13
+spec_date:2022-03-07
+trans_update:2022-03-08
 source_checked:210831
 page_state_key:HTML
 spec_status:LS
@@ -387,6 +387,7 @@ popup::::ポップアップ
 	のままで:stay
 	どちらに:picking one of these
 	次のいずれかが満たされる:be in one of these scenarios
+	それがゆえ:That's why
 
 	●未分類
 計時情報:timing info::~
@@ -685,11 +686,10 @@ coop.unsafe-none:~ORIGIN#coop-unsafe-none
 v.allow-top-navigation-by-user-activation:~ORIGIN#attr-iframe-sandbox-allow-top-navigation-by-user-activation
 v.allow-top-navigation:~ORIGIN#attr-iframe-sandbox-allow-top-navigation
 v.allow-popups:~ORIGIN#attr-iframe-sandbox-allow-popups
-	閲覧文脈~sandbox化( 利用者~作動化~top-level~navi )~flag:~ORIGIN#sandboxed-top-level-navigation-with-user-activation-browsing-context-flag
-	閲覧文脈~sandbox化( 非~利用者~作動化~top-level~navi )~flag:~ORIGIN#sandboxed-top-level-navigation-without-user-activation-browsing-context-flag
-	閲覧文脈~sandbox化( 補助~navi )~flag:~ORIGIN#sandboxed-auxiliary-navigation-browsing-context-flag
+v.allow-top-navigation-to-custom-protocols:~ORIGIN#attr-iframe-sandbox-allow-top-navigation-to-custom-protocols
 
 st.~refresh:~HEmetadata#attr-meta-http-equiv-refresh
+
 
 	●用語
 なければその前に:#_potentially-before
@@ -880,6 +880,9 @@ bc.~sandbox法~flag群:~ORIGIN#concept-bc-sandboxing-flags
 ~sandbox化( ~modal )~flag:~ORIGIN#sandboxed-modals-flag
 
 閲覧文脈~sandbox化( ~plugin )~flag:~ORIGIN#sandboxed-plugins-browsing-context-flag
+閲覧文脈~sandbox化( ~custom~protocol~navi )~flag:~ORIGIN#sandboxed-custom-protocols-navigation-browsing-context-flag
+閲覧文脈~sandbox化( 利用者~作動化~top-level~navi )~flag:~ORIGIN#sandboxed-top-level-navigation-with-user-activation-browsing-context-flag
+
 作成時の~sandbox法~flag群を決定する:~ORIGIN#determining-the-creation-sandboxing-flags
 非同一-生成元~opener施策を得する:~ORIGIN#obtain-coop
 非同一-生成元~opener施策:~ORIGIN#cross-origin-opener-policy
@@ -3176,56 +3179,54 @@ To hand-off to external software given a URL or response resource, a browsing co
 	<li>
 <p>
 ~IF［
-%B は`~top-level閲覧文脈$でない
-］~AND［
-次のいずれも満たされない
+次がすべて満たされる
 ］…：
 ◎
-If browsingContext is not a top-level browsing context, and none of:
+Return without invoking the external sofware package if all of these conditions hold:
 </p>
 		<ul>
 			<li>
+%B は`~top-level閲覧文脈$でない
+◎
+browsingContext is not a top-level browsing context;
+</li>
+			<li>
+`閲覧文脈~sandbox化( ~custom~protocol~navi )~flag$ ~IN %~sandbox~flag群
+◎
+sandboxFlags has its sandboxed custom protocols navigation browsing context flag set; and
+</li>
+			<li>
 ［
-`allow-top-navigation-by-user-activation$v ~token ~IN %~sandbox~flag群
-］~AND［
+`閲覧文脈~sandbox化( 利用者~作動化~top-level~navi )~flag$ ~IN %~sandbox~flag群
+］~OR［
 %一過な作動化か ~EQ ~T
 ］
 ◎
-sandboxFlags contains the allow-top-navigation-by-user-activation token and hasTransientActivation is true
-</li>
-			<li>
-`allow-top-navigation$v ~token ~IN %~sandbox~flag群
-◎
-sandboxFlags contains the allow-top-navigation token
-</li>
-			<li>
-`allow-popups$v ~token ~IN %~sandbox~flag群
-◎
-sandboxFlags contains the allow-popups token
+sandboxFlags has its sandboxed top-level navigation with user activation browsing context flag set, or hasTransientActivation is false.
 </li>
 		</ul>
-<p class="trans-note">【
-これらの条件は，各種~tokenに基づいて記されているが、
-`~sandbox法~flag集合$は実際には各種~flagからなるので，適切に翻訳して解釈し直す必要がある。
-】</p>
-
 <p>
 …ならば
 ⇒
 ~RET
 （ 外部~software~packageは呼出さない。）
 ◎
-hold, then return without invoking the external software package.
-</p>
+↑</p>
 
 <p class="note">注記：
 ~iframeの内側から外部~softwareへ向けた~naviは、
 利用者からは，新たな［
 ~popup／~top-level~navi
 ］として見えることもある。
-したがって，~sandbox~flag群を適切に施行している。
+それがゆえ、
+そのような~naviが~sandbox化された `iframe$e において許容されるのは，［
+`allow-popups$v,
+`allow-top-navigation$v,
+`allow-top-navigation-by-user-activation$v,
+`allow-top-navigation-to-custom-protocols$v
+］いずれかが指定されたときに限られる。
 ◎
-Navigation inside an iframe toward external software can be seen by users as a new popup or a new top-level navigation. Therefore, we enforcing sandbox flags appropriately.
+Navigation inside an iframe toward external software can be seen by users as a new popup or a new top-level navigation. That's why its is allowed in sandboxed iframe only when one of allow-popups, allow-top-navigation, allow-top-navigation-by-user-activation, or allow-top-navigation-to-custom-protocols is specified.
 </p>
 	</li>
 	<li>
@@ -7155,12 +7156,12 @@ The following table illustrates the processing of various values for the header,
 
 </tbody></table>
 ◎
-`X-Frame-Options`	Valid	Result
-`DENY`	✅	embedding disallowed
-`SAMEORIGIN`	✅	same-origin embedding allowed
-`INVALID`	❌	embedding allowed
-`ALLOWALL`	❌	embedding allowed
-`ALLOW-FROM=https://example.com/`	❌	embedding allowed (from anywhere)
+`X-Frame-Options`｜Valid｜Result
+`DENY`｜✅｜embedding disallowed
+`SAMEORIGIN`｜✅｜same-origin embedding allowed
+`INVALID`｜❌｜embedding allowed
+`ALLOWALL`｜❌｜embedding allowed
+`ALLOW-FROM=https://example.com/`｜❌｜embedding allowed (from anywhere)
 </div>
 
 </div>
@@ -7207,15 +7208,15 @@ The following table illustrates how various non-conformant cases involving multi
 </tbody></table>
 
 ◎
-`X-Frame-Options`	Result
-`SAMEORIGIN, SAMEORIGIN`	same-origin embedding allowed
-`SAMEORIGIN, DENY`	embedding disallowed
-`SAMEORIGIN,`	embedding disallowed
-`SAMEORIGIN, ALLOWALL`	embedding disallowed
-`SAMEORIGIN, INVALID`	embedding disallowed
-`ALLOWALL, INVALID`	embedding disallowed
-`ALLOWALL,`	embedding disallowed
-`INVALID, INVALID`	embedding allowed
+`X-Frame-Options`｜Result
+`SAMEORIGIN, SAMEORIGIN`｜same-origin embedding allowed
+`SAMEORIGIN, DENY`｜embedding disallowed
+`SAMEORIGIN,`｜embedding disallowed
+`SAMEORIGIN, ALLOWALL`｜embedding disallowed
+`SAMEORIGIN, INVALID`｜embedding disallowed
+`ALLOWALL, INVALID`｜embedding disallowed
+`ALLOWALL,`｜embedding disallowed
+`INVALID, INVALID`｜embedding allowed
 </div>
 
 <p>
