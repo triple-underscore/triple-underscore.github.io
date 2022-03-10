@@ -116,8 +116,8 @@ return text;
 
 ●●options
 
-spec_date:2022-02-22
-trans_update:2022-02-23
+spec_date:2022-03-09
+trans_update:2022-03-10
 source_checked:210301
 page_state_key:HTML
 spec_status:LS
@@ -384,6 +384,7 @@ st.~X-UA-Compatible:#attr-meta-http-equiv-x-ua-compatible
 ~link先の資源~fetch用に設定しておく:#linked-resource-fetch-setup-steps
 ~link先の資源を~fetchして処理する既定の~algo:#default-fetch-and-process-the-linked-resource
 ~link先の資源を処理する:#process-the-linked-resource
+~link~header群を処理する:#process-link-headers
 
 
 ~pragma集合の既定の言語:#pragma-set-default-language
@@ -417,6 +418,9 @@ st.~X-UA-Compatible:#attr-meta-http-equiv-x-ua-compatible
 ~commaで分割する:~INFRA#split-on-commas
 位置~変数:~INFRA#string-position-variable
 符号位置:~INFRA#code-point
+~HTML名前空間:~INFRA#html-namespace
+~map:~INFRA#ordered-map
+
 即時:~HTMLINFRA#immediately
 接続されたとき:~HTMLINFRA#becomes-connected
 必須の下位資源:~HTMLINFRA#critical-subresources
@@ -566,6 +570,7 @@ ss.~CSS規則~list:~CSSOM1#concept-css-style-sheet-css-rules
 ~fetchする:~FETCH#concept-fetch
 i.応答の本体を消費する処理n:~FETCH#process-response-end-of-body
 計時を完結して報告する:~FETCH#finalize-and-report-timing
+~header~listから値を取得して復号して分割する:~FETCH#concept-header-list-get-decode-split
 要請:~FETCH#concept-request
 応答:~FETCH#concept-response
 ~network~error:~FETCH#concept-network-error
@@ -578,6 +583,7 @@ rq.同期~flag:~HTMLdep#synchronous-flag
 	廃）rq.同期~flag:~FETCH#synchronous-flag
 ~ok状態s:~FETCH#ok-status
 rs.状態s:~FETCH#concept-response-status
+rs.~header~list:~FETCH#concept-response-header-list
 
 行先の素:~FETCH#concept-potential-destination
 行先に翻訳-:~FETCH#concept-potential-destination-translate
@@ -599,6 +605,8 @@ doc.符号化法:~DOM4#concept-document-encoding
 子たち変更-時の手続き:~DOM4#concept-node-children-changed-ext
 全~内容を文字列に置換する:~DOM4#string-replace-all
 接続されて:~DOM4#connected
+要素を作成する:~DOM4#concept-create-element
+属性~値を設定する:~DOM4#concept-element-attributes-set-value
 
 ~UTF-8:~ENCODING#utf-8
 符号化法:~ENCODING#encoding
@@ -619,6 +627,11 @@ doc.符号化法:~DOM4#concept-document-encoding
 
 c.~xml-stylesheet:https://www.w3.org/TR/xml-stylesheet/#the-xml-stylesheet-processing-instruction
 
+~link関係~型:~HTTPweblink#_link-relation-types
+~link~target:~HTTPweblink#_link-target
+~target属性~群:~HTTPweblink#_attributes
+	TODO: ~RFCx/rfc8288#appendix-B.2 → ~HTTPweblink#parse-fv
+
 
 	WHATWG Wiki MetaExtensions page:https://wiki.whatwg.org/wiki/MetaExtensions
 	WHATWG Wiki PragmaExtensions page:https://wiki.whatwg.org/wiki/PragmaExtensions
@@ -627,6 +640,8 @@ c.~xml-stylesheet:https://www.w3.org/TR/xml-stylesheet/#the-xml-stylesheet-proce
 定義済み~link型の集合に対する拡張:~HTMLlinks#concept-rel-extensions
 	~metadata名:#concept-meta-extensions
 	~style付け~modelに供与する外部~資源~link:~HTMLlinks#link-type-stylesheet
+	~HTTPweblink#appendix-B.2 → ~HTTPweblink#parse
+
 
 	●
 
@@ -685,6 +700,8 @@ BOM:
 切断-:disconnect::~
 body:
 shadow:
+生の:raw:~
+相:phase:~
 	子たち:children
 	文書~level:document-level
 
@@ -698,6 +715,12 @@ give-up:give up
 	%~URL~record:url
 	%~URL~record:urlRecord
 	%起動元~種別:initiatorType
+	%文書:doc
+	%生の~link~header群:rawLinkHeaders
+	%~link~header:linkHeader
+	%~link~obj:linkObject
+	%属性~群:attribs
+	%期待される相:expectedPhase
 
 	●内容／意味論／呈示／UI
 必須の:critical::~
@@ -3331,32 +3354,168 @@ Unless otherwise specified for a given rel keyword, the element must delay the l
 				<section id="processing-link-headers">
 <h5 title="Processing Link headers">4.2.4.4. `Link^h ~headerの処理</h5>
 
+<div class="algo">
 <p>
-~HTTP `Link$h ~headerは、~UAが~supportするならば，
-文書~内のどの~linkよりも先に現れると見做すモノトスル
-— ~HTTP~message内に与えられる順序で。
-これらの~headerは、関連な仕様が与える規則に則って処理されることになる。
-`HTTP$r
+`~link~header群を処理する@
+ときは、
+所与の
+( `文書$ %文書, `応答$ %応答, %相 ~IN { `pre-media^l, `media^l } )
+に対し：
+◎
+To process link headers given a Document doc, a response response, and a "pre-media" or "media" phase:
+</p>
+<ol>
+	<li>
+%生の~link~header群 ~LET `~header~listから値を取得して復号して分割する$( %応答 の`~header~list$rs, `Link^h【！`link$e】 )
+◎
+Let rawLinkHeaders be the result of getting, decoding, and splitting `Link` from response's header list.
+</li>
+	<li>
+<p>
+%生の~link~header群 を成す
+~EACH( %~link~header )
+に対し：
+◎
+For each linkHeader of rawLinkHeaders:
+</p>
+		<ol>
+			<li>
+%~link~obj ~LET %~link~header を<a href="~RFCx/rfc8288#appendix-B.2">構文解析-</a>した結果
 `WEBLINK$r
 ◎
-HTTP `Link` headers, if supported, must be assumed to come before any links in the document, in the order that they were given in the HTTP message. These headers are to be processed according to the rules given in the relevant specifications. [HTTP] [WEBLINK]
-</p> 
-
-<p class="note">注記：
-~HTTP `Link$h ~headerにおける関係~型の登録は，`~HTML~link型$とは別個であり、したがってそれらの意味論は，同じ名前の~HTML~link型と異なり得る。
+Let linkObject be the result of parsing linkHeader. [WEBLINK]
+</li>
+			<li>
+%関係~型 ~LET %~link~obj の`~link関係~型$【！relation_type】
 ◎
-Registration of relation types in HTTP `Link` headers is distinct from HTML link types, and thus their semantics can be different from same-named HTML types.
+↓</li>
+			<li>
+<p>
+~IF［
+%関係~型 ~NEQ "`preload$v"
+］
+⇒
+~CONTINUE
+◎
+If linkObject["relation_type"] is not "preload", then continue.
 </p>
 
+<p class="note">注記：
+将来には、
+追加的な~link型~用の~supportが，ここに追加され得る。
+◎
+Support for additional link types can be added here in the future.
+</p>
+			</li>
+			<li>
+<p>
+%属性~群 ~LET %~link~obj の`~target属性~群$【！target_attributes】
+</p>
+
+<p class="trans-note">【
+%属性~群 は、
+この~algoにおいては，`~map$であるかのように扱われているが、
+実際には，一連の［
+( 名前, 値 ) からなる~tuple
+］からなる~listであり、
+実質的には，同じ~key（名前）を伴う~entryが複数個あり得る~mapになる
+（しかしながら、一部の~key（特に， "`media$aL" ）は， 1 個までに限られる）。
+】</p>
+◎
+Let attribs be linkObject["target_attributes"].
+</li>
+			<li>
+%期待される相 ~LET ［
+次が満たされるならば `media^l ／
+~ELSE_ ε【！~F】
+］
+⇒
+%属性~群 を成すある~entryは次を満たす
+⇒
+その~key ~IN { "`srcset$a", "`imagesrcset$aL", "`media$aL" }
+◎
+Let expectedPhase be "media" if either "srcset", "imagesrcset", or "media" exist in attribs; otherwise false.
+</li>
+			<li>
+~IF［
+%期待される相 ~NEQ %相
+］
+⇒
+~CONTINUE
+◎
+If expectedPhase is not phase, then continue.
+</li>
+			<li>
+%media ~LET %属性~群【！params】[ "`media$aL" ]
+◎
+↓</li>
+			<li>
+~IF［
+%media ~NEQ ε
+］~AND［
+%media は`環境に合致して$いない
+］
+⇒
+~CONTINUE
+◎
+If params includes "media" and params["media"] does not match the environment, then continue.
+</li>
+			<li>
+%要素 ~LET `要素を作成する$( %文書, `link$e, `~HTML名前空間$ )
+◎
+Let element be the result of creating an element given doc, link, and the HTML namespace.
+</li>
+			<li>
+%要素 の`属性~値を設定する$( "`href$aL",  %~link~obj の`~link~target$【！target_uri】 )
+◎
+Set an attribute value for element using "href" and linkObject["target_uri"].
+</li>
+			<li>
+%要素 の`属性~値を設定する$( "`rel$aL", %関係~型 )
+◎
+Set an attribute value for element using "rel" and linkObject["relation_type"].
+</li>
+			<li>
+%属性~群 を成す
+~EACH( %名前 → %値 )
+に対し
+⇒
+~IF［
+%名前 ~IN {
+"`as$aL",
+"`type$aL",
+"`crossorigin$aL",
+"`imagesizes$aL",
+"`blocking$aL",
+"`integrity$aL",
+"`imagesrcset$aL",
+"`media$aL"
+}
+］
+⇒
+%要素 の`属性~値を設定する$( %名前, %値 )
+◎
+For each entry in attribs: if entry[0] is "as", "type", "crossorigin", "imagesizes", "blocking", "integrity", "imagesrcset", or "media", then set an attribute value for element using entry[0] and entry[1].
+</li>
+			<li>
+`~link先の資源を~fetchして処理する$( %要素【！el】 )
+◎
+Fetch and process el.
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
 <p class="XXX">
-`Link$h ~headerの処理
-— 特に `文書$の`~scriptを阻んでいる~stylesheet~counter$に対し，どう波及するか —
-は、定義されていない。
-これを仕様に統合することに関する論点は
+~link関係~型 `preload$v 以外に関する `Link$h ~headerの処理は、
+定義されていない
+— 特に、`文書$の`~scriptを阻んでいる~stylesheet~counter$に対し，どう波及するかは。
+これを仕様に統合することに関する論点は、
 <a href="~HTMLissue/4224">課題 #4224</a>
 を見よ。
 ◎
-The processing of `Link` headers, in particular their influence on a Document's script-blocking style sheet counter, is not defined. See issue #4224 for discussion on integrating this into the spec.
+The processing of `Link` headers apart from preload, in particular their influence on a Document's script-blocking style sheet counter, is not defined. See issue #4224 for discussion on integrating this into the spec.
 </p>
 
 				</section>
