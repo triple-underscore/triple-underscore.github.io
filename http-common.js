@@ -637,7 +637,7 @@ c.realm:~HTTPsem#realm
 形式変換-:~HTTPsem#message-transformation
 形式変換:~HTTPsem#message-transformation
 
-	§#representation-md
+	§#representation.data.and.metadata
 表現~data:~HTTPsem#representation-data
 表現~header:~HTTPsem#representation-header
 表現~metadata:~HTTPsem#representation-metadata
@@ -656,6 +656,7 @@ c.realm:~HTTPsem#realm
 強い比較~関数:~HTTPsem#strong-comparison
 弱い比較~関数:~HTTPsem#weak-comparison
 改変~日時:~HTTPsem#modification-date
+実体~tag:~HTTPsem#entity-tag
 
 	§#methods
 ~method:~HTTPsem#methods
