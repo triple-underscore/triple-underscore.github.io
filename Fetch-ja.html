@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2022-03-09
-trans_update:2022-03-11
+spec_date:2022-03-14
+trans_update:2022-03-16
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -802,6 +802,7 @@ rs.~sw計時情報:#response-service-worker-timing-info
 
 ~network~error:#concept-network-error
 中止~network~error:#concept-aborted-network-error
+適切な~network~error:#appropriate-network-error
 
 絞込み応答:#concept-filtered-response
 不透明~redirect絞込み応答:#concept-filtered-response-opaque-redirect
@@ -817,11 +818,9 @@ rs.~sw計時情報:#response-service-worker-timing-info
 
 ~fetch~group:#concept-fetch-group
 ~fetch記録:#concept-fetch-record
-fg.要請:#concept-fetch-record-request
-fg.~fetch:#concept-fetch-record-fetch
-fg.終了され:#concept-fetch-group-terminate
-fg.終了させる:#concept-fetch-group-terminate
-~fetch~groupを終了させる:#concept-fetch-group-terminate
+fR.要請:#concept-fetch-record-request
+fR.制御器:#concept-fetch-record-fetch
+~fetch~groupを終了する:#concept-fetch-group-terminate
 
 接続~pool:#concept-connection-pool
 接続を得する:#concept-connection-obtain
@@ -880,6 +879,17 @@ fT.復号した本体の~size:#fetch-timing-info-decoded-body-size
 ~fetch:#concept-fetch
 ~fetchする:#concept-fetch
 ~fetching:#concept-fetch
+休止-:#concept-fetch-suspend
+再開-:#concept-fetch-resume
+
+~fetch制御器:#fetch-controller
+fC.状態:#fetch-controller-state
+~fetchを中止する:#fetch-controller-abort
+~fetchを終了する:#fetch-controller-terminate
+終了-:#fetch-controller-terminate
+
+~fetch~taskを~queueする:#queue-a-fetch-task
+
 ~fetch~params:#fetch-params
 fP.要請:#fetch-params-request
 fP.~taskの行先:#fetch-params-task-destination
@@ -890,6 +900,9 @@ fP.応答の本体~終了~時の処理n:#fetch-params-process-response-end-of-bo
 fP.応答の本体を消費する処理n:#fetch-params-process-response-consume-body
 fP.非同一-生成元~能力は隔離されるか:#fetch-params-cross-origin-isolated-capability
 fP.計時情報:#fetch-params-timing-info
+fP.制御器:#fetch-params-controller
+fP.中止された:#fetch-params-aborted
+fP.取消された:#fetch-params-canceled
 
 ~main~fetch:#concept-main-fetch
 ~scheme~fetch:#concept-scheme-fetch
@@ -900,16 +913,6 @@ fP.計時情報:#fetch-params-timing-info
 ~HTTP~network~fetch:#concept-http-network-fetch
 ~CORS予行~fetch:#cors-preflight-fetch-0
 ~fetch終結:#fetch-finale
-
-終了され:#concept-fetch-terminate
-終了させ:#concept-fetch-terminate
-終了させる:#concept-fetch-terminate
-終了-時:#concept-fetch-terminate
-	中止~flag:#concept-fetch-terminate
-休止-:#concept-fetch-suspend
-再開-:#concept-fetch-resume
-
-~fetch~taskを~queueする:#queue-a-fetch-task
 
 V.要請の本体~chunk長さの処理n:#process-request-body
 V.要請の本体~終了~時の処理n:#process-request-end-of-body
@@ -926,7 +929,6 @@ i.応答の本体を消費する処理n:#process-response-end-of-body
 i.並列~queueを利用するか:#fetch-useparallelqueue
 
 i.~HTTP3のみか:#obtain-a-connection-http3only
-
 
 内容~符号法sを取扱う:#handle-content-codings
 
@@ -1017,7 +1019,8 @@ TS.~chunkを~enqueueする:~STREAMS#transformstream-enqueue
 
 
 	●Fetch API
-~fetchを中止する:#abort-fetch
+~fetch~methodを中止する:#abort-fetch
+api.~fetchを中止する:#abort-fetch
 本体と内容~型を抽出する:#concept-bodyinit-extract
 本体と内容~型を安全に抽出する:#bodyinit-safely-extract
 
@@ -1437,9 +1440,9 @@ pipe::::パイプ
 時間切れ:timeout:~
 呼出法:invoke 法:呼び出し法
 入出力:I/O::~
+制御器:controller::~
 
 	~mark::::マーク
-	終了-時:termination
 	読取n可能:readable::読み取り可能
 	細かさを抑えた:coarsen
 	細かさは抑えられ:coarsened
@@ -2017,6 +2020,7 @@ helper:
 	%最後の~URL:lastURL
 	%~preloadされる応答~可用~時の手続き:onPreloadedResponseAvailable
 	%~preloadされる資源を見出したか:foundPreloadedResource
+	%制御器:controller
 
 	●指示語
 	あらゆるもの:everything
@@ -2201,7 +2205,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/dd2b4e90a7dc2c3952452b46099e802a0e160e2b/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/4561d5f4b2462e2bb5f91668504a90fc5a725786/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -2518,6 +2522,18 @@ A boolean.
 </dd>
 
 	<dt>
+`制御器@fP
+（既定は新たな`~fetch制御器$）
+◎
+controller (default a new fetch controller)
+</dt>
+	<dd>
+`~fetch制御器$
+◎
+A fetch controller.
+</dd>
+
+	<dt>
 `計時情報@fP
 ◎
 timing info
@@ -2528,6 +2544,79 @@ timing info
 A fetch timing info.
 </dd>
 </dl>
+
+<p>
+`~fetch制御器@
+は、
+次に挙げる`~item$sctからなる`構造体$である
+— それは、
+`~fetch$が開始された後に，その~call元が［
+当の~fetchに対し，ある種の演算を遂行する
+］ことを可能化するために利用される：
+◎
+A fetch controller is a struct used to enable callers of fetch to perform certain operations on it after it has started. It has the following items:
+</p>
+<dl class="def-list">
+	<dt>
+`状態@fC
+（既定は `ongoing^l ）
+◎
+state (default "ongoing")
+</dt>
+	<dd>
+`ongoing^l ／ `terminated^l ／ `aborted^l
+◎
+"ongoing", "terminated", or "aborted"
+</dd>
+</dl>
+
+<div class="algo">
+<p>
+`~fetchを中止する@
+ときは、所与の
+( `~fetch制御器$ %制御器 )
+に対し
+⇒
+%制御器 の`状態$fC ~SET `aborted^l
+◎
+To abort a fetch controller controller, set controller’s state to "aborted".
+</p>
+</div>
+
+<div class="algo">
+<p>
+`~fetchを終了する@
+ときは、所与の
+( `~fetch制御器$ %制御器 )
+に対し
+⇒
+%制御器 の`状態$fC ~SET `terminated^l
+◎
+To terminate a fetch controller controller, set controller’s state to "terminated".
+</p>
+</div>
+
+<p>
+所与の`~fetch~params$ %~fetch~params は、
+次を満たすとき
+`中止された@fP
+とされる
+⇒
+%~fetch~params の`制御器$fPの`状態$fC ~EQ `aborted^l
+◎
+A fetch params fetchParams is aborted if its controller’s state is "aborted".
+</p>
+
+<p>
+所与の`~fetch~params$ %~fetch~params は、
+次を満たすとき
+`取消された@fP
+とされる
+⇒
+%~fetch~params の`制御器$fPの`状態$fC ~IN { `aborted^l, `terminated^l }
+◎
+A fetch params fetchParams is canceled if its controller’s state is "aborted" or "terminated".
+</p>
 
 <p>
 `~fetch計時情報@
@@ -6804,6 +6893,40 @@ A response whose type is "error" is known as a network error.
 A network error is a response whose status is always 0, status message is always the empty byte sequence, header list is always empty, and body is always null.
 </div>
 
+<div class="algo">
+<p>
+`適切な~network~error@
+を作成するときは、
+所与の
+( `~fetch~params$ %~fetch~params )
+に対し：
+◎
+To create the appropriate network error given fetch params fetchParams:
+</p>
+<ol>
+	<li>
+~Assert：
+%~fetch~params は`取消された$fP
+◎
+Assert: fetchParams is canceled.
+</li>
+	<li>
+~IF［
+%~fetch~params は`中止された$fP
+］
+⇒
+~RET `中止~network~error$
+◎
+Return an aborted network error if fetchParams is aborted;＼
+</li>
+	<li>
+~RET `~network~error$
+◎
+otherwise return a network error.
+</li>
+</ol>
+</div>
+
 <hr>
 
 <p>
@@ -7239,48 +7362,51 @@ A fetch group holds an ordered list of fetch records.
 次に挙げるものが結付けられる：
 ◎
 ↓</p>
-
-<dl class="def-list">
-	<dt>`要請@fg</dt>
-	<dd>
-`要請$。
+<ul>
+	<li>
+`要請@fR
+⇒
+`要請$
 ◎
 A fetch record has an associated request (a request).
-</dd>
-
-	<dt>`~fetch@fg</dt>
-	<dd>
-`~fetch$~algoの~instance,
-または ~NULL 。
+</li>
+	<li>
+`制御器@fR
+⇒
+`~fetch制御器$ ／ ~NULL
 ◎
-A fetch record has an associated fetch (a fetch algorithm or null).
-</dd>
-</dl>
+A fetch record has an associated controller (a fetch controller or null).
+</li>
+</ul>
 
 <hr>
 
 <div class="algo">
 <p>
-`~fetch~group$ %G が
-`終了され@fg
-たときは、
-次を走らす
+`~fetch~groupを終了する@
+ときは、所与の
+( `~fetch~group$ %G )
+に対し，次を走らす
 ⇒
 %G を成す
 ~EACH( `~fetch記録$ %記録 )
 に対し
 ⇒
 ~IF［
-%記録 の`要請$fgは［［
+%記録 の`制御器$fR ~NEQ ~NULL
+］
+⇒
+~IF［
+%記録 の`要請$fRは［［
 `済んだか$rq ~EQ ~F
 ］~OR［
 `~keepaliveか$rq ~EQ ~F
 ］］を満たす
 ］
 ⇒
-%記録 の`~fetch$fgを`終了させる$()
+`~fetchを終了する$( %記録 の`制御器$fR )
 ◎
-When a fetch group is terminated, for each associated fetch record whose request’s done flag is unset or keepalive is false, terminate the fetch record’s fetch.
+When a fetch group is terminated, for each associated fetch record whose fetch record’s controller is not null, and whose request’s done flag is unset or keepalive is false, terminate the fetch record’s controller.
 </p>
 </div>
 
@@ -10334,18 +10460,7 @@ If given, processResponseEndOfBody must be an algorithm accepting a response.＼
 If given, processResponseConsumeBody must be an algorithm accepting a response and null, failure, or a byte sequence.
 </div>
 
-<ul>
-	<li>
-進行中の`~fetch$は、［
-%中止~flag ~IN { `中止する^i, ε } （省略時は ε ）
-］を伴って，
-`終了され@
-ることもある。
-【同じ~fetchに対し，複数の終了nは生じ得るか？（その場合、どの %中止~flag が優先されるか？）】
-◎
-An ongoing fetch can be terminated with flag aborted, which is unset unless otherwise specified.
-</li>
-	<li>
+<p>
 ~UAは、
 進行中の~fetchを
 `休止-@
@@ -10362,8 +10477,7 @@ An ongoing fetch can be terminated with flag aborted, which is unset unless othe
 ］には，休止~要請を無視するベキである。
 ◎
 The user agent may be asked to suspend the ongoing fetch. The user agent may either accept or ignore the suspension request. The suspended fetch can be resumed. The user agent should ignore the suspension request if the ongoing fetch is updating the response in the HTTP cache for the request.
-</li>
-</ul>
+</p>
 
 <div class="note">
 <p>注記：
@@ -10713,10 +10827,10 @@ If request is a subresource request, then:
 			<li>
 %記録 ~LET 次のようにされた，新たな`~fetch記録$
 ⇒＃
-`要請$fg ~SET %要請；
-`~fetch$fg ~SET この`~fetch$~algoの~instance
+`要請$fR ~SET %要請,
+`制御器$fR ~SET %~fetch~params の`制御器$fP
 ◎
-Let record be a new fetch record consisting of request and this instance of the fetch algorithm.
+Let record be a new fetch record whose request is request and controller is fetchParams’s controller.
 </li>
 			<li>
 ［
@@ -10728,9 +10842,14 @@ Append record to request’s client’s fetch group list of fetch records.
 		</ol>
 	</li>
 	<li>
-~RET `~main~fetch$( %~fetch~params )
+`~main~fetch$( %~fetch~params )
 ◎
 Run main fetch given fetchParams.
+</li>
+	<li>
+~RET %~fetch~params の`制御器$fP
+◎
+Return fetchParams’s controller.
 </li>
 </ol>
 </div>
@@ -11817,12 +11936,11 @@ URLs such as "about:config" are handled during navigation and result in a networ
 					<li>
 <p>
 この段の中は、
-進行中の~fetchが`終了され$た`ときは中止する$：
+%~fetch~params が`取消された$fP`ときは中止する$：
 ◎
-Run these steps, but abort when the ongoing fetch is terminated:
+Run these steps, but abort when fetchParams is canceled:
 </p>
 						<ol>
-
 							<li>
 %blob ~LET %要請 の`現在の~URL$rqの`~blob~URL~entry$urlの`~obj$bU
 ◎
@@ -11886,15 +12004,9 @@ Return response.
 					<li>
 前~段が`中止されたときは$
 ⇒
-~RET ［
-`終了-時$の %中止~flag ~NEQ ε ならば `中止~network~error$ ／
-~ELSE_ `~network~error$
-］
+~RET `適切な~network~error$( %~fetch~params )
 ◎
-If aborted, then:
-• Let aborted be the termination’s aborted flag.
-• If aborted is set, then return an aborted network error.
-• Return a network error.
+If aborted, then return the appropriate network error for fetchParams.
 </li>
 				</ol>
 			</dd>
@@ -12039,21 +12151,21 @@ Let transformAlgorithm given chunk be these steps:
 						<ol>
 							<li>
 ~IF［
-進行中の~fetchは`終了され$た
+%~fetch~params は`取消された$fP
 ］
 ⇒
 ~RET
 ◎
-If the ongoing fetch is terminated, then abort these steps.
+If fetchParams is canceled, then abort these steps.
 </li>
 							<li>
 ~IF［
 %~chunk は `Uint8Array$I ~objでない
 ］
 ⇒
-進行中の~fetchを`終了させる$
+`~fetchを終了する$( %~fetch~params の`制御器$fP )
 ◎
-If chunk is not a Uint8Array object, then terminate the ongoing fetch.
+If chunk is not a Uint8Array object, then terminate fetchParams’s controller.
 </li>
 							<li>
 <p>
@@ -12107,11 +12219,11 @@ Set requestForServiceWorker’s body’s stream to transformedStream.
 Let serviceWorkerStartTime be the coarsened shared current time given fetchParams’s cross-origin isolated capability.
 </li>
 			<li>
-%応答 ~SET `~fetchを取扱う$( %~sw用の要請 )
+%応答 ~SET `~fetchを取扱う$( %~sw用の要請, ＊%~fetch~params の`制御器$fP, %~fetch~params の`非同一-生成元~能力は隔離されるか$fP )
 `HTML$r
 `SW$r
 ◎
-Set response to the result of invoking handle fetch for requestForServiceWorker. [HTML] [SW]
+Set response to the result of invoking handle fetch for requestForServiceWorker, with fetchParams’s controller and fetchParams’s cross-origin isolated capability. [HTML] [SW]
 </li>
 			<li>
 <p>
@@ -12832,9 +12944,9 @@ Let the revalidatingFlag be unset.
 	<li>
 <p>
 この段の中は、
-進行中の~fetchが`終了され$た`ときは中止する$：
+%~fetch~params が`取消された$fP`ときは中止する$：
 ◎
-Run these steps, but abort when the ongoing fetch is terminated:
+Run these steps, but abort when fetchParams is canceled:
 </p>
 		<ol>
 			<li>
@@ -12990,7 +13102,7 @@ Let group be httpRequest’s client’s fetch group.
 </li>
 					<li>
 %~inflight記録~list ~LET ［
-%~group 内の`~fetch記録$のうち，その`要請$fgが次を満たすもの
+%~group 内の`~fetch記録$のうち，その`要請$fRが次を満たすもの
 ］からなる同順の~list
 ⇒
 ［
@@ -13011,7 +13123,7 @@ For each fetchRecord in inflightRecords:
 </p>
 						<ol>
 							<li>
-%~inflight要請 ~LET %~fetch記録 の`要請$fg
+%~inflight要請 ~LET %~fetch記録 の`要請$fR
 ◎
 Let inflightRequest be fetchRecord’s request.
 </li>
@@ -13580,15 +13692,9 @@ Otherwise, set response to storedResponse and set response’s cache state to "l
 	<li>
 前~段が`中止されたときは$
 ⇒
-~RET ［
-`終了-時$の %中止~flag ~NEQ ε ならば `中止~network~error$ ／
-~ELSE_ `~network~error$
-］
+~RET `適切な~network~error$( %~fetch~params )
 ◎
-If aborted, then:
-• Let aborted be the termination’s aborted flag.
-• If aborted is set, then return an aborted network error.
-• Return a network error.
+If aborted, then return the appropriate network error for fetchParams.
 </li>
 	<li>
 <p>
@@ -13809,18 +13915,12 @@ If request’s use-URL-credentials flag is unset or isAuthenticationFetch is tru
 				<ol>
 					<li>
 ~IF［
-進行中の~fetchは`終了され$た
+%~fetch~params は`取消された$fP
 ］
 ⇒
-~RET ［
-`終了-時$の %中止~flag ~NEQ ε ならば `中止~network~error$ ／
-~ELSE_ `~network~error$
-］
+~RET `適切な~network~error$( %~fetch~params )
 ◎
-If the ongoing fetch is terminated, then:
-• Let aborted be the termination’s aborted flag.
-• If aborted is set, then return an aborted network error.
-• Return a network error.
+If fetchParams is canceled, then return the appropriate network error for fetchParams.
 </li>
 					<li>
 ( %~username, %~password ) ~LET
@@ -13878,25 +13978,18 @@ Needs testing: multiple `Proxy-Authenticate` headers, missing, parsing issues.
 </li>
 			<li>
 ~IF［
-進行中の~fetchは`終了され$た
+%~fetch~params は`取消された$fP
 ］
 ⇒
-~RET ［
-`終了-時$の %中止~flag ~NEQ ε ならば `中止~network~error$ ／
-~ELSE_ `~network~error$
-］
+~RET `適切な~network~error$( %~fetch~params )
 ◎
-If the ongoing fetch is terminated, then:
-• Let aborted be the termination’s aborted flag.
-• If aborted is set, then return an aborted network error.
-• Return a network error.
+If fetchParams is canceled, then return the appropriate network error for fetchParams.
 </li>
 			<li>
 <p>
 %要請 の`~window$rqにおいて、
-末端利用者に対し 適切に
-【認証に関する手続きを】
-促し，その結果を`~proxy認証~entry$として保存する
+末端利用者に対し 適切に【認証に関する手続きを】促して，
+その結果を`~proxy認証~entry$として保存する
 `HTTP-AUTH$r
 ◎
 Prompt the end user as appropriate in request’s window and store the result as a proxy-authentication entry. [HTTP-AUTH]
@@ -13954,18 +14047,12 @@ then:
 		<ol>
 			<li>
 ~IF［
-進行中の~fetchは`終了され$た
+%~fetch~params は`取消された$fP
 ］
 ⇒
-~RET `終了-時$の %中止~flag に応じて
-⇒＃
-`中止する^i ならば`中止~network~error$／
-~ELSE_ `~network~error$
+~RET `適切な~network~error$( %~fetch~params )
 ◎
-If the ongoing fetch is terminated, then:
-• Let aborted be the termination’s aborted flag.
-• If aborted is set, then return an aborted network error.
-• Return a network error.
+If fetchParams is canceled, then return the appropriate network error for fetchParams.
 </li>
 			<li>
 %応答 ~SET `~HTTP~network-or-cache~fetch$( %~fetch~params, %認証~fetchか, ~T )
@@ -14088,9 +14175,9 @@ Otherwise
 	<li>
 <p>
 この段の中は、
-進行中の~fetchが`終了され$た`ときは中止する$：
+%~fetch~params が`取消された$fP`ときは中止する$：
 ◎
-Run these steps, but abort when the ongoing fetch is terminated:
+Run these steps, but abort when fetchParams is canceled:
 </p>
 		<ol>
 			<li>
@@ -14319,12 +14406,12 @@ Let processBodyChunk given bytes be these steps:
 										<ol>
 											<li>
 ~IF［
-進行中の~fetchは`終了され$た
+%~fetch~params は`取消された$fP
 ］
 ⇒
 ~RET
 ◎
-If the ongoing fetch is terminated, then abort these steps.
+If fetchParams is canceled, then abort these steps.
 </li>
 											<li>
 この段は`並列的$に走らす
@@ -14358,12 +14445,12 @@ Let processEndOfBody be these steps:
 										<ol>
 											<li>
 ~IF［
-進行中の~fetchは`終了され$た
+%~fetch~params は`取消された$fP
 ］
 ⇒
 ~RET
 ◎
-If the ongoing fetch is terminated, then abort these steps.
+If fetchParams is canceled, then abort these steps.
 </li>
 											<li>
 %要請の本体~終了~時の処理n ~LET %~fetch~params の`要請の本体~終了~時の処理n$fP
@@ -14392,28 +14479,28 @@ Let processBodyError given e be these steps:
 										<ol>
 											<li>
 ~IF［
-進行中の~fetchは`終了され$た
+%~fetch~params は`取消された$fP
 ］
 ⇒
 ~RET
 ◎
-If the ongoing fetch is terminated, then abort these steps.
+If fetchParams is canceled, then abort these steps.
 </li>
 											<li>
 ~IF［
 %~error は `AbortError$E 例外である
 ］
 ⇒
-進行中の~fetchを`終了させる$( `中止する^i )
+`~fetchを中止する$( %~fetch~params の`制御器$fP )
 ◎
-If e is an "AbortError" DOMException, then terminate the ongoing fetch with the aborted flag set.
+If e is an "AbortError" DOMException, then abort fetchParams’s controller.
 </li>
 											<li>
 ~ELSE
 ⇒
-進行中の~fetchを`終了させる$()
+`~fetchを終了する$( %~fetch~params の`制御器$fP )
 ◎
-Otherwise, terminate the ongoing fetch.
+Otherwise, terminate fetchParams’s controller.
 </li>
 										</ol>
 									</li>
@@ -14441,8 +14528,6 @@ Incrementally read request’s body given processBodyChunk, processEndOfBody, pr
 前~段が`中止されたときは$：
 ◎
 If aborted, then:
-◎
-↓• Let aborted be the termination’s aborted flag.
 </p>
 		<ol>
 			<li>
@@ -14455,19 +14540,14 @@ If aborted, then:
 If connection uses HTTP/2, then transmit an RST_STREAM frame.
 </li>
 			<li>
-~RET ［
-`終了-時$の %中止~flag ~NEQ ε ならば `中止~network~error$ ／
-~ELSE_ `~network~error$
-］
+~RET `適切な~network~error$( %~fetch~params )
 ◎
-If aborted is set, then return an aborted network error.
-◎
-Return a network error.
+Return the appropriate network error for fetchParams.
 </li>
 		</ol>
 	</li>
 	<li>
-%~pull~algo ~LET 次を走らす動作
+%~pull~algo ~LET 次を走らす~algo
 ⇒
 ~IF［
 進行中の~fetchは`休止-$している
@@ -14475,14 +14555,14 @@ Return a network error.
 ⇒
 それを`再開-$する
 ◎
-Let pullAlgorithm be an action that resumes the ongoing fetch if it is suspended.
+Let pullAlgorithm be an algorithm that resumes the ongoing fetch if it is suspended.
 </li>
 	<li>
-%取消~algo ~LET 次を走らす動作
+%取消~algo ~LET 次を走らす~algo
 ⇒
-進行中の~fetchを`終了させる$( `中止する^i )
+`~fetchを中止する$( %~fetch~params の`制御器$fP )
 ◎
-Let cancelAlgorithm be an action that terminates the ongoing fetch with the aborted flag set.
+Let cancelAlgorithm be an algorithm that aborts fetchParams’s controller.
 </li>
 	<li>
 %限界水位 ~LET ~LET ~UAが選ぶ［
@@ -14511,9 +14591,9 @@ Set up stream with pullAlgorithm set to pullAlgorithm, cancelAlgorithm set to ca
 	<li>
 <p>
 この段の中は、
-進行中の~fetchが`終了され$た`ときは中止する$：
+%~fetch~params が`取消された$fP`ときは中止する$：
 ◎
-Run these steps, but abort when the ongoing fetch is terminated:
+Run these steps, but abort when fetchParams is canceled:
 </p>
 		<ol>
 			<li>
@@ -14579,14 +14659,12 @@ If aborted, then:
 		<ol>
 			<li>
 ~IF［
-`終了-時$の %中止~flag ~NEQ ε
+%~fetch~params is #fetch-params-aborted
 ］
 ⇒
 %応答 の`中止されたか$rs ~SET ~T
 ◎
-Let aborted be the termination’s aborted flag.
-◎
-If aborted is set, then set response’s aborted flag.
+If fetchParams is aborted, then set response’s aborted flag.
 </li>
 			<li>
 ~RET %応答
@@ -14606,9 +14684,9 @@ Run these steps in parallel:
 			<li>
 <p>
 この段の中は、
-進行中の~fetchが`終了され$た`ときは中止する$：
+%~fetch~params が`取消された$fP`ときは中止する$：
 ◎
-Run these steps, but abort when the ongoing fetch is terminated:
+Run these steps, but abort when fetchParams is canceled:
 </p>
 <p>
 ~WHILE 無条件：
@@ -14665,9 +14743,9 @@ Increase timingInfo’s decoded body size by bytes’s length.
 %~byte列 ~EQ `失敗^i
 ］
 ⇒
-進行中の~fetchを`終了させる$()
+`~fetchを終了する$( %~fetch~params の`制御器$fP )
 ◎
-If bytes is failure, then terminate the ongoing fetch.
+If bytes is failure, then terminate fetchParams’s controller.
 </li>
 							<li>
 %~stream に`~chunkを~enqueueする$RS( %~byte列 を包含している `ArrayBuffer$I を包装している `Uint8Array$I )
@@ -14679,9 +14757,9 @@ Enqueue a Uint8Array wrapping an ArrayBuffer containing bytes into stream.
 %~stream は`~errorした$RS
 ］
 ⇒
-進行中の~fetchを`終了させる$()
+`~fetchを終了する$( %~fetch~params の`制御器$fP )
 ◎
-If stream is errored, then terminate the ongoing fetch.
+If stream is errored, then terminate fetchParams.'s controller.
 </li>
 							<li>
 ~IF［
@@ -14720,12 +14798,10 @@ If aborted, then:
 					<li>
 <p>
 ~IF［
-`終了-時$の %中止~flag ~NEQ ε
+%~fetch~params is #fetch-params-aborted
 ］：
 ◎
-Let aborted be the termination’s aborted flag.
-◎
-If aborted is set, then:
+If fetchParams is aborted, then:
 </p>
 						<ol>
 							<li>
@@ -19241,7 +19317,7 @@ If requestObject’s signal is aborted, then:
 </p>
 		<ol>
 			<li>
-`~fetchを中止する$( %~promise, %要請, ~NULL )
+`~fetch~methodを中止する$( %~promise, %要請, ~NULL )
 ◎
 Abort fetch with p, request, and null.
 </li>
@@ -19292,6 +19368,11 @@ This lets us reject promises with predictable timing, when the request to abort 
 </p>
 	</li>
 	<li>
+%制御器 ~LET ~NULL
+◎
+Let controller be null.
+</li>
+	<li>
 <p>
 `通達に~algoを追加する$( %~Request~obj の`通達$Rq, 次を走らす手続き )：
 ◎
@@ -19304,20 +19385,24 @@ Add the following abort steps to requestObject’s signal:
 Set locallyAborted to true.
 </li>
 			<li>
-`~fetchを中止する$( %~promise, %要請, %~Response~obj )
+`~fetch~methodを中止する$( %~promise, %要請, %~Response~obj )
 ◎
 Abort fetch with p, request, and responseObject.
 </li>
 			<li>
-進行中の~fetchを`終了させる$( `中止する^i )
+~IF［
+%制御器 ~NEQ ~NULL
+］
+⇒
+`~fetchを中止する$( %制御器  )
 ◎
-Terminate the ongoing fetch with the aborted flag set.
+If controller is not null, then abort controller.
 </li>
 		</ol>
 	</li>
 	<li>
 <p>
-%要請 を`~fetchする$
+%制御器 ~SET %要請 を`~fetchする$
 — 次を与える下で：
 ◎
 ↓</p>
@@ -19331,7 +19416,8 @@ Terminate the ongoing fetch with the aborted flag set.
 ◎
 Let handleFetchDone given response response be to finalize and report timing with response, globalObject, and "fetch".
 ◎
-Fetch request with processResponseEndOfBody set to handleFetchDone,＼
+Set controller to the result of calling fetch given request,＼
+with processResponseEndOfBody set to handleFetchDone,＼
 </li>
 
 			<li class="algo">
@@ -19358,7 +19444,7 @@ If locallyAborted is true, terminate these substeps.
 %応答 の`中止されたか$rs ~EQ ~T
 ］
 ⇒＃
-`~fetchを中止する$( %~promise, %要請, %~Response~obj )；
+`~fetch~methodを中止する$( %~promise, %要請, %~Response~obj )；
 ~RET
 ◎
 If response’s aborted flag is set, then abort fetch with p, request, and responseObject, and terminate these substeps.
@@ -19397,7 +19483,7 @@ Return p.
 
 <div class="algo">
 <p>
-`~fetchを中止する@
+`~fetch~methodを中止する@
 ときは、所与の
 ( %~promise, %要請, %~Response~obj )
 に対し，次を走らす：
@@ -19471,7 +19557,7 @@ If response’s body is not null and is readable, then error response’s body w
 ~UAは、
 進行中の~fetchを
 — その終了nが~scriptを通して観測-可能にならないならば —
-`終了させ$てもヨイ。
+`終了-$してもヨイ。
 ◎
 The user agent may terminate an ongoing fetch if that termination is not observable through script.
 </p>
@@ -20180,6 +20266,18 @@ useParallelQueue
 Takes a boolean that defaults to false. Indicates where the algorithms passed as arguments will be invoked. Hopefully most standards will not need this.
 </dd>
 </dl>
+
+<p>
+`~fetch$演算を呼出したときは、
+`~fetch制御器$が返される。
+この制御器は、
+すでに開始した~fetch演算に対し［
+利用者や~page~logicにより，その`~fetchを中止する$／
+~browserに内部的な状況下に因り，その`~fetchを終了する$
+］などの動作を遂行するために利用される。
+◎
+When invoked, the fetch operation returns a fetch controller. The controller is used for performing actions on a fetch operation that has already started, such as aborting the operation by the user or page logic, or terminating it due to a browser-internal circumstance.
+</p>
 
 		</section>
 	</section>
