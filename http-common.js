@@ -715,8 +715,6 @@ c.realm:~HTTPsem#realm
 
 部分的な応答:~HTTPsem#status.206
 部分的:~HTTPsem#status.206
-満足可能:~HTTPsem#satisfiable
-	満足不能:~HTTPsem#unsatisfiable
 
 	§#extending
 
@@ -821,8 +819,6 @@ HTTP11:HTTP/1.1
 満足しよ:satisfyしよ:満たそ
 満足する:satisfyする:満たす
 満足でき:satisfyでき:満たせ
-満足可能:satisfiable:~
-	満足可能でない:unsatisfiable
 結付法:associating:結び付け
 見出させ:findさせ:~
 運ばせ:carryさせ::~
