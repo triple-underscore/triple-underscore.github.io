@@ -2381,7 +2381,7 @@ parameter::::パラメタ
 完遂d:finished::完遂
 完了-:complete::~
 完了:completion::~
-取消n:cancellation::取り消し::キャンセル
+取消n:cancelation::取り消し::キャンセル
 取消:cancel::取り消し::キャンセル
 取消す:cancelする::取り消す::キャンセルする
 取消され:cancelされ::取り消され::キャンセルされ
