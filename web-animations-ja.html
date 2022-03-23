@@ -183,8 +183,8 @@ return text;
 
 ●●options
 spec_title:Web Animations
-spec_date:2022-03-11
-trans_update:2022-03-12
+spec_date:2022-03-16
+trans_update:2022-03-23
 source_checked:180416
 original_url:https://drafts.csswg.org/web-animations-1/
 	abbr_url:WANIM
@@ -874,6 +874,7 @@ keyframe:
 	~keyframe~list:keyframes
 schedule::::スケジュール
 	~scheduleし直す:reschedule
+階段:step::~
 
 	~animate可能:animatable
 	~animate不可:not animatable
@@ -1060,6 +1061,7 @@ overhead::::オーバーヘッド
 	を除いて:with the exception
 	when asked to
 	きちんと:well-
+	変更~log:changelog
 
 	●未分類
 fade-out:fade out:::フェードアウト
@@ -3451,15 +3453,6 @@ Displays 'running'
 The procedure to play an animation, animation, given a flag auto-rewind, is as follows:
 </p>
 
-<p class="note">注記：
-%自動で巻戻すか は、
-`CSS-ANIMATIONS-1$r など，［
-この~model上に築かれるが，巻戻しの挙動は要求しない他の仕様
-］用に供される。
-◎
-Note: The auto-rewind flag is provided for other specifications that build on this model but do not require the rewinding behavior, such as CSS Animations [CSS-ANIMATIONS-1].
-</p>
-
 <ol>
 	<li>
 %静止-は中止された ~LET ［
@@ -3475,9 +3468,146 @@ Let aborted pause be a boolean flag that is true if animation has a pending paus
 %処理待ち準備済み~promiseは在るか ~LET ~F
 ◎
 Let has pending ready promise be a boolean flag that is initially false.
-◎
-↓Let seek time be a time value that is initially unresolved.
 </li>
+	<li>
+%~seek時刻 ~LET `未解決$
+◎
+Let seek time be a time value that is initially unresolved.
+</li>
+	<li>
+%現-時刻 ~LET %~animation の`現-時刻$
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%自動で巻戻すか ~EQ `自動で巻戻す^i
+］：
+◎
+If the auto-rewind flag is true, perform the steps corresponding to the first matching condition from the following, if any:
+</p>
+		<ol>
+			<li>
+%実効~再生~rate ~LET %~animation の`実効~再生~rate$
+◎
+↓</li>
+			<li>
+%効果~終端 ~SET %~animation に`結付けられている効果の終端$
+◎
+↓</li>
+			<li>
+<p>
+~IF［
+%実効~再生~rate ~GTE 0
+］~AND［
+次のいずれかが満たされる
+］…：
+◎
+If animation’s effective playback rate ≥ 0, and animation’s current time is either:
+</p>
+				<ul>
+					<li>
+%現-時刻 ~EQ `未解決$
+◎
+unresolved, or
+</li>
+					<li>
+%現-時刻 ~LT 0
+◎
+less than zero, or
+</li>
+					<li>
+%現-時刻 ~GTE %効果~終端
+◎
+greater than or equal to associated effect end,
+</li>
+				</ul>
+<p>
+…ならば
+⇒
+%~seek時刻 ~SET 0
+◎
+Set seek time to zero.
+</p>
+			</li>
+			<li>
+<p>
+~IF［
+%実効~再生~rate ~LT 0
+］~AND［
+次のいずれかが満たされる
+］…：
+◎
+If animation’s effective playback rate &lt; 0, and animation’s current time is either:
+</p>
+				<ul>
+					<li>
+%現-時刻 ~EQ `未解決$
+◎
+unresolved, or
+</li>
+					<li>
+%現-時刻 ~LTE 0
+◎
+less than or equal to zero, or
+</li>
+					<li>
+%現-時刻 ~GT %効果~終端
+◎
+greater than associated effect end,
+</li>
+				</ul>
+<p>
+…ならば：
+</p>
+				<ol>
+					<li>
+~IF［
+%効果~終端 ~EQ 正な無限大
+【この条件は %現-時刻 ~GT %効果~終端 と両立し得ないと思われるが？】
+］
+⇒
+~THROW  `InvalidStateError$E
+◎
+If associated effect end is positive infinity,
+• throw an "InvalidStateError" DOMException and abort these steps.
+</li>
+					<li>
+%~seek時刻 ~SET %効果~終端
+◎
+Otherwise,
+• Set seek time to animation’s associated effect end.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+
+	<li>
+<p>
+~IF［
+%~animation の`開始-時刻$ ~EQ `未解決$
+］~AND［
+%現-時刻 ~EQ `未解決$
+］
+⇒
+%~seek時刻 ~SET 0
+◎
+If the following three conditions are all satisfied:
+• seek time is unresolved, and
+• animation’s start time is unresolved, and
+• animation’s current time is unresolved,
+set seek time to zero.
+</p>
+
+<p class="note">注記：
+この段は、
+%自動で巻戻すか の設定に関わらず，
+この手続-が遊休~animationを再生することを確保する。
+◎
+Note: The above step ensures that this procedure will play an idle animation regardless of the setting of the auto-rewind flag.
+</p>
+	</li>
 	<li>
 %時列線は有限か ~LET ［
 次が満たされるならば ~T ／
@@ -3489,132 +3619,6 @@ Let has pending ready promise be a boolean flag that is initially false.
 ◎
 Let has finite timeline be true if animation has an associated timeline that is not monotonically increasing.
 </li>
-	<li>
-<p>
-%~seek時刻 ~LET 次の下位手続きを走らせた結果：
-◎
-↑</p>
-		<ol>
-			<li>
-%実効~再生~rate ~LET %~animation の`実効~再生~rate$
-◎
-↓</li>
-			<li>
-%現-時刻 ~LET %~animation の`現-時刻$
-◎
-↓</li>
-			<li>
-%効果~終端 ~SET %~animation に`結付けられている効果の終端$
-◎
-↓</li>
-			<li>
-<p>
-~IF［
-%実効~再生~rate ~GT 0
-］~AND［
-%自動で巻戻すか ~EQ `自動で巻戻す^i
-］~AND［
-%現-時刻 は次のいずれかを満たす
-］…：
-◎
-Perform the steps corresponding to the first matching condition from the following, if any:
-◎
-If animation’s effective playback rate &gt; 0, the auto-rewind flag is true and either animation’s:
-</p>
-				<ul>
-					<li>
-%現-時刻 ~EQ `未解決$
-◎
-current time is unresolved, or
-</li>
-					<li>
-%現-時刻 ~LT 0
-◎
-current time &lt; zero, or
-</li>
-					<li>
-%現-時刻 ~GTE %効果~終端
-◎
-current time ≥ associated effect end,
-</li>
-				</ul>
-<p>
-…ならば
-⇒
-~RET 0
-◎
-Set seek time to zero.
-</p>
-			</li>
-			<li>
-<p>
-~IF［
-%実効~再生~rate ~LT 0
-］~AND［
-%自動で巻戻すか ~EQ `自動で巻戻す^i
-］~AND［
-%現-時刻 は次のいずれかを満たす
-］…：
-◎
-If animation’s effective playback rate &lt; 0, the auto-rewind flag is true and either animation’s:
-</p>
-				<ul>
-					<li>
-%現-時刻 ~EQ `未解決$
-◎
-current time is unresolved, or
-</li>
-					<li>
-%現-時刻 ~LTE 0
-◎
-current time ≤ zero, or
-</li>
-					<li>
-%現-時刻 ~GT %効果~終端 【 ~NEQ 正な無限大】
-◎
-current time &gt; associated effect end,
-</li>
-				</ul>
-<p>
-…ならば：
-</p>
-				<ol>
-					<li>
-~IF［
-%効果~終端 ~EQ 正な無限大
-］
-⇒
-~THROW  `InvalidStateError$E
-◎
-If associated effect end is positive infinity,
-• throw an "InvalidStateError" DOMException and abort these steps.
-</li>
-					<li>
-~RET %効果~終端
-◎
-Otherwise,
-• Set seek time to animation’s associated effect end.
-</li>
-				</ol>
-			</li>
-			<li>
-~IF［
-%実効~再生~rate ~EQ 0
-］~AND［
-%現-時刻 ~EQ `未解決$
-］
-⇒
-~RET 0
-◎
-If animation’s effective playback rate = 0 and animation’s current time is unresolved,
-• Set seek time to zero.
-</li>
-			<li>
-~RET `未解決$
-◎
-↑↑</li>
-		</ol>
-	</li>
 	<li>
 <p>
 ~IF［
@@ -5335,18 +5339,33 @@ If animation has a pending play task or a pending pause task,
 ◎
 Note: The different types of pending tasks will apply the pending playback rate when they run so there is no further action required in this case.
 </p>
-
 	</li>
 	<li>
+%現-時刻 ~LET %~animation の`現-時刻$
+◎
+↓</li>
+	<li>
+<p>
 ~IF［
 %以前の再生-状態 ~IN { `遊休中$i, `静止中$i }
+］~OR［
+%現-時刻 ~EQ `未解決$
 ］
 ⇒
 `処理待ち再生~rateがあれば適用する$( %~animation )
 ◎
-If previous play state is idle or paused,
+If previous play state is idle or paused, or animation’s current time is unresolved,
 • Apply any pending playback rate on animation.
-</li>
+</p>
+
+<p class="note">注記：
+上の 2 個目の条件は、
+`稼働中$i にある~animationの`現-時刻$が`未解決$で，`処理待ち再生-~task$も無い場合には、
+以下で再生しようと試みないようにするために要求される。
+◎
+Note: the second condition above is required so that if we have a running animation with an unresolved current time and no pending play task, we do not attempt to play it below.
+</p>
+	</li>
 	<li>
 <p>
 ~ELIF［
@@ -5357,15 +5376,11 @@ If previous play state is finished,
 </p>
 		<ol>
 			<li>
-%旧~現-時刻 ~LET %~animation の`現-時刻$
-◎
-↓</li>
-			<li>
 ~IF［
 `保持-時刻$ ~EQ `未解決$
 ］
 ⇒
-%~animation の`保持-時刻$ ~SET %旧~現-時刻
+%~animation の`保持-時刻$ ~SET %現-時刻
 ◎
 Let the unconstrained current time be the result of calculating the current time of animation substituting an unresolved time value for the hold time.
 </li>
@@ -5379,7 +5394,7 @@ Let the unconstrained current time be the result of calculating the current time
 ］
 ⇒
 %~animation の`開始-時刻$
-~DECBY ( %旧~現-時刻 ~DIV %~animation の`処理待ち再生~rate$ )
+~DECBY ( %現-時刻 ~DIV %~animation の`処理待ち再生~rate$ )
 ◎
 Let animation’s start time be the result of evaluating the following expression:
 • timeline time - (unconstrained current time / pending playback rate)
@@ -9949,7 +9964,7 @@ Thank you also to Michiel "Pomax" Kamermans for help with the equations for a pr
 
 <p>
 放送~animationの制作-時に利用される処理nと技法を，編集者たちに気前よく懇切に手ほどきされた
-<a href="http://www.endemolshine.com.au">Southern Star Animation</a>
+<a href="http://www.endemolshine.com.au" lang="en">Southern Star Animation</a>
 に~~深く感謝する。
 ◎
 Our deep gratitude goes out to Southern Star Animation for their kind generosity and patience in introducing the editors to the processes and techniques used producing broadcast animations.
@@ -9961,19 +9976,37 @@ Our deep gratitude goes out to Southern Star Animation for their kind generosity
 
 <p>
 <a href="~TR/2021/WD-web-animations-1-20210518/">2021年 5月 18日 作業草案</a>
-からの変更点は
-⇒
-まだ無い
+からの変更点は：
 ◎
 The following changes have been made since the 18 May 2021 Working Draft:
-◎
-(None as yet)
 </p>
+<ul>
+	<li>
+`~animationを再生する$手続-を変更した
+— `実効~再生~rate$に関わらず， %自動で巻戻すか を一貫して検査するよう
+（以前は、~rateが 0 のときに検査してなかった）。
+◎
+Changed the procedure to play an animation to consistently check the auto-rewind flag regardless of the effective playback rate. Previously the flag was not checked when the effective playback rate was zero.
+</li>
+	<li>
+`~animationを再生する$手続-を変更した
+— %自動で巻戻すか ~EQ ε のときでも，
+遊休~animationが再生されることを確保するよう。
+◎
+Changed the procedure to play an animation to ensure an idle animation is played even when the auto-rewind flag is false.
+</li>
+	<li>
+`再生~rateを継目無く更新する$手続-を変更した
+— `開始-時刻$が解決された稼働中の~animationは、
+その`現-時刻$が未解決で`処理待ち再生-~task$も無い場合には，再生しようと試みないよう。
+◎
+Changed the procedure to seamlessly update the playback rate so that it does not attempt to play an animation with a resolved start time but an unresolved current time and no pending play task (i.e. a running animation).
+</li>
+</ul>
 
 <p>
-<a href="https://github.com/w3c/csswg-drafts/commits/main/web-animations-1">changelog</a>
-にて、
-より詳細な履歴が供されている。
+より詳細な履歴は、
+<a href="https://github.com/w3c/csswg-drafts/commits/main/web-animations-1">変更~log</a>に供される。
 ◎
 The changelog provides a more detailed history.
 </p>
@@ -10007,12 +10040,12 @@ font-weight property values prior to level 4 are combined as follows:
 <ul>
 	<li>
 `補間$は、［
-`number$t の`補間$を用いて得られた結果
+`number$t の`補間$から得られた結果
 ］を最も近い 100 の倍数に丸めた結果
 — そのような 100 の倍数が 2 つある場合は正な無限大に近い方へ丸めるとする —
 が %結果値 を与えるものとして定義される。
 （すなわち、
-離散的~手続き（100 の倍数）を介して補間する。）
+離散的な階段（100 の倍数）を介して補間する。）
 ◎
 Interpolated via discrete steps (multiples of 100). The interpolation happens in real number space as for &lt;number&gt;s and is converted to an integer by rounding to the nearest multiple of 100, with values halfway between multiples of 100 rounded towards positive infinity.
 </li>
@@ -10080,31 +10113,41 @@ if neither value is visible then discrete animation is used.
 Animation the box-shadow or text-shadow property follows the procedures for combining shadow lists as follows:
 </p>
 
-<ul>
+<div>
+<ol>
 	<li>
-値 `none^v は長さ 0 の~listと扱った上で、
-~list内の各~影に対し，`算出d値による$挙動に従って成分ごとに補間する。
-ただし…
-◎
-Each shadow in the list (treating none as a 0-length list) is interpolated component-wise as with by computed value behavior. However,＼
+値 `none^v は、
+長さ 0 の~listとして扱う。
 </li>
 	<li>
-入力~影に，片方のみ `inset^v を含む~pairが 1 つでもある場合、
-影~list全体に`離散的$な~animationを利用する。
-◎
-if both input shadows are inset or both input shadows are not inset, then the interpolated shadow must match the input shadows in that regard. If any pair of input shadows has one inset and the other not inset, the entire shadow-list uses discrete animation.＼
-</li>
-	<li>
-他の場合，双方の影~listの長さが異なる場合には、
-短い方の~listの末尾に，同じ長さに揃うよう，次のようにされた影たちを付け加える
+双方の影~listの長さが異なる場合
+⇒
+同じ長さに揃うよう、
+短い方の~listの末尾に，次のようにされた影たちを加える
 ⇒＃
-色は `transparent$v,
+`color^t は `transparent$v,
 すべての `length^t 値は `0^v,
-`inset^v の有無は 長い方の~listを成す影のそれに合致する
-◎
-If the lists of shadows have different lengths, then the shorter list is padded at the end with shadows whose color is transparent, all lengths are 0, and whose inset (or not) matches the longer list.
+`inset^v の有無は 長い方の~listを成す対応する影と合致する
 </li>
-</ul>
+	<li>
+双方の影~listを成す対応する影~pairとして，
+`inset^v の有無が合致しないものが 1 つでもある場合
+⇒
+影~list全体に`離散的$な~animationを利用する。
+</li>
+	<li>
+他の場合
+⇒
+~list内の各~影に対し，`算出d値による$挙動に従って成分ごとに補間する。
+</li>
+</ol>
+
+◎
+Each shadow in the list (treating none as a 0-length list) is interpolated component-wise as with by computed value behavior.＼
+However, if both input shadows are inset or both input shadows are not inset, then the interpolated shadow must match the input shadows in that regard.＼
+If any pair of input shadows has one inset and the other not inset, the entire shadow-list uses discrete animation.＼
+If the lists of shadows have different lengths, then the shorter list is padded at the end with shadows whose color is transparent, all lengths are 0, and whose inset (or not) matches the longer list.
+</div>
 
 <p>
 `影~list$aT 値a, 値b の`加算$は、
