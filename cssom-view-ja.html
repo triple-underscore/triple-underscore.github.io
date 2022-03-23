@@ -505,8 +505,8 @@ return;
 ●●options
 
 spec_title:CSSOM View Module
-spec_date:2022-03-19
-trans_update:2022-03-20
+spec_date:2022-03-22
+trans_update:2022-03-23
 source_checked:210802
 page_state_key:CSS
 original_url:https://drafts.csswg.org/cssom-view-1/
@@ -666,6 +666,11 @@ mb.relativeTo:#dom-boxquadoptions-relativeto
 mb.fromBox:#dom-convertcoordinateoptions-frombox
 mb.toBox:#dom-convertcoordinateoptions-tobox
 
+mb.checkAriaHidden:#dom-isvisibleoptions-checkariahidden
+mb.checkInert:#dom-isvisibleoptions-checkinert
+mb.checkOpacity:#dom-isvisibleoptions-checkopacity
+mb.checkVisibilityCSS:#dom-isvisibleoptions-checkvisibilitycss
+
 	mb.screenX:#dom-mouseeventinit-
 	mb.screenY
 	mb.clientX
@@ -709,6 +714,7 @@ p.direction:~CSSWM#propdef-direction
 p.border-left-width:~CSSBG#propdef-border-left-width
 p.border-top-width:~CSSBG#propdef-border-top-width
 p.display:~CSSDISP#propdef-display
+p.opacity:~CSSCOLOR#propdef-opacity
 p.overflow-x:~CSSOVERFLOW3#propdef-overflow-x
 p.overflow-y:~CSSOVERFLOW3#propdef-overflow-y
 p.overflow:~CSSOVERFLOW3#propdef-overflow
@@ -858,6 +864,8 @@ mq.合致-状態:#mediaquerylist-matches-state
 文字大小区別:~INFRA#string-is
 整数として構文解析する:~HTMLcms#rules-for-parsing-integers
 
+不活:~HTMLinteraction#inert
+
 閲覧文脈:~BROWSERS#browsing-context
 補助~閲覧文脈:~BROWSERS#auxiliary-browsing-context
 作動中の文書:~BROWSERS#active-document
@@ -903,9 +911,10 @@ ev.配送-中か:~DOM4#dispatch-flag
 
 閉な~shadowで非可視:~DOM4#concept-closed-shadow-hidden
 
-	●追加
+	●補完
 畳まれて:~DOM4#range-collapsed
 内容が飛ばされ:~CSSCONTAIN#skips-its-contents
+不可視:~CSSDISP#invisible
 
 ●●words_table1
 
@@ -964,6 +973,10 @@ pinch::::ピンチ
 進行中:ongoing:~
 touch::::タッチ
 	複~touch
+不活:inert::~
+隠され:hideされ:~
+ARIA:
+
 	~scrollされる〜:scrolling〜
 	~scroll法:scrolling
 	~~位置
@@ -1011,6 +1024,7 @@ utility::ユーティリティ
 見積もり:estimation:~
 網羅的:exhaustive:~
 誤り:error:~
+単直:straightforward:簡単
 
 	により定義される:-defined
 	詳細:specifics
@@ -1020,6 +1034,7 @@ utility::ユーティリティ
 	~~適度な:not get too 〜
 	ふりをする:masquerade
 	選んで:chooseして
+	任意で選べる:opted into
 
 	●構文
 剥いだ:stripした:~
@@ -1066,6 +1081,8 @@ display::::ディスプレイ
     Elika Etemad. ＜CSS Box Model Module Level 4＞. 21 April 2020. WD. URL: https://www.w3.org/TR/css-box-4/
 [CSS-BREAK-4]
     Rossen Atanassov; Elika Etemad. ＜CSS Fragmentation Module Level 4＞. 18 December 2018. WD. URL: https://www.w3.org/TR/css-break-4/
+[CSS-COLOR-4]
+    Tab Atkins Jr.; Chris Lilley; Lea Verou. ＜CSS Color Module Level 4＞. 15 December 2021. WD. URL: https://www.w3.org/TR/css-color-4/
 [CSS-CONTAIN-2]
     Tab Atkins Jr.; Florian Rivoal; Vladimir Levin. ＜CSS Containment Module Level 2＞. 16 December 2020. WD. URL: https://www.w3.org/TR/css-contain-2/
 [CSS-DEVICE-ADAPT]
@@ -4143,7 +4160,10 @@ dictionary `ScrollIntoViewOptions@I : `ScrollOptions$I {
 };
 
 dictionary `IsVisibleOptions@I {
-
+  `boolean$ `checkAriaHidden@mb = false;
+  `boolean$ `checkInert@mb = false;
+  `boolean$ `checkOpacity@mb = false;
+  `boolean$ `checkVisibilityCSS@mb = false;
 };
 </pre>
 
@@ -4343,49 +4363,92 @@ The following snippet gets the dimensions of the first div element in a document
 </p>
 
 <pre class="lang-js">
-var example = document
+var %example = document
     .getElementsByTagName("div")[0]
     .getBoundingClientRect();
-var exampleWidth = example.width;
-var exampleHeight = example.height;
+var %exampleWidth = %example.width;
+var %exampleHeight = %example.height;
 </pre>
 </div>
 </div>
 
+<p class="note">注記：
+`isVisible()$m ~methodは、
+要素は “可視” になり得るかどうかについて，一群の単純な検査を供する。
+それは，既定では［
+`~box~tree$に基づく，ごく単純かつ単直な~method
+］であるが、
+“可視性” を成す精確な観念として何が欲されるかに依存して，
+いくつかの［
+任意で選べる追加的な検査
+］も許容する。
+◎
+Note: The isVisible() method provides a set of simple checks for whether an element is potentially "visible". It defaults to a very simple and straightforward method based on the box tree, but allows for several additional checks to be opted into, depending on what precise notion of "visibility" is desired.
+</p>
+
 <div class="algo">
 <p>
 `isVisible(options)@m
-~method手続きは：
+~method手続きは、［
+次に挙げるいずれかが満たされるならば ~F ／
+~ELSE_ ~T
+］を返す：
 ◎
 The isVisible(options) method must run these steps, when called on an element this:
 </p>
-<ol>
+<ul>
 	<li>
-~IF［
 コレは`~layout~box$を持たない
-］
-⇒
-~RET ~F
 ◎
 If this does not have an associated layout box, return false.
 </li>
 	<li>
-~IF［
-コレの`~shadowも含む広義-先祖$に［
-その `content-visibility$p は `hidden^v にされたもの
-］は在る
-］
-⇒
-~RET ~F
+コレの`~shadowも含む広義-先祖$であって，
+`content-visibility$p が `hidden^v にされたものが在る
 ◎
 If this, or a shadow-inclusive ancestor of this, has content-visibility: hidden, return false.
 </li>
 	<li>
-~RET ~T
+［
+%options[ "`checkAriaHidden$mb" ] ~EQ ~T
+］~AND［
+コレは<a href="~TR/wai-aria-1.1/#dfn-hidden">隠されている</a>
+（~ARIAのイミで）
+］
+◎
+If the checkAriaHidden dictionary member of options is true, and this is hidden (in the ARIA sense), return false.
+</li>
+	<li>
+［
+%options[ "`checkInert$mb" ] ~EQ ~T
+］~AND［
+コレは`不活$である
+］
+◎
+If the checkInert dictionary member of options is true, and this is inert, return false.
+</li>
+	<li>
+［
+%options[ "`checkOpacity$mb" ] ~EQ ~T
+］~AND［
+コレの`~shadowも含む広義-先祖$であって，
+`opacity$p が `0^v に算出されるものが在る
+］
+◎
+If the checkOpacity dictionary member of options is true, and this, or a shadow-inclusive ancestor of this, has a computed opacity value of 0, return false.
+</li>
+	<li>
+［
+%options[ "`checkVisibilityCSS$mb" ] ~EQ ~T
+］~AND［
+コレは不可視【`不可視$？】である
+］
+◎
+If the checkVisibilityCSS dictionary member of options is true, and this is invisible, return false.
 ◎
 Return true.
 </li>
-</ol>
+</ul>
 </div>
 
 <div class="algo">
