@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2022-04-05
-trans_update:2022-04-06
+spec_date:2022-04-07
+trans_update:2022-04-08
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -381,6 +381,7 @@ p.status-code:~HTTPmsg#p.status-code
 
 	●status code
 st.101:~HTTPsem#status.101
+st.103:~HTTPearlyhints#early-hints
 st.200:~HTTPsem#status.200
 st.204:~HTTPsem#status.204
 st.205:~HTTPsem#status.205
@@ -895,6 +896,7 @@ fP.要請:#fetch-params-request
 fP.~taskの行先:#fetch-params-task-destination
 fP.要請の本体~chunk長さの処理n:#fetch-params-process-request-body
 fP.要請の本体~終了~時の処理n:#fetch-params-process-request-end-of-body
+fP.応答の早期~hintの処理n:#fetch-params-process-early-hints-response
 fP.応答の処理n:#fetch-params-process-response
 fP.応答の本体~終了~時の処理n:#fetch-params-process-response-end-of-body
 fP.応答の本体を消費する処理n:#fetch-params-process-response-consume-body
@@ -917,6 +919,7 @@ fP.~preloadされる応答の候補:#fetch-params-preloaded-response-candidate
 
 V.要請の本体~chunk長さの処理n:#process-request-body
 V.要請の本体~終了~時の処理n:#process-request-end-of-body
+V.応答の早期~hintの処理n:#fetch-processearlyhintsresponse
 V.応答の処理n:#process-response
 V.応答の本体~終了~時の処理n:#fetch-processresponseendofbody
 V.応答の本体を消費する処理n:#process-response-end-of-body
@@ -1123,6 +1126,7 @@ set.付加する:~INFRA#set-append
 条件付き要請:~HTTPsem#conditional-request
 要請~method:~HTTPsem#methods
 内容~符号法:~HTTPsem#content.codings
+状態s~code:~HTTPsem#status-code
 応答~状態s~code:~HTTPsem#status-code
 非最終-応答:~HTTPsem#interim-response
 最終-応答:~HTTPsem#final-response
@@ -1332,6 +1336,7 @@ RFC6454:RFC6454-ja.html
 UPGRADE1:webappsec-upgrade-insecure-requests-ja.html
 	https://w3c.github.io/webappsec-upgrade-insecure-requests/
 FETCH-METADATA:webappsec-fetch-metadata-ja.html
+HTTPearlyhints:http-status-code-103-ja.html
 
 mp_form_data:<code>multipart/form-data</code> 
 form_urlencoded:<code>application/x-www-form-urlencoded</code> 
@@ -1461,6 +1466,7 @@ pipe::::パイプ
 	何もしない:no-op
 	失敗した:not succeed
 	回数:number of times
+	設定しておく:setup
 
 	●URL
 hostname::::ホスト名
@@ -1698,6 +1704,7 @@ helper:
 自由度:freedom:~
 方策:tactics:~
 誂える:tailorする:~
+審査-:vet:~
 
 	用途:usage
 	~~強く:highly
@@ -1975,6 +1982,7 @@ helper:
 	%並列~queueを利用するか:%useParallelQueue
 	%応答:response
 	%応答の処理n:processResponse
+	%応答の早期~hintの処理n:processEarlyHintsResponse
 	%応答の本体~終了~時の処理n:processResponseEndOfBody
 	%応答の本体を消費する処理n:processResponseConsumeBody
 	-:doneAlgorithm
@@ -2474,6 +2482,12 @@ process request body chunk length (default null)
 （既定は ~NULL ）
 ◎
 process request end-of-body (default null)
+</dt>
+	<dt>
+`応答の早期~hintの処理n@fP
+（既定は ~NULL ）
+◎
+process early hints response (default null)
 </dt>
 	<dt>
 `応答の処理n@fP
@@ -4721,7 +4735,7 @@ A default `User-Agent` value is an implementation-defined header value for the `
 `状態s@
 は、
 範囲 { 0 〜 999 } に入る整数である。
-【~HTTPにおける`応答~状態s~code$に対応する。】
+【~HTTPにおける応答の`状態s~code$に対応する。】
 ◎
 A status is an integer in the range 0 to 999, inclusive.
 </p>
@@ -4741,11 +4755,12 @@ Various edge cases in mapping HTTP/1’s status-code to this concept are worked 
 であるとされる
 ⇒＃
 `101$st,
+`103$st,
 `204$st,
 `205$st,
 `304$st
 ◎
-A null body status is a status that is 101, 204, 205, or 304.
+A null body status is a status that is 101, 103, 204, 205, or 304.
 </p>
 
 <p>
@@ -10432,6 +10447,12 @@ The algorithm below defines fetching. In broad strokes, it takes a request and o
 引数をとらない~algo
 </li>
 	<li>
+`応答の早期~hintの処理n@V
+⇒
+~NULL（省略時）／
+`応答$を受容する~algo
+</li>
+	<li>
 `応答の処理n@V
 ⇒
 ~NULL（省略時）／
@@ -10463,6 +10484,7 @@ The algorithm below defines fetching. In broad strokes, it takes a request and o
 To fetch, given a request request,＼
 an optional algorithm processRequestBodyChunkLength,＼
 an optional algorithm processRequestEndOfBody,＼
+an optional algorithm processEarlyHintsResponse,＼
 an optional algorithm processResponse,＼
 an optional algorithm processResponseEndOfBody,＼
 an optional algorithm processResponseConsumeBody,＼
@@ -10470,11 +10492,11 @@ and an optional boolean useParallelQueue (default false),＼
 run the steps below.＼
 If given, processRequestBodyChunkLength must be an algorithm accepting an integer representing the number of bytes transmitted.＼
 If given, processRequestEndOfBody must be an algorithm accepting no arguments.＼
+If given, processEarlyHintsResponse must be an algorithm accepting a response.＼
 If given, processResponse must be an algorithm accepting a response.＼
 If given, processResponseEndOfBody must be an algorithm accepting a response.＼
 If given, processResponseConsumeBody must be an algorithm accepting a response and null, failure, or a byte sequence.
 </div>
-
 <p>
 ~UAは、
 進行中の~fetchを
@@ -10499,15 +10521,40 @@ The user agent may be asked to suspend the ongoing fetch. The user agent may eit
 次のいずれかが満たされる場合、
 ~UAは，`要請$に対する~HTTP~cache内の~entryを更新しない：
 </p>
-
-<ul ><li>要請の`~cache~mode$rq ~EQ `no-store^l
-</li><li>応答の `Cache-Control$h ~header値は `no-store^dir を含む `HTTP-CACHING$r
-</li></ul>
+<ul>
+	<li>
+要請の`~cache~mode$rq ~EQ `no-store^l
+</li>
+	<li>
+応答の `Cache-Control$h ~header値は `no-store^dir を含む `HTTP-CACHING$r
+</li>
+</ul>
 ◎
 The user agent does not update the entry in the HTTP cache for a request if request’s cache mode is "no-store" or a `Cache-Control: no-store` header appears in the response. [HTTP-CACHING]
 </div>
 
 <ol>
+		<li>
+<p>
+~Assert：
+［
+%要請 の`~mode$rq ~EQ `navigate^l
+］~OR［
+%応答の早期~hintの処理n ~EQ ~NULL
+］
+◎
+Assert: request’s mode is "navigate" or processEarlyHintsResponse is null.
+</p>
+
+<p class="note">注記：
+早期~hint
+（ `early hints^en, `応答$のうち，その`状態s$rs ~EQ `103$st なるもの）
+の処理は、
+~navi用に限り審査される。
+◎
+Processing of early hints (responses whose status is 103) is only vetted for navigations.
+</p>
+	</li>
 	<li>
 %~taskの行先 ~LET ~NULL
 ◎
@@ -10570,13 +10617,14 @@ whose start time and post-redirect start time are the coarsened shared current t
 `計時情報$fP ~SET %計時情報,
 `要請の本体~chunk長さの処理n$fP ~SET %要請の本体~chunk長さの処理n
 `要請の本体~終了~時の処理n$fP ~SET %要請の本体~終了~時の処理n,
+`応答の早期~hintの処理n$fP ~SET %応答の早期~hintの処理n,
 `応答の処理n$fP ~SET %応答の処理n,
 `応答の本体を消費する処理n$fP ~SET %応答の本体を消費する処理n,
 `応答の本体~終了~時の処理n$fP ~SET %応答の本体~終了~時の処理n,
 `~taskの行先$fP ~SET %~taskの行先,
 `非同一-生成元~能力は隔離されるか$fP ~SET %非同一-生成元~能力は隔離されるか
 ◎
-Let fetchParams be a new fetch params whose request is request, timing info is timingInfo, process request body chunk length is processRequestBodyChunkLength, process request end-of-body is processRequestEndOfBody, process response is processResponse, process response consume body is processResponseConsumeBody, process response end-of-body is processResponseEndOfBody, task destination is taskDestination, and cross-origin isolated capability is crossOriginIsolatedCapability.
+Let fetchParams be a new fetch params whose request is request, timing info is timingInfo, process request body chunk length is processRequestBodyChunkLength, process request end-of-body is processRequestEndOfBody, process early hints response is processEarlyHintsResponse, process response is processResponse, process response consume body is processResponseConsumeBody, process response end-of-body is processResponseEndOfBody, task destination is taskDestination, and cross-origin isolated capability is crossOriginIsolatedCapability.
 </li>
 	<li>
 ~IF［
@@ -14330,38 +14378,88 @@ When request’s body’s source is null, it means body is created from a Readab
 						</ul>
 </div>
 					</li>
-					<li>
+					<li class="algo">
+<p>
+~WHILE 無条件
+【すなわち、~HTTP~serverから`最終-応答$が返される（または接続が~errorになる）まで，各~HTTP応答に対し以下の手続きを繰返す】
+：
+◎
+While true:
+</p>
+						<ol>
+							<li>
+~IF［
+%計時情報 の`最終-~network応答~開始~時刻$fT ~EQ 0
+］
+⇒
 %計時情報 の`最終-~network応答~開始~時刻$fT ~SET 
-~UAの~HTTP構文解析器が当の応答を成す最初の~byte（例：
-~HTTP2用の~frame~header~byte列／
-~HTTP1x用の応答~状態s行l
-）を受信した直後における，
+~UAの~HTTP構文解析器が当の応答を成す最初の~byte
+（例：~HTTP2用の~frame~header~byte列／~HTTP1x用の応答~状態s行l）
+を受信した直後における，
 `細かさを抑えた共有される現在の時刻$( %~fetch~params の`非同一-生成元~能力は隔離されるか$fP )
 ◎
-Set timingInfo’s final network-response start time to the coarsened shared current time given fetchParams’s cross-origin isolated capability, immediately after the user agent’s HTTP parser receives the first byte of the response (e.g., frame header bytes for HTTP/2 or response status line for HTTP/1.x).
+If timingInfo’s final network-response start time is 0, then set timingInfo’s final network-response start time to coarsened shared current time given fetchParams’s cross-origin isolated capability, immediately after the user agent’s HTTP parser receives the first byte of the response (e.g., frame header bytes for HTTP/2 or response status line for HTTP/1.x).
 </li>
-					<li>
-`~header$すべてが伝送されるまで待機すること。
+							<li>
+~HTTP応答の`~header節$全体が伝送されるまで待機する
 ◎
-Wait until all the headers are transmitted.
+Wait until all the HTTP response headers are transmitted.
 </li>
-					<li>
+							<li>
+%状態s ~LET ~HTTP応答の`状態s~code$
+◎
+Let status be the HTTP response’s status code.
+</li>
+							<li>
 <p>
-`応答$のうち，［
-`状態s$rs ~IN { `100^st, `102^st 〜 `199^st }
-］なるものは、
-無視すること
-— 上で %計時情報 の`最終-~network応答~開始~時刻$fTを設定する目的は除いて。
+~IF［
+%状態s ~IN { `100^st 〜 `199^st }
+］：
 ◎
-Any responses whose status is in the range 100 to 199, inclusive, and is not 101, are to be ignored, except for the purposes of setting timingInfo’s final network-response start time above.
+If status is in the range 100 to 199, inclusive:
 </p>
-
+								<ol>
+									<li>
+~IF［
+%状態s ~EQ `101$st
+］
+⇒
+~BREAK
+◎
+If status is 101, break.
+</li>
+									<li>
+~IF［
+%状態s ~EQ `103$st
+］~AND［
+%~fetch~params の`応答の早期~hintの処理n$fP ~NEQ ~NULL
+］
+⇒
+次を走らす`~fetch~taskを~queueする$( 【 %~taskの行先 は指定されていない】 )
+⇒
+%~fetch~params の`応答の早期~hintの処理n$fP( `応答$ )
+◎
+If status is 103 and fetchParams’s process early hints response is non-null, then queue a fetch task to run fetchParams’s process early hints response, with response.
+</li>
+									<li>
+~CONTINUE
+◎
+Continue.
+</li>
+								</ol>
 <p class="note">注記：
-この種の`応答$【`非最終-応答$】には、
-最終的に， “最終” `応答$【`最終-応答$】が後続する。
+この種の~HTTP応答【`非最終-応答$】には、
+最終的に， “最終” ~HTTP応答【`最終-応答$】が後続する。
 ◎
-These kind of responses are eventually followed by a "final" response.
+These kind of HTTP responses are eventually followed by a "final" HTTP response.
 </p>
+							</li>
+							<li>
+~BREAK
+◎
+Break.
+</li>
+						</ol>
 					</li>
 				</ul>
 
