@@ -32,11 +32,15 @@ source_data.generate = function(){
 //	const section_map = this.section_map;
 
 	return this.html.replace(
-		/`(.+?)([$@\^])(\w*)/g,
+		/%[\w\-~一-鿆あ-ん]+|`(.+?)([$@\^])(\w*)/g,
 		create_html
 	);
 
 	function create_html(match, key, indicator, klass){
+
+if(!key) {//%
+	return `<var>${match.slice(1)}</var>`;
+}
 
 let href = '';
 let href1 = '';
