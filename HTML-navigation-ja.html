@@ -113,7 +113,7 @@ return text;
 ●●options
 
 spec_date:2022-04-14
-trans_update:2022-04-15
+trans_update:2022-04-16
 source_checked:210831
 page_state_key:HTML
 spec_status:LS
@@ -283,6 +283,10 @@ random::::ランダム
 handle:
 休止:suspension::~
 設置-:place:~
+preload:
+commit:
+	~commit済みでない:uncommitted
+早期:early::~
 
 	-:step labeled
 	取消されても:cancelation
@@ -440,6 +444,7 @@ package::::パッケージ
 	表:table
 	当の外部~software:target software
 	過ぎて:past
+	残り続ける:remain
 
 	●変数
 X:
@@ -518,6 +523,10 @@ X:
 	%内部的な結果:internalResult
 	%安全でない~navi開始~時刻:unsafeNavigationStartTime
 	%応答の本体~終了~時の処理n:processResponseEndOfBody
+	%応答の早期~hintの処理n:processEarlyHintsResponse
+	%早期~応答:earlyResponse
+	%~commit済みでない~preload群:uncommittedPreloads
+	%早期~preloadを~commitする:commitEarlyPreload
 
 	●指示語
 最近の:latest:~
@@ -717,6 +726,7 @@ nvP.履歴~取扱い:#navigation-params-hh
 nvP.非同一-生成元~redirectありか:#navigation-params-has-cross-origin-redirects
 nvP.応答の本体~終了~時の処理n:#navigation-params-process-response-end-of-body
 nvP.安全でない開始~時刻:#navigation-params-unsafe-start-time
+nvP.~commit済みでない~preload群:#navigation-params-uncommitted-preloads
 
 履歴を取扱うときの挙動:#history-handling-behavior
 i.既定:#hh-default
@@ -973,6 +983,7 @@ enV.非同一-生成元~能力は隔離されるか？:~WAPI#concept-settings-ob
 ~header~listから値を取得して復号して分割する:~FETCH#concept-header-list-get-decode-split
 ~headerを付加する:~FETCH#concept-header-list-append
 i.応答の処理n:~FETCH#process-response
+i.応答の早期~hintの処理n:~FETCH#fetch-processearlyhintsresponse
 非同一-生成元~資源~施策~検査:~FETCH#cross-origin-resource-policy-check
 要請:~FETCH#concept-request
 ~network~error:~FETCH#concept-network-error
@@ -1030,6 +1041,8 @@ doc.~navi~ID:~HTMLdom#concept-document-navigation-id
 
 共用~宣言的~refresh手続き:~HEmetadata#shared-declarative-refresh-steps
 ~link~header群を処理する:~HEmetadata#process-link-headers
+早期~hint~header群を処理する:~HEmetadata#process-early-hint-headers
+早期~hint:~HEmetadata#early-hints-2
 
 消滅させる:~WEBSOCKET#make-disappear
 強制的に閉じる:~HTMLsse#concept-eventsource-forcibly-close
@@ -1417,6 +1430,25 @@ unsafe start time
 ◎
 a number, representing a value of the unsafe shared current time when the navigation has started
 </dd>
+
+	<dt>
+`~commit済みでない~preload群@nvP
+◎
+uncommitted preloads
+</dt>
+	<dd>
+~NULL ／一群の~algoからなる`~list$
+◎
+null or a list of algorithms＼
+</dd>
+	<dd>
+~listを成す各~algoは、
+早期に~preloadされた~linkを表現する
+— それらは、
+`文書$が作成されたなら，~commitされることになる。
+◎
+representing early preloaded links, to be committed once the document has been created
+</dd>
 </dl>
 
 <p class="note">注記：
@@ -1428,10 +1460,11 @@ Once a navigation params struct is created, this standard does not mutate any of
 
 <p>
 `~session履歴$は、`文書$が作成された後に更新される。
-`履歴を取扱うときの挙動@
-は、［
+［
 ~navi処理nを全体を通して欲される，~session履歴~更新の種別
-］を追跡するために利用され，次のいずれかを値にとる：
+］を追跡するため、
+`履歴を取扱うときの挙動@
+が利用され，次に挙げるいずれかの値をとる：
 ◎
 After Document creation, the session history gets updated. A history handling behavior is used to track the desired type of session history update throughout the navigation process. It is one of the following:
 </p>
@@ -1580,7 +1613,8 @@ Let unsafeNavigationStartTime be the unsafe shared current time.
 %資源 は`~URL$である
 ］
 ⇒
-%資源 ~SET 次のようにされた新たな`要請$
+%資源 ~SET 新たな`要請$
+— その
 ⇒
 `~URL$rq ~SET %資源
 ◎
@@ -1975,7 +2009,8 @@ Let responseOrigin be the result of determining the origin given browsingContext
 Let coop be a new cross-origin opener policy.
 </li>
 	<li>
-%~COOP施行n結果 ~LET 次のようにされた新たな`非同一-生成元~opener施策の施行n結果$
+%~COOP施行n結果 ~LET 新たな`非同一-生成元~opener施策の施行n結果$
+— その
 ⇒＃
 `閲覧文脈~groupの切替nは必要か$cooP ~SET ~F,
 `報告のみに因る閲覧文脈~groupの切替nは必要か$cooP ~SET ~F,
@@ -1998,7 +2033,8 @@ Let coopEnforcementResult be a new cross-origin opener policy enforcement result
 Let policyContainer be the result of determining navigation params policy container given resource's url, historyPolicyContainer, initiatorPolicyContainer, browsingContext's parent browsing context's active document's policy container, and null.
 </li>
 	<li>
-%~navi~params ~LET 次のようにされた新たな`~navi~params$
+%~navi~params ~LET 新たな`~navi~params$
+— その
 ⇒＃
 `~ID$nvP ~SET %~navi~ID,
 `要請$nvP ~SET ~NULL,
@@ -2013,9 +2049,10 @@ Let policyContainer be the result of determining navigation params policy contai
 `履歴~取扱い$nvP ~SET %履歴~取扱い,
 `応答の本体~終了~時の処理n$nvP ~SET %応答の本体~終了~時の処理n,
 `安全でない開始~時刻$nvP ~SET %安全でない~navi開始~時刻,
-`非同一-生成元~redirectありか$nvP ~SET ~F
+`非同一-生成元~redirectありか$nvP ~SET ~F,
+`~commit済みでない~preload群$nvP ~SET ~NULL
 ◎
-Let navigationParams be a new navigation params whose id is navigationId, request is null, response is resource, origin is responseOrigin, policy container is policyContainer, final sandboxing flag set is finalSandboxFlags, cross-origin opener policy is coop, COOP enforcement result is coopEnforcementResult, reserved environment is null, browsing context is browsingContext, history handling is historyHandling, process response end of body is processResponseEndOfBody, unsafe start time is unsafeNavigationStartTime, and has cross-origin redirects is false.
+Let navigationParams be a new navigation params whose id is navigationId, request is null, response is resource, origin is responseOrigin, policy container is policyContainer, final sandboxing flag set is finalSandboxFlags, cross-origin opener policy is coop, COOP enforcement result is coopEnforcementResult, reserved environment is null, browsing context is browsingContext, history handling is historyHandling, process response end of body is processResponseEndOfBody, unsafe start time is unsafeNavigationStartTime, has cross-origin redirects is false, and uncommitted preloads is null.
 </li>
 	<li>
 `~navigate応答を処理する$( %~navi種別, %~downloadは許容されるか, %一過な作動化か, %~navi~params )
@@ -2068,7 +2105,8 @@ Let response be the result of executing a javascript: URL request given resource
 Let finalSandboxFlags be the union of browsingContext's sandboxing flags and response's forced sandboxing flag set.
 </li>
 					<li>
-%~COOP施行n結果 ~LET 次のようにされた新たな`非同一-生成元~opener施策の施行n結果$
+%~COOP施行n結果 ~LET 新たな`非同一-生成元~opener施策の施行n結果$
+— その
 ⇒＃
 `閲覧文脈~groupの切替nは必要か$cooP ~SET ~F,
 `報告のみに因る閲覧文脈~groupの切替nは必要か$cooP ~SET ~F,
@@ -2080,7 +2118,8 @@ Let finalSandboxFlags be the union of browsingContext's sandboxing flags and res
 Let coopEnforcementResult be a new cross-origin opener policy enforcement result whose needs a browsing context group switch is false, would need a browsing context group switch due to report-only is false, url is resource's URL, origin is browsingContext's active document's origin, cross-origin opener policy is browsingContext's active document's cross-origin opener policy, and current context is navigation source is false.
 </li>
 					<li>
-%~navi~params ~LET 次のようにされた新たな`~navi~params$
+%~navi~params ~LET 新たな`~navi~params$
+— その
 ⇒＃
 `~ID$nvP ~SET %~navi~ID,
 `要請$nvP ~SET %資源,
@@ -2095,9 +2134,10 @@ Let coopEnforcementResult be a new cross-origin opener policy enforcement result
 `履歴~取扱い$nvP ~SET %履歴~取扱い,
 `応答の本体~終了~時の処理n$nvP ~SET %応答の本体~終了~時の処理n,
 `安全でない開始~時刻$nvP ~SET %安全でない~navi開始~時刻,
-`非同一-生成元~redirectありか$nvP ~SET ~F
+`非同一-生成元~redirectありか$nvP ~SET ~F,
+`~commit済みでない~preload群$nvP ~SET ~NULL
 ◎
-Let navigationParams be a new navigation params whose id is navigationId, request is resource, response is response, origin is browsingContext's active document's origin, policy container is browsingContext's active document's policy container, final sandboxing flag set is finalSandboxFlags, cross-origin opener policy is browsingContext's active document's cross-origin opener policy, COOP enforcement result is coopEnforcementResult, reserved environment is null, browsing context is browsingContext, history handling is historyHandling, process response end of body is processResponseEndOfBody, unsafe start time is unsafeNavigationStartTime, and has cross-origin redirects is false.
+Let navigationParams be a new navigation params whose id is navigationId, request is resource, response is response, origin is browsingContext's active document's origin, policy container is browsingContext's active document's policy container, final sandboxing flag set is finalSandboxFlags, cross-origin opener policy is browsingContext's active document's cross-origin opener policy, COOP enforcement result is coopEnforcementResult, reserved environment is null, browsing context is browsingContext, history handling is historyHandling, process response end of body is processResponseEndOfBody, unsafe start time is unsafeNavigationStartTime, has cross-origin redirects is false, and uncommitted preloads is null.
 </li>
 					<li>
 `~navigate応答を処理する$( %~navi種別, %~downloadは許容されるか, %一過な作動化か, %~navi~params )
@@ -2247,7 +2287,8 @@ Let responseOrigin be null.
 Let currentContextIsSource be the result of whether browsingContext's active document is same origin with sourceBrowsingContext's active document.
 </li>
 	<li>
-%~COOP施行n結果 ~LET 次のようにされた新たな`非同一-生成元~opener施策の施行n結果$
+%~COOP施行n結果 ~LET 新たな`非同一-生成元~opener施策の施行n結果$
+— その
 ⇒＃
 `閲覧文脈~groupの切替nは必要か$cooP ~SET ~F,
 `報告のみに因る閲覧文脈~groupの切替nは必要か$cooP ~SET ~F,
@@ -2282,6 +2323,11 @@ Let currentURL be request's current URL.
 %非同一-生成元~redirectありか ~LET ~F
 ◎
 Let hasCrossOriginRedirects be false.
+</li>
+	<li>
+%~commit済みでない~preload群 ~LET ~NULL
+◎
+Let uncommittedPreloads be null.
 </li>
 	<li>
 <p id="navigate-redirect-step">
@@ -2340,6 +2386,21 @@ Run the environment discarding steps for request's reserved client.
 ◎
 Set request's reserved client to null.
 </li>
+					<li>
+<p>
+%~commit済みでない~preload群 ~SET ~NULL
+◎
+Set uncommittedPreloads to null.
+</p>
+
+<p class="note">注記：
+`早期~hint$~headerから~preloadされる~linkは、
+`同一-生成元$への~redirectが生じても~preload~cache内に残り続けるが，
+非同一-生成元への~redirectが生じたときは破棄される。
+◎
+Preloaded links from early hint headers remain in the preload cache after a same origin redirect, but get discarded when the redirect is cross-origin.
+</p>
+					</li>
 				</ol>
 			</li>
 			<li>
@@ -2389,7 +2450,8 @@ and topLevelOrigin to parentEnvironment's top-level origin.
 					</li>
 					<li>
 <p>
-%要請 の`予約-済み~client$rq ~SET 次のようにされた新たな`環境$
+%要請 の`予約-済み~client$rq ~SET 新たな`環境$
+— その
 ⇒＃
 `~ID$enV ~SET 一意かつ不透明な文字列,
 `~target閲覧文脈$enV ~SET %B,
@@ -2423,27 +2485,50 @@ The created environment's active service worker is set in the Handle Fetch algor
 If the result of Should navigation request of type be blocked by Content Security Policy? given request and navigationType is "Blocked", then set response to a network error and break. [CSP]
 </li>
 			<li>
+<p>
 ~IF［
 %応答 ~EQ ~NULL
+］：
+</p>
+				<ol>
+					<li>
+<p>
+%要請 を`~fetch$する
+— 次を与える下で：
+</p>
+						<ul>
+							<li class="algo">
+<p>
+`応答の早期~hintの処理n$i ~SET 所与の
+( `応答$ %早期~応答 )
+に対し，次を走らす手続き
+⇒
+~IF［
+%~commit済みでない~preload群 ~EQ ~NULL
 ］
 ⇒
-%応答 ~SET %要請 を用いて`~fetch$した結果
+%~commit済みでない~preload群 ~SET `早期~hint~header群を処理する$( %早期~応答, %要請 の`予約-済み~client$rq )
+</li>
+						</ul>
+					</li>
+				</ol>
+
 ◎
 Otherwise:
 ◎
-If response is null, fetch request.
+If response is null, fetch request, with processEarlyHintsResponse set to the following step given a response earlyResponse: If uncommittedPreloads is null, then set uncommittedPreloads to the result of processing early hint headers given earlyResponse and request's reserved client.
 </li>
 			<li>
 ~ELSE
 ⇒
-%応答 ~SET `~HTTP~redirect~fetch$( %要請, %応答 ) を遂行した結果
+`~HTTP~redirect~fetch$( %要請, %応答 )
 ◎
 Otherwise, perform HTTP-redirect fetch using request and response.
 </li>
 			<li>
-`~network用~task源$上で［
+%応答 ~SET `~network用~task源$からの［
 %応答 に対し`応答の処理n$iを遂行する`~task$
-］を待機する
+］を待機した結果【？】
 ◎
 Wait for the task on the networking task source to process response and set response to the result.
 </li>
@@ -2668,7 +2753,8 @@ Let responsePolicyContainer be the result of creating a policy container from a 
 Let resultPolicyContainer be the result of determining navigation params policy container given response's URL, historyPolicyContainer, initiatorPolicyContainer, null, and responsePolicyContainer.
 </li>
 	<li>
-%~navi~params ~LET 次のようにされた新たな`~navi~params$
+%~navi~params ~LET 新たな`~navi~params$
+— その
 ⇒＃
 `~ID$nvP ~SET %~navi~ID,
 `要請$nvP ~SET %要請,
@@ -2683,9 +2769,10 @@ Let resultPolicyContainer be the result of determining navigation params policy 
 `履歴~取扱い$nvP ~SET %履歴~取扱い,
 `応答の本体~終了~時の処理n$nvP ~SET %応答の本体~終了~時の処理n,
 `安全でない開始~時刻$nvP ~SET %安全でない~navi開始~時刻,
-`非同一-生成元~redirectありか$nvP ~SET %非同一-生成元~redirectありか
+`非同一-生成元~redirectありか$nvP ~SET %非同一-生成元~redirectありか,
+`~commit済みでない~preload群$nvP ~SET %~commit済みでない~preload群
 ◎
-Let navigationParams be a new navigation params whose id is navigationId, request is request, response is response, origin is responseOrigin, policy container is resultPolicyContainer, final sandboxing flag set is finalSandboxFlags, cross-origin opener policy is responseCOOP, COOP enforcement result is coopEnforcementResult, reserved environment is request's reserved client, browsing context is browsingContext, history handling is historyHandling, process response end of body is processResponseEndOfBody, unsafe start time is unsafeNavigationStartTime, and has cross-origin redirects is hasCrossOriginRedirects.
+Let navigationParams be a new navigation params whose id is navigationId, request is request, response is response, origin is responseOrigin, policy container is resultPolicyContainer, final sandboxing flag set is finalSandboxFlags, cross-origin opener policy is responseCOOP, COOP enforcement result is coopEnforcementResult, reserved environment is request's reserved client, browsing context is browsingContext, history handling is historyHandling, process response end of body is processResponseEndOfBody, unsafe start time is unsafeNavigationStartTime, has cross-origin redirects is hasCrossOriginRedirects, and uncommitted preloads is uncommittedPreloads.
 </li>
 	<li>
 `~navigate応答を処理する$( %~navi種別, %~downloadは許容されるか, %一過な作動化か, %~navi~params )
@@ -3318,7 +3405,8 @@ To execute a javascript: URL request, given a request request, a browsing contex
 </p>
 <ol id="concept-js-deref">
 	<li>
-%応答 ~LET 次のようにされた新たな`応答$
+%応答 ~LET 新たな`応答$
+— その
 ⇒
 `状態s$rs ~SET `204$hst
 ◎
@@ -3378,7 +3466,7 @@ Let scriptSource be the UTF-8 decoding of the percent-decoding of encodedScriptS
 ◎
 ↑</li>
 			<li>
-%文書 の`~URL$docを %要請 の`~URL~list$rqに付加する
+%要請 の`~URL~list$rqに %文書 の`~URL$docを`付加する$
 ◎
 Append browsingContext's active document's URL to request's URL list.
 </li>
@@ -3425,7 +3513,8 @@ Let result be undefined if evaluationStatus is an abrupt completion or evaluatio
 `Type$jA( %結果 ) ~EQ `String^jT
 ］
 ⇒
-%応答 ~SET 次のようにされた新たな`応答$
+%応答 ~SET 新たな`応答$
+— その
 ⇒＃
 `~header~list$rs ~SET « ( `Content-Type$h, `text/html;charset=utf-8^bl ) »,
 `本体$rs ~SET `~UTF-8符号化する$( %結果 )
@@ -3605,8 +3694,9 @@ If navigationParams's reserved environment is a non-secure context, then set req
 Let agent be the result of obtaining a similar-origin window agent given navigationParams's origin, browsingContext's group, and requestsOAC.
 </li>
 			<li>
-%~realm実行~文脈 ~LET 次のように~custom化する下で，
+%~realm実行~文脈 ~LET 
 %~agent 内で`新たな~JS~realmを作成する$
+— 次に従って~custom化する下で
 ⇒＃
 大域~obj用に新たな `Window$I ~objを作成する【すなわち， %B にて`作動中の~window$になる】,
 大域 `this^jv 束縛には %B の `WindowProxy$I ~objを利用する
@@ -3839,6 +3929,15 @@ Run the shared declarative refresh steps with document and value.
 We do not currently have a spec for how to handle multiple `Refresh` headers. This is tracked as issue #2900.
 </p>
 	</li>
+	<li>
+%~navi~params の`~commit済みでない~preload群$nvPを成す
+~EACH( %早期~preloadを~commitする )
+に対し
+⇒
+%早期~preloadを~commitする( %文書 )
+◎
+For each commitEarlyPreload in navigationParams's uncommitted preloads, call commitEarlyPreload given document.
+</li>
 	<li>
 `~link~header群を処理する$( %文書, %~navi~params の`応答$nvP, `pre-media^l )
 ◎
@@ -4909,7 +5008,8 @@ When the user agent is to display a user agent page inline, provided a browsing 
 <ol>
 	<li>
 <p>
-%~navi~params ~LET 次のようにされた新たな`~navi~params$
+%~navi~params ~LET 新たな`~navi~params$
+— その
 ⇒＃
 `要請$nvP ~SET ~NULL,
 `応答$nvP ~SET ~NULL†,
@@ -4924,6 +5024,18 @@ When the user agent is to display a user agent page inline, provided a browsing 
 ◎
 Let navigationParams be a new navigation params whose request is null, response is null, origin is a new opaque origin, final sandboxing flag set is an empty set, cross-origin opener policy is a new cross-origin opener policy, COOP enforcement result is a new cross-origin opener policy enforcement result, reserved environment is null, process response end of body is an algorithm that does nothing, unsafe start time is the unsafe shared current time, and browsing context is browsingContext.
 </p>
+
+<p class="trans-note">【
+%~navi~params を成す一部の`~item$sct
+— `~ID$nvP,
+`施策~容器$nvP,
+`履歴~取扱い$nvP,
+`非同一-生成元~redirectありか$nvP,
+`~commit済みでない~preload群$nvP —
+は、
+ここでは設定されていない
+（うち一部は、利用されないからと思われるが）。
+】</p>
 
 <p class="XXX">†
 次の段で~callされる~algoは、 ~NULL にされた`応答$nvPを どう処するか~~指定していない。
@@ -5396,7 +5508,8 @@ If entry's document is null, then:
 Assert: historyHandling is "default".
 </li>
 			<li>
-%要請 ~LET 次のようにされた新たな`要請$
+%要請 ~LET 新たな`要請$
+— その
 ⇒
 `~URL$rq ~SET %~entry の`~URL$shE
 ◎
