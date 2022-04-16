@@ -1122,7 +1122,7 @@ sensitive:
 盗聴:theft:~
 脆弱:vulnerable::~
 署名:signature:~
-露呈-:reveal:露に
+露呈-:reveal:露わに
 中間者:man-in-the-middle::~
 相関-:correlate:~
 相関:correlation:~
