@@ -2064,6 +2064,8 @@ log::::ログ
 実施:practice:~
 実践:practice:~
 実用的:practical:~
+委任-:delegate:~
+委任:delegation:~
 調整-:adjust:~
 調整:adjustment:~
 最適:optimal:~
