@@ -1214,7 +1214,6 @@ redirection::::リダイレクト
 指令-:direct::~
 	directional:
 双方向:bidirectional::~
-主体:party::~
 上流:upstream::~
 下流:downstream::~
 中継:intermediate::~

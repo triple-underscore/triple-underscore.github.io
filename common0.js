@@ -3179,7 +3179,9 @@ sandbox::::サンドボックス
 軽減:mitigation:~
 軽減策:mitigations:~
 安全:safe:~
-第三者主体:third-party::~::サードパーティ
+主体:party::~::パーティ
+第三者-:third-::~::サード
+当事者-:first-::~::ファースト
 阻止-:block::~::ブロック
 敵対的:hostile:~
 
