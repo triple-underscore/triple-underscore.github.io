@@ -1767,6 +1767,11 @@ risk::::リスク
 予約-:reserve:~
 文書化-:document:~
 文書化:documentation:~
+諮る:consultする:~
+諮られ:consultされ:~
+諮っ:consultし:~
+諮れ:consultでき:~
+諮らな:consultしな:~
 
 	●拡張／互換
 version::::バージョン
