@@ -167,7 +167,7 @@ v.any:attr-link-sizes-any
 
 spec_date:2022-04-26
 trans_update:2022-04-27
-source_checked:210309
+source_checked:220426
 page_state_key:HTML
 spec_status:LS
 original_url:https://html.spec.whatwg.org/multipage/links.html
@@ -335,6 +335,7 @@ sc.blob_:~FILEAPI#url
 	廃：~FILEAPI#DefinitionOfScheme
 
 c.text/css:~HTMLindex#text/css
+c.text/vtt:~HTMLindex#text/vtt
 
 	●用語
 外部~資源~link:#external-resource-link
@@ -378,7 +379,7 @@ plE.応答~可用~時の手続き:#preload-on-response-available
 資源を~preloadする:#preload-a-resource
 ~preloadされる資源を消費する:#consume-a-preloaded-resource
 ~preload~keyを作成する:#create-a-preload-key
-
+型は行先に合致するか？:#match-preload-type
 
 	●§
 ~link型:#linkTypes
@@ -593,6 +594,13 @@ rq.~header~list:~FETCH#concept-request-header-list
 
 ~MIME型:~MIMESNIFF#mime-type
 妥当な~MIME型~文字列:~MIMESNIFF#valid-mime-type
+~essence:~MIMESNIFF#mime-type-essence
+~MIME型を構文解析する:~MIMESNIFF#parse-a-mime-type
+~UAにより~supportされて:~MIMESNIFF#supported-by-the-user-agent
+音声／動画~MIME型:~MIMESNIFF#audio-or-video-mime-type
+画像~MIME型:~MIMESNIFF#image-mime-type
+~font~MIME型:~MIMESNIFF#font-mime-type
+~JS~MIME型:~MIMESNIFF#javascript-mime-type
 ~JSON~MIME型:~MIMESNIFF#json-mime-type
 
 ~CSS~pixel:~CSSVAL#px
@@ -667,6 +675,8 @@ modulepreload:
 	%資格証を利用するか:useCredentials
 	%非同一-生成元:crossOrigin
 	%文書~生成元:documentOrigin
+	%型:type
+	%~MIME型~record:mimeTypeRecord
 
 	●link
 Content-Type:
@@ -922,6 +932,8 @@ executable-macro::::実行可能マクロ
 	~~残量／~~能力:power
 側:side:~
 内包-:include::~
+	音声／動画:audio or video
+essence:
 
 	個々の~linkの~click率:click-through-rate
 	〜を含み得る:-capable
@@ -2547,7 +2559,7 @@ Let url be this's url.
 ⇒
 ~RET 空~文字列
 ◎
-If url is null, return the empty string.
+If url is null, then return the empty string.
 </li>
 	<li>
 ~RET `~URL~pathを直列化する$( %~URL )
@@ -6566,16 +6578,32 @@ Return true.
 所与の
 ⇒＃
 `要請$ %要請,
+文字列 %型,
 `応答$を受容する~algo %応答の処理n
 ◎終
 に対し，
+◎
+To preload a resource given a request request, a string type and processResponse, which is an algorithm accepting a response:
+</p>
+<ol>
+	<li>
+~IF［
+`型は行先に合致するか？$( %型, %要請 の`行先$rq ) ~EQ ~F
+］
+⇒
+~RET
+◎
+If type doesn't match request's destination, then return.
+</li>
+	<li>
+<p>
 %要請 を`~fetchする$
 — 次を与える下で：
 ◎
-To preload a resource given a request request and processResponse, which is an algorithm accepting a response: fetch request,＼
+Fetch request,＼
 </p>
-<ul>
-	<li class="algo">
+		<ul>
+			<li class="algo">
 <p>
 `応答の本体を消費する処理n$i ~SET 所与の
 ( `応答$ %応答,
@@ -6585,8 +6613,8 @@ To preload a resource given a request request and processResponse, which is an a
 ◎
 with processResponseConsumeBody set to the following steps given response response and null or byte sequence bytesOrNull:
 </p>
-		<ol>
-			<li>
+				<ol>
+					<li>
 <p>
 ~IF［
 %~byte列または~NULL は`~byte列$である
@@ -6619,22 +6647,134 @@ If bytesOrNull is a byte sequence, then set response's body to the first return 
 ◎
 By using processResponseConsumeBody, we have extracted the entire body. This is necessary to ensure the preloader loads the entire body from the network, regardless of whether the preload will be consumed (which is uncertain at this point). This step then resets the request's body to a new body containing the same bytes, so that other specifications can read from it at the time of actual consumption, despite us having already done so once.
 </p>
-			</li>
-			<li>
+					</li>
+					<li>
 ~ELSE
 ⇒
 %応答 ~SET `~network~error$
 ◎
 Otherwise, set response to a network error.
 </li>
-			<li>
+					<li>
 %応答の処理n( %応答 )
 ◎
 Call processResponse with response.
 </li>
-		</ol>
+				</ol>
+			</li>
+		</ul>
 	</li>
-</ul>
+</ol>
+
+<div class="algo">
+<p>
+上の~algoにて
+`型は行先に合致するか？@
+決定するときは、
+所与の
+( 文字列 %型, 文字列 %行先 )
+に対し：
+◎
+For the purposes of the above algorithm, a string type matches a string destination if the following algorithm returns true:
+</p>
+<ol>
+	<li>
+~IF［
+%型 ~EQ 空~文字列
+］
+⇒
+~RET ~T
+◎
+If type is an empty string, then return true.
+</li>
+	<li>
+~IF［
+%行先 ~EQ `fetch^l
+］
+⇒
+~RET ~T
+◎
+If destination is "fetch", then return true.
+</li>
+	<li>
+%~MIME型~record ~LET `~MIME型を構文解析する$( %型 )
+◎
+Let mimeTypeRecord be the result of parsing type.
+</li>
+	<li>
+~IF［
+%~MIME型~record ~EQ `失敗^i
+］
+⇒
+~RET ~F
+◎
+If mimeTypeRecord is failure, then return false.
+</li>
+	<li>
+~IF［
+%~MIME型~record は`~UAにより~supportされて$いない
+］
+⇒
+~RET ~F
+◎
+If mimeTypeRecord is not supported by the user agent, then return false.
+</li>
+	<li>
+<p>
+下の表の
+~EACH( 行 %行 )
+に対し
+⇒
+~IF［
+%行先 は %行 の 1 列目に挙げる文字列である
+］~AND［
+%~MIME型~record は %行 の 2 列目に与える条件を満たす
+］
+⇒
+~RET ~T
+</p>
+
+<table><thead><tr>
+<th>%行先
+<th>%~MIME型~record
+</thead><tbody>
+
+<tr><td>
+`audio^l, `video^l
+<td>`音声／動画~MIME型$である
+
+<tr><td>`~scriptに類する行先$
+<td>`~JS~MIME型$である
+
+<tr><td>`image^l
+<td>`画像~MIME型$である
+
+<tr><td>`font^l
+<td>`~font~MIME型$である
+
+<tr><td>`style^l
+<td>その`~essence$ ~EQ `text/css$c
+
+<tr><td>`track^l
+<td>その`~essence$ ~EQ `text/vtt$c
+</tbody></table>
+
+◎
+Return true if any of the following conditions are true:
+• destination is "audio" or "video", and mimeTypeRecord is an audio or video MIME type
+• destination is a script-like destination and mimeTypeRecord is a JavaScript MIME type
+• destination is "image" and mimeTypeRecord is an image MIME type
+• destination is "font" and mimeTypeRecord is a font MIME type
+• destination is "style" and mimeTypeRecord's essence is text/css
+• destination is "track" and mimeTypeRecord's essence is text/vtt
+</li>
+	<li>
+~RET ~F
+◎
+Return false.
+</li>
+</ol>
+</div>
 </div>
 
 <div class="algo">
@@ -6743,7 +6883,7 @@ Set request's URL to url.
 	<li>
 %~preload~key ~LET `~preload~keyを作成する$( %要請 )
 ◎
-Let preloadKey be a preload key whose URL is request's URL, destination is request's destination, integrity metadata is request's integrity metadata, mode is request's mode, and credentials mode is request's credentials mode.
+Let preloadKey be the result of creating a preload key given request.
 </li>
 	<li>
 %~preload~entry ~LET 新たな`~preload~entry$
@@ -6764,15 +6904,25 @@ Set el's node document's map of preloaded resources[preloadKey] to preloadEntry.
 ◎
 If el is render-blocking, then block rendering on el.
 </li>
+	<li>
+%型 ~LET ［
+%link は `type$aL 属性を有するならば その値 ／
+~ELSE_ 空~文字列
+］
+◎
+Let type be the empty string.
+◎
+If el has a type attribute, then set type to the value of el's type attribute.
+</li>
 	<li class="algo">
 <p>
-`資源を~preloadする$( %要請, 次の手続き )
+`資源を~preloadする$( %要請, %型, 次の手続き )
 — 手続きは、
 所与の
 ( `応答$ %応答 )
 に対し，次を走らす：
 ◎
-Preload request, with the following steps given response response:
+Preload request, given type and the following steps given response response:
 </p>
 		<ol>
 			<li>
@@ -6802,6 +6952,8 @@ Otherwise, call preloadEntry's on response available with response.
 ］
 ⇒
 `~eventを発火する$( %link, `error$et )
+◎
+If response is a network error, fire an event named error at el.＼
 </li>
 			<li>
 <p>
@@ -6809,7 +6961,7 @@ Otherwise, call preloadEntry's on response available with response.
 ⇒
 `~eventを発火する$( %link, `load$et )
 ◎
-If response is a network error, fire an event named error at el. Otherwise, fire an event named load at el.
+Otherwise, fire an event named load at el.
 </p>
 
 <p class="XXX">
