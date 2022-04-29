@@ -449,7 +449,7 @@ THIS_PAGE: url?
 SPEC_URL:
 options.original_url || '',
 PUB: options.trans_1st_pub ?
-`（公開：<time>${options.trans_1st_pub}</time> ）` : '',
+`（初公表日：<time>${options.trans_1st_pub}</time> ）` : '',
 W3C:
 '<a href="https://www.w3.org/">W3C</a>',
 WHATWG:
