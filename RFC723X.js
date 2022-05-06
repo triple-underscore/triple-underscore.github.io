@@ -1247,7 +1247,6 @@ redirection::::リダイレクト
 
 所在-:locate::~
 経路:path:~
-遠隔:remote::~::リモート
 
 	●未分類
 個人-:personal:~

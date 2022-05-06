@@ -776,7 +776,6 @@ nullable:::null 可能
 変異不能:immutable::~
 
 	●構造
-shadow:
 	~group化する:grouping
 svg:
 	子孫:descendent
@@ -870,9 +869,6 @@ glyph::::グリフ
 red:
 blue:
 green:
-
-背景:background::~
-色:color::~
 色停:color stop::~
 黒:black::~
 白:white::~
@@ -883,7 +879,6 @@ green:
 塗れる:paintできる::~
 塗らな:paintしな::~
 塗ng:painting::塗り
-前景:foreground::~
 後景:backdrop::~
 遮る:obscureする:~
 描く:drawする::~
@@ -928,7 +923,6 @@ WOFF:
 OpenType:
 JPEG:
 PNG:
-遠隔:remote::~::リモート
 multimedia::::マルチメディア
 
 	●仕様

@@ -939,7 +939,7 @@ Util.rxp_wordsX = /\b ((?:<\/[^>]*>)+)|([\u2E80-\u9FFF])(?=(<\w[^>]*>)*\w)/g;
 */
 
 Util.rxp_words1 =
-	/(?:~([\w\-]+|[あ-ん])|~*([\u4E00-\u9FFF]+\w*|[\u30A1-\u30F4ー]+\w*))(-|[あ-ん]{0,2})/g;
+	/(?:~([\w\-]+|[あ-ん])|~*([\u4E00-\u9FFF]+\w*|[\u30A1-\u30F4ー]+\w*))(-|[あ-ん々]{0,2})/g;
 Util.replaceWords1 = (data, mapping) => {
 
 	return data.replace( Util.rxp_words1, (t, en, word, hira) => {
@@ -1343,6 +1343,8 @@ WG:
 
 ●指示語
 特定0の:particular:ある特定の
+個々の:individual:~
+個別に:individualに:~
 自前の:own:~
 複-:multi-:~
 単-:single-:~
@@ -1429,7 +1431,7 @@ scalar::::スカラー
 vector::::ベクター
 素な:plainな::~
 	素な~text:plaintext
-包装-:wrap::~
+単語:word:~
 
 ●幾何
 空間:space:~
@@ -1526,9 +1528,6 @@ vector::::ベクター
 明確化-:clarify:~
 明確化:clarification:~
 表出-:express:~
-	表出-:express:表
-	表出でき:expressでき:表せ
-	表出する:expressする:表す
 言明-:state:~
 言明:statement:~
 説明-:explain:~
@@ -1549,8 +1548,6 @@ vector::::ベクター
 解せ:understandでき:~
 解され:understandされ:~
 解さな:understandしな:~
-解せる:understandできる:~
-解せな:understandできな:~
 理解-:understand:~
 多義的:ambiguous:~
 一義的:unambiguous:~
@@ -1772,6 +1769,7 @@ risk::::リスク
 諮っ:consultし:~
 諮れ:consultでき:~
 諮らな:consultしな:~
+背景0:background:背景
 
 	●拡張／互換
 version::::バージョン
@@ -2627,6 +2625,9 @@ garbage::::ガーベジ
 参照-:reference:~
 
 graph::::グラフ
+shadow:
+平坦:flat::~
+	平坦~化:flatten
 primitive::::プリミティブ
 interface::::インタフェース
 mixin:
@@ -2694,6 +2695,7 @@ node::::ノード
 包含-:contain::~
 内容:content::~
 容器:container:::コンテナ
+包装-:wrap::~
 入子に:nest::入れ子に
 入子な:nestedな::入れ子な
 入子ng:nesting::入れ子
@@ -2757,11 +2759,18 @@ scope::::スコープ
 
 隔離-:isolate::~
 隔離:isolation::~
+分断:break::~
+分断-:break::~
+分断ng:breaking::分断
+分断法:breaking::~
+	分断-不能:unbreakable
+	分断-法:breaking
 分離:separation:~
 分離-:separate:~
 分離子:separator:~
 	〜で分離された:-separated
 	~space等で分離され:space-separated
+別々な:separateな:~
 区切子:delimiter:~
 
 等価:equivalent:~
@@ -3122,6 +3131,7 @@ download::::ダウンロード
 upload::::アップロード
 redirect::::リダイレクト
 referrer::::リファラ
+remote::::リモート
 
 接続-:connect::~
 接続:connection::~
@@ -3264,6 +3274,20 @@ inset::::インセット
 	塊~levelの:block-level
 行l:line::行
 	行-:line-:~
+断片:fragment::~
+断片化-:fragment::~
+断片化:fragmentation::~
+	断片~化:fragmented
+	断片~化:fragmenting
+	断片化-法:fragmenting
+整列-:align::~
+整列:alignment::~
+	整列-法:alignment
+	〜に整列され:-aligned
+	整列-済み:aligned
+色:color::~
+背景:background::~
+前景:foreground::~
 `;
 
 /*
@@ -3339,7 +3363,7 @@ FOO間:inter-FOO
 その他:others
 前者:former
 後者:latter
-別々の:separate
+別々な:separateな:~
 別の:another
 両者／両:both
 ほとんどの:most
@@ -3367,7 +3391,6 @@ FOO間:inter-FOO
 同じ:same
 一致:identical
 各:each
-個々の:individual
 自身:itself
 自身:themselves
 自前の:own
@@ -3378,7 +3401,6 @@ FOO間:inter-FOO
 何であれ:whatever
 何:what
 どの〜も:any
-元の:original
 いずれか:one of
 様々な:various
 種々の:various
