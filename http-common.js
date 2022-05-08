@@ -874,8 +874,6 @@ email:
 	pipe-and-filter:パイプ＆フィルタ
 property::::プロパティ
 	特質
-command::::コマンド
-random::::ランダム
 	render::::レンダー
 	rendering::::レンダリング
 repository::::リポジトリ
@@ -1118,8 +1116,6 @@ escaping::::エスケープ処理
 形式変換-:transform::~
 形式変換:transformation::~
 形式変換ng:transforming::形式変換
-分割-:split:~
-分割:splitting:~
 分解-:decompose:~
 節:section::~::セクション
 
@@ -1327,7 +1323,6 @@ stateful::::ステートフル
 開く:openする::~
 閲覧-:browse:~:::ブラウズ
 閲覧:browsing:~:::ブラウジング
-領域:region:~
 鮮度:freshness::~
 新鮮:fresh::~
 	新鮮~化-:freshen

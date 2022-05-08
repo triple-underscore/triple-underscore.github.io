@@ -800,7 +800,6 @@ span:
 重合しな:overlapしな::重なり合わな
 限界:bounding::~
 限界域:bounds::~
-領域:region::~
 外形線:outline::~
 内域:interior::~
 

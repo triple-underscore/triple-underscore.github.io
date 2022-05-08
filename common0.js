@@ -1432,6 +1432,10 @@ vector::::ベクター
 素な:plainな::~
 	素な~text:plaintext
 単語:word:~
+profile::::プロファイル
+random::::ランダム
+	~random化:randomization／randomize
+command::::コマンド
 
 ●幾何
 空間:space:~
@@ -2874,7 +2878,8 @@ sort::::ソート
 結合:combining::~
 結合n:combination::結合
 結合子:combinator::~
-
+分割-:split:~
+	分割-:divide
 正規化-:normalize::~
 正規化:normalization::~
 生成-:generate::~
@@ -2973,6 +2978,7 @@ hyphen::::ハイフン
 	~hyphen化:hyphenation／:hyphenate
 改行文字:newline::~
 	改行文字:newline character
+数字:digit::~
 token::::トークン
 comment::::コメント
 escape::::エスケープ
@@ -3262,6 +3268,7 @@ inset::::インセット
 配置-:place:~
 配置:placement:~
 区画:area::~
+領域:region::~
 整形-:format::~
 整形:formatting::~
 
