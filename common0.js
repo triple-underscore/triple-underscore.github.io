@@ -1098,7 +1098,7 @@ FINGERPRINTING:<a class="fingerprinting" href="infra-ja.html#tracking-vector" ti
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
 TR:https://www.w3.org/TR
 RFCx:https://www.rfc-editor.org/rfc
-	RFCx:https://tools.ietf.org/html
+	RFCx:https://datatracker.ietf.org/doc/html
 TC39:https://tc39.es/ecma262/multipage/
 INFRA:infra-ja.html
 DOM4:DOM4-ja.html

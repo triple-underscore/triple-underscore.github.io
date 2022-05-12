@@ -1576,8 +1576,8 @@ COMMON_DATA.JA_BASIS = {
 	TR:        'www.w3.org/TR',
 	CSSWG:     'drafts.csswg.org',
 	HTMLLS:    'html.spec.whatwg.org/multipage',
-//	RFCx:      'tools.ietf.org/html',
 	RFCx:      'www.rfc-editor.org/rfc',
+//	RFCx:      'datatracker.ietf.org/doc/html',
 	HTTPWG:    'httpwg.org/specs',
 	suika:     'wiki.suikawiki.org',
 //	default:   ''
