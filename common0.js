@@ -80,7 +80,6 @@ const Util = {
 	collectParts: EMPTY_FUNC, // 今や無用
 	collectDeclaredParts: EMPTY_FUNC,
 	replaceParts: EMPTY_FUNC,
-	collectHtmlCodeList: EMPTY_FUNC,
 
 // common1.js
 	ADDITIONAL_NODES: [],
@@ -142,37 +141,6 @@ Util.parseBlocks = (source) => {
 	return result;
 }
 
-/* HTML 例示コード用 */
-Util.collectHtmlCodeList = (parts) => {
-	if(!parts){
-		parts = Object.create(null);
-	}
-
-	const data = PAGE_DATA.html_code_list;
-	delete PAGE_DATA.html_code_list;
-	const rxp = /■(\S+)(.*)((?:\n.+)+)/g;
-	let m;
-	while(m = rxp.exec(data)){
-		const pre = C('pre');
-		pre.className = 'lang-html' + (m[2] || '');
-		const markup = m[3].trim();
-		if(/[%＜]/.test(markup)){
-			pre.innerHTML = markup
-				.replace(/&/g, '&amp;')
-				.replace(/</g, '&lt;')
-				.replace(/>/g, '&gt;')
-				.replace(/＜/g, '<mark>')
-				.replace(/＞/g, '</mark>')
-				.replace(/%(\w+)/g, '<var>$1</var>')
-				.replace(/％/g, '')
-			;
-		} else {
-			pre.textContent = markup.replace(/％/g, '');
-		}
-		parts['_ex-' + m[1]] = pre;
-	}
-	return parts;
-}
 
 /* 
 'token:word1:word2:word3:...' の形式の各行を
@@ -215,6 +183,32 @@ Util.get_header = (section) => {
 
 Util.collectDeclaredParts = (parts) => {
 	// 既定の収集器
+	if(PAGE_DATA.html_code_list){
+		// HTML 見本コード id="_ex-html-${key}"
+		const data = PAGE_DATA.html_code_list;
+		delete PAGE_DATA.html_code_list;
+		const rxp = /■(\S+)(.*)((?:\n.+)+)/g;
+		let m;
+		while(m = rxp.exec(data)){
+			const pre = C('pre');
+			pre.className = 'lang-html' + (m[2] || '');
+			const markup = m[3].trim();
+			if(/[%＜]/.test(markup)){
+				pre.innerHTML = markup
+					.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;')
+					.replace(/＜/g, '<mark>')
+					.replace(/＞/g, '</mark>')
+					.replace(/%(\w+)/g, '<var>$1</var>')
+					.replace(/％/g, '')
+				;
+			} else {
+				pre.textContent = markup.replace(/％/g, '');
+			}
+			parts['_ex-html-' + m[1]] = pre;
+		}
+	}
 
 	if(PAGE_DATA.images){
 		// 画像データから img を生成
