@@ -6,7 +6,6 @@ const source_data = {
 };
 
 Util.ready = function(){
-//	source_data.section_map = Util.get_mapping(PAGE_DATA.section_map || '');
 	source_data.init();
 
 	Util.switchWordsInit(source_data);
@@ -29,10 +28,10 @@ source_data.generate = function(){
 	const tag_map = this.tag_map;
 	const link_map = this.link_map;
 	const st_phrase = this.st_phrase;
-//	const section_map = this.section_map;
+	const ref_base = this.ref_base || '';
 
 	return this.html.replace(
-		/%[\w\-~一-鿆あ-ん]+|`(.+?)([$@\^])(\w*)/g,
+		/%[\w\-~一-鿆あ-ん]+|`(.+?)([$@\^§])(\w*)/g,
 		create_html
 	);
 
@@ -57,22 +56,15 @@ let tag = tag_map[klass];
 switch(klass){
 case 'r':
 	text = `[${key}]`;
-	href = `#${key}`;
+	href = `${ref_base}#${key}`;
 	break;
-case 'sec':
+case 'rfc':
 	{
-		const keys = key.split('/');
-		const spec = keys[0];
-		const sec = keys[1];
-		if(sec){
-			text = `[${spec}] § ${sec}`;
-			if(spec.slice(0,3) === 'RFC'){
-				href = `~RFCx/rfc${spec.slice(3)}#section-${sec}`;
-			}
-		} else {
-			text = `§ ${spec}`;
+		const [rfc, sec] = key.split('/');
+		if(!sec) {
+			return match;
 		}
-		klass = '';
+		return `<a href="${ref_base}#RFC${rfc}">[RFC${rfc}]</a> <a href="~RFCx/rfc${rfc}#section-${sec}">§ ${sec}</a> `;
 	}
 	break;
 case 'st': // status code
@@ -106,6 +98,9 @@ if(indicator !== '^'){
 	switch(indicator){
 	case '$':
 		text = `<a href="${href}">${text}</a>`;
+		break;
+	case '§':
+		text = ` <a href="${href}">§ ${text}</a> `;
 		break;
 	case '@':
 		text = `<dfn id="${href.slice(1)}">${text}</dfn>`;
