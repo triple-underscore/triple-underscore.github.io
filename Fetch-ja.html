@@ -184,8 +184,8 @@ return (
 ●●options
 
 spec_title:Fetch
-spec_date:2022-05-13
-trans_update:2022-05-14
+spec_date:2022-05-18
+trans_update:2022-05-18
 source_checked:210325
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -593,6 +593,7 @@ m.new Response:#dom-response
 	m.error:#dom-response-error
 	m.redirect:#dom-response-redirect
 	m.status:#dom-response-status
+	m.json:#dom-response-json
 	m.type:#dom-response-type
 	m.url:#dom-response-url
 	m.redirected:#dom-response-redirected
@@ -1051,6 +1052,7 @@ Rq.~Headers:#request-headers
 Rq.通達:#request-signal
 
 ~Response~objを作成する:#response-create
+~Response~objを初期化する:#initialize-a-response
 Rs.応答:#concept-response-response
 Rs.~Headers:#response-headers
 
@@ -1090,6 +1092,7 @@ str.長さ:~INFRA#string-length
 ~forgiving-base64復号する:~INFRA#forgiving-base64-decode
 同型に符号化する:~INFRA#isomorphic-encode
 同型に復号する:~INFRA#isomorphic-decode
+~JS値を~JSON~byte列に直列化する:~INFRA#serialize-a-javascript-value-to-json-bytes
 前後の~ASCII空白~列を剥ぐ:~INFRA#strip-leading-and-trailing-ascii-whitespace
 
 構造体:~INFRA#struct
@@ -1955,6 +1958,7 @@ helper:
 	%読取器:reader
 	%読取n要請:readRequest
 	%~byte列:bs
+	%~byte列:bytes
 	%~error:e
 	%~network区分~key:networkPartitionKey
 	%第二~key:secondKey
@@ -1965,6 +1969,7 @@ helper:
 	%最終-本体:inputOrInitBody
 	%初期~本体:initBody
 	%本体と型:bodyWithType
+	%本体と型:body
 	%型:type
 	%内容~型
 	%~Location~URL:locationURL
@@ -1977,11 +1982,11 @@ helper:
 	%取消~algo:cancelAlgorithm
 	%限界水位:highWaterMark
 	%~size~algo:sizeAlgorithm
-	%~byte列:bytes
 	%~stream:stream
 	%~realm:realm
 	%~Request~obj:requestObject
 	%~Response~obj:responseObject
+	%~Response~obj:response
 	%~cloneした~Request~obj:clonedRequestObject
 	%~cloneした要請:clonedRequest
 	%~cloneした応答~clonedResponse
@@ -2237,7 +2242,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/03c041ea8c2544d7834bf2f6cbe205ebfeb1e923/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/b3bfd0c877fd09da8c315b43cf1dd858f3ac1612/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -3707,7 +3712,7 @@ If list contains name, then set name to the first such header’s name.
 
 <p class="note">注記：
 これは、
- %~list 内に該当する`~header$がすでにあれば，
+%~list 内に該当する`~header$がすでにあれば，
 その`名前$hdの文字大小を再利用させる。
 該当する~headerが複数あれば、
 それらすべての名前は同じ文字大小にされることになる。
@@ -19051,6 +19056,10 @@ interface `Response@I {
       `USVString$ %url,
       optional `unsigned short$ %status = 302
   );
+  [`NewObject$] static `Response$I `json$m(
+      `any$ %data,
+      optional `ResponseInit$I %init = {}
+  );
 
   readonly attribute `ResponseType$I `type$m;
 
@@ -19130,7 +19139,7 @@ A Response object’s body is its response’s body.
 状態s~message,
 ~header~list
 ］は、
- %init により供される。
+%init により供される。
 ◎
 Creates a Response whose body is body, and status, status message, and headers are provided by init.
 </dd>
@@ -19148,6 +19157,19 @@ Creates network error Response.
 — 状態sに %status を伴い， %url へ~redirectするような。
 ◎
 Creates a redirect Response that redirects to url with status status.
+</dd>
+
+	<dt>%response = `Response$I . `json(data, [, init])$m</dt>
+	<dd>
+`Response$I を作成して，その本体を ~JSONに符号化された %~data にする
+— ［
+状態s,
+状態s~message,
+~header~list
+］は、
+%init により供される。
+◎
+Creates a Response whose body is the JSON-encoded data, and status, status message, and headers are provided by init.
 </dd>
 
 	<dt>%response . `type$m</dt>
@@ -19247,14 +19269,15 @@ Return responseObject.
 </ol>
 </div>
 
-<hr>
-
 <div class="algo">
 <p>
-`new Response(body, init)@m
-構築子~手続きは：
+`~Response~objを初期化する@
+ときは、
+所与の
+( `Response$I ~obj %~Response~obj【！response】, `ResponseInit$I %init, `本体と型$ %本体と型【！body】 （省略時は ~NULL ） )
+に対し，次を走らす：
 ◎
-The new Response(body, init) constructor steps are:
+To initialize a response, given a Response object response, ResponseInit init, and an optional body with type body, run these steps:
 </p>
 <ol>
 	<li>
@@ -19277,6 +19300,97 @@ If init["status"] is not in the range 200 to 599, inclusive, then throw a RangeE
 If init["statusText"] does not match the reason-phrase token production, then throw a TypeError.
 </li>
 	<li>
+%応答 ~LET %~Response~obj の`応答$Rs
+◎
+↓</li>
+	<li>
+%応答 の
+⇒＃
+`状態s$rs ~SET %init[ "`status$RsI" ],
+`状態s~message$rs ~SET %init[ "`statusText$RsI" ]
+◎
+Set response’s response’s status to init["status"].
+◎
+Set response’s response’s status message to init["statusText"].
+</li>
+	<li>
+~IF［
+%init[ "`headers$RsI" ] ~NEQ ε
+］
+⇒
+%~Response~obj の`~Headers$Rsを`~objで埋める$( %init[ "`headers$RsI" ] )
+◎
+If init["headers"] exists, then fill response’s headers with init["headers"].
+</li>
+	<li>
+<p>
+~IF［
+%本体と型 ~NEQ ~NULL
+］：
+◎
+If body was given, then:
+</p>
+		<ol>
+			<li>
+<p>
+~IF［
+%応答 の`状態s$rsは`~null本体~状態s$である
+］
+⇒
+~THROW `TypeError$E
+◎
+If response’s status is a null body status, then throw a TypeError.
+</p>
+
+<p class="note">注記：
+`101$st は、
+この段には影響しない
+— それは、
+他所におけるその利用に因り，`~null本体~状態s$に含まれているので。
+◎
+101 is included in null body status due to its use elsewhere. It does not affect this step.
+</p>
+			</li>
+			<li>
+%応答 の`本体$rs ~SET %本体と型 の`本体$bwT
+◎
+Set response’s body to body’s body.
+</li>
+			<li>
+%型 ~LET %本体と型 の`型$bwT
+◎
+↓</li>
+			<li>
+~IF［
+%型 ~NEQ ~NULL
+］~AND［
+%応答 の`~header~list$rs内に［
+`Content-Type$h を`名前に持つ~header$
+］は無い
+］
+⇒
+%応答 の`~header~list$rsに`~headerを付加する$(
+( `Content-Type$h, %型 )
+)
+◎
+If body’s type is non-null and response’s header list does not contain `Content-Type`, then append (`Content-Type`, body’s type) to response’s header list.
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+<hr>
+
+<div class="algo">
+<p>
+`new Response(body, init)@m
+構築子~手続きは：
+◎
+The new Response(body, init) constructor steps are:
+</p>
+<ol>
+	<li>
 %応答 ~LET 新たな`応答$
 ◎
 ↓</li>
@@ -19292,85 +19406,20 @@ Set this’s response to a new response.
 Set this’s headers to a new Headers object with this’s relevant Realm, whose header list is this’s response’s header list and guard is "response".
 </li>
 	<li>
-%応答 の`状態s$rs ~SET %init[ "`status$RsI" ]
+%本体と型 ~LET %body に応じて
+⇒＃
+~NULL ならば ~NULL ／
+~ELSE_ `本体と型を抽出する$( %body )
 ◎
-Set this’s response’s status to init["status"].
+Let bodyWithType be null.
+◎
+If body is non-null, then set bodyWithType to the result of extracting body.
 </li>
 	<li>
-%応答 の`状態s~message$rs ~SET %init[ "`statusText$RsI" ]
+`~Response~objを初期化する$( コレ, %init, %本体と型 )
 ◎
-Set this’s response’s status message to init["statusText"].
+Perform initialize a response given this, init, and bodyWithType.
 </li>
-	<li>
-~IF［
-%init[ "`headers$RsI" ] ~NEQ ε
-］
-⇒
-コレの`~Headers$Rsを`~objで埋める$( %init[ "`headers$RsI" ] )
-◎
-If init["headers"] exists, then fill this’s headers with init["headers"].
-</li>
-	<li>
-<p>
-~IF［
-%body ~NEQ ~NULL
-］：
-◎
-If body is non-null, then:
-</p>
-		<ol>
-			<li>
-<p>
-~IF［
-%init[ "`status$RsI" ] は`~null本体~状態s$である
-］
-⇒
-~THROW `TypeError$E
-◎
-If init["status"] is a null body status, then throw a TypeError.
-</p>
-
-<p class="note">注記：
-`101$st は、
-この段には影響しない
-— それは、
-他所におけるその利用に因り，`~null本体~状態s$に含まれているので。
-◎
-101 is included in null body status due to its use elsewhere. It does not affect this step.
-</p>
-			</li>
-			<li>
-%本体と型 ~LET `本体と型を抽出する$( %body )
-◎
-Let bodyWithType be the result of extracting body.
-</li>
-			<li>
-%応答 の`本体$rs ~SET %本体と型 の`本体$bwT
-◎
-Set this’s response’s body to bodyWithType’s body.
-</li>
-			<li>
-%型 ~LET %本体と型 の`型$bwT
-◎
-Let type be bodyWithType’s type.
-</li>
-			<li>
-~IF［
-%型 ~NEQ ~NULL
-］~AND［
-%応答 の`~header~list$rs内に［
-`Content-Type$h を`名前に持つ~header$
-］は無い
-］
-⇒
-%応答 の`~header~list$rsに`~headerを付加する$(
-( `Content-Type$h, %型 )
-)
-◎
-If type is non-null and this’s response’s header list does not contain `Content-Type`, then append (`Content-Type`, type) to this’s response’s header list.
-</li>
-		</ol>
-	</li>
 </ol>
 </div>
 
@@ -19435,6 +19484,46 @@ Let value be parsedURL, serialized and isomorphic encoded.
 )
 ◎
 Append (`Location`, value) to responseObject’s response’s header list.
+</li>
+	<li>
+~RET %~Response~obj
+◎
+Return responseObject.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`json(data, init)@m
+静的~method手続きは：
+◎
+The static json(data, init) method steps are:
+</p>
+<ol>
+	<li>
+%~byte列 ~LET `~JS値を~JSON~byte列に直列化する$( %data )
+◎
+Let bytes the result of running serialize a JavaScript value to JSON bytes on data.
+</li>
+	<li>
+%本体と型【！body】 ~LET `本体と型を抽出する$( %~byte列 )
+◎
+Let body be the result of extracting bytes.
+</li>
+	<li>
+%~Response~obj ~LET `~Response~objを作成する$( 新たな`応答$, `response^l, コレに`関連な~Realm$ )
+◎
+Let responseObject be the result of creating a Response object, given a new response, "response", and this’s relevant Realm.
+</li>
+	<li>
+%本体と型 の`型$bwT ~SET `application/json^l
+◎
+↓</li>
+	<li>
+`~Response~objを初期化する$( %~Response~obj, %init, %本体と型 )
+◎
+Perform initialize a response given responseObject, init, and (body, "application/json").
 </li>
 	<li>
 ~RET %~Response~obj
@@ -20346,7 +20435,7 @@ Vary: Origin
 `Access-Control-Allow-Origin$h を送信する
 ］よう環境設定されているとする。
 このとき、
- `Vary$h が`利用されない^emと何が起こるか考える。
+`Vary$h が`利用されない^emと何が起こるか考える。
 ~UAが その資源への非`~CORS要請$に対する応答を受信したとき
 （例えば、`~navi要請$の結果として）、
 ~UAは，
@@ -20833,4 +20922,5 @@ This is the Living Standard. Those interested in the patent-review version shoul
 </div>
 
 </div>
+
 
