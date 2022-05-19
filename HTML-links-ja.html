@@ -164,8 +164,8 @@ v.any:attr-link-sizes-any
 
 ●●options
 
-spec_date:2022-05-17
-trans_update:2022-05-17
+spec_date:2022-05-19
+trans_update:2022-05-19
 source_checked:220426
 page_state_key:HTML
 spec_status:LS
@@ -223,6 +223,7 @@ em:em
 ●●words_table1
 
 APPMANIFEST:appmanifest-ja.html
+SRI1:webappsec-subresource-integrity-ja.html
 
 a_area:<code class="element">a</code>|<code class="element">area</code>
 targetB:target
@@ -369,10 +370,10 @@ elm.~URL:#concept-hyperlink-url
 ~preload~key:#preload-key
 plK.~URL:#preload-url
 plK.行先:#preload-destination
-plK.完全性~metadata:#preload-integrity-metadata
 plK.~mode:#preload-mode
 plK.資格証~mode:#preload-credentials-mode
 ~preload~entry:#preload-entry
+plE.完全性~metadata:#preload-integrity-metadata
 plE.応答:#preload-response
 plE.応答~可用~時の手続き:#preload-on-response-available
 資源を~preloadする:#preload-a-resource
@@ -636,6 +637,10 @@ c.import():~TC39#sec-import-calls
 
 内容:~HTTPinfra#message-content
 
+完全性~metadataを構文解析する:~SRI1#parse-metadata
+	:~SRI1#get-the-strongest-metadata
+
+
 ●●words_table
 
 	●処理一般
@@ -647,6 +652,7 @@ modulepreload:
 往来:roundtrip::~
 完結-:finalize::~
 消費:consumption::~
+消費側:consumer::~
 
 	初期化し直す:reinitialise
 	初期化されないまま:uninitialize
@@ -657,12 +663,16 @@ modulepreload:
 	~instance化する〜:instantiator 〜
 	設定-時:setting
 	各回:instances
+	~error含みの:erroneous
+
 	%~hyperlink接尾辞:hyperlinkSuffix
 	%~URL:url
 	%link:el
 	%行先:destination
 	%資格証~mode:credentialsMode
 	%完全性~metadata:integrityMetadata
+	%消費側~完全性~metadata:consumerIntegrityMetadata
+	%~preload完全性~metadata:preloadIntegrityMetadata
 	%応答~可用~時の手続き:onResponseAvailable
 	%~preload群:preloads
 	%~preload~key:preloadKey
@@ -697,7 +707,6 @@ feed::::フィード
 追った:followした::~
 参照先:referenced:~
 検索:lookup:~
-導く:leadする:~
 連列的:sequential::~
 	文書~列:series
 別形式:reformulation:~
@@ -734,7 +743,7 @@ pool::::プール
 	preconnect^en:preconnect
 	~network接続の不確実性:use of unreliable network connectivity
 	~download法:downloading
-
+	要請し直-:re-request
 
 	●保安
 directory::::ディレクトリ
@@ -755,13 +764,15 @@ nonce::::ナンス
 選択的:selective:~
 関心:interest:~
 関心事:interest:~
-	信用-済み:trusted
-	信用-済みでない:untrusted
 警告-:warn:~
 私的:private:~
 騙して:trickして:~
-	知らずに:unknowingly
 無法:nefarious:~
+
+	信用-済み:trusted
+	信用-済みでない:untrusted
+	知らずに:unknowingly
+	悪意的になり得る:potentially-malicious
 
 	●URL
 hostname::::ホスト名
@@ -868,6 +879,9 @@ wiki:
 実現可能:feasible:~
 	実現可能かどうか:feasibility
 能性:potential:~
+導く:leadする:~
+	至らす:lead
+不合致:mistmatch:~
 
 	任意選択で:may
 	特に:no particular
@@ -906,6 +920,7 @@ wiki:
 	該当する:true
 	ことにする:elect
 	委ねられる:deferred to
+	満たされ:apply
 
 	●未分類
 microformats:
@@ -963,8 +978,10 @@ essence:
 
 	-:alter
 	~~後続する:followup
+	後続-:follow
 	通る:go through
 	残り続ける:remain
+	~metadataなし^i:no metadata^c
 
 	●指示語
 一体:全体
@@ -986,6 +1003,7 @@ essence:
 	冒頭部:top part
 	もの:thing
 	後続の:subsequent
+	後で:later
 
 	~~所在から:by looking at where
 	過去の:past
@@ -6426,14 +6444,6 @@ URL
 destination
 </li>
 	<li>
-`完全性~metadata@plK
-⇒
-文字列
-◎
-integrity metadata
-• A string
-</li>
-	<li>
 `~mode@plK
 ⇒
 `~mode$rq ~IN { `same-origin^l, `cors^l, `no-cors^l }
@@ -6460,9 +6470,18 @@ A preload entry is a struct. It has the following items:
 </p>
 <ul>
 	<li>
+`完全性~metadata@plE
+⇒
+文字列
+◎
+integrity metadata
+• A string
+</li>
+	<li>
 `応答@plE
 ⇒
 ~NULL ／`応答$
+【指定されない場合は ~NULL をとる】
 ◎
 response
 • Null or a response
@@ -6474,6 +6493,7 @@ response
 `応答$ ／ ~NULL
 ］を受容する~algo
 ］
+【指定されない場合は ~NULL をとる】
 ◎
 on response available
 • Null, or an algorithm accepting a response or null
@@ -6505,11 +6525,10 @@ To consume a preloaded resource for Window window, given a URL url, a string des
 ⇒＃
 `~URL$plK ~SET %~URL,
 `行先$plK ~SET %行先,
-`完全性~metadata$plK ~SET %完全性~metadata,
 `~mode$plK ~SET %~mode,
 `資格証~mode$plK ~SET %資格証~mode
 ◎
-Let key be a preload key whose URL is url, destination is destination, integrity metadata is integrityMetadata, mode is mode, and credentials mode is credentialsMode.
+Let key be a preload key whose URL is url, destination is destination, mode is mode, and credentials mode is credentialsMode.
 </li>
 	<li>
 %~preload群 ~LET %~window に`結付けられている文書$の`~preloadされる資源~群が成す~map$
@@ -6530,6 +6549,90 @@ If key does not exist in preloads, then return false.
 ◎
 Let entry be preloads[key].
 </li>
+	<li>
+%消費側~完全性~metadata ~LET `完全性~metadataを構文解析する$( %完全性~metadata )
+◎
+Let consumerIntegrityMetadata be the result of parsing integrityMetadata.
+</li>
+	<li>
+%~preload完全性~metadata ~LET `完全性~metadataを構文解析する$( %~entry の`完全性~metadata$plE )
+◎
+Let preloadIntegrityMetadata be the result of parsing entry's integrity metadata.
+</li>
+	<li>
+<p>
+~IF［
+次に挙げる どの条件も満たされない
+］…：
+◎
+If none of the following condition apply:
+</p>
+		<ul>
+			<li>
+%消費側~完全性~metadata ~EQ `~metadataなし^i
+◎
+consumerIntegrityMetadata is no metadata;
+</li>
+			<li>
+<p>
+( %消費側~完全性~metadata, %~preload完全性~metadata )
+は “等しい”
+◎
+consumerIntegrityMetadata is equal to preloadIntegrityMetadata; or
+</p>
+
+<p class="XXX">
+この比較は、
+未知な完全性~optionを無視することになろう。
+<a href="https://github.com/w3c/webappsec-subresource-integrity/issues/116">課題 #116</a>
+を見よ。
+◎
+This comparison would ignore unknown integrity options. See issue #116.
+</p>
+			</li>
+			<li>
+~UAは、
+%~preload完全性~metadata は %消費側~完全性~metadata <a href="~SRI1#get-the-strongest-metadata">より強い</a>ものと決定した
+`SRI$r
+◎
+the user-agent has determined that preloadIntegrityMetadata is stronger than consumerIntegrityMetadata [SRI]
+</li>
+		</ul>
+<p>
+…ならば
+⇒
+~RET ~F
+◎
+then return false.
+</p>
+
+<p class="note">注記：
+%~preload完全性~metadata と %消費側~完全性~metadata の不合致は、
+両方とも当の~dataに合致する場合でも，
+~networkからの追加的な~fetchに至らすことになろう。
+◎
+A mistmatch in integrity metadata between the preload and the consumer, even if both match the data, would lead to an additional fetch from the network.
+</p>
+
+<p class="note">注記：
+~preload要請の結果が`~network~error$になった場合でも，
+それを~preload~cacheに追加することは重要になる
+— 後で~networkから~error含みな応答を要請し直すことにならないよう。
+これには、
+~securityの含意もある：
+ある開発者が、
+~preload要請に対しては下位資源~完全性~metadataを指定しつつ，
+後続する資源~要請【同じ資源への通常の要請】に対しては指定しない事例を考える。
+下位資源の完全性~検証yに失敗した~preload要請を破棄した場合、
+資源~要請は，［
+~networkから悪意的にもなり得る応答を~fetchして、
+その完全性を検証yすることなく消費する
+］ことになる。
+`SRI$r
+◎
+It is important that network errors are added to the preload cache so that if a preload request results in an error, the erroneous response isn't re-requested from the network later. This also has security implications; consider the case where a developer specifies subresource integrity metadata on a preload request, but not the following resource request. If the preload request fails subresource integrity verification and is discarded, the resource request will fetch and consume a potentially-malicious response from the network without verifying its integrity. [SRI]
+</p>
+	</li>
 	<li>
 %~preload群[ %~key ] ~SET ε
 ◎
@@ -6778,11 +6881,10 @@ Return false.
 ⇒＃
 `~URL$plK ~SET %要請 の`~URL$rq,
 `行先$plK ~SET %要請 の`行先$rq,
-`完全性~metadata$plK ~SET %要請 の`完全性~metadata$rq,
 `~mode$plK ~SET %要請 の`~mode$rq,
 `資格証~mode$plK ~SET %要請 の`資格証~mode$rq
 ◎
-To create a preload key for a request request, return a new preload key whose URL is request's URL, destination is request's destination, integrity metadata is request's integrity metadata, mode is request's mode, and credentials mode is request's credentials mode.
+To create a preload key for a request request, return a new preload key whose URL is request's URL, destination is request's destination, mode is request's mode, and credentials mode is request's credentials mode.
 </p>
 </div>
 
@@ -6875,8 +6977,11 @@ Let preloadKey be the result of creating a preload key given request.
 </li>
 	<li>
 %~preload~entry ~LET 新たな`~preload~entry$
+— その
+⇒＃
+`完全性~metadata$plE ~SET %要請 の`完全性~metadata$rq
 ◎
-Let preloadEntry be a new preload entry.
+Let preloadEntry be a new preload entry whose integrity metadata is request's integrity metadata.
 </li>
 	<li>
 %link の`~node文書$の`~preloadされる資源~群が成す~map$[ %~preload~key ] ~SET %~preload~entry
@@ -8057,3 +8162,4 @@ Types defined as extensions in the microformats page for existing rel values wit
 			</section>
 		</section>
 </main>
+
