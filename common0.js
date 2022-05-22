@@ -3057,7 +3057,7 @@ click::::クリック
 label::::ラベル
 button::::ボタン
 mouse::::マウス
-Key:key:::キー
+UIkey:key:::キー
 keyboard::::キーボード
 view::::ビュー
 UIwindow:window:::ウィンドウ
