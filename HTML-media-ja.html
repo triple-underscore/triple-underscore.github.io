@@ -156,8 +156,8 @@ return text;
 
 ●●options
 
-spec_date:2022-05-19
-trans_update:2022-04-02
+spec_date:2022-05-23
+trans_update:2022-05-24
 source_checked:200402
 page_state_key:HTML
 spec_status:LS
@@ -502,6 +502,7 @@ motion::::モーション
 	真中:in the middle
 	音高を保全するよう調整-:pitch-preserving algorithms are used／in effect
 	速めたり遅める:speed up or slow down
+	合致しない:mismatch
 
 	●処理
 looping::::ループ処理
@@ -555,6 +556,7 @@ sniff:
 	%~media終了~時の処理n:processEndOfMedia
 	資源~全体^i:"entire resource"
 	終端まで^i:"until end"
+	結果:values
 
 	●§tracklist
 role:
@@ -1024,6 +1026,8 @@ aM.loop:#attr-media-loop
 aM.muted:#attr-media-muted
 aM.preload:#attr-media-preload
 
+h.Content-Range:~HTTPsem#field.content-range
+h.Range:~HTTPsem#field.range
 
 v.none:#attr-media-preload-none
 v.auto:#attr-media-preload-auto
@@ -1301,7 +1305,7 @@ rs.本体:~FETCH#concept-response-body
 計時を完結して報告する:~FETCH#finalize-and-report-timing
 ~network~error:~FETCH#concept-network-error
 
-内容~範囲~値を抽出する:https://wicg.github.io/background-fetch/#extract-content-range-values
+内容~範囲~値を抽出-:https://wicg.github.io/background-fetch/#extract-content-range-values
 
 文書~内:~DOM4#in-a-document
 属性~値を設定する:~DOM4#concept-element-attributes-set-value
@@ -4653,13 +4657,12 @@ To verify a media response given a response response, a media resource resource,
 <ol>
 	<li>
 ~Assert：
-%~byte範囲 は、［
+%~byte範囲 は、
+次に挙げるいずれかである
+⇒＃
 `資源~全体^i ／
-( 数, ［
-数または `終端まで^i
-］ )
-からなる~tuple
-］である
+( 数, 数 ) からなる~tuple ／
+( 数, `終端まで^i ) からなる~tuple
 ◎
 and "entire resource" or a (number, number or "until end") tuple byteRange:
 </li>
@@ -4688,6 +4691,15 @@ Let internalResponse be response's unsafe response.
 </li>
 	<li>
 ~IF［
+%内部~応答 の`状態s$rs ~EQ `200^hst
+］
+⇒
+~RET ~T
+◎
+If internalResponse's status is 200, then return true.
+</li>
+	<li>
+~IF［
 %内部~応答 の`状態s$rs ~NEQ `206^hst
 ］
 ⇒
@@ -4695,6 +4707,29 @@ Let internalResponse be response's unsafe response.
 ◎
 If internalResponse's status is not 206, then return false.
 </li>
+	<li>
+<p>
+~IF［
+%内部~応答 から`内容~範囲~値を抽出-$した結果 ~EQ `失敗^i
+］
+⇒
+~RET ~F
+◎
+If the result of extracting content-range values from internalResponse is failure, then return false.
+</p>
+
+<p class="note">注記：
+抽出された結果は利用されず、
+特に， %~byte範囲 とは比較されないことに注意。
+なので、
+この段は， `Content-Range$h ~headerの構文上の検証としてしか~serveしない
+— ［
+応答の `Content-Range$h 値, 要請の `Range$h 値
+］による範囲が合致しない場合でも，失敗とは見なされない。
+◎
+Note that the extracted values are not used, and in particular are not compared to byteRange. So this step serves as syntactic validation of the `Content-Range` header, but if the `Content-Range` values on the response mismatch the `Range` values on the request, that is not considered a failure.
+</p>
+	</li>
 	<li>
 %生成元 ~LET %内部~応答 の`~URL$rsに応じて
 ⇒＃
@@ -4772,22 +4807,6 @@ Otherwise, set resource's origin to "multiple".
 This ensures that opaque responses with range headers do not leak information by being patched together with other responses from different origins.
 </p>
 	</li>
-	<li>
-( %始端, %終端 ) ~LET %内部~応答 から`内容~範囲~値を抽出する$
-◎
-Let (start, end) be the result of extracting content-range values from internalResponse.
-</li>
-	<li>
-~IF［
-%始端 ~NEQ %~byte範囲[ 0 ]
-］~OR［
-%~byte範囲[ 1 ] ~NIN { `終端まで^i, %終端 }
-］
-⇒
-~RET ~F
-◎
-If start is not byteRange[0], or if byteRange[1] is neither "until end" or end, return false.
-</li>
 	<li>
 ~RET ~T
 ◎
