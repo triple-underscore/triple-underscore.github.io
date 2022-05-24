@@ -36,7 +36,7 @@ function expand(){
 	const link_map = this.link_map;
 
 	return this.html.replace(
-		/%[\w\-~一-鿆]+|`(.*?)([$@^])(\w*)/g,
+		/%[\w\-~一-鿆あ-ん]+|`(.*?)([$@^])(\w*)/g,
 		create_html
 	);
 
@@ -109,8 +109,8 @@ return text;
 ●●options
 
 spec_title:Permissions
-spec_date:2022-05-09
-trans_update:2022-05-10
+spec_date:2022-05-23
+trans_update:2022-05-24
 source_checked:220214
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/permissions/
@@ -259,6 +259,7 @@ a.allow:~HEembed#attr-iframe-allow
 ~ASCII小文字~化:~INFRA#ascii-lowercase
 ~list:~INFRA#list
 付加する:~INFRA#list-append
+真偽値:~INFRA#boolean
 
 現在の~realm~record:~TC39#current-realm
 ~Realm:~TC39#realm
@@ -349,6 +350,7 @@ permissions0:permissions
 末端利用者:end user:~:::エンドユーザ
 枠組み:framework:~
 略記:shorthand:~
+選択:selection:~
 選択的:selective:~
 選択肢:option:~
 	~~選択肢:choice
@@ -450,6 +452,7 @@ balance::::バランス
 	%~task:task
 	-:tasks
 	%~task源:-
+	%複数を許容するか:allowMultiple
 
 	●許可／保安
 revokeされ::取り消され
@@ -1901,20 +1904,26 @@ As a shorthand, requesting permission to use a DOMString name, is the same as re
 
 <div class="algo">
 <p>
-%記述子 に結付けられている %選択肢~群 の中から一つを
+%記述子 に結付けられている %選択肢~群 の中から一つ以上を
 `選ぶよう利用者に~promptする@
 ときは、
 ~UAは，次の手続きを遂行するモノトスル
-— この~algoは［
-`denied$l ／ %選択肢~群 を成す選択肢のうち一つ
+— この~algoは、
+( `真偽値$ %複数を許容するか ~IN { `複数を許容する^i, ε } （省略時は ε ） )
+もとり，［
+`denied$l ／ 利用者の選択
 ］を返す：
 ◎
-To prompt the user to choose one of several options associated with a descriptor, the user agent must perform the following steps. This algorithm returns either "denied" or one of the options.
+To prompt the user to choose one or more options associated with a given descriptor and an optional boolean allowMultiple (default false), the user agent must perform the following steps. This algorithm returns either "denied" or the user's selection.
 </p>
 <ol>
 	<li>
+%許可~状態 ~LET `許可~状態$( %記述子 )
+◎
+↓</li>
+	<li>
 ~IF［
-`許可~状態$( %記述子 ) ~EQ `denied$l
+%許可~状態 ~EQ `denied$l
 ］
 ⇒
 ~RET `denied$l
@@ -1922,56 +1931,88 @@ To prompt the user to choose one of several options associated with a descriptor
 If descriptor's permission state is "denied", return "denied" and abort these steps.
 </li>
 	<li>
-任意選択で
+任意選択で，利用者に~promptすることなく
 ⇒
 ~IF［
-`許可~状態$( %記述子 ) ~EQ `granted$l
+%許可~状態 ~EQ `granted$l
 ］
 ⇒
-~RET %選択肢~群 を成す選択肢のうち一つ
-— 利用者に~promptすることなく
+~RET %選択肢~群 を成す選択肢のうち［
+%複数を許容するか ~EQ ε ならば一つ ／
+~ELSE_ 一つ以上
+］
 ⇒
 この場合，~UAは、
 後続の同じ
 ( %記述子, 選択肢の集合 )
 から`選ぶよう利用者に~promptする$ときも、
-~UAが`利用者の意図についての新たな情報$を受取っていない限り，同じ選択肢を返すモノトスル。
+~UAが`利用者の意図についての新たな情報$を受取っていない限り，同じ［
+選択肢／選択肢たち
+］を返すモノトスル。
 ◎
-If descriptor's permission state is "granted", the UA may return one of options and abort these steps. If the user agent returns without prompting, then subsequent prompts for the user to choose from the same set of options with the same descriptor must return the same option, unless the user agent receives new information about the user's intent.
+If descriptor's permission state is "granted", the user agent may return one (or more if allowMultiple is true) of options chosen by the user and abort these steps. If the user agent returns without prompting, then subsequent prompts for the user to choose from the same set of options with the same descriptor must return the same option(s), unless the user agent receives new information about the user's intent.
 </li>
 	<li>
 <p>
 利用者に［
-%選択肢~群 から一つの選択肢を選ぶか, 許可を否認するか
-］依頼した上で
-— ~call元~の~algoが［
-~prompt内に含める~extra情報
-］を指定した場合は，それも含めた上で —
-選ばれるまで待機する：
+%選択肢~群 から一つ（以上）の選択肢を選ぶか, 許可を否認するか
+］依頼した上で：
 ◎
-Ask the user to choose one of the options or deny permission, and wait for them to choose. If the calling algorithm specified extra information to include in the prompt, include it.
+Ask the user to choose one or more options or deny permission,＼
 </p>
-		<ul>
+		<ol>
 			<li>
-~RET ［
-利用者は ある選択肢を選んだならば それ ／
-~ELSE_ `denied$l
-］
+利用者が選ぶまで待機する
 ◎
-If the user chooses an option, return it; otherwise return "denied".＼
+and wait for them to choose:
 </li>
 			<li>
+~IF［
+利用者は %選択肢~群 から何も選ばなかった（否認した）
+］
+⇒
+~RET `denied$l
+◎
+↓</li>
+			<li>
+%選択 ~LET 利用者が選んだ一つ（以上）の選択肢
+— ~call元~の~algoが［
+~prompt内に含める~extra情報
+］を指定した場合、
+それも結果に含める
+◎
+If the calling algorithm specified extra information to include in the prompt, include it.
+</li>
+			<li>
+~IF［
+%複数を許容するか ~EQ ε
+］
+⇒
+%選択 を成す選択肢たちを 1 個の~itemに制約する
+◎
+If allowMultiple is false, restrict selection to a single item from options; otherwise, any number may be selected by the user.
+</li>
+			<li>
+<p>
+~RET %選択
+◎
+If the user chooses an option, return it;＼
+↑otherwise return "denied".＼
+</p>
+
+<p>
 利用者から［
 選んだものを，他の~realmにも適用するよう意図する
-］ことが指示された場合は、
+］ことが指示された場合、
 それを，［
-この~realm,
+この`~realm$,
 および`同一-生成元$に属する他の`~realm$
 ］用の`利用者の意図についての新たな情報$として扱うとする。
 ◎
 If the user's interaction indicates they intend this choice to apply to other realms, then treat this this as new information about the user's intent for other realms with the same origin.
-</li>
-		</ul>
+</p>
+			</li>
+		</ol>
 <p class="note">注記：
 ここでの［
 許可~UI ／
@@ -1987,18 +2028,23 @@ This is intentionally vague about the details of the permission UI and how the u
 </p>
 	</li>
 </ol>
+</div>
 
 <p>
-所与の文字列【！DOMString】 %名前 に結付けられている選択肢~群から一つを`選ぶよう利用者に~promptする$とは、
+所与の文字列【！DOMString】 %名前 に結付けられている選択肢~群から［
+一つ／一つ以上
+］を`選ぶよう利用者に~promptする$とは、
 次の略記である
 ⇒
 ［
 `name$mb ~memberが %名前 に設定された`PermissionDescriptor$I 
-］に結付けられている選択肢~群から`選ぶよう利用者に~promptする$
+］に結付けられている選択肢~群から［
+`選ぶよう利用者に~promptする$() ／
+`選ぶよう利用者に~promptする$( `複数を許容する^i )
+］
 ◎
 As a shorthand, prompting the user to choose from options associated with a DOMString name, is the same as prompting the user to choose from those options associated with a PermissionDescriptor with its name member set to name.
 </p>
-</div>
 
 		</section>
 		<section id="reacting-to-revocation">
