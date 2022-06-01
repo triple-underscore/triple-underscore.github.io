@@ -112,8 +112,8 @@ return text;
 
 ●●options
 
-spec_date:2022-05-26
-trans_update:2022-05-27
+spec_date:2022-05-31
+trans_update:2022-06-01
 source_checked:210831
 page_state_key:HTML
 spec_status:LS
@@ -299,6 +299,7 @@ commit:
 	~call元:caller
 	保つ:keep
 	処理-:procesed
+	細かさを抑えた:coarsen
 
 	●UI
 	右~click:right-click
@@ -521,6 +522,7 @@ X:
 	%早期~hintを~commitする:commitEarlyHints
 	%早期~hintを~commitする:-
 	%再帰的か:recursiveFlag
+	%新たな大域~obj:newGlobal
 
 	●指示語
 最近の:latest:~
@@ -952,6 +954,7 @@ enV.~target閲覧文脈:~WAPI#concept-environment-target-browsing-context
 enV.作動中の~sw:~WAPI#concept-environment-active-service-worker
 enV.~API用~基底~URL:~WAPI#api-base-url
 enV.~secureな文脈:~WAPI#secure-context
+enV.非同一-生成元~能力は隔離されるか？:~WAPI#concept-settings-object-cross-origin-isolated-capability
 
 環境を破棄する手続き:~WAPI#environment-discarding-steps
 新たな~JS~realmを作成する:~WAPI#creating-a-new-javascript-realm
@@ -1153,6 +1156,7 @@ jA.Type:~TC39#sec-ecmascript-data-types-and-values
 ~scroll容器:~CSSOVERFLOW3#scroll-container
 
 現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
+細かさを抑えた時刻:~HRTIME#dfn-coarsen-time
 
 ~navi計時~entryを作成する:~NAV-TIMING#dfn-create-the-navigation-timing-entry
 
@@ -4005,9 +4009,9 @@ Let unloadTimingInfo be a new document unload timing info.
 Let previousDocument be sessionHistory's current entry's document.
 </li>
 	<li>
-`文書を~unloadする$( %前-文書, ε, %~unload計時情報 )
+`文書を~unloadする$( %前-文書, ε, %~unload計時情報, %新たな文書 に`関連な大域~obj$ )
 ◎
-Unload previousDocument with unloadTimingInfo.
+Unload previousDocument with unloadTimingInfo and newDocument's relevant global object.
 </li>
 	<li>
 %~navi ~LET この~algoを呼出した`~navi$~algoの~instance
@@ -4025,6 +4029,30 @@ Unload previousDocument with unloadTimingInfo.
 （特に，ここで %~navi が取消されても、一例として，文書や その子孫を~unloadする一部として生じている ~event配送-や~script実行は，中止されない。）
 ◎
 If this instance of the navigation algorithm is canceled while this step is running the unload a document algorithm, then the unload a document algorithm must be allowed to run to completion, but this instance of the navigation algorithm must not run beyond this step. (In particular, for instance, the cancelation of this algorithm does not abort any event dispatch or script execution occurring as part of unloading the document or its descendants.)
+</li>
+	<li>
+<p>
+~IF［
+%新たな文書 の`~event~loop$ ~NEQ %前-文書 の`~event~loop$
+］：
+</p>
+		<ul>
+			<li>
+~UAは、
+次を`並列的$に行ってもヨイ
+⇒
+`文書を~unloadする$( %前-文書 )
+</li>
+			<li>
+この事例では【前項を行うかどうかを問わず？】，~UAは、
+次も【即時に】行うベキである
+⇒
+%~unload計時情報 ~SET ~NULL
+</li>
+		</ul>
+◎
+If newDocument's event loop is not previousDocument's event loop, then the user agent may unload previousDocument in parallel,＼
+In that case, the user agent should set unloadTimingInfo to null.
 </li>
 	<li>
 ~IF［
@@ -6570,11 +6598,12 @@ Return result.
 ⇒＃
 `文書$ %文書,
 %再帰的か ~IN { `再帰的^i, ε }（省略時は ε ）,
-`文書~unload計時情報$または~NULL %~unload計時情報 （省略時は ~NULL ）
+`文書~unload計時情報$または~NULL %~unload計時情報 （省略時は ~NULL ）,
+`大域~obj$ %新たな大域~obj（省略時は ε ）
 ◎終
 に対し，次を走らす：
 ◎
-To unload a Document document, given an optional recursiveFlag and a document unload timing info-or-null unloadTimingInfo (default null):
+To unload a Document document, given an optional recursiveFlag, a document unload timing info-or-null unloadTimingInfo (default null), and an optional global object newGlobal:
 </p>
 <ol>
 	<li>
@@ -6629,20 +6658,33 @@ Update the visibility state of newDocument to "hidden".
 ◎
 ↓</li>
 	<li>
+<p>
 ~IF［
 %~unload計時情報 ~NEQ ~NULL
 ］
 ⇒
-%~unload計時情報 の`~unload~event開始~時刻$ ~SET `現在の高分解能~時刻$( %大域~obj )
+%~unload計時情報 の`~unload~event開始~時刻$ ~SET
+`細かさを抑えた時刻$( `現在の高分解能~時刻$( %新たな大域~obj ), %大域~obj の`非同一-生成元~能力は隔離されるか？$enV )
+</p>
+
+<p class="trans-note">【
+細かさを抑えた時刻は，
+現在の高分解能~時刻の中でも遂行されていて冗長に見えるが、
+2 個目の引数に異なるものを［
+渡すので，必要になる／
+渡して，二重に適用する必要がある
+］。
+次の次の段も同様。
+】</p>
 ◎
-If unloadTimingInfo is not null, then set unloadTimingInfo's unload event start time to the current high resolution time given document's relevant global object.
+If unloadTimingInfo is not null, then set unloadTimingInfo's unload event start time to the current high resolution time given newGlobal, coarsened given document's relevant settings object's cross-origin isolated capability.
 </li>
 	<li>
 ~IF［
 %文書 の`回復可能~状態$doc ~EQ ~F
 ］
 ⇒
-`~eventを発火する$( %文書 に`関連な大域~obj$, `unload$et )
+`~eventを発火する$( %大域~obj, `unload$et )
 — `~targetを上書きする^i 下で
 ◎
 If document's salvageable state is false, then fire an event named unload at document's relevant global object, with legacy target override flag set.
@@ -6652,9 +6694,10 @@ If document's salvageable state is false, then fire an event named unload at doc
 %~unload計時情報 ~NEQ ~NULL
 ］
 ⇒
-%~unload計時情報 の`~unload~event終了~時刻$ ~SET `現在の高分解能~時刻$( %大域~obj )
+%~unload計時情報 の`~unload~event終了~時刻$ ~SET
+`細かさを抑えた時刻$( `現在の高分解能~時刻$( %新たな大域~obj ), %大域~obj の`非同一-生成元~能力は隔離されるか？$enV )
 ◎
-If unloadTimingInfo is not null, then set unloadTimingInfo's unload event end time to the current high resolution time given document's relevant global object.
+If unloadTimingInfo is not null, then set unloadTimingInfo's unload event end time to the current high resolution time given newGlobal, coarsened given document's relevant settings object's cross-origin isolated capability.
 </li>
 	<li>
 `~event~loop$の`終了n入子ng~level$ ~DECBY 1
