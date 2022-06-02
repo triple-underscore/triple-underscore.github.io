@@ -276,6 +276,7 @@ a.http-equiv:#attr-meta-http-equiv
 a.lang:~HTMLdom#attr-lang
 a.manifest:~HTMLobs#attr-html-manifest
 a.name:#attr-meta-name
+a.nonce:~HTMLurl#attr-nonce
 a.rel:~HTMLlinks#attr-hyperlink-rel
 a.target:#attr-base-target
 a.title:~HTMLdom#attr-title
@@ -406,12 +407,14 @@ lO.文書:#link-options-document
 lO.環境:#link-options-environment
 lO.href:#link-options-href
 lO.起動元:#link-options-initiator
-lO.integrity:#link-options-integrity
+lO.完全性~metadata:#link-options-integrity
 lO.文書~準備済み時の手続き:#link-options-on-document-ready
 lO.生成元:#link-options-origin
 lO.施策~容器:#link-options-policy-container
 lO.~source集合:#link-options-source-set
-lO.type:#link-options-type
+lO.~MIME型:#link-options-type
+lO.~referrer施策:#link-options-referrer-policy
+lO.暗号用~nonce~metadata:#link-options-nonce
 ~link~header群を処理する:#process-link-headers
 ~header群から~link群を抽出する:#extract-links-from-headers
 ~link~headerから構文解析した属性~群を~option群に適用する:#apply-link-options-from-parsed-header-attributes
@@ -726,6 +729,8 @@ preload:
 nonce::::ナンス
 ok:
 	阻止される^i:blocked
+	完全性~metadata:integrity
+	~MIME型:type
 
 	●構文
 BOM:
@@ -3689,16 +3694,22 @@ destination (default the empty string)
 initiator (default "link")
 </dt>
 	<dt>
-`integrity@lO
+`完全性~metadata@lO
 （既定は空~文字列）
 ◎
 integrity (default the empty string)
 </dt>
 	<dt>
-`type@lO
+`~MIME型@lO
 （既定は空~文字列）
 ◎
 type (default the empty string)
+</dt>
+	<dt>
+`暗号用~nonce~metadata@lO
+（既定は空~文字列）
+◎
+cryptographic nonce metadata (default the empty string)
 </dt>
 	<dd>
 文字列
@@ -3716,6 +3727,18 @@ crossorigin (default No CORS)
 `~CORS設定群~属性$がとり得る状態
 ◎
 A CORS settings attribute state
+</dd>
+
+	<dt>
+`~referrer施策@lO
+（既定は空~文字列）
+◎
+referrer policy (default the empty string)
+</dt>
+	<dd>
+`~referrer施策$
+◎
+A referrer policy
 </dd>
 
 	<dt>
@@ -3832,12 +3855,14 @@ Let document be el's node document.
 ⇒＃
 `行先$lO ~SET %link の `as$aL 属性の状態 を`行先に翻訳-$した結果,
 `crossorigin$lO ~SET %link の `crossorigin$aL 内容~属性の状態,
+`~referrer施策$lO ~SET %link の `referrerpolicy$aL 内容~属性の状態,
 `~source集合$lO ~SET %link の `~source集合$,
 `基底~URL$lO ~SET %文書 の `~URL$doc,
 `生成元$lO ~SET %文書 の`生成元$doc,
 `環境$lO ~SET %文書 に`関連な設定群~obj$,
 `施策~容器$lO ~SET %文書 の`施策~容器$doc,
-`文書$lO ~SET %文書
+`文書$lO ~SET %文書,
+＊`暗号用~nonce~metadata$lO ~SET %link の `CryptographicNonce$sl 内部~slotの現在の値
 ◎
 Let options be a new link processing options with
 ◎
@@ -3845,6 +3870,8 @@ destination
 • the result of translating the state of el's as attribute
 crossorigin
 • the state of el's crossorigin content attribute
+referrer policy
+• the state of el's referrerpolicy content attribute
 source set
 • el's source set
 base URL
@@ -3857,6 +3884,8 @@ policy container
 • document's policy container
 document
 • document
+cryptographic nonce metadata
+• The current value of el's [[CryptographicNonce]] internal slot
 </li>
 	<li>
 ~IF［
@@ -3872,7 +3901,7 @@ If el has an href attribute, then set options's href to the value of el's href a
 %link は `integrity$aL 属性を有する
 ］
 ⇒
-%~option群 の `integrity$lO ~SET %link の `integrity$aL 属性の値
+%~option群 の`完全性~metadata$lO ~SET %link の `integrity$aL 属性の値
 ◎
 If el has an integrity attribute, then set options's integrity to the value of el's integrity content attribute.
 </li>
@@ -3881,7 +3910,7 @@ If el has an integrity attribute, then set options's integrity to the value of e
 %link は `type$aL 属性を有する
 ］
 ⇒
-%~option群 の `type$lO ~SET %link の `type$a 内容~属性の値
+%~option群 の`~MIME型$lO ~SET %link の `type$aL 内容~属性の値
 ◎
 If el has a type attribute, then set options's type to the value of el's type attribute.
 </li>
@@ -4185,16 +4214,40 @@ If attribs["crossorigin"] exists and is an ASCII case-insensitive match for one 
 %属性~群[ "`integrity$aL" ] ~NEQ ε
 ］
 ⇒
-%~option群 の `integrity$lO ~SET %属性~群[ "`integrity$aL" ]
+%~option群 の`完全性~metadata$lO ~SET %属性~群[ "`integrity$aL" ]
 ◎
 If attribs["integrity"] exists, then set options's integrity to attribs["integrity"].
+</li>
+	<li>
+%~referrer施策 ~LET %属性~群[ "`referrerpolicy$aL" ]
+◎
+↓</li>
+	<li>
+~IF［
+%~referrer施策 ~NEQ ε
+］~AND［
+%~referrer施策 は，`~referrer施策$用のいずれかの値に`~ASCII大小無視$で合致する
+］
+⇒
+%~option群 の`~referrer施策$lO ~SET その`~referrer施策$
+◎
+If attribs["referrerpolicy"] exists and is an ASCII case-insensitive match for some referrer policy, then set options's referrer policy to that referrer policy.
+</li>
+	<li>
+~IF［
+%属性~群[ "`nonce$a" ] ~NEQ ε
+］
+⇒
+%~option群 の`暗号用~nonce~metadata$lO ~SET %属性~群[ "`nonce$a" ]
+◎
+If attribs["nonce"] exists, then set options's nonce to attribs["nonce"].
 </li>
 	<li>
 ~IF［
 %属性~群[ "`type$aL" ] ~NEQ ε
 ］
 ⇒
-%~option群 の `type$lO ~SET %属性~群[ "`type$aL" ]
+%~option群 の`~MIME型$lO ~SET %属性~群[ "`type$aL" ]
 ◎
 If attribs["type"] exists, then set options's type to attribs["type"].
 </li>
