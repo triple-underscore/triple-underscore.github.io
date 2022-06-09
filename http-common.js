@@ -569,8 +569,8 @@ c.realm:~HTTPsem#realm
 ~message:~HTTPinfra#message
 送信者:~HTTPinfra#sender
 受信者:~HTTPinfra#recipient
-	要請:~HTTPinfra#request
-	応答:~HTTPinfra#response
+要請:~HTTPinfra#request
+応答:~HTTPinfra#response
 ~UA:~HTTPinfra#user-agent
 生成元~server:~HTTPinfra#origin-server
 連鎖:~HTTPinfra#chain
@@ -668,7 +668,8 @@ c.realm:~HTTPsem#realm
 	§#context
 期待:~HTTPsem#expectation
 製品~識別子:~HTTPsem#product-identifier
-応答~header:~HTTPsem#response-header
+要請~header:~HTTPsem#request.context
+応答~header:~HTTPsem#response.context
 首な資源:~HTTPsem#primary-resource
 
 	§#authentication
@@ -965,7 +966,6 @@ agent::::エージェント
 準拠-:comply::~
 準拠:compliant::~
 特性:characteristic:~
-位置付け:status:~
 相互運用-:interoperate:~
 相当:substantial:~
 禁制-:prohibit::~
@@ -987,7 +987,6 @@ agent::::エージェント
 補助:help:~
 複雑化-:complicate:~
 表記規約:notational conventions:~
-著作者:author:~
 機会:chance:~
 版:edition:~
 

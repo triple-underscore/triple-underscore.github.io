@@ -1050,7 +1050,6 @@ app:application:::アプリケーション
 衝突:collision:~
 補助:help:~
 複雑化-:complicate:~
-著作者:author:~
 機会:chance:~
 設置-:place:~
 設置しな:placeしな:課さな
@@ -1084,7 +1083,6 @@ app:application:::アプリケーション
 自動化:automated:~
 協調的:collaborative:~
 相違化-:differentiate:区別
-変更管理者:change controller:~
 運用-:operate:~
 運用:operation:~
 運用者:operator:~
