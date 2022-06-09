@@ -315,12 +315,14 @@ REC: 'W3C Recommendation',
 NOTE: 'W3C Working Group Note',
 LS: 'Living Standard',
 IETFPR: 'IETF PROPOSED STANDARD',
+IETFSTD: 'IETF Internet Standard',
+IETFBCP: 'IETF Best Current Practice',
 IETFID: 'IETF Internet-Draft',
 IETFEX: 'IETF Experimental',
 	}[key];
 	if(!text) return;
 
-	const color = { ED: 'red', EDCG: 'orange', IETFPR: 'gray', IETFID: 'green', IETFEX: 'green', LS: 'green' }[key];
+	const color = { ED: 'red', EDCG: 'orange', IETFBCP: 'gray', IETFSTD: 'gray', IETFPR: 'gray', IETFID: 'green', IETFEX: 'green', LS: 'green' }[key];
 	const div = C('div');
 	div.id = '_sideways-logo';
 	if(color) div.style.background = color;
@@ -1813,19 +1815,20 @@ RFC6454=副2           ~ipa/RFC6454JA.html
 RFC6455=副            ~/RFC6455-ja.html
 RFC6901=副            ~/RFC6901-ja.html
 RFC6902=副            ~/RFC6902-ja.html
-HTTP=副               ~/http-common-ja.html#core-specifications●日本語訳（ RFC 7230〜7235, その改訂下にあるバージョン）
+HTTP=副               ~/http-common-ja.html#core-specifications●日本語訳（ RFC 9110〜9112 ）
 RFC7230=副            ~/RFC7230-ja.html
 RFC7231=副            ~/RFC7231-ja.html
 RFC7232=副            ~/RFC7232-ja.html
 RFC7233=副            ~/RFC7233-ja.html
 RFC7234=副            ~/RFC7234-ja.html
 RFC7235=副            ~/RFC7235-ja.html
-RFC7230=副            ~/http-messaging-ja.html●日本語訳（改訂中）
-RFC7231=副            ~/http-semantics-ja.html●日本語訳（改訂中）
-RFC7232=副            ~/http-semantics2-ja.html#conditional.requests●日本語訳（改訂中）
-RFC7233=副            ~/http-semantics2-ja.html#range.requests●日本語訳（改訂中）
-RFC7234=副            ~/http-cache-ja.html●日本語訳（改訂中）
-RFC7235=副            ~/http-semantics2-ja.html#authentication●日本語訳（改訂中）
+RFC7230=副            ~/http-messaging-ja.html●日本語訳（RFC9112）
+RFC7230=副            ~/http-semantics-ja.html●日本語訳（RFC9110）
+RFC7231=副            ~/http-semantics-ja.html●日本語訳（RFC9110）
+RFC7232=副            ~/http-semantics2-ja.html#conditional.requests●日本語訳（RFC9110）
+RFC7233=副            ~/http-semantics2-ja.html#range.requests●日本語訳（RFC9110）
+RFC7234=副            ~/http-cache-ja.html●日本語訳（RFC9111）
+RFC7235=副            ~/http-semantics2-ja.html#authentication●日本語訳（RFC9110）
 RFC7301=副            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
 RFC8259=副            www.asahi-net.or.jp/~ax2s-kmtn/internet/rfc8259j.html
 RFC8941=副            ~/http-structured-fields-ja.html

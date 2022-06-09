@@ -597,6 +597,8 @@ EDCG: '<a href="w3c-standards-types-ja.html#reports">Draft Community Group Repor
 LS: 'Living Standard',
 LD: 'Living Document',
 //IETFPR: 'IETF PROPOSED STANDARD',
+IETFSTD: 'Internet Standard',
+IETFBCP: 'Best Current Practice',
 IETFID: 'Internet Draft',
 				}[status] || status;
 			}
@@ -1468,6 +1470,7 @@ command::::コマンド
 ●仕様レベル
 
 作者:author:~
+著作者:author:~
 利用-:use:~
 利用:use:~
 再利用-:reuse:~
@@ -1482,6 +1485,7 @@ command::::コマンド
 実装定義:implementation-defined:~
 実装-:implement:~
 実装者:implementer:~
+制御者:controller:~
 ヒト:human:人
 
 通常:normal:~
@@ -1789,6 +1793,7 @@ registry::::レジストリ
 後方-:backwards:~
 前方-:forwards:~
 過去互換:quirks:~
+位置付け:status:~
 非推奨に:deprecate:~
 非推奨d:deprecated:非推奨
 	取って代わ:supersede
