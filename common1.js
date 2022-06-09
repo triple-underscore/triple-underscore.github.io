@@ -1815,7 +1815,6 @@ RFC6454=副2           ~ipa/RFC6454JA.html
 RFC6455=副            ~/RFC6455-ja.html
 RFC6901=副            ~/RFC6901-ja.html
 RFC6902=副            ~/RFC6902-ja.html
-HTTP=副               ~/http-common-ja.html#core-specifications●日本語訳（ RFC 9110〜9112 ）
 RFC7230=副            ~/RFC7230-ja.html
 RFC7231=副            ~/RFC7231-ja.html
 RFC7232=副            ~/RFC7232-ja.html
@@ -1833,6 +1832,9 @@ RFC7301=副            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
 RFC8259=副            www.asahi-net.or.jp/~ax2s-kmtn/internet/rfc8259j.html
 RFC8941=副            ~/http-structured-fields-ja.html
 RFC8942=副            ~/http-client-hints-ja.html
+RFC9110=副            ~/http-semantics-ja.html
+RFC9111=副            ~/http-cache-ja.html
+RFC9112=副            ~/http-messaging-ja.html
 SELECTORS4=副         ~/selectors4-ja.html
 SELECTORS3=副         ~mitsue/css3-selectors/
 SELECTORS3=副2        ＃zng.info/specs/css3-selectors.html
@@ -1958,6 +1960,9 @@ CSS3VAL:CSSVALUES3
 CSS3WRITINGMODES:CSSWRITINGMODES3
 CSSOM:CSSOM1
 CSSOMVIEW:CSSOMVIEW1
+HTTP:RFC9110
+HTTPCACHING:RFC9111
+HTTP1:RFC9112
 JSON:RFC8259
 MEDIAQ:MEDIAQUERIES4
 MEDIAQUERIES:MEDIAQUERIES4
