@@ -1126,7 +1126,7 @@ RFC7234:RFC7234-ja.html
 HTTPinfra:http-semantics-ja.html
 HTTPsem:http-semantics2-ja.html
 HTTPcache:http-cache-ja.html
-HTTPmsg:http-messaging-ja.html
+HTTPmsg:http1-ja.html
 HTTPweblink:http-web-linking-ja.html
 HTTPcookie:http-cookie-ja.html
 STRUCTURED-FIELDS:http-structured-fields-ja.html

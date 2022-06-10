@@ -12,7 +12,7 @@ Util.ready = function(){
 
 	PAGE_DATA.ref_data = (PAGE_DATA.ref_data || '') + `
 HTTP=副               ~/http-semantics-ja.html
-HTTP11=副             ~/http-messaging-ja.html
+HTTP11=副             ~/http1-ja.html
 CACHING=副            ~/http-cache-ja.html
 `
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
