@@ -751,7 +751,6 @@ COMMON_DATA.words_table1 += `
 ●●words_table1
 
 RFC8246:http-immutable-response-ja.html
-RFC7538:http-status-code-308-ja.html
 HTTPpatch:http-patch-ja.html
 HTTPearlyhints:http-status-code-103-ja.html
 
