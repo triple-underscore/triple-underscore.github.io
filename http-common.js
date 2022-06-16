@@ -494,36 +494,6 @@ p.Expires:~HTTPcache#p.Expires
 p.cache-directive:~HTTPcache#p.cache-directive
 p.delta-seconds:~HTTPcache#p.delta-seconds
 
-	//Messaging
-p.HTTP-message:~HTTPmsg#p.HTTP-message
-p.HTTP-name:~HTTPmsg#p.HTTP-name
-p.HTTP-version:~HTTPmsg#p.HTTP-version
-p.Transfer-Encoding:~HTTPmsg#p.Transfer-Encoding
-
-p.absolute-form:~HTTPmsg#p.absolute-form
-p.asterisk-form:~HTTPmsg#p.asterisk-form
-p.authority-form:~HTTPmsg#p.authority-form
-p.chunk:~HTTPmsg#p.chunk
-p.chunk-data:~HTTPmsg#p.chunk-data
-p.chunk-ext:~HTTPmsg#p.chunk-ext
-p.chunk-ext-name:~HTTPmsg#p.chunk-ext-name
-p.chunk-ext-val:~HTTPmsg#p.chunk-ext-val
-p.chunk-size:~HTTPmsg#p.chunk-size
-p.chunked-body:~HTTPmsg#p.chunked-body
-p.field-line:~HTTPmsg#p.field-line
-p.last-chunk:~HTTPmsg#p.last-chunk
-p.message-body:~HTTPmsg#p.message-body
-	p.method:~HTTPmsg#p.method
-p.obs-fold:~HTTPmsg#p.obs-fold
-p.origin-form:~HTTPmsg#p.origin-form
-p.reason-phrase:~HTTPmsg#p.reason-phrase
-p.request-line:~HTTPmsg#p.request-line
-p.request-target:~HTTPmsg#p.request-target
-p.start-line:~HTTPmsg#p.start-line
-p.status-code:~HTTPmsg#p.status-code
-p.status-line:~HTTPmsg#p.status-line
-p.trailer-section:~HTTPmsg#p.trailer-section
-
 	●code 他
 c.http:~HTTPinfra#http.uri
 c.https:~HTTPinfra#https.uri
