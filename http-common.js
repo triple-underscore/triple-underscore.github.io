@@ -992,7 +992,6 @@ agent::::エージェント
 設置-:place:~
 設置しな:placeしな:課さな
 設置する:placeする:課す
-承認-:acknowledge:~
 誤解:mistake:~
 責務:responsibility:~
 開示-:disclose:~
@@ -1023,7 +1022,6 @@ agent::::エージェント
 再試行:retry::~
 再試行-:retry::~
 	再試行-法:retrying
-過度の:excessiveな:~
 確約-:assure:~
 メモ:memo:::~
 稀:rare:~
