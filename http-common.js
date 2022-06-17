@@ -553,6 +553,7 @@ c.realm:~HTTPsem#realm
 内方:~HTTPinfra#inbound
 外方:~HTTPinfra#outbound
 ~proxy:~HTTPinfra#proxy
+横取n~proxy:~HTTPinfra#interception-proxy
 ~gateway:~HTTPinfra#gateway
 ~tunnel:~HTTPinfra#tunnel
 ~stateless:~HTTPinfra#stateless
@@ -855,7 +856,6 @@ minor::::副:マイナー
 尾部:trailing:~
 頭部:leading:~
 巨大:large:~
-広範:wide:~
 非最終-:interim:~
 最終-:final:~
 近過去:recent::~
@@ -905,10 +905,8 @@ agent::::エージェント
 堅牢性:robustness:~
 図:figure:~
 増強-:enhance:~
-古い:older:~
 可用性:availability:~
 不可能:impossible:~
-	無効化-／無力化:disable:無効化
 同義語:synonym:~
 大概は:presumableに:~
 実用性:practicality:~
@@ -1145,6 +1143,7 @@ redirection::::リダイレクト
 
 所在-:locate::~
 経路:path::~
+横取n:interception::横取り
 
 	●未分類
 root::::ルート
