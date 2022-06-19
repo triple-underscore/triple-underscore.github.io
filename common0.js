@@ -1510,6 +1510,7 @@ command::::コマンド
 編集者:editor:~
 編集上の:editorialな:~
 情報:information:~
+	〜情報:〜 info
 導入-:introduce:~
 序論:introduction:~
 概観:overview:~
