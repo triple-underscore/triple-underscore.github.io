@@ -1555,7 +1555,7 @@ COMMON_DATA.INDEX_KEYS =`
 IDL:pre.idl
 プロパティ:.propdef
 記述子:.descdef
-ABNF:pre.ABNF
+構文:pre.bnf,pre.prod
 訳注:.trans-note
 `;
 
