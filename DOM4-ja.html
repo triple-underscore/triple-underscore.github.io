@@ -267,8 +267,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2022-06-20
-trans_update:2022-05-13
+spec_date:2022-06-30
+trans_update:2022-06-30
 source_checked:210831
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -381,7 +381,7 @@ snapshot:
 続行-:proceed:~
 遭遇-:encounter:~
 経路:path::~
-受動:passive::~
+受動-:passive::~
 composed:
 	＊構成経路:composed::
 相:phase::~::フェイズ
@@ -411,6 +411,7 @@ poll:
 
 	%大域~obj:global
 	%文書片:fragment
+	%~target:eventTarget
 
 	●計時
 時計:clock:~
@@ -622,6 +623,7 @@ wheel:
 不正確:inaccurate:~
 同等:equal:~
 式:expression:~
+body:
 
 	調整-済み:-adjusted
 	渡-:pass
@@ -1140,8 +1142,10 @@ ev.伝播を即時に停止するか:#stop-immediate-propagation-flag
 ev.伝播を停止するか:#stop-propagation-flag
 ev.取消されたか:#canceled-flag
 ev.配送-中か:#dispatch-flag
-ev.受動~listener内か:#in-passive-listener-flag
+ev.受動-~listener内か:#in-passive-listener-flag
 ev.~composedか:#composed-flag
+
+既定の受動-値:#default-passive-value
 
 evP.呼出n~target:#event-path-invocation-target
 evP.呼出n~targetは~shadow~tree内か:#event-path-invocation-target-in-shadow-tree
@@ -1633,6 +1637,8 @@ rM.大域~obj:~WAPI#concept-realm-global
 ~event~handler~event型:~WAPI#event-handler-event-type
 生成元が類似な~window~agent:~WAPI#similar-origin-window-agent
 
+~body要素:~HTMLdom#the-body-element-2
+
 手続きを~timeout後に走らす:~HTMLGAPI#run-steps-after-a-timeout
 ~timer~task源:~HTMLGAPI#timer-task-source
 
@@ -1795,7 +1801,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/8cd35b86c296d67ae3925b5dddfeb963be7f9439/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/b29449709a7b797cdb9721600bb552f8f140e64a/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -3342,7 +3348,7 @@ Initially the attribute must be initialized to NONE.
 `伝播を停止するか@ev,
 `伝播を即時に停止するか@ev,
 `取消されたか@ev,
-`受動~listener内か@ev,
+`受動-~listener内か@ev,
 `~composedか@ev,
 `初期化-済みか@ev,
 `配送-中か@ev
@@ -3423,7 +3429,7 @@ The bubbles and cancelable attributes must return the values they were initializ
 ~IF［
 %~event の $cancelable 属性~値 ~EQ ~T
 ］~AND［
-%~event の`受動~listener内か$ev ~EQ ~F
+%~event の`受動-~listener内か$ev ~EQ ~F
 ］
 ⇒
 %~event の`取消されたか$ev ~SET ~T
@@ -3976,7 +3982,7 @@ dictionary @@EventListenerOptions {
 };
 
 dictionary @@AddEventListenerOptions : $EventListenerOptions {
-  $boolean @passive = false;
+  $boolean @passive;
   $boolean @once = false;
   $AbortSignal @signal;
 };
@@ -4035,10 +4041,10 @@ capture (a boolean, initially false)
 	<li>
 `passive@evL
 ⇒
-真偽値
-— 初期~時は ~F とする
+~NULL ／ 真偽値
+— 初期~時は ~NULL とする
 ◎
-passive (a boolean, initially false)
+passive (null or a boolean, initially null)
 </li>
 	<li>
 `once@evL
@@ -4289,11 +4295,13 @@ To flatten more options, run these steps:
 <ol>
 	<li>
 ( %capture, %passive, %once, %signal ) ~LET
-( %options を`平坦~化$した結果, ~F, ~F, ε )
+( %options を`平坦~化$した結果, ε, ~F, ε )
 ◎
 Let capture be the result of flattening options.
 ◎
-Let once and passive be false.
+Let once be false.
+◎
+Let passive and signal be null.
 ◎
 Let signal be null.
 </li>
@@ -4307,9 +4315,18 @@ Let signal be null.
 %signal ~SET %options[ "$AddEventListenerOptions.signal" ]
 ◎
 If options is a dictionary, then:
-• Set passive to options["passive"] and once to options["once"].
+• Set once to options["once"].
+• If options["passive"] exists, then set passive to options["passive"].
 • If options["signal"] exists, then set signal to options["signal"].
 </li>
+	<li>
+~IF［
+%passive ~EQ ε
+］
+⇒
+%passive ~SET ~NULL
+◎
+↑</li>
 	<li>
 ~IF［
 %signal ~EQ ε
@@ -4356,6 +4373,43 @@ Because of the defaults stated elsewhere, the returned EventTarget's get the par
 ◎
 In the future we could allow custom get the parent algorithms. Let us know if this would be useful for your programs. For now, all author-created EventTargets do not participate in a tree structure.
 </p>
+</div>
+
+<div class="algo">
+<p>
+`既定の受動-値@
+は、
+所与の
+( ~event型 %型, $EventTarget ~obj %~target )
+に対し，［
+次に挙げる いずれも満たされるならば ~T ／
+~ELSE_ ~F
+］を返す：
+</p>
+<ul>
+	<li>
+%型 ~IN { `touchstart^l, `touchmove^l, `wheel^l, `mousewheel^l }
+`TOUCH-EVENTS$r
+`UIEVENTS$r
+</li>
+	<li>
+［
+%~target は $Window ~objである
+］~OR［
+%~target は`~node$であって，その`~node文書$ %文書 は［
+%~target ~IN { %文書, %文書 の`文書~要素$, %文書 の`~body要素$ }
+］を満たす
+］
+`HTML$r
+</li>
+</ul>
+
+◎
+The default passive value, given an event type type and an EventTarget eventTarget, is determined as follows:
+• Return true if all of the following are true:
+•• type is one of "touchstart", "touchmove", "wheel", or "mousewheel". [TOUCH-EVENTS] [UIEVENTS]
+•• eventTarget is a Window object, or is a node whose node document is eventTarget, or is a node whose node document’s document element is eventTarget, or is a node whose node document’s body element is eventTarget. [HTML]
+• Return false.
 </div>
 
 <div class="algo">
@@ -4417,6 +4471,15 @@ If listener’s signal is not null and is aborted, then return.
 ~RET
 ◎
 If listener’s callback is null, then return.
+</li>
+	<li>
+~IF［
+%~listener の `passive$evL ~EQ ~NULL
+］
+⇒
+%~listener の `passive$evL ~SET `既定の受動-値$( %型, %~target )
+◎
+If listener’s passive is null, then set it to the default passive value given type and eventTarget.
 </li>
 	<li>
 ~IF［
