@@ -536,7 +536,6 @@ Util.fillHeader = () => {
 	const options = PAGE_DATA.options;
 	const url = options.original_url || '';
 //	if(!url) return;
-	let isHTML = false;
 
 	const header = document.body.querySelector('header');
 	if(!header) return;
@@ -560,7 +559,6 @@ Util.fillHeader = () => {
 			break;
 		case 'html.spec.whatwg.org':
 			html = '<a href="https://whatwg.org/" id="_WHATWG">WHATWG</a>';
-			isHTML = true;
 			break;
 		default:
 			break fillLogo;
@@ -580,12 +578,9 @@ Util.fillHeader = () => {
 `<time datetime="${date}">${m[1]} 年 ${m[2]} 月 ${m[3]} 日</time>`;
 		}
 		let header_text ='';
-		if(isHTML) {
-			header_text = 'HTML Living Standard';
-		} else {
-			const status = options.spec_status;
-			if(status){
-				header_text = {
+		const status = options.spec_status;
+		if(status){
+			header_text = {
 ED: '<a href="w3c-standards-types-ja.html#ED">編集者草案</a>',
 WD: '<a href="w3c-standards-types-ja.html#WD">作業草案</a>',
 PR: '<a href="w3c-standards-types-ja.html#PR">勧告案</a>',
@@ -600,10 +595,9 @@ LD: 'Living Document',
 IETFSTD: 'Internet Standard',
 IETFBCP: 'Best Current Practice',
 IETFID: 'Internet Draft',
-				}[status] || status;
-			}
+			}[status] || status;
 		}
-		const html = `<h2>${header_text} — ${date}</h2>`;
+		const html = `<p>${header_text} — ${date}</p>`;
 		hgroup.insertAdjacentHTML('beforeend', html);
 	}
 
