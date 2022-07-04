@@ -1201,8 +1201,8 @@ TRANSFORM2:css-transforms2-ja.html
 TRANSITION:css-transitions-ja.html
 WANIM:web-animations-ja.html
 WANIMapi:web-animations-api-ja.html
-MQ4:mediaqueries5-ja.html
-MQ5:mediaqueries5-ja.html
+MQ4:mediaqueries-ja.html
+MQ5:mediaqueries-ja.html
 SVG11:SVG11
 SVG2:https://svgwg.org/svg2-draft
 SVGrender:svg-render-ja.html
