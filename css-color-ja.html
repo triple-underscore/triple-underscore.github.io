@@ -426,13 +426,13 @@ function initColorDraw(){
 ●●options
 
 spec_title:CSS Color Module Level 4
-spec_date:2022-06-28
-trans_update:2022-06-24
+spec_date:2022-07-05
+trans_update:2022-07-07
 source_checked:220628
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-color-4/
 	abbr_url:CSSCOLOR
-spec_status:WD
+spec_status:CR
 ref_id_prefix:biblio-
 ref_id_lowercase:true
 site_nav:paint,css
@@ -1329,10 +1329,10 @@ radian::::ラジアン
 	-:inGamut
 	~WHILE／~CONTINUE:repeat
 
-	%変換元~OKLCH:origin_OKLCH
 	%行先:destination
 	%最小:min
 	%最大:max
+	%現在の色:origin_OKLCH
 	%現在の色:current
 	%~clipされた色:clipped
 	%~source:src
@@ -1343,6 +1343,8 @@ radian::::ラジアン
 	%~source 用の`白色点$:src-white
 	%~XYZ:xyz
 	%矩形な行先:dest-rect
+	%最小は色域~内か:min_inGamut
+	%ほぼ0:epsilon
 
 	●CSS
 積層:stacking::~
@@ -2222,7 +2224,7 @@ strong { color: red; }
 [CSS-CASCADE-5]
     Elika Etemad; Miriam Suzanne; Tab Atkins Jr.. ＜CSS Cascading and Inheritance Level 5＞. 13 January 2022. CR. URL: https://www.w3.org/TR/css-cascade-5/
 [CSS-COLOR-5]
-    Chris Lilley; et al. ＜CSS Color Module Level 5＞. 28 April 2022. WD. URL: https://www.w3.org/TR/css-color-5/
+    Chris Lilley; et al. ＜CSS Color Module Level 5＞. 28 June 2022. WD. URL: https://www.w3.org/TR/css-color-5/
 [CSS-COLOR-ADJUST-1]
     CSS Color Adjust Module Level 1 URL: https://www.w3.org/TR/css-color-adjust-1/
 [CSS-CONDITIONAL-3]
@@ -2304,7 +2306,7 @@ strong { color: red; }
 
 ●●trans_metadata
 <p>
-~THIS_PAGEは、~W3Cにより作業草案として公開された
+~THIS_PAGEは、~W3Cにより勧告候補として公開された
 <a href="~SPEC_URL">CSS Color Module Level 4</a>
 を日本語に翻訳したものです。
 ~PUB
@@ -2319,6 +2321,8 @@ strong { color: red; }
 編集者草案
 	https://drafts.csswg.org/css-color/
 
+実装報告
+	https://wpt.fyi/results/css/css-color
 テスト一式
 	http://test.csswg.org/suites/css-color-4_dev/nightly-unstable/
 	https://wpt.fyi/results/css/css-color/
@@ -10252,22 +10256,28 @@ To CSS gamut map a color origin in color space origin color space to be in gamut
 	</li>
 	<li>
 <p>
-%変換元~OKLCH ~LET %変換元 を~OKLCH色~空間へ変換した結果：
+%現在の色 ~LET %変換元 を~OKLCH色~空間へ変換した結果：
 </p>
 		<ol>
 			<li>
+<p>
 ~IF［
-%行先~色~空間 には色域~制限sは無い
-（ %行先~色域 は~OKLCH色域に一致する：~CIE~XYZ, ~Lab, ~LCH, ~OKLab, ~OKLCH）
+%行先~色~空間 には色域~制限sは無い†
 ］~OR［
-%変換元~OKLCH は %行先~色域 の内側にある
+%現在の色 は %行先~色域 の内側にある
 ］
 ⇒
-~RET %変換元~OKLCH を %行先~色~空間 へ変換した結果
+~RET %現在の色 を %行先~色~空間 へ変換した結果
+</p>
+<p class="trans-note">【†
+すなわち、
+%行先~色域 は~OKLCH色域に一致する
+（例：~CIE~XYZ, ~Lab, ~LCH, ~OKLab, ~OKLCH）
+】</p>
 </li>
 	<li>
 ~IF［
-%変換元~OKLCH の明度 ~GTE 100%
+%現在の色 の明度 ~GTE 100%
 ］
 ⇒
 ~RET %行先~色~空間 において［
@@ -10276,7 +10286,7 @@ To CSS gamut map a color origin in color space origin color space to be in gamut
 </li>
 	<li>
 ~IF［
-%変換元~OKLCH の明度 ~LTE 0%
+%現在の色 の明度 ~LTE 0%
 ］
 ⇒
 ~RET %行先~色~空間 において［
@@ -10300,9 +10310,15 @@ if inGamut(origin_OKLCH) is true, convert origin_OKLCH to destination and return
 	<li>
 %~JND ~LET 0.02
 ◎
-let JND be 0.02
-◎
 ↓↓otherwise, let delta(one, two) be a function which returns the deltaEOK of color one compared to color two
+◎
+let JND be 0.02
+</li>
+	<li>
+%ほぼ0 ~LET 0.0001
+【この定数は、以下の算出を速く収束させるためにある。】
+◎
+let epsilon be 0.0001
 ◎
 ↓↓let clip(color)| be a function which converts color to destination, converts all negative components to zero, converts all components greater that one to one, and returns the result
 </li>
@@ -10312,15 +10328,22 @@ let JND be 0.02
 set min to zero
 </li>
 	<li>
-%最大 ~SET %変換元~OKLCH の~OKLCH色度
+%最大 ~SET %現在の色 の~OKLCH色度
 ◎
 set max to the OKLCH chroma of origin_OKLCH
 </li>
 	<li>
-<p>
-~WHILE 無条件：
+%最小は色域~内か ~LET ~T
 ◎
-repeat the following steps
+let min_inGamut be a boolean that represents when min is still in gamut, and set it to true
+</li>
+	<li>
+<p>
+~WHILE［
+%最大 ~MINUS %最小 ~GT %ほぼ0
+］：
+◎
+while (max - min is greater than epsilon) repeat the following steps
 </p>
 		<ol>
 			<li>
@@ -10329,55 +10352,91 @@ repeat the following steps
 set chroma to (min + max) /2
 </li>
 			<li>
-%現在の色 ~SET %変換元~OKLCH
-◎
-set current to origin_OKLCH＼
-</li>
-			<li>
 %現在の色 の色度~成分 ~SET %色度
 ◎
+↑set current to origin_OKLCH＼
 and then set the chroma component to chroma
 </li>
 			<li>
 ~IF［
+%最小は色域~内か ~EQ ~T
+］~AND［
 %現在の色 は %行先~色域 の内側にある
 ］
 ⇒＃
 %最小 ~SET %色度；
 ~CONTINUE
 ◎
-if inGamut(current) is true, set min to chroma and continue to repeat these steps
-◎
-otherwise, if inGamut(current) is false carry out these steps:
+if min_inGamut is true and also if inGamut(current) is true, set min to chroma and continue to repeat these steps
 </li>
 			<li>
+<p>
+~ELIF［
+%現在の色 は %行先~色域 の内側にない
+］：
+</p>
+				<ol>
+					<li>
 %~clipした色 ~LET 
 %現在の色 を %行先~色~空間 へ変換したとするとき［
 0 以下になる成分は 0 ／
 1 以上になる成分は 1
 ］になるよう，
 %現在の色 を改変して得られる色
-◎
-set clipped to clip(current)
 </li>
-			<li>
+					<li>
+%~DeltaE ~LET ( %~clipした色, %現在の色 ) の`~DeltaE~OK$
+</li>
+					<li>
 ~IF［
-( %~clipした色, %現在の色 ) の`~DeltaE~OK$ ~LT %~JND
+%~DeltaE ~GTE %~JND
 ］
-⇒
-~RET %~clipした色 を %行先~色~空間 へ変換した結果
+⇒＃
+%最大 ~SET %色度；
+~CONTINUE
+</li>
+					<li>
+~IF［
+%~DeltaE ~GT %~JND ~MINUS %ほぼ0
+【！%~DeltaE ~MINUS %~JND ~LT %ほぼ0】
+］
+⇒＃
+%現在の色 ~SET %~clipした色；
+~BREAK
+</li>
+						<li>
+%最小は色域~内か ~SET ~F
+</li>
+						<li>
+%最小 ~SET %色度
+</li>
+				</ol>
 ◎
-set E to delta(clipped, current)
-◎
-if E &lt; JND return clipped as the gamut mapped color
+otherwise, if inGamut(current) is false carry out these steps:
+• set clipped to clip(current)
+• set E to delta(clipped, current)
+• if E &lt; JND
+•• if (JND - E &lt; epsilon) return clipped as the gamut mapped color
+•• otherwise,
+••• set min_inGamut to false
+••• set min to chroma
+• otherwise, set max to chroma and continue to repeat these steps
 </li>
 			<li>
-%最大 ~SET %色度
-◎
-otherwise, set max to chroma and continue to repeat these steps
+~ELSE（ %現在の色 は %行先~色域 の内側にある）
+⇒
+~Assert：
+この段に達することはない
+【この段は、この訳による補完（さもなければ無限~loop）】
 </li>
+
 		</ol>
 	</li>
+	<li>
+~RET %現在の色 を %行先~色~空間 へ変換した結果
+◎
+return current as the gamut mapped color
+</li>
 </ol>
 </div>
 
@@ -12173,6 +12232,18 @@ Emilio Cobos Álvarez, Chris Bai, Amelia Bellamy-Royds, Lars Borg, Mike Bremford
 <h2 title="Changes">変更点</h2>
 
 <dl>
+	<dt id="changes-from-20220628">
+`2022年 6月 28日 作業草案＠~TR/2022/WD-css-color-4-20220628/$
+からの変更点
+◎
+Changes since the Working Draft of 28 June 2022
+</dt>
+	<dd>
+位置付けを勧告候補に更新した。
+◎
+Updated status for Candidate Recommendation
+</dd>
+
 	<dt id="changes-from-20220428">
 `2022年 4月 28日 作業草案＠~TR/2022/WD-css-color-4-20220428/$
 からの変更点
