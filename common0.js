@@ -2247,6 +2247,7 @@ programming::::プログラミング
 care::::ケア
 注意深く:carefulに:~
 注意深い:carefulな:~
+	気を付ける:be careful
 自動的:automatic:~
 手動:manual:~
 手動で:manualに:~
