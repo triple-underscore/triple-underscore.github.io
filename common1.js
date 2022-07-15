@@ -1646,6 +1646,7 @@ CSSDEVICEADAPT1=・    ~CSSWG/css-device-adapt-1/
 CSSDEVICEADAPT1=主    ~momdoG/css-device-adapt-1/
 CSSDISPLAY3=副        ~/css-display-ja.html
 CSSEASING1=副         ~/css-easing-ja.html
+CSSEASING2=副         ~/css-easing-ja.html●Level 1 日本語訳
 CSSEXCLUSIONS1=副     ~/css-exclusions-ja.html
 CSSFLEXBOX1=副        ~/css-flexbox-ja.html
 CSSFONTS3=副          ~/css-fonts-ja.html
