@@ -1113,10 +1113,6 @@ W3Ccommon:w3c-common-ja.html
 CSScommon:css-common-ja.html
 HTTPcommon:http-common-ja.html
 IETFcommon:ietf-common-ja.html
-RFC7230:RFC7230-ja.html
-RFC7231:RFC7231-ja.html
-RFC7232:RFC7232-ja.html
-RFC7234:RFC7234-ja.html
 HTTPinfra:http-semantics-ja.html
 HTTPsem:http-semantics2-ja.html
 HTTPcache:http-cache-ja.html
