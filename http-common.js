@@ -725,7 +725,6 @@ RFC8246:http-immutable-response-ja.html
 HTTPpatch:http-patch-ja.html
 HTTPearlyhints:http-status-code-103-ja.html
 
-IANA-a:https://www.iana.org/assignments
 	ERRATA:https://www.rfc-editor.org/errata_search.php
 ERRATA:https://www.rfc-editor.org/errata
 

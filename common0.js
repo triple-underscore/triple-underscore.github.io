@@ -1113,6 +1113,7 @@ W3Ccommon:w3c-common-ja.html
 CSScommon:css-common-ja.html
 HTTPcommon:http-common-ja.html
 IETFcommon:ietf-common-ja.html
+IANA-a:https://www.iana.org/assignments
 HTTPinfra:http-semantics-ja.html
 HTTPsem:http-semantics2-ja.html
 HTTPcache:http-cache-ja.html
