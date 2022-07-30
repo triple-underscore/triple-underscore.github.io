@@ -537,14 +537,11 @@ c.realm:~HTTPsem#realm
 	参加者
 	接続
 ~message:~HTTPinfra#message
-送信者:~HTTPinfra#sender
-受信者:~HTTPinfra#recipient
 要請:~HTTPinfra#request
+要請~message:~HTTPinfra#request
 応答:~HTTPinfra#response
-~UA:~HTTPinfra#user-agent
-生成元~server:~HTTPinfra#origin-server
+応答~message:~HTTPinfra#response
 連鎖:~HTTPinfra#chain
-中継者:~HTTPinfra#intermediary
 端点:~HTTPinfra#endpoint
 端点間:~HTTPinfra#end-to-end
 隣点間:~HTTPinfra#hop-by-hop
@@ -552,6 +549,11 @@ c.realm:~HTTPsem#realm
 下流:~HTTPinfra#downstream
 内方:~HTTPinfra#inbound
 外方:~HTTPinfra#outbound
+送信者:~HTTPinfra#sender
+受信者:~HTTPinfra#recipient
+~UA:~HTTPinfra#user-agent
+生成元~server:~HTTPinfra#origin-server
+中継者:~HTTPinfra#intermediary
 ~proxy:~HTTPinfra#proxy
 横取n~proxy:~HTTPinfra#interception-proxy
 ~gateway:~HTTPinfra#gateway
@@ -595,6 +597,7 @@ c.realm:~HTTPsem#realm
 ~header節:~HTTPinfra#header-section
 ~trailer:~HTTPinfra#trailer-field
 ~trailer節:~HTTPinfra#trailer-section
+~message内容:~HTTPinfra#message-content
 内容:~HTTPinfra#message-content
 ~messageの出生日時:~HTTPinfra#origination-date
 時計:~HTTPinfra#clock
