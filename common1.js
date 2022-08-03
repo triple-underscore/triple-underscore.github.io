@@ -1832,6 +1832,7 @@ RFC7301=副            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
 RFC8259=副            www.asahi-net.or.jp/~ax2s-kmtn/internet/rfc8259j.html
 RFC8941=副            ~/http-structured-fields-ja.html
 RFC8942=副            ~/http-client-hints-ja.html
+RFC8949=副            ~/CBOR-ja.html
 RFC9110=副            ~/http-semantics-ja.html
 RFC9111=副            ~/http-cache-ja.html
 RFC9112=副            ~/http1-ja.html
