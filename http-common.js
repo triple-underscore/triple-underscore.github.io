@@ -555,8 +555,11 @@ c.realm:~HTTPsem#realm
 生成元~server:~HTTPinfra#origin-server
 中継者:~HTTPinfra#intermediary
 ~proxy:~HTTPinfra#proxy
-横取n~proxy:~HTTPinfra#interception-proxy
+回送-~proxy:~HTTPinfra#forward-proxy
 ~gateway:~HTTPinfra#gateway
+逆~proxy:~HTTPinfra#reverse-proxy
+透過的~proxy:~HTTPinfra#transparent-proxy
+横取n~proxy:~HTTPinfra#interception-proxy
 ~tunnel:~HTTPinfra#tunnel
 ~stateless:~HTTPinfra#stateless
 ~cache:~HTTPinfra#cache
