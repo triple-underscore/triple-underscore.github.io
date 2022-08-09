@@ -2766,6 +2766,7 @@ scope::::スコープ
 	〜で分離された:-separated
 	~space等で分離され:space-separated
 別々な:separateな:~
+別々に:separateに:~
 区切子:delimiter:~
 
 等価:equivalent:~
