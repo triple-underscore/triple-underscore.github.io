@@ -867,7 +867,6 @@ minor::::副:マイナー
 重複:duplicate:~
 
 	●仕様
-framework::::フレームワーク
 proprietary::::プロプライエタリ
 十分:enough:~
 導かれ:leadされ:~

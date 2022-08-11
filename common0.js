@@ -1591,6 +1591,7 @@ feedback::::フィードバック
 module::::モジュール
 model::::モデル
 risk::::リスク
+framework::::フレームワーク
 論じる:discussする:~
 論じら:discussさ:~
 論じて:discussして:~
