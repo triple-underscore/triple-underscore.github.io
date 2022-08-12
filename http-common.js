@@ -271,7 +271,7 @@ h.Pragma:~HTTPcache#field.pragma
 h.Warning:~HTTPcache#field.warning
 
 	//Messaging
-h.Transfer-Encoding:~HTTPmsg#field.transfer-encoding
+h.Transfer-Encoding:~HTTPv1#field.transfer-encoding
 
 	//他
 h.Cookie:~HTTPcookie#sane-cookie
@@ -498,7 +498,7 @@ p.delta-seconds:~HTTPcache#p.delta-seconds
 c.http:~HTTPinfra#http.uri
 c.https:~HTTPinfra#https.uri
 
-c.chunked:~HTTPmsg#chunked.encoding
+c.chunked:~HTTPv1#chunked.encoding
 c.compress:~HTTPsem#compress.coding
 c.deflate:~HTTPsem#deflate.coding
 c.gzip:~HTTPsem#gzip.coding
@@ -711,11 +711,11 @@ c.realm:~HTTPsem#realm
 私用~cache:~HTTPcache#private-cache
 	~cache:~HTTPcache#cache
 
-	●HTTPmsg
-~HTTP11:~HTTPmsg#version-1.1
-転送~符号法:~HTTPmsg#transfer.codings
-転送~符号法の名前:~HTTPmsg#transfer-coding-name
-~message本体:~HTTPmsg#message.body
+	●HTTPv1
+~HTTP11:~HTTPv1#version-1.1
+転送~符号法:~HTTPv1#transfer.codings
+転送~符号法の名前:~HTTPv1#transfer-coding-name
+~message本体:~HTTPv1#message.body
 
 	●
 ~IETFによる考査:~RFCx/rfc8126#section-4.8

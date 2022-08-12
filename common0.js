@@ -1117,7 +1117,7 @@ IANA-a:https://www.iana.org/assignments
 HTTPinfra:http-semantics-ja.html
 HTTPsem:http-semantics2-ja.html
 HTTPcache:http-cache-ja.html
-HTTPmsg:http1-ja.html
+HTTPv1:http1-ja.html
 HTTPweblink:http-web-linking-ja.html
 HTTPcookie:http-cookie-ja.html
 STRUCTURED-FIELDS:http-structured-fields-ja.html
