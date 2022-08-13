@@ -3123,7 +3123,8 @@ hyperlink::::ハイパーリンク
 address::::アドレス
 domain::::ドメイン
 frame::::フレーム
-閲覧文脈:browsing context::~
+閲覧-:browse::~
+閲覧:browsing::~
 navi:navigation:::ナビ
 navigate::::ナビゲート
 download::::ダウンロード

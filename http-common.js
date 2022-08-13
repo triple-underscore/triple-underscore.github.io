@@ -1285,8 +1285,6 @@ stateful::::ステートフル
 重み:weight::~
 量:amount:~
 開く:openする::~
-閲覧-:browse:~:::ブラウズ
-閲覧:browsing:~:::ブラウジング
 鮮度:freshness::~
 新鮮:fresh::~
 	新鮮~化-:freshen
