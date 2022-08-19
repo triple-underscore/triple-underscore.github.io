@@ -647,7 +647,6 @@ c.realm:~HTTPsem#realm
 製品~識別子:~HTTPsem#product-identifier
 要請~header:~HTTPsem#request.context
 応答~header:~HTTPsem#response.context
-首な資源:~HTTPsem#primary-resource
 
 	§#authentication
 認証~scheme:~HTTPsem#auth.scheme
@@ -1232,7 +1231,6 @@ reactive::::リアクティブ
 更新喪失:lost update::~
 条件付き:conditional::~
 	〜でない:unconditional~
-条態:condition::~
 格納域:store::~
 再構築-:reconstruct:~
 再構築:reconstruction:~
