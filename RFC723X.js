@@ -1410,7 +1410,6 @@ stateless::::ステートレス
 最終的:eventual
 先立つ:prior
 〜に先立って／先に／事前に／~~直前:prior to〜
-後続の:subsequent
 次:next
 残りの部分:remainder
 前後:around

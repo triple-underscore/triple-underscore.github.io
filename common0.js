@@ -1336,6 +1336,7 @@ WG:
 単-:single-:~
 単独の:single:~
 現在の:current:~
+後続な:subsequent:後続の
 元の:original:~
 	ナシ:none:なし
 subject::対象
@@ -3386,7 +3387,6 @@ FOO間:inter-FOO
 全体:entire
 一連の:series of
 一緒:together
-後続の:subsequent
 後続-:follow
 
 同じ:same
