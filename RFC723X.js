@@ -1009,7 +1009,6 @@ app:application:::アプリケーション
 必要十分:adequate:~
 必要性:needs:~
 恒久的:permanent:~
-意向:intention:~
 早期の:early:~
 暫定的:interim:~
 	本質的でない:nonessential
@@ -1516,7 +1515,6 @@ through
 出来事
 及ぼす
 宛先
-意図されずに:unintentional
 期間:period／period of time
 表~table
 誤り:wrong

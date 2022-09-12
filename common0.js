@@ -1688,9 +1688,13 @@ framework::::フレームワーク
 イミ:sense:意味
 有意:significant:~
 意図-:intend:~
+	意図されない:unintended
 意図:intent:~
+意図n:intention:意図
 意図的:intentional:~
-	意向:intention:~
+	意図的でない:unintentional
+	意図的でなく:unintentionally
+	意図nに反して:unintentionally
 明示的:explicit:~
 暗黙的:implicit:~
 暗黙の:implied:~
@@ -1703,6 +1707,7 @@ framework::::フレームワーク
 求めて:wantして:~
 求めた:wantした:~
 求まれ:wantされ:~
+	求まれない:unwanted
 欲する:desireする:~
 欲され:desireされ:~
 欲さな:desireしな:~

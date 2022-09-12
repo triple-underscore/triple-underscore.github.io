@@ -919,7 +919,6 @@ agent::::エージェント
 必要十分:adequate:~
 必要性:needs:~
 恒久的:permanent:~
-意向:intention:~
 慣行:convention::~
 早期の:early:~
 柔軟:flexible:~
@@ -1439,7 +1438,6 @@ logging
 	及ぼす
 	宛先
 	強くstrong
-	意図されずに:unintentional
 	期間:period／period of time
 	源:source:ソース
 	表~table
