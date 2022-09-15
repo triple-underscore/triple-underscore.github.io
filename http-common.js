@@ -956,7 +956,6 @@ agent::::エージェント
 補助:help:~
 複雑化-:complicate:~
 表記規約:notational conventions:~
-機会:chance:~
 版:edition:~
 
 設置-:place:~

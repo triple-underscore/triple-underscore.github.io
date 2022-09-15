@@ -1048,7 +1048,6 @@ app:application:::アプリケーション
 衝突:collision:~
 補助:help:~
 複雑化-:complicate:~
-機会:chance:~
 設置-:place:~
 設置しな:placeしな:課さな
 設置する:placeする:課す

@@ -1423,6 +1423,8 @@ profile::::プロファイル
 random::::ランダム
 	~random化:randomization／randomize
 command::::コマンド
+機会:opportunity:~
+機会c:chance:機会
 
 ●幾何
 空間:space:~
