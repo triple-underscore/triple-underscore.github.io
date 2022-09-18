@@ -3234,7 +3234,7 @@ style::::スタイル
 	~style上の:stylistic
 stylesheet:style sheet:::スタイルシート
 cascade::::カスケード
-at-rule:::at-規則
+at-:
 記述子:descriptor::~
 略式:shorthand::~
 下位prop:sub-property::下位 property:下位プロパティ
