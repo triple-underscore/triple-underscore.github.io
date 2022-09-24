@@ -367,8 +367,8 @@ html-syntax:HTML 構文
 comms:メッセージ通信
 browsers:ナビと閲覧
 storage:ストレージ
-uievents:イベント／UX
-sensors:センサ
+uievents:UI
+sensors:センサー
 network:ネットワーク
 http:HTTP
 security:セキュリティ
