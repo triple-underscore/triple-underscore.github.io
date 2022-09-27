@@ -190,8 +190,8 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2022-09-22
-trans_update:2022-09-23
+spec_date:2022-09-26
+trans_update:2022-09-28
 source_checked:220524
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -519,6 +519,7 @@ m.new Request:#dom-request
 	m.isReloadNavigation:#dom-request-isreloadnavigation
 	m.isHistoryNavigation:#dom-request-ishistorynavigation
 	m.signal:#dom-request-signal
+	m.duplex:#dom-request-duplex
 	m.clone:#dom-request-clone
 
 	■RequestInfo
@@ -772,7 +773,7 @@ rq.計時許容に失敗したか:#timing-allow-failed
 要請を~cloneする:#concept-request-clone
 ~scriptに類する:#request-destination-script-like
 範囲~headerを追加する:#concept-request-add-range-header
-単純な範囲~header値:#simple-range-header-value
+単純な範囲~header値を構文解析する:#simple-range-header-value
 
 下位資源~要請:#subresource-request
 非~下位資源~要請:#non-subresource-request
@@ -1077,7 +1078,6 @@ byte.から開始して:~INFRA#byte-sequence-starts-with
 ~byte大小無視:~INFRA#byte-case-insensitive
 ~JSON~byte列を~JS値に構文解析する:~INFRA#parse-json-bytes-to-a-javascript-value
 文字列:~INFRA#string
-str.長さ:~INFRA#string-length
 ~scalar値~文字列:~INFRA#scalar-value-string
 文字:~INFRA#code-point
 ~ASCII空白:~INFRA#ascii-whitespace
@@ -1691,7 +1691,6 @@ opt-in::::オプトイン
 保つ:keepする:~
 保って:keepして:~
 目指す:aimする:~
-helper:
 誤認-:mistake:~
 	ものと誤認して:mistakenly
 選んで:chooseして:~
@@ -1712,6 +1711,7 @@ helper:
 審査-:vet:~
 漏れる:leakする:~
 
+	^en:helper
 	用途:usage
 	~~強く:highly
 	一貫性を得る:consistent
@@ -2040,7 +2040,9 @@ helper:
 	%~cache状態:cacheState
 	%~host群:hosts
 	%範囲~始端:rangeStart
+	%範囲~始端~値:rangeStartValue
 	%範囲~終端:rangeEnd
+	%範囲~終端~値:rangeEndValue
 	%最後の~URL:lastURL
 	%~preloadされる応答~可用~時の手続き:onPreloadedResponseAvailable
 	%~preloadされる資源を見出したか:foundPreloadedResource
@@ -2225,7 +2227,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/0d9563298d30f3108ffaf30e2dc377b0852fcb07/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/1fbc40c1df1a353ce1a49de8e4b2c753563e265d/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -4199,9 +4201,11 @@ fetch("https://victim.example/naïve-endpoint", {
 
 <tr><td>`Range$h
 <td>
-%値 は`単純な範囲~header値$でない
+次の結果 ~EQ `失敗^i
+⇒
+`単純な範囲~header値を構文解析する$( %値 )
 ◎
-If value is not a simple range header value, then return false.
+If the result of parse a single range header value given value is failure, then return false.
 
 <tr><td>その他
 ◎
@@ -4359,7 +4363,7 @@ A privileged no-CORS request-header name is a header name that is a byte-case-in
 それを結付けている要請~objが複製される場合には 保全されるが，
 その要請が特権的でない~APIにより改変された場合には 除去されることになる。
 ◎
-These are headers that can be set by privileged APIs, and will be preserved if their associated request object is copied, but will be removed if the request is modified by unprivilaged APIs.
+These are headers that can be set by privileged APIs, and will be preserved if their associated request object is copied, but will be removed if the request is modified by unprivileged APIs.
 </p>
 
 <p>
@@ -4375,7 +4379,7 @@ These are headers that can be set by privileged APIs, and will be preserved if t
 </p>
 
 <p>
-特定0の要請に`範囲~headerを追加する$ために，~helperが供される。【？】
+特定0の要請に`範囲~headerを追加する$ために， `helper^en が供される。【？】
 ◎
 A helper is provided to add a range header to a particular request.
 </p>
@@ -4712,14 +4716,13 @@ Return values.
 
 <div class="algo">
 <p>
-所与の`~byte列$ %値 が
-`単純な範囲~header値@
-であるか否か決定するときは、
-次の手続きを遂行する
-— これは、
-`真偽値$を返す：
+`単純な範囲~header値を構文解析する@
+ときは、
+所与の
+( `~byte列$ %値 )
+に対し，次の手続きを走らす：
 ◎
-To determine if a byte sequence value is a simple range header value, perform the following steps. They return a boolean.
+To parse a single range header value from a byte sequence value, run these steps:
 </p>
 <ol>
 	<li>
@@ -4732,9 +4735,9 @@ Let data be the isomorphic decoding of value.
 %~data は `bytes=^l `から開始して$いない
 ］
 ⇒
-~RET ~F
+~RET `失敗^i
 ◎
-If data does not start with "bytes=", then return false.
+If data does not start with "bytes=", then return failure.
 </li>
 	<li>
 %位置 ~LET %~data 内の 6 番の`文字$を指している`位置~変数$
@@ -4747,13 +4750,21 @@ Let position be a position variable for data, initially pointing at the 6th code
 Let rangeStart be the result of collecting a sequence of code points that are ASCII digits, from data given position.
 </li>
 	<li>
+%範囲~始端~値 ~LET %範囲~始端 に応じて
+⇒＃
+空~文字列ならば ~NULL ／
+~ELSE_ %範囲~始端 を 10 進数として解釈した結果
+◎
+Let rangeStartValue be rangeStart, interpreted as decimal number, if rangeStart is not the empty string; otherwise null.
+</li>
+	<li>
 ~IF［
 %位置↗ ~NEQ `002D^U `-^smb
 ］
 ⇒
-~RET ~F
+~RET `失敗^i
 ◎
-If the code point at position within data is not U+002D (-), then return false.
+If the code point at position within data is not U+002D (-), then return failure.
 </li>
 	<li>
 %位置 ~INCBY 1
@@ -4766,60 +4777,77 @@ Advance position by 1.
 Let rangeEnd be the result of collecting a sequence of code points that are ASCII digits, from data given position.
 </li>
 	<li>
+%範囲~終端~値 ~LET %範囲~終端 に応じて
+⇒＃
+空~文字列ならば ~NULL ／
+~ELSE_ %範囲~終端 を 10 進数として解釈した結果
+◎
+Let rangeEndValue be rangeEnd, interpreted as decimal number, if rangeEnd is not the empty string; otherwise null.
+</li>
+	<li>
 ~IF［
 %位置↗ ~NEQ ε
 ］
 ⇒
-~RET ~F
+~RET `失敗^i
 ◎
-If position is not past the end of data, then return false.
+If position is not past the end of data, then return failure.
+</li>
+	<li>
+~IF［
+%範囲~終端~値 ~EQ ~NULL
+］~AND［
+%範囲~始端~値 ~EQ ~NULL
+］
+⇒
+~RET `失敗^i
+◎
+If rangeEndValue and rangeStartValue are null, then return failure.
+</li>
+	<li>
+~IF［
+%範囲~始端~値 ~NEQ ~NULL
+］~AND［
+%範囲~終端~値 ~NEQ ~NULL
+］~AND［
+%範囲~始端~値 ~GT %範囲~終端~値
+］
+⇒
+~RET `失敗^i
+◎
+If rangeStartValue and rangeEndValue are numbers, and rangeStartValue is greater than rangeEndValue, then return failure.
 </li>
 	<li>
 <p>
-~IF［
-%範囲~終端 の`長さ$str ~EQ 0
-］
-⇒
-~RET ~T
+~RET ( %範囲~始端~値, %範囲~終端~値 )
 ◎
-If rangeEnd’s length is 0, then return true.
+Return (rangeStartValue, rangeEndValue).
 </p>
 
 <p class="note">注記：
-範囲の終端は省略できる
-— 例： `bytes=0-^bl は妥当になる。
+範囲の［
+終端／始端
+］は省略できる
+— 例： ［
+`bytes=0-^bl ／ `bytes=-500^bl
+］は妥当な範囲になる。
 ◎
-The range end can be omitted, e.g., `bytes=0-` is valid. 
+The range end or start can be omitted, e.g., `bytes=0-` or `bytes=-500` are valid ranges.
 </p>
 	</li>
-	<li>
-~IF［
-%範囲~始端 を 10 進数として解釈した結果
-~GT
-%範囲~終端 を 10 進数として解釈した結果
-］
-⇒
-~RET ~F
-◎
-If rangeStart, interpreted as decimal number, is greater than rangeEnd, interpreted as decimal number, then return false.
-</li>
-	<li>
-~RET ~T
-◎
-Return true.
-</li>
 </ol>
 
 <p class="note">注記：
-`単純な範囲~header値$は，
-`Range$h ~headerに許容される値の下位集合を成すが、
+この~algoは，［
+`Range$h ~headerに許容される値の下位集合
+］に対し成功するが、
 ~UAが［
 ~mediaを要請する／~downloadを再開する
 ］ときに最も共通的に利用される形である。
 この形式による範囲~header値は、
 `範囲~headerを追加する$を利用して設定できる。
 ◎
-A simple range header value is a subset of allowed range header values, but it is the most common form used by user agents when requesting media or resuming downloads. This format of range header value can be set using add a range header.
+Parse a single range header value succeeds for a subset of allowed range header values, but it is the most common form used by user agents when requesting media or resuming downloads. This format of range header value can be set using add a range header.
 </p>
 </div>
 
@@ -7251,11 +7279,11 @@ which is initially unset.
 これは、［
 過去の範囲~付き要請からの部分的~応答が，
 範囲~要請を為さなかった~APIに供される
-］のを防止することを確保するために利用される。
+］のを防止するために利用される。
 これの用途については、
 その攻撃の詳細な記述を見よ。
 ◎
-This is used to ensure to prevent a partial response from an earlier ranged request being provided to an API that didn’t make a range request. See the flag’s usage for a detailed description of the attack.
+This is used to prevent a partial response from an earlier ranged request being provided to an API that didn’t make a range request. See the flag’s usage for a detailed description of the attack.
 </dd>
 
 	<dt>
@@ -14757,12 +14785,14 @@ If status is in the range 100 to 199, inclusive:
 								<ol>
 									<li>
 ~IF［
+%要請 の`~mode$rq ~EQ `websocket^l
+］~AND［
 %状態s ~EQ `101$st
 ］
 ⇒
 ~BREAK
 ◎
-If status is 101, break.
+If request’s mode is "websocket" and status is 101, then break.
 </li>
 									<li>
 ~IF［
@@ -17813,6 +17843,7 @@ interface `Request@I {
   readonly attribute `boolean$ `isReloadNavigation$m;
   readonly attribute `boolean$ `isHistoryNavigation$m;
   readonly attribute `AbortSignal$I `signal$m;
+  readonly attribute `RequestDuplex$I `duplex$m;
 
   [`NewObject$] `Request$I `clone$m();
 };
@@ -18105,7 +18136,9 @@ Can only be null. Used to disassociate request from any Window.
 全二重（ `full-duplex^en ）な~fetchを起動するためにある
 （すなわち、
 ~UAは，要請~全体を送信する前に，応答を処理できる）
-（ `full^l を定義している`課題 #1254＠https://github.com/whatwg/fetch/issues/1254$ を見よ）。
+（ `full^l を定義している
+`課題 #1254＠https://github.com/whatwg/fetch/issues/1254$
+を見よ）。
 この~memberは、
 `body$RqI が `ReadableStream$I ~objであるときは，設定される必要がある。
 ◎
@@ -18280,6 +18313,32 @@ Returns a boolean indicating whether or not request is for a history navigation 
 Returns the signal associated with request, which is an AbortSignal object indicating whether or not request has been aborted, and its abort event handler.
 </dd>
 
+	<dt>%request . `duplex$m</dt>
+	<dd>
+`half^l を返す
+— これは、
+当の~fetchは半二重になることを意味する
+（すなわち、
+~UAは，要請~全体を送信した後に対する応答を処理する）。
+◎
+Returns "half", meaning the fetch will be half-duplex (i.e., the user agent sends the entire request before processing the response).＼
+</dd>
+	<dd>
+将来においては、
+`full^l も返し得る
+— これは、
+当の~fetchは全二重になることを意味する
+（すなわち、
+~UAは，要請~全体を送信する前に対する応答を処理できる）
+【！to indicate that the fetch will be full-duplex】。
+【！ class="note"】
+`full^l を定義している
+`課題 #1254＠https://github.com/whatwg/fetch/issues/1254$
+を見よ。
+◎
+In future, it could also return "full", meaning the fetch will be full-duplex (i.e., the user agent can process the response before sending the entire request) to indicate that the fetch will be full-duplex. See issue #1254 for defining "full".
+</dd>
+
 	<dt>%request . `clone()$m</dt>
 	<dd>
 %request の~cloneを返す。
@@ -18319,9 +18378,9 @@ Set requestObject’s headers to a new Headers object with realm, whose headers 
 Set requestObject’s signal to a new AbortSignal object with realm.
 </li>
 	<li>
-~RET %~Request~obj【！request】
+~RET %~Request~obj
 ◎
-Return request.
+Return requestObject.
 </li>
 </ol>
 </div>
@@ -19257,6 +19316,15 @@ The isHistoryNavigation getter steps are to return true if this’s request’s 
 ~RET コレの`通達$Rq
 ◎
 The signal getter steps are to return this’s signal.
+</div>
+
+<div class="algo">
+`duplex@m
+取得子~手続きは
+⇒
+~RET `half^l
+◎
+The duplex getter steps are to return "half".
 </div>
 
 <div class="algo">
@@ -21052,6 +21120,7 @@ Jordan Stephens,
 Jörn Zaefferer,
 Joseph Pecoraro,
 Josh Matthews,
+jub0bs,
 Julian Krispel-Samsel,
 Julian Reschke,
 <span lang="ko">송정기</span> (Jungkee Song),
