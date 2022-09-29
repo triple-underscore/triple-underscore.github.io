@@ -96,8 +96,8 @@ return text;
 
 ●●options
 
-spec_date:2022-03-16
-trans_update:2022-03-17
+spec_date:2022-09-28
+trans_update:2022-09-29
 source_checked:201016
 page_state_key:HTML
 original_url:https://html.spec.whatwg.org/multipage/worklets.html
@@ -236,7 +236,6 @@ enV.~target閲覧~文脈:~WAPI#concept-environment-target-browsing-context
 enV.作動中の~sw:~WAPI#concept-environment-active-service-worker
 enV.時刻~起点:~WAPI#concept-settings-object-time-origin
 
-非同期に完了する:~HTMLINFRA#_asynchronously-complete
 並列的:~HTMLINFRA#in-parallel
 相対的に~URL構文解析する:~HTMLurl#parse-a-url
 文書:~HTMLdom#the-document-object
@@ -249,12 +248,14 @@ enV.時刻~起点:~WAPI#concept-settings-object-time-origin
 実装定義:~INFRA#implementation-defined
 有順序~map:~INFRA#ordered-map
 有順序~集合:~INFRA#ordered-set
-	~EACH:~INFRA#list-iterate
-付加する:~INFRA#list-append
-除去する:~INFRA#list-remove
 ~list:~INFRA#list
+	~EACH:~INFRA#list-iterate
 空:~INFRA#list-is-empty
 ~size:~INFRA#list-size
+~cloneする:~INFRA#list-clone
+付加する:~INFRA#list-append
+除去する:~INFRA#list-remove
+~dequeueする:~INFRA#queue-dequeue
 
 ~IDL値に変換する:~WEBIDLjs#dfn-convert-ecmascript-to-idl-value
 	~IDL値に変換する:~WEBIDLjs#es-type-mapping
@@ -431,7 +432,8 @@ fake:
 	%実行~文脈:executionContext
 	%処理待ち~task数:pendingTasks
 	%成功裡に追加された:addedSuccessfully
-
+	%処理待ち追加した~module群:pendingAddedModules
+	%その次の追加した~moduleを走らす:runNextAddedModule
 
 ●●trans_metadata
 <p>
@@ -1145,15 +1147,32 @@ Let workletGlobalScope be the global object of realmExecutionContext's Realm com
 Let insideSettings be the result of setting up a worklet environment settings object given realmExecutionContext and outsideSettings.
 </li>
 	<li>
-<p>
-%~worklet の`追加した~module~list$wLを成す
-~EACH( %~module~URL )
-に対し：
+%処理待ち追加した~module群 ~LET `~cloneする$( %~worklet の`追加した~module~list$wL )
 ◎
-For each moduleURL of worklet's added modules list:
+Let pendingAddedModules be a clone of worklet's added modules list.
+</li>
+	<li class="algo">
+<p>
+%その次の追加した~moduleを走らす ~LET 次を走らす手続き：
+◎
+Let runNextAddedModule be the following steps:
 </p>
 		<ol>
 			<li>
+<p>
+~IF［
+%処理待ち追加した~module群 は`空$でない
+］：
+◎
+If pendingAddedModules is not empty, then:
+</p>
+				<ol>
+					<li>
+%~module~URL ~LET %処理待ち追加した~module群 から`~dequeueする$
+◎
+Let moduleURL be the result of dequeueing from pendingAddedModules.
+</li>
+					<li>
 <p>
 `~worklet~script~graphを~fetchする$( 次に挙げる引数 )
 ⇒＃
@@ -1162,10 +1181,17 @@ For each moduleURL of worklet's added modules list:
 %~worklet の`~worklet行先~種別$wL,
 <span class="XXX">資格証~modeは何か？</span>,
 %内側~設定群,
-%~worklet の`~module応答~map$wL
+%~worklet の`~module応答~map$wL,
+次に与える手続き
 ◎
-Fetch a worklet script graph given moduleURL, insideSettings, worklet's worklet destination type, what credentials mode?, insideSettings, and worklet's module responses map.＼
-↓ Wait until the algorithm asynchronously completes with script.
+Fetch a worklet script graph given moduleURL, insideSettings, worklet's worklet destination type, what credentials mode?, insideSettings, worklet's module responses map, and with＼
+</p>
+
+<div class="algo">
+<p>
+手続きは：
+◎
+the following steps given script:
 </p>
 
 <p class="note">注記：
@@ -1177,40 +1203,56 @@ Fetch a worklet script graph given moduleURL, insideSettings, worklet's worklet 
 ◎
 This will not actually perform a network request, as it will just reuse responses from worklet's module responses map. The main purpose of this step is to create a new workletGlobalScope-specific module script from the response.
 </p>
-	</li>
-	<li>
-前~段が %~script を結果として`非同期に完了する$まで待機する
-◎
-↑</li>
-	<li>
+						<ol>
+							<li>
 ~Assert：
 %~script ~NEQ ~NULL
 — %~worklet の`~module応答~map$wLが初期~時に %~module~URL で拡充された時点で、~fetchは成功して，~source~textは成功裡に構文解析されたはずなので。
 ◎
 Assert: script is not null, since the fetch succeeded and the source text was successfully parsed when worklet's module responses map was initially populated with moduleURL.
 </li>
-	<li>
+							<li>
 `~module~scriptを走らす$( %~script )
 ◎
 Run a module script given script.
 </li>
-		</ol>
-	</li>
-	<li>
+							<li>
+%その次の追加した~moduleを走らす()
+◎
+Run runNextAddedModule.
+</li>
+						</ol>
+</div>
+					</li>
+					<li>
+~RET
+◎
+Abort these steps.
+</li>
+				</ol>
+			</li>
+			<li>
 %外側~設定群 の`大域~obj$enVに`結付けられている文書$の`~worklet大域~scope~list$doc
 に %~worklet大域~scope を`付加する$
 ◎
 Append workletGlobalScope to outsideSettings's global object's associated Document's worklet global scopes.
 </li>
-	<li>
+			<li>
 %~worklet の`大域~scope~list$wLに %~worklet大域~scope を`付加する$
 ◎
 Append workletGlobalScope to worklet's global scopes.
 </li>
-	<li>
+			<li>
 %内側~設定群 により指定される`担当の~event~loop$enVを走らす
 ◎
 Run the responsible event loop specified by insideSettings.
+</li>
+		</ol>
+	</li>
+	<li>
+%その次の追加した~moduleを走らす()
+◎
+Run runNextAddedModule.
 </li>
 </ol>
 </div>
@@ -1630,9 +1672,10 @@ If this fails, then return a promise rejected with a "SyntaxError" DOMException.
 ◎
 Let promise be a new promise.
 </li>
-	<li>
+	<li class="algo">
 <p>
-この段は、`並列的$に走らす：
+この段は、
+`並列的$に走らす：
 ◎
 Run the following steps in parallel:
 </p>
@@ -1684,19 +1727,15 @@ Let addedSuccessfully be false.
 ~EACH( %~worklet大域~scope )
 に対し
 ⇒
-`大域~taskを~queueする$( `~network用~task源$, %~worklet大域~scope, 次に与える下位手続き )
+`大域~taskを~queueする$( `~network用~task源$, %~worklet大域~scope, 次に与える手続き )
 ◎
-For each workletGlobalScope of this's global scopes, queue a global task on the networking task source given workletGlobalScope to perform the following steps:
+For each workletGlobalScope of this's global scopes, queue a global task on the networking task source given workletGlobalScope to＼
 </p>
 
 <div class="algo">
 <p>
-下位手続きは、次を遂行する：
-◎
-↑</p>
-				<ol>
-					<li>
-<p>
+手続きは
+⇒
 `~worklet~script~graphを~fetchする$( 次に挙げる引数 )
 ⇒＃
 %~module~URL~record,
@@ -1704,24 +1743,27 @@ For each workletGlobalScope of this's global scopes, queue a global task on the 
 コレの`~worklet行先~種別$wL,
 %options[ "`credentials$m" ],
 %~worklet大域~scope に`関連な設定群~obj$,
-コレの`~module応答~map$wL
+コレの`~module応答~map$wL,
+次に与える手続き
 ◎
-Fetch a worklet script graph given moduleURLRecord, outsideSettings, this's worklet destination type, options["credentials"], workletGlobalScope's relevant settings object, and this's module responses map.＼
-↓Wait until the algorithm asynchronously completes with script.
+fetch a worklet script graph given moduleURLRecord, outsideSettings, this's worklet destination type, options["credentials"], workletGlobalScope's relevant settings object, this's module responses map, and the following steps given script:
 </p>
 
 <p class="note">注記：
-これらの~fetchのうち，~network要請を実際に遂行することになるのは、最初のものに限られる
-— 他の `WorkletGlobalScope$I 用のそれらは，コレの`~module応答~map$wLからの`応答$を再利用することになる。
+これらの~fetchのうち，~network要請を実際に遂行することになるのは、
+最初のものに限られる
+— 他の `WorkletGlobalScope$I 用のそれらは、
+コレの`~module応答~map$wLからの`応答$を再利用することになる。
 ◎
 Only the first of these fetches will actually perform a network request; the ones for other WorkletGlobalScopes will reuse responses from this's module responses map.
 </p>
-					</li>
-					<li>
-前~段が %~script を結果として`非同期に完了する$まで待機する
-◎
-↑</li>
 
+<div class="algo">
+<p>
+手続きは：
+◎
+↑</p>
+				<ol>
 					<li>
 <p>
 ~IF［
@@ -1875,6 +1917,7 @@ If pendingTasks is 0, then resolve promise.
 						</ol>
 					</li>
 				</ol>
+</div>
 </div>
 			</li>
 		</ol>
