@@ -2117,7 +2117,7 @@ log::::ログ
 効果的:effective:~
 実質的:effective:~
 効率的:efficient:~
-効率性:efficiency:~
+効率:efficiency:~
 副作用:side-effect:~
 影響-:affect:~
 影響i:impact:影響
