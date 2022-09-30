@@ -23,8 +23,8 @@ caption {
 ●●options
 
 spec_title:Retrofit Structured Fields for HTTP
-spec_date:2022-07-27
-trans_update:2022-08-12
+spec_date:2022-09-26
+trans_update:2022-09-30
 source_checked:220727
 original_url:https://httpwg.org/http-extensions/draft-ietf-httpbis-retrofit.html
 abbr_url:HTTPretrofit
@@ -98,6 +98,8 @@ a.HttpOnly:~HTTPcookie#attribute-httponly
 a.SameSite:~HTTPcookie#attribute-samesite
 
 有構造~field:~STRUCTURED-FIELDS#structured-field
+p.sf-date:#p.sf-date
+~sf日時:#sf-date
 ~sf~item:~STRUCTURED-FIELDS#sf-item
 ~sf~key:~STRUCTURED-FIELDS#sf-key
 ~sf~list:~STRUCTURED-FIELDS#sf-list
@@ -112,6 +114,10 @@ a.SameSite:~HTTPcookie#attribute-samesite
 ~sf内縁~list:~STRUCTURED-FIELDS#sf-inner-list
 ~sf~byte列:~STRUCTURED-FIELDS#sf-binary
 ~sf~decimal:~STRUCTURED-FIELDS#sf-decimal
+
+整数を直列化する:~STRUCTURED-FIELDS#ser-integer
+整数または~decimalを構文解析する:~STRUCTURED-FIELDS#parse-number
+
 
 ●●words_table1
 RFC6455:RFC6455-ja.html
@@ -162,6 +168,16 @@ decimal:::10 進数
 	構文解析された `cookie-date$p:parsed-cookie-date
 	$p:link-param
 	$p:delta-seconds
+	^p:date-time
+	^p:time-offset
+	^p:time-secfrac
+
+	●処理
+	`~sf日時$:Date
+	%入力~整数:input_integer
+	-:input_date
+	%入力~文字列:input_string
+	%出力~日時:output_date
 
 	●保安
 変動:variance:~
@@ -212,6 +228,7 @@ retrofit:
 消費器:consumer::~
 閏秒:leap seconds:~
 	〜からの秒数:number of delta seconds
+	〜からの秒数:delta in seconds
 
 	除外する:minus
 	~field値:payload
@@ -242,6 +259,9 @@ retrofit:
     Fielding, R., Ed., Nottingham, M., Ed., and J. Reschke, Ed., ＜HTTP Semantics＞, STD 97, ~RFC9110, June 2022
 [RFC2119]
     Bradner, S., ＜Key words for use in RFCs to Indicate Requirement Levels＞, BCP 14, ~RFC2119, March 1997
+[RFC3339]
+    Klyne, G. and C. Newman, ＜Date and Time on the Internet: Timestamps＞, ~RFC3339, July 2002
+
 [RFC8174]
     Leiba, B., ＜Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words＞, BCP 14, ~RFC8174, May 2017
 [RFC8288]
@@ -265,6 +285,8 @@ retrofit:
 	<a href="https://httpwg.org/">HTTP Working Group</a>
 位置付け
 	Internet-Draft
+更新
+	RFC 8941 （認可されたならば）
 意図される位置付け
 	Standards Track
 失効日
@@ -316,6 +338,13 @@ This specification nominates a selection of existing HTTP fields as having synta
 それらの利用を折衝する方法は指定しない。
 ◎
 To accommodate some additional fields whose syntax is not compatible, it also defines mappings of their semantics into new Structured Fields. It does not specify how to negotiate their use.
+</p>
+
+<p>
+それらの対応付けのうち 1 つは、
+新たな有構造~field~data型として`~sf日時$の導入を要求する。
+◎
+One of those mappings requires introduction of a new Structured Fields data type, Date.
 </p>
 
 <p class="trans-note">【
@@ -498,6 +527,18 @@ Note that while implementations can parse and serialise compatible fields as Str
 【以下、この段落の内容は`~IETF日本語訳 共通~page＠~IETFcommon#requirements-notation$に移譲。】
 ◎
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all capitals, as shown here.
+</p>
+
+<p>
+この文書は、
+`RFC3339$r から次に挙げる規則を利用する
+【と記されているが、（まだ）利用されていない】
+⇒＃
+`date-time^p,
+`time-offset^p,
+`time-secfrac^p
+◎
+This document uses the date-time, time-offset, and time-secfrac rules from [RFC3339].
 </p>
 
 	</section>
@@ -969,17 +1010,14 @@ Date: Sun, 06 Nov 1994 08:49:37 GMT
 </pre>
 
 <p>
-その値は、［
-~Unix~Epoch（~UTC 1970年 1月 1日 00:00:00 ）からの秒数（閏秒は除外する）
-］を与える`~sf整数$により，より効率的に表現される。
-したがって、
-上の例は，次のように対応付けられよう：
+その値は、
+次のように対応付けられよう：
 ◎
-Its value is more efficiently represented as an Integer number of delta seconds from the Unix epoch (00:00:00 UTC on 1 January 1970, minus leap seconds). Thus, the example above would be mapped to:
+Its value would be mapped to:
 </p>
 
 <pre class="lang-http">
-SF-Date: 784072177
+SF-Date: @784111777
 </pre>
 </div>
 
@@ -1071,16 +1109,20 @@ SF-Location: "https://example.com/foo"
 <p>
 `表 3＠#date-fields$ の 1 列目に挙げる`~field名$
 【言い換えれば、 `HTTP-date$p を値にとる`単数~field$】
-は、
-その値を次で与えられる`~sf整数$として表現することにより，［
+は、［
 同じ行の 2 列目に挙げられた`有構造~field$
 ］の中へ対応付けれる
-⇒
-値を `HTTP$r `日時の形式＠~HTTPinfra#http.date§に則って構文解析した結果を［
-~Unix~Epoch（~UTC 1970年 1月 1日 00:00:00 ）からの秒数（閏秒は除外する）
-］に換算した結果
+— その値を［
+`HTTP$r `日時の形式＠~HTTPinfra#http.date§に則って構文解析した結果
+］を［
+~Unix~Epoch（~UTC 1970年 1月 1日 00:00:00 ）からの秒数に
+— 閏秒は除外して —
+換算した結果
+］の整数【！Integer number】を［
+`付録 A＠#date-type§にて定義される`有構造~field$用の~data型 `~sf日時$
+］として表現することにより。
 ◎
-The field names in Table 3 (paired with their mapped field names) have values that can be mapped into Structured Fields by parsing their payload according to Section 5.6.7 of [HTTP] and representing the result as an Integer number of seconds delta from the Unix Epoch (00:00:00 UTC on 1 January 1970, excluding leap seconds).
+The field names in Table 3 (paired with their mapped field names) have values that can be mapped into Structured Fields by parsing their payload according to Section 5.6.7 of [HTTP] and representing the result as an Integer number of seconds delta from the Unix Epoch (00:00:00 UTC on 1 January 1970, excluding leap seconds), using the Date Structured Fields data type defined in Appendix A.
 </p>
 
 <div>
@@ -1131,7 +1173,7 @@ For example, an Expires field could be mapped as:
 </p>
 
 <pre class="lang-http">
-SF-Expires: 1571965240
+SF-Expires: @1659578233
 </pre>
 </div>
 
@@ -1323,7 +1365,7 @@ Cookie attributes map to Parameters on the Inner List, with the parameter name b
 <td>`~sf真偽値$
 
 <tr><td>`Expires$a
-<td>`~sf整数$
+<td>`~sf日時$＊
 
 <tr><td>`Max-Age$a
 <td>`~sf整数$
@@ -1355,12 +1397,12 @@ SameSite｜Token
 
 <p>
 `Expires$a 属性は、
-`~sf整数$による表現
-— 構文解析された `cookie-date＠~HTTPcookie#p.cookie-date$p を~Unix~Epoch（~UTC 1970年 1月 1日 00:00:00 ）からの秒数（閏秒は除外する）として表出した結果 —
-に対応付けられる
-（ `COOKIES$r `日付＠~HTTPcookie#cookie-date§ を見よ）。
+`~sf日時$＊による表現
+— 構文解析された `cookie-date＠~HTTPcookie#p.cookie-date$p 
+（ `COOKIES$r `日付＠~HTTPcookie#cookie-date§ を見よ）
+に対応付けられる。
 ◎
-The Expires attribute is mapped to an Integer representation of parsed-cookie-date (see Section 5.1.1 of [COOKIES]) expressed as a number of seconds delta from the Unix Epoch (00:00:00 UTC on 1 January 1970, excluding leap seconds).
+The Expires attribute is mapped to a Date representation of parsed-cookie-date (see Section 5.1.1 of [COOKIES]).
 </p>
 
 <div class="example">
@@ -1386,7 +1428,7 @@ can be mapped into:
 </p>
 
 <pre class="lang-http">
-SF-Set-Cookie: ("lang" "en-US"); expires=1623233894; samesite=Strict; secure
+SF-Set-Cookie: ("lang" "en-US"); expires=@1623233894＊; samesite=Strict; secure
 </pre>
 
 <pre class="lang-http">
@@ -1653,5 +1695,138 @@ Section 2 identifies existing HTTP fields that can be parsed and serialised with
 Section 3 defines alternative representations of existing fields. Because downstream consumers might interpret the message differently based upon whether they recognise the alternative representation, implementations are prohibited from generating such fields unless they have negotiated support for them with their peer. This specification does not define such a mechanism, but any such definition needs to consider the implications of doing so carefully.
 </p>
 
+	</section>
+	<section id="date-type">
+<h2 title="Appendix A. The Date Structured Type">付録 A. 有構造~型：~sf日時</h2>
+
+<p>
+この節は、
+新たな有構造~field~data型として，
+`~sf日時@
+（ `Date^en ）を定義する。
+◎
+This section defines a new Structured Fields data type, Date.
+</p>
+
+<p>
+`~sf日時$の~data~modelは、
+`~sf整数$に類似する
+【~dataとしては，~sf整数と同じだが、直列化-法は異なる】
+— それは、［
+~UTC 1970年 1月 1日 00:00:00
+］からの［
+閏秒は除外した（場合によっては負な）秒数
+］を表現する。
+◎
+Dates have a data model that is similar to Integers, representing a (possibly negative) delta in seconds from January 1, 1970 00:00:00 UTC, excluding leap seconds.
+</p>
+
+<p>
+`~sf日時$用の~ABNFは：
+◎
+The ABNF for Dates is:
+</p>
+
+<pre class="bnf">
+`sf-date@p
+	= "@" ["-"] 1*15`DIGIT$P
+</pre>
+
+<div class="example">
+<p>
+例えば：
+◎
+For example:
+</p>
+<pre class="lang-http">
+Example-Date: @1659578233
+</pre>
+</div>
+
+		<section id="serialising-a-date">
+<h3 title="A.1. Serialising a Date">A.1. `~sf日時$の直列化-法</h3>
+
+<p>
+所与の
+( %入力~整数 )
+に対し，［
+~HTTP`~field値$に利用するに相応しい~ASCII文字列
+］を返す：
+◎
+Given a Date as input_integer, return an ASCII string suitable for use in an HTTP field value.
+</p>
+<ol>
+	<li>
+%出力 ~LET "`@^c"
+◎
+Let output be "@".
+</li>
+	<li>
+%出力 に次の結果を付加する
+⇒
+`整数を直列化する$( %入力~整数 ) `STRUCTURED-FIELDS$r
+◎
+Append to output the result of running Serializing an Integer with input_date (see Section 4.1.4 of [STRUCTURED-FIELDS]).
+</li>
+	<li>
+~RET %出力
+◎
+Return output.
+</li>
+</ol>
+
+		</section>
+		<section id="parsing-a-date">
+<h3 title="A.2. Parsing a Date">A.2. `~sf日時$の構文解析-法</h3>
+
+<p class="trans-note">【
+この節にて暗黙的に適用される規約（ %位置↗ 記法など）については、
+`STRUCTURED-FIELDS$r `有構造~fieldの構文解析-法＠~STRUCTURED-FIELDS#text-parse§
+の~algoを見よ。
+】</p>
+
+<p>
+%入力~文字列 から`~sf日時$を構文解析して返す：
+◎
+Given an ASCII string as input_string, return a Date. input_string is modified to remove the parsed value.
+</p>
+<ol>
+	<li>
+~IF［
+%位置↗ ~NEQ "`@^c"
+］
+⇒
+構文解析を失敗させる
+◎
+If the first character of input_string is not "@", fail parsing.
+</li>
+	<li>
+%位置 ~INCBY 1
+◎
+Discard the first character of input_string.
+</li>
+	<li>
+%出力~日時 ~LET %入力~文字列 から`整数または~decimalを構文解析する$
+`STRUCTURED-FIELDS$r
+◎
+Let output_date be the result of running Parsing an Integer or Decimal with input_string (see Section 4.2.4 of [STRUCTURED-FIELDS]).
+</li>
+	<li>
+~IF［
+%出力~日時 は`~sf~decimal$である
+］
+⇒
+構文解析を失敗させる
+◎
+If output_date is a Decimal, fail parsing.
+</li>
+	<li>
+~RET %出力~日時
+◎
+Return output_date.
+</li>
+</ol>
+
+		</section>
 	</section>
 </main></div>
