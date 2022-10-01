@@ -9,12 +9,16 @@ Util.ready = function(){
 	source_data.init();
 
 	Util.switchWordsInit(source_data);
-
-	PAGE_DATA.ref_data = (PAGE_DATA.ref_data || '') + `
-HTTP=副               ~/http-semantics-ja.html
-HTTP11=副             ~/http1-ja.html
-CACHING=副            ~/http-cache-ja.html
+	PAGE_DATA.ref_key_map = (PAGE_DATA.ref_key_map || '') + `
+HTTP:RFC9110
+CACHING:RFC9111
+HTTP11:RFC9112
+HTTP2:RFC9113
+HTTP3:RFC9114
+URI:RFC3986
+COOKIE:RFC6265
 `
+
 	/* 展開状態で保存されたページがこの script を読み込まないようにする */
 	repeat('script[src="http-common.js"]', (e) => {
 		e.remove();
