@@ -77,6 +77,9 @@ case 'st': // status code
 case 'st0': // TODO st/st0＊
 	klass = 'st';
 	break;
+case 'ph':
+	text = `:${key}`;
+	break;
 case 'X':
 	text = `%x${key}`;
 	break;
@@ -127,6 +130,7 @@ st:status
 st0:status
 wc:warn
 h:header
+ph:pseudo-header
 m:method
 dir:directive
 qdir:directive
@@ -142,6 +146,7 @@ c:code
 p:code
 P:code
 h:code
+ph:code
 m:code
 st:code
 st0:code

@@ -1839,6 +1839,7 @@ RFC9110=副            ~/http-semantics-ja.html
 RFC9111=副            ~/http-cache-ja.html
 RFC9112=副            ~/http1-ja.html
 RFC9113=副            summerwind.jp/docs/rfc9113/
+RFC9114=副            ~/http3-ja.html
 SELECTORS4=副         ~/selectors4-ja.html
 SELECTORS3=副         ~mitsue/css3-selectors/
 SELECTORS3=副2        ＃zng.info/specs/css3-selectors.html

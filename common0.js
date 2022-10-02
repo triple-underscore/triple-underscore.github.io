@@ -1118,6 +1118,7 @@ HTTPinfra:http-semantics-ja.html
 HTTPsem:http-semantics2-ja.html
 HTTPcache:http-cache-ja.html
 HTTPv1:http1-ja.html
+HTTPv3:http3-ja.html
 HTTPweblink:http-web-linking-ja.html
 HTTPcookie:http-cookie-ja.html
 STRUCTURED-FIELDS:http-structured-fields-ja.html
