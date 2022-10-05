@@ -110,8 +110,8 @@ return text;
 
 ●●options
 
-spec_date:2022-09-28
-trans_update:2022-09-29
+spec_date:2022-10-04
+trans_update:2022-10-05
 source_checked:220316
 page_state_key:HTML
 original_url:https://html.spec.whatwg.org/multipage/workers.html
@@ -323,7 +323,7 @@ V.~URL:#_location-url
 
 ~workerの環境~設定群~objを設定しておく:#set-up-a-worker-environment-settings-object
 
-~scriptを~worker大域~scopeの中に取込む:#import-scripts-into-worker-global-scope
+~scriptを~worker大域~scopeの中に~importする:#import-scripts-into-worker-global-scope
 ~worker大域~scope:#concept-workerlocation-workerglobalscope
 関連な所有者として追加するもの:#relevant-owner-to-add
 
@@ -371,10 +371,9 @@ sC.再投出-用~error:~WAPI#concept-script-error-to-rethrow
 ~script:~WAPI#concept-script
 古典~script:~WAPI#classic-script
 ~module~script:~WAPI#module-script
-~worker用古典~scriptを~fetchする:~WAPI#fetch-a-classic-worker-script
+~worker用~古典~scriptを~fetchする:~WAPI#fetch-a-classic-worker-script
 ~module~worker~script~graphを~fetchする:~WAPI#fetch-a-module-worker-script-tree
-~workerが取込んだ古典~scriptを~fetchする:~WAPI#fetch-a-classic-worker-imported-script
-V.~custom~fetch応答の処理n:~WAPI#fetching-scripts-processcustomfetchresponse
+~workerが~importした古典~scriptを~fetchする:~WAPI#fetch-a-classic-worker-imported-script
 
 古典~scriptを走らす:~WAPI#run-a-classic-script
 ~module~scriptを走らす:~WAPI#run-a-module-script
@@ -420,8 +419,10 @@ enV.時刻~起点:~WAPI#concept-settings-object-time-origin
 環境~設定群~obj:~WAPI#environment-settings-object
 尚早に中止され:~WAPI#abort-a-running-script
 走っている~scriptを中止する:~WAPI#abort-a-running-script
-~fetchを遂行する:~WAPI#fetching-scripts-perform-fetch
-i.~top-level内:~WAPI#fetching-scripts-is-top-level
+非同期的な~fetchを遂行する~hook:~WAPI#asynchronous-perform-the-fetch-hook
+同期的な~fetchを遂行する~hook:~WAPI#synchronous-perform-the-fetch-hook
+V.~custom~fetch応答の処理n:~WAPI#fetching-scripts-processcustomfetchresponse
+V.~top-levelか:~WAPI#fetching-scripts-is-top-level
 実行は準備済みか:~WAPI#concept-environment-execution-ready-flag
 agC.非同一-生成元~隔離~mode:~WAPI#agent-cluster-cross-origin-isolation
 
@@ -452,8 +453,10 @@ embP.値:~ORIGIN#embedder-policy-value-2
 実装定義:~INFRA#implementation-defined
 set.付加する:~INFRA#set-append
 集合:~INFRA#ordered-set
+~list:~INFRA#list
 空:~INFRA#list-is-empty
 map.~clearする:~INFRA#map-clear
+~scalar値~文字列:~INFRA#scalar-value-string
 
 凍結d配列:~WEBIDL#dfn-frozen-array-type
 新たな:~WEBIDLjs#new
@@ -727,7 +730,8 @@ background::::バックグラウンド
 	%内側~設定群:inside settings
 	%行先:destination
 	%要請:request
-	%~top-level内か:is top-level
+	%~top-levelか:is top-level
+	%~top-levelか:isTopLevel
 	%~custom~fetch応答の処理n:processCustomFetchResponse
 	%応答:response
 	%~script:script
@@ -753,6 +757,7 @@ background::::バックグラウンド
 	%~query:query
 	%素片:fragment
 	%完了-時の手続き:onComplete
+	%~fetchを遂行する:performFetch
 
 	●仕様
 未取扱い:not handled:未取り扱い
@@ -774,9 +779,7 @@ background::::バックグラウンド
 管理器:manager::~::マネージャ
 繋がろ:contactしよ:~
 古典:classic::~::クラシック
-取込む:importする::取り込む
-取込んだ:importした::取り込んだ
-取込み:import::取り込み
+import:
 main::::メイン
 database::::データベース
 CPU:
@@ -1049,7 +1052,7 @@ View this example online.
 </p>
 <ul>
 	<li>
-~JS `import^c 文を利用して他の~moduleを取込む能
+~JS `import^c 文を利用して他の~moduleを~importする能
 </li>
 	<li>
 既定で~strict~modeになる
@@ -1075,7 +1078,7 @@ As the import statement is available, the importScripts() method will automatica
 ~main~threadの外で画像~操作を行う~worker
 ］を利用する。
 それは、
-別の~moduleから利用される~filterを取込む。
+別の~moduleから利用される~filterを~importする。
 ◎
 In this example, the main document uses a worker to do off-main-thread image manipulation. It imports the filters used from another module.
 </p>
@@ -1176,7 +1179,7 @@ self.onmessage = %e =&gt; {
 
 <p>
 これは、
-次の~file `filters.js^c を取込む：
+次の~file `filters.js^c を~importする：
 ◎
 Which imports the file filters.js:
 </p>
@@ -3492,10 +3495,6 @@ If is shared is true, then:
 Let destination be "sharedworker" if is shared is true, and "worker" otherwise.
 </li>
 	<li>
-%完了-時の手続き ~LET <a href="#_worker-onComplete">下に定義される手続き</a>
-◎
-↓↓</li>
-	<li>
 <p>
 次に従って~scriptを得する
 — %options[ `type^l ] に応じて：
@@ -3506,15 +3505,16 @@ Obtain script by switching on the value of options's type member:
 			<li>
 `classic^l
 ⇒
-`~worker用古典~scriptを~fetchする$( 次に挙げる引数 )
+`~worker用~古典~scriptを~fetchする$( 次に挙げる引数 )
 ⇒＃
 %~URL,
 %外側~設定群,
 %行先,
 %内側~設定群,
-%完了-時の手続き
+%完了-時の手続き†,
+%~fetchを遂行する†
 ◎
-Fetch a classic worker script given url, outside settings, destination, inside settings, and with onComplete as defined below.
+Fetch a classic worker script given url, outside settings, destination, inside settings, and with onComplete and performFetch as defined below.
 </li>
 			<li>
 `module^l
@@ -3526,25 +3526,36 @@ Fetch a classic worker script given url, outside settings, destination, inside s
 %行先,
 %options[ `credentials^l ],
 %内側~設定群,
-%完了-時の手続き
+%完了-時の手続き†,
+%~fetchを遂行する†
 ◎
-Fetch a module worker script graph given url, outside settings, destination, the value of the credentials member of options, inside settings, and with onComplete as defined below.
+Fetch a module worker script graph given url, outside settings, destination, the value of the credentials member of options, inside settings, and with onComplete and performFetch as defined below.
 </li>
 		</ul>
 
+<p>†
+上で利用される［
+%完了-時の手続き,
+%~fetchを遂行する
+］は、
+以下に定義される：
+◎
+↑</p>
+
 <div class="algo">
 <p>
-いずれの場合も，上で`~fetchを遂行する$ときは、所与の
-( %要請, %~top-level内か, `~custom~fetch応答の処理n$V )
-に対し，次の手続きを遂行する：
+%~fetchを遂行する は，`非同期的な~fetchを遂行する~hook$であり、
+所与の
+( %要請, `~top-levelか$V, `~custom~fetch応答の処理n$V )
+に対し，次を遂行する：
 ◎
-In both cases, to perform the fetch given request, is top-level and processCustomFetchResponse:
+In both cases, let performFetch be the following asynchronous perform the fetch hook given request, is top-level and processCustomFetchResponse:
 </p>
 		<ol>
 			<li>
 <p>
 ~IF［
-%~top-level内か ~EQ ε
+%~top-levelか ~EQ ~F
 ］：
 </p>
 				<ol>
@@ -3559,7 +3570,7 @@ In both cases, to perform the fetch given request, is top-level and processCusto
 </li>
 				</ol>
 ◎
-If is top-level is not set, fetch request with processCustomFetchResponse as processResponseConsumeBody and return.
+If isTopLevel is false, fetch request with processCustomFetchResponse as processResponseConsumeBody and return.
 </li>
 			<li>
 %要請 の`予約-済み~client$rq ~SET %内側~設定群
@@ -3692,8 +3703,8 @@ Run processCustomFetchResponse with response.
 </div>
 
 <div class="algo">
-<p id="_worker-onComplete">
-上で利用される %完了-時の手続き は、
+<p>
+%完了-時の手続き は、
 所与の
 ( %~script )
 に対し：
@@ -5003,33 +5014,31 @@ User agents should err toward exposing the number of logical processors availabl
 <h3 title="APIs available to workers">10.3. ~workerから可用な~API</h3>
 
 			<section id="importing-scripts-and-libraries">
-<h4 title="Importing scripts and libraries">10.3.1. ~script／~libraryの取込み</h4>
+<h4 title="Importing scripts and libraries">10.3.1. ~script／~libraryの~import法</h4>
 
 <div class="algo">
 `WorkerGlobalScope$I ~objの
 `importScripts(...urls)@m
 ~method~手続きは
 ⇒
-`~scriptを~worker大域~scopeの中に取込む$( コレ, %urls )
+`~scriptを~worker大域~scopeの中に~importする$( コレ, %urls )
 ◎
 The importScripts(...urls) method steps are to import scripts into worker global scope given this and urls.
 </div>
 
 <div class="algo">
 <p>
-`~scriptを~worker大域~scopeの中に取込む@
+`~scriptを~worker大域~scopeの中に~importする@
 ときは、
 所与の
 ⇒＃
 `WorkerGlobalScope$I ~obj %~worker大域~scope,
-`sequence&lt;DOMString&gt;^I 型の値 %~URL群,
+`~scalar値~文字列$の`~list$ %~URL群,
+`同期的な~fetchを遂行する~hook$ %~fetchを遂行する（省略時は ε ）
 ◎終
-に対し，次の手続きを走らすモノトスル
-— この手続きには、
-任意選択で`~fetchを遂行する$~hookを給して，~custom化してもヨイ
-（供された場合、`~workerが取込んだ古典~scriptを~fetchする$ときに利用される）：
+に対し，次の手続きを走らすモノトスル：
 ◎
-To import scripts into worker global scope, given a WorkerGlobalScope object worker global scope and a sequence&lt;DOMString&gt; urls, run these steps. The algorithm may optionally be customized by supplying custom perform the fetch hooks, which if provided will be used when invoking fetch a classic worker-imported script.
+To import scripts into worker global scope, given a WorkerGlobalScope object worker global scope, a list of scalar value strings urls, and an optional synchronous perform the fetch hook performFetch:
 </p>
 <ol>
 	<li>
@@ -5089,16 +5098,14 @@ Parse each value in urls relative to settings object. If any fail, throw a "Synt
 ~EACH( %~URL )
 に対し：
 ◎
-For each url in the resulting URL records, run these substeps:
+For each url in the resulting URL records:
 </p>
 		<ol>
 			<li>
-%~script ~LET 
-`~workerが取込んだ古典~scriptを~fetchする$( %~URL, %設定群~obj )
-— `~fetchを遂行する$ ~custom手続きが供されたならば，それも渡す
+%~script ~LET `~workerが~importした古典~scriptを~fetchする$( %~URL, %設定群~obj, %~fetchを遂行する )
 （この段は、例外を投出し得る）
 ◎
-Fetch a classic worker-imported script given url and settings object, passing along any custom perform the fetch steps provided. If this succeeds, let script be the result. Otherwise, rethrow the exception.
+Fetch a classic worker-imported script given url and settings object, passing along performFetch if provided. If this succeeds, let script be the result. Otherwise, rethrow the exception.
 </li>
 			<li>
 <p>
@@ -5139,9 +5146,9 @@ If an exception was thrown or if the script was prematurely aborted, then abort 
 
 <p class="note">注記：
 `Service Workers^cite `SW$r は、
-`~fetchを遂行する$ ~hook用に自前の~optionを与えて この~algoを走らす仕様の例である。
+自前の`非同期的な~fetchを遂行する~hook$を与えて この~algoを走らす仕様の例である。
 ◎
-Service Workers is an example of a specification that runs this algorithm with its own options for the perform the fetch hook. [SW]
+Service Workers is an example of a specification that runs this algorithm with its own synchronous perform the fetch hook. [SW]
 </p>
 </div>
 

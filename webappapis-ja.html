@@ -123,7 +123,7 @@ return text;
 ●●options
 
 spec_date:2022-10-04
-trans_update:2022-10-04
+trans_update:2022-10-05
 source_checked:220316
 page_state_key:HTML
 spec_status:LS
@@ -598,8 +598,12 @@ sfO.具現化を阻んでいるか:#concept-script-fetch-options-render-blocking
 ~module要請から~module種別を得る:#module-type-from-module-request
 ~module種別は許容されるか？:#module-type-allowed
 
-~fetchを遂行する:#fetching-scripts-perform-fetch
-i.~top-level内:#fetching-scripts-is-top-level
+~fetchを遂行する~hook:#fetching-scripts-perform-fetch
+非同期的な~fetchを遂行する~hook:#asynchronous-perform-the-fetch-hook
+同期的な~fetchを遂行する~hook:#synchronous-perform-the-fetch-hook
+i.~top-levelか:#fetching-scripts-is-top-level
+V.~top-levelか:#fetching-scripts-is-top-level
+	i.~top-level内:#fetching-scripts-is-top-level
 i.~custom~fetch応答の処理n:#fetching-scripts-processcustomfetchresponse
 V.~custom~fetch応答の処理n:#fetching-scripts-processcustomfetchresponse
 
@@ -1217,8 +1221,6 @@ BOM:
 設定下:setup::~
 	設定しておく:setup
 	設定しておく:set upする
-未設定:unset::~
-	ε:unset
 checkpoint:
 schedule::::スケジュール
 	~scriptによる:scripted
@@ -1824,7 +1826,12 @@ OffscreenCanvas:
 	%完了-時の手続き:onComplete
 	%失敗したか:failed
 	%処理待ち個数:pendingCount
-	%~custom~fetch応答:customFetchResponse
+	%~fetchを遂行する:performFetch
+	%応答を処理する:processResponse
+	次に定義する手続き:onSingleFetchComplete
+	次に定義する手続き:onFetchDescendantsComplete
+	次に定義する手続き:onInternalFetchingComplete
+
 
 	●指示語
 現在:currently:~
@@ -4813,81 +4820,111 @@ For any given script fetch options options, the descendant script fetch options 
 <hr>
 
 <p>
-これらの~algoを利用する仕様は、
-任意選択で
-`~fetchを遂行する@
-~custom~hookを給して，~algoを~custom化できる：
+以下の~algoのうち いくつかは、
+`~fetchを遂行する~hook@
+で~custom化できる（され得る）
+— それは、
+次に挙げるいずれかの形をとる~algoである：
 ◎
-The algorithms below can be customized by optionally supplying a custom perform the fetch hook,＼
+Several of the below algorithms can be customized with a perform the fetch hook algorithm, in one of the following forms:
 </p>
-<ul>
-	<li>
-この~custom~hookは、
+<dl>
+	<dt>
+`非同期的な~fetchを遂行する~hook@
+◎
+asynchronous perform the fetch hook
+</dt>
+	<dd>
 次に挙げる引数をとる
 ⇒＃
 `要請$,
-%~top-level内か,
-`~custom~fetch応答の処理n$V
+真偽値 `~top-levelか@i,
+`~custom~fetch応答の処理n$i
 ◎
-which takes a request, an is top-level flag, and a processCustomFetchResponse algorithm.＼
-</li>
-	<li>
-`~custom~fetch応答の処理n@V
-は、
-`応答$（`~network~error$にもなり得る）を引数にとる手続きとする。
-この~custom~hookは、
-この手続きを［
-`~workerが~importした古典~scriptを~fetchする$ときは同期的に／
-他のときは非同期に
-］走らすモノトスル。
+It takes a request, a boolean isTopLevel, and a processCustomFetchResponse algorithm.＼
+</dd>
+	<dd>
+この~hookは、
+`~custom~fetch応答の処理n@i
+を走らす
+— それは、
+`応答$（`~network~error$にもなり得る）を引数にとる。
 ◎
-The perform the fetch algorithm must run processCustomFetchResponse with a response (which may be a network error), either synchronously (when using fetch a classic worker-imported script) or asynchronously (otherwise).＼
-</li>
+It runs processCustomFetchResponse with a response (which may be a network error).
+</dd>
+
+	<dt>
+`同期的な~fetchを遂行する~hook@
+◎
+synchronous perform the fetch hook
+</dt>
+	<dd>
+次に挙げる引数をとる
+⇒＃
+`要請$,
+%~top-levelか
+◎
+It takes a request and a boolean isTopLevel,＼
+</dd>
+	<dd>
+`応答$（`~network~error$にもなり得る）を返す。
+◎
+and returns a response (which may be a network error).
+</dd>
+</dl>
+
+<p>
+いずれの事例も，
+`~top-levelか$V は：
+◎
+In both cases, isTopLevel will be true＼
+</p>
+<ul>
 	<li>
 <p>
-%~top-level内か ~IN { `~top-level内@i, ε } は：
+次に対しては ~T にされる：
 </p>
 		<ul>
 			<li>
-次に対しては `~top-level内$i にされる
-⇒
 `古典~script$に対する すべての~fetch
 </li>
 			<li>
-次を行うときの初期~fetchに対しては `~top-level内$i にされる
+次を行うときの初期~fetch
 ⇒＃
 `外部~module~script~graphを~fetchする$ ／
 `~module~worker~script~graphを~fetchする$ ／
 `~import_~script~graphを~fetchする$
 </li>
-			<li>
-次に対しては ε にされる
+		</ul>
+◎
+for all classic script fetches, and for the initial fetch when fetching an external module script graph, fetching a module worker script graph, or fetching an import() module script graph,＼
+</li>
+	<li>
+次に対しては ~F にされる
 ⇒
 ［
 ~module~script~graphを通り抜ける間に遭遇した `import^c 文
 ］による結果の~fetch
-</li>
-		</ul>
 ◎
-The is top-level flag will be set for all classic script fetches,＼
-and for the initial fetch when fetching an external module script graph, fetching a module worker script graph, or fetching an import() module script graph,＼
-but not for the fetches resulting from import statements encountered throughout the graph.
+but false for the fetches resulting from import statements encountered throughout the graph.
 </li>
 </ul>
 
-<div class="note">
-<p>注記：
-`~fetchを遂行する$~hookを給さない，既定の場合では、
-以下の~algoは，単純に 所与の`要請$を`~fetchする$ことになるが、［
+<p>
+以下の各~algoは、［
+`~fetchを遂行する~hook$を給さない既定では，
+単純に所与の`要請$を`~fetchする$
+］ことになるが，~algoに特有な［［
 `要請$, および 結果の`応答$の検証
-］に対する~algoに特有な~custom化も伴う。
+］に対する~custom化
+］を伴う。
 ◎
-By default, not supplying the perform the fetch will cause the below algorithms to simply fetch the given request, with algorithm-specific customizations to the request and validations of the resulting response.
+By default, not supplying a perform the fetch hook will cause the below algorithms to simply fetch the given request, with algorithm-specific customizations to the request and validations of the resulting response.
 </p>
 
 <p>
 ~algoに特有な~custom化の上層に，自前の~custom化を重ねたい仕様~策定者は、
-次のような`~fetchを遂行する$~hookを給すること
+次のような`~fetchを遂行する~hook$を給すること
 ⇒
 所与の`要請$を改変して, それを`~fetch$して, 結果の`応答$に対する特有な検証を遂行する
 （検証に失敗したなら`~network~error$で完了する）
@@ -4902,8 +4939,6 @@ To layer your own customizations on top of these algorithm-specific ones, supply
 ◎
 The hook can also be used to perform more subtle customizations, such as keeping a cache of responses and avoiding performing a fetch at all.
 </p>
-
-</div>
 
 <p class="note">注記：
 `Service Workers^cite `SW$r は、
@@ -4966,27 +5001,22 @@ Set up the classic script request given request and options.
 </li>
 	<li>
 <p>
-~IF［
-この~algoの~call元にて，`~fetchを遂行する$ための~custom手続き %手続き が指定されている
-］
-⇒
-%手続き( %要請, `~top-level内$i, （`~custom~fetch応答の処理n$i を成す）下に与える手続き )
-【！run the remaining steps as part of】
-【！ "as part of X’s Y" = “X の Y を成す部分” ≠ “X の Y の一部” 】
-◎
-If the caller specified custom steps to perform the fetch, perform them on request, with the is top-level flag set. Return from this algorithm, and run the remaining steps as part of the perform the fetch's processCustomFetchResponse given response response.
-</p>
-
-<p>
-~ELSE
-⇒
 %要請 を`~fetchする$
 — 次を与える下で
 ⇒
-`応答の本体を消費する処理n$i ~SET 下に与える手続き
-【！run the remaining steps as part of】
+`応答の本体を消費する処理n$i ~SET 次に定義する手続き
 ◎
-Otherwise, fetch request. Return from this algorithm, and run the remaining steps as part of the fetch's processResponseConsumeBody given response response.
+Fetch request with the following processResponseConsumeBody steps＼
+</p>
+
+<div class="algo">
+<p>
+手続きは、
+所与の
+( `応答$ %応答 )
+に対し：
+◎
+given response response:
 </p>
 
 <p class="note">注記：
@@ -4998,15 +5028,6 @@ Otherwise, fetch request. Return from this algorithm, and run the remaining step
 ◎
 response can be either CORS-same-origin or CORS-cross-origin. This only affects how error reporting happens.
 </p>
-
-<div class="algo">
-<p>
-手続きは、
-所与の
-( `応答$ %応答 )
-に対し：
-◎
-↑</p>
 		<ol>
 			<li>
 `計時を完結して報告する$( %応答, %設定群~obj の`大域~obj$enV, `script^l )
@@ -5029,7 +5050,7 @@ Set response to response's unsafe response.
 %完了-時の手続き( ~NULL )；
 ~RET
 ◎
-If response's type is "error", or response's status is not an ok status, then run onComplete given null, and return.
+If response's type is "error", or response's status is not an ok status, then run onComplete given null, and abort these steps.
 </p>
 
 <p class="note">注記：
@@ -5085,14 +5106,14 @@ Let muted errors be true if response was CORS-cross-origin, and false otherwise.
 </li>
 			<li>
 %~script ~LET
-`古典~scriptを作成する$(
+`古典~scriptを作成する$( 次に挙げる引数 )
+⇒＃
 %~source~text,
 %応答 の`~URL$rs,
 %~option群,
 %~errorは黙秘するか
-)
 ◎
-Let script be the result of creating a classic script given source text, settings object, response's url, options, and muted errors.
+Let script be the result of creating a classic script given source text, settings object, response's URL, options, and muted errors.
 </li>
 			<li>
 %完了-時の手続き( %~script )
@@ -5115,11 +5136,12 @@ Run onComplete given script.
 %~fetch~client設定群~obj,
 %行先,
 %~script設定群~obj,
-%完了-時の手続き
+%完了-時の手続き,
+`非同期的な~fetchを遂行する~hook$ %~fetchを遂行する（省略時は ε ）
 ◎終
 に対し，次を走らす
 ◎
-To fetch a classic worker script given a url, a fetch client settings object, a destination, a script settings object, and an onComplete algorithm, run these steps.＼
+To fetch a classic worker script given a url, a fetch client settings object, a destination, a script settings object, an onComplete algorithm, and an optional asynchronous perform the fetch hook performFetch, run these steps.＼
 </p>
 <ol>
 	<li>
@@ -5147,13 +5169,12 @@ Let request be a new request whose URL is url, client is fetch client settings o
 	<li>
 <p>
 ~IF［
-この~algoの~call元にて，`~fetchを遂行する$ための~custom手続き %手続き が指定されている
+%~fetchを遂行する ~NEQ ε
 ］
 ⇒
-%手続き( %要請, `~top-level内$i, （`~custom~fetch応答の処理n$i を成す）下に与える手続き )
-【！run the remaining steps as part of】
+%~fetchを遂行する( %要請, ~T, %応答を処理する† )
 ◎
-If the caller specified custom steps to perform the fetch, perform them on request, with the is top-level flag set. Return from this algorithm, and run the remaining steps as part of the perform the fetch's processCustomFetchResponse given response response.
+If performFetch was given, run performFetch with request, true, and with processResponse as defined below.
 </p>
 
 <p>
@@ -5162,20 +5183,20 @@ If the caller specified custom steps to perform the fetch, perform them on reque
 %要請 を`~fetchする$
 — 次を与える下で
 ⇒
-`応答の本体を消費する処理n$i ~SET 下に与える手続き
-【！run the remaining steps as part of】
+`応答の本体を消費する処理n$i ~SET %応答を処理する†
 ◎
-Otherwise, fetch request. Return from this algorithm, and run the remaining steps as part of the fetch's processResponseConsumeBody given response response.
+Otherwise, fetch request with processResponseConsumeBody set to processResponse as defined below.
 </p>
 
 <div class="algo">
-<p>
-手続きは、
+<p>†
+%応答を処理する 手続きは、
 所与の
 ( `応答$ %応答 )
 に対し：
 ◎
-↑</p>
+In both cases, let processResponse given response response be the following algorithm:
+</p>
 		<ol>
 			<li>
 `計時を完結して報告する$( %応答, %~fetch~client設定群~obj の`大域~obj$enV, `other^l )
@@ -5193,13 +5214,14 @@ Set response to response's unsafe response.
 ］~OR［
 %応答 の`状態s$rs ~NIN { `~ok状態s$rs }
 ］
-⇒
-%完了-時の手続き( ~NULL )
+⇒＃
+%完了-時の手続き( ~NULL )；
+~RET
 ◎
 If either of the following conditions are met:
 • response's type is "error"; or
 • response's status is not an ok status,
-then run onComplete given null, and return.
+then run onComplete given null, and abort these steps.
 </li>
 			<li>
 <p>
@@ -5213,7 +5235,7 @@ If both of the following conditions are met:
 					<li>
 %応答 の`~URL$rsの`~scheme$urlは`~HTTP_S~scheme$である
 ◎
-response's url's scheme is an HTTP(S) scheme; and
+response's URL's scheme is an HTTP(S) scheme; and
 </li>
 					<li>
 次の結果は`~JS~MIME型$でない
@@ -5229,7 +5251,7 @@ the result of extracting a MIME type from response's header list is not a JavaSc
 %完了-時の手続き( ~NULL )
 ~RET
 ◎
-then run onComplete given null, and return.
+then run onComplete given null, and abort these steps.
 </p>
 
 <p class="note">注記：
@@ -5250,14 +5272,14 @@ Let source text be the result of UTF-8 decoding response's body.
 </li>
 			<li>
 %~script ~LET
-`古典~scriptを作成する$(
+`古典~scriptを作成する$( 次に挙げる引数 )
+⇒＃
 %~source~text,
 %~script設定群~obj,
 %応答 の`~URL$rs,
 `既定の古典~script~fetch~option群$
-)
 ◎
-Let script be the result of creating a classic script using source text, script settings object, response's url, and the default classic script fetch options.
+Let script be the result of creating a classic script using source text, script settings object, response's URL, and the default classic script fetch options.
 </li>
 			<li>
 %完了-時の手続き( %~script )
@@ -5275,14 +5297,16 @@ Run onComplete given script.
 `~workerが~importした古典~scriptを~fetchする@
 ときは、
 所与の
-( %~URL, %設定群~obj )
+⇒＃
+%~URL,
+%設定群~obj, 
+`同期的な~fetchを遂行する~hook$ %~fetchを遂行する（省略時は ε ）
+◎終
 に対し，次を走らす
 — この~algoは、
-同期的に完了し，
-例外を投出する（失敗~時）か,
-新たな`古典~script$を返す（成功~時）：
+同期的に完了し，例外を投出する（失敗~時）か新たな`古典~script$を返す（成功~時）：
 ◎
-To fetch a classic worker-imported script given a url and a settings object, run these steps. The algorithm will synchronously complete with a classic script on success, or throw an exception on failure.
+To fetch a classic worker-imported script given a url, a settings object, and an optional synchronous perform the fetch hook performFetch, run these steps. The algorithm will synchronously complete with a classic script on success, or throw an exception on failure.
 </p>
 <ol>
 	<li>
@@ -5299,51 +5323,21 @@ To fetch a classic worker-imported script given a url and a settings object, run
 Let request be a new request whose URL is url, client is settings object, destination is "script", parser metadata is "not parser-inserted", synchronous flag is set, and whose use-URL-credentials flag is set.
 </li>
 	<li>
-%応答 ~LET ~NULL
-◎
-Let response be null.
-</li>
-	<li>
 <p>
-~IF［
-この~algoの~call元にて，`~fetchを遂行する$ための~custom手続き %手続き が指定されている
-］
-⇒
-%応答 ~LET %手続き( %要請, `~top-level内$i, 次に与える手続き )
+%応答 ~SET %~fetchを遂行する に応じて
+⇒＃
+ε ならば %要請 を`~fetchする$／
+~ELSE_ %~fetchを遂行する( %要請, ~T )
 ◎
-If the caller specified custom steps to perform the fetch, perform them on request, with the is top-level flag set, and with＼
-</p>
-
-<p class="algo">
-手続き
-— `~custom~fetch応答の処理n$i —
-は、
-所与の
-( `応答$ %~custom~fetch応答 )
-に対し
-⇒
-%応答 ~SET %~custom~fetch応答
+If performFetch was given, let response be the result of running performFetch given request and true.
 ◎
-the following processCustomFetchResponse steps given response customFetchResponse:
-• Set response to customFetchResponse.
-</p>
-
-<p>
-~ELSE
-⇒
-%応答 ~SET %要請 を`~fetchする$
-◎
-Otherwise, fetch request, and set response to the result.
+Otherwise, let response be the result of fetching request.
 </p>
 
 <p class="note">注記：
 この節の他の~algoと違って，ここでの~fetchingは同期的に行われる。
-したがって、
-ここで`~fetchを遂行する$どの手続きも，
-`~custom~fetch応答の処理n$i を同期的に走らす
-— この段が完了した時点で %応答 は設定-済みになる。
 ◎
-Unlike other algorithms in this section, the fetching process is synchronous here. Thus any perform the fetch steps will also run processCustomFetchResponse synchronously, and response will have been set when this step completes.
+Unlike other algorithms in this section, the fetching process is synchronous here.
 </p>
 	</li>
 	<li>
@@ -5406,15 +5400,15 @@ Let muted errors be true if response was CORS-cross-origin, and false otherwise.
 </li>
 	<li>
 %~script ~LET
-`古典~scriptを作成する$(
+`古典~scriptを作成する$ 次に挙げる引数 )
+⇒＃
 %~source~text,
 %設定群~obj,
 %応答 の`~URL$rs,
 `既定の古典~script~fetch~option群$,
 %~errorは黙秘するか
-)
 ◎
-Let script be the result of creating a classic script given source text, settings object, response's url, the default classic script fetch options, and muted errors.
+Let script be the result of creating a classic script given source text, settings object, response's URL, the default classic script fetch options, and muted errors.
 </li>
 	<li>
 ~RET %~script
@@ -5458,11 +5452,10 @@ onComplete must be an algorithm accepting null (on failure) or a module script (
 %~option群,
 %設定群~obj,
 `client^l,
-ε,
-`~top-level~module~fetch^i,
-次に与える手続き
+~T,
+次に定義する手続き
 ◎
-Fetch a single module script given url, settings object, "script", options, settings object, "client", with the top-level module fetch flag set, and with＼
+Fetch a single module script given url, settings object, "script", options, settings object, "client", true, and with＼
 </p>
 
 <div class="algo">
@@ -5483,7 +5476,7 @@ the following steps given result:
 %完了-時の手続き( ~NULL )；
 ~RET
 ◎
-If result is null, run onComplete given null, and return.
+If result is null, run onComplete given null, and abort these steps.
 </li>
 			<li>
 %訪問-済み集合 ~LET « ( %~URL, `javascript^l ) »
@@ -5503,13 +5496,6 @@ Fetch the descendants of and link result given settings object, "script", visite
 </li>
 		</ol>
 </div>
-
-<p>
-この~algoの~call元にて`~fetchを遂行する$ための~custom手続きが指定されている場合、
-それも渡す。
-◎
-If the caller of this algorithm specified custom perform the fetch steps, pass those along as well.
-</p>
 	</li>
 </ol>
 </div>
@@ -5590,10 +5576,10 @@ If the result of running the module type allowed steps given moduleType and sett
 %設定群~obj,
 `client^l,
 %~module要請,
-`~top-level~module~fetch^i,
-次に与える手続き
+~T,
+次に定義する手続き
 ◎
-Fetch a single module script given url, settings object, "script", options, settings object, "client", moduleRequest, with the top-level module fetch flag set, and with＼
+Fetch a single module script given url, settings object, "script", options, settings object, "client", moduleRequest, true, and with＼
 </p>
 
 <div class="algo">
@@ -5614,7 +5600,7 @@ the following steps given result:
 %完了-時の手続き( ~NULL )；
 ~RET
 ◎
-If result is null, run onComplete with null, and return.
+If result is null, run onComplete with null, and abort these steps.
 </li>
 			<li>
 %訪問-済み集合 ~LET « ( %~URL, %~module種別 ) »
@@ -5634,13 +5620,6 @@ Fetch the descendants of and link result given settings object, destination, vis
 </li>
 		</ol>
 </div>
-
-<p>
-この~algoの~call元にて`~fetchを遂行する$ための~custom手続きが指定されている場合、
-それも渡す。
-◎
-If the caller of this algorithm specified custom perform the fetch steps, pass those along as well.
-</p>
 	</li>
 </ol>
 </div>
@@ -5680,11 +5659,10 @@ onComplete must be an algorithm accepting null (on failure) or a module script (
 %~option群,
 %設定群~obj,
 `client^l,
-ε,
-`~top-level~module~fetch^i,
-次に与える手続き
+~T,
+次に定義する手続き
 ◎
-Fetch a single module script given url, settings object, destination, options, settings object, "client", with the top-level module fetch flag set, and with＼
+Fetch a single module script given url, settings object, destination, options, settings object, "client", true, and with＼
 </p>
 
 <div class="algo">
@@ -5698,7 +5676,7 @@ the following steps given result:
 </p>
 		<ol>
 			<li>
-%完了-時の手続き( %結果 )；
+%完了-時の手続き( %結果 )
 ◎
 Run onComplete given result.
 </li>
@@ -5711,7 +5689,7 @@ Run onComplete given result.
 ◎
 If result is not null,＼
 </li>
-			<li class="algo">
+			<li>
 <p>
 任意選択で，次の手続きを遂行する：
 ◎
@@ -5872,23 +5850,21 @@ fetch a worklet/module worker script graph given url, fetch client settings obje
 %行先,
 %資格証~mode,
 %~module~map設定群~obj,
-%完了-時の手続き
-— 加えて、
-`~fetchを遂行する$ための~custom手続きとして，下に与える手続きを利用する
+%完了-時の手続き,
+次に定義する（`非同期的な~fetchを遂行する~hook$を成す）手続き
 ◎
 To fetch a worklet script graph given a url, a fetch client settings object, a destination, a credentials mode, a module map settings object, a module responses map, and an onComplete algorithm,＼
-fetch a worklet/module worker script graph given url, fetch client settings object, destination, credentials mode, module map settings object, and onComplete.＼
-Use the following custom steps to perform the fetch＼
+fetch a worklet/module worker script graph given url, fetch client settings object, destination, credentials mode, module map settings object, onComplete, and the following asynchronous perform the fetch hook＼
 </p>
 
 <div class="algo">
 <p>
-~custom手続きは、
+手続きは、
 所与の
-( %応答, 【%~top-level内か, 】`~custom~fetch応答の処理n$V )
+( %要請, 【`~top-levelか$V, 】`~custom~fetch応答の処理n$V )
 に対し 次を走らす：
 ◎
-given response and processCustomFetchResponse:
+given request and processCustomFetchResponse:
 </p>
 <ol>
 	<li>
@@ -6058,11 +6034,12 @@ This diagram illustrates how these algorithms relate to the ones above, as well 
 %行先,
 %資格証~mode,
 %~module~map設定群~obj,
-%完了-時の手続き
+%完了-時の手続き,
+`非同期的な~fetchを遂行する~hook$ %~fetchを遂行する（省略時は ε ）
 ◎終
 に対し，次を走らす：
 ◎
-To fetch a worklet/module worker script graph given a url, a fetch client settings object, a destination, a credentials mode, a module map settings object, and an onComplete algorithm, run these steps.＼
+To fetch a worklet/module worker script graph given a url, a fetch client settings object, a destination, a credentials mode, a module map settings object, an onComplete algorithm, and an optional asynchronous perform the fetch hook performFetch, run these steps.＼
 </p>
 <ol>
 	<li>
@@ -6095,21 +6072,21 @@ Let options be a script fetch options whose cryptographic nonce is the empty str
 %~option群,
 %~module~map設定群~obj,
 `client^l,
-ε,
-`~top-level~module~fetch^i,
-次に与える手続き
+~T,
+次に定義する手続き,
+%~fetchを遂行する
 ◎
-Fetch a single module script given url, fetch client settings object, destination, options, module map settings object, "client", with the top-level module fetch flag set, and with＼
+Fetch a single module script given url, fetch client settings object, destination, options, module map settings object, "client", true, and onSingleFetchComplete as defined below. If performFetch was given, pass it along as well.＼
 </p>
 
 <div class="algo">
 <p>
-手続きは、
+手続き【！onSingleFetchComplete】は、
 所与の
 ( %結果 )
 に対し：
 ◎
-the following steps given result:
+onSingleFetchComplete given result is the following algorithm:
 </p>
 		<ol>
 			<li>
@@ -6120,7 +6097,7 @@ the following steps given result:
 %完了-時の手続き( ~NULL )；
 ~RET
 ◎
-If result is null, run onComplete given null, and return.
+If result is null, run onComplete given null, and abort these steps.
 </li>
 			<li>
 %訪問-済み集合 ~LET « ( %~URL, `javascript^l ) »
@@ -6134,19 +6111,13 @@ Let visited set be « (url, "javascript") ».
 %~fetch~client設定群~obj,
 %行先,
 %訪問-済み集合,
-%完了-時の手続き
+%完了-時の手続き,
+%~fetchを遂行する
 ◎
-Fetch the descendants of and link result given fetch client settings object, destination, visited set, and onComplete.
+Fetch the descendants of and link result given fetch client settings object, destination, visited set, and onComplete. If performFetch was given, pass it along as well.
 </li>
 		</ol>
 </div>
-
-<p>
-この~algoの~call元にて`~fetchを遂行する$ための~custom手続きが指定されている場合、
-それも渡す。
-◎
-If the caller of this algorithm specified custom perform the fetch steps, pass those along as well.
-</p>
 	</li>
 </ol>
 </div>
@@ -6161,11 +6132,12 @@ If the caller of this algorithm specified custom perform the fetch steps, pass t
 %~fetch~client設定群~obj,
 %行先,
 %訪問-済み集合,
-%完了-時の手続き
+%完了-時の手続き,
+`非同期的な~fetchを遂行する~hook$ %~fetchを遂行する（省略時は ε ）
 ◎終
 に対し，次を走らす：
 ◎
-To fetch the descendants of and link a module script module script, given a fetch client settings object, a destination, a visited set, and an onComplete algorithm, run these steps.＼
+To fetch the descendants of and link a module script module script, given a fetch client settings object, a destination, a visited set, an onComplete algorithm, and an optional asynchronous perform the fetch hook performFetch, run these steps.＼
 </p>
 <ol>
 	<li>
@@ -6184,19 +6156,20 @@ onComplete must be an algorithm accepting null (on failure) or a module script (
 %~fetch~client設定群~obj,
 %行先,
 %訪問-済み集合,
-次に与える手続き
+次に定義する手続き,
+%~fetchを遂行する
 ◎
-Fetch the descendants of module script, given fetch client settings object, destination, visited set, and with＼
+Fetch the descendants of module script, given fetch client settings object, destination, visited set, and onFetchDescendantsComplete as defined below. If performFetch was given, pass it along as well.
 </p>
 
 <div class="algo">
 <p>
-手続きは、
+手続き【！onFetchDescendantsComplete】は、
 所与の
 ( %結果 )
 に対し：
 ◎
-the following steps given result:
+onFetchDescendantsComplete given result is the following algorithm:
 </p>
 		<ol>
 			<li>
@@ -6208,7 +6181,7 @@ the following steps given result:
 %完了-時の手続き( ~NULL )；
 ~RET
 ◎
-If result is null, then run onComplete given result, and return.
+If result is null, then run onComplete given result, and abort these steps.
 </p>
 
 <p class="note">注記：
@@ -6283,11 +6256,12 @@ Run onComplete given result.
 %~fetch~client設定群~obj,
 %行先,
 %訪問-済み集合,
-%完了-時の手続き
+%完了-時の手続き,
+`非同期的な~fetchを遂行する~hook$ %~fetchを遂行する（省略時は ε ）
 ◎終
 に対し，次を走らす：
 ◎
-To fetch the descendants of a module script module script, given a fetch client settings object, a destination, a visited set, and an onComplete algorithm, run these steps.＼
+To fetch the descendants of a module script module script, given a fetch client settings object, a destination, a visited set, an onComplete algorithm, and an optional asynchronous perform the fetch hook performFetch, run these steps.＼
 </p>
 <ol>
 	<li>
@@ -6427,19 +6401,20 @@ Let failed be false.
 %~module~script の`設定群~obj$sC,
 %訪問-済み集合,
 %~module~script の`基底~URL$sC,
-次に与える手続き
+次に定義する手続き,
+%~fetchを遂行する
 ◎
-For each moduleRequest in moduleRequests, perform the internal module script graph fetching procedure given moduleRequest, fetch client settings object, destination, options, module script's settings object, visited set, module script's base URL, and＼
+For each moduleRequest in moduleRequests, perform the internal module script graph fetching procedure given moduleRequest, fetch client settings object, destination, options, module script's settings object, visited set, module script's base URL, and onInternalFetchingComplete as defined below. If performFetch was given, pass it along as well.＼
 </p>
 
 <div class="algo">
 <p>
-手続きは、
+手続き【！onInternalFetchingComplete】は、
 所与の
 ( %結果 )
 に対し：
 ◎
-the following steps given result:
+onInternalFetchingComplete given result is the following algorithm:
 </p>
 		<ol>
 			<li>
@@ -6484,13 +6459,6 @@ If pendingCount is zero, run onComplete with module script.
 		</ol>
 </div>
 
-<p>
-この~algoの~call元にて`~fetchを遂行する$ための~custom手続きが指定されている場合、
-それも渡す。
-◎
-If the caller of this algorithm specified custom perform the fetch steps, pass those along while performing the internal module script graph fetching procedure.
-</p>
-
 <p class="note">注記：
 `~module~script~graphを~fetchする内部~手続-$により遂行される~fetchたちは、
 互いに並列的に遂行されるべきである。
@@ -6514,11 +6482,12 @@ The fetches performed by the internal module script graph fetching procedure are
 %~module~map設定群~obj,
 %訪問-済み集合,
 %~referrer,
-%完了-時の手続き
+%完了-時の手続き,
+`非同期的な~fetchを遂行する~hook$ %~fetchを遂行する（省略時は ε ）
 ◎終
-に対し，次の手続きを遂行する：
+に対し，次の手続きを走らす：
 ◎
-To perform the internal module script graph fetching procedure given a moduleRequest, a fetch client settings object, a destination, some options, a module map settings object, a visited set, a referrer, and an onComplete algorithm, run these steps.＼
+To perform the internal module script graph fetching procedure given a moduleRequest, a fetch client settings object, a destination, some options, a module map settings object, a visited set, a referrer, an onComplete algorithm, and an optional asynchronous perform the fetch hook performFetch, run these steps.＼
 </p>
 <ol>
 	<li>
@@ -6564,22 +6533,21 @@ Assert: visited set contains (url, moduleType).
 %~module~map設定群~obj,
 %~referrer,
 %~module要請,
-ε
-◎終
-— この~algoの~call元にて`~fetchを遂行する$ための~custom手続きが指定されている場合、
-それも渡す。
+~F,
+次に定義する手続き,
+%~fetchを遂行する
 ◎
-Fetch a single module script given url, fetch client settings object, destination, options, module map settings object, referrer, moduleRequest, with the top-level module fetch flag unset, and with＼
+Fetch a single module script given url, fetch client settings object, destination, options, module map settings object, referrer, moduleRequest, false, and onSingleFetchComplete as defined below. If performFetch was given, pass it along as well.
 </p>
 
 <div class="algo">
 <p>
-手続きは、
+手続き【！onSingleFetchComplete】は、
 所与の
 ( %結果 )
 に対し：
 ◎
-the following steps given result:
+onSingleFetchComplete given result is the following algorithm:
 </p>
 		<ol>
 			<li>
@@ -6590,7 +6558,7 @@ the following steps given result:
 %完了-時の手続き( ~NULL )；
 ~RET
 ◎
-If result is null, run onComplete with null, and return.
+If result is null, run onComplete with null, and abort these steps.
 </li>
 			<li>
 `~module~scriptの子孫を~fetchする$( 次に挙げる引数 )
@@ -6599,19 +6567,13 @@ If result is null, run onComplete with null, and return.
 %~fetch~client設定群~obj,
 %行先,
 %訪問-済み集合,
-%完了-時の手続き
+%完了-時の手続き,
+%~fetchを遂行する
 ◎
-Fetch the descendants of result given fetch client settings object, destination, visited set, and with onComplete.
+Fetch the descendants of result given fetch client settings object, destination, visited set, and with onComplete. If performFetch was given, pass it along as well.
 </li>
 		</ol>
 </div>
-
-<p>
-この~algoの~call元にて`~fetchを遂行する$ための~custom手続きが指定されている場合、
-それも渡す。
-◎
-If the caller of this algorithm specified custom perform the fetch steps, pass those along as well.
-</p>
 	</li>
 </ol>
 </div>
@@ -6629,12 +6591,13 @@ If the caller of this algorithm specified custom perform the fetch steps, pass t
 %~module~map設定群~obj,
 %~referrer,
 %~module要請【！省略時は ε 】,
-%~top-level~module~fetchか ~IN { `~top-level~module~fetch^i, ε },
-%完了-時の手続き
+真偽値 `~top-levelか$V,
+%完了-時の手続き,
+`非同期的な~fetchを遂行する~hook$ %~fetchを遂行する（省略時は ε ）
 ◎終
 に対し，次を走らす：
 ◎
-To fetch a single module script, given a url, a fetch client settings object, a destination, some options, a module map settings object, a referrer, an optional moduleRequest, a top-level module fetch flag, and an onComplete algorithm, run these steps.＼
+To fetch a single module script, given a url, a fetch client settings object, a destination, some options, a module map settings object, a referrer, an optional moduleRequest, a boolean isTopLevel, an onComplete algorithm, and an optional asynchronous perform the fetch hook performFetch, run these steps.＼
 </p>
 <ol>
 	<li>
@@ -6730,7 +6693,7 @@ Let request be a new request whose URL is url, destination is destination, mode 
 ~IF［
 %行先 ~IN { `worker^l, `sharedworker^l, `serviceworker^l }
 ］~AND［
-%~top-level~module~fetchか ~EQ `~top-level~module~fetch^i
+%~top-levelか【！top-level module fetch flag】 ~EQ ~T
 ］
 ⇒
 %要請 の`~mode$rq ~SET `same-origin^l
@@ -6745,36 +6708,33 @@ Set up the module script request given request and options.
 	<li>
 <p>
 ~IF［
-この~algoの~call元にて，`~fetchを遂行する$ための~custom手続き %手続き が指定されている
-］：
+%~fetchを遂行する ~NEQ ε
+］
+⇒
+%~fetchを遂行する( %要請, %~top-levelか, %応答を処理する† )
 ◎
-If the caller specified custom steps to perform the fetch,＼
+If performFetch was given, run performFetch with request, isTopLevel, and with processResponse as defined below.
 </p>
-		<ol>
-			<li>
-%~top-level内か ~LET %~top-level~module~fetchか に応じて
-⇒＃
-ε ならば ε ／
-`~top-level~module~fetch^i ならば `~top-level内$i
-◎
-↓</li>
-			<li>
-%手続き( %要請, %~top-level内か, （`~custom~fetch応答の処理n$i を成す）下に与える手続き  )
-【！run the remaining steps as part of】
-◎
-perform them on request, setting the is top-level flag if the top-level module fetch flag is set. Return from this algorithm, and run the remaining steps as part of the perform the fetch's processCustomFetchResponse given response response.
-</li>
-		</ol>
+
 <p>
 ~ELSE
 ⇒
 %要請 を`~fetchする$
 — 次を与える下で
 ⇒
-`応答の本体を消費する処理n$i ~SET 下に与える手続き
-【！run the remaining steps as part of】
+`応答の本体を消費する処理n$i ~SET %応答を処理する†
 ◎
-Otherwise, fetch request. Return from this algorithm, and run the remaining steps as part of the fetch's processResponseConsumeBody given response response.
+Otherwise, fetch request with processResponse as processResponseConsumeBody.
+</p>
+
+<div class="algo">
+<p>†
+%応答を処理する 手続きは、
+所与の
+( `応答$ %応答 )
+に対し：
+◎
+In both cases, let processResponse given response response be the following algorithm:
 </p>
 
 <p class="note">注記：
@@ -6783,15 +6743,6 @@ Otherwise, fetch request. Return from this algorithm, and run the remaining step
 ◎
 response is always CORS-same-origin.
 </p>
-
-<div class="algo">
-<p>
-手続きは、
-所与の
-( `応答$ %応答 )
-に対し：
-◎
-↑</p>
 		<ol>
 			<li>
 `計時を完結して報告する$( %応答, %~fetch~client設定群~obj の`大域~obj$enV, `other^l )
@@ -6813,7 +6764,7 @@ If either of the following conditions are met:
 • response's type is "error"; or
 • response's status is not an ok status.
 ◎
-then set moduleMap[(url, moduleType)] to null, run onComplete given null, and return.
+then set moduleMap[(url, moduleType)] to null, run onComplete given null, and abort these steps.
 </li>
 			<li>
 %~source~text ~LET `~UTF-8復号する$( %応答 の`本体$rs )
@@ -6844,7 +6795,7 @@ Let module script be null.
 %~option群
 )
 ◎
-If MIME type is a JavaScript MIME type and moduleType is "javascript", then set module script to the result of creating a JavaScript module script given source text, module map settings object, response's url, and options.
+If MIME type is a JavaScript MIME type and moduleType is "javascript", then set module script to the result of creating a JavaScript module script given source text, module map settings object, response's URL, and options.
 </li>
 			<li>
 ~IF［
@@ -9967,7 +9918,7 @@ As explained above for HostResolveImportedModule, in the common case, referencin
 %基底~URL,
 %設定群~obj,
 %~fetch~option群,
-次に与える手続き
+次に定義する手続き
 ◎
 Fetch an import() module script graph given moduleRequest, base URL, settings object, fetch options, and with＼
 </p>
