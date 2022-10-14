@@ -190,7 +190,7 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2022-10-07
+spec_date:2022-10-13
 trans_update:2022-10-14
 source_checked:220524
 spec_status:LS
@@ -861,6 +861,7 @@ cT.~ALPNで折衝した~protocol:#connection-timing-info-alpn-negotiated-protoco
 
 不透明な計時~情報を作成する:#create-an-opaque-timing-info
 全部的な計時~情報を抽出する:#extract-full-timing-info
+次回の手動~redirect手続きを処理する:#fetch-controller-process-the-next-manual-redirect
 
 ~fetch計時~情報:#fetch-timing-info
 fT.開始~時刻:#fetch-timing-info-start-time
@@ -895,6 +896,7 @@ fT.復号した~size:#fetch-timing-info-decoded-body-size
 fC.状態:#fetch-controller-state
 fC.全部的な計時~情報:#fetch-controller-full-timing-info
 fC.計時を報告する手続き:#fetch-controller-report-timing-steps
+fC.次回の手動~redirect手続き:#fetch-controller-next-manual-redirect-steps
 ~fetchを中止する:#fetch-controller-abort
 ~fetchを終了する:#fetch-controller-terminate
 終了-:#fetch-controller-terminate
@@ -923,7 +925,6 @@ fP.~preloadされる応答の候補:#fetch-params-preloaded-response-candidate
 ~scheme~fetch:#concept-scheme-fetch
 ~HTTP~fetch:#concept-http-fetch
 ~HTTP~redirect~fetch:#concept-http-redirect-fetch
-~navigate~redirect~fetch:#concept-navigate-redirect-fetch
 ~HTTP~network-or-cache~fetch:#concept-http-network-or-cache-fetch
 ~HTTP~network~fetch:#concept-http-network-fetch
 ~CORS予行~fetch:#cors-preflight-fetch-0
@@ -1856,6 +1857,8 @@ opt-in::::オプトイン
 	アリでないもの:than what is possible with
 	遡って解きほぐす:unwind
 	に従って:as per
+	ごく:very
+	得る:get
 
 	●未分類
 	格納-済み:stored
@@ -2074,6 +2077,7 @@ opt-in::::オプトイン
 	%本体~情報:bodyInfo
 
 	●指示語
+次回の:next:~
 	あらゆるもの:everything
 	~~特有なもの:particulars
 	以前の:previous
@@ -2143,7 +2147,7 @@ FETCHMETADATA=副       ~/webappsec-fetch-metadata-ja.html
 [FETCH-METADATA]
     Mike West. ＜Fetch Metadata Request Headers＞. URL: https://w3c.github.io/webappsec-fetch-metadata/
 [FILEAPI]
-    Marijn Kruisselbrink; Arun Ranganathan. ＜File API＞. URL: https://w3c.github.io/FileAPI/
+    Marijn Kruisselbrink. ＜File API＞. URL: https://w3c.github.io/FileAPI/
 [HR-TIME-3]
     Yoav Weiss. ＜High Resolution Time＞. URL: https://w3c.github.io/hr-time/
 [HSTS]
@@ -2249,7 +2253,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/283c2ae9285858e099c84a0841924fa7c4ef33e4/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/8023bd0b2babecb3f7b7f10e482401ecc80e0a9e/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -2668,6 +2672,20 @@ serialized abort reason (default null)
 ◎
 Null or a Record (result of StructuredSerialize).
 </dd>
+
+	<dt>
+`次回の手動~redirect手続き@fC
+（既定は ~NULL ）
+◎
+next manual redirect steps (default null)
+</dt>
+	<dd>
+~NULL ／［
+何も受容しない~algo
+］
+◎
+Null or an algorithm accepting nothing.
+</dd>
 </dl>
 
 <div class="algo">
@@ -2691,6 +2709,31 @@ Assert: this’s report timing steps is not null.
 %制御器 の`計時を報告する手続き$fC( %大域~obj )
 ◎
 Call this’s report timing steps with global.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`次回の手動~redirect手続きを処理する@
+ときは、
+所与の
+( `~fetch制御器$ %制御器 )
+に対し：
+◎
+To process the next manual redirect for a fetch controller controller:
+</p>
+<ol>
+	<li>
+~Assert：
+%制御器 の`次回の手動~redirect手続き$fC ~NEQ ~NULL
+◎
+Assert: controller’s next manual redirect steps are not null.
+</li>
+	<li>
+%制御器 の`次回の手動~redirect手続き$fC()
+◎
+Call controller’s next manual redirect steps.
 </li>
 </ol>
 </div>
@@ -13202,10 +13245,26 @@ Set response to a network error.
 
 					<dt>`manual^l</dt>
 					<dd>
+						<ol>
+							<li>
 %応答 ~SET `内部~応答$が %実際の応答 にされた，`不透明~redirect絞込み応答$
 ◎
 Set response to an opaque-redirect filtered response whose internal response is actualResponse.
-</dd>
+</li>
+							<li>
+~IF［
+%要請 の`~mode$rq ~EQ `navigate^l
+］：
+<span class="block algo">
+%~fetch~params の`制御器$fPの`次回の手動~redirect手続き$fC ~SET 次を走らす手続き
+⇒
+`~HTTP~redirect~fetch$( %~fetch~params, %応答 )
+</span>
+◎
+If request’s mode is "navigate", then set fetchParams’s controller’s next manual redirect steps to run HTTP-redirect fetch given fetchParams and response.
+</li>
+</ol>
+					</dd>
 
 					<dt>`follow^l</dt>
 					<dd>
@@ -13469,57 +13528,8 @@ This has to invoke main fetch to get request’s response tainting correct.
 </div>
 
 		</section>
-
-		<section id="navigate-redirect-fetch">
-<h3 title="Navigate-redirect fetch">4.5. ~navigate~redirect~fetch</h3>
-
-<p class="note">注記：
-この~algoは、
-`HTML^cite の`~navigate~algo$から利用される。
-これは、
-`並列的$に呼出されることが期待される。
-`HTML$r
-◎
-This algorithm is used by HTML’s navigate algorithm. It is expected to be invoked while in parallel. [HTML]
-</p>
-
-<div class="algo">
-<p>
-`~navigate~redirect~fetch@
-を遂行するときは、所与の
-( `要請$ %要請, `応答$ %応答 )
-に対し，次の手続きを走らす
-— それは、
-`応答$を返す：
-◎
-To navigate-redirect fetch, given a request request and response response, run these steps. They return a response.
-</p>
-<ol>
-	<li>
-~Assert：
-%要請 の`~redirect~mode$rq ~EQ `manual^l
-◎
-Assert: request’s redirect mode is "manual".
-</li>
-	<li>
-%~fetch~params ~LET 新たな`~fetch~params$
-— その
-⇒＃
-`要請$fP ~SET %要請
-◎
-Let fetchParams be a new fetch params whose request is request.
-</li>
-	<li>
-~RET `~HTTP~redirect~fetch$( %~fetch~params, %応答 )
-◎
-Return the result of running HTTP-redirect fetch given fetchParams and response.
-</li>
-</ol>
-</div>
-
-		</section>
 		<section id="http-network-or-cache-fetch">
-<h3 title="HTTP-network-or-cache fetch">4.6. ~HTTP~network-or-cache~fetch</h3>
+<h3 title="HTTP-network-or-cache fetch">4.5. ~HTTP~network-or-cache~fetch</h3>
 
 <div class="algo">
 <p>
@@ -14719,7 +14729,7 @@ Return response. Typically response’s body’s stream is still being enqueued 
 
 		</section>
 		<section id="http-network-fetch">
-<h3 title="HTTP-network fetch">4.7. ~HTTP~network~fetch</h3>
+<h3 title="HTTP-network fetch">4.6. ~HTTP~network~fetch</h3>
 
 <div class="algo">
 <p>
@@ -15561,7 +15571,7 @@ Return response. Typically response’s body’s stream is still being enqueued 
 
 		</section>
 		<section id="cors-preflight-fetch">
-<h3 title="CORS-preflight fetch">4.8. ~CORS予行~fetch</h3>
+<h3 title="CORS-preflight fetch">4.7. ~CORS予行~fetch</h3>
 
 <p class="note">注記：
 これは、
@@ -15915,7 +15925,7 @@ Otherwise, return a network error.
 
 		</section>
 		<section id="cors-preflight-cache">
-<h3 title="CORS-preflight cache">4.9. ~CORS予行~cache</h3>
+<h3 title="CORS-preflight cache">4.8. ~CORS予行~cache</h3>
 
 <p>
 各~UAは、
@@ -16184,7 +16194,7 @@ is true.
 
 		</section>
 		<section id="cors-check">
-<h3 title="CORS check">4.10. ~CORS検査</h3>
+<h3 title="CORS check">4.9. ~CORS検査</h3>
 
 <div class="algo">
 <p>
@@ -16271,7 +16281,7 @@ Return failure.
 
 		</section>
 		<section id="tao-check">
-<h3 title="TAO check">4.11. ~TAO検査</h3>
+<h3 title="TAO check">4.10. ~TAO検査</h3>
 
 <p class="trans-note">【
 ~TAOは `Timing-Allow-Origin$h （計時を許容する生成元）の略称。
@@ -21077,6 +21087,26 @@ processResponse
 `応答$の`本体$rsの`~stream$bdに対し直に演算したいと求める標準にとって有用になる。
 ◎
 Takes an algorithm that will be passed a response. Indicates response’s header list has been received and initialized. This is primarily useful for standards that want to operate on response’s body’s stream directly.
+</dd>
+	<dd>
+［
+`要請$の`~mode$rq ~EQ `navigate^l
+］~AND［
+`要請$の`~redirect~mode$rq ~EQ `manual^l
+］の場合、
+~call元は，意図する挙動を［
+自身に ごく特有な~flowに従って，この~algoで得る
+］必要がある。
+~call元は，適切な`~Location~URL＠#concept-response-location-url$を算出するベキであり、
+結果が［
+~NULL／`失敗^i
+］でない場合は，`次回の手動~redirect手続きを処理する$を~callするベキである。
+その結果、
+`応答の処理n$i は，再び
+— ~redirect連鎖における次回の`応答$を伴って —
+~callされることになる。
+◎
+If the request’s mode is "navigate" and its redirect mode is "manual", then callers need to follow a very specific flow with this algorithm to get the intended behavior. They should compute the appropriate location URL, and if it is not null or a failure, then they should call process the next manual redirect. This will result in processResponse being called again, with the next response in the redirect chain.
 </dd>
 
 	<dt>
