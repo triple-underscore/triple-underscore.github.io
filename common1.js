@@ -305,12 +305,13 @@ const initSideway = () => {
 	if(!key) return;
 
 	const text = {
-WD: 'W3C Working Draft',
 ED: 'W3C Editor’s Draft',
 EDCG: 'W3C Community Group Draft Report',
-PR: 'W3C Proposed Recommendation',
+WD: 'W3C Working Draft',
+FPWD: 'W3C First Public Working Draft',
 CR: 'W3C Candidate Recommendation Snapshot',
 CRD: 'W3C Candidate Recommendation Draft',
+PR: 'W3C Proposed Recommendation',
 REC: 'W3C Recommendation',
 NOTE: 'W3C Working Group Note',
 LS: 'Living Standard',
@@ -325,7 +326,9 @@ IETFEX: 'IETF Experimental',
 	const color = { ED: 'red', EDCG: 'orange', IETFBCP: 'gray', IETFSTD: 'gray', IETFPR: 'gray', IETFID: 'green', IETFEX: 'green', LS: 'green' }[key];
 	const div = C('div');
 	div.id = '_sideways-logo';
-	if(color) div.style.background = color;
+	if(color){
+		div.style.background = color;
+	}
 	div.textContent = text;
 	document.body.appendChild(div);
 }
@@ -478,10 +481,16 @@ const fillSpecMetadata = () => {
 	if(!data) return;
 
 	if(options.original_url){
-		data = `
+		const url = options.original_url;
+		let data0 = `
 このバージョン（原文 URL ）
 	${options.original_url}
-${data}`
+`;
+		if(url.slice(0, 25) === 'https://drafts.csswg.org/'){
+			data0 += `	https://w3c.github.io/csswg-drafts/${url.slice(25)}
+`;
+		}
+		data = `${data0}${data}`
 	}
 	data = data
 		.replace(/\n\S.+/g, '\n<dt>$&<dt>')

@@ -583,6 +583,7 @@ Util.fillHeader = () => {
 			header_text = {
 ED: '<a href="w3c-standards-types-ja.html#ED">編集者草案</a>',
 WD: '<a href="w3c-standards-types-ja.html#WD">作業草案</a>',
+FPWD: '<a href="w3c-standards-types-ja.html#FPWD">最初の公な作業草案</a>',
 PR: '<a href="w3c-standards-types-ja.html#PR">勧告案</a>',
 CRD: '<a href="w3c-standards-types-ja.html#CRD">勧告候補草案</a>',
 CR: '<a href="w3c-standards-types-ja.html#CR">勧告候補スナップショット</a>',
