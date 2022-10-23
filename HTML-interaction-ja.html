@@ -110,8 +110,8 @@ return text;
 
 ●●options
 
-spec_date:2022-10-06
-trans_update:2022-10-07
+spec_date:2022-10-22
+trans_update:2022-10-24
 source_checked:221006
 page_state_key:HTML
 spec_status:LS
@@ -609,7 +609,6 @@ fe.値:~HTMLforms#concept-fe-value
 ~node文書:~DOM4#concept-node-document
 ~tree順序:~DOM4#concept-tree-order
 子:~DOM4#concept-tree-child
-子~群:~DOM4#concept-tree-child
 子孫:~DOM4#concept-tree-descendant
 ~node~tree:~DOM4#concept-node-tree
 根:~DOM4#concept-tree-root
@@ -622,6 +621,7 @@ fe.値:~HTMLforms#concept-fe-value
 広義-先祖:~DOM4#concept-tree-inclusive-ancestor
 ~host:~DOM4#concept-documentfragment-host
 ~shadow根:~DOM4#concept-shadow-root
+~shadowも含む子孫:~DOM4#concept-shadow-including-descendant
 ~shadowも含む~tree順序:~DOM4#concept-shadow-including-tree-order
 ~shadowも含む広義-先祖:~DOM4#concept-shadow-including-inclusive-ancestor
 ~shadow~host:~DOM4#element-shadow-host
@@ -883,7 +883,11 @@ mark::::マーク
 	%T:top
 	%~focus誘発元:focus trigger
 	%標的:focus target
+	%標的:focusTarget
+	%自動focus委任-先:autofocusDelegate
+	%~focus可能な区画:focusableArea
 	%~focus可能な区画:focusable area
+	%~~注目先:whereToLook
 	%標的:parent
 	%親:-
 	%子孫:descendant
@@ -969,6 +973,7 @@ mark::::マーク
 	挙げる点:two caveats
 	変化しない:original 〜 remains unchanged
 	〜かどうか:status
+	~~注目すること:looking at
 
 	●未分類
 trust:
@@ -4284,13 +4289,38 @@ Otherwise
 ( %標的, 文字列 %~focus誘発元（省略時は `other^l ）)
 に対し，次の手続きを走らす：
 ◎
-The focus delegate for a focus target, given an optional string focus trigger (default "other"), is given by the following steps:
+The focus delegate for a focusTarget, given an optional string focusTrigger (default "other"), is given by the following steps:
 </p>
 <ol>
 	<li>
-%自動focus委任-先 ~LET `自動focus委任-先$( %標的, %~focus誘発元 )
+~IF［
+%標的 は`~shadow~host$である
+］~AND［
+%標的 の`~shadow根$elmの`~focusを委任するか$sR ~EQ ~F
+］
+⇒
+~RET ~NULL
 ◎
-Let autofocus delegate be the autofocus delegate for focus target given focus trigger.
+If focusTarget is a shadow host and its shadow root's delegates focus is false, then return null.
+</li>
+	<li>
+%~~注目先 ~LET %標的
+◎
+Let whereToLook be focusTarget.
+</li>
+	<li>
+~IF［
+%~~注目先 は`~shadow~host$である
+］
+⇒
+%~~注目先 ~SET %~~注目先 の`~shadow根$elm
+◎
+If whereToLook is a shadow host, then set whereToLook to whereToLook's shadow root.
+</li>
+	<li>
+%自動focus委任-先 ~LET `自動focus委任-先$( %~~注目先, %~focus誘発元 )
+◎
+Let autofocusDelegate be the autofocus delegate for whereToLook given focusTrigger.
 </li>
 	<li>
 ~IF［
@@ -4299,56 +4329,31 @@ Let autofocus delegate be the autofocus delegate for focus target given focus tr
 ⇒
 ~RET %自動focus委任-先
 ◎
-If autofocus delegate is not null, then return autofocus delegate.
+If autofocusDelegate is not null, then return autofocusDelegate.
 </li>
 	<li>
 <p>
-~IF［
-%標的 は`~shadow~host$である
-］：
+%~~注目先 の
+~EACH( `子孫$ %子孫 )
+に対し，`~tree順序$で：
+◎
+For each descendant of whereToLook's descendants, in tree order:
 </p>
 		<ol>
 			<li>
-%標的 ~SET %標的 の`~shadow根$elm
-</li>
-			<li>
 ~IF［
-%標的 の`~focusを委任するか$sR ~EQ ~F
+%子孫 は`~focus可能な区画$である
 ］
 ⇒
-~RET ~NULL
+~RET %子孫
+◎
+If descendant is a focusable area, then return descendant.
 </li>
-		</ol>
-
-◎
-If focus target is a shadow host and its shadow root's delegates focus is false, then return null.
-◎
-Let parent be focus target.
-◎
-If parent is a shadow host, then set parent to parent's shadow root.
-</li>
-	<li>
-<p>
-%標的 の`子~群$を成す
-~EACH( %子 )
-に対し：
-◎
-For each child of parent's children:
-</p>
-		<ol>
-			<li>
-%~focus可能な区画 ~LET %子
-◎
-↓</li>
 			<li>
 <p>
-~IF［
-%子 は`~focus可能な区画$でない
-］
-⇒
-%~focus可能な区画 ~SET `~focus可能な区画を取得する$( %子, %~focus誘発元 )
+%~focus可能な区画 ~LET `~focus可能な区画を取得する$( %子孫, %~focus誘発元 )
 ◎
-Let focusable area be child, if child is a focusable area; otherwise let focusable area be the result of getting the focusable area for child given focus trigger.
+Let focusableArea be the result of getting the focusable area for descendant given focusTrigger.
 </p>
 
 <p class="note">注記：
@@ -4356,9 +4361,9 @@ Let focusable area be child, if child is a focusable area; otherwise let focusab
 この~algoに再帰し得る
 — すなわち、
 `~focus可能な区画を取得する$手続きは，
-%子 の`~focus委任-先$を返すかもしれない。
+%子孫 の`~focus委任-先$を返すかもしれない。
 ◎
-This step can end up recursing, i.e., the get the focusable area steps might return the focus delegate of child.
+This step can end up recursing, i.e., the get the focusable area steps might return the focus delegate of descendant.
 </p>
 			</li>
 			<li>
@@ -4368,9 +4373,17 @@ This step can end up recursing, i.e., the get the focusable area steps might ret
 ⇒
 ~RET %~focus可能な区画
 ◎
-If focusable area is not null, then return focusable area.
+If focusableArea is not null, then return focusableArea.
 </li>
 		</ol>
+<p class="note">注記：
+ここでは、
+`~shadowも含む子孫$は`~~注目しない^emで`子孫$に限り~~注目することが，重要になる。
+`~shadow~host$は、
+代わりに，上で言及した再帰的な事例により取扱われる。
+◎
+It's important that we are not looking at the shadow-including descendants here, but instead only at the descendants. Shadow hosts are instead handled by the recursive case mentioned above.
+</p>
 	</li>
 	<li>
 ~RET ~NULL
@@ -4381,12 +4394,14 @@ Return null.
 
 <p class="note">注記：
 上の~algoは、
-本質的に，相応しい`~focus可能な区画$として［
+本質的に，［
+相応しい`~focus可能な区画$のうち，次に該当する最初のもの
+］を返す
+⇒
 その`~DOM~anchor$から %標的 までの経路では、
 どの~shadow~tree境界においても~focusを委任する
-］ような最初のものを返す。
 ◎
-The above algorithm essentially returns the first suitable focusable area where the path between its DOM anchor and focus target delegates focus at any shadow tree boundaries.
+The above algorithm essentially returns the first suitable focusable area where the path between its DOM anchor and focusTarget delegates focus at any shadow tree boundaries.
 </p>
 </div>
 
