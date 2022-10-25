@@ -115,9 +115,9 @@ return text;
 ●●options
 
 spec_title:The Screen Orientation API
-spec_date:2022-10-21
-trans_update:2022-10-24
-source_checked:221021
+spec_date:2022-10-25
+trans_update:2022-10-26
+source_checked:221025
 original_url:https://w3c.github.io/screen-orientation/
 	abbr_url:SCREEN-ORIENTATION
 spec_status:ED
@@ -220,7 +220,12 @@ oT.landscape-secondary:#dom-orientationtype-landscape-secondary
 
 sl.orientationPendingPromise:#dfn-orientationpendingpromise
 sl.angle:#dfn-angle
+sl.initialType:#dfn-initialtype
 sl.type:#dfn-type
+
+文書~unload時の片付け手続き:~NAVI#unloading-document-cleanup-steps
+~screen方位を全部的に~unlockする手続き:#dfn-fully-unlock-the-screen-orientation-steps
+~screen方位を~unlockする:#dfn-unlock-the-screen-orientation
 
 et.change:#dfn-change
 
@@ -249,13 +254,15 @@ et.change:#dfn-change
 方位~obj:#dfn-associated-screenorientation
 子孫~閲覧~文脈:#dfn-descendant-browsing-context
 子孫~文書~群:#_descendant-documents
-~lock:#dfn-lock-the-screen-orientation
-~unlockされ:#dfn-unlocked
 ~screen方位を~lockする:#dfn-lock-the-screen-orientation
+~lock:#dfn-lock-the-screen-orientation
+~screen方位を~unlockする:#dfn-unlock-the-screen-orientation
+~unlockされ:#dfn-unlock-the-screen-orientation
 事前~lock条件:#dfn-pre-lock-conditions
 現在の~lock~promiseを却下して~NULL化する:#dfn-reject-and-nullify-the-current-lock-promise
-~screen方位を~lockしようと試行する:#dfn-try-to-lock-the-screen-orientation
+方位~lockを適用する:#dfn-apply-orientation-lock
 ~screen方位~変更~手続き:#dfn-screen-orientation-change-steps
+~screen方位を全部的に~unlockする手続き:#dfn-fully-unlock-the-screen-orientation-steps
 
 	●用語（外部
 
@@ -299,8 +306,6 @@ doc.可視性~状態:~HTMLinteraction#visibility-state
 ~page可視性~変化-時の手続き:~HTMLinteraction#page-visibility-change-steps
 
 本質的:~TR/WCAG21/#dfn-essential
-
-~navigate:~NAVI#navigate
 
 ~installした~web~app:~APPMANIFEST#dfn-installed-web-application
 
@@ -359,14 +364,14 @@ monitor::::モニター
 
 	●処理一般
 稼働時:runtime::~
-
+片付け:cleanup::~
+unload:
 	-:sub-steps
 	%現在の~lock~promise:currentLockPromise
 	-:descendantDocs
-	-:docs
 	%子孫~文書:doc
 	%種別:type
-	~top-level文書:topDocument
+	%~top-level文書:topDocument
 	%~screen方位:screenOrientation
 	%子孫~文書:doc
 	%方位:orientation
@@ -404,6 +409,8 @@ monitor::::モニター
 	$r:Web Content Accessibility Guidelines (WCAG) 2.1
 	ようになり得る:potentially
 	その逆:vice versa
+	助けに:help
+	制約されない:unrestricted
 
 	●未分類
 車椅子:wheelchair:~
@@ -413,6 +420,7 @@ game::::ゲーム
 固定的:fixed:~
 manifest:
 
+	存続する限り:for the life of
 	~~移行:go into
 	~web~site:website
 	表:table
@@ -438,8 +446,8 @@ Draft. URL: https://www.w3.org/TR/appmanifest/
     ＜HTML Standard＞. Anne van Kesteren; Domenic Denicola; Ian Hickson; Philip Jägenstedt; Simon Pieters.  WHATWG. Living Standard. URL: https://html.spec.whatwg.org/multipage/
 [infra]
     ＜Infra Standard＞. Anne van Kesteren; Domenic Denicola.  WHATWG. Living Standard. URL: https://infra.spec.whatwg.org/
-[mediaqueries]
-    ＜Media Queries Level 4＞. Florian Rivoal; Tab Atkins Jr..  W3C. 25 December 2021. W3C Candidate Recommendation. URL: https://www.w3.org/TR/mediaqueries-4/
+[mediaqueries-5]
+    ＜Media Queries Level 5＞. Dean Jackson; Florian Rivoal; Tab Atkins Jr.; Daniel Libby.  W3C. 18 December 2021. W3C Working Draft. URL: https://www.w3.org/TR/mediaqueries-5/
 [RFC2119]
     ＜Key words for use in RFCs to Indicate Requirement Levels＞. S. Bradner.  IETF. March 1997. Best Current Practice. URL: https://www.rfc-editor.org/rfc/rfc2119
 [RFC8174]
@@ -471,6 +479,10 @@ Draft. URL: https://www.w3.org/TR/appmanifest/
 	https://w3c-test.org/screen-orientation/
 編集
 	Marcos Cáceres (Apple Inc.)
+前任編集者
+	Mounir Lamouri (Google Inc.)
+	Johanna Herman (Invited Expert)
+
 フィードバック
 	<a href="https://github.com/w3c/screen-orientation/">GitHub w3c/screen-orientation</a> (<a href="https://github.com/w3c/screen-orientation/pulls/">pull requests</a>, <a href="https://github.com/w3c/screen-orientation/issues/new/choose">new issue</a>, <a href="https://github.com/w3c/screen-orientation/issues/">open issues</a>)
 ブラウザサポート
@@ -617,12 +629,13 @@ window.addEventListener("load", updateLockButton);
 <h2 title="Concepts">2. 概念</h2>
 
 <p>
-~screen方位を ある `OrientationLockType$I %方位 に
-`~lock@
-するとは、
-利用者は~screenを特定の`~screen方位$にしか回転できなくなることを意味する
+所与の `OrientationLockType$I %方位 に
+`~screen方位を~lockする@
+（ `lock^en する）とは、
+利用者は，~screenを特定の`~screen方位$にしか回転できなくなることを意味する
 【！- possibly at the exclusion of other orientations】。
-~screenを どの方位へ回転できるかは、［
+~screenを どの方位へ回転できるかは、
+【所与の %方位 に加えて，】［
 ~UA／利用者~選好／
 ~OSの規約／
 当の~screen自身
@@ -634,6 +647,18 @@ window.addEventListener("load", updateLockButton);
 に回転できることを意味する。
 ◎
 To lock the screen orientation to an OrientationLockType orientation means that the screen can only be rotated by the user to a specific screen orientation - possibly at the exclusion of other orientations. The possible orientations to which the screen can be rotated is determined by the user agent, a user preference, the operating system's conventions, or the screen itself. For example, locking the orientation to landscape means that the screen can be rotated by the user to landscape-primary and maybe landscape-secondary if the system allows it, but won't change the orientation to portrait-secondary orientation.
+</p>
+
+<p>
+`~screen方位を~unlockする@
+（ `unlock^en する）
+とは、
+末端-利用者が制約されない
+— すなわち、
+~systemが許容するどの`~screen方位$にも~screenを回転できる —
+ようにすることをいう。
+◎
+To unlock the screen orientation the end user is unrestricted to rotate the screen to any screen orientation that the system allows.
 </p>
 
 <p>
@@ -707,9 +732,7 @@ The screen can be rotated by the user to any orientation allowed by the device's
 Default (unlocked)
 </dt>
 	<dd>
-~screenが
-`~unlockされ@
-ている（ `unlocked^en ）こと
+~screenが`~unlockされ$ていること
 — すなわち、`作動中の方位~lock$ ~EQ ~NULL —
 を表す，機器の既定の挙動。
 この方位は、［
@@ -917,7 +940,7 @@ Portrait｜portrait-primary
 angle 0｜portrait-secondary
 angle 180｜landscape-primary
 angle 90 or angle 270｜landscape-secondary
-Set at the angle not used for landscape-primary.
+The angle not used for landscape-primary.
 Landscape｜landscape-primary
 angle 0｜landscape-secondary
 angle 180｜portrait-primary
@@ -954,8 +977,39 @@ Never assume any cross-devices relationship between the screen orientation type 
 
 		</section>
 	</section>
+	<section id="extensions-to-the-document-interface">
+<h2 title="Extensions to the Document interface">3. `Document^I ~interfaceに対する拡張</h2>
+
+		<section id="internal-slots-0">
+<h3 title="Internal Slots">3.1. 内部~slot</h3>
+
+<p>
+`Document$I ~interfaceは、
+次に挙げる内部~slotで拡張される：
+◎
+The Document interface is extended with the following internal slots:
+◎
+Internal Slot 	Description
+</p>
+
+<dl>
+	<dt>
+`orientationPendingPromise@sl
+</dt>
+	<dd>
+次のいずれか
+⇒＃
+~NULL ／
+ある `Promise$I （~supportされるいずれかの方位に~screenを~lockする要請を表現する）
+◎
+Either null or a Promise. When assigned a Promise, that promise represents a request to lock the screen orientation.
+</dd>
+</dl>
+
+		</section>
+	</section>
 	<section id="extensions-to-the-screen-interface">
-<h2 title="Extensions to the Screen interface">3. `Screen^I ~interfaceに対する拡張</h2>
+<h2 title="Extensions to the Screen interface">4. `Screen^I ~interfaceに対する拡張</h2>
 
 <pre class="idl">
 partial interface `Screen$I {
@@ -975,7 +1029,7 @@ The Window object has an associated ScreenOrientation, which is a Screen's orien
 
 	</section>
 	<section id="screenorientation-interface">
-<h2 title="ScreenOrientation interface">4. `ScreenOrientation^I ~interface</h2>
+<h2 title="ScreenOrientation interface">5. `ScreenOrientation^I ~interface</h2>
 
 <pre class="idl">
 [`Exposed$=Window]
@@ -989,7 +1043,7 @@ interface `ScreenOrientation@I : `EventTarget$I {
 </pre>
 
 		<section id="internal-slots">
-<h3 title="Internal Slots">4.1. 内部~slot</h3>
+<h3 title="Internal Slots">5.1. 内部~slot</h3>
 
 <p>
 ◎
@@ -1006,22 +1060,31 @@ Represents the screen's last known current orientation angle in degrees as an un
 </dd>
 
 	<dt>
+`initialType@sl
+</dt>
+	<dd>
+`閲覧~文脈$が作成された時点における，~screenの`現在の方位~種別$を表現する。
+◎
+Represents the screen's current orientation type when the browsing context was created.
+</dd>
+
+	<dt>
 `type@sl
 </dt>
 	<dd>
-~screen【！theScreen/ screen】の最後に既知な`現在の方位~種別$を `OrientationType$I 列挙~値として表現する。
+~screenの最後に既知な`現在の方位~種別$を `OrientationType$I 列挙~値として表現する。
 ◎
-Represents the screen's last known current orientation type of theScreen/ screen as an OrientationType enum value.
+Represents the screen's last known current orientation type as an OrientationType enum value.
 </dd>
 </dl>
 
 		</section>
 		<section id="lock-method">
-<h3 title="lock() method">4.2. `lock()^m ~method</h3>
+<h3 title="lock() method">5.2. `lock()^m ~method</h3>
 
 <p>
 `~UA$は、
-~screen方位を`~lock$するに先立って［
+`~screen方位を~lockする$に先立って［
 `文書$, それが`属する閲覧~文脈$
 ］が満たす必要がある 1 つ以上の
 `事前~lock条件@
@@ -1033,7 +1096,7 @@ Represents the screen's last known current orientation type of theScreen/ screen
 ◎
 ↓When the lock() method is invoked with OrientationLockType orientation, the user agent MUST run the following steps.
 ◎
-The user agent MAY require a document and its associated browsing context to meet one or more pre-lock conditions in order to lock the screen orientation. See 10. Interaction with Web Application Manifest 9. Interaction with Fullscreen API.
+The user agent MAY require a document and its associated browsing context to meet one or more pre-lock conditions in order to lock the screen orientation. See 10. Interaction with Web Application Manifest and 9. Interaction with Fullscreen API.
 </p>
 
 <div class="algo">
@@ -1054,6 +1117,7 @@ Let document be this's relevant global object's associated Document.
 ］
 ⇒
 ~RET `InvalidStateError$E 例外で`却下される~promise$
+`non-fully-active^test
 ◎
 If document is not fully active, return a promise rejected with an "InvalidStateError" DOMException.
 </li>
@@ -1085,10 +1149,10 @@ If the user agent does not support locking the screen orientation to orientation
 %文書 .`orientationPendingPromise$sl ~NEQ ~NULL
 ］
 ⇒
-`現在の~lock~promiseを却下して~NULL化する$( %文書, `AbortError$E 例外 )
+`現在の~lock~promiseを却下して~NULL化する$( %文書, "`AbortError$E" )
 `lock-basic^test
 ◎
-If document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with a "AbortError" DOMException.
+If document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with an "AbortError".
 </li>
 	<li>
 %文書 .`orientationPendingPromise$sl ~SET `新たな~promise$
@@ -1099,11 +1163,11 @@ Set document's [[orientationPendingPromise]] to a new promise.
 	<li class="algo">
 この段は`並列的$に遂行する
 ⇒
-`~screen方位を~lockしようと試行する$( %文書, %orientation )
+`方位~lockを適用する$( %文書, %orientation )
 ◎
 Return document's [[orientationPendingPromise]].
 ◎
-Try to lock the screen orientation of document to orientation.
+Apply orientation lock orientation to document.
 </li>
 	<li>
 ~RET %文書 .`orientationPendingPromise$sl
@@ -1114,7 +1178,7 @@ Try to lock the screen orientation of document to orientation.
 
 		</section>
 		<section id="unlock-method">
-<h3 title="unlock() method">4.3. `unlock()^m ~method</h3>
+<h3 title="unlock() method">5.3. `unlock()^m ~method</h3>
 
 <div class="algo">
 <p>
@@ -1140,24 +1204,38 @@ If document is not fully active, throw an "InvalidStateError" DOMException.
 </li>
 	<li>
 ~IF［
+`閲覧~文脈~sandbox化( 方位~lock )~flag$ ~IN %文書 にて`作動中の~sandbox法~flag集合$
+］
+⇒
+~RET
+`lock-sandboxed-iframe^test
+◎
+If document has the sandboxed orientation lock browsing context flag set, return undefined.
+</li>
+	<li>
+~IF［
+~screenの`作動中の方位~lock$ ~EQ ~NULL
+］
+⇒
+~RET
+◎
+If screen's active orientation lock is null, return undefined.
+</li>
+	<li>
+~IF［
 %文書 .`orientationPendingPromise$sl ~NEQ ~NULL
 ］
 ⇒
-`現在の~lock~promiseを却下して~NULL化する$( %文書, `AbortError$E 例外 )
+`現在の~lock~promiseを却下して~NULL化する$( %文書, "`AbortError$E" )
 ◎
-If document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with a "AbortError" DOMException.
+If document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with an "AbortError".
 </li>
 	<li class="algo">
 この段は`並列的$に遂行する
 ⇒
-`~screen方位を~lockしようと試行する$( %文書, `既定の~screen方位$ )
+`方位~lockを適用する$( %文書 )
 ◎
-Try to lock the screen orientation of document to the default screen orientation.
-</li>
-	<li>
-~screenの`作動中の方位~lock$ ~SET ~NULL
-◎
-Set the screen's active orientation lock to null.
+Apply orientation lock null to document.
 </li>
 </ol>
 </div>
@@ -1179,7 +1257,7 @@ unlock() does not return a promise because it is equivalent to locking to the de
 
 		</section>
 		<section id="type-attribute">
-<h3 title="type attribute">4.4. `type^m 属性</h3>
+<h3 title="type attribute">5.4. `type^m 属性</h3>
 
 <div class="algo">
 <p>
@@ -1194,7 +1272,7 @@ When getting, the type attribute returns this's [[type]].
 
 		</section>
 		<section id="angle-attribute">
-<h3 title="angle attribute">4.5. `angle^m 属性</h3>
+<h3 title="angle attribute">5.5. `angle^m 属性</h3>
 
 <div class="algo">
 <p>
@@ -1220,7 +1298,7 @@ The angle attribute represents how far the screen has rotated from it natural or
 
 		</section>
 		<section id="onchange-event-handler-attribute">
-<h3 title="onchange event handler attribute">4.6. `onchange^m ~event~handler属性</h3>
+<h3 title="onchange event handler attribute">5.6. `onchange^m ~event~handler属性</h3>
 
 <p>
 `onchange@m
@@ -1236,7 +1314,7 @@ The onchange attribute is an event handler IDL attribute for the onchange event 
 		</section>
 	</section>
 	<section id="orientationlocktype-enum">
-<h2 title="OrientationLockType enum">5. `OrientationLockType^I 列挙</h2>
+<h2 title="OrientationLockType enum">6. `OrientationLockType^I 列挙</h2>
 
 <pre class="idl">
 enum `OrientationLockType@I {
@@ -1255,7 +1333,7 @@ enum `OrientationLockType@I {
 `OrientationLockType$I 列挙は、
 ~screenを どの~screen方位に`~lock$できるようになり得るかを表現する：
 ◎
-The OrientationLockType enum represents the screen orientations to which a screen can be potentially locked to.
+The OrientationLockType enum represents the screen orientations to which a screen can be potentially locked.
 </p>
 
 <p class="note">注記：
@@ -1309,7 +1387,7 @@ User agents might only support a subset of the possible OrientationLockType valu
 ◎
 "portrait" represents portrait.
 ◎
-"portrait-primary" represents. portrait-primary,
+"portrait-primary" represents portrait-primary,
 ◎
 "portrait-secondary" represents portrait-secondary.
 ◎
@@ -1320,7 +1398,7 @@ User agents might only support a subset of the possible OrientationLockType valu
 
 	</section>
 	<section id="orientationtype-enum">
-<h2 title="OrientationType enum">6. `OrientationType^I 列挙</h2>
+<h2 title="OrientationType enum">7. `OrientationType^I 列挙</h2>
 
 <pre class="idl">
 enum `OrientationType@I {
@@ -1368,37 +1446,6 @@ The OrientationType enum values are used to represent the screen's current orien
 </div>
 
 	</section>
-	<section id="extensions-to-the-document-interface">
-<h2 title="Extensions to the Document interface">7. `Document$I ~interfaceに対する拡張</h2>
-
-		<section id="internal-slots-0">
-<h3 title="Internal Slots">7.1. 内部~slot</h3>
-
-<p>
-`Document$I ~interfaceは、
-次に挙げる内部~slotで拡張される：
-◎
-The Document interface is extended with the following internal slots:
-◎
-Internal Slot 	Description
-</p>
-
-<dl>
-	<dt>
-`orientationPendingPromise@sl
-</dt>
-	<dd>
-次のいずれか
-⇒＃
-~NULL ／
-ある `Promise$I （~supportされるいずれかの方位に~screenを~lockする要請を表現する）
-◎
-Either null or a Promise. When assigned a Promise, that promise represents a request to lock the screen orientation.
-</dd>
-</dl>
-
-		</section>
-	</section>
 	<section id="algorithms">
 <h2 title="Algorithms">8. ~algo</h2>
 
@@ -1419,6 +1466,11 @@ When a browsing context context is created, the user agent MUST:
 Let screenOrientation be context's associated ScreenOrientation.
 </li>
 	<li>
+%~screen方位 .`initialType$sl ~SET ~screenの`現在の方位~種別$
+◎
+Initialize screenOrientation's [[initialType]] internal slot to the screen's current orientation type.
+</li>
+	<li>
 %~screen方位 .`type$sl ~SET ~screenの`現在の方位~種別$
 ◎
 Initialize screenOrientation's [[type]] internal slot to the screen's current orientation type.
@@ -1426,7 +1478,7 @@ Initialize screenOrientation's [[type]] internal slot to the screen's current or
 	<li>
 %~screen方位 .`angle$sl ~SET ~screenの`現在の方位~角度$
 ◎
-Initialize screenOrientation's [[angle]] internal slot to the screen's screen's current orientation angle.
+Initialize screenOrientation's [[angle]] internal slot to the screen's current orientation angle.
 </li>
 </ol>
 `orientation-reading^test
@@ -1441,29 +1493,33 @@ Initialize screenOrientation's [[angle]] internal slot to the screen's screen's 
 `現在の~lock~promiseを却下して~NULL化する@
 ときは、
 所与の
-( `文書$ %文書, `DOMException$I %例外 )
+( `文書$ %文書, 文字列【！DOMString】 %例外~名 )
 に対し，次を走らすモノトスル：
 ◎
-When steps require to reject and nullify the current lock promise of Document document with DOMException exception, the user agent MUST:
+When steps require to reject and nullify the current lock promise of Document document with a DOMString exceptionName, the user agent MUST:
 </p>
 <ol>
 	<li>
 %~promise ~LET %文書 .`orientationPendingPromise$sl
 ◎
-Let promise be document's [[orientationPendingPromise]].
-</li>
+↓</li>
 	<li>
-~Assert：
-%~promise ~NEQ ~NULL
+~IF［
+%~promise ~EQ ~NULL
+］
+⇒
+~RET
 ◎
-Assert: promise is not null.
+If document's [[orientationPendingPromise]] is null, abort these steps.
+◎
+Let promise be document's [[orientationPendingPromise]].
 </li>
 	<li class="algo">
 次を走らす`大域~taskを~queueする$( `~DOM操作~task源$, %文書 に`関連な大域~obj$ )
 ⇒
-%例外 で %~promise を`却下する$
+新たな %例外~名 `DOMException$I で %~promise を`却下する$
 ◎
-Queue a global task on the DOM manipulation task source with document's relevant global object to reject promise with exception.
+Queue a global task on the DOM manipulation task source with document's relevant global object to reject promise with a new exceptionName DOMException.
 </li>
 	<li>
 %文書 .`orientationPendingPromise$sl ~SET ~NULL
@@ -1475,22 +1531,31 @@ Set document's [[orientationPendingPromise]] to null.
 </div>
 
 		</section>
-		<section id="try-to-lock-the-screen-orientation">
-<h3 title="Try to lock the screen orientation">8.3. ~screen方位を~lockしようと試行する</h3>
+		<section id="applying-an-orientation-lock">
+<h3 title="Applying an orientation lock ">8.3. 方位~lockの適用-法</h3>
 
 <div class="algo">
 <p>
-`~screen方位を~lockしようと試行する@
+`方位~lockを適用する@
 ときは、
 所与の
-( `文書$ %文書, `OrientationLockType$I %方位【！lock】 )
+( `文書$ %文書, `OrientationLockType$I %方位 （省略時は ~NULL ）)
 に対し，次を遂行するモノトスル
 — この手続きは、
-常に`並列的$に遂行されることになる：
+常に`並列的$に遂行されるよう呼出される：
 ◎
-When steps require to try to lock the screen orientation of Document document to OrientationLockType lock, the user agent MUST perform do the following steps in parallel:
+When steps require to apply orientation lock of OrientationLockType? orientation to Document document, the user agent MUST perform do the following steps in parallel:
 </p>
 <ol>
+	<li>
+~IF［
+%文書 は`全部的に作動中$でない
+］
+⇒
+`現在の~lock~promiseを却下して~NULL化する$( %文書, "`AbortError$E" )
+◎
+If document stops being fully active while in parallel, reject and nullify the current lock promise of document with an "AbortError".
+</li>
 	<li>
 %~top-level文書 ~LET %文書 の`~top-level閲覧~文脈$にて`作動中の文書$
 ◎
@@ -1502,7 +1567,7 @@ Let topDocument be document's top-level browsing context's active document.
 ~EACH( %子孫~文書 )
 に対し：
 ◎
-Let descendantDocs be an ordered set consisting of topDocument's descendant browsing contexts' active documents, if any, in tree order.
+Let descendantDocs be an ordered set consisting of topDocument's descendant browsing contexts's active documents, if any, in tree order.
 ◎
 For each doc in descendantDocs:
 </p>
@@ -1526,20 +1591,30 @@ If doc is document, continue.
 If doc [[orientationPendingPromise]] is null, continue.
 </li>
 			<li>
-`現在の~lock~promiseを却下して~NULL化する$( %子孫~文書, `AbortError$E 例外 )
+`現在の~lock~promiseを却下して~NULL化する$( %子孫~文書, "`AbortError$E" )
 ◎
-Reject and nullify the current lock promise of doc with an "AbortError" DOMException.
+Reject and nullify the current lock promise of doc with an "AbortError".
 </li>
 		</ol>
 	</li>
 	<li>
+~IF［
+%方位 ~EQ ~NULL
+］
+⇒
+`~screen方位を~unlockする$
+◎
+If orientation is null, unlock the screen orientation.
+</li>
+	<li>
 <p>
-~screen方位を %方位 に`~lock$するよう試みる
-— 必要とされるなら、
-~platform規約に依存して，
+~ELSE
+⇒
+%方位 に`~screen方位を~lockする$よう試みる
+— ~platform規約に依存して，
 %文書 の表示域の描かれ方を %方位 に合致するよう変更する
 ◎
-Attempt to lock the screen orientation to orientation, and, if necessary, and depending on platform conventions, change how the viewport is drawn to match orientation.＼
+Otherwise, attempt to lock the screen orientation to orientation. Depending on platform conventions, change how the viewport is drawn to match orientation.＼
 </p>
 
 <p>
@@ -1557,9 +1632,14 @@ If the attempt fails due to previously-established user preference, or platform 
 %文書 .`orientationPendingPromise$sl ~NEQ ~NULL
 ］
 ⇒
-`現在の~lock~promiseを却下して~NULL化する$( %文書, `NotSupportedError$E 例外 )
+`現在の~lock~promiseを却下して~NULL化する$( %文書, "`NotSupportedError$E" )
 ◎
-If the document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with "NotSupportedError" DOMException.
+If the document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with a "NotSupportedError".
+</li>
+			<li>
+~screenの`作動中の方位~lock$ ~SET ~NULL
+◎
+Set the screen's active orientation lock to null.
 </li>
 			<li>
 ~RET
@@ -1580,7 +1660,8 @@ Abort these steps.
 ］ことを防止する選好を設定した
 </li>
 			<li>
-~UAではなく下層の~platformが，~screen方位を所与の %方位 に~lockすることを許容していない
+~UAではなく下層の~platformが，所与の %方位 に~screen方位を~lockすることを許容していない
+【これに該当するかどうかは、 %方位 にも依存するかもしれない。】
 </li>
 		</ul>
 ◎
@@ -1589,6 +1670,20 @@ Note
 This can happen if the user has set a preference that prevents web applications from changing the screen orientation, or if the underlying platform, rather than the user agent, does not allow locking the screen orientation to the given orientation.
 </div>
 	</li>
+	<li>
+~screenの`作動中の方位~lock$ ~SET %方位
+◎
+Set the screen's active orientation lock to orientation＼
+</li>
+	<li>
+［
+`現在の方位~種別$, `現在の方位~角度$
+］を［
+`~screen方位$に対する変更を反映する
+］よう更新する
+◎
+and update the current orientation type and current orientation angle to reflect any changes to the screen orientation.
+</li>
 	<li>
 <p>
 %~promise ~LET %文書 .`orientationPendingPromise$sl
@@ -1634,15 +1729,6 @@ If promise is not null, resolve promise with undefined.
 </li>
 		</ol>
 	</li>
-	<li>
-~IF［
-%文書 は`全部的に作動中$でなくなった
-］
-⇒
-`現在の~lock~promiseを却下して~NULL化する$( %文書, `AbortError$E 例外 )
-◎
-If document stops being fully active while in parallel, reject and nullify the current lock promise of document with an "AbortError" DOMException.
-</li>
 </ol>
 </div>
 
@@ -1711,11 +1797,6 @@ Let screenOrientation be document's relevant global object's associated ScreenOr
 If type is equal to screenOrientation's [[type]] and angle is equal to screenOrientation's [[angle]], abort these steps.
 </li>
 	<li>
-%~screen方位 ~LET %文書【！doc】 に`関連な大域~obj$の`方位~obj$
-◎
-Let screenOrientation be doc's relevant global object's associated ScreenOrientation.
-</li>
-	<li>
 %~screen方位 .`angle$sl ~SET %角度
 ◎
 Set screenOrientation's [[angle]] to angle.
@@ -1744,9 +1825,9 @@ Fire an event named "change" at screenOrientation.
 </li>
 		</ol>
 ◎
-Let docs be an ordered set consisting of document's descendant browsing contexts's active documents, if any, in tree order.
+Let descendantDocs be an ordered set consisting of document's descendant browsing contexts's active documents, if any, in tree order.
 ◎
-For each doc in docs, queue a global task on the DOM manipulation task source with doc's relevant global object to run the screen orientation change steps with doc.
+For each doc in descendantDocs, queue a global task on the DOM manipulation task source with doc's relevant global object to run the screen orientation change steps with doc.
 </li>
 </ol>
 </div>
@@ -1775,9 +1856,9 @@ The page visibility change steps given document are as follows:
 If document's visibility state is "hidden", terminate these steps.
 </li>
 	<li>
-`~screen方位~変更~手続き$( %文書 に`関連な大域~obj$に`結付けられている文書$ )
+`~screen方位~変更~手続き$( %文書 )
 ◎
-Run the screen orientation change steps with document's relevant global object's associated Document.
+Run the screen orientation change steps with document.
 </li>
 </ol>
 </div>
@@ -1796,40 +1877,52 @@ Developers need to be aware that documents with a "hidden" visibility state will
 </p>
 
 		</section>
-		<section id="handling-navigation">
-<h3 title="Handling navigation">8.6. ~naviの取扱い</h3>
+		<section id="handling-unloading-documents">
+<h3 title="Handling unloading documents">8.6. 文書~unload時の取扱い</h3>
+
+<p>
+`文書~unload時の片付け手続き$を所与の
+( `文書$ %文書 )
+の下で走らすときは、
+次も走らすモノトスル
+⇒
+`~screen方位を全部的に~unlockする手続き$( %文書 )
+◎
+Whenever the unloading document cleanup steps run with a document, the user agent MUST run the fully unlock the screen orientation steps with document.
+</p>
+
+		</section>
+		<section id="fully-unlocking-the-orientation">
+<h3 title="Fully unlocking the orientation">8.7. 方位の全部的な~unlock法</h3>
 
 <div class="algo">
 <p>
-`~top-level閲覧~文脈$が`~navigate$されたときは、
-次の手続きを走らすモノトスル：
+`~screen方位を全部的に~unlockする手続き@
+は、
+所与の
+( `文書$ %文書 )
+に対し，次に従う：
 ◎
-When a top-level browsing context is navigated, the user agent MUST run the following steps:
+The fully unlock the screen orientation steps for Document document are as follows:
 </p>
 <ol>
-	<li>
-%文書 ~LET コレに`関連な大域~obj$に`結付けられている文書$
-◎
-Let document be this's relevant global object's associated Document.
-</li>
 	<li>
 ~IF［
 %文書 .`orientationPendingPromise$sl ~NEQ ~NULL
 ］
 ⇒
-`現在の~lock~promiseを却下して~NULL化する$( %文書, `AbortError$E 例外 )
+`現在の~lock~promiseを却下して~NULL化する$( %文書, "`AbortError$E" )
 ◎
-If document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with a "AbortError" DOMException.
+If document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with an "AbortError".
 </li>
-	<li>
-`~screen方位を~lockしようと試行する$( %文書, `既定の~screen方位$ )
+	<li class="algo">
+この段は`並列的$に遂行する
+⇒
+`方位~lockを適用する$( %文書 の`~top-level閲覧~文脈$にて`作動中の文書$ )
 ◎
-Try to lock the screen orientation of document to the default screen orientation.
-</li>
-	<li>
-~screenの`作動中の方位~lock$ ~SET ~NULL
+Let topDocument be document's top-level browsing context's active document.
 ◎
-Set the screen's active orientation lock to null.
+Apply orientation lock null to topDocument.
 </li>
 </ol>
 </div>
@@ -1867,7 +1960,7 @@ The Web Application Manifest specification allows web applications to set the de
 `表示~mode$ `fullscreen^v で呈示される
 ］ことを要求するベキである。
 ◎
-A user agent SHOULD require installed web applications to be presented in display mode be "fullscreen" as a pre-lock condition.
+A user agent SHOULD require installed web applications to be presented in the "fullscreen" display mode as a pre-lock condition.
 </p>
 
 	</section>
@@ -1897,50 +1990,61 @@ As users can have their devices mounted in a fixed orientation (e.g. on the arm 
 	<section id="privacy-and-security-considerations">
 <h2 title="Privacy and Security Considerations">12. ~privacyと~securityの考慮点</h2>
 
-~INFORMATIVE
-
 <p>
 ~screenの［
 `現在の方位~種別$,
 `現在の方位~角度$
 ］は、
 いずれも指紋収集~行路になり得る。
+以下に挙げる軽減は、［
+機器が どう保持されているかを露呈しないこと
+］により利用者の~privacyを保護する助けになることに加え，［
+`副-方位$の種別, それに結付けられた角度
+］が指紋収集~目的に利用されることを防止する。
+◎
+A screen's type and angle are a potential fingerprinting vector. The following mitigation help protect a user's privacy by not revealing how a device is being held, and also prevents the secondary orientation type and associated angles from being user for fingerprinting purposes.
+</p>
+
+<p>
 ~UAは、
 指紋収集に抵抗するためとして（例：私的~閲覧），次のようにしてもヨイ：
 ◎
-A screen's type and angle are a potential fingerprinting vector. To resist fingerprinting (e.g., in private browsing), user agents MAY:
+To resist fingerprinting (e.g., in private browsing), user agents MAY:
 </p>
-<ol>
+<ul>
 	<li>
-【 `type$m 属性は、】
-常に，`首-方位$
-（~screenの縦横比に応じて［
+`~top-level閲覧~文脈$が存続する限り，［
+~screenの`自然な方位$ ~EQ `initialType$sl
+］であったかのように挙動する。
+◎
+For the life of a top-level browsing context, behave as as if screen's natural orientation is [[initialType]].
+</li>
+	<li>
+`type$m 取得子は、［
 `portrait-primary$oT ／ `landscape-primary$oT
-いずれか）
-を返す。
+］（`首-方位$）のみを返すよう制約する。
+— どちらを返すかは、
+~screenの縦横比により決定する。
 ◎
-Depending on the screen's aspect ratio, always return either "portrait-primary" or "landscape-primary".
+Restrict the possible return values of the type getter to "portrait-primary" or "landscape-primary". The screen aspect ratio determines which is returned.
 </li>
 	<li>
-`angle$m 属性は、
-常に 0 を返す。
+`angle$m 取得子は［
+`現在の方位~種別$が `initialType$sl に合致するならば 0 ／
+~ELSE_ 90
+］を返す。
 ◎
-Always return 0 for the value of the angle attribute.
+If the current orientation type matches [[initialType]], return 0 for the angle getter. Otherwise, return 90.
 </li>
 	<li>
-~screen方位が変化した場合、
+~screen方位が変化した場合に `change$et ~eventを発火するのは、
 `現在の方位~種別$が［
 `縦置き方位$から`横置き方位$へ, またはその逆へ変化した
-］ときに限り， `change$et ~eventを発火する。
-これは、［
-機器が どう保持されているか露呈されない
-］よう利用者の~privacyを保護することに加え，［
-`副-方位$が指紋収集~行路として利用される
-］ことを防止する。
+］ときに限る。
 ◎
-If the screen orientation changes, only fire the change event when the current orientation type changes from portrait to landscape, or vice versa. This both protects user's privacy by not revealing how a device is being held, and prevents using the secondary orientation as a fingerprinting vector.
+If the screen orientation changes, only fire the change event when the current orientation type changes from portrait to landscape, or vice versa.
 </li>
-</ol>
+</ul>
 
 	</section>
 </main></div>
