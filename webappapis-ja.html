@@ -122,8 +122,8 @@ return text;
 
 ●●options
 
-spec_date:2022-10-07
-trans_update:2022-10-07
+spec_date:2022-10-24
+trans_update:2022-10-25
 source_checked:221007
 page_state_key:HTML
 spec_status:LS
@@ -1872,6 +1872,7 @@ as:
 	%大域~obj:global
 	%~task源:source
 	%参照元~scriptまたは~module:referencingScriptOrModule
+	%参照元~script:referencingScript
 	%参照元~script:referencing script
 	%指定子:specifier
 	%~promise
@@ -1969,6 +1970,7 @@ as:
 	%参照中の~script:referringScript
 	%~scope~import群との合致-:scopeImportsMatch
 	%~top-levelの~import群との合致-:topLevelImportsMatch
+	%解決-済み~module~script:resolvedModuleScript
 
 	●指示語
 現在:currently:~
@@ -8923,14 +8925,13 @@ To resolve a module specifier given a script-or-null referringScript and a strin
 </p>
 <ol>
 	<li>
-%設定群~obj ~LET `現在の設定群~obj$
+%設定群~obj ~LET ~NULL
 ◎
-Let settingsObject be the current settings object.
-</li>
+↓</li>
 	<li>
-%基底~URL ~LET %設定群~obj の`~API用~基底~URL$enV
+%基底~URL ~LET ~NULL
 ◎
-Let baseURL be settingsObject's API base URL.
+Let settingsObject and baseURL be null.
 </li>
 	<li>
 <p>
@@ -8950,6 +8951,32 @@ Set settingsObject to referringScript's settings object.
 %基底~URL ~SET %参照中の~script の`基底~URL$sC
 ◎
 Set baseURL to referringScript's base URL.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+		<ol>
+			<li>
+~Assert：
+`現在の設定群~obj$は在る。
+【参考：`課題 #8410＠~HTMLissue/8410$】
+◎
+Assert: there is a current settings object.
+</li>
+			<li>
+%設定群~obj ~SET `現在の設定群~obj$
+◎
+Set settingsObject to the current settings object.
+</li>
+			<li>
+%基底~URL ~SET %設定群~obj の`~API用~基底~URL$enV
+◎
+Set baseURL to settingsObject's API base URL.
 </li>
 		</ol>
 	</li>
@@ -11766,14 +11793,13 @@ JavaScript contains an implementation-defined HostResolveImportedModule abstract
 </p>
 <ol>
 	<li>
-%設定群~obj ~LET `現在の設定群~obj$
+%~module~map ~LET ~NULL
 ◎
-Let settings object be the current settings object.
-</li>
+↓</li>
 	<li>
 %参照元~script ~LET ~NULL
 ◎
-Let referencing script be null.
+Let moduleMap and referencingScript be null.
 </li>
 	<li>
 <p>
@@ -11787,26 +11813,33 @@ If referencingScriptOrModule is not null, then:
 			<li>
 %参照元~script ~SET %参照元~scriptまたは~module.`HostDefined^sl
 ◎
-Set referencing script to referencingScriptOrModule.[[HostDefined]].
+Set referencingScript to referencingScriptOrModule.[[HostDefined]].
 </li>
 			<li>
-%設定群~obj ~SET %参照元~script の`設定群~obj$sC
+%~module~map ~SET  %参照元~script の`設定群~obj$sCの`~module~map$enV
 ◎
-Set settings object to referencing script's settings object.
+Set moduleMap to referencingScript's settings object's module map.
 </li>
-			<li>
-%基底~URL ~SET %参照元~script の`基底~URL$sC
+		</ol>
+	</li>
+	<li>
+<p>
+~ELSE：
 ◎
-Set base URL to referencing script's base URL.
-</li>
+Otherwise:
+</p>
+		<ol>
 			<li>
 ~Assert：
-%基底~URL ~NEQ ~NULL
-— %参照元~script は［
-`古典~script$／`~JS~module~script$
-］なので。
+`現在の設定群~obj$は在る。
+【参考：`課題 #8410＠~HTMLissue/8410$】
 ◎
-Assert: base URL is not null, as referencing script is a classic script or a JavaScript module script.
+Assert: there is a current settings object.
+</li>
+			<li>
+%~module~map ~SET `現在の設定群~obj$の`~module~map$enV
+◎
+Set moduleMap to the current settings object's module map.
 </li>
 		</ol>
 
@@ -11817,7 +11850,6 @@ Assert: base URL is not null, as referencing script is a classic script or a Jav
 例えば，次が与えられた下で：
 ◎
 referencingScriptOrModule is not usually null, but will be so for event handlers per the get the current value of the event handler algorithm. For example, given:
-
 </p>
 
 <pre class="lang-html">
@@ -11832,19 +11864,13 @@ referencingScriptOrModule is not usually null, but will be so for event handlers
 ◎
 If a click event occurs, then at the time the import() expression runs, GetActiveScriptOrModule will return null, which will be passed to this abstract operation when HostResolveImportedModule is called by FinishDynamicImport.
 </p>
-
 </div>
 	</li>
-	<li>
-%~module~map ~LET %設定群~obj の`~module~map$enV
-◎
-Let moduleMap be settings object's module map.
-</li>
 	<li>
 <p>
 %~URL ~LET `~module指定子を解決する$( %参照元~script, %~module要請.`Specifier^sl )
 ◎
-Let url be the result of resolving a module specifier given referencing script and moduleRequest.[[Specifier]].
+Let url be the result of resolving a module specifier given referencingScript and moduleRequest.[[Specifier]].
 </p>
 
 <p>
@@ -11867,7 +11893,7 @@ Let moduleType be the result of running the module type from module request step
 	<li>
 %解決-済み~module~script ~LET %~module~map[ ( %~URL, %~module種別 ) ]
 ◎
-Let resolved module script be moduleMap[(url, moduleType)].＼
+Let resolvedModuleScript be moduleMap[(url, moduleType)].＼
 </li>
 	<li>
 ~Assert：
@@ -11876,18 +11902,18 @@ Let resolved module script be moduleMap[(url, moduleType)].＼
 ◎
 (This entry must exist for us to have gotten to this point.)
 ◎
-Assert: resolved module script is a module script (i.e., is not null or "fetching").
+Assert: resolvedModuleScript is a module script (i.e., is not null or "fetching").
 </li>
 	<li>
 ~Assert：
 %解決-済み~module~script の`~record$sC ~NEQ ~NULL
 ◎
-Assert: resolved module script's record is not null.
+Assert: resolvedModuleScript's record is not null.
 </li>
 	<li>
 ~RET %解決-済み~module~script の`~record$sC
 ◎
-Return resolved module script's record.
+Return resolvedModuleScript's record.
 </li>
 </ol>
 </div>
