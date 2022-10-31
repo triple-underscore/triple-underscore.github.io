@@ -575,7 +575,7 @@ Util.fillHeader = () => {
 		const m = date.match(/^(\d+)-0*(\d+)-0*(\d+)$/);
 		if(m){
 			date = 
-`<time datetime="${date}">${m[1]} 年 ${m[2]} 月 ${m[3]} 日</time>`;
+`<time datetime="${date}">${m[1]}年 ${m[2]}月 ${m[3]}日</time>`;
 		}
 		let header_text ='';
 		const status = options.spec_status;
