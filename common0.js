@@ -1221,11 +1221,14 @@ HTMLLS:https://html.spec.whatwg.org/multipage
 ARIA1:https://w3c.github.io/aria/
 HTMLARIA:https://w3c.github.io/html-aria/
 HTMLAAM:https://w3c.github.io/html-aam/
-BROWSERS:HTML-browsing-contexts-ja.html
-WINDOW:HTML-window-ja.html
 ORIGIN:HTML-origin-ja.html
-HISTORY:HTML-history-ja.html
-NAVI:HTML-navigation-ja.html
+WINDOW:HTML-window-ja.html
+HTMLWPROXY:HTML-windowproxy-ja.html
+HTMLds:https://html.spec.whatwg.org/multipage/document-sequences.html
+BROWSERS:https://html.spec.whatwg.org/multipage/document-sequences.html
+HTMLnav:https://html.spec.whatwg.org/multipage/browsing-the-web.html
+NAVI:https://html.spec.whatwg.org/multipage/browsing-the-web.html
+HTMLlifecycle:https://html.spec.whatwg.org/multipage/document-lifecycle.html
 WAPI:webappapis-ja.html
 HTMLGAPI:HTML-global-api-ja.html
 HTMLINFRA:HTML-infrastructure-ja.html
@@ -3136,6 +3139,7 @@ frame::::フレーム
 閲覧:browsing::~
 navi:navigation:::ナビ
 navigate::::ナビゲート
+navigable::::ナビ可能
 download::::ダウンロード
 upload::::アップロード
 redirect::::リダイレクト
