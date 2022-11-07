@@ -1228,7 +1228,7 @@ HTMLds:https://html.spec.whatwg.org/multipage/document-sequences.html
 BROWSERS:https://html.spec.whatwg.org/multipage/document-sequences.html
 HTMLnav:https://html.spec.whatwg.org/multipage/browsing-the-web.html
 NAVI:https://html.spec.whatwg.org/multipage/browsing-the-web.html
-HTMLlifecycle:https://html.spec.whatwg.org/multipage/document-lifecycle.html
+HTMLlifecycle:HTML-document-lifecycle-ja.html
 WAPI:webappapis-ja.html
 HTMLGAPI:HTML-global-api-ja.html
 HTMLINFRA:HTML-infrastructure-ja.html
