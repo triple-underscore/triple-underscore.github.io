@@ -115,8 +115,8 @@ return text;
 ●●options
 
 spec_title:The Screen Orientation API
-spec_date:2022-10-27
-trans_update:2022-10-29
+spec_date:2022-11-03
+trans_update:2022-11-08
 source_checked:221025
 original_url:https://w3c.github.io/screen-orientation/
 	abbr_url:SCREEN-ORIENTATION
@@ -289,6 +289,7 @@ et.change:#dfn-change
 ~top-level閲覧~文脈:~BROWSERS#top-level-browsing-context
 閲覧~文脈~容器:~BROWSERS#browsing-context-container
 
+~taskを~queueする:~WAPI#queue-a-task
 大域~taskを~queueする:~WAPI#queue-a-global-task
 ~DOM操作~task源:~WAPI#dom-manipulation-task-source
 ~event~handler~event型:~WAPI#event-handler-event-type
@@ -310,6 +311,10 @@ doc.可視性~状態:~HTMLinteraction#visibility-state
 ~installした~web~app:~APPMANIFEST#dfn-installed-web-application
 
 表示~mode:~MQ5#display-mode
+
+単純~fullscreen文書:~FULLSCREEN#simple-fullscreen-document
+~fullscreenから全部的に抜出る:~FULLSCREEN#fully-exit-fullscreen
+
 
 	●用例（補完
 0.requestFullscreen:~FULLSCREEN#dom-element-requestfullscreen
@@ -347,6 +352,8 @@ unlock::::アンロック
 	~lockすること:locking
 pre-lock
 fullscreen::::全スクリーン
+抜出る:exitする::抜け出る
+
 	~click::::クリック
 装着-:mount::~
 描かれ:drawされ::~
@@ -1160,9 +1167,7 @@ If document's [[orientationPendingPromise]] is not null, reject and nullify the 
 ◎
 Set document's [[orientationPendingPromise]] to a new promise.
 </li>
-	<li class="algo">
-この段は`並列的$に遂行する
-⇒
+	<li>
 `方位~lockを適用する$( %文書, %orientation )
 ◎
 Apply orientation lock orientation to document.
@@ -1229,9 +1234,7 @@ If screen's active orientation lock is null, return undefined.
 ◎
 If document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with an "AbortError".
 </li>
-	<li class="algo">
-この段は`並列的$に遂行する
-⇒
+	<li>
 `方位~lockを適用する$( %文書 )
 ◎
 Apply orientation lock null to document.
@@ -1503,13 +1506,10 @@ When steps require to reject and nullify the current lock promise of Document do
 ◎
 ↓</li>
 	<li>
-~IF［
-%~promise ~EQ ~NULL
-］
-⇒
-~RET
+~Assert：
+%~promise ~NEQ ~NULL
 ◎
-If document's [[orientationPendingPromise]] is null, abort these steps.
+Assert: [[orientationPendingPromise]] is not null. 
 ◎
 Let promise be document's [[orientationPendingPromise]].
 </li>
@@ -1539,21 +1539,31 @@ Set document's [[orientationPendingPromise]] to null.
 ときは、
 所与の
 ( `文書$ %文書, `OrientationLockType$I %方位 （省略時は ~NULL ）)
-に対し，次を遂行するモノトスル
-— この手続きは、
-常に`並列的$に遂行されるよう呼出される：
+に対し，次を遂行するモノトスル：
 ◎
-When steps require to apply orientation lock of OrientationLockType? orientation to Document document, the user agent MUST perform do the following steps in parallel:
+When steps require to apply orientation lock of OrientationLockType? orientation to Document document, the user agent MUST perform do the following steps:
 </p>
 <ol>
 	<li>
+<p>
 ~IF［
-%文書 は`全部的に作動中$でない
+%文書 `stops being^en `全部的に作動中$ `while in^en `並列的$†
+］~AND［
+%文書 .`orientationPendingPromise$sl ~NEQ ~NULL
 ］
 ⇒
 `現在の~lock~promiseを却下して~NULL化する$( %文書, "`AbortError$E" )
+</p>
+
+<p class="trans-note">【†
+この段は、
+並列的に遂行されていないにもかかわらず，
+“並列的” が利用されている
+— その意図が はっきりしない
+（単に， “%文書 は`全部的に作動中$でない” ？）。
+】</p>
 ◎
-If document stops being fully active while in parallel, reject and nullify the current lock promise of document with an "AbortError".
+If document stops being fully active while in parallel, and [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with an "AbortError".
 </li>
 	<li>
 %~top-level文書 ~LET %文書 の`~top-level閲覧~文脈$にて`作動中の文書$
@@ -1596,7 +1606,26 @@ Reject and nullify the current lock promise of doc with an "AbortError".
 </li>
 		</ol>
 	</li>
-	<li>
+	<li class="algo">
+<p>
+この段は`並列的$に走らす：
+◎
+Run the following sub-steps in parallel:
+</p>
+		<ol>
+			<li>
+~IF［
+%文書 は`全部的に作動中$でない
+］~AND［
+%文書 .`orientationPendingPromise$sl ~NEQ ~NULL
+］
+⇒＃
+`現在の~lock~promiseを却下して~NULL化する$( %文書, "`AbortError$E" )；
+~RET
+◎
+If document has stopped being fully active, and if the document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with an "AbortError" and abort these steps.
+</li>
+			<li>
 ~IF［
 %方位 ~EQ ~NULL
 ］
@@ -1605,7 +1634,7 @@ Reject and nullify the current lock promise of doc with an "AbortError".
 ◎
 If orientation is null, unlock the screen orientation.
 </li>
-	<li>
+			<li>
 <p>
 ~ELSE
 ⇒
@@ -1613,7 +1642,7 @@ If orientation is null, unlock the screen orientation.
 — ~platform規約に依存して，
 %文書 の表示域の描かれ方を %方位 に合致するよう変更する
 ◎
-Otherwise, attempt to lock the screen orientation to orientation. Depending on platform conventions, change how the viewport is drawn to match orientation.＼
+Otherwise, attempt to lock the screen orientation to orientation. Depending on platform conventions, change how the viewport is drawn to match orientation.
 </p>
 
 <p>
@@ -1625,8 +1654,20 @@ Otherwise, attempt to lock the screen orientation to orientation. Depending on p
 ◎
 If the attempt fails due to previously-established user preference, or platform limitation, or any other reason:
 </p>
-		<ol>
-			<li>
+				<ol>
+					<li>
+~screenの`作動中の方位~lock$ ~SET ~NULL
+◎
+Set the screen's active orientation lock to null.
+</li>
+					<li class="algo">
+<p>
+次を走らす`~taskを~queueする$【`大域~taskを~queueする$】( `~DOM操作~task源$, %文書 に`関連な大域~obj$ )：
+◎
+Queue a task on the DOM manipulation task source with document's relevant global object to:
+</p>
+						<ol>
+							<li>
 ~IF［
 %文書 .`orientationPendingPromise$sl ~NEQ ~NULL
 ］
@@ -1635,46 +1676,42 @@ If the attempt fails due to previously-established user preference, or platform 
 ◎
 If the document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with a "NotSupportedError".
 </li>
-			<li>
-~screenの`作動中の方位~lock$ ~SET ~NULL
-◎
-Set the screen's active orientation lock to null.
-</li>
-			<li>
+							<li>
 ~RET
 ◎
 Abort these steps.
 </li>
-		</ol>
-
+						</ol>
+					</li>
+				</ol>
 <div class="note">
 <p>注記：
 これは、
 次のいずれかの場合に起こり得る：
 </p>
-		<ul>
-			<li>
+				<ul>
+					<li>
 利用者が［
 ~web~appが~screen方位を変更する
 ］ことを防止する選好を設定した
 </li>
-			<li>
+					<li>
 ~UAではなく下層の~platformが，所与の %方位 に~screen方位を~lockすることを許容していない
 【これに該当するかどうかは、 %方位 にも依存するかもしれない。】
 </li>
-		</ul>
+				</ul>
 ◎
 Note
 
 This can happen if the user has set a preference that prevents web applications from changing the screen orientation, or if the underlying platform, rather than the user agent, does not allow locking the screen orientation to the given orientation.
 </div>
-	</li>
-	<li>
+			</li>
+			<li>
 ~screenの`作動中の方位~lock$ ~SET %方位
 ◎
 Set the screen's active orientation lock to orientation＼
 </li>
-	<li>
+			<li>
 ［
 `現在の方位~種別$, `現在の方位~角度$
 ］を［
@@ -1683,7 +1720,16 @@ Set the screen's active orientation lock to orientation＼
 ◎
 and update the current orientation type and current orientation angle to reflect any changes to the screen orientation.
 </li>
-	<li>
+		</ol>
+	</li>
+	<li class="algo">
+<p>
+次を走らす`大域~taskを~queueする$( `~DOM操作~task源$, %文書 に`関連な大域~obj$ )：
+◎
+Queue a global task on the DOM manipulation task source with document's relevant global object to:
+</p>
+		<ol>
+			<li>
 <p>
 %~promise ~LET %文書 .`orientationPendingPromise$sl
 ◎
@@ -1699,19 +1745,12 @@ Note
 
 As the promise needs to resolve after a "change" event is fired, we keep a reference to prevent it from being aborted by an event's handler function calling lock().
 </p>
-	</li>
-	<li>
+			</li>
+			<li>
 %文書 .`orientationPendingPromise$sl ~SET ~NULL
 ◎
 Set document's [[orientationPendingPromise]] to null.
 </li>
-	<li class="algo">
-<p>
-次を走らす`大域~taskを~queueする$( `~DOM操作~task源$, %文書 に`関連な大域~obj$ )：
-◎
-Queue a global task on the DOM manipulation task source with document's relevant global object to:
-</p>
-		<ol>
 			<li>
 `~screen方位~変更~手続き$( %~top-level文書 )
 ◎
@@ -1922,9 +1961,7 @@ The fully unlock the screen orientation steps for Document document are as follo
 ◎
 If document's [[orientationPendingPromise]] is not null, reject and nullify the current lock promise of document with an "AbortError".
 </li>
-	<li class="algo">
-この段は`並列的$に遂行する
-⇒
+	<li>
 `方位~lockを適用する$( %文書 の`~top-level閲覧~文脈$にて`作動中の文書$ )
 ◎
 Let topDocument be document's top-level browsing context's active document.
@@ -1942,10 +1979,20 @@ Apply orientation lock null to topDocument.
 <p>
 ~UAは、
 `事前~lock条件$として，
-`lock()$m の利用を単純な~fullscreen文書 `fullscreen$r に制約するベキである。
-【 “単純な（ `simple^en ）” とは何を意味する？】
+`lock()$m の利用を`単純~fullscreen文書$ `fullscreen$r に制約するベキである。
 ◎
 A user agent SHOULD restrict the use of lock() to simple fullscreen documents as a pre-lock condition. [fullscreen]
+</p>
+
+<p>
+`文書$ %文書 が`~fullscreenから全部的に抜出る$ `fullscreen$r
+【！ exists = exit の誤記 [=fully exists fullscreen...】
+ときは、
+次も走らすとする
+⇒
+`~screen方位を全部的に~unlockする手続き$( %文書 )
+◎
+When a document [=fully exists fullscreen|fully exist fullscreen==], it also runs the fully unlock the screen orientation steps. [fullscreen]
 </p>
 
 	</section>
