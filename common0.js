@@ -1224,8 +1224,8 @@ HTMLAAM:https://w3c.github.io/html-aam/
 ORIGIN:HTML-origin-ja.html
 WINDOW:HTML-window-ja.html
 HTMLWPROXY:HTML-windowproxy-ja.html
-HTMLds:https://html.spec.whatwg.org/multipage/document-sequences.html
-BROWSERS:https://html.spec.whatwg.org/multipage/document-sequences.html
+HTMLds:HTML-document-sequences-ja.html
+BROWSERS:HTML-document-sequences-ja.html
 HTMLnav:https://html.spec.whatwg.org/multipage/browsing-the-web.html
 NAVI:https://html.spec.whatwg.org/multipage/browsing-the-web.html
 HTMLlifecycle:HTML-document-lifecycle-ja.html
