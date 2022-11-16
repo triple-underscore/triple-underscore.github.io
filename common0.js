@@ -1429,6 +1429,7 @@ random::::ランダム
 command::::コマンド
 機会:opportunity:~
 機会c:chance:機会
+snapshot::::スナップショット
 
 ●幾何
 空間:space:~
