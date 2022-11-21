@@ -116,7 +116,7 @@ return text;
 ●●options
 
 	spec_date:2021-02
-trans_update:2021-02-11
+trans_update:2022-11-22
 source_checked:200124
 original_url:https://httpwg.org/specs/rfc8941.html
 	abbr_url:STRUCTURED-FIELDS
@@ -127,6 +127,11 @@ no_original_dfn:true
 ref_rfc:true
 site_nav:network,http
 trans_1st_pub:2020-01-27
+
+●●original_urls
+date:https://httpwg.org/http-extensions/draft-ietf-httpbis-sfbis.html
+parse-date:https://httpwg.org/http-extensions/draft-ietf-httpbis-sfbis.html
+serialising-a-date:https://httpwg.org/http-extensions/draft-ietf-httpbis-sfbis.html
 
 ●●class_map
 p:production
@@ -198,6 +203,8 @@ p.sf-item:#p.sf-item
 p.sf-list:#p.sf-list
 p.sf-string:#p.sf-string
 p.sf-token:#p.sf-token
+p.sf-date:#p.sf-date
+
 p.unescaped:#p.unescaped
 
 有構造~header:#structured-header
@@ -225,6 +232,7 @@ sf.~decimal:#sf-decimal
 sf.~token:#sf-token
 sf.文字列:#sf-string
 sf.整数:#sf-integer
+sf.日時:#sf-date
 
 	§
 	sf.~parameter群:#param
@@ -260,10 +268,12 @@ sf.整数:#sf-integer
 ~decimalを直列化する:#ser-decimal
 文字列を直列化する:#ser-string
 ~tokenを直列化する:#ser-token
+日時を直列化する:#serialising-a-date
 
 裸~itemを構文解析する:#parse-bare-item
 ~byte列を構文解析する:#parse-binary
 真偽値を構文解析する:#parse-boolean
+日時を構文解析する:#parse-date
 辞書を構文解析する:#parse-dictionary
 内縁~listを構文解析する:#parse-innerlist
 ~itemを構文解析する:#parse-item
@@ -281,6 +291,7 @@ sf.整数:#sf-integer
 有構造~data型:#types
 	有構造~fieldの構文解析-法:#text-parse
 	有構造~fieldの直列化-法:#text-serialize
+改訂の一部を成す:#part-of-the-revision
 
 	abstract
 	status-of-memo
@@ -412,11 +423,14 @@ decimal:::10 進数
 深さ:depth:~
 数量-:numeric:~
 裸:bare::~
+日時:date::~
 	〜を包装する:wrapper
 	~list$:array
 小数:fractional:~
 HPACK:
 trailer::::トレイラ
+閏秒:leap seconds:~
+UTC:
 
 	浮動小数点
 	固定小数点数
@@ -436,6 +450,7 @@ trailer::::トレイラ
 	有構造~trailer:Structured Trailer
 	〜:inclusive
 	~byte列:bytes/Byte Sequence/sequence of bytes/array of bytes
+	〜からの秒数:delta in seconds from
 
 	●構文解析／直列化
 連結-:concatenate::~
@@ -830,6 +845,13 @@ commit 履歴（ Internet-Draft ）
 ◎
 This document describes a set of data types and associated algorithms that are intended to make it easier and safer to define and handle HTTP header and trailer fields, known as "Structured Fields", "Structured Headers", or "Structured Trailers". It is intended for use by specifications of new HTTP fields that wish to use a common syntax that is more restrictive than traditional HTTP field values.
 </p>
+
+<p class="trans-note" id="part-of-the-revision">【
+この訳では、
+`この~RFCに対する改訂＠https://httpwg.org/http-extensions/draft-ietf-httpbis-sfbis.html$を成す主要な内容として，有構造~data型`日時$sfも追加している。
+その改訂は，まだ~RFCとして認可されていないので、
+`日時$sfに関連な内容は変更され得ることに注意。
+】</p>
 
 	</section>
 	<section id="status-of-memo">
@@ -2111,7 +2133,8 @@ Field specifications can constrain the order of individual Dictionary members, a
 `文字列$sf,
 `~token$sf,
 `~byte列$sf,
-`真偽値$sf
+`真偽値$sf,
+`日時$sf†
 </p>
 
 <p class="trans-note">【
@@ -2120,6 +2143,11 @@ Field specifications can constrain the order of individual Dictionary members, a
 ］は，どちらも文字列であるが、
 実装は，型に応じて別々に扱えるよう型~情報を保持する必要がある
 （ `B§ ）。
+】</p>
+
+<p class="trans-note">【†
+`日時$sfおよび それ用の~ABNF `sf-date$p は、
+この~RFCの一部ではなく，その`改訂の一部を成す$。
 】</p>
 
 ◎
@@ -2142,6 +2170,7 @@ The ABNF for Items is:
 	/ `sf-token$p
 	/ `sf-binary$p
 	/ `sf-boolean$p
+	【/ `sf-date$p】
 </pre>
 
 <div class="example">
@@ -2594,6 +2623,57 @@ Example-Boolean: ?1
 ◎
 Note that in Dictionary (Section 3.2) and Parameter (Section 3.1.2) values, Boolean true is indicated by omitting the value.
 </p>
+
+			</section>
+			<section id="date">
+<h4 title="Dates">3.3.7. `日時^sf</h4>
+
+<p class="trans-note">【
+この節の内容は、
+この~RFCの一部ではなく，その`改訂の一部を成す$。
+】</p>
+
+<p>
+有構造~field内には
+`日時@sf
+（ `Date^en ）を伝達できる。
+◎
+Date values can be conveyed in Structured Fields.
+</p>
+
+<p>
+`日時$sfの~data~modelは、
+`整数$sfに類似する
+【~dataとしては，`整数$sfと同じだが、直列化-法／構文解析-法は異なる】
+— それは、［
+~UTC 1970年 1月 1日 00:00:00
+］からの［
+閏秒は除外した（場合によっては負な）秒数
+］を表現する。
+◎
+Dates have a data model that is similar to Integers, representing a (possibly negative) delta in seconds from January 1, 1970 00:00:00 UTC, excluding leap seconds.
+</p>
+
+<p>
+`日時$sf用の~ABNFは：
+◎
+The ABNF for Dates is:
+</p>
+
+<pre class="bnf">
+`sf-date@p
+	= "@" ["-"] 1*15`DIGIT$P
+</pre>
+
+<p>
+例えば：
+◎
+For example:
+</p>
+
+<pre class="lang-http">
+Example-Date: @1659578233
+</pre>
 
 			</section>
 		</section>
@@ -3066,6 +3146,18 @@ If input_item is a Byte Sequence, return the result of running Serializing a Byt
 If input_item is a Boolean, return the result of running Serializing a Boolean (Section 4.1.9) with input_item.
 </li>
 			<li>
+<p>
+`日時$sf
+⇒
+`日時を直列化する$( %入力~item )
+</p>
+
+<p class="trans-note">【
+これは、
+この~RFCの一部ではなく，その`改訂の一部を成す$。
+】</p>
+			</li>
+			<li>
 その他の型
 ⇒
 ~Assert：
@@ -3470,6 +3562,44 @@ If input_boolean is false, append "0" to output.
 Return output.
 </li>
 </ol>
+			</section>
+			<section id="serialising-a-date">
+<h4 title="Serialising a Date">4.1.10. `日時$sfの直列化-法</h4>
+
+<p class="trans-note">【
+この節の内容は、
+この~RFCの一部ではなく，その`改訂の一部を成す$。
+】</p>
+
+<p>
+所与の
+( %入力~整数 )
+に対し，［
+~HTTP`~field値$に利用するに相応しい~ASCII文字列
+］を返す：
+◎
+Given a Date as input_integer, return an ASCII string suitable for use in an HTTP field value.
+</p>
+<ol>
+	<li>
+%出力 ~LET "`@^c"
+◎
+Let output be "@".
+</li>
+	<li>
+%出力 に次の結果を付加する
+⇒
+`整数を直列化する$( %入力~整数 )
+◎
+Append to output the result of running Serializing an Integer with input_date (Section 4.1.4).Return output.
+</li>
+	<li>
+~RET %出力
+◎
+Return output.
+</li>
+</ol>
+
 			</section>
 		</section>
 		<section id="text-parse">
@@ -4093,6 +4223,20 @@ If the first character of input_string is ":", return the result of running Pars
 If the first character of input_string is "?", return the result of running Parsing a Boolean (Section 4.2.8) with input_string.
 </li>
 			<li>
+<p>
+`@^ch
+⇒
+~RET %入力~文字列 から`日時を構文解析する$
+</p>
+
+<p class="trans-note">【
+これは、
+この~RFCの一部ではなく，その`改訂の一部を成す$。
+`日時$sfを~supportしない実装は、
+次項 “その他” に従うことになる。
+】</p>
+			</li>
+			<li>
 その他
 ⇒
 構文解析を失敗させる（認識されない型である）
@@ -4664,6 +4808,55 @@ If the first character of input_string matches "0", discard the first character,
 構文解析を失敗させる
 ◎
 No value has matched; fail parsing.
+</li>
+</ol>
+			</section>
+			<section id="parse-date">
+<h3 title="A.2. Parsing a Date">4.2.9. `日時$sfの構文解析-法</h3>
+
+<p class="trans-note">【
+この節の内容は、
+この~RFCの一部ではなく，その`改訂の一部を成す$。
+】</p>
+
+<p>
+%入力~文字列 から`日時$sfを構文解析して返す：
+◎
+Given an ASCII string as input_string, return a Date. input_string is modified to remove the parsed value.
+</p>
+<ol>
+	<li>
+~IF［
+%位置↗ ~NEQ "`@^c"
+］
+⇒
+構文解析を失敗させる
+◎
+If the first character of input_string is not "@", fail parsing.
+</li>
+	<li>
+%位置 ~INCBY 1
+◎
+Discard the first character of input_string.
+</li>
+	<li>
+%出力~日時 ~LET %入力~文字列 から`整数または~decimalを構文解析する$
+◎
+Let output_date be the result of running Parsing an Integer or Decimal (Section 4.2.4) with input_string.
+</li>
+	<li>
+~IF［
+%出力~日時 は`~decimal$sfである
+］
+⇒
+構文解析を失敗させる
+◎
+If output_date is a Decimal, fail parsing.
+</li>
+	<li>
+~RET %出力~日時
+◎
+Return output_date.
 </li>
 </ol>
 			</section>
