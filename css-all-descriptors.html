@@ -18,7 +18,6 @@ abbr {
 .ED {
 	color: black;
 }
-
 .FPWD {
 	background: hsl(10, 55%, 55%);
 	color: white;
@@ -35,11 +34,15 @@ abbr {
 	background: hsl(62, 86%, 45%);
 	color: black;
 }
+.CRD {
+	background: hsl(30, 68%, 65%);
+	color: black;
+}
 .PR {
 	background: hsl(89, 53%, 44%);
 	color: white;
 }
-.REC, .CSS {
+.REC {
 	background: hsl(129, 54%, 40%);
 	color: white;
 }
@@ -52,8 +55,45 @@ abbr {
 	color: green;
 }
 
-#descriptors td {
+#legend td {
 	padding: 0.1em 0.5em;
+}
+
+
+@supports (display: grid) and (display: contents) {
+
+#descriptors {
+	min-width: 20em;
+	max-width: 40em;
+}
+
+#descriptors tr {
+	grid-template-areas:
+		"desc desc"
+		". 用途"
+		". 参照先"
+		". module"
+	;
+	grid-template-columns: 4em 1fr;
+}
+
+#descriptors tr > *:nth-child(1) {
+	grid-area: desc;
+	border-left-width: 0;
+}
+
+#descriptors tr > *:nth-child(2) {
+	grid-area: 用途;
+}
+
+#descriptors tr > *:nth-child(3) {
+	grid-area: 参照先;
+}
+
+#descriptors tr > *:nth-child(4) {
+	grid-area: module;
+}
+
 }
 
 </style>
@@ -66,34 +106,37 @@ const E = (id) => {
 	return document.getElementById(id);
 }
 
+const copmpare_items = (item1, item2, names) => {
+	const key = names.find( ( name ) => {
+		return ( item1[name] !== item2[name] );
+	});
+	if( key === undefined) return 0;
+	return (item1[key] > item2[key]) ? 1:-1;
+}
+
 const sorters = {
 	by_desc0: (item1, item2) => {
-		if(item1.prop === item2.prop){
-			return (item1.module > item2.module) ? 1:-1;
-		}
-		return (item1.prop > item2.prop) ? 1:-1;
+		return copmpare_items( item1, item2, ["desc", "at_rule", "module"] );
 	},
 	by_desc1: (item1, item2) => {
-		if(item1.prop === item2.prop){
-			return (item1.module > item2.module) ? 1:-1;
-		}
-		return (item1.prop > item2.prop) ? -1:1;
+		return - copmpare_items( item1, item2, ["desc", "at_rule", "module"] );
+	},
+	by_at_rule0: (item1, item2) => {
+		return copmpare_items( item1, item2, ["at_rule", "desc", "module"] );
+	},
+	by_at_rule1: (item1, item2) => {
+		return - copmpare_items( item1, item2, ["at_rule", "desc", "module"] );
 	},
 	by_module0: (item1, item2) => {
-		if(item1.module === item2.module){
-			return (item1.prop > item2.prop) ? 1:-1;
-		}
-		return (item1.module > item2.module) ? 1:-1;
+		return copmpare_items( item1, item2, ["module", "desc", "at_rule"] );
 	},
 	by_module1: (item1, item2) => {
-		if(item1.module === item2.module){
-			return (item1.prop > item2.prop) ? 1:-1;
-		}
-		return (item1.module > item2.module) ? -1:1;
+		return - copmpare_items( item1, item2, ["module", "desc", "at_rule"] );
 	}
 };
+
 const sort_list = (key_dir, data) => {
-	const tbody = E('prop-list');
+	const tbody = E('desc-list');
 
 	data.forEach((item, index) => {
 		item.row = tbody.rows[index];
@@ -109,26 +152,28 @@ const sort_list = (key_dir, data) => {
 const parse = (data) => {
 	const list = [];
 	let module = '';
+	let at_rule = '';
 	const map = {};
 
 	data.replace(/^■.+|^●?(\S+?):\s*(.+)/mg,
 	(match, m1, m2) => {
 		switch(match[0]){
 		case '■':
-			module = match.slice(1);
+			[ module, at_rule ] = match.slice(1).split('@');
 			break;
 		case '●':
 			map[m1] = m2;
 			break;
 		default:
 			const item = {
-				prop:   m1,
+				desc:   m1,
 				module: module,
+				at_rule: at_rule,
 				urls:   [],
 			};
 			list.push(item);
 			for( let t of m2.split(',') ){
-				let fragment = item.prop;
+				let fragment = item.desc;
 				if( t.indexOf('=') >= 0 ){
 					const t1 = t.split('=');
 					t = t1[0];
@@ -150,10 +195,9 @@ const create_html = (data) => {
 	const html = [];
 
 	for( const item of data ){
-		html.push(
-			'<tr><td><code class="descriptor">',
-			item.prop,
-			'</code><td>'
+		html.push( `
+<tr><td><code class="descriptor">${item.desc}</code>
+<td><code class="at-rule">@${item.at_rule}</code><td>`
 		);
 		for( const url of item.urls){
 			html.push(
@@ -164,8 +208,7 @@ const create_html = (data) => {
 			);
 		}
 		html.push(
-			'<td>',
-			item.module
+			`<td><cite>${item.module}</cite>`
 		);
 	}
 
@@ -175,16 +218,16 @@ const create_html = (data) => {
 }
 
 {
-	const data = parse(E('prop_data').textContent);
+	const data = parse(E('desc_data').textContent);
 
 	let sort_by = 'by_desc0';
 	data.sort(sorters[sort_by]);
 
-	E('prop-list').innerHTML = create_html(data);
+	E('desc-list').innerHTML = create_html(data);
 
 	document.body.classList.add('_expanded');
 
-	E('prop-header').addEventListener('click', (event) => {
+	E('desc-header').addEventListener('click', (event) => {
 		const e = event.target;
 		if(e.tagName === 'BUTTON' && e.id){
 			sort_by = sort_list(e.id, data);
@@ -195,8 +238,8 @@ const create_html = (data) => {
 </script>
 
 
-<script type="text/plain" id="prop_data">
-■CSS Color Module
+<script type="text/plain" id="desc_data">
+■CSS Color Module@color-profile
 ●WD4:~TR/css-color-4/#descdef-color-profile-
 ●ED4:~CSSWG/css-color-4/#descdef-color-profile-
 ●JA4:css-color-ja.html#descdef-color-profile-
@@ -206,7 +249,7 @@ src: WD5,ED5,JA5
 rendering-intent: WD5,ED5,JA5
 components: WD5,ED5,JA5
 
-■CSS Containment Module
+■CSS Containment Module@container
 ●ED3:~CSSWG/css-contain-3/#descdef-container-
 ●WD3:~TR/css-contain-3/#descdef-container-
 aspect-ratio: WD3,ED3
@@ -216,7 +259,7 @@ inline-size: WD3,ED3
 orientation: WD3,ED3
 width: WD3,ED3
 
-■CSS Counter Styles
+■CSS Counter Styles@counter-style
 ●CR3:~TR/css-counter-styles-3/#descdef-counter-style-
 ●ED3:~CSSWG/css-counter-styles-3/#descdef-counter-style-
 ●JA3:css-counter-styles-ja.html#descdef-counter-style-
@@ -231,7 +274,7 @@ suffix: CR3,ED3,JA3
 symbols: CR3,ED3,JA3
 system: CR3,ED3,JA3
 
-■CSS Paged Media Module
+■CSS Paged Media Module@page
 ●WD3:~TR/css3-page/#descdef-page-
 ●ED3:~CSSWG/css-page-3/#descdef-page-
 ●JA3:css-page-ja.html#descdef-page-
@@ -241,17 +284,17 @@ size: WD3,ED3,JA3
 page-orientation: ED3,JA3
 
 
-■CSS Round Display
+■CSS Round Display@media
 ●WD1:~TR/css-round-display-1/#descdef-media-
 ●ED1:~CSSWG/css-round-display-1/#descdef-media-
 shape: WD1,ED1
 
-■CSS Round Display
+■CSS Round Display@viewport
 ●WD1:~TR/css-round-display-1/#descdef-viewport-
 ●ED1:~CSSWG/css-round-display-1/#descdef-viewport-
 viewport-fit: WD1,ED1
 
-■CSS Device Adaptation Module
+■CSS Device Adaptation Module@viewport
 ●WD1:~TR/css-device-adapt-1/#descdef-viewport-
 ●JA1:http://momdo.github.io/css-device-adapt-1/#descdef-viewport-
 height: WD1,JA1
@@ -266,7 +309,7 @@ user-zoom: WD1,JA1
 width: WD1,JA1
 zoom: WD1,JA1
 
-■CSS Fonts Module
+■CSS Fonts Module@font-face
 ●REC3:~TR/css-fonts-3/#descdef-
 ●ED3:~CSSWG/css-fonts-3/#descdef-
 ●JA3:css-fonts-ja.html#descdef-
@@ -296,13 +339,13 @@ superscript-position-override:WD5,ED5
 superscript-size-override:WD5,ED5
 unicode-range: REC3,ED3,JA3,WD4,ED4,JA4
 
-■CSS Fonts Module
+■CSS Fonts Module@font-feature-values
 ●WD4:~TR/css-fonts-4/#descdef-font-feature-values-
 ●ED4:~CSSWG/css-fonts-4/#descdef-font-feature-values-
 ●JA4:css-fonts4-ja.html#descdef-font-feature-values-
 font-display: WD4,ED4,JA4
 
-■CSS Fonts Module
+■CSS Fonts Module@font-palette-values
 ●WD4:~TR/css-fonts-4/#descdef-font-palette-values-
 ●ED4:~CSSWG/css-fonts-4/#descdef-font-palette-values-
 ●JA4:css-fonts4-ja.html#descdef-font-palette-values-
@@ -310,7 +353,7 @@ base-palette: WD4,ED4,JA4
 font-family: WD4,ED4,JA4
 override-colors: WD4,ED4,JA4
 
-■Media Queries
+■Media Queries@media
 ●CR4:~TR/mediaqueries-4/#descdef-media-
 ●ED4:~CSSWG/mediaqueries-4/#descdef-media-
 ●WD5:~TR/mediaqueries-5/#descdef-media-
@@ -354,7 +397,7 @@ video-color-gamut: WD5,ED5,JA5
 video-dynamic-range: WD5,ED5,JA5
 width: CR4,ED4,WD5,ED5,JA5
 
-■CSS Properties and Values API
+■CSS Properties and Values API@property
 ●WD1:~TR/css-properties-values-api-1/#descdef-property-
 ●ED1:https://drafts.css-houdini.org/css-properties-values-api-1/#descdef-property-
 ●JA1:css-properties-values-api-ja.html#descdef-property-
@@ -362,95 +405,100 @@ inherits: WD1,ED1,JA1
 initial-value: WD1,ED1,JA1
 syntax: WD1,ED1,JA1
 
-■Scroll-linked Animations
-●ED1:~CSSWG/scroll-animations-1/#descdef-scroll-timeline-
-end: ED1
-orientation: ED1
-source: ED1
-start: ED1
-time-range: ED1
-
 </script>
 
 </head>
 <body>
 
-<h1>CSS の記述子 一覧</h1>
+<h1>CSS の記述子一覧</h1>
 
 <p>
 <a href="https://triple-underscore.github.io/css-all-descriptors.html">このページ</a>
-は、 CSS の各種 記述子と，それを定義する仕様, およびその和訳への参照先リンクを集約したものです。
-（更新： <time>2022-09-25</time> ）
+は、
+CSS の各種 記述子と それらを定義する仕様, およびその和訳への参照先リンクを集約したものです。
+（更新： <time>2022-11-29</time> ）
 （<a href="index.html#spec-list-css">このサイトの CSS 仕様和訳の一覧</a>）
 </p>
 
 <ul>
 	<li>
-記述子一覧における参照先の仕様は、下の表に示す略称と色分けで表されています。
+記述子一覧にて参照先として挙げられる各仕様は、
+下の表に示す略称と色分けで表されています。
 </li>
 	<li>
 各略称の末尾の数字は、当のモジュールのレベルを表します。
-（ “レベル 1” は CSS Level 2 以前を意味するのではなく，その後に新規に導入された機能を表していることに注意。）
+（ “レベル 1” は CSS2 以前を意味するのではなく，その後に新規に導入された特能を表していることに注意。）
 </li>
 	<li>
 この一覧は、
 W3C の
 <a lang="en" href="https://www.w3.org/Style/CSS/all-descriptors">List of CSS descriptors, both proposed and standard</a>
-から得られたデータを元にしていますが、そのページに述べられているように，記載漏れはあるかもしれません（一部，訳者による追加あり）。
+から得られたデータを元にしていますが、
+そのページに述べられているとおり，漏れはあるかもしれません（一部，訳者による追加あり）。
 </li>
 	<li>
-一般に，同じ名前の記述子でも、どの at 規則の中で利用されるかに応じて 意味や定義は変わるので、（同じ仕様内も含め）複数のリンク先があることに注意（例えば <code class="descriptor">font-display</code> ）。
+名前が同じ記述子でも、
+用途（どの at-規則にて利用できるか）に応じて，
+意味や定義が異なるものが複数あり得ることに注意
+（例： <code class="descriptor">font-display</code> ）。
 </li>
 </ul>
 
 
 <main id="MAIN">
 
-<table id="descriptors">
+<table id="legend">
 	<caption>略称／色分けの凡例</caption>
 <thead><tr><th>略称
-<th>全部的な名前
+<th>全部的な名前（日本語）
+<th>全部的な名前（正式名称）
 </thead>
 
 <tbody><tr><td><abbr class="ED">ED</abbr>
-<td>編集者草案（ Editors' Draft ）
+<td>編集者草案
+<td lang="en"><a href="w3c-standards-types-ja.html#ED">Editors' Draft</a>
 
 <tr><td><abbr class="FPWD">FPWD</abbr>
-<td>最初の公な作業草案（ First Public Working Draft ）
+<td>最初の公な作業草案
+<td lang="en"><a href="w3c-standards-types-ja.html#FPWD">First Public Working Draft</a>
 
 <tr><td><abbr class="WD">WD</abbr>
-<td>作業草案（ Working Draft ）
-
-<tr><td><abbr class="LC">LC</abbr>
-<td>最終作業草案（ Last Call Working Draft ）
+<td>作業草案
+<td lang="en"><a href="w3c-standards-types-ja.html#WD">Working Draft</a>
 
 <tr><td><abbr class="CR">CR</abbr>
-<td>勧告候補（ Candidate Recommendation ）
+<td>勧告候補スナップショット
+<td lang="en"><a href="w3c-standards-types-ja.html#CR">Candidate Recommendation Snapshot</a>
 
-<!-- 
+<tr><td><abbr class="CRD">CRD</abbr>
+<td>勧告候補草案
+<td lang="en"><a href="w3c-standards-types-ja.html#CRD">Candidate Recommendation Draft</a>
+
+<!-- PR は CSS からは廃されたが、他の W3C 仕様からは廃されていない
 <tr><td><abbr class="PR">PR</abbr>
-<td>勧告案（ Proposed Recommendation ）
- -->
+<td>勧告案
+<td lang="en"><a href="w3c-standards-types-ja.html#PR">Proposed Recommendation</a>
+-->
 
 <tr><td><abbr class="REC">REC</abbr>
-<td>勧告（ Recommendation ）
-
-<!-- 
-<tr><td><abbr class="NOTE">NOTE</abbr>
-<td>WG ノート（ Working Group Note ）
- -->
+<td>勧告
+<td lang="en"><a href="w3c-standards-types-ja.html#REC">Recommendation</a>
 
 <tr><td><abbr class="JA">JA</abbr>
-<td>日本語訳
+<td colspan="2">（日本語訳）
 
 </tbody></table>
 
 
 
-<table>
-<thead id="prop-header"><tr><th>記述子
+<table class="grid-table" id="descriptors">
+<thead id="desc-header"><tr><th>記述子
 <button id="by_desc0" type="button">△</button>
 <button id="by_desc1" type="button">▽</button>
+
+<th>用途
+<button id="by_at_rule0" type="button">△</button>
+<button id="by_at_rule1" type="button">▽</button>
 
 <th>参照先
 <th>モジュール／仕様名
@@ -458,7 +506,7 @@ W3C の
 <button id="by_module1" type="button">▽</button>
 
 </thead>
-<tbody id="prop-list"></tbody>
+<tbody id="desc-list"></tbody>
 </table>
 
 </main>
