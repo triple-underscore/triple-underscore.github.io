@@ -160,8 +160,8 @@ return text;
 ●●options
 
 spec_title:URL
-spec_date:2022-12-02
-trans_update:2022-12-03
+spec_date:2022-12-05
+trans_update:2022-12-06
 source_checked:210816
 spec_status:LS
 original_url:https://url.spec.whatwg.org/
@@ -436,7 +436,8 @@ url.~URL:#concept-url-url
 url.~query~obj:#concept-url-query-object
 
 ~URL~obj:#concept-urlsearchparams-url-object
-名値~pair~list:#concept-urlsearchparams-list
+~parameter~list:#concept-urlsearchparams-list
+~query~parameter:#_concept-query-parameter
 更新する:#concept-urlsearchparams-update
 初期化する:#urlsearchparams-initialize
 
@@ -477,16 +478,20 @@ cp.値:~INFRA#code-point-value
 区切子で厳密に分割する:~INFRA#strictly-split
 厳密に分割-:~INFRA#strictly-split
 で終端して:~INFRA#string-ends-with
+未満の符号単位~列:~INFRA#code-unit-less-than
 
 空:~INFRA#list-is-empty
 	~EACH:~INFRA#list-iterate
 ~list:~INFRA#list
 ~size:~INFRA#list-size
 ~item:~INFRA#list-item
+~tuple:~INFRA#tuple
 空にする:~INFRA#list-empty
 除去する:~INFRA#list-remove
 付加する:~INFRA#list-append
 ~cloneする:~INFRA#list-clone
+拡張する:~INFRA#list-extend
+~listを昇順に~sortする:~INFRA#list-sort-in-ascending-order
 構造体:~INFRA#struct
 
 	●ENCODING
@@ -549,7 +554,6 @@ blob:
 番号:number::~
 無符号:unsigned::~
 	32-bit／16-bit／128-bit
-名値:name-value: ( 名, 値 ) 
 成分組:tuple::~
 
 	変異-不能:immutable
@@ -795,7 +799,7 @@ voice::::ボイス
 	%~host
 	%無視するか:ignore0
 	%~obj:-
-	%~pair:pair
+	%内縁~連列:innerSequence
 	%~password:password
 	%~percent-符号化-集合:percentEncodeSet
 	%~piece~index:pieceIndex
@@ -805,8 +809,8 @@ voice::::ボイス
 	%~query~percent-符号化-集合:queryPercentEncodeSet
 	%~slashか:-
 	%spaceAsPlus:spaceAsPlus
-	%~tuple:tuple
-	%~tuple~list:tuples
+	%~parameter~list:tuples
+	%~parameter:tuple
 	%~URL:url
 	%~username
 	%~~成分:part
@@ -842,7 +846,7 @@ voice::::ボイス
 	%最後の~item:last
 	%末尾の~dot:trailingDot
 	%公共~接尾辞:publicSuffix
-
+	%直列化した~query:serializedQuery
 
 	●未分類
 正準-:canonical::~
@@ -934,7 +938,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/url/commits">GitHub whatwg/url/commits</a>
-	<a href="https://url.spec.whatwg.org/commit-snapshots/08951233c9e36ffe19c6d530a533a05f1272d181/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://url.spec.whatwg.org/commit-snapshots/86add654a21b1da5ff89898d2c903db383b75703/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/urlstandard">@urlstandard</a>
 
 Tests:
@@ -2716,7 +2720,7 @@ Let domain be the result of running UTF-8 decode without BOM on the percent-deco
 `~BOMも失敗-もそのままに~UTF-8復号する$を利用した上で，
 `失敗^i 時には早々に ~RET することもできる
 — `~domainを~ASCII化する$のは
-`FFFD^U `REPLACEMENT CHARACTER^cn 【！`&#xFFFD^smb】
+`FFFD^U `REPLACEMENT CHARACTER^cn 【！(�)】
 に対し失敗するので。
 ◎
 Alternatively UTF-8 decode without BOM or fail can be used, coupled with an early return for failure, as domain to ASCII fails on U+FFFD (�).
@@ -8202,9 +8206,9 @@ Unfortunately, as rendered URLs are strings and can appear anywhere, a specific 
 <p>
 `~form_urlencoded形式@
 は、
-一連の名値~pairを符号化する仕方を供する。
+`~query~parameter$たちからなる`~list$を符号化する仕方を供する。
 ◎
-The application/x-www-form-urlencoded format provides a way to encode name-value pairs.
+The application/x-www-form-urlencoded format provides a way to encode a list of tuples, each consisting of a name and a value.
 </p>
 
 <p class="note">注記：
@@ -8254,8 +8258,7 @@ The application/x-www-form-urlencoded parser takes a byte sequence input, and th
 Let sequences be the result of splitting input on 0x26 (&amp;).
 </li>
 	<li>
-%出力 ~LET 空`~list$
-（名, 値のいずれも文字列であるような，名値~pairからなる~list）
+%出力 ~LET 新たな`~list$（`~query~parameter$たち）
 ◎
 Let output be an initially empty list of name-value tuples where both name and value hold a string.
 </li>
@@ -8334,7 +8337,7 @@ Return output.
 `~form_urlencoded直列化器@
 は、
 所与の
-( 0 個以上の［名値~tuple］からなる~list %~tuple~list, `符号化法$ %符号化法 （省略時は`~UTF-8$ ） )
+( `~query~parameter$たちからなる`~list$ %~parameter~list, `符号化法$ %符号化法 （省略時は`~UTF-8$ ） )
 に対し，次を走らす：
 ◎
 The application/x-www-form-urlencoded serializer takes a list of name-value tuples tuples, with an optional encoding encoding (default UTF-8), and then runs these steps:
@@ -8352,20 +8355,20 @@ Let output be the empty string.
 </li>
 	<li>
 <p>
-%~tuple~list を成す
-~EACH( %~tuple )
+%~parameter~list を成す
+~EACH( %~parameter )
 に対し：
 ◎
 For each tuple of tuples:
 </p>
 		<ol>
 			<li>
-%名 ~LET `文字列を符号化してから~percent-符号化する$( %符号化法, %~tuple の名, `~form_urlencoded~percent-符号化-集合$, ~T )
+%名 ~LET `文字列を符号化してから~percent-符号化する$( %符号化法, %~parameter の名, `~form_urlencoded~percent-符号化-集合$, ~T )
 ◎
 Let name be the result of running percent-encode after encoding with encoding, tuple’s name, the application/x-www-form-urlencoded percent-encode set, and true.
 </li>
 			<li>
-%値 ~LET `文字列を符号化してから~percent-符号化する$( %符号化法, %~tuple の値, `~form_urlencoded~percent-符号化-集合$, ~T )
+%値 ~LET `文字列を符号化してから~percent-符号化する$( %符号化法, %~parameter の値, `~form_urlencoded~percent-符号化-集合$, ~T )
 ◎
 Let value be the result of running percent-encode after encoding with encoding, tuple’s value, the application/x-www-form-urlencoded percent-encode set, and true.
 </li>
@@ -8545,7 +8548,7 @@ Set this’s URL to parsedURL.
 Set this’s query object to a new URLSearchParams object.
 </li>
 	<li>
-%~obj を %~query で`初期化する$
+%~obj を`初期化する$( %~query )
 ◎
 Initialize this’s query object with query.
 </li>
@@ -8621,7 +8624,7 @@ var %url = new URL(`🏳🌈^l, new URL(`https://pride.example/hello-world^l))
 <div class="algo">
 <p>
 `toJSON()@m
-~method~手続き／
+~method手続き／
 `href@m
 取得子~手続きは：
 <p>
@@ -8661,7 +8664,7 @@ If parsedURL is failure, then throw a TypeError.
 Set this’s URL to parsedURL.
 </li>
 	<li>
-コレの`~query~obj$urlの`名値~pair~list$を空にする
+コレの`~query~obj$urlの`~parameter~list$を`空にする$
 ◎
 Empty this’s query object’s list.
 </li>
@@ -8675,7 +8678,7 @@ Let query be this’s URL’s query.
 %~query ~NEQ ~NULL
 ］
 ⇒
-コレの`~query~obj$urlの`名値~pair~list$ ~SET `~form_urlencoded文字列~構文解析器$( %~query )
+コレの`~query~obj$urlの`~parameter~list$ ~SET `~form_urlencoded文字列~構文解析器$( %~query )
 ◎
 If query is non-null, then set this’s query object’s list to the result of parsing query.
 </li>
@@ -9111,7 +9114,7 @@ Let url be this’s URL.
 ］
 ⇒＃
 %~URL の`~query$url ~SET ~NULL；
-コレの`~query~obj$urlの`名値~pair~list$を空にする；
+コレの`~query~obj$urlの`~parameter~list$を`空にする$；
 ~RET
 ◎
 If the given value is the empty string, set url’s query to null, empty this’s query object’s list, and then return.
@@ -9132,7 +9135,7 @@ Set url’s query to the empty string.
 Basic URL parse input with url as url and query state as state override.
 </li>
 	<li>
-コレの`~query~obj$urlの`名値~pair~list$ ~SET `~form_urlencoded文字列~構文解析器$( %入力 )
+コレの`~query~obj$urlの`~parameter~list$ ~SET `~form_urlencoded文字列~構文解析器$( %入力 )
 ◎
 Set this’s query object’s list to the result of parsing input.
 </li>
@@ -9318,103 +9321,117 @@ Ignoring encodings (use UTF-8), search will percent-encode anything in the query
 </p>
 </div>
 
-<div class="p">
 <p>
 各 `URLSearchParams$I ~objには、
-次のものが結付けられる：
-</p>
-
-<dl class="def-list">
-	<dt>`名値~pair~list@</dt>
-	<dd>
-0 個以上の名値~pairからなる`~list$
-— 初期~時は空とする。
-</dd>
-
-	<dt>`~URL~obj@</dt>
-	<dd>
-~NULL ／ `URL$I ~pbj
-— 初期~時は ~NULL とする。
-</dd>
-</dl>
-
+次に挙げるものが結付けられる：
 ◎
 A URLSearchParams object has an associated:
-• list: a list of name-value pairs, initially empty.
-• URL object: null or a URL object, initially null.
-</div>
+</p>
+<ul>
+	<li>
+`~parameter~list@
+⇒
+`~query~parameter$たちからなる`~list$
+— 初期~時は空とする。
+◎
+list: a list of tuples each consisting of a name and a value, initially empty.
+</li>
+	<li>
+`~URL~obj@
+⇒
+~NULL ／ `URL$I ~obj
+— 初期~時は ~NULL とする。
+◎
+URL object: null or a URL object, initially null.
+</li>
+</ul>
+
+<p>
+`~query~parameter@
+は、
+( 文字列 名, 文字列 値 )
+が成す`~tuple$である。
+</p>
+
+<p class="trans-note">【
+`~query~parameter$は、
+他所の記述を集約して意味を明確化するための，この訳による追加
+（それに伴い，一部の変数~名も改めている）。
+】</p>
 
 <div class="algo">
 <p>
-`URLSearchParams$I ~obj %~query を所与の %init で
+`URLSearchParams$I ~obj %~query を
 `初期化する@
 ときは、
-%init の型に応じて，次を走らす：
+所与の
+( %init )
+に対し，次を走らす：
 ◎
 To initialize a URLSearchParams object query with init, run these steps:
 </p>
-
-<dl class="switch">
-	<dt>
-`連列~型$である
-◎
-If init is a sequence, then＼
-</dt>
-	<dd>
+<ol>
+	<li>
 <p>
-%init を成す
-~EACH( %~pair )
-に対し：
+%init の型に応じて：
 ◎
-for each pair in init:
-</p>
-		<ol>
+↓</p>
+		<ul class="switch">
 			<li>
+<p>
+`連列~型$である：
+</p>
+				<ol>
+					<li>
+%init を成す
+~EACH( %内縁~連列 )
+に対し
+⇒
 ~IF［
-%~pair を成す~itemの個数 ~NEQ 2
+%内縁~連列 の`~size$ ~NEQ 2
 ］
 ⇒
 ~THROW `TypeError$E
+</li>
+					<li>
+%init を成す
+~EACH( %内縁~連列 )
+に対し
+⇒
+%~query の`~parameter~list$に
+( %内縁~連列[ 0 ], %内縁~連列[ 1 ] )
+を`付加する$
+</li>
+				</ol>
 ◎
-If pair does not contain exactly two items, then throw a TypeError.
+If init is a sequence, then for each innerSequence of init:
+• If innerSequence’s size is not 2, then throw a TypeError.
+• Append (innerSequence[0], innerSequence[1]) to query’s list.
 </li>
 			<li>
-%~query の`名値~pair~list$に，新たな
-~pair( %~pair 内の 1 個目の~item, %~pair 内の 2 個目の~item )
-を`付加する$
-◎
-Append a new name-value pair whose name is pair’s first item, and value is pair’s second item, to query’s list.
-</li>
-		</ol>
-	</dd>
-
-	<dt>
 `~record型$である
-◎
-Otherwise, if init is a record, then＼
-</dt>
-	<dd>
+⇒
 %init を成す
 ~EACH( %名 → %値 )
 に対し
 ⇒
-%~query の`名値~pair~list$に，新たな~pair( %名, %値 ) を`付加する$
+%~query の`~parameter~list$に ( %名, %値 ) を`付加する$
 ◎
-for each name → value of init, append a new name-value pair whose name is name and value is value, to query’s list.
-	</dd>
-
-	<dt>
+Otherwise, if init is a record,＼
+then for each name → value of init, append (name, value) to query’s list.
+</li>
+			<li>
 文字列である
+⇒
+%~query の`~parameter~list$ ~SET `~form_urlencoded文字列~構文解析器$( %init )
 ◎
 Otherwise:
 • Assert: init is a string.
-</dt>
-	<dd>
-%~query の`名値~pair~list$ ~SET `~form_urlencoded文字列~構文解析器$( %init )
-◎
-Set query’s list to the result of parsing init.
-</dd>
-</dl>
+• Set query’s list to the result of parsing init.
+</li>
+		</ul>
+	</li>
+</ol>
 </div>
 
 <div class="algo">
@@ -9438,14 +9455,15 @@ To update a URLSearchParams object query, run these steps:
 If query’s URL object is null, then return.
 </li>
 	<li>
-%~query の`~URL~obj$の`~URL$urlの`~query$url ~SET ［
-次の結果 ~NEQ 空~文字列 ならばその結果 ／
-~ELSE_ ~NULL
-］
-⇒
-`~form_urlencoded直列化器$( %~query の`名値~pair~list$ )
+%直列化した~query ~LET `~form_urlencoded直列化器$( %~query の`~parameter~list$ )
 ◎
 Let serializedQuery be the serialization of query’s list.
+</li>
+	<li>
+%~query の`~URL~obj$の`~URL$urlの`~query$url ~SET %直列化した~query に応じて
+⇒＃
+空~文字列 ならば ~NULL ／
+~ELSE_ %直列化した~query
 ◎
 If serializedQuery is the empty string, then set serializedQuery to null.
 ◎
@@ -9472,7 +9490,7 @@ The new URLSearchParams(init) constructor steps are:
 If init is a string and starts with U+003F (?), then remove the first code point from init.
 </li>
 	<li>
-コレ を %init で`初期化する$
+コレを`初期化する$( %init )
 ◎
 Initialize this with init.
 </li>
@@ -9482,18 +9500,18 @@ Initialize this with init.
 <div class="algo">
 <p>
 `append(name, value)@m
-~method~手続きは：
+~method手続きは：
 ◎
 The append(name, value) method steps are:
 </p>
 <ol>
 	<li>
-コレの`名値~pair~list$に，新たな~pair( %name, %value ) を`付加する$
+コレの`~parameter~list$に ( %name, %value ) を`付加する$
 ◎
-Append a new name-value pair whose name is name and value is value, to list.
+Append (name, value) to this’s list.
 </li>
 	<li>
-コレを`更新する$
+コレを`更新する$()
 ◎
 Update this.
 </li>
@@ -9503,20 +9521,20 @@ Update this.
 <div class="algo">
 <p>
 `delete(name)@m
-~method~手続きは：
+~method手続きは：
 ◎
 The delete(name) method steps are:
 </p>
 <ol>
 	<li>
-コレの`名値~pair~list$から，次を満たす すべての~pairを除去する
+コレの`~parameter~list$から次を満たす`~query~parameter$【！~tuple】をすべて`除去する$
 ⇒
-その名 ~EQ %name
+名 ~EQ %name
 ◎
-Remove all name-value pairs whose name is name from list.
+Remove all tuples whose name is name from this’s list.
 </li>
 	<li>
-コレを`更新する$
+コレを`更新する$()
 ◎
 Update this.
 </li>
@@ -9526,70 +9544,92 @@ Update this.
 <div class="algo">
 <p>
 `get(name)@m
-~method~手続きは：
+~method手続きは：
 </p>
 <ol>
 	<li>
-~RET コレの`名値~pair~list$内に［
-名 ~EQ %name
-］なる~pairは［
-在るならば それらのうちの最初の~pairの値 ／
-無いならば ~NULL
+コレの`~parameter~list$を成す
+~EACH ( %~parameter )
+に対し
+⇒
+~IF［
+%~parameter の名 ~EQ %name
 ］
+⇒
+~RET %~parameter の値
+</li>
+	<li>
+~RET ~NULL
 </li>
 </ol>
 ◎
-The get(name) method steps are to return the value of the first name-value pair whose name is name in this’s list, if there is such a pair, and null otherwise.
+The get(name) method steps are to return the value of the first tuple whose name is name in this’s list, if there is such a tuple; otherwise null.
 </div>
 
 <div class="algo">
 <p>
 `getAll(name)@m
-~method~手続きは：
+~method手続きは：
 </p>
 <ol>
 	<li>
-~RET コレの`名値~pair~list$内の［
-名 ~EQ %name
-］なる~pairすべてからなる，~list順による`連列~型$の値
-（空にもなり得る）
+%結果 ~LET 新たな`~list$
+</li>
+	<li>
+コレの`~parameter~list$を成す
+~EACH ( %~parameter )
+に対し
+⇒
+~IF［
+%~parameter の名 ~EQ %name
+］
+⇒
+%結果 に %~parameter の値を`付加する$
+</li>
+	<li>
+~RET %結果
 </li>
 </ol>
 
 ◎
-The getAll(name) method steps are to return the values of all name-value pairs whose name is name, in this’s list, in list order, and the empty sequence otherwise.
+The getAll(name) method steps are to return the values of all tuples whose name is name in this’s list, in list order; otherwise the empty sequence.
 </div>
 
 <div class="algo">
 <p>
 `has(name)@m
-~method~手続きは：
+~method手続きは：
 </p>
 <ol>
 	<li>
-~RET コレの`名値~pair~list$内に［
-名 ~EQ %name
-］なる~pairは［
-在るならば ~T ／
-無いならば ~F
+コレの`~parameter~list$を成す
+~EACH ( %~parameter )
+に対し
+⇒
+~IF［
+%~parameter の名 ~EQ %name
 ］
+⇒
+~RET ~T
+</li>
+	<li>
+~RET ~F
 </li>
 </ol>
-
 ◎
-The has(name) method steps are to return true if there is a name-value pair whose name is name in this’s list, and false otherwise.
+The has(name) method steps are to return true if there is a tuple whose name is name in this’s list; otherwise false.
 </div>
 
 <div class="algo">
 <p>
 `set(name, value)@m
-~method~手続きは：
+~method手続きは：
 ◎
 The set(name, value) method steps are:
 </p>
 <ol>
 	<li>
-%~pair~list ~LET コレの`名値~pair~list$
+%~parameter~list ~LET コレの`~parameter~list$
 ◎
 ↓</li>
 	<li>
@@ -9598,14 +9638,14 @@ The set(name, value) method steps are:
 ↓</li>
 	<li>
 <p>
-%~pair~list を成す
-~EACH( %~pair )
+%~parameter~list を成す
+~EACH( %~parameter )
 に対し：
 </p>
 		<ol>
 			<li>
 ~IF［
-%~pair の名 ~NEQ %name
+%~parameter の名 ~NEQ %name
 ］
 ⇒
 ~CONTINUE
@@ -9615,30 +9655,30 @@ The set(name, value) method steps are:
 %設定したか ~EQ ~T
 ］
 ⇒＃
-%~pair~list から %~pair を`除去する$；
+%~parameter~list から %~parameter を`除去する$；
 ~CONTINUE
 </li>
 			<li>
-%~pair の値 ~SET %value
+%~parameter の値 ~SET %value
 </li>
 			<li>
 %設定したか ~SET ~T
 </li>
 		</ol>
 ◎
-If this’s list contains any name-value pairs whose name is name, then set the value of the first such name-value pair to value and remove the others.
+If this’s list contains any tuples whose name is name, then set the value of the first such tuple to value and remove the others.
 </li>
 	<li>
 ~IF［
 %設定したか ~EQ ~F
 ］
 ⇒
-%~pair~list に新たな~pair( %name, %value ) を`付加する$
+%~parameter~list に ( %name, %value ) を`付加する$
 ◎
-Otherwise, append a new name-value pair whose name is name and value is value, to this’s list.
+Otherwise, append (name, value) to this’s list.
 </li>
 	<li>
-コレを`更新する$
+コレを`更新する$()
 ◎
 Update this.
 </li>
@@ -9650,12 +9690,12 @@ Update this.
 <div class="example" id="example-searchparams-sort">
 
 <p>
-`URLSearchParams$I ~obj内の名値~pairを~sortすると有用になることもある
+`URLSearchParams$I ~objの`~parameter~list$を~sortすると有用になることもある
 — 特に，~cache~hit率を高めれる。
 これは、
 `sort()$m ~methodを呼出すことで成遂げれる：
 ◎
-It can be useful to sort the name-value pairs in a URLSearchParams object, in particular to increase cache hits. This can be accomplished through invoking the sort() method:
+It can be useful to sort the name-value tuples in a URLSearchParams object, in particular to increase cache hits. This can be accomplished through invoking the sort() method:
 </p>
 
 <pre class="lang-js">
@@ -9665,7 +9705,7 @@ const %url = new URL("https://example.org/?q=🏳️‍🌈&key=e1f7bc78");
 </pre>
 
 <p>
-例えば比較~目的など，元の入力を改めたくない場合は、
+元の入力を改めたくない場合（例：比較~目的）は、
 新たな `URLSearchParams$I ~objを構築する：
 ◎
 To avoid altering the original input, e.g., for comparison purposes, construct a new URLSearchParams object:
@@ -9681,36 +9721,53 @@ const %sorted = new URLSearchParams(%url.search)
 <div class="algo">
 <p>
 `sort()@m
-~method~手続きは：
-◎
-The sort() method steps are:
+~method手続きは：
 </p>
 <ol>
 	<li>
-コレの`名値~pair~list$を成す すべての~pairを
-— 次に従うように —
-名で~sortする
-⇒＃
-名の比較は符号単位に基づく／
-名が等しい~pairどうしの順序は保全する
-◎
-Sort all name-value pairs, if any, by their names. Sorting must be done by comparison of code units. The relative order between name-value pairs with equal names must be preserved.
+%~parameter~list ~LET コレの`~parameter~list$
 </li>
 	<li>
-コレを`更新する$
-◎
-Update this.
+<p>
+%~sort済み~list ~LET `~listを昇順に~sortする$( %~parameter~list, 次の手続き )
+</p>
+
+<p class="algo">
+手続きは、
+所与の
+( `~query~parameter$ %A, `~query~parameter$ %B )
+に対し，［
+次が満たされるならば ~T ／ ~ELSE_ ~F 
+］を返す
+⇒
+%A の名は %B の名 `未満の符号単位~列$である
+</p>
+	</li>
+	<li>
+%~parameter~list を`空にする$
+</li>
+	<li>
+%~parameter~list を %~sort済み~list で`拡張する$
+</li>
+	<li>
+コレを`更新する$()
 </li>
 </ol>
+
+◎
+The sort() method steps are:
+• Sort all tuples in this’s list, if any, by their names. Sorting must be done by comparison of code units. The relative order between tuples with equal names must be preserved.
+• Update this.
 </div>
 
 <div class="algo">
 <p>
 `iterable@m
-における`反復される値~pair群$は，コレの`名値~pair~list$であり、
-前者の各~pairを成す［
+における`反復される値~pair群$は，
+コレの`~parameter~list$であり、
+前者を成す各~pairを成す［
 ~key／値
-］は，後者の各~pairを成す［
+］は，後者を成す各`~query~parameter$を成す［
 名／値
 ］が与えるとする。
 ◎
@@ -9720,11 +9777,11 @@ The value pairs to iterate over are this’s list’s name-value pairs with the 
 <div class="algo">
 <p>
 `stringifier@m
-における`文字列~化の挙動$~手続きは：
+における`文字列~化の挙動$を成す手続きは：
 <p>
 <ol>
 	<li>
-~RET `~form_urlencoded直列化器$( コレの`名値~pair~list$ )
+~RET `~form_urlencoded直列化器$( コレの`~parameter~list$ )
 </li>
 </ol>
 ◎
