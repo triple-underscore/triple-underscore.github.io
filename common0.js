@@ -1104,6 +1104,7 @@ MIMESNIFF:mimesniff-ja.html
 FULLSCREEN:fullscreen-ja.html
 NOTIFICATIONS:notifications-ja.html
 INTERSECTIONOBSERVER:IntersectionObserver-ja.html
+SCREEN-ORIENTATION:screen-orientation-ja.html
 WEBIDL:WebIDL-ja.html
 WEBIDLjs:WebIDL-JS-ja.html
 XHR:XHR-ja.html
