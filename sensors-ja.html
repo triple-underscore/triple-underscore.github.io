@@ -212,8 +212,8 @@ return text;
 ●●options
 
 spec_title:Generic Sensor API
-spec_date:2022-11-23
-trans_update:2022-11-27
+spec_date:2022-12-10
+trans_update:2022-12-14
 source_checked:211215
 spec_status:ED
 original_url:https://w3c.github.io/sensors/
@@ -547,7 +547,7 @@ doc.生成元:~DOM4#concept-document-origin
 許可~要請~algo:https://wicg.github.io/permissions-request/#permission-request-algorithm
 
 	■WEBDRIVER
-拡張~command:~WEBDRIVER#dfn-extension-command
+拡張~command:~WEBDRIVER#dfn-extension-commands
 現在の閲覧~文脈:~WEBDRIVER#dfn-current-browsing-context
 ~URI~template:~WEBDRIVER#dfn-extension-command-uri-template
 ~remote端~手続き:~WEBDRIVER#dfn-remote-end-steps
@@ -555,7 +555,7 @@ doc.生成元:~DOM4#concept-document-origin
 wdr.~error:#_webdriver-error
 wdr.成功:#_webdriver-success
 
-~WebDriver~error:~WEBDRIVER#dfn-errors
+~WebDriver~error:~WEBDRIVER#dfn-error
 ~WebDriver~error~code:~WEBDRIVER#dfn-error-code
 成功:~WEBDRIVER#dfn-success
 
@@ -564,7 +564,7 @@ i.そのような~windowは無い:~WEBDRIVER#dfn-no-such-window
 
 もはや開いてない:~WEBDRIVER#dfn-no-longer-open
 利用者~promptを取扱う:~WEBDRIVER#dfn-handle-any-user-prompts
-~session:~WEBDRIVER#dfn-sessions
+~session:~WEBDRIVER#dfn-session
 ~url変数:~WEBDRIVER#dfn-url-variables
 局所~端:~WEBDRIVER#dfn-local-ends
 
@@ -1050,8 +1050,8 @@ game::::ゲーム
 	前回に:previously
 
 	●変数
-	-:connected
-	%許可~状態:~permission_state
+	%許可~状態:permissionState
+	%接続されたか:connected
 	%作動化された~sensor群:activated_sensors
 	%特能~名:feature_name
 	-:feature_names
@@ -1106,6 +1106,9 @@ APIDESIGNPRINCIPLES=副      ~/design-principles-ja.html
     Anssi Kostiainen; Rijubrata Bhaumik. ＜Proximity Sensor＞. URL: https://w3c.github.io/proximity/
 [RFC2119]
     S. Bradner. ＜Key words for use in RFCs to Indicate Requirement Levels＞. March 1997. Best Current Practice. URL: https://datatracker.ietf.org/doc/html/rfc2119
+[WEBDRIVER2]
+    Simon Stewart; David Burns. ＜WebDriver＞. URL: https://w3c.github.io/webdriver/
+
 [WebDriver]
     Simon Stewart; David Burns. ＜WebDriver＞. URL: https://w3c.github.io/webdriver/
 [WEBIDL]
@@ -3372,9 +3375,46 @@ Run these sub-steps in parallel:
 </p>
 		<ol>
 			<li>
+%許可~状態 ~LET `~sensor~accessを要請する$( コレ )
+◎
+Let permissionState be the result of invoking request sensor access with this as argument.
+</li>
+			<li>
 <p>
 ~IF［
-`~sensorに接続する$( コレ ) の結果 ~EQ ~F
+%許可~状態 ~EQ `denied^l
+］
+⇒
+◎
+If permissionState is "denied", then:
+</p>
+				<ol>
+					<li>
+%e ~LET `例外を作成する$( `NotAllowedError$E )
+◎
+Let e be the result of creating a "NotAllowedError" DOMException.
+</li>
+					<li>
+次を走らす`~taskを~queueする$
+⇒
+`~errorを通知する$( コレ, %e )
+◎
+Queue a task to run notify error with this and e as arguments.
+</li>
+					<li>
+~RET
+◎
+Return.
+</li>
+				</ol>
+			</li>
+			<li>
+%接続されたか ~LET `~sensorに接続する$( コレ )
+</li>
+			<li>
+<p>
+~IF［
+%接続されたか ~EQ ~F
 ］：
 ◎
 Let connected be the result of invoking connect to sensor with this as argument.
@@ -3402,44 +3442,10 @@ Return.
 				</ol>
 			</li>
 			<li>
-%許可~状態 ~LET `~sensor~accessを要請する$( コレ )
-◎
-Let permission_state be the result of invoking request sensor access with this as argument.
-</li>
-			<li>
-~IF［
-%許可~状態 ~EQ `granted^l
-］
-⇒
 `~sensor~objを作動化する$( コレ )
 ◎
-If permission_state is "granted",
-• Invoke activate a sensor object with this as argument.
+Invoke activate a sensor object with this as argument.
 </li>
-			<li>
-<p>
-~ELIF［
-%許可~状態 ~EQ `denied^l
-］
-⇒
-◎
-Otherwise, if permission_state is "denied",
-</p>
-				<ol>
-					<li>
-%e ~LET `例外を作成する$( `NotAllowedError$E )
-◎
-Let e be the result of creating a "NotAllowedError" DOMException.
-</li>
-					<li>
-次を走らす`~taskを~queueする$
-⇒
-`~errorを通知する$( コレ, %e )
-◎
-Queue a task to run notify error with this and e as arguments.
-</li>
-				</ol>
-			</li>
 		</ol>
 	</li>
 </ol>
@@ -4555,12 +4561,16 @@ A permission state.
 
 <ol>
 	<li>
+~Assert：
+この~algoは`並列的$に走っている。
+【この段は、この訳による補完】
+</li>
+	<li>
 %~sensor ~LET %~sensor~instance の`~platform~sensor$
 ◎
 Let sensor be the platform sensor associated with sensor_instance.
 </li>
 	<li>
-<p>
 %~sensor の`~sensor許可~名~群$を成す
 ~EACH( %許可~名 )
 に対し
@@ -4572,19 +4582,8 @@ Let sensor be the platform sensor associated with sensor_instance.
 ］
 ⇒
 ~RET `denied^l
-</p>
-
-<p class="trans-note">【
-原文では，この段~以降を “`並列的$に走らす” と記されているが、
-値を返しているので不適切になる
-— “待機する” は、
-それに代わるこの訳による補完
-（この~algo自体が，並列的に走らされている）。
-】</p>
 ◎
 Let sensor_permissions be sensor’s associated set of permission names.
-◎
-Run these sub-steps in parallel:
 ◎
 For each permission_name in sensor_permissions,
 • Let state be the result of requesting permission to use permission_name.
@@ -4594,7 +4593,7 @@ For each permission_name in sensor_permissions,
 	<li>
 ~RET `granted^l
 ◎
-Otherwise, return "granted".
+Return "granted".
 </li>
 </ol>
 </div>
@@ -4611,13 +4610,13 @@ Otherwise, return "granted".
 予測-可能な仕方で応答する物理的な~hardware~deviceが要るので。
 この難題に取組むため、
 この文書は，
-`WebDriver$r 仕様に対し［
+`WEBDRIVER2$r 仕様に対し［
 ~UAが稼働している~host上で`模擬~sensor$を制御するための，いくつかの`拡張~command$
 ］を定義する。
 これらの`拡張~command$により、
 特定0の~propを伴う~deviceを作成でき，要請に対するそれらの応答はきちんと定義される。
 ◎
-The Generic Sensor API and its extension specifications pose a challenge to test authors, as fully exercising those interfaces requires physical hardware devices that respond in predictable ways. To address this challenge this document defines a number of extension commands to the [WebDriver] specification for controlling mock sensor on the host that the user agent is running on. With these extension commands, devices with particular properties can be created and their responses to requests are well defined.
+The Generic Sensor API and its extension specifications pose a challenge to test authors, as fully exercising those interfaces requires physical hardware devices that respond in predictable ways. To address this challenge this document defines a number of extension commands to the [WEBDRIVER2] specification for controlling mock sensor on the host that the user agent is running on. With these extension commands, devices with particular properties can be created and their responses to requests are well defined.
 </p>
 
 		<section id="mock-sensors">
@@ -4976,28 +4975,24 @@ dictionary `MockSensorReadingValues@I {
 <h3 title="Extension Commands">9.2. 拡張~command</h3>
 
 <p class="trans-note">【
-簡潔にするため，この訳では、
-この節において次の表記を用いる：
+この訳では、
+この節に利用される `WEBDRIVER$r の用語に次の表記を用いる：
 】</p>
+<dl>
+	<dt>
+`~error@wdr( %~code )
+</dt>
+	<dd>
+`~WebDriver~error~code$ %~code を伴う`~WebDriver~error$
+</dd>
 
-<ul>
-	<li>
-“`~error@wdr( %~code )”
-という表記は、
-次の略記である
-⇒
-“`~WebDriver~error~code$に %~code を伴う`~WebDriver~error$”
-（ “`WebDriver error with WebDriver error code^en %~code” ）
-</li>
-	<li>
-“`成功@wdr( %~data )”
-という表記は、
-次の略記である
-⇒
-“~data~fieldに %~data を伴う`成功$”
-（ “`success with data^en %~data” ）
-</li>
-</ul>
+	<dt>
+`成功@wdr( %~data )
+</dt>
+	<dd>
+~data~fieldに %~data を伴う`成功$
+</dd>
+</dl>
 
 			<section id="create-mock-sensor-command">
 <h4 title="Create mock sensor">9.2.1. 模擬~sensorを作成する</h4>
@@ -5033,7 +5028,7 @@ The remote end steps are:
 ⇒
 ~RET `~error$wdr( `無効な引数$i )
 ◎
-Let configuration be the configuration parameter, converted to an IDL value of type MockSensorConfiguration. If this throws an exception, return a WebDriver error with WebDriver error code invalid argument.
+Let configuration be the configuration parameter, converted to an IDL value of type MockSensorConfiguration. If this throws an exception, return an invalid argument error.
 </li>
 	<li>
 %型 ~LET %環境設定[ "`mockSensorType$mC" ]
@@ -5047,7 +5042,7 @@ Let type be the configuration.mockSensorType.＼
 ⇒
 ~RET `~error$wdr( `模擬~sensorは作成-済み$i )
 ◎
-If the current browsing context already has this type of mock sensor, return a WebDriver error with WebDriver error code mock sensor already created.
+If the current browsing context already has this type of mock sensor, return a mock sensor already created error.
 </li>
 	<li>
 ~IF［
@@ -5056,7 +5051,7 @@ If the current browsing context already has this type of mock sensor, return a W
 ⇒
 ~RET `~error$wdr( `そのような~windowは無い$i )
 ◎
-If the current browsing context is no longer open, return a WebDriver error with WebDriver error code no such window.
+If the current browsing context is no longer open, return a no such window error.
 </li>
 	<li>
 %結果 ~LET `利用者~promptを取扱う$()
@@ -5106,7 +5101,7 @@ Let connected be the configuration.connected, set mock’s associated connection
 ⇒
 %模擬~sensor が~supportする最大~標本化~frequency ~SET %最大~標本化~frequency
 ◎
-If configuration.maxSamplingFrequency is present, then:
+If configuration.maxSamplingFrequency exists, then:
 • Set mock’s maximum supported sampling frequency to configuration.maxSamplingFrequency.
 </li>
 			<li>
@@ -5120,7 +5115,7 @@ If configuration.maxSamplingFrequency is present, then:
 ⇒
 %模擬~sensor が~supportする最小~標本化~frequency ~SET %最小~標本化~frequency
 ◎
-If configuration.minSamplingFrequency is present, then:
+If configuration.minSamplingFrequency exists, then:
 • Set mock’s minimum supported sampling frequency to configuration.minSamplingFrequency.
 </li>
 			<li>
@@ -5165,12 +5160,12 @@ To create an "ambient-light" mock sensor in the current browsing context of the 
 
 <p>
 所与の`模擬~sensor型$用に`現在の閲覧~文脈$内に作成できる`模擬~sensor$は、
-1 個に限られることに自覚するように。
+1 個に限られることを自覚すること。
 他の場合、
 `~error$wdr( `模擬~sensorは作成-済み$i )
 が投出されることになる。
 ◎
-Be aware that only one mock sensor of a given mock sensor type can be created in current browsing context, otherwise a WebDriver error with WebDriver error code mock sensor already created will be thrown.
+Be aware that only one mock sensor of a given mock sensor type can be created in current browsing context, otherwise a mock sensor already created error will be thrown.
 </p>
 </div>
 
@@ -5209,7 +5204,7 @@ The remote end steps are:
 ⇒
 ~RET `~error$wdr( `無効な引数$i )
 ◎
-Let type be a url variable, converted to an IDL value of type MockSensorType. If this throws an exception, return a WebDriver error with WebDriver error code invalid argument.
+Let type be a url variable, converted to an IDL value of type MockSensorType. If this throws an exception, return an invalid argument error.
 </li>
 	<li>
 ~IF［
@@ -5218,7 +5213,7 @@ Let type be a url variable, converted to an IDL value of type MockSensorType. If
 ⇒
 ~RET `~error$wdr( `そのような~windowは無い$i )
 ◎
-If the current browsing context is no longer open, return a WebDriver error with WebDriver error code no such window.
+If the current browsing context is no longer open, return a no such window error.
 </li>
 	<li>
 %結果 ~LET `利用者~promptを取扱う$()
@@ -5232,7 +5227,7 @@ Handle any user prompts,＼
 ⇒
 ~RET %結果
 ◎
-and return its value if it is a WebDriver error.
+and return its value if it is an error.
 </li>
 	<li>
 ~IF［
@@ -5241,7 +5236,7 @@ and return its value if it is a WebDriver error.
 ⇒
 ~RET `成功$wdr( `直列形の模擬~sensor$ )
 ◎
-If type does not match a mock sensor type amongst all associated mock sensors of the current browsing context, return a WebDriver error with WebDriver error code no such mock sensor.
+If type does not match a mock sensor type amongst all associated mock sensors of the current browsing context, return a no such mock sensor error.
 ◎
 Return success with the serialized mock sensor as data.
 </li>
@@ -5287,7 +5282,7 @@ The remote end steps are:
 ⇒
 ~RET `~error$wdr( `無効な引数$i )
 ◎
-Let type be a url variable, converted to an IDL value of type MockSensorType. If this throws an exception, return a WebDriver error with WebDriver error code invalid argument.
+Let type be a url variable, converted to an IDL value of type MockSensorType. If this throws an exception, return an invalid argument error.
 </li>
 	<li>
 ~IF［
@@ -5296,7 +5291,7 @@ Let type be a url variable, converted to an IDL value of type MockSensorType. If
 ⇒
 ~RET `~error$wdr( `そのような~windowは無い$i )
 ◎
-If the current browsing context is no longer open, return a WebDriver error with WebDriver error code no such window.
+If the current browsing context is no longer open, return a no such window error.
 </li>
 	<li>
 %結果 ~LET `利用者~promptを取扱う$()
@@ -5310,7 +5305,7 @@ Handle any user prompts,＼
 ⇒
 ~RET %結果
 ◎
-and return its value if it is a WebDriver error.
+and return its value if it is an error.
 </li>
 	<li>
 ~IF［
@@ -5319,7 +5314,7 @@ and return its value if it is a WebDriver error.
 ⇒
 ~RET `~error$wdr( `そのような模擬~sensorは無い$i )
 ◎
-If type does not match a mock sensor type amongst all associated mock sensors of the current browsing context, return a WebDriver error with WebDriver error code no such mock sensor.
+If type does not match a mock sensor type amongst all associated mock sensors of the current browsing context, return a no such mock sensor error.
 </li>
 	<li>
 %読取り ~LET `~IDL値に変換する$( %読取り 引数【？】, %型 に結付けられている `MockSensorReadingValues$I 型 )
@@ -5328,7 +5323,7 @@ If type does not match a mock sensor type amongst all associated mock sensors of
 ⇒
 ~RET `~error$wdr( `無効な引数$i )
 ◎
-Let reading be the reading argument, converted to an IDL value of the type’s associated MockSensorReadingValues. If this throws an exception, return a WebDriver error with WebDriver error code invalid argument.
+Let reading be the reading argument, converted to an IDL value of the type’s associated MockSensorReadingValues. If this throws an exception, return an invalid argument error.
 </li>
 	<li>
 %読取り を成す
@@ -5388,7 +5383,7 @@ Let type be a url variable.
 ⇒
 ~RET `~error$wdr( `無効な引数$i )
 ◎
-If MockSensorType does not contain type, return a WebDriver error with WebDriver error code invalid argument.
+If MockSensorType does not contain type, return an invalid argument error.
 </li>
 	<li>
 ~IF［
@@ -5397,7 +5392,7 @@ If MockSensorType does not contain type, return a WebDriver error with WebDriver
 ⇒
 ~RET `~error$wdr( `そのような~windowは無い$i )
 ◎
-If the current browsing context is no longer open, return a WebDriver error with WebDriver error code no such window.
+If the current browsing context is no longer open, return a no such window error.
 </li>
 	<li>
 %結果 ~LET `利用者~promptを取扱う$()
@@ -5411,7 +5406,7 @@ Handle any user prompts,＼
 ⇒
 ~RET %結果
 ◎
-and return its value if it is a WebDriver error.
+and return its value if it is an error.
 </li>
 	<li>
 ~IF［
@@ -5421,7 +5416,7 @@ and return its value if it is a WebDriver error.
 その`模擬~sensor$を削除する；
 ~RET `成功$wdr( ~NULL )
 ◎
-If type does not match a mock sensor type amongst all associated mock sensors of the current browsing context, return a WebDriver error with WebDriver error code no such mock sensor.
+If type does not match a mock sensor type amongst all associated mock sensors of the current browsing context, return a no such mock sensor error.
 ◎
 Delete type of mock sensor in current browsing context.
 ◎
@@ -5441,13 +5436,12 @@ Return success with data null.
 
 <p>
 この節は、
-~WebDriverによる
-<a href="~WEBDRIVER#handling-errors">~errorの取扱い</a>
+`WEBDRIVER$r <a href="~WEBDRIVER#errors">§ ~error</a>
 を拡張する
-— 次の表に，`模擬~sensor$用に特有な，拡張された`~WebDriver~error~code$を定義する
+— 次の表に，`模擬~sensor$用に拡張された`~WebDriver~error~code$を定義する
 【原文における~error~codeは、~JSON~error~codeと同じ】：
 ◎
-This section extends the Handling Errors and defines extended WebDriver error codes specific for mock sensor in following table.
+This section extends the WebDriver 2 § 6.6 Errors section and defines extended WebDriver error codes specific for mock sensor in following table.
 </p>
 
 <div>
