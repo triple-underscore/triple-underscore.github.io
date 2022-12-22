@@ -308,7 +308,8 @@ I.DOMRectReadOnly:~GEOMETRY#domrectreadonly
 	~TR/geometry-1/#dom-domrectreadonly
 I.DOMTokenList:~DOM4#interface-domtokenlist
 I.Document:~DOM4#document
-I.DocumentAndElementEventHandlers:~WAPI#documentandelementeventhandlers
+	廃）I.DocumentAndElementEventHandlers:~WAPI#documentandelementeventhandlers
+I.DocumentAndElementEventHandlers:~SVGchanges#documentandelementeventhandlers
 I.Element:~DOM4#element
 I.CSSPseudoElement:~CSSPSEUDO#csspseudoelement
 I.GlobalEventHandlers:~WAPI#globaleventhandlers
