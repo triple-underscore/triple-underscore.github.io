@@ -168,8 +168,8 @@ return text;
 ●●options
 
 spec_title:URL
-spec_date:2022-12-20
-trans_update:2022-12-22
+spec_date:2023-01-02
+trans_update:2023-01-05
 source_checked:221209
 spec_status:LS
 original_url:https://url.spec.whatwg.org/
@@ -454,6 +454,8 @@ url.~query~obj:#concept-url-query-object
 ~form_urlencoded直列化器:#concept-urlencoded-serializer
 ~form_urlencoded~byte直列化器:#concept-urlencoded-byte-serializer
 
+不透明な~pathならば その末尾にある~space列を剥ぐ:#potentially-strip-trailing-spaces-from-an-opaque-path
+
 	●INFRA
 ~byte:~INFRA#byte
 ~byte列:~INFRA#byte-sequence
@@ -591,6 +593,7 @@ stateful::::ステートフル
 	にならない:not end up
 	往来-可能:roundtripeable
 	触れないまま残す:leave 〜 untouched
+	得られる:yield
 
 	●文字データ
 BOM:
@@ -610,6 +613,7 @@ at-sign::::@マーク
 	文字列~化:stringification
 	文字列~化-:stringify
 部分文字列:substring::~
+剥ぐ:stripする::~
 
 	●構文解析／直列化
 piece:::片
@@ -636,6 +640,7 @@ ISO-2022-JP:
 入出力:I/O:~
 	8 進数:octal／:octal number
 	`0080^U 以上:greater than U+007F DELETE
+	尾部／末尾:trailing
 
 	●URL／origin／domain／host
 IP:
@@ -693,6 +698,7 @@ hooks::::フック
 申請-:file:~
 非推奨化:deprecation:~
 致命的:fatal:~
+能性:potential:~
 
 	~network用:networking
 	明瞭でない:unclear
@@ -830,6 +836,7 @@ voice::::ボイス
 	%~parameter~list:tuples
 	%~parameter:tuple
 	%~URL:url
+	%~URL~obj:url
 	%~username
 	%~~成分:part
 	%~~成分~list:parts
@@ -955,7 +962,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/url/commits">GitHub whatwg/url/commits</a>
-	<a href="https://url.spec.whatwg.org/commit-snapshots/6ad2f048222ee34653913a8d4891b7578d1aab74/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://url.spec.whatwg.org/commit-snapshots/fdaa0e5a3790693a82f578d7373f216d8fef9ac8/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/urlstandard">@urlstandard</a>
 
 Tests:
@@ -8564,6 +8571,60 @@ A URL object has an associated:
 • query object: a URLSearchParams object.
 </div>
 
+<div class="algo">
+<p>
+`不透明な~pathならば その末尾にある~space列を剥ぐ@
+ときは、
+所与の
+( `URL$I ~obj %~URL~obj )
+に対し：
+◎
+To potentially strip trailing spaces from an opaque path given a URL object url:
+</p>
+<ol>
+	<li>
+%~URL ~LET %~URL~obj の`~URL$url
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%~URL は`不透明な~path$を持つ
+］~AND［
+%~URL の`素片$url ~EQ ~NULL
+］~AND［
+%~URL の`~query$url ~EQ ~NULL
+］：
+</p>
+		<ol>
+			<li>
+%~path文字列 ~LET %~URL の`~path$url
+</li>
+			<li>
+~WHILE［
+%~path文字列 は空でない
+］~AND［
+%~path文字列 の最後の文字 ~EQ `0020^U `SPACE^cn
+］
+⇒
+%~path文字列 から最後の文字を除去する
+</li>
+			<li>
+%~URL の`~path$url ~SET %~path文字列
+</li>
+		</ol>
+◎
+If url’s URL does not have an opaque path, then return.
+◎
+If url’s URL’s fragment is non-null, then return.
+◎
+If url’s URL’s query is non-null, then return.
+◎
+Remove all trailing U+0020 SPACE code points from url’s URL’s path.
+</li>
+</ol>
+</div>
+
 <hr id="constructors">
 
 <div class="algo">
@@ -9202,18 +9263,46 @@ The search setter steps are:
 Let url be this’s URL.
 </li>
 	<li>
+%入力 ~LET 所与の値
+◎
+↓</li>
+	<li>
+<p>
 ~IF［
-所与の値 ~EQ 空~文字列
-］
-⇒＃
-%~URL の`~query$url ~SET ~NULL；
-コレの`~query~obj$urlの`~parameter~list$を`空にする$；
+%入力 ~EQ 空~文字列
+］：
+◎
+If the given value is the empty string:
+</p>
+		<ol>
+			<li>
+%~URL の`~query$url ~SET ~NULL
+◎
+Set url’s query to null.
+</li>
+			<li>
+コレの`~query~obj$urlの`~parameter~list$を`空にする$
+◎
+Empty this’s query object’s list.
+</li>
+			<li>
+`不透明な~pathならば その末尾にある~space列を剥ぐ$( コレ )
+◎
+Potentially strip trailing spaces from an opaque path with this.
+</li>
+			<li>
 ~RET
 ◎
-If the given value is the empty string, set url’s query to null, empty this’s query object’s list, and then return.
+Return.
 </li>
+		</ol>
+	</li>
 	<li>
-%入力 ~LET 所与の値 — ただし，先頭 1 個の ❝? は（もし在れば）除去する
+~IF［
+%入力 の先頭の~cp ~EQ ❝?
+］
+⇒
+%入力 から先頭の~cpを除去する
 ◎
 Let input be the given value with a single leading U+003F (?) removed, if any.
 </li>
@@ -9233,6 +9322,17 @@ Basic URL parse input with url as url and query state as state override.
 Set this’s query object’s list to the result of parsing input.
 </li>
 </ol>
+
+<p class="note">注記：
+`search$m 設定子には、
+コレの`~URL$urlの`~path$urlから尾部を成す［
+`0020^U `SPACE^cn からなる`~cp$列
+］を除去する能性がある。
+これを行うのは、
+コレの`~URL$urlを`~URL直列化器$にかけてから`~URL構文解析器$にかけたとき，~~元と`同等な~URL$が得られるようにするためである。
+◎
+The search setter has the potential to remove trailing U+0020 SPACE code points from this’s URL’s path. It does this so that running the URL parser on the output of running the URL serializer on this’s URL does not yield a URL that is not equal.
+</p>
 </div>
 
 <div class="algo">
@@ -9296,21 +9396,37 @@ The hash setter steps are:
 ◎
 ↓</li>
 	<li>
+<p>
 ~IF［
 %入力 ~EQ 空~文字列
-］
-⇒＃
+］：
+◎
+If the given value is the empty string:
+</p>
+		<ol>
+			<li>
 %~URL の`素片$url ~SET ~NULL；
+◎
+Set this’s URL’s fragment to null.
+</li>
+			<li>
+`不透明な~pathならば その末尾にある~space列を剥ぐ$( コレ )
+◎
+Potentially strip trailing spaces from an opaque path with this.
+</li>
+			<li>
 ~RET
 ◎
-If the given value is the empty string, then set this’s URL’s fragment to null and return.
+Return.
 </li>
+		</ol>
+	</li>
 	<li>
 ~IF［
-%入力 の先頭の文字 ~EQ ❝#
+%入力 の先頭の~cp ~EQ ❝#
 ］
 ⇒
-%入力 から先頭の文字を除去する
+%入力 から先頭の~cpを除去する
 ◎
 Let input be the given value with a single leading U+0023 (#) removed, if any.
 </li>
@@ -9325,6 +9441,14 @@ Set this’s URL’s fragment to the empty string.
 Basic URL parse input with this’s URL as url and fragment state as state override.
 </li>
 </ol>
+
+<p class="note">注記：
+`hash$m 設定子には、
+`search$m 設定子と等価な方式で，
+コレの`~URL$urlの`~path$urlを変更する能性がある。
+◎
+The hash setter has the potential to change this’s URL’s path in a manner equivalent to the search setter.
+</p>
 </div>
 
 		</section>
@@ -9438,6 +9562,17 @@ list: a list of tuples each consisting of a name and a value, initially empty.
 URL object: null or a URL object, initially null.
 </li>
 </ul>
+
+<p class="note">注記：
+`URLSearchParams$I ~objのうち，
+その`~URL~obj$が ~NULLでないものには、
+`URL$I ~objの［
+`search$m, `hash$m
+］設定子と等価な方式で，
+`~URL~obj$の`~path$urlを変更する能性がある。
+◎
+A URLSearchParams object with a non-null URL object has the potential to change that object’s path in a manner equivalent to the URL object’s search and hash setters.
+</p>
 
 <p>
 `~query~parameter@
@@ -9561,6 +9696,15 @@ Let serializedQuery be the serialization of query’s list.
 If serializedQuery is the empty string, then set serializedQuery to null.
 ◎
 Set query’s URL object’s URL’s query to serializedQuery.
+</li>
+	<li>
+~IF［
+%直列化した~query ~EQ ~NULL
+］
+⇒
+`不透明な~pathならば その末尾にある~space列を剥ぐ$( %~query の`~URL~obj$ )
+◎
+If serializedQuery is null, then potentially strip trailing spaces from an opaque path with query’s URL object.
 </li>
 </ol>
 </div>
