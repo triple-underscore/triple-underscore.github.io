@@ -508,37 +508,29 @@ const fillCopyright = () => {
 	let info = options.copyright;
 	if(!info) return;
 
-	info = info.split(',');
-	const year = info[0];
-	const license = info[1];
+	const [ year, license ] = info.split(',');
+	let license_data = '';
 
-	let html = `
-<small>このページは、次による原文の許諾の下で翻訳されています：
-<br><span lang="en">
-`;
 	switch( license ){
 	case 'whatwg': // whatwg は year なし
-		html += `
+		license_data = `
 <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>. Copyright © WHATWG (Apple, Google, Mozilla, Microsoft).`;
 		break;
-	case 'use':
-	case 'permissive':
-		html += `
+
+	case 'permissive': // W3C
+		license_data = `
+<a href="https://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © ${year} <a href="https://www.w3.org/">World Wide Web Consortium</a>. <abbr title="World Wide Web Consortium">W3C</abbr><sup>®</sup> <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, <a href="https://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and <a href="https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document" rel="license">permissive document license</a> rules apply.`;
+		break;
+
+	case 'use': // W3C（旧）
+		license_data = `
 <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © ${year}
 <a href="https://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup>
 (<a href="https://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>,
 <a href="https://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>,
 <a href="https://www.keio.ac.jp/">Keio</a>, <a href="https://ev.buaa.edu.cn/">Beihang</a>).
 W3C <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>,
-<a href="https://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and
-`
-		+ ( license === 'use' ?
-'<a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents" rel="license">document use</a>' :
-'<a rel="license" href="https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document" rel="license">permissive document license</a>'
-)
-		+ `
-rules apply.
-</span></small>`;
+<a href="https://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and <a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents" rel="license">document use</a> rules apply.`;
 
 /*
 http://www.ercim.org/ と https://www.ercim.eu/ の違いは無視（ 1 箇所のみ）。
@@ -549,6 +541,10 @@ https と http の違いは無視。
 
 		break;
 	}
+	const html = license_data ? `
+<small>このページは、次による原文の許諾の下で翻訳されています：
+<br><span lang="en">${license_data}</span></small>` : `
+<small>（翻訳エラー：適用可能な著作権情報が設定されていない）</small>`;
 
 	details.insertAdjacentHTML('beforeend', html);
 }
