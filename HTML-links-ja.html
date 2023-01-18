@@ -172,8 +172,8 @@ v.any:attr-link-sizes-any
 
 ●●options
 
-spec_date:2022-11-01
-trans_update:2022-11-06
+spec_date:2023-01-18
+trans_update:2023-01-19
 source_checked:220426
 page_state_key:HTML
 spec_status:LS
@@ -713,6 +713,7 @@ commit:
 	設定-時:setting
 	各回:instances
 	~error含みの:erroneous
+	優先-:prioritize
 
 	%要素:element
 	%要素:subject
@@ -746,9 +747,11 @@ commit:
 	%~navigable:navigable
 	%~target~navigable:targetNavigable
 	%本体~byte列:bodyBytes
+	%~byte列:bytesOrNull
 	%制御器:controller
 	%計時を報告する:reportTiming
-
+	%~option群:options
+	%~prefetch応答の処理n:processPrefetchResponse
 
 	●link
 Content-Type:
@@ -762,6 +765,7 @@ dot::::ドット
 syndication-feed:syndication feed:::［連携サイトからのフィード］
 syndicate::::連携
 feed::::フィード
+prefetch:
 増補-:augment:~
 追う:followする::~
 追った:followした::~
@@ -6279,19 +6283,11 @@ The prefetch keyword may be used with link elements. This keyword creates an ext
 次を指示する
 ⇒
 利用者は，未来の~naviにてこの資源を要求する見込みが高いので、
-~UAは，参照先~資源を先取的に`~fetch$して~cacheすることが有益になると見込まれる。
+~UAは，［
+参照先~資源／同一-~site文書
+］を先取的に`~fetch$して~cacheすることが有益になると見込まれる。
 ◎
-The prefetch keyword indicates that preemptively fetching and caching the specified resource is likely to be beneficial, as it is highly likely that the user will require this resource for future navigations.＼
-</p>
-
-<p>
-~UAは、
-`Resource Hints^cite 仕様 `RESOURCEHINTS$r
-に述べられる［
-~keyword `prefetch$v の処理~model
-］を実装するモノトスル。
-◎
-User agents must implement the processing model of the prefetch keyword described in Resource Hints. [RESOURCEHINTS]
+The prefetch keyword indicates that preemptively fetching and caching the specified resource or same-site document is likely to be beneficial, as it is highly likely that the user will require this resource for future navigations.
 </p>
 
 <p>
@@ -6299,6 +6295,112 @@ User agents must implement the processing model of the prefetch keyword describe
 既定の型は無い。
 ◎
 There is no default type for resources given by the prefetch keyword.
+</p>
+
+<div class="algo">
+<p>
+`prefetch$v ~link用の`~link先の資源を~fetchして処理する$ときは、
+所与の
+( `link$e 要素 %link )
+に対し，次に従う：
+◎
+The fetch and process the linked resource algorithm for prefetch links, given a link element el, is as follows:
+</p>
+<ol>
+	<li>
+~IF［
+%link の `href$aL 属性の値 ~EQ 空~文字列
+］
+⇒
+~RET
+◎
+If el's href attribute's value is the empty string, then return.
+</li>
+	<li>
+%~option群 ~LET `要素から~link~option群を作成する$( %link )
+◎
+Let options be the result of creating link options from el.
+</li>
+	<li>
+%~option群 の`行先$lO ~SET 空~文字列
+◎
+Set options's destination to the empty string.
+</li>
+	<li>
+%要請 ~LET `~link要請を作成する$( %~option群 )
+◎
+Let request be the result of creating a link request given options.
+</li>
+	<li>
+~IF［
+%要請 ~EQ ~NULL
+］
+⇒
+~RET
+◎
+If request is null, then return.
+</li>
+	<li>
+%要請 の`起動元$rq ~SET `prefetch^l
+◎
+Set request's initiator to "prefetch".
+</li>
+	<li class="algo">
+<p>
+%~prefetch応答の処理n ~LET 所与の
+( `応答$ %応答, ［ ~NULL／ `失敗^i ／ `~byte列$ ］ %~byte列 )
+に対し，次を走らす手続き：
+◎
+Let processPrefetchResponse be the following steps given a response response and null, failure, or a byte sequence bytesOrNull:
+</p>
+		<ol>
+			<li>
+~IF［
+%応答 は`~network~error$である
+］
+⇒
+`~eventを発火する$( %link, `error$et )
+◎
+If response is a network error, fire an event named error at el.
+</li>
+			<li>
+~ELSE
+⇒
+`~eventを発火する$( %link, `load$et )
+◎
+Otherwise, fire an event named load at el.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~UAは、
+次に従うベキである
+⇒
+%要請 を`~fetchする$
+— 次を与える下で
+⇒
+`応答の本体を消費する処理n$i ~SET %~prefetch応答の処理n
+◎
+The user agent should fetch request, with processResponseConsumeBody set to processPrefetchResponse.＼
+</p>
+
+<p>
+~UAは、
+現在の文書~用に必要とされる他の要請を優先するよう，
+%要請 の~fetchingを遅延してもヨイ。
+◎
+User agents may delay the fetching of request to prioritize other requests that are necessary for the current document.
+</p>
+	</li>
+</ol>
+</div>
+
+<p class="algo">
+この型の~link先の資源~用の`~link~headerを処理する手続き$は、
+何もしない。
+◎
+The process a link header steps for this type of linked resource are to do nothing.
 </p>
 
 				</section>
@@ -6907,9 +7009,8 @@ Set controller to the result of fetching request,＼
 <p>
 `応答の本体を消費する処理n$i ~SET 所与の
 ( `応答$ %応答,
-［ ~NULL ／ `失敗^i ／`~byte列$ ］ %本体~byte列
-%~byte列または~NULL )
-に対し，次を走らす：
+［ ~NULL ／ `失敗^i ／ `~byte列$ ］ %本体~byte列 )
+に対し，次を走らす手続き：
 ◎
 with processResponseConsumeBody set to the following steps given a response response and null, failure, or a byte sequence bodyBytes:
 </p>
