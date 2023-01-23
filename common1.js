@@ -1839,6 +1839,7 @@ RFC7301=副            github.com/ami-GS/ALPN-spec-jp/blob/master/spec.md
 RFC7540=副            summerwind.jp/docs/rfc7540/
 RFC7540=副            summerwind.jp/docs/rfc9113/●日本語訳（RFC9113）
 RFC8259=副            www.asahi-net.or.jp/~ax2s-kmtn/internet/rfc8259j.html
+RFC8470=副            ~/http-early-data-ja.html
 RFC8941=副            ~/http-structured-fields-ja.html
 RFC8942=副            ~/http-client-hints-ja.html
 RFC8949=副            ~/CBOR-ja.html
