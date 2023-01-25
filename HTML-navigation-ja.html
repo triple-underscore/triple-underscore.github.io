@@ -180,8 +180,8 @@ return text;
 
 ●●options
 
-spec_date:2023-01-20
-trans_update:2023-01-20
+spec_date:2023-01-24
+trans_update:2023-01-25
 source_checked:221117
 page_state_key:HTML
 spec_status:LS
@@ -599,7 +599,6 @@ pC.~referrer施策:~ORIGIN#policy-container-referrer-policy
 pC.埋込元~施策:~ORIGIN#policy-container-embedder-policy
 ~CSPから導出される~sandbox法~flag群:~ORIGIN#csp-derived-sandboxing-flags
 ~fetch応答から施策~容器を作成する:~ORIGIN#creating-a-policy-container-from-a-fetch-response
-
 生成元:~ORIGIN#concept-origin
 ~navi~paramsの施策~容器を決定する:~ORIGIN#determining-navigation-params-policy-container
 ~navi応答の埋込元~施策に対する固守を検査する:~ORIGIN#check-a-navigation-response's-adherence-to-its-embedder-policy
@@ -624,6 +623,7 @@ sub.生成元:~ORIGIN#same-origin
 非同一-生成元~opener施策:~ORIGIN#cross-origin-opener-policy
 非同一-生成元~opener施策の施行n結果:~ORIGIN#coop-enforcement-result
 非同一-生成元~opener施策を得する:~ORIGIN#obtain-coop
+~URLは履歴~内に施策~容器を格納するよう要求するか？:~ORIGIN#requires-storing-the-policy-container-in-history
 
 bc.作動中の~window:~HTMLds#active-window
 bc.作動中の文書:~HTMLds#active-document
@@ -802,7 +802,6 @@ rq.予約-済み~client:~FETCH#concept-request-reserved-client
 rq.再読込み~naviか:~FETCH#concept-request-reload-navigation-flag
 rq.利用者が作動化したか:~FETCH#request-user-activation
 rq.履歴~naviか:~FETCH#concept-request-history-navigation-flag
-rq.施策~容器:~FETCH#concept-request-policy-container
 rq.本体:~FETCH#concept-request-body
 rq.現在の~URL:~FETCH#concept-request-current-url
 rq.生成元:~FETCH#concept-request-origin
@@ -1095,6 +1094,7 @@ back-up:back up:::バックアップ
 	~queue:post
 	~download:downloading
 	時間がかかる:take some time
+	ここまでに:after
 
 	●変数
 
@@ -1173,6 +1173,8 @@ back-up:back up:::バックアップ
 	%宛先~realm:targetRealm
 	%履歴:history
 	%履歴~取扱い:historyHandling
+	%履歴~entry:historyEntry
+	%履歴~施策~容器:-
 	%差分:delta
 	%復号-済み素片:decodedFragment
 	%応答:response
@@ -1228,7 +1230,6 @@ back-up:back up:::バックアップ
 	%起動元~生成元~snapshot:initiatorOriginSnapshot
 	%辿可能:traversable
 	%作動化し直さないか:doNotReactivate
-	%履歴~entry:historyEntry
 	%資源:resource
 	%非同一-文書を経ている~navigable群:navigablesCrossingDocuments
 	%同期c~naviを取扱う前に待機しなければならない~navigable群:navigablesThatMustWaitBeforeHandlingSyncNavigation
@@ -2007,10 +2008,10 @@ If the Document is not destroyed, then during history traversal, it can be react
 	<li>
 `履歴~施策~容器@dS
 ⇒
-`施策~容器$／ `client^l
-— 初期~時は `client^l とする。
+`施策~容器$／ ~NULL
+— 初期~時は ~NULL とする。
 ◎
-A history policy container, a policy container or "client", initially "client".
+A history policy container, a policy container or null, initially null.
 </li>
 	<li>
 `要請~referrer@dS
@@ -2734,7 +2735,7 @@ Unlike in the previous example, these synchronous steps do not "jump the queue" 
 ~URL `/i-1-a^c を伴う~entry
 ］に更新することも含まれる。
 ◎
-One the fetch for /i-1-a finally finishes, we proceed to finish updating the frames[1] navigable for the traversal, including updating its active session history entry to the entry with URL /i-1-a.
+Once the fetch for /i-1-a finally finishes, we proceed to finish updating the frames[1] navigable for the traversal, including updating its active session history entry to the entry with URL /i-1-a.
 </li>
 			<li>
 今や、
@@ -4483,11 +4484,23 @@ Let entryToReplace be targetNavigable's active session history entry.
 Let oldDocState be entryToReplace's document state.
 </li>
 	<li>
+%履歴~施策~容器 ~LET %旧-文書~状態 の`履歴~施策~容器$dS
+◎
+↓</li>
+	<li>
+~IF［
+%履歴~施策~容器 ~NEQ ~NULL
+］
+⇒
+%履歴~施策~容器 ~SET `施策~容器を~cloneする$( %履歴~施策~容器 )
+◎
+↓</li>
+	<li>
 %文書~状態 ~LET 新たな`文書~状態$
 — その
 ⇒＃
 `文書$dS ~SET %新たな文書,
-`履歴~施策~容器$dS ~SET `施策~容器を~cloneする$( %旧-文書~状態 の`履歴~施策~容器$dS ),
+`履歴~施策~容器$dS ~SET %履歴~施策~容器,
 `要請~referrer$dS ~SET %旧-文書~状態 の`要請~referrer$dS,
 `要請~referrer施策$dS ~SET %旧-文書~状態 の`要請~referrer施策$dS <span class="XXX">これは、`~navi~algo$に渡された %~referrer施策 にするべきか</span>,
 `起動元~生成元$dS ~SET %起動元~生成元~snapshot,
@@ -6513,6 +6526,7 @@ Let document be the result of loading a document given navigationParams, sourceS
 ◎
 If document is null, then run completionSteps and return.
 </li>
+
 					<li>
 %~entry の`文書~状態$shEの`文書$dS ~SET %文書
 ◎
@@ -6522,6 +6536,15 @@ Set entry's document state's document to document.
 %~entry の`文書~状態$shEの`生成元$dS ~SET %文書 の`生成元$doc
 ◎
 Set entry's document state's origin to document's origin.
+</li>
+					<li>
+~IF［
+`~URLは履歴~内に施策~容器を格納するよう要求するか？$( %文書 の`~URL$doc ) ~EQ ~T
+］
+⇒
+%~entry の`文書~状態$shEの`履歴~施策~容器$dS ~SET %~navi~params の`施策~容器$nvP
+◎
+If document's URL requires storing the policy container in history, then set entry's document state's history policy container to navigationParams's policy container.
 </li>
 				</ol>
 			</li>
@@ -6745,7 +6768,6 @@ Let documentResource be entry's document state's resource.
 — その
 ⇒＃
 `~URL$rq ~SET %~entry の`~URL$shE,
-`施策~容器$rq ~SET %~entry の`文書~状態$shEの`履歴~施策~容器$dS,
 `~client$rq ~SET %~source~snapshot~params の`~fetch~client$ssP,
 `行先$rq ~SET `document^l,
 `資格証~mode$rq ~SET `include^l,
@@ -6760,8 +6782,6 @@ Let request be a new request, with
 ◎
 url
 • entry's URL
-policy container
-• entry's document state's history policy container
 client
 • sourceSnapshotParams's fetch client
 destination
@@ -7377,11 +7397,35 @@ Set entry's serialized state to StructuredSerializeForStorage(null).
 Let oldDocState be entry's document state.
 </li>
 			<li>
+%履歴~施策~容器 ~LET %旧-文書~状態 の`履歴~施策~容器$dS
+◎
+↓</li>
+			<li>
+<p>
+~IF［
+%履歴~施策~容器 ~NEQ ~NULL
+］
+⇒
+%履歴~施策~容器 ~SET `施策~容器を~cloneする$( %履歴~施策~容器 )
+</p>
+
+<p class="note">注記：
+ここで［
+%履歴~施策~容器 ~NEQ ~NULL
+］になるのは、
+辿りの事例に限られる
+— それは、
+ここまでに，
+`履歴~内に施策~容器を格納するよう要求される~URL＠~ORIGIN#requires-storing-the-policy-container-in-history$へ~navigateする間に拡充される。
+</p>
+◎
+↓</li>
+			<li>
 <p>
 %~entry の`文書~状態$shE ~SET 新たな`文書~状態$
 — その
 ⇒＃
-`履歴~施策~容器$dS ~SET `施策~容器を~cloneする$( %旧-文書~状態 の`履歴~施策~容器$dS ),
+`履歴~施策~容器$dS ~SET %履歴~施策~容器,
 `要請~referrer$dS ~SET %旧-文書~状態 の`要請~referrer$dS,
 `要請~referrer施策$dS ~SET %旧-文書~状態 の`要請~referrer施策$dS,
 `生成元$dS ~SET %旧-文書~状態 の`生成元$dS,
@@ -7392,7 +7436,7 @@ Let oldDocState be entry's document state.
 Set entry's document state to a new document state, with
 ◎
 history policy container
-• a clone of the oldDocState's history policy container
+• a clone of the oldDocState's history policy container if it is non-null; null otherwise
 request referrer
 • oldDocState's request referrer
 request referrer policy
@@ -7424,6 +7468,8 @@ navigable target name
 ］ことになる。
 ◎
 For the navigation case, only entry referenced oldDocState, which was created early in the navigate algorithm. So for navigations, this is functionally just an update to entry's document state. For the traversal case, it's possible adjacent session history entries also reference oldDocState, in which case they will continue doing so even after we've updated entry's document state.
+◎
+↑ oldDocState's history policy container is only ever non-null here in the traversal case, after we've populated it during a navigation to a URL that requires storing the policy container in history.
 </p>
 
 <div class="example">
