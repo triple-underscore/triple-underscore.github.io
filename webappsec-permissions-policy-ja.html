@@ -109,8 +109,8 @@ return text;
 ●●options
 
 spec_title:Permissions Policy
-spec_date:2023-01-11
-trans_update:2023-01-13
+spec_date:2023-01-23
+trans_update:2023-01-25
 source_checked:200526
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-permissions-policy/
@@ -178,9 +178,10 @@ long:~WEBIDL#idl-long
 I.PermissionsPolicyViolationReportBody:#permissionspolicyviolationreportbody
 I.PermissionsPolicy:#permissionspolicy
 I.ReportBody:~REPORTING#reportbody
-I.Node:~DOM4#node
-I.Element:~DOM4#element
+	I.Node:~DOM4#node → ~node
+	I.Element:~DOM4#element → 要素
 I.Document:~DOM4#document
+	→ `文書$
 I.HTMLIFrameElement:~HEembed#htmliframeelement
 I.XMLHttpRequest:~XHR#xmlhttprequest
 I.Window:~WINDOW#window
@@ -285,14 +286,14 @@ iF.施策~obj:#iframe-policy-object
 辞書と生成元から施策を構築する:#construct-policy
 施策~指令を構文解析する:#parse-policy-directive
 許可~施策~属性を処理する:#process-policy-attributes
-閲覧~文脈~用の許可~施策を作成する:#create-for-browsingcontext
-応答から閲覧~文脈~用の許可~施策を作成する:#create-from-response
-閲覧~文脈~内の特能~用に継承される施策を定義する:#define-inherited-policy
+~navigable用の許可~施策を作成する:#create-for-navigable
+応答から~navigable用の許可~施策を作成する:#create-from-response
 生成元に属する容器~内の特能~用に継承される施策を定義する:#define-inherited-policy-in-container
 文書~内の特能は生成元~用に可能化されるか？:#is-feature-enabled
 設定群~上で許可~施策の違反~用に報告を生成する:#report-permissions-policy-violation
 要請には特能の利用は許容されるべきか？:#should-request-be-allowed-to-use-feature
 
+属する文書:#_documents-in-a-navigable
 
 	§ #structured-header-serialization
 
@@ -323,16 +324,13 @@ sf.~key:~STRUCTURED-FIELDS#sf-key
 
 doc.許可~施策:~HTMLdom#concept-document-permissions-policy
 
-bc.作動中の文書:~HTMLds#active-document
-閲覧~文脈:~HTMLds#browsing-context
-属する文書:~HTMLds#concept-document-bc
-~top-level閲覧~文脈:~HTMLds#top-level-browsing-context
-
-子~閲覧~文脈:~BROWSERS#child-browsing-context
-入子な閲覧~文脈:~BROWSERS#nested-browsing-context
-入子にしている閲覧~文脈:~BROWSERS#nested-browsing-context
-閲覧~文脈~容器:~BROWSERS#browsing-context-container
-親~閲覧~文脈:~BROWSERS#parent-browsing-context
+~navigable:~HTMLds#navigable
+子孫~navigable群:~HTMLds#descendant-navigables
+子~navigable:~HTMLds#child-navigable
+~navigable容器:~HTMLds#navigable-container
+内容~navigable:~HTMLds#content-navigable
+~top-level辿可能:~HTMLds#top-level-traversable
+~node~navigable:~HTMLds#node-navigable
 
 相対的に~URL構文解析する:~HTMLurl#parse-a-url
 生成元:~ORIGIN#concept-origin
@@ -348,6 +346,8 @@ bc.作動中の文書:~HTMLds#active-document
 環境~設定群~obj:~WAPI#environment-settings-object
 enV.大域~obj:~WAPI#concept-settings-object-global
 
+~node:~DOM4#concept-node
+要素:~DOM4#concept-element
 文書:~DOM4#concept-document
 	文書:~HTMLdom#the-document-object
 ~node文書:~DOM4#concept-node-document
@@ -403,6 +403,8 @@ Fullscreen:
 Worker:
 Worklet:
 下位frame:subframe::下位 frame:下位フレーム
+辿可能:traversable::辿り可能
+
 	~frame化され:framed
 	`iframe^e:iframe
 	自身が埋込む〜~host:embedee
@@ -684,6 +686,19 @@ Changes to this document may be tracked at https://github.com/w3c/webappsec.
 既存の用語を利用して記述を簡約している。
 </p>
 
+<p>
+（原文には明示的に定義されていないが、）
+所与の
+( `~navigable$ %~navigable )
+に対し，
+%~navigable に
+`属する文書@
+とは、
+次を満たす`文書$たちを指す
+⇒
+その`~node~navigable$ ~EQ %~navigable
+</p>
+
 	</section>
 	<section id="introduction">
 <h2 title="Introduction">1. 序論</h2>
@@ -705,7 +720,6 @@ Changes to this document may be tracked at https://github.com/w3c/webappsec.
 ◎
 The web platform provides an ever-expanding set of features and APIs, offering richer functionality, better developer ergonomics, and improved performance. However, a missing piece is the ability for the developer to selectively enable, disable, or modify the behavior of some of these browser features and APIs within their application:
 </p>
-
 <ol>
 	<li>
 開発者は、
@@ -750,7 +764,7 @@ The developer may want to selectively enable access to certain browser features 
 		<ul>
 			<li>
 ~browserにおいて ある種の “`fast path^en”† 最適化を可能化するため。
-【†よくある事例~用の “優先路”（短期滞在者向け入出国手続きのような）】
+【†よくある事例~用の “優先路”（観光客専用の入出国手続きの様な）】
 </li>
 			<li>
 埋込む側
@@ -828,7 +842,7 @@ By specifying an empty origin list, the specified features will be disabled for 
 ~FastCorp社の~siteは、
 特定の非同一-生成元 `iframe$e 内では地理所在を可能化したいと求めているとする。
 そうするためには、
- `iframe^e 要素に "`allow^a" 属性を含ませる：
+`iframe^e 要素に "`allow^a" 属性を含ませる：
 ◎
 Geolocation is disabled by default in all cross-origin frames. FastCorp Inc. has a specific cross-origin iframe on their site for which it wants to enable geolocation. It can do so by including an "allow" attribute on the iframe element:
 </p>
@@ -852,7 +866,7 @@ Iframe attributes can selectively enable features in certain frames, and not in 
 <p>
 ~SecureCorp社は、［
 自前の生成元／ 生成元 `https://example.com^l 
-］用を除くどの閲覧~文脈の中でも
+］用を除くどの`子孫~navigable群$の中でも
 — ~SecureCorp社の~pageに自前の `iframe$e を埋込める攻撃者が居たとしても —
 ~Geolocation~APIの利用を完全に不能化したいと求めているとする。
 次のような［
@@ -860,7 +874,7 @@ Iframe attributes can selectively enable features in certain frames, and not in 
 ］を送達すれば、
 それを行える：
 ◎
-SecureCorp Inc. wants to completely disable use of the Geolocation API within all browsing contexts except for its own origin and those whose origin is "https://example.com", even in the presence of an attacker who can embed their own iframes on SecureCorp’s pages. It can do this by delivering the following HTTP response header to define a restricted permissions policy for Geolocation:
+SecureCorp Inc. wants to completely disable use of the Geolocation API within all descendant navigables except for its own origin and those whose origin is "https://example.com", even in the presence of an attacker who can embed their own iframes on SecureCorp’s pages. It can do this by delivering the following HTTP response header to define a restricted permissions policy for Geolocation:
 </p>
 
 <pre class="lang-http">
@@ -869,7 +883,7 @@ SecureCorp Inc. wants to completely disable use of the Geolocation API within al
 
 <p>
 `許容list$は、
- 1 個~以上の生成元からなる~listである
+1 個~以上の生成元からなる~listである
 — その各~生成元には、
 次のいずれかを与えれる
 ⇒＃
@@ -1018,16 +1032,25 @@ Policy-controlled features are identified by tokens, which are character strings
 </p>
 
 <p>
-各 `特能$には、
+各 `特能$ %特能 には、
 `既定の許容list$がある
 — それは、
-次の 2 つを定義する
-⇒＃
-その特能は `~top-level閲覧~文脈$に`属する文書$内で可用かどうか／
-その特能への~accessは`子~閲覧~文脈$にはどう継承されるか
+次の 2 つを定義する：
 ◎
-Each policy-controlled feature has a default allowlist, which defines whether that feature is available in documents in top-level browsing contexts, and how access to that feature is inherited in child browsing contexts.
+Each policy-controlled feature has a default allowlist, which defines＼
 </p>
+<ul>
+	<li>
+%特能 は，`~top-level辿可能$に`属する文書$内で可用になるかどうか
+◎
+whether that feature is available in documents in top-level traversables,＼
+</li>
+	<li>
+%特能 への~accessは，`子~navigable$へ どう継承されるか
+◎
+and how access to that feature is inherited in child navigables.
+</li>
+</ul>
 
 <p>
 `特能$のうち，~UAが施策を通して制御することを許容するものは、
@@ -1131,18 +1154,19 @@ Each document in a frame tree inherits a set of policies from its parent frame, 
 </p>
 
 <p>
-`~top-level閲覧~文脈$に`属する文書$に継承される施策は、
+`~top-level辿可能$に`属する文書$に継承される施策は、
 各~特能~用に定義される既定の施策に基づく。
 ◎
-In a Document in a top-level browsing context, the inherited policy is based on defined defaults for each feature.
+In a Document in a top-level traversable, the inherited policy is based on defined defaults for each feature.
 </p>
 
 <p>
-`子~閲覧~文脈$に`属する文書$に継承される施策は、［
-親~文書の`許可~施策$doc, および`子~閲覧~文脈$の`容器~施策$
+`子~navigable$に`属する文書$に継承される施策は、［
+親~文書の`許可~施策$doc,
+当の`子~navigable$の`容器~施策$
 ］に基づく。
 ◎
-In a Document in a child browsing context, the inherited policy is based on the parent document’s permissions policy, as well as the child browsing context's container policy.
+In a Document in a child navigable, the inherited policy is based on the parent document’s permissions policy, as well as the child navigable's container policy.
 </p>
 
 </div>
@@ -1178,24 +1202,24 @@ A header policy is a list of policy directives delivered via an HTTP header with
 <h3 title="Container policies">4.6. 容器~施策</h3>
 
 <p>
-各`入子な閲覧~文脈$は、
+各 `子~navigable$は、
 `~header施策$に加えて，
 `容器~施策@
 を持つ。
 それは、
 `施策~指令$であり，空にもなり得る。
 `容器~施策$は、
-`閲覧~文脈~容器$上の属性により設定できる。
+`~navigable容器$上の属性により設定できる。
 ◎
-In addition to the header policy, each nested browsing context has a container policy, which is a policy directive, which may be empty. The container policy can set by attributes on the browsing context container.
+In addition to the header policy, each child navigable has a container policy, which is a policy directive, which may be empty. The container policy can set by attributes on the navigable container.
 </p>
 
 <p>
-`入子な閲覧~文脈$用の`容器~施策$は、
-その文脈の中に読込まれる文書に`継承される施策$に波及する
-（`閲覧~文脈~内の特能~用に継承される施策を定義する$を見よ）。
+`子~navigable$用の`容器~施策$は、
+その~navigableの中に読込まれる文書に`継承される施策$に波及する
+（`生成元に属する容器~内の特能~用に継承される施策を定義する$を見よ）。
 ◎
-The container policy for a nested browsing context influences the inherited policy of any document loaded into that context. (See § 9.7 Define an inherited policy for feature in browsing context)
+The container policy for a child navigable influences the inherited policy of any document loaded into that navigable. (See § 9.7 Define an inherited policy for feature in container at origin)
 </p>
 
 <p class="note">注記：
@@ -1293,7 +1317,6 @@ The keywords 'self', 'src', and 'none' can appear in the text representation of 
 ◎
 To determine whether an allowlist matches an origin origin, run these steps:
 </p>
-
 <ol>
 	<li>
 ~IF［
@@ -1332,21 +1355,32 @@ return false.
 <h3 title="Default Allowlists">4.9. 既定の許容list</h3>
 
 <p>
-各 `特能$には、
+各 `特能$ %特能 には、
 `既定の許容list@
 がある。
 `既定の許容list$は、
-次を決定する
-⇒＃
-`~top-level閲覧~文脈$内に宣言された施策は無い下で，所与の特能は文書において許容されるかどうか ／
-特能への~accessは自動的に`子~閲覧~文脈$に`属する文書$に委任されるかどうか
+次を決定する：
 ◎
-Every policy-controlled feature has a default allowlist. The default allowlist determines whether the feature is allowed in a document with no declared policy in a top-level browsing context, and also whether access to the feature is automatically delegated to documents in child browsing contexts.
+Every policy-controlled feature has a default allowlist. The default allowlist determines＼
 </p>
+<ul>
+	<li>
+`~top-level辿可能$内に宣言された施策は無い下で、
+%特能 は，文書において許容されるかどうか
+◎
+whether the feature is allowed in a document with no declared policy in a top-level traversable,＼
+</li>
+	<li>
+%特能 への~accessは、
+自動的に`子~navigable$に`属する文書$に委任されるかどうか
+◎
+and also whether access to the feature is automatically delegated to documents in child navigables.
+</li>
+</ul>
 
 <p>
-所与の`特能$用の`既定の許容list$は、
-次のいずれかの値をとる：
+所与の`特能$ %特能 用の`既定の許容list$は、
+次に挙げる いずれかの値をとる：
 ◎
 The default allowlist for a feature is one of these values:
 </p>
@@ -1356,25 +1390,26 @@ The default allowlist for a feature is one of these values:
 `全~生成元$i
 </dt>
 	<dd>
-当の特能は、
-既定では，`~top-level閲覧~文脈$に`属する文書$において許容される。
+%特能 は、
+既定では，`~top-level辿可能$に`属する文書$において許容される。
 加えて，許容されるときは、
-`子~閲覧~文脈$に`属する文書$においても既定で許容される。
+`子~navigable$に`属する文書$においても既定で許容される。
 ◎
-The feature is allowed in documents in top-level browsing contexts by default, and when allowed, is allowed by default to documents in child browsing contexts.
+The feature is allowed in documents in top-level traversables by default, and when allowed, is allowed by default to documents in child navigables. 
 </dd>
 
 	<dt>
 `'self'@l
 </dt>
 	<dd>
-当の特能は、
-既定では，`~top-level閲覧~文脈$に`属する文書$において許容される。
+%特能 は、
+既定では，`~top-level辿可能$に`属する文書$において許容される。
 加えて，許容されるときは、
-`子~閲覧~文脈$に`属する文書$のうち，`同じ生成元~domain$の文書においては既定で許容されるが、
-非同一-生成元の文書においては，既定では許容されない。
+`子~navigable$に`属する文書$のうち，
+`同じ生成元~domain$に属する文書においては既定で許容されるが、
+非同一-生成元に属する文書においては，既定では許容されない。
 ◎
-The feature is allowed in documents in top-level browsing contexts by default, and when allowed, is allowed by default to same-origin domain documents in child browsing contexts, but is disallowed by default in cross-origin documents in child browsing contexts.
+The feature is allowed in documents in top-level traversables by default, and when allowed, is allowed by default to same-origin domain documents in child navigables, but is disallowed by default in cross-origin documents in child navigables.
 </dd>
 </dl>
 
@@ -1581,17 +1616,18 @@ iframe elements have an "allow" attribute, which contains an ASCII-serialized po
 その事例では、
 当の許容list用の既定の値は `'src'^l とする
 — この値は、
- `iframe$e 要素の `src$aF 属性に与えられた~URLの`生成元$urlを表現する。
+`iframe$e 要素の `src$aF 属性に与えられた~URLの`生成元$urlを表現する。
 ◎
 The allowlist for the features named in the attribute may be empty; in that case, the default value for the allowlist is 'src', which represents the origin of the URL in the iframe’s src attribute.
 </li>
 	<li>
 空でないときは、
-当の `allow^aF 属性を有する `iframe$e 要素が`入子にしている閲覧~文脈$が構築されるときに，その`容器~施策$に［
+当の `allow^aF 属性を有する `iframe$e 要素の`内容~navigable$が構築されるときに，
+その`容器~施策$に［
 認識される各`特能$用の`許容list$
 ］が追加されることになる。
 ◎
-When not empty, the "allow" attribute will result in adding an allowlist for each recognized feature to the iframe element’s nested browsing context's container policy, when it is constructed.
+When not empty, the "allow" attribute will result in adding an allowlist for each recognized feature to the iframe element’s content navigable's container policy, when it is constructed.
 </li>
 </ul>
 
@@ -1612,7 +1648,7 @@ Some features controlled by Permissions Policy have existing iframe attributes d
 <h4 title="allowfullscreen">6.3.1. `allowfullscreen^a</h4>
 
 <p>
-`iframe$e 要素~上の `allowfullscreen$aF 属性は、
+`iframe$e 要素 %要素 上の `allowfullscreen$aF 属性は、
 `requestFullscreen()$m への~accessを制御する：
 ◎
 The "allowfullscreen" iframe attribute controls access to requestFullscreen().
@@ -1620,27 +1656,29 @@ The "allowfullscreen" iframe attribute controls access to requestFullscreen().
 
 <ul>
 	<li>
-`iframe^e 要素が `allow$aF 属性を有していて，その値は ~token `fullscreen^l を包含する場合、
-`allowfullscreen$aF 属性による効果はないモノトスル。
+%要素 が `allow$aF 属性を有していて，その値は ~token `fullscreen^l を包含する場合、
+`allowfullscreen$aF 属性による効果は無いモノトスル。
 ◎
 If the iframe element has an "allow" attribute whose value contains the token "fullscreen", then the "allowfullscreen" attribute must have no effect.
 </li>
 	<li>
-他の場合， `iframe^e 要素が `allowfullscreen$aF 属性を有するならば、
-要素が`入子にしている閲覧~文脈$が構築されるときに，その`容器~施策$に `fullscreen^l 特能~用の`許容list$として `全~生成元$i が追加されることになる。
+他の場合， %要素 が `allowfullscreen$aF 属性を有するならば、
+%要素 の`内容~navigable$が構築されるときに，
+その`容器~施策$に `fullscreen^l 特能~用の`許容list$として `全~生成元$i が追加されることになる。
 ◎
-Otherwise, the presence of an "allowfullscreen" attribute on an iframe will result in adding an allowlist of * for the "fullscreen" feature to the iframe element’s nested browsing context's container policy, when it is constructed.
+Otherwise, the presence of an "allowfullscreen" attribute on an iframe will result in adding an allowlist of * for the "fullscreen" feature to the iframe element’s content navigable's container policy, when it is constructed.
 </li>
 </ul>
 
 <p class="note">注記：
 これは、
 `&lt;iframe allow="fullscreen"&gt;^c
-の挙動から異なるが、
+の挙動とは異なるが、
 既存の `allowfullscreen^a の利用と互換性を得るためにある。
+`iframe^e 要素が［
 `allow="fullscreen"^c,
 `allowfullscreen^a
-の両者とも `iframe^e 要素~上に在る場合、
+］どちらも有する場合、
 より制約的な方の許容listを成す `allow="fullscreen"^c が利用されることになる。
 ◎
 This is different from the behaviour of &lt;iframe allow="fullscreen"&gt;, and is for compatibility with existing uses of allowfullscreen. If allow="fullscreen" and allowfullscreen are both present on an iframe element, then the more restrictive allowlist of allow="fullscreen" will be used.
@@ -1671,7 +1709,7 @@ The current policy which is in effect in a document can be observed by scripts. 
 </p>
 
 <p>
-文書, `iframe^e の両者とも， `PermissionsPolicy$I ~objを供する
+`文書$, `iframe^e の両者とも， `PermissionsPolicy$I ~objを供する
 — それを利用すれば、
 自身に適用される許可~施策を検分できる。
 ◎
@@ -1791,11 +1829,11 @@ Append a child frame to a third-party map service.
 ~frame内の文書は、
 ~HTTP~headerを介して自前の施策を適用していることもあれば，初期の所在から新たな生成元へ~navigateされることもある。
 そのような事例で［
-`iframe$e 要素が`入子にしている閲覧~文脈$内で有効な施策
+`iframe$e 要素の`内容~navigable$【！nested navigable】内で有効な施策
 ］が露呈されれば、
 非同一-生成元~文書の挙動について情報を漏洩することになり得る。
 ◎
-It is also possible to inspect the policy on an iframe element, from the document which contains it. The policy object in this case represents the observable policy for the frame, which depends only on the current document and the attributes of the iframe element. It does not reveal whether a feature is actually currently allowed in the frame, as the document in the frame may have applied its own policy via an HTTP header, or may have navigated away from its initial location to a new origin. Revealing the effective policy in the iframe element’s nested browsing context in that case could leak information about the behaviour of a cross-origin document.
+It is also possible to inspect the policy on an iframe element, from the document which contains it. The policy object in this case represents the observable policy for the frame, which depends only on the current document and the attributes of the iframe element. It does not reveal whether a feature is actually currently allowed in the frame, as the document in the frame may have applied its own policy via an HTTP header, or may have navigated away from its initial location to a new origin. Revealing the effective policy in the iframe element’s nested navigable in that case could leak information about the behaviour of a cross-origin document.
 </p>
 
 <div class="example">
@@ -1853,7 +1891,7 @@ this frame should not be allowed to use fullscreen when the document in its src 
 次の結果は、
 ~F になる
 — 施策により、
- `src^a 属性~内に挙げられた~URLには，~fullscreenの利用-は許容されないので。
+`src^a 属性~内に挙げられた~URLには，~fullscreenの利用は許容されないので。
 ◎
 This will be false, as the URL listed in the src attribute is not allowed by policy to use fullscreen.
 </span> */
@@ -1863,7 +1901,7 @@ This will be false, as the URL listed in the src attribute is not allowed by pol
  %new_frame.allow = 'sync-xhr';
  /* <span class="comment">
 次の結果は、
- ~T になる。
+~T になる。
 すなわち、
 この `iframe^e には `sync-xhr^l 【同期的 `XMLHttpRequest$I 】の利用-は許容される
 — `src^a 属性に挙げられた~URLが何であれ，属性がまだ設定されてなくとも。
@@ -1900,11 +1938,11 @@ partial interface `HTMLIFrameElement$I {
 
 <p>
 各 `PermissionsPolicy$I ~obj %P には、
- `Node$I ~objが結付けられる
+ある`~node$が結付けられる
 — それは， %P に
 `結付けられている~node@
 と称され、
- %P の作成-時に設定される。
+%P の作成-時に設定される。
 ◎
 A PermissionsPolicy object has an associated node, which is a Node. The associated node is set when the PermissionsPolicy object is created.
 </p>
@@ -1913,10 +1951,10 @@ A PermissionsPolicy object has an associated node, which is a Node. The associat
 各 `PermissionsPolicy$I ~obj %P の
 `既定の生成元@
 は、
- %P に`結付けられている~node$ %N に応じて，次で与えられる`生成元$になる
+%P に`結付けられている~node$ %~node に応じて，次で与えられる`生成元$になる
 ⇒＃
-`Document$I であるならば %N の`生成元$doc【！`生成元$】 ／
-`Element$I であるならば %N 用に`宣言された生成元$
+`文書$であるならば %~node の`生成元$doc【！`生成元$】 ／
+`要素$であるならば %~node 用に`宣言された生成元$
 ◎
 A PermissionsPolicy object has a default origin, which is an origin, whose value depends on the state of the PermissionsPolicy object’s associated node:
 • If the PermissionsPolicy object’s associated node is a Document, then its default origin is the Document's origin.
@@ -1924,12 +1962,12 @@ A PermissionsPolicy object has a default origin, which is an origin, whose value
 </p>
 
 <p>
-各 `Document$I ~obj %D には、
- %D の
+各`文書$ %文書 には、
+%文書 の
 `施策~obj@doc
 と称される，次を満たす `PermissionsPolicy$I ~obj %P がただ一つ在る
 ⇒
-%P に`結付けられている~node$ ~EQ %D
+%P に`結付けられている~node$ ~EQ %文書
 ◎
 Each Document has a policy object, which is a PermissionsPolicy instance whose associated node is that Document.
 </p>
@@ -1945,12 +1983,12 @@ A Document's permissionsPolicy IDL attribute, on getting, must return the Docume
 </div>
 
 <p>
-各 `iframe$e 要素 %E には、
- %E の
+各 `iframe$e 要素 %要素 には、
+%要素 の
 `施策~obj@iF
 と称される，次を満たす `PermissionsPolicy$I ~obj %P がただ一つ在る
 ⇒
-%P に`結付けられている~node$ ~EQ %E
+%P に`結付けられている~node$ ~EQ %要素
 ◎
 Each iframe element has a policy object, which is a PermissionsPolicy instance whose associated node is that element.
 </p>
@@ -2146,37 +2184,33 @@ Return result.
 </ol>
 </div>
 
+<div class="algo">
 <p>
-~node %N 用の
+所与の［
+`要素$／`文書$
+］【！Node】 %~node 用の
 `観測-可能な施策@
-は、
-次を包含する`許可~施策$である
-⇒
-［
-%N により表現される閲覧~文脈
-］内の施策についての情報のうち，現在の閲覧~文脈から可視であるもの。
+は、［
+%~node の`~node~navigable$【！the navigable represented by that Node】内の施策についての情報のうち，
+%~node の`~node文書$【！現在の文書】から可視なもの
+］を包含する`許可~施策$であり，
+次を走らせた結果になる：
 ◎
-The observable policy for any Node is a permissions policy, which contains the information about the policy in the browsing context represented by that Node which is visible from the current browsing context.
-</p>
-
-<div class="algo">
-<p>
-所与の %文書 用の`観測-可能な施策$を取得するときは、
-%文書 の`許可~施策$docを返す。
+The observable policy for any Node is a permissions policy, which contains the information about the policy in the navigable represented by that Node which is visible from the current document.
 ◎
-To get the observable policy for a Document document, return document’s permissions policy.
-</p>
-</div>
-
-<div class="algo">
-<p>
-所与の要素 %~node 用の`観測-可能な施策$を取得するときは、
-次を走らす：
+↓ To get the observable policy for a Document document, return document’s permissions policy.
 ◎
 To get the observable policy for an Element node, run the following steps:
 </p>
-
 <ol>
+	<li>
+~IF［
+%~node は`文書$である
+］
+⇒
+~RET %~node の`許可~施策$doc
+◎
+↑</li>
 	<li>
 %継承した施策 ~LET 新たな有順序~map
 ◎
@@ -2211,17 +2245,18 @@ Return a new permissions policy with inherited policy inherited policy and decla
 
 <div class="algo">
 <p>
-`Element$I %~node 用に
+所与の
+( `要素$ %要素 )
+用に
 `宣言された生成元@
 を取得するときは、
 次を走らす：
 ◎
 To get the declared origin for an Element node, run the following steps:
 </p>
-
 <ol>
 	<li>
-%文書 ~LET %~node の`~node文書$
+%文書 ~LET %要素 の`~node文書$
 ◎
 ↓</li>
 	<li>
@@ -2235,7 +2270,7 @@ If node’s node document’s sandboxed origin browsing context flag is set, the
 </li>
 	<li>
 ~IF［
-%~node の `sandbox$aF 属性を有していて，その値は `allow-same-origin^v ~keywordを包含しない
+%要素 は `sandbox$aF 属性を有していて，その値は `allow-same-origin^v ~keywordを包含しない
 ］
 ⇒
 ~RET 一意かつ不透明な生成元
@@ -2244,7 +2279,7 @@ If node’s sandbox attribute is set, and does not contain the allow-same-origin
 </li>
 	<li>
 ~IF［
-%~node は `srcdoc$aF 属性を有する
+%要素 は `srcdoc$aF 属性を有する
 ］
 ⇒
 ~RET %文書 の`生成元$doc
@@ -2254,14 +2289,14 @@ If node’s srcdoc attribute is set, then return node’s node document’s orig
 	<li>
 <p>
 ~IF［
-%~node は `src^a 属性を有する
+%要素 は `src^a 属性を有する
 ］：
 ◎
 If node’s src attribute is set:
 </p>
 		<ol>
 			<li>
-%~URL ~LET `相対的に~URL構文解析する$( %~node の `src$aF 属性の値, %文書 )
+%~URL ~LET `相対的に~URL構文解析する$( %要素 の `src$aF 属性の値, %文書 )
 ◎
 Let url be the result of parsing node’s src attribute, relative to node’s node document.
 </li>
@@ -2285,13 +2320,15 @@ Return node’s node document’s origin.
 
 <p class="note">注記：
 `宣言された生成元$の概念は、［
-ある~pageが~frameの中へ読込むものと意図している，文書
+~pageが~frameの中へ読込もうと意図している文書
 ］の生成元を表現することが意図されている。
 これは、
 一例として，［
 `sandbox^a ／ `srcdoc^a
-］属性を~supportしない~browserは、
-宣言された生成元を算出するときには，その属性を織り込まないべきであることを意味する。
+］属性を~supportしない~browserは、［
+宣言された生成元を算出するときには，
+その属性を織り込まないべきである
+］ことを意味する。
 ◎
 The declared origin concept is intended to represent the origin of the document which the embedding page intends to load into a frame. This means, for instance, that if the browser does not support the sandbox or srcdoc attributes, it should not take those attributes into account when computing the declared origin.
 </p>
@@ -2321,7 +2358,7 @@ Permissions policy violation reports indicate that some behavior of the Document
 
 <p>
 `許可~施策~違反~報告$の`報告~種別$は、
- `permissions-policy-violation^l とする。
+`permissions-policy-violation^l とする。
 ◎
 Permissions policy violation reports have the report type "permissions-policy-violation".
 </p>
@@ -2422,7 +2459,6 @@ Note: There is currently no mechanism in place for enabling report-only mode, so
 ◎
 Given a response (response) and an origin (origin), this algorithm returns a declared permissions policy.
 </p>
-
 <ol>
 	<li>
 %構文解析した~header ~LET
@@ -2632,7 +2668,6 @@ Return policy.
 ◎
 Given a string (value), an origin (container origin), and an optional origin (target origin), this algorithm returns a policy directive.
 </p>
-
 <ol>
 	<li>
 %指令 ~LET 新たな`有順序~map$
@@ -2819,7 +2854,6 @@ Return directive
 ◎
 Given an element (element), this algorithm returns a container policy, which may be empty.
 </p>
-
 <ol>
 	<li>
 %容器~施策 ~LET `施策~指令を構文解析する$(
@@ -2862,20 +2896,28 @@ Return container policy.
 </div>
 
 		</section>
-		<section id="algo-create-for-browsingcontext">
-<h3 title="Create a Permissions Policy for a browsing context">9.5. `閲覧~文脈~用の許可~施策を作成する@</h3>
+		<section id="algo-create-for-navigable">
+<h3 title="Create a Permissions Policy for a navigable">9.5. `~navigable用の許可~施策を作成する@</h3>
 
 <div class="algo">
 <p>
 この~algoは、
 所与の
-( `閲覧~文脈$ %閲覧~文脈, `生成元$ %生成元 )
+( ［
+~NULL ／`要素$
+］ %容器, `生成元$ %生成元 )
 に対し，新たな`許可~施策$を返す：
 ◎
-Given a browsing context (browsingContext), and an origin (origin) this algorithm returns a new Permissions Policy.
+Given null or an element (container) and an origin (origin) this algorithm returns a new Permissions Policy.
 </p>
-
 <ol>
+	<li>
+~Assert：
+%容器 ~EQ ~NULL ならば，
+%容器 は`~navigable容器$である。
+◎
+Assert: If not null, container is a navigable container.
+</li>
 	<li>
 %継承した施策 ~LET 新たな`有順序~map$
 ◎
@@ -2890,11 +2932,10 @@ Let declared policy be a new ordered map.
 ~EACH( `~support済み特能$ %特能 )
 に対し
 ⇒
-%継承した施策[ %特能 ] ~SET
-`閲覧~文脈~内の特能~用に継承される施策を定義する$( %特能, %生成元, %閲覧~文脈 )
+%継承した施策[ %特能 ] ~SET `生成元に属する容器~内の特能~用に継承される施策を定義する$( %特能, %容器, %生成元 )
 ◎
 For each feature supported,
-• Let isInherited be the result of running Define an inherited policy for feature in browsing context on feature, origin and browsingContext.
+• Let isInherited be the result of running Define an inherited policy for feature in container at origin on feature, container and origin.
 • Set inherited policy[feature] to isInherited.
 </li>
 	<li>
@@ -2915,23 +2956,24 @@ Return policy.
 
 		</section>
 		<section id="algo-create-from-response">
-<h3 title="Create a Permissions Policy for a browsing context from response">9.6. `応答から閲覧~文脈~用の許可~施策を作成する@</h3>
+<h3 title="Create a Permissions Policy for a navigable from response">9.6. `応答から~navigable用の許可~施策を作成する@</h3>
 
 <div class="algo">
 <p>
 この~algoは、
 所与の
-( `閲覧~文脈$ %閲覧~文脈, `生成元$ %生成元, `応答$ %応答 )
+( ［
+~NULL ／ `~navigable容器$
+］ %容器, `生成元$ %生成元, `応答$ %応答 )
 に対し，新たな`許可~施策$を返す：
 ◎
-Given a browsing context (browsingContext), origin (origin), and a response (response), this algorithm returns a new Permissions Policy.
+Given null or a navigable container (container), an origin (origin), and a response (response), this algorithm returns a new Permissions Policy.
 </p>
-
 <ol>
 	<li>
-%施策 ~LET `閲覧~文脈~用の許可~施策を作成する$( %閲覧~文脈, %生成元 )
+%施策 ~LET `~navigable用の許可~施策を作成する$( %容器, %生成元 )
 ◎
-Let policy be the result of running Create a Permissions Policy for a browsing context given browsingContext, and origin.
+Let policy be the result of running Create a Permissions Policy for a navigable given container and origin.
 </li>
 	<li>
 %d ~LET `応答~施策を処理する$( %応答, %生成元 )
@@ -2961,54 +3003,30 @@ Return policy.
 </div>
 
 		</section>
-		<section id="algo-define-inherited-policy">
-<h3 title="Define an inherited policy for feature in browsing context">9.7. `閲覧~文脈~内の特能~用に継承される施策を定義する@</h3>
+		<section id="algo-define-inherited-policy-in-container">
+<h3 title="Define an inherited policy for feature in container at origin">9.7. `生成元に属する容器~内の特能~用に継承される施策を定義する@</h3>
 
 <div class="algo">
 <p>
 この~algoは、
 所与の
-( `特能$ %特能, `生成元$ %生成元, `閲覧~文脈$ %閲覧~文脈 )
-に対し，
-%特能 用に`継承される施策$を返す：
+( `特能$ %特能, ［
+~NULL ／ `~navigable容器$
+］ %容器, %容器 内の文書~用の`生成元$ %生成元 )
+に対し， %容器 が %特能 用に`継承した施策$を返す：
 ◎
-Given a feature (feature), an origin (origin), and a browsing context (browsingContext), this algorithm returns the inherited policy for that feature.
+Given a feature (feature), null or a navigable container (container), and an origin for a document in that container (origin), this algorithm returns the inherited policy for that feature.
 </p>
-
 <ol>
 	<li>
 ~IF［
-%閲覧~文脈 は、
-ある`閲覧~文脈~容器$ %容器 が`入子にしている閲覧~文脈$である
+%容器 ~EQ ~NULL
 ］
 ⇒
-~RET `生成元に属する容器~内の特能~用に継承される施策を定義する$( %特能, %容器, %生成元 )
-◎
-If browsingContext is the nested browsing context of a browsing context container, return the result of executing Define an inherited policy for feature in container at origin for feature in browsingContext’s browsing context container at origin.
-</li>
-	<li>
 ~RET `可能化される^i
 ◎
-Otherwise, return "Enabled".
+If container is null, return "Enabled".
 </li>
-</ol>
-</div>
-
-		</section>
-		<section id="algo-define-inherited-policy-in-container">
-<h3 title="Define an inherited policy for feature in container at origin">9.8. `生成元に属する容器~内の特能~用に継承される施策を定義する@</h3>
-
-<div class="algo">
-<p>
-この~algoは、
-所与の
-( `特能$ %特能, `閲覧~文脈~容器$ %容器, 容器~内の文書~用の`生成元$ %生成元 )
-に対し， %容器 が %特能 用に`継承した施策$を返す：
-◎
-Given a feature (feature) a browsing context container (container), and an origin for a document in that container (origin), this algorithm returns the inherited policy for that feature.
-</p>
-
-<ol>
 	<li>
 %文書 ~LET %容器 の`~node文書$
 ◎
@@ -3092,7 +3110,7 @@ Otherwise return "Disabled".
 
 		</section>
 		<section id="algo-is-feature-enabled">
-<h3 title="Is feature enabled in document for origin?">9.9. `文書~内の特能は生成元~用に可能化されるか？@</h3>
+<h3 title="Is feature enabled in document for origin?">9.8. `文書~内の特能は生成元~用に可能化されるか？@</h3>
 
 <div class="algo">
 <p>
@@ -3106,7 +3124,6 @@ Otherwise return "Disabled".
 ◎
 Given a feature (feature), a Document object (document), and an origin (origin), this algorithm returns "Disabled" if feature should be considered disabled, and "Enabled" otherwise.
 </p>
-
 <ol>
 	<li>
 %施策 ~LET %文書 の`許可~施策$
@@ -3178,7 +3195,7 @@ Return "Disabled".
 
 		</section>
 		<section id="algo-report-permissions-policy-violation">
-<h3 title="Generate report for violation of permissions policy on settings">9.10. `設定群~上で許可~施策の違反~用に報告を生成する@</h3>
+<h3 title="Generate report for violation of permissions policy on settings">9.9. `設定群~上で許可~施策の違反~用に報告を生成する@</h3>
 
 <div class="algo">
 <p>
@@ -3189,7 +3206,6 @@ Return "Disabled".
 ◎
 Given a feature (feature), an environment settings object (settings), and an optional string (group), this algorithm generates a report about the violation of the policy for feature.
 </p>
-
 <ol>
 	<li>
 %本体 ~LET 次のように初期化された新たな `PermissionsPolicyViolationReportBody$I
@@ -3248,7 +3264,7 @@ Note: This algorithm should be called when a permissions policy has been violate
 
 		</section>
 		<section id="algo-should-request-be-allowed-to-use-feature">
-<h3 title="Should request be allowed to use feature?">9.11. `要請には特能の利用は許容されるべきか？@</h3>
+<h3 title="Should request be allowed to use feature?">9.10. `要請には特能の利用は許容されるべきか？@</h3>
 
 <div class="algo">
 <p>
@@ -3262,7 +3278,6 @@ Note: This algorithm should be called when a permissions policy has been violate
 ◎
 Given a feature (feature) and a request (request), this algorithm returns true if the request should be allowed to use feature, and false otherwise.
 </p>
-
 <ol>
 	<li>
 %~window ~SET %要請 の`~window$rq
@@ -3467,7 +3482,7 @@ Features should be designed such that a violation of the policy in a framed docu
 — その先が，異なる施策が適用される異なる生成元であっても —
 変化しない。
 `観測-可能な施策$を更新させるのは、
- `iframe^e 要素の `src$aF 属性を設定して生じる~naviに限られる。
+`iframe^e 要素の `src$aF 属性を設定して生じる~naviに限られる。
 ◎
 The introspection API is designed to only show information about a subframe’s policy which could already be deduced by the embedding document. This observable policy is not affected by any HTTP headers delivered with the framed document, and does not change when the frame navigates itself, even if such navigation is to a different origin, where a different policy applies. Only navigations caused by setting the src attribute of the &lt;iframe&gt; element will cause the observable policy to be updated.
 </p>
@@ -3539,7 +3554,7 @@ If this document is embedded by a page which disables the "sync-xhr" feature, th
 ~web上では、
 この類の挙動の強制-法はすでにアリなことに注意。
 特能には、
- `iframe^e には許容されず，~top-level文書~内に限り許容されるものもある。
+`iframe^e には許容されず，~top-level文書~内に限り許容されるものもある。
 また， `iframe^e ~sandbox法は、
 類似な仕方で，~frameを
 — それが依存し得る特能に~accessすることなく —
@@ -3550,7 +3565,7 @@ Note that this sort of behavior forcing is already possible on the web: some fea
 
 <p>
 一般に，この懸念を軽減するには、
- 2 つの仕方がある：
+2 つの仕方がある：
 ◎
 In general, this concern is mitigated in two ways:
 </p>
@@ -3558,7 +3573,7 @@ In general, this concern is mitigated in two ways:
 <ul>
 	<li>
 脆弱な~pageは、
- `X-Frame-Options^h ~HTTP~headerを伴わせて ~serveできる
+`X-Frame-Options^h ~HTTP~headerを伴わせて ~serveできる
 — そうすれば、
 攻撃者が~frame化するのは許容されなくなるので。
 ◎
