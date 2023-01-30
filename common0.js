@@ -1247,6 +1247,7 @@ HTMLautofill:HTML-autofill-ja.html
 HTMLindex:HTML-index-ja.html
 HTMLlinks:HTML-links-ja.html
 HTMLnavigator:HTML-navigator-ja.html
+HTMLpopover:HTML-popover-ja.html
 HTMLinteraction:HTML-interaction-ja.html
 HTMLrendering:HTML-rendering-ja.html
 HTMLselectors:selectors-html-ja.html
