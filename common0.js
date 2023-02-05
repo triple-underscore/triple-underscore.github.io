@@ -1168,7 +1168,7 @@ CSSNESTING:css-nesting-ja.html
 CSSNS:css-namespaces-ja.html
 CSSOM1:cssom-ja.html
 CSSOMVIEW:cssom-view-ja.html
-CSSOVERFLOW4:https://drafts.csswg.org/css-overflow-4/
+CSSOVERFLOW4:css-overflow4-ja.html
 CSSOVERFLOW3:css-overflow-ja.html
 CSSPV1:css-properties-values-api-ja.html
 CSSPAGE:css-page-ja.html
