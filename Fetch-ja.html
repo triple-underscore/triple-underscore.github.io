@@ -190,8 +190,8 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2023-01-26
-trans_update:2023-01-20
+spec_date:2023-02-08
+trans_update:2023-02-10
 source_checked:221212
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -497,6 +497,7 @@ I.URL:~URL1#url
 m.new Headers:#dom-headers
 	m.delete:#dom-headers-delete
 	m.get:#dom-headers-get
+	m.getSetCookie:#dom-headers-getsetcookie
 	m.has:#dom-headers-has
 	m.set:#dom-headers-set
 	m.value:#dom-headers-value
@@ -1698,7 +1699,6 @@ side-channel:side channel:::サイドチャネル
 単直:straightforward:簡単
 網羅的:exhaustive:~
 多用途の:versatileな:~
-妥協点:compromise:~
 素朴:naïve:~
 致命的:fatal:~
 増補-:augment:~
@@ -1803,7 +1803,6 @@ opt-in::::オプトイン
 	どうやっても:anyway
 	-:a.k.a
 	[INFRA]:Infra
-	ある面で:In a way
 	長年にわたり:over the years
 	機能する:function
 	大多数:major
@@ -1952,6 +1951,8 @@ opt-in::::オプトイン
 	送信し直-:resend
 	作成し直-:recreate
 	置く:put
+	側:-side
+	側:-
 
 	●変数
 	%~blob:blob
@@ -1987,6 +1988,7 @@ opt-in::::オプトイン
 	%~header値:value
 	%値~list:values
 	%値~list:parsedValues
+	%値~list:-
 	%値を抽出するか:extract-value flag
 	%候補~値:candidateValue
 	%直列化した生成元:serializedOrigin
@@ -2117,6 +2119,7 @@ opt-in::::オプトイン
 	%本体~情報:bodyInfo
 	%長さ:length
 	%~byte列を~JS値に変換する:convertBytesToJSValue
+	%結果:result
 
 	●指示語
 次回の:next:~
@@ -2291,7 +2294,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/093c622c93d61159cc2d426b869446073c73d38f/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/bc97a851a209526ed2b5e0b20af5d6954d8224bf/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -3585,8 +3588,13 @@ A header list is a list of zero or more headers. It is initially « ».
 本質的には特化された~multimapである
 — すなわち、
 何個かの ( ~key: 値 ) ~pairからなる有順序~listであって，~keyが重複し得るものである。
+`Set-Cookie$h 以外の~headerは，
+~client側~JSに公開されるときには常に結合されるので、
+実装は
+— `Set-Cookie^h ~header用の~data構造も~supportする限り —
+より効率的な表現を選ぶこともできる。
 ◎
-A header list is essentially a specialized multimap: an ordered list of key-value pairs with potentially duplicate keys.
+A header list is essentially a specialized multimap: an ordered list of key-value pairs with potentially duplicate keys. Since headers other than `Set-Cookie` are always combined when exposed to client-side JavaScript, implementations could choose a more efficient representation, as long as they also support an associated data structure for `Set-Cookie` headers.
 </p>
 
 <div class="algo">
@@ -4200,21 +4208,47 @@ For each name of names:
 </p>
 		<ol>
 			<li>
+<p>
+~IF［
+%名前 ~EQ `set-cookie^bl
+］
+⇒
+%値~list を成す
+~EACH( %名前 を`名前に持つ~header$ %~header )
+に対し
+⇒
+%~header群 に ( %名前, %~header の`値$hd ) を`付加する$
+◎
+If name is `set-cookie`, then:
+• Let values be a list of all values of headers in list whose name is a byte-case-insensitive match for name, in order.
+• For each value of values:
+•• Append (name, value) to headers.
+</li>
+			<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+				<ol>
+					<li>
 %値 ~LET `~header~listから値を取得する$( %~list, %名前 )
 ◎
 Let value be the result of getting name from list.
 </li>
-			<li>
+					<li>
 ~Assert：
 %値 ~NEQ ~NULL
 ◎
 Assert: value is non-null.
 </li>
-			<li>
-%~header群 に  ( %名前, %値 ) を`付加する$
+					<li>
+%~header群 に ( %名前, %値 ) を`付加する$
 ◎
 Append (name, value) to headers.
 </li>
+				</ol>
+			</li>
 		</ol>
 	<li>
 ~RET %~header群
@@ -6004,7 +6038,7 @@ A request has an associated initiator type,＼
 `beacon^l,
 `body^l,
 `css^l,
-`early-hint^l,
+`early-hints^l,
 `embed^l,
 `fetch^l,
 `font^l,
@@ -6022,7 +6056,7 @@ A request has an associated initiator type,＼
 `xmlhttprequest^l,
 `other^l
 ◎
-which is null, "audio", "beacon", "body", "css", "early-hint", "embed", "fetch", "font", "frame", "iframe", "image", "img", "input", "link", "object", "ping", "script", "track", "video", "xmlhttprequest", or "other". Unless stated otherwise it is null. [RESOURCE-TIMING]
+which is null, "audio", "beacon", "body", "css", "early-hints", "embed", "fetch", "font", "frame", "iframe", "image", "img", "input", "link", "object", "ping", "script", "track", "video", "xmlhttprequest", or "other". Unless stated otherwise it is null. [RESOURCE-TIMING]
 </dd>
 
 	<dt>
@@ -16908,26 +16942,12 @@ interface `Headers@I {
   `undefined$ `append$m(`ByteString$ %name, `ByteString$ %value);
   `undefined$ `delete$m(`ByteString$ %name);
   `ByteString$? `get$m(`ByteString$ %name);
+  `sequence$&lt;`ByteString$&gt; `getSetCookie$m();
   `boolean$ `has$m(`ByteString$ %name);
   `undefined$ `set$m(`ByteString$ %name, `ByteString$ %value);
   `iterable$m&lt;`ByteString$, `ByteString$&gt;;
 };
 </pre>
-
-<p class="note">注記：
-`~header~list$と違って、
-`Headers$I ~objは，複数個の `Set-Cookie$h `~header$を表現できない。
-`Set-Cookie^h ~headerは，他のすべての~headerと違って【複数個の`~field行l$を一つに】結合できないので
-— このことは，ある面で問題になり得るが、
-この~headerは ~client側~JSには公開されないので，
-受容-可能な妥協点と判断される。
-実装は、
-`~header~list$用であっても
-— `Set-Cookie^h ~header用の~data構造も~supportする限り —
-より効率的な `Headers$I ~obj表現を選ぶこともできる。
-◎
-Unlike a header list, a Headers object cannot represent more than one `Set-Cookie` header. In a way this is problematic as unlike all other headers `Set-Cookie` headers cannot be combined, but since `Set-Cookie` headers are not exposed to client-side JavaScript this is deemed an acceptable compromise. Implementations could choose the more efficient Headers object representation even for a header list, as long as they also support an associated data structure for `Set-Cookie` headers.
-</p>
 
 <p>
 各 `Headers$I ~objには，次に挙げるものが結付けられる：
@@ -17027,23 +17047,30 @@ Removes a header from headers.
 
 	<dt>%headers . `get(name)$m</dt>
 	<dd>
-名前に %name を伴うすべての~headerの値を［
+%name を名前に持つ~headerすべての値を［
 ~commaと~space
 ］で分離した文字列として返す。
 ◎
 Returns as a string the values of all headers whose name is name, separated by a comma and a space.
 </dd>
 
+	<dt>%headers . `getSetCookie()$m</dt>
+	<dd>
+`Set-Cookie$h を名前に持つ~headerすべての値からなる~listを返す。
+◎
+Returns a list of the values for all headers whose name is `Set-Cookie`.
+</dd>
+
 	<dt>%headers . `has(name)$m</dt>
 	<dd>
-名前に %name を伴う~headerは在るかどうかを返す。
+%name を名前に持つ~headerは在るかどうかを返す。
 ◎
 Returns whether there is a header whose name is name.
 </dd>
 
 	<dt>%headers . `set(name, value)$m</dt>
 	<dd>
-名前に %name を伴う~headerのうち，最初の~headerの値を置換して残りは除去する。
+%name を名前に持つ~headerのうち，最初の~headerの値を置換して残りは除去する。
 ◎
 Replaces the value of the first header whose name is name with value and removes any remaining headers whose name is name.
 </dd>
@@ -17442,6 +17469,33 @@ If name is not a header name, then throw a TypeError.
 Return the result of getting name from this’s header list.
 </li>
 </ol>
+</div>
+
+<div class="algo">
+<p>
+`getSetCookie()@m
+~method手続きは：
+</p>
+<ol>
+	<li>
+%値~list ~LET 新たな`~list$
+</li>
+	<li>
+コレの`~header~list$Hlを成す
+~EACH( `Set-Cookie$h を`名前に持つ~header$ %~header )
+に対し
+⇒
+%値~list に %~header の`値$hdを`付加する$
+</li>
+	<li>
+~RET %値~list
+</li>
+</ol>
+
+◎
+The getSetCookie() method steps are:
+• If this’s header list does not contain `Set-Cookie`, then return « ».
+• Return the values of all headers in this’s header list whose name is a byte-case-insensitive match for `Set-Cookie`, in order.
 </div>
 
 <div class="algo">
