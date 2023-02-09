@@ -1148,6 +1148,7 @@ CSSCOLOR:css-color-ja.html
 CSSCOLOR5:css-color5-ja.html
 CSSCOLORADJUST:css-color-adjust-ja.html
 CSSCOND:css-conditional-ja.html
+CSSCOND4:css-conditional4-ja.html
 CSSCONTENT:css-content-ja.html
 CSSCONTAIN:css-contain-ja.html
 CSSCOUNTER:css-counter-styles-ja.html
