@@ -364,6 +364,7 @@ const fillSiteNav = () => {
 
 	const name_map = Util.get_mapping(`
 infrastructure:基盤
+tag-finding:TAG知見
 svg:SVG
 html:HTML
 html-dom:HTML 要素
