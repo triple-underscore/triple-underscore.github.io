@@ -265,8 +265,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2023-02-05
-trans_update:2023-02-07
+spec_date:2023-02-20
+trans_update:2023-02-21
 source_checked:221213
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -396,8 +396,9 @@ composed:
 poll:
 	~pollしている:polling
 捕捉-:capture::~
-	一度限りか:once
+処理待ち:pending:~
 
+	一度限りか:once
 	通達-時:signaling
 	通達-法:signaling
 	~promiseを返す:promise-returning
@@ -1450,7 +1451,7 @@ mo.記録~queue:#concept-mo-queue
 
 登録-済み観測器:#registered-observer
 一時~登録-済み観測器:#transient-registered-observer
-変異~観測器~群:#mutation-observer-list
+処理待ち変異~観測器~群:#mutation-observer-list
 登録-済み観測器~list:#registered-observer-list
 
 ob.観測器:#registered-observer-observer
@@ -1799,7 +1800,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/0111a95ab9dfa3cc0170f7e907a61fca03e131ce/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/d34d52d0c7898304fc28a509f5f7d05c737df26d/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -9714,32 +9715,30 @@ or null if there is no such element.
 		<section id="mutation-observers">
 <h3 title="Mutation observers">4.3. 変異~観測器</h3>
 
-<div class="p">
 <p>
 各 `生成元が類似な~window~agent$ `HTML$r
 には、
 次に挙げるものが結付けられる：
-</p>
-
-<dl class="def-list">
-	<dt>`変異~観測器の小taskは~queueされたか@</dt>
-	<dd>
+◎
+↓</p>
+<ul>
+	<li>
+`変異~観測器の小taskは~queueされたか@
+⇒
 真偽値
 — 初期~時は ~F とする。
-</dd>
-
-	<dt>`変異~観測器~群@</dt>
-	<dd>
-0 個以上の $MutationObserver ~objからなる`有順序~集合$
-— 初期~時は`空$とする。
-</dd>
-</dl>
-
 ◎
 Each similar-origin window agent has a mutation observer microtask queued (a boolean), which is initially false. [HTML]
+</li>
+	<li>
+`処理待ち変異~観測器~群@
+⇒
+0 個以上の $MutationObserver ~objからなる`有順序~集合$
+— 初期~時は`空$とする。
 ◎
-Each similar-origin window agent also has mutation observers (a set of zero or more MutationObserver objects), which is initially empty.
-</div>
+Each similar-origin window agent also has pending mutation observers (a set of zero or more MutationObserver objects), which is initially empty.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -9789,9 +9788,14 @@ To notify mutation observers, run these steps:
 Set the surrounding agent’s mutation observer microtask queued to false.
 </li>
 	<li>
-%通知-集合 ~LET `~surrounding~agent$の`変異~観測器~群$を`~cloneする$
+%通知-集合 ~LET `~surrounding~agent$の`処理待ち変異~観測器~群$を`~cloneする$
 ◎
-Let notifySet be a clone of the surrounding agent’s mutation observers.
+Let notifySet be a clone of the surrounding agent’s pending mutation observers.
+</li>
+	<li>
+`~surrounding~agent$の`処理待ち変異~観測器~群$を`空にする$
+◎
+Empty the surrounding agent’s pending mutation observers.
 </li>
 	<li>
 %通達~slot集合 ~LET `~surrounding~agent$の`通達~slot群$を`~cloneする$
@@ -9813,7 +9817,7 @@ For each mo of notifySet:
 </p>
 		<ol>
 			<li>
-%記録たち ~LET %MO の`記録~queue$moを`~cloneする$
+%記録~群 ~LET %MO の`記録~queue$moを`~cloneする$
 ◎
 Let records be a clone of mo’s record queue.
 </li>
@@ -9835,10 +9839,10 @@ For each node of mo’s node list, remove all transient registered observers who
 </li>
 			<li>
 ~IF［
-%記録たち は`空$でない
+%記録~群 は`空$でない
 ］
 ⇒
-`~callback関数を呼出す$( %MO の`~callback$mo, « %記録たち, %MO », %MO )
+`~callback関数を呼出す$( %MO の`~callback$mo, « %記録~群, %MO », %MO )
 ⇒
 例外が投出されたときは、
 ~catchして
@@ -9966,36 +9970,38 @@ A MutationObserver object can be used to observe mutations to the tree of nodes.
 
 <p>
 各 $MutationObserver ~objには、
-次の概念が結付けられる：
+次に挙げる概念が結付けられる：
 ◎
 Each MutationObserver object has these associated concepts:
 </p>
-
-<dl class="def-list">
-	<dt>`~callback@mo</dt>
-	<dd>
+<ul>
+	<li>
+`~callback@mo
+⇒
 ~callback関数。
 ~objの作成-時に設定される。
 ◎
 A callback set on creation.
-</dd>
-
-	<dt>`~node~list@mo</dt>
-	<dd>
-0 個以上の`~node$からなる`~list$。
+</li>
+	<li>
+`~node~list@mo
+⇒
+［
+`~node$への弱い参照
+］たちが成す`~list$。
 初期~時は`空$とする。
 ◎
-A node list (a list of nodes), which is initially empty.
-</dd>
-
-	<dt>`記録~queue@mo</dt>
-	<dd>
+A node list (a list of weak references to nodes), which is initially empty.
+</li>
+	<li>
+`記録~queue@mo
+⇒
 0 個以上の $MutationRecord ~objからなる`~queue$
 — 初期~時は`空$とする。
 ◎
 A record queue (a queue of zero or more MutationRecord objects), which is initially empty.
-</dd>
-</dl>
+</li>
+</ul>
 
 <dl class="domintro">
 	<dt>%observer = $MutationObserver(callback)</dt>
@@ -10118,24 +10124,12 @@ Empties the record queue and returns what was in there.
 <div class="algo">
 <p>
 @MutationObserver(callback)
-構築子~手続きは：
-◎
-The new MutationObserver(callback) constructor steps are:
-</p>
-<ol>
-	<li>
+構築子~手続きは
+⇒
 コレの`~callback$mo ~SET %callback
 ◎
-Set this’s callback to callback.
-</li>
-	<li>
-［
-コレに`関連な~agent$の`変異~観測器~群$
-］にコレを`付加する$set
-◎
-Append this to this’s relevant agent’s mutation observers.
-</li>
-</ol>
+The new MutationObserver(callback) constructor steps are to set this’s callback to callback.
+</p>
 </div>
 
 <div class="algo">
@@ -10275,9 +10269,11 @@ Otherwise:
 Append a new registered observer whose observer is this and options is options to target’s registered observer list.
 </li>
 			<li>
-コレの`~node~list$moに %target を`付加する$
+コレの`~node~list$moに［
+%target への弱い参照
+］を`付加する$
 ◎
-Append target to this’s node list.
+Append a weak reference to target to this’s node list.
 </li>
 		</ol>
 	</li>
@@ -10321,7 +10317,7 @@ The takeRecords() method steps are:
 </p>
 <ol>
 	<li>
-%記録たち ~LET コレの`記録~queue$moを`~cloneする$
+%記録~群 ~LET コレの`記録~queue$moを`~cloneする$
 ◎
 Let records be a clone of this’s record queue.
 </li>
@@ -10331,7 +10327,7 @@ Let records be a clone of this’s record queue.
 Empty this’s record queue.
 </li>
 	<li>
-~RET %記録たち
+~RET %記録~群
 ◎
 Return records.
 </li>
@@ -10358,7 +10354,7 @@ To queue a mutation record of type for target with name, namespace, oldValue, ad
 </p>
 <ol>
 	<li>
-%有関係~観測器たち ~LET 新たな`~map$
+%有関係~観測器~群 ~LET 新たな`~map$
 ◎
 Let interestedObservers be an empty map.
 </li>
@@ -10461,10 +10457,10 @@ Let mo be registered’s observer.
 </li>
 			<li>
 ~IF［
-%有関係~観測器たち[ %MO ] ~EQ ε
+%有関係~観測器~群[ %MO ] ~EQ ε
 ］
 ⇒
-%有関係~観測器たち[ %MO ] ~SET ~NULL
+%有関係~観測器~群[ %MO ] ~SET ~NULL
 ◎
 If interestedObservers[mo] does not exist, then set interestedObservers[mo] to null.
 </li>
@@ -10500,7 +10496,7 @@ or type is "characterData" and options["characterDataOldValue"] is true,＼
 <p>
 …ならば
 ⇒
-%有関係~観測器たち[ %MO ] ~SET %旧-値
+%有関係~観測器~群[ %MO ] ~SET %旧-値
 ◎
 then set interestedObservers[mo] to oldValue.
 </p>
@@ -10509,13 +10505,15 @@ then set interestedObservers[mo] to oldValue.
 	</li>
 	<li>
 <p>
-%有関係~観測器たち を成す
+%有関係~観測器~群 を成す
 ~EACH( %観測器 → %~map先の旧-値 )
-に対し
-⇒
-%観測器 の`記録~queue$moに次を`~enqueueする$
-⇒
-新たな $@MutationRecord ~obj
+に対し：
+◎
+For each observer → mappedOldValue of interestedObservers:
+</p>
+		<ol>
+			<li>
+%記録 ~LET 新たな $@MutationRecord ~obj
 — その
 ⇒＃
 $type ~SET %種別,
@@ -10528,10 +10526,20 @@ $removedNodes ~SET %除去-済み~node群,
 $previousSibling ~SET %前-同胞,
 $nextSibling ~SET %次-同胞,
 ◎
-For each observer → mappedOldValue of interestedObservers:
-• Let record be a new MutationRecord object with its type set to type, target set to target, attributeName set to name, attributeNamespace set to namespace, oldValue set to mappedOldValue, addedNodes set to addedNodes, removedNodes set to removedNodes, previousSibling set to previousSibling, and nextSibling set to nextSibling.
-• Enqueue record to observer’s record queue.
+Let record be a new MutationRecord object with its type set to type, target set to target, attributeName set to name, attributeNamespace set to namespace, oldValue set to mappedOldValue, addedNodes set to addedNodes, removedNodes set to removedNodes, previousSibling set to previousSibling, and nextSibling set to nextSibling.
 </li>
+			<li>
+%観測器 の`記録~queue$moに %記録 を`~enqueueする$
+◎
+Enqueue record to observer’s record queue.
+</li>
+			<li>
+`~surrounding~agent$の`処理待ち変異~観測器~群$に %観測器 を`付加する$set
+◎
+Append observer to the surrounding agent’s pending mutation observers.
+</li>
+		</ol>
+	</li>
 	<li>
 `変異~観測器 小taskを~queueする$
 ◎
@@ -10686,24 +10694,6 @@ The return value depends on type. For "attributes", it is the value of the chang
 ◎
 The type, target, addedNodes, removedNodes, previousSibling, nextSibling, attributeName, attributeNamespace, and oldValue attributes must return the values they were initialized to.
 </div>
-
-			</section>
-			<section id="garbage-collection">
-<h4 title="Garbage collection">4.3.4. ~garbage収集</h4>
-
-<p>
-所与の［
-`~node$ %~node,
-%~node の`登録-済み観測器~list$に含まれる各`登録-済み観測器$ %登録-済み観測器
-］に対しては
-⇒＃
-%~node は %登録-済み観測器 への強い参照を持つ ／
-%登録-済み観測器 は %~node への弱い参照を持つ
-◎
-Nodes have a strong reference to registered observers in their registered observer list.
-◎
-Registered observers in a node’s registered observer list have a weak reference to the node.
-</p>
 
 			</section>
 		</section>
@@ -23785,6 +23775,7 @@ Elliott Sprehn,
 Emilio Cobos Álvarez,
 Eric Bidelman,
 Erik Arvidsson,
+François Remy,
 Gary Kacmarcik,
 Gavin Nicol,
 Giorgio Liscio,
@@ -23877,6 +23868,7 @@ Sam Dutton,
 Sam Sneddon,
 Samuel Giles,
 Sanket Joshi,
+Scott Haseley,
 Sebastian Mayr,
 Seo Sanghyeon,
 Sergey G. Grekhov,
