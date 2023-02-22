@@ -222,6 +222,7 @@ cn:cp-name
 jv:js-value
 jt:js-type
 jA:abstract
+op:op
 
 ●●tag_map
 I:code
@@ -253,6 +254,7 @@ cn:span
 jv:code
 jt:code
 jA:span
+op:span
 cite:cite
 em:em
 sub:sub
@@ -1019,12 +1021,10 @@ c.body.getReader():~STREAMS#rs-get-reader
 rR.~chunk手続き:~STREAMS#read-request-chunk-steps
 rR.~close手続き:~STREAMS#read-request-close-steps
 rR.~error手続き:~STREAMS#read-request-error-steps
-
-RS.設定しておく:~STREAMS#readablestream-set-up
+RS.~byte読取り~support付きで設定しておく:~STREAMS#readablestream-set-up-with-byte-reading-support
 	V.取消~algo:~STREAMS#readablestream-set-up-cancelalgorithm
-	V.限界水位:~STREAMS#readablestream-set-up-highwatermark
 	V.~pull~algo:~STREAMS#readablestream-set-up-pullalgorithm
-	V.~size~algo:~STREAMS#readablestream-set-up-sizealgorithm
+RS.現在の~BYOB要請~view:~STREAMS#readablestream-current-byob-request-view
 RS.読取器を取得する:~STREAMS#readablestream-get-a-reader
 RS.~proxyを作成する:~STREAMS#readablestream-create-a-proxy
 RS.~chunkを~enqueueする:~STREAMS#readablestream-enqueue
@@ -1260,15 +1260,21 @@ jA.StructuredDeserialize:~HTMLcloning#structureddeserialize
 連列~型:~WEBIDL#idl-sequence
 ~record型:~WEBIDL#idl-record
 反復される値~pair群:~WEBIDL#dfn-value-pairs-to-iterate-over
-新たな:~WEBIDLjs#new
+
 複製を取得する:~WEBIDL#dfn-get-buffer-source-copy
 内包-:~WEBIDL#include
 
+新たな:~WEBIDLjs#new
 新たな~promise:~WEBIDLjs#a-new-promise
 却下する:~WEBIDLjs#reject
 解決する:~WEBIDLjs#resolve
 却下される~promise:~WEBIDLjs#a-promise-rejected-with
 解決される~promise:~WEBIDLjs#a-promise-resolved-with
+BS.~byte長さ:~WEBIDLjs#buffersource-byte-length
+配列~buffer~viewの中へ~byte列を書込む:~WEBIDLjs#arraybufferview-write
+~buffer~sourceを~byte列から作成する:~WEBIDLjs#_buffersource-create
+	:~WEBIDLjs#arraybufferview-create
+
 
 符号化法:~ENCODING#encoding
 ~labelから符号化法を取得する:~ENCODING#concept-encoding-get
@@ -1438,7 +1444,6 @@ forgiving-base64:
 	10 進数:decimal number
 
 	●data型／操作／構造
-number:
 null:
 multimap:
 Record:
@@ -1454,9 +1459,7 @@ Record:
 
 	作成-時:creation
 	初期~時:initially
-	有限:non-infinite
 	~GT 0:positive
-	負でない:non-negative／
 	~IN:contain
 	~header~list:headers
 	KiB:kibibyte
@@ -1465,11 +1468,11 @@ Record:
 Headers:
 Response:
 Request:
+BYOB:
 close:
 open:
 chunk::::チャンク
 二叉化-:tee::~
-限界水位:high water mark::~
 function:
 済んだ:done:~
 main:
@@ -1953,6 +1956,8 @@ opt-in::::オプトイン
 	置く:put
 	側:-side
 	側:-
+	下限:lower limit
+	上限:upper limit
 
 	●変数
 	%~blob:blob
@@ -2032,8 +2037,6 @@ opt-in::::オプトイン
 
 	%~pull~algo:pullAlgorithm
 	%取消~algo:cancelAlgorithm
-	%限界水位:highWaterMark
-	%~size~algo:sizeAlgorithm
 	%~stream:stream
 	%~realm:realm
 	%~Request~obj:requestObject
@@ -2121,6 +2124,9 @@ opt-in::::オプトイン
 	%~byte列を~JS値に変換する:convertBytesToJSValue
 	%結果:result
 	%空白を許容するか:allowWhitespace
+	%可用な~size:available
+	%欲される~size:desiredSize
+	%抽出-~size:extractSize
 
 	●指示語
 次回の:next:~
@@ -11778,7 +11784,7 @@ then:
 ◎
 Assert: request’s origin is same origin with request’s client’s origin.
 </li>
-			<li>
+			<li class="algo">
 %~preloadされる応答~可用~時の手続き ~LET 
 所与の
 ( `応答$ %応答 )
@@ -15753,36 +15759,158 @@ Return the appropriate network error for fetchParams.
 		</ol>
 	</li>
 	<li>
-%~pull~algo ~LET 次を走らす~algo
-⇒
+<p>
+%~buffer ~LET ~byte列が成す空な~buffer
+◎
+Let buffer be an empty buffer that can have bytes appended to it.
+</p>
+
+<p class="note">注記：
+これは、［
+~UAの~network層の内側にある内部~buffer
+］を表現する。
+◎
+This represents an internal buffer inside the network layer of the user agent.
+</p>
+	</li>
+	<li class="algo">
+<p>
+%~pull~algo ~LET 次の手続き：
+◎
+Let pullAlgorithm be the followings steps:
+</p>
+		<ol>
+			<li>
+%~promise ~LET `新たな~promise$
+◎
+Let promise be a new promise.
+</li>
+			<li class="algo">
+<p>
+この段は、
+`並列的$に走らす：
+◎
+Run the following steps in parallel:
+</p>
+				<ol>
+					<li>
 ~IF［
+%~buffer の~size ~LT ~UAが選ぶ下限
+］~AND［
 進行中の~fetchは`休止-$している
 ］
 ⇒
-それを`再開-$する
+当の~fetchを`再開-$する
 ◎
-Let pullAlgorithm be an algorithm that resumes the ongoing fetch if it is suspended.
+If the size of buffer is smaller than a lower limit chosen by the user agent and the ongoing fetch is suspended, resume the fetch.
 </li>
-	<li>
-%取消~algo ~LET 次を走らす~algo
+					<li>
+次が満たされるまで待機する
+⇒
+%~buffer は空でない
+◎
+Wait until buffer is not empty.
+</li>
+					<li class="algo">
+<p>
+次を走らす`~fetch~taskを~queueする$( %~fetch~params の`~taskの行先$fP )
+◎
+Queue a fetch task to run the following steps, with fetchParams’s task destination.
+</p>
+						<ol>
+							<li>
+%可用な~size ~LET %~buffer の~size
+◎
+Let available be the size of buffer.
+</li>
+							<li>
+%欲される~size ~LET %可用な~size
+◎
+Let desiredSize be available.
+</li>
+							<li>
+~IF［
+%~stream の`現在の~BYOB要請~view$RS ~NEQ ~NULL
+］
+⇒
+%欲される~size ~SET %~stream の`現在の~BYOB要請~view$RSの`~byte長さ$BS
+◎
+If stream’s current BYOB request view is non-null, then set desiredSize to stream’s current BYOB request view's byte length.
+</li>
+							<li>
+%抽出-~size ~LET `min^op( %可用な~size, %欲される~size )
+◎
+Let extractSize be the smaller value of available and desiredSize.
+</li>
+							<li>
+%~byte列 ~LET %~buffer から %抽出-~size 個の~byteを抽出した結果
+◎
+Let bytes be the result of extracting extractSize of bytes from buffer.
+</li>
+							<li>
+<p>
+~IF［
+%~stream の`現在の~BYOB要請~view$RS ~NEQ ~NULL
+］：
+◎
+If streams current BYOB request view is non-null, then＼
+</p>
+								<ol>
+									<li>
+`配列~buffer~viewの中へ~byte列を書込む$( %~byte列, %~stream の`現在の~BYOB要請~view$RS )
+◎
+write bytes into stream’s current BYOB request view,＼
+</li>
+									<li>
+%~view ~SET %~stream の`現在の~BYOB要請~view$RS
+◎
+and set view to stream’s current BYOB request view.
+</li>
+								</ol>
+							</li>
+							<li>
+~ELSE
+⇒
+%~view ~SET `~buffer~sourceを~byte列から作成する$( `Uint8Array$I, %~byte列, %~stream に`関連な~realm$ )
+◎
+Otherwise, set view to the result of creating a Uint8Array from bytes in stream’s relevant Realm.
+</li>
+							<li>
+%~stream に`~chunkを~enqueueする$RS( %~view )
+◎
+Enqueue view into stream.
+</li>
+							<li>
+~IF［
+%~stream は`~errorした$RS
+］
+⇒
+`~fetchを終了する$( %~fetch~params の`制御器$fP )
+◎
+If stream is errored, then terminate fetchParams’s controller.
+</li>
+							<li>
+`undefined^jv で %~promise を`解決する$
+◎
+Resolve promise with undefined.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+			<li>
+~RET %~promise
+◎
+Return promise.
+</li>
+		</ol>
+	</li>
+	<li class="algo">
+%取消~algo ~LET 次の手続き
 ⇒
 `~fetchを中止する$( %~fetch~params の`制御器$fP, 所与の %事由 【？】)
 ◎
 Let cancelAlgorithm be an algorithm that aborts fetchParams’s controller with reason, given reason.
-」</li>
-	<li>
-%限界水位 ~LET ~LET ~UAが選ぶ［
-有限かつ負でない~number, または `Infinity^jv
-］
-◎
-Let highWaterMark be a non-negative, non-NaN number, chosen by the user agent.
-</li>
-	<li>
-%~size~algo ~LET `~chunk$~objを受容し，~UAが選ぶ［
-有限かつ負でない~number
-］を返す~algo
-◎
-Let sizeAlgorithm be an algorithm that accepts a chunk object and returns a non-negative, non-NaN, non-infinite number, chosen by the user agent.
 </li>
 	<li>
 %~stream ~LET `新たな$ `ReadableStream$I
@@ -15790,9 +15918,9 @@ Let sizeAlgorithm be an algorithm that accepts a chunk object and returns a non-
 Let stream be a new ReadableStream.
 </li>
 	<li>
-%~stream を`設定しておく$RS( %~pull~algo, %取消~algo, %限界水位,  %~size~algo )
+%~stream を`~byte読取り~support付きで設定しておく$RS( %~pull~algo, %取消~algo )
 ◎
-Set up stream with pullAlgorithm set to pullAlgorithm, cancelAlgorithm set to cancelAlgorithm, highWaterMark set to highWaterMark, and sizeAlgorithm set to sizeAlgorithm.
+Set up stream with byte reading support with pullAlgorithm set to pullAlgorithm, cancelAlgorithm set to cancelAlgorithm.
 </li>
 	<li>
 %応答 の`本体$rs ~SET 新たな`本体$
@@ -15898,27 +16026,18 @@ Increase response’s body info’s decoded size by bytes’s length.
 If bytes is failure, then terminate fetchParams’s controller.
 </li>
 							<li>
-%~stream に`~chunkを~enqueueする$RS( %~byte列 を包含している `ArrayBuffer$I を包装している `Uint8Array$I )
+%~buffer に %~byte列 を付加する
 ◎
-Enqueue a Uint8Array wrapping an ArrayBuffer containing bytes into stream.
+Append bytes to buffer.
 </li>
 							<li>
 ~IF［
-%~stream は`~errorした$RS
+%~buffer の~size ~GT ~UAが選ぶ上限
 ］
-⇒
-`~fetchを終了する$( %~fetch~params の`制御器$fP )
-◎
-If stream is errored, then terminate fetchParams.'s controller.
-</li>
-							<li>
-~IF［
-%~stream は`もっと~dataが必要$RSではない
-]
 ⇒
 進行中の~fetchを`休止-$するよう，~UAに依頼する
 ◎
-If stream doesn’t need more data ask the user agent to suspend the ongoing fetch.
+If the size of buffer is larger than an upper limit chosen by the user agent, ask the user agent to suspend the ongoing fetch.
 </li>
 						</ol>
 					</li>
@@ -17756,9 +17875,9 @@ Otherwise, if object is a Blob object, set stream to the result of running objec
 ~ELSE
 ⇒＃
 %~stream ~SET `新たな$ `ReadableStream$I ~obj；
-%~stream を`設定しておく$RS()
+%~stream を`~byte読取り~support付きで設定しておく$RS()
 ◎
-Otherwise, set stream to a new ReadableStream object, and set up stream.
+Otherwise, set stream to a new ReadableStream object, and set up stream with byte reading support.
 </li>
 	<li>
 ~Assert：
