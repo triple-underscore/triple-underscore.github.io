@@ -176,7 +176,7 @@ return text;
 
 ●●options
 
-spec_date:2022-11-22
+spec_date:2023-02-24
 trans_update:2022-10-07
 source_checked:220830
 page_state_key:HTML
@@ -771,6 +771,7 @@ V.既定の色~空間:#initialize-imagedata-defaultcolorspace
 ~clip手続き:#clip-steps
 点は~path内か？手続き:#is-point-in-path-steps
 点は~stroke内か？手続き:#is-point-in-stroke-steps
+楕円~上の点を決定する手続き:#determine-the-point-on-an-ellipse-steps
 
 ofC.文脈~mode:#offscreencanvas-context-mode
 ofC.~bitmap:#offscreencanvas-bitmap
@@ -6920,15 +6921,22 @@ The ellipse(x, y, radiusX, radiusY, rotation, startAngle, endAngle, counterclock
 <p>
 `~ellipse~method手続き@
 は、所与の
-( `~path$ %~path, %x, %y, %x半径, %y半径, %回転, %始端~角度, %終端~角度, %反時計回りか )
+( `~path$ %~path, %~x, %~y, %~x半径, %~y半径, %回転, %始端~角度, %終端~角度, %反時計回りか )
 に対し，次を走らす：
+◎
+↓↓ The determine the point on an ellipse steps, given ellipse, and angle, are:
+• Let eccentricCircle be the circle that shares its origin with ellipse, with a radius equal to the semi-major axis of ellipse.
+• Let outerPoint be the point on eccentricCircle's circumference at angle measured in radians clockwise from ellipse's semi-major axis.
+• Let chord be the line perpendicular to ellipse's major axis between this axis and outerPoint.
+• Return the point on chord that crosses ellipse's circumference.
 ◎
 The ellipse method steps, given canvasPath, x, y, radiusX, radiusY, rotation, startAngle, endAngle, and counterclockwise, are: 
 </p>
 <ol>
 	<li>
-~IF［
-%~path 以外の引数に`有限$でないものがある
+~IF［［
+%~path, %反時計回りか
+］以外の引数に`有限$でないものがある
 ］
 ⇒
 ~RET
@@ -6937,9 +6945,9 @@ If any of the arguments are infinite or NaN, then return.
 </li>
 	<li>
 ~IF［
-%x半径 ~LT 0
+%~x半径 ~LT 0
 ］~OR［
-%y半径 ~LT 0
+%~y半径 ~LT 0
 ］
 ⇒
 ~THROW `IndexSizeError$E
@@ -6947,7 +6955,7 @@ If any of the arguments are infinite or NaN, then return.
 If either radiusX or radiusY are negative, then throw an "IndexSizeError" DOMException.
 </li>
 	<li>
-( %円弧, %始点, %終点 ) ~LET 下にて与える円弧と，その始点, 終点
+( %円弧, %始点, %終点 ) ~LET 下に従って決定される円弧と，その始点, 終点
 ◎
 ↓</li>
 	<li>
@@ -6972,16 +6980,16 @@ If canvasPath's path has any subpaths, then add a straight line from the last po
 — その最後の点から %円弧 で接続するように —
 %終点 を追加する
 ◎
-Add the start and end points of the arc to the subpath, and connect them with an arc. The arc and its start and end points are defined as follows:
+Add the start and end points of the arc to the subpath, and connect them with an arc.＼
 </li>
 </ol>
 
-<div>
+<div class="algo">
 <p>
 上における円弧, およびその［
 始点, 終点
 ］は、
-次に従って与えられる：
+次の下位-手続きに従って決定される：
 </p>
 <ol>
 	<li>
@@ -6989,37 +6997,41 @@ Add the start and end points of the arc to the subpath, and connect them with an
 </li>
 	<li>
 ( %始点, %終点 ) ~LET
-真円の周-に沿って %真円 上の点 (1, 0) から角度
-( %始端~角度, %終端~角度 )
-にある点（~radian単位）
-</li>
-	<li>
-%全~周-か ~LET ~F
+%真円 の周-に沿って %真円 上の点 (1, 0) から時計回りに角度
+( %始端~角度 ~radian, %終端~角度 ~radian )
+にある点
 </li>
 	<li>
 <p>
-~IF［［
+%全~周-か ~LET ［
+次のいずれかが満たされるならば ~T ／
+~ELSE_ ~F
+］：
+</p>
+		<ul>
+			<li>
+［
 %反時計回りか ~EQ ~F
 ］~AND［
 %終端~角度 ~MINUS %始端~角度 ~GTE 2π
-］］~OR［［
+］
+</li>
+			<li>
+［
 %反時計回りか ~EQ ~T
 ］~AND［
 %始端~角度 ~MINUS %終端~角度 ~GTE 2π
-］］：
-</p>
-		<ol>
-			<li>
+］
+</li>
+		</ul>
+	</li>
+	<li>
+~IF［
+%全~周-か ~EQ ~T
+］
+⇒
 %終点 ~SET %始点
 </li>
-			<li>
-%全~周-か ~SET ~T
-</li>
-		</ol>
-
-【！ 原文はこの場合に 反時計回り が加味されていない】
-
-	</li>
 	<li>
 <p>
 %円弧 ~LET %真円 の周-を次のように辿って得られる円弧：
@@ -7044,17 +7056,27 @@ Add the start and end points of the arc to the subpath, and connect them with an
 %円弧, %始点, %終点
 ］それぞれに対し，次を順に適用した結果
 ⇒＃
-( x, y ) 軸~方向に ( %x半径, %y半径 ) 倍だけ拡縮する；
+( x, y ) 軸~方向に ( %~x半径, %~y半径 ) 倍だけ拡縮する；
 時計回りに %回転 ~radianだけ回転する；
-( x, y ) 軸~方向に ( %x, %y ) だけ移動する
+( x, y ) 軸~方向に ( %~x, %~y ) だけ移動する
 </li>
 </ol>
+
+<p class="trans-note">【
+原文は，この下位-手続きの中で
+`楕円~上の点を決定する手続き@
+を利用しているが、
+この訳では，代わりに
+その手続きを %真円 と変形（最後の段）に分ける形で組み込んでいる。
+】</p>
+◎
+The arc and its start and end points are defined as follows:
 ◎
 Consider an ellipse that has its origin at (x, y), that has a major-axis radius radiusX and a minor-axis radius radiusY, and that is rotated about its origin such that its semi-major axis is inclined rotation radians clockwise from the x-axis.
 ◎
-If counterclockwise is false and endAngle-startAngle is equal to or greater than 2π, or, if counterclockwise is true and startAngle-endAngle is equal to or greater than 2π, then the arc is the whole circumference of this ellipse, and the point at startAngle along this circle's circumference, measured in radians clockwise from the ellipse's semi-major axis, acts as both the start point and the end point.
+If counterclockwise is false and endAngle − startAngle is equal to or greater than 2π, or, if counterclockwise is true and startAngle − endAngle is equal to or greater than 2π, then the arc is the whole circumference of this ellipse, and both the start point and the end point are the result of running the determine the point on an ellipse steps given this ellipse and startAngle.
 ◎
-Otherwise, the points at startAngle and endAngle along this circle's circumference, measured in radians clockwise from the ellipse's semi-major axis, are the start and end points respectively, and the arc is the path along the circumference of this ellipse from the start point to the end point, going counterclockwise if counterclockwise is true, and clockwise otherwise. Since the points are on the ellipse, as opposed to being simply angles from zero, the arc can never cover an angle greater than 2π radians.
+Otherwise, the start point is the result of running the determine the point on an ellipse steps given this ellipse and startAngle, the end point is the result of running the determine the point on an ellipse steps given this ellipse and endAngle, and the arc is the path along the circumference of this ellipse from the start point to the end point, going counterclockwise if counterclockwise is true, and clockwise otherwise. Since the points are on the ellipse, as opposed to being simply angles from zero, the arc can never cover an angle greater than 2π radians.
 </div>
 
 <p class="note">注記：
