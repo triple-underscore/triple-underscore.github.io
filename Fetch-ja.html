@@ -9,27 +9,49 @@ code {
 	white-space:nowrap;
 }
 
-._narrow-cell {
-	position:relative;
-}
-
-._narrow-cell > * {
-	position: absolute;
-	top: -3em;
-	left: 0;
-}
-
-._narrow-cell > *::before {
-	position: absolute;
-	top: 1.5em;
-	left: 1em;
-	color: gray;
-	content: "↓";
-}
-
 td > pre {
 	margin: 0;
 }
+
+@supports (display: grid) and (display: contents) {
+
+#_credentials-combinations {
+	min-width: 30em;
+	max-width: 45em;
+}
+
+#_credentials-combinations tr {
+	grid-template-areas:
+		"資格証 Allow-Origin 共有"
+		"資格証 Allow-Credentials 共有"
+		"注記 注記 注記"
+	;
+	grid-template-columns: 8em 1fr 4em;
+}
+
+#_credentials-combinations tr > *:nth-child(1) {
+	grid-area: 資格証;
+	border-left-width: 0;
+}
+
+#_credentials-combinations tr > *:nth-child(2) {
+	grid-area: Allow-Origin;
+}
+
+#_credentials-combinations tr > *:nth-child(3) {
+	grid-area: Allow-Credentials;
+}
+
+#_credentials-combinations tr > *:nth-child(4) {
+	grid-area: 共有;
+}
+
+#_credentials-combinations tr > *:nth-child(5) {
+	grid-area: 注記;
+}
+
+}
+
 </style>
 
 <script src="common0.js"></script>
@@ -1557,6 +1579,7 @@ background::::バックグラウンド
 	%~URL:url
 	%内部~応答:internalResponse
 	%範囲~値:rangeValue
+	%範囲~header値:rangeHeader
 	%~header名:headerName
 	%~header名~群:headerNames
 	%~header群:headers
@@ -1721,8 +1744,6 @@ background::::バックグラウンド
 	%欲される~size:desiredSize
 	%抽出-~size:extractSize
 	%全部的な長さ:fullLength
-	%範囲~header値:rangeHeader
-	%範囲~値:rangeValue
 	%切出した~blob:slicedBlob
 	%切出した本体と型:slicedBodyWithType
 	%切出した長さ:slicedLength
@@ -4451,33 +4472,39 @@ If value’s length is greater than 128, then return false.
 </li>
 	<li>
 <p>
-~IF［［
+［
 %名前 は、
-次の表の 1 列目に挙げるどれと`~byte大小無視$で合致するか
-］に応じて，同じ行の 2 列目に与える条件が満たされる
-］
-⇒
-~RET ~F
+次に挙げるどれと`~byte大小無視$で合致するか
+］に応じて：
 ◎
 Byte-lowercase name and switch on the result:
 </p>
 
-<table><thead><tr><th>~header名
-<th>条件
-</thead><tbody>
-
-<tr><td>`Accept$h
-<td>
+		<ul class="switch">
+			<li>
+`Accept$h
+⇒
+~IF［
 %値 を成す ある~byteは、
 `~CORS非安全な要請~header~byte$である
+］
+⇒
+~RET ~F
 ◎
 If value contains a CORS-unsafe request-header byte, then return false.
+</li>
 
-<tr><td style="white-space: pre-line;">`Accept-Language$h,
-`Content-Language$h
-<td>
+			<li>
+<p>
+`Accept-Language$h ／
+`Content-Language$h ：
+</p>
+				<ol>
+					<li>
+~IF［
 %値 を成す ある~byteは、
 次に挙げる どれでもない
+］…
 ⇒＃
 `20^X `SP^smb,
 `2A^X `*^smb,
@@ -4489,37 +4516,54 @@ If value contains a CORS-unsafe request-header byte, then return false.
 `3D^X `=^smb,
 `41^X `A^smb 〜 `5A^X `Z^smb,
 `61^X `a^smb 〜 `7A^X `z^smb,
+◎終
+…ならば
+⇒
+~RET ~F
+</li>
+				</ol>
 ◎
 If value contains a byte that is not in the range 0x30 (0) to 0x39 (9), inclusive, is not in the range 0x41 (A) to 0x5A (Z), inclusive, is not in the range 0x61 (a) to 0x7A (z), inclusive, and is not 0x20 (SP), 0x2A (*), 0x2C (,), 0x2D (-), 0x2E (.), 0x3B (;), or 0x3D (=), then return false.
-
-<tr><td>`Content-Type$h
-<td>
-
-<div>
+</li>
+			<li>
 <p>
-次のいずれかが満たされる：
+`Content-Type$h：
 </p>
-<ul>
-	<li>
+				<ol>
+					<li>
+~IF［
 %値 を成す ある~byteは、
 `~CORS非安全な要請~header~byte$である
-</li>
-	<li>
-`~MIME型を構文解析する$( `同型に復号する$( %値 ) )
-の結果は `失敗^i, または 次を満たす
+］
 ⇒
-結果の`~essence$ ~NIN { `application/x-www-form-urlencoded^l, `multipart/form-data^l, `text/plain^l }
-</li>
-</ul>
+~RET ~F
 ◎
 If value contains a CORS-unsafe request-header byte, then return false.
+</li>
+					<li>
+%~MIME型 ~LET `~MIME型を構文解析する$( `同型に復号する$( %値 ) )
 ◎
 Let mimeType be the result of parsing the result of isomorphic decoding value.
+</li>
+					<li>
+~IF［
+%~MIME型 ~EQ `失敗^i
+］
+⇒
+~RET ~F
 ◎
 If mimeType is failure, then return false.
+</li>
+					<li>
+~IF［
+%~MIME型 の`~essence$ ~NIN { `application/x-www-form-urlencoded^l, `multipart/form-data^l, `text/plain^l }
+］
+⇒
+~RET ~F
 ◎
 If mimeType’s essence is not "application/x-www-form-urlencoded", "multipart/form-data", or "text/plain", then return false.
-</div>
+</li>
+			</ol>
 
 <p class="warning">
 これは、
@@ -4533,7 +4577,8 @@ This intentionally does not use extract a MIME type as that algorithm is rather 
 <div class="example">
 <p>
 `~header~listから~MIME型を抽出する$ が利用された場合、
-次の要請からは~CORS予行~要請は生じなくなり，~server上の素朴な構文解析器は要請~本体を~JSONとして扱うかもしれない：
+次の要請からは~CORS予行~要請は生じなくなり，
+~server上の素朴な構文解析器は要請の本体を~JSONとして扱うかもしれない：
 ◎
 If extract a MIME type were used the following request would not result in a CORS preflight and a naïve parser on the server might treat the request body as JSON:
 </p>
@@ -4550,25 +4595,36 @@ fetch("https://victim.example/naïve-endpoint", {
 });
 </pre>
 </div>
-
-<tr><td>`Range$h
-<td>
+			</li>
+			<li>
 <p>
-［
-次の結果 ~EQ `失敗^i
-］~OR［
-次の結果[ 0 ] ~EQ ~NULL
-］
-⇒
-`単純な範囲~header値を構文解析する$( %値, ~F )
+`Range$h：
+</p>
+				<ol>
+					<li>
+%範囲~値 ~LET `単純な範囲~header値を構文解析する$( %値, ~F )
 ◎
 Let rangeValue be the result of parsing a single range header value given value and false.
+</li>
+					<li>
+~IF［
+%範囲~値 ~EQ `失敗^i
+］
+⇒
+~RET ~F
 ◎
 If rangeValue is failure, then return false.
+</li>
+					<li>
+~IF［
+%範囲~値[ 0 ] ~EQ ~NULL
+］
+⇒
+~RET ~F
 ◎
 If rangeValue[0] is null, then return false.
-</p>
-
+</li>
+				</ol>
 <p class="note">注記：
 歴史的に，~web~browserは［
 `bytes=-500^bl などの範囲
@@ -4577,16 +4633,16 @@ If rangeValue[0] is null, then return false.
 ◎
 As web browsers have historically not emitted ranges such as `bytes=-500` this algorithm does not safelist them.
 </p>
-
-<tr><td>その他
+			</li>
+			<li>
+その他
+⇒
+~RET ~F
 ◎
 Otherwise
-<td>
-無条件
-◎
-Return false.
-</tbody></table>
-
+• Return false.
+</li>
+		</ul>
 	</li>
 	<li>
 ~RET ~T
@@ -10326,17 +10382,13 @@ The server developer therefore needs to decide whether or not responses "tainted
 To share responses with credentials, the `Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials` headers are important. The following table serves to illustrate the various legal and illegal combinations for a request to https://rabbit.invalid/:
 </p>
 
-<table style="margin-top: 5em;">
+<table class="grid-table" id="_credentials-combinations">
 <tbody><tr><th>
 要請の`資格証~mode$rq
 ◎
 Request’s credentials mode
-<th><div class="_narrow-cell"><span style="top:-4.5em;">
-`Access-Control-Allow-Origin$h
-</span></div>
-<th><div class="_narrow-cell"><span>
-`Access-Control-Allow-Credentials$h
-</span></div>
+<th>`Access-Control-Allow-Origin$h
+<th>`Access-Control-Allow-Credentials$h
 <th>共有される？
 ◎
 Shared?
@@ -13571,7 +13623,7 @@ Return a new response whose status message is `OK`, header list is « (`Content-
 今の所、
 あいにく `file:^c `~URL$については，
 `left as an exercise for the reader^en である。
-【実装に委ねられる】
+【読者（実装者）または何らかの読取器？に委ねられる。】
 ◎
 For now, unfortunate as it is, file: URLs are left as an exercise for the reader.
 </dd>
