@@ -981,6 +981,7 @@ COMMON_DATA.PREMAP = `
 使:\uE007<a href="~CASCADE#used">使用~値</a>\uE005
 順:\uE007<a href="~CSSOM1#serializing-css-values">正準的~順序</a>\uE005
 ア:\uE007<a href="~WANIM#animation-type">~animation型</a>\uE005
+論:\uE007<a href="~CSSLOGICAL#logical-property-group">論理-~prop~group</a>\uE005
 型:\uE007型\uE005
 表終:\uE009
 イ型:\uE00C\uE008型\uE005
