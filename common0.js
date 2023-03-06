@@ -1137,6 +1137,7 @@ COMPOSITING:compositing-ja.html
 FILTERS:filter-effects-ja.html
 MASKING1:css-masking-ja.html
 CASCADE:css-cascade-ja.html
+CSSANCHOR:css-anchor-position-ja.html
 CSSBOX:css-box-ja.html
 CSS2BOX:css22-box-ja.html
 CSS2VISUDET:css22-visudet-ja.html
