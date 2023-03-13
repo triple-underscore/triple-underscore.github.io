@@ -1287,7 +1287,6 @@ TIMELINE:performance-timeline-ja.html
 HRTIME:hr-time-ja.html
 NAV-TIMING:navigation-timing-ja.html
 RESOURCE-TIMING:resource-timing-ja.html
-RESOURCE-HINTS:resource-hints-ja.html
 SENSORS:sensors-ja.html
 REPORTING:reporting1-ja.html
 PERMISSIONS:webappsec-permissions-ja.html

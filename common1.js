@@ -1752,7 +1752,6 @@ USERTIMING2=副        ~/user-timing-ja.html
 RESOURCETIMING2=副     ~/resource-timing-ja.html
 RESOURCETIMING=副     ~/resource-timing-ja.html
 BEACON=副             ~/beacon-ja.html
-RESOURCEHINTS=副      ~/resource-hints-ja.html
 PERMISSIONSPOLICY1=副 ~/webappsec-permissions-policy-ja.html
 REFERRERPOLICY=副     ~/webappsec-referrer-policy-ja.html
 REPORTING1=副         ~/reporting1-ja.html
