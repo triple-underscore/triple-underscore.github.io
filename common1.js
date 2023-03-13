@@ -1892,7 +1892,6 @@ XMLNS=副              ~/xml-names-ja.html
 XMLSS=副              ~/xml-stylesheet-ja.html
 XSLT=副               ~/XML/xslt10-ja.html
 XSLT=副2              ~adagio/tr_xslt10/toc.htm
-PRELOAD=副            ~/preload-ja.html
 STORAGE=副            ~/storage-ja.html
 `;
 
