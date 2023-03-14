@@ -484,15 +484,10 @@ const fillSpecMetadata = () => {
 
 	if(options.original_url){
 		const url = options.original_url;
-		let data0 = `
+		data = `
 このバージョン（原文 URL ）
 	${options.original_url}
-`;
-		if(url.slice(0, 25) === 'https://drafts.csswg.org/'){
-			data0 += `	https://w3c.github.io/csswg-drafts/${url.slice(25)}
-`;
-		}
-		data = `${data0}${data}`
+${data}`
 	}
 	data = data
 		.replace(/\n\S.+/g, '\n<dt>$&<dt>')

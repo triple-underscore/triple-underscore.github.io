@@ -1131,7 +1131,7 @@ CSSissue:https://github.com/w3c/csswg-drafts/issues
 HTMLissue:https://github.com/whatwg/html/issues
 CSS21:https://www.w3.org/TR/CSS2
 CSS22:https://www.w3.org/TR/CSS2
-	CSS22:https://drafts.csswg.org/css2 → single page
+	CSS22:https://w3c.github.io/csswg-drafts/css2 → single page
 CSP3:CSP3-ja.html
 COMPOSITING:compositing-ja.html
 FILTERS:filter-effects-ja.html
@@ -1177,7 +1177,7 @@ CSSPV1:css-properties-values-api-ja.html
 CSSPAGE:css-page-ja.html
 CSSPOS:css-position-ja.html
 CSSRUBY:css-ruby-ja.html
-CSSREGION:https://drafts.csswg.org/css-regions-1/
+CSSREGION:https://w3c.github.io/csswg-drafts/css-regions-1/
 CSSSCOPING:css-scoping-ja.html
 CSSSCROLLSNAP:css-scroll-snap-ja.html
 CSSSHAPES:css-shapes-ja.html
@@ -1186,7 +1186,7 @@ CSSPSEUDO:css-pseudo-ja.html
 CSSSPEECH:css-speech-ja.html
 CSSSTYLEATTR:css-style-attr-ja.html
 CSSSYN:css-syntax-ja.html
-CSSTABLE:https://drafts.csswg.org/css-tables-3/
+CSSTABLE:https://w3c.github.io/csswg-drafts/css-tables-3/
 CSSTEXT:css-text-ja.html
 CSSTEXTDECOR:css-text-decor-ja.html
 CSSTOM1:css-typed-om-ja.html
