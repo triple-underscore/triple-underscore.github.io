@@ -1488,6 +1488,7 @@ snapshot::::スナップショット
 実装-:implement:~
 実装者:implementer:~
 制御者:controller:~
+読者:reader:~
 ヒト:human:人
 
 通常:normal:~
