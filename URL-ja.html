@@ -368,8 +368,8 @@ return text;
 ●●options
 
 spec_title:URL
-spec_date:2023-02-24
-trans_update:2023-03-01
+spec_date:2023-03-20
+trans_update:2023-03-22
 source_checked:221209
 spec_status:LS
 original_url:https://url.spec.whatwg.org/
@@ -446,6 +446,7 @@ m.registerProtocolHandler:~HTMLnavigator#dom-navigator-registerprotocolhandler
 m.encodeURIComponent:~TC39#sec-encodeuricomponent-uricomponent
 
 m.new URL:#dom-url-url
+m.canParse:#dom-url-canparse
 m.href:#dom-url-href
 m.origin:#dom-url-origin
 m.protocol:#dom-url-protocol
@@ -678,6 +679,8 @@ err.file-invalid-Windows-drive-letter-host:#file-invalid-windows-drive-letter-ho
 url.~URL:#concept-url-url
 	url.~url:#concept-url-url
 url.~query~obj:#concept-url-query-object
+
+~API~URL構文解析器:#api-url-parser
 
 ~URL~obj:#concept-urlsearchparams-url-object
 ~parameter~list:#concept-urlsearchparams-list
@@ -1219,7 +1222,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/url/commits">GitHub whatwg/url/commits</a>
-	<a href="https://url.spec.whatwg.org/commit-snapshots/6d4734a63c6d99df84d296099b7c14a94d156a4f/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://url.spec.whatwg.org/commit-snapshots/ae3c28b84e3e7122c2807401c26b8a63cb2ab445/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/urlstandard">@urlstandard</a>
 
 Tests:
@@ -1619,7 +1622,7 @@ Yes
 ◎
 An IPv6 address is missing the closing U+005D (]).
 <td class="example">
-`https://[::1^l【！https://[::1"】
+`https://[::1^l
 <td>
 失敗する
 ◎
@@ -3973,7 +3976,6 @@ Return ipv4.
 — 例えば、
 `100.100^l は `100.0.0.100^l と等価になる。
 】</p>
-
 </div>
 
 <div class="algo">
@@ -5078,7 +5080,6 @@ The base and output URL are represented in serialized form for brevity.
 <small>†
 — 基底~URLを欠くことに因り妥当でない。
 </small>
-
 </div>
 
 		<section id="url-representation">
@@ -6309,7 +6310,7 @@ There is no way to express a username or password of a URL record within a valid
 所与の
 ⇒＃
 `~scalar値~文字列$ %入力,
-~NULL または`基底~URL$ %基底 （省略時は ~NULL ）,
+［~NULL ／`基底~URL$］ %基底 （省略時は ~NULL ）,
 `符号化法$ %符号化法 （省略時は `~UTF-8$ ）
 ◎終
 に対し，次を走らす：
@@ -6425,7 +6426,7 @@ Return url.
 所与の
 ⇒＃
 `~scalar値~文字列$ %入力,
-~NULL または`基底~URL$ %基底 （省略時は ~NULL ）,
+［~NULL ／`基底~URL$］ %基底 （省略時は ~NULL ）,
 `符号化法$ %符号化法 （省略時は`~UTF-8$ ）,
 `~URL$と上書stateが成す~pair ( %~URL, %上書state ) （省略時は ( ε, ε ) ）
 ◎終
@@ -8665,7 +8666,6 @@ UTF-8 percent-encode c using the fragment percent-encode set and append the resu
 ◎
 To set the username given a url and username, set url’s username to the result of running UTF-8 percent-encode on username using the userinfo percent-encode set.
 </p>
-
 </div>
 
 <div class="algo">
@@ -9472,6 +9472,8 @@ This section uses terminology from Web IDL. Browser user agents must support thi
 interface `URL@I {
   `URL$mc(`USVString$ %url, optional `USVString$ %base);
 
+  static `boolean$ `canParse$m(`USVString$ %url, optional `USVString$ %base);
+
   <span id="url-stringification-behavior">stringifier</span> attribute `USVString$ `href$m;
   readonly attribute `USVString$ `origin$m;
            attribute `USVString$ `protocol$m;
@@ -9565,14 +9567,15 @@ Remove all trailing U+0020 SPACE code points from url’s URL’s path.
 </ol>
 </div>
 
-<hr id="constructors">
-
 <div class="algo">
 <p>
-`new URL(url, base)@m
-構築子~手続きは：
+`~API~URL構文解析器@
+は、
+所与の
+( `~scalar値~文字列$ %~URL, ［~NULL／`~scalar値~文字列$］ %基底【！（省略時は ~NULL ）】 )
+に対し，次の手続きを走らす：
 ◎
-The new URL(url, base) constructor steps are:
+The API URL parser takes a scalar value string url and an optional null-or-scalar value string base (default null), and then runs these steps:
 </p>
 <ol>
 	<li>
@@ -9583,32 +9586,58 @@ Let parsedBase be null.
 	<li>
 <p>
 ~IF［
-%base ~NEQ ε
+%基底 ~NEQ ~NULL
 ］：
 ◎
-If base is given, then:
+If base is non-null:
 </p>
 		<ol>
 			<li>
-%構文解析した基底 ~SET `基本~URL構文解析器$( %base )
+%構文解析した基底 ~SET `基本~URL構文解析器$( %基底 )
 ◎
-Let parsedBase be the result of running the basic URL parser on base.
+Set parsedBase to the result of running the basic URL parser on base.
 </li>
 			<li>
 ~IF［
 %構文解析した基底 ~EQ `失敗^i
 ］
 ⇒
-~THROW `TypeError$E
+~RET `失敗^i
 ◎
-If parsedBase is failure, then throw a TypeError.
+If parsedBase is failure, then return failure.
 </li>
 		</ol>
 	</li>
 	<li>
-%構文解析した~URL ~LET `基本~URL構文解析器$( %url, %構文解析した基底 )
+~RET `基本~URL構文解析器$( %~URL, %構文解析した基底 )
 ◎
-Let parsedURL be the result of running the basic URL parser on url with parsedBase.
+Return the result of running the basic URL parser on url with parsedBase.
+</li>
+</ol>
+</div>
+
+<hr>
+
+<div class="algo">
+<p>
+`new URL(url, base)@m
+構築子~手続きは：
+◎
+The new URL(url, base) constructor steps are:
+</p>
+<ol>
+	<li>
+~IF［
+%base ~EQ ε
+］
+⇒
+%base ~SET ~NULL
+◎
+↓</li>
+	<li>
+%構文解析した~URL ~LET `~API~URL構文解析器$( %~url, %base )
+◎
+Let parsedURL be the result of running the API URL parser on url with base, if given.
 </li>
 	<li>
 ~IF［
@@ -9710,7 +9739,46 @@ A URL object can be used as a base URL (as the IDL requires a string as argument
 var %url = new URL(`🏳🌈^l, new URL(`https://pride.example/hello-world^l));
 %url.pathname // `/%F0%9F%8F%B3%EF%B8%8F%E2%80%8D%F0%9F%8C%88^l
 </pre>
+</div>
 
+<hr>
+
+<div class="algo">
+<p>
+`canParse(url, base)@m
+静的~method手続きは：
+◎
+The static canParse(url, base) method steps are:
+</p>
+<ol>
+	<li>
+~IF［
+%base ~EQ ε
+］
+⇒
+%base ~SET ~NULL
+◎
+↓</li>
+	<li>
+%構文解析した~URL ~LET `~API~URL構文解析器$( %~url, %base )
+◎
+Let parsedURL be the result of running the API URL parser on url with base, if given.
+</li>
+	<li>
+~IF［
+%構文解析した~URL ~EQ `失敗^i
+］
+⇒
+~RET ~F
+◎
+If parsedURL is failure, then return false.
+</li>
+	<li>
+~RET ~T
+◎
+Return true.
+</li>
+</ol>
 </div>
 
 <hr id="urlutils-members">
@@ -10908,7 +10976,6 @@ To avoid altering the original input, e.g., for comparison purposes, construct a
 const %sorted = new URLSearchParams(%url.search)
 %sorted.sort()
 </pre>
-
 </div>
 
 <div class="algo">
@@ -11049,6 +11116,42 @@ There have been a lot of people that have helped make URLs more interoperable ov
 `_ipr1@
 
 	</section>
+
+
+
+
+
+
+
+●●
+
+~API~URL構文解析器:#api-url-parser
+
+<pre>
+~API:API#5
+~URL:URL#11
+~scalar:scalar#3
+~url:url#4
+既定の:default#1
+~NULL:NULL#3
+手続き:steps#2
+走らす:runする#1
+~LET:LET#3
+~IF:IF#3
+~NEQ:NEQ#1
+~SET:SET#1
+~EQ:EQ#2
+失敗:failure#3
+~RET:RET#4
+所与の:given#2
+静的:static#1
+~method:method#1
+~F:F#1
+~T:T#1
+~NULL-or-:#1
+~INFRA:#1
+</pre>
+
 </main></div>
 
 <div hidden>
@@ -11093,6 +11196,7 @@ Gavin Carothers,
 Geoff Richards,
 Glenn Maynard,
 Gordon P. Hemsley,
+hemanth,
 Henri Sivonen,
 Ian Hickson,
 Ilya Grigorik,
@@ -11173,7 +11277,6 @@ This standard is written by
 (<a href="https://www.apple.com/">Apple</a>,
 <a href="mailto:annevk@annevk.nl">annevk@annevk.nl</a>).
 </p>
-
 </div>
 
 <div lang="en" id="_ipr1">
@@ -11186,5 +11289,5 @@ portions in the source code are licensed under the <a href="https://opensource.o
 This is the Living Standard. Those interested in the patent-review version should view the <a href="https://url.spec.whatwg.org/review-drafts/2023-02/">Living Standard Review Draft</a>.
 </p>
 </div>
-
 </div>
+
