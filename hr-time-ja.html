@@ -104,8 +104,8 @@ return text;
 
 ●●options
 
-spec_date:2023-02-16
-trans_update:2023-02-17
+spec_date:2023-03-22
+trans_update:2023-03-23
 source_checked:230112
 page_state_key:TIMING
 original_url:https://w3c.github.io/hr-time/
@@ -208,7 +208,6 @@ c.Temporal.Instant:https://tc39.es/proposal-temporal/#sec-temporal-instant-const
 単調増加~時計:#dfn-monotonic-clock
 粗化した共有される現在の時刻:#dfn-coarsened-shared-current-time
 安全でない共有される現在の時刻:#dfn-unsafe-shared-current-time
-~epochに相対的な時刻印:#dfn-epoch-relative-timestamp
 
 	●用語（外部
 実装定義:~INFRA#implementation-defined
@@ -264,10 +263,12 @@ nano:nano-:::ナノ
 	~milli秒:milliseconds
 	~milli秒数:in milliseconds
 	~milli秒数:the number of milliseconds
+	~milli秒数:number of milliseconds
 	~milli秒より細かい:sub-millisecond
 	~micro秒:microseconds
 	~nano秒数:number of nanoseconds
 	秒:seconds
+	整数な:integral
 単調増加:monotonic::~
 単調増加-:monotonic に increase::~
 減少-:decrease::~
@@ -287,6 +288,7 @@ epoch:
 数える:countする:~
 早期:early:~
 近似的:approximate:~
+	約:approximately
 齢:age:~
 
 	時間~原点:time origin::~
@@ -843,7 +845,7 @@ Time execution in worker
   }
 
   /* <span class="comment">
-結果と, および~epochに相対的な時刻印を，別の文脈へ送信する
+結果と, および~epochに相対的な時刻【！timestamp】を，別の文脈へ送信する
 ◎
 Send results and epoch-relative timestamps to another context
 </span> */
@@ -886,7 +888,7 @@ var %worker = new SharedWorker('worker.js');
   var %msg = %event.data;
 
   /* <span class="comment">
-~epochに相対的な時刻印を文書の`時刻~起点$enVに換算する
+~epochに相対的な時刻【！timestamp】を文書の`時刻~起点$enVに換算する
 ◎
 translate epoch-relative timestamps into document's time origin
 </span> */
@@ -1789,59 +1791,6 @@ The coarsened shared current time given an optional boolean crossOriginIsolatedC
 The unsafe shared current time must return the unsafe current time of the monotonic clock.
 </div>
 
-<div class="algo">
-<p>
-`~epochに相対的な時刻印@
-を取得するときは、
-所与の
-( %時刻 （省略時は ε ） )
-に対し：
-◎
-To get an epoch-relative timestamp, optionally with a moment on the wall clock time:
-• If time was not passed, set time to the wall clock's unsafe current time.
-</p>
-<ol>
-	<li>
-~IF［
-%時刻 ~EQ ε
-］
-⇒
-%時刻 ~SET `壁~時計$の`安全でない現在の時刻$0
-</li>
-	<li>
-~Assert：
-%時刻 は`壁~時計$から得られた`~moment$である。
-◎
-↑</li>
-	<li>
-~Assert：
-%時刻 ~GTE `~Unix~epoch$【！1 January 1970 00:00:00 UTC】
-【 “%時刻 は~Unix~epochより過去でない” 】
-◎
-Assert: time is greater than or equal to 1 January 1970 00:00:00 UTC.
-</li>
-	<li>
-~RET `~Unix~epoch$ から %時刻 までの~milli秒数
-— ここでは、
-1 日は 86400秒, 1 秒は 1000 ~milli秒からなるとする
-（すなわち、
-閏秒は織り込まないとする）
-◎
-Return the number of milliseconds from the Unix epoch to time: where each day is comprised of 86,400 seconds, each of which is 1000 milliseconds long (i.e., don't account for leap seconds).
-</li>
-</ol>
-
-<p class="note">注記：
-`DOMHighResTimeStamp$I は `double^c 型なので、
-それを
-— 例えば `Date.now()$c と比較する目的で —
-`~epochに相対的な時刻印$を表現するために利用すると，
-~milli秒より細かい精度は失われるかもしれない。
-◎
-A DOMHighResTimeStamp is a double. Therefore, using it to represent an epoch-relative timestamp, e.g. for the purpose of comparing it with Date.now(), might lose sub-millisecond precision.
-</p>
-</div>
-
 	</section>
 	<section id="sec-domhighrestimestamp">
 <h2 title="The DOMHighResTimeStamp typedef">5. `DOMHighResTimeStamp^I ~typedef</h2>
@@ -1873,6 +1822,17 @@ typedef `double$ `DOMHighResTimeStamp@I;
 A DOMHighResTimeStamp SHOULD represent a time in milliseconds accurate enough to allow measurement while preventing timing attacks - see 9.1 Clock resolution for additional considerations.
 </p>
 
+<p class="note">注記：
+`DOMHighResTimeStamp$I は `double^c 型なので、
+~epochに相対的な時刻
+— `~Unix~epoch$から ある`~moment$までの~milli秒数 —
+を ある有限な分解能でしか表現できない。
+2023年内の`~moment$【この段落を書いた時点？】においては、
+その分解能は，約 0.2 ~micro秒になる。
+◎
+A DOMHighResTimeStamp is a double, so it can only represent an epoch-relative time—the number of milliseconds from the Unix epoch to a moment—to a finite resolution. For moments in 2023, that resolution is approximately 0.2 microseconds.
+</p>
+
 	</section>
 	<section id="the-epochtimestamp-typedef">
 <h2 title="The EpochTimeStamp typedef">6. `EpochTimeStamp^I ~typedef</h2>
@@ -1896,25 +1856,15 @@ The use of EpochTimeStamp, known previously as DOMTimeStamp, is discouraged. Whe
 
 <p>
 `EpochTimeStamp$I は、
-`~Unix~epoch$【！01 January, 1970 00:00:00 UTC】から所与の時刻までの~milli秒数を
-— 閏秒を除外して —
-表現する。
+`~Unix~epoch$から所与の［
+`壁~時計$から得られた`~moment$
+］までの［
+閏秒を除外した，整数な~milli秒数
+］を表現する。
 この~milli秒数がどう解釈されるかは、
-この型を利用する仕様が定義することになる。
+この型を利用する各~仕様が定義することになる。
 ◎
-A EpochTimeStamp represents the number of milliseconds from a given time to 01 January, 1970 00:00:00 UTC, excluding leap seconds. Specifications that use this type define how the number of milliseconds are interpreted.＼
-</p>
-
-<p>
-`EpochTimeStamp$I は、［
-`~epochに相対的な時刻印$を引数なしで~callする
-］ことにより初期化され，既定では現在の時刻になる。
-異なる相対的な時刻を要求する仕様は、
-必要なら，`~epochに相対的な時刻印$を その引数に［
-`壁~時計$からの`~moment$
-］を伴わせて~callできる。
-◎
-An EpochTimeStamp is initialized by calling epoch-relative timestamp with no arguments, which defaults to the current time. Specifications that require a different relative time can call epoch-relative timestamp with a moment from the wall clock as an argument, if needed.
+A EpochTimeStamp represents an integral number of milliseconds from the Unix epoch to a given moment on the wall clock, excluding leap seconds. Specifications that use this type define how the number of milliseconds are interpreted.
 </p>
 
 	</section>
