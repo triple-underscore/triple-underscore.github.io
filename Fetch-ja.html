@@ -208,8 +208,8 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2023-03-02
-trans_update:2023-03-04
+spec_date:2023-03-24
+trans_update:2023-03-26
 source_checked:221212
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -1718,6 +1718,7 @@ background::::バックグラウンド
 	%局所的に中止されたか:locallyAborted
 	%~cache状態:cacheState
 	%~host群:hosts
+	%内容~範囲:contentRange
 	%範囲~始端:rangeStart
 	%範囲~始端~値:rangeStartValue
 	%範囲~終端:rangeEnd
@@ -1744,12 +1745,11 @@ background::::バックグラウンド
 	%欲される~size:desiredSize
 	%抽出-~size:extractSize
 	%全部的な長さ:fullLength
+	%直列化した全部的な長さ:serializedFullLength
 	%切出した~blob:slicedBlob
 	%切出した本体と型:slicedBodyWithType
 	%切出した長さ:slicedLength
-	%内容~範囲:contentRange
-	%始端:-
-	%終端:sliceEndRange
+	%直列化した切出した長さ:serializedSlicedLength
 
 	●URL
 hostname::::ホスト名
@@ -2361,7 +2361,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/8f8ab504da6ca9681db5c7f8aa3d1f4b6bf8840c/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/8f109835dcff90d19caed4b551a0da32d9d0f57e/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -13374,19 +13374,29 @@ The `GET` method restriction serves no useful purpose other than being interoper
 </p>
 					</li>
 					<li>
+%~blob ~LET %~blob~URL~entry の`~obj$bU
+◎
+Let blob be blobURLEntry’s object.
+</li>
+					<li>
 %応答 ~LET 新たな`応答$
 ◎
 Let response be a new response.
 </li>
 					<li>
-%全部的な長さ ~LET `同型に符号化する$( `整数を直列化する$( %~blob~URL~entry の`~obj$bUの `size$mF ) )
+%全部的な長さ ~LET %~blob の `size$mF
 ◎
-Let fullLength be blobURLEntry’s object’s size, serialized and isomorphic encoded.
+Let fullLength be blob’s size.
 </li>
 					<li>
-%型 ~LET %~blob~URL~entry の`~obj$bUの `type$mF
+%直列化した全部的な長さ ~LET `同型に符号化する$( `整数を直列化する$( %全部的な長さ ) )
 ◎
-Let type be blobURLEntry’s object’s type.
+Let serializedFullLength be fullLength, serialized and isomorphic encoded.
+</li>
+					<li>
+%型 ~LET %~blob の `type$mF
+◎
+Let type be blob’s type.
 </li>
 					<li>
 <p>
@@ -13398,9 +13408,9 @@ If request’s header list does not contain `Range`:
 </p>
 						<ol>
 							<li>
-%本体と型 ~LET `本体と型を安全に抽出する$( %~blob~URL~entry の`~obj$bU )
+%本体と型 ~LET `本体と型を安全に抽出する$( %~blob )
 ◎
-Let bodyWithType be the result of safely extracting blobURLEntry’s object.
+Let bodyWithType be the result of safely extracting blob.
 </li>
 							<li>
 %応答 の`状態s~message$rs ~SET `OK^bl
@@ -13413,9 +13423,12 @@ Set response’s status message to `OK`.
 Set response’s body to bodyWithType’s body.
 </li>
 							<li>
-%応答 の`~header~list$rs ~SET « ( `Content-Length$h, %全部的な長さ ), ( `Content-Type$h, %型 ) »
+%応答 の`~header~list$rs ~SET « 次に挙げる~header »
+⇒＃
+( `Content-Length$h, %直列化した全部的な長さ ),
+( `Content-Type$h, %型 )
 ◎
-Set response’s header list to « (`Content-Length`, fullLength), (`Content-Type`, type) ».
+Set response’s header list to « (`Content-Length`, serializedFullLength), (`Content-Type`, type) ».
 </li>
 						</ol>
 					</li>
@@ -13451,38 +13464,74 @@ Let rangeValue be the result of parsing a single range header value given rangeH
 If rangeValue is failure, then return a network error.
 </li>
 							<li>
-%始端 ~LET %範囲~値[ 0 ]
+( %範囲~始端, %範囲~終端 ) ~LET %範囲~値
 ◎
-↓</li>
-							<li>
-%終端 ~LET ~NULL
-◎
-Let sliceEndRange be null.
+Let (rangeStart, rangeEnd) be rangeValue.
 </li>
 							<li>
 <p>
 ~IF［
-%範囲~値[ 1 ] ~NEQ ~NULL
+%範囲~始端 ~EQ ~NULL
+］：
+◎
+If rangeStart is null:
+</p>
+								<ol>
+									<li>
+%範囲~始端 ~SET %全部的な長さ ~MINUS %範囲~終端
+◎
+Set rangeStart to fullLength − rangeEnd.
+</li>
+									<li>
+%範囲~終端 ~SET %範囲~始端 ~PLUS %範囲~終端 ~MINUS 1
+◎
+Set rangeEnd to rangeStart + rangeEnd − 1.
+</li>
+								</ol>
+							</li>
+							<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+								<ol>
+									<li>
+~IF［
+%範囲~始端 ~GTE %全部的な長さ
 ］
 ⇒
-%終端 ~SET %範囲~値[ 1 ] ~PLUS 1
+~RET `~network~error$
 ◎
-If rangeValue[1] is non-null, then set sliceEndRange to rangeValue[1] + 1.
+If rangeStart is greater than or equal to fullLength, then return a network error.
+</li>
+									<li>
+~IF［
+%範囲~終端 ~EQ ~NULL
+］~OR［
+%範囲~終端 ~GTE %全部的な長さ
+］
+⇒
+%範囲~終端 ~SET %全部的な長さ ~MINUS 1
+◎
+If rangeEnd is null or rangeEnd is greater than or equal to fullLength, then set rangeEnd to fullLength − 1.
+</li>
+								</ol>
+							</li>
+							<li>
+<p>
+%切出した~blob ~LET `~blobを切出す$( %~blob, %範囲~始端, %範囲~終端 ~PLUS 1, %型 )
+◎
+Let slicedBlob be the result of invoking slice blob given blob, rangeStart, rangeEnd + 1, and type.
 </p>
 
 <p class="note">注記：
 `Range$h【！range】 ~header用の`~byte範囲＠~HTTPsem#byte-range$は，終端を含むが、
-下で利用する`~blobを切出す$~algoの入力~範囲は，そうでない
-— %範囲~値[ 1 ] に 1 を加えているのは、
+`~blobを切出す$ ~algoの入力~範囲は，そうでない
+— %範囲~終端 に 1 を加えているのは、
 そのためである。
 ◎
-A range header denotes an inclusive byte range, while the slice blob algorithm input range does not. To use the slice blob algorithm, we have to increment the parsed range header end value.
-</p>
-							</li>
-							<li>
-%切出した~blob ~LET `~blobを切出す$( %~blob~URL~entry の`~obj$bU, %始端, %終端, %型 )
-◎
-Let slicedBlob be the result of invoking slice blob given blobURLEntry’s object, rangeValue[0], sliceEndRange, and type.
+A range header denotes an inclusive byte range, while the slice blob algorithm input range does not. To use the slice blob algorithm, we have to increment rangeEnd.
 </li>
 							<li>
 %切出した本体と型 ~LET `本体と型を安全に抽出する$( %切出した~blob )
@@ -13495,9 +13544,9 @@ Let slicedBodyWithType be the result of safely extracting slicedBlob.
 Set response’s body to slicedBodyWithType’s body.
 </li>
 							<li>
-%切出した長さ ~LET `同型に符号化する$( `整数を直列化する$( %切出した~blob の`size$mF ) )
+%直列化した切出した長さ ~LET `同型に符号化する$( `整数を直列化する$( %切出した~blob の `size$mF ) )
 ◎
-Let slicedLength be slicedBlob’s size, serialized and isomorphic encoded.
+Let serializedSlicedLength be slicedBlob’s size, serialized and isomorphic encoded.
 </li>
 							<li>
 %内容~範囲 ~LET `bytes ^bl
@@ -13505,22 +13554,11 @@ Let slicedLength be slicedBlob’s size, serialized and isomorphic encoded.
 Let contentRange be `bytes `.
 </li>
 							<li>
-~IF［
-%始端 ~NEQ ~NULL
-］
-⇒
 %内容~範囲 に次の結果を付加する
 ⇒
-`同型に符号化する$( `整数を直列化する$( %始端 ) )
+`同型に符号化する$( `整数を直列化する$( %範囲~始端 ) )
 ◎
-If rangeValue[0] is non-null, then serialize and isomorphic encode rangeValue[0], and append the result to contentRange.
-</li>
-							<li>
-~ELSE
-⇒
-%内容~範囲 に `30^X `0^smb を付加する
-◎
-Otherwise, append 0x30 (0) to contentRange.
+Append rangeStart, serialized and isomorphic encoded, to contentRange.
 </li>
 							<li>
 %内容~範囲 に `2D^X `-^smb を付加する
@@ -13528,22 +13566,11 @@ Otherwise, append 0x30 (0) to contentRange.
 Append 0x2D (-) to contentRange.
 </li>
 							<li>
-~IF［
-%終端 ~NEQ ~NULL
-］
-⇒
 %内容~範囲 に次の結果を付加する
 ⇒
-`同型に符号化する$( `整数を直列化する$( %終端 ) )
+`同型に符号化する$( `整数を直列化する$( %範囲~終端 ) )
 ◎
-If sliceEndRange is non-null, then serialize and isomorphic encode sliceEndRange, and append the result to contentRange.
-</li>
-							<li>
-~ELSE
-⇒
-%内容~範囲 に %全部的な長さ を付加する
-◎
-Otherwise, append fullLength to contentRange.
+Append rangeEnd, serialized and isomorphic encoded to contentRange.
 </li>
 							<li>
 %内容~範囲 に `2F^X `/^smb を付加する
@@ -13551,9 +13578,9 @@ Otherwise, append fullLength to contentRange.
 Append 0x2F (/) to contentRange.
 </li>
 							<li>
-%内容~範囲 に %全部的な長さ を付加する
+%内容~範囲 に %直列化した全部的な長さ を付加する
 ◎
-Append fullLength to contentRange.
+Append serializedFullLength to contentRange.
 </li>
 							<li>
 %応答 の`状態s$rs ~SET `206$st
@@ -13566,13 +13593,13 @@ Set response’s status to 206.
 Set response’s status message to `Partial Content`.
 </li>
 							<li>
-%応答 の`~header~list$rs ~SET 
-«
-( `Content-Length$h, %切出した長さ ),
+%応答 の`~header~list$rs ~SET « 次に挙げる~header »
+⇒＃
+( `Content-Length$h, %直列化した切出した長さ ),
 ( `Content-Type$h, %型 ),
-( `Content-Range$h, %内容~範囲 ) »
+( `Content-Range$h, %内容~範囲 )
 ◎
-Set response’s header list to « (`Content-Length`, slicedLength), (`Content-Type`, type), (`Content-Range`, contentRange) ».
+Set response’s header list to « (`Content-Length`, serializedSlicedLength), (`Content-Type`, type), (`Content-Range`, contentRange) ».
 </li>
 						</ol>
 					</li>
