@@ -1864,6 +1864,7 @@ registry::::レジストリ
 	機能上の:functional:~
 拡張-:extend:~
 拡張:extension:~
+拡張d:extended:拡張
 拡張能:extensibility:~
 能:ability:~
 能力:capability:~
