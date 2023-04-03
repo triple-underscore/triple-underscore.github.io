@@ -988,7 +988,7 @@ COMMON_DATA.PREMAP = `
 界面:\uE007~interface\uE005
 同期:\uE007同期c？\uE005
 浮上:\uE007浮上-？\uE005
-標的:\uE007標的\uE005
+標的:\uE007~target\uE005
 取消:\uE007取消~可？\uE005
 構:\uE007Composed？\uE005
 既定動作:\uE007既定~動作\uE005
@@ -1021,7 +1021,7 @@ COMMON_DATA.PREMAP = `
 界面:<tr><th>~interface<td>
 同期:<tr><th>同期？<td>
 浮上:<tr><th>浮上-？<td>
-標的:<tr><th>標的<td>
+標的:<tr><th>~target<td>
 取消:<tr><th>取消可？<td>
 構:<tr><th>Composed？<td>
 既定動作:<tr><th>既定~動作<td>
