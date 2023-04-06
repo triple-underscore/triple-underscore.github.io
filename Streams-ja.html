@@ -162,8 +162,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2023-02-20
-trans_update:2023-02-22
+spec_date:2023-04-04
+trans_update:2023-04-06
 source_checked:211216
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -828,9 +828,10 @@ RS.二又化する:#readablestream-tee
 RS.妨げられて:#is-readable-stream-disturbed
 RS.現在の~BYOB要請~view:#readablestream-current-byob-request-view
 RS.限界水位までの~queueの残り~size:#readablestream-desired-size-to-fill-up-to-the-high-water-mark
-
 RS.~pipe:#readablestream-pipe
 RS.~pipeする:#readablestream-pipe
+RS.~byte列から~pullする:#readablestream-pull-from-bytes
+
 VRSp.中止-を防止するか:#readablestream-pipe-to-preventabort
 VRSp.取消-を防止するか:#readablestream-pipe-to-preventcancel
 VRSp.~closeを防止するか:#readablestream-pipe-to-preventclose
@@ -926,15 +927,11 @@ i.反復~終端-:~WEBIDL#end-of-iteration
 却下-時:~WEBIDLjs#upon-rejection
 反応-:~WEBIDLjs#dfn-perform-steps-once-promise-is-settled
 
-BS.切離され:~WEBIDLjs#dfn-detach
-BS.切離す:~WEBIDLjs#dfn-detach
 BS.~byte長さ:~WEBIDLjs#buffersource-byte-length
-BS.下層~buffer:~WEBIDLjs#buffersource-underlying-buffer
-BS.転送する:~WEBIDLjs#arraybuffer-transfer
-BS.作成する:~WEBIDLjs#arraybufferview-create
-BS.中へ~byte列を書込んで:~WEBIDLjs#arraybufferview-write
-BS.中へ書込んで:~WEBIDLjs#arraybuffer-write
 保持された~byte列の複製を取得する:~WEBIDLjs#dfn-get-buffer-source-copy
+配列~buffer~viewの中へ~byte列を書込む:~WEBIDLjs#arraybufferview-write
+~buffer~sourceを~byte列から作成する:~WEBIDLjs#_buffersource-create
+	配列~buffer~viewを~byte列から作成する:~WEBIDLjs#arraybufferview-create
 
 新たな:~WEBIDLjs#new
 ~Web~IDLを介して新たに作成した:~WEBIDLjs#new
@@ -955,6 +952,7 @@ set.付加する:~INFRA#set-append
 構造体:~INFRA#struct
 sct.~item:~INFRA#struct-item
 ~byte列:~INFRA#byte-sequence
+byte.長さ:~INFRA#byte-sequence-length
 
 要請~本体:~FETCH#concept-request-body
 
@@ -1217,6 +1215,7 @@ return:
 置換s:substitution::置換
 切離され:detachされ::切り離され
 切離す:detachする::切り離す
+切離して:detachする::切り離して
 連結-:concatenate::~
 連結:concatenation::~
 弱い:weakな::~
@@ -1412,6 +1411,8 @@ encapsulate::::カプセル化
 背後:behind:~
 望み:wishes:~
 破る:breakする:~
+保守的:conservative:~
+積極的:aggressive:~
 
 	方法:how to
 	目的をもって:purposefully
@@ -1651,8 +1652,11 @@ template::::テンプレート
 	%開始~algo:startAlgorithm
 	%開始~promise:startPromise
 	%~stream
+	%~stream:stream
 	%~pull~algo:pullAlgorithm
 	%~pull~algo包装体:pullAlgorithmWrapper
+	%~pullする~size:pullSize
+	%~pullした~byte列:pulled
 	%~size~algo:sizeAlgorithm
 	%取消~algo:cancelAlgorithm
 	%取消~algo包装体:cancelAlgorithmWrapper
@@ -1684,6 +1688,9 @@ template::::テンプレート
 	%値:%value
 	%成功~手続き:successSteps
 	%失敗~手続き:failureSteps
+	%可用な~size:available
+	%欲される~size:desiredSize
+	%~view:view
 
 	●指示語
 後方:backward:~
@@ -1812,7 +1819,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/b45c0c5a6c66c73c1e17254976e8a271aecc5592" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/2942e89487be9d95ee70cfb980499c4778774b67" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -5010,7 +5017,7 @@ Attempts to reads bytes into view, and returns a promise resolved with the resul
 <code>{ value: %theChunk, done: false }</code>
 の形による~objで充足されることになる。
 この事例では、
-%view は`切離され$BSるので，もはや利用-可能でなくなるが、
+%view は`切離され＠~WEBIDLjs#dfn-detach$るので，もはや利用-可能でなくなるが、
 %theChunk は同じ裏~memory領域への新たな（かつ同じ型の）~viewになり，
 ~chunkの~dataは その中へ書込まれるようになる。
 ◎
@@ -5020,7 +5027,7 @@ If the chunk does become available, the promise will be fulfilled with an object
 ~streamが~closeされたときは、
 <code>{ value: %theChunk, done: true }</code>
 の形による~objで充足されることになる。
-この事例では %view は`切離され$BS，もはや利用-可能でなくなるが、
+この事例では %view は`切離され＠~WEBIDLjs#dfn-detach$，もはや利用-可能でなくなるが、
 %theChunk は同じ裏~memory領域への新たな（かつ同じ型の）~viewになる
 — その~memoryが~call元に返されることを確保するため，改変を加えずに。
 ◎
@@ -22149,13 +22156,13 @@ Otherwise, perform ? ReadableByteStreamControllerEnqueue(stream.[[controller]], 
 <hr>
 
 <p>
-以下に与える~algoは、
+以下に与える各~algoは、
 上の［
 `~byte読取り~support付きで設定しておく$RS~algoを介して初期化されたもの
 ］以外の `ReadableStream$I ~instanceには，
 利用してはナラナイ。
 ◎
-The following algorithm must only be used on ReadableStream instances initialized via the above set up with byte reading support algorithm:
+The following algorithms must only be used on ReadableStream instances initialized via the above set up with byte reading support algorithm:
 </p>
 
 <div class="algo">
@@ -22197,15 +22204,13 @@ Return byobRequest.[[view]].
 
 <p>
 仕様は、
-`現在の~BYOB要請~view$RSに対しては，次をしてはナラナイ
-⇒
-その`下層~buffer$BSを［
-`転送する$BS／`切離す$BS
-］
+`現在の~BYOB要請~view$RSに対しては，その`下層~buffer＠~WEBIDLjs#buffersource-underlying-buffer$を［
+`転送して＠~WEBIDLjs#arraybuffer-transfer$はナラナイ／
+`切離して＠~WEBIDLjs#dfn-detach$はナラナイ
+］。
 ◎
 Specifications must not transfer or detach the underlying buffer of the current BYOB request view.
 </p>
-
 
 <p class="note">注記：
 実装は
@@ -22226,12 +22231,12 @@ Implementations could do something equivalent to transferring, e.g. if they want
 仕様は、
 `現在の~BYOB要請~view$RS %~view が ~NULL でないときは、
 アリなら，
-%~view の`中へ~byte列を書込んで$BSから
+%~view の`中へ~byte列を書込んで＠~WEBIDLjs#arraybufferview-write$から
 `~chunkを~enqueueする$RS( %~view )
 を~callするべきである。
 仕様は、［
 `~chunkを~enqueueする$RSに渡すためとして，
-新たな `ArrayBufferView$I を`作成する$BS
+新たな `ArrayBufferView$I を`作成する＠~WEBIDLjs#arraybufferview-create$
 ］のは、［
 %~view が ~NULL のとき
 ］または［
@@ -22245,11 +22250,128 @@ Specifications should, when possible, write into the current BYOB request view w
 </p>
 
 <p>
+次に与える，`~byte列から~pullする$RS~algoは、
+共通的な事例
+— ［
+ある`下層~byte源$を成す仕様~levelの表現として~serveする`~byte列$ %~byte列
+］から~byte列を導出する事例 —
+用に，これらの要件を実装する。
+それは、
+保守的であり，
+%~byte列 内に【一部の】~byte列を残すことに注意
+— %~byte列 から【全部を】積極的に`~chunkを~enqueueする$RSのではなく
+【この~algoは、 入力 %~byte列 を改変する】
+。
+なので、
+この~algoの~call元は，残りの~byteたちの個数を`背圧$用の通達として利用したいと求めることもあろう。
+◎
+The following pull from bytes algorithm implements these requirements, for the common case where bytes are derived from a byte sequence that serves as the specification-level representation of an underlying byte source. Note that it is conservative and leaves bytes in the byte sequence, instead of aggressively enqueueing them, so callers of this algorithm might want to use the number of remaining bytes as a backpressure signal.
+</p>
+
+<div class="algo">
+<p>
+`ReadableStream$I %~stream の中へ
+`~byte列から~pullする@RS
+ときは、
+所与の
+( `~byte列$ %~byte列 ) 
+に対し：
+◎
+To pull from bytes with a byte sequence bytes into a ReadableStream stream:
+</p>
+<ol>
+	<li>
+~Assert：
+%~stream .`controller$rS は `ReadableByteStreamController$I を`実装する$。
+◎
+Assert: stream.[[controller]] implements ReadableByteStreamController.
+</li>
+	<li>
+%可用な~size ~LET %~byte列 の`長さ$byte
+◎
+Let available be bytes’s length.
+</li>
+	<li>
+%現在の要請~view ~LET %~stream の`現在の~BYOB要請~view$RS
+◎
+↓</li>
+	<li>
+%欲される~size ~LET %現在の要請~view に応じて
+⇒＃
+~NULL ならば %可用な~size ／
+~ELSE_ %現在の要請~view の`~byte長さ$BS
+◎
+Let desiredSize be available.
+◎
+If stream’s current BYOB request view is non-null, then set desiredSize to stream’s current BYOB request view's byte length.
+</li>
+	<li>
+%~pullする~size ~LET `min^op( %可用な~size, %欲される~size )
+◎
+Let pullSize be the smaller value of available and desiredSize.
+</li>
+	<li>
+%~pullした~byte列 ~LET %~byte列 を成す最初の %~pullする~size 個の~byte
+◎
+Let pulled be the first pullSize bytes of bytes.
+</li>
+	<li>
+%~byte列 から最初の %~pullする~size 個の~byteを除去する
+◎
+Remove the first pullSize bytes from bytes.
+</li>
+	<li>
+<p>
+~IF［
+%現在の要請~view ~NEQ ~NULL
+］：
+◎
+If stream’s current BYOB request view is non-null, then:
+</p>
+		<ol>
+			<li>
+`配列~buffer~viewの中へ~byte列を書込む$( %現在の要請~view, %~pullした~byte列 )
+◎
+Write pulled into stream’s current BYOB request view.
+</li>
+			<li>
+~ABRUPT `ReadableByteStreamControllerRespond$A( %~stream .`controller$rS, %~pullする~size )
+◎
+Perform ? ReadableByteStreamControllerRespond(stream.[[controller]], pullSize).
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~ELSE：
+◎
+Otherwise,
+</p>
+		<ol>
+			<li>
+%~view ~SET `~buffer~sourceを~byte列から作成する$( `Uint8Array$I, %~pullした~byte列, %~stream に`関連な~realm$ )
+◎
+Set view to the result of creating a Uint8Array from pulled in stream’s relevant Realm.
+</li>
+			<li>
+~ABRUPT `ReadableByteStreamControllerEnqueue$A( %~stream .`controller$rS, %~view )
+◎
+Perform ? ReadableByteStreamControllerEnqueue(stream.[[controller]], view).
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+<p>
 仕様は、
 `ReadableStream$I を`~closeして＠#readablestream-close$以降は、
-その`現在の~BYOB要請~view$RSの`中へ書込んで$BSはナラナイ。
+その`現在の~BYOB要請~view$RSの中へ［
+`~byte列を書込んで＠~WEBIDLjs#arraybufferview-write$【！~WEBIDLjs#arraybuffer-write】はナラナイ／
+`~byte列から~pullして＠#readablestream-pull-from-bytes$はナラナイ
+］。
 ◎
-Specifications must not write into the current BYOB request view after closing the corresponding ReadableStream.
+Specifications must not write into the current BYOB request view or pull from bytes after closing the corresponding ReadableStream.
 </p>
 
 			</section>
@@ -22796,7 +22918,7 @@ Perform ! SetUpWritableStreamDefaultController(stream, controller, startAlgorith
 これは、［
 `StructuredSerializeWithTransfer$A／
 当の~buffer~sourceにより`保持された~byte列の複製を取得する$／
-`ArrayBuffer$I を`転送する$BS
+`ArrayBuffer$I を`転送する＠~WEBIDLjs#arraybuffer-transfer$
 ］などの演算を利用して，所与の値の同期的な［
 複製または転送
 ］を為すことで避けれる。
@@ -23185,7 +23307,7 @@ Perform ! SetUpTransformStreamDefaultController(stream, controller, transformAlg
 これは、［
 `StructuredSerializeWithTransfer$A／
 当の~buffer~sourceにより`保持された~byte列の複製を取得する$／
-`ArrayBuffer$I を`転送する$BS
+`ArrayBuffer$I を`転送する＠~WEBIDLjs#arraybuffer-transfer$
 ］などの演算を利用して，所与の値の同期的な［
 複製または転送
 ］を為すことで避けれる。
