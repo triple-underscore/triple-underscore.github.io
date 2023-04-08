@@ -121,8 +121,8 @@ return text;
 
 ●●options
 
-spec_date:2023-01-20
-trans_update:2023-01-20
+spec_date:2023-04-06
+trans_update:2023-04-08
 source_checked:220227
 page_state_key:HTML
 spec_status:LS
@@ -209,6 +209,8 @@ I.ValidityState:~HTMLforms#validitystate
 	I.Window:~WINDOW#window
 I.WindowProxy:~HTMLWPROXY#windowproxy
 I.HTMLIFrameElement:#htmliframeelement
+I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
+
 
 m.alert:~HTMLGAPI#dom-window-alert
 m.checkValidity:~HTMLforms#dom-cva-checkvalidity
@@ -357,6 +359,8 @@ i.~fallback:#_object-fallback
 
 i.初回:#process-iframe-initial-insertion
 
+処理待ちな資源~計時の開始~時刻:#iframe-pending-resource-timing-start-time
+
 
 	●用語HTML
 
@@ -412,6 +416,7 @@ text/html における~tag省略:~HTMLdom#concept-element-tag-omission
 
 ~DOM操作~task源:~WAPI#dom-manipulation-task-source
 関連な設定群~obj:~WAPI#relevant-settings-object
+関連な大域~obj:~WAPI#concept-relevant-global
 ~event~loop:~WAPI#event-loop
 ~network用~task源:~WAPI#networking-task-source
 ~queueされ:~WAPI#queue-a-task
@@ -507,6 +512,10 @@ i.応答の処理n:~FETCH#process-response
 要請:~FETCH#concept-request
 応答:~FETCH#concept-response
 ~network~error:~FETCH#concept-network-error
+~fetch計時~情報:~FETCH#fetch-timing-info
+fT.開始~時刻:~FETCH#fetch-timing-info-start-time
+fT.終了~時刻:~FETCH#fetch-timing-info-end-time
+応答~本体~情報:~FETCH#response-body-info
 
 rq.~client:~FETCH#concept-request-client
 rq.資格証~mode:~FETCH#concept-request-credentials-mode
@@ -537,6 +546,10 @@ doc.生成元:~DOM4#concept-document-origin
 
 属性~値の正規化:https://www.w3.org/TR/xml/#AVNormalize
 ~referrer施策:~REFERRER-POLICY#referrer-policy
+
+現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
+
+資源~計時を~markする:~RESOURCE-TIMING#dfn-mark-resource-timing
 
 許可~施策:~PERMISSIONS-POLICY#permissions-policy
 容器~施策:~PERMISSIONS-POLICY#container-policy
@@ -692,6 +705,9 @@ online::::オンライン
 増分的:incremental:~
 再開:resumption::~
 手渡す:hand offする:取り扱わせる
+高分解能:high resolution::~
+処理待ち:pending:~
+mark::::マーク
 
 	newly
 	~access可能:accessible
@@ -722,6 +738,9 @@ srcdoc:
 	%iframe:element
 	%embed:element
 	%object:element
+	%大域~obj:global
+	%~URL:url
+	%~fallback計時~情報:fallbackTimingInfo
 
 	●未分類
 要素間:inter-element::~
@@ -1656,7 +1675,7 @@ Return url.
 ときは、
 所与の
 (
-`iframe$e 要素 %iframe,
+%iframe,
 `~URL$ %~URL,
 `~referrer施策$ %~referrer施策,
 ［
@@ -1685,6 +1704,15 @@ Let historyHandling be "push".
 %履歴~取扱い ~SET `置換-$i
 ◎
 If element's content navigable's active document is not completely loaded, then set historyHandling to "replace".
+</li>
+	<li>
+~IF［
+%iframe は `iframe$e である
+］
+⇒
+%iframe の`処理待ちな資源~計時の開始~時刻$ ~SET `現在の高分解能~時刻$( %iframe の`~node文書$に`関連な大域~obj$ )
+◎
+If element is an iframe, then set element's pending resource-timing start time to the current high resolution time given element's node document's relevant global object.
 </li>
 	<li>
 `~navigableを~URLへ~navigateする$( %~navigable, %~URL, %iframe の`~node文書$ )
@@ -1753,6 +1781,49 @@ Let childDocument be element's content navigable's active document.
 ◎
 If childDocument has its mute iframe load flag set, then return.
 </li>
+	<li>
+<p>
+~IF［
+%iframe の`処理待ちな資源~計時の開始~時刻$ ~NEQ ~NULL
+］：
+◎
+If element's pending resource-timing start time is not null, then:
+</p>
+		<ol>
+			<li>
+%大域~obj ~LET %iframe の`~node文書$に`関連な大域~obj$
+◎
+Let global be element's node document's relevant global object.
+</li>
+			<li>
+%~fallback計時~情報 ~LET 新たな`~fetch計時~情報$
+— その
+⇒＃
+`開始~時刻$fT ~SET %iframe の`処理待ちな資源~計時の開始~時刻$,
+`終了~時刻$fT ~SET `現在の高分解能~時刻$( %大域~obj )
+◎
+Let fallbackTimingInfo be a new fetch timing info whose start time is element's pending resource-timing start time and whose response end time is the current high resolution time given global.
+</li>
+			<li>
+`資源~計時を~markする$( ↓ )
+⇒＃
+%~fallback計時~情報,
+%~URL,
+"`iframe$e",
+%大域~obj,
+空~文字列,
+新たな`応答~本体~情報$,
+0
+◎
+Mark resource timing given fallbackTimingInfo, url, "iframe", global, the empty string, a new response body info, and 0.
+</li>
+			<li>
+%iframe の`処理待ちな資源~計時の開始~時刻$ ~SET ~NULL
+◎
+Set element's pending resource-timing start time to null.
+</li>
+		</ol>
+	</li>
 	<li>
 %子~文書 の`~iframe~loadは進捗-中か$ ~SET ~T
 ◎
@@ -4413,6 +4484,18 @@ User agents are expected to use these attributes as hints for the rendering.
 ◎
 The width and height IDL attributes on the iframe, embed, object, source, and video elements must reflect the respective content attributes of the same name.
 </div>
+
+<p>
+各 `iframe$e 要素には
+`処理待ちな資源~計時の開始~時刻@
+が結付けられる
+— それは、［
+~NULL ／ `DOMHighResTimeStamp$I
+］をとり，
+初期~時は ~NULL に設定される。
+◎
+Each iframe element has an associated null or DOMHighResTimeStamp pending resource-timing start time, initially set to null.
+</p>
 
 <p class="note">注記：
 これらの~IDL属性の型は、［
