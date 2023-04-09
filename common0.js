@@ -1126,7 +1126,8 @@ HTTPv3:http3-ja.html
 HTTPweblink:http-web-linking-ja.html
 HTTPcookie:http-cookie-ja.html
 STRUCTURED-FIELDS:http-structured-fields-ja.html
-CSSWG:https://drafts.csswg.org
+	CSSWG:https://drafts.csswg.org
+CSSWG:https://w3c.github.io/csswg-drafts
 CSSissue:https://github.com/w3c/csswg-drafts/issues
 HTMLissue:https://github.com/whatwg/html/issues
 CSS21:https://www.w3.org/TR/CSS2
