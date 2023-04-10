@@ -2262,7 +2262,8 @@ programming::::プログラミング
 相応しく:suitableに:~
 相応しい:suitableな:~
 相応でな:suitableでな:相応しくな
-care::::ケア
+care:::配慮::ケア
+	~careする:take care
 注意深く:carefulに:~
 注意深い:carefulな:~
 	気を付ける:be careful
