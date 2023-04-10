@@ -1435,6 +1435,8 @@ command::::コマンド
 機会:opportunity:~
 機会c:chance:機会
 snapshot::::スナップショット
+mark::::マーク
+marker::::マーカ
 
 ●幾何
 空間:space:~

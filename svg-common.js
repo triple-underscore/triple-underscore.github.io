@@ -858,7 +858,6 @@ stroke::::ストローク
 gradient:
 graphics::::グラフィックス
 grayscale::::グレイスケール
-marker::::マーカ
 mask::::マスク
 masking::::マスク法
 	~maskされ見えなくなる:masked out

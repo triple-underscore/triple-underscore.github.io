@@ -907,7 +907,6 @@ guide::::ガイド
 key::::キー
 machine::::マシン
 mail::::メール
-mark::::マーク
 email:
 句:phrase::~::フレーズ
 	pipe-and-filter:パイプ＆フィルタ
