@@ -1437,6 +1437,7 @@ command::::コマンド
 snapshot::::スナップショット
 mark::::マーク
 marker::::マーカ
+anchor::::アンカー
 
 ●幾何
 空間:space:~
