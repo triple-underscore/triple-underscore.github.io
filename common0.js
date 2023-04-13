@@ -1130,9 +1130,10 @@ STRUCTURED-FIELDS:http-structured-fields-ja.html
 CSSWG:https://w3c.github.io/csswg-drafts
 CSSissue:https://github.com/w3c/csswg-drafts/issues
 HTMLissue:https://github.com/whatwg/html/issues
-CSS21:https://www.w3.org/TR/CSS2
-CSS22:https://www.w3.org/TR/CSS2
+CSS2J:css2-ja.html
+CSS22:https://www.w3.org/TR/CSS22
 	CSS22:https://w3c.github.io/csswg-drafts/css2 → single page
+CSS2TABLE:https://w3c.github.io/csswg-drafts/css2/tables.html/../
 CSP3:CSP3-ja.html
 COMPOSITING:compositing-ja.html
 FILTERS:filter-effects-ja.html
@@ -1140,9 +1141,6 @@ MASKING1:css-masking-ja.html
 CASCADE:css-cascade-ja.html
 CSSANCHOR:css-anchor-position-ja.html
 CSSBOX:css-box-ja.html
-CSS2BOX:css22-box-ja.html
-CSS2VISUDET:css22-visudet-ja.html
-CSS2VISUREN:css22-visuren-ja.html
 CSSALIGN:css-align-ja.html
 CSSANIM:css-animations-ja.html
 CSSBG:css-backgrounds-ja.html

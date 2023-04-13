@@ -1578,7 +1578,7 @@ COMMON_DATA.JA_BASIS = {
 	ipa:       'www.ipa.go.jp/security/rfc',
 	adagio:    '＃www.y-adagio.com/public/standards',
 	TR:        'www.w3.org/TR',
-	CSSWG:     'drafts.csswg.org',
+	CSSWG:     'w3c.github.io/csswg-drafts',
 	HTMLLS:    'html.spec.whatwg.org/multipage',
 	RFCx:      'www.rfc-editor.org/rfc',
 //	RFCx:      'datatracker.ietf.org/doc/html',
@@ -1616,11 +1616,11 @@ CSP3=副               ~/CSP3-ja.html
 CSP3=副2              hashedhyphen.github.io/webappsec-specjp/csp/index.html
 CSP2=副               ~/CSP-ja.html
 CSS1=副               ＃www.doraneko.org/webauth/css1/19961217/Overview.html
-CSS21=・              ~TR/CSS2/
-CSS21=・              ~CSSWG/css2/
-CSS21=主              ~momdoG/css2/Overview.html
-CSS21=副2             hp.vector.co.jp/authors/VA022006/css/index.html
-CSS21=副              ~adagio/tr_css2/toc.html●2.0 日本語訳
+CSS2=副              ~momdoG/css2/Overview.html
+CSS2=副2             hp.vector.co.jp/authors/VA022006/css/index.html
+CSS2=副3             ~adagio/tr_css2/toc.html●2.0 日本語訳
+CSS2TABLE=主          ~momdoG/css2/tables.html
+CSS2TABLE=・          ~CSSWG/css2/tables.html/../
 CSSALIGN3=副          ~/css-align-ja.html
 CSSANIMATIONS1=副     ~/css-animations-ja.html
 CSSANIMATIONS2=副     ~/css-animations2-ja.html
@@ -1892,10 +1892,6 @@ STORAGE=副            ~/storage-ja.html
 
 COMMON_DATA.REF_DATA2 = `
 ~TR/CSS22/●       ~momdoG/css2/
-~TR/CSS21/●       ~momdoG/css2/
-~TR/CSS2/●        ~momdoG/css2/
-~CSSWG/css2/●     ~momdoG/css2/
-~CSSWG/css21/●    ~momdoG/css2/
 ~TR/SVG/●         triple-underscore.github.io/SVG11/
 ~TR/SVG11/●       triple-underscore.github.io/SVG11/
 	~HTMLLS/●          ~momdoG/html/
@@ -1906,8 +1902,8 @@ COMMON_DATA.REF_DATA2 = `
 COMMON_DATA.REF_KEY_MAP = `
 DOM4:DOM
 CSP:CSP3
-CSS2:CSS21
-CSS22:CSS21
+CSS21:CSS2
+CSS22:CSS2
 COMPOSITING:COMPOSITING1
 CSS3ALIGN:CSSALIGN3
 CSS3LIST:CSSLISTS3
