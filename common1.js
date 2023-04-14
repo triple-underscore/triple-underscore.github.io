@@ -1714,6 +1714,7 @@ FILTEREFFECTS1=副     ~/filter-effects-ja.html
 MEDIAFRAG=・          ~TR/media-frags/
 MEDIAFRAG=主          www.asahi-net.or.jp/~ax2s-kmtn/internet/media/REC-media-frags-10-20120925.html
 COMPAT=副             ~/compat-ja.html
+DESIGNPRINCIPLES=副   ~/design-principles-ja.html
 DOM=副                ~/DOM4-ja.html
 DOMPARSING=副         ~/DOM-Parsing-ja.html
 DOMLEVEL2STYLE=副     ~adagio/tr_dom2_style/expanded-toc.html

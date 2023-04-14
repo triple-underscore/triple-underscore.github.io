@@ -1093,6 +1093,7 @@ TR:https://www.w3.org/TR
 RFCx:https://www.rfc-editor.org/rfc
 	RFCx:https://datatracker.ietf.org/doc/html
 TC39:https://tc39.es/ecma262/multipage/
+DESIGN-PRINCIPLES:design-principles-ja.html
 INFRA:infra-ja.html
 DOM4:DOM4-ja.html
 DOM-Parsing:DOM-Parsing-ja.html
