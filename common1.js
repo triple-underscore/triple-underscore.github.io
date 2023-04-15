@@ -1701,6 +1701,7 @@ CSSUI4=副             ~/css-ui-ja.html
 CSSVALUES3=副         ~momdoG/css3-values/
 CSSVALUES3=副         ~/css-values-ja.html●Level 4 日本語訳
 CSSVALUES4=副         ~/css-values-ja.html
+CSSVALUES5=副         ~/css-values5-ja.html
 CSSVARIABLES1=副      ~/css-variables-ja.html
 CSSWILLCHANGE1=副     ~/css-will-change-ja.html
 CSSWRITINGMODES4=副   ~/css-writing-modes-ja.html

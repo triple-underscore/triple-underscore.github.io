@@ -1193,6 +1193,7 @@ CSSTOM1:css-typed-om-ja.html
 CSSEASING:css-easing-ja.html
 CSSUI:css-ui-ja.html
 CSSVAL:css-values-ja.html
+CSSVAL5:css-values5-ja.html
 CSSVAR:css-variables-ja.html
 CSSWILLCHANGE:css-will-change-ja.html
 CSSWM:css-writing-modes-ja.html
