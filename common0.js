@@ -2251,7 +2251,7 @@ programming::::プログラミング
 発見-:discover:~
 発見:discovery:~
 恣意的:arbitrary:~
-任意な:arbitraryな:任意の
+任意な:arbitraryな:~
 任意に:arbitraryに:~
 帰結:consequence:~
 駆動な:drivenな:駆動の
