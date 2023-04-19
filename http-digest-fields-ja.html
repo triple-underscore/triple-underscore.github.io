@@ -53,8 +53,8 @@ figure > pre {
 ●●options
 
 spec_title:Digest Fields
-spec_date:2023-04-05
-trans_update:2023-04-09
+spec_date:2023-04-19
+trans_update:2023-04-19
 source_checked:230308
 original_url:https://httpwg.org/http-extensions/draft-ietf-httpbis-digest-headers.html
 abbr_url:HTTPdigest
@@ -228,8 +228,9 @@ GZIP:
 
 	●処理
 弄る:mangleする:~
-剥がさ:stripさ:~
 診断:diagnosis:~
+発行-:issue:~
+有符号化-:code::~::コード
 
 	通過する:pass across
 	手渡す:handing off
@@ -250,6 +251,7 @@ GZIP:
 署名:signature::~
 代用:substitution::~
 出自:origin::~
+事故:accident:~
 
 	第一-:first-
 	第二-:second-
@@ -294,7 +296,7 @@ GZIP:
 	構成:structured
 助け:help:~
 関心:interest:~
-	興味深い:interesting
+興味深い:interestingな:~
 	興味深いことに:interestingly
 	関心~group:interest group
 固定的:fixed:~
@@ -391,6 +393,10 @@ workflow::::ワークフロー
 	多様なもの:wide variety of
 	混在していた:mixed
 	広範な:broad
+	目的をもった:purposeful
+	反対の:opposite
+	は別として:aside from
+	かなり:quite
 
 	●未分類
 消費:consumption::~
@@ -407,6 +413,8 @@ patch::::パッチ
 	切り離す:decouple
 	部分的にしか:fully or partially
 	端点どうし:between peers
+	大きくなる:larger
+	全体が:whole
 
 	●語形
 	^r:Single UNIX Specification, version 2
@@ -874,7 +882,7 @@ the message content requires some sort of manipulation to be considered as repre
 </li>
 	<li>
 `内容$が`資源$の部分的な表現を伝達する所
-— `範囲~要請$ `HTTP$r【！§ 14.2】など
+— `範囲~要請$ `HTTP$r【！§ 14.2】 など
 ◎
 or content conveys a partial representation of a resource, such as Range Requests (see Section 14 of [HTTP]).
 </li>
@@ -1897,11 +1905,22 @@ Digests explicitly depend on the "representation metadata" (e.g., the values of 
 署名は、
 `完全性~field$を適用するときに，敵対者に~~晒される見込みが高いと判断される
 — `5§ を見よ。
-署名を利用して，空な表現の~checksumを保護することは、［
-最終的な`内容$において，何かが剥がされたり追加されたかどうか検出する
-］ことを，受信している端点に許容する。
+`Repr-Digest$h は、
+署名と組合されたときに，興味深い可能性を提供する。
+送信する`内容$が無い局面では，
+当の~message内に空~文字列の~digestを内包でき、
+署名された場合は，受信者が［
+内容が何らかの［
+事故，あるいは目的をもった操作
+］による結果として追加されたか否か
+］を検出する助けになり得る。
+反対の局面も~supportされる
+— 内容~用の`完全性~field$を内包して，それを署名すれば、
+受信者が［
+当の内容が，どこで除去されたか
+］を検出する助けになり得る。
 ◎
-Signatures are likely to be deemed an adversarial setting when applying Integrity fields; see Section 5. Using signatures to protect the checksum of an empty representation allows receiving endpoints to detect if an eventual content has been stripped or added.
+Signatures are likely to be deemed an adversarial setting when applying Integrity fields; see Section 5. Repr-Digest offers an interesting possibility when combined with signatures. In the scenario where there is no content to send, the digest of an empty string can be included in the message and, if signed, can help the recipient detect if content was added either as a result of accident or purposeful manipulation. The opposite scenario is also supported; including an Integrity field for content, and signing it, can help a recipient detect where the content was removed.
 </p>
 
 <p>
@@ -2240,14 +2259,25 @@ IANA is requested to deprecate the "Hypertext Transfer Protocol (HTTP) Digest Al
 <h2 title="Appendix A. Resource Representation and Representation Data">付録 A. 資源~表現と表現~data</h2>
 
 <p>
-以下に挙げる例は、［
+この節において以下に挙げる例は、［
 `表現~metadata$, `内容$の`形式変換$, `~method$
 ］が~messageと`内容$にどう影響iするかを示す。
+これらの例は、
+網羅的ではない。
+◎
+This section following examples show how representation metadata, content transformations, and method impacts on the message and content. These examples a not exhaustive.
+</p>
+
+<p>
+他が指示されない限り、
+以下に挙げる各~例は，［
+~JSON~obj `{"hello": "world"}^c と後続する 1 個の `LF$P
+］に基づく。
 以下において，`内容$が印字不能な文字を包含するときは
-（例：圧縮されているとき）、
+（例：符号化されたとき）、
 ~hexに符号化された~byte列として示される。
 ◎
-The following examples show how representation metadata, content transformations, and method impacts on the message and content. When the content contains non-printable characters (e.g., when it is compressed) it is shown as a sequence of hex-encoded bytes.
+Unless otherwise indicated, the examples are based on the JSON object {"hello": "world"} followed by an LF. When the content contains non-printable characters (e.g., when it is encoded) it is shown as a sequence of hex-encoded bytes.
 </p>
 
 <div class="example">
@@ -2256,6 +2286,7 @@ The following examples show how representation metadata, content transformations
 PUT /entries/1234 HTTP/1.1
 Host: foo.example
 Content-Type: application/json
+Content-Length: 19
 
 {"hello": "world"}
 </pre>
@@ -2267,26 +2298,30 @@ Figure 1: Request containing a JSON object without any content coding
 </div>
 
 <p>
-圧縮は、
-内容の長さを抑制する効率的な仕方を与える。
+しかしながら、
+`内容~符号法$の利用は，かなり共通的にある。
+~clientは、
+同じ~dataを `gzip$c 符号法 `HTTP$r【！§ 8.4.1.3】 で~uploadすることもできる。
+この事例では、
+当の符号法の~overheadに因り，
+`Content-Length$h が包含する値は大きくなることに注意。
 ◎
-Compression is an efficient way to reduce the content length.
+However, the use of content coding is quite common. The client could also upload the same data with a gzip coding (Section 8.4.1.3 of [HTTP]). Note that in this case, the Content-Length contains a larger value due to the coding overheads.
 </p>
 
 <div class="example">
 <figure id="name-request-containing-a-gzip-e">
 <pre class="lang-http">
-`~SBS-ST$
-
 PUT /entries/1234 HTTP/1.1
 Host: foo.example
 Content-Type: application/json
 Content-Encoding: gzip
+Content-Length: 39
 
-1F 8B 08 00 A5 B4 BD 62 02 FF
-AB 56 4A 54 B2 52 50 32 A4 03
-50 AA 05 00 44 47 2A 7C 6D 00
-00 00
+1F 8B 08 00 88 41 37 64 00 FF
+AB 56 CA 48 CD C9 C9 57 B2 52
+50 2A CF 2F CA 49 51 AA E5 02
+00 D9 E4 31 E7 13 00 00 00
 </pre>
 <figcaption>
 `gzip$c で符号化された~JSON~objを包含している要請
@@ -2296,15 +2331,12 @@ Figure 2: Request containing a gzip-encoded JSON object
 </div>
 
 <p>
-`内容$を［
-圧縮した形で，正しい`内容~符号法$を伴わずに送信する
-］ことは、［
-当の内容は，不正形である
-］ことを意味する。
+`gzip$c で有符号化された~dataを `Content-Encoding$h を介して指示することなく送信することは、
+当の内容は不正形であることを意味する。
 この事例では、
-`~server$は~errorで返信できる
+`~server$は~errorで返信できる。
 ◎
-Sending the compressed form of the content without the correct content coding means that the content is malformed. In this case, the server can reply with an error.
+Sending the gzip coded data without indicating it via Content-Encoding means that the content is malformed. In this case, the server can reply with an error.
 </p>
 
 <div class="example">
@@ -2313,11 +2345,12 @@ Sending the compressed form of the content without the correct content coding me
 PUT /entries/1234 HTTP/1.1
 Host: foo.example
 Content-Type: application/json
+Content-Length: 39
 
-1F 8B 08 00 A5 B4 BD 62 02 FF
-AB 56 4A 54 B2 52 50 32 A4 03
-50 AA 05 00 44 47 2A 7C 6D 00
-00 00
+1F 8B 08 00 88 41 37 64 00 FF
+AB 56 CA 48 CD C9 C9 57 B2 52
+50 2A CF 2F CA 49 51 AA E5 02
+00 D9 E4 31 E7 13 00 00 00
 </pre>
 <figcaption>
 不正形な~JSONを包含している要請
@@ -2338,11 +2371,15 @@ Figure 4: An error response for a malformed content
 
 <p>
 `範囲~要請$は、
-転送される`内容$に影響する
-— 次の例は、
-`§ A における~JSON~obj＠#name-request-containing-a-gzip-e$の部分的な表現を伝達する【よう要請する】。
+転送される`内容$に影響する。
+次の例では、
+`~client$は，
+`/entires/1234^c に在る`資源$
+— ~JSON~obj `{"hello": "world"}^c と後続する 1 個の `LF$P —
+に~accessしているが、
+選好される`内容~符号法$と特定の~byte範囲も指示した。
 ◎
-A Range-Request affects the transferred message content, conveying a partial representation of the JSON object in Figure 2.
+A Range-Request affects the transferred message content. In this example, the client is accessing the resource at /entires/1234, which is the JSON object {"hello": "world"} followed by an LF. However, the client has indicated a preferred content coding and a specific byte range.
 </p>
 
 <div class="example">
@@ -2350,6 +2387,7 @@ A Range-Request affects the transferred message content, conveying a partial rep
 <pre class="lang-http">
 GET /entries/1234 HTTP/1.1
 Host: foo.example
+Accept-Encoding: gzip
 Range: bytes=1-7
 </pre>
 <figcaption>
@@ -2357,13 +2395,24 @@ Range: bytes=1-7
 ◎
 Figure 5: Request for partial content
 </figcaption></figure>
+</div>
 
+<p>
+対して`~server$は、
+（`上の 2 個目の例＠#name-request-containing-a-gzip-e$にて全体が表示された~JSON~objを成す最初の 10 ~byteに等価な）
+部分的な表現で応答することにより，
+~client要請を満足する。
+◎
+The server satisfies the client request by responding with a partial representation (equivalent to the first 10 of the JSON object displayed in whole in Figure 2).
+</p>
+
+<div class="example">
 <figure id="name-partial-response-from-a-gzi">
 <pre class="lang-http">
 HTTP/1.1 206 Partial Content
 Content-Encoding: gzip
 Content-Type: application/json
-Content-Range: bytes 0-10/32
+Content-Range: bytes 0-9/39
 
 1F 8B 08 00 A5 B4 BD 62 02 FF
 </pre>
@@ -2375,12 +2424,15 @@ Figure 6: Partial response from a gzip-encoded representation
 </div>
 
 <p>
-~methodは、
-転送される`内容$に影響することもある。
-例えば、
-`HEAD$m 要請に対する応答は，`内容$を運ばない。
+［
+`内容~符号法$／`範囲~要請$
+］は別として、
+~methodは，転送される`内容$に影響することもある。
+例えば， `HEAD$m 要請に対する応答は`内容$を運ばないが、
+この例の事例では，
+`Content-Length$h `HTTP$r【！§ 8.6】 を内包する。
 ◎
-The method can also affect the transferred message content. For example, the response to a HEAD request does not carry content.
+Aside from content coding or range requests, the method can also affect the transferred message content. For example, the response to a HEAD request does not carry content but in this example case does include a Content-Length; see Section 8.6 of [HTTP].
 </p>
 
 <div class="example">
@@ -2403,6 +2455,7 @@ Figure 7: HEAD request
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Encoding: gzip
+Content-Length: 39
 
 </pre>
 <figcaption>
@@ -2416,14 +2469,18 @@ Figure 8: Response to HEAD request (empty content)
 <p>
 応答の意味論は、
 `~target~URI$を同封された表現から切り離すかもしれない。
-下に与える応答の例では、
-`Content-Location$h ~headerは，［
+次の例では、
+`~client$は，
+`/authors/^c へ~directされる `POST$m 要請を発行するが、
+対する応答は，
+`Content-Location$h ~headerを内包していて［
 同封された表現は、
 `/authors/123^c にて可用な資源を指す
-］ことを指示する
-— 当の要請は `/authors/^c へ~directされていても。
+］ことを指示する。
+この例では、
+`Content-Length$h は送信されないことに注意。
 ◎
-Finally, the semantics of a response might decouple the target URI from the enclosed representation. In the example response below, the Content-Location header field indicates that the enclosed representation refers to the resource available at /authors/123, even though the request is directed to /authors/.
+Finally, the semantics of a response might decouple the target URI from the enclosed representation. In the example below, the client issues a POST request directed to /authors/ but the response includes a Content-Location header field that indicates the enclosed representation refers to the resource available at /authors/123. Note that Content-Length is not sent in this example.
 </p>
 
 <div class="example">
