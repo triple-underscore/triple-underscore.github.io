@@ -1384,7 +1384,7 @@ Util.addAltRefs = () => {
 		return REF_KEY_MAP[key] || key;
 	}
 
-	const ref_types = ['normative', 'informative'];
+	const ref_types = ['normative', 'informative', 'additional'];
 
 	const rfc_list = [];
 	const ref_node_list = ref_types.filter( (id) => {
@@ -1471,7 +1471,8 @@ Util.addAltRefs = () => {
 
 		const html_data = {
 normative: '<h3>文献（規範）</h3>',
-informative: '<h3>文献（参考）</h3>'
+informative: '<h3>文献（参考）</h3>',
+additional: '<h3>文献（この訳による追加）</h3>'
 		};
 
 		const refHTML = (data) => {
