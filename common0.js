@@ -1144,6 +1144,7 @@ CSSANCHOR:css-anchor-position-ja.html
 CSSBOX:css-box-ja.html
 CSSALIGN:css-align-ja.html
 CSSANIM:css-animations-ja.html
+CSSANIM2:css-animations2-ja.html
 CSSBG:css-backgrounds-ja.html
 CSSBREAK:css-break-ja.html
 CSSCOLOR:css-color-ja.html
@@ -1176,13 +1177,13 @@ CSSOVERFLOW3:css-overflow-ja.html
 CSSPV1:css-properties-values-api-ja.html
 CSSPAGE:css-page-ja.html
 CSSPOS:css-position-ja.html
+CSSPSEUDO:css-pseudo-ja.html
 CSSRUBY:css-ruby-ja.html
 CSSREGION:https://w3c.github.io/csswg-drafts/css-regions-1/
 CSSSCOPING:css-scoping-ja.html
 CSSSCROLLSNAP:css-scroll-snap-ja.html
 CSSSHAPES:css-shapes-ja.html
 CSSSNAPSHOT:css-snapshot-ja.html
-CSSPSEUDO:css-pseudo-ja.html
 CSSSPEECH:css-speech-ja.html
 CSSSTYLEATTR:css-style-attr-ja.html
 CSSSYN:css-syntax-ja.html
@@ -1203,9 +1204,9 @@ GEOMETRY:geometry-ja.html
 TRANSFORM:css-transforms-ja.html
 TRANSFORM2:css-transforms2-ja.html
 TRANSITION:css-transitions-ja.html
+TRANSITION2:css-transitions2-ja.html
 WANIM:web-animations-ja.html
 WANIMapi:web-animations-api-ja.html
-MQ4:mediaqueries-ja.html
 MQ5:mediaqueries-ja.html
 SVG11:SVG11
 SVG2:https://svgwg.org/svg2-draft
