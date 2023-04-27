@@ -118,8 +118,8 @@ return text;
 
 ●●options
 
-spec_date:2023-03-31
-trans_update:2023-04-01
+spec_date:2023-04-27
+trans_update:2023-04-28
 source_checked:221006
 page_state_key:HTML
 spec_status:LS
@@ -149,6 +149,7 @@ M:method
 I:code
 m:code
 mE:code
+pE:code
 E:code
 c:code
 e:code
@@ -205,6 +206,8 @@ I.FocusOptions:#focusoptions
 I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
 I.Navigator:~HTMLnavigator#navigator
 I.UserActivation:#useractivation
+I.VisibilityStateEntry:#visibilitystateentry
+I.PerformanceEntry:~TIMELINE#dom-performanceentry
 
 CEReactions:~HEcustom#cereactions
 
@@ -240,6 +243,11 @@ m.navigator:~HTMLnavigator#dom-window-navigator
 m.userActivation:#dom-navigator-useractivation
 m.hasBeenActive:#dom-useractivation-hasbeenactive
 m.isActive:#dom-useractivation-isactive
+
+m.name:#visibilitystateentry-name
+m.entryType:#visibilitystateentry-entrytype
+m.startTime:#visibilitystateentry-starttime
+m.duration:#visibilitystateentry-duration
 
 	m.execCommand:#execCommand
 m.execCommand:~EXEC-COMMAND#execcommand%28%29
@@ -423,6 +431,8 @@ ps.focus-visible:~SELECTORS4#focus-visible-pseudo
 doc.可視性~状態:#visibility-state
 可視性~状態を更新する:#update-the-visibility-state
 ~page可視性~変化-時の手続き:#page-visibility-change-steps
+vsE.時刻印:#visibilitystateentry-timestamp
+vsE.可視性~状態:#visibilitystateentry-state
 
 ~design~modeは可能化されるか:#design-mode-enabled
 編集中の~host:#editing-host
@@ -650,6 +660,7 @@ ev.~composedか:~DOM4#composed-flag
 doc.生成元:~DOM4#concept-document-origin
 
 現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
+処理能~entryを~queueする:~TIMELINE#queue-a-performanceentry
 
 上端~層:~FULLSCREEN#top-layer
 tL.追加する:~FULLSCREEN#top-layer-add
@@ -866,6 +877,11 @@ shortcut::::ショートカット
 経路:path::~
 off-screen::::オフスクリーン
 	開閉すること:to be opened or closed
+塗り:paint:~
+間引かせ:throttleさせ:~
+間引き:throttling:~
+活動:activity:~
+	活動が無い:inactivity
 
 	ヤリトリ-可能:interactive
 	長く:long
@@ -890,6 +906,8 @@ off-screen::::オフスクリーン
 	^Key:Escape
 	^Key:Shift
 	WYSIWYG
+	長期間:long period
+	になって以降:from the moment
 
 	●構文
 
@@ -1064,6 +1082,8 @@ top::::トップ
 端:end:~
 template:
 URI:
+相関:correlation:~
+隠蔽-:shadow:~
 
 	素な~textのみ:plaintext-only
 	この属性の状態:kind of editable (or not editable)
@@ -2084,6 +2104,19 @@ If document's visibility state equals visibilityState, then return.
 Set document's visibility state to visibilityState.
 </li>
 	<li>
+%処理能~entry ~LET 新たな `VisibilityStateEntry$I
+— その
+⇒＃
+`可視性~状態$vsE ~SET %可視性~状態,
+`時刻印$vsE ~SET `現在の高分解能~時刻$( %文書 に`関連な大域~obj$ )
+◎
+Queue a new VisibilityStateEntry whose visibility state is visibilityState and whose timestamp is the current high resolution time given document's relevant global object.
+</li>
+	<li>
+`処理能~entryを~queueする$( %処理能~entry )
+◎
+↑</li>
+	<li>
 `~screen方位~変更~手続き$( %文書 )
 `SCREENORIENTATION$r
 ◎
@@ -2127,6 +2160,133 @@ Fire an event named visibilitychange at document, with its bubbles attribute ini
 </ol>
 </div>
 
+			<section id="the-visibilitystateentry-interface">
+<h4 title="The VisibilityStateEntry interface">6.2.1. `VisibilityStateEntry$I ~interface</h4>
+
+<p>
+`VisibilityStateEntry$I ~interfaceは、
+文書が作動中になって以降における文書の可視性の変化を公開する。
+◎
+The VisibilityStateEntry interface exposes visibility changes to the document, from the moment the document becomes active.
+</p>
+
+<div class="example">
+<p>
+これは例えば、
+~page内の~JS~codeが，可視性の変化と塗り計時との相関を精査することを許容する：
+◎
+For example, this allows JavaScript code in the page to examine correlation between visibility changes and paint timing:
+</p>
+
+<pre class="lang-js">
+function wasHiddenBeforeFirstContentfulPaint() {
+    const %fcpEntry = performance.getEntriesByName("first-contentful-paint")[0];
+    const %visibilityStateEntries = performance.getEntriesByType("visibility-state");
+    return %visibilityStateEntries.some(e =&gt;
+        e.startTime &lt; %fcpEntry.startTime &amp;&amp;
+        e.name === "hidden");
+}
+</pre>
+
+</div>
+
+<p class="note">注記：
+~pageを隠すことは，描画~その他の~UA演算を間引かせ得るので、
+可視性の変化を［
+そのような間引きが生じたことの指示
+］として利用することは，共通的にある。
+しかしながら、
+間引かせ得るものは，~browserに応じて他にもある
+— 長期間，活動【利用者とのヤリトリ等】が無いなど。
+◎
+Since hiding a page can cause throttling of rendering and other user-agent operations, it is common to use visibility changes as an indication that such throttling has occurred. However, other things could also cause throttling in different browsers, such as long periods of inactivity.
+</p>
+
+<pre class="idl">
+[Exposed=(Window)]
+interface `VisibilityStateEntry@I : `PerformanceEntry$I {
+  readonly attribute DOMString `name$m;                 /* <span class="comment">
+継承した `name＠~TIMELINE#dom-performanceentry-name$m を隠蔽する
+◎
+shadows inherited name
+</span> */
+  readonly attribute DOMString `entryType$m;            /* <span class="comment">
+継承した `entryType＠~TIMELINE#dom-performanceentry-entrytype$m を隠蔽する
+◎
+shadows inherited entryType
+</span> */
+  readonly attribute DOMHighResTimeStamp `startTime$m;  /* <span class="comment">
+継承した `startTime＠~TIMELINE#dom-performanceentry-starttime$m を隠蔽する
+◎
+shadows inherited startTime
+</span> */
+  readonly attribute unsigned long `duration$m;         /* <span class="comment">
+継承した `duration＠~TIMELINE#dom-performanceentry-duration$m を隠蔽する
+◎
+shadows inherited duration
+</span> */
+};
+</pre>
+
+<p>
+各 `VisibilityStateEntry$I ~objには、
+次に挙げるものが結付けられる：
+◎
+↓</p>
+<ul>
+	<li>
+`時刻印@vsE
+⇒
+`DOMHighResTimeStamp$I 値
+◎
+The VisibilityStateEntry has an associated DOMHighResTimeStamp timestamp.
+</li>
+	<li>
+`可視性~状態@vsE
+⇒
+`visible^l ／ `hidden^l
+◎
+The VisibilityStateEntry has an associated "visible" or "hidden" visibility state.
+</li>
+</ul>
+
+<div class="algo">
+`name@m
+取得子~手続きは
+⇒
+~RET コレの`可視性~状態$vsE
+◎
+The name getter steps are to return this's visibility state.
+</div>
+
+<div class="algo">
+`entryType@m
+取得子~手続きは
+⇒
+~RET `visibility-state^l
+◎
+The entryType getter steps are to return "visibility-state".
+</div>
+
+<div class="algo">
+`startTime@m
+取得子~手続きは
+⇒
+~RET コレの`時刻印$vsE
+◎
+The startTime getter steps are to return this's timestamp.
+</div>
+
+<div class="algo">
+`duration@m
+取得子~手続きは
+⇒
+~RET 0
+◎
+The duration getter steps are to return zero.
+</div>
+
+			</section>
 		</section>
 		<section id="inert-subtrees">
 <h3 title="Inert subtrees">6.3. 不活な下位tree</h3>
