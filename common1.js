@@ -1742,8 +1742,7 @@ APPMANIFEST=副        ~/appmanifest-ja.html
 HRTIME=副             ~/hr-time-ja.html
 NAVIGATIONTIMING=副   ~/navigation-timing-ja.html●Level 2 日本語訳
 NAVIGATIONTIMING2=副  ~/navigation-timing-ja.html
-PERFORMANCETIMELINE=副     ~/performance-timeline-ja.html●Level 2 日本語訳
-PERFORMANCETIMELINE2=副    ~/performance-timeline-ja.html
+PERFORMANCETIMELINE=副     ~/performance-timeline-ja.html
 USERTIMING2=副        ~/user-timing-ja.html
 RESOURCETIMING2=副     ~/resource-timing-ja.html
 RESOURCETIMING=副     ~/resource-timing-ja.html
@@ -1933,6 +1932,7 @@ TLS:RFC8446
 SERVICEWORKERS1:SERVICEWORKERS
 FEATUREPOLICY:PERMISSIONSPOLICY1
 PERMISSIONSPOLICY:PERMISSIONSPOLICY1
+PERFORMANCETIMELINE2:PERFORMANCETIMELINE
 HRTIME2:HRTIME
 HRTIME3:HRTIME
 `;
