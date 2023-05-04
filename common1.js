@@ -1673,6 +1673,7 @@ CSSNAMESPACES3=副3    ~momdo/REC-css-namespaces-3-20140320.html
 CSSOVERFLOW3=副       ~/css-overflow-ja.html
 CSSPAGE3=副           ~/css-page-ja.html
 CSSPOSITION3=副       ~/css-position-ja.html
+CSSPOSITION4=副       ~/css-position4-ja.html
 CSSRUBY1=副           ~/css-ruby-ja.html
 CSSSHAPES1=副         ~/css-shapes-ja.html
 CSSSPEECH1=副         ~/css-speech-ja.html
