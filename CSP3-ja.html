@@ -145,8 +145,8 @@ return text;
 ●●options
 
 spec_title:Content Security Policy Level 3
-spec_date:2023-04-28
-trans_update:2023-04-29
+spec_date:2023-05-03
+trans_update:2023-05-04
 source_checked:230220
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-csp/
@@ -374,6 +374,7 @@ wildcard::::ワイルドカード
 	case-sensitive
 	~token化:tokenization
 	符号化-法:encoding
+	10 進数:decimal number
 
 	●処理
 callable:
@@ -485,7 +486,8 @@ params::::パラメタ群
 	%A:path A
 	%B:path B
 	%~scheme:-
-	%既定~port:-
+	-:defaultPort
+	%正規化-済み入力:normalizedInput
 	%listA:path list A
 	%listB:path list B
 	%LA:-
@@ -1194,6 +1196,7 @@ E.CompileError:~WASM/js-api/#zexceptiondef-compileerror
 sub.大小無視:#_ascii-case_insensitive
 ~ASCII小文字~化する:~INFRA#ascii-lowercase
 ~ASCII文字列:~INFRA#ascii-string
+~ASCII数字:~INFRA#ascii-digit
 ~ASCII空白:~INFRA#ascii-whitespace
 ~ASCII空白で分割する:~INFRA#split-on-ascii-whitespace
 ~commaで分割する:~INFRA#split-on-commas
@@ -1428,7 +1431,7 @@ RFC3492=副            crieit.net/posts/RFC3492-Punycode-IDNA-Unicode-Bootstring
 ●●ref_informative
 
 [APPMANIFEST]
-    Marcos Caceres; et al. ＜Web Application Manifest＞. 26 April 2023. WD. URL: https://www.w3.org/TR/appmanifest/
+    Marcos Caceres; et al. ＜Web Application Manifest＞. 2 May 2023. WD. URL: https://www.w3.org/TR/appmanifest/
 [BEACON]
     Ilya Grigorik; Alois Reitbauer. ＜Beacon＞. 3 August 2022. CR. URL: https://www.w3.org/TR/beacon/
 [CSP2]
@@ -10514,15 +10517,13 @@ Let port-part be expression’s port-part if present, and null otherwise.
 </li>
 			<li>
 ~IF［
-`~port成分は合致するか？$A(%~port成分, %~URL~port,
-%~URL~scheme
-)
+`~port成分は合致するか？$A( %~port成分, %~URL )
 ~EQ `合致しない^i
 ］
 ⇒
 ~RET `合致しない^i
 ◎
-If port-part does not port-part match url’s port and url’s scheme, return "Does Not Match".
+If port-part does not port-part match url, return "Does Not Match".
 </li>
 			<li>
 <p>
@@ -10851,79 +10852,73 @@ Return "Matches".
 
 <p>
 `~port成分は合致するか？@A
-( %A, %B, %~scheme )
-（いずれも`~ASCII文字列$）は、
-~CSP~source式の `port-part$p %A が
-~URLの［
-`~port$url %B, `~scheme$url %~scheme
+( `~ASCII文字列$ %入力, `~URL$ %~URL )
+は、
+%入力 として与えられた［
+~CSP~source式の `port-part$p
+］が %~URL の［
+`~port$url, `~scheme$url
 ］に合致するかどうかを検査する：
 ◎
-An ASCII string port A port-part matches two other ASCII strings port B and scheme B if a CSP source expression that contained the first as a port-part could potentially match a URL containing the latter as port and scheme. For example, "80" port-part matches matches "80"/"http".
+An ASCII string input port-part matches URL url if a CSP source expression that contained the first as a port-part could potentially match a URL containing the latter’s port and scheme. For example, "80" port-part matches matches http://example.com.
 </p>
-
-<div >
 <ol>
 	<li>
-%既定~port ~LET %~scheme 用の`既定~port$
+~Assert：
+%入力 は次に挙げるいずれかである
+⇒＃
+空~文字列／
+`~asterisk$／
+`~ASCII数字$たちが成す連列
+◎
+Assert: input is the empty string, "*", or a sequence of ASCII digits.
+</li>
+	<li>
+~IF［
+%入力 ~EQ `~asterisk$
+］
+⇒
+~RET `合致する^i
+◎
+If input is equal to "*", return "Matches".
+</li>
+	<li>
+%正規化-済み入力 ~LET %入力 に応じて
+⇒＃
+空~文字列ならば ~NULL ／
+~ELSE_ %入力 を 10 進数として解釈した結果
+◎
+Let normalizedInput be null if input is the empty string; otherwise input interpreted as decimal number.
+</li>
+	<li>
+~IF［
+%正規化-済み入力 ~EQ %~URL の`~port$url
+］
+⇒
+~RET `合致する^i
+◎
+If normalizedInput equals url’s port, return "Matches".
 </li>
 	<li>
 <p>
-~RET［
-次のいずれかが満たされるならば `合致する^i ／
-~ELSE_ `合致しない^i
-］：
-</p>
-		<ul>
-			<li>［
-%A ~EQ 空~文字列
+~IF［
+%~URL の`~port$url ~EQ ~NULL
 ］~AND［
-%B ~EQ %既定~port
+%正規化-済み入力 ~EQ %~URL の`~scheme$url用の`既定~port$
 ］
-</li>
-			<li>
-%A ~EQ `~asterisk$
-</li>
-			<li>
-［
-%A ~NEQ 空~文字列
-］~AND［
-%A ~EQ %B †
-］
-</li>
-			<li>
-［
-%B ~EQ 空~文字列
-］~AND［
-%A ~EQ %既定~port
-］
-</li>
-		</ul>
-	</li>
-</ol>
-
+⇒
+~RET `合致する^i
 ◎
-• If port A is the empty string:
-•• If port B is the default port for scheme B, return "Matches". Otherwise, return "Does Not Match".
-• If port A is equal to "*", return "Matches".
-• If port A is identical to port B, return "Matches".
-• If port B is the empty string:
-•• If port A is the default port for scheme B, return "Matches". Otherwise, return "Does not Match".
-• Return "Does Not Match".
-</div>
-
-<p class="trans-note">【
-%A, %B には ~NULL も渡され得るが、
-おそらく，ここでの空~文字列を意味する。
-】【
-`既定~port$は ~NULL の場合もある。
-】【†
-この比較が数として解釈する下で行うのかどうか、
-はっきりしない
-（~URLの`~port$urlは、
-実際には整数として定義されている）。
-例えば `080^l と `80^l は、
-~port番号として異なるものと扱われるかもしれない。
-】</p>
+If url’s port is null:
+• Let defaultPort be the default port for url’s scheme.
+• If normalizedInput equals defaultPort, return "Matches".
+</li>
+	<li>
+~RET `合致しない^i
+◎
+Return "Does Not Match".
+</li>
+</ol>
 
 				</section>
 				<section id="match-paths">
