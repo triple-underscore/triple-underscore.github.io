@@ -1579,7 +1579,7 @@ COMMON_DATA.JA_BASIS = {
 	ipa:       'www.nic.ad.jp/ja/tech/ipa',
 	adagio:    '＃www.y-adagio.com/public/standards',
 	TR:        'www.w3.org/TR',
-	CSSWG:     'w3c.github.io/csswg-drafts',
+	CSSWG:     'drafts.csswg.org',
 	HTMLLS:    'html.spec.whatwg.org/multipage',
 	RFCx:      'www.rfc-editor.org/rfc',
 //	RFCx:      'datatracker.ietf.org/doc/html',
