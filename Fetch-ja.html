@@ -208,8 +208,8 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2023-05-05
-trans_update:2023-05-02
+spec_date:2023-05-08
+trans_update:2023-05-09
 source_checked:221212
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -907,6 +907,7 @@ fT.~redirect終了~時刻:#fetch-timing-info-redirect-end-time
 fT.~redirect開始~時刻:#fetch-timing-info-redirect-start-time
 fT.最終-接続~計時~情報:#fetch-timing-info-final-connection-timing-info
 fT.最終-~network要請~開始~時刻:#fetch-timing-info-final-network-request-start-time
+fT.最初の非最終-~network要請~開始~時刻:#fetch-timing-info-first-interim-network-response-start-time
 fT.最終-~network応答~開始~時刻:#fetch-timing-info-final-network-response-start-time
 fT.~server計時~header群:#fetch-timing-info-server-timing-headers
 fT.具現化を阻んでいるか:#fetch-timing-info-render-blocking
@@ -914,6 +915,7 @@ fT.具現化を阻んでいるか:#fetch-timing-info-render-blocking
 応答~本体~情報:#response-body-info
 fT.符号化された~size:#fetch-timing-info-encoded-body-size
 fT.復号した~size:#fetch-timing-info-decoded-body-size
+fT.内容~型:#response-body-info-content-type
 
 計時を報告する:#finalize-and-report-timing
 接続~計時~情報を記録する:#record-connection-timing-info
@@ -1270,6 +1272,7 @@ nvP.予約-済み環境:~HTMLnav#navigation-params-reserved-environment
 	●外部（他
 
 ~realm:~TC39#realm
+現在の~realm:~TC39#current-realm
 ~Record:~TC39#sec-list-and-record-specification-type
 
 jA.StructuredSerialize:~HTMLcloning#structuredserialize
@@ -1366,6 +1369,7 @@ doc.生成元:~DOM4#concept-document-origin
 ~essence:~MIMESNIFF#mime-type-essence
 ~parameter群:~MIMESNIFF#parameters
 	:~MIMESNIFF#serialize-a-mime-type
+~supportされる~MIME型を最小~化する:~MIMESNIFF#minimize-a-supported-mime-type
 
 ~fetchを取扱う:~SW1#handle-fetch
 ~sw計時~情報:~SW1#service-worker-timing-info
@@ -1613,7 +1617,6 @@ background::::バックグラウンド
 	%埋込元~施策:embedderPolicy
 	%報告のみ:reportOnly
 	%回送-応答:forwardResponse
-	%実際の応答:actualResponse
 	%埋込元~施策~値:embedderPolicyValue
 	%~top-level生成元:topLevelOrigin
 	%~top-level~site:topLevelSite
@@ -2350,7 +2353,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/b07a52c5f7de9ba2a1bb60f9c6f417e197d6209c/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/aaada1f0c53381553cdd5e58aafacf70e9e80246/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -3061,6 +3064,12 @@ final service worker start time (default 0)
 final network-request start time (default 0)
 </dt>
 	<dt>
+`最初の非最終-~network要請~開始~時刻@fT
+（既定は 0 ）
+◎
+first interim network-response start time (default 0)
+</dt>
+	<dt>
 `最終-~network応答~開始~時刻@fT
 （既定は 0 ）
 ◎
@@ -3148,6 +3157,18 @@ A number.
 それを復号した結果の~sizeを~byte数で与える。
 （内容~符号法は適用されてない場合、同じになる。）
 】</dd>
+
+	<dt>
+`内容~型@fT
+（既定は空~文字列）
+◎
+content type (default the empty string)
+</dt>
+	<dd>
+`~ASCII文字列$
+◎
+An ASCII string.
+</dd>
 </dl>
 
 <div class="algo">
@@ -12762,7 +12783,7 @@ opaque filtered response
 `~network~error$であるならば %応答 ／
 ~ELSE_ %応答 の`内部~応答$
 ◎
-Let internalResponse be response, if response is a network error, and response’s internal response otherwise.
+Let internalResponse be response, if response is a network error; otherwise response’s internal response.
 </li>
 	<li>
 <p>
@@ -13120,23 +13141,46 @@ This covers the case of response being a network error.
 </p>
 					</li>
 					<li>
-%応答~状態s ~LET ［
-次が満たされるならば 0 ／
-~ELSE_ %応答 の`状態s$rs
-］
-⇒
-［
-%~fetch~params の`要請$fPの`~mode$rq ~EQ `navigate^l
-］~AND［
-%応答 の`非同一-生成元~redirectはあるか$rs ~EQ ~T
-］
-◎
-Let responseStatus be 0 if fetchParams’s request’s mode is "navigate" and response’s has-cross-origin-redirects is true; otherwise response’s status.
-</li>
-					<li>
 %要請 ~LET %~fetch~params の`要請$fP
 ◎
 ↓</li>
+					<li>
+%応答~状態s ~LET 0
+◎
+Let responseStatus be 0.
+</li>
+					<li>
+<p>
+~IF［
+%要請 の`~mode$rq ~NEQ `navigate^l
+］~OR［
+%応答 の`非同一-生成元~redirectはあるか$rs ~EQ ~F
+］：
+◎
+If fetchParams’s request’s mode is not "navigate" or response’s has-cross-origin-redirects is false:
+</p>
+						<ol>
+							<li>
+%応答~状態s ~SET %応答 の`状態s$rs
+◎
+Set responseStatus to response’s status.
+</li>
+							<li>
+%~MIME型 ~LET `~header~listから~MIME型を抽出する$( %応答 の`~header~list$rs )
+◎
+Let mimeType be the result of extracting a MIME type from response’s header list.
+</li>
+							<li>
+~IF［
+%~MIME型 ~NEQ ~NULL
+］
+⇒
+%本体~情報 の`内容~型$fT ~SET `~supportされる~MIME型を最小~化する$( %~MIME型 )
+◎
+If mimeType is non-null, then set bodyInfo’s content type to the result of minimizing a supported MIME type given mimeType.
+</li>
+						</ol>
+					</li>
 					<li>
 ~IF［
 %要請 の`起動元~種別$rq ~NEQ ~NULL
@@ -13738,13 +13782,12 @@ Let request be fetchParams’s request.
 	<li>
 %応答 ~LET ~NULL
 ◎
-Let response be null.
+Let response and internalResponse be null.
 </li>
 	<li>
-%実際の応答 ~LET ~NULL
+%内部~応答 ~LET ~NULL
 ◎
-Let actualResponse be null.
-</li>
+↑</li>
 	<li>
 <p>
 ~IF［
@@ -13872,12 +13915,12 @@ Set fetchParams’s timing info’s final service worker start time to serviceWo
 If request’s body is non-null, then cancel request’s body with undefined.
 </li>
 					<li>
-%実際の応答 ~SET %応答 に応じて
+%内部~応答 ~SET %応答 に応じて
 ⇒＃
 `絞込み応答$でないならば %応答 ／
 ~ELSE_ %応答 の`内部~応答$
 ◎
-Set actualResponse to response, if response is not a filtered response, and to response’s internal response otherwise.
+Set internalResponse to response, if response is not a filtered response; otherwise to response’s internal response.
 </li>
 					<li>
 <p>
@@ -14043,12 +14086,12 @@ Redirects coming from the network (as opposed to from a service worker) are not 
 <p>
 			</li>
 			<li>
-%実際の応答 ~SET `~HTTP~network-or-cache~fetch$( %~fetch~params )
+%内部~応答 ~SET `~HTTP~network-or-cache~fetch$( %~fetch~params )
 ◎
-Set response and actualResponse to the result of running HTTP-network-or-cache fetch given fetchParams.
+Set response and internalResponse to the result of running HTTP-network-or-cache fetch given fetchParams.
 </li>
 			<li>
-%応答 ~SET %実際の応答
+%応答 ~SET %内部~応答
 ◎
 ↑</li>
 			<li>
@@ -14090,13 +14133,13 @@ If the TAO check for request and response returns failure, then set request’s 
 ~IF［
 `opaque^l ~IN { %要請 の`応答~tainting$rq, %応答 の`種別$rs }
 ］~AND［
-`非同一-生成元~資源~施策~検査$( %要請 の`生成元$rq, %要請 の`~client$rq, %要請 の`行先$rq, %実際の応答 )
+`非同一-生成元~資源~施策~検査$( %要請 の`生成元$rq, %要請 の`~client$rq, %要請 の`行先$rq, %内部~応答 )
 ~EQ `阻止される^i
 ］
 ⇒
 ~RET `~network~error$
 ◎
-If either request’s response tainting or response’s type is "opaque", and the cross-origin resource policy check with request’s origin, request’s client, request’s destination, and actualResponse returns blocked, then return a network error.
+If either request’s response tainting or response’s type is "opaque", and the cross-origin resource policy check with request’s origin, request’s client, request’s destination, and internalResponse returns blocked, then return a network error.
 </p>
 
 <p class="note">注記：
@@ -14116,16 +14159,16 @@ The cross-origin resource policy check runs for responses coming from the networ
 	<li>
 <p>
 ~IF［
-%実際の応答 の`状態s$rsは`~redirect状態s$である
+%内部~応答 の`状態s$rsは`~redirect状態s$である
 ］：
 ◎
-If actualResponse’s status is a redirect status, then:
+If internalResponse’s status is a redirect status:
 </p>
 		<ol>
 			<li>
 <p>
 ~IF［
-%実際の応答 の`状態s$rs ~NEQ `303$st
+%内部~応答 の`状態s$rs ~NEQ `303$st
 ］~AND［
 %要請 の`本体$rq ~NEQ ~NULL
 ］~AND［
@@ -14135,7 +14178,7 @@ If actualResponse’s status is a redirect status, then:
 ~UAは `RST_STREAM^c ~frameを伝送してもヨイ
 — また，そうすることが奨励される。
 ◎
-If actualResponse’s status is not 303, request’s body is non-null, and the connection uses HTTP/2, then user agents may, and are even encouraged to, transmit an RST_STREAM frame.
+If internalResponse’s status is not 303, request’s body is non-null, and the connection uses HTTP/2, then user agents may, and are even encouraged to, transmit an RST_STREAM frame.
 </p>
 
 <p class="note">注記：
@@ -14182,9 +14225,9 @@ If request’s mode is "navigate", then set fetchParams’s controller’s next 
 							<li>
 ~ELSE
 ⇒
-%応答 ~SET %実際の応答 を`内部~応答$とする，`不透明~redirect絞込み応答$
+%応答 ~SET %内部~応答 を`内部~応答$とする，`不透明~redirect絞込み応答$
 ◎
-Otherwise, set response to an opaque-redirect filtered response whose internal response is actualResponse.
+Otherwise, set response to an opaque-redirect filtered response whose internal response is internalResponse.
 </li>
 						</ol>
 					</li>
@@ -14210,9 +14253,9 @@ Return response.＼
 <p class="note">注記：
 手続きはここで終わるが、
 その後も概して，
-%実際の応答 の`本体$rsの`~stream$bdには ~byte列が~enqueueされ続ける。
+%内部~応答 の`本体$rsの`~stream$bdには ~byte列が~enqueueされ続ける。
 ◎
-Typically actualResponse’s body’s stream is still being enqueued to after returning.
+Typically internalResponse’s body’s stream is still being enqueued to after returning.
 </p>
 	</li>
 </ol>
@@ -14239,17 +14282,17 @@ To HTTP-redirect fetch, given a fetch params fetchParams and a response response
 Let request be fetchParams’s request.
 </li>
 	<li>
-%実際の応答 ~LET %応答 に応じて
+%内部~応答 ~LET %応答 に応じて
 ⇒＃
 `絞込み応答$でないならば %応答 ／
 ~ELSE_ %応答 の`内部~応答$
 ◎
-Let actualResponse be response, if response is not a filtered response, and response’s internal response otherwise.
+Let internalResponse be response, if response is not a filtered response; otherwise response’s internal response.
 </li>
 	<li>
-%~Location~URL ~LET `応答の~Location~URLを得る$( %実際の応答, %要請 の`現在の~URL$rqの`素片$url )
+%~Location~URL ~LET `応答の~Location~URLを得る$( %内部~応答, %要請 の`現在の~URL$rqの`素片$url )
 ◎
-Let locationURL be actualResponse’s location URL given request’s current URL’s fragment.
+Let locationURL be internalResponse’s location URL given request’s current URL’s fragment.
 </li>
 	<li>
 ~IF［
@@ -14329,7 +14372,7 @@ This catches a cross-origin resource redirecting to a same-origin URL.
 	</li>
 	<li>
 ~IF［
-%実際の応答 の`状態s$rs ~NEQ `303$st
+%内部~応答 の`状態s$rs ~NEQ `303$st
 ］~AND［
 %要請 の`本体$rq ~NEQ ~NULL
 ］~AND［
@@ -14338,23 +14381,23 @@ This catches a cross-origin resource redirecting to a same-origin URL.
 ⇒
 ~RET `~network~error$
 ◎
-If actualResponse’s status is not 303, request’s body is non-null, and request’s body’s source is null, then return a network error.
+If internalResponse’s status is not 303, request’s body is non-null, and request’s body’s source is null, then return a network error.
 </li>
 	<li>
 <p>
 ~IF［［
-%実際の応答 の`状態s$rs ~IN { `301$st, `302$st }
+%内部~応答 の`状態s$rs ~IN { `301$st, `302$st }
 ］~AND［
 %要請 の`~method$rq ~EQ `POST$hm
 ］］~OR［［
-%実際の応答 の`状態s$rs ~EQ `303$st
+%内部~応答 の`状態s$rs ~EQ `303$st
 ］~AND［
 %要請 の`~method$rq ~NIN { `GET$hm, `HEAD$hm }
 ］］：
 ◎
 If one of the following is true
-• actualResponse’s status is 301 or 302 and request’s method is `POST`
-• actualResponse’s status is 303 and request’s method is not `GET` or `HEAD`
+• internalResponse’s status is 301 or 302 and request’s method is `POST`
+• internalResponse’s status is 303 and request’s method is not `GET` or `HEAD`
 ◎
 then:
 </p>
@@ -14455,10 +14498,10 @@ If timingInfo’s redirect start time is 0, then set timingInfo’s redirect sta
 Append locationURL to request’s URL list.
 </li>
 	<li>
-`~referrer施策を設定する$( %要請, %実際の応答 )
+`~referrer施策を設定する$( %要請, %内部~応答 )
 `REFERRER$r
 ◎
-Invoke set request’s referrer policy on redirect on request and actualResponse. [REFERRER]
+Invoke set request’s referrer policy on redirect on request and internalResponse. [REFERRER]
 </li>
 	<li>
 %再帰的か ~LET ~T
@@ -15896,17 +15939,14 @@ While true:
 </p>
 						<ol>
 							<li>
-~IF［
-%計時~情報 の`最終-~network応答~開始~時刻$fT ~EQ 0
-］
-⇒
-%計時~情報 の`最終-~network応答~開始~時刻$fT ~SET 
+%計時~情報 の`最終-~network応答~開始~時刻$fT ~SET ［
 ~UAの~HTTP構文解析器が当の応答を成す最初の~byte
 （例：~HTTP2用の~frame~header~byte列／~HTTP1x用の応答~状態s行l）
-を受信した直後における，
+を受信した直後
+］における，
 `粗化した共有される現在の時刻$( %~fetch~params の`非同一-生成元~能力は隔離されるか$fP )
 ◎
-If timingInfo’s final network-response start time is 0, then set timingInfo’s final network-response start time to coarsened shared current time given fetchParams’s cross-origin isolated capability, immediately after the user agent’s HTTP parser receives the first byte of the response (e.g., frame header bytes for HTTP/2 or response status line for HTTP/1.x).
+Set timingInfo’s final network-response start time to the coarsened shared current time given fetchParams’s cross-origin isolated capability, immediately after the user agent’s HTTP parser receives the first byte of the response (e.g., frame header bytes for HTTP/2 or response status line for HTTP/1.x).
 </li>
 							<li>
 当の~HTTP応答の`~header節$全体が伝送されるまで待機する
@@ -15927,6 +15967,15 @@ Let status be the HTTP response’s status code.
 If status is in the range 100 to 199, inclusive:
 </p>
 								<ol>
+									<li>
+~IF［
+%計時~情報 の`最初の非最終-~network要請~開始~時刻$fT ~EQ 0
+］
+⇒
+%計時~情報 の`最初の非最終-~network要請~開始~時刻$fT ~SET %計時~情報 の`最終-~network応答~開始~時刻$fT
+◎
+If timingInfo’s first interim network-response start time is 0, then set timingInfo’s first interim network-response start time to timingInfo’s final network-response start time.
+</li>
 									<li>
 ~IF［
 %要請 の`~mode$rq ~EQ `websocket^l
@@ -20175,7 +20224,7 @@ Set this’s request to request.
 	<li>
 コレの`通達$Rq ~SET コレに`関連な~realm$に属する`新たな$ `AbortSignal$I ~obj
 ◎
-Set this’s signal to a new AbortSignal object with this’s relevant Realm.
+Set this’s signal to a new AbortSignal object with this’s relevant realm.
 </li>
 	<li>
 <p>
@@ -20194,7 +20243,7 @@ If signal is non-null, then make this’s signal follow signal.
 `~header~list$Hl ~SET %要請 の`~header~list$rq,
 `~guard$Hl ~SET `request^l
 ◎
-Set this’s headers to a new Headers object with this’s relevant Realm, whose header list is request’s header list and guard is "request".
+Set this’s headers to a new Headers object with this’s relevant realm, whose header list is request’s header list and guard is "request".
 </li>
 	<li>
 <p>
@@ -20622,7 +20671,7 @@ Let clonedRequest be the result of cloning this’s request.
 	<li>
 %~cloneした~Request~obj ~LET `~Request~objを作成する$( %~cloneした要請, コレの`~Headers$Rqの`~guard$Hl, コレに`関連な~realm$ )
 ◎
-Let clonedRequestObject be the result of creating a Request object, given clonedRequest, this’s headers’s guard, and this’s relevant Realm.
+Let clonedRequestObject be the result of creating a Request object, given clonedRequest, this’s headers’s guard, and this’s relevant realm.
 </li>
 	<li>
 `通達に追従させる$( %~cloneした~Request~obj の`通達$Rq, コレの`通達$Rq )
@@ -21015,7 +21064,7 @@ Set this’s response to a new response.
 `~header~list$Hl ~SET %応答 の`~header~list$rs,
 `~guard$Hl ~SET `response^l
 ◎
-Set this’s headers to a new Headers object with this’s relevant Realm, whose header list is this’s response’s header list and guard is "response".
+Set this’s headers to a new Headers object with this’s relevant realm, whose header list is this’s response’s header list and guard is "response".
 </li>
 	<li>
 %本体と型 ~LET %body に応じて
@@ -21039,9 +21088,11 @@ Perform initialize a response given this, init, and bodyWithType.
 `error()@m
 静的~method手続きは
 ⇒
-~RET `~Response~objを作成する$( 新たな`~network~error$, `immutable^l, コレに`関連な~realm$ )
+~RET `~Response~objを作成する$( 新たな`~network~error$, `immutable^l, `現在の~realm$ )
 ◎
-The static error() method steps are to return the result of creating a Response object, given a new network error, "immutable", and this’s relevant Realm.
+The static error() method steps are to return the result of creating a Response object, given a new network error, "immutable", and the current realm.
+
+this’s relevant realm.
 </div>
 
 <div class="algo">
@@ -21076,9 +21127,9 @@ If parsedURL is failure, then throw a TypeError.
 If status is not a redirect status, then throw a RangeError.
 </li>
 	<li>
-%~Response~obj ~LET `~Response~objを作成する$( 新たな`応答$, `immutable^l, コレに`関連な~realm$ )
+%~Response~obj ~LET `~Response~objを作成する$( 新たな`応答$, `immutable^l, `現在の~realm$ )
 ◎
-Let responseObject be the result of creating a Response object, given a new response, "immutable", and this’s relevant Realm.
+Let responseObject be the result of creating a Response object, given a new response, "immutable", and the current realm.
 </li>
 	<li>
 %~Response~obj の`応答$Rsの`状態s$rs ~SET %status
@@ -21124,9 +21175,9 @@ Let bytes the result of running serialize a JavaScript value to JSON bytes on da
 Let body be the result of extracting bytes.
 </li>
 	<li>
-%~Response~obj ~LET `~Response~objを作成する$( 新たな`応答$, `response^l, コレに`関連な~realm$ )
+%~Response~obj ~LET `~Response~objを作成する$( 新たな`応答$, `response^l, `現在の~realm$ )
 ◎
-Let responseObject be the result of creating a Response object, given a new response, "response", and this’s relevant Realm.
+Let responseObject be the result of creating a Response object, given a new response, "response", and the current realm.
 </li>
 	<li>
 %本体と型 の`型$bwT ~SET `application/json^l
@@ -21258,7 +21309,7 @@ Let clonedResponse be the result of cloning this’s response.
 	<li>
 ~RET `~Response~objを作成する$( %~cloneした応答, コレの`~Headers$Rsの`~guard$Hl, コレに`関連な~realm$ )
 ◎
-Return the result of creating a Response object, given clonedResponse, this’s headers’s guard, and this’s relevant Realm.
+Return the result of creating a Response object, given clonedResponse, this’s headers’s guard, and this’s relevant realm.
 </li>
 </ol>
 </div>
@@ -21352,7 +21403,7 @@ Let responseObject be null.
 	<li>
 %関連な~realm ~LET コレに`関連な~realm$
 ◎
-Let relevantRealm be this’s relevant Realm.
+Let relevantRealm be this’s relevant realm.
 </li>
 	<li>
 <p>
