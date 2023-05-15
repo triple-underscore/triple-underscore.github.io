@@ -3029,6 +3029,10 @@ literal::::リテラル
 構文解析:parsing::~::パース処理
 
 形:form:~
+欠落:missing:欠落している
+欠落な:missingな:欠落している
+欠落であ:missingであ:欠落してい
+欠落っ:missingであっ:欠落してい
 
 ●具現化
 
