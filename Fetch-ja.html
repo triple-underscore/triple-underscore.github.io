@@ -208,8 +208,8 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2023-05-13
-trans_update:2023-05-15
+spec_date:2023-05-17
+trans_update:2023-05-19
 source_checked:221212
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -1355,9 +1355,8 @@ bU.~obj:~FILEAPI#blob-url-entry-object
 
 資源~計時を~markする:~RESOURCE-TIMING#dfn-mark-resource-timing
 
+依存~中止-通達を作成する:~DOM4#create-a-dependent-abort-signal
 通達に~algoを追加する:~DOM4#abortsignal-add
-中止-を通達する:~DOM4#abortsignal-signal-abort
-通達に追従させる:~DOM4#abortsignal-follow
 aB.中止-事由:~DOM4#abortsignal-abort-reason
 aB.中止された:~DOM4#abortsignal-aborted
 doc.生成元:~DOM4#concept-document-origin
@@ -1659,6 +1658,7 @@ background::::バックグラウンド
 	%~Response~obj:responseObject
 	%~Response~obj:response
 	%~cloneした~Request~obj:clonedRequestObject
+	%~cloneした通達:clonedSignal
 	%~cloneした要請:clonedRequest
 	%~cloneした応答~clonedResponse
 	%関連な~realm:relevantRealm
@@ -1748,6 +1748,8 @@ background::::バックグラウンド
 	%切出した長さ:slicedLength
 	%直列化した切出した長さ:serializedSlicedLength
 	%内容:contents
+	%通達:signal
+	%通達~群:signals
 
 	●URL
 hostname::::ホスト名
@@ -2142,6 +2144,7 @@ opt-in::::オプトイン
 埋めれ:fillでき:~
 未登録:non-registered:~
 次回の:next:~
+依存:dependent:~
 
 	格納-済み:stored
 	改変されてない:unmodified
@@ -2372,7 +2375,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/018ac19838ade92324a1900113636a8bf98f3a1b/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/086e35f3d2b2fd1961d648f2df9b4a350fff707f/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -19688,10 +19691,10 @@ Returns a clone of request.
 `~Request~objを作成する@
 ときは、
 所与の
-( `要請$ %要請, `~Headers用の~guard$ %~guard, `~realm$ %~realm )
-に対し，次の手続きを走らす：
+( `要請$ %要請, `~Headers用の~guard$ %~guard, `AbortSignal$I ~obj %通達, `~realm$ %~realm )
+に対し：
 ◎
-To create a Request object, given a request request, headers guard guard, and realm realm, run these steps:
+To create a Request object, given a request request, headers guard guard, AbortSignal object signal, and realm realm: 
 </p>
 <ol>
 	<li>
@@ -19708,7 +19711,7 @@ To create a Request object, given a request request, headers guard guard, and re
 ⇒＃
 `要請$Rq ~SET %要請,
 `~Headers$Rq ~SET %headers,
-`通達$Rq ~SET %~realm 属する`新たな$ `AbortSignal$I ~obj
+`通達$Rq ~SET %通達
 ◎
 Let requestObject be a new Request object with realm.
 ◎
@@ -19716,7 +19719,7 @@ Set requestObject’s request to request.
 ◎
 Set requestObject’s headers to a new Headers object with realm, whose headers list is request’s headers list and guard is guard.
 ◎
-Set requestObject’s signal to a new AbortSignal object with realm.
+Set requestObject’s signal to signal.
 </li>
 	<li>
 ~RET %~Request~obj
@@ -20277,19 +20280,17 @@ Otherwise, set request’s priority to init["priority"].
 Set this’s request to request.
 </li>
 	<li>
-コレの`通達$Rq ~SET コレに`関連な~realm$に属する`新たな$ `AbortSignal$I ~obj
+%通達~群 ~LET ［
+%通達 ~NEQ ~NULL ならば « %通達 » ／
+~ELSE_ « »
+］
 ◎
-Set this’s signal to a new AbortSignal object with this’s relevant realm.
+Let signals be « signal » if signal is non-null; otherwise « ».
 </li>
 	<li>
-<p>
-~IF［
-%通達 ~NEQ ~NULL
-］
-⇒
-`通達に追従させる$( コレの`通達$Rq, %通達 )
+コレの`通達$Rq ~SET `依存~中止-通達を作成する$( %通達~群, `AbortSignal$I, コレに`関連な~realm$ )
 ◎
-If signal is non-null, then make this’s signal follow signal.
+Set this’s signal to the result of creating a dependent abort signal from signals, using AbortSignal and this’s relevant realm.
 </li>
 	<li>
 コレの`~Headers$Rq ~SET コレに`関連な~realm$に属する`新たな$ `Headers$I ~obj
@@ -20724,14 +20725,20 @@ If this is unusable, then throw a TypeError.
 Let clonedRequest be the result of cloning this’s request.
 </li>
 	<li>
-%~cloneした~Request~obj ~LET `~Request~objを作成する$( %~cloneした要請, コレの`~Headers$Rqの`~guard$Hl, コレに`関連な~realm$ )
+~Assert：
+コレの`通達$Rq ~NEQ ~NULL
 ◎
-Let clonedRequestObject be the result of creating a Request object, given clonedRequest, this’s headers’s guard, and this’s relevant realm.
+Assert: this’s signal is non-null.
 </li>
 	<li>
-`通達に追従させる$( %~cloneした~Request~obj の`通達$Rq, コレの`通達$Rq )
+%~cloneした通達 ~LET `依存~中止-通達を作成する$( « コレの`通達$Rq », `AbortSignal$I, コレに`関連な~realm$ )
 ◎
-Make clonedRequestObject’s signal follow this’s signal.
+Let clonedSignal be the result of creating a dependent abort signal from « this’s signal », using AbortSignal and this’s relevant realm.
+</li>
+	<li>
+%~cloneした~Request~obj ~LET `~Request~objを作成する$( %~cloneした要請, コレの`~Headers$Rqの`~guard$Hl, %~cloneした通達, コレに`関連な~realm$ )
+◎
+Let clonedRequestObject be the result of creating a Request object, given clonedRequest, this’s headers’s guard, clonedSignal and this’s relevant realm.
 </li>
 	<li>
 ~RET %~cloneした~Request~obj
