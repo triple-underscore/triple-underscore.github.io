@@ -2375,7 +2375,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/086e35f3d2b2fd1961d648f2df9b4a350fff707f/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/900326635be4509de38f1a61084565731ac115c4/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -13327,13 +13327,21 @@ Queue a fetch task to run processResponseEndOfBodyTask with fetchParams’s task
 If fetchParams’s process response is non-null, then queue a fetch task to run fetchParams’s process response given response, with fetchParams’s task destination.
 </li>
 	<li>
+%内部~応答 ~LET %応答 に応じて
+⇒＃
+`~network~error$であるならば %応答 ／
+~ELSE_ %応答 の`内部~応答$
+◎
+Let internalResponse be response, if response is a network error; otherwise response’s internal response.
+</li>
+	<li>
 ~IF［
-%応答 の`本体$rs ~EQ ~NULL
+%内部~応答 の`本体$rs ~EQ ~NULL
 ］
 ⇒
 %応答の本体~終了~時の処理n()
 ◎
-If response’s body is null, then run processResponseEndOfBody.
+If internalResponse’s body is null, then run processResponseEndOfBody.
 </li>
 	<li>
 <p>
@@ -13361,9 +13369,9 @@ Let identityTransformAlgorithm be an algorithm which, given chunk, enqueues chun
 Set up transformStream with transformAlgorithm set to identityTransformAlgorithm and flushAlgorithm set to processResponseEndOfBody.
 </li>
 			<li>
-%応答 の`本体$rsの`~stream$bd ~SET %応答 の`本体$rs の`~stream$bdを %形式変換-~stream を`通して~pipeする$RS()
+%内部~応答 の`本体$rsの`~stream$bd ~SET %内部~応答 の`本体$rs の`~stream$bdを %形式変換-~stream を`通して~pipeする$RS()
 ◎
-Set response’s body’s stream to the result of response’s body’s stream piped through transformStream.
+Set internalResponse’s body’s stream to the result of internalResponse’s body’s stream piped through transformStream.
 </li>
 </ol>
 
@@ -13390,21 +13398,21 @@ If fetchParams’s process response consume body is non-null, then:
 ( %~NULLまたは~byte列 )
 に対し，次を走らす手続き
 ⇒
-%~fetch~params の`応答の本体を消費する処理n$fP( %応答, %~NULLまたは~byte列 )
+%~fetch~params の`応答の本体を消費する処理n$fP( %内部~応答, %~NULLまたは~byte列 )
 ◎
-Let processBody given nullOrBytes be this step: run fetchParams’s process response consume body given response and nullOrBytes.
+Let processBody given nullOrBytes be this step: run fetchParams’s process response consume body given internalResponse and nullOrBytes.
 </li>
 			<li class="algo">
 %本体~errorの処理n ~LET 次を走らす手続き
 ⇒
-%~fetch~params の`応答の本体を消費する処理n$fP( %応答, `失敗^i )
+%~fetch~params の`応答の本体を消費する処理n$fP( %内部~応答, `失敗^i )
 ◎
-Let processBodyError be this step: run fetchParams’s process response consume body given response and failure.
+Let processBodyError be this step: run fetchParams’s process response consume body given internalResponse and failure.
 </li>
 			<li>
 <p>
 ~IF［
-%応答 の`本体$rs ~EQ ~NULL
+%内部~応答 の`本体$rs ~EQ ~NULL
 ］：
 ⇒
 `~fetch~taskを~queueする$( 次の手続き, %~fetch~params の`~taskの行先$fP )
@@ -13417,19 +13425,19 @@ Let processBodyError be this step: run fetchParams’s process response consume 
 %本体の処理n( ~NULL )
 </div>
 ◎
-If response’s body is null, then queue a fetch task to run processBody given null, with fetchParams’s task destination.
+If internalResponse’s body is null, then queue a fetch task to run processBody given null, with fetchParams’s task destination.
 </li>
 			<li>
 ~ELSE
 ⇒
 `本体を全部的に読取る$( ↓ )
 ⇒＃
-%応答 の`本体$rs,
+%内部~応答 の`本体$rs,
 %本体の処理n,
 %本体~errorの処理n,
 %~fetch~params の`~taskの行先$fP
 ◎
-Otherwise, fully read response’s body given processBody, processBodyError, and fetchParams’s task destination.
+Otherwise, fully read internalResponse’s body given processBody, processBodyError, and fetchParams’s task destination.
 </li>
 		</ol>
 	</li>
@@ -22571,13 +22579,29 @@ failure
 • Attempting to fully read the contents of the response’s body failed, e.g., due to an I/O error.
 </li>
 			<li>
+<p>
 `~byte列$
 ⇒
 %応答 の`本体$rsの内容を`読取る＠#body-fully-read$ことに成功した。
 ◎
 a byte sequence
 • Fully reading the contents of the response’s body succeeded.
-</li>
+</p>
+
+<p class="warning">
+全部的な内容を包含している`~byte列$は、
+`~mode$rqが `no-cors^l にされた`要請$にも渡されることになる。
+~call元は、
+そのような内容を取扱うときは，気を付ける必要がある
+— それは、
+要請している`生成元$からは，~access可能になるべきでないので。
+例えば，
+~call元は `no-cors^l `応答$の内容を利用して利用者に画像~内容を直に表示し得るが、
+それらの画像~内容は，それらを埋込んでいる文書~内の~scriptには直に公開されるべきでない。
+◎
+A byte sequence containing the full contents will be passed also for a request whose mode is "no-cors". Callers have to be careful when handling such content, as it should not be accessible to the requesting origin. For example, the caller may use contents of a "no-cors" response to display image contents directly to the user, but those image contents should not be directly exposed to scripts in the embedding document.
+</p>
+			</li>
 		</ul>
 	</dd>
 	<dd class="example">
