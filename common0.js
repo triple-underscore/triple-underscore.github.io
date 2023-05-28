@@ -40,12 +40,12 @@ ref_data
 
 • 本文 html 生成用
 words_table: 単語トークン置換表
-words_table1: 単語トークン置換表（固定）
+words_table1: 単語トークン置換表（固定的）
 class_map: class 名 対応表
 tag_map: tag 名 対応表
 link_map: リンク先 対応表
 abbr_url: ページ URL 略称コード（ "INFRA" 等）
-html_code_list: HTML 例示コード
+html_code_list: HTML 見本コード
 images: 画像データ
 */
 
@@ -461,13 +461,13 @@ Util.setState = (key, val) => {
 
 /** 目次構築
 
-section の入れ子階層を反映する，入れ子 ol による目次を得る
+section の入れ子階層を反映する，入れ子 ol による目次を生成する
 各 section タグの先頭の子要素（見出し）の内容が目次の各項目の内容に複製される
 
-	引数 root : section を子に持つ DOM 要素
+	引数 root : section を子に持つ要素
 
 備考
-・ section の入れ子は直接の親子関係のみ
+・ section の入れ子は直な親子関係のみ
 ・ 子要素を持たない section は無視される
 ・ 自身またはその見出しに id があてがわれていない section も無視される
 ・ 見出しの内容に id を持つ要素があると生成項目と id が重複する（不正）
@@ -993,6 +993,11 @@ COMMON_DATA.PREMAP = `
 構:\uE007Composed？\uE005
 既定動作:\uE007既定~動作\uE005
 文脈:\uE007文脈~情報\uE005
+表記記号:<p>この訳において（主に~algo内で）利用される各種記号（ ε, ~SET, ~IF, ~THROW, 等々）の意味や定義の詳細は、<a href="index.html#common-algo-symbols">~algoに共通して利用される表記</a>を参照されたし。</p>
+追跡路:<a class="fingerprinting" href="infra-ja.html#tracking-vector" title="（ここには、利用者の追跡に利用され得るものがある。／There is a tracking vector here.）"></a>
+非規範的:<p><em>この節は規範的ではない。</em><span lang="en" class="_en">This section is non-normative.</span></p>
+要約:<h2 title="Abstract">要約a</h2>
+位置付け:<h2 title="Status of this Document">この文書の位置付け</h2>
 `;
 
 /*
@@ -1081,13 +1086,8 @@ LTE: <span class="op">≤</span>
 GTE: <span class="op">≥</span> 
 IN: <span class="op">∈</span> 
 NIN: <span class="op">∉</span> 
-SYMBOL_DEF_REF:<a href="index.html#common-algo-symbols">アルゴリズムに共通して用いられる表記</a>
-ABSTRACT:<h2 title="Abstract">要約</h2>
-STATUSofTHIS:<h2 title="Status of this Document">この文書の位置付け</h2>
 SOTD-CSS:<a href="css-common-ja.html#sotd">CSS 日本語訳 共通ページ</a>／<a href="#_spec_metadata">この文書についての詳細</a>
 SOTD-W3C:<a href="w3c-common-ja.html#sotd">W3C 日本語訳 共通ページ</a>／<a href="#_spec_metadata">この文書についての詳細</a>
-INFORMATIVE:<p><em>この節は規範的ではない。</em><span lang="en" class="_en">This section is non-normative.</span></p>
-FINGERPRINTING:<a class="fingerprinting" href="infra-ja.html#tracking-vector" title="（ここには、利用者の追跡に利用され得るものがある。／There is a tracking vector here.）"></a>
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
 TR:https://www.w3.org/TR
 RFCx:https://www.rfc-editor.org/rfc
@@ -1543,6 +1543,7 @@ anchor::::アンカー
 言明:statement:~
 説明-:explain:~
 説明:explanation:~
+要約a:abstract:要約
 要約:summary:~
 要約-:summarize:~
 表明-:assert:~
