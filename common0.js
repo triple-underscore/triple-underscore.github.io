@@ -3081,6 +3081,10 @@ screen::::スクリーン
 scrollbar::::スクロールバー
 scroll::::スクロール
 control::::コントロール
+modal::::モーダル
+	~modal性:modality
+gesture::::ジェスチャ
+prompt:
 click::::クリック
 label::::ラベル
 button::::ボタン
@@ -3101,7 +3105,6 @@ filename::::ファイル名
 外観:appearance:~
 手入力-:enter:~
 手入力:entry:~
-対話-:interact::~::インタラクト
 対話:interaction::~::インタラクション
 対話的:interactive::~::インタラクティブ
 対話性:interactivity::~::インタラクティブ性
