@@ -162,8 +162,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2023-05-31
-trans_update:2023-06-01
+spec_date:2023-06-07
+trans_update:2023-06-09
 source_checked:211216
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -407,9 +407,10 @@ jT.Number:~TC39#sec-ecmascript-language-types-number-type
 
 	●IDL member
 m.new ReadableStream:#rs-constructor
-rs.locked:#rs-locked
 rs.cancel:#rs-cancel
+rs.from:#rs-from
 rs.getReader:#rs-get-reader
+rs.locked:#rs-locked
 rs.pipeThrough:#rs-pipe-through
 rs.pipeTo:#rs-pipe-to
 rs.tee:#rs-tee
@@ -680,6 +681,7 @@ A.StructuredDeserializeWithTransfer:~HTMLcloning#structureddeserializewithtransf
 
 	■ TC39（Ax.XXX:~TC39#sec-xxx ( lowercase )
 Ax.Get:~TC39#sec-get-o-p
+	Ax.Call
 	Ax.CloneArrayBuffer
 	Ax.Construct
 	Ax.CopyDataBlockBytes
@@ -687,9 +689,14 @@ Ax.Get:~TC39#sec-get-o-p
 	Ax.CreateBuiltinFunction
 	Ax.CreateDataProperty
 	Ax.DetachArrayBuffer
+	Ax.GetIterator
+	Ax.GetMethod
 	Ax.GetV
 	Ax.IsDetachedBuffer
 	Ax.IsInteger
+	Ax.IteratorComplete
+	Ax.IteratorNext
+	Ax.IteratorValue
 	Ax.OrdinaryObjectCreate
 	Ax.SameValue
 
@@ -1819,7 +1826,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/eba8c799d4dac3f57291be12d3cf7c597620a80e" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/8d7a0bf26eb2cc23e884ddbaac7c1da4b91cf2bc" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -2876,6 +2883,8 @@ The Web IDL definition for the ReadableStream class is given as follows:
 interface `ReadableStream@I {
   `ReadableStream$mc(optional `object$ %underlyingSource, optional `QueuingStrategy$I %strategy = {});
 
+  static `ReadableStream$I `from$rs(`any$ %asyncIterable);
+
   readonly attribute `boolean$ `locked$rs;
 
   `Promise$&lt;`undefined$&gt; `cancel$rs(optional `any$ %reason);
@@ -3630,6 +3639,24 @@ Perform ? SetUpReadableStreamDefaultControllerFromUnderlyingSource(this, underly
 </li>
 		</ol>
 	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+静的な
+`from(asyncIterable)@rs
+~method手続きは：
+◎
+The static from(asyncIterable) method steps are:
+</p>
+<ol>
+	<li>
+~RET
+~ABRUPT `ReadableStreamFromIterable$A( %asyncIterable )
+◎
+Return ? ReadableStreamFromIterable(asyncIterable).
+</li>
 </ol>
 </div>
 
@@ -6883,6 +6910,218 @@ If stream.[[reader]] is undefined, return false.
 ~RET ~T
 ◎
 Return true.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`ReadableStreamFromIterable(asyncIterable)@A
+は、
+次の手続きを遂行する：
+◎
+ReadableStreamFromIterable(asyncIterable) performs the following steps:
+</p>
+<ol>
+	<li>
+%stream ~LET `undefined^jv
+◎
+Let stream be undefined.
+</li>
+	<li>
+%iteratorRecord ~LET
+~ABRUPT `GetIterator$Ax( %asyncIterable, `async^i )
+◎
+Let iteratorRecord be ? GetIterator(asyncIterable, async).
+</li>
+	<li class="algo">
+%startAlgorithm ~LET 次を走らす~algo
+⇒
+~RET `undefined^jv
+◎
+Let startAlgorithm be an algorithm that returns undefined.
+</li>
+	<li class="algo">
+<p>
+%pullAlgorithm ~LET 次を走らす~algo：
+◎
+Let pullAlgorithm be the following steps:
+</p>
+		<ol>
+			<li>
+%nextResult ~LET 
+`IteratorNext$Ax( %iteratorRecord )
+◎
+Let nextResult be IteratorNext(iteratorRecord).
+</li>
+			<li>
+~IF［
+%nextResult は`中途完了^である
+］
+⇒
+~RET `却下される~promise$
+
+%nextResult.`Value^sl
+◎
+If nextResult is an abrupt completion, return a promise rejected with nextResult.[[Value]].
+</li>
+			<li>
+%nextPromise ~LET %nextResult.`Value^sl で`解決される~promise$
+◎
+Let nextPromise be a promise resolved with nextResult.[[Value]].
+</li>
+			<li class="algo">
+<p>
+~RET ［
+所与の ( %iterResult ) に対し，次を走らす充足~手続き
+］で %nextPromise に`反応-$した結果：
+◎
+Return the result of reacting to nextPromise with the following fulfillment steps, given iterResult:
+</p>
+				<ol>
+					<li>
+~IF［
+`Type$A( %iterResult ) ~NEQ `Object^jT
+］
+⇒
+~THROW `TypeError$jE
+◎
+If Type(iterResult) is not Object, throw a TypeError.
+</li>
+					<li>
+%done ~LET
+~ABRUPT `IteratorComplete$Ax( %iterResult )
+◎
+Let done be ? IteratorComplete(iterResult).
+</li>
+					<li>
+~IF［
+%done ~EQ ~T
+］
+⇒
+~NOABRUPT `ReadableStreamDefaultControllerClose$A( %stream.`controller$rS )
+◎
+If done is true:
+• Perform ! ReadableStreamDefaultControllerClose(stream.[[controller]]).
+</li>
+					<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+						<ol>
+							<li>
+%value ~LET
+~ABRUPT `IteratorValue$Ax( %iterResult )
+◎
+Let value be ? IteratorValue(iterResult).
+</li>
+							<li>
+~NOABRUPT `ReadableStreamDefaultControllerEnqueue$A( %stream.`controller$rS, %value )
+◎
+Perform ! ReadableStreamDefaultControllerEnqueue(stream.[[controller]], value).
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+	<li class="algo">
+<p>
+%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
+◎
+Let cancelAlgorithm be the following steps, given reason:
+</p>
+		<ol>
+			<li>
+%iterator ~LET %iteratorRecord.`Iterator^sl
+◎
+Let iterator be iteratorRecord.[[Iterator]].
+</li>
+			<li>
+%returnMethod ~LET
+`GetMethod$Ax( %iterator, `return^l )
+◎
+Let returnMethod be GetMethod(iterator, "return").
+</li>
+			<li>
+~IF［
+%returnMethod は`中途完了^である
+］
+⇒
+~RET %returnMethod.`Value^sl で`却下される~promise$
+◎
+If returnMethod is an abrupt completion, return a promise rejected with returnMethod.[[Value]].
+</li>
+			<li>
+~IF［
+%returnMethod.`Value^sl ~EQ `undefined^jv
+］
+⇒
+~RET `undefined^jv で`解決される~promise$
+◎
+If returnMethod.[[Value]] is undefined, return a promise resolved with undefined.
+</li>
+			<li>
+%returnResult ~LET
+`Call$Ax( %returnMethod.`Value^sl, %iterator, « %reason » )
+◎
+Let returnResult be Call(returnMethod.[[Value]], iterator, « reason »).
+</li>
+			<li>
+~IF［
+%returnResult は`中途完了^である
+］
+⇒
+~RET 
+%returnResult.`Value^sl で`却下される~promise$
+◎
+If returnResult is an abrupt completion, return a promise rejected with returnResult.[[Value]].
+</li>
+			<li>
+%returnPromise ~LET %returnResult.`Value^sl で`解決される~promise$
+◎
+Let returnPromise be a promise resolved with returnResult.[[Value]].
+</li>
+			<li class="algo">
+<p>
+~RET ［
+所与の ( %iterResult ) に対し，次を走らす充足~手続き
+］で %returnPromise に`反応-$した結果：
+◎
+Return the result of reacting to returnPromise with the following fulfillment steps, given iterResult:
+</p>
+				<ol>
+					<li>
+~IF［
+`Type$A( %iterResult ) ~NEQ `Object^jT
+］
+⇒
+~THROW `TypeError$jE
+◎
+If Type(iterResult) is not Object, throw a TypeError.
+</li>
+					<li>
+~RET `undefined^jv
+◎
+Return undefined.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+	<li>
+%stream ~SET 
+~NOABRUPT `CreateReadableStream$A( %startAlgorithm, %pullAlgorithm, %cancelAlgorithm, 0 )
+◎
+Set stream to ! CreateReadableStream(startAlgorithm, pullAlgorithm, cancelAlgorithm, 0).
+</li>
+	<li>
+~RET %stream
+◎
+Return stream.
 </li>
 </ol>
 </div>
