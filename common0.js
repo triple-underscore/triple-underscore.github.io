@@ -2312,6 +2312,8 @@ method::::メソッド
 呼出ng:invoking:呼び出し
 呼出n:invocation:呼び出し
 
+呼応して:対する response において:~
+	呼応して:in response to
 遂行-:perform:~
 実行-:execute:~
 実行:execution:~
@@ -3589,7 +3591,6 @@ FOO間:inter-FOO
 加えて:in addition,
 加えて:Additionally,
 〜に加えて:in addition to〜
-に呼応して:in response to
 もっぱら:solely
 良い:good
 方が良い／より良く／より良い／もっと良い:better
