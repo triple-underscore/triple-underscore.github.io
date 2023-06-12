@@ -1198,7 +1198,6 @@ open:
 経路制御-:route::~:ルート
 経路制御:routing::~:ルーティング
 direct::::ダイレクト
-redirection::::リダイレクト
 	ディレクティブ
 指令-:direct::~
 	directional:

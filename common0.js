@@ -3165,6 +3165,7 @@ navigable::::ナビ可能
 download::::ダウンロード
 upload::::アップロード
 redirect::::リダイレクト
+redirection::::リダイレクション
 referrer::::リファラ
 remote::::リモート
 

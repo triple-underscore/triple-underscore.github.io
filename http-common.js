@@ -1114,7 +1114,6 @@ open:
 route::::ルート
 	~route法:routing
 direct::::ダイレクト
-redirection::::リダイレクト
 	ディレクティブ
 指令-:direct::~
 	directional:
