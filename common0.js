@@ -993,7 +993,7 @@ COMMON_DATA.PREMAP = `
 構:\uE007Composed？\uE005
 既定動作:\uE007既定~動作\uE005
 文脈:\uE007文脈~情報\uE005
-表記記号:<p>この訳において（主に~algo内で）利用される各種記号（ ε, ~SET, ~IF, ~THROW, 等々）の意味や定義の詳細は、<a href="index.html#common-algo-symbols">~algoに共通して利用される表記</a>を参照されたし。</p>
+表記記号:<p>この訳において（主に~algo内で）利用される各種記号（ ε, ~SET, ~IF, ~THROW, 等々）の意味や定義の詳細は、<a href="index.html#common-wording">共通な慣用表現</a>, <a href="index.html#common-algo-symbols">~algoに共通して利用される表記</a>を参照されたし。</p>
 追跡路:<a class="fingerprinting" href="infra-ja.html#tracking-vector" title="（ここには、利用者の追跡に利用され得るものがある。／There is a tracking vector here.）"></a>
 非規範的:<p><em>この節は規範的ではない。</em><span lang="en" class="_en">This section is non-normative.</span></p>
 要約:<h2 title="Abstract">要約a</h2>
