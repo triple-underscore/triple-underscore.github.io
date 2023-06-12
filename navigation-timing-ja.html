@@ -185,8 +185,8 @@ function get_timing_data1(){ // level 1 用
 ●●options
 
 spec_title:Navigation Timing Level 2
-spec_date:2023-02-06
-trans_update:2023-02-07
+spec_date:2023-06-07
+trans_update:2023-06-12
 source_checked:210408
 page_state_key:TIMING
 original_url:https://w3c.github.io/navigation-timing/
@@ -256,10 +256,14 @@ IP:
 milli::::ミリ
 	回数:count
 DOMContentLoaded:
+restart:
+Critical-CH:
 	差:difference
 	かかった およその時間:roughly how long it took for
 	~navi計時:Navigation Timing
 	~navi計時における:~overload
+	時点:moment
+
 
 	●保安
 login:::ログイン
@@ -422,6 +426,7 @@ m.loadEventStart:#dom-performancenavigationtiming-loadeventstart
 m.loadEventEnd:#dom-performancenavigationtiming-loadeventend
 m.type:#dom-performancenavigationtiming-type
 m.redirectCount:#dom-performancenavigationtiming-redirectcount
+m.criticalCHRestart:#dom-performancenavigationtiming-criticalchrestart
 m.toJSON():#dom-performancenavigationtiming-tojson
 
 m.entryType:~TIMELINE#dom-performanceentry-entrytype
@@ -489,6 +494,7 @@ v.refresh:~HEmetadata#attr-meta-http-equiv-refresh
 pT.文書~load計時:#dfn-document-load-timing
 pT.前-文書の~unload計時:#dfn-previous-document-unload-timing
 pT.~navi種別:#dfn-navigation-type
+pT.~Critical-CH~restart時刻:#dfn-critical-ch-restart-time
 pT.~redirect回数:#dfn-redirect-count
 pT.~sw計時:#dfn-service-worker-timing
 
@@ -582,12 +588,13 @@ swT.~fetch~event配送-時刻:~SW1#service-worker-timing-info-fetch-event-dispat
 
 ●●ref_normative
 
+
 [dom]
     DOM Standard. Anne van Kesteren. WHATWG. Living Standard. URL: https://dom.spec.whatwg.org/ 
 [FETCH]
     Fetch Standard. Anne van Kesteren. WHATWG. Living Standard. URL: https://fetch.spec.whatwg.org/ 
 [HR-TIME]
-    High Resolution Time. Yoav Weiss. W3C. 16 January 2023. W3C Working Draft. URL: https://www.w3.org/TR/hr-time-3/ 
+    High Resolution Time. Yoav Weiss. W3C. 25 April 2023. W3C Working Draft. URL: https://www.w3.org/TR/hr-time-3/ 
 [HTML]
     HTML Standard. Anne van Kesteren; Domenic Denicola; Ian Hickson; Philip Jägenstedt; Simon Pieters. WHATWG. Living Standard. URL: https://html.spec.whatwg.org/multipage/ 
 [NAVIGATION-TIMING]
@@ -595,7 +602,7 @@ swT.~fetch~event配送-時刻:~SW1#service-worker-timing-info-fetch-event-dispat
 [PERFORMANCE-TIMELINE-2]
     Performance Timeline. Nicolas Pena Moreno. W3C. 15 November 2022. W3C Candidate Recommendation. URL: https://www.w3.org/TR/performance-timeline/ 
 [RESOURCE-HINTS]
-    Resource Hints. Ilya Grigorik. W3C. 5 October 2020. W3C Working Draft. URL: https://www.w3.org/TR/resource-hints/ 
+    Resource Hints. Ilya Grigorik. W3C. 14 March 2023. W3C Working Draft. URL: https://www.w3.org/TR/resource-hints/ 
 [RESOURCE-TIMING-2]
     Resource Timing. Yoav Weiss; Noam Rosenthal. W3C. 4 October 2022. W3C Candidate Recommendation. URL: https://www.w3.org/TR/resource-timing-2/ 
 [RFC2119]
@@ -1198,6 +1205,7 @@ interface `PerformanceNavigationTiming@I : `PerformanceResourceTiming$I {
     readonly attribute `DOMHighResTimeStamp$I `loadEventEnd$m;
     readonly attribute `NavigationTimingType$I `type$m;
     readonly attribute unsigned short `redirectCount$m;
+    readonly attribute `DOMHighResTimeStamp$I `criticalCHRestart$m;
     [`Default$] object `toJSON()$m;
 };
 </pre>
@@ -1236,6 +1244,23 @@ A PerformanceNavigationTiming has an associated number redirect count.
 ◎
 A PerformanceNavigationTiming has an associated NavigationTimingType navigation type.
 </li>
+	<li>
+<p>
+`~Critical-CH~restart時刻@pT
+⇒
+`DOMHighResTimeStamp$I 値
+◎
+A PerformanceNavigationTiming has an associated DOMHighResTimeStamp Critical-CH restart time.
+</p>
+
+<p class="trans-note">【
+~Critical-CHは、
+~HTTP~header名
+— 参考：
+`仕様＠https://www.ietf.org/archive/id/draft-davidben-http-client-hint-reliability-03.html$,
+`MDN＠https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Critical-CH$
+】</p>
+	</li>
 	<li>
 `~sw計時@pT
 ⇒
@@ -1447,6 +1472,29 @@ The redirectCount getter steps are to return this's redirect count.
 
 <div class="algo">
 <p>
+`criticalCHRestart@m
+取得子~手続きは
+⇒
+~RET コレの`~Critical-CH~restart時刻$pT
+◎
+The criticalCHRestart getter steps are to return this's Critical-CH restart time.
+</p>
+
+<p class="note">注記：
+`criticalCHRestart$m は、
+0 でないならば，［
+`navigationStart$1【 `timeOrigin$m 】, `unloadEventStart$m, `unloadEventEnd$m
+］以外の時刻印より前になる
+— それは、［
+~naviの~redirectionを成す部分が~restartした時点
+］を~markするので。
+◎
+If criticalCHRestart is not 0 it will be before all other timestamps except for navigationStart, unloadEventStart, and unloadEventEnd. This is because it marks the moment the redirection part of the navigation was restarted.
+</p>
+</div>
+
+<div class="algo">
+<p>
 `toJSON()@m
 ~methodは、
 コレ用の`既定の~toJSON手続き$を走らす。
@@ -1613,11 +1661,12 @@ Each document has an associated navigation timing entry, initially unset.
 `NavigationTimingType$I %~navi種別,
 ~NULL／`~sw計時~情報$ %~sw計時,
 文字列 %~cache~mode,
+`DOMHighResTimeStamp$I %~Critical-CH~restart,
 `応答~本体~情報$ %本体~情報
 ◎終
 に対し：
 ◎
-To create the navigation timing entry for Document document, given a fetch timing info fetchTiming, a number redirectCount, a NavigationTimingType navigationType, a null or service worker timing info serviceWorkerTiming, a DOMString cacheMode, and a response body info bodyInfo, do the following:
+To create the navigation timing entry for Document document, given a fetch timing info fetchTiming, a number redirectCount, a NavigationTimingType navigationType, a null or service worker timing info serviceWorkerTiming, a DOMString cacheMode, a DOMHighResTimeStamp criticalCHRestart, and a response body info bodyInfo, do the following:
 </p>
 <ol>
 	<li>
@@ -1650,7 +1699,8 @@ Setup the resource timing entry for navigationTimingEntry given "navigation", do
 `前-文書の~unload計時$pT ~SET %文書 の`前-文書の~unload計時~情報$doc,
 `~redirect回数$pT ~SET %~redirect回数,
 `~navi種別$pT ~SET %~navi種別,
-`~sw計時$pT ~SET %~sw計時
+`~sw計時$pT ~SET %~sw計時,
+`~Critical-CH~restart時刻$pT ~SET %~Critical-CH~restart
 ◎
 Set navigationTimingEntry's document load timing to document's load timing info
 ◎
@@ -1666,10 +1716,12 @@ Set navigationTimingEntry's service worker timing to serviceWorkerTiming.
 %文書 の`~navi計時~entry$doc ~SET %~navi計時~entry
 ◎
 Set document's navigation timing entry to navigationTimingEntry.
+◎
+↑ Set navigationTimingEntry's Critical-CH restart time to criticalCHRestart.
 </li>
 	<li>
 %大域~obj
-【の `処理能~entry~buffer~map$[ `navigation^l ] 】
+【の`処理能~entry~buffer~map$[ `navigation^l ] 】
 の`処理能~entry~buffer$に %~navi計時~entry を追加する
 ◎
 add navigationTimingEntry to global's performance entry buffer.
@@ -1738,7 +1790,7 @@ The relaxed same origin policy doesn't provide sufficient protection against una
 は、
 ~path名に基いて~accessを制約するような特能がないため，`同一-生成元$から来たものと見なされる。
 これらの~page間の~naviに際しては、
-後の~pageから，~redirectや `unload^et ~eventに対する計時など，前の~pageの計時~情報への~accessが可能になる。
+後の~pageから，~redirectionや `unload^et ~eventに対する計時など，前の~pageの計時~情報への~accessが可能になる。
 ◎
 Different pages sharing one host name, for example contents from different authors hosted on sites with user generated content are considered from the same origin because there is no feature to restrict the access by pathname. Navigating between these pages allows a latter page to access timing information of the previous one, such as timing regarding redirection and unload event.
 </dd>
