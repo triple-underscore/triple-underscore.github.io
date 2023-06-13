@@ -2256,7 +2256,7 @@ programming::::プログラミング
 任意な:arbitraryな:~
 任意に:arbitraryに:~
 帰結:consequence:~
-駆動な:drivenな:駆動の
+駆動な:drivenな:~
 駆動-:drive:~
 導出-:derive:~
 正準的:canonical::~
