@@ -114,8 +114,8 @@ return text;
 ●●options
 
 spec_title:CSS Anchor Positioning
-spec_date:2023-06-06
-trans_update:2023-06-08
+spec_date:2023-06-13
+trans_update:2023-06-14
 source_checked:230606
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-anchor-position-1/
@@ -241,13 +241,13 @@ e.input:~HEinput#the-input-element
 暗黙的な~anchor要素:#implicit-anchor-element
 位置~fallback~list:#position-fallback-list
 位置~fallback~style群を決定する:#determine-the-position-fallback-styles
+追加的な~fallback限界域~矩形:#additional-fallback-bounds-rect
 ~target~anchor要素:#target-anchor-element
 ~anchor先:#target-anchor-element
 自動的な~anchor位置決め:#automatic-anchor-positioning
 既定の~anchor指定子:#default-anchor-specifier
 受容-可能な~anchor要素:#acceptable-anchor-element
 ~snapshot済み~scroll~offset:#snapshotted-scroll-offset
-~snapshotした~scroll~offset:#snapshotted-scroll-offset
 
 	●用語（ CSS
 断片:~CSSBREAK#fragment
@@ -262,6 +262,7 @@ e.input:~HEinput#the-input-element
 	~inset~prop:~CSSLOGICAL#inset-properties
 ~insetで改変された包含塊:~CSSPOS#inset-modified-containing-block
 ~margin~box:~CSSBOX#margin-box
+~padding~box:~CSSBOX#padding-box
 ~math関数:~CSSVAL#math-function
 ~prop:~CASCADE#css-property
 使用~値:~CASCADE#used-value
@@ -303,7 +304,9 @@ noneS:none
 
 	●幾何
 限界:bounding::~
+限界域:bounds::~
 矩形:rectangle:~
+	矩形:rect
 中央:center:~
 	中央に寄せ:center
 ズラす:shiftする:ずらす
@@ -316,7 +319,6 @@ noneS:none
 反対-:opposite:~
 	反対-側の:opposing
 	反対-側の:opposite
-限界域:bounds:~
 
 	縦幅:tall
 	幅広:wide
@@ -343,6 +345,8 @@ scrolling::::スクロール処理
 	固定d位置決め:fixpos
 	覆う:coverする:~
 	少し上へ離して:slightly away from 〜 hovering just above it
+	~padding~box:padding-box
+	内容~box:content-box
 
 	●CSS
 視野な:scopedな::~
@@ -387,7 +391,6 @@ popover:
 	%基底~style群:base styles
 	%~fallback~style群:fallback styles
 	%改変-済み包含塊:scroll-adjusted IMCB
-	%~target矩形:target rect
 
 	●仕様
 策:strategy:~
@@ -453,7 +456,6 @@ encapsulation::::カプセル化
 	関わることなく:without regard to
 	別として:beside
 	気にする:worry
-	書き直-:rewrite
 	より強い:stronger
 	ちょうど:exactly
 	少し:slightly
@@ -1797,6 +1799,7 @@ Selects a target anchor element the same as anchor(), which will be compensated 
 Note: When the element uses anchor-default or has an implicit anchor element, authors can often avoid explicitly setting an anchor-scroll value because the initial value is default.
 </p>
 
+<div class="algo">
 <div class="p">
 <p>
 `絶対的に位置され$た要素 %~query要素 は、
@@ -1827,20 +1830,27 @@ then query el has a snapshotted scroll offset,＼
 `~snapshot済み~scroll~offset$は、［
 縦方向~offset, 横方向~offset
 ］を表現している 2 個の長さが成す~pairである
-— 各~offsetは、［
+— これらの各~offsetは：
+◎
+which is a pair of lengths representing a vertical and horizontal offset.
+◎
+The snapshotted scroll offset is＼
+</p>
+<ul>
+	<li>
+<p>
+［
 次を満たす各`~scroll容器$
 ］の`初期~scroll位置$からの~offsetの総和になる
 ⇒
 ［
-`~target~anchor要素$の先祖である
+%~anchor要素 の先祖である
 ］~AND［
 %~query要素 の`包含塊$の子孫である
 ］
 【この先祖, 子孫は、`~box~tree$に基づくであろう。】
 ◎
-which is a pair of lengths representing a vertical and horizontal offset.
-◎
-The snapshotted scroll offset is the sum of the offsets from the initial scroll position of all scroll container ancestors of the target anchor element, up to but not including query el’s containing block.
+the sum of the offsets from the initial scroll position of all scroll container ancestors of the target anchor element, up to but not including query el’s containing block.
 </p>
 
 <p class="issue">
@@ -1850,6 +1860,18 @@ The snapshotted scroll offset is the sum of the offsets from the initial scroll 
 ◎
 Define the precise timing of the snapshot: updated each frame, before style recalc.
 </p>
+	</li>
+	<li>
+%~query要素 は`追加的な~fallback限界域~矩形$ %矩形 を有する場合、
+上の結果から，さらに［
+%矩形 （すなわち， %~anchor要素 の`~padding~box$）の位置
+］を減算した結果になる。
+【！the element generating the additional fallback-bounds rect = %~anchor要素 】
+◎
+If query el has an additional fallback-bounds rect, similarly calculate the sum of the offsets from the initial scroll position of all scroll container ancestors of the element generating the additional fallback-bounds rect, and subtract that summed offset from the additional fallback-bounds rect’s position.
+</li>
+</ul>
+</div>
 
 		</section>
 		<section id="anchor-valid">
@@ -2378,19 +2400,35 @@ Recalculate el’s inset-modified containing block using these shifted values to
 			</li>
 			<li>
 ~IF［
-%~margin~box は， %改変-済み包含塊 の中に全部的に包含されている
+%~margin~box は， %改変-済み包含塊 の中に全部的に包含されていない
 ］
 ⇒
+~CONTINUE
+◎
+If el’s margin box is not fully contained within the scroll-adjusted IMCB, continue.
+</li>
+			<li>
+~IF［
+%要素 は`追加的な~fallback限界域~矩形$を有する
+］~AND［
+%~margin~box は，その矩形の中に全部的に包含されていない
+］
+⇒
+~CONTINUE
+◎
+If el has an additional fallback-bounds rect, and el’s margin box is not fully contained within it, continue.
+</li>
+			<li>
 ~BREAK
 ◎
-If el’s margin box is fully contained within the scroll-adjusted IMCB,＼
+Use adjusted styles for el and exit this algorithm.
 </li>
 		</ol>
 	</li>
 	<li>
 ~RET %調整-済み~style群
 ◎
-or fallback styles is the final entry in the position fallback list, then use adjusted styles for el and exit this algorithm.
+If the previous step finished without selecting a set of styles, use the adjusted styles corresponding to the final entry in the position fallback list.
 </li>
 </ol>
 
@@ -2641,7 +2679,7 @@ When using position: fixed, or things like the Popover API that use the top laye
 目的
 ］において，
 通常の包含塊
-— ~scroll調整-済み【未定義な用語】かつ~insetで改変された包含塊 —
+— （~scroll調整-済みな）`~insetで改変された包含塊$ —
 を利用して［
 自身が~overflowしているか否か
 ］を決定する。
@@ -2651,60 +2689,35 @@ The element uses its normal (scroll-adjusted, inset-modified) containing block t
 
 	<dt>`dashed-ident$t</dt>
 	<dd>
-次の結果 %~target ~EQ ε ならば `normal$v と同じに挙動する。
-⇒
-`~target~anchor要素$( 当の要素, 所与の `dashed-ident$t )
+当の要素は、
+その包含塊に対し
+— `normal$v のときと同じく —
+自身が~overflowしているか否かを検査することに加えて、
+`追加的な~fallback限界域~矩形$が有るならば，
+それに対し自身が~overflowしているか否かを検査する。
 ◎
-Let target be a target anchor element, given this element and the &lt;dashed-ident&gt;.
-◎
-If target doesn’t exist, this behaves as normal.
+In addition to checking overflow against its containing block, as per normal, the element checks against its additional fallback-bounds rect.
 </dd>
 	<dd>
 <p>
-他の場合、
-まず， %~target矩形 を次に従って決定する：
+`追加的な~fallback限界域~矩形@
+は、
+次の結果 ~NEQ ε ならば結果の`~padding~box$になり，
+他の場合は無い
+⇒
+`~target~anchor要素$( 当の要素, 所与の `dashed-ident$t )
+◎
+The additional fallback-bounds rect is the padding box of the target anchor element given this element and the specified &lt;dashed-ident&gt;. If there is no such target anchor element, there is no additional fallback-bounds rect.
 </p>
-		<ol>
-			<li>
-%~target を［
-%~target は`自動的~位置決め包含塊^【未定義な用語】を確立した
-］ かのように扱う。
+
+<p class="issue">
+~padding~box, 内容~boxどちらにするか？
+どちらになるかを制御-可能にするべきか？
 ◎
-If target exists, treat target as if it establishes an automatic positioning containing block.＼
-</li>
-			<li>
-%~target矩形 ~LET 前~段の`自動的~位置決め包含塊^
-◎
-Let target rect be that containing block,＼
-</li>
-			<li>
-必要とされるなら，
-%~target矩形 を~scroll調整-済みにする。
-◎
-scroll-adjusted if necessary.
-</li>
-			<li>
-~RET %~target矩形
-</li>
-		</ol>
-<p>
-当の要素の`位置~fallback~style群を決定する$ときは、
-当の要素を［
-通常の包含塊, %~target矩形
-］`両者^emと比較して、
-`どちらか^emの矩形を~overflowする場合には，
-~overflowしているものと扱う。
-◎
-When determining the position fallback styles of the element, compare it to both its normal containing block and to target rect, and treat it as overflowing if it overflows either rectangle.
+padding-box? Or content-box? Should it be controllable?
 </p>
 	</dd>
 </dl>
-
-<p class="issue">
-“~scroll調整-済み” の概念について，編集上の書き直しが必要である。
-◎
-I need an editorial rewrite of the scroll-adjusted concept so I can properly invoke it here.
-</p>
 
 		</section>
 		<section id="fallback-automatic">
