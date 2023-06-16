@@ -335,7 +335,7 @@ source_data.populate = function(){
 ●●options
 
 spec_title:Web IDL Standard
-trans_update:2023-06-07
+trans_update:2023-06-16
 original_url:https://webidl.spec.whatwg.org/
 	abbr_url:WEBIDLjs
 page_state_key:WEBIDL
@@ -426,6 +426,7 @@ informative:informative-references
 T.ArrayBuffer:~WEBIDL#idl-ArrayBuffer
 T.ArrayBufferView:~WEBIDL#ArrayBufferView
 T.BufferSource:~WEBIDL#BufferSource
+T.SharedArrayBuffer:~WEBIDL#idl-SharedArrayBuffer
 T.ByteString:~WEBIDL#idl-ByteString
 T.DOMException:~WEBIDL#idl-DOMException
 T.DOMString:~WEBIDL#idl-DOMString
@@ -624,6 +625,8 @@ eX.~message:~WEBIDL#domexception-message
 文字列~型:~WEBIDL#dfn-string-type
 有型~配列~型:~WEBIDL#dfn-typed-array-type
 ~buffer~source型:~WEBIDL#dfn-buffer-source-type
+~buffer型:~WEBIDL#buffer-types
+~buffer~view型:~WEBIDL#buffer-view-types
 ~obj型:~WEBIDL#dfn-object-type
 
 特有~型:~WEBIDL#dfn-specific-type
@@ -710,6 +713,7 @@ eX.~message:~WEBIDL#domexception-message
 ~buffer~sourceを~byte列から作成する:#_buffersource-create
 	配列~bufferを~byte列から作成する:#arraybuffer-create
 	配列~buffer~viewを~byte列から作成する:#arraybufferview-create
+	共用~配列~bufferを~byte列から作成する:#sharedarraybuffer-create
 配列~bufferを切離す:#dfn-detach
 	BS.切離す:#dfn-detach
 切離されて:#buffersource-detached
@@ -908,6 +912,7 @@ jI.Promise.resolve:~TC39#sec-promise.resolve
 jI.Promise.reject:~TC39#sec-promise.reject
 jI.MapIteratorPrototype:~TC39#sec-%25mapiteratorprototype%25-object
 jI.SetIteratorPrototype:~TC39#sec-%25setiteratorprototype%25-object
+jI.SharedArrayBuffer:~TC39#sec-sharedarraybuffer-constructor
 
 jE.SyntaxError:~TC39#sec-native-error-types-used-in-this-standard-syntaxerror
 
@@ -915,7 +920,7 @@ jE.SyntaxError:~TC39#sec-native-error-types-used-in-this-standard-syntaxerror
 jt.Map:~TC39#sec-map-objects
 jt.Set:~TC39#sec-set-objects
 jt.Error:~TC39#sec-error-objects
-	jt.ArrayBuffer:~TC39#sec-arraybuffer-objects
+jt.ArrayBuffer:~TC39#sec-arraybuffer-objects
 	jt.DataView:~TC39#sec-dataview-objects
 jt.SharedArrayBuffer:~TC39#sec-sharedarraybuffer-objects
 jt.TypeError:~TC39#sec-native-error-types-used-in-this-standard-typeerror
@@ -1419,8 +1424,11 @@ idl:IDL
 	%~es引数~群:args
 	%~es辞書
 	%~es配列~buffer:esArrayBuffer
+	-:esSharedArrayBuffer
 	%~es~view:esView
+	%~es~buffer:esBuffer
 	%~es~buffer~source:esBufferSource
+	%~es~buffer~view:esBufferView
 	%~es転送-済み:esTransferred
 	%~handler
 	%~ID:id
@@ -1580,6 +1588,7 @@ idl:IDL
 	%配列~buffer~data:arrayBufferData
 	%配列~buffer~byte長さ:arrayBufferByteLength
 	%配列~buffer:arrayBuffer
+	-:sharedArrayBuffer
 	%開始-時の~offset:startingOffset
 	%拡張を防止するか:preventExtensions
 	%有符号か:signedness
@@ -5665,22 +5674,38 @@ If types includes object, then return the IDL value that is a reference to the o
 ］~AND［
 %V は `ArrayBufferData^sl `内部~slot$を持つ
 ］：
-◎
-If Type(V) is Object and V has an [[ArrayBufferData]] internal slot, then:
 </p>
 		<ol>
 			<li>
+%配列~buffer型 ~LET `IsSharedArrayBuffer$A( %V ) の結果に応じて
+⇒＃
+`true^jv ならば `SharedArrayBuffer$T ／
+`false^jv ならば `ArrayBuffer$T
+</li>
+			<li>
 ~IF［
-%型~群 に `ArrayBuffer$T が含まれている
+%型~群 に %配列~buffer型 が含まれている
 ］
 ⇒
-~RET `~IDL値に変換する$( %V, `ArrayBuffer$T )
-◎
-If types includes ArrayBuffer, then return the result of converting V to ArrayBuffer.
+~RET `~IDL値に変換する$( %V, %配列~buffer型 )
 </li>
-			<!--cp-object-in-types-->
+			<li>
+~IF［
+%型~群 に `object$T が含まれている
+］
+⇒
+~RET ~obj %V への参照である~IDL値
+</li>
 		</ol>
-	</li>
+◎
+If Type(V) is Object, V has an [[ArrayBufferData]] internal slot, and IsSharedArrayBuffer(V) is false, then:
+• If types includes ArrayBuffer, then return the result of converting V to ArrayBuffer.
+• If types includes object, then return the IDL value that is a reference to the object V.
+◎
+If Type(V) is Object, V, has an [[ArrayBufferData]] internal slot, and IsSharedArrayBuffer(V) is true, then:
+• If types includes SharedArrayBuffer, then return the result of converting V to SharedArrayBuffer.
+• If types includes object, then return the IDL value that is a reference to the object V.
+</li>
 	<li>
 <p>
 ~IF［
@@ -5934,36 +5959,57 @@ An IDL union type value is converted to an ECMAScript value according to the rul
 <h4 title="Buffer source types">3.2.25. ~buffer~source型</h4>
 
 <p>
-~IDL`~buffer~source型$の値は、
+~IDL［
+`ArrayBuffer$T ／ `SharedArrayBuffer$T
+］型の値は、
 対応する~ES~classの~objにより表現される
-— それらの~objは、
-ある~ES［
-`ArrayBuffer$T ／ `SharedArrayBuffer$jt
-］~obj %V により~backされるが，次に挙げる追加的な制約を伴う
-【 “~backする” とは、下層の~dataを “裏で保持する” ことを意味する】：
+— そのような値は，ある~ES［
+`ArrayBuffer$jt ／ `SharedArrayBuffer$jt
+］~obj %V により~backされるが、
+当の型に `AllowResizable$x `拡張d属性が結付けられ$ていない場合，［
+`IsResizableArrayBuffer$A( %V ) ~EQ `false^jv
+］を満たすもの†に限られる。
 ◎
-Values of the IDL buffer source types are represented by objects of the corresponding ECMAScript class, with the following additional restrictions on those objects.
+A value of an IDL ArrayBuffer is represented by an object of the corresponding ECMAScript class. If it is not associated with the [AllowResizable] extended attribute, it can only be backed by ECMAScript ArrayBuffer objects V for which IsResizableArrayBuffer(V) is false.
+◎
+A value of an IDL SharedArrayBuffer is represented by an object of the corresponding ECMAScript class. If it is not associated with the [AllowResizable] extended attribute, it can only be backed by ECMAScript SharedArrayBuffer objects V for which IsResizableArrayBuffer(V) is false.
+</p>
+
+<p>
+~IDL`~buffer~view型$の値は、
+対応する~ES~classの~objにより表現される
+— そのような値は，ある~ES［
+`ArrayBuffer$jt ／ `SharedArrayBuffer$jt
+］~obj %V により~backされるが：
+◎
+Values of the IDL buffer view types are represented by objects of the corresponding ECMAScript class, with the following additional restrictions on those objects.
 </p>
 <ul>
 	<li>
-%V として~ES `SharedArrayBuffer$jt が許容されるのは、
-当の型に `AllowShared$x `拡張d属性が結付けられ$ている場合に限られる。
+当の型に `AllowShared$x `拡張d属性が結付けられ$ていない場合、
+%V は `ArrayBuffer$jt ~objに限られる【！if applicable？】。
 ◎
-If the type is not associated with either the [AllowResizable] or [AllowShared] extended attribute, they can only be backed by ECMAScript ArrayBuffer objects V for which IsResizableArrayBuffer(V) is false.
+If the type is not associated with either the [AllowResizable] or [AllowShared] extended attribute, if applicable, they can only be backed by ECMAScript ArrayBuffer objects V for which IsResizableArrayBuffer(V) is false.
 ◎
-If the type is associated with the [AllowResizable] extended attribute but not with the [AllowShared] extended attribute, they can only be backed by ECMAScript ArrayBuffer objects.
+If the type is associated with the [AllowResizable] extended attribute but not with the [AllowShared] extended attribute, if applicable, they can only be backed by ECMAScript ArrayBuffer objects.
 </li>
 	<li>
-%V として［
-`IsResizableArrayBuffer$A( %V ) ~EQ ~T
-］を満たすもの【すなわち，“~resize可能” なもの】が許容されるのは、
-当の型に `AllowResizable$x `拡張d属性が結付けられ$ている場合に限られる。
+当の型に `AllowResizable$x `拡張d属性が結付けられ$ていない場合、［
+`IsResizableArrayBuffer$A( %V ) ~EQ `false^jv
+］を満たすもの†に限られる。
 ◎
-If the type is associated with the [AllowShared] extended attribute but not with the [AllowResizable] extended attribute, they can only be backed by ECMAScript ArrayBuffer and ECMAScript SharedArrayBuffer objects V for which IsResizableArrayBuffer(V) is false.
+If the type is associated with the [AllowShared] extended attribute but not with the [AllowResizable] extended attribute, they can only be backed by ECMAScript ArrayBuffer and SharedArrayBuffer objects V for which IsResizableArrayBuffer(V) is false.
 ◎
 If the type is associated with both the [AllowResizable] and the [AllowShared] extended attributes, they can be backed by any ECMAScript ArrayBuffer or SharedArrayBuffer object.
 </li>
 </ul>
+
+<p class="trans-note">【
+“~backする” とは、
+下層の~dataを “裏で保持する” ことを意味する。
+】【†
+すなわち， “~resize可能” でないもの
+】</p>
 
 <div class="algo">
 <p id="es-to-buffer-source">
@@ -5974,35 +6020,39 @@ An ECMAScript value V is converted to an IDL ArrayBuffer value by running the fo
 </p>
 <ol>
 	<li>
+<p>
 ~IF［
+~OR↓
+］…
+</p>
+		<ul>
+			<li>
 `Type$A( %V ) ~NEQ `Object^jt
-］~OR［
+</li>
+			<li>
 %V は `ArrayBufferData^sl `内部~slot$を持たない
-］
-⇒
-`~THROW$ `TypeError$jt
-◎
-If Type(V) is not Object, or V does not have an [[ArrayBufferData]] internal slot, then throw a TypeError.
 </li>
-	<li>
-~IF［
-`AllowShared$x `拡張d属性が結付けられ$ている~IDL型への変換でない
-］~AND［
+			<li>
 `IsSharedArrayBuffer$A( %V ) ~EQ `true^jv
-］
-⇒
-`~THROW$ `TypeError$jt
-◎
-If the conversion is not to an IDL type associated with the [AllowShared] extended attribute, and IsSharedArrayBuffer(V) is true, then throw a TypeError.
 </li>
-	<li>
-~IF［
+			<li id="cp-is-conv-not-AllowResizable-0">
+［
 `AllowResizable$x `拡張d属性が結付けられ$ている~IDL型への変換でない
 ］~AND［
 `IsResizableArrayBuffer$A( %V ) ~EQ `true^jv
 ］
+</li>
+		</ul>
+<p>
+…ならば
 ⇒
 `~THROW$ `TypeError$jt
+</p>
+
+◎
+If Type(V) is not Object, or V does not have an [[ArrayBufferData]] internal slot, then throw a TypeError.
+◎
+If IsSharedArrayBuffer(V) is true, then throw a TypeError.
 ◎
 If the conversion is not to an IDL type associated with the [AllowResizable] extended attribute, and IsResizableArrayBuffer(V) is true, then throw a TypeError.
 </li>
@@ -6015,7 +6065,53 @@ Return the IDL ArrayBuffer value that is a reference to the same object as V.
 </div>
 
 <div class="algo">
-<p id="buffer-source-to-es">
+<p>
+~ES値 %V を`SharedArrayBuffer$T 型の`~IDL値に変換する$ときは、
+次に従う：
+◎
+An ECMAScript value V is converted to an IDL SharedArrayBuffer value by running the following algorithm:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+~OR↓
+］…
+</p>
+		<ul>
+			<li>
+`Type$A( %V ) ~NEQ `Object^jt
+</li>
+			<li>
+%V は `ArrayBufferData^sl `内部~slot$を持たない
+</li>
+			<li>
+`IsSharedArrayBuffer$A( %V ) ~EQ `false^jv
+</li>
+			<!--cp-is-conv-not-AllowResizable-0-->
+		</ul>
+<p>
+…ならば
+⇒
+`~THROW$ `TypeError$jt
+</p>
+◎
+If Type(V) is not Object, or V does not have an [[ArrayBufferData]] internal slot, then throw a TypeError.
+◎
+If IsSharedArrayBuffer(V) is false, then throw a TypeError.
+◎
+If the conversion is not to an IDL type associated with the [AllowResizable] extended attribute, and IsResizableArrayBuffer(V) is true, then throw a TypeError.
+</li>
+	<li>
+~RET %V と同じ~objへの参照である~IDL `SharedArrayBuffer$T 値
+◎
+Return the IDL SharedArrayBuffer value that is a reference to the same object as V.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
 ~ES値 %V を `DataView$T 型の`~IDL値に変換する$ときは、
 次に従う：
 ◎
@@ -6023,35 +6119,42 @@ An ECMAScript value V is converted to an IDL DataView value by running the follo
 </p>
 <ol>
 	<li>
+<p>
 ~IF［
+~OR↓
+］…
+</p>
+		<ul>
+			<li>
 `Type$A( %V ) ~NEQ `Object^jt
-］~OR［
-%V は `DataView^sl `内部~slot$を持たない
-］
-⇒
-`~THROW$ `TypeError$jt
-◎
-If Type(V) is not Object, or V does not have a [[DataView]] internal slot, then throw a TypeError.
 </li>
-	<li id="cp-is-conv-not-AllowShared">
-~IF［
+			<li>
+%V は `DataView^sl `内部~slot$を持たない
+</li>
+			<li id="cp-is-conv-not-AllowShared">
+［
 `AllowShared$x `拡張d属性が結付けられ$ている~IDL型への変換でない
 ］~AND［
 `IsSharedArrayBuffer$A( %V.`ViewedArrayBuffer^sl ) ~EQ `true^jv
 ］
-⇒
-`~THROW$ `TypeError$jt
-◎
-If the conversion is not to an IDL type associated with the [AllowShared] extended attribute, and IsSharedArrayBuffer(V.[[ViewedArrayBuffer]]) is true, then throw a TypeError.
 </li>
-	<li id="cp-is-conv-not-AllowResizable">
-~IF［
+			<li id="cp-is-conv-not-AllowResizable-1">
+［
 `AllowResizable$x `拡張d属性が結付けられ$ている~IDL型への変換でない
 ］~AND［
 `IsResizableArrayBuffer$A( %V.`ViewedArrayBuffer^sl ) ~EQ `true^jv
 ］
+</li>
+		</ul>
+<p>
+…ならば
 ⇒
 `~THROW$ `TypeError$jt
+</p>
+◎
+If Type(V) is not Object, or V does not have a [[DataView]] internal slot, then throw a TypeError.
+◎
+If the conversion is not to an IDL type associated with the [AllowShared] extended attribute, and IsSharedArrayBuffer(V.[[ViewedArrayBuffer]]) is true, then throw a TypeError.
 ◎
 If the conversion is not to an IDL type associated with the [AllowResizable] extended attribute, and IsResizableArrayBuffer(V.[[ViewedArrayBuffer]]) is true, then throw a TypeError.
 </li>
@@ -6073,20 +6176,36 @@ An ECMAScript value V is converted to an IDL Int8Array, Int16Array, Int32Array, 
 </p>
 <ol>
 	<li>
+<p>
 ~IF［
+~OR↓
+］…
+</p>
+		<ul>
+			<li>
 `Type$A( %V ) ~NEQ `Object^jt
-］~OR［
+</li>
+			<li>
 %V は `TypedArrayName^sl `内部~slot$を持たない
-］~OR［
+</li>
+			<li>
 %V の `TypedArrayName^sl `内部~slot$の値 ~NEQ %T の名前
-］
+</li>
+			<!--cp-is-conv-not-AllowShared-->
+			<!--cp-is-conv-not-AllowResizable-1-->
+		</ul>
+<p>
+…ならば
 ⇒
 `~THROW$ `TypeError$jt
+</p>
 ◎
 If Type(V) is not Object, or V does not have a [[TypedArrayName]] internal slot with a value equal to T’s name, then throw a TypeError.
+◎
+If the conversion is not to an IDL type associated with the [AllowShared] extended attribute, and IsSharedArrayBuffer(V.[[ViewedArrayBuffer]]) is true, then throw a TypeError.
+◎
+If the conversion is not to an IDL type associated with the [AllowResizable] extended attribute, and IsResizableArrayBuffer(V.[[ViewedArrayBuffer]]) is true, then throw a TypeError.
 </li>
-	<!--cp-is-conv-not-AllowShared-->
-	<!--cp-is-conv-not-AllowResizable-->
 	<li>
 ~RET %V と同じ~objへの参照である~IDL %T 型~値
 ◎
@@ -6095,7 +6214,7 @@ Return the IDL value of type T that is a reference to the same object as V.
 </ol>
 </div>
 
-<p class="algo">
+<p class="algo" id="buffer-source-to-es">
 `~buffer~source型$の~IDL値 %V を`~ES値に変換する$ときは
 ⇒
 ~RET %V が表現するものと同じ~objへの参照を表現する `Object^jt
@@ -6118,14 +6237,37 @@ To create an ArrayBuffer from a byte sequence bytes in a realm realm:
 ↓↓</p>
 <ol>
 	<li>
-%~es配列~buffer ~LET
-~ABRUPT `AllocateArrayBuffer$A( %~realm.`Intrinsics^sl.`ArrayBuffer$jIsl,
+%~buffer型 ~LET %T に応じて
+⇒＃
+`SharedArrayBuffer$T ならば %T ／
+~ELSE_ `ArrayBuffer$T
+◎
+↓↓</li>
+	<li>
+<p>
+%~es配列~buffer ~LET %~buffer型 に応じて：
+</p>
+		<ul class="switch">
+			<li>
+`SharedArrayBuffer$T
+⇒
+~ABRUPT `AllocateSharedArrayBuffer$A( %~realm.`SharedArrayBuffer$jIsl,
 %~byte列 の`長さ$byte )
+</li>
+			<li>
+`ArrayBuffer$T
+⇒
+~ABRUPT `AllocateArrayBuffer$A( %~realm.`ArrayBuffer$jIsl,
+%~byte列 の`長さ$byte )
+</li>
+		</ul>
+◎
+↓↓
 ◎
 Let esArrayBuffer be ? AllocateArrayBuffer(realm.[[Intrinsics]].[[%ArrayBuffer%]], bytes’s length).
 </li>
 	<li>
-%配列~buffer ~LET `~IDL値に変換する$( %~es配列~buffer, `ArrayBuffer$T )
+%配列~buffer ~LET `~IDL値に変換する$( %~es配列~buffer, %~buffer型 )
 ◎
 Let arrayBuffer be the result of converting esArrayBuffer to an IDL value of type ArrayBuffer.
 </li>
@@ -6136,21 +6278,26 @@ Write bytes into arrayBuffer.
 </li>
 	<li>
 ~IF［
-%T ~EQ `ArrayBuffer$T
+%T は`~buffer型$である
 ］
 ⇒
 ~RET %配列~buffer
 ◎
 Return arrayBuffer.
+◎
+↑↑ To create a SharedArrayBuffer from a byte sequence bytes in a realm realm:
+• Let esSharedArrayBuffer be ? AllocateSharedArrayBuffer(realm.[[Intrinsics]].[[%SharedArrayBuffer%]], bytes’s length).
+• Let sharedArrayBuffer be the result of converting esSharedArrayBuffer to an IDL value of type SharedArrayBuffer.
+• Write bytes into sharedArrayBuffer.
+• Return sharedArrayBuffer.
 </li>
 	<li>
-<p>
-~ELSE：
+~Assert：
+%T は`~buffer~view型$である
 ◎
 ↑↑To create one of the ArrayBufferView types from a byte sequence bytes in a realm realm:
-</p>
-		<ol>
-			<li>
+</li>
+	<li>
 ~Assert：
 ［
 %T ~EQ `DataView$T
@@ -6161,7 +6308,7 @@ Return arrayBuffer.
 ◎
 Assert: if the type is not DataView, then bytes’s length modulo the element size of that type is 0.
 </li>
-			<li>
+	<li>
 %構築子 ~LET %~realm.`Intrinsics^sl からの［
 %T 用の適切な構築子
 ］
@@ -6172,19 +6319,17 @@ Assert: if the type is not DataView, then bytes’s length modulo the element si
 ◎
 Let constructor be the appropriate constructor from realm.[[Intrinsics]] for the type of ArrayBufferView being created.
 </li>
-			<li>
+	<li>
 %~es~view ~LET
 ~NOABRUPT `Construct$A( %構築子, « %~es配列~buffer » )
 ◎
 Let esView be ! Construct(constructor, « esArrayBuffer »).
 </li>
-			<li>
+	<li>
 ~RET `~IDL値に変換する$( %~es~view, %T )
 ◎
 Return the result of converting esView into the given type.
 </li>
-		</ol>
-	</li>
 </ol>
 
 <p class="trans-note">【
@@ -6192,19 +6337,21 @@ Return the result of converting esView into the given type.
 原文では %T ~EQ ［
 <dfn id="arraybuffer-create">`ArrayBuffer$T の場合</dfn>
 ／
+<dfn id="sharedarraybuffer-create">`SharedArrayBuffer$T の場合</dfn>
+／
 <dfn id="arraybufferview-create">`ArrayBufferView$T の場合</dfn>
-］の 2 つに分けて定義されているが，
+］の 3 つに分けて定義されているが，
 この訳では 1 つに統合することにする。
 】</p>
 </div>
 
 <div class="algo">
 <p>
-`BufferSource$T %~buffer~source に
+`~buffer~source型$の~instance %~buffer~source に
 `保持された~byte列の複製を取得する@
 ときは：
 ◎
-To get a copy of the bytes held by the buffer source given a BufferSource bufferSource:
+To get a copy of the bytes held by the buffer source given a buffer source type instance bufferSource:
 </p>
 <ol>
 	<li>
@@ -6263,7 +6410,7 @@ Otherwise:
 			<li>
 ~Assert：
 %~es~buffer~source は［
-`ArrayBuffer$T ／ `SharedArrayBuffer$jt
+`ArrayBuffer$jt ／ `SharedArrayBuffer$jt【！T】
 ］~objである
 ◎
 Assert: esBufferSource is an ArrayBuffer or SharedArrayBuffer object.
@@ -6315,12 +6462,12 @@ Return bytes.
 
 <div class="algo">
 <p>
-`BufferSource$T %~buffer~source の
+`~buffer~source型$の~instance %~buffer~source の
 `~byte長さ@BS
 は、
 次の手続きの結果を返す：
 ◎
-The byte length of a BufferSource bufferSource is the value returned by the following steps:
+The byte length of a buffer source type instance bufferSource is the value returned by the following steps:
 </p>
 <ol>
 	<li>
@@ -6347,32 +6494,46 @@ Return esBufferSource.[[ArrayBufferByteLength]].
 
 <div class="algo">
 <p>
-`BufferSource$T %~buffer~source の
+`~buffer~source型$の~instance %~buffer~source の
 `下層~buffer@BS
 は、
 次の手続きの結果を返す：
 ◎
-The underlying buffer of a BufferSource bufferSource is the value returned by the following steps:
+The underlying buffer of a buffer source type instance bufferSource is the value returned by the following steps:
 </p>
 <ol>
 	<li>
 ~IF［
-%~buffer~source は `ArrayBuffer$T 型である
+%~buffer~source は`~buffer型$の~instanceである
 ］
 ⇒
 ~RET %~buffer~source
 ◎
-If bufferSource is an ArrayBuffer, return bufferSource.
+If bufferSource is a buffer type instance, then return bufferSource.
 </li>
 	<li>
-%~es~buffer~source ~LET `~ES値に変換する$( %~buffer~source )
+%~es~buffer~view ~LET `~ES値に変換する$( %~buffer~source )
 ◎
-Let esBufferSource be the result of converting bufferSource to an ECMAScript value.
+Let esBufferView be the result of converting bufferSource to an ECMAScript value.
 </li>
 	<li>
-~RET `~IDL値に変換する$( %~es~buffer~source.`ViewedArrayBuffer^sl, `ArrayBuffer$T )
+%~es~buffer ~LET %~es~buffer~view.`ViewedArrayBuffer^sl
 ◎
-Return the result of converting esBufferSource.[[ViewedArrayBuffer]] to an IDL value of type ArrayBuffer.
+Let esBuffer be esBufferView.[[ViewedArrayBuffer]].
+</li>
+	<li>
+~IF［
+`IsSharedArrayBuffer$A( %~es~buffer ) ~EQ `false^jv
+］
+⇒
+~RET `~IDL値に変換する$( %~es~buffer, `ArrayBuffer$T )
+◎
+If IsSharedArrayBuffer(esBuffer) is false, then return the result of converting esBuffer to an IDL value of type ArrayBuffer.
+</li>
+	<li>
+~RET `~IDL値に変換する$( %~es~buffer, `SharedArrayBuffer$T )
+◎
+Return the result of converting esBuffer to an IDL value of type SharedArrayBuffer.
 </li>
 </ol>
 </div>
@@ -6383,13 +6544,13 @@ Return the result of converting esBufferSource.[[ViewedArrayBuffer]] to an IDL v
 ときは、
 所与の
 (
-`ArrayBuffer$T %配列~buffer,
+`~buffer型$の~instance %配列~buffer,
 `~byte列$ %~byte列,
-負でない整数 <dfn id="arraybuffer-write-startingoffset">%開始-時の~offset</dfn>（省略時は 0 
+負でない整数 <dfn id="arraybuffer-write-startingoffset">%開始-時の~offset</dfn>（省略時は 0 ）
 )
 に対し：
 ◎
-To write a byte sequence bytes into an ArrayBuffer arrayBuffer, optionally given a startingOffset (default 0):
+To write a byte sequence bytes into a buffer type instance arrayBuffer, optionally given a startingOffset (default 0):
 </p>
 <ol>
 	<li>
@@ -6470,17 +6631,15 @@ Write bytes into arrayBuffer with startingOffset set to esView.[[ByteOffset]] + 
 
 <div class="warning">
 <p>
-仕様において［
-`ArrayBuffer$T に対し，`配列~bufferの中へ~byte列を書込む$／ 
-`ArrayBufferView$T に対し，`配列~buffer~viewの中へ~byte列を書込む$
-］ような~textを書くときには、
+仕様において，
+`~buffer~source型$の~instanceの中へ`~byte列を書込む＠#arraybuffer-write$ような~textを書くときには、
 細心な注意を払う必要がある
 — 下層の~dataは、
 作者や他の~APIにより，予測-不能なときに容易に変更され得るので。
 このことは、
-とりわけ `AllowShared$x `拡張d属性$が孕まれる場合に該当する。
+とりわけ `SharedArrayBuffer$T ~objが孕まれる場合に該当する。
 ◎
-Extreme care must be taken when writing specification text that writes into an ArrayBuffer or ArrayBufferView, as the underlying data can easily be changed by the script author or other APIs at unpredictable times. This is especially true if the [AllowShared] extended attribute is involved.
+Extreme care must be taken when writing specification text that writes into a buffer source type instance, as the underlying data can easily be changed by the script author or other APIs at unpredictable times. This is especially true if a SharedArrayBuffer object is involved. 
 </p>
 
 <p>
@@ -6499,7 +6658,7 @@ For the non-shared cases, a more recommended pattern is to transfer the ArrayBuf
 ⇒＃
 まず，~buffer~sourceに`保持された~byte列の複製を取得する$；
 その~byte列を改変してから，`~buffer~sourceを~byte列から作成する$；
-結果の新たな`~buffer~source型$の~objを作者~codeに与える。
+結果の新たな`~buffer型$の~obj【！ ArrayBuffer or ArrayBufferView】を作者~codeに与える。
 ◎
 Alternately, you can get a copy of the bytes held by the buffer source, modify those bytes, and then use them to create a new ArrayBuffer or ArrayBufferView to give back to author code.
 </p>
@@ -6520,12 +6679,6 @@ To detach an ArrayBuffer arrayBuffer:
 %~es配列~buffer ~LET `~ES値に変換する$( %配列~buffer )
 ◎
 Let esArrayBuffer be the result of converting arrayBuffer to an ECMAScript value.
-</li>
-	<li>
-~Assert：
-`IsSharedArrayBuffer$A( %~es配列~buffer ) ~EQ `false^jv
-◎
-Assert: IsSharedArrayBuffer(esArrayBuffer) is false.
 </li>
 	<li>
 ~ABRUPT
@@ -6555,7 +6708,8 @@ Detaching a buffer that is already detached is a no-op.
 
 <div class="algo">
 <p>
-所与の `BufferSource$T %~buffer~source が
+所与の
+`~buffer~source型$の~instance %~buffer~source が
 `切離されて@
 ［
 いる／いない
@@ -6564,7 +6718,7 @@ Detaching a buffer that is already detached is a no-op.
 `true^jv ／ `false^jv
 ］を返すことをいう：
 ◎
-A BufferSource bufferSource is detached if the following steps return true:
+A buffer source type instance bufferSource is detached if the following steps return true:
 </p>
 <ol>
 	<li>
@@ -6608,12 +6762,6 @@ Let esArrayBuffer be the result of converting arrayBuffer to an ECMAScript value
 </li>
 	<li>
 ~Assert：
-`IsSharedArrayBuffer$A( %~es配列~buffer ) ~EQ ~F
-◎
-Assert: IsSharedArrayBuffer(esArrayBuffer) is false.
-</li>
-	<li>
-~Assert：
 `IsDetachedBuffer$A( %~es配列~buffer ）~EQ ~F
 ◎
 Assert: IsDetachedBuffer(esArrayBuffer) is false.
@@ -6646,7 +6794,7 @@ If targetRealm is not given, let targetRealm be the current realm.
 </li>
 	<li>
 %~es転送-済み ~LET
-~NOABRUPT `AllocateArrayBuffer$A( %宛先~realm.`Intrinsics^sl.`ArrayBuffer$jIsl, 0 )
+~NOABRUPT `AllocateArrayBuffer$A( %宛先~realm.`ArrayBuffer$jIsl, 0 )
 ◎
 Let esTransferred be ! AllocateArrayBuffer(targetRealm.[[Intrinsics]].[[%ArrayBuffer%]], 0).
 </li>
@@ -6843,7 +6991,7 @@ Return oa.[[ProxyHandler]].[[BackingList]].
 
 <p>
 この節では、
-その有無が~ES言語束縛に影響する，いくつかの`拡張d属性$を定義する。
+`拡張d属性$のうち，その有無が~ES言語束縛に影響するものを定義する。
 ◎
 This section defines a number of extended attributes whose presence affects the ECMAScript binding.
 </p>
@@ -6852,31 +7000,45 @@ This section defines a number of extended attributes whose presence affects the 
 <h4 data-dfn-type="extended-attribute" data-export="" title="[AllowResizable]">3.3.1. `AllowResizable^x</h4>
 
 <p>
-`AllowResizable$x `拡張d属性$が`~buffer~source型$に現れた場合：
+`~buffer型$に`AllowResizable$x `拡張d属性$が現れている場合、
+次を許容する新たな~IDL型を作成する
+⇒
+対応する~ES［
+`ArrayBuffer$jt ／ `SharedArrayBuffer$jt
+］~objは、
+~resize可能になる。
+◎
+If the [AllowResizable] extended attribute appears on a buffer type, it creates a new IDL type that allows for the respective corresponding ECMAScript ArrayBuffer or SharedArrayBuffer object to be resizable.
+</p>
+
+<p>
+`~buffer~view型$に `AllowResizable$x `拡張d属性$が現れている場合：
 ◎
 ↓</p>
 <ul>
 	<li>
 次を許容する新たな~IDL型を作成する
 ⇒
-（長さ固定な `ArrayBuffer$T のみならず，）
-~resize可能な~ES `ArrayBuffer$T により~backする
+当の型の値を~backしている~ES `ArrayBuffer$jt ~objは、
+~resize可能になる（長さ固定のみならず）。
 ◎
-If the [AllowResizable] extended attribute appears on one of the buffer source types without the presence of the [AllowShared] extended attribute, it creates a new IDL type that allows the buffer source type to be backed by an ECMAScript ArrayBuffer that is resizable, instead of only by a fixed-length ArrayBuffer.
+If the [AllowResizable] extended attribute appears on one of the buffer view types and the [AllowShared] extended attribute does not, it creates a new IDL type that allows the buffer view type to be backed by an ECMAScript ArrayBuffer that is resizable, instead of only by a fixed-length ArrayBuffer.
 </li>
 	<li>
-加えて，当の型に `AllowShared$x `拡張d属性$も現れている場合、
-前項により作成される~IDL型は，次も許容する
+`AllowShared$x `拡張d属性$も現れている場合、
+作成される~IDL型には，次が許容される
 ⇒
-~resize可能†な~ES `SharedArrayBuffer$jt により~backする
+当の型の値を ある~resize可能†な~ES `SharedArrayBuffer$jt により~backする
+（ `ArrayBuffer$jt ~objに加えて）。
 ◎
-If the [AllowResizable] extended attribute and the [AllowShared] extended attribute both appear on one of the buffer source types, it creates a new IDL type that allows the buffer source type to be additionally backed by an ECMAScript SharedArrayBuffer that is growable.
+If the [AllowResizable] extended attribute and the [AllowShared] extended attribute both appear on one of the buffer view types, it creates a new IDL type that allows the buffer view type to be additionally backed by an ECMAScript SharedArrayBuffer that is growable.
 </li>
 </ul>
 
 <p class="trans-note">【†
-`SharedArrayBuffer^jt に対しては，
-原文では “`resizable^en” ではなく “`growable^en” という語が用いられているが、
+原文では，
+`SharedArrayBuffer^jt 用には
+“~resize可能（ `resizable^en ）” に代えて “`growable^en” という語が利用されているが、
 この仕様からは，どちらも［
 `IsResizableArrayBuffer$A( 当の~backしている~obj ) ~EQ ~T
 ］を満たすことを意味するとしか解釈しようがないので、
@@ -6920,13 +7082,14 @@ See the example in § 3.3.2 [AllowShared] for example usage of both [AllowResiza
 <h4>3.3.2. `AllowShared^x</h4>
 
 <p>
-`AllowShared$x `拡張d属性$が`~buffer~source型$に現れた場合、
+`AllowShared$x `拡張d属性$が`~buffer~view型$に現れた場合、
 次を許容する新たな~IDL型を作成する
 ⇒
-（共有されない `ArrayBuffer$T のみならず，）
-~ES `SharedArrayBuffer$jt により~backする
+当の~objを
+— `ArrayBuffer$T のみならず —
+`SharedArrayBuffer$T により~backする
 ◎
-If the [AllowShared] extended attribute appears on one of the buffer source types, it creates a new IDL type that allows the buffer source type to be backed by an ECMAScript SharedArrayBuffer, instead of only by a non-shared ArrayBuffer.
+If the [AllowShared] extended attribute appears on one of the buffer view types, it creates a new IDL type that allows the object to be backed by an SharedArrayBuffer instead of only by an ArrayBuffer.
 </p>
 
 <p>
@@ -6937,37 +7100,36 @@ The [AllowShared] extended attribute must take no arguments.
 </p>
 
 <p>
-`~buffer~source型$でない型に `AllowShared$x `拡張d属性が結付けられ$てはナラナイ。
+`~buffer~view型$でない型に `AllowShared$x `拡張d属性が結付けられ$てはナラナイ。
 ◎
-A type that is not a buffer source type must not be associated with the [AllowShared] extended attribute.
+A type that is not a buffer view type must not be associated with the [AllowShared] extended attribute.
 </p>
 
 <p>
 `AllowShared$x の利用に課される特有な要件については、
-`~buffer~source型＠#es-buffer-source-types§の［
-~ES値から~IDL`~buffer~source型$へ変換する規則
+`~buffer~source型＠#es-buffer-source-types§内の［
+~ES値から~IDL`~buffer~view型$へ変換する規則
 ］を見よ。
 ◎
-See the rules for converting ECMAScript values to IDL buffer source types in § 3.2.25 Buffer source types for the specific requirements that the use of [AllowShared] entails.
+See the rules for converting ECMAScript values to IDL buffer view types in § 3.2.25 Buffer source types for the specific requirements that the use of [AllowShared] entails.
 </p>
 
 <div class="example" id="example-allowresizable-allowshared">
 <p>
-次の`~IDL片$には、
-引数 %dest に［
-`AllowResizable$x ／ `AllowResizable$x
-］拡張d属性を利用する演算, 利用しない演算がある：
+次の`~IDL片$は、［
+`AllowResizable$x, `AllowShared$x
+］`拡張d属性$にアリな組合nをデモる：
 ◎
-In the following IDL fragment, one operation’s argument uses the [AllowResizable] extended attribute, while the other does not:
+The following IDL fragment demonstrates the possible combinations of the [AllowResizable] and [AllowShared] extended attribute:
 </p>
 
 <pre class="webidl">
 [Exposed=Window]
 interface ExampleBufferFeature {
-  undefined writeInto(BufferSource %dest);
-  undefined writeIntoResizable([AllowResizable] BufferSource %dest);
-  undefined writeIntoShared([AllowShared] BufferSource %dest);
-  undefined writeIntoSharedResizable([AllowResizable, AllowShared] BufferSource %dest);
+  undefined writeInto(ArrayBufferView %dest);
+  undefined writeIntoResizable([AllowResizable] ArrayBufferView %dest);
+  undefined writeIntoShared([AllowShared] ArrayBufferView %dest);
+  undefined writeIntoSharedResizable([AllowResizable, AllowShared] ArrayBufferView %dest);
 };
 </pre>
 
@@ -6979,47 +7141,40 @@ With this definition,
 <ul>
 	<li>
 `writeInto^M の~callは、
-次を受容しない
-— すなわち， `TypeError$jE 例外を投出することになる（以下同様）
-⇒＃
-(1) ~resize可能な `ArrayBuffer$T ~instance／
-(2) `SharedArrayBuffer$jt ~instance／
-(1) または (2) により~backされる有型~配列 ／
-(1) または (2) により~backされる `DataView$T
+`~buffer~view型$のうち［
+~resize可能な `ArrayBuffer$jt【！$T 以下同様】 ~instance／
+`SharedArrayBuffer$jt ~instance
+］により~backされるものを受容しない
+— すなわち， `TypeError$jE 例外を投出することになる（以下同様）。
 ◎
-A call to writeInto with a resizable ArrayBuffer instance, a SharedArrayBuffer instance, or any typed array or DataView backed by either, will throw a TypeError exception.
+A call to writeInto with any buffer view type backed by either a resizable ArrayBuffer instance or a SharedArrayBuffer instance, will throw a TypeError exception.
 </li>
 	<li>
 `writeIntoResizable^M の~callは、
-次を受容しない
-⇒＃
-(1) `SharedArrayBuffer$jt ~instance／
-(1) により~backされる有型~配列 ／
-(1) により~backされる `DataView$T
+`~buffer~view型$のうち［
+`SharedArrayBuffer$jt ~instanceにより~backされるもの
+］を受容しない。
 ◎
-A call to writeIntoResizable with a SharedArrayBuffer instance, or any typed array or DataView backed by one, will throw a TypeError exception.
+A call to writeIntoResizable with any buffer view type backed by a SharedArrayBuffer instance, will throw a TypeError exception.
 </li>
 	<li>
 `writeIntoShared^M の~callは、
-次を受容しない
-⇒＃
-(1) ~resize可能な `ArrayBuffer$T ~instance／
-(2) ~resize可能な `SharedArrayBuffer$jt ~instance／
-(1) または (2) により~backされる有型~配列 ／
-(1) または (2) により~backされる `DataView$T
+`~buffer~view型$のうち［
+~resize可能な［
+`ArrayBuffer$jt ／ `SharedArrayBuffer$jt 
+］の~instanceにより~backされるもの
+］を受容しない。
 ◎
-A call to writeIntoShared with a resizable ArrayBuffer instance, a growable SharedArrayBuffer instance, or any typed array or DataView backed by one, will throw a TypeError exception.
+A call to writeIntoShared with any buffer view type backed by a resizable ArrayBuffer instance or a growable SharedArrayBuffer instance, will throw a TypeError exception.
 </li>
 	<li>
 `writeIntoSharedResizable^M の~callは、
-次をいずれも受容することになる
-⇒＃
-(1) `ArrayBuffer$T ~instance／
-(2) `SharedArrayBuffer$jt ~instance／
-(1) または (2) により~backされる有型~配列 ／
-(1) または (2) により~backされる `DataView$T
+`~buffer~view型$のうち［［
+`ArrayBuffer$jt ／ `SharedArrayBuffer$jt
+］の~instanceにより~backされるもの
+］を受容する。
 ◎
-A call to writeIntoSharedResizable will accept an ArrayBuffer instance, a SharedArrayBuffer instance, or any typed array or DataView backed by either.
+A call to writeIntoSharedResizable will accept any buffer view type backed by a ArrayBuffer instance or a SharedArrayBuffer instance.
 </li>
 </ul>
 </div>
@@ -11055,7 +11210,9 @@ then remove from S all other entries.
 ◎
 Otherwise: if Type(V) is Object, V has an [[ArrayBufferData]] internal slot, and there is an entry in S that has one of the following types at position i of its type list,
 <td>
-`ArrayBuffer$T, `object$T
+`ArrayBuffer$T,
+`SharedArrayBuffer$T,
+`object$T
 ◎
 • ArrayBuffer
 • object
@@ -15245,7 +15402,7 @@ its kind, which is the iteration kind,
 ◎
 its ongoing promise, which is a Promise or null,
 </li>
-	<li>＊
+	<li>
 `完遂したか@aI
 ⇒
 真偽値
