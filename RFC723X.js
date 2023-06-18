@@ -1324,8 +1324,6 @@ direct::::ダイレクト
 昇順:ascending order:~
 降順:decreaseing order:~
 更新喪失:lost update::~
-条件付き:conditional::~
-	〜でない:unconditional~
 格納域:store::~
 再構築-:reconstruct:~
 再構築:reconstruction:~

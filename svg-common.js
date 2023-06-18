@@ -932,7 +932,6 @@ multimedia::::マルチメディア
 	〜品質:-quality
 基礎的:fundamental:~
 役割:role::~
-条件付き:conditional:~
 道具:tool:~
 共通しな:commonでな:~
 自立的:standalone:~

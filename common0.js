@@ -2507,11 +2507,14 @@ catch:
 上書き:override::~
 	上書き:overwrite:~
 
-条件:condition:~
-	条件付き:conditional:~
-	条件付きの:conditionalな:~
-	条件付きで:conditionalに:~
-	条件付けら:conditionさ:~
+条件:condition::~
+条件付き:conditional::~
+条件付きに:conditionalに::条件付きで
+無条件に:unconditionalに::無条件で
+無条件な:unconditionalな::~
+	条件付けら:conditionさ
+	条件付きでない:unconditional
+	条件を伴わずに:unconditional
 
 反応-:react::~
 反応:reaction::~
