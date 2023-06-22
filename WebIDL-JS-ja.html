@@ -335,7 +335,7 @@ source_data.populate = function(){
 ●●options
 
 spec_title:Web IDL Standard
-trans_update:2023-06-16
+trans_update:2023-06-22
 original_url:https://webidl.spec.whatwg.org/
 	abbr_url:WEBIDLjs
 page_state_key:WEBIDL
@@ -960,8 +960,6 @@ op.min:~TC39#eqn-min
 ~error~obj:~TC39#sec-error-objects
 完了record:~TC39#sec-completion-record-specification-type
 中途完了:~TC39#sec-completion-record-specification-type
-	正常完了:~TC39#normal-completion
-	~TC39#sec-completion-record-specification-type
 構築子:~TC39#constructor
 関数~obj:~TC39#function-object
 組込みの関数~obj:~TC39#sec-built-in-function-objects
@@ -1131,7 +1129,6 @@ capture:
 原型鎖:prototype chain::::プロトタイプチェイン
 pdesc:Property Descriptor::property 記述子:プロパティ記述子
 中途完了:abrupt completion::~
-正常完了:normal completion::~
 完了record:Completion Record::完了 record
 EnvironmentRecord:
 Module-Record:Module Record
@@ -1595,6 +1592,7 @@ idl:IDL
 	%最小:-
 	%回送-~ID:forwardId
 	%完了~record:completion
+	%結果:completion
 	%例外:ex
 	%例外:O
 
@@ -20122,7 +20120,7 @@ Note that ECMAScript objects need not have properties corresponding to constants
 
 <div class="algo">
 <p>
-`CleanupSettings@A( %設定群~組, %完了~record, %T )
+`CleanupSettings@A( %設定群~組, %結果, %T )
 は、
 次を遂行する
 — ここで：
@@ -20132,7 +20130,10 @@ Note that ECMAScript objects need not have properties corresponding to constants
 %設定群~組 は `PrepareSettings$A から返された 2 つの設定群が成す組
 </li>
 	<li>
-%完了~record は`完了record$
+%結果 は［
+`中途完了$／~IDL値
+］
+【この引数に渡された “例外を表現している値” は、`中途完了$を表す。】
 </li>
 	<li>
 %T はある~IDL型
@@ -20150,16 +20151,24 @@ Note that ECMAScript objects need not have properties corresponding to constants
 </li>
 	<li>
 ~IF［
-%完了~record は正常完了である【`中途完了$でない】
-］~OR［
+%結果 は~IDL値である
+］
+⇒
+~RET %結果
+</li>
+	<li>
+%値 ~LET %結果.`Value^sl
+</li>
+	<li>
+~IF［
 %T は`~promise型$でない
 ］
 ⇒
-~RET %完了~record
+`~THROW$ %値
 </li>
 	<li>
 %却下される~promise ~LET
-~NOABRUPT `Call$A( `Promise.reject$jI, `Promise$jI, « %完了~record.`Value^sl » )
+~NOABRUPT `Call$A( `Promise.reject$jI, `Promise$jI, « %値 » )
 </li>
 	<li>
 ~RET `~IDL値に変換する$( %却下される~promise, %T )
@@ -20169,8 +20178,8 @@ Note that ECMAScript objects need not have properties corresponding to constants
 ◎
 • Clean up after running a callback with stored settings.
 • Clean up after running script with relevant settings.
-• If completion is a normal completion, return completion.
-• If completion is an abrupt completion and T is not a promise type, return completion.
+• If completion is an IDL value, return completion.
+• If completion is an abrupt completion and the T is not a promise type, throw completion.[[Value]].
 • Let rejectedPromise be ! Call(%Promise.reject%, %Promise%, «completion.[[Value]]»).
 • Return the result of converting rejectedPromise to T.
 </div>
@@ -20347,7 +20356,7 @@ Let getResult be Completion(Get(O, opName)).
 </li>
 			<li>
 ~IF［
-%取得-結果 は`中途完了$である：
+%取得-結果 は`中途完了$である
 ］
 ⇒
 ~RET `CleanupSettings$A( %設定群~組, %取得-結果, %T )
@@ -20401,10 +20410,10 @@ Let esArgs be the result of converting args to an ECMAScript arguments list.＼
 
 <p>
 ~IF［
-変換-時に例外 %E が投出された
+変換-時に例外が投出された
 ］
 ⇒
-~RET `CleanupSettings$A( %設定群~組, %E, %T )
+~RET `CleanupSettings$A( %設定群~組, その例外を表現している値, %T )
 ◎
 If this throws an exception, set completion to the completion value representing the thrown exception and jump to the step labeled return.
 </p>
@@ -20424,21 +20433,33 @@ Let callResult be Completion(Call(X, thisArg, esArgs)).
 ◎
 If callResult is an abrupt completion, set completion to callResult and jump to the step labeled return.
 </li>
-	<li id="cp-set-completion-callResult">
-%完了~record ~SET `~IDL値に変換する$( %~call結果.`Value^sl, %T )
+	<li>
+<div id="cp-set-completion-callResult">
+<p>
+%結果 ~LET `~IDL値に変換する$( %~call結果.`Value^sl, %T )
+</p>
+
+<p>
+~IF［
+変換-時に例外が投出された
+］
+⇒
+%結果 ~SET その例外を表現している値
+</p>
+</div>
 ◎
-Set completion to the result of converting callResult.[[Value]] to an IDL value of the same type as the operation’s return type.
+Set completion to the result of converting callResult.[[Value]] to an IDL value of the same type as the operation’s return type. If this throws an exception, set completion to the completion value representing the thrown exception.
 </li>
 	<li id="call-user-object-operation-return">
 <p>
-~RET `CleanupSettings$A( %設定群~組, %完了~record, %T )
+~RET `CleanupSettings$A( %設定群~組, %結果, %T )
 </p>
 ◎
-Return: at this point completion will be set to an ECMAScript completion value.
+Return: at this point completion will be set to an IDL value or an abrupt completion.
 • Clean up after running a callback with stored settings.
 • Clean up after running script with relevant settings.
-• If completion is a normal completion, return completion.
-• If completion is an abrupt completion and the operation has a return type that is not a promise type, return completion.
+• If completion is an IDL value, return completion.
+• If completion is an abrupt completion and the operation has a return type that is not a promise type, throw completion.[[Value]].
 • Let rejectedPromise be ! Call(%Promise.reject%, %Promise%, «completion.[[Value]]»).
 • Return the result of converting rejectedPromise to the operation’s return type.
 </li>
@@ -20606,15 +20627,19 @@ Let realm be F’s associated realm.
 Let callResult be Completion(Call(F, thisArg, esArgs)).
 </li>
 	<!--cp-callResult-is-abrupt-->
-	<!--cp-set-completion-callResult-->
-	<li id="invoke-return">
-~RET `CleanupSettings$A( %設定群~組, %完了~record, %T )
+	<li>
+<!--cp-set-completion-callResult-->
 ◎
-Return: at this point completion will be set to an ECMAScript completion value.
+Set completion to the result of converting callResult.[[Value]] to an IDL value of the same type as callable’s return type. If this throws an exception, set completion to the completion value representing the thrown exception.
+</li>
+	<li id="invoke-return">
+~RET `CleanupSettings$A( %設定群~組, %結果, %T )
+◎
+Return: at this point completion will be set to an IDL value or an abrupt completion.
 • Clean up after running a callback with stored settings.
 • Clean up after running script with relevant settings.
-• If completion is a normal completion, return completion.
-• If completion is an abrupt completion and the callback function has a return type that is not a promise type, return completion.
+• If completion is an IDL value, return completion.
+• If completion is an abrupt completion and the callback function has a return type that is not a promise type, throw completion.[[Value]].
 • Let rejectedPromise be ! Call(%Promise.reject%, %Promise%, «completion.[[Value]]»).
 • Return the result of converting rejectedPromise to the callback function’s return type.
 </li>
@@ -20674,13 +20699,18 @@ If IsConstructor(F) is false, throw a TypeError exception.
 Let callResult be Completion(Construct(F, esArgs)).
 </li>
 	<!--cp-callResult-is-abrupt-->
-	<!--cp-set-completion-callResult-->
 	<li>
-~RET `CleanupSettings$A( %設定群~組, %完了~record, %T )
+<!--cp-set-completion-callResult-->
 ◎
-Return: at this point completion will be set to an ECMAScript completion value.
+Set completion to the result of converting callResult.[[Value]] to an IDL value of the same type as callable’s return type. If this throws an exception, set completion to the completion value representing the thrown exception.
+</li>
+	<li>
+~RET `CleanupSettings$A( %設定群~組, %結果, %T )
+◎
+Return: at this point completion will be set to an IDL value or an abrupt completion.
 • Clean up after running a callback with stored settings.
 • Clean up after running script with relevant settings.
+• If completion is an abrupt completion, throw completion.[[Value]].
 • Return completion.
 </li>
 </ol>
