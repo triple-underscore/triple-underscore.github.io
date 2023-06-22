@@ -1177,6 +1177,7 @@ CSSOVERFLOW3:css-overflow-ja.html
 CSSPV1:css-properties-values-api-ja.html
 CSSPAGE:css-page-ja.html
 CSSPOS:css-position-ja.html
+CSSPOS4:css-position4-ja.html
 CSSPSEUDO:css-pseudo-ja.html
 CSSRUBY:css-ruby-ja.html
 CSSREGION:https://drafts.csswg.org/css-regions-1/
