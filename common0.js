@@ -1898,7 +1898,6 @@ registry::::レジストリ
 	●適合性
 
 標準:standard:~
-標準な:standardな:標準の
 草案:draft:~
 編集者草案:Editor’s Draft:~
 作業草案:Working Draft:~
