@@ -2457,6 +2457,7 @@ catch:
 継続:continuation::~
 継続的:continuous::~
 
+進行中:ongoing:~
 評価:evaluation::~
 評価-:evaluate::~
 
