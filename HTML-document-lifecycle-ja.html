@@ -50,6 +50,7 @@ case 'r':
 	href = `HTML-references.html#refs${key}`;
 	break;
 case 'l':
+case 'hH':
 	text = `"<code class="literal">${text}</code>"`;
 	break;
 case 'bl':
@@ -100,8 +101,8 @@ return text;
 
 ●●options
 
-spec_date:2023-06-02
-trans_update:2023-06-03
+spec_date:2023-06-26
+trans_update:2023-06-30
 source_checked:221101
 page_state_key:HTML
 spec_status:LS
@@ -209,13 +210,13 @@ handle:
 設置-:place:~
 commit:
 早期:early::~
-進行中の:ongoing:~
 放棄-:abandon:~
 作成時の:creation::~
 制御器:controller::~
 
 	~call元:caller
 	終わらす:finish
+	渡さな:pass
 
 	●変数
 旧-:old:~
@@ -230,8 +231,9 @@ BF:
 	%O:transport
 	%~BF~cache内に保つか:intendToKeepInBfcache
 	%~CSP~list:cspList
-	%~MIME型:type0
-	%~X~frame~option群:xFrameOptions0
+	%~MIME型:type
+	%~X-Frame-Options:rawXFrameOptions
+	%~frame~option群:xFrameOptions
 	%~agent:agent
 	%~event~loop:eventLoop
 	%~host要素:hostelement
@@ -260,7 +262,6 @@ BF:
 	%施策:policy
 	%早期~hintを~commitする:-
 	%最初の部位t用の~navi~params:firstPartNavigationParams
-	%生~X~frame~option群:rawXFrameOptions0
 	%生成元~agent~cluster~header:oacHeader
 	%生成元~agent~clusterを要請するか:requestsOAC
 	%行先~生成元:destinationOrigin
@@ -545,17 +546,20 @@ nvP.早期~hintを~commitする:~HTMLnav#navigation-params-commit-early-hints
 ~scriptを走らせてもよい:~HTMLnav#scripts-may-run-for-the-newly-created-document
 ~source~snapshot~params:~HTMLnav#source-snapshot-params
 文書を読込む:~HTMLnav#loading-a-document
-~navigableを~URLへ~navigateする:~HTMLnav#navigate
 ~navigateする:~HTMLnav#navigate
+~navigableを~URLへ~navigateする:~HTMLnav#navigate
 i.応答:~HTMLnav#navigation-response
 i.履歴~取扱い:~HTMLnav#navigation-hh
-i.置換-:~HTMLnav#hh-replace
+hH.replace:~HTMLnav#navigationhistorybehavior-replace
+i.~browser~UI:~HTMLnav#uni-browser-ui
 ~navi~ID:~HTMLnav#navigation-id
 ~session履歴~entry:~HTMLnav#session-history-entry
 shE.文書~状態:~HTMLnav#she-document-state
 dS.文書:~HTMLnav#document-state-document
-進行中の~navi:~HTMLnav#ongoing-navigation
+進行中な~navi:~HTMLnav#ongoing-navigation
+進行中な~naviを設定する:~HTMLnav#set-the-ongoing-navigation
 読込直す:~HTMLnav#reload
+~navigableを読込直す:~HTMLnav#reload
 履歴を差分だけ辿る:~HTMLnav#traverse-the-history-by-a-delta
 素片へ~navigateする:~HTMLnav#navigate-fragid
 dS.資源:~HTMLnav#document-state-resource
@@ -1622,7 +1626,7 @@ Let document be the result of loading a document given firstPartNavigationParams
 — 次を与える下で
 ⇒＃
 `応答$i ~SET %~navi~params の`応答$nvP
-`履歴~取扱い$i ~SET `置換-$i
+`履歴~取扱い$i ~SET `replace$hH
 ◎
 For each additional body part obtained from navigationParams's response, the user agent must navigate document's node navigable to navigationParams's request's URL, using document, with response set to navigationParams's response and historyHandling set to "replace".
 </p>
@@ -2679,18 +2683,18 @@ Let document be navigable's active document.
 ~IF［
 %文書 の`~unload~counter$ ~EQ 0
 ］~AND［
-%~navigable の`進行中の~navi$ ~EQ `~navi~ID$
+%~navigable の`進行中な~navi$ ~EQ `~navi~ID$
 ］
 ⇒
-%~navigable の`進行中の~navi$ ~SET ~NULL
+`進行中な~naviを設定する$( %~navigable, ~NULL )
 ◎
-If document's unload counter is 0, and navigable's ongoing navigation is a navigation ID, then set navigable's ongoing navigation to null.
+If document's unload counter is 0, and navigable's ongoing navigation is a navigation ID, then set the ongoing navigation for navigable to null.
 </p>
 
 <p class="note">注記：
 これには
-%~navigable にて進行中の~naviがあれば，それを中止する効果がある
-— `進行中の~navi$に対する変更は、
+%~navigable にて進行中な~naviがあれば，それを中止する効果がある
+— `進行中な~navi$に対する変更は、
 ~naviの間ある種の箇所で，更なる作業を放棄させることになるので。
 ◎
 This will have the effect of aborting any ongoing navigations of navigable, since at certain points during navigation, changes to the ongoing navigation will cause further work to be abandoned.
@@ -2709,7 +2713,7 @@ Abort document.
 自身の`~UI＠#nav-traversal-ui$を通して，
 辿りの停止-法も許容する
 — すなわち、［
-`進行中の~navi$ ~EQ `traversal^l
+`進行中な~navi$ ~EQ `traversal^l
 ］の事例で。
 上の~algoは、
 これを織り込まない。
@@ -2773,7 +2777,8 @@ Per the below processing model, if both a CSP frame-ancestors directive and an `
 For web developers and conformance checkers, its value ABNF is:
 </p>
 
-<pre class="bnf">X-Frame-Options
+<pre class="bnf">
+X-Frame-Options
 	= "DENY"
 	/ "SAMEORIGIN"
 </pre>
@@ -2828,14 +2833,14 @@ If policy's directive set contains a frame-ancestors directive, then return true
 		</ol>
 	</li>
 	<li>
-%生~X~frame~option群 ~LET `~header~listから値を取得して復号して分割する$( %応答 の`~header~list$rs, `X-Frame-Options$h )
+%~X-Frame-Options ~LET `~header~listから値を取得して復号して分割する$( %応答 の`~header~list$rs, `X-Frame-Options$h )
 ◎
 Let rawXFrameOptions be the result of getting, decoding, and splitting `X-Frame-Options` from response's header list.
 </li>
 	<li>
 <p>
 ~IF［
-%生~X~frame~option群 ~EQ ~NULL
+%~X-Frame-Options ~EQ ~NULL
 ］
 ⇒
 ~RET ~T
@@ -2847,16 +2852,16 @@ Let rawXFrameOptions be the result of getting, decoding, and splitting `X-Frame-
 】</p>
 	</li>
 	<li>
-%~X~frame~option群 ~LET 新たな`集合$
+%~frame~option群 ~LET 新たな`集合$
 ◎
 Let xFrameOptions be a new set.
 </li>
 	<li>
-%生~X~frame~option群 を成す
+%~X-Frame-Options を成す
 ~EACH( %値 )
 に対し
 ⇒
-%~X~frame~option群 に次の結果を`付加する$set
+%~frame~option群 に次の結果を`付加する$set
 ⇒
 `~ASCII小文字~化する$( %値 ) 
 ◎
@@ -2865,14 +2870,14 @@ For each value of rawXFrameOptions, append value, converted to ASCII lowercase, 
 	<li>
 <p>
 ~IF［
-%~X~frame~option群 の`~size$ ~GT 1
+%~frame~option群 の`~size$ ~GT 1
 ］：
 ◎
 ↓</p>
 		<ol>
 			<li>
 <p>
-%~X~frame~option群 を成す
+%~frame~option群 を成す
 ~EACH( %値 )
 に対し
 ⇒
@@ -2921,7 +2926,7 @@ This means it contains multiple invalid values, which we treat the same way as i
 	</li>
 	<li>
 ~IF［
-%~X~frame~option群[ 0 ] ~EQ `deny^l
+%~frame~option群[ 0 ] ~EQ `deny^l
 ］
 ⇒
 ~RET ~F
@@ -2931,7 +2936,7 @@ If xFrameOptions[0] is "deny", then return false.
 	<li>
 <p>
 ~IF［
-%~X~frame~option群[ 0 ] ~EQ `sameorigin^bl
+%~frame~option群[ 0 ] ~EQ `sameorigin^bl
 ］：
 ◎
 If xFrameOptions[0] is "sameorigin", then:
@@ -3272,6 +3277,32 @@ When a user requests a reload of a navigable, user agents may provide a mechanis
 <hr>
 
 <p>
+`~navigableを~URLへ~navigateする$
+~callが上で言及した仕組みにより起動される場合、
+その引数 %利用者-関与i に `~browser~UI$i を渡すモノトスル。
+◎
+All calls to navigate initiated by the mechanisms mentioned above must have the userInvolvement argument set to "browser UI".
+</p>
+
+<p>
+`~navigableを読込直す$
+~callが上で言及した仕組みにより起動される場合、
+その引数 %利用者-関与i に `~browser~UI$i を渡すモノトスル。
+◎
+All calls to reload initiated by the mechanisms mentioned above must have the userInvolvement argument set to "browser UI".
+</p>
+
+<p>
+`履歴を差分だけ辿る$
+~callが上で言及した仕組みにより起動される場合、
+その引数 %~source文書 には値を渡さないモノトスル。
+◎
+All calls to traverse the history by a delta initiated by the mechanisms mentioned above must not pass a value for the sourceDocument argument.
+</p>
+
+<hr>
+
+<p>
 上に挙げた推奨, および
 この仕様における~data構造には、［
 ~UAが利用者に~session履歴をどう表現するかに対し制約を設置する
@@ -3299,13 +3330,13 @@ For example, although a top-level traversable's session history entries are stor
 </p>
 
 <p>
-類似に，［
-すべての子孫`~navigable$
-］用の~session履歴は，
-それらの`辿可能な~navigable$内に格納されるが、
-~UAは，［
-もっと仔細な，`~navigable$ごとに~session履歴の~view
-］を利用者に呈示することもできる。
+類似に、
+`辿可能な~navigable$内には，［
+そのすべての子孫`~navigable$
+］用の~session履歴が格納されるが、
+~UAは，もっと仔細に［
+`~navigable$ごとに，~session履歴の~viewを利用者に呈示する
+］こともできる。
 ◎
 Similarly, although session history for all descendant navigables is stored in their traversable navigable, user agents could present the user with a more nuanced per-navigable view of the session history.
 </p>
@@ -3342,9 +3373,10 @@ In both cases user agents might additionally incorporate user preferences, or pr
 </p>
 
 <p>
-~UAは、
-そのような~popup用に必要最小限な~UIを供する場合には，
-~browserの所在~barを隠さないことが奨励される。
+~UAは、［
+そのような~popup用に必要最小限な~UIを供する場合でも，
+~browserの所在~barは隠さない
+］ことが奨励される。
 ◎
 User agents that provides a minimal user interface for such popups are encouraged to not hide the browser's location bar.
 </p>

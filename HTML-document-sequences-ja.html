@@ -120,6 +120,7 @@ case 'r':
 case 'coop':
 case 'coep':
 case 'coI':
+case 'hH':
 case 'l':
 	text = `"<code class="literal">${text}</code>"`;
 	break;
@@ -172,8 +173,8 @@ return text;
 
 ●●options
 
-spec_date:2023-06-09
-trans_update:2023-06-10
+spec_date:2023-06-26
+trans_update:2023-06-30
 source_checked:221101
 page_state_key:HTML
 spec_status:LS
@@ -222,7 +223,6 @@ navigator::::ナビゲータ
 load:
 	~load後:post-load
 unload:
-unloading:
 step:
 補助:auxiliary::~
 開いた:openした::~
@@ -659,6 +659,8 @@ coop.same-origin:~ORIGIN#coop-same-origin
 文書を破壊する:~HTMLlifecycle#destroy-a-document
 	＠~HTMLlifecycle#destroy-a-document
 
+子~navigableの破壊について~navi~APIに伝える:~HTMLnavAPI#inform-the-navigation-api-about-child-navigable-destruction
+
 dS.~navigable名:~HTMLnav#document-state-nav-target-name
 dS.入子な履歴~群:~HTMLnav#document-state-nested-histories
 dS.文書:~HTMLnav#document-state-document
@@ -668,9 +670,8 @@ shE.~URL:~HTMLnav#she-url
 shE.文書:~HTMLnav#she-document
 shE.文書~状態:~HTMLnav#she-document-state
 shE.~step:~HTMLnav#she-step
-i.履歴~取扱い:~HTMLnav#navigation-hh
-i.文書~資源:~HTMLnav#navigation-resource
-i.置換-:~HTMLnav#hh-replace
+	i.文書~資源:~HTMLnav#navigation-resource
+hH.replace:~HTMLnav#navigationhistorybehavior-replace
 ~POST資源:~HTMLnav#post-resource
 
 ~navigableを~URLへ~navigateする:~HTMLnav#navigate
@@ -679,12 +680,11 @@ i.置換-:~HTMLnav#hh-replace
 ~session履歴~entry:~HTMLnav#session-history-entry
 ~session履歴~辿り並列~queue:~HTMLnav#session-history-traversal-parallel-queue
 ~session履歴~辿り手続きを付加する:~HTMLnav#tn-append-session-history-traversal-steps
-~unloadingを利用者が取消したか否か検査する:~HTMLnav#checking-if-unloading-is-user-canceled
+~unloadは取消されたか否か検査する:~HTMLnav#checking-if-unloading-is-canceled
 文書を作動中にする:~HTMLnav#make-active
 入子な履歴:~HTMLnav#nested-history
-処理待ち履歴~変更を適用する:~HTMLnav#apply-pending-history-changes
+~navigableの作成／破壊~用に更新する:~HTMLnav#update-for-navigable-creation/destruction
 履歴~stepを適用する:~HTMLnav#apply-the-history-step
-履歴~取扱いの挙動:~HTMLnav#history-handling-behavior
 文書~状態:~HTMLnav#document-state-2
 新たな~session履歴~辿り並列~queueを開始する:~HTMLnav#starting-a-new-session-history-traversal-parallel-queue
 	＠~HTMLnav#traverse-the-history-by-a-delta
@@ -946,12 +946,12 @@ The current session history entry and the active session history entry are usual
 Synchronous navigations are performed. This causes the active session history entry to temporarily step ahead of the current session history entry.
 </li>
 	<li>
-表示-可能でなく~errorでもない応答が`履歴~stepを適用する$間に受信されたとき。
+表示-可能でなく~errorでもない応答が`履歴~stepを適用する$ときに受信されたとき。
 これは、
 `現在の~session履歴~entry$navを更新するが，
 `作動中の~entry$navは そのままにする。
 ◎
-A non-displayable, non-error response is received during history traversal. This updates the current session history entry but leaves the active session history entry as-is.
+A non-displayable, non-error response is received when applying the history step. This updates the current session history entry but leaves the active session history entry as-is.
 </li>
 </ul>
 
@@ -1401,7 +1401,7 @@ Let traversable be the result of creating a new top-level traversable given null
 `~navigableを~URLへ~navigateする$( %辿可能, %初期~navi~URL, %辿可能 にて`作動中の文書$nav )
 — 次も与える下で
 ⇒＃
-`文書~資源$i ~SET %初期~navi~POST資源
+`文書~資源^i ~SET %初期~navi~POST資源
 ◎
 Navigate traversable to initialNavigationURL using traversable's active document, with documentResource set to initialNavigationPostResource.
 </p>
@@ -1750,9 +1750,9 @@ Let nestedHistory be a new nested history whose id is navigable's id and entries
 Append nestedHistory to parentDocState's nested histories.
 </li>
 			<li>
-`処理待ち履歴~変更を適用する$( %辿可能 )
+`~navigableの作成／破壊~用に更新する$( %辿可能 )
 ◎
-Apply pending history changes to traversable.
+Update for navigable creation/destruction given traversable.
 </li>
 		</ol>
    </li>
@@ -2244,6 +2244,11 @@ If navigable is null, then return.
 Set container's content navigable to null.
 </li>
 	<li>
+`子~navigableの破壊について~navi~APIに伝える$( %~navigable )
+◎
+Inform the navigation API about child navigable destruction given navigable.
+</li>
+	<li>
 `文書を破壊する$( %~navigable にて`作動中の文書$nav )
 ◎
 Destroy navigable's active document.
@@ -2273,9 +2278,9 @@ Append the following session history traversal steps to traversable:
 </p>
 		<ol>
 			<li>
-%辿可能 に`処理待ち履歴~変更を適用する$
+`~navigableの作成／破壊~用に更新する$( %辿可能 )
 ◎
-Apply pending history changes to traversable.
+Update for navigable creation/destruction given traversable.
 </li>
 		</ol>
 	</li>
@@ -2381,12 +2386,12 @@ If traversable's is closing is true, then return.
 </li>
 	<li>
 ~IF［
-`~unloadingを利用者が取消したか否か検査する$( %~unload対象 ) ~EQ ~T
+`~unloadは取消されたか否か検査する$( %~unload対象 ) ~EQ ~T
 ］
 ⇒
 ~RET
 ◎
-If the result of checking if unloading is user-canceled for toUnload is true, then return.
+If the result of checking if unloading is canceled for toUnload is true, then return.
 </li>
 	<li>
 %~unload対象 を成す
@@ -3058,10 +3063,9 @@ If sandboxingFlagSet's sandbox propagates to auxiliary browsing contexts flag is
 
 <p class="note">注記：
 新たに作成された`~navigable$ %結果 が即時に`~navigate$される場合、
-その~naviは，
-`履歴~取扱いの挙動$を `置換-$i にする下で行われることになる。
+それは， `replace$hH ~naviとして行われることになる。
 ◎
-If the newly created navigable chosen is immediately navigated, then the navigation will be done with "replace" history handling behavior.
+If the newly created navigable chosen is immediately navigated, then the navigation will be done as a "replace" navigation.
 </p>
 			</li>
 			<li>
@@ -3312,7 +3316,7 @@ A Document does not necessarily have a non-null browsing context. In particular,
 これは、
 `閲覧~文脈$を`初期~about_blank な文書$から別の文書へ`~navigate$するときに生じる
 — それは、
-【`履歴~取扱い$i に】`置換-$i を与える下で行われる。
+`replace$hH ~navi【！with replacement】として行われることになる。
 ◎
 In general, there is a 1-to-1 mapping from the Window object to the Document object, as long as the Document object has a non-null browsing context. There is one exception. A Window can be reused for the presentation of a second Document in the same browsing context, such that the mapping is then 1-to-2. This occurs when a browsing context is navigated from the initial about:blank Document to another, which will be done with replacement.
 </p>

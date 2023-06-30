@@ -1235,6 +1235,7 @@ HTMLWPROXY:HTML-windowproxy-ja.html
 HTMLds:HTML-document-sequences-ja.html
 BROWSERS:HTML-document-sequences-ja.html
 HTMLnav:HTML-navigation-ja.html
+HTMLnavAPI:https://html.spec.whatwg.org/multipage/nav-history-apis.html
 HTMLlifecycle:HTML-document-lifecycle-ja.html
 WAPI:webappapis-ja.html
 HTMLGAPI:HTML-global-api-ja.html
@@ -1485,6 +1486,7 @@ anchor::::アンカー
 	再利用:re-use
 再利用:reuse:~
 利用者:user:~:::ユーザ
+利用者-:user:~:利用者による::ユーザによる
 利用元:user:~
 有用:useful:~
 用法:usage:~
@@ -2226,6 +2228,7 @@ programming::::プログラミング
 孕んで:involveして:~
 孕まな:involveしな:~
 孕み:involveし:~
+関与i:involvement:関与
 
 見出す:findする:~
 見出され:findされ:~
