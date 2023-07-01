@@ -1895,6 +1895,7 @@ registry::::レジストリ
 改めら:alterさ:~
 改めて:alterして:~
 改めた:alterした:~
+古典:classic::~::クラシック
 
 
 	●適合性
