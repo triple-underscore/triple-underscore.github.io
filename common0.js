@@ -2374,8 +2374,9 @@ filter::::フィルタ
 
 達-:reach:~
 到達-:reach:~
-制御-:control:~
-制御:control:~
+制御-:control::~
+制御:control::~
+制御器:controller::~
 起動-:initiate:~
 起動元:initiator:~
 初期:initial:~
