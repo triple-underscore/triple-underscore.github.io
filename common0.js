@@ -2560,6 +2560,8 @@ promise:
 時列線:timeline::~::タイムライン
 日付:date::~
 準備済み:ready::~
+準備-:prepare:~
+準備:preparation:~
 進捗-:progress::~
 進捗:progress::~
 live:

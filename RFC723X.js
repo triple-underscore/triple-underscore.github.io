@@ -1331,7 +1331,6 @@ direct::::ダイレクト
 活動:activity::~
 消去-:erase:~
 消費量:consumption:~
-準備-:prepare:~
 状態変更:state-changing::~::ステート変更
 stateless::::ステートレス
 	無状態の:statelessな:::ステートレスな
