@@ -109,8 +109,8 @@ return text;
 ●●options
 
 spec_title:Permissions Policy
-spec_date:2023-06-30
-trans_update:2023-07-03
+spec_date:2023-07-05
+trans_update:2023-07-07
 source_checked:230525
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-permissions-policy/
@@ -248,9 +248,10 @@ h.Permissions-Policy:#permissions-policy-header
 
 
 許容list:#allowlist
-自己-生成元:#_self-origin
-~src生成元:#_src-origin
-許可~source式~list:#_permissions-source-expressions
+新たな許容list:#_new-allowlist
+AL.自己-生成元:#self-origin
+AL.~src生成元:#src-origin
+AL.式~群:#expressions
 
 	§許容-属性:#iframe-allow-attribute
 容器~施策:#container-policy
@@ -360,7 +361,6 @@ enV.大域~obj:~WAPI#concept-settings-object-global
 doc.生成元:~DOM4#concept-document-origin
 
 ~URL構文解析する:~URL1#concept-url-parser
-~URL:~URL1#concept-url
 url.生成元:~URL1#concept-url-origin
 
 要請:~FETCH#concept-request
@@ -1399,50 +1399,64 @@ The special value *, which represents every origin, or
 	<li>
 <p>
 次に挙げる~itemからなる`構造体$：
+◎
+A struct containing:
 </p>
 		<ul>
 			<li>
-`自己-生成元@
-⇒
-`生成元$ ／ ε
-— 初期~時は ε とする。
-（これは、
-`self$P を表現する。）
-</li>
-			<li>
-`~src生成元@
-⇒
-`生成元$ ／ ε
-— 初期~時は ε とする。
-（これは、
-`src^a 【 `iframe$e の `src$aF 属性など】を表現する。）
-</li>
-			<li>
-`許可~source式~list@
+`式~群@AL
 ⇒
 `permissions-source-expression$P に合致する文字列たちが成す`有順序~集合$
-— 初期~時は空とする。
+◎
+expressions, which is an ordered set of permissions-source-expression
+</li>
+			<li>
+<p>
+`自己-生成元@AL
+⇒
+`生成元$ ／ ~NULL
+</p>
+
+<p class="trans-note">【
+これは、
+~HTTP~header内では， `self$P で表現される。
+】</p>
+◎
+self-origin, which is an origin or null
+</li>
+			<li>
+<p>
+`~src生成元@AL
+⇒
+`生成元$ ／ ~NULL
+</p>
+
+<p class="trans-note">【
+これは、
+`src^a （ `iframe$e の `src$aF 属性など）から導出される。
+】</p>
+◎
+src-origin, which is an origin or null 
 </li>
 		</ul>
 
-<p class="trans-note">【
-この構造体は，原文では［
-0 〜 1 個の “`self$P を表現している生成元”,
-0 〜 1 個の “`src^a を表現している生成元”,
-0 個以上の `permissions-source-expression$P
-］が成す有順序~集合として定義されているが、
-上のように定義した方が簡明になるので，改めている。
-この有順序~集合~内での［
-`自己-生成元$, `~src生成元$
-］の順序~情報が失われることになるが、
-この仕様の処理~modelにおいて それが有意になる箇所は無い。
-】</p>
-◎
-An ordered set of permissions-source-expressions and up to two additional origins (one representing self and one representing src).
-</li>
-</ul>
+<p>
+`新たな許容list@
+は、
+この構造体を次のように初期化して返す
+⇒＃
+`自己-生成元$AL ~SET ~NULL,
+`~src生成元$AL ~SET ~NULL,
+`式~群$AL ~SET 新たな`有順序~集合$
+</p>
 
-<p class="trans-note"></p>
+<p class="trans-note">【
+この定義は、
+この訳による補完。
+】</p>
+
+	</li>
+</ul>
 
 <p class="note">注記：
 ［
@@ -1491,27 +1505,27 @@ Note: We are not using the CSP variant of wildcard matching as it requires the H
 	</li>
 	<li>
 ~IF［
-%許容list の`自己-生成元$ ~NEQ ε
+%許容list の`自己-生成元$AL ~NEQ ~NULL
 ］~AND［
-( %許容list の`自己-生成元$, %生成元 )
+( %許容list の`自己-生成元$AL, %生成元 )
 は`同じ生成元~domain$である
 ］
 ⇒
 ~RET ~T
 ◎
-If the allowlist contains an origin representing self, and it is same origin-domain with origin, then return true.
+If the allowlist’s self-origin is not null and it is same origin-domain with origin, then return true.
 </li>
 	<li>
 ~IF［
-%許容list の`~src生成元$ ~NEQ ε
+%許容list の`~src生成元$AL ~NEQ ~NULL
 ］~AND［
-( %許容list の`~src生成元$, %生成元 )
+( %許容list の`~src生成元$AL, %生成元 )
 は`同じ生成元~domain$である
 ］
 ⇒
 ~RET ~T
 ◎
-If the allowlist contains an origin representing src, and it is same origin-domain with origin, then return true.
+If the allowlist’s src-origin is not null and it is same origin-domain with origin, then return true.
 </li>
 	<li>
 ~IF［
@@ -1523,26 +1537,23 @@ If the allowlist contains an origin representing src, and it is same origin-doma
 If origin is an opaque origin, return false.
 </li>
 	<li>
-<p>
-%許容list の`許可~source式~list$を成す
+%~URL ~LET `~URL構文解析する$( `生成元を直列化する$( %生成元 ) )
+◎
+Let url be the result of calling the url parser on the serialization of origin.
+</li>
+	<li>
+%許容list の`式~群$ALを成す
 ~EACH( %式 )
 に対し
 ⇒
 ~IF［
-`~URLは ( 生成元, ~redirect回数 ) について式に合致するか？$( %生成元†, %式, %生成元, 0 ) の結果 ~EQ ~T
+`~URLは ( 生成元, ~redirect回数 ) について式に合致するか？$( %~URL, %式, %生成元, 0 ) の結果 ~EQ ~T
 ］
 ⇒
 ~RET ~T
-<p>
-
-<p class="trans-note">【†
-1 個目の引数は`~URL$をとるので、
-実際には次の結果を与える必要があろう：
-`~URL構文解析する$( `生成元を直列化する$( %生成元 ) )
-】</p>
 ◎
-Otherwise, for each permissions-source-expression item in the allowlist:
-• If the result of running Does url match expression in origin with redirect count? on origin, item, origin, and 0 is true then return true.
+For each permissions-source-expression item in the allowlist’s expressions:
+• If the result of running Does url match expression in origin with redirect count? on url, item, origin, and 0 is true then return true.
 </li>
 	<li>
 ~RET ~F
@@ -2381,36 +2392,36 @@ Return result.
 	</li>
 	<li>
 ~IF［
-%許容list の`自己-生成元$ ~NEQ ε
+%許容list の`自己-生成元$AL ~NEQ ~NULL
 ］
 ⇒
 %結果 に次の結果を`付加する$set
 ⇒
-`生成元を直列化する$( %許容list の`自己-生成元$ )
+`生成元を直列化する$( %許容list の`自己-生成元$AL )
 ◎
-If the allowlist contains an origin representing self, append the serialization of it to result
+If the allowlist’s self-origin is not null, append the serialization of it to result
 </li>
 	<li>
 ~IF［
-%許容list の`~src生成元$ ~NEQ ε
+%許容list の`~src生成元$AL ~NEQ ~NULL
 ］
 ⇒
 %結果 に次の結果を付加する
 ⇒
-`生成元を直列化する$( %許容list の`~src生成元$ )
+`生成元を直列化する$( %許容list の`~src生成元$AL )
 ◎
-If the allowlist contains an origin representing src, append the serialization of it to result
+If the allowlist’s src-origin is not null, append the serialization of it to result
 </li>
 	<li>
 ~ELSE
 ⇒
-%許容list の`許可~source式~list$を成す
+%許容list の`式~群$ALを成す
 ~EACH( %~item )
 に対し
 ⇒
 %結果 に %~item を付加する
 ◎
-Otherwise, for each permissions-source-expression item in allowlist:
+Otherwise, for each permissions-source-expression item in allowlist’s expressions:
 • Append item to result
 </li>
 	<li>
@@ -2780,17 +2791,17 @@ Let feature be the policy-controlled feature identified by feature-name.
 %施策[ %特能 ] ~SET `全~生成元$i；
 ~CONTINUE
 ◎
-↓ Let allowlist be a new allowlist that is an empty ordered set.
+↓ Let allowlist be a new allowlist.
 ◎
 If value is the token *, or＼
 if value is a list which contains the token *, set allowlist to the special value *.
 ◎
 Otherwise:
 ◎
-↓ If value is the token self, let the origin representing self in allowlist be origin.
+↓ If value is the token self, let allowlist’s self-origin be origin.
 </li>
 			<li>
-%許容list ~LET 新たな`許容list$【！`有順序~集合$】
+%許容list ~LET `新たな許容list$
 ◎
 ↑</li>
 			<li>
@@ -2807,18 +2818,18 @@ Otherwise if value is a list, then for each element in value:
 %~item ~EQ `self$P
 ］
 ⇒
-%許容list の`自己-生成元$ ~SET %生成元
+%許容list の`自己-生成元$AL ~SET %生成元
 ◎
-If element is the token self, let the origin representing self in allowlist be origin.
+If element is the token self, let allowlist’s self-origin be origin.
 </li>
 					<li>
 ~ELIF［
 %~item は妥当な `permissions-source-expression$P である
 ］
 ⇒
-%許容list の`許可~source式~list$に %~item を`付加する$
+%許容list の`式~群$ALに %~item を`付加する$
 ◎
-If element is a valid permissions-source-expression, append element to allowlist.
+If element is a valid permissions-source-expression, append element to allowlist’s expressions.
 </li>
 				</ol>
 			</li>
@@ -2915,12 +2926,12 @@ Let targetlist be the remaining elements, if any, of tokens.
 %指令[ %特能 ] ~SET `全~生成元$i；
 ~CONTINUE
 ◎
-Let allowlist be a new allowlist that is an empty ordered set.
+Let allowlist be a new allowlist.
 ◎
 If any element of targetlist is the string "*", set allowlist to the special value *.
 </li>
 			<li>
-%許容list ~SET 新たな`許容list$【！`有順序~集合$】
+%許容list ~SET `新たな許容list$
 ◎
 ↑ Otherwise:
 </li>
@@ -2931,7 +2942,7 @@ If any element of targetlist is the string "*", set allowlist to the special val
 ⇒
 %~target~list に `'src'^l を`付加する$
 ◎
-If targetlist is empty and target origin is given, let the origin representing src in allowlist be target origin.
+↓ If targetlist is empty and target origin is given, let allowlist’s src-origin be target origin.
 </li>
 			<li>
 <p>
@@ -2952,9 +2963,9 @@ If element is an ASCII case-insensitive match for "'self'":
 </p>
 						<ol>
 							<li>
-%許容list の`自己-生成元$ ~SET %容器~生成元
+%許容list の`自己-生成元$AL ~SET %容器~生成元
 ◎
-Let the origin representing self in allowlist be container origin.
+Let allowlist’s self-origin be container origin.
 </li>
 							<li>
 ~CONTINUE
@@ -2975,9 +2986,9 @@ If target origin is given, and element is an ASCII case-insensitive match for "'
 </p>
 						<ol>
 							<li>
-%許容list の`~src生成元$ ~SET %~target生成元
+%許容list の`~src生成元$AL ~SET %~target生成元
 ◎
-Let the origin representing src in allowlist be target origin.
+Let allowlist’s src-origin be target origin.
 </li>
 							<li>
 ~CONTINUE
@@ -3016,7 +3027,7 @@ If target is not an opaque origin,＼
 </li>
 					<li>
 <p>
-%許容list の`許可~source式~list$に次の結果を`付加する$set
+%許容list の`式~群$ALに次の結果を`付加する$set【！`付加する$】
 ⇒
 `生成元を直列化する$( %~target )
 </p>
@@ -3025,7 +3036,7 @@ If target is not an opaque origin,＼
 結果は `permissions-source-expression$P に合致するはずである。
 】</p>
 ◎
-append the serialization of target to allowlist.
+append the serialization of target to allowlist’s expressions.
 </li>
 				</ol>
 			</li>
