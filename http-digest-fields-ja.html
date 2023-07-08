@@ -53,8 +53,8 @@ figure > pre {
 ●●options
 
 spec_title:Digest Fields
-spec_date:2023-06-30
-trans_update:2023-07-03
+spec_date:2023-07-05
+trans_update:2023-07-08
 source_checked:230308
 original_url:https://httpwg.org/http-extensions/draft-ietf-httpbis-digest-headers.html
 abbr_url:HTTPdigest
@@ -127,6 +127,8 @@ cite.~HTTP~digest~field用~hash~algo~registry:#_hash-algo-registry
 
 ~hashing~algo:#algorithms
 選定された表現~data:#selected-representation-data
+~algo~key:#algorithm-key
+位置付け:#algorithm-status
 
 	●§
 1:#introduction
@@ -147,7 +149,7 @@ cite.~HTTP~digest~field用~hash~algo~registry:#_hash-algo-registry
 6.4:#usage-in-trailer-fields
 6.5:#variations-within-content-encoding
 6.6:#sec-agility
-6.7:#resource-exhaustion
+6.7:#sec-exhaustion
 7:#iana-considerations
 7.1:#http-field-name-registration
 7.2:#establish-hash-algorithm-registry
@@ -171,6 +173,7 @@ C.1:#server-selects-clients-least-preferred-algorithm
 C.2:#ex-server-selects-unsupported-algorithm
 C.3:#server-does-not-support-client-algorithm-and-returns-an-error
 D:#sample-digest-values
+E:#migrating
 	:#faq
 	:#acknowledgements
 	:#code-samples
@@ -262,6 +265,7 @@ GZIP:
 	最も弱い:weakest
 	~~保険をかける:providing coverage
 	破られた:broken
+	残す:leave
 
 	●仕様
 順応-:adapt:~
@@ -321,6 +325,7 @@ workflow::::ワークフロー
 多様性:variation:~
 閉鎖-:close:~
 否定-:negate:~
+免除-:exempt:~
 
 	至らす:cause
 	至らす:leading
@@ -376,7 +381,7 @@ workflow::::ワークフロー
 	適合しないこと:non-conformance
 	かそうでないのか:or unintentional
 	明瞭に表す:clearly articulate
-	可能性:possibility
+	アリ性:possibility
 	用意がある:willing to
 	~~必要とされる:demand
 	~~自前の:it also defined
@@ -398,6 +403,8 @@ workflow::::ワークフロー
 	は別として:aside from
 	かなり:quite
 	たいした〜無い:negligible
+	必要以上に:undue
+	~~被る:caused by
 
 	●言い換え
 中継点:hop::~
@@ -423,7 +430,7 @@ workflow::::ワークフロー
 	とは異なる:different compared to
 	〜で呈示される場合もある:For presentation purposes, ...
 	行l長さの~~都合により...:fit completely within the line-length limits...
-	受信者:receiver
+	受信者$:receiver
 	識別するもの:identification of
 	~trailer節:trailers
 	段階:stage
@@ -435,6 +442,7 @@ workflow::::ワークフロー
 	{ 〜 }:inclusive
 	確立して，初期~登録を与える:bootstrap
 	複数行からなる:multiline
+	算出し直-:recomputation
 
 	●未分類
 消費:consumption::~
@@ -468,6 +476,8 @@ patch::::パッチ
 	またがる:across
 	〜までに:extent
 	各部:parts
+	それまで:previously
+	演算~上の:operational
 
 	●語形
 	^r:Single UNIX Specification, version 2
@@ -708,7 +718,7 @@ Copyright (c) 2023 IETF Trust and the persons identified as the document authors
 — それは，応用~層からは不透明であり、
 それが受持つのは，単独の接続までに限られるので。
 ~HTTP~messageは，別々な接続の連鎖~越しに旅することが多く、
-接続どうしの合間にて~data破損を~~被る可能性がある。
+接続どうしの合間にて~data破損を~~被るアリ性がある。
 ~HTTPによる完全性の仕組みは、［
 端点／~HTTPを利用している応用
 ］用に［
@@ -1096,11 +1106,18 @@ This document uses the line folding strategies described in [FOLDING].
 `~hashing~algo$の名前は、
 それらを定義する文書に利用される文字大小-法を尊重する
 （例： `SHA-1$i, `CRC32c$i ）。
-一方で，`~hashing~algo$の~keyは、
+◎
+Hashing algorithm names respect the casing used in their definition document (e.g., SHA-1, CRC32c).
+</p>
+
+<p>
+~HTTP`~message$は、
+`~algo~key$を利用して，`~hashing~algo$を指示する。
+文書の注釈文において`~algo~key$を指す所では、
 引用符で括られる
 （例： "`sha$c", "`crc32c$c" ）。
 ◎
-Hashing algorithm names respect the casing used in their definition document (e.g. SHA-1, CRC32c) whereas hashing algorithm keys are quoted (e.g., "sha", "crc32c").
+HTTP messages indicate hashing algorithms using an Algorithm Key (algorithms). Where the document refers to an Algorithm Key in prose, it is quoted (e.g., "sha", "crc32c").
 </p>
 
 <p>
@@ -1112,7 +1129,7 @@ Hashing algorithm names respect the casing used in their definition document (e.
 `~digest^dfn
 は、
 【~checksumと同様であるが，】
-当の~fieldに包含される値に関係する所に限り利用される。
+当の`~field$に包含される値に関係する所に限り利用される。
 ◎
 The term "checksum" describes the output of the application of an algorithm to a sequence of bytes, whereas "digest" is only used in relation to the value contained in the fields.
 </p>
@@ -1217,11 +1234,14 @@ Content-Digest: \
 受信した各~digestに対し，どれを無視してもヨイ。
 応用に特有な挙動や局所的な施策は、
 伝達された~digestの処理や検証の実施に対し，追加的な拘束を設定してもヨイ。
-例えば，受信した~digestのある下位集合に対する検証は、
-資源~枯渇に抗する保護を成す~approachの一つになる
-— `6.7§ を見よ。
+~securityの考慮点は、［
+~digestを無視すること／複数の~digestを検証すること
+］に関係する課題のうち一部を受持つ
+（［
+`6.6§ ／ `6.7§
+］を見よ）。
 ◎
-A recipient MAY ignore any or all digests. Application-specific behavior or local policy MAY set additional constraints on the processing and validation practices of the conveyed digests. For example, validation of a subset of received digests is one approach to protection against resource exhaustion; see Section 6.7.
+A recipient MAY ignore any or all digests. Application-specific behavior or local policy MAY set additional constraints on the processing and validation practices of the conveyed digests. The security considerations covers some of the issues related to ignoring digests (see Section 6.6) and validating multiple digests (see Section 6.7).
 </p>
 
 <p>
@@ -1355,11 +1375,14 @@ Repr-Digest: \
 受信した各~digestに対し，どれを無視してもヨイ。
 応用に特有な挙動や局所的な施策は、
 伝達された~digestの処理や検証の実施に対し，追加的な拘束を設定してもヨイ。
-例えば，受信した~digestのある下位集合に対する検証は、
-資源~枯渇に抗する保護を成す~approachの一つになる
-— `6.7§ を見よ。
+~securityの考慮点は、［
+~digestを無視すること／複数の~digestを検証すること
+］に関係する課題のうち一部を受持つ
+（［
+`6.6§ ／ `6.7§
+］を見よ）。
 ◎
-A recipient MAY ignore any or all digests. Application-specific behavior or local policy MAY set additional constraints on the processing and validation practices of the conveyed digests. For example, validation of a subset of received digests is one approach to protection against resource exhaustion; see Section 6.7.
+A recipient MAY ignore any or all digests. Application-specific behavior or local policy MAY set additional constraints on the processing and validation practices of the conveyed digests. The security considerations covers some of the issues related to ignoring digests (see Section 6.6) and validating multiple digests (see Section 6.7).
 </p>
 
 <p>
@@ -1612,7 +1635,7 @@ An initial set of algorithms will be registered with IANA in the "Hash Algorithm
 
 <p>
 各~algoには、
-位置付け~fieldがある
+`位置付け$がある
 — それは、
 実装における選定を援助することが意図される。
 ◎
@@ -1620,34 +1643,49 @@ Each algorithm has a status field, which is intended to provide an aid to implem
 </p>
 
 <p>
-位置付け `標準^i を伴う~algoは、
+`位置付け$ `標準^i を伴う~algoは、
 多くの目的に相応しくなる
-— 敵対者に~~晒される状況も含めて
-（そこでは、
+— 応用には、
+これらの~algoを利用することが`推奨される^2119。
+これらは、
+敵対者に~~晒される状況にも利用できる
+— そこでは、
 ~hash関数は，［
 衝突~攻撃, 第一-原像~攻撃, 第二-原像~攻撃
-］に対する耐性を供する必要があるかもしれない）。
-敵対者に~~晒される状況において，
-`標準^i を伴う~algoのうち どれを選定することが受容-可能かは、
+］に対する耐性を供する必要があるかもしれない。
+そのような状況において， `標準^i を伴う~algoのうち どれを選定することが受容-可能かは、
 当の状況下で~~必要とされる保護~levelに依存することになる。
-折衝は無いので、
-~security用の~digestに依存する端点は，［
-受容する用意がある~algoのうち最も弱いもの
-］に対する攻撃に対し脆弱になる。
+さらなる考慮点は、
+`6.6§ にて呈示される。
 ◎
-Algorithms with a status value of "standard" are suitable for many purposes, including adversarial situations where hash functions might need to provide resistance to collision, first-preimage and second-preimage attacks. For adversarial situations, selecting which of the "standard" algorithms are acceptable will depend on the level of protection the circumstances demand. As there is no negotiation, endpoints that depend on a digest for security will be vulnerable to attacks on the weakest algorithm they are willing to accept.
+Algorithms with a status value of "standard" are suitable for many purposes and it is RECOMMENDED that applications use these algorithms. These can be used in adversarial situations where hash functions might need to provide resistance to collision, first-preimage and second-preimage attacks. For adversarial situations, selecting which of the "standard" algorithms are acceptable will depend on the level of protection the circumstances demand. More considerations are presented in Section 6.6.
 </p>
 
 <p>
-位置付け `非~secure^i を伴う~algoは、
+`位置付け$ `非~secure^i を伴う~algoは、
 これらの特質を何も供さないか，弱いことが既知である
 （ `NO-MD5$r, `NO-SHA$r を見よ）。
 これらの~algoは，破損に抗する完全性を保全するためとして利用してもヨイが、
 敵対者に~~晒され得る設定においては，利用してはナラナイ
 — 例えば、
 真正性を得るために`完全性~field$の値を署名するとき。
+これらの~algoの利用を許可することは、
+一部の応用には助けになることもある
+— 例えば、
+それまで `RFC3230$r を利用していた応用を，この仕様へ移行するとき（ `E§ ）／
+既存の［
+算出された~digest値たちが成す格納-済みな~collection
+］を［
+より~secureな他の~algoを利用して算出し直すこと
+］により必要以上に演算~上の~overheadを~~被ることを避けるため。
+そのような応用であっても，この節の要件は免除されない。
+さらには、
+そのような［
+旧来のもの／歴史
+］を伴わない応用は，
+`位置付け$ `標準^i を伴う~algoを利用するための指導に従う~OUGHT。
 ◎
-Algorithms with a status value of "insecure" either provide none of these properties, or are known to be weak (see [NO-MD5] and [NO-SHA]). These algorithms MAY be used to preserve integrity against corruption, but MUST NOT be used in a potentially adversarial setting; for example, when signing Integrity fields' values for authenticity.
+Algorithms with a status value of "insecure" either provide none of these properties, or are known to be weak (see [NO-MD5] and [NO-SHA]). These algorithms MAY be used to preserve integrity against corruption, but MUST NOT be used in a potentially adversarial setting; for example, when signing Integrity fields' values for authenticity. Permitting the use of these algorithms can help some applications, for example, those that previously used [RFC3230], are migrating to this specification (Appendix E), and have existing stored collections of computed digest values avoid undue operational overhead caused by recomputation using other more-secure algorithms. Such applications are not exempt from the requirements in this section. Furthermore, applications without such legacy or history ought to follow the guidance for using algorithms with the status value "standard".
 </p>
 
 <p>
@@ -1668,7 +1706,7 @@ Registration requests for the "Hash Algorithms for HTTP Digest Fields" registry 
 </p>
 <ul>
 	<li>
-~algo~key
+`~algo~key@
 （ `Algorithm Key^en ）
 ⇒
 次に挙げる`有構造~field$において，
@@ -1683,7 +1721,7 @@ Algorithm Key: the Structured Fields key value used in Content-Digest, Repr-Dige
 </li>
 	<li>
 <p>
-位置付け
+`位置付け@
 （ `Status^en ）
 ⇒
 当の~algoの位置付け
@@ -1741,18 +1779,18 @@ Reference(s): pointer(s) to the primary document(s) defining the Algorithm Key a
 <p>
 指名された専門家（たち）は，
 登録~要請を考査する際には、
-要請された位置付けに注意を払うべきである。
-位置付けは、
+要請された`位置付け$に注意を払うべきである。
+`位置付け$は、
 標準~化の状態sおよび［
 関連な関心~group
 — ~IETF／~securityに関係する標準開発組織など —
 からの広範な見解
 ］を反映するべきである。
-位置付け `標準^i は、［
+`位置付け$ `標準^i は、［
 弱い／破られた（ `broken^en ）／試験的である
 ］ことが既知な~algoには，相応でない。
 登録~要請が，そのような~algoを `標準^i として登録しようと試みた場合、
-指名された専門家（たち）は，代替な位置付け
+指名された専門家（たち）は，代替な`位置付け$
 — `非~secure^i か `暫定的^i —
 を示唆するべきである。
 ◎
@@ -1762,7 +1800,7 @@ When reviewing registration requests, the designated expert(s) should pay attent
 <p>
 指名された専門家（たち）は，
 登録~要請を考査する際には、
-却下の~~根拠として，位置付け［
+却下の~~根拠として，`位置付け$［
 `非~secure^i ／ `暫定的^i
 ］を利用することはできない。
 ◎
@@ -1774,7 +1812,7 @@ When reviewing registration requests, the designated expert(s) cannot use a stat
 更新する／変更する
 ］要請は許可される。
 例えば、
-~algoの位置付けを［
+~algoの`位置付け$を［
 ~security環境が発展するに伴い，
 `標準^i から `非~secure^i へ移行tする
 ］ことも許容され得る。
@@ -1907,7 +1945,7 @@ Digests explicitly depend on the "representation metadata" (e.g., the values of 
 `完全性~field$を適用するときに，敵対者に~~晒される見込みが高いと判断される
 — `5§ を見よ。
 `Repr-Digest$h は、
-署名と組合されたときに，興味深い可能性を提供する。
+署名と組合されたときに，興味深いアリ性を提供する。
 送信する`内容$が無い局面では，
 当の~message内に空~文字列の~digestを内包でき、
 署名された場合は，受信者が［
@@ -2034,8 +2072,11 @@ The security properties of hashing algorithms are not fixed. Algorithm Agility (
 とは言え，資源を消費して複数個の値を送信しても、
 `受信者$【！receiver】から無視された場合には，浪費されることになる
 （ `3§ を見よ）。
+~security用に~digestに依存する`受信者$【！receiver】は、［
+自身が受容する用意がある~algoのうち最も弱いもの
+］に対する攻撃に対し脆弱になる。
 ◎
-Transition from weak algorithms is supported by negotiation of hashing algorithm using Want-Content-Digest or Want-Repr-Digest (see Section 4) or by sending multiple digests from which the receiver chooses. Endpoints are advised that sending multiple values consumes resources, which may be wasted if the receiver ignores them (see Section 3).
+Transition from weak algorithms is supported by negotiation of hashing algorithm using Want-Content-Digest or Want-Repr-Digest (see Section 4) or by sending multiple digests from which the receiver chooses. A receiver that depends on a digest for security will be vulnerable to attacks on the weakest algorithm it is willing to accept. Endpoints are advised that sending multiple values consumes resources, which may be wasted if the receiver ignores them (see Section 3).
 </p>
 
 <p>
@@ -2055,16 +2096,23 @@ While algorithm agility allows the migration to stronger algorithms it does not 
 </p>
 
 		</section>
-		<section id="resource-exhaustion">
+		<section id="sec-exhaustion">
 <h3 title="Resource exhaustion">6.7. 資源の枯渇</h3>
 
 <p>
 `完全性~field$の検証は、計算l資源を消費する。
-実装は、資源の枯渇を避けるためとして，［
+実装は、
+資源の枯渇を避けるためとして，［
 ~algoの種別, 検証の回数, `内容$の~size
 ］の検証を制約できる。
+これらの事例では、
+より選好される~algoの［
+検証をまるごと飛ばす／
+検証における失敗を無視する
+］と，降格~攻撃のアリ性を残すことになる
+（ `6.6§ を見よ）。
 ◎
-Integrity fields validation consumes computational resources. In order to avoid resource exhaustion, implementations can restrict validation of the algorithm types, number of validations, or the size of content.
+Integrity fields validation consumes computational resources. In order to avoid resource exhaustion, implementations can restrict validation of the algorithm types, number of validations, or the size of content. In these cases, skipping validation entirely or ignoring validation failure of a more-preferred algorithm leaves the possibility of a downgrade attack (see Section 6.6).
 </p>
 
 		</section>
@@ -2157,8 +2205,8 @@ IANA is requested to create the new "Hash Algorithms for HTTP Digest Fields" reg
 — 初期~hash~algo
 </caption>
 <thead><tr>
-<th>~algo~key
-<th>位置付け
+<th>`~algo~key$
+<th>`位置付け$
 <th>記述
 <th>参照
 
@@ -3536,7 +3584,7 @@ crc32c -    :Q3lHIA==:
 </pre>
 
 	</section>
-	<section id="migrating-from-rfc-3230">
+	<section id="migrating">
 <h2 title="Appendix E. Migrating from RFC 3230">付録 E. ~RFC 3230 からの移行-法</h2>
 
 <p>
