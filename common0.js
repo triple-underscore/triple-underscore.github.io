@@ -1520,8 +1520,6 @@ anchor::::アンカー
 	●規約／表記
 編集者:editor:~
 編集上の:editorialな:~
-情報:information:~
-	〜情報:〜 info
 導入-:introduce:~
 序論:introduction:~
 概観:overview:~
@@ -2490,6 +2488,8 @@ catch:
 検出:detection::~
 報告:report::~::レポート
 報告-:report::~::レポート
+情報:information:~
+報:info:情報
 通知-:notify::~
 通知:notification::~
 通達-:signal::~
