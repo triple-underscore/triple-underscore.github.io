@@ -2276,9 +2276,6 @@ care:::配慮::ケア
 注意深く:carefulに:~
 注意深い:carefulな:~
 	気を付ける:be careful
-自動的:automatic:~
-手動:manual:~
-手動で:manualに:~
 管理-:manage:~
 管理:management:~
 純粋:pure:~
@@ -2470,6 +2467,16 @@ catch:
 処理-:process:~
 処理n:process:処理
 処理器:processor:~:::プロセッサ
+
+自動的:automatic::~
+自動:auto::~
+自動-:auto-::~
+自動で:auto-::~
+自動化:automation::~
+自動化-:automate::~
+	自動的に:automatically
+手動:manual::~
+手動で:manualに::~
 
 検証-:validate::~
 検証:validation::~

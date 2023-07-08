@@ -986,8 +986,6 @@ agent::::エージェント
 維持-:retain:~
 維持させ:sustainし:~
 背後:behind:~
-自動化-:automate:~
-自動化:automated:~
 協調的:collaborative:~
 相違化-:differentiate:区別
 運用-:operate:~
