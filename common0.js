@@ -1235,7 +1235,7 @@ HTMLWPROXY:HTML-windowproxy-ja.html
 HTMLds:HTML-document-sequences-ja.html
 BROWSERS:HTML-document-sequences-ja.html
 HTMLnav:HTML-navigation-ja.html
-HTMLnavAPI:https://html.spec.whatwg.org/multipage/nav-history-apis.html
+HTMLnavAPI:HTML-navigation-apis-ja.html
 HTMLlifecycle:HTML-document-lifecycle-ja.html
 WAPI:webappapis-ja.html
 HTMLGAPI:HTML-global-api-ja.html
