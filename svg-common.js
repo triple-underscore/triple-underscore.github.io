@@ -908,7 +908,6 @@ green:
 viewer::::ビューア
 zoom::::ズーム
 pan::::パン
-辿り:traversal::~
 隠され:hideされ::~
 隠す:hideする::~
 隠せば:hideすれば::~

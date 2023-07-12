@@ -1441,6 +1441,22 @@ snapshot::::スナップショット
 mark::::マーク
 marker::::マーカ
 anchor::::アンカー
+frame::::フレーム
+閲覧-:browse::~
+閲覧:browsing::~
+navi:navigation:::ナビ
+navigate::::ナビゲート
+navigable::::ナビ可能
+辿り:traversal::~
+辿可能:traversable::辿り可能
+辿-:traverse::辿り
+	辿-法:traversing
+辿る:traverseする::~
+辿られ:traverseされ::~
+辿らな:traverseしな::~
+辿らせ:traverseさせ::~
+辿っ:traverseし::~
+辿れ:traverseでき::~
 
 ●幾何
 空間:space:~
@@ -2337,6 +2353,8 @@ method::::メソッド
 返せ:returnでき:~
 返り:return:~
 
+script::::スクリプト
+scripting::::スクリプト処理
 hook::::フック
 fall-back:fall back:::フォールバック
 fallback::::フォールバック
@@ -3134,7 +3152,7 @@ filename::::ファイル名
 印刷:print:~:::プリント
 印刷-:print:~:::プリント
 
-●security/network
+●network
 
 資源:resource::~:リソース
 下位資源:subresource::~:下位リソース
@@ -3156,11 +3174,6 @@ filename::::ファイル名
 
 提出-:submit::~
 提出:submission::~
-
-CSP:
-CORS:
-script::::スクリプト
-scripting::::スクリプト処理
 所在:location::~
 URL:
 url:
@@ -3174,12 +3187,6 @@ link::::リンク
 hyperlink::::ハイパーリンク
 address::::アドレス
 domain::::ドメイン
-frame::::フレーム
-閲覧-:browse::~
-閲覧:browsing::~
-navi:navigation:::ナビ
-navigate::::ナビゲート
-navigable::::ナビ可能
 download::::ダウンロード
 upload::::アップロード
 redirect::::リダイレクト
@@ -3236,6 +3243,8 @@ session::::セッション
 sandbox::::サンドボックス
 	~sandbox化:sandboxed
 	~sandbox法:sandboxing
+CSP:
+CORS:
 生成元:origin::~::オリジン
 同一-:same-::~
 非同一-:cross-::~::クロス
