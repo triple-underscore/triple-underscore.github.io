@@ -174,7 +174,7 @@ return text;
 ●●options
 
 spec_date:2023-07-13
-trans_update:2023-07-13
+trans_update:2023-07-14
 source_checked:221101
 page_state_key:HTML
 spec_status:LS
@@ -221,6 +221,7 @@ load:
 	~load後:post-load
 unload:
 step:
+about:
 補助:auxiliary::~
 開いた:openした::~
 閉中:is closing::閉じかけ
@@ -310,6 +311,7 @@ process::::プロセス
 	%~window種別:windowType
 	%作成元:creator
 	%作成元の生成元:creatorOrigin
+	%作成元の基底~URL:creatorBaseURL
 	%先祖~群:ancestors
 	%入力~navigable:inputNavigable
 	%入子な履歴:nestedHistory
@@ -579,7 +581,6 @@ bc.~top-level閲覧~文脈:#bc-tlbc
 bc.~virtual閲覧~文脈~group~ID:#virtual-browsing-context-group-id
 bc.作動中の~window:#active-window
 bc.作動中の文書:#active-document
-bc.作成元の基底~URL:#creator-base-url
 bc.作成時の~opener生成元:#opener-origin-at-creation
 bc.初期~URL:#browsing-context-initial-url
 bc.補助か:#is-auxiliary
@@ -617,6 +618,8 @@ doc.初期~about_blankか:~HTMLdom#is-initial-about:blank
 doc.施策~容器:~HTMLdom#concept-document-policy-container
 doc.許可~施策:~HTMLdom#concept-document-permissions-policy
 doc.非同一-生成元~opener施策:~HTMLdom#concept-document-coop
+doc.~about基底~URL:~HTMLdom#concept-document-about-base-url
+
 ~navi開始~時刻:~HTMLdom#navigation-start-time
 初期~about_blank な文書:~HTMLdom#is-initial-about:blank
 文書~load計時~報:~HTMLdom#document-load-timing-info
@@ -659,6 +662,7 @@ coop.same-origin:~ORIGIN#coop-same-origin
 dS.~navigable名:~HTMLnav#document-state-nav-target-name
 dS.入子な履歴~群:~HTMLnav#document-state-nested-histories
 dS.文書:~HTMLnav#document-state-document
+dS.~about基底~URL:~HTMLnav#document-state-about-base-url
 nH.~ID:~HTMLnav#nested-history-id
 nH.~entry群:~HTMLnav#nested-history-entries
 shE.~URL:~HTMLnav#she-url
@@ -1321,8 +1325,9 @@ Otherwise, set document to the second return value of creating a new auxiliary b
 %文書~状態 ~LET 新たな`文書~状態$
 — その
 ⇒＃
-`文書$dS ~SET %文書
-`~navigable名$dS ~SET %~target名
+`文書$dS ~SET %文書,
+`~navigable名$dS ~SET %~target名,
+`~about基底~URL$dS ~SET %文書 の`~about基底~URL$doc
 ◎
 Let documentState be a new document state, with
 ◎
@@ -1330,6 +1335,8 @@ document
 • document
 navigable target name
 • targetName
+about base URL
+• document's about base URL
 </li>
 	<li>
 %辿可能 ~LET 新たな`辿可能な~navigable$
@@ -1676,7 +1683,8 @@ If element has a name content attribute, then set targetName to the value of tha
 — その
 ⇒＃
 `文書$dS ~SET %文書,
-`~navigable名$dS ~SET %~target名
+`~navigable名$dS ~SET %~target名,
+`~about基底~URL$dS ~SET %文書 の`~about基底~URL$doc
 ◎
 Let documentState be a new document state, with
 ◎
@@ -1684,6 +1692,8 @@ document
 • document
 navigable target name
 • targetName
+about base URL
+• document's about base URL
 </li>
 	<li>
 %~navigable ~LET 新たな`~navigable$
@@ -3177,16 +3187,6 @@ An is auxiliary boolean, initially false.
 An initial URL, a URL or null, initially null.
 </li>
 	<li>
-`作成元の基底~URL@bc
-⇒
-~NULL ／［
-`~URL$を返す~algo
-］
-— 初期~時は ~NULL とする。
-◎
-A creator base URL, null or an algorithm that returns a URL, initially null.
-</li>
-	<li>
 `~virtual閲覧~文脈~group~ID@bc
 ⇒
 整数
@@ -3349,6 +3349,11 @@ Let unsafeContextCreationTime be the unsafe shared current time.
 ◎
 Let creatorOrigin be null.
 </li>
+	<li>
+%作成元の基底~URL ~LET ~NULL
+◎
+Let creatorBaseURL be null.
+</li>
 	<li id="creator-browsing-context">
 <p>
 ~IF［
@@ -3363,12 +3368,10 @@ If creator is non-null, then:
 ◎
 Set creatorOrigin to creator's origin.
 </li>
-			<li class="algo">
-%閲覧~文脈 の`作成元の基底~URL$bc ~SET 次を走らす~algo
-⇒
-~RET %作成元 の`文書~基底~URL$
+			<li>
+%作成元の基底~URL ~SET %作成元 の`文書~基底~URL$
 ◎
-Set browsingContext's creator base URL to an algorithm which returns creator's base URL.
+Set creatorBaseURL to creator's document base URL.
 </li>
 			<li>
 %閲覧~文脈 の`~virtual閲覧~文脈~group~ID$bc ~SET %作成元 が`属する閲覧~文脈$の`~top-level閲覧~文脈$bcの`~virtual閲覧~文脈~group~ID$bc
@@ -3455,12 +3458,13 @@ Let loadTimingInfo be a new document load timing info with its navigation start 
 `種別$doc ~SET `html^l,
 `内容~型$doc ~SET "`text/html$mt"
 `~mode$doc ~SET `quirks^l,
-`生成元$doc ~SET %生成元
-`属する閲覧~文脈$ ~SET %閲覧~文脈
-`許可~施策$doc ~SET %許可~施策
-`作動中の~sandbox法~flag集合$ ~SET %~sandbox~flag群
-`~load計時~報$doc ~SET %~load計時~報
-`初期~about_blankか$doc ~SET ~T
+`生成元$doc ~SET %生成元,
+`属する閲覧~文脈$ ~SET %閲覧~文脈,
+`許可~施策$doc ~SET %許可~施策,
+`作動中の~sandbox法~flag集合$ ~SET %~sandbox~flag群,
+`~load計時~報$doc ~SET %~load計時~報,
+`初期~about_blankか$doc ~SET ~T,
+`~about基底~URL$doc ~SET %作成元の基底~URL
 ◎
 Let document be a new Document, with:
 ◎
@@ -3482,6 +3486,8 @@ load timing info
 • loadTimingInfo
 is initial about:blank
 • true
+about base URL
+• creatorBaseURL
 </li>
 	<li>
 <p>

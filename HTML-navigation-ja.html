@@ -180,8 +180,8 @@ return text;
 
 ●●options
 
-spec_date:2023-07-04
-trans_update:2023-07-05
+spec_date:2023-07-13
+trans_update:2023-07-14
 source_checked:230626
 page_state_key:HTML
 spec_status:LS
@@ -395,7 +395,7 @@ nvP.最終-~sandbox~flag集合:#navigation-params-sandboxing
 nvP.生成元:#navigation-params-origin
 nvP.要請:#navigation-params-request
 nvP.非同一-生成元~opener施策:#navigation-params-coop
-
+nvP.~about基底~URL:#navigation-params-about-base-url
 
 ~navigableを変更している継続の状態:#changing-navigable-continuation-state
 cnC.~navigable:#changing-nav-continuation-navigable
@@ -415,6 +415,7 @@ dS.要請~referrer:#document-state-request-referrer
 dS.要請~referrer施策:#document-state-request-referrer-policy
 dS.資源:#document-state-resource
 dS.起動元~生成元:#document-state-initiator-origin
+dS.~about基底~URL:#document-state-about-base-url
 
 doc.指示された部位:#the-indicated-part-of-the-document
 
@@ -598,11 +599,15 @@ nfSnvP.~navi計時~種別:#non-fetch-scheme-params-nav-timing-type
 並列的:~HTMLINFRA#in-parallel
 一意かつ内部的な値:~HTMLcms#unique-internal-value
 
+~fallback基底~URL:~HTMLurl#fallback-base-url
+文書~基底~URL:~HTMLurl#document-base-url
+
 doc.初期~about_blankか:~HTMLdom#is-initial-about:blank
 初期~about_blank な文書:~HTMLdom#is-initial-about:blank
 doc.施策~容器:~HTMLdom#concept-document-policy-container
 doc.現在の準備度:~HTMLdom#current-document-readiness
 doc.非同一-生成元~opener施策:~HTMLdom#concept-document-coop
+doc.~about基底~URL:~HTMLdom#concept-document-about-base-url
 
 ~downloadとして取扱う:~HTMLlinks#as-a-download
 ~hyperlinkを追う:~HTMLlinks#following-hyperlinks-2
@@ -1035,6 +1040,7 @@ unload:
 agent:
 iframe:
 step:
+about:
 補助:auxiliary::~
 埋込元:embedder::埋め込み元
 読込直す:reloadする::読み込み直す::リロードする
@@ -1349,8 +1355,8 @@ back-up:back up:::バックアップ
 	%評価~状態s:evaluationStatus
 	%資源:resource
 	%起動元~生成元:initiatorOrigin
-	%起動元~生成元:initiatorOrigin
 	%起動元~生成元~snapshot:initiatorOriginSnapshot
+	%起動元~基底~URL~snapshot:initiatorBaseURLSnapshot
 	%辿可能:traversable
 	%開始-時の~index:startingIndex
 	%開始-時の生成元:startingOrigin
@@ -2223,6 +2229,26 @@ An origin, which is an origin or null, initially null.
 `~navigable名$dSは~clearされる。
 ◎
 This is the origin that we set "about:"-schemed Documents' origin to. We store it here because it is also used when restoring these Documents during traversal, since they are reconstructed locally without visiting the network. It is also used to compare the origin before and after the session history entry is repopulated. If the origins change, the navigable target name is cleared.
+</p>
+	</li>
+	<li>
+<p>
+`~about基底~URL@dS
+⇒
+`~URL$ ／ ~NULL
+— 初期~時は ~NULL とする。
+◎
+An about base URL, which is a URL or null, initially null.
+</p>
+
+<p class="note">注記：
+これは、
+`about:^l ~schemeを伴う`文書$用に限り拡充され，
+そのような`文書$用の`~fallback基底~URL$を与えることになる。
+それは、
+起動元`文書$の`文書~基底~URL$の~snapshotを成す。
+◎
+This will be populated only for "about:"-schemed Documents and will be the fallback base URL for those Documents. It is a snapshot of the initiator Document's document base URL.
 </p>
 	</li>
 	<li>
@@ -3707,6 +3733,15 @@ cross-origin opener policy
 navigation timing type
 • a NavigationTimingType used for creating the navigation timing entry for the new Document
 </li>
+	<li>
+`~about基底~URL@nvP
+⇒
+`~URL$ ／ ~NULL
+— 新たな`文書$の`~about基底~URL$docを拡充するために利用される
+◎
+about base URL
+• a URL or null used to populate the new Document's about base URL
+</li>
 </ul>
 
 <p class="note">注記：
@@ -4039,6 +4074,11 @@ Let sourceSnapshotParams be the result of snapshotting source snapshot params gi
 %起動元~生成元~snapshot ~LET %~source文書 の`生成元$doc
 ◎
 Let initiatorOriginSnapshot be sourceDocument's origin.
+</li>
+	<li>
+%起動元~基底~URL~snapshot ~LET %~source文書 の`文書~基底~URL$
+◎
+Let initiatorBaseURLSnapshot be sourceDocument's document base URL.
 </li>
 	<li id="sandboxLinks">
 <p>
@@ -4536,23 +4576,26 @@ The navigable target name can get cleared under various conditions later in the 
 </p>
 			</li>
 			<li>
+<p>
 ~IF［
-%~URL ~EQ `~about_blank$sc
-］
-⇒
-%文書~状態 の`生成元$dS ~SET %文書~状態 の`起動元~生成元$dS
+%~URL ~IN { `~about_blank$sc, `~about_srcdoc$sc }
+］：
 ◎
-If url is about:blank, then set documentState's origin to documentState's initiator origin.
-</li>
-			<li>
-~ELIF［
-%~URL ~EQ `~about_srcdoc$sc
-］
-⇒
-%文書~状態 の`生成元$dS ~SET %~navigable の`親$navにて`作動中の文書$navの`生成元$doc
+If url is about:blank or about:srcdoc, then:
+</p>
+				<ol>
+					<li>
+%文書~状態 の`生成元$dS ~SET %起動元~生成元~snapshot
 ◎
-Otherwise, if url is about:srcdoc, then set documentState's origin to navigable's parent's active document's origin.
+Set documentState's origin to initiatorOriginSnapshot.
 </li>
+					<li>
+%文書~状態 の`~about基底~URL$dS ~SET %起動元~基底~URL~snapshot
+◎
+Set documentState's about base URL to initiatorBaseURLSnapshot.
+</li>
+				</ol>
+			</li>
 			<li>
 %履歴~entry ~LET 新たな`~session履歴~entry$
 — その
@@ -4666,7 +4709,8 @@ cross-origin opener policy
 `施策~容器$nvP ~SET %施策~容器,
 `最終-~sandbox~flag集合$nvP ~SET %最終-~sandbox~flag群,
 `非同一-生成元~opener施策$nvP ~SET %~COOP,
-`~navi計時~種別$nvP ~SET `navigate$l
+`~navi計時~種別$nvP ~SET `navigate$l,
+`~about基底~URL$nvP ~SET %文書~状態 の`~about基底~URL$dS
 ◎
 Set navigationParams to a new navigation params, with
 ◎
@@ -4696,6 +4740,8 @@ cross-origin opener policy
 • coop
 navigation timing type
 • "navigate"
+about base URL
+• documentState's about base URL
 </li>
 				</ol>
 			</li>
@@ -5086,7 +5132,8 @@ Let oldDocState be entryToReplace's document state.
 `履歴~施策~容器$dS ~SET %履歴~施策~容器,
 `要請~referrer$dS ~SET %旧-文書~状態 の`要請~referrer$dS,
 `要請~referrer施策$dS ~SET %旧-文書~状態 の`要請~referrer施策$dS,
-`起動元~生成元$dS ~SET %起動元~生成元~snapshot,
+`起動元~生成元$dS【！origin】 ~SET %起動元~生成元~snapshot,
+`~about基底~URL$dS ~SET %旧-文書~状態 の`~about基底~URL$dS,
 `資源$dS ~SET ~NULL,
 `一度でも拡充されたか$dS ~SET ~T,
 `~navigable名$dS ~SET %旧-文書~状態 の`~navigable名$dS
@@ -5103,6 +5150,8 @@ request referrer policy
 • oldDocState's request referrer policy or should this be the referrerPolicy that was passed to navigate?
 origin
 • initiatorOriginSnapshot
+about base URL
+• oldDocState's about base URL
 resource
 • null
 ever populated
@@ -5304,7 +5353,8 @@ cross-origin opener policy
 `施策~容器$nvP ~SET %施策~容器,
 `最終-~sandbox~flag集合$nvP ~SET %最終-~sandbox~flag群,
 `非同一-生成元~opener施策$nvP ~SET %~COOP,
-`~navi計時~種別$nvP ~SET `navigate$l
+`~navi計時~種別$nvP ~SET `navigate$l,
+`~about基底~URL$nvP ~SET %~target~navigable にて`作動中の文書$navの`~about基底~URL$doc
 ◎
 Let navigationParams be a new navigation params, with
 ◎
@@ -5334,6 +5384,8 @@ cross-origin opener policy
 • coop
 navigation timing type
 • "navigate"
+about base URL
+• targetNavigable's active document's about base URL
 </li>
 	<li>
 ~RET `~HTML文書を読込む$( %~navi~params )
@@ -7849,7 +7901,8 @@ Let policyContainer be the result of determining navigation params policy contai
 `施策~容器$nvP ~SET %施策~容器,
 `最終-~sandbox~flag集合$nvP ~SET %~target~snapshot~params の`~sandbox法~flag群$tsP,
 `非同一-生成元~opener施策$nvP ~SET %~COOP,
-`~navi計時~種別$nvP ~SET %~navi計時~種別
+`~navi計時~種別$nvP ~SET %~navi計時~種別,
+`~about基底~URL$nvP ~SET %~entry の`文書~状態$shEの`~about基底~URL$dS
 ◎
 Return a new navigation params, with
 ◎
@@ -7879,6 +7932,8 @@ cross-origin opener policy
 • coop
 navigation timing type
 • navTimingType
+about base URL
+• entry's document state's about base URL
 </li>
 </ol>
 </div>
@@ -8591,6 +8646,7 @@ Let oldDocState be entry's document state.
 `要請~referrer$dS ~SET %旧-文書~状態 の`要請~referrer$dS,
 `要請~referrer施策$dS ~SET %旧-文書~状態 の`要請~referrer施策$dS,
 `生成元$dS ~SET %旧-文書~状態 の`生成元$dS,
+`~about基底~URL$dS ~SET %旧-文書~状態 の`~about基底~URL$dS,
 `資源$dS ~SET %旧-文書~状態 の`資源$dS,
 `一度でも拡充されたか$dS ~SET %旧-文書~状態 の`一度でも拡充されたか$dS,
 `~navigable名$dS ~SET %旧-文書~状態 の`~navigable名$dS
@@ -8605,6 +8661,8 @@ request referrer policy
 • oldDocState's request referrer policy
 origin
 • oldDocState's origin
+about base URL
+• oldDocState's about base URL
 resource
 • oldDocState's resource
 ever populated
@@ -8952,7 +9010,8 @@ If the iframe is allowed to report to resource timing, we don't need to run its 
 `施策~容器$nvP ~SET %結果~施策~容器,
 `最終-~sandbox~flag集合$nvP ~SET %最終-~sandbox~flag群,
 `~COOP施行n結果$nvP ~SET %~COOP施行n結果,
-`~navi計時~種別$nvP ~SET %~navi計時~種別
+`~navi計時~種別$nvP ~SET %~navi計時~種別,
+`~about基底~URL$nvP ~SET %~entry の`文書~状態$shEの`~about基底~URL$dS
 ◎
 Return a new navigation params, with
 ◎
@@ -8982,6 +9041,8 @@ COOP enforcement result
 • coopEnforcementResult
 navigation timing type
 • navTimingType
+about base URL
+• entry's document state's about base URL
 </li>
 </ol>
 </div>
