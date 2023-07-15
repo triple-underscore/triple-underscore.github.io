@@ -864,7 +864,6 @@ masking::::マスク法
 	~raster化-:rasterize
 	~screen上の:onscreen
 symbol::::シンボル
-glyph::::グリフ
 red:
 blue:
 green:

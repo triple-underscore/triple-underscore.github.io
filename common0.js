@@ -3309,6 +3309,7 @@ animation::::アニメーション
 疑似要素:pseudo-element::~
 
 font::::フォント
+glyph::::グリフ
 graphic::::グラフィック
 graphicな:graphical:::グラフィックな
 canvas::::キャンバス
