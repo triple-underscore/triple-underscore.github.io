@@ -588,6 +588,7 @@ PR: '<a href="w3c-standards-types-ja.html#PR">勧告案</a>',
 CRD: '<a href="w3c-standards-types-ja.html#CRD">勧告候補草案</a>',
 CR: '<a href="w3c-standards-types-ja.html#CR">勧告候補スナップショット</a>',
 REC: '<a href="w3c-standards-types-ja.html#REC">勧告</a>',
+DRY: '<a href="w3c-standards-types-ja.html#DRY">草案レジストリ</a>',
 NOTE: '<a href="w3c-standards-types-ja.html#NOTE">W3C グループノート</a>',
 DNOTE: '<a href="w3c-standards-types-ja.html#DNOTE">W3C グループ草案ノート</a>',
 EDCG: '<a href="w3c-standards-types-ja.html#reports">Draft Community Group Report</a>', // #CG-DRAFT
