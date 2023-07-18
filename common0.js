@@ -1617,6 +1617,7 @@ navigable::::ナビ可能
 見做した:assumeした:~
 見做して:assumeして:~
 前提:assumption:~
+表t:table:表:::テーブル
 
 	●設計
 architecture::::アーキテクチャ
