@@ -13,12 +13,15 @@ original_urls:
 	原文URL複数分岐
 mdn_urls:
 	MDN サイト（https://developer.mozilla.org/docs/Web/...）へのリンク（ id → URL ）
+copyright:
+	著作権（ページ特有
 trans_metadata:
 	和訳メタデータ
 spec_metadata:
 	仕様メタデータ
 ref_normative:
 ref_informative:
+ref_additional:
 	参照文献データ
 ref_key_map:
 ref_data:
@@ -69,6 +72,8 @@ nav_prev／nav_next
 	前／次のページへのリンク（ HTML/SVG 用
 navs
 	巡回 UI 用（ INDEX_KEYS
+copyright
+	著作権（共通
 
 */
 
@@ -501,26 +506,24 @@ ${data}`
 const fillCopyright = () => {
 	const details = E('_copyright');
 	if(!details) return;
-
-	let info = options.copyright;
-	if(!info) return;
-
-	const [ year, license ] = info.split(',');
-	let license_data = '';
-
-	switch( license ){
-	case 'whatwg': // whatwg は year なし
-		license_data = `
+	let license_data = PAGE_DATA.copyright;
+	if(!license_data) {
+		let info = options.copyright;
+		if(!info) return;
+		const [ year, license ] = info.split(',');
+		switch( license ){
+		case 'whatwg': // whatwg は year なし
+			license_data = `
 <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>. Copyright © WHATWG (Apple, Google, Mozilla, Microsoft).`;
 		break;
 
-	case 'permissive': // W3C
-		license_data = `
+		case 'permissive': // W3C
+			license_data = `
 <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © ${year} <a href="https://www.w3.org/">World Wide Web Consortium</a>. <abbr title="World Wide Web Consortium">W3C</abbr><sup>®</sup> <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, <a href="https://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and <a href="https://www.w3.org/Consortium/Legal/copyright-software" rel="license" title="W3C Software and Document License">permissive document license</a> rules apply.`;
 		break;
 
-	case 'use': // W3C（旧）
-		license_data = `
+		case 'use': // W3C（旧）
+			license_data = `
 <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © ${year}
 <a href="https://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup>
 (<a href="https://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>,
@@ -530,18 +533,20 @@ W3C <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">li
 <a href="https://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and <a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents" rel="license">document use</a> rules apply.`;
 
 /*
-http://www.ercim.org/ と https://www.ercim.eu/ の違いは無視（ 1 箇所のみ）。
 ", All Rights Reserved" （数カ所）は省略。
-rel="license" の有無は無視。
-https と http の違いは無視。
+rel="license" は無いものにも常に付与。
+http は https に置換。
+http://www.ercim.org/ （ 1 箇所）は https://www.ercim.eu/ に置換。
 */
 
-		break;
+			break;
+		}
 	}
+
 	const html = license_data ? `
 <small>このページは、次による原文の許諾の下で翻訳されています：
 <br><span lang="en">${license_data}</span></small>` : `
-<small>（翻訳エラー：適用可能な著作権情報が設定されていない）</small>`;
+<small>（翻訳エラー：適用可能な著作権情報が指定されていない）</small>`;
 
 	details.insertAdjacentHTML('beforeend', html);
 }

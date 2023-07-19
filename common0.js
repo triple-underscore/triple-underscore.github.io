@@ -33,8 +33,10 @@ original_id_map
 original_urls
 trans_metadata
 spec_metadata
+copyright
 ref_normative
 ref_informative
+ref_additional
 ref_key_map
 ref_data
 
@@ -612,7 +614,7 @@ IETFID: 'Internet Draft',
 			html += 
 '<details id="_spec_metadata"><summary>この文書についての詳細</summary></details>';
 		}
-		if(options.copyright){
+		if(PAGE_DATA.copyright || options.copyright){
 			html += 
 '<details id="_copyright"><summary>©</summary></details>';
 		}
