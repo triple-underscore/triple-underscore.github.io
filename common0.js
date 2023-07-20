@@ -2310,6 +2310,16 @@ care:::配慮::ケア
 貢献者:contributor:~
 	貢献された方々:contributor
 	謝意／感謝:thank
+必要yな:necessaryな:必要とされる
+	必要yなだけ:as necessary
+必要yなら:necessaryなら:必要とされるなら
+必要yであ:necessaryであ:必要とされ
+必要yでな:necessaryでな:必要とされな
+必要yあり:necessaryになり:必要とされ
+必要yある:necessaryになる:必要とされる
+不必要:unnecessary:~
+	必要yでない:unnecessary
+	不必要に:unnecessarily
 
 ●制御／処理
 algo:algorithm:::アルゴリズム
@@ -3652,13 +3662,9 @@ FOO間:inter-FOO
 場合によっては:possibly
 少し／少しばかり:slightly
 必要:need
-必要とされ:necessary
-必要に応じて:as necessary
-必要なら:if necessary
+必要に応じて:as necessary／needed／required
 とは限らない:necessarily
 必ずしも〜ない:necessarily
-不必要に:unnecessarily
-不必要な:unnecessary
 方法:how to
 更なる:further
 概ね:roughly
