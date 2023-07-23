@@ -2868,7 +2868,6 @@ bit::::ビット
 本体:body::~::ボディ
 binary::::バイナリ
 source::::ソース
-源:source::~::ソース
 query::::クエリ
 	pointer::::ポインタ
 scalar::::スカラー

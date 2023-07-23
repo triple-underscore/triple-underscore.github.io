@@ -1440,8 +1440,6 @@ logging
 	宛先
 	強くstrong
 	期間:period／period of time
-	源:source:ソース
-	表~table
 	誤り:wrong
 	長く／長い~long
 	電網
