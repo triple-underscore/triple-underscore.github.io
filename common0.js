@@ -1778,9 +1778,6 @@ framework::::フレームワーク
 懸念:concern:~
 困難:difficult:~
 困難さ:difficulty:~
-複階的:complex:~
-複階性:complexity:複雑さ
-
 直感的:intuitive:~
 本質的:essential:~
 手法:method:~
@@ -2203,11 +2200,6 @@ programming::::プログラミング
 基本的:basic:~
 基本:basic:~
 基底:base:~
-単純:simple:~
-	単純~化-:simplify
-	単純~化:simplification
-	単純に:simply
-	より単純な:simpler
 存在-:exist:~
 存在:existence:~
 既存の:existing:~
@@ -2758,6 +2750,16 @@ node::::ノード
 文書:document::~
 文書片:document fragment::~::文書フラグメント
 
+単純:simple:~
+	単純~化-:simplify
+	単純~化:simplification
+	単純に:simply
+	より単純:simpler
+複階-:complex::~
+複階的:complex::~
+複階性:complexity::複雑さ
+複合-:compound::~
+複合的:compound::~
 階層:hierarchy:~
 階層-:heirarchical:~
 階層的:hierarchical:~
@@ -2772,7 +2774,6 @@ node::::ノード
 入子に:nest::入れ子に
 入子な:nestedな::入れ子な
 入子ng:nesting::入れ子
-
 順序:order:~
 有順序:ordered:~
 無順序:unordered:~
@@ -2780,15 +2781,12 @@ node::::ノード
 順序付けら:orderさ:~
 	順序付ける
 並替ng:reordering:並び替え
-
 空:empty:~
-
 型:type::~
 有型:typed::~
 種別:type:~
 class::::クラス
 下位class:subclass:下位 class::下位クラス
-
 文脈:context::~
 scope::::スコープ
 視野:scope::~::スコープ
