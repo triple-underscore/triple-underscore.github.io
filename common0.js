@@ -1736,7 +1736,8 @@ framework::::フレームワーク
 	意図nに反して:unintentionally
 明示的:explicit:~
 暗黙的:implicit:~
-暗黙の:implied:~
+暗黙:implied:~
+	暗黙に:by implication
 含意-:imply:~
 含意:implication:~
 
@@ -1956,7 +1957,6 @@ registry::::レジストリ
 省略可能:optional:~
 	省略時は:optional
 任意選択:optional:~
-任意選択の:optionalな:~
 任意選択で:optionalに:~
 奨励-:encourage:~
 	しないことが奨励-:discourage
@@ -2385,7 +2385,6 @@ filter::::フィルタ
 配送-:dispatch::~
 
 作動中:active::~::アクティブ
-作動中の:activeな::~::アクティブな
 作動化-:activate::~::アクティブ化
 作動化:activation::~::アクティブ化
 動作-:act::~
@@ -2577,7 +2576,6 @@ promise:
 解決d:resolved::解決
 解決:resolution::~
 	処理待ち:pending:~
-	処理待ちの:pending:~
 先送り:defer::~
 遅延-:delay::~
 遅延:delay::~
