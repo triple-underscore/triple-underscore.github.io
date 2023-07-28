@@ -1712,6 +1712,7 @@ CSSVALUES4=副         ~/css-values-ja.html
 CSSVALUES5=副         ~/css-values5-ja.html
 CSSVARIABLES2=副      ~/css-variables-ja.html
 CSSVARIABLES1=副      ~/css-variables-ja.html●Level 2 日本語訳
+CSSVIEWTRANSITIONS1=副 ~/css-view-transitions-ja.html
 CSSWILLCHANGE1=副     ~/css-will-change-ja.html
 CSSWRITINGMODES4=副   ~/css-writing-modes-ja.html
 CSSWRITINGMODES3=副   ~/css-writing-modes3-ja.html
