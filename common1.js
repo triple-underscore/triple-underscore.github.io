@@ -297,7 +297,7 @@ const addTopNav = () => {
 	const a = C('a');
 	a.href = '#top';
 	a.style.cssText =
-'position:fixed; left:0; bottom:0; height:5em; background:#EEE; text-align:center; width:1.5em;'
+'position:fixed; left:0; bottom:0; height:5em; background:var(--pale-color); text-align:center; width:1.5em;'
 	a.textContent = '↑';
 	document.body.appendChild(a);
 }
