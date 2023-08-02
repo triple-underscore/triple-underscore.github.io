@@ -376,10 +376,14 @@ Util.setState = (key, val) => {
 	// meta with viewport for mbile (ideally, should be set by CSS, not meta tag)
 	const head = document.head || document.getElementsByTagName('head')[0];
 	if(head){
-	//	const w = screen.width;...
-		const meta = C('meta');
+		let meta = C('meta');
 		meta.name = 'viewport';
 		meta.content = 'width=device-width, initial-scale=1, minimum-scale=1';
+		head.appendChild(meta);
+
+		meta = C('meta');
+		meta.name = 'color-scheme';
+		meta.content = 'light dark';
 		head.appendChild(meta);
 
 		const link = C('link');
