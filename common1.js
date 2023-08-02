@@ -1869,6 +1869,7 @@ SVG2=副               ~/index.html#spec-list-svg
 SVG11=副              ~/SVG11/
 SVG11=副              ~/index.html#spec-list-svg●Level 2 日本語訳
 MATHML=副             ＃takamu.sakura.ne.jp/mathml3-ja/index.html
+MATHMLCORE=副         ＃takamu.sakura.ne.jp/mathml-core-ja/index.html
 SERVICEWORKERS=副                ~/service-workers-ja.html
 TOUCHEVENTS=副        ~/touch-events-ja.html
 URL=副                ~/URL-ja.html
