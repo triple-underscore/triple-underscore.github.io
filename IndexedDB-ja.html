@@ -160,9 +160,9 @@ return (quote ? quote + text + quote : text);
 ●●options
 
 spec_title:Indexed Database API 3.0
-spec_date:2023-04-13
-trans_update:2023-07-24
-source_checked:211006
+spec_date:2023-08-03
+trans_update:2023-08-04
+source_checked:230803
 original_url:https://w3c.github.io/IndexedDB/
 spec_status:ED
 ref_id_prefix:biblio-
@@ -472,6 +472,7 @@ i.非作動中:#transaction-inactive
 i.作動中:#transaction-active
 i.完遂d:#transaction-finished
 完遂-:#transaction-finished
+生きて:#transaction-live
 
 耐久能~hint:#transaction-durability-hint
 片付ける~event~loop:#transaction-cleanup-event-loop
@@ -484,7 +485,6 @@ tx.~error:#transaction-error
 中止-:#transaction-abort
 ~commit:#transaction-commit
 昇格~tx:#upgrade-transaction
-稼働して:#_transaction-running
 昇格~txの中:#_within-an-upgrade-transaction
 昇格~txの外:#_within-an-upgrade-transaction
 
@@ -635,8 +635,7 @@ addするかputする:#add-or-put
 要請を非同期に実行する:#asynchronously-execute-a-request
 非同期に実行する:#asynchronously-execute-a-request
 
-昇格~txを稼働する:#run-an-upgrade-transaction
-昇格~txを稼働-:#run-an-upgrade-transaction
+~dbを昇格する:#upgrade-a-database
 昇格~txを中止する:#abort-an-upgrade-transaction
 昇格~txが中止-:#abort-an-upgrade-transaction
 
@@ -767,7 +766,6 @@ escaping::::エスケープ処理
 区間:interval:~
 時機:timing:~
 稼働-:run::~
-	稼働している:running
 	成功した:successful
 不可分:atomic::~
 例外的:exceptional:~
@@ -821,6 +819,8 @@ crash::::クラッシュ
 	executing
 	target
 	発火-法:firing
+	生きて:live
+	生かし続けれる:cause 〜 stay alive
 
 	●一般処理（storage
 bucket::::バケット
@@ -2313,13 +2313,6 @@ A database has at most one associated upgrade transaction,＼
 そのような~txは，あっても一つに限られ、
 この`~db$を`~access先$とする，ある`接続$に`専属する$。
 】</dd>
-	<dd class="trans-note">【
-“昇格~txは
-`稼働して@
-いる（ `running^en ）”
-という，未定義な句も現れるが、
-おそらく，これが ε でないことを意味する。
-】</dd>
 </dl>
 
 			<section id="database-connection">
@@ -2466,7 +2459,7 @@ The connection can also be closed explicitly using the steps to close a database
 ⇒
 `~db接続を~closeする$( %接続, `強制する^i )
 ◎
-A connection may be closed by a user agent in exceptional circumstances, for example due to loss of access to the file system, a permission change, or clearing of the storage key’s storage. If this occurs the user agent must run close a database connection with the connection and with the forced flag set to true.
+A connection may be closed by a user agent in exceptional circumstances, for example due to loss of access to the file system, a permission change, or clearing of the storage key's storage. If this occurs the user agent must run close a database connection with the connection and with the forced flag set to true.
 </li>
 		</ul>
 	</dd>
@@ -2480,9 +2473,9 @@ A connection has an object store set,＼
 	<dd>
 %接続 の作成-時に， %接続↗ に`専属する$`保管庫$たちの集合に初期化される。
 この集合の内容は、
-%接続↗ の`昇格~tx$dbが`稼働して$いる間を除いて，一定であり続ける。
+%接続↗ の`昇格~tx$dbが`生きて$いる間を除いて，一定であり続ける。
 ◎
-which is initialized to the set of object stores in the associated database when the connection is created. The contents of the set will remain constant except when an upgrade transaction is running.
+which is initialized to the set of object stores in the associated database when the connection is created. The contents of the set will remain constant except when an upgrade transaction is live.
 </dd>
 </dl>
 
@@ -2731,10 +2724,10 @@ which is initialized to the set of indexes that reference the associated object 
 	<dd>
 この集合の内容は、
 %H が`専属する$~txが［
-`昇格~tx$であって, `稼働して$いる間
+`昇格~tx$であって, `生きて$いる間
 ］を除いて，一定であり続ける。
 ◎
-The contents of the set will remain constant except when an upgrade transaction is running.
+The contents of the set will remain constant except when an upgrade transaction is live.
 </dd>
 	<dt>
 `名前@OsH
@@ -2750,10 +2743,10 @@ which is initialized to the name of the associated object store when the object 
 	<dd>
 この名前は、
 %H が`専属する$~txが［
-`昇格~tx$であって, `稼働して$いる間
+`昇格~tx$であって, `生きて$いる間
 ］を除いて，一定であり続ける。
 ◎
-The name will remain constant except when an upgrade transaction is running.
+The name will remain constant except when an upgrade transaction is live.
 </dd>
 </dl>
 
@@ -3024,24 +3017,15 @@ Let ta be the type of a.
 Let tb be the type of b.
 ◎
 If ta does not equal tb, then run these steps:
-◎
-If ta is array, then return 1.
-◎
-If tb is array, then return -1.
-◎
-If ta is binary, then return 1.
-◎
-If tb is binary, then return -1.
-◎
-If ta is string, then return 1.
-◎
-If tb is string, then return -1.
-◎
-If ta is date, then return 1.
-◎
-Assert: tb is date.
-◎
-Return -1.
+• If ta is array, then return 1.
+• If tb is array, then return -1.
+• If ta is binary, then return 1.
+• If tb is binary, then return -1.
+• If ta is string, then return 1.
+• If tb is string, then return -1.
+• If ta is date, then return 1.
+• Assert: tb is date.
+• Return -1.
 </li>
 	<li>
 %va ~LET %a の`値$key
@@ -3974,10 +3958,10 @@ An index handle has a name,＼
 %I の作成-時に %I↗ の`名前$Ixに初期化される。
 この名前は、
 %I が`専属する$`~tx$が［
-`昇格~tx$であって, `稼働して$いる間
+`昇格~tx$であって, `生きて$いる間
 ］を除いて，一定であり続ける。
 ◎
-which is initialized to the name of the associated index when the index handle is created. The name will remain constant except when an upgrade transaction is running.
+which is initialized to the name of the associated index when the index handle is created. The name will remain constant except when an upgrade transaction is live.
 </dd>
 </dl>
 
@@ -4116,14 +4100,14 @@ that determines which types of interactions can be performed upon that transacti
 この型の`~tx$には、
 ~dataを読取ることのみが許容され，改変は行えない。
 `readonly^l ~txには、
-複数のそれらを同時に稼働できる優位性がある
+複数のそれらを同時に`開始-$できる優位性がある
 — 互いの`視野が重合して$いようが
 （すなわち，同じ保管庫を利用していても）。
 この型の~txは、
 ~dbが~openされたなら，いつでも作成できる。
 【！ 手短に言えば、［ 同じ保管庫を視野に入れている，この型の~txたち ］は，その保管庫を排他的に占有する。】
 ◎
-The transaction is only allowed to read data. No modifications can be done by this type of transaction. This has the advantage that several read-only transactions can run at the same time even if their scopes are overlapping, i.e. if they are using the same object stores. This type of transaction can be created any time once a database has been opened.
+The transaction is only allowed to read data. No modifications can be done by this type of transaction. This has the advantage that several read-only transactions can be started at the same time even if their scopes are overlapping, i.e. if they are using the same object stores. This type of transaction can be created any time once a database has been opened.
 </dd>
 
 			<dt>`readwrite@l</dt>
@@ -4138,12 +4122,12 @@ The transaction is only allowed to read data. No modifications can be done by th
 ］ことはできない。
 また、［
 互いの`視野が重合して$いる複数の `readwrite^l `~tx$
-］を同時に稼働させることはできない
+］を同時に`開始-$させることはできない
 — そうすると，~txの間に互いの~dataを改変し得ることになるので。
 この型の~txは、
 ~dbが~openされたなら，いつでも作成できる。
 ◎
-The transaction is allowed to read, modify and delete data from existing object stores. However object stores and indexes can’t be added or removed. Multiple "readwrite" transactions can’t run at the same time if their scopes are overlapping since that would mean that they can modify each other’s data in the middle of the transaction. This type of transaction can be created any time once a database has been opened.
+The transaction is allowed to read, modify and delete data from existing object stores. However object stores and indexes can’t be added or removed. Multiple "readwrite" transactions can’t be started at the same time if their scopes are overlapping since that would mean that they can modify each other’s data in the middle of the transaction. This type of transaction can be created any time once a database has been opened.
 </dd>
 			<dd class="trans-note">【
 手短に言えば、
@@ -4414,10 +4398,10 @@ Transactions are expected to be short lived. This is encouraged by the automatic
 
 <p class="note">注記：
 それでも、
-作者は，~txを長い間 稼働させれるが、
-そのような用法は，利用者~体験を~~悪化させ得るので，勧められない。
+作者は，~txを長い間`生かし続け＠#transaction-live$れるが、
+そのような用法は，利用者~体験を~~悪化させ得るので勧められない。
 ◎
-Authors can still cause transactions to run for a long time; however, this usage pattern is not advised as it can lead to a poor user experience.
+Authors can still cause transactions to stay alive for a long time; however, this usage pattern is not advised as it can lead to a poor user experience.
 </p>
 
 <p>
@@ -4587,6 +4571,16 @@ When a transaction is committed or aborted, its state is set to finished.
 The implementation must allow requests to be placed against the transaction whenever it is active. This is the case even if the transaction has not yet been started. Until the transaction is started the implementation must not execute these requests; however, the implementation must keep track of the requests and their order.
 </p>
 
+<p>
+`~tx$は、［
+それが`作成-$されたときから，その`状態$txが `完遂d$i に設定されるまで
+］の間，
+`生きて@
+いるとされる。
+◎
+A transaction is said to be live from when it is created until its state is set to finished.
+</p>
+
 <div class="algo">
 <p>
 `索引付き~db~txを片付ける@
@@ -4740,10 +4734,10 @@ are not finished.
 実装は追加的な拘束を課してもヨイ。
 例えば，実装は
 ⇒＃
-`視野が重合して$いない`~readwrite~tx$を並列的に稼働することは要求されない／
-同時に稼働している~txの個数に制限sを課してもヨイ
+`視野が重合して$いない`~readwrite~tx$を並列的に`開始-$することは要求されない／
+同時に`開始-$される~txの個数に制限sを課してもヨイ
 ◎
-Implementations may impose additional constraints. For example, implementations are not required to run non-overlapping read/write transactions in parallel, or may impose limits on the number of running transactions.
+Implementations may impose additional constraints. For example, implementations are not required to start non-overlapping read/write transactions in parallel, or may impose limits on the number of started transactions.
 </p>
 
 
@@ -4761,19 +4755,18 @@ These constraints imply the following:
 `~readonly~tx$は、
 同時並行的にいくつでも
 — 互いの`視野が重合して$いようが —
-稼働することが許容される。
+`開始-$することが許容される。
 ◎
-Any number of read-only transactions are allowed to run concurrently, even if they have overlapping scopes.
+Any number of read-only transactions are allowed to be started concurrently, even if they have overlapping scopes.
 </li>
 	<li>
-`~readonly~tx$は、
-稼働している限り，［
+`~readonly~tx$が`生きて$いる間は，［
 実装が その~txにより作成された`要請$を通して返す~data
 ］は一定であり続ける。
 すなわち，同じ~data片を読取る 2 つの要請からは、
 ~dataが見出されるかどうかも含め，同じ結果を得られる。
 ◎
-As long as a read-only transaction is running, the data that the implementation returns through requests created with that transaction remains constant. That is, two requests to read the same piece of data yield the same result both for the case when data is found and the result is that data, and for the case when data is not found and a lack of data is indicated.
+As long as a read-only transaction is live, the data that the implementation returns through requests created with that transaction remains constant. That is, two requests to read the same piece of data yield the same result both for the case when data is found and the result is that data, and for the case when data is not found and a lack of data is indicated.
 </li>
 	<li>
 <p>
@@ -4832,12 +4825,13 @@ An upgrade transaction is a transaction with mode "versionchange".
 
 <p>
 `昇格~tx$は、
-`~db$への`接続$が~openされた後，`昇格~txを稼働する$間に、
+`~db$への`接続$が~openされた後，
+`~dbを昇格する$手続きの間に、
 指定された`~version$dbが現在の`~version$dbより大きい場合に，自動的に作成される†。
 この`~tx$は、
 `upgradeneeded$et ~event~handlerの内側で `作動中$i になる。
 ◎
-An upgrade transaction is automatically created when running the steps to run an upgrade transaction after a connection is opened to a database, if a version greater than the current version is specified. This transaction will be active inside the upgradeneeded event handler.
+An upgrade transaction is automatically created when running the steps to upgrade a database after a connection is opened to a database, if a version greater than the current version is specified. This transaction will be active inside the upgradeneeded event handler.
 </p>
 
 <p class="trans-note">【†
@@ -4863,38 +4857,46 @@ An upgrade transaction enables the creation, renaming, and deletion of object st
 `昇格~tx$は、
 排他的である。
 `~dbを~openする$手続きは、［
-`昇格~tx$が`稼働して$いる間，~dbを~openしている`接続$
+`昇格~tx$が`生きて$いる間，~dbを~openしている`接続$
 ］は，唯一に限られることを確保する。
 同じ`~db$への他のすべての`接続$が~closeされるまでは、
 `upgradeneeded$et ~eventは発火されず，
 したがって`昇格~tx$も開始されない。
 これは、
 以前のすべての~txが`完遂-$されることを確保する。
-`昇格~tx$が稼働している限り、
-同じ`~db$への他の`接続$を~openしようとする試みは遅延され、
-同じ`接続$を利用するために `transaction()＠#dom-idbdatabase-transaction$c を~callして追加的な~txを開始しようとする試みに対しては，
-例外が投出されることになる。
-したがって，`昇格~tx$は、［
-他の~txが同時並行的に稼働しない
-］ことに加え，
-稼働している間は［
-同じ`~db$に対し，他の~txは~queueされない
-］ことを確保する。
 ◎
-An upgrade transaction is exclusive. The steps to open a database ensure that only one connection to the database is open when an upgrade transaction is running. The upgradeneeded event isn’t fired, and thus the upgrade transaction isn’t started, until all other connections to the same database are closed. This ensures that all previous transactions are finished. As long as an upgrade transaction is running, attempts to open more connections to the same database are delayed, and any attempts to use the same connection to start additional transactions by calling transaction() will throw an exception. Thus upgrade transactions not only ensure that no other transactions are running concurrently, but also ensure that no new transactions are queued against the same database as long as the transaction is running.
+An upgrade transaction is exclusive. The steps to open a database ensure that only one connection to the database is open when an upgrade transaction is live. The upgradeneeded event isn’t fired, and thus the upgrade transaction isn’t started, until all other connections to the same database are closed. This ensures that all previous transactions are finished.
 </p>
 
 <p>
-これは、
+`昇格~tx$が`生きて$いる間は、
+同じ`~db$への他の`接続$を~openしようとする試みは遅延され、
+同じ`接続$を利用するために `transaction()＠#dom-idbdatabase-transaction$c を~callして追加的な~txを開始しようとする試みに対しては，
+例外が投出されることになる。
+このことは、
+次を確保する：
+◎
+As long as an upgrade transaction is live, attempts to open more connections to the same database are delayed, and any attempts to use the same connection to start additional transactions by calling transaction() will throw an exception.＼
+</p>
+<ul>
+	<li>
+`昇格~tx$が`生きて$いる間は、
+同じ`~db$に対し，
+他の~txが同時並行的に`~live$になることも，新たな~txが~queueされることも無い。
+◎
+This ensures that no other transactions are live concurrently, and also ensures that no new transactions are queued against the same database as long as the upgrade transaction is live.
+</li>
+	<li>
 `昇格~tx$が完了したなら，`~db$内の［
 `保管庫$, `索引$
 ］の集合は、
 後続なすべての［
 `接続$, `~tx$
-］の存続期間において，一定であり続けることを確保する。
+］の存続期間において，一定であり続ける。
 ◎
-This ensures that once an upgrade transaction is complete, the set of object stores and indexes in a database remain constant for the lifetime of all subsequent connections and transactions.
-</p>
+This further ensures that once an upgrade transaction is complete, the set of object stores and indexes in a database remain constant for the lifetime of all subsequent connections and transactions.
+</li>
+</ul>
 
 </div>
 
@@ -5631,13 +5633,17 @@ that determines whether it moves in monotonically increasing or decreasing order
 		</dl>
 
 ◎
-This direction causes the cursor to be opened at the start of the source. When iterated, the cursor should yield all records, including duplicates, in monotonically increasing order of keys.
+"next"
+• This direction causes the cursor to be opened at the start of the source. When iterated, the cursor should yield all records, including duplicates, in monotonically increasing order of keys.
 ◎
-This direction causes the cursor to be opened at the start of the source. When iterated, the cursor should not yield records with the same key, but otherwise yield all records, in monotonically increasing order of keys. For every key with duplicate values, only the first record is yielded. When the source is an object store or an index with its unique flag set to true, this direction has exactly the same behavior as "next".
+"nextunique"
+• This direction causes the cursor to be opened at the start of the source. When iterated, the cursor should not yield records with the same key, but otherwise yield all records, in monotonically increasing order of keys. For every key with duplicate values, only the first record is yielded. When the source is an object store or an index with its unique flag set to true, this direction has exactly the same behavior as "next".
 ◎
-This direction causes the cursor to be opened at the end of the source. When iterated, the cursor should yield all records, including duplicates, in monotonically decreasing order of keys.
+"prev"
+• This direction causes the cursor to be opened at the end of the source. When iterated, the cursor should yield all records, including duplicates, in monotonically decreasing order of keys.
 ◎
-This direction causes the cursor to be opened at the end of the source. When iterated, the cursor should not yield records with the same key, but otherwise yield all records, in monotonically decreasing order of keys. For every key with duplicate values, only the first record is yielded. When the source is an object store or an index with its unique flag set to true, this direction has exactly the same behavior as "prev".
+"prevunique"
+• This direction causes the cursor to be opened at the end of the source. When iterated, the cursor should not yield records with the same key, but otherwise yield all records, in monotonically decreasing order of keys. For every key with duplicate values, only the first record is yielded. When the source is an object store or an index with its unique flag set to true, this direction has exactly the same behavior as "prev".
 </dd>
 
 	<dt>
@@ -6241,7 +6247,6 @@ Aborting a transaction rolls back any increases to the key generator which happe
 </aside>
 
 <aside class="example" id="example-inline-keygen">
-
 <p>
 ある~objを保管庫に保存するときに
 （例えば `IDBObjectStore.put()$m を用いて），［
@@ -6254,6 +6259,7 @@ Aborting a transaction rolls back any increases to the key generator which happe
 The following examples illustrate the different behaviors when trying to use in-line keys and key generators to save an object to an object store.
 </p>
 
+<div>
 <p>
 以下では：
 </p>
@@ -6445,7 +6451,7 @@ store.put(4); // will throw DataError
 // The key generation will attempt to create and store the key path property on this array.
 store.put([10]); // will throw DataError
 </pre>
-
+</div>
 </div>
 </aside>
 
@@ -6584,7 +6590,7 @@ Given that multiple Indexed DB operations can throw the same type of error, and 
 
 	</section>
 	<section id="async-api">
-<h2 title="APIs">4. ~API</h2>
+<h2 title="API">4. ~API</h2>
 
 <p>
 各種~API~methodは、
@@ -6711,13 +6717,13 @@ Returns the IDBObjectStore, IDBIndex, or IDBCursor the request was made against,
 %request の`設置-先~tx$
 （ `IDBTransaction$I ）
 を返す。
-ただし， %request は`~open要請$である場合は、
-それにより~openされた`~db$の`昇格~tx$dbが`稼働して$［
-いるならば それ ／
-いなければ ~NULL
+ただし， %request は`~open要請$である場合、
+%request により~openされた`~db$の`昇格~tx$dbが［
+ε でない, かつ`生きて$いるならば それ ／
+~ELSE_ ~NULL
 ］を返す。
 ◎
-Returns the IDBTransaction the request was made within. If this as an open request, then it returns an upgrade transaction while it is running, or null otherwise.
+Returns the IDBTransaction the request was made within. If this as an open request, then it returns an upgrade transaction while it is live, or null otherwise.
 </dd>
 
 	<dt>%request . `readyState$m</dt>
@@ -6934,9 +6940,9 @@ The oldVersion getter steps are to return the value it was initialized to. It re
 初期化-時の値を返す。
 それは、
 当の~dbの新たな`~version$dbを表現するが，~dbが削除されつつあるときは ~NULL になる。
-`昇格~txを稼働する$手続きを見よ。
+`~dbを昇格する$手続きを見よ。
 ◎
-The newVersion getter steps are to return the value it was initialized to. It represents the new version of the database, or null if the database is being deleted. See the steps to run an upgrade transaction.
+The newVersion getter steps are to return the value it was initialized to. It represents the new version of the database, or null if the database is being deleted. See the steps to upgrade a database.
 </div>
 
 <p>
@@ -7314,8 +7320,8 @@ Otherwise:
 </div>
 
 <p class="note">注記：
-上の`~dbを~openする$手続きが`昇格~txを稼働-$させた場合、
-この段は その昇格~txが`完遂-$した後に走ることになる。
+上の`~dbを~openする$手続きが`昇格~tx$を稼働させた場合、
+この段は，それが`完遂-$した後に走ることになる。
 これは、
 別の~versionへの昇格が起こりつつある場合に，最初に`接続$上に `success$et ~eventを発火して、
 ~scriptが［
@@ -8137,7 +8143,7 @@ The default mode is "readonly" and the default durability is "default".
 	<dd>
 %connection を~closeする
 — ~closeし終えるのは、
-%connection に`専属する$すべての`~tx$が，稼働し終えた時点になる。
+%connection に`専属する$すべての`~tx$が完遂された時点になる。
 ◎
 Closes the connection once all running transactions have finished.
 </dd>
@@ -8153,12 +8159,14 @@ The transaction(storeNames, mode, options) method steps are:
 <ol>
 	<li>
 ~IF［
-コレ↗の`昇格~tx$dbは`稼働して$いる
+コレ↗の`昇格~tx$db ~NEQ ε
+］~AND［
+コレ↗の`昇格~tx$dbは`生きて$いる
 ］
 ⇒
 ~THROW `InvalidStateError$E
 ◎
-If a running upgrade transaction is associated with the connection, throw an "InvalidStateError" DOMException.
+If a live upgrade transaction is associated with the connection, throw an "InvalidStateError" DOMException.
 </li>
 	<li>
 ~IF［
@@ -8609,8 +8617,7 @@ The autoIncrement getter steps are to return true if this's object store has a k
 </p>
 </div>
 
-
-＊<p class="note">
+<p class="note">注記：
 以下に挙げる~methodは、［
 `~readonly~tx$の中で~callされた場合は `ReadOnlyError$E ／
 `~tx$が `作動中$i でないときに~callされた場合は `TransactionInactiveError$E
@@ -9176,7 +9183,7 @@ Let range be the result of converting a value to a key range with query. Rethrow
 ⇒
 `範囲に入る~entryたちを検索取得する$( コレ↗, %範囲, %count, %取得演算 )
 ◎
-Let operation be an algorithm to run retrieve multiple values from an object store with the current Realm Rcord, store, range, and count if given.
+Let operation be an algorithm to run retrieve multiple values from an object store with the current Realm record, store, range, and count if given.
 ◎
 Return the result (an IDBRequest) of running asynchronously execute a request with this and operation.
 </li>
@@ -9380,7 +9387,7 @@ Let range be the result of converting a value to a key range with query. Rethrow
 ◎
 Let cursor be a new cursor with its transaction set to transaction, undefined position, direction set to direction, got value flag set to false, undefined key and value, source set to store, range set to range, and key only flag set to false.
 ◎
-Let operation be an algorithm to run iterate a cursor with the current Realm Rcord and cursor.
+Let operation be an algorithm to run iterate a cursor with the current Realm record and cursor.
 ◎
 Let request be the result of running asynchronously execute a request with this and operation.
 </li>
@@ -9438,7 +9445,7 @@ Let range be the result of converting a value to a key range with query. Rethrow
 ◎
 Let cursor be a new cursor with its transaction set to transaction, undefined position, direction set to direction, got value flag set to false, undefined key and value, source set to store, range set to range, and key only flag set to true.
 ◎
-Let operation be an algorithm to run iterate a cursor with the current Realm Rcord and cursor.
+Let operation be an algorithm to run iterate a cursor with the current Realm record and cursor.
 ◎
 Let request be the result of running asynchronously execute a request with this and operation.
 </li>
@@ -10239,7 +10246,7 @@ Let range be the result of converting a value to a key range with query and true
 ⇒
 `範囲に入る最初の~entryを検索取得する$( コレ↗, %範囲, %取得演算 )
 ◎
-Let operation be an algorithm to run retrieve a referenced value from an index with the current Realm Rcord, index, and range.
+Let operation be an algorithm to run retrieve a referenced value from an index with the current Realm record, index, and range.
 ◎
 Return the result (an IDBRequest) of running asynchronously execute a request with this and operation.
 </li>
@@ -10353,7 +10360,7 @@ Let range be the result of converting a value to a key range with query. Rethrow
 ⇒
 `範囲に入る~entryたちを検索取得する$( コレ↗, %範囲, %count, %取得演算 )
 ◎
-Let operation be an algorithm to run retrieve multiple referenced values from an index with the current Realm Rcord, index, range, and count if given.
+Let operation be an algorithm to run retrieve multiple referenced values from an index with the current Realm record, index, range, and count if given.
 ◎
 Return the result (an IDBRequest) of running asynchronously execute a request with this and operation.
 </li>
@@ -10556,7 +10563,7 @@ Let range be the result of converting a value to a key range with query. Rethrow
 ◎
 Let cursor be a new cursor with its transaction set to transaction, undefined position, direction set to direction, got value flag set to false, undefined key and value, source set to index, range set to range, and key only flag set to false.
 ◎
-Let operation be an algorithm to run iterate a cursor with the current Realm Rcord and cursor.
+Let operation be an algorithm to run iterate a cursor with the current Realm record and cursor.
 ◎
 Let request be the result of running asynchronously execute a request with this and operation.
 </li>
@@ -10614,7 +10621,7 @@ Let range be the result of converting a value to a key range with query. Rethrow
 ◎
 Let cursor be a new cursor with its transaction set to transaction, undefined position, direction set to direction, got value flag set to false, undefined key and value, source set to index, range set to range, and key only flag set to true.
 ◎
-Let operation be an algorithm to run iterate a cursor with the current Realm Rcord and cursor.
+Let operation be an algorithm to run iterate a cursor with the current Realm record and cursor.
 ◎
 Let request be the result of running asynchronously execute a request with this and operation.
 </li>
@@ -11311,7 +11318,7 @@ Set request’s done flag to false.
 ⇒
 `~cursorを反復する$( コレ, `現在の~realm~record$, ε, ε, %count )
 ◎
-Let operation be an algorithm to run iterate a cursor with the current Realm Rcord, this, and count.
+Let operation be an algorithm to run iterate a cursor with the current Realm record, this, and count.
 ◎
 Run asynchronously execute a request with this's source, operation, and request.
 </li>
@@ -11420,7 +11427,7 @@ Set request’s done flag to false.
 ⇒
 `~cursorを反復する$( コレ, `現在の~realm~record$, %key )
 ◎
-Let operation be an algorithm to run iterate a cursor with the current Realm Rcord, this, and key (if given).
+Let operation be an algorithm to run iterate a cursor with the current Realm record, this, and key (if given).
 ◎
 Run asynchronously execute a request with this's source, operation, and request.
 </li>
@@ -11547,7 +11554,7 @@ Set request’s done flag to false.
 ⇒
 `~cursorを反復する$( コレ, `現在の~realm~record$, %key, %首key )
 ◎
-Let operation be an algorithm to run iterate a cursor with the current Realm Rcord, this, key, and primaryKey.
+Let operation be an algorithm to run iterate a cursor with the current Realm record, this, key, and primaryKey.
 ◎
 Run asynchronously execute a request with this's source, operation, and request.
 </li>
@@ -12669,9 +12676,9 @@ Wait until all connections in openConnections are closed.
 </li>
 			<li>
 <p>
-`昇格~txを稼働する$( %新~接続, %~version, %要請 )
+`~dbを昇格する$( %新~接続, %~version, %要請 )
 ◎
-Run run an upgrade transaction using connection, version and request.
+Run upgrade a database using connection, version and request.
 </p>
 
 <p class="trans-note">【
@@ -12789,16 +12796,14 @@ If the forced flag is true, then fire an event named close at connection.
 明示的に `close()$m を~callした場合には、
 この~eventは`発火されない^em。
 ◎
-The close event only fires if the connection closes abnormally, e.g. if the storage key’s storage is cleared, or there is corruption or an I/O error. If close() is called explicitly the event does not fire.
+The close event only fires if the connection closes abnormally, e.g. if the storage key's storage is cleared, or there is corruption or an I/O error. If close() is called explicitly the event does not fire.
 </p>
 	</li>
 </ol>
-</div>
 
 <p class="note">注記：
-%接続 の`状態$Cnが `~close待ち$i にされて以降は、［
-%接続 を利用して，新たな`~tx$を`作成-$する
-］ことはできなくなる。
+%接続 の`状態$Cnが `~close待ち$i になって以降は、
+%接続 を利用して新たな`~tx$を`作成-$することはできなくなる。
 ~txを`作成-$する すべての~methodは、
 最初に %接続 の`状態$Cnを検査した上で， `~open中$i でないならば例外を投出する。
 ◎
@@ -12806,16 +12811,16 @@ Once a connection's close pending flag has been set to true, no new transactions
 </p>
 
 <p class="note">注記：
-`接続$が~closeされたとき、
-所与の`~db$への`接続$がすべて~closeされるまで，
-`阻まれ＠#version-change-close-block$,
-`待機~中＠#delete-close-block$にあった［
-`昇格~txを稼働する$演算／ `~dbを削除する$演算
-］の待機-は、
-解かれ得る。
+%接続 が `~close済み$i になったなら、［
+所与の`~db$（ %接続 ↗ ）への`接続$たち すべてが~closeされる
+］まで`待機して＠#delete-close-block$いた［
+`~dbを昇格する$／`~dbを削除する$
+］演算は，`阻まれ＠#version-change-close-block$ないようになり得る。
 ◎
-Once the connection is closed, this can unblock the steps to run an upgrade transaction, and the steps to delete a database, which both wait for connections to a given database to be closed before continuing.
+Once the connection is closed, this can unblock the steps to upgrade a database, and the steps to delete a database, which both wait for connections to a given database to be closed before continuing.
 </p>
+</div>
+
 		</section>
 		<section id="deleting-a-database">
 <h3 title="Deleting a database">5.3. ~dbの削除-法</h3>
@@ -13067,8 +13072,7 @@ Even if an exception is thrown from one of the event handlers of this event, the
 ⇒
 ［
 %~tx を`設置-先~tx$とする`要請$
-（すなわち、
-`昇格~txを稼働する$手続きに渡された %要請 ）
+【すなわち、`~dbを昇格する$ときに渡された %要請 】
 ］の`設置-先~tx$ ~SET ε
 ◎
 If transaction is an upgrade transaction, then let request be the request associated with transaction and set request’s transaction to null.
@@ -13260,8 +13264,7 @@ If transaction is an upgrade transaction, then:
 				<ol>
 					<li>
 %要請 ~LET %~tx を`設置-先~tx$とする`~open要請$
-（すなわち、
-`昇格~txを稼働する$手続きに渡された %要請 ）
+【すなわち、`~dbを昇格する$ときに渡された %要請 】
 ◎
 Let request be the open request associated with transaction.
 </li>
@@ -13485,19 +13488,17 @@ Fire a success event at request.
 
 		</section>
 		<section id="upgrade-transaction-steps">
-<h3 title="Running an upgrade transaction">5.7. 昇格~txの稼働-法</h3>
+<h3 title="Upgrading a database">5.7. ~dbの昇格-法</h3>
 
 <div class="algo">
 <p>
-`昇格~txを稼働する@
+`~dbを昇格する@
 ときは、
 所与の
 ( `接続$ %接続, %~version `要請$ %要請 )
-に対し，次に従う
-（ %接続 は`~db$を更新するために利用され，
-%~version は~dbに設定する新たな~versionを与える）：
+に対し，次に従う：
 ◎
-To run an upgrade transaction with connection (a connection) which is used to update the database, a new version to be set for the database, and a request, run these steps:
+To upgrade a database with connection (a connection), a new version, and a request, run these steps:
 </p>
 <ol>
 	<li>
@@ -14464,7 +14465,7 @@ Return list converted to a sequence&lt;any&gt;.
 </div>
 
 <div lang="en" class="_en" style="white-space: pre-line;">
-<h3>6.2 Object store retrieval perations</h3>
+<h3>6.2 Object store retrieval operations</h3>
 <p>
 To retrieve a value from an object store with targetRealm, store and range, run these steps:
 
@@ -16900,7 +16901,7 @@ Added durability option and durability attribute. (Issue #50)
 </li>
 	<li>
 `§ ~txの~schedule法＠#transaction-scheduling$をもっと精確に指定した。
-`視野が重合して$いる`~readonly~tx$が稼働している間は、
+`視野が重合して$いる`~readonly~tx$が生きている【！running】間は、
 `~readwrite~tx$は開始できないようにした。
 （ `253$issue ）
 ◎
@@ -16917,6 +16918,15 @@ Added Accessibility considerations section. (Issue #327)
 （ `346$issue ）
 ◎
 Used [infra]'s list sorting definition. (Issue #346)
+</li>
+	<li>
+“`running^en” を一義化するため、
+【 “`running^en ~tx” に代えて】
+`生きて$いる~tx用の定義を追加して，
+“昇格~txを `run^en する” を`~dbを昇格する$に改称した。
+（ `408$issue ）
+◎
+Added a definition for live transactions, and renamed "run an upgrade transaction" to upgrade a database, to disambiguate "running". (Issue #408)
 </li>
 </ul>
 
@@ -16976,6 +16986,7 @@ Danillo Paiva,
 David Grogan,
 Domenic Denicola,
 Dominique Hazael-Massieux,
+Evan Stade,
 Glenn Maynard,
 Hans Wennborg,
 Isiah Meadows,
@@ -16993,7 +17004,7 @@ Kyaw Tun,
 Kyle Huey,
 Laxminarayan G Kamath A,
 Maciej Stachowiak,
-Marcos Cáceres
+Marcos Cáceres,
 Margo Seltzer,
 Marijn Kruisselbrink,
 Ms2ger,
