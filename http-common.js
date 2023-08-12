@@ -942,7 +942,6 @@ agent::::エージェント
 深刻:serious:~
 準拠-:comply::~
 準拠:compliant::~
-特性:characteristic:~
 相互運用-:interoperate:~
 相当:substantial:~
 禁制-:prohibit::~

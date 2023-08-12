@@ -1791,7 +1791,8 @@ framework::::フレームワーク
 資質:nature:~
 自然:natural:~
 不変則:invariant:~
-特徴:characteristics:~
+特性:characteristic:~
+	特徴付ける:characterize
 重要:important:~
 重要度:importance:~
 

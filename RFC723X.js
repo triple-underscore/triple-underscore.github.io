@@ -1025,7 +1025,6 @@ app:application:::アプリケーション
 深刻:serious:~
 準拠-:comply::~
 準拠:compliant::~
-特性:characteristic:~
 位置付け:status:~
 相互運用-:interoperate:~
 	相互運用-可能:interoperable
