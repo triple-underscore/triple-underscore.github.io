@@ -2628,6 +2628,9 @@ garbage::::ガーベジ
 探索:search::~::サーチ
 探索-:search::~::サーチ
 探索処理:searching::~::サーチ処理
+往復:roundtrip::~::ラウンドトリップ
+往復-:round-trip::~::ラウンドトリップ
+	往復:round trip
 
 ●構造／関係／IDL
 

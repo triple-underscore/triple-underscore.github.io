@@ -1137,7 +1137,6 @@ direct::::ダイレクト
 送信者:sender::~
 広告-:advertise:~
 広告:advertisement:~
-往来:round trip:~:::ラウンドトリップ
 昇格:upgrade::~::アップグレード
 降格:downgrade::~::ダウングレード
 端点:endpoint::~::エンドポイント
