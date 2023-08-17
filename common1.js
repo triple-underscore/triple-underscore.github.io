@@ -1360,13 +1360,6 @@ Util.dfnInit = () => {
 
 Util.addAltRefs = () => {
 
-	const LABELS = {
-		'主': '日本語訳',
-		'副': '日本語訳',
-		'版': '最新公表版',
-		'編': '編集者草案'
-	};
-
 	const JA_REFS = COMMON_DATA.JA_REFS;
 	const JA_LINKS = COMMON_DATA.JA_LINKS;
 	const JA_BASIS = COMMON_DATA.JA_BASIS;
@@ -1436,31 +1429,32 @@ Util.addAltRefs = () => {
 	while(m = rxp.exec(REF_DATA)){
 		const key = m[1];
 		const mark = m[2];
-		const label_index = m[3] || '';
 		let prefix = m[4];
-		const is_local = prefix === '~';
 		const url0 = m[5];
-		const label = ( m[6]? m[6].slice(1): LABELS[mark] ) + label_index;
-		let url = url0;
-		if(prefix){
+		const label = ( m[6]? m[6].slice(1): '日本語訳' ) + (m[3] || '');
+		let url1 = url0;
+		let url;
+		if(prefix === '~'){ // link to this site
+			url = url0.slice(1);
+		} else if(prefix){
 			prefix = prefix.slice(1);
-//			if(! prefix in JA_BASIS) throw prefix;
-			url = JA_BASIS[prefix] + url0;
+//			console.assert(prefix in JA_BASIS, '未知な接頭辞:', prefix);
+			url1 = JA_BASIS[prefix] + url0;
+			url = ( url1[0] === '＃' ) ?
+				`http://${url1.slice(1)}` : `https://${url1}`;
 		}
-		const url1 = ( url[0] === '＃' ) ?
-			`http://${url.slice(1)}` : `https://${url}`;
 		switch(mark){
 			case '主':
-				JA_REFS[key] = is_local? ( `.${url0}` ) : url1;
+				JA_REFS[key] = url;
 			case '副':
-				add_ref_link(key, url1, label);
+				add_ref_link(key, url, label);
 				break;
-
-			case '版':
-			case '編':
-				add_ref_link(key, url1, label);
+			case '・':
+				if(url && !(url1 in JA_LINKS))
+					JA_LINKS[url1] = `@${key}`;
+				break;
 			default:
-				if(!(url in JA_LINKS)) JA_LINKS[url] = `@${key}`;
+				break;
 		}
 	}
 
@@ -1578,7 +1572,7 @@ COMMON_DATA.JA_LINKS = Object.create(null);// 英文 URL -> 文献 id
 
 // 短縮形 URL の接頭辞 対応表
 COMMON_DATA.JA_BASIS = {
-	'':        'triple-underscore.github.io',
+//	'':        'triple-underscore.github.io',
 	mitsue:    'standards.mitsue.co.jp/resources/w3c/TR',
 	momdo:     '＃momdo.s35.xrea.com/web-html-test/spec',
 	momdoG:    'momdo.github.io',
@@ -1595,12 +1589,10 @@ COMMON_DATA.JA_BASIS = {
 };
 
 /*
-主 副 版 編 ・
-＊ ＊ ＊ ＊ 　 参照文献に追加する？
-　 　 ＊ ＊ ＊ 和訳リンク対応表に追加する？  JA_LINKS に (url:ref-id) を追加
-＊ 　 　 　 　 hover 時に表示する？       JA_REFS に  (ref-id:url) を追加
-
-	=版／=編は廃止
+主 副 ・
+＊ ＊ 　 参照文献に追加する？
+　 　 ＊ 和訳リンク対応表に追加する？  JA_LINKS に (url:ref-id) を追加
+＊ 　 　 hover 時に表示する？       JA_REFS に  (ref-id:url) を追加
 */
 
 COMMON_DATA.REF_DATA = `
@@ -1623,9 +1615,9 @@ CSP3=副               ~/CSP3-ja.html
 CSP3=副2              hashedhyphen.github.io/webappsec-specjp/csp/index.html
 CSP2=副               ~/CSP-ja.html
 CSS1=副               ＃www.doraneko.org/webauth/css1/19961217/Overview.html
-CSS2=副              ~momdoG/css2/Overview.html
-CSS2=副2             hp.vector.co.jp/authors/VA022006/css/index.html
-CSS2=副3             ~adagio/tr_css2/toc.html●2.0 日本語訳
+CSS2=副               ~momdoG/css2/Overview.html
+CSS2=副2              hp.vector.co.jp/authors/VA022006/css/index.html
+CSS2=副3              ~adagio/tr_css2/toc.html●2.0 日本語訳
 CSS2TABLE=主          ~momdoG/css2/tables.html
 CSS2TABLE=・          ~CSSWG/css2/tables.html/../
 CSSALIGN3=副          ~/css-align-ja.html
@@ -1857,7 +1849,6 @@ SELECTORS4=副         ~/selectors4-ja.html
 SELECTORS3=副         ~mitsue/css3-selectors/
 SELECTORS3=副2        ＃zng.info/specs/css3-selectors.html
 SELECTORS3=副         ~/selectors4-ja.html●Level 4 日本語訳
-SELECTORSAPI=副       ~mitsue/selectors-api/●Level 1 日本語訳
 SECURECONTEXTS=副     ~/webappsec-secure-contexts-ja.html
 SECURECONTEXTS=副     hashedhyphen.github.io/webappsec-specjp/secure-contexts/index.html
 SRI=副                ~/webappsec-subresource-integrity-ja.html
@@ -1902,8 +1893,8 @@ STORAGE=副            ~/storage-ja.html
 
 COMMON_DATA.REF_DATA2 = `
 ~TR/CSS22/●       ~momdoG/css2/
-~TR/SVG/●         triple-underscore.github.io/SVG11/
-~TR/SVG11/●       triple-underscore.github.io/SVG11/
+	~TR/SVG/●         triple-underscore.github.io/SVG11/
+	~TR/SVG11/●       triple-underscore.github.io/SVG11/
 	~HTMLLS/●          ~momdoG/html/
 `;
 
