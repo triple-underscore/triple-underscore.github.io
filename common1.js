@@ -1436,10 +1436,12 @@ Util.addAltRefs = () => {
 		let url;
 		if(prefix === '~'){ // link to this site
 			url = url0.slice(1);
-		} else if(prefix){
-			prefix = prefix.slice(1);
-//			console.assert(prefix in JA_BASIS, '未知な接頭辞:', prefix);
-			url1 = JA_BASIS[prefix] + url0;
+		} else {
+			if(prefix){
+				prefix = prefix.slice(1);
+//				console.assert(prefix in JA_BASIS, '未知な接頭辞:', prefix);
+				url1 = JA_BASIS[prefix] + url0;
+			}
 			url = ( url1[0] === '＃' ) ?
 				`http://${url1.slice(1)}` : `https://${url1}`;
 		}
