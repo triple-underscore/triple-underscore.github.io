@@ -117,8 +117,8 @@ return text;
 
 ●●options
 
-spec_date:2023-06-21
-trans_update:2023-06-22
+spec_date:2023-08-25
+trans_update:2023-08-26
 source_checked:210317
 page_state_key:HTML
 spec_status:LS
@@ -238,19 +238,23 @@ none::なし
 候補:candidate:~
 修復:fixup::~
 指名-:designate::~
+合体-:coalesce:~
+旧-:old:~
+新-:new:~
+追跡子:tracker::~::トラッカー
 
 	数~段~先で:In a couple steps
 	先の:earlier
-	~~集約:coalesce
 	-:throw
 	その後に:subsequently
 	その後に，:Subsequently
 	すぐに:soon
 
 	%dialog:subject
-	%要素:element／
+	%要素:element
+	%要素:the details element
+	-:element
 	%文書:'s node document
-	%details:the details element
 	%現在の~node:currentNode
 	%親:parent
 	%~command:the command
@@ -264,6 +268,8 @@ none::なし
 	%~modalであったか:wasModal
 	%除去される~node:removedNode
 	%旧-親:oldParent
+	%旧-状態:oldState
+	%新-状態:newState
 
 
 	●仕様
@@ -375,6 +381,7 @@ I.Document:~HTMLdom#document
 文書:~HTMLdom#the-document-object
 I.Element:~DOM4#interface-element
 I.HTMLElement:~HTMLdom#htmlelement
+I.ToggleEvent:~HTMLinteraction#toggleevent
 
 m!details.open:#dom-details-open
 
@@ -385,6 +392,8 @@ m!dialog.showModal:#dom-dialog-showmodal
 m!dialog.returnValue:#dom-dialog-returnvalue
 
 m.cancelable:~DOM4#dom-event-cancelable
+m.oldState:~HTMLinteraction#dom-toggleevent-oldstate
+m.newState:~HTMLinteraction#dom-toggleevent-newstate
 
 c.window.open():~WINDOW#dom-window-open
 
@@ -458,6 +467,8 @@ cF.動作:#command-facet-action
 ~details通知~task手続き:#details-notification-task-steps
 親~details用の~summary:#summary-for-its-parent-details
 先祖~detailsを露呈する:#ancestor-details-revealing-algorithm
+~details用の~toggle~task追跡子:#details-toggle-task-tracker
+~details用の~toggle~event~taskを~queueする:#queue-a-details-toggle-event-task
 
 ~access~UIkey委任-先:#the-legend-element's-accesskey-delegatee
 
@@ -488,6 +499,9 @@ opt.不能化されて:~HEforms#concept-option-disabled
 doc.指名する被focus区画:~HTMLinteraction#focused-area-of-the-document
 ~focus可能:~HTMLinteraction#focusable
 ~focus委任-先:~HTMLinteraction#focus-delegate
+~toggle~task追跡子:~HTMLinteraction#toggle-task-tracker
+tTk.旧-状態:~HTMLinteraction#toggle-task-old-state
+tTk.~task:~HTMLinteraction#toggle-task-task
 
 ~popover可視性~状態:~HTMLpopover#popover-visibility-state
 i.示している:~HTMLpopover#popover-showing-state
@@ -520,9 +534,8 @@ text/html における~tag省略:~HTMLdom#concept-element-tag-omission
 ~DOM操作~task~source:~WAPI#dom-manipulation-task-source
 利用者~対話~task~source:~WAPI#user-interaction-task-source
 ~click~eventを発火する:~WAPI#fire-a-click-event
-~task:~WAPI#concept-task
+~task~queue:~WAPI#task-queue
 要素~taskを~queueする:~WAPI#queue-an-element-task
-~queueされ:~WAPI#queue-an-element-task
 
 同一-生成元:~ORIGIN#same-origin
 
@@ -924,49 +937,135 @@ The user agent should allow the user to request that the additional information 
 This ability to request that additional information be shown or hidden may simply be the activation behavior of the appropriate summary element, in the case such an element exists. However, if no such element exists, user agents can still provide this ability through some other user interface affordance.
 </p>
 
+<p>
+各 `details$e 要素は、
+`~details用の~toggle~task追跡子@
+を有する
+— それは、［
+~NULL ／`~toggle~task追跡子$
+］であり，
+初期~時は ~NULL とする。
+◎
+Every details element has a details toggle task tracker, which is a toggle task tracker or null, initially null.
+</p>
+
 <div class="algo">
 <p>
 ~UAは、
-``open$a 属性が `details$e 要素 %details［
-に追加される ／ から除去される
-］度に，次を行うモノトスル
-⇒
-`要素~taskを~queueする$( `~DOM操作~task~source$, %details, `~details通知~task手続き$ )
-◎
-Whenever the open attribute is added to or removed from a details element, the user agent must queue an element task on the DOM manipulation task source given then details element that runs the following steps,＼
-</p>
-
-<p>
+``open$a 属性が `details$e 要素 %要素［
+に追加された ／ から除去された
+］ときは，
 `~details通知~task手続き@
-は、
-所与の %details に対し次を走らす：
+と称される次の手続きを走らすモノトスル
 ◎
-which are known as the details notification task steps, for this details element:
-</p>
-
-<ol>
-	<li>
-<p>
-~IF［
-%details に対し`~details通知~task手続き$を走らす別の`~task$が`~queueされ$ている
-］
-⇒
-~RET
-◎
-If another task has been queued to run the details notification task steps for this details element, then return.
+Whenever the open attribute is added to or removed from a details element, the user agent must run the following steps, which are known as the details notification task steps, for this details element:
 </p>
 
 <p class="note">注記：
 ``open$a 属性が何回か続けて~toggleされたときは、
-この段は，本質的に ~eventが 1 回だけ発火されるように~~集約する。
+結果の~taskは，本質的に~eventが 1 回だけ発火されるよう合体される。
 ◎
-When the open attribute is toggled several times in succession, these steps essentially get coalesced so that only one event is fired.
+When the open attribute is toggled several times in succession, the resulting tasks essentially get coalesced so that only one event is fired.
 </p>
+
+<ol>
+	<li>
+~IF［
+``open$a 属性は追加された
+］
+⇒
+`~details用の~toggle~event~taskを~queueする$( %要素, `closed^l, `open^l )
+◎
+If the open attribute is added, queue a details toggle event task given the details element, "closed", and "open".
+</li>
+	<li>
+~ELSE
+⇒
+`~details用の~toggle~event~taskを~queueする$( %要素, `open^l, `closed^l )
+◎
+Otherwise, queue a details toggle event task given the details element, "open", and "closed".
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`~details用の~toggle~event~taskを~queueする@
+ときは、
+所与の
+( `details$e 要素 %要素, 文字列 %旧-状態, 文字列 %新-状態 )
+に対し：
+◎
+To queue a details toggle event task given a details element element, a string oldState, and a string newState:
+</p>
+<ol>
+	<li>
+%追跡子 ~LET %要素 の`~details用の~toggle~task追跡子$
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%追跡子 ~NEQ ~NULL
+］：
+◎
+If element's details toggle task tracker is not null, then:
+</p>
+		<ol>
+			<li>
+%旧-状態 ~SET %追跡子 の`旧-状態$tTk
+◎
+Set oldState to element's details toggle task tracker's old state.
+</li>
+			<li>
+%追跡子 の`~task$tTkを それが属する`~task~queue$から除去する
+◎
+Remove element's details toggle task tracker's task from its task queue.
+</li>
+			<li>
+%要素 の`~details用の~toggle~task追跡子$ ~SET ~NULL
+◎
+Set element's details toggle task tracker to null.
+</li>
+		</ol>
 	</li>
 	<li>
-`~eventを発火する$( %details, `toggle$et )
+<p>
+%~task ~LET `要素~taskを~queueする$( `~DOM操作~task~source$, %要素, 次の手続き ）
 ◎
-Fire an event named toggle at the details element.
+Queue an element task given the DOM manipulation task source and element to run＼
+</p>
+<div class="algo">
+<p>
+手続きは：
+◎
+the following steps:
+</p>
+		<ol>
+			<li>
+`~eventを発火する$( %要素, `toggle$et, `ToggleEvent$I )
+— 次のように初期化して
+⇒＃
+`oldState$m 属性 ~SET %旧-状態,
+`newState$m 属性 ~SET %新-状態
+◎
+Fire an event named toggle at element, using ToggleEvent, with the oldState attribute initialized to oldState and the newState attribute initialized to newState.
+</li>
+			<li>
+%要素 の`~details用の~toggle~task追跡子$ ~SET ~NULL
+◎
+Set element's details toggle task tracker to null.
+</li>
+		</ol>
+</div>
+	</li>
+	<li>
+%要素 の`~details用の~toggle~task追跡子$ ~SET 次を伴う構造体
+⇒＃
+`~task$tTk ~SET %~task,
+`旧-状態$tTk ~SET %旧-状態
+◎
+Set element's details toggle task tracker to a struct with task set to the just-queued task and old state set to oldState.
 </li>
 </ol>
 </div>
@@ -1002,8 +1101,8 @@ While currentNode has a parent node within the flat tree:
 			<li>
 <p>
 ~IF［
-ある `details$e 要素 %details が在って，
-%現在の~node は %details の
+ある `details$e 要素 %要素 が在って，
+%現在の~node は %要素 の
 `2 個目の~slot＠~HTMLrendering#_details-slots$の中に~slotされている
 ］：
 ◎
@@ -1011,16 +1110,16 @@ If currentNode is slotted into the second slot of a details element:
 </p>
 				<ol>
 					<li>
-%現在の~node ~SET %details
+%現在の~node ~SET %要素
 ◎
 Set currentNode to the details element which currentNode is slotted into.
 </li>
 					<li>
 ~IF［
-%details は ``open$a 属性を有していない
+%要素 は ``open$a 属性を有していない
 ］
 ⇒
-%details の`属性~値を設定する$( `open^l, 空~文字列 )
+%要素 の`属性~値を設定する$( `open^l, 空~文字列 )
 ◎
 If the open attribute is not set on currentNode, then set the open attribute on currentNode to the empty string.
 </li>
@@ -2602,9 +2701,14 @@ the viewport should not be scrolled by doing this step.
 		</ol>
 	</li>
 	<li>
-次を走らす`要素~taskを~queueする$( `利用者~対話~task~source$, %dialog )
+<p>
+`要素~taskを~queueする$( `利用者~対話~task~source$, %dialog, 次の手続き )
+</p>
+<div class="algo">
+手続きは
 ⇒
 `~eventを発火する$( %dialog, `close$et )
+</div>
 ◎
 Queue an element task on the user interaction task source given the subject element to fire an event named close at subject.
 </li>
@@ -2737,9 +2841,15 @@ Canceling dialogs: When Document is blocked by a modal dialog dialog, user agent
 <ol>
 	<li>
 <p>
-次を走らす`要素~taskを~queueする$( `利用者~対話~task~source$, %dialog )：
+`要素~taskを~queueする$( `利用者~対話~task~source$, %dialog, 次の手続き )：
 ◎
-queues an element task on the user interaction task source given the dialog element to run these steps:
+queues an element task on the user interaction task source given the dialog element to run＼
+</p>
+<div class="algo">
+<p>
+手続きは：
+◎
+these steps:
 </p>
 		<ol>
 			<li>
@@ -2760,6 +2870,7 @@ Let close be the result of firing an event named cancel at dialog, with the canc
 If close is true, then close the dialog dialog with null.
 </li>
 		</ol>
+</div>
 	</li>
 </ol>
 
