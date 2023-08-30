@@ -294,6 +294,7 @@ hop:
 topology::::トポロジー
 reset:
 peer:
+移転:migration::~
 
 	相手の端点:'s peer
 	相手の端点:the remote peer
@@ -3573,7 +3574,7 @@ HTTP clients are expected to request that the transport keep connections open wh
 ］は、
 【この識別子として】［
 ~clientが起動した`双方向な~stream$の`~stream~ID$／
-【（~serverが起動した~push~streamの）】`~push~ID$
+【（~serverが起動した`~push~stream$の）】`~push~ID$
 ］を送信する。
 ［
 要請／~push
@@ -3589,10 +3590,12 @@ Even when a connection is not idle, either endpoint can decide to stop using the
 
 <p>
 `GOAWAY$ft ~frame内の情報は、［
-`~client$h3, `~server$h3
-］が，当の`~HTTP3接続$の~shutdownに先立って受容された［
+当の`~HTTP3接続$の~shutdownに先立って，どの［
 要請／~push
-］に対し合意することを可能化する。
+］が受容されたか
+］について［
+`~client$h3, `~server$h3
+］が合意することを可能化する。
 `GOAWAY$ft ~frameの送信に際して，端点は、［
 影響された`~stream$用の~transport状態を片付ける
 ］ため，［
@@ -3766,9 +3769,9 @@ An endpoint that is attempting to gracefully shut down a connection can send a G
 ］ことになる
 ］ことを指示する。
 `~server$h3と同様に、
-`~client$h3は，［
-指定された`~push~ID$が以前に送信した値を超えない
-］限り，後続に `GOAWAY$ft ~frameを送信してもヨイ。
+`~client$h3は，後続に `GOAWAY$ft ~frameを
+— それに指定した`~push~ID$が以前に送信した値を超えない限り —
+送信してもヨイ。
 ◎
 A client has more flexibility in the value it chooses for the Push ID field in a GOAWAY that it sends. A value of 262-1 indicates that the server can continue fulfilling pushes that have already been promised. A smaller value indicates the client will reject pushes with push IDs greater than or equal to this value. Like the server, the client MAY send subsequent GOAWAY frames so long as the specified push ID is no greater than any previously sent value.
 </p>
@@ -3804,12 +3807,10 @@ Once all accepted requests and pushes have been processed, the endpoint can perm
 </p>
 
 <p>
-`~client$h3が［
-要請を伴う`双方向な~stream$に可用な~ID
-］をすべて消費した場合、
+`~client$h3が`双方向な~stream$に可用な~IDすべてを要請たちで消費した場合、
 `~server$h3は，
 `GOAWAY$ft ~frameを送信する必要はない
-— `~client$h3が更なる要請を為すことは可能でないので。
+— `~client$h3が更に要請を為すことは可能でないので。
 ◎
 If a client has consumed all available bidirectional stream IDs with requests, the server need not send a GOAWAY frame, since the client is unable to make further requests.
 </p>
@@ -4188,11 +4189,11 @@ A control stream is indicated by a stream type of 0x00. Data on this stream cons
 双方の端点【！Each side】は、
 接続の始めに 1 個の`制御~stream$を起動してから，
 この`~stream$上の最初の~frameとして `SETTINGS$ft ~frameを送信しなければナラナイ。
-この`~stream$の最初の~frameの~frame種別が他の種別である場合、
+この`~stream$の【にて受信された】最初の~frameの~frame種別が他の種別である場合、
 `接続~error$( `H3_MISSING_SETTINGS$er )
 として扱わなければナラナイ。
-`制御~stream$は、
-どちらの端点も 1 個に限り許可される
+どちらの端点も【自身が起動する】`制御~stream$は、
+ 1 個に限り許可される
 — `制御~stream$であると主張している 2 個目の~streamの受領は、
 `接続~error$( `H3_STREAM_CREATION_ERROR$er )
 として扱わなければナラナイ。
@@ -4201,7 +4202,7 @@ A control stream is indicated by a stream type of 0x00. Data on this stream cons
 `受信器$は、
 `制御~stream$を~closeするよう`送信器$に要請してはナラナイ。
 どの時点であれ，
-どちらの`制御~stream$とも~closeされた場合、
+どちらかの`制御~stream$が~closeされた場合、
 `接続~error$( `H3_CLOSED_CRITICAL_STREAM$er )
 として扱わなければナラナイ。
 `接続~error$は、
@@ -4213,7 +4214,7 @@ Each side MUST initiate a single control stream at the beginning of the connecti
 <p>
 `制御~stream$の内容は，他の`~stream$の挙動を管理するために利用されるので、
 端点は，［
-相手の端点の`制御~stream$が阻まれないよう保つよう，十分な~flow制御~creditを供する
+相手の端点の`制御~stream$が阻まれないことを保つよう，十分な~flow制御~creditを供する
 ］ベキである。
 ◎
 Because the contents of the control stream are used to manage the behavior of other streams, endpoints SHOULD provide enough flow-control credit to keep the peer's control stream from becoming blocked.
@@ -4331,26 +4332,36 @@ Each push ID MUST only be used once in a push stream header. If a client detects
 は、［
 未知な種別は無視するものとする要件
 ］を行使するためとして予約される。
-これらの`~stream$に意味論は無い。
-これらの~streamは、
-応用~層にて~paddingが欲されるときに送信され得る。
-これらの`~stream$はまた、［
-現在~転送されている~dataが無い接続
-］上に送信しもヨイ。
-端点は、
-これらの`~stream$の受領に際して，
+これらの`~stream$は：
+◎
+Stream types of the format 0x1f * N + 0x21 for non-negative integer values of N are reserved to exercise the requirement that unknown types be ignored. These streams＼
+</p>
+<ul>
+	<li>
+意味論は無く，応用~層にて~paddingが欲されるときに送信され得る。
+◎
+have no semantics, and they can be sent when application-layer padding is desired.＼
+</li>
+	<li>
+現在~転送されている~dataが無い接続~上に送信してもヨイ。
+◎
+They MAY also be sent on connections where no data is currently being transferred.＼
+</li>
+	<li>
+それを受信した端点は、
 それに意味があるものと見なしてはナラナイ。
 ◎
-Stream types of the format 0x1f * N + 0x21 for non-negative integer values of N are reserved to exercise the requirement that unknown types be ignored. These streams have no semantics, and they can be sent when application-layer padding is desired. They MAY also be sent on connections where no data is currently being transferred. Endpoints MUST NOT consider these streams to have any meaning upon receipt.
-</p>
+Endpoints MUST NOT consider these streams to have any meaning upon receipt.
+</li>
+</ul>
 
 <p>
 `~stream$の~payload, その長さは、
 送信している実装が選ぶ任意の方式で選定される。
 実装は、
 予約-済み`~stream種別$を送信するときには，
-`~stream$を~cleanに終了しても`~reset$してもヨイ
-— `~stream$を`~reset$するときは、［
+当の`~stream$を~cleanに終了しても`~reset$してもヨイ
+— `~reset$するときは、［
 `~error~code$ `H3_NO_ERROR$er ／
 予約-済み~error~code（`~HTTP3~error~code§）
 ］を利用するベキである。
@@ -4587,7 +4598,7 @@ When a stream terminates cleanly, if the last frame on the stream was truncated,
 <h4>7.2.1. `DATA^ft</h4>
 
 <p>
-`DATA^ft ~frame（種別= `0x00^hex ）は、
+`DATA^ft ~frame（種別 `0x00^hex ）は、
 `~message$【！request or response】の`内容$に結付けられる
 任意な［
 可変長な~byte列
@@ -4632,7 +4643,7 @@ Figure 4: DATA Frame
 <h4>7.2.2. `HEADERS^ft</h4>
 
 <p>
-`HEADERS^ft ~frame（種別= `0x01^hex ）は、
+`HEADERS^ft ~frame（種別 `0x01^hex ）は、
 `~field節$を運ぶために利用され，~QPACKを利用して符号化される。
 詳細は `QPACK$r を見よ。
 ◎
@@ -4676,7 +4687,7 @@ HEADERS frames can only be sent on request streams or push streams. If a HEADERS
 <h4>7.2.3. `CANCEL_PUSH^ft</h4>
 
 <p>
-`CANCEL_PUSH^ft ~frame（種別= `0x03^hex ）は、
+`CANCEL_PUSH^ft ~frame（種別 `0x03^hex ）は、
 `~push~stream$が受信されるに先立って，
 `~server~push$の取消nを要請するために利用される。
 `CANCEL_PUSH^ft ~frameは、
@@ -4817,7 +4828,7 @@ If the client receives a CANCEL_PUSH frame, that frame might identify a push ID 
 <h4>7.2.4. `SETTINGS^ft</h4>
 
 <p>
-`SETTINGS^ft ~frame（種別= `0x04^hex ）は、
+`SETTINGS^ft ~frame（種別 `0x04^hex ）は、
 環境設定~parameterを伝達する
 — それは、
 【自身の】選好や相手の端点に対する拘束の挙動など，端点が どう通信するかに影響する。
@@ -4874,7 +4885,7 @@ SETTINGS frames MUST NOT be sent on any stream other than the control stream. If
 しかしながら、
 `SETTINGS^ft の利用は，折衝を含意し得る：
 互いの端点は、
-`SETTINGS^ft を利用して，自身~supportする値たちが成す集合を広告する。
+`SETTINGS^ft を利用して，自身が~supportする値たちが成す集合を広告する。
 各`設定$の定義は、
 互いの端点が［
 この 2 つの集合をどう組合せて，どの選択を利用するものと結論するか
@@ -5043,8 +5054,8 @@ An HTTP implementation MUST NOT send frames or requests that would be invalid ba
 相手の端点の `SETTINGS^ft ~frameが到着する前までは，
 これらの初期~値を利用して各`~message$を送信するベキである
 — `設定$群を運んでいる~packetは、［
-喪失され／遅延され
-］得るので。
+喪失され得る／遅延され得る
+］ので。
 各`設定$は、
 `SETTINGS^ft ~frameが到着したとき，その新たな値に変更される。
 ◎
@@ -5057,7 +5068,7 @@ All settings begin at an initial value. Each endpoint SHOULD use these initial v
 ］は除去される。
 端点は、
 `SETTINGS^ft ~frameを送信するに先立って，
-相手の端点から受信されることになる~dataを要求してはナラナイ
+相手の端点から~dataが受信されることを要求してはナラナイ
 — `設定$群は、
 ~transportが~dataの送信~用に準備済みになり次第，送信しなければナラナイ。
 ◎
@@ -5072,8 +5083,10 @@ For servers, the initial value of each client setting is the default value.
 </p>
 
 <p>
-~1-RTT~QUIC接続を利用している`~client$h3用には、
-~serverによる各`設定$の初期~値は，当の設定の既定の値になる。
+`~client$h3が~1-RTT~QUIC接続を利用している場合
+⇒
+`~server$h3による各`設定$の`~client$h3における初期~値は、
+当の設定の既定の値になる。
 各［
 ~1-RTT~key【？】
 ］は、［
@@ -5193,7 +5206,7 @@ If a server accepts 0-RTT but then sends a SETTINGS frame that omits a setting v
 <h4>7.2.5. `PUSH_PROMISE^ft</h4>
 
 <p>
-`PUSH_PROMISE$ft ~frame（種別= `0x05^hex ）は、
+`PUSH_PROMISE$ft ~frame（種別 `0x05^hex ）は、
 `要請~stream$上で，`~server$h3から`~client$h3へ［
 ~promiseされた要請の`~header節$
 ］を運ぶために利用される。
@@ -5361,7 +5374,7 @@ See Section 4.6 for a description of the overall server push mechanism.
 <h4>7.2.6. `GOAWAY^ft</h4>
 
 <p>
-`GOAWAY^ft ~frame（種別= `0x07^hex ）は、［
+`GOAWAY^ft ~frame（種別 `0x07^hex ）は、［
 `~HTTP3接続$の上品な~shutdownを起動する
 ］ために，
 どちらの端点からも利用される。
@@ -5451,7 +5464,7 @@ See Section 5.2 for more information on the use of the GOAWAY frame.
 <h4>7.2.7. `MAX_PUSH_ID^ft</h4>
 
 <p>
-`MAX_PUSH_ID^ft ~frame（種別= `0x0d^hex ）は、
+`MAX_PUSH_ID^ft ~frame（種別 `0x0d^hex ）は、
 `~server$h3が起動できる`~server~push$の個数を制御するためにあり，
 `~client$h3により利用される。
 これは、
@@ -6557,14 +6570,14 @@ The use of 0-RTT with HTTP/3 creates an exposure to replay attack. The anti-repl
 
 		</section>
 		<section id="migration">
-<h3 title="Migration">10.10. 軽減</h3>
+<h3 title="Migration">10.10. 移転</h3>
 
 <p>
 ある種の~HTTP実装は、
 ~log取りや~access制御の目的で，`~client$h3の~addressを利用する。
 ~QUIC`~client$h3の~addressは，接続の間に変化し得るので
 （加えて、
-将来の~versionは，複数の~addressの同時な利用を~supportするかもしれない）、
+将来の~versionは，複数~addressの同時な利用を~supportするかもしれない）、
 そのような実装は，［
 `~client$h3の現在の~address（たち）を，それ（ら）が関連するときには能動的に検索取得する
 ］か［
