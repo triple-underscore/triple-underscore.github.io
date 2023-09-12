@@ -160,8 +160,8 @@ return text;
 
 ●●options
 
-spec_date:2023-09-04
-trans_update:2023-06-22
+spec_date:2023-09-11
+trans_update:2023-09-12
 source_checked:220523
 page_state_key:HTML
 spec_status:LS
@@ -996,6 +996,7 @@ et.waiting:#event-media-waiting
 
 	●要素
 e.audio:#the-audio-element
+e.base:~HEmetadata#the-base-element
 e.canvas:~HEcanvas#the-canvas-element
 e.img:~HEimages#the-img-element
 e.picture:~HEimages#the-picture-element
@@ -2027,6 +2028,8 @@ If the poster attribute's value is the empty string or if the attribute is absen
 </li>
 	<li>
 %~URL ~LET `相対的に~URL構文解析する$( %poster, 要素の`~node文書$ )
+◎
+Let url be the result of parsing the poster attribute's value, relative to the element's node document.
 </li>
 	<li>
 ~IF［
@@ -2034,11 +2037,13 @@ If the poster attribute's value is the empty string or if the attribute is absen
 ］
 ⇒
 ~RET ε
+<span class="note">この場合、~poster~frameは無い。</span>
 ◎
-Parse the poster attribute's value relative to the element's node document. If this fails, then there is no poster frame; return.
+If url is failure, then return. There is no poster frame.
 </li>
 	<li>
-%要請 ~LET 次のようにされた新たな`要請$
+%要請 ~LET 新たな`要請$
+— その
 ⇒＃
 `~URL$rq ~SET %~URL,
 `~client$rq ~SET 要素の`~node文書$に`関連な設定群~obj$,
@@ -2047,7 +2052,7 @@ Parse the poster attribute's value relative to the element's node document. If t
 `起動元~種別$rq ~SET `video^l,
 `~URL資格証を利用するか$rq ~SET ~T
 ◎
-Let request be a new request whose URL is the resulting URL record, client is the element's node document's relevant settings object, destination is "image", initiator type is "video", credentials mode is "include", and whose use-URL-credentials flag is set.
+Let request be a new request whose URL is url, client is the element's node document's relevant settings object, destination is "image", initiator type is "video", credentials mode is "include", and whose use-URL-credentials flag is set.
 </li>
 	<li>
 <p>
@@ -4222,54 +4227,43 @@ Return. The element won't attempt to load another resource until this algorithm 
 If mode is attribute
 </p>
 		<ol>
-			<li>
-<p>⌛
-%~URL ~LET 次の手続きを走らせた結果：
-</p>
-
-<div class="algo">
-<p>
-手続きは：
-</p>
-				<ol>
-					<li>
+			<li>⌛
+%~URL ~LET `失敗^i
+◎
+↓</li>
+			<li>⌛
 %src ~LET %要素 の `src$aM 属性の値
 ◎
 ↓</li>
-					<li>
+			<li>
+<p>⌛
 ~IF［
-%src ~EQ 空~文字列
+%src ~NEQ 空~文字列
 ］
 ⇒
-~RET ε
+%~URL ~SET %要素 の `src$aM 属性が最後に変化した時点において，次を遂行したとするときの結果†
+⇒
+`相対的に~URL構文解析する$( %src, %要素 の`~node文書$ )
+</p>
+
+<p class="trans-note">【†
+すなわち、
+変化した後における `base$e 要素に対する変更は影響しない。
+】</p>
 ◎
 ⌛ If the src attribute's value is the empty string, then end the synchronous section, and jump down to the failed with attribute step below.
-</li>
-					<li>
-%~URL~record ~LET `相対的に~URL構文解析する$( %src, %要素 の`~node文書$ )
 ◎
-⌛ Let urlString and urlRecord be the resulting URL string and the resulting URL record, respectively, that would have resulted from parsing the URL specified by the src attribute's value relative to the media element's node document when the src attribute was last changed.
+⌛ Let urlRecord be the result of parsing the src attribute's value, relative to the media element's node document when the src attribute was last changed.
 </li>
-					<li>
+			<li>⌛
 ~IF［
-%~URL~record ~EQ `失敗^i
+%~URL ~NEQ `失敗^i
 ］
 ⇒
-~RET ε
+%要素 の `currentSrc$mM 属性 ~SET `~URLを直列化する$( %~URL )
 ◎
-↑</li>
-					<li>
-%要素 の `currentSrc$mM 属性 ~SET `~URLを直列化する$( %~URL~record )
-◎
-⌛ If urlString was obtained successfully, set the currentSrc attribute to urlString.
+⌛ If urlRecord is not failure, then set the currentSrc attribute to the result of applying the URL serializer to urlRecord.
 </li>
-					<li>
-~RET %~URL~record
-◎
-↑</li>
-				</ol>
-</div>
-			</li>
 			<li>
 以降は `並列的$に継続する
 ◎
@@ -4277,16 +4271,12 @@ End the synchronous section, continuing the remaining steps in parallel.
 </li>
 			<li>
 ~IF［
-%~URL ~EQ ε
+%~URL ~NEQ `失敗^i
 ］
 ⇒
-~GOTO `失敗^i
-◎
-↓</li>
-			<li>
 `~media資源~fetch~algo$( %要素, %~URL )
 ◎
-If urlRecord was obtained successfully, run the resource fetch algorithm with urlRecord.＼
+If urlRecord is not failure, then run the resource fetch algorithm with urlRecord.＼
 </li>
 			<li>
 ~GOTO `失敗^i
@@ -4308,7 +4298,7 @@ Failed with attribute:＼
 この`資源~選定~algo$は`中止-$されていない
 （~media資源の読込nに失敗したか，`~media資源~fetch~algo$は呼出されなかった）
 ◎
-Reaching this step indicates that the media resource failed to load or that the given URL could not be parsed.＼
+Reaching this step indicates that the media resource failed to load or that urlRecord is failure.＼
 </li>
 			<li>
 %~promise~list ~LET %要素 の`再生待ち~promiseたちを取り出す$
@@ -4441,19 +4431,16 @@ Other changes don't affect pointer.
 				<ol>
 					<li>
 %src ~LET ［
-%候補 は `src$aS 属性を有するならば その値 ／
+%候補 は `src$aM 属性を有するならば その値 ／
 ~ELSE_ ε
 ］
-◎
-↓</li>
+</li>
 					<li>
 ~IF［
 %src ~IN { ε, 空~文字列 }
 ］
 ⇒
-~RET ε
-◎
-⌛ Process candidate: If candidate does not have a src attribute, or if its src attribute's value is the empty string, then end the synchronous section, and jump down to the failed with elements step below.
+~RET `失敗^i
 </li>
 					<li>
 ~IF［
@@ -4462,23 +4449,7 @@ Other changes don't affect pointer.
 その値は`環境に合致して$いない
 ］
 ⇒
-~RET ε
-◎
-⌛ If candidate has a media attribute whose value does not match the environment, then end the synchronous section, and jump down to the failed with elements step below.
-</li>
-					<li>
-%~URL~record ~LET `相対的に~URL構文解析する$( %src, %候補 の`~node文書$ )
-◎
-⌛ Let urlString and urlRecord be the resulting URL string and the resulting URL record, respectively, that would have resulted from parsing the URL specified by candidate's src attribute's value relative to the candidate's node document when the src attribute was last changed.
-</li>
-					<li>
-~IF［
-%~URL~record ~EQ `失敗^i
-］
-⇒
-~RET ε
-◎
-⌛ If urlString was not obtained successfully, then end the synchronous section, and jump down to the failed with elements step below.
+~RET `失敗^i
 </li>
 					<li>
 ~IF［
@@ -4487,21 +4458,43 @@ Other changes don't affect pointer.
 その値を`~MIME型$として（ ~codecs ~parameterがあれば，それも織り込んだ上で）構文解析した結果は，`~UAが具現化できないと知る型$を表現する
 ］
 ⇒
-~RET ε
+~RET `失敗^i
+</li>
+					<li>
+<p>
+~RET %要素 の `src$aM 属性が最後に変化した時点において，次を遂行したとするときの結果†
+⇒
+`相対的に~URL構文解析する$( %src, %候補 の`~node文書$ )
+</p>
+
+<p class="trans-note">【†
+すなわち、
+変化した後における `base$e 要素に対する変更は影響しない。
+】</p>
+					</li>
+				</ol>
+</div>
+
+◎
+⌛ Process candidate: If candidate does not have a src attribute, or if its src attribute's value is the empty string, then end the synchronous section, and jump down to the failed with elements step below.
+◎
+⌛ If candidate has a media attribute whose value does not match the environment, then end the synchronous section, and jump down to the failed with elements step below.
+◎
+⌛ Let urlRecord be the result of parsing candidate's src attribute's value, relative to candidate's node document when the src attribute was last changed.
+◎
+⌛ If urlRecord is failure, then end the synchronous section, and jump down to the failed with elements step below.
 ◎
 ⌛ If candidate has a type attribute whose value, when parsed as a MIME type (including any codecs described by the codecs parameter, for types that define that parameter), represents a type that the user agent knows it cannot render, then end the synchronous section, and jump down to the failed with elements step below.
 </li>
-					<li>
-%要素 の `currentSrc$mM 属性 ~SET `~URLを直列化する$( %~URL~record )
+			<li>⌛
+~IF［
+%~URL ~NEQ `失敗^i
+］
+⇒
+%要素 の `currentSrc$mM 属性 ~SET `~URLを直列化する$( %~URL )
 ◎
-⌛ Set the currentSrc attribute to urlString.
+⌛ Set the currentSrc attribute to the result of applying the URL serializer to urlRecord.
 </li>
-					<li>
-~RET %~URL~record
-</li>
-				</ol>
-</div>
-			</li>
 			<li>
 以降は `並列的$に継続する
 ◎
@@ -4510,7 +4503,7 @@ End the synchronous section, continuing the remaining steps in parallel.
 			<li>
 <p>
 ~IF［
-%~URL ~NEQ ε
+%~URL ~NEQ `失敗^i
 ］：
 </p>
 				<ol>
