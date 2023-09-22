@@ -1731,6 +1731,7 @@ FILEAPI=副            ~/File_API-ja.html
 FULLSCREEN=副         ~/fullscreen-ja.html
 NOTIFICATIONS=副      ~/notifications-ja.html
 GEOMETRY1=副          ~/geometry-ja.html
+MOTION1=副            ~/motion-ja.html
 HTML=副               ~/index.html#spec-list-html●日本語訳（このサイト）
 HTML=副               ~momdoG/html/●日本語（部分）訳
 HTML=副               ~momdoG/html/dev/●日本語訳（ Web 開発者向け）
