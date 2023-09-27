@@ -199,8 +199,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2023-08-29
-trans_update:2023-08-30
+spec_date:2023-09-26
+trans_update:2023-09-28
 source_checked:230718
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -431,7 +431,6 @@ real-time:real time:::リアルタイム
 	時点で:at the time of
 	回ごとに:at a time
 	秒あたりの:per second
-	かかることもある:may take
 	の直前まで限り:up to, but not including
 	高いものほど先に:ahead of 〜 lower
 	処理-可能:processable
@@ -476,6 +475,7 @@ real-time:real time:::リアルタイム
 	%~server証明書~hash群:serverCertificateHashes
 	%~session:session
 	%~stream:stream
+	%~stream~ID:streamId
 	%~transport:transport
 	%~unreliableは要求されるか:requireUnreliable
 	%~view:view
@@ -651,7 +651,6 @@ balance::::バランス
 	-:opts
 	-:enum
 	-:a series of steps
-	`minRtt$mb:min-RTT
 	`smoothed_rtt^c ^en:smoothed
 	~buffer化:buffering
 	この数は、決して減少しない:This number can only increase.
@@ -677,7 +676,7 @@ epoch:
 満足-:satisfy:~
 上界:upper bound:~
 上限:upper limit:~
-枯渇-:exhaust:~
+枯渇:exhaustion:~
 番号:number:~
 素早く:quickに:~
 machine::::マシン
@@ -793,6 +792,7 @@ I.BufferSource:~WEBIDL#BufferSource
 E.AbortError:~WEBIDL#aborterror
 E.InvalidStateError:~WEBIDL#invalidstateerror
 E.NotSupportedError:~WEBIDL#notsupportederror
+E.QuotaExceededError:~WEBIDL#quotaexceedederror
 E.RangeError:~WEBIDL#exceptiondef-rangeerror
 E.SyntaxError:~WEBIDL#syntaxerror
 E.TypeError:~WEBIDL#exceptiondef-typeerror
@@ -806,7 +806,7 @@ I.WebTransportReliabilityMode:#enumdef-webtransportreliabilitymode
 I.WebTransportHash:#dictdef-webtransporthash
 I.WebTransportCloseInfo:#dictdef-webtransportcloseinfo
 I.WebTransportSendStreamOptions:#dictdef-webtransportsendstreamoptions
-I.WebTransportStats:#dictdef-webtransportstats
+I.WebTransportConnectionStats:#dictdef-webtransportconnectionstats
 I.WebTransportDatagramStats:#dictdef-webtransportdatagramstats
 I.WebTransportSendStream:#webtransportsendstream
 I.WebTransportSendStreamStats:#dictdef-webtransportsendstreamstats
@@ -873,19 +873,18 @@ mb.reason:#dom-webtransportcloseinfo-reason
 
 mb.sendOrder:#dom-webtransportsendstreamoptions-sendorder
 
-mb.datagrams:#dom-webtransportstats-datagrams
-mb.timestamp:#dom-webtransportstats-timestamp
-mb.bytesSent:#dom-webtransportstats-bytessent
-mb.packetsSent:#dom-webtransportstats-packetssent
-mb.packetsLost:#dom-webtransportstats-packetslost
-mb.numOutgoingStreamsCreated:#dom-webtransportstats-numoutgoingstreamscreated
-mb.numIncomingStreamsCreated:#dom-webtransportstats-numincomingstreamscreated
-mb.bytesReceived:#dom-webtransportstats-bytesreceived
-mb.packetsReceived:#dom-webtransportstats-packetsreceived
-mb.smoothedRtt:#dom-webtransportstats-smoothedrtt
-mb.rttVariation:#dom-webtransportstats-rttvariation
-mb.minRtt:#dom-webtransportstats-minrtt
-mb.estimatedSendRate:#dom-webtransportstats-estimatedsendrate
+mb.datagrams:#dom-webtransportconnectionstats-datagrams
+mb.timestamp:#dom-webtransportconnectionstats-timestamp
+mb.bytesSent:#dom-webtransportconnectionstats-bytessent
+mb.packetsSent:#dom-webtransportconnectionstats-packetssent
+mb.bytesLost:#dom-webtransportconnectionstats-byteslost
+mb.packetsLost:#dom-webtransportconnectionstats-packetslost
+mb.bytesReceived:#dom-webtransportconnectionstats-bytesreceived
+mb.packetsReceived:#dom-webtransportconnectionstats-packetsreceived
+mb.smoothedRtt:#dom-webtransportconnectionstats-smoothedrtt
+mb.rttVariation:#dom-webtransportconnectionstats-rttvariation
+mb.minRtt:#dom-webtransportconnectionstats-minrtt
+mb.estimatedSendRate:#dom-webtransportconnectionstats-estimatedsendrate
 
 mbD.timestamp:#dom-webtransportdatagramstats-timestamp
 mbD.expiredOutgoing:#dom-webtransportdatagramstats-expiredoutgoing
@@ -985,6 +984,7 @@ ft.SETTINGS:~HTTPv3#frame-settings
 h.Origin:~FETCH#http-origin
 
 	●用語
+下層~接続:#underlying-connection
 ~WebTransport~stream:#protocol-webtransport-stream
 ~WebTransport~session:#protocol-webtransport-session
 ~datagramを送信する:#session-send-a-datagram
@@ -1191,7 +1191,7 @@ QUICDATAGRAM:RFC9221
 [INFRA]
     Anne van Kesteren; Domenic Denicola. ＜Infra Standard＞. Living Standard. URL: https://infra.spec.whatwg.org/
 [PRIVACY-PRINCIPLES]
-    Robin Berjon; Tonya Lee Tonya Dickard. ＜Privacy Principles＞. URL: https://w3ctag.github.io/privacy-principles/
+    Robin Berjon; Jeffrey Yasskin. ＜Privacy Principles＞. URL: https://w3ctag.github.io/privacy-principles/
 [QUIC]
     Jana Iyengar; Martin Thomson. ＜QUIC: A UDP-Based Multiplexed and Secure Transport＞. Internet-Draft. URL: https://www.rfc-editor.org/rfc/rfc9000
 [QUIC-DATAGRAM]
@@ -1375,11 +1375,15 @@ There are two main protocol concepts for WebTransport: sessions and streams. Eac
 <p>
 `~WebTransport~session@
 は、
-~HTTP3越しの~WebTransportが成す~sessionである。
+その
+`下層~接続@
+と称される［
+~HTTP3／~HTTP2
+］`接続$越しの~WebTransportが成す~sessionである。
 ~pool法が可能化されたときは、
 1 個の`接続$に複数個の`~WebTransport~session$が在り得る。
 ◎
-A WebTransport session is a session of WebTransport over HTTP/3. There may be multiple WebTransport sessions on one connection, when pooling is enabled.
+A WebTransport session is a session of WebTransport over an HTTP/3 or HTTP/2 underlying connection. There may be multiple WebTransport sessions on one connection, when pooling is enabled.
 </p>
 
 <p>
@@ -2814,7 +2818,7 @@ WebTransport provides an API to the HTTP/3 transport functionality defined in [W
 interface `WebTransport@I {
   `constructor＠#dom-webtransport-webtransport$(`USVString$ %url, optional `WebTransportOptions$I %options = {});
 
-  `Promise$&lt;`WebTransportStats$I&gt; `getStats$mT();
+  `Promise$&lt;`WebTransportConnectionStats$I&gt; `getStats$mT();
   readonly attribute `Promise$&lt;`undefined$&gt; `ready$mT;
   readonly attribute `WebTransportReliabilityMode$I `reliability$mT;
   readonly attribute `WebTransportCongestionControl$I `congestionControl$mT;
@@ -4283,15 +4287,10 @@ Run the following steps in parallel:
 </p>
 				<ol>
 					<li>
-下層の~QUIC接続から統計を集める
+`下層~接続$から統計を集める
 — 各~datagram上の統計も含む
 ◎
-Gather the stats from the underlying QUIC connection, including stats on datagrams.
-</li>
-					<li>
-前~段の統計が準備済みになるまで待機する
-◎
-Wait for the stats to be ready.
+Gather the stats from the underlying connection, including stats on datagrams.
 </li>
 					<li>
 <p>
@@ -4307,9 +4306,9 @@ run the following steps:
 </p>
 						<ol>
 							<li>
-%統計 ~LET `新たな$ `WebTransportStats$I ~obj
+%統計 ~LET `新たな$ `WebTransportConnectionStats$I ~obj
 ◎
-Let stats be a new WebTransportStats object＼
+Let stats be a new WebTransportConnectionStats object＼
 </li>
 							<li>
 %統計 の各~memberを集められた統計を表現するよう設定する
@@ -4414,20 +4413,26 @@ reject p with an InvalidStateError:
 				<ol>
 					<li>
 <p>
-%内部~stream ~LET `双方向~streamを作成する$( %~transport . `Session$sl )
-◎
-Let internalStream be the result of creating a bidirectional stream with transport.[[Session]].
+%~stream~ID ~LET %~transport . `Session$sl 用に妥当かつ一意な新たな~stream~ID
+— `QUIC$r `§ 19.11＠~RFCx/rfc9000#section-19.11$ にて定義されるとおり
 </p>
 
-<p class="note">注記：
-この演算には時間がかかることもある
-— 例えば、
-~stream~IDが枯渇したとき。
-`QUIC$r
-◎
-Note: This operation may take time, for example when the stream ID is exhausted. [QUIC]
+<p>
+~IF［
+枯渇に因り，即時に可用な~stream~IDは無い
+］
+⇒＃
+`~promiseを却下する$( %p, `QuotaExceededError$E 例外 )；
+~RET
 </p>
-					</li>
+◎
+Let streamId be a new stream ID that is valid and unique for transport.[[Session]], as defined in [QUIC] Section 19.11. If one is not immediately available due to exhaustion, reject p with a QuotaExceededError and abort these steps.
+</li>
+					<li>
+%内部~stream ~LET `双方向~streamを作成する$( %~transport . `Session$sl, %~stream~ID )
+◎
+Let internalStream be the result of creating a bidirectional stream with transport.[[Session]] and streamId.
+</li>
 					<li>
 <p>
 `~network~taskを~queueする$( %~transport, 次の手続き )
@@ -4554,20 +4559,27 @@ reject p with an InvalidStateError:
 				<ol>
 					<li>
 <p>
-%内部~stream ~LET `流出~一方向~streamを作成する$( %~transport . `Session$sl )
-◎
-Let internalStream be the result of creating an outgoing unidirectional stream with transport.[[Session]].
+%~stream~ID ~LET %~transport . `Session$sl 用に妥当かつ一意な新たな~stream~ID
+— `QUIC$r `§ 19.11＠~RFCx/rfc9000#section-19.11$ にて定義されるとおり
 </p>
 
-<p class="note">注記：
-この演算には時間がかかることもある
-— 例えば、
-~stream~IDが枯渇したとき。
-`QUIC$r
-◎
-Note: This operation may take time, for example when the stream ID is exhausted. [QUIC]
+<p>
+~IF［
+枯渇に因り，即時に可用な~stream~IDは無い
+］
+⇒＃
+`~promiseを却下する$( %p, `QuotaExceededError$E 例外 )；
+~RET
 </p>
-					</li>
+◎
+Let streamId be a new stream ID that is valid and unique for transport.[[Session]], as defined in [QUIC] Section 19.11. If one is not immediately available due to exhaustion, reject p with a QuotaExceededError and abort these steps.
+</li>
+					<li>
+<p>
+%内部~stream ~LET `流出~一方向~streamを作成する$( %~transport . `Session$sl, %~stream~ID )
+◎
+Let internalStream be the result of creating an outgoing unidirectional stream with transport.[[Session]] and streamId.
+</li>
 					<li>
 <p>
 `~network~taskを~queueする$( %~transport, 次の手続き )
@@ -4949,10 +4961,10 @@ Cleanup transport with error and closeInfo.
 
 <div class="algo">
 <p>
-ある `WebTransport$I %~transport に結付けられた`接続$に接続~errorが生じたときは、
+ある `WebTransport$I %~transport の`下層~接続$に接続~errorが生じたときは、
 次の手続きを走らす：
 ◎
-Whenever a connection associated with a WebTransport transport gets a connection error, run these steps:
+Whenever a WebTransport transport’s underlying connection gets a connection error, run these steps:
 </p>
 <ol>
 	<li>
@@ -5130,10 +5142,10 @@ enum `WebTransportCongestionControl@I {
 
 <p>
 `WebTransportOptions$I は、［
-~WebTransport接続がどう確立され，どう利用されるか
+`~WebTransport~session$がどう確立され，どう利用されるか
 ］を決定する~parameterたちが成す辞書である。
 ◎
-WebTransportOptions is a dictionary of parameters that determine how WebTransport connection is established and used.
+WebTransportOptions is a dictionary of parameters that determine how the WebTransport session is established and used.
 </p>
 <dl>
 	<dt>
@@ -5143,12 +5155,11 @@ allowPooling, of type boolean, defaulting to false
 </dt>
 	<dd>
 ~T に設定されたときは、
-当の~WebTransport接続を~poolできる
+当の`~WebTransport~session$を~poolできる
 — すなわち、
-当の~WebTransport~session用の~network接続は，
-他の~HTTP3~sessionと共有できるようになる。
+その`下層~接続$は，他の~HTTP3~sessionと共有できるようになる。
 ◎
-When set to true, the WebTransport connection can be pooled, that is, the network connection for the WebTransport session can be shared with other HTTP/3 sessions.
+When set to true, the WebTransport session can be pooled, that is, its underlying connection can be shared with other HTTP/3 sessions.
 </dd>
 
 	<dt>
@@ -5157,13 +5168,13 @@ When set to true, the WebTransport connection can be pooled, that is, the networ
 requireUnreliable, of type boolean, defaulting to false
 </dt>
 	<dd>
-~T に設定した場合、
+~T に設定されたときは、
 次を行えなくなる
 ⇒
-~HTTP3接続がアリでない場合に，
-~WebTransport接続を~HTTP2越しに確立する
+~HTTP3`接続$がアリでない場合に，
+`~WebTransport~session$を~HTTP2`接続$越しに確立する
 ◎
-When set to true, the WebTransport connection cannot be established over HTTP/2 if an HTTP/3 connection is not possible.
+When set to true, the WebTransport session cannot be established over an HTTP/2 connection if an HTTP/3 connection is not possible.
 </dd>
 
 	<dt>
@@ -5563,41 +5574,34 @@ Note: This is sender-side data prioritization which does not guarantee reception
 </dl>
 
 		</section>
-		<section id="web-transport-stats">
-<h3 title="WebTransportStats Dictionary">5.12. `WebTransportStats^I 辞書</h3>
+		<section id="web-transport-connection-stats">
+<h3 title="WebTransportConnectionStats Dictionary">5.12. `WebTransportConnectionStats^I 辞書</h3>
 
 <p>
-`WebTransportStats$I 辞書は、
-~HTTP3接続~上の統計~情報を含む。
+`WebTransportConnectionStats$I 辞書は、
+`~WebTransport~session$の`下層~接続$についての~WebTransportに特有な統計を含む。
 ◎
-The WebTransportStats dictionary includes information on HTTP/3 connection stats.
+The WebTransportConnectionStats dictionary includes information on WebTransport-specific stats about the WebTransport session's underlying connection.
 </p>
 
-<p class="issue">
-`quic-transport^en 【？】は、
-今や除去された
-— この節は、
-改訂される必要がある。
-それらのうち（ `minRtt$mb【！min-RTT】 の様な）一部は［
-~HTTP2／
-~HTTP3
-］接続~用に公開しても安全である一方、
-ほとんどは［
-結果として情報~開示になるか，
-~poolされた接続~用に定義することはアリでない
-］。
+<p class="note">注記：
+~pool法が利用されるとき，同じ`接続$に~poolされた複数の`~WebTransport~session$は、
+すべて同じ情報を受信する
+— すなわち、
+当の情報は、［
+~poolされた`~WebTransport~session$たちのうち，同じ`~network区分~key$を保持しているもの
+］にまたがって開示される。
 ◎
-Now that quic-transport has been removed, this section needs to be revised. Some of those are safe to expose for HTTP/2 and HTTP/3 connections (like min-RTT), while most would either result in information disclosure or are impossible to define for pooled connections.
+Note: When pooling is used, multiple WebTransport sessions pooled on the same connection all receive the same information, i.e. the information is disclosed across pooled sessions holding the same network partition key.
 </p>
 
 <pre class="idl">
-dictionary `WebTransportStats@I {
+dictionary `WebTransportConnectionStats@I {
   `DOMHighResTimeStamp$ `timestamp$mb;
   `unsigned long long$ `bytesSent$mb;
   `unsigned long long$ `packetsSent$mb;
+  `unsigned long long$ `bytesLost$mb;
   `unsigned long long$ `packetsLost$mb;
-  `unsigned long$ `numOutgoingStreamsCreated$mb;
-  `unsigned long$ `numIncomingStreamsCreated$mb;
   `unsigned long long$ `bytesReceived$mb;
   `unsigned long long$ `packetsReceived$mb;
   `DOMHighResTimeStamp$ `smoothedRtt$mb;
@@ -5632,13 +5636,12 @@ The timestamp for when the stats are gathered, relative to the UNIX epoch (Jan 1
 bytesSent, of type unsigned long long
 </dt>
 	<dd>
-当の~QUIC接続~上に送信された~byteたちの個数
-— これは、
-再-伝送も含むが，［
+当の`下層~接続$上に送信された~byteたちの個数
+— 再-伝送も含むが，［
 ~UDPその他の外縁~frame法
 ］は含まない。
 ◎
-The number of bytes sent on the QUIC connection, including retransmissions. Does not include UDP or any other outer framing.
+The number of bytes sent on the underlying connection, including retransmissions. Does not include UDP or any other outer framing.
 </dd>
 
 	<dt>
@@ -5647,10 +5650,26 @@ The number of bytes sent on the QUIC connection, including retransmissions. Does
 packetsSent, of type unsigned long long
 </dt>
 	<dd>
-当の~QUIC接続~上に送信された~packetの個数
+当の`下層~接続$上に送信された~packetの個数
 — 喪失したものと決定されたものも含む。
 ◎
-The number of packets sent on the QUIC connection, including those that are determined to have been lost.
+The number of packets sent on the underlying connection, including those that are determined to have been lost.
+</dd>
+
+	<dt>
+`bytesLost@mb
+◎
+bytesLost, of type unsigned long long 
+</dt>
+	<dd>
+当の`下層~接続$上で喪失した~byteたちの個数
+（単調増加しない
+— 喪失したものと宣言された~packetは，後続に受信され得るので）
+— 再-伝送も含むが，［
+~UDPその他の外縁~frame法
+］は含まない。
+◎
+The number of bytes lost on the underlying connection (does not monotonically increase, because packets that are declared lost can subsequently be received). Does not include UDP or any other outer framing.
 </dd>
 
 	<dt>
@@ -5659,33 +5678,11 @@ The number of packets sent on the QUIC connection, including those that are dete
 packetsLost, of type unsigned long long
 </dt>
 	<dd>
-当の~QUIC接続~上で喪失した~packetの個数
+当の`下層~接続$上で喪失した~packetの個数
 （単調増加しない
 — 喪失したものと宣言された~packetは，後続に受信され得るので）。
 ◎
-The number of packets lost on the QUIC connection (does not monotonically increase, because packets that are declared lost can subsequently be received).
-</dd>
-
-	<dt>
-`numOutgoingStreamsCreated@mb
-◎
-numOutgoingStreamsCreated, of type unsigned long
-</dt>
-	<dd>
-当の~QUIC接続~上に作成された流出~QUIC~streamの個数。
-◎
-The number of outgoing QUIC streams created on the QUIC connection.
-</dd>
-
-	<dt>
-`numIncomingStreamsCreated@mb
-◎
-numIncomingStreamsCreated, of type unsigned long
-</dt>
-	<dd>
-当の~QUIC接続~上に作成された流入~QUIC~streamの個数。
-◎
-The number of incoming QUIC streams created on the QUIC connection.
+The number of packets lost on the underlying connection (does not monotonically increase, because packets that are declared lost can subsequently be received).
 </dd>
 
 	<dt>
@@ -5694,14 +5691,14 @@ The number of incoming QUIC streams created on the QUIC connection.
 bytesReceived, of type unsigned long long
 </dt>
 	<dd>
-当の~QUIC接続~上で受信された総-~byte数
+当の`下層~接続$上で受信された総-~byte数
 — ［
 各~stream用に重複した~data
 ］も含むが，［
 ~UDPその他の外縁~frame法
 ］は含まない。
 ◎
-The number of total bytes received on the QUIC connection, including duplicate data for streams. Does not include UDP or any other outer framing.
+The number of total bytes received on the underlying connection, including duplicate data for streams. Does not include UDP or any other outer framing.
 </dd>
 
 	<dt>
@@ -5710,10 +5707,10 @@ The number of total bytes received on the QUIC connection, including duplicate d
 packetsReceived, of type unsigned long long
 </dt>
 	<dd>
-当の~QUIC接続~上で受信された総-~packet数
+当の`下層~接続$上で受信された総-~packet数
 — 処理-可能でなかった~packetも含む。
 ◎
-The number of total packets received on the QUIC connection, including packets that were not processable.
+The number of total packets received on the underlying connection, including packets that were not processable.
 </dd>
 
 	<dt>
@@ -5757,15 +5754,6 @@ The minimum round-trip time observed on the entire connection.
 </dd>
 
 	<dt>
-`datagrams@mb
-◎
-</dt>
-	<dd class="trans-note">【
-この~memberについては、
-原文には何も述べられていない。
-】</dd>
-
-	<dt>
 `estimatedSendRate@mb
 ◎
 estimatedSendRate, of type unsigned long long, nullable
@@ -5788,6 +5776,15 @@ estimatedSendRate, of type unsigned long long, nullable
 ◎
 The estimated rate at which queued data will be sent by the user agent, in bits per second. This rate applies to all streams and datagrams that share a WebTransport session and is calculated by the congestion control algorithm (potentially chosen by congestionControl). If the user agent does not currently have an estimate, the member MUST be absent. The member can be absent even if present in previous results.
 </dd>
+
+	<dt>
+`datagrams@mb
+◎
+</dt>
+	<dd class="trans-note">【
+この~memberについては、
+原文には何も述べられていない。
+】</dd>
 </dl>
 
 		</section>
@@ -5986,11 +5983,6 @@ Run the following steps in parallel:
 コレ【！この `WebTransportSendStream$I】に特有な統計を集める
 ◎
 Gather the stats specific to this WebTransportSendStream.
-</li>
-					<li>
-前~段の統計が準備済みになるまで待機する
-◎
-Wait for the stats to be ready.
 </li>
 					<li>
 <p>
@@ -8556,9 +8548,9 @@ indirectly through the rate at which data is consumed or transmitted by the clie
 </li>
 	<li>
 この~APIにより供される統計の一部として
-（ <a href="#web-transport-stats">§ `WebTransportStats^I 辞書</a> を見よ）
+（ <a href="#web-transport-connection-stats">§ `WebTransportConnectionStats^I 辞書</a> を見よ）
 ◎
-or as part of the statistics provided by the API (see § 5.12 WebTransportStats Dictionary).＼
+or as part of the statistics provided by the API (see § 5.12 WebTransportConnectionStats Dictionary).＼
 </li>
 </ul>
 <p>
@@ -8647,7 +8639,7 @@ The use of networking capabilities on one site reduces the capacity available to
 ~focusを得ていない
 （ `HTML^cite `§ ~focus＠~HTMLinteraction#focus$）
 ］~site用には，~feedbackする仕組み
-— 統計（ <a href="#web-transport-stats">§ `WebTransportStats^I 辞書</a> ）など —
+— 統計（ <a href="#web-transport-connection-stats">§ `WebTransportConnectionStats^I 辞書</a> ）など —
 への~accessを［
 制限する／退行する
 ］こともできる。
@@ -8656,7 +8648,7 @@ The use of networking capabilities on one site reduces the capacity available to
 ~network内の変化について観測nを為すこと
 ］を防止しない。
 ◎
-A user agent could limit or degrade access to feedback mechanisms such as statistics (§ 5.12 WebTransportStats Dictionary) for sites that are inactive or do not have focus (HTML § 6.6 Focus). As noted, this does not prevent a server from making observations about changes in the network.
+A user agent could limit or degrade access to feedback mechanisms such as statistics (§ 5.12 WebTransportConnectionStats Dictionary) for sites that are inactive or do not have focus (HTML § 6.6 Focus). As noted, this does not prevent a server from making observations about changes in the network.
 </p>
 
 			</section>
