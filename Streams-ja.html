@@ -162,8 +162,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2023-07-12
-trans_update:2023-07-14
+spec_date:2023-09-30
+trans_update:2023-10-01
 source_checked:211216
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -263,6 +263,7 @@ acquire-readable-stream-default-reader:acquire-readable-stream-reader
 extract-high-water-mark:validate-and-normalize-high-water-mark
 extract-size-algorithm:make-size-algorithm-from-size-function
 readable-stream-default-controller-has-backpressure:rs-default-controller-has-backpressure
+transform-stream-default-source-cancel-algorithm:transform-stream-default-source-cancel
 transform-stream-default-source-pull-algorithm:transform-stream-default-source-pull
 cross-realm-transform-send-error:abstract-opdef-crossrealmtransformsenderror
 pack-and-post-message:abstract-opdef-packandpostmessage
@@ -354,6 +355,7 @@ I.CountQueuingStrategy:#countqueuingstrategy
 I.QueuingStrategy:#dictdef-queuingstrategy
 
 I.QueuingStrategySize:#callbackdef-queuingstrategysize
+I.TransformerCancelCallback:#callbackdef-transformercancelcallback
 I.TransformerFlushCallback:#callbackdef-transformerflushcallback
 I.TransformerStartCallback:#callbackdef-transformerstartcallback
 I.TransformerTransformCallback:#callbackdef-transformertransformcallback
@@ -482,6 +484,7 @@ tsdc.error:#ts-default-controller-error
 tsdc.terminate:#ts-default-controller-terminate
 
 tf.flush:#dom-transformer-flush
+tf.cancel:#dom-transformer-cancel
 tf.start:#dom-transformer-start
 tf.transform:#dom-transformer-transform
 tf.readableType:#dom-transformer-readabletype
@@ -650,6 +653,8 @@ tS.Detached:#transformstream-detached
 tS.readable:#transformstream-readable
 tS.writable:#transformstream-writable
 
+tsdC.cancelAlgorithm:#transformstreamdefaultcontroller-cancelalgorithm
+tsdC.finishPromise:#transformstreamdefaultcontroller-finishpromise
 tsdC.flushAlgorithm:#transformstreamdefaultcontroller-flushalgorithm
 tsdC.stream:#transformstreamdefaultcontroller-stream
 tsdC.transformAlgorithm:#transformstreamdefaultcontroller-transformalgorithm
@@ -867,6 +872,7 @@ WSW.~chunkを書込む:#writablestreamdefaultwriter-write-a-chunk
 TS.設定しておく:#transformstream-set-up
 V.形式変換~algo:#transformstream-set-up-transformalgorithm
 V.書出n~algo:#transformstream-set-up-flushalgorithm
+V.取消~algo:#transformstream-set-up-cancelalgorithm
 TS.~chunkを~enqueueする:#transformstream-enqueue
 TS.~errorにする:#transformstream-error
 TS.終了する:#transformstream-terminate
@@ -1328,6 +1334,7 @@ polling::::ポーリング
 	~escapeしていな:unescaped／
 	〜に応じて~escapeする:〜-aware escaping
 	“完了まで走る” :run-to-completion
+	-:unpopulated
 
 	●仕様
 ecosystem::::エコシステム
@@ -1564,6 +1571,7 @@ encapsulate::::カプセル化
 	勧める:advised to
 	~~避けようのない事実:fact-of-life
 	〜したなら:once
+	~counterproductive
 
 	●未分類
 ECMAScript:
@@ -1811,12 +1819,12 @@ template::::テンプレート
 ●●spec_metadata
 
 Participate:
-	<a href="https://github.com/whatwg/streams">GitHub whatwg/streams</a> (<a href="https://github.com/whatwg/streams/issues/new">new issue</a>, <a href="https://github.com/whatwg/streams/issues">open issues</a>)
+	<a href="https://github.com/whatwg/streams">GitHub whatwg/streams</a> (<a href="https://github.com/whatwg/streams/issues/new/choose">new issue</a>, <a href="https://github.com/whatwg/streams/issues">open issues</a>)
 	<a href="https://whatwg.org/chat">Chat on Matrix</a>
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/f780e1fcbf498b0ac21e45ec12ca33e07e13bcb4" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/007d729f1476f7f1ea34731ba9bd2becb702117e" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -18527,6 +18535,7 @@ dictionary `Transformer@I {
   `TransformerStartCallback$I `start$tf;
   `TransformerTransformCallback$I `transform$tf;
   `TransformerFlushCallback$I `flush$tf;
+  `TransformerCancelCallback$I `cancel$tf;
   `any$ `readableType$tf;
   `any$ `writableType$tf;
 };
@@ -18534,6 +18543,7 @@ dictionary `Transformer@I {
 callback `TransformerStartCallback@I = `any$ (`TransformStreamDefaultController$I %controller);
 callback `TransformerFlushCallback@I = `Promise$&lt;`undefined$&gt; (`TransformStreamDefaultController$I %controller);
 callback `TransformerTransformCallback@I = `Promise$&lt;`undefined$&gt; (`any$ %chunk, `TransformStreamDefaultController$I %controller);
+callback `TransformerCancelCallback@I = `Promise$&lt;`undefined$&gt; (`any$ %reason);
 </pre>
 
 <dl>
@@ -18690,6 +18700,49 @@ If the flushing process is asynchronous, the function can return a promise to si
 それを終了するのは非生産的になる）。
 ◎
 (Note that there is no need to call controller.terminate() inside flush(); the stream is already in the process of successfully closing down, and terminating it would be counterproductive.)
+</dd>
+
+	<dt>
+`cancel(reason)@tf
+（ `TransformerCancelCallback$I 型）
+◎
+cancel(reason), of type TransformerCancelCallback
+</dt>
+	<dd>
+この関数は、［
+`可書~側$が取消された／`可書~側$が中止された
+］とき，~callされる。
+◎
+A function called when the readable side is cancelled, or when the writable side is aborted.
+</dd>
+	<dd>
+概して，これは、
+当の~streamが［
+中止された／取消された
+］ときに，下層の形式変換器~用の資源を片付けるために利用される。
+◎
+Typically this is used to clean up underlying transformer resources when the stream is aborted or cancelled.
+</dd>
+	<dd>
+取消n処理nが非同期的である場合、
+この関数は，その成否を通達する~promiseを返すようにすることもできる
+— その結果は、［
+`abort()$ws ／ `cancel()$rs
+］の~call元へ通信されることになる。
+例外を投出した場合、
+却下される~promiseを返すのと同じに扱われる。
+◎
+If the cancellation process is asynchronous, the function can return a promise to signal success or failure; the result will be communicated to the caller of stream.writable.abort() or stream.readable.cancel(). Throwing an exception is treated the same as returning a rejected promise.
+</dd>
+	<dd>
+（ `cancel()$tf の内側では、
+`terminate()$tsdc を~callする必要は無いことに注意
+— 当の~streamは，すでに［
+取消す／中止する
+］処理nにあり、
+それを終了するのは非生産的になる。）
+◎
+(Note that there is no need to call controller.terminate() inside cancel(); the stream is already in the process of cancelling/aborting, and terminating it would be counterproductive.)
 </dd>
 
 	<dt>
@@ -19125,6 +19178,35 @@ Instances of TransformStreamDefaultController are created with the internal slot
 Internal Slot｜Description (non-normative)
 </p>
 <dl class="def-list">
+	<dt>`cancelAlgorithm@tsdC</dt>
+	<dd>
+1 個の引数（取消n用の事由）をとり，~promiseを返す~algo
+◎
+A promise-returning algorithm, taking one argument (the reason for cancellation),＼
+</dd>
+	<dd>
+これは、
+要請された取消nを当の`形式変換器$に通信する。
+◎
+which communicates a requested cancellation to the transformer
+</dd>
+
+	<dt>`finishPromise@tsdC</dt>
+	<dd>
+［
+`cancelAlgorithm$tsdC ／ `flushAlgorithm$tsdC
+］の完了に際して解決される~promise。
+◎
+A promise which resolves on completion of either the [[cancelAlgorithm]] or the [[flushAlgorithm]].＼
+</dd>
+	<dd>
+この~fieldが `undefined^jv をとる場合、
+それらの~algoはどちらも，
+まだ`呼出されて＠~WEBIDLjs#invoke-a-callback-function$ない
+◎
+If this field is unpopulated (that is, undefined), then neither of those algorithms have been invoked yet
+</dd>
+
 	<dt>`flushAlgorithm@tsdC</dt>
 	<dd>
 ~promiseを返す~algo
@@ -19133,7 +19215,7 @@ A promise-returning algorithm＼
 </dd>
 	<dd>
 これは、
-要請された~closeを`形式変換器$に通信する。
+要請された~closeを当の`形式変換器$に通信する。
 ◎
 which communicates a requested close to the transformer
 </dd>
@@ -19153,7 +19235,7 @@ A promise-returning algorithm, taking one argument (the chunk to transform),＼
 </dd>
 	<dd>
 これは、
-`形式変換器$に形式変換nを遂行するよう要請する。
+当の`形式変換器$に形式変換nを遂行するよう要請する。
 ◎
 which requests the transformer perform its transformation
 </dl>
@@ -19347,24 +19429,14 @@ Let pullAlgorithm be the following steps:
 • Return ! TransformStreamDefaultSourcePullAlgorithm(stream).
 </li>
 	<li class="algo">
-<p>
-%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
+%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo
+⇒
+~RET
+~NOABRUPT `TransformStreamDefaultSourceCancelAlgorithm$A( %stream, %reason )
 ◎
 Let cancelAlgorithm be the following steps, taking a reason argument:
-</p>
-		<ol>
-			<li>
-~NOABRUPT `TransformStreamErrorWritableAndUnblockWrite$A( %stream, %reason )
-◎
-Perform ! TransformStreamErrorWritableAndUnblockWrite(stream, reason).
+• Return ! TransformStreamDefaultSourceCancelAlgorithm(stream, reason).
 </li>
-			<li>
-~RET `解決される~promise$( `undefined^jv )
-◎
-Return a promise resolved with undefined.
-</li>
-		</ol>
-	</li>
 	<li>
 %stream.`readable$tS ~SET
 ~NOABRUPT `CreateReadableStream$A( %startAlgorithm, %pullAlgorithm, %cancelAlgorithm, %readableHighWaterMark, %readableSizeAlgorithm )
@@ -19457,25 +19529,12 @@ Perform ! TransformStreamDefaultControllerClearAlgorithms(stream.[[controller]])
 Perform ! WritableStreamDefaultControllerErrorIfNeeded(stream.[[writable]].[[controller]], e).
 </li>
 	<li>
-~IF［
-%stream.`backpressure$tS ~EQ ~T
-］
-⇒
-~NOABRUPT `TransformStreamSetBackpressure$A( %stream, ~F )
+~NOABRUPT `TransformStreamUnblockWrite$A( %stream )
 ◎
-If stream.[[backpressure]] is true, perform ! TransformStreamSetBackpressure(stream, false).
+Perform ! TransformStreamUnblockWrite(stream).
 </li>
 </ol>
 </div>
-
-<p class="note">注記：
-`TransformStreamDefaultSinkWriteAlgorithm$A 抽象-演算は、
-`backpressureChangePromise$tS ~slotに格納された~promiseが解決されるまで待機することもある。
-`TransformStreamSetBackpressure$A への~callは、
-~promiseが常に解決されることを確保する。
-◎
-The TransformStreamDefaultSinkWriteAlgorithm abstract operation could be waiting for the promise stored in the [[backpressureChangePromise]] slot to resolve. The call to TransformStreamSetBackpressure ensures that the promise always resolves.
-</p>
 
 <div class="algo">
 <p>
@@ -19513,6 +19572,35 @@ Set stream.[[backpressure]] to backpressure.
 </ol>
 </div>
 
+<div class="algo">
+<p>
+`TransformStreamUnblockWrite@A
+は、次の手続きを遂行する：
+◎
+TransformStreamUnblockWrite(stream) performs the following steps:
+</p>
+<ol>
+	<li>
+~IF［
+%stream.`backpressure$tS ~EQ ~T
+］
+⇒
+~NOABRUPT `TransformStreamSetBackpressure$A( %stream, ~F )
+◎
+If stream.[[backpressure]] is true, perform ! TransformStreamSetBackpressure(stream, false).
+</li>
+</ol>
+
+<p class="note">注記：
+`TransformStreamDefaultSinkWriteAlgorithm$A 抽象-演算は、
+`backpressureChangePromise$tS ~slotに格納された~promiseが解決されるまで待機することもある。
+`TransformStreamSetBackpressure$A への~callは、
+~promiseが常に解決されることを確保する。
+◎
+The TransformStreamDefaultSinkWriteAlgorithm abstract operation could be waiting for the promise stored in the [[backpressureChangePromise]] slot to resolve. The call to TransformStreamSetBackpressure ensures that the promise always resolves.
+</p>
+</div>
+
 			</section>
 			<section id="ts-default-controller-abstract-ops">
 <h3 title="Default controllers">6.4.2. 既定の制御器</h3>
@@ -19526,10 +19614,10 @@ The following abstract operations support the implementaiton of the TransformStr
 
 <div class="algo">
 <p>
-`SetUpTransformStreamDefaultController(stream, controller, transformAlgorithm, flushAlgorithm)@A
+`SetUpTransformStreamDefaultController(stream, controller, transformAlgorithm, flushAlgorithm, cancelAlgorithm)@A
 は、次の手続きを遂行する：
 ◎
-SetUpTransformStreamDefaultController(stream, controller, transformAlgorithm, flushAlgorithm) performs the following steps:
+SetUpTransformStreamDefaultController(stream, controller, transformAlgorithm, flushAlgorithm, cancelAlgorithm) performs the following steps:
 </p>
 <ol>
 	<li>
@@ -19563,6 +19651,11 @@ Set controller.[[transformAlgorithm]] to transformAlgorithm.
 %controller.`flushAlgorithm$tsdC ~SET %flushAlgorithm
 ◎
 Set controller.[[flushAlgorithm]] to flushAlgorithm.
+</li>
+	<li>
+%controller.`cancelAlgorithm$tsdC ~SET %cancelAlgorithm
+◎
+Set controller.[[cancelAlgorithm]] to cancelAlgorithm.
 </li>
 </ol>
 </div>
@@ -19617,6 +19710,13 @@ Otherwise, return a promise resolved with undefined.
 Let flushAlgorithm be an algorithm which returns a promise resolved with undefined.
 </li>
 	<li class="algo">
+%cancelAlgorithm ~LET 次を走らす~algo
+⇒
+~RET `解決される~promise$( `undefined^jv )
+◎
+Let cancelAlgorithm be an algorithm which returns a promise resolved with undefined.
+</li>
+	<li class="algo">
 ~IF［
 %transformerDict[ "`transform$tf" ] ~NEQ ε
 ］
@@ -19638,15 +19738,27 @@ If transformerDict["transform"] exists, set transformAlgorithm to an algorithm w
 ◎
 If transformerDict["flush"] exists, set flushAlgorithm to an algorithm which returns the result of invoking transformerDict["flush"] with argument list « controller » and callback this value transformer.
 </li>
+	<li class="algo">
+~IF［
+%transformerDict[ "`cancel$tf" ] ~NEQ ε
+］
+⇒
+%cancelAlgorithm ~SET 所与の ( %reason ) に対し，次を走らす~algo
+⇒
+~RET `~callback関数を呼出す$( %transformerDict[ "`cancel$tf" ], « %reason », %transformer )
+◎
+If transformerDict["cancel"] exists, set cancelAlgorithm to an algorithm which takes an argument reason and returns the result of invoking transformerDict["cancel"] with argument list « reason » and callback this value transformer.
+</li>
 	<li>
 ~NOABRUPT `SetUpTransformStreamDefaultController$A( ↓ )
 ⇒＃
 %stream,
 %controller,
 %transformAlgorithm,
-%flushAlgorithm
+%flushAlgorithm,
+%cancelAlgorithm
 ◎
-Perform ! SetUpTransformStreamDefaultController(stream, controller, transformAlgorithm, flushAlgorithm).
+Perform ! SetUpTransformStreamDefaultController(stream, controller, transformAlgorithm, flushAlgorithm, cancelAlgorithm).
 </li>
 </ol>
 </div>
@@ -19692,6 +19804,11 @@ Set controller.[[transformAlgorithm]] to undefined.
 %controller.`flushAlgorithm$tsdC ~SET `undefined^jv
 ◎
 Set controller.[[flushAlgorithm]] to undefined.
+</li>
+	<li>
+%controller.`cancelAlgorithm$tsdC ~SET `undefined^jv
+◎
+Set controller.[[cancelAlgorithm]] to undefined.
 </li>
 </ol>
 </div>
@@ -19999,14 +20116,112 @@ TransformStreamDefaultSinkAbortAlgorithm(stream, reason) performs the following 
 </p>
 <ol>
 	<li>
-~NOABRUPT `TransformStreamError$A( %stream, %reason )
+%controller ~LET %stream.`controller$wS
 ◎
-Perform ! TransformStreamError(stream, reason).
+Let controller be stream.[[controller]].
 </li>
 	<li>
-~RET `解決される~promise$( `undefined^jv )
+~IF［
+%controller.`finishPromise$tsdC ~NEQ `undefined^jv
+］
+⇒
+~RET %controller.`finishPromise$tsdC
 ◎
-Return a promise resolved with undefined.
+If controller.[[finishPromise]] is not undefined, return controller.[[finishPromise]].
+</li>
+	<li>
+%readable ~LET %stream.`readable$tS
+◎
+Let readable be stream.[[readable]].
+</li>
+	<li>
+%controller.`finishPromise$tsdC ~LET `新たな~promise$
+◎
+Let controller.[[finishPromise]] be a new promise.
+</li>
+	<li>
+%cancelPromise ~LET %controller.`cancelAlgorithm$tsdC( %reason )
+◎
+Let cancelPromise be the result of performing controller.[[cancelAlgorithm]], passing reason.
+</li>
+	<li>
+~NOABRUPT `TransformStreamDefaultControllerClearAlgorithms$A( %controller )
+◎
+Perform ! TransformStreamDefaultControllerClearAlgorithms(controller).
+</li>
+	<li>
+<p>
+`~promiseに反応する$( %cancelPromise )
+— 次を与える下で：
+◎
+React to cancelPromise:
+</p>
+		<ul>
+			<li class="algo">
+<p>
+`充足~手続き^i は：
+◎
+If cancelPromise was fulfilled, then:
+</p>
+				<ol>
+					<li>
+~IF［
+%readable.`state$rS ~EQ `errored^l
+］
+⇒
+`~promiseを却下する$( %controller.`finishPromise$tsdC, %readable.`storedError$rS )
+◎
+If readable.[[state]] is "errored", reject controller.[[finishPromise]] with readable.[[storedError]].
+</li>
+					<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+						<ol>
+							<li>
+~NOABRUPT `ReadableStreamDefaultControllerError$A( %readable.`controller$rS, %reason )
+◎
+Perform ! ReadableStreamDefaultControllerError(readable.[[controller]], reason).
+</li>
+							<li>
+`~promiseを解決する$( %controller.`finishPromise$tsdC, `undefined^jv )
+◎
+Resolve controller.[[finishPromise]] with undefined.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+			<li class="algo">
+<p>
+`却下~手続き^i は、
+所与の
+( 事由 %r )
+に対し：
+◎
+If cancelPromise was rejected with reason r, then:
+</p>
+				<ol>
+					<li>
+~NOABRUPT `ReadableStreamDefaultControllerError$A( %readable.`controller$rS, %r )
+◎
+Perform ! ReadableStreamDefaultControllerError(readable.[[controller]], r).
+</li>
+					<li>
+`~promiseを却下する$( %controller.`finishPromise$tsdC, %r )
+◎
+Reject controller.[[finishPromise]] with r.
+</li>
+				</ol>
+			</li>
+		</ul>
+	</li>
+	<li>
+~RET %controller.`finishPromise$tsdC
+◎
+Return controller.[[finishPromise]].
 </li>
 </ol>
 </div>
@@ -20020,14 +20235,28 @@ TransformStreamDefaultSinkCloseAlgorithm(stream) performs the following steps:
 </p>
 <ol>
 	<li>
+%controller ~LET %stream.`controller$wS
+◎
+Let controller be stream.[[controller]].
+</li>
+	<li>
+~IF［
+%controller.`finishPromise$tsdC ~NEQ `undefined^jv
+］
+⇒
+~RET %controller.`finishPromise$tsdC
+◎
+If controller.[[finishPromise]] is not undefined, return controller.[[finishPromise]].
+</li>
+	<li>
 %readable ~LET %stream.`readable$tS
 ◎
 Let readable be stream.[[readable]].
 </li>
 	<li>
-%controller ~LET %stream.`controller$tS
+%controller.`finishPromise$tsdC ~LET `新たな~promise$
 ◎
-Let controller be stream.[[controller]].
+Let controller.[[finishPromise]] be a new promise.
 </li>
 	<li>
 %flushPromise ~LET %controller.`flushAlgorithm$tsdC()
@@ -20041,10 +20270,10 @@ Perform ! TransformStreamDefaultControllerClearAlgorithms(controller).
 </li>
 	<li>
 <p>
-~RET `~promiseに反応する$( %flushPromise )
+`~promiseに反応する$( %flushPromise )
 — 次を与える下で：
 ◎
-Return the result of reacting to flushPromise:
+React to flushPromise:
 </p>
 		<ul>
 			<li class="algo">
@@ -20059,15 +20288,29 @@ If flushPromise was fulfilled, then:
 %readable.`state$rS ~EQ `errored^l
 ］
 ⇒
-~THROW %readable.`storedError$rS
+`~promiseを却下する$( %controller.`finishPromise$tsdC, %readable.`storedError$rS )
 ◎
-If readable.[[state]] is "errored", throw readable.[[storedError]].
+If readable.[[state]] is "errored", reject controller.[[finishPromise]] with readable.[[storedError]].
 </li>
 					<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+						<ol>
+							<li>
 ~NOABRUPT `ReadableStreamDefaultControllerClose$A( %readable.`controller$rS )
 ◎
 Perform ! ReadableStreamDefaultControllerClose(readable.[[controller]]).
 </li>
+							<li>
+`~promiseを解決する$( %controller.`finishPromise$tsdC, `undefined^jv )
+◎
+Resolve controller.[[finishPromise]] with undefined.
+</li>
+						</ol>
+					</li>
 				</ol>
 			</li>
 			<li class="algo">
@@ -20081,19 +20324,24 @@ If flushPromise was rejected with reason r, then:
 </p>
 				<ol>
 					<li>
-~NOABRUPT `TransformStreamError$A( %stream, %r )
+~NOABRUPT `ReadableStreamDefaultControllerError$A( %readable.`controller$rS, %r )
 ◎
-Perform ! TransformStreamError(stream, r).
+Perform ! ReadableStreamDefaultControllerError(readable.[[controller]], r).
 </li>
 					<li>
-~THROW %readable.`storedError$rS
+`~promiseを却下する$( %controller.`finishPromise$tsdC, %r )
 ◎
-Throw readable.[[storedError]].
+Reject controller.[[finishPromise]] with r.
 </li>
 				</ol>
 			</li>
 		</ul>
 	</li>
+	<li>
+~RET %controller.`finishPromise$tsdC
+◎
+Return controller.[[finishPromise]].
+</li>
 </ol>
 </div>
 
@@ -20107,6 +20355,137 @@ Throw readable.[[storedError]].
 ◎
 The following abstract operation is used to implement the underlying source for the readable side of transform streams.
 </p>
+
+<div class="algo">
+<p>
+`TransformStreamDefaultSourceCancelAlgorithm(stream, reason)@A
+は、
+次の手続きを遂行する：
+◎
+TransformStreamDefaultSourceCancelAlgorithm(stream, reason) performs the following steps:
+</p>
+<ol>
+	<li>
+%controller ~LET %stream.`controller$wS
+◎
+Let controller be stream.[[controller]].
+</li>
+	<li>
+~IF［
+%controller.`finishPromise$tsdC ~NEQ `undefined^jv
+］
+⇒
+~RET %controller.`finishPromise$tsdC
+◎
+If controller.[[finishPromise]] is not undefined, return controller.[[finishPromise]].
+</li>
+	<li>
+%writable ~LET %stream.`writable$tS
+◎
+Let writable be stream.[[writable]].
+</li>
+	<li>
+%controller.`finishPromise$tsdC ~LET `新たな~promise$
+◎
+Let controller.[[finishPromise]] be a new promise.
+</li>
+	<li>
+%cancelPromise ~LET %controller.`cancelAlgorithm$tsdC( %reason )
+◎
+Let cancelPromise be the result of performing controller.[[cancelAlgorithm]], passing reason.
+</li>
+	<li>
+~NOABRUPT `TransformStreamDefaultControllerClearAlgorithms$A( %controller )
+◎
+Perform ! TransformStreamDefaultControllerClearAlgorithms(controller).
+</li>
+	<li>
+<p>
+`~promiseに反応する$( %cancelPromise )
+— 次を与える下で：
+◎
+React to cancelPromise:
+</p>
+		<ul>
+			<li class="algo">
+<p>
+`充足~手続き^i は：
+◎
+If cancelPromise was fulfilled, then:
+</p>
+				<ol>
+					<li>
+~IF［
+%writable.`state$wS ~EQ `errored^l
+］
+⇒
+`~promiseを却下する$( %controller.`finishPromise$tsdC, %writable.`storedError$wS )
+◎
+If writable.[[state]] is "errored", reject controller.[[finishPromise]] with writable.[[storedError]].
+</li>
+					<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+						<ol>
+							<li>
+~NOABRUPT `WritableStreamDefaultControllerErrorIfNeeded$A( %writable.`controller$wS, %reason )
+◎
+Perform ! WritableStreamDefaultControllerErrorIfNeeded(writable.[[controller]], reason).
+</li>
+							<li>
+~NOABRUPT `TransformStreamUnblockWrite$A( %stream )
+◎
+Perform ! TransformStreamUnblockWrite(stream).
+</li>
+							<li>
+`~promiseを解決する$( %controller.`finishPromise$tsdC, `undefined^jv )
+◎
+Resolve controller.[[finishPromise]] with undefined.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+			<li class="algo">
+<p>
+`却下~手続き^i は、
+所与の
+( 事由 %r )
+に対し：
+◎
+If cancelPromise was rejected with reason r, then:
+</p>
+				<ol>
+					<li>
+~NOABRUPT `WritableStreamDefaultControllerErrorIfNeeded$A( %writable.`controller$wS,
+%r )
+◎
+Perform ! WritableStreamDefaultControllerErrorIfNeeded(writable.[[controller]], r).
+</li>
+					<li>
+~NOABRUPT `TransformStreamUnblockWrite$A( %stream )
+◎
+Perform ! TransformStreamUnblockWrite(stream).
+</li>
+					<li>
+`~promiseを却下する$( %controller.`finishPromise$tsdC, %r )
+◎
+Reject controller.[[finishPromise]] with r.
+</li>
+				</ol>
+			</li>
+		</ul>
+	</li>
+	<li>
+~RET %controller.`finishPromise$tsdC
+◎
+Return controller.[[finishPromise]].
+</li>
+</ol>
+</div>
 
 <div class="algo">
 <p>
@@ -23707,16 +24086,30 @@ The return value will be a promise that either fulfills with undefined, or rejec
 ~algoは、
 ~promiseを返してもヨイ。
 </dd>
+
+	<dt id="transformstream-set-up-cancelalgorithm">
+%取消~algo
+</dt>
+	<dd>
+ε ／
+~algo
+（省略時は ε ）
+</dd>
+	<dd>
+~algoは、
+~promiseを返してもヨイ。
+</dd>
 </dl>
 <p>
 に対し，次の手続きを遂行する：
 </p>
 ◎
 To set up a newly-created-via-Web IDL TransformStream stream given＼
-an algorithm transformAlgorithm and＼
-an optional algorithm flushAlgorithm,＼
+an algorithm transformAlgorithm,＼
+an optional algorithm flushAlgorithm, and＼
+an optional algorithm cancelAlgorithm,＼
 perform the following steps.＼
-transformAlgorithm and, if given, flushAlgorithm, may return a promise.
+transformAlgorithm and, if given, flushAlgorithm and cancelAlgorithm, may return a promise.
 </div>
 <ol>
 	<li>
@@ -23814,6 +24207,44 @@ Return a promise resolved with undefined.
 </li>
 		</ol>
 	</li>
+	<li class="algo">
+<p>
+%取消~algo包装体 ~LET 所与の
+( %事由 )
+に対し，次を走らす~algo：
+◎
+Let cancelAlgorithmWrapper be an algorithm that runs these steps given a value reason:
+</p>
+		<ol>
+			<li>
+%結果 ~LET ~NULL
+◎
+↓</li>
+			<li>
+~IF［
+%取消~algo ~NEQ ε
+］
+⇒
+%結果 ~SET %取消~algo( %事由 )
+⇒
+例外 %e が投出されたときは
+⇒
+~RET `却下される~promise$( %e )
+◎
+Let result be the result of running cancelAlgorithm given reason, if cancelAlgorithm was given, or null otherwise. If this throws an exception e, return a promise rejected with e.
+</li>
+			<li>
+~RET %結果 に応じて
+⇒＃
+`Promise$I であるならば %結果 ／
+~ELSE_ `解決される~promise$( `undefined^jv )
+◎
+If result is a Promise, then return result.
+◎
+Return a promise resolved with undefined.
+</li>
+		</ol>
+	</li>
 	<li>
 %開始~promise ~LET `解決される~promise$( `undefined^jv )
 ◎
@@ -23842,9 +24273,10 @@ Let controller be a new TransformStreamDefaultController.
 %~stream,
 %制御器,
 %形式変換~algo包装体,
-%書出n~algo包装体
+%書出n~algo包装体,
+%取消~algo包装体
 ◎
-Perform ! SetUpTransformStreamDefaultController(stream, controller, transformAlgorithmWrapper, flushAlgorithmWrapper).
+Perform ! SetUpTransformStreamDefaultController(stream, controller, transformAlgorithmWrapper, flushAlgorithmWrapper, cancelAlgorithmWrapper).
 </li>
 </ol>
 
