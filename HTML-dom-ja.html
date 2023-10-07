@@ -152,8 +152,8 @@ return text;
 
 ●●options
 
-spec_date:2023-10-03
-trans_update:2023-10-04
+spec_date:2023-10-06
+trans_update:2023-10-07
 source_checked:230713
 page_state_key:HTML
 spec_status:LS
@@ -700,8 +700,9 @@ doc.変異~eventを発火するか:#concept-document-fire-mutation-events-flag
 ~ltr:#concept-ltr
 ~rtl:#concept-rtl
 方向性:#the-directionality
-自動~方向性:#auto-directionality
-親~方向性:#parent-directionality
+要素の自動~方向性を算出する:#auto-directionality
+要素の親の方向性を算出する:#parent-directionality
+~text~nodeの方向性を算出する:#text-node-directionality
 属性の方向性:#directionality-of-the-attribute
 方向性有りな属性:#directionality-capable-attribute
 文字列の方向性を算出する:#_compute-string-directionality
@@ -905,13 +906,15 @@ doc.生成元:~DOM4#concept-document-origin
 doc.~URL:~DOM4#concept-document-url
 doc.内容~型:~DOM4#concept-document-content-type
 子~群:~DOM4#concept-tree-child
+子孫:~DOM4#concept-tree-descendant
 ~HTML文書:~DOM4#html-document
 ~XML文書:~DOM4#xml-document
 ~tree:~DOM4#concept-tree
 ~tree順序:~DOM4#concept-tree-order
 ~shadow~tree:~DOM4#concept-shadow-tree
 根:~DOM4#concept-tree-root
-広義-先祖:~DOM4#concept-tree-inclusive-ancestor
+~shadow根:~DOM4#concept-shadow-root
+割当された~node群:~DOM4#slot-assigned-nodes
 ~tree内にある:~DOM4#in-a-document-tree
 最初の子:~DOM4#concept-tree-first-child
 次の同胞？:~DOM4#concept-tree-next-sibling
@@ -1145,13 +1148,15 @@ lifecycle:
 	%~realm:realm
 	%slot:-
 	%~node:node
-	%先祖:-
 	%属性:-
 	%O:-
 	%~list:list
 	%C:-
 	%~item~list:results
-	%子:-
+	%子:child
+	%子孫:descendant
+	%子~方向:childDirection
+	%親~node:parentNode
 	%文字列~item:-
 	%要改行数:-
 	%素片:fragment
@@ -1289,7 +1294,7 @@ thema::::テーマ
 	言えない:admittedly
 	難しく:hard
 	実は:really
-	より高~levelの:higher-level
+	より高~level:higher-level
 	まったく:truly
 	一助:tool to help
 	万能:panacea
@@ -6914,9 +6919,9 @@ The lang attribute in the XML namespace is defined in XML. [XML]
 
 <p>
 要素からこれらの属性が省略された場合、
-この要素の言語は，要素の親は要素であるならば 親の言語と同じになる。
+当の要素（`~shadow~tree$内の`slot$e 要素を除く）の言語は，要素の親は要素であるならば 親の言語と同じになる。
 ◎
-If these attributes are omitted from an element, then the language of this element is the same as the language of its parent element, if any.
+If these attributes are omitted from an element, then the language of this element is the same as the language of its parent element, if any (except for slot elements in a shadow tree).
 </p>
 
 <p>
@@ -6985,82 +6990,91 @@ The attribute in no namespace with no prefix and with the literal localname "xml
 ~node %~node の
 `言語@
 を決定するときは、
-次の手続きから返される言語~tag値に基づくモノトスル：
+次の結果【言語~tag】を利用するモノトスル：
 ◎
-To determine the language of a node, user agents must＼
+To determine the language of a node, user agents must use the first appropriate step in the following list:
 </p>
-
 <ol>
 	<li>
-%要素 ~LET ［
-%~node は要素であるならば %~node ／
-~ELSE_ %~node の親~要素
-］
-◎
-↓</li>
-	<li>
-<p>
 ~IF［
-%要素 の`広義-先祖$に ~OR↓ を満たすものが在る
-］…
-</p>
-		<ul>
-			<li>
-`~xml_lang$a 属性を有する
-</li>
-			<li>
-`~HTML要素$であって `lang$a 属性（名前空間なし）を有する
-</li>
-		</ul>
-<p>
-…ならば：
-</p>
-		<ol>
-			<li>
-%先祖 ~LET そのような要素のうち %要素 に最も近いもの
-</li>
-			<li>
-~IF［
-%先祖 は `~xml_lang$a 属性を有する
+%~node は要素である
+］~AND［
+%~node は `~xml_lang$a 属性を有する
 ］
 ⇒
 ~RET その属性の値
-— `lang$a 属性（名前空間なし）は、
-有していても`無視-$する。
-</li>
-			<li>
-~RET %先祖 の `lang$a 属性（名前空間なし）の値
-</li>
-		</ol>
 ◎
-look at the nearest ancestor element (including the element itself if the node is an element) that has a lang attribute in the XML namespace set or is an HTML element and has a lang in no namespace attribute set. That attribute specifies the language of the node (regardless of its value).
-◎
-If both the lang attribute in no namespace and the lang attribute in the XML namespace are set on an element, user agents must use the lang attribute in the XML namespace, and the lang attribute in no namespace must be ignored for the purposes of determining the element's language.
+If the node is an element that has a lang attribute in the XML namespace set
+• Use the value of that attribute.
 </li>
 	<li>
 ~IF［
-`~pragma集合の既定の言語$が設定されている
+%~node は`~HTML要素$である
+］~AND［
+%~node は `lang$a 属性（名前空間なし）を有する
+］
+⇒
+~RET その属性の値
+◎
+If the node is an HTML element and has a lang in no namespace attribute set.
+• Use the value of that attribute.
+</li>
+	<li>
+~IF［
+%~node の親は`~shadow根$である
+］
+⇒
+~RET %~node の親の`~host$の`言語$
+</li>
+	<li>
+~IF［
+%~node は `slot$e 要素である
+］~AND［
+%~node の`根$は`~shadow根$である
+］
+⇒
+~RET %~node の`根$の`~host$の`言語$
+◎
+If the node's parent is a shadow root
+◎
+If the node is a slot element whose root is a shadow root
+• Use the language of that shadow root's host.
+</li>
+	<li>
+~IF［
+%~node の`親~要素$ ~NEQ ~NULL
+］
+⇒
+~RET %~node の`親~要素$の`言語$
+◎
+If the node's parent element is not null
+• Use the language of that parent element.
+</li>
+	<li>
+~IF［
+`~pragma集合の既定の言語$は設定されている
 ］
 ⇒
 ~RET それに対応する言語~tag
 ◎
-If node's inclusive ancestors do not have either attribute set, but there is a pragma-set default language set, then that is the language of the node.＼
+Otherwise
+• If there is a pragma-set default language set, then that is the language of the node.＼
 </li>
 	<li>
 ~IF［
-より高~levelの~protocol（~HTTPなど）から，単独の言語~情報が報告されている
+より高~levelな~protocol（~HTTPなど）から，単独の言語~情報が報告されている
 ］
 ⇒
 ~RET それに対応する言語~tag
 ◎
-If there is no pragma-set default language set, then language information from a higher-level protocol (such as HTTP), if any, must be used as the final fallback language instead.＼
+• If there is no pragma-set default language set, then language information from a higher-level protocol (such as HTTP), if any, must be used as the final fallback language instead.＼
 </li>
 	<li>
 ~RET 空~文字列
-— ~nodeの言語は未知とされる。
-より高~levelの~protocolから複数の言語が報告されている場合も含む。
+— %~node の言語は未知とされる。
+より高~levelな~protocolから複数の言語が報告されている場合も含む。
 ◎
-In the absence of any such language information, and in cases where the higher-level protocol reports multiple languages, the language of the node is unknown, and the corresponding language tag is the empty string.
+• In the absence of any such language information, and in cases where the higher-level protocol reports multiple languages, the language of the node is unknown, and the corresponding language tag is the empty string.
 </li>
 </ol>
 </div>
@@ -7068,7 +7082,7 @@ In the absence of any such language information, and in cases where the higher-l
 <p>
 上の結果が認識できる言語~tagでない場合、
 ~UAは，結果を［
-その言語~tagを持つ未知な
+その言語~tagを有する未知な
 — 他のすべての言語とは別個な —
 言語
 ］として扱うモノトスル。
@@ -7586,15 +7600,34 @@ ltr
 rtl
 • Return 'rtl'.
 </li>
-
 	<li>
-`自動$st
-⇒
-~RET %要素 の`自動~方向性$
+<p>
+`自動$st：
 ◎
 auto
-• Return the auto directionality of element.
+</p>
+		<ol>
+			<li>
+%結果 ~LET `要素の自動~方向性を算出する$( %要素 )
+◎
+Let result be the auto directionality of element.
 </li>
+			<li>
+~IF［
+%結果 ~EQ ~NULL
+］
+⇒
+~RET `要素の親の方向性を算出する$( %要素 )
+◎
+If result is null, then return the parent directionality of element.
+</li>
+			<li>
+~RET %結果
+◎
+Return result.
+</li>
+		</ol>
+	</li>
 	<li>
 <p>
 `未定義$st
@@ -7607,7 +7640,7 @@ undefined
 %要素 は `bdi$e 要素である
 ］
 ⇒
-~RET %要素 の`自動~方向性$
+~RET `要素の自動~方向性を算出する$( %要素 )
 ◎
 If element is a bdi element, then return the auto directionality of element.
 </li>
@@ -7623,7 +7656,7 @@ If element is a bdi element, then return the auto directionality of element.
 If element is an input element whose type attribute is in the Telephone state, then return 'ltr'.
 </li>
 			<li>
-~RET %要素 の`親~方向性$
+~RET `要素の親の方向性を算出する$( %要素 )
 ◎
 Return the parent directionality of element.
 </li>
@@ -7636,16 +7669,18 @@ Return the parent directionality of element.
 `dir$a 属性は`~HTML要素$用に限り定義されるので、
 他の名前空間に属する要素は，それを有し得ない
 — それらの`方向性$には、
-常に`親~方向性$が利用される結果になる。
+常に親の方向性が利用される結果になる。
 ◎
 Since the dir attribute is only defined for HTML elements, it cannot be present on elements from other namespaces. Thus, elements from other namespaces always end up using the parent directionality.
 </p>
 
 <div class="algo">
 <p>
-所与の要素 %要素 の
-`自動~方向性@
-を算出するときは：
+`要素の自動~方向性を算出する@
+ときは、
+所与の
+( 要素 %要素 )
+に対し：
 ◎
 To compute the auto directionality given an element element:
 </p>
@@ -7692,14 +7727,14 @@ If element is an input element whose type attribute is in the Text, Search, Tele
 ↓</li>
 			<li>
 ~IF［
-%方向性 ~NEQ ε
+%方向性 ~NEQ ~NULL
 ］
 ⇒
 ~RET %方向性
 ◎
 If element's value contains a character of bidirectional character type AL or R, and there is no character of bidirectional character type L anywhere before it in the element's value, then return 'rtl'. [BIDI]
 </li>
-			<li>
+	<li>
 ~IF［
 %文字列 ~NEQ 空~文字列
 ］
@@ -7708,22 +7743,95 @@ If element's value contains a character of bidirectional character type AL or R,
 ◎
 If element's value is not the empty string, then return 'ltr'.
 </li>
-			<li>
-~RET %要素 の`親~方向性$
+	<li>
+~RET ~NULL
 ◎
-Return the parent directionality of element.
+Return null.
 </li>
 		</ol>
 	</li>
 	<li>
 <p>
-%要素 の子孫である
-~EACH( `Text$I ~node %~text )
+~IF［
+%要素 は `slot$e 要素である
+］~AND［
+%要素 の`根$は`~shadow根$である
+］~AND［
+%要素 に`割当された~node群$は空でない
+］：
+◎
+If element is a slot element whose root is a shadow root and element's assigned nodes are not empty:
+</p>
+		<ol>
+			<li>
+<p>
+%要素 の`割当された~node群$を成す
+~EACH( %子 )
+に対し：
+◎
+For each node child of element's assigned nodes:
+</p>
+				<ol>
+					<li>
+%子~方向 ~LET ~NULL
+◎
+Let childDirection be null.
+</li>
+					<li>
+~IF［
+%子 は `Text$I ~nodeである
+］
+⇒
+%子~方向 ~SET `~text~nodeの方向性を算出する$( %子 )
+◎
+If child is a Text node, then set childDirection to the text node directionality of child.
+</li>
+					<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+
+						<ol>
+							<li>
+~Assert：
+%子 は `Element$I ~nodeである
+◎
+Assert: child is an Element node.
+</li>
+							<li>
+%子~方向 ~SET `要素の自動~方向性を算出する$( %子 )
+◎
+Set childDirection to the auto directionality of child.
+</li>
+						</ol>
+					</li>
+					<li>
+~IF［
+%子~方向 ~NEQ ~NULL
+］
+⇒
+~RET %子~方向
+◎
+If childDirection is not null, then return childDirection.
+</li>
+				</ol>
+			</li>
+			<li>
+~RET ~NULL
+◎
+Return null.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+%要素 の`子孫$たちを成す
+~EACH( %子孫 )
 に対し，`~tree順序$で：
 ◎
-↓ Let codePoint be null.
-◎
-For each Text node text that is a descendant of element, in tree order:
+For each node descendant of element's descendants, in tree order:
 </p>
 		<ol>
 			<li>
@@ -7734,7 +7842,7 @@ For each Text node text that is a descendant of element, in tree order:
 </p>
 				<ul>
 					<li>
-%~text の先祖である
+%子孫 の先祖である
 </li>
 					<li>
 %要素 の子孫である
@@ -7753,6 +7861,13 @@ For each Text node text that is a descendant of element, in tree order:
 `textarea$e
 </li>
 							<li>
+［
+`slot$e 要素である
+］~AND［
+その`根$は`~shadow根$である
+］
+</li>
+							<li>
 `dir$a 属性の状態 ~NEQ `未定義$st
 </li>
 						</ul>
@@ -7764,81 +7879,104 @@ For each Text node text that is a descendant of element, in tree order:
 ~CONTINUE
 </p>
 ◎
-If text has an ancestor element that is a descendant of element and is also one of
+If descendant has an ancestor element that is a descendant of element and is also one of
 • a bdi element
 • a script element
 • a style element
 • a textarea element
+• a slot element whose root is a shadow root
 • an element whose dir attribute is not in the undefined state
 then continue.
 </li>
 			<li>
-%方向性 ~LET `文字列の方向性を算出する$( %~text の`~data$cd )
-◎
-↓</li>
-			<li>
+<p>
 ~IF［
-%方向性 ~NEQ ε
+%子孫 は `slot$e 要素である
+］~AND［
+%子孫 の`根$は`~shadow根$である
+］：
+◎
+If descendant is a slot element whose root is a shadow root, then:
+</p>
+				<ol>
+					<li>
+%結果 ~LET `要素の自動~方向性を算出する$( %子孫 )
+◎
+Let result be the auto directionality of descendant.
+</li>
+					<li>
+~IF［
+%結果 ~NEQ ~NULL
 ］
 ⇒
-~RET %方向性
+~RET %結果
 ◎
-If text's data does not contain a code point whose bidirectional character type is L, AL, or R, then continue. [BIDI]
+If result is not null, then return result.
+</li>
+					<li>
+~RET `~ltr$
 ◎
-Set codePoint to the first code point in text's data whose bidirectional character type is L, AL, or R.
+Return 'ltr'.
+</li>
+				</ol>
+			</li>
+			<li>
+~IF［
+%子孫 は `Text$I ~nodeでない
+］
+⇒
+~CONTINUE
 ◎
-Break.
+If descendant is not a Text node, then continue.
+</li>
+			<li>
+%結果 ~LET `~text~nodeの方向性を算出する$( %子孫 )
+◎
+Let result be the text node directionality of descendant.
+</li>
+			<li>
+~IF［
+%結果 ~NEQ ~NULL
+］
+⇒
+~RET 結果
+◎
+If result is not null, then return result.
 </li>
 		</ol>
 	</li>
 	<li>
-~RET %要素 の`親~方向性$
+~RET ~NULL
 ◎
-If codePoint is null, then return the parent directionality of element.
-◎
-↑ If codePoint is of bidirectional character type AL or R, then return 'rtl'.
-◎
-↑ If codePoint is of bidirectional character type L, then return 'ltr'.
+Return null.
 </li>
 </ol>
 </div>
 
 <div class="algo">
 <p>
-所与の要素 %要素 の
-`親~方向性@
-を算出するときは：
+`~text~nodeの方向性を算出する@
+ときは、
+所与の
+( `Text$I ~node %~text )
+に対し：
 ◎
-To compute the parent directionality given an element element:
+To compute the text node directionality given a Text node text:
 </p>
 <ol>
 	<li>
-%親 ~LET %要素 の`親~要素$
+~RET `文字列の方向性を算出する$( %~text の`~data$cd )
 ◎
-↓</li>
-	<li>
-~IF［
-%親 ~EQ ~NULL
-］
-⇒
-~RET `~ltr$
+If text's data does not contain a code point whose bidirectional character type is L, AL, or R, then return null. [BIDI]
 ◎
-If element has no parent element, then return 'ltr'.
-</li>
-	<li>
-~RET %親 の`方向性$
+Let codePoint be the first code point in text's data whose bidirectional character type is L, AL, or R.
 ◎
-Return directionality of element's parent.
+If codePoint is of bidirectional character type AL or R, then return 'rtl'.
+◎
+If codePoint is of bidirectional character type L, then return 'ltr'.
 </li>
 </ol>
 </div>
-
-<p class="note">注記：
-この属性には、
-`双方向-~algoを孕む具現化~要件が課される＠#bidireq$。
-◎
-This attribute has rendering requirements involving the bidirectional algorithm.
-</p>
 
 <div class="algo">
 <p>
@@ -7876,7 +8014,7 @@ This attribute has rendering requirements involving the bidirectional algorithm.
 		</ol>
 	</li>
 	<li>
-~RET ε
+~RET ~NULL
 </li>
 </ol>
 
@@ -7885,6 +8023,66 @@ This attribute has rendering requirements involving the bidirectional algorithm.
 各所に共通な演算を集約するための，この訳による追加。
 】</p>
 </div>
+
+<div class="algo">
+<p>
+`要素の親の方向性を算出する@
+ときは、
+所与の
+( 要素 %要素 )
+に対し：
+◎
+To compute the parent directionality given an element element:
+</p>
+<ol>
+	<li>
+~IF［
+%要素 は `slot$e 要素である
+］~AND［
+%要素 の`根$は`~shadow根$である
+］
+⇒
+~RET %要素 の`根$の`~host$の`方向性$
+◎
+If element is a slot element whose root is a shadow root, then return the directionality of element's root's host.
+</li>
+	<li>
+%親~node ~LET %要素 の親
+◎
+Let parentNode be element's parent node.
+</li>
+	<li>
+~IF［
+%親~node は`~shadow根$である
+］
+⇒
+~RET %親~node の`~host$の`方向性$
+◎
+If parentNode is a shadow root, then return the directionality of parentNode's host.
+</li>
+	<li>
+~IF［
+%親~node は要素である
+］
+⇒
+~RET %親~node の`方向性$
+◎
+If parentNode is an element, then return the directionality of parentNode.
+</li>
+	<li>
+~RET `~ltr$
+◎
+Return 'ltr'.
+</li>
+</ol>
+</div>
+
+<p class="note">注記：
+この属性には、
+`双方向-~algoを孕む具現化~要件が課される＠#bidireq$。
+◎
+This attribute has rendering requirements involving the bidirectional algorithm.
+</p>
 
 <hr>
 
@@ -7919,7 +8117,7 @@ Find the first character (in logical order) of the attribute's value that is of 
 			<li>
 ~RET %方向性 に応じて
 ⇒＃
-ε ならば `~ltr$ ／
+~NULL ならば `~ltr$ ／
 ~ELSE_ %方向性
 ◎
 If such a character is found and it is of bidirectional character type AL or R, the directionality of the attribute is 'rtl'.
@@ -7962,7 +8160,7 @@ Otherwise
 <td>`input.alt$a
 
 <tr><td>`meta$e
-<td>`meta.content$a†
+<td>`meta.content$a †
 
 <tr><td>`optgroup$e
 <td>`optgroup.label$a
@@ -7984,7 +8182,11 @@ Otherwise
 </table>
 
 <p>†
-要素の `meta.name$a 属性が~metadata名を指定していて，その値は 機械からではなくヒトから読まれる用途が首に意図されている場合に限る。
+要素の `meta.name$a 属性が~metadata名を指定していて、
+それは，首に次を意図している場合に限る
+⇒
+要素の `content^a 属性の値は、
+機械からではなく，ヒトから読まれるものである。
 </p>
 
 ◎
@@ -9661,3 +9863,4 @@ Conformance checker requirements for checking use of ARIA role and aria-* attrib
 		</section>
 	</section>
 </main>
+
