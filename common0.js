@@ -2319,6 +2319,12 @@ care:::配慮::ケア
 不必要:unnecessary:~
 	必要yでない:unnecessary
 	不必要に:unnecessarily
+用立てる:utilizeする:~
+用立てら:utilizeさ:~
+用立てれ:utilizeでき:~
+用立て:utilizeし:~
+	用立てる:make use of
+
 
 ●制御／処理
 algo:algorithm:::アルゴリズム
