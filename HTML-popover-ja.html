@@ -108,8 +108,8 @@ return text;
 
 ●●options
 
-spec_date:2023-09-27
-trans_update:2023-09-27
+spec_date:2023-10-18
+trans_update:2023-10-23
 source_checked:230127
 page_state_key:HTML
 spec_status:LS
@@ -224,6 +224,7 @@ doc.~popover~pointerdown~target:#popover-pointerdown-target
 elm.~popover呼出元:#popover-invoker
 elm.~popover用の~toggle~task追跡子:#popover-toggle-task-tracker
 elm.~popoverを示すまたは隠す途中か:#popover-showing-or-hiding
+elm.~popover閉-注視器:#popover-close-watcher
 ~popover~target属性:#_popover-target-attribute
 ~popover用の~toggle~event~taskを~queueする:#queue-a-popover-toggle-event-task
 ~popoverを示す:#show-popover
@@ -277,6 +278,10 @@ tTk.~task:~HTMLinteraction#toggle-task-task
 自動focus委任-先:~HTMLinteraction#autofocus-delegate
 ~objを~focusする:~HTMLinteraction#focusing-steps
 doc.指名する被focus区画:~HTMLinteraction#focused-area-of-the-document
+閉-注視器:~HTMLinteraction#close-watcher
+閉-注視器を確立する:~HTMLinteraction#establish-a-close-watcher
+閉-注視器を破壊する:~HTMLinteraction#close-watcher-destroy
+閉-要請:~HTMLinteraction#close-request
 
 同一-生成元:~ORIGIN#same-origin
 
@@ -284,6 +289,7 @@ bc.作動中な文書:~HTMLds#active-document
 属する閲覧~文脈:~HTMLds#concept-document-bc
 ~top-level閲覧~文脈:~HTMLds#top-level-browsing-context
 
+関連な大域~obj:~WAPI#concept-relevant-global
 要素~taskを~queueする:~WAPI#queue-an-element-task
 ~task:~WAPI#concept-task
 ~task~queue:~WAPI#task-queue
@@ -368,6 +374,8 @@ ARIA:
 支援技術:assistive technology:~
 reader::::リーダ
 確認-:confirm:~
+閉-:close:閉じ
+注視器:watcher::~
 
 	軽い:light
 	最も後に来る:latest
@@ -456,7 +464,7 @@ reader::::リーダ
 	%可視性~状態:-
 	%期待される文書:expectedDocument
 	-:cleanupShowingFlag
-	-:cleanupHidingFlag
+	-:cleanupSteps
 	%入子な示すか:nestedShow
 	%入子な隠すか:nestedHide
 
@@ -574,7 +582,7 @@ reader::::リーダ
 
 		</section>
 		<section id="the-popover-attribute">
-<h3 title="The popover attribute">6.11. `popover^a 属性</h3>
+<h3 title="The popover attribute">6.12. `popover^a 属性</h3>
 
 <p>
 `popover@a
@@ -742,8 +750,9 @@ The popover attribute is an enumerated attribute with the following keywords and
 <tr><td>`manual@v
 <td>`手動@st
 <td>
-他の~popoverを閉じないことに加え，
-`軽く退ける$ふるまいを伴わない。
+他の~popoverを閉じないことに加え，［
+`軽く退ける$ふるまい／`閉-要請$
+］に応答しない。
 
 <tr><td>
 <td>`~popoverなし@st
@@ -772,7 +781,7 @@ The popover attribute is an enumerated attribute with the following keywords and
 Keyword｜State｜Brief description
 auto｜auto｜Closes other popovers when opened; has light dismiss.
 The empty string｜｜
-manual｜manual｜Does not close other popovers; does not light dismiss.
+manual｜manual｜Does not close other popovers; does not light dismiss or respond to close requests.
 ◎
 The popover attribute's invalid value default is the manual state and its missing value default is the no popover state.
 </div>
@@ -822,7 +831,8 @@ The Document has a popover pointerdown target, which is an HTML element or null,
 	<li>
 `~popover呼出元@elm
 ⇒
-`~HTML要素$ ／ ~NULL
+~NULL ／
+ある`~HTML要素$
 — 初期~時は ~NULL とする。
 ◎
 Every HTML element has a popover invoker, which is an HTML element or null, initially set to null.
@@ -838,10 +848,20 @@ Every HTML element has a popover showing or hiding, which is a boolean, initiall
 	<li>
 `~popover用の~toggle~task追跡子@elm
 ⇒
-~NULL ／`~toggle~task追跡子$
+~NULL ／
+ある`~toggle~task追跡子$
 — 初期~時は ~NULL とする。
 ◎
 Every HTML element popover toggle task tracker, which is a toggle task tracker or null, initially null.
+</li>
+	<li>
+`~popover閉-注視器@elm
+⇒
+~NULL ／
+ある`閉-注視器$
+— 初期~時は~NULL とする。
+◎
+Every HTML element has a popover close watcher, which is a close watcher or null, initially null.
 </li>
 </ul>
 
@@ -1140,6 +1160,30 @@ If the result of running topmost auto popover on document is null, then set shou
 This ensures that focus is returned to the previously-focused element only for the first popover in a stack.
 </p>
 			</li>
+			<li id="canceling-popovers">
+<p>
+%要素 の`~popover閉-注視器$elm ~SET `閉-注視器を確立する$( %要素 に`関連な大域~obj$ )
+— 次も与える下で：
+◎
+Set element's popover close watcher to the result of establishing a close watcher given element's relevant global object, with:
+</p>
+				<ul>
+					<li class="algo">
+`取消-動作^i は
+⇒
+~RET ~T
+◎
+cancelAction being to return true.
+</li>
+					<li class="algo">
+`閉-動作^i は
+⇒
+`~popoverを隠す$( %要素, ~T, ~T, ~F )
+◎
+closeAction being to hide a popover given element, true, true, and false.
+</li>
+				</ul>
+			</li>
 		</ol>
 	</li>
 	<li>
@@ -1353,13 +1397,16 @@ Set element's popover showing or hiding to true.
 <p class="trans-note">【
 この訳では、
 以降において ~GOTO を利用して，
-原文による入子な手続き（ %cleanupShowingFlag ）を伴う制御~flowを少し単純~化する。
+原文による入子な手続き（ %cleanupSteps ）を伴う制御~flowを少し単純~化する。
 】</p>
 ◎
 If nestedHide is true, then set fireEvents to false.
 ◎
-Let cleanupHidingFlag be the following steps:
+↓↓ Let cleanupSteps be the following steps:
 • If nestedHide is false, then set element's popover showing or hiding to false.
+•• If element's popover close watcher is not null, then:
+••• Destroy element's popover close watcher.
+••• Set element's popover close watcher to null.
 </li>
 	<li>
 <p>
@@ -1388,7 +1435,7 @@ Run hide all popovers until given element, focusPreviousElement, and fireEvents.
 ~GOTO `最後の段^i
 ◎
 If the result of running check popover validity given element, true, and throwExceptions is false,＼
-↓↓ then run cleanupHidingFlag and return.
+↓↓ then run cleanupSteps and return.
 </p>
 
 <p class="note">注記：
@@ -1435,7 +1482,7 @@ Fire an event named beforetoggle, using ToggleEvent, with the oldState attribute
 ~GOTO `最後の段^i
 ◎
 If the result of running check popover validity given element, true, throwExceptions, and null is false,＼
-↓↓ then run cleanupHidingFlag and return.
+↓↓ then run cleanupSteps and return.
 </p>
 
 <p class="note">注記：
@@ -1520,15 +1567,35 @@ the viewport should not be scrolled by doing this step.
 		</ol>
 	</li>
 	<li>
-`最後の段^i
-⇒
+<p>
+`最後の段^i：
+</p>
+		<ol>
+			<li>
 ~IF［
 %入子な隠すか ~EQ ~F
 ］
 ⇒
 %要素 の`~popoverを示すまたは隠す途中か$elm ~SET ~F
+</li>
+			<li>
+<p>
+~IF［
+%要素 の`~popover閉-注視器$elm ~NEQ ~NULL
+］：
+</p>
+				<ol>
+					<li>
+`閉-注視器を破壊する$( %要素 の`~popover閉-注視器$elm )
+</li>
+					<li>
+%要素 の`~popover閉-注視器$elm ~SET ~NULL
+</li>
+				</ol>
+			</li>
+		</ol>
 ◎
-↑↑ Run cleanupHidingFlag.
+↑↑ Run cleanupSteps.
 </li>
 </ol>
 </div>
@@ -2302,7 +2369,7 @@ Return popovers.
 
 			</section>
 			<section id="the-popover-target-attributes">
-<h4 title="The popover target attributes">6.11.1. ~popover~target属性</h4>
+<h4 title="The popover target attributes">6.12.1. ~popover~target属性</h4>
 
 <p>
 各`~button$は、
@@ -2409,10 +2476,11 @@ The following shows how the popovertarget attribute in combination with the popo
 `手動$stな~popoverの［
 開な状態, 閉な状態
 ］を~toggleできる様子を次に示す。
-手動な~popoverは、
-`軽く退ける$ふるまいを伴わない：
+手動な~popoverは、［
+`軽く退ける$ふるまい／`閉-要請$
+］に応答しない：
 ◎
-If a popovertargetaction attribute is not specified, the default action will be to toggle the associated popover. The following shows how only specifying the popovertarget attribute on its invoking button can toggle a manual popover between its opened and closed states. A manual popover will not light dismiss:
+If a popovertargetaction attribute is not specified, the default action will be to toggle the associated popover. The following shows how only specifying the popovertarget attribute on its invoking button can toggle a manual popover between its opened and closed states. A manual popover will not respond to light dismiss or close requests:
 </p>
 
 `popover-target-attribute-2^xCode
@@ -2607,42 +2675,22 @@ Return popoverElement.
 
 			</section>
 			<section id="popover-light-dismiss">
-<h4 title="Popover light dismiss">6.11.2. ~popoverを軽く退ける</h4>
+<h4 title="Popover light dismiss">6.12.2. ~popoverを軽く退ける</h4>
 
-<p class="note">注記：
+<p class="note">
 “軽く退ける（ `light dismiss^en ）” とは、
 次を意味する
 ⇒
 `~popover要素$のうち［
 その `popover$a 属性の状態 ~EQ `自動$st
-］を満たすものに対し［
-<kbd>Esc</kbd> ~UIkeyを押下げる／
-当の~popoverの外側を~clickする
-］と，当の~popoverを閉じることになる。
+］を満たすものに対し，当の~popoverの外側を~clickすると、
+当の~popoverを閉じることになる。
+これは、
+`in addition to^en【？】
+そのような~popoverが`閉-要請$に対しどう応答するか。
 ◎
-"Light dismiss" means that pressing the Esc key or clicking outside of a popover whose popover attribute is in the auto state will close the popover.
+"Light dismiss" means that clicking outside of a popover whose popover attribute is in the auto state will close the popover. This is in addition to how such popovers respond to close requests.
 </p>
-
-<div class="algo">
-<p>
-`~popoverの取消-法＠#canceling-popovers@
-⇒
-`文書$の`最上層な自動~popover$を示しているときは、
-~UAは，［
-その作動化に際して次を行う~UI
-］を供してもヨイ
-⇒
-`要素~taskを~queueする$( `利用者~対話~task~source$, `最上層な自動~popover$, 次の手続き )
-</p>
-
-<p class="algo">
-手続きは
-⇒
-`~popoverを隠す$( `最上層な自動~popover$, ~T, ~T, ~F )
-</p>
-◎
-Canceling popovers: when Document has a topmost auto popover showing, user agents may provide a user interface that, upon activation, queues an element task on the user interaction task source given topmost auto popover to run the hide popover algorithm given the topmost auto popover, true, true, and false.
-</div>
 
 <div class="algo">
 <p>
