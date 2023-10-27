@@ -3562,7 +3562,6 @@ FOO間:inter-FOO
 間:between
 すでに:already
 もはや:no longer
-最早:no longer
 まで:until
 今や:now
 再び:again
