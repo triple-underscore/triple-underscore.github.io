@@ -108,9 +108,9 @@ return text;
 ●●options
 
 spec_title:Ambient Light Sensor
-spec_date:2023-07-21
-trans_update:2023-07-25
-source_checked:190809
+spec_date:2023-10-20
+trans_update:2023-10-27
+source_checked:231020
 spec_status:ED
 original_url:https://w3c.github.io/ambient-light/
 	abbr_url:AMBIENT-LIGHT
@@ -127,6 +127,7 @@ conformance:w3c
 E:error
 et:event-type
 d:descriptor
+jt:js-type
 
 ●●tag_map
 I:code
@@ -137,6 +138,7 @@ mb:code
 cite:cite
 et:code
 d:code
+jt:code
 i:i
 em:em
 
@@ -144,7 +146,6 @@ em:em
 
 ●●mdn_urls
 ambientlightsensor:API/AmbientLightSensor
-	dictdef-ambientlightreadingvalues:API/AmbientLightReadingValues
 
 ●●link_map
 
@@ -157,7 +158,6 @@ E.SecurityError:~WEBIDL#securityerror
 
 	I.DOMException:~WEBIDL#idl-DOMException
 I.AmbientLightSensor:#ambientlightsensor
-I.AmbientLightReadingValues:#dictdef-ambientlightreadingvalues
 I.Sensor:~SENSORS#sensor
 I.SensorOptions:~SENSORS#dictdef-sensoroptions
 
@@ -165,7 +165,6 @@ m.new AmbientLightSensor:#dom-ambientlightsensor-ambientlightsensor
 	%sensorOptions:#dom-ambientlightsensor-ambientlightsensor-sensoroptions-sensoroptions
 
 m.illuminance:#dom-ambientlightsensor-illuminance
-mb.illuminance:#dom-ambientlightreadingvalues-illuminance
 
 m.matchMedia:~CSSOMVIEW#dom-window-matchmedia
 
@@ -174,6 +173,8 @@ l.ambient-light-sensor:#permissiondef-ambient-light-sensor
 
 d.prefers-contrast:~MQ5#descdef-media-prefers-contrast
 d.prefers-color-scheme:~MQ5#descdef-media-prefers-color-scheme
+
+jt.Object:https://tc39.es/ecma262/multipage/fundamental-objects.html#sec-object-objects
 
 	●用語
 
@@ -187,6 +188,7 @@ i.~ambient光~sensor:#ambient-light-sensor
 ~ambient光の~threshold検査~algo:#ambient-light-threshold-check-algorithm
 照度~読取り量子:#illuminance-rounding-multiple
 照度~threshold値:#illuminance-threshold-value
+照度の読取りを構文解析する:#illuminance-reading-parsing-algorithm
 
 
 	●用語（sensor
@@ -198,19 +200,25 @@ i.~ambient光~sensor:#ambient-light-sensor
 既定の~sensor:~SENSORS#default-sensor
 最新な読取り~mapから値を取得する:~SENSORS#get-value-from-latest-reading
 標本化~frequency:~SENSORS#sampling-frequency
-~virtual~sensor:~SENSORS#virtual-sensor
-模擬~sensor型:~SENSORS#mock-sensor-type
-模擬~sensor読取り値~群:~SENSORS#mock-sensor-reading-values
 ~sensor許可~revocation~algo:~SENSORS#generic-sensor-permission-revocation-algorithm
 最新な読取りを更新する:~SENSORS#update-latest-reading
 読取り量子化~algo:~SENSORS#reading-quantization-algorithm
 ~threshold検査~algo:~SENSORS#threshold-check-algorithm
 正確度を抑制する:~SENSORS#reduce-accuracy
+~virtual~sensor~metadata:~SENSORS#virtual-sensor-metadata
+型ごとの~virtual~sensor~metadata:~SENSORS#per-type-virtual-sensor-metadata
+vsM.~virtual~sensor型:~SENSORS#virtual-sensor-metadata-virtual-sensor-type
+vsM.読取り構文解析~algo:~SENSORS#virtual-sensor-metadata-reading-parsing-algorithm
+一数の読取りを構文解析する:~SENSORS#parse-single-value-number-reading
 
 
 	●用語（外部
 真偽値:~INFRA#boolean
-	~THROW:~WEBIDL#dfn-throw
+~map:~INFRA#ordered-map
+map.~entry:~INFRA#map-entry
+map.~key:~INFRA#map-key
+map.値:~INFRA#map-value
+
 構築子~手続き:~WEBIDL#constructor-steps
 
 施策により制御される特能:~PERMISSIONS-POLICY#policy-controlled-feature
@@ -248,7 +256,6 @@ device:
 sensor::::センサー
 frequency:
 最新な:latest:~
-模擬:mock::~
 virtual:
 検出器:detector::~
 標本化-:sample::~::サンプル
@@ -277,6 +284,7 @@ threshold:
 	%丸められた新たな読取り:roundedNewReading
 	%丸められた最新な読取り:roundedLatestReading
 	%量子化された読取り:quantizedReading
+	%~parameter群:parameters
 
 	●事例
 LED:
@@ -369,6 +377,7 @@ print:
 変動:fluctuation:~
 構成:construction:~
 切替わる:switchする:~
+main:
 
 	~style:styling
 	~web~page:webpage
@@ -381,9 +390,7 @@ print:
 	差がある:differ
 	よりも高い:higher
 	最も近い:closest
-
-	●指示語
-main:
+	一数:single-value number
 	少数の:a small set
 	低-:low
 	高-:high
@@ -1099,36 +1106,26 @@ Return ambient_light_sensor.
 		<section id="ambient-light-threshold-check-algorithm">
 <h3 title="Ambient light threshold check algorithm">6.2. ~ambient光~threshold検査~algo</h3>
 
+<div class="algo">
 <p>
 `~sensor型$ `~ambient光~sensor$i は、
-`~threshold検査~algo$として，次を定義する：
+`~threshold検査~algo$として，次を定義する
+— それは、
+所与の
+( `~sensor読取り$ %新たな読取り, `~sensor読取り$ %最新な読取り )
+に対し，［
+読取りにおける差は十分に有意かどうかを指示する`真偽値$
+］を返す：
 ◎
 The Ambient Light Sensor sensor type defines the following threshold check algorithm:
-</p>
-
-<div class="algo">
-<ul>
-	<li>
-入力
-⇒＃
-`~sensor読取り$ %新たな読取り,
-`~sensor読取り$ %最新な読取り
 ◎
 input
 • newReading, a sensor reading
 • latestReading, a sensor reading
-</li>
-	<li>
-出力
-⇒
-`真偽値$
-— 読取りにおける差は十分に有意かどうかを指示する。
 ◎
 output
 • A boolean indicating whether the difference in readings is significant enough.
-</li>
-</ul>
-
+</p>
 <ol>
 	<li>
 %新たな照度 ~LET %新たな読取り[ `illuminance^l ]
@@ -1152,7 +1149,8 @@ Let latestIlluminance be latestReading["illuminance"].
 ］
 ⇒
 ~RET ~T
-</li>
+◎
+↑</li>
 	<li>
 ~IF［
 ( %最新な照度 ~MINUS %新たな照度 ) の絶対~値 ~LT `照度~threshold値$
@@ -1204,33 +1202,23 @@ Not doing so would indicate to users that the raw illuminance readings are withi
 		<section id="ambient-light-reading-quantization-algorithm">
 <h3 title="Ambient light reading quantization algorithm">6.3. ~ambient光~読取り量子化~algo</h3>
 
+<div class="algo">
 <p>
 `~sensor型$ `~ambient光~sensor$i は、
-`読取り量子化~algo$として，次を定義する：
+`読取り量子化~algo$として，次を定義する
+— それは、
+所与の
+( `~sensor読取り$ %読取り )
+に対し，`~sensor読取り$を返す：
 ◎
 The Ambient Light Sensor sensor type defines the following reading quantization algorithm:
-</p>
-
-<div class="algo">
-<ul>
-	<li>
-入力
-⇒＃
-`~sensor読取り$ %読取り
 ◎
 input
 • reading, a sensor reading
-</li>
-	<li>
-出力
-⇒
-`~sensor読取り$
 ◎
 output
 • A sensor reading
-</li>
-</ul>
-
+</p>
 <ol>
 	<li>
 %量子化された読取り ~LET %読取り 【の複製？】
@@ -1258,37 +1246,49 @@ Return quantizedReading.
 
 <p>
 この節では、
-`汎用~sensor~API^cite `GENERIC-SENSOR$r に定義される`自動化＠~SENSORS#automation$を拡張する
-— ~UAによる `~ambient光~sensor$i の実装を~testする目的で，［
-~ambient光~level
-］について模擬する情報を供するためとして。
+`GENERIC-SENSOR$r に定義される`自動化＠~SENSORS#automation$を拡張する
+— `~ambient光~sensor$i に特有な`~virtual~sensor~metadata$を供することにより。
 ◎
-This section extends the automation section defined in the Generic Sensor API [GENERIC-SENSOR] to provide mocking information about the ambient light levels for the purposes of testing a user agent’s implementation of Ambient Light Sensor.
+This section extends Generic Sensor API § 9 Automation by providing Ambient Light Sensor-specific virtual sensor metadata.
 </p>
 
-		<section id="mock-ambient-light-sensor-type">
-<h3 title="Mock Sensor Type">7.1. 模擬~sensor型</h3>
-
-<p class="trans-note">【
-模擬~sensorは，今や`~virtual~sensor$として`定義し直された＠https://github.com/w3c/sensors/commit/50ea8175a8118f268b61da0662164053f37e97e9$ので、
-この節を成す内容は，別の形に書き直される必要がある。
-】</p>
+<div class="algo">
+<p>
+`照度の読取りを構文解析する@
+ときは、
+所与の
+( ~JSON `Object$jt %~parameter群 )
+に対し
+⇒
+~RET `一数の読取りを構文解析する$( %~parameter群, `illuminance^l )
+◎
+The illuminance reading parsing algorithm, given a JSON Object parameters, must return the result of invoking parse single-value number reading with parameters and "illuminance".
+</p>
+</div>
 
 <p>
-`AmbientLightSensor$I ~classに結付けられる`模擬~sensor型$は，
-`ambient-light^l であり、
-その`模擬~sensor読取り値~群$を成す辞書は，次に従って定義される：
+`型ごとの~virtual~sensor~metadata$を与える`~map$は、
+次に挙げる`~entry$mapを伴うモノトスル：
 ◎
-The AmbientLightSensor class has an associated mock sensor type which is "ambient-light", its mock sensor reading values dictionary is defined as follows:
+The per-type virtual sensor metadata map must have the following entry:
 </p>
+<ul>
+	<li>
+`~key$map `ambient-light^l
+⇒
+対応する`値$mapを与える`~virtual~sensor~metadata$の
+⇒＃
+`~virtual~sensor型$vsMは `~ambient光~sensor$i ／
+`読取り構文解析~algo$vsMは `照度の読取りを構文解析する$
+◎
+key
+• "ambient-light"
+◎
+value
+• A virtual sensor metadata whose virtual sensor type is Ambient Light Sensor and reading parsing algorithm is illuminance reading parsing algorithm.
+</li>
+</ul>
 
-<pre class="idl">
-dictionary `AmbientLightReadingValues@I {
-  required `double$? `illuminance@mb;
-};
-</pre>
-
-		</section>
 	</section>
 	<section id="usecases-requirements">
 <h2 title="Use Cases and Requirements">8. 利用事例と要件</h2>
