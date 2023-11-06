@@ -122,8 +122,8 @@ return text;
 
 ●●options
 
-spec_date:2023-09-27
-trans_update:2023-09-20
+spec_date:2023-11-06
+trans_update:2023-11-06
 source_checked:220227
 page_state_key:HTML
 spec_status:LS
@@ -368,6 +368,8 @@ i.初回:#process-iframe-initial-insertion
 寸法~属性:#dimension-attributes
 ~media要素:~HEmedia#media-element
 
+~HTML要素~挿入-時の手続き:~HTMLINFRA#html-element-insertion-steps
+~HTML要素~除去-時の手続き:~HTMLINFRA#html-element-removing-steps
 文書の中へ挿入され:~HTMLINFRA#insert-an-element-into-a-document
 文書から除去され:~HTMLINFRA#remove-an-element-from-a-document
 ~plugin:~HTMLINFRA#plugin
@@ -546,6 +548,8 @@ doc.生成元:~DOM4#concept-document-origin
 文書~内に:~DOM4#in-a-document
 ~node文書:~DOM4#concept-node-document
 ~supportする~token集合:~DOM4#concept-supported-tokens
+~shadow~tree:~DOM4#concept-shadow-tree
+~shadowも含めた根:~DOM4#concept-shadow-including-root
 
 属性~値の正規化:https://www.w3.org/TR/xml/#AVNormalize
 ~referrer施策:~REFERRER-POLICY#referrer-policy
@@ -629,7 +633,7 @@ lazy:
 為す:makeする:~
 load:
 	~load後:post-load
-未読込みに:unload::未読み込みに::未ロードに
+unload:
 補助:auxiliary::~
 
 	●保安
@@ -739,6 +743,8 @@ srcdoc:
 	%大域~obj:global
 	%~URL:url
 	%~fallback計時~報:fallbackTimingInfo
+	%挿入される~node:insertedNode
+	%除去される~node:removedNode
 
 	●未分類
 要素間:inter-element::~
@@ -1312,42 +1318,81 @@ If the src attribute and the srcdoc attribute are both specified together, the s
 
 <div class="algo">
 <p>
-`iframe$e 要素 %iframe が`文書の中へ挿入され$たときは、
-~UAは次を走らすモノトスル：
+`iframe$e 用の`~HTML要素~挿入-時の手続き$は、
+所与の
+( %挿入される~node )
+に対し：
 ◎
-When an iframe element element is inserted into a document＼
+The iframe HTML element insertion steps, given insertedNode, are:
 </p>
 <ol>
 	<li>
 ~IF［
-文書が`属する閲覧~文脈$ ~EQ ~NULL
+%挿入される~node の`~shadowも含めた根$が`属する閲覧~文脈$ ~EQ ~NULL
 ］
 ⇒
 ~RET
 ◎
-whose browsing context is non-null, the user agent must run these steps:
+If insertedNode's shadow-including root's browsing context is null, then return.
 </li>
 	<li>
-`新たな子~navigableを作成する$( %iframe )
+`新たな子~navigableを作成する$( %挿入される~node )
 ◎
-Create a new child navigable for element.
+Create a new child navigable for insertedNode.
 </li>
 	<li>
 ~IF［
-%iframe は `sandbox$aF 属性を有する
+%挿入される~node は `sandbox$aF 属性を有する
 ］
 ⇒
-`~sandbox法~指令を構文解析する$( %iframe の `sandbox$aF 属性の値, %iframe の`~iframe~sandbox法~flag集合$ )
+`~sandbox法~指令を構文解析する$( %挿入される~node の `sandbox$aF 属性の値, %挿入される~node の`~iframe~sandbox法~flag集合$ )
 ◎
-If element has a sandbox attribute, then parse the sandboxing directive given the attribute's value and element's iframe sandboxing flag set.
+If insertedNode has a sandbox attribute, then parse the sandboxing directive given the attribute's value and insertedNode's iframe sandboxing flag set.
 </li>
 	<li>
-`~iframe属性~群を処理する$( %iframe, `初回$i )
+`~iframe属性~群を処理する$( %挿入される~node, `初回$i )
 ◎
-Process the iframe attributes for element, with initialInsertion set to true.
+Process the iframe attributes for insertedNode, with initialInsertion set to true.
 </li>
 </ol>
 </div>
+
+<div class="algo">
+<p>
+`iframe$e 用の`~HTML要素~除去-時の手続き$は、
+所与の
+( %除去される~node )
+に対し
+⇒
+`子~navigableを破壊する$( %除去される~node )
+◎
+The iframe HTML element removing steps, given removedNode, are to destroy a child navigable given removedNode.
+</p>
+
+<p class="note">注記：
+これが起きたときは、
+`unload$et ~eventは発火されない
+（当の要素の`内容~文書$は、
+<em>
+`~unloadされる＠~HTMLlifecycle#unload-a-document$ことなく，
+`破壊される＠~HTMLds#destroy-a-document$【！~HTMLds#destroy-a-child-navigable】
+</em>）。
+◎
+This happens without any unload events firing (the element's content document is destroyed, not unloaded).
+</p>
+</div>
+
+<p class="XXX">
+上により，
+`iframe$e は`~shadow~tree$内にある間も処理されるが、
+その挙動を成す他のいくつかの側面は，
+~shadow~treeに関してきちんと定義されていない。
+より詳細は、
+`課題 #763＠~HTMLissue/763$
+を見よ。
+◎
+Although iframes are processed while in a shadow tree, per the above, several other aspects of their behavior are not well-defined with regards to shadow trees. See issue #763 for more detail.
+</p>
 
 <div class="algo">
 <p>
@@ -1358,27 +1403,6 @@ Process the iframe attributes for element, with initialInsertion set to true.
 ◎
 ↓</p>
 <ul>
-	<li>
-<p>
-%iframe が`文書から除去され$たときは
-⇒＃
-`子~navigableを破壊する$( %iframe )
-◎
-When an iframe element is removed from a document, the user agent must destroy a child navigable given the element.
-</p>
-
-<p class="note">注記：
-これは、
-`unload$et ~eventは発火されずに起こる
-（ %iframe の`内容~navigable$は、
-<em>
-それに属する`文書$を`未読込みにする＠~HTMLlifecycle#unload-a-document$ことなく，
-文書とともに`破壊される＠~HTMLds#destroy-a-child-navigable$
-</em>）。
-◎
-This happens without any unload events firing (the element's content navigable and its Document are destroyed, not unloaded).
-</p>
-	</li>
 	<li>
 %iframe の `srcdoc$aF 属性が［
 設定- ／ 変更- ／ 除去-
@@ -3199,7 +3223,7 @@ The embed element has no fallback content; its descendants are ignored.
 
 <p>
 `作動中になれ$る `embed$e 要素が，`作動中になれ$なくなったときは、
-要素~用に~instance化されていた`~plugin$は，未読込みにするモノトスル。
+要素~用に~instance化されていた`~plugin$を~unloadするモノトスル。
 ◎
 Whenever an embed element that was potentially active stops being potentially active, any plugin that had been instantiated for that element must be unloaded.
 </p>
