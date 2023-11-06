@@ -1644,6 +1644,7 @@ CSSCONDITIONAL3=副    ~/css-conditional-ja.html
 CSSCONDITIONAL4=副    ~/css-conditional4-ja.html
 CSSCONTAIN2=副        ~/css-contain-ja.html
 CSSCONTAIN1=副        ~/css-contain-ja.html●Level 2 日本語訳
+CSSCONTAIN3=副        ~/css-contain3-ja.html
 CSSCONTENT3=副        ~/css-content-ja.html
 CSSDEVICEADAPT1=・    ~TR/css-device-adapt/
 CSSDEVICEADAPT1=・    ~CSSWG/css-device-adapt-1/

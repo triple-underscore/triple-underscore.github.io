@@ -1161,6 +1161,7 @@ CSSCOND:css-conditional-ja.html
 CSSCOND4:css-conditional4-ja.html
 CSSCONTENT:css-content-ja.html
 CSSCONTAIN:css-contain-ja.html
+CSSCONTAIN3:css-contain3-ja.html
 CSSCOUNTER:css-counter-styles-ja.html
 CSSDISP:css-display-ja.html
 CSSEXCLUSION:css-exclusions-ja.html
