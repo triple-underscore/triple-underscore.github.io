@@ -519,18 +519,18 @@ const fillCopyright = () => {
 
 		case 'permissive': // W3C
 			license_data = `
-<a href="https://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © ${year} <a href="https://www.w3.org/">World Wide Web Consortium</a>. <abbr title="World Wide Web Consortium">W3C</abbr><sup>®</sup> <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>, <a href="https://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and <a href="https://www.w3.org/Consortium/Legal/copyright-software" rel="license" title="W3C Software and Document License">permissive document license</a> rules apply.`;
+<a href="https://www.w3.org/policies/#copyright">Copyright</a> © ${year} <a href="https://www.w3.org/">World Wide Web Consortium</a>. <abbr title="World Wide Web Consortium">W3C</abbr><sup>®</sup> <a href="https://www.w3.org/policies/#Legal_Disclaimer">liability</a>, <a href="https://www.w3.org/policies/#W3C_Trademarks">trademark</a> and <a href="https://www.w3.org/copyright/software-license/" rel="license" title="W3C Software and Document License">permissive document license</a> rules apply.`;
 		break;
 
 		case 'use': // W3C（旧）
 			license_data = `
-<a href="https://www.w3.org/Consortium/Legal/ipr-notice#Copyright">Copyright</a> © ${year}
+<a href="https://www.w3.org/policies/#Copyright">Copyright</a> © ${year}
 <a href="https://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a><sup>®</sup>
 (<a href="https://www.csail.mit.edu/"><abbr title="Massachusetts Institute of Technology">MIT</abbr></a>,
 <a href="https://www.ercim.eu/"><abbr title="European Research Consortium for Informatics and Mathematics">ERCIM</abbr></a>,
 <a href="https://www.keio.ac.jp/">Keio</a>, <a href="https://ev.buaa.edu.cn/">Beihang</a>).
-W3C <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Legal_Disclaimer">liability</a>,
-<a href="https://www.w3.org/Consortium/Legal/ipr-notice#W3C_Trademarks">trademark</a> and <a rel="license" href="https://www.w3.org/Consortium/Legal/copyright-documents" rel="license">document use</a> rules apply.`;
+W3C <a href="https://www.w3.org/policies/#Legal_Disclaimer">liability</a>,
+<a href="https://www.w3.org/policies/#W3C_Trademarks">trademark</a> and <a rel="license" href="https://www.w3.org/copyright/document-license/" rel="license">document use</a> rules apply.`;
 
 /*
 ", All Rights Reserved" （数カ所）は省略。
