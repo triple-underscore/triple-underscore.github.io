@@ -162,9 +162,9 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2023-09-30
-trans_update:2023-10-01
-source_checked:211216
+spec_date:2023-11-13
+trans_update:2023-11-14
+source_checked:231113
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
 ref_id_prefix:biblio-
@@ -225,6 +225,7 @@ ts:code
 gts:code
 tsdc:code
 byob:code
+brO:code
 bbrq:code
 rbsc:code
 rsdc:code
@@ -342,6 +343,7 @@ I.ReadableStreamReadResult:#dictdef-readablestreamreadresult
 I.ReadableByteStreamController:#readablebytestreamcontroller
 I.ReadableStreamBYOBReader:#readablestreambyobreader
 I.ReadableStreamBYOBRequest:#readablestreambyobrequest
+I.ReadableStreamBYOBReaderReadOptions:#dictdef-readablestreambyobreaderreadoptions
 
 I.WritableStream:#writablestream
 I.WritableStreamDefaultWriter:#writablestreamdefaultwriter
@@ -443,6 +445,8 @@ byob.closed:#byob-reader-closed
 byob.cancel:#byob-reader-cancel
 byob.read:#byob-reader-read
 byob.releaseLock:#byob-reader-release-lock
+
+brO.min:#dom-readablestreambyobreaderreadoptions-min
 
 bbrq.view:#rs-byob-request-view
 bbrq.respond:#rs-byob-request-respond
@@ -701,6 +705,9 @@ Ax.Get:~TC39#sec-get-o-p
 	Ax.SameValue
 
 	●用語
+剰余:#_remainder
+
+
 ~chunk:#chunk
 可読~stream:#readable-stream
 下層~source:#underlying-source
@@ -773,6 +780,7 @@ pD.~buffer~byte長さ:#pull-into-descriptor-buffer-byte-length
 pD.~byte~offset:#pull-into-descriptor-byte-offset
 pD.~byte長さ:#pull-into-descriptor-byte-length
 pD.埋まった~byte数:#pull-into-descriptor-bytes-filled
+pD.最小な埋n:#pull-into-descriptor-minimum-fill
 pD.要素~size:#pull-into-descriptor-element-size
 pD.~view構築子:#pull-into-descriptor-view-constructor
 pD.読取器~型:#pull-into-descriptor-reader-type
@@ -1153,6 +1161,9 @@ overflow::::オーバーフロー
 chunk::::チャンク
 埋まっ:fillされ:~
 	埋まった~byte数:bytes filled
+埋n:fill:埋め
+埋め:fillし:~
+	埋め続け:keep filling
 埋めら:fillさ:~
 埋めよ:fillしよ:~
 count:
@@ -1268,6 +1279,8 @@ clean:
 lifecycle:
 mod:
 polling::::ポーリング
+剰余:remainder:~
+	`剰余$:remainder after dividing 〜 by 〜
 
 	却下-時:upon rejection
 	充足-時:upon fulfillment
@@ -1319,6 +1332,7 @@ polling::::ポーリング
 	転換-:turn into
 	し続ける:continue
 	あり続ける:stay
+	居続ける:stay
 	追跡し続ける:keep track
 	~~運び続ける:shuttling
 	保つ:keep
@@ -1418,6 +1432,7 @@ encapsulate::::カプセル化
 破る:breakする:~
 保守的:conservative:~
 積極的:aggressive:~
+教育的:educational:~
 
 	方法:how to
 	目的をもって:purposefully
@@ -1572,6 +1587,7 @@ encapsulate::::カプセル化
 	~~避けようのない事実:fact-of-life
 	〜したなら:once
 	~counterproductive
+	要求される:must
 
 	●未分類
 ECMAScript:
@@ -1642,6 +1658,10 @@ template::::テンプレート
 	低く:low
 	手元:on hand
 	残され:remain
+	より少ない:fewer
+	残りの:remaining
+	ほぼ:mostly
+	頭部:head
 
 	●変数（§#other-specs
 保持体:holder::~::ホルダ
@@ -1824,7 +1844,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/007d729f1476f7f1ea34731ba9bd2becb702117e" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/4dc123a6e7f7ba89a8c6a7975b021156f39cab52" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 
 テスト
@@ -1990,6 +2010,15 @@ Web developers can also use the APIs described here to create their own streams,
 
 <p>
 尚、この仕様~自身も~~末尾に自前の`表記規約＠#conventions$を備えていることに注意。
+</p>
+
+<p>
+`剰余@( %A, %B )
+と記された所では、
+所与の
+( 負でない整数 %A, 正な整数 %B )
+に対し，
+%A を %B で除算したときの剰余を返す。
 </p>
 
 	</section>
@@ -2774,7 +2803,7 @@ const %reader = %readableStream.getReader();
 %reader.read().then(
   ({ %value, %done }) =&gt; {
     if (%done) {
-      console.log(`~streamはすでに~closeされています^l【！The stream was already closed】);
+      console.log(`~streamはすでに~closeされました^l【！The stream was already closed】);
     } else {
       console.log(%value);
     }
@@ -2821,7 +2850,7 @@ async function readInto(%buffer) {
   let %offset = 0;
 
   while (%offset &lt; %buffer.byteLength) {
-    const {value: %view, %done} =
+    const { value: %view, %done } =
      await %reader.read(new Uint8Array(%buffer, %offset, %buffer.byteLength - %offset));
     %buffer = %view.buffer;
     if (%done) {
@@ -2850,6 +2879,22 @@ async function readInto(%buffer) {
 ◎
 An important thing to note here is that the final buffer value is different from the startingAB, but it (and all intermediate buffers) shares the same backing memory allocation. At each step, the buffer is transferred to a new ArrayBuffer object. The view is destructured from the return value of reading a new Uint8Array, with that ArrayBuffer object as its buffer property, the offset that bytes were written to as its byteOffset property, and the number of bytes that were written as its byteLength property.
 </p>
+
+<p>
+この例は、
+ほぼ教育的であることに注意。
+実用的な目的においては、
+`read()$byob ~method用の `min$brO ~optionが，
+正確な~byte数を読取るための もっと容易かつ直接的な仕方を供する：
+◎
+Note that this example is mostly educational. For practical purposes, the min option of read() provides an easier and more direct way to read an exact number of bytes:
+</p>
+
+<pre class="lang-js">
+const %reader = readableStream.getReader({ mode: "byob" });
+const { value: %view, %done } = await reader.read(new Uint8Array(1024), { min: 1024 });
+console.log(`最初の 1024 ~byte: ^l【！The first 1024 bytes: 】, %view);
+</pre>
 </div>
 
 		</section>
@@ -3720,7 +3765,7 @@ Return ! IsReadableStreamLocked(this).
 <div class="algo">
 <p>
 `cancel(reason)@rs
-~method~手続きは：
+~method手続きは：
 ◎
 The cancel(reason) method steps are:
 </p>
@@ -3746,7 +3791,7 @@ Return ! ReadableStreamCancel(this, reason).
 <div class="algo">
 <p>
 `getReader(options)@rs
-~method~手続きは：
+~method手続きは：
 ◎
 The getReader(options) method steps are:
 </p>
@@ -3821,7 +3866,7 @@ Note how the first thing it does is obtain a reader, and from then on it uses th
 <div class="algo">
 <p>
 `pipeThrough(transform, options)@rs
-~method~手続きは：
+~method手続きは：
 ◎
 The pipeThrough(transform, options) method steps are:
 </p>
@@ -3903,7 +3948,7 @@ A typical example of constructing pipe chain using pipeThrough(transform, option
 <div class="algo">
 <p>
 `pipeTo(destination, options)@rs
-~method~手続きは：
+~method手続きは：
 ◎
 The pipeTo(destination, options) method steps are:
 </p>
@@ -4039,7 +4084,7 @@ Start the new pipe!
 <div class="algo">
 <p>
 `tee()@rs
-~method~手続きは：
+~method手続きは：
 ◎
 The tee() method steps are:
 </p>
@@ -4796,7 +4841,7 @@ Perform ? SetUpReadableStreamDefaultReader(this, stream).
 <div class="algo">
 <p>
 `read()@dr
-~method~手続きは：
+~method手続きは：
 ◎
 The read() method steps are:
 </p>
@@ -4872,7 +4917,7 @@ Return promise.
 <div class="algo">
 <p>
 `releaseLock()@dr
-~method~手続きは：
+~method手続きは：
 ◎
 The releaseLock() method steps are:
 </p>
@@ -4921,11 +4966,15 @@ The Web IDL definition for the ReadableStreamBYOBReader class is given as follow
 interface `ReadableStreamBYOBReader@I {
   `ReadableStreamBYOBReader$mc(`ReadableStream$I %stream);
 
-  `Promise$&lt;`ReadableStreamReadResult$I&gt; `read$byob(`ArrayBufferView$I %view);
+  `Promise$&lt;`ReadableStreamReadResult$I&gt; `read$byob(`ArrayBufferView$I %view, optional `ReadableStreamBYOBReaderReadOptions$I %options = {});
   `undefined$ `releaseLock$byob();
 };
 
 `ReadableStreamBYOBReader$I includes `ReadableStreamGenericReader$I;
+
+dictionary `ReadableStreamBYOBReaderReadOptions@I {
+  [`EnforceRange$] `unsigned long long$ `min@brO = 1;
+};
 </pre>
 
 			</section>
@@ -5061,35 +5110,36 @@ Returns a promise that will be fulfilled when the stream becomes closed, or reje
 If the reader is active, behaves the same stream.cancel(reason).
 </dd>
 
-	<dt>{ %value, %done } = await %reader.`read(view)$byob</dt>
+	<dt>{ %value, %done } = await %reader.`read(view, options)$byob</dt>
 	<dd>
+
 <p>
 ~byte列を %view の中に読取ろうと試みて、
 その結果で解決される~promiseを返す：
 ◎
-Attempts to reads bytes into view, and returns a promise resolved with the result:
+Attempts to read bytes into view, and returns a promise resolved with the result:
 </p>
 		<ul>
 			<li>
 可用な~chunkが無くなったときは、
-<code>{ value: %theChunk, done: false }</code>
+<code>{ value: %newView, done: false }</code>
 の形による~objで充足されることになる。
 この事例では、
 %view は`切離され＠~WEBIDLjs#dfn-detach$るので，もはや利用-可能でなくなるが、
-%theChunk は同じ裏~memory領域への新たな（かつ同じ型の）~viewになり，
+%newView は同じ裏~memory領域への新たな（かつ同じ型の）~viewになり，
 ~chunkの~dataは その中へ書込まれるようになる。
 ◎
-If the chunk does become available, the promise will be fulfilled with an object of the form { value: theChunk, done: false }. In this case, view will be detached and no longer usable, but theChunk will be a new view (of the same type) onto the same backing memory region, with the chunk’s data written into it.
+If the chunk does become available, the promise will be fulfilled with an object of the form { value: newView, done: false }. In this case, view will be detached and no longer usable, but newView will be a new view (of the same type) onto the same backing memory region, with the chunk’s data written into it.
 </li>
 			<li>
 ~streamが~closeされたときは、
-<code>{ value: %theChunk, done: true }</code>
+<code>{ value: %newView, done: true }</code>
 の形による~objで充足されることになる。
 この事例では %view は`切離され＠~WEBIDLjs#dfn-detach$，もはや利用-可能でなくなるが、
-%theChunk は同じ裏~memory領域への新たな（かつ同じ型の）~viewになる
+%newView は同じ裏~memory領域への新たな（かつ同じ型の）~viewになる
 — その~memoryが~call元に返されることを確保するため，改変を加えずに。
 ◎
-If the stream becomes closed, the promise will be fulfilled with an object of the form { value: theChunk, done: true }. In this case, view will be detached and no longer usable, but theChunk will be a new view (of the same type) onto the same backing memory region, with no modifications, to ensure the memory is returned to the caller.
+If the stream becomes closed, the promise will be fulfilled with an object of the form { value: newView, done: true }. In this case, view will be detached and no longer usable, but newView will be a new view (of the same type) onto the same backing memory region, with no modifications, to ensure the memory is returned to the caller.
 </li>
 			<li>
 %reader が`取消され$た場合、
@@ -5113,7 +5163,24 @@ If the stream becomes errored, the promise will be rejected with the relevant er
 `下層~source$から更に~dataが~pullされることになる。
 ◎
 If reading a chunk causes the queue to become empty, more data will be pulled from the underlying source.
-</p></dd>
+</p>
+	</dd>
+	<dd>
+%options の `min$brO が与えられた場合、
+当の~promiseは，［
+所与の最小~個数の要素が可用になるか，~streamが~closeされた場合
+］に限り充足されることになる
+— ~closeされた場合、
+~promiseは当の~stream内の残りの要素たちで充足され，その個数は初期~時に要請された量より少ないかもしれない。
+ここでの “個数” は、［
+（有型~配列~用には）%newView の `length^c ／
+（ `DataView$I 用には） %newView の `byteLength^c
+］で与えられる。
+`min$brO が与えられなかった場合、
+当の~promiseは 1 個以上の要素が可用になったとき解決される。
+◎
+If min is given, then the promise will only be fulfilled as soon as the given minimum number of elements are available. Here, the "number of elements" is given by newView’s length (for typed arrays) or newView’s byteLength (for DataViews). If the stream becomes closed, then the promise is fulfilled with the remaining elements in the stream, which might be fewer than the initially requested amount. If not given, then the promise resolves when at least one element is available.
+</dd>
 
 	<dt>%reader.`releaseLock()$byob</dt>
 	<dd>
@@ -5159,10 +5226,10 @@ Perform ? SetUpReadableStreamBYOBReader(this, stream).
 
 <div class="algo">
 <p>
-`read(view)@byob
-~method~手続きは：
+`read(view, options)@byob
+~method手続きは：
 ◎
-The read(view) method steps are:
+The read(view, options) method steps are:
 </p>
 <ol>
 	<li>
@@ -5191,6 +5258,45 @@ If view.[[ViewedArrayBuffer]].[[ArrayBufferByteLength]] is 0, return a promise r
 ~RET `却下される~promise$( `TypeError$jE 例外 )
 ◎
 If ! IsDetachedBuffer(view.[[ViewedArrayBuffer]]) is true, return a promise rejected with a TypeError exception.
+</li>
+	<li>
+%min ~LET %options[ "`min$brO" ]
+◎
+↓</li>
+	<li>
+~IF［
+%min ~EQ 0
+］
+⇒
+~RET `却下される~promise$( `TypeError$jE 例外 )
+◎
+If options["min"] is 0, return a promise rejected with a TypeError exception.
+</li>
+	<li>
+~IF［
+%view は `TypedArrayName^sl 内部~slotを有する
+］
+⇒
+~IF［
+%min ~GT %view.`ArrayLength^sl
+］
+⇒
+~RET `却下される~promise$( `RangeError$E 例外 )
+◎
+If view has a [[TypedArrayName]] internal slot,
+• If options["min"] &gt; view.[[ArrayLength]], return a promise rejected with a RangeError exception.
+</li>
+	<li>
+~ELSE（すなわち， %view は `DataView$I である）
+⇒
+~IF［
+%min ~GT %view.`ByteLength^sl
+］
+⇒
+~RET `却下される~promise$( `RangeError$E 例外 )
+◎
+Otherwise (i.e., it is a DataView),
+• If options["min"] &gt; view.[[ByteLength]], return a promise rejected with a RangeError exception.
 </li>
 	<li>
 ~IF［
@@ -5251,9 +5357,9 @@ error steps, given e
 	</li>
 	<li>
 ~RET
-~NOABRUPT `ReadableStreamBYOBReaderRead$A( コレ, %view, %readIntoRequest )
+~NOABRUPT `ReadableStreamBYOBReaderRead$A( コレ, %view, %min, %readIntoRequest )
 ◎
-Perform ! ReadableStreamBYOBReaderRead(this, view, readIntoRequest).
+Perform ! ReadableStreamBYOBReaderRead(this, view, options["min"], readIntoRequest).
 </li>
 	<li>
 ~RET %promise
@@ -5266,7 +5372,7 @@ Return promise.
 <div class="algo">
 <p>
 `releaseLock()@byob
-~method~手続きは：
+~method手続きは：
 ◎
 The releaseLock() method steps are:
 </p>
@@ -5527,7 +5633,7 @@ Return ! ReadableStreamDefaultControllerGetDesiredSize(this).
 <div class="algo">
 <p>
 `close()@rsdc
-~method~手続きは：
+~method手続きは：
 ◎
 The close() method steps are:
 </p>
@@ -5552,7 +5658,7 @@ Perform ! ReadableStreamDefaultControllerClose(this).
 <div class="algo">
 <p>
 `enqueue(chunk)@rsdc
-~method~手続きは：
+~method手続きは：
 ◎
 The enqueue(chunk) method steps are:
 </p>
@@ -5577,7 +5683,7 @@ Perform ? ReadableStreamDefaultControllerEnqueue(this, chunk).
 <div class="algo">
 <p>
 `error(e)@rsdc
-~method~手続きは：
+~method手続きは：
 ◎
 The error(e) method steps are:
 </p>
@@ -6060,6 +6166,20 @@ A nonnegative integer number of bytes that have been written into the buffer so 
 </dd>
 
 	<dt>
+`最小な埋n@pD
+◎
+minimum fill
+</dt>
+	<dd>
+正な整数
+— 結付けられた `read()$byob 要請を充足する前に`~buffer$pDの中へ書込むことが要求される最小な~byte数を表現する。
+既定では、
+`要素~size$pDに等しくなる。
+◎
+A positive integer representing the minimum number of bytes that must be written into the buffer before the associated read() request may be fulfilled. By default, this equals the element size.
+</dd>
+
+	<dt>
 `要素~size@pD
 ◎
 element size
@@ -6209,7 +6329,7 @@ Return ! ReadableByteStreamControllerGetDesiredSize(this).
 <div class="algo">
 <p>
 `close()@rbsc
-~method~手続きは：
+~method手続きは：
 ◎
 The close() method steps are:
 </p>
@@ -6243,7 +6363,7 @@ Perform ? ReadableByteStreamControllerClose(this).
 <div class="algo">
 <p>
 `enqueue(chunk)@rbsc
-~method~手続きは：
+~method手続きは：
 ◎
 The enqueue(chunk) method steps are:
 </p>
@@ -6296,7 +6416,7 @@ Return ? ReadableByteStreamControllerEnqueue(this, chunk).
 <div class="algo">
 <p>
 `error(e)@rbsc
-~method~手続きは：
+~method手続きは：
 ◎
 The error(e) method steps are:
 </p>
@@ -6459,11 +6579,31 @@ Return.
 `~byte~offset$pD ~SET 0,
 `~byte長さ$pD ~SET %autoAllocateChunkSize,
 `埋まった~byte数$pD ~SET 0,
+`最小な埋n$pD ~SET 1,
 `要素~size$pD ~SET 1,
 `~view構築子$pD ~SET `Uint8Array$jI,
 `読取器~型$pD ~SET `default^l
 ◎
-Let pullIntoDescriptor be a new pull-into descriptor with buffer buffer.[[Value]], buffer byte length autoAllocateChunkSize, byte offset 0, byte length autoAllocateChunkSize, bytes filled 0, element size 1, view constructor %Uint8Array%, and reader type "default".
+Let pullIntoDescriptor be a new pull-into descriptor with
+◎
+buffer
+• buffer.[[Value]]
+buffer byte length
+• autoAllocateChunkSize
+byte offset
+• 0
+byte length
+• autoAllocateChunkSize
+bytes filled
+• 0
+minimum fill
+• 1
+element size
+• 1
+view constructor
+• %Uint8Array%
+reader type
+• "default"
 </li>
 			<li>
 コレ.`pendingPullIntos$rbsC に %pullIntoDescriptor を`付加する$
@@ -6675,7 +6815,7 @@ Return this.[[view]].
 <div class="algo">
 <p>
 `respond(bytesWritten)@bbrq
-~method~手続きは：
+~method手続きは：
 ◎
 The respond(bytesWritten) method steps are:
 </p>
@@ -6721,7 +6861,7 @@ Perform ? ReadableByteStreamControllerRespond(this.[[controller]], bytesWritten)
 <div class="algo">
 <p>
 `respondWithNewView(view)@bbrq
-~method~手続きは：
+~method手続きは：
 ◎
 The respondWithNewView(view) method steps are:
 </p>
@@ -8925,7 +9065,6 @@ Let readIntoRequest be a read-into request with the following items:
 ◎
 chunk steps, given chunk
 • Queue a microtask to perform＼
-the following steps:
 </p>
 <div class="algo">
 <p>
@@ -9188,9 +9327,9 @@ error steps
 				</ul>
 			</li>
 			<li>
-~NOABRUPT `ReadableStreamBYOBReaderRead$A( %reader, %view, %readIntoRequest )
+~NOABRUPT `ReadableStreamBYOBReaderRead$A( %reader, %view, 1, %readIntoRequest )
 ◎
-Perform ! ReadableStreamBYOBReaderRead(reader, view, readIntoRequest).
+Perform ! ReadableStreamBYOBReaderRead(reader, view, 1, readIntoRequest).
 </li>
 		</ol>
 	</li>
@@ -10302,10 +10441,10 @@ For each readIntoRequest of readIntoRequests,
 
 <div class="algo">
 <p>
-`ReadableStreamBYOBReaderRead(reader, view, readIntoRequest)@A
+`ReadableStreamBYOBReaderRead(reader, view, min, readIntoRequest)@A
 は、次の手続きを遂行する：
 ◎
-ReadableStreamBYOBReaderRead(reader, view, readIntoRequest) performs the following steps:
+ReadableStreamBYOBReaderRead(reader, view, min, readIntoRequest) performs the following steps:
 </p>
 <ol>
 	<li>
@@ -10336,9 +10475,9 @@ If stream.[[state]] is "errored", perform readIntoRequest’s error steps given 
 	<li>
 ~ELSE
 ⇒
-~NOABRUPT `ReadableByteStreamControllerPullInto$A( %stream.`controller$rS, %view, %readIntoRequest )
+~NOABRUPT `ReadableByteStreamControllerPullInto$A( %stream.`controller$rS, %view, %min, %readIntoRequest )
 ◎
-Otherwise, perform ! ReadableByteStreamControllerPullInto(stream.[[controller]], view, readIntoRequest).
+Otherwise, perform ! ReadableByteStreamControllerPullInto(stream.[[controller]], view, min, readIntoRequest).
 </li>
 </ol>
 </div>
@@ -11583,10 +11722,10 @@ Let firstPendingPullInto be controller.[[pendingPullIntos]][0].
 			<li>
 <p>
 ~IF［
-%firstPendingPullInto の`埋まった~byte数$pD ~GT 0
+`剰余$( %firstPendingPullInto の`埋まった~byte数$pD, %firstPendingPullInto の`要素~size$pD ) ~NEQ 0
 ］：
 ◎
-If firstPendingPullInto’s bytes filled &gt; 0,
+If the remainder after dividing firstPendingPullInto’s bytes filled by firstPendingPullInto’s element size is not 0,
 </p>
 				<ol>
 					<li>
@@ -11657,9 +11796,9 @@ If stream.[[state]] is "closed",
 		<ol>
 			<li>
 ~Assert：
-%pullIntoDescriptor の`埋まった~byte数$pD ~EQ 0
+`剰余$( %pullIntoDescriptor の`埋まった~byte数$pD, %pullIntoDescriptor の`要素~size$pD ) ~EQ 0
 ◎
-Assert: pullIntoDescriptor’s bytes filled is 0.
+Assert: the remainder after dividing pullIntoDescriptor’s bytes filled by pullIntoDescriptor’s element size is 0.
 </li>
 			<li>
 %done ~SET ~T
@@ -11739,9 +11878,9 @@ Assert: bytesFilled ≤ pullIntoDescriptor’s byte length.
 </li>
 	<li>
 ~Assert：
-( %bytesFilled `mod^op %elementSize ) ~EQ 0
+`剰余$( %bytesFilled, %elementSize ) ~EQ 0
 ◎
-Assert: bytesFilled mod elementSize is 0.
+Assert: the remainder after dividing bytesFilled by elementSize is 0.
 </li>
 	<li>
 %buffer ~LET
@@ -12178,17 +12317,6 @@ ReadableByteStreamControllerFillPullIntoDescriptorFromQueue(controller, pullInto
 </p>
 <ol>
 	<li>
-%elementSize ~LET %pullIntoDescriptor の`要素~size$pD【！[[elementSize]]】
-◎
-Let elementSize be pullIntoDescriptor.[[elementSize]].
-</li>
-	<li>
-%currentAlignedBytes ~LET
-( %pullIntoDescriptor の`埋まった~byte数$pD ~MINUS ( %pullIntoDescriptor の`埋まった~byte数$pD `mod^op %elementSize ) )
-◎
-Let currentAlignedBytes be pullIntoDescriptor’s bytes filled − (pullIntoDescriptor’s bytes filled mod elementSize).
-</li>
-	<li>
 %maxBytesToCopy ~LET
 `min^op( %controller.`queueTotalSize$rbsC,
 ( %pullIntoDescriptor の`~byte長さ$pD ~MINUS %pullIntoDescriptor の`埋まった~byte数$pD )
@@ -12203,12 +12331,6 @@ Let maxBytesToCopy be min(controller.[[queueTotalSize]], pullIntoDescriptor’s 
 Let maxBytesFilled be pullIntoDescriptor’s bytes filled + maxBytesToCopy.
 </li>
 	<li>
-%maxAlignedBytes ~LET
-( %maxBytesFilled ~MINUS ( %maxBytesFilled `mod^op %elementSize ) )
-◎
-Let maxAlignedBytes be maxBytesFilled − (maxBytesFilled mod elementSize).
-</li>
-	<li>
 %totalBytesToCopyRemaining ~LET %maxBytesToCopy
 ◎
 Let totalBytesToCopyRemaining be maxBytesToCopy.
@@ -12219,12 +12341,28 @@ Let totalBytesToCopyRemaining be maxBytesToCopy.
 Let ready be false.
 </li>
 	<li>
+~Assert：
+%pullIntoDescriptor の`埋まった~byte数$pD ~LT %pullIntoDescriptor の`最小な埋n$pD
+◎
+Assert: pullIntoDescriptor’s bytes filled &lt; pullIntoDescriptor’s minimum fill.
+</li>
+	<li>
+%remainderBytes ~LET `剰余$( %maxBytesFilled, %pullIntoDescriptor の`要素~size$pD )
+◎
+Let remainderBytes be the remainder after dividing maxBytesFilled by pullIntoDescriptor’s element size.
+</li>
+	<li>
+%maxAlignedBytes ~LET %maxBytesFilled ~MINUS %remainderBytes
+◎
+Let maxAlignedBytes be maxBytesFilled − remainderBytes.
+</li>
+	<li>
 <p>
 ~IF［
-%maxAlignedBytes ~GT %currentAlignedBytes
+%maxAlignedBytes ~GTE %pullIntoDescriptor の`最小な埋n$pD
 ］：
 ◎
-If maxAlignedBytes &gt; currentAlignedBytes,
+If maxAlignedBytes ≥ pullIntoDescriptor’s minimum fill,
 </p>
 		<ol>
 			<li>
@@ -12233,10 +12371,21 @@ If maxAlignedBytes &gt; currentAlignedBytes,
 Set totalBytesToCopyRemaining to maxAlignedBytes − pullIntoDescriptor’s bytes filled.
 </li>
 			<li>
+<p>
 %ready ~SET ~T
 ◎
 Set ready to true.
-</li>
+</p>
+
+<p class="note">注記：
+`read()$byob 要請~用の記述子【 %pullIntoDescriptor 】は、
+まだ その最小~長さまで埋まってない間は，当の~queueを成す頭部に居続けることになる
+— なので、
+`下層~source$は，それを埋め続けれる。
+◎
+A descriptor for a read() request that is not yet filled up to its minimum length will stay at the head of the queue, so the underlying source can keep filling it.
+</p>
+			</li>
 		</ol>
 	</li>
 	<li>
@@ -12350,9 +12499,9 @@ Assert: pullIntoDescriptor’s bytes filled &gt; 0.
 </li>
 			<li>
 ~Assert：
-%pullIntoDescriptor の`埋まった~byte数$pD ~LT %pullIntoDescriptor の`要素~size$pD
+%pullIntoDescriptor の`埋まった~byte数$pD ~LT %pullIntoDescriptor の`最小な埋n$pD
 ◎
-Assert: pullIntoDescriptor’s bytes filled &lt; pullIntoDescriptor’s element size.
+Assert: pullIntoDescriptor’s bytes filled &lt; pullIntoDescriptor’s minimum fill.
 </li>
 		</ol>
 	</li>
@@ -12727,10 +12876,10 @@ Perform ! ReadableByteStreamControllerFillReadRequestFromQueue(controller, readR
 
 <div class="algo">
 <p>
-`ReadableByteStreamControllerPullInto(controller, view, readIntoRequest)@A
+`ReadableByteStreamControllerPullInto(controller, view, min, readIntoRequest)@A
 は、次の手続きを遂行する：
 ◎
-ReadableByteStreamControllerPullInto(controller, view, readIntoRequest) performs the following steps:
+ReadableByteStreamControllerPullInto(controller, view, min, readIntoRequest) performs the following steps:
 </p>
 <ol>
 	<li>
@@ -12763,6 +12912,26 @@ If view has a [[TypedArrayName]] internal slot (i.e., it is not a DataView),
 Set elementSize to the element size specified in the typed array constructors table for view.[[TypedArrayName]].
 ◎
 Set ctor to the constructor specified in the typed array constructors table for view.[[TypedArrayName]].
+</li>
+	<li>
+%minimumFill ~LET %min ~MUL %elementSize
+◎
+Let minimumFill be min × elementSize.
+</li>
+	<li>
+~Assert：
+%minimumFill ~GTE 0
+］~AND［
+%minimumFill ~LTE %view.`ByteLength^sl
+］
+◎
+Assert: minimumFill ≥ 0 and minimumFill ≤ view.[[ByteLength]].
+</li>
+	<li>
+~Assert：
+`剰余$( %minimumFill, %elementSize ) ~EQ 0
+◎
+Assert: the remainder after dividing minimumFill by elementSize is 0.
 </li>
 	<li>
 %byteOffset ~LET %view.`ByteOffset^sl
@@ -12814,11 +12983,31 @@ Let buffer be bufferResult.[[Value]].
 `~byte~offset$pD ~SET %byteOffset,
 `~byte長さ$pD ~SET %byteLength,
 `埋まった~byte数$pD ~SET 0,
+`最小な埋n$pD ~SET %minimumFill,
 `要素~size$pD ~SET %elementSize,
 `~view構築子$pD ~SET %ctor,
 `読取器~型$pD ~SET `byob^l
 ◎
-Let pullIntoDescriptor be a new pull-into descriptor with buffer buffer, buffer byte length buffer.[[ArrayBufferByteLength]], byte offset byteOffset, byte length byteLength, bytes filled 0, element size elementSize, view constructor ctor, and reader type "byob".
+Let pullIntoDescriptor be a new pull-into descriptor with
+◎
+buffer
+• buffer
+buffer byte length
+• buffer.[[ArrayBufferByteLength]]
+byte offset
+• byteOffset
+byte length
+• byteLength
+bytes filled
+• 0
+minimum fill
+• minimumFill
+element size
+• elementSize
+view constructor
+• ctor
+reader type
+• "byob"
 </li>
 	<li>
 <p>
@@ -13066,9 +13255,9 @@ ReadableByteStreamControllerRespondInClosedState(controller, firstDescriptor) pe
 <ol>
 	<li>
 ~Assert：
-%firstDescriptor の`埋まった~byte数$pD ~EQ 0
+`剰余$( %firstDescriptor の`埋まった~byte数$pD, %firstDescriptor の`要素~size$pD ) ~EQ 0
 ◎
-Assert: firstDescriptor’s bytes filled is 0.
+Assert: the remainder after dividing firstDescriptor’s bytes filled by firstDescriptor’s element size is 0.
 </li>
 	<li>
 ~IF［
@@ -13167,24 +13356,34 @@ Return.
 		</ol>
 	</li>
 	<li>
+<p>
 ~IF［
-%pullIntoDescriptor の`埋まった~byte数$pD ~LT %pullIntoDescriptor の`要素~size$pD
+%pullIntoDescriptor の`埋まった~byte数$pD ~LT %pullIntoDescriptor の`最小な埋n$pD
 ］
 ⇒
 ~RET
 ◎
-If pullIntoDescriptor’s bytes filled &lt; pullIntoDescriptor’s element size, return.
-</li>
+If pullIntoDescriptor’s bytes filled &lt; pullIntoDescriptor’s minimum fill, return.
+</p>
+
+<p class="note">注記：
+`read()$byob 要請~用の記述子【 %pullIntoDescriptor 】は、
+まだ その最小~長さまで埋まってない間は，当の~queueを成す頭部に居続けることになる
+— なので、
+`下層~source$は，それを埋め続けれる。
+◎
+A descriptor for a read() request that is not yet filled up to its minimum length will stay at the head of the queue, so the underlying source can keep filling it.
+</p>
+	</li>
 	<li>
 ~NOABRUPT `ReadableByteStreamControllerShiftPendingPullInto$A( %controller )
 ◎
 Perform ! ReadableByteStreamControllerShiftPendingPullInto(controller).
 </li>
 	<li>
-%remainderSize ~LET
-( %pullIntoDescriptor の`埋まった~byte数$pD `mod^op %pullIntoDescriptor の`要素~size$pD )
+%remainderSize ~LET `剰余$( %pullIntoDescriptor の`埋まった~byte数$pD, %pullIntoDescriptor の`要素~size$pD )
 ◎
-Let remainderSize be pullIntoDescriptor’s bytes filled mod pullIntoDescriptor’s element size.
+Let remainderSize be the remainder after dividing pullIntoDescriptor’s bytes filled by pullIntoDescriptor’s element size.
 </li>
 	<li>
 <p>
@@ -14765,7 +14964,7 @@ Return ! IsWritableStreamLocked(this).
 <div class="algo">
 <p>
 `abort(reason)@ws
-~method~手続きは：
+~method手続きは：
 ◎
 The abort(reason) method steps are:
 </p>
@@ -14791,7 +14990,7 @@ Return ! WritableStreamAbort(this, reason).
 <div class="algo">
 <p>
 `close()@ws
-~method~手続きは：
+~method手続きは：
 ◎
 The close() method steps are:
 </p>
@@ -14826,7 +15025,7 @@ Return ! WritableStreamClose(this).
 <div class="algo">
 <p>
 `getWriter()@ws
-~method~手続きは：
+~method手続きは：
 ◎
 The getWriter() method steps are:
 </p>
@@ -15268,7 +15467,7 @@ Return this.[[readyPromise]].
 <div class="algo">
 <p>
 `abort(reason)@dw
-~method~手続きは：
+~method手続きは：
 ◎
 The abort(reason) method steps are:
 </p>
@@ -15294,7 +15493,7 @@ Return ! WritableStreamDefaultWriterAbort(this, reason).
 <div class="algo">
 <p>
 `close()@dw
-~method~手続きは：
+~method手続きは：
 ◎
 The close() method steps are:
 </p>
@@ -15334,7 +15533,7 @@ Return ! WritableStreamDefaultWriterClose(this).
 <div class="algo">
 <p>
 `releaseLock()@dw
-~method~手続きは：
+~method手続きは：
 ◎
 The releaseLock() method steps are:
 </p>
@@ -15370,7 +15569,7 @@ Perform ! WritableStreamDefaultWriterRelease(this).
 <div class="algo">
 <p>
 `write()@dw
-~method~手続きは：
+~method手続きは：
 ◎
 The write(chunk) method steps are:
 </p>
@@ -15590,7 +15789,7 @@ The signal getter steps are:
 <div class="algo">
 <p>
 `error(e)@wsdc
-~method~手続きは：
+~method手続きは：
 ◎
 The error(e) method steps are:
 </p>
@@ -19311,7 +19510,7 @@ Return ! ReadableStreamDefaultControllerGetDesiredSize(readableController).
 <div class="algo">
 <p>
 `enqueue(chunk)@tsdc
-~method~手続きは：
+~method手続きは：
 ◎
 The enqueue(chunk) method steps are:
 </p>
@@ -19327,7 +19526,7 @@ Perform ? TransformStreamDefaultControllerEnqueue(this, chunk).
 <div class="algo">
 <p>
 `error(e)@tsdc
-~method~手続きは：
+~method手続きは：
 ◎
 The error(e) method steps are:
 </p>
@@ -19343,7 +19542,7 @@ Perform ? TransformStreamDefaultControllerError(this, e).
 <div class="algo">
 <p>
 `terminate()@tsdc
-~method~手続きは：
+~method手続きは：
 ◎
 The terminate() method steps are:
 </p>
