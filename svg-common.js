@@ -510,7 +510,6 @@ t.angle:~CSSVAL#angle-value
 t.length-percentage:~CSSVAL#typedef-length-percentage
 t.url:~CSSVAL#url-value
 t.color:~CSSVAL#colors
-t.alpha-value:~CSSCOLOR#typedef-alpha-value
 t.paint:~SVGpainting#DataTypePaint
 	t.paint:~SVGpainting#SpecifyingPaint
 t.marker-ref:~SVGpainting#DataTypeMarkerRef
