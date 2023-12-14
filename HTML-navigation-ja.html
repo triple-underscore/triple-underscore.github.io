@@ -180,8 +180,8 @@ return text;
 
 ●●options
 
-spec_date:2023-11-15
-trans_update:2023-11-15
+spec_date:2023-12-13
+trans_update:2023-12-14
 source_checked:230626
 page_state_key:HTML
 spec_status:LS
@@ -278,6 +278,9 @@ I.BeforeUnloadEvent:~WINDOW#beforeunloadevent
 I.HashChangeEvent:~WINDOW#hashchangeevent
 I.NavigateEvent:~HTMLnavAPI#navigateevent
 I.Navigation:~HTMLnavAPI#navigation
+I.NavigationActivation:~HTMLnavAPI#navigationactivation
+I.NavigationType:~HTMLnavAPI#navigationtype
+I.NavigationHistoryEntry:~HTMLnavAPI#navigationhistoryentry
 I.NavigationHistoryBehavior:~HTMLnavAPI#navigationhistorybehavior
 I.NavigationTimingType:~NAV-TIMING#dom-navigationtimingtype
 I.PopStateEvent:~WINDOW#popstateevent
@@ -306,14 +309,16 @@ c.history.replaceState():~WINDOW#dom-history-replacestate
 	＠~HTMLnavAPI#dom-navigation-navigate
 	＠~HTMLnavAPI#dom-navigationnavigateoptions-state
 	＠~HTMLnavAPI#dom-navigationtransition-finished
-	＠~HTMLnavAPI#dom-navigationtype-reload
-	＠~HTMLnavAPI#dom-navigationtype-traverse
 
 l.auto:#dom-scrollrestoration-auto
 l.manual:#dom-scrollrestoration-manual
-l.back_forward:~NAV-TIMING#dom-navigationtimingtype-back_forward
+l.push:~HTMLnavAPI#dom-navigationtype-push
+l.replace:~HTMLnavAPI#dom-navigationtype-replace
+l.reload:~HTMLnavAPI#dom-navigationtype-reload
+l.traverse:~HTMLnavAPI#dom-navigationtype-traverse
 l.navigate:~NAV-TIMING#dom-navigationtimingtype-navigate
-l.reload:~NAV-TIMING#dom-navigationtimingtype-reload
+	＠:~NAV-TIMING#dom-navigationtimingtype-reload
+	＠~NAV-TIMING#dom-navigationtimingtype-back_forward
 l.unsafe-none:~ORIGIN#coop-unsafe-none
 
 sc.~about_srcdoc:~HTMLurl#about:srcdoc
@@ -788,6 +793,15 @@ hsT.長さ:~WINDOW#concept-history-length
 再~作動化~用に~navi~API~entry群を更新する:~HTMLnavAPI#update-the-navigation-api-entries-for-reactivation
 ~push／置換-／再読込み用の~navigate_ev~eventを発火する:~HTMLnavAPI#fire-a-push/replace/reload-navigate-event
 辿-用の~navigate_ev~eventを発火する:~HTMLnavAPI#fire-a-traverse-navigate-event
+作動化:~HTMLnavAPI#navigation-activation
+nA.旧-~entry:~HTMLnavAPI#nav-activation-old-entry
+nA.新-~entry:~HTMLnavAPI#nav-activation-new-entry
+nA.~navi種別:~HTMLnavAPI#nav-activation-navigation-type
+~navi~API~entry~indexを取得する:~HTMLnavAPI#getting-the-navigation-api-entry-index
+nV.~entry~list:~HTMLnavAPI#navigation-entry-list
+nhe.~session履歴~entry:~HTMLnavAPI#nhe-she
+~naviの現在の~entry:~HTMLnavAPI#navigation-current-entry
+
 
 	i.~navi種別:~HTMLnavAPI#fire-navigate-prr-navigationtype
 	i.同一-文書か:~HTMLnavAPI#fire-navigate-prr-issamedocument
@@ -798,6 +812,8 @@ hsT.長さ:~WINDOW#concept-history-length
 
 
 	●用語（外部
+新たな~obj:~WEBIDLjs#new
+
 sct.~item:~INFRA#struct-item
 set.付加する:~INFRA#set-append
 sub.大小無視:~INFRA#ascii-case-insensitive
@@ -954,7 +970,6 @@ url.素片:~URL1#concept-url-fragment
 ~consoleに警告を報告する:~CONSOLE#report-a-warning-to-the-console
 
 	●＠
-	＠#apply-the-history-step
 	＠#attempt-to-populate-the-history-entry's-document
 	＠#continuations-dequeue
 	＠#create-navigation-params-by-fetching
@@ -1237,6 +1252,7 @@ back-up:back up:::バックアップ
 	%~navi~ID:navigationId
 	%~navi~params:navigationParams
 	%~navi計時~種別:navTimingType
+	%~navi種別:navigationType
 	%~referrer施策:referrerPolicy
 	%~sandbox~flag群:sandboxFlags
 	%~script~source:scriptSource
@@ -1250,6 +1266,7 @@ back-up:back up:::バックアップ
 	%~step:step
 	%~step群:steps
 	%~target~entry:targetEntry
+	-:targetEntry
 	%~target~entry群:targetEntries
 	%~target~navigable:targetNavigable
 	%~target~snapshot~params:targetSnapshotParams
@@ -1362,7 +1379,8 @@ back-up:back up:::バックアップ
 	%開始-時の~index:startingIndex
 	%開始-時の生成元:startingOrigin
 	%非同一-文書を経ている~navigable群:navigablesCrossingDocuments
-	-:targetEntry
+	%作動化~用の直前~entry:previousEntryForActivation
+	%直前~entryの~index:previousEntryIndex
 
 		●UI
 	~scroll法／~scrollすること:scrolling
@@ -2708,7 +2726,7 @@ The target history step is determined to be 0: the current session history step 
 </li>
 			<li>
 <p>
-~mainな`履歴~step~algo＠#apply-the-history-step$に入る。
+~mainな`履歴~stepを適用する$~algoに入る。
 ◎
 We enter the main apply the history step algorithm.
 </p>
@@ -4993,9 +5011,9 @@ Set targetStep to traversable's current session history step.
 		</ol>
 	</li>
 	<li>
-`~push／置換-用に履歴~stepを適用する$( %~target~step, %辿可能 )
+`~push／置換-用に履歴~stepを適用する$( %~target~step, %履歴~取扱い, %辿可能 )
 ◎
-Apply the push/replace history step targetStep to traversable.
+Apply the push/replace history step targetStep to traversable given historyHandling.
 </li>
 </ol>
 </div>
@@ -5585,9 +5603,10 @@ Set navigable's active session history entry to historyEntry.
 %履歴~entry,
 ~T,
 %~script履歴~index,
-%~script履歴~長さ
+%~script履歴~長さ,
+%履歴~取扱い
 ◎
-Update document for history step application given navigable's active document, historyEntry, true, scriptHistoryIndex, and scriptHistoryLength.
+Update document for history step application given navigable's active document, historyEntry, true, scriptHistoryIndex, scriptHistoryLength, and historyHandling.
 </p>
 
 <div class="note">
@@ -5666,9 +5685,10 @@ Append the following session history synchronous navigation steps involving navi
 %辿可能,
 %~navigable,
 %履歴~entry,
-%置換する~entry
+%置換する~entry,
+%履歴~取扱い
 ◎
-Finalize a same-document navigation given traversable, navigable, historyEntry, and entryToReplace.
+Finalize a same-document navigation given traversable, navigable, historyEntry, entryToReplace, and historyHandling.
 </li>
 			<li>
 `~WebDriver-BiDi素片へ~navigateされた$( ↓ )
@@ -5693,11 +5713,12 @@ Invoke WebDriver BiDi fragment navigated with navigable's active browsing contex
 `辿可能な~navigable$ %辿可能,
 `~navigable$ %~target~navigable,
 `~session履歴~entry$ %~target~entry,
-［`~session履歴~entry$／~NULL］ %置換する~entry
+［`~session履歴~entry$／~NULL］ %置換する~entry,
+`履歴~取扱いの挙動$ %履歴~取扱い
 ◎終
 に対し：
 ◎
-To finalize a same-document navigation given a traversable navigable traversable, a navigable targetNavigable, a session history entry targetEntry, and session history entry-or-null entryToReplace:
+To finalize a same-document navigation given a traversable navigable traversable, a navigable targetNavigable, a session history entry targetEntry, a session history entry-or-null entryToReplace, and a history handling behavior historyHandling:
 </p>
 
 <p class="note">注記：
@@ -5801,9 +5822,9 @@ Set targetStep to traversable's current session history step.
 	</li>
 	<li>
 <p>
-`~push／置換-用に履歴~stepを適用する$( %~target~step, %辿可能 )
+`~push／置換-用に履歴~stepを適用する$( %~target~step, %履歴~取扱い, %辿可能 )
 ◎
-Apply the push/replace history step targetStep to traversable.
+Apply the push/replace history step targetStep to traversable given historyHandling.
 </p>
 
 <p class="note">注記：
@@ -6846,7 +6867,7 @@ If navigationAPIState is not null, then set destinationNavigationAPIState to nav
 %継続するか ~LET `~push／置換-／再読込み用の~navigate_ev~eventを発火する$( %~navi )
 — 次も与える下で
 ⇒＃
-`~navi種別^i ~SET `reload＠~HTMLnavAPI#dom-navigationtype-reload$l,
+`~navi種別^i ~SET `reload$l,
 `同一-文書か^i ~SET ~F,
 `利用者-関与i^i ~SET %利用者-関与i,
 `行先~URL^i ~SET %~navigable にて`作動中な~entry$navの`~URL$shE,
@@ -7213,9 +7234,15 @@ Append the following session history synchronous navigation steps involving navi
 <p>
 手続きは
 ⇒
-`同一-文書~naviを完結する$( %辿可能, %~navigable, %新たな~entry, %置換する~entry )
+`同一-文書~naviを完結する$( ↓ )
+⇒＃
+%辿可能,
+%~navigable,
+%新たな~entry,
+%置換する~entry,
+%履歴~取扱い
 ◎
-Finalize a same-document navigation given traversable, navigable, newEntry, and entryToReplace.
+Finalize a same-document navigation given traversable, navigable, newEntry, entryToReplace, and historyHandling.
 </p>
 </div>
 	</li>
@@ -9514,8 +9541,9 @@ Let step be traversable's current session history step.
 ~NULL,
 ~NULL,
 ~NULL,
+~NULL
 ◎
-Return the result of applying the history step step to traversable given false, null, null, and null.
+Return the result of applying the history step step to traversable given false, null, null, null, and null.
 </li>
 </ol>
 </div>
@@ -9525,10 +9553,14 @@ Return the result of applying the history step step to traversable given false, 
 `~push／置換-用に履歴~stepを適用する@
 ときは、
 所与の
-( 負でない整数 %~step, `辿可能な~navigable$ %辿可能 )
+⇒＃
+負でない整数 %~step,
+`履歴~取扱いの挙動$ %履歴~取扱い,
+`辿可能な~navigable$ %辿可能
+◎終
 に対し：
 ◎
-To apply the push/replace history step given a non-negative integer step to a traversable navigable traversable:
+To apply the push/replace history step given a non-negative integer step and a history handling behavior historyHandling to a traversable navigable traversable:
 </p>
  <ol>
 	<li>
@@ -9539,9 +9571,10 @@ To apply the push/replace history step given a non-negative integer step to a tr
 ~F,
 ~NULL,
 ~NULL,
-~NULL
+~NULL,
+%履歴~取扱い
 ◎
-Return the result of applying the history step step to traversable given false, null, null, and null.
+Return the result of applying the history step step to traversable given false, null, null, null, and historyHandling.
 </li>
 </ol>
 
@@ -9579,9 +9612,10 @@ Let step be traversable's current session history step.
 ~T,
 ~NULL,
 ~NULL,
-~NULL
+~NULL,
+`reload$l
 ◎
-Return the result of applying the history step step to traversable given true, null, null, and null.
+Return the result of applying the history step step to traversable given true, null, null, null, and "reload".
 </li>
 </ol>
 </div>
@@ -9622,9 +9656,10 @@ To apply the traverse history step given a non-negative integer step to a traver
 ~T,
 %~source~snapshot~params,
 %検査する起動元,
-%利用者-関与i
+%利用者-関与i,
+`traverse$l
 ◎
-Return the result of applying the history step step to traversable given true, sourceSnapshotParams, initiatorToCheck, and userInvolvement.
+Return the result of applying the history step step to traversable given true, sourceSnapshotParams, initiatorToCheck, userInvolvement, and "traverse".
 </li>
 </ol>
 </div>
@@ -9649,7 +9684,8 @@ Now for the algorithm itself.
 真偽値 %取消nを検査するか,
 ［ `~source~snapshot~params$／ ~NULL ］ %~source~snapshot~params,
 ［ `~navigable$／ ~NULL ］ %検査する起動元,
-［ `~naviに対する利用者-関与i$／ ~NULL ］ %~navigate_ev~event用の利用者-関与i
+［ `~naviに対する利用者-関与i$／ ~NULL ］ %~navigate_ev~event用の利用者-関与i,
+［ `NavigationType$I ／ ~NULL ］%~navi種別
 ◎終
 に対し，次の手続きを遂行する
 — これは、
@@ -9662,7 +9698,7 @@ Now for the algorithm itself.
 ◎終
 を返す：
 ◎
-To apply the history step given a non-negative integer step to a traversable navigable traversable, with boolean checkForCancelation, source snapshot params-or-null sourceSnapshotParams, navigable-or-null initiatorToCheck, and user navigation involvement-or-null userInvolvementForNavigateEvents, perform the following steps. They return "initiator-disallowed", "canceled-by-beforeunload", "canceled-by-navigate", or "applied".
+To apply the history step given a non-negative integer step to a traversable navigable traversable, with boolean checkForCancelation, source snapshot params-or-null sourceSnapshotParams, navigable-or-null initiatorToCheck, user navigation involvement-or-null userInvolvementForNavigateEvents, and NavigationType-or-null navigationType, perform the following steps. They return "initiator-disallowed", "canceled-by-beforeunload", "canceled-by-navigate", or "applied".
 </p>
 <ol>
 	<li>
@@ -9899,6 +9935,52 @@ This case occurs due to a synchronous navigation which already updated the activ
 </p>
 			</li>
 			<li>
+<p>
+~Assert：
+%~navi種別 に応じて，次が満たされる：
+◎
+Switch on navigationType:
+</p>
+				<ul class="switch">
+					<li>
+`reload$l
+⇒
+%~target~entry の`文書~状態$shEの`再読込みは処理待ちか$dS ~EQ ~T
+◎
+Assert: targetEntry's document state's reload pending is true.
+</li>
+					<li>
+`traverse$l
+⇒
+%~target~entry の`文書~状態$shEの`一度でも拡充されたか$dS ~EQ ~T
+◎
+Assert: targetEntry's document state's ever populated is true.
+</li>
+					<li>
+`replace$l
+⇒
+［
+%~target~entry の`~step$shE ~EQ %表示した~entry の`~step$shE
+］~AND［
+%~target~entry の`文書~状態$shEの`一度でも拡充されたか$dS ~EQ ~F
+］
+◎
+Assert: targetEntry's step is displayedEntry's step and targetEntry's document state's ever populated is false.
+</li>
+					<li>
+`push$l
+⇒
+［
+%~target~entry の`~step$shE ~EQ %表示した~entry の`~step$shE ~PLUS 1
+］~AND［
+%~target~entry の`文書~状態$shEの`一度でも拡充されたか$dS ~EQ ~F
+］
+◎
+Assert: targetEntry's step is displayedEntry's step + 1 and targetEntry's document state's ever populated is false.
+</li>
+				</ul>
+			</li>
+			<li>
 %旧-生成元 ~LET %~target~entry の`文書~状態$shEの`生成元$dS
 ◎
 Let oldOrigin be targetEntry's document state's origin.
@@ -9956,8 +10038,8 @@ If targetEntry's document is null, or targetEntry's document state's reload pend
 					<li>
 %~navi計時~種別 ~LET %~target~entry の`文書$shEに応じて
 ⇒＃
-~NULL ならば `back_forward$l ／
-~ELSE_ `reload$l
+~NULL ならば `back_forward＠~NAV-TIMING#dom-navigationtimingtype-back_forward$l ／
+~ELSE_ `reload＠~NAV-TIMING#dom-navigationtimingtype-reload$l
 ◎
 Let navTimingType be "back_forward" if targetEntry's document is null; otherwise "reload".
 </li>
@@ -10464,9 +10546,11 @@ Activate history entry targetEntry for navigable.
 %~navigableを変更している継続 の`更新のみか$cnC,
 %~script履歴~長さ,
 %~script履歴~index,
-%~navi~API用の~entry群
+%~navi種別,
+%~navi~API用の~entry群,
+%表示した~entry
 ◎
-Let updateDocument be an algorithm step which performs update document for history step application given targetEntry's document, targetEntry, changingNavigableContinuation's update-only, scriptHistoryLength, scriptHistoryIndex, and entriesForNavigationAPI.
+Let updateDocument be an algorithm step which performs update document for history step application given targetEntry's document, targetEntry, changingNavigableContinuation's update-only, scriptHistoryLength, scriptHistoryIndex, navigationType, entriesForNavigationAPI, and displayedEntry.
 </li>
 					<li>
 ~IF［
@@ -11166,11 +11250,13 @@ Return results.
 真偽値 %作動化し直さないか,
 整数 %~script履歴~長さ,
 整数 %~script履歴~index,
-`~session履歴~entry$たちが成す`~list$ %~navi~API用の~entry群（省略時は ε ）
+［ `NavigationType$I ／ ~NULL ］%~navi種別,
+`~session履歴~entry$たちが成す`~list$ %~navi~API用の~entry群（省略時は ε ）,
+`~session履歴~entry$ %作動化~用の直前~entry（省略時は ε ）
 ◎終
 に対し：
 ◎
-To update document for history step application given a Document document, a session history entry entry, a boolean doNotReactivate, integers scriptHistoryLength and scriptHistoryIndex, and an optional list of session history entries entriesForNavigationAPI:
+To update document for history step application given a Document document, a session history entry entry, a boolean doNotReactivate, integers scriptHistoryLength and scriptHistoryIndex, NavigationType-or-null navigationType, an optional list of session history entries entriesForNavigationAPI, and an optional session history entry previousEntryForActivation:
 </p>
 <ol>
 	<li>
@@ -11202,6 +11288,11 @@ Set document's history object's index to scriptHistoryIndex.
 Set document's history object's length to scriptHistoryLength.
 </li>
 	<li>
+%~navi ~LET %履歴 に`関連な大域~obj$の`~navi~API$
+◎
+Let navigation be history's relevant global object's navigation API.
+</li>
+	<li>
 <p>
 ~IF［
 %文書たちの~entryは変化したか ~EQ ~T
@@ -11226,11 +11317,6 @@ Set document's latest entry to entry.
 Restore the history object state given document and entry.
 </li>
 			<li>
-%~navi ~LET %履歴 に`関連な大域~obj$の`~navi~API$
-◎
-Let navigation be history's relevant global object's navigation API.
-</li>
-			<li>
 <p>
 ~IF［
 %新たな文書か ~EQ ~F
@@ -11240,7 +11326,7 @@ If documentIsNew is false, then:
 </p>
 				<ol>
 					<li>
-`同一-文書~navi用に~navi~API~entry群を更新する$( %~navi, %~entry, `traverse＠~HTMLnavAPI#dom-navigationtype-traverse$l )
+`同一-文書~navi用に~navi~API~entry群を更新する$( %~navi, %~entry, `traverse$l )
 ◎
 Update the navigation API entries for a same-document navigation given navigation, entry, and "traverse".
 </li>
@@ -11327,6 +11413,129 @@ Initialize the navigation API entries for a new document given navigation, entri
 </li>
 				</ol>
 			</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~IF［
+~AND↓
+］…
+◎
+If all the following are true:
+</p>
+		<ul>
+			<li>
+%作動化~用の直前~entry ~NEQ ε
+◎
+previousEntryForActivation is given;
+</li>
+			<li>
+%~navi種別 ~NEQ ~NULL
+◎
+navigationType is non-null; and
+</li>
+			<li>
+［
+%~navi種別 ~EQ `reload$l
+］~OR［
+%作動化~用の直前~entry の`文書$shE ~NEQ %文書
+］
+◎
+navigationType is "reload" or previousEntryForActivation's document is not document
+</li>
+		</ul>
+<p>
+…ならば：
+◎
+then:
+</p>
+		<ol>
+			<li>
+%作動化 ~LET %~navi の`作動化$
+【この段は、この訳による補完】
+</li>
+			<li>
+<p>
+~IF［
+%作動化 ~EQ ~NULL
+］：
+</p>
+				<ol>
+					<li>
+%作動化 ~SET `新たな~obj$( `NavigationActivation$I, %~navi に`関連な~realm$ )
+</li>
+					<li>
+%作動化 の`旧-~entry$nA ~SET ~NULL
+【この段は、この訳による補完】
+</li>
+					<li>
+%~navi の`作動化$ ~SET %作動化
+</li>
+				</ol>
+◎
+If navigation's activation is null, then set navigation's activation to a new NavigationActivation object in navigation's relevant realm.
+</li>
+			<li>
+%直前~entryの~index ~LET `~navi~API~entry~indexを取得する$( %~navi, %作動化~用の直前~entry )
+◎
+Let previousEntryIndex be the result of getting the navigation API entry index of previousEntryForActivation within navigation.
+</li>
+			<li>
+~IF［
+%直前~entryの~index ~GTE 0
+］
+⇒
+%作動化 の`旧-~entry$nA ~SET %~navi の`~entry~list$nV[ %直前~entryの~index ]
+◎
+If previousEntryIndex is non-negative, then set activation's old entry to navigation's entry list[previousEntryIndex].
+</li>
+			<li>
+<p>
+~ELIF［
+~AND↓
+］…
+◎
+Otherwise, if all the following are true:
+</p>
+				<ul class="brief">
+					<li>
+%~navi種別 ~EQ `replace$l
+◎
+navigationType is "replace";
+</li>
+					<li>
+( %作動化~用の直前~entry の`文書~状態$shEの`生成元$dS, %文書 の`生成元$doc )
+は`同一-生成元$である
+◎
+previousEntryForActivation's document state's origin is same origin with document's origin; and
+</li>
+					<li>
+%作動化~用の直前~entry の`文書$shEの`初期~about_blankか$doc ~EQ ~F
+◎
+previousEntryForActivation's document's initial about:blank is false,
+</li>
+				</ul>
+<p>
+…ならば
+⇒
+%作動化 の`旧-~entry$nA ~SET `新たな~obj$( `NavigationHistoryEntry$I, %~navi に`関連な~realm$ )
+— その
+⇒＃
+`~session履歴~entry$nhe ~SET %作動化~用の直前~entry
+◎
+then set activation's old entry to a new NavigationHistoryEntry in navigation's relevant realm, whose session history entry is previousEntryForActivation.
+</p>
+			</li>
+			<li>
+%作動化 の`新-~entry$nA ~SET `~naviの現在の~entry$( %~navi )
+◎
+Set activation's new entry to navigation's current entry.
+</li>
+			<li>
+%作動化 の`~navi種別$nA ~SET %~navi種別
+◎
+Set activation's navigation type to navigationType.
+</li>
 		</ol>
 	</li>
 	<li>
@@ -11470,18 +11679,21 @@ Set document's browsing context's WindowProxy's [[Window]] internal slot value t
 Set document's visibility state to document's node navigable's traversable navigable's system visibility state.
 </li>
 	<li>
-%処理能~entry ~LET 新たな `VisibilityStateEntry$I
-— その
+%処理能~entry ~LET `新たな~obj$( `VisibilityStateEntry$I, 【 %文書 に`関連な~realm$】 )
+◎
+↓</li>
+	<li>
+%処理能~entry の
 ⇒＃
 `可視性~状態$vsE ~SET %文書 の`可視性~状態$doc,
 `時刻印$vsE ~SET 0
 ◎
-Queue a new VisibilityStateEntry whose visibility state is document's visibility state and whose timestamp is zero.
-</li>
+↓</li>
 	<li>
 `処理能~entryを~queueする$( %処理能~entry )
 ◎
-↑</li>
+Queue a new VisibilityStateEntry whose visibility state is document's visibility state and whose timestamp is zero.
+</li>
 	<li>
 %~window に`関連な設定群~obj$の`実行は準備済みか$enV ~SET ~T
 ◎
