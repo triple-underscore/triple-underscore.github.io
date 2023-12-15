@@ -180,8 +180,8 @@ return text;
 
 ●●options
 
-spec_date:2023-12-13
-trans_update:2023-12-14
+spec_date:2023-12-15
+trans_update:2023-12-15
 source_checked:230626
 page_state_key:HTML
 spec_status:LS
@@ -283,6 +283,7 @@ I.NavigationType:~HTMLnavAPI#navigationtype
 I.NavigationHistoryEntry:~HTMLnavAPI#navigationhistoryentry
 I.NavigationHistoryBehavior:~HTMLnavAPI#navigationhistorybehavior
 I.NavigationTimingType:~NAV-TIMING#dom-navigationtimingtype
+I.PageRevealEvent:~WINDOW#pagerevealevent
 I.PopStateEvent:~WINDOW#popstateevent
 I.VisibilityStateEntry:~HTMLinteraction#visibilitystateentry
 I.WindowProxy:~HTMLWPROXY#windowproxy
@@ -291,6 +292,7 @@ sl.Window:~HTMLWPROXY#concept-windowproxy-window
 m.cancelable:~DOM4#dom-event-cancelable
 m.type:~DOM4#dom-event-type
 m.isTrusted:~DOM4#dom-event-istrusted
+m.viewTransition:~WINDOW#dom-pagerevealevent-viewtransition
 
 c.history.pushState():~WINDOW#dom-history-pushstate
 c.history.replaceState():~WINDOW#dom-history-replacestate
@@ -344,6 +346,7 @@ et.hashchange:~HTMLindex#event-hashchange
 et.input:~UIEVENTS#event-type-input
 et.navigate:~HTMLindex#event-navigate
 et.navigateerror:~HTMLindex#event-navigateerror
+et.pagereveal:~HTMLindex#event-pagereveal
 et.pageshow:~HTMLindex#event-pageshow
 et.popstate:~HTMLindex#event-popstate
 
@@ -595,6 +598,10 @@ nfSnvP.~navi計時~種別:#non-fetch-scheme-params-nav-timing-type
 
 ~beforeunload_evを発火する手続き:#steps-to-fire-beforeunload
 
+文書を露呈する:#reveal
+doc.露呈されたか:#has-been-revealed
+描画を更新する:~WAPI#update-the-rendering
+
 	●用語（HTML
 
 
@@ -766,6 +773,7 @@ aG.~event~loop:~WAPI#concept-agent-event-loop
 関連な大域~obj:~WAPI#concept-relevant-global
 関連な設定群~obj:~WAPI#relevant-settings-object
 静止する:~WAPI#pause
+描画を更新する:~WAPI#update-the-rendering
 
 作動中な~timer群が成す~map:~HTMLGAPI#map-of-active-timers
 登録-済み~handler:~HTMLnavigator#dom-navigator-registerprotocolhandler
@@ -943,6 +951,8 @@ st.Email:~HEinput#email-state-(type=email)
 文書の開始位置へ~scrollする:~CSSOMVIEW#scroll-to-the-beginning-of-the-document
 ~viewの中へ~scrollする:~CSSOMVIEW#scroll-a-target-into-view
 ~scroll可能な~overflow区画:~CSSOVERFLOW3#scrollable-overflow-region
+~view遷移を作動化する:~CSSVT#activate-view-transition
+非同一-文書な~view遷移を解決する:~CSSWG/css-view-transitions-2/#document-resolve-cross-document-view-transition
 
 ~MIME型:~MIMESNIFF#mime-type
 算出される~MIME型:~MIMESNIFF#computed-mime-type
@@ -1382,6 +1392,7 @@ back-up:back up:::バックアップ
 	%作動化~用の直前~entry:previousEntryForActivation
 	%直前~entryの~index:previousEntryIndex
 	%生成元:-
+	%遷移:transition
 
 		●UI
 	~scroll法／~scrollすること:scrolling
@@ -1627,6 +1638,10 @@ disk::::ディスク
 	少しばかりの:some minor
 	伴う:comes along with
 	導いた:led to
+	一回:once
+	~~最新:up-to-date
+	かまわない:free to
+	在るために:presence
 
 ●●trans_metadata
 <p>
@@ -11134,7 +11149,7 @@ To get all navigables that might experience a cross-document traversal given a t
 <p>注記：
 %辿可能 の`~session履歴~辿り~queue$navの視点からは、
 これらの文書は，
-%~target~step により述べられる辿りの間に経るかもしれない非同一-文書の候補たちを成す。
+%~target~step により述べられる辿りの間に経るかもしれない非同一-文書な候補たちを成す。
 それらは、
 ~target文書~用の~HTTP状態s~codeが `204$hst の場合には，非同一-文書の辿りを経ないことになる。
 ◎
@@ -11818,6 +11833,11 @@ If document's current document readiness is "complete", and document's page show
 Set document's page showing flag to true.
 </li>
 			<li>
+%文書 の`露呈されたか$doc ~SET ~F
+◎
+Set document's has been revealed to false.
+</li>
+			<li>
 `可視性~状態を更新する$( %文書, `visible^l )
 ◎
 Update the visibility state of document to "visible".
@@ -11901,8 +11921,87 @@ If document's indicated part is still null, then try to scroll to the fragment f
 </div>
 
 				</section>
+				<section id="revealing-the-document">
+<h5 title="Revealing the document">7.4.6.3 文書を露呈する</h5>
+
+<p>
+各`文書$は、
+真偽値をとる
+`露呈されたか@doc
+を有する
+— 初期~時は ~F とする。
+これは、［
+`pagereveal$et ~eventが`文書$の各~作動化に対し一回だけ発火される
+］ことを確保するために利用される
+（初期~時に描画されたとき一回, `文書を作動化し直す$各回に一回）。
+◎
+A Document has a boolean has been revealed, initially false. It is used to ensure that the pagereveal event is fired once for each activation of the Document (once when it's rendered initially, and once for each reactivation).
+</p>
+
+<div class="algo">
+<p>
+`文書を露呈する@
+ときは、
+所与の
+( `文書$ %文書 )
+に対し：
+◎
+To reveal a Document document:
+</p>
+<ol>
+	<li>
+~IF［
+%文書 の`露呈されたか$doc ~EQ ~T
+］
+⇒
+~RET
+◎
+If document's has been revealed is true, then return.
+</li>
+	<li>
+%文書 の`露呈されたか$doc ~SET ~T
+◎
+Set document's has been revealed to true.
+</li>
+	<li>
+%遷移 ~LET `非同一-文書な~view遷移を解決する$( %文書 )
+◎
+Let transition be the result of resolving cross-document view-transition for document.
+</li>
+	<li>
+`~eventを発火する$( %文書 に`関連な大域~obj$, `pagereveal$et, `PageRevealEvent$I )
+— 次のように初期化して
+⇒＃
+`viewTransition$m 属性 ~SET %遷移
+◎
+Fire an event named pagereveal at document's relevant global object, using PageRevealEvent with its viewTransition set to transition.
+</li>
+	<li>
+~IF［
+%遷移 ~NEQ ~NULL
+］
+⇒
+`~view遷移を作動化する$( %遷移 )
+◎
+If transition is not null, then activate transition.
+</li>
+</ol>
+</div>
+
+<p class="note">注記：
+`pagereveal$et は，［
+`描画を更新する$中で~pageの~~最新~versionを表示する最初の段
+］の間に発火されることが保証されるが、
+~UAは，発火する前に当の~page用に~cacheした~frameを表示してもかまわない。
+これは、
+~cacheされた~frameの呈示が `pagereveal$et ~handlerが在るために遅延するのを防止する。
+◎
+Though pagereveal is guaranteed to be fired during the first update the rendering step that displays an up-to-date version of the page, user agents are free to display a cached frame of the page before firing it. This prevents the presence of a pagereveal handler from delaying the presentation of such cached frame.
+</p>
+
+				</section>
 				<section id="scrolling-to-a-fragment">
-<h5 title="Scrolling to a fragment">7.4.6.3. 素片への~scroll法</h5>
+<h5 title="Scrolling to a fragment">7.4.6.4. 素片への~scroll法</h5>
 
 <div class="algo">
 <p>
@@ -12151,7 +12250,7 @@ Return null.
 
 				</section>
 				<section id="persisted-user-state-restoration">
-<h5 title="Persisted history entry state">7.4.6.4. 持続される履歴~entry状態</h5>
+<h5 title="Persisted history entry state">7.4.6.5. 持続される履歴~entry状態</h5>
 
 <div class="algo">
 <p>
