@@ -1206,6 +1206,7 @@ CSSVAL:css-values-ja.html
 CSSVAL5:css-values5-ja.html
 CSSVAR:css-variables-ja.html
 CSSVT:css-view-transitions-ja.html
+CSSVT2:css-view-transitions2-ja.html
 CSSWILLCHANGE:css-will-change-ja.html
 CSSWM:css-writing-modes-ja.html
 SELECTORS4:selectors4-ja.html
