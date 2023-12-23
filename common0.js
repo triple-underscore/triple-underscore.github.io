@@ -3280,6 +3280,7 @@ CORS:
 軽減:mitigation:~
 軽減策:mitigations:~
 安全:safe:~
+	安全でない:unsafe
 主体:party::~::パーティ
 第三者-:third-::~::サード
 当事者-:first-::~::ファースト
