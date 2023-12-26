@@ -1188,8 +1188,6 @@ reactive::::リアクティブ
 同一性:identity:~
 同封-:enclose::~
 同時:simultaneous:~
-同時性:concurrency:~
-同時的:concurrent:~
 品質:quality::~
 品質値:qvalue::~
 回復-:recover::~

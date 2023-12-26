@@ -2466,6 +2466,8 @@ catch:
 投出-:throw::~
 即時:immediate::~
 並列的:parallel::~
+同時並行:concurrent::~
+同時並行性:concurrency::~
 同期c:sync::同期
 非同期c:async::非同期
 同期-:synchronize::~
