@@ -781,7 +781,7 @@ svg:
 	子孫:descendent
 不可分:atomic::~
 構造化-:structure::~
-外来の:foreign::~
+外来:foreign::~
 下位-:sub-:~
 部位:portion:~
 最外縁の:outermost::~
