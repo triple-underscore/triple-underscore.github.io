@@ -968,7 +968,6 @@ app:application:::アプリケーション
 依存:dependent:~
 保守的:conservative:~
 	適合:conformant:~
-適度:reasonable:~
 適時:timely:~
 選好順:descending preference の order:選好度の高い順
 有利:advantageous:~

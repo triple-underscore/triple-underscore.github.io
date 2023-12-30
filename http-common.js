@@ -898,7 +898,6 @@ agent::::エージェント
 上品:graceful::~
 不可欠:crucial:~
 保守的:conservative:~
-適度:reasonable:~
 適時:timely:~
 有意度:significance:~
 有意性:significance:~

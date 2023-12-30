@@ -2180,6 +2180,8 @@ log::::ログ
 方式:manner:~
 仕方:way:~
 労:effort:~
+適度:reasonable:~
+適理:reasonable:~
 
 	●仕様（未分類
 logic::::ロジック
