@@ -323,7 +323,6 @@ st.304:~7232#status.304
 st.305:~7231#status.305
 st.306:~7231#status.306
 st.307:~7231#status.307
-st.308:~7538#status.308
 st.400:~7231#status.400
 st.401:~7235#status.401
 st.402:~7231#status.402
@@ -789,7 +788,6 @@ ERRATA:https://www.rfc-editor.org/errata_search.php
 7234:RFC7234-ja.html
 7235:RFC7235-ja.html
 723Xabnf:RFC723X-ABNF-ja.html
-7538:http-status-code-308-ja.html
 HTTPpatch:http-patch-ja.html
 	7238:https://www.rfc-editor.org/rfc/rfc7238
 2045:https://www.rfc-editor.org/rfc/rfc2045
