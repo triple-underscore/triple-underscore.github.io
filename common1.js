@@ -1759,6 +1759,7 @@ REFERRERPOLICY=副     ~/webappsec-referrer-policy-ja.html
 REPORTING1=副         ~/reporting1-ja.html
 SCREENORIENTATION=副  ~/screen-orientation-ja.html
 PERMISSIONS=副        ~/webappsec-permissions-ja.html
+DEVICEORIENTATION=副  ~/deviceorientation-ja.html
 GEOLOCATIONAPI=・     ~TR/geolocation-API/
 GEOLOCATIONAPI=副     ~/geolocation-api-ja.html
 GEOLOCATIONAPI=副2    www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-20220901.html
