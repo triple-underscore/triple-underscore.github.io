@@ -180,8 +180,8 @@ return text;
 
 ●●options
 
-spec_date:2024-01-09
-trans_update:2024-01-09
+spec_date:2024-01-12
+trans_update:2024-01-13
 source_checked:230626
 page_state_key:HTML
 spec_status:LS
@@ -1148,6 +1148,7 @@ back-up:back up:::バックアップ
 決着-:settle::~
 追跡子:tracker::~::トラッカー
 入口:entry point:~
+分岐:branch:~
 
 	起動元は許容されない^i:"initiator-disallowed"
 	~beforeunload_evにより取消された^i:"canceled-by-beforeunload"
@@ -1199,7 +1200,6 @@ back-up:back up:::バックアップ
 	終わった:ended-up
 	全体を~~停止させ:put the whole thing to a halt
 	構文解析-不能:unparseable
-	~fetchし直す:refetch
 	始め／始まる:beginning
 	~~開始法:beginning
 	~~終了法:ending
@@ -1219,6 +1219,8 @@ back-up:back up:::バックアップ
 旧-:old:~
 新-:new:~
 生の:raw:~
+余分:extra:~
+
 	%-:~baseURL
 	%~COOP:coop
 	%~COOP施行n結果:coopEnforcementResult
@@ -1308,7 +1310,6 @@ back-up:back up:::バックアップ
 	%同期c~naviを取扱う前に待機しなければならない~navigable群:navigablesThatMustWaitBeforeHandlingSyncNavigation
 	%変更されていないが更新は必要な~navigable群:nonchangingNavigablesThatStillNeedUpdates
 	%変更されている~navigable群:changingNavigables
-	%失敗か:failure
 	%子~navigable:childNavigable
 	%完了~手続き:completionSteps
 	%完了した~task数:completedTasks
@@ -1331,6 +1332,7 @@ back-up:back up:::バックアップ
 	%指示された要素:potentialIndicatedElement
 	%文書:document
 	%文書~tree:-
+	%文書~状態:-
 	%文書~状態:docState
 	%文書~状態:documentState
 	%文書~状態~群:docStates
@@ -1393,6 +1395,7 @@ back-up:back up:::バックアップ
 	%直前~entryの~index:previousEntryIndex
 	%生成元:-
 	%遷移:transition
+	%余分な文書~状態を保存するか:saveExtraDocumentState
 
 		●UI
 	~scroll法／~scrollすること:scrolling
@@ -1533,6 +1536,7 @@ main::::メイン
 	事:fact
 	紛らわし過ぎる:too confusing
 	~web~platform:the platform
+	助けにならない:would be unhelpful
 
 	●未分類
 BOM:
@@ -1608,6 +1612,7 @@ disk::::ディスク
 	最~大な:greatest
 	効いてない:not in play
 	そのままにする:leaving
+	のままにする:leave
 	を成すかなりの部分〜費やされる:much of 〜 comes about
 	指して:point
 	指している:pointing
@@ -7517,47 +7522,90 @@ to run these steps:
 %完了~手続き()；
 ~RET
 ◎
-If navigable's ongoing navigation no longer equals navigationId, then run completionSteps and return.
+If navigable's ongoing navigation no longer equals navigationId, then run completionSteps and abort these steps.
 </li>
 			<li>
-%失敗か ~LET ~F
+<p>
+%余分な文書~状態を保存するか ~LET ~T
 ◎
-Let failure be false.
-</li>
+Let saveExtraDocumentState be true.
+</p>
+
+<div class="note">
+<p>注記：
+%~entry の`文書~状態$shEの`文書$dSを拡充する結果になる事例では、
+通例的に，`文書$から一部の状態を %~entry の中へ保存することが求まれる。
+これは、
+未来に %~entry への辿りが生じた際に %~entry の`文書$dSが`破壊されていた＠#note-bfcache$場合に［
+新たな`文書$を作成するとき，保存しておいた状態を利用できる
+］ことを確保する。
+◎
+Usually, in the cases where we end up populating entry's document state's document, we then want to save some of the state from that Document into entry. This ensures that if there are future traversals to entry where its document has been destroyed, we can use that state when creating a new Document.
+</p>
+
+<p>
+しかしながら、
+一部の特定の事例では，状態を保存しても助けにならない。
+そのような場合、
+%余分な文書~状態を保存するか は，
+この~algo内の後の段で ~F に設定される。
+◎
+However, in some specific cases, saving the state would be unhelpful. For those, we set saveExtraDocumentState to false later in this algorithm.
+</p>
+</div>
+			</li>
+			<li>
+%文書~状態 ~LET %~entry の`文書~状態$shE
+◎
+↓</li>
 			<li>
 <p>
 ~IF［
 %~navi~params は`非-~fetch~scheme~navi~params$である
-］
-⇒
-%~entry の`文書~状態$shEの`文書$dS ~SET `非-~fetch~scheme文書を作成しようと試みる$( %~navi~params )
+］：
 ◎
-If navigationParams is a non-fetch scheme navigation params, then set entry's document state's document to the result of running attempt to create a non-fetch scheme document given navigationParams.
+If navigationParams is a non-fetch scheme navigation params, then:
+</p>
+				<ol>
+					<li>
+<p>
+%文書~状態 の`文書$dS ~SET `非-~fetch~scheme文書を作成しようと試みる$( %~navi~params )
+◎
+Set entry's document state's document to the result of running attempt to create a non-fetch scheme document given navigationParams.
 </p>
 
 <p class="note">注記：
-%~entry の`~URL$shEは、
-この~algoの［
-~HTTP~redirectに追従している これまでの段【どこ？】
-］の中で変更されたかもしれない。
+この結果、
+%文書~状態 の`文書$dSは ~NULL に設定され得る
+— 例：`外部~softwareに手渡す$とき。
 ◎
-The entry's URL might have been changed within the previous step of this algorithm following an HTTP redirect.
+This can result in setting entry's document state's document to null, e.g., when handing-off to external software.
 </p>
+					</li>
+					<li>
+%余分な文書~状態を保存するか ~SET ~F
+◎
+Set saveExtraDocumentState to false.
+</li>
+				</ol>
 			</li>
 			<li>
+<p>
 ~ELIF［
-%~navi~params ~EQ ~NULL
-］
-⇒
-%失敗か ~SET ~T
-◎
-Otherwise, if navigationParams is null, then set failure to true.
-</li>
-			<li>
-~ELIF［
-次を遂行した結果 ~EQ `阻止される^i
-`CSP$r 
+~OR↓ が満たされる
 ］…
+◎
+Otherwise, if any of the following are true:
+</p>
+				<ul>
+					<li>
+%~navi~params ~EQ ~NULL
+◎
+navigationParams is null;
+</li>
+					<li>
+次を遂行した結果 ~EQ `阻止される^i
+`CSP$r
 ⇒
 `~targetにおける ある種別の~navi要請に対する応答は~CSPにより阻止されるべきか？$( ↓ )
 ⇒＃
@@ -7566,36 +7614,26 @@ Otherwise, if navigationParams is null, then set failure to true.
 %~navi~params の`施策~容器$nvPの`~CSP~list$pC,
 %~CSP~navi種別,
 %~navigable
-◎終
-…ならば
-⇒
-%失敗か ~SET ~T
 ◎
-Otherwise, if the result of should navigation response to navigation request of type in target be blocked by Content Security Policy? given navigationParams's request, navigationParams's response, navigationParams's policy container's CSP list, cspNavigationType, and navigable is "Blocked", then set failure to true. [CSP]
+the result of should navigation response to navigation request of type in target be blocked by Content Security Policy? given navigationParams's request, navigationParams's response, navigationParams's policy container's CSP list, cspNavigationType, and navigable is "Blocked";
 </li>
-			<li>
-~ELIF［
+					<li>
+［
 %~navi~params の`予約-済み環境$nvP ~NEQ ~NULL
 ］~AND［
 次を遂行した結果 ~EQ ~F
-］…
+］
 ⇒
 `~navi応答の埋込元~施策に対する固守を検査する$( ↓ )
 ⇒＃
 %~navi~params の`応答$nvP,
 %~navigable,
 %~navi~params の`施策~容器$nvPの`埋込元~施策$pC
-◎終
-…ならば
-⇒
-%失敗か ~SET ~T
 ◎
-Otherwise, if navigationParams's reserved environment is non-null and the result of checking a navigation response's adherence to its embedder policy given navigationParams's response, navigable, and navigationParams's policy container's embedder policy is false, then set failure to true.
+navigationParams's reserved environment is non-null and the result of checking a navigation response's adherence to its embedder policy given navigationParams's response, navigable, and navigationParams's policy container's embedder policy is false; or
 </li>
-			<li>
-~ELIF［
+					<li>
 次を遂行した結果 ~EQ ~F
-］…
 ⇒
 `~navi応答の~X-Frame-Optionsに対する固守を検査する$( ↓ )
 ⇒＃
@@ -7603,33 +7641,32 @@ Otherwise, if navigationParams's reserved environment is non-null and the result
 %~navigable,
 %~navi~params の`施策~容器$nvPの`~CSP~list$pC,
 %~navi~params の`生成元$nvP
-◎終
-…ならば
-⇒
-%失敗か ~SET ~T
 ◎
-Otherwise, if the result of checking a navigation response's adherence to `X-Frame-Options` given navigationParams's response, navigable, navigationParams's policy container's CSP list, and navigationParams's origin is false, then set failure to true.
+the result of checking a navigation response's adherence to `X-Frame-Options` given navigationParams's response, navigable, navigationParams's policy container's CSP list, and navigationParams's origin is false,
 </li>
-			<li>
+				</ul>
 <p>
-~IF［
-%失敗か ~EQ ~T
-］：
+…ならば：
 ◎
-If failure is true, then:
+then:
 </p>
 				<ol>
 					<li>
-%~entry の`文書~状態$shEの`文書$dS ~SET `~DOMを有さない文書~用に~inline内容を作成する$( %~navigable, ~NULL, %~navi計時~種別 )
+%文書~状態 の`文書$dS ~SET `~DOMを有さない文書~用に~inline内容を作成する$( %~navigable, ~NULL, %~navi計時~種別 )
 — 当の~inline内容は、
 何らかの類の生じた~errorを利用者に指示するベキである。
 ◎
 Set entry's document state's document to the result of creating a document for inline content that doesn't have a DOM, given navigable, null, and navTimingType. The inline content should indicate to the user the sort of error that occurred.
 </li>
 					<li>
-%~entry の`文書~状態$shEの`文書$dSの`回復可能か$doc ~SET ~F
+%文書~状態 の`文書$dSの`回復可能か$doc ~SET ~F
 ◎
 Set entry's document state's document's salvageable to false.
+</li>
+					<li>
+%余分な文書~状態を保存するか ~SET ~F
+◎
+Set saveExtraDocumentState to false.
 </li>
 					<li>
 <p>
@@ -7655,27 +7692,6 @@ Invoke WebDriver BiDi navigation failed with currentBrowsingContext and a new We
 </li>
 						</ol>
 					</li>
-				</ol>
-			</li>
-			<li>
-<p>
-~ELIF［
-%~navi~params の`応答$nvPの`状態s$rs ~IN { `204$hst, `205$hst }
-］：
-◎
-Otherwise, if navigationParams's response's status is 204 or 205, then:
-</p>
-				<ol>
-					<li>
-%完了~手続き()
-◎
-Run completionSteps.
-</li>
-					<li>
-~RET
-◎
-Return.
-</li>
 				</ol>
 			</li>
 			<li id="navigation-as-a-download">
@@ -7763,92 +7779,123 @@ Invoke WebDriver BiDi download started with currentBrowsingContext and a new Web
 </li>
 						</ol>
 					</li>
-					<li>
-%完了~手続き()
-◎
-Run completionSteps.
-</li>
-					<li>
-~RET
-◎
-Return.
-</li>
 				</ol>
-			</li>
-			<li>
-<p>
-~ELSE：
+<p class="note">注記：
+この分岐は、
+%文書~状態 の`文書$dSを ~NULL のままにする。
 ◎
-Otherwise:
+This branch leaves entry's document state's document as null.
 </p>
-				<ol>
-					<li>
-%文書 ~LET `文書を読込む$( %~navi~params, %~source~snapshot~params, %~entry の`文書~状態$shEの`起動元~生成元$dS )
-◎
-Let document be the result of loading a document given navigationParams, sourceSnapshotParams, and entry's document state's initiator origin.
-</li>
-					<li>
-~IF［
-%文書 ~EQ ~NULL
-］
-⇒＃
-%完了~手続き()；
-~RET
-◎
-If document is null, then run completionSteps and return.
-</li>
-
-					<li>
-%~entry の`文書~状態$shEの`文書$dS ~SET %文書
-◎
-Set entry's document state's document to document.
-</li>
-					<li>
-%~entry の`文書~状態$shEの`生成元$dS ~SET %文書 の`生成元$doc
-◎
-Set entry's document state's origin to document's origin.
-</li>
-					<li>
-~IF［
-`~URLは履歴~内に施策~容器を格納するよう要求するか？$( %文書 の`~URL$doc ) ~EQ ~T
-］
-⇒
-%~entry の`文書~状態$shEの`履歴~施策~容器$dS ~SET %~navi~params の`施策~容器$nvP
-◎
-If document's URL requires storing the policy container in history, then set entry's document state's history policy container to navigationParams's policy container.
-</li>
-				</ol>
 			</li>
 			<li>
 <p>
-~IF［
-%~entry の`文書~状態$shEの`要請~referrer$dS ~EQ `client^l
+~ELIF［
+%~navi~params の`応答$nvPの`状態s$rs ~NIN { `204$hst, `205$hst }
 ］
 ⇒
-%~entry の`文書~状態$shEの`要請~referrer$dS ~SET %要請 の`~referrer$rq
+%文書~状態 の`文書$dS ~SET `文書を読込む$( %~navi~params, %~source~snapshot~params, %文書~状態 の`起動元~生成元$dS )
 ◎
-If entry's document state's request referrer is "client", then set it to request's referrer.
+Otherwise, if navigationParams's response's status is not 204 and is not 205, then set entry's document state's document to the result of loading a document given navigationParams, sourceSnapshotParams, and entry's document state's initiator origin.
 </p>
 
 <p class="note">注記：
-これは、［
-%~entry へ戻るよう辿っていて，~fetchし直す必要がある
-］場合に［
-~fetch~clientから~referrerを導出する代わりに，同じ`~referrer$rqを利用する
-］ことを確保する。
+この結果、
+%文書~状態 の`文書$dSは ~NULL に設定され得る
+— 例：`外部~softwareに手渡す$とき。
 ◎
-This ensures that if we traverse back entry and have to refetch, we use the same referrer, instead of deriving the referrer from the fetch client.
+This can result in setting entry's document state's document to null, e.g., when handing-off to external software.
 </p>
 			</li>
 			<li>
+<p>
 ~IF［
-%~entry の`文書~状態$shEの`文書$dS ~NEQ ~NULL
-］
-⇒
-%~entry の`文書~状態$shEの`一度でも拡充されたか$dS ~SET ~T
+%文書~状態 の`文書$dS ~NEQ ~NULL
+］：
 ◎
-If entry's document state's document is not null, then set entry's document state's ever populated to true.
+If entry's document state's document is not null, then:
+</p>
+
+				<ol>
+					<li>
+%文書~状態 の`一度でも拡充されたか$dS ~SET ~T
+◎
+Set entry's document state's ever populated to true.
 </li>
+					<li>
+<p>
+~IF［
+%余分な文書~状態を保存するか ~EQ ~T
+］：
+◎
+If saveExtraDocumentState is true:
+</p>
+						<ol>
+							<li>
+%文書 ~LET %文書~状態 の`文書$dS
+◎
+Let document be entry's document state's document.
+</li>
+							<li>
+%文書~状態 の`生成元$dS ~SET %文書 の`生成元$doc
+◎
+Set entry's document state's origin to document's origin.
+</li>
+							<li>
+<p>
+~IF［
+`~URLは履歴~内に施策~容器を格納するよう要求するか？$( %文書 の`~URL$doc ) ~EQ ~T
+］：
+◎
+If document's URL requires storing the policy container in history, then:
+</p>
+								<ol>
+									<li>
+~Assert：
+%~navi~params は`~navi~params$である
+（すなわち［
+~NULL ／ `非-~fetch~scheme~navi~params$
+］でない）。
+◎
+Assert: navigationParams is a navigation params (i.e., neither null nor a non-fetch scheme navigation params).
+</li>
+									<li>
+%文書~状態 の`履歴~施策~容器$dS ~SET %~navi~params の`施策~容器$nvP
+◎
+Set entry's document state's history policy container to navigationParams's policy container.
+</li>
+								</ol>
+							</li>
+						</ol>
+					</li>
+					<li>
+<p>
+~IF［
+%文書~状態 の`要請~referrer$dS ~EQ `client^l
+］~AND［
+%~navi~params は`~navi~params$である
+（すなわち［
+~NULL ／ `非-~fetch~scheme~navi~params$
+］でない）
+］：
+◎
+If entry's document state's request referrer is "client", and navigationParams is a navigation params (i.e., neither null nor a non-fetch scheme navigation params), then:
+</p>
+						<ol>
+							<li>
+~Assert：
+%~navi~params の`要請$nvP ~NEQ ~NULL
+◎
+Assert: navigationParams's request is not null.
+</li>
+							<li>
+%文書~状態 の`要請~referrer$dS ~SET %~navi~params の`要請$nvPの`~referrer$rq
+◎
+Set entry's document state's request referrer to navigationParams's request's referrer.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
 			<li>
 %完了~手続き()
 ◎
