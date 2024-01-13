@@ -101,8 +101,8 @@ return text;
 
 ●●options
 
-spec_date:2023-10-29
-trans_update:2023-10-31
+spec_date:2024-01-12
+trans_update:2024-01-13
 source_checked:221101
 page_state_key:HTML
 spec_status:LS
@@ -214,6 +214,8 @@ commit:
 放棄-:abandon:~
 作成時の:creation::~
 分岐:branch:~
+連絡:entangle::~
+	連絡を断つ:disentangle
 
 	~call元:caller
 	終わらす:finish
@@ -282,6 +284,16 @@ BF:
 	%生成元:origin
 	%~COOP:coop
 	%~COOP施行n結果:coopEnforcementResult
+	%子孫~navigable群:descendantNavigables
+	%子孫~navigable:descendantNavigable
+	-:childNavigables
+	%子~navigable:childNavigable
+	%~unload済み数:numberUnloaded
+	%~unload済みを増加する:incrementUnloaded
+	%すべて~unload後の手続き:afterAllUnloads
+	%破壊-済み数:numberDestroyed
+	%破壊-済みを増加する:incrementDestroyed
+	%すべて破壊-後の手続き:afterAllDestruction
 
 	●保安
 濫用:abuse:~
@@ -392,6 +404,7 @@ html-head-body: <code class="element">html</code>, <code class="element">head</c
 
 I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
 I.EventSource:~HTMLsse#eventsource
+I.MessagePort:~HTMLcomms#messageport
 I.NavigationTimingType:~NAV-TIMING#dom-navigationtimingtype
 I.PaymentRequest:https://w3c.github.io/payment-request/#dom-paymentrequest
 I.WebSocket:~WEBSOCKET#websocket
@@ -446,7 +459,9 @@ sc.~about_blank:~HTMLdep#about:blank
 完全に読込まれた時刻:#completely-loaded-time
 読込ngを完全に終わらす:#completely-finish-loading
 文書を破壊する:#destroy-a-document
+文書とその子孫たちを破壊する:#destroy-a-document-and-its-descendants
 文書を中止する:#abort-a-document
+文書とその子孫たちを中止する:#abort-a-document-and-its-descendants
 読込ngを停止する:#nav-stop
 
 doc.~pageを示しているか:#page-showing
@@ -455,6 +470,7 @@ doc.休止された~timer~handle群:#suspended-timer-handles
 doc.回復可能か:#concept-document-salvageable
 
 文書を~unloadする:#unload-a-document
+文書とその子孫たちを~unloadする:#unload-a-document-and-its-descendants
 終了n入子ng~level:#termination-nesting-level
 ~unload~counter:#unload-counter
 文書~unload時の片付け手続き:#unloading-document-cleanup-steps
@@ -518,6 +534,9 @@ nav.容器~文書:~HTMLds#nav-container-document
 doc.容器~文書:~HTMLds#doc-container-document
 nav.作動中な文書:~HTMLds#nav-document
 nav.作動中な閲覧~文脈:~HTMLds#nav-bc
+nav.辿可能な~navigable:~HTMLds#nav-traversable
+nav.~session履歴~辿り~queue:~HTMLds#tn-session-history-traversal-queue
+nav.作動中な~window:~HTMLds#nav-window
 tbcG.~group:~HTMLds#tlbc-group
 tn.~session履歴~entry群:~HTMLds#tn-session-history-entries
 子~navigable:~HTMLds#child-navigable
@@ -599,6 +618,7 @@ tK.文書:~WAPI#concept-task-document
 aG.~event~loop:~WAPI#concept-agent-event-loop
 ~network用~task~source:~WAPI#networking-task-source
 ~DOM操作~task~source:~WAPI#dom-manipulation-task-source
+~naviと辿り~task~source:~WAPI#navigation-and-traversal-task-source
 
 ~iframe属性~群を処理する:~HEembed#process-the-iframe-attributes
 ~iframe~load~event手続き:~HEembed#iframe-load-event-steps
@@ -611,7 +631,10 @@ aG.~event~loop:~WAPI#concept-agent-event-loop
 wG.所有者~集合:~WORKERS#concept-WorkerGlobalScope-owner-set
 doc.~worklet大域~scope~list:~WORKLETS#concept-document-worklet-global-scopes
 ~worklet大域~scopeを終了させる:~WORKLETS#terminate-a-worklet-global-scope
+
 強制的に~closeする:~HTMLsse#concept-eventsource-forcibly-close
+~portの連絡を断つ:~HTMLcomms#disentangle
+
 
 ~HTML構文解析器:~HTMLparsing#html-parser
 構文解析器を中止する:~HTMLparsing#abort-a-parser
@@ -2247,7 +2270,7 @@ Document objects have an unload counter, which is used to ignore certain operati
 `文書を~unloadする@
 ときは、
 所与の
-( `文書$ %旧-文書, 所与の `文書$ %新-文書（省略時は ε ） )
+( `文書$ %旧-文書, `文書$ %新-文書（省略時は ε ） )
 に対し：
 ◎
 To unload a Document oldDocument, given an optional Document newDocument:
@@ -2255,10 +2278,11 @@ To unload a Document oldDocument, given an optional Document newDocument:
 <ol>
 	<li>
 ~Assert：
-この~algoは、
-%旧-文書 の`~event~loop$に~queueされた`~task$の一部として走っている。
+この~algoは、［
+%旧-文書 に`関連な~agent$の`~event~loop$aGに~queueされた`~task$
+］の一部として走っている。
 ◎
-Assert: this is running as part of a task queued on oldDocument's event loop.
+Assert: this is running as part of a task queued on oldDocument's relevant agent's event loop.
 </li>
 	<li>
 %~unload計時~報 ~LET 新たな`文書~unload計時~報$
@@ -2502,6 +2526,119 @@ Decrease oldDocument's unload counter by 1.
 If newDocument is given, newDocument's was created via cross-origin redirects is false, and newDocument's origin is the same as oldDocument's origin, then set newDocument's previous document unload timing to unloadTimingInfo.
 </li>
 </ol>
+
+</div>
+
+<div class="algo">
+<p>
+`文書とその子孫たちを~unloadする@
+ときは、
+所与の
+( `文書$ %文書, ［
+`文書$／~NULL
+］ %新-文書（省略時は ~NULL ）, 手続き %すべて~unload後の手続き（省略時は ε ） )
+に対し：
+◎
+To unload a document and its descendants, given a Document document, an optional Document-or-null newDocument (default null), and an optional set of steps afterAllUnloads:
+</p>
+<ol>
+	<li>
+~Assert：
+この~algoは、［
+%文書 の`~node~navigable$の`辿可能な~navigable$navの`~session履歴~辿り~queue$nav
+］の中で走っている。
+◎
+Assert: this is running within document's node navigable's traversable navigable's session history traversal queue.
+</li>
+	<li>
+%~unload済み数 ~LET 0
+◎
+↓ Let childNavigables be document's child navigables.
+◎
+Let numberUnloaded be 0.
+</li>
+	<li>
+<p>
+%文書 の【`~node~navigable$の】
+~EACH( `子~navigable$ %子~navigable )
+に対し
+<span class="XXX">順序は どうする？</span>
+⇒
+`大域~taskを~queueする$( `~naviと辿り~task~source$,  %子~navigable にて`作動中な~window$nav, 次の手続き )
+◎
+For each childNavigable of childNavigable's in what order?, queue a global task on the navigation and traversal task source given childNavigable's active window to perform＼
+</p>
+
+<div class="algo">
+<p>
+手続きは：
+◎
+the following steps:
+</p>
+		<ol>
+			<li class="algo">
+%~unload済みを増加する ~LET 次を走らす~algo
+⇒
+%~unload済み数 ~INCBY 1
+◎
+Let incrementUnloaded be an algorithm step which increments numberUnloaded.
+</li>
+			<li>
+`文書とその子孫たちを~unloadする$( %子~navigable にて`作動中な文書$nav, ~NULL, %~unload済みを増加する )
+◎
+Unload a document and its descendants given childNavigable's active document, null, and incrementUnloaded.
+</li>
+		</ol>
+</div>
+	</li>
+	<li>
+次が満たされるまで待機する
+⇒
+%~unload済み数 ~EQ %子~navigable の`~size$
+◎
+Wait until numberUnloaded equals childNavigable's size.
+</li>
+	<li>
+<p>
+`大域~taskを~queueする$( `~naviと辿り~task~source$, %文書 に`関連な大域~obj$, 次の手続き )
+◎
+Queue a global task on the navigation and traversal task source given document's relevant global object to perform＼
+</p>
+<div class="algo">
+<p>
+手続きは：
+◎
+the following steps:
+</p>
+		<ol>
+			<li>
+~IF［
+%新-文書 ~EQ ~NULL
+］
+⇒
+`文書を~unloadする$( %文書 )
+◎
+↓</li>
+			<li>
+~ELSE
+⇒
+`文書を~unloadする$( %文書, %新-文書 )
+◎
+Unload document, passing along newDocument if it is not null.
+</li>
+			<li>
+~IF［
+%すべて~unload後の手続き ~NEQ ε
+］
+⇒
+%すべて~unload後の手続き()
+◎
+If afterAllUnloads was given, then run it.
+</li>
+		</ol>
+</div>
+	</li>
+</ol>
 </div>
 
 <div class="algo">
@@ -2635,14 +2772,17 @@ To destroy a Document document:
 </p>
 <ol>
 	<li>
-%文書 の`子孫~navigable群$を成す
-~EACH( %~navigable )
-に対し
-<span class="XXX">順序は どうする？</span>
-⇒
-`文書を破壊する$( ~navigableにて`作動中な文書$nav )
+~Assert：
+この~algoは、［
+%文書 に`関連な~agent$の`~event~loop$aGに~queueされた`~task$
+］の一部として走っている。
 ◎
-Destroy the active documents of each of document's descendant navigables. In what order?
+Assert: this is running as part of a task queued on document's relevant agent's event loop.
+</li>
+	<li>
+`文書を中止する$( %文書 )
+◎
+Abort document.
 </li>
 	<li>
 %文書 の`回復可能か$doc ~SET ~F
@@ -2650,16 +2790,26 @@ Destroy the active documents of each of document's descendant navigables. In wha
 Set document's salvageable state to false.
 </li>
 	<li>
+~EACH( `MessagePort$I %~port )
+に対し
+⇒
+~IF［
+%~port に`関連な大域~obj$に`結付けられた文書$ ~EQ %文書
+］
+⇒
+`~portの連絡を断つ$( %~port )
+◎
+Let ports be the list of MessagePorts whose relevant global object's associated Document is document.
+◎
+For each port in ports, disentangle port.
+</li>
+
+	<li>
 この仕様も含む`適用-可能な仕様$に定義される`文書~unload時の片付け手続き$があれば、
 それらの各~手続きを %文書 を渡して走らす
 【そのような手続きが複数ある場合に，どの順序で走らすかは、指定されていない。】
 ◎
 Run any unloading document cleanup steps for document that are defined by this specification and other applicable specifications.
-</li>
-	<li>
-`文書を中止する$( %文書 )
-◎
-Abort document.
 </li>
 	<li>
 ~queueされた`~task$のうち［
@@ -2707,6 +2857,99 @@ Even after destruction, the Document object itself might still be accessible to 
 </p>
 </div>
 
+<div class="algo">
+<p>
+`文書とその子孫たちを破壊する@
+ときは、
+所与の
+( `文書$ %文書, 手続き %すべて破壊-後の手続き（省略時は ε ） )
+に対し，
+次の手続きを`並列的$に遂行する：
+◎
+To destroy a document and its descendants given a Document document and an optional set of steps afterAllDestruction, perform the following steps in parallel:
+</p>
+<ol>
+	<li>
+%破壊-済み数 ~LET 0
+◎
+↓ Let childNavigables be document's child navigables.
+◎
+Let numberDestroyed be 0.
+</li>
+	<li>
+<p>
+%文書 の【`~node~navigable$の】
+~EACH( `子~navigable$ %子~navigable )
+に対し
+<span class="XXX">順序は どうする？</span>
+⇒
+`大域~taskを~queueする$( `~naviと辿り~task~source$, %子~navigable にて`作動中な~window$nav, 次の手続き )
+◎
+For each childNavigable of childNavigable's in what order?, queue a global task on the navigation and traversal task source given childNavigable's active window to perform＼
+</p>
+<div class="algo">
+<p>
+手続きは：
+◎
+the following steps:
+</p>
+		<ol>
+			<li class="algo">
+%破壊-済みを増加する ~LET 次を遂行する手続き
+⇒
+%破壊-済み数 ~INCBY 1
+◎
+Let incrementDestroyed be an algorithm step which increments numberDestroyed.
+</li>
+			<li>
+`文書とその子孫たちを破壊する$( %子~navigable にて`作動中な文書$nav, %破壊-済みを増加する )
+◎
+Destroy a document and its descendants given childNavigable's active document and incrementDestroyed.
+</li>
+		</ol>
+</div>
+	</li>
+	<li>
+次が満たされるまで待機する
+⇒
+%破壊-済み数 ~EQ %子~navigable群【！childNavigable】 の`~size$
+◎
+Wait until numberDestroyed equals childNavigable's size.
+</li>
+	<li>
+<p>
+`大域~taskを~queueする$( `~naviと辿り~task~source$, %文書 に`関連な大域~obj$, 
+次の手続き )
+◎
+Queue a global task on the navigation and traversal task source given document's relevant global object to perform＼
+</p>
+<div class="algo">
+<p>
+手続きは：
+◎
+the following steps:
+</p>
+		<ol>
+			<li>
+`文書を破壊する$( %文書 )
+◎
+Destroy document.
+</li>
+			<li>
+~IF［
+%すべて破壊-後の手続き ~NEQ ε
+］
+⇒
+%すべて破壊-後の手続き()
+◎
+If afterAllDestruction was given, then run it.
+</li>
+		</ol>
+</div>
+	</li>
+</ol>
+</div>
+
 			</section>
 			<section id="aborting-a-document-load">
 <h4 title="Aborting a document load">7.5.11. 文書~読込nの中止-法</h4>
@@ -2723,29 +2966,12 @@ To abort a Document document:
 </p>
 <ol>
 	<li>
-<p>
-%文書 の`子孫~navigable群$を成す
-~EACH( %~navigable )
-に対し
-<span class="XXX">順序は どうする？</span>：
-</p>
-		<ol>
-			<li>
-%作動中な文書 ~LET ~navigableにて`作動中な文書$nav
-</li>
-			<li>
-`文書を中止する$( %作動中な文書 )
-</li>
-			<li>
-~IF［
-%作動中な文書 の`回復可能か$doc ~EQ ~F
-］
-⇒
-%文書 の`回復可能か$doc ~SET ~F
-</li>
-		</ol>
+~Assert：
+この~algoは、［
+%文書 に`関連な~agent$の`~event~loop$aGに~queueされた`~task$
+］の一部として走っている。
 ◎
-Abort the active documents of each of document's descendant navigables. In what order? If this results in any of those Document objects having their salvageable state set to false, then set document's salvageable state to false also.
+Assert: this is running as part of a task queued on document's relevant agent's event loop.
 </li>
 	<li>
 <p>
@@ -2815,10 +3041,77 @@ Abort that parser.
 			<li>
 %文書 の`回復可能か$doc ~SET ~F
 ◎
-Set document's salvageable state to false.
+Set document's salvageable to false.
 </li>
 		</ol>
 	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`文書とその子孫たちを中止する@
+ときは、
+所与の
+( `文書$ %文書 )
+に対し：
+◎
+To abort a document and its descendants given a Document document:
+</p>
+<ol>
+	<li>
+~Assert：
+この~algoは、［
+%文書 に`関連な~agent$の`~event~loop$aGに~queueされた`~task$
+］の一部として走っている。
+◎
+Assert: this is running as part of a task queued on document's relevant agent's event loop.
+</li>
+	<li>
+%子孫~navigable群 ~LET %文書 の`子孫~navigable群$
+◎
+Let descendantNavigables be document's descendant navigables.
+</li>
+	<li>
+<p>
+%子孫~navigable群 を成す
+~EACH( %子孫~navigable )
+に対し
+<span class="XXX">順序は どうする？</span>
+⇒
+`大域~taskを~queueする$( `~naviと辿り~task~source$, %子孫~navigable にて`作動中な~window$nav, 次の手続き )
+◎
+For each descendantNavigable of descendantNavigables in what order?, queue a global task on the navigation and traversal task source given descendantNavigable's active window to perform＼
+</p>
+<div class="algo">
+<p>
+手続きは：
+◎
+the following steps:
+</p>
+		<ol>
+			<li>
+`文書を中止する$( %子孫~navigable にて`作動中な文書$nav )
+◎
+Abort descendantNavigable's active document.
+</li>
+			<li>
+~IF［
+%子孫~navigable にて`作動中な文書$navの`回復可能か$doc ~EQ ~F
+］
+⇒
+%文書 の`回復可能か$doc ~SET ~F
+◎
+If descendantNavigable's active document's salvageable is false, then set document's salvageable to false.
+</li>
+		</ol>
+</div>
+	</li>
+	<li>
+`文書を中止する$( %文書 )
+◎
+Abort document.
+</li>
 </ol>
 </div>
 
@@ -2861,9 +3154,9 @@ This will have the effect of aborting any ongoing navigations of navigable, sinc
 </p>
 	</li>
 	<li>
-`文書を中止する$( %文書 )
+`文書とその子孫たちを中止する$( %文書 )
 ◎
-Abort document.
+Abort a document and its descendants given document.
 </li>
 </ol>
 </div>

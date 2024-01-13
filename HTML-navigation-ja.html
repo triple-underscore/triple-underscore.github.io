@@ -741,8 +741,8 @@ multipart/x-mixed-replace 文書を読込む:~HTMLlifecycle#navigate-multipart-x
 ~text文書を読込む:~HTMLlifecycle#navigate-text
 ~DOMを有さない文書~用に~inline内容を作成する:~HTMLlifecycle#read-ua-inline
 ~unload~counter:~HTMLlifecycle#unload-counter
-文書を~unloadする:~HTMLlifecycle#unload-a-document
-文書を中止する:~HTMLlifecycle#abort-a-document
+文書とその子孫たちを~unloadする:~HTMLlifecycle#unload-a-document-and-its-descendants
+文書とその子孫たちを中止する:~HTMLlifecycle#abort-a-document-and-its-descendants
 文書を作成して初期化する:~HTMLlifecycle#initialise-the-document-object
 	＠~HTMLlifecycle#initialise-the-document-object
 文書を破壊する:~HTMLlifecycle#destroy-a-document
@@ -1010,6 +1010,7 @@ url.素片:~URL1#concept-url-fragment
 	＠~HTMLissue/4703
 	＠~HTMLissue/5562
 	＠~HTMLlifecycle#destroy-a-document
+	＠~HTMLlifecycle#destroy-a-document-and-its-descendants
 	＠~HTMLlifecycle#initialise-the-document-object
 	＠~HTMLlifecycle#read-ua-inline
 	＠~HTMLlifecycle#read-xml
@@ -1396,6 +1397,7 @@ back-up:back up:::バックアップ
 	%生成元:-
 	%遷移:transition
 	%余分な文書~状態を保存するか:saveExtraDocumentState
+	`~unload後の手続き^i:afterPotentialUnloads
 
 		●UI
 	~scroll法／~scrollすること:scrolling
@@ -2348,9 +2350,9 @@ A navigable target name string, initially the empty string.
 <p>
 ~UAは、
 `文書~状態$の`文書$dS（ ~NEQ ~NULL とする）が`全部的に作動中$でない間は，
-それを`破壊-＠~HTMLlifecycle#destroy-a-document$してもヨイ。
+当の`文書とその子孫たちを破壊-＠~HTMLlifecycle#destroy-a-document-and-its-descendants$してもヨイ。
 ◎
-User agents may destroy the documents of document states with non-null documents, as long as the Document is not fully active.
+User agents may destroy a document and its descendants given the documents of document states with non-null documents, as long as the Document is not fully active.
 </p>
 
 <p>
@@ -4577,9 +4579,9 @@ Queue a global task on the navigation and traversal task source given navigable'
 <div class="algo">
 手続きは
 ⇒
-`文書を中止する$( %~navigable にて`作動中な文書$nav )
+`文書とその子孫たちを中止する$( %~navigable にて`作動中な文書$nav )
 ◎
-to abort navigable's active document.
+to abort a document and its descendants given navigable's active document.
 </div>
 			</li>
 			<li id="navigation-create-document-state">
@@ -10200,8 +10202,7 @@ Otherwise, run afterDocumentPopulated immediately.
 
 <div class="algo">
 <p>
-`文書を拡充した後の手続き^i は、
-次を走らす：
+`文書を拡充した後の手続き^i は：
 ◎
 In both cases, let afterDocumentPopulated be the following steps:
 </p>
@@ -10530,70 +10531,42 @@ Once a navigable has reached this point in traversal, additionally queued synchr
 Let entriesForNavigationAPI be the result of getting session history entries for the navigation API given navigable and targetStep.
 </li>
 			<li>
-<p id="_monkey-patched-by-css-view-transitions-2">
-`大域~taskを~queueする$( `~naviと辿り~task~source$, %~navigable にて`作動中な~window$nav, 次の手続き )
+~IF［
+%~navigableを変更している継続 の`更新のみか$cnC ~EQ ~F
+］~AND［
+%~target~entry の`文書$shE ~NEQ %表示した文書
+］
+⇒
+`文書とその子孫たちを~unloadする$( %表示した文書, %~target~entry の`文書$shE,
+次の段にて定義する `~unload後の手続き^i )
 ◎
-Queue a global task on the navigation and traversal task source given navigable's active window＼
+If changingNavigableContinuation's update-only is false, and targetEntry's document does not equal displayedDocument, then unload a document and its descendants given displayedDocument, targetEntry's document, and afterPotentialUnloads.
+</li>
+			<li>
+<p id="_monkey-patched-by-css-view-transitions-2">
+~ELSE
+⇒
+`大域~taskを~queueする$( `~naviと辿り~task~source$, %~navigable にて`作動中な~window$nav, 下に定義する `~unload後の手続き^i )
+◎
+Otherwise, queue a global task on the navigation and traversal task source given navigable's active window to perform afterPotentialUnloads.
 </p>
 
 <div class="algo">
 <p>
-手続きは：
+`~unload後の手続き^i:%~afterPotentialUnloads は：
 ◎
-to run the steps:
+In both cases, let afterPotentialUnloads be the following steps:
 </p>
 				<ol>
 					<li>
-<p>
 ~IF［
 %~navigableを変更している継続 の`更新のみか$cnC ~EQ ~F
-］：
-◎
-If changingNavigableContinuation's update-only is false, then:
-</p>
-						<ol>
-							<li>
-<p>
-~IF［
-%~target~entry の`文書$shE ~NEQ %表示した文書
-］：
-◎
-If targetEntry's document does not equal displayedDocument, then:
-</p>
-								<ol>
-									<li>
-`文書を~unloadする$( %表示した文書, %~target~entry の`文書$shE )
-◎
-Unload displayedDocument given targetEntry's document.
-</li>
-									<li>
-<p>
-%表示した文書 の`子孫~navigable群$を成す
-~EACH( %子~navigable )
-に対し
+］
 ⇒
-`大域~taskを~queueする$( `~naviと辿り~task~source$, %子~navigable にて`作動中な~window$nav, 次の手続き )
-◎
-For each childNavigable of displayedDocument's descendant navigables, queue a global task on the navigation and traversal task source given childNavigable's active window＼
-</p>
-
-<div class="algo">
-手続きは
-⇒
-`文書を~unloadする$( %子~navigable にて`作動中な文書$nav )
-◎
-to unload childNavigable's active document.
-</div>
-									</li>
-								</ol>
-							</li>
-							<li>
 `履歴~entryを作動化する$( %~target~entry, %~navigable )
 ◎
-Activate history entry targetEntry for navigable.
+If changingNavigableContinuation's update-only is false, then activate history entry targetEntry for navigable.
 </li>
-						</ol>
-					</li>
 					<li class="algo">
 %文書を更新する ~LET 次を遂行する手続き
 ⇒
