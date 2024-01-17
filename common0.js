@@ -1133,6 +1133,7 @@ HTTPv1:http1-ja.html
 HTTPv3:http3-ja.html
 HTTPweblink:http-web-linking-ja.html
 HTTPcookie:http-cookie-ja.html
+HTTPpriority:http-priority-ja.html
 STRUCTURED-FIELDS:http-structured-fields-ja.html
 CSSWG:https://drafts.csswg.org
 	CSSWG:https://w3c.github.io/csswg-drafts

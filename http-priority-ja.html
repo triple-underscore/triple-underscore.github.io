@@ -1,0 +1,2973 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<title>RFC 9218 — Extensible Prioritization Scheme for HTTP（日本語訳）</title>
+
+<link rel="stylesheet" href="common.css" type="text/css">
+<link rel="stylesheet" href="http-common.css" type="text/css">
+<style>
+.settings-parameter,
+.frame-type,
+.error-code {
+	font-family: sans-serif0, sans-serif;
+	color: var(--K-color);
+}
+
+.frame-diagram {
+	margin: 0;
+}
+
+.frame-diagram > span[lang="en"] {
+	white-space: pre;
+}
+</style>
+
+
+<script src="common0.js"></script>
+<script src="http-common.js"></script>
+<script src="common1.js" async></script>
+
+<script type="text/plain" id="_source_data">
+
+●●options
+spec_title:Extensible Prioritization Scheme for HTTP
+	spec_date:2022-06
+trans_update:2024-01-17
+	source_checked:
+page_state_key:HTTP
+original_url:https://httpwg.org/specs/rfc9218.html
+	abbr_url:HTTPpriority
+spec_status:IETFPR
+no_original_dfn:true
+ref_rfc:true
+trans_1st_pub:2024-01-17
+
+●●class_map
+ft:frame-type
+er:error-code
+hex:hex-value
+sp:settings-parameter
+
+●●tag_map
+ft:code
+er:code
+hex:span
+sp:code
+
+●●original_id_map
+
+	fig-h2-reprioritization-frame:name-http-2-priority_update-frame
+	fig-h2-reprioritization-frame:figure-1
+	fig-h3-reprioritization-frame:name-http-3-priority_update-frame
+	fig-h3-reprioritization-frame:figure-2
+	iana-parameter-table:name-initial-priority-parameters
+	iana-parameter-table:table-1
+	HTTP/2:HTTP2
+	HTTP/3:HTTP3
+	PRIORITY-SETTING:I-D.lassey-priority-setting
+
+●●mdn_urls
+
+●●link_map
+
+h.Priority:#header-field
+
+ft.PRIORITY_UPDATE:#frame
+ft.SETTINGS:~HTTPv2#SETTINGS
+	ft.PUSH_PROMISE:~HTTPv2#PUSH_PROMISE
+	ft.PUSH_PROMISE:~HTTPv3#frame-push-promise
+	ft.HEADERS:~HTTPv2#HEADERS
+	ft.HEADERS:~HTTPv3#frame-headers
+
+sp.SETTINGS_NO_RFC7540_PRIORITIES:#SETTINGS_NO_RFC7540_PRIORITIES
+sp.SETTINGS_MAX_CONCURRENT_STREAMS:~HTTPv2#SETTINGS_MAX_CONCURRENT_STREAMS
+
+er.PROTOCOL_ERROR:~HTTPv2#PROTOCOL_ERROR
+er.H3_GENERAL_PROTOCOL_ERROR:~HTTPv3#H3_GENERAL_PROTOCOL_ERROR
+er.H3_FRAME_UNEXPECTED:~HTTPv3#H3_FRAME_UNEXPECTED
+er.H3_ID_ERROR:~HTTPv3#H3_ID_ERROR
+
+
+	●用語
+制御~stream:#control-stream
+~HTTP2優先度~通達:#HTTP2-priority-signal
+緊急度:#dfn-urgency
+増分的か:#dfn-is-incremental
+
+h3.制御~stream:~HTTPv3#h3-control-stream
+h3.要請~stream:~HTTPv3#h3-request-stream
+h3.~push~stream:~HTTPv3#h3-push-stream
+
+接続~error:#dfn-connection-error
+
+旧~HTTP2:#RFC7540
+
+	●§
+
+1:#introduction
+1.1:#notational-conventions
+2:#motivation
+2.1:#disabling
+2.1.1:#advice-when-using-extensible-priorities-as-the-alternative
+3:#applicability-of-the-extensible-priority-scheme
+4:#parameters
+4.1:#urgency
+4.2:#incremental
+4.3:#new-parameters
+4.3.1:#register
+5:#header-field
+6:#reprioritization
+7:#frame
+7.1:#h2-update-frame
+7.2:#h3-update-frame
+8:#merging
+9:#client-scheduling
+10:#server-scheduling
+10.1:#intermediaries-with-multiple-backend-connections
+11:#connect-scheduling
+12:#retransmission-scheduling
+13:#fairness
+13.1:#coalescing
+13.2:#h1-backends
+13.3:#intentional-unfairness
+14:#header-field-rationale
+15:#security-considerations
+16:#iana-considerations
+
+	●用語（外部
+h3.~push~ID:~HTTPv3#h3-push-id
+h3.最大~push~ID:~HTTPv3#h3-max-push-id
+h3.~stream~ID:~HTTPv3#quic-stream-id
+
+有構造~field:~STRUCTURED-FIELDS#structured-field
+~sf真偽値:~STRUCTURED-FIELDS#sf-boolean
+~sf辞書:~STRUCTURED-FIELDS#sf-dictionary
+~sf整数:~STRUCTURED-FIELDS#sf-integer
+~sf~key:~STRUCTURED-FIELDS#sf-key
+sF.符号化され:~STRUCTURED-FIELDS#text-serialize
+
+●●words_table1
+HTTPv2:https://httpwg.org/specs/rfc9113.html
+	~RFCx/rfc9113
+sf:<sub>sf-</sub>
+
+●●words_table
+
+	●略称／名称
+
+HTTP2:HTTP/2
+HTTP3:HTTP/3
+HTTP1x:HTTP/1.x
+	HTTP11:HTTP/1.1
+QUIC:
+	Netflix
+JPEG:
+CDN:
+	~CDN:Content Delivery Network(CDN）
+	~CSS:Cascading Style Sheets
+
+	●network
+受信器:receiver::~
+送信器:sender::~
+停滞:stall:~
+到着-:arrive:~
+backend::::バックエンド
+frontend::::フロントエンド
+	~backend:back end
+	~frontend:front end
+	~frontend:edge
+承認:acknowledgement:~
+探査:probe:~
+	探査:Probe
+prefetch:
+
+	相手の端点:peer
+	"open"
+	"closed"
+	"idle"
+	"half-closed (local)"
+	"half-closed (remote)"
+
+	●優先度
+輻輳:congestion::~
+多重化-:multiplex::~
+多重化:multiplexing::~
+Priority:
+優先度化:prioritization:優先度付け
+	再~優先度化:reprioritization
+優先度化-:prioritize:優先度付け
+	優先度化し直:reprioritize
+優先-:prioritize:~
+	優先しない:deprioritize
+優先順位:precedence:~
+競走:race:~
+争い:competition:~
+争って:competeして:~
+争う::competeする:~
+昇順:ascending order:~
+降順:descending order:~
+増分的:incremental::~
+緊急度:urgency::~
+公平:fair::~
+公平性:fairness::~
+不公平性:unfairness::~
+非対称性:asymmetry:~
+割振n:allocation:割り振り
+先取的:preemptive:先取り的
+分配-:distribute:~
+分配:distribution:~
+粒度:granularity:~
+	より少ない〜の粒度:less granular
+細分化-:subdivide:~
+並替え:permutation:並び替え
+
+	●処理
+中途で:abruptに:~
+応答性:responsiveness::~
+background::::バックグラウンド
+	~background~task用:background
+持回り:round-robin::持ち回り::ラウンドロビン
+後回-:starve::後回しに
+後回:starvation::後回し
+
+	●形式
+可変長:variable-length:長さ可変
+
+	●保安
+
+	●仕様
+障壁:barrier:~
+普遍的:universal:~
+尊重-:respect:~
+難題:challenge:~
+連絡先:contact:~
+事実調査:research:~
+省略:omission:~
+部屋:room:~
+変種:variant:~
+指名-:designate:~
+選ぶ:chooseする:~
+	選ばれ:chooseされ:~
+選べ:chooseでき:~
+代用-:substitute:~
+助言:advice:~
+冗長:redundant:~
+策:strategy:~
+有益:beneficial:~
+合意-:agree:~
+専門家:expert:~
+増補-:augment:~
+表記上の:notational:~
+提唱-:advocate:~
+着想-:inspire:~
+多方面:extensive:~
+team::::チーム
+critical:
+価値:value:~
+template:
+注力-:focus:~
+守る:abideする:~
+否定-:negate:~
+特質:property:~
+義務:mandatory:~
+多様さ:variation:~
+短所:shortcoming:~
+洞察:insight:~
+類似でな:dissimilarでな:類似しな
+非類似性:dissimilarity:~
+拡大-:expand:~
+拡大:expansion:~
+最悪:worst:~
+逆効果:adverse:~
+trade-off::::トレードオフ
+解く:solveする:~
+
+	感謝:thank
+	引き出され:drawn
+	対照的に:in contrast
+	広範:broad
+	多くを負って:owes a lot
+	実施~上の:practical
+	~~根拠:basis
+	相応に:correspondingly
+	§:Section
+	~HTTP~versionに特有な:~HTTP-version-specific
+	に関わらず:irrespective
+	にもなり易い:could easily
+	対照的に:in contrast
+	この文書に:herein
+	見込みが高い:likely
+	~~最新な:most up-to-date
+	委ねられ:left
+	に関する:regarding
+	逆に:conversely
+	変わる:varies
+	大きく:heavily
+	限定的:limited
+	難がある~suffered~from:#1
+	在っても:even in the presence of
+	知る:know
+	示す:show
+	見られ:seen
+	最善に解する:has the best understanding
+	に~~価する:deserve
+	変化に関心が無いこと:disinterest in changing
+	担う:play
+	値打ちがある:attractive
+	責務がある:responsible
+	最適とは言えない:suboptimal
+	帰結として:consequently
+	代替もある:Alternatively 〜 can
+	働くものになり得る:can work
+	至らす:lead
+	特に挙げて:highlights
+	方々:people
+	できなくする:prevent
+	ないようにする:prevent
+
+	●言い換え
+	短くすること:in having short
+	自身にとっての:their view of
+	無視する下で:in ignorance of
+	仕様が要求される:Specification Required
+	専門家~考査:Expert Review
+	在った方が良い:appreciated
+	と引き換えに:at the cost of
+	そのように定義するだけで、 〜ので:only because the...
+	とは限らない:It is not always the case
+	依存しない:independent
+	それでも、:However 〜 still
+	さもなければ:doing so
+	以下では:the remainder of this section
+	それ以前:older
+	運ぶための:carriage
+	重み付き:weighted
+	同時並行~度:concurrency
+	再~伝送:retransmission
+	~link能:linkability
+	一定期間を経た:after a certain time period
+	“余りをかき集める”:scavenging
+	資源を~~節約できる:limits resource commitment
+	登録~手続-:its associated procedures
+	当の文書:the main
+	へ向けての:set out
+	有構造~field:Structured Field
+	~sf真偽値:Boolean
+	~sf辞書:Dictionary
+	~sf整数:Integer
+	~stream識別子^i:Stream Identifier
+	~flag群（利用されない）:Unused Flags／Unused Flag(s)
+	要請~stream用の:request-stream
+	~push~stream用の:push-stream
+	~cache能:cacheability
+	~Priority~field値^i:Priority Field Value
+	~Priority~field値^i ~field:Priority field
+	逆~多重化-:demux
+	更新~file:update images
+	増分的か$:incremental parameter
+	緊急度$:urgency parameter
+	緊急度$:urgency level
+	緊急度$ 7（~background~task用）を伴う:background priority
+	依拠-能:reliability
+	^en:Probe Timeout timer
+	^en:that uses absolute values
+	`内方$にある次の~server:single hop
+	`内方$にある次の~server:the next hop
+	そのような~stream:one CONNECT stream 
+
+	●未分類
+発行-:issue:~
+喪失-:lose:~
+喪失:loss:~
+描かれ:drawされ:~
+後続-:follow:~
+漸進的:progressive:~
+不確定:indeterminate:~
+末端-:end:~
+偏った:unbalancedな:~
+
+	伝送途上:in flight
+	面して:facing
+	不均等:unequal
+	しようと:going
+	へ行く:going
+	ようになる:get
+	抗する:against
+	より少なく:less
+	全体:entirety
+	それら全体として:in their entirety
+	何回も経る:have many
+	ときには、:it is sometimes
+	等しくない:unequal
+	来て:coming
+	大きさ:how large
+	大きい:large
+	小さい:small
+	小さな:small amounts of
+	先頭近く:early
+	早い:early
+	早く:early
+	早く来た:early
+	より早く:earlier
+	より早く:early moment
+	高いものほど早く:higher
+	より高-:higher
+	より高い:higher
+	より高く:higher
+	高過ぎ:too high
+	が低い:low-
+	より低い:lower-
+	最も低い:lowest
+	低過ぎ:too low
+	できるだけ早く:at the earliest moment
+	を超える:greater than
+	より長く:longer
+	範囲~外の:out-of-range
+	以上 〜 以下:inclusive
+	小さいほど:smaller
+	一連の:series of
+	どうしの:among
+	少し:slightly
+	何個か:one or more
+	無かった:absent
+	無い場合:The absence of
+	無い場合:In the absence of
+	〜になる前に ahead of 〜
+	少しでも:some
+	いくぶんの:some amount of
+	数:count
+	総数:count
+	各部:parts
+	-法が〜異なる:differently
+	~~同時に:at the same time
+	設定しておかれたもの:setups
+	その一方、:meanwhile
+	~~別々:discrete
+	し続け:continue
+	あり続け:continue
+
+●●ref_key_map
+
+●●ref_normative
+
+[HTTP]
+    Fielding, R., Ed., Nottingham, M., Ed., and J. Reschke, Ed., ＜HTTP Semantics＞, STD 97, ~RFC9110, June 2022
+[HTTP/2]
+    Thomson, M., Ed. and C. Benfield, Ed., ＜HTTP/2＞, ~RFC9113, June 2022
+[HTTP/3]
+    Bishop, M., Ed., ＜HTTP/3＞, ~RFC9114, June 2022
+[QUIC]
+    Iyengar, J., Ed. and M. Thomson, Ed., ＜QUIC: A UDP-Based Multiplexed and Secure Transport＞, ~RFC9000, May 2021
+[RFC2119]
+    Bradner, S., ＜Key words for use in RFCs to Indicate Requirement Levels＞, BCP 14, ~RFC2119, March 1997
+[RFC8126]
+    Cotton, M., Leiba, B., and T. Narten, ＜Guidelines for Writing an IANA Considerations Section in RFCs＞, BCP 26, ~RFC8126, June 2017
+[RFC8174]
+    Leiba, B., ＜Ambiguity of Uppercase vs Lowercase in RFC2119 Key Words＞, BCP 14, ~RFC8174, May 2017
+[STRUCTURED-FIELDS]
+    Nottingham, M. and P-H. Kamp, ＜Structured Field Values for HTTP＞, ~RFC8941, February 2021
+
+●●ref_informative
+
+[CACHING]
+    Fielding, R., Ed., Nottingham, M., Ed., and J. Reschke, Ed., ＜HTTP Caching＞, STD 98, ~RFC9111, June 2022
+[FORWARDED]
+    Petersson, A. and M. Nilsson, ＜Forwarded HTTP Extension＞, ~RFC7239, June 2014
+[MARX]
+    Marx, R., De Decker, T., Quax, P., and W. Lamotte, ＜Of the Utmost Importance: Resource Prioritization in HTTP/3 over QUIC＞, SCITEPRESS Proceedings of the 15th International Conference on Web Information Systems and Technologies (pages 130-143), September 2019
+    URL: https://www.doi.org/10.5220/0008191701300143
+[PRIORITY-SETTING]
+    Lassey, B. and L. Pardue, ＜Declaring Support for HTTP/2 Priorities＞, Work in Progress, Internet-Draft, draft-lassey-priority-setting-00, 25 July 2019
+    URL: https://datatracker.ietf.org/doc/html/draft-lassey-priority-setting-00
+[QUIC-RECOVERY]
+    Iyengar, J., Ed. and I. Swett, Ed., ＜QUIC Loss Detection and Congestion Control＞, ~RFC9002, May 2021
+[RFC7540]
+    Belshe, M., Peon, R., and M. Thomson, Ed., ＜Hypertext Transfer Protocol Version 2 (HTTP/2)＞, ~RFC7540, May 2015
+[RFC8081]
+    Lilley, C., ＜The "font" Top-Level Media Type＞, ~RFC8081, February 2017
+
+
+●●trans_metadata
+<p>
+~THIS_PAGEは、
+~IETF により Internet Standard として公表された，
+<a href="~SPEC_URL">Extensible Prioritization Scheme for HTTP</a>
+（RFC 9218）
+を日本語に翻訳したものです。
+~PUB
+</p>
+
+●●spec_metadata
+Stream
+	Internet Engineering Task Force (IETF)
+RFC
+	9218
+分類
+	Standards Track
+日付
+	2022 年 6 月
+編集／著作者アドレス
+	<a href="mailto:kazuhooku@gmail.com" class="email">Kazuho Oku</a>（奥 一穂）(Fastly)
+	<a href="mailto:lucaspardue.24.7@gmail.com" class="email">Lucas Pardue</a> (Cloudflare)
+履歴
+	https://datatracker.ietf.org/doc/rfc9218/
+現在の位置付け, 正誤表, フィードバックの方法
+	https://www.rfc-editor.org/info/rfc9218
+</script>
+
+</head>
+<body>
+
+
+<header>
+	<hgroup>
+<h1>HTTP 用の拡張可能な優先度付けスキーム</h1>
+<p lang="en">RFC 9218 — Extensible Prioritization Scheme for HTTP</p>
+	</hgroup>
+</header>
+
+<div id="MAIN" hidden>
+	<section>
+◎要約
+
+<p>
+この文書は、
+次を許容する~schemeを述べる：
+◎
+This document describes a scheme that＼
+</p>
+<ul>
+	<li>
+~HTTP~clientが，次について自身の選好を通信する
+⇒
+`上流$にある~serverは、
+~clientからの要請に対する応答を どう優先度化するか
+◎
+allows an HTTP client to communicate its preferences for how the upstream server prioritizes responses to its requests,＼
+</li>
+	<li>
+~serverが，次について`下流$にある`中継者$たちに~hintする
+⇒
+~serverからの応答を回送するとき，どう優先度化するべきか
+◎
+and also allows a server to hint to a downstream intermediary how its responses should be prioritized when they are forwarded.＼
+</li>
+</ul>
+
+<p>
+この文書は、
+次の 2 つを定義する：
+◎
+This document defines＼
+</p>
+<ul>
+	<li>
+初期~優先度を~HTTP~versionに依存しない方式で通信するための `Priority$h ~header
+◎
+the Priority header field for communicating the initial priority in an HTTP version-independent manner,＼
+</li>
+	<li>
+［
+~HTTP2／~HTTP3
+］において，応答たちを優先度化し直すための `PRIORITY_UPDATE$ft ~frame
+◎
+as well as HTTP/2 and HTTP/3 frames for reprioritizing responses.＼
+</li>
+</ul>
+
+<p>
+これらは、
+将来の拡張能を供するよう設計された，共通な形式~構造を共有する。
+◎
+These share a common format structure that is designed to provide future extensibility.
+</p>
+
+	</section>
+	<section id="status-of-memo">
+<h2 title="Status of This Memo">このメモの位置付け</h2>
+
+<p class="trans-note">【
+この節の内容は
+`~IETF日本語訳 共通~page＠~IETFcommon#status$に移譲。
+】</p>
+
+	</section>
+	<section id="copyright">
+<h2 title="Copyright Notice">著作権の告知</h2>
+
+<p lang="en">
+Copyright (c) 2022 IETF Trust and the persons identified as the document authors. All rights reserved.
+</p>
+
+<p class="trans-note">【
+以下、
+この節の他の内容は
+`~IETF日本語訳 共通~page＠~IETFcommon#copyright-notice$に移譲。
+】</p>
+
+	</section>
+
+<main id="MAIN0">
+	<section id="introduction">
+<h2 title="Introduction">1. 序論</h2>
+
+<p>
+`資源$の`表現$ `HTTP$r が，他の何個かの資源と関係性があることは、
+共通的にある。
+~clientは、
+検索取得した表現を処理している間に，これらの関係性を発見することが多く、
+その結果，更なる検索取得~要請へ至ることがある。
+その一方で、
+そのような関係性には，~clientが［
+局所的に可用な資源の処理を継続することを阻む
+］かどうかを決定する資質もある。
+例として、
+~HTML文書の描画（視覚的な具現化）は，
+文書が指す~CSS~fileの検索取得により阻まれることもある。
+対照的に，~inline画像は、
+描画を阻むことなく，画像を成す~chunkたちが到着するに伴い増分的に描かれる。
+◎
+It is common for representations of an HTTP [HTTP] resource to have relationships to one or more other resources. Clients will often discover these relationships while processing a retrieved representation, which may lead to further retrieval requests. Meanwhile, the nature of the relationships determines whether a client is blocked from continuing to process locally available resources. An example of this is the visual rendering of an HTML document, which could be blocked by the retrieval of a Cascading Style Sheets (CSS) file that the document refers to. In contrast, inline images do not block rendering and get drawn incrementally as the chunks of the images arrive.
+</p>
+
+<p>
+［
+~HTTP2 `HTTP/2$r ／~HTTP3 `HTTP/3$r
+］は、
+単独の接続~内で いくつもの［
+要請, 応答
+］を多重化することを~supportする。
+［
+多重化を供する~protocolの実装
+］を成す重要な特能として、［
+情報の送信を優先度化する能
+］がある。
+例えば，~HTTP~serverにとっては、［
+~HTML文書の有意義な呈示をできるだけ早く供する
+］ため，
+~clientへ送信する［
+~HTTP応答たち，それらを成す~chunkたち
+］を優先度化することが重要になる。
+◎
+HTTP/2 [HTTP/2] and HTTP/3 [HTTP/3] support multiplexing of requests and responses in a single connection. An important feature of any implementation of a protocol that provides multiplexing is the ability to prioritize the sending of information. For example, to provide meaningful presentation of an HTML document at the earliest moment, it is important for an HTTP server to prioritize the HTTP responses, or the chunks of those HTTP responses, that it sends to a client.
+</p>
+
+<p>
+［
+~HTTP2~server／~HTTP3~server
+］は、［
+同時並行な応答~dataの伝送
+］を自身が選ぶ どの手段でも~scheduleできる。
+~serverは、
+~clientからの優先度~通達を無視でき，
+それでも~HTTP応答を成功裡に~serveする。
+しかしながら、［
+~clientが各~要請をどう発行して，対する応答をどう消費するか
+］を無視する下で運用している~serverは、［
+~clientにおける応用の処理能
+］を最適とは言えないものにし得る。
+優先度~通達は、
+~clientが［
+自身にとっての要請の優先度を通信する
+］ことを許容する。
+~serverは、［
+~clientの必要性とは独立な自前の必要性がある
+］ので，［
+優先度の通達を他の可用な情報と組合せた結果
+］として［
+応答~dataの~schedule法を伝える
+］ことが多い。
+◎
+HTTP/2 and HTTP/3 servers can schedule transmission of concurrent response data by any means they choose. Servers can ignore client priority signals and still successfully serve HTTP responses. However, servers that operate in ignorance of how clients issue requests and consume responses can cause suboptimal client application performance. Priority signals allow clients to communicate their view of request priority. Servers have their own needs that are independent of client needs, so they often combine priority signals with other available information in order to inform scheduling of response data.
+</p>
+
+<p>
+`旧~HTTP2$（~RFC 7540 ）の~stream優先度は、［
+ある “優先度~tree” を~serverへ通信する，一連の優先度~通達
+］を送信することを~clientに許容した。
+この~treeの構造は、
+~clientにより選好される［
+~HTTP応答どうしの相対的な順序付け,
+~HTTP応答たちに対する重み付きな帯域幅の分配
+］を表現する。
+~serverは、
+これらの優先度~通達を［
+優先度化の裁定に対する入力として利用する
+］こともできる。
+◎
+RFC 7540 [RFC7540] stream priority allowed a client to send a series of priority signals that communicate to the server a "priority tree"; the structure of this tree represents the client's preferred relative ordering and weighted distribution of the bandwidth among HTTP responses. Servers could use these priority signals as input into prioritization decisions.
+</p>
+
+<p>
+`旧~HTTP2$の~stream優先度の設計と実装には、
+`2§にて説明されるとおり，
+短所があることも観測された。
+その帰結として、
+~HTTP2 `HTTP/2$r は，［
+これらの~stream優先度~通達の利用
+］を非推奨にした。
+この文書に定義される［
+優先度化~scheme, 優先度~通達
+］は、［
+`旧~HTTP2$の~stream優先度を代用するもの
+］として動作し得る。
+◎
+The design and implementation of RFC 7540 stream priority were observed to have shortcomings, as explained in Section 2. HTTP/2 [HTTP/2] has consequently deprecated the use of these stream priority signals. The prioritization scheme and priority signals defined herein can act as a substitute for RFC 7540 stream priority.
+</p>
+
+<p>
+この文書は、
+~HTTP応答たちを優先度化するための，拡張-可能な~schemeを述べる
+`that uses absolute values^en 【？】。
+`4§は、
+優先度~parameterを定義する
+— それは、［
+標準~化され，拡張-可能な優先度~情報
+］の形式である。
+`5§は、
+`Priority$h ~HTTP~headerを定義する
+— それは、
+~protocol~versionに依存しない，`端点間$な優先度~通達である。
+~clientは、この~headerを送信して，［
+自身にとって，応答たちがどう優先度化されるべきか
+］を通達できる。
+類似に，`中継者$の背後にある~serverは、
+それを利用して，中継者へ優先度を通達できる。
+~clientは、
+要請を送信した後に，~HTTP~versionに特有な~frameを
+— ［
+`7.1§／ `7.2§
+］にて定義されるとおり —
+送信することにより，自身にとっての応答~優先度を変更できる
+（ `6§を見よ）。
+◎
+This document describes an extensible scheme for prioritizing HTTP responses that uses absolute values. Section 4 defines priority parameters, which are a standardized and extensible format of priority information. Section 5 defines the Priority HTTP header field, which is an end-to-end priority signal that is independent of protocol version. Clients can send this header field to signal their view of how responses should be prioritized. Similarly, servers behind an intermediary can use it to signal priority to the intermediary. After sending a request, a client can change their view of response priority (see Section 6) by sending HTTP-version-specific frames as defined in Sections 7.1 and 7.2.
+</p>
+
+<p>
+［
+~header／~frame
+］による優先度~通達は、
+~serverの応答~優先度化~処理nに対する入力である。
+それらは、
+示唆でしかなく，［
+応答に対する特定0の処理／応答どうしの相対的な伝送~順序
+］を保証しない。
+［
+`10§,
+`12§
+］は、［
+~serverが，通達に際して どう動作し得るか
+］についての考慮点と指導を供する。
+◎
+Header field and frame priority signals are input to a server's response prioritization process. They are only a suggestion and do not guarantee any particular processing or transmission order for one response relative to any other response. Sections 10 and 12 provide considerations and guidance about how servers might act upon signals.
+</p>
+
+		<section id="notational-conventions">
+<h3 title="Notational Conventions">1.1. 表記上の規約</h3>
+
+<p>
+この文書~内の~keyword "MUST" …
+【以下、この段落の内容は`~IETF日本語訳 共通~page＠~IETFcommon#requirements-notation$に移譲。】
+◎
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all capitals, as shown here.
+</p>
+
+<p>
+この文書は、
+構文と構文解析-法を指定するために，
+`STRUCTURED-FIELDS$r による［
+`~sf真偽値$", `~sf辞書$, `~sf整数$
+］を利用する。
+◎
+This document uses the following terminology from Section 3 of [STRUCTURED-FIELDS] to specify syntax and parsing: "Boolean", "Dictionary", and "Integer".
+</p>
+
+<p>
+~HTTP［
+要請／応答
+］の例では、
+`HTTP/2$r による~HTTP2~styleの整形-法を利用する。
+◎
+Example HTTP requests and responses use the HTTP/2-style formatting from [HTTP/2].
+</p>
+
+<p>
+この文書は、
+`QUIC$r による可変長な整数~符号化法を利用する。
+◎
+This document uses the variable-length integer encoding from [QUIC].
+</p>
+
+<p>
+用語
+`制御~stream@
+は、［
+識別子 `0x0^hex を伴う~HTTP2~stream,
+~HTTP3`制御~stream$h3 `HTTP/3$r
+］両者を述べるために利用される。
+◎
+The term "control stream" is used to describe both the HTTP/2 stream with identifier 0x0 and the HTTP/3 control stream; see Section 6.2.1 of [HTTP/3].
+</p>
+
+<p>
+用語
+`~HTTP2優先度~通達@
+は、［
+~clientから~serverへ~HTTP2~frame内に送信された優先度~情報
+］を述べるために利用される
+— `HTTP/2$r `優先度の通達-法＠~HTTPv2#PriorityHere§を見よ。
+◎
+The term "HTTP/2 priority signal" is used to describe the priority information sent from clients to servers in HTTP/2 frames; see Section 5.3.2 of [HTTP/2].
+</p>
+
+<p>
+`接続~error@
+は、［
+~HTTP2の`接続~error＠~HTTPv2#ConnectionErrorHandler$／
+~HTTP3の`接続~error＠~HTTPv3#quic-connection-error$
+］の総称である。
+所与の~error~code %~code に対し、
+種別 %~code を伴う`接続~error$は，
+`接続~error$( %~code )
+と表記される。
+【この用語と表記規約は、この訳による追加。】
+</p>
+
+	</section>
+	<section id="motivation">
+<h2 title="Motivation for Replacing RFC 7540 Stream Priorities">2. 旧~HTTP2（~RFC 7540 ）の~stream優先度を置換する動機</h2>
+
+<p>
+`旧~HTTP2$の`~stream優先度＠~RFCx/rfc7540#section-5.3$は、
+複階的な~systemである
+— そこでは、
+~clientは，
+~stream依存関係と重みを通達して，偏った~treeを述べる。
+それは、
+配備が限定的であり相互運用能に難があるので，
+~HTTP2の改訂 `HTTP/2$r にて非推奨にされた。
+~HTTP2は、
+伝送路の互換性を保守するため，これらの~protocol要素を維持する
+（ `HTTP/2$r `優先度の通達-法＠~HTTPv2#PriorityHere§を見よ）
+— すなわち、
+代替な通達-法（この文書が述べる~schemeなど）が在るとしても，
+利用されるかもしれない。
+◎
+RFC 7540 stream priority (see Section 5.3 of [RFC7540]) is a complex system where clients signal stream dependencies and weights to describe an unbalanced tree. It suffered from limited deployment and interoperability and has been deprecated in a revision of HTTP/2 [HTTP/2]. HTTP/2 retains these protocol elements in order to maintain wire compatibility (see Section 5.3.2 of [HTTP/2]), which means that they might still be used even in the presence of alternative signaling, such as the scheme this document describes.
+</p>
+
+<p>
+多くの`旧~HTTP2$~server実装は、
+`~HTTP2優先度~通達$に対し動作しない。
+◎
+Many RFC 7540 server implementations do not act on HTTP/2 priority signals.
+</p>
+
+<p>
+優先度化には、［
+資源や要請が生成された順序について~serverが有する情報
+］も利用し得る。
+例えば、
+~serverは，［
+~HTML文書~構造の知識
+］に基づいて［
+各~画像を送達する際に，
+利用者~体験に~criticalなものを他より優先する
+］よう求めるかもしれない。
+`旧~HTTP2$では、
+~serverが~clientからの優先度化~用の通達を解釈することは，困難である
+— 同じ条件でも、
+通達-法は，~clientごとに ごく異なり得るので。
+この文書が述べる通達-法は、［
+要求される解釈, 許容される多様さ
+］が より少なくなるよう拘束された，もっと単純なものである。
+◎
+Prioritization can use information that servers have about resources or the order in which requests are generated. For example, a server, with knowledge of an HTML document structure, might want to prioritize the delivery of images that are critical to user experience above other images. With RFC 7540, it is difficult for servers to interpret signals from clients for prioritization, as the same conditions could result in very different signaling from different clients. This document describes signaling that is simpler and more constrained, requiring less interpretation and allowing less variation.
+</p>
+
+<p>
+`旧~HTTP2$は、
+~serverが`中継者$用に優先度~通達を供するために利用できる手法を定義しない。
+◎
+RFC 7540 does not define a method that can be used by a server to provide a priority signal for intermediaries.
+</p>
+
+<p>
+`旧~HTTP2$の~stream優先度は、［
+同じ接続を~~同時に共有している他の要請
+］に相対的に表出される。
+そのような設計は、［
+他の要請が接続をどう共有し得るかに関する知識が無い下で，要請を生成する応用／
+~HTTP3 `HTTP/3$r の様な，~streamたちにまたがる強い順序付け保証が無い~protocol
+］の中へ組入れることが困難である。
+◎
+RFC 7540 stream priority is expressed relative to other requests sharing the same connection at the same time. It is difficult to incorporate such a design into applications that generate requests without knowledge of how other requests might share a connection, or into protocols that do not have strong ordering guarantees across streams, like HTTP/3 [HTTP/3].
+</p>
+
+<p>
+独立な事実調査 `MARX$r による実験から、
+少なくとも~Webにおける利用事例~用には，もっと単純な~schemeでも［
+実施において見られる，より複階的な`旧~HTTP2$に基づいて設定しておかれたもの
+］に比較して等価~以上な処理能~特性に到達できることが示された。
+◎
+Experiments from independent research [MARX] have shown that simpler schemes can reach at least equivalent performance characteristics compared to the more complex RFC 7540 setups seen in practice, at least for the Web use case.
+</p>
+
+		</section>
+		<section id="disabling">
+<h3 title="Disabling RFC 7540 Stream Priorities">2.1. 旧~HTTP2（~RFC 7540 ）の~stream優先度の不能化-法</h3>
+
+<p>
+上述した問題と洞察は、
+`旧~HTTP2$の~stream優先度に対する代替へ向けての動機になった
+（ `HTTP/2$r `優先度化＠~HTTPv2#StreamPriority§を見よ）。
+◎
+The problems and insights set out above provided the motivation for an alternative to RFC 7540 stream priority (see Section 5.3 of [HTTP/2]).
+</p>
+
+<p>
+この文書により定義される
+`SETTINGS_NO_RFC7540_PRIORITIES@sp
+~HTTP2設定は、
+以下に述べるとおり，
+`~HTTP2優先度~通達$を［
+省略する／無視する
+］ことを端点に許容する。
+`SETTINGS_NO_RFC7540_PRIORITIES^sp の値は、
+0 か 1 でなければナラナイ
+— それ以外の値は、
+`接続~error$( `PROTOCOL_ERROR$er )として扱わなければナラナイ
+（ `HTTP/2$r `接続~errorの取扱い＠~HTTPv2#ConnectionErrorHandler§を見よ）。
+その初期~値は 0 とする。
+◎
+The SETTINGS_NO_RFC7540_PRIORITIES HTTP/2 setting is defined by this document in order to allow endpoints to omit or ignore HTTP/2 priority signals (see Section 5.3.2 of [HTTP/2]), as described below. The value of SETTINGS_NO_RFC7540_PRIORITIES MUST be 0 or 1. Any value other than 0 or 1 MUST be treated as a connection error (see Section 5.4.1 of [HTTP/2]) of type PROTOCOL_ERROR. The initial value is 0.
+</p>
+
+<p>
+端点は、
+`SETTINGS_NO_RFC7540_PRIORITIES^sp を利用する場合には，
+それを最初の `SETTINGS$ft ~frame内に送信しなければナラナイ。
+送信器は、
+最初の `SETTINGS^ft ~frameより後に `SETTINGS_NO_RFC7540_PRIORITIES^sp 値を変更してはナラナイ。
+変更を検出した受信器は、
+それを
+`接続~error$( `PROTOCOL_ERROR$er )
+として扱ってもヨイ。
+◎
+If endpoints use SETTINGS_NO_RFC7540_PRIORITIES, they MUST send it in the first SETTINGS frame. Senders MUST NOT change the SETTINGS_NO_RFC7540_PRIORITIES value after the first SETTINGS frame. Receivers that detect a change MAY treat it as a connection error of type PROTOCOL_ERROR.
+</p>
+
+<p>
+~clientは、［
+値 1 を伴う `SETTINGS_NO_RFC7540_PRIORITIES^sp
+］を送信して，［
+自身が`~HTTP2優先度~通達$を利用していない
+］ことを指示できる。
+`SETTINGS$ft ~frameは，［
+~clientから送信された どの`~HTTP2優先度~通達$よりも先行する
+］ので、
+~serverは，［
+通達を取扱うために何らかの資源を割振る必要があるかどうか
+］を通達が到着する前に決定できる。
+~serverは、［
+値 1 を伴う `SETTINGS_NO_RFC7540_PRIORITIES^sp
+］を受信したときは，`~HTTP2優先度~通達$を無視しなければナラナイ。
+◎
+Clients can send SETTINGS_NO_RFC7540_PRIORITIES with a value of 1 to indicate that they are not using HTTP/2 priority signals. The SETTINGS frame precedes any HTTP/2 priority signal sent from clients, so servers can determine whether they need to allocate any resources to signal handling before signals arrive. A server that receives SETTINGS_NO_RFC7540_PRIORITIES with a value of 1 MUST ignore HTTP/2 priority signals.
+</p>
+
+<p>
+~serverは、［
+値 1 を伴う `SETTINGS_NO_RFC7540_PRIORITIES^sp
+］を送信して，［
+~clientから`~HTTP2優先度~通達$が送信されても無視することになる
+］ことを指示できる。
+◎
+Servers can send SETTINGS_NO_RFC7540_PRIORITIES with a value of 1 to indicate that they will ignore HTTP/2 priority signals sent by clients.
+</p>
+
+<p>
+`SETTINGS_NO_RFC7540_PRIORITIES^sp を送信する端点には、
+代替な優先度~通達を利用することが奨励されるが
+（例えば，
+`5§ ／
+`7.1§
+を見よ），
+特定の通達~種別を利用する要件は無い。
+◎
+Endpoints that send SETTINGS_NO_RFC7540_PRIORITIES are encouraged to use alternative priority signals (for example, see Section 5 or Section 7.1), but there is no requirement to use a specific signal type.
+</p>
+
+			<section id="advice-when-using-extensible-priorities-as-the-alternative">
+<h4 title="Advice when Using Extensible Priorities as the Alternative">2.1.1. 代替として拡張-可能な優先度を利用する際の助言</h4>
+
+<p>
+~clientは、［
+~serverから `SETTINGS$ft ~frameを受信する
+］までは，［
+~serverが`~HTTP2優先度~通達$を無視しているか否か
+］を知らない。
+したがって，~clientは、［
+~serverから `SETTINGS^ft ~frameを受信する
+］までは，［
+`~HTTP2優先度~通達$, 
+この文書による優先度化~schemeの通達
+］をどちらも送信するベキである
+（ `5§, `7.1§を見よ）。
+◎
+Before receiving a SETTINGS frame from a server, a client does not know if the server is ignoring HTTP/2 priority signals. Therefore, until the client receives the SETTINGS frame from the server, the client SHOULD send both the HTTP/2 priority signals and the signals of this prioritization scheme (see Sections 5 and 7.1).
+</p>
+
+<p>
+~clientは、［
+値 1 を伴う `SETTINGS_NO_RFC7540_PRIORITIES$sp ~parameter
+］を包含する最初の `SETTINGS$ft ~frameを受信したなら，
+`~HTTP2優先度~通達$の送信を停止するベキである。
+これは、［
+無視されることが既知な冗長な通達を送信する
+］ことを避ける。
+◎
+Once the client receives the first SETTINGS frame that contains the SETTINGS_NO_RFC7540_PRIORITIES parameter with a value of 1, it SHOULD stop sending the HTTP/2 priority signals. This avoids sending redundant signals that are known to be ignored.
+</p>
+
+<p>
+類似に，~clientは、［
+値 0 を伴う `SETTINGS_NO_RFC7540_PRIORITIES$sp ~parameterを受信した場合／
+そのような~parameterは無かった場合
+］には，
+`PRIORITY_UPDATE$ft  ~frameの送信を停止するベキである
+（ `7.1§）
+— それらの~frameは、
+無視される見込みが高いので。
+しかしながら，~clientは、
+`Priority$h ~headerの送信を継続してもヨイ
+— それは、
+`端点間$な通達であり，［
+~clientに直に接続された~server
+］の背後にある~nodeにとっては有用かもかもしれないので。
+◎
+Similarly, if the client receives SETTINGS_NO_RFC7540_PRIORITIES with a value of 0 or if the settings parameter was absent, it SHOULD stop sending PRIORITY_UPDATE frames (Section 7.1), since those frames are likely to be ignored. However, the client MAY continue sending the Priority header field (Section 5), as it is an end-to-end signal that might be useful to nodes behind the server that the client is directly connected to.
+</p>
+
+			</section>
+		</section>
+	</section>
+	<section id="applicability-of-the-extensible-priority-scheme">
+<h2 title="Applicability of the Extensible Priority Scheme">3. 拡張-可能な優先度~schemeの適用能</h2>
+
+<p>
+この文書により定義される優先度~schemeは、
+首に，~HTTP`応答~message$ `HTTP$r たちの優先度化に注力する。
+それは、［
+新たな優先度~parameterたち
+（ `4§ ）,
+それらを伝達する手段
+（ `5§, `7§ ）
+］を定義する。
+それは、［
+応答たちを優先度化する責務がある~serverへ，応答たちの優先度を通信する
+］ことが意図される。
+`10§
+は、
+~serverが［
+それらの通達に対し，他の入力や要因との組合nで動作する
+］ための考慮点を供する。
+◎
+The priority scheme defined by this document is primarily focused on the prioritization of HTTP response messages (see Section 3.4 of [HTTP]). It defines new priority parameters (Section 4) and a means of conveying those parameters (Sections 5 and 7), which is intended to communicate the priority of responses to a server that is responsible for prioritizing them. Section 10 provides considerations for servers about acting on those signals in combination with other inputs and factors.
+</p>
+
+<p>
+`CONNECT$m ~method `HTTP$r は、
+`~tunnel$を確立するために利用され得る。
+通達-法は、
+~tunnelにも類似に適用される
+— ~serverによる優先度化~用の追加的な考慮点は、
+`11§にて与えられる。
+◎
+The CONNECT method (see Section 9.3.6 of [HTTP]) can be used to establish tunnels. Signaling applies similarly to tunnels; additional considerations for server prioritization are given in Section 11.
+</p>
+
+<p>
+`9§では、
+~clientが［
+この~schemeを成す要素たち
+］を局所的に［
+自身が生成する要請~messageたちに，どう任意選択で適用できるか
+］を述べる。
+◎
+Section 9 describes how clients can optionally apply elements of this scheme locally to the request messages that they generate.
+</p>
+
+<p>
+~HTTP拡張には、
+何らかの形で［［
+~HTTP2／~HTTP3
+］~streamの挙動を変更するもの／
+新たな~dataを運ぶための仕組みを定義するもの
+］もあるかもしれない。
+そのような拡張も、［
+この優先度~schemeが，自身に どう適用されるか
+］を定義し得る。
+◎
+Some forms of HTTP extensions might change HTTP/2 or HTTP/3 stream behavior or define new data carriage mechanisms. Such extensions can themselves define how this priority scheme is to be applied.
+</p>
+
+	</section>
+	<section id="parameters">
+<h2 title="Priority Parameters">4. 優先度~parameter</h2>
+
+<p>
+優先度~情報は、［
+( ~key, 値 )
+が成す~pair
+］たちが成す連列であり，将来の拡張~用の部屋を供する。
+各~pairは、
+ある優先度~parameterを表現する。
+◎
+The priority information is a sequence of key-value pairs, providing room for future extensions. Each key-value pair represents a priority parameter.
+</p>
+
+<p>
+`Priority$h ~HTTP~headerは、［
+要請／応答
+］が発行されるときに［
+この優先度~parameterたちが成す集合
+］を`端点間$で伝送する仕方である。
+~clientは、
+要請を送信した後に，［
+`7.1§,
+`7.2§
+］にて定義されるとおり［
+~HTTP~versionに特有な `PRIORITY_UPDATE$ft ~frameを送信する
+］ことにより［
+自身にとっての，応答~優先度
+］を変更できる
+（`6§）。
+これらの~frameは、
+`内方$にある次の~serverに限り優先度~parameterを伝送する。
+◎
+The Priority HTTP header field (Section 5) is an end-to-end way to transmit this set of priority parameters when a request or a response is issued. After sending a request, a client can change their view of response priority (Section 6) by sending HTTP-version-specific PRIORITY_UPDATE frames as defined in Sections 7.1 and 7.2. Frames transmit priority parameters on a single hop only.
+</p>
+
+<p>
+`中継者$は、［
+`PRIORITY_UPDATE$ft ~frame,
+`Priority$h ~header
+］どちらに対しても，［
+それら内の優先度~通達を消費できる／
+それら内に優先度~通達を生産できる
+］。
+`中継者$のうち`内方$にある次の~serverへ `Priority$h 要請~headerのみを渡すものは、
+~clientからの元の`端点間$な通達を保全する
+— `14§を見よ。
+`中継者$は、
+`Priority$h ~headerを渡すこともでき，
+`PRIORITY_UPDATE$ft ~frameを追加的に送信することもできる。
+これは、
+元の［
+~clientによる端点間な通達
+］を保全する一方で，
+`内方$にある次の~serverに異なる優先度を利用するよう指図する効果がある
+— `7§ による指導に従って。
+`中継者$のうち，
+`Priority$h 要請~headerを［
+置換する／追加する
+］ものは、元の［
+~clientによる端点間な通達
+］を上書きする
+— それは、
+後続な［
+当の要請の受信者~すべて
+］用の優先度化に影響し得る。
+◎
+Intermediaries can consume and produce priority signals in a PRIORITY_UPDATE frame or Priority header field. An intermediary that passes only the Priority request header field to the next hop preserves the original end-to-end signal from the client; see Section 14. An intermediary could pass the Priority header field and additionally send a PRIORITY_UPDATE frame. This would have the effect of preserving the original client end-to-end signal, while instructing the next hop to use a different priority, per the guidance in Section 7. An intermediary that replaces or adds a Priority request header field overrides the original client end-to-end signal, which can affect prioritization for all subsequent recipients of the request.
+</p>
+
+<p>
+優先度~parameterたちが成す集合は、［
+`Priority$h ~header,
+`PRIORITY_UPDATE$ft ~frame
+］どちらにおいても，`~sf辞書$ `STRUCTURED-FIELDS$r として`符号化され$sFる。
+◎
+For both the Priority header field and the PRIORITY_UPDATE frame, the set of priority parameters is encoded as a Dictionary (see Section 3.2 of [STRUCTURED-FIELDS]).
+</p>
+
+<p>
+この文書は、
+優先度~parameterとして，［
+`緊急度$（ `u^c ）,
+`増分的か$（ `i^c ）
+］を定義する。
+~serverは、
+これらの優先度~parameterを運ばない~HTTP要請を受信したときは，
+各自に既定の値が指定されていたかのように動作するベキである。
+◎
+This document defines the urgency (u) and incremental (i) priority parameters. When receiving an HTTP request that does not carry these priority parameters, a server SHOULD act as if their default values were specified.
+</p>
+
+<p>
+`中継者$は、
+自身が回送する［
+要請, 対する応答
+］に対し，［
+当の要請の通達,
+当の応答の通達
+］を組合できる。
+応答における優先度~parameterの省略に対する取扱いは、
+要請におけるそれとは異なることに注意
+— `8§を見よ。
+◎
+An intermediary can combine signals from requests and responses that it forwards. Note that omission of priority parameters in responses is handled differently from omission in requests; see Section 8.
+</p>
+
+<p>
+受信器は、
+`~sf辞書$を
+`STRUCTURED-FIELDS$r `有構造~fieldの構文解析-法＠~STRUCTURED-FIELDS#text-parse§
+に述べられるとおりに構文解析する。
+この文書は、
+成功裡に構文解析された`~sf辞書$に対し，追加的な要件を設置する：
+優先度~parameterのうち，その［
+【~keyが】未知なもの／
+値が範囲~外であるもの／
+値が期待されない型であるもの
+］は、
+無視しなければナラナイ。
+◎
+Receivers parse the Dictionary as described in Section 4.2 of [STRUCTURED-FIELDS]. Where the Dictionary is successfully parsed, this document places the additional requirement that unknown priority parameters, priority parameters with out-of-range values, or values of unexpected types MUST be ignored.
+</p>
+
+		<section id="urgency">
+<h3 title="Urgency">4.1. 緊急度</h3>
+
+<p>
+`緊急度@
+（ `urgency^en ）
+~parameter
+— `~sf~key$ `u^c —
+の値は、
+0 以上 7 以下の`~sf整数$ `STRUCTURED-FIELDS$r であり，
+既定は 3 とする
+— それは、
+降順による優先度を与える。
+◎
+The urgency (u) parameter value is Integer (see Section 3.3.1 of [STRUCTURED-FIELDS]), between 0 and 7 inclusive, in descending order of priority. The default is 3.
+</p>
+
+<p>
+この~parameterを利用する端点は、［
+自身にとっての，~HTTP応答たちの優先順位
+］を通信する。
+端点は、
+`緊急度$の値を［
+~serverは、
+この情報を成す`緊急度$による順序を利用して，応答たち伝送するかもしれない
+］という期待に基づいて選べる。
+値が小さいほど，優先順位は高くなる。
+◎
+Endpoints use this parameter to communicate their view of the precedence of HTTP responses. The chosen value of urgency can be based on the expectation that servers might use this information to transmit HTTP responses in the order of their urgency. The smaller the value, the higher the precedence.
+</p>
+
+<div class="example">
+<p>
+次の例は、
+`緊急度$が 0 に設定された（ `u=0^c ），ある~CSS~fileへの要請を示す：
+◎
+The following example shows a request for a CSS file with the urgency set to 0:
+</p>
+
+<pre class="lang-http">
+:method = GET
+:scheme = https
+:authority = example.net
+:path = /style.css
+priority = u=0
+</pre>
+</div>
+
+<p>
+~clientは、
+自身が~fetchする文書には，他の`資源$への~fetchも伴われると見込まれるときは
+（例：~HTML文書）、
+当の文書~資源に既定の`緊急度$をアテガうベキである。
+この規約は、［
+当の~web~siteに特有な知識を利用して緊急度を精緻化する
+］ことを~serverに許容する
+（`8§を見よ）。
+◎
+A client that fetches a document that likely consists of multiple HTTP resources (e.g., HTML) SHOULD assign the default urgency level to the main resource. This convention allows servers to refine the urgency using knowledge specific to the website (see Section 8).
+</p>
+
+<p>
+最も低い`緊急度$（ 7 ）は、
+~background~task（~software更新~fileの送達など）用に予約される。
+この緊急度は、
+~fetchされる応答には利用者-ヤリトリに何らかの影響iがある場合には，利用するベキでない。
+◎
+The lowest urgency level (7) is reserved for background tasks such as delivery of software updates. This urgency level SHOULD NOT be used for fetching responses that have any impact on user interaction.
+</p>
+
+		</section>
+		<section id="incremental">
+<h3 title="Incremental">4.2. 増分的か</h3>
+
+<p>
+`増分的か@
+（ `incremental^en ）
+~parameter
+— `~sf~key$ `i^c —
+は、
+`~sf真偽値$ `STRUCTURED-FIELDS$r をとる。
+それは、
+~HTTP応答は増分的に処理できるか否か
+— すなわち，［
+当の応答を成す各~chunkが到着するに伴い，何らかの有意義な出力を供する
+］か否か —
+を指示する。
+◎
+The incremental (i) parameter value is Boolean (see Section 3.3.6 of [STRUCTURED-FIELDS]). It indicates if an HTTP response can be processed incrementally, i.e., provide some meaningful output as chunks of the response arrive.
+</p>
+
+<p>
+`増分的か$の既定の値は、
+~F （ `0^c ）とする。
+◎
+The default value of the incremental parameter is false (0).
+</p>
+
+<p>
+~clientが［
+`増分的か$が ~F に設定された要請
+］たちを同時並行に為す場合、［
+対する応答として，同じ`緊急度$を伴うもの
+］たちを同時並行に~serveすることには便益は無い
+— ~clientは、
+それらの応答を増分的に処理しようとしないので。
+同じ`緊急度$を伴う非-増分的な応答を［
+1 個ずつ，要請たちが生成された順序で~serveする
+］ことが，最善な策になると見なされる。
+◎
+If a client makes concurrent requests with the incremental parameter set to false, there is no benefit in serving responses with the same urgency concurrently because the client is not going to process those responses incrementally. Serving non-incremental responses with the same urgency one by one, in the order in which those requests were generated, is considered to be the best strategy.
+</p>
+
+<p>
+~clientが［
+`増分的か$が ~T に設定された要請
+］たちを同時並行に為す場合、［
+同じ`緊急度$を伴う要請たち
+］に対し同時並行に~serveすることは，有益かもしれない。
+これを行うと、
+当の接続の帯域幅は分配される
+— それは、
+各~応答は，完了するまで より長くかかることを意味する。
+増分的な送達が最も有用になるのは、
+~clientにて複数の部分的な応答が可用になるに伴い
+— それらが`完全$になる前に —
+~clientに何らかの価値を供するかもしれないときである。
+◎
+If a client makes concurrent requests with the incremental parameter set to true, serving requests with the same urgency concurrently might be beneficial. Doing this distributes the connection bandwidth, meaning that responses take longer to complete. Incremental delivery is most useful where multiple partial responses might provide some value to clients ahead of a complete response being available.
+</p>
+
+<div class="example">
+<p>
+次の例は、
+ある~JPEG~fileへの要請を示す
+— その~parameter［
+`緊急度$は 5,
+`増分的か$は ~T
+］に設定されている：
+◎
+The following example shows a request for a JPEG file with the urgency parameter set to 5 and the incremental parameter set to true.
+</p>
+
+<pre class="lang-http">
+:method = GET
+:scheme = https
+:authority = example.net
+:path = /image.jpg
+priority = u=5, i
+</pre>
+</div>
+
+		</section>
+		<section id="new-parameters">
+<h3 title="Defining New Priority Parameters">4.3. 新たな優先度~parameterの定義-法</h3>
+
+<p>
+新たな優先度~parameterを定義するよう試みるときは、
+それが［
+既存の端点により遂行される優先度化／
+当の~parameterを解さない`中継者$
+］に対し逆効果に干渉しないよう，~careしなければならない。
+未知な優先度~parameterは無視されるので、
+新たな優先度~parameterは，［
+`緊急度$／`増分的か$
+］優先度~parameterを［
+後方-互換でない仕方／~fallback安全でない仕方
+］（順不同）で改変したり, その解釈を変更するべきでない。
+◎
+When attempting to define new priority parameters, care must be taken so that they do not adversely interfere with prioritization performed by existing endpoints or intermediaries that do not understand the newly defined priority parameters. Since unknown priority parameters are ignored, new priority parameters should not change the interpretation of, or modify, the urgency (see Section 4.1) or incremental (see Section 4.2) priority parameters in a way that is not backwards compatible or fallback safe.
+</p>
+
+<p>
+例えば，［
+緊急度を 8 ~levelより多い粒度で供する必要がある
+］場合、［
+追加的な優先度~parameterを利用することで，範囲を細分化する
+］ことはアリになろう。
+当の~parameterを認識しない実装は、
+より少ない 8 ~levelの粒度を安全に利用し続けれる。
+◎
+For example, if there is a need to provide more granularity than eight urgency levels, it would be possible to subdivide the range using an additional priority parameter. Implementations that do not recognize the parameter can safely continue to use the less granular eight levels.
+</p>
+
+<p>
+代替として、
+緊急度を増補することもできる。
+例えば，~graphicな~UAは、
+優先度~parameter `可視か^i （ `visible^c ）を送信して，
+要請された資源が表示域の中にあるか否かを指示することもできる。
+◎
+Alternatively, the urgency can be augmented. For example, a graphical user agent could send a visible priority parameter to indicate if the resource being requested is within the viewport.
+</p>
+
+<p>
+優先度~parameterの値【名前？】には、［
+~vendor／応用／配備
+］に特有なものより，汎用なものが選好される。
+当の~communityにおいて汎用な値【名前？】が合意できない場合には、
+~parameterの名前は，相応に特有なものになるべきである
+（例：
+当の［
+~vendor／応用／配備
+］を識別する接頭辞を伴う名前）。
+◎
+Generic priority parameters are preferred over vendor-specific, application-specific, or deployment-specific values. If a generic value cannot be agreed upon in the community, the parameter's name should be correspondingly specific (e.g., with a prefix that identifies the vendor, application, or deployment).
+</p>
+
+			<section id="register">
+<h4 title="Registration">4.3.1. 登録</h4>
+
+<p>
+新たな優先度~parameterは、
+`~HTTP優先度~registry＠~IANA-a/http-priority$cite
+内に登録することにより定義できる。
+この~registryは、
+`~sf辞書$内に利用される`~sf~key$（短い~textな文字列）を統治する
+`STRUCTURED-FIELDS$r 。
+各~HTTP要請には優先度~通達が結付けられ得るので、
+~keyの長さを
+— とりわけ， 1 個の文字からなる文字列に —
+短くすることには価値がある。
+値打ちがある~keyに対する意図されない競合を避ける下で，拡張を奨励するため、
+この~registryでは，
+優先度~parameter用の登録~要請に対し次に挙げる 2 種の登録~施策が運用される：
+◎
+New priority parameters can be defined by registering them in the "HTTP Priority" registry. This registry governs the keys (short textual strings) used in the Dictionary (see Section 3.2 of [STRUCTURED-FIELDS]). Since each HTTP request can have associated priority signals, there is value in having short key lengths, especially single-character strings. In order to encourage extensions while avoiding unintended conflict among attractive key values, the "HTTP Priority" registry operates two registration policies, depending on key length.
+</p>
+<ul>
+	<li>
+~keyの長さが 1 の場合
+⇒
+`仕様が要求される施策＠~RFCx/rfc8126#section-4.6$ `RFC8126$r を利用する。
+◎
+Registration requests for priority parameters with a key length of one use the Specification Required policy, per Section 4.6 of [RFC8126].
+</li>
+	<li>
+他（長さ 2 以上）の場合
+⇒
+`専門家~考査による施策＠~RFCx/rfc8126#section-4.5$ `RFC8126$r を利用する。
+仕様~文書は、
+在った方が良いが，要求されてはいない。
+◎
+Registration requests for priority parameters with a key length greater than one use the Expert Review policy, per Section 4.5 of [RFC8126]. A specification document is appreciated but not required.
+</li>
+</ul>
+
+<p>
+指名された専門家（たち）は，各~登録~要請を考査する際に［
+`4.3§ にて供される追加的な指導
+］を考慮できるが、
+それは，却下の~~根拠には利用できない。
+◎
+When reviewing registration requests, the designated expert(s) can consider the additional guidance provided in Section 4.3 but cannot use it as a basis for rejection.
+</p>
+
+<p>
+登録~要請は、
+当の優先度~parameter %~parameter に対し，
+次の~templateを利用するべきである：
+◎
+Registration requests should use the following template:
+</p>
+<ul>
+	<li>
+名前
+⇒
+%~parameter の~keyに合致する優先度~parameter用の名前
+◎
+Name:
+[a name for the priority parameter that matches the parameter key]
+</li>
+	<li>
+記述
+⇒
+%~parameter の意味論と値の記述
+◎
+Description:
+[a description of the priority parameter semantics and value]
+</li>
+	<li>
+参照
+⇒
+%~parameter を定義している仕様
+◎
+Reference:
+[to a specification defining this priority parameter]
+</li>
+</ul>
+
+<p>
+登録~要請の送信-先の詳細は、
+`~HTTP優先度~registry＠~IANA-a/http-priority$cite
+を見よ。
+◎
+See the registry at &lt;https://www.iana.org/assignments/http-priority&gt; for details on where to send registration requests.
+</p>
+
+			</section>
+		</section>
+	</section>
+	<section id="header-field">
+<h2 title="The Priority HTTP Header Field">5. `Priority^h ~HTTP~header</h2>
+
+<p>
+`Priority^h ~HTTP~headerは、
+優先度~parameter群を運ぶ`~sf辞書$をとる
+（ `4§を見よ）。
+それは、［
+要請~内, 応答~内
+］どちらにも出現し得る。
+それは、［
+自身にとって，~HTTP応答たちがどう優先度化されるべきか
+］を指示する`端点間$な通達である。
+`8§は、
+`中継者$が［
+~client, ~server
+］から送信された優先度~情報をどう組合できるかを述べる。
+~clientは、
+`Priority^h 応答~headerの［
+出現／省略
+］を優先度化が生じたことの承認としては解釈できない。
+端点が `Priority^h ~header値に対し どう動作できるかに関する指導は、［
+`9§,
+`10§
+］にて与えられる。
+◎
+The Priority HTTP header field is a Dictionary that carries priority parameters (see Section 4). It can appear in requests and responses. It is an end-to-end signal that indicates the endpoint's view of how HTTP responses should be prioritized. Section 8 describes how intermediaries can combine the priority information sent from clients and servers. Clients cannot interpret the appearance or omission of a Priority response header field as acknowledgement that any prioritization has occurred. Guidance for how endpoints can act on Priority header values is given in Sections 9 and 10.
+</p>
+
+<p>
+`Priority^h ~headerを伴う~HTTP要請は、［
+~cacheされ，後続な要請~用に再利用される
+］かもしれない
+— `CACHING$r を見よ。
+生成元~serverには、［
+`Priority^h 応答~headerを受信した~HTTP要請の~propに基づいて生成する
+］ときには［
+~cacheした応答に対する~cachingの挙動
+］を制御する~header
+（例： `Cache-Control$h, `Vary$h ）
+を利用して［
+~cache能／適用能
+］を制御することが期待される。
+◎
+An HTTP request with a Priority header field might be cached and reused for subsequent requests; see [CACHING]. When an origin server generates the Priority response header field based on properties of an HTTP request it receives, the server is expected to control the cacheability or the applicability of the cached response by using header fields that control the caching behavior (e.g., Cache-Control, Vary).
+</p>
+
+	</section>
+	<section id="reprioritization">
+<h2 title="Reprioritization">6. 再~優先度化</h2>
+
+<p>
+~clientは、
+要請を送信した後，対する応答の優先度を変更すると有益になることもある。
+例として、
+~web~browserは，
+ある~JS~file用に~prefetch【事前~fetch】要請を
+— その `Priority$h 要請~headerの`緊急度$に `u=7^c （~background~task用）を設定して —
+発行するかもしれない。
+当の~prefetchが進捗-中にある間に，
+利用者が当の【！new】~JS~fileを参照する~pageへ~navigateしたときには、
+~browserは，再~優先度化~通達として［
+`u=0^c に設定された `~Priority~field値^i ~fieldを伴うもの
+］を送信することになろう。
+そのような再~優先度化には、
+`PRIORITY_UPDATE$ft ~frameを利用できる。
+◎
+After a client sends a request, it may be beneficial to change the priority of the response. As an example, a web browser might issue a prefetch request for a JavaScript file with the urgency parameter of the Priority request header field set to u=7 (background). Then, when the user navigates to a page that references the new JavaScript file, while the prefetch is in progress, the browser would send a reprioritization signal with the Priority Field Value set to u=0. The PRIORITY_UPDATE frame (Section 7) can be used for such reprioritization.
+</p>
+
+	</section>
+	<section id="frame">
+<h2 title="The PRIORITY_UPDATE Frame">7. `PRIORITY_UPDATE^ft ~frame</h2>
+
+<p>
+この文書は、［
+~HTTP2 `HTTP/2$r ／
+~HTTP3 `HTTP/3$r
+］用に，新たな `PRIORITY_UPDATE^ft ~frameを指定する。
+それは、
+優先度~parameter群を運ぶとともに，
+~HTTP~versionに特有な識別子に基づいて優先度化の~targetを参照する。
+この識別子は、
+~HTTP2においては~stream~ID【`~stream識別子＠~HTTPv2#StreamIdentifiers$】であり，~HTTP3においては［
+`~stream~ID$h3／`~push~ID$h3
+］である。
+`Priority$h ~headerと違って、
+`PRIORITY_UPDATE^ft ~frameは，`隣点間$な通達である。
+◎
+This document specifies a new PRIORITY_UPDATE frame for HTTP/2 [HTTP/2] and HTTP/3 [HTTP/3]. It carries priority parameters and references the target of the prioritization based on a version-specific identifier. In HTTP/2, this identifier is the stream ID; in HTTP/3, the identifier is either the stream ID or push ID. Unlike the Priority header field, the PRIORITY_UPDATE frame is a hop-by-hop signal.
+</p>
+
+<p>
+`PRIORITY_UPDATE^ft ~frameは、［
+当の応答を運ぶ~streamとは独立に送信する
+］ことを~clientに許容するよう，
+~clientにより`制御~stream$上に送信される。
+すなわち，~clientは、
+それを次のために利用できる：
+◎
+PRIORITY_UPDATE frames are sent by clients on the control stream, allowing them to be sent independently of the stream that carries the response. This means they can be used＼
+</p>
+<ul>
+	<li>
+［
+応答~stream／~push~stream
+］を優先度化し直す
+◎
+to reprioritize a response or a push stream,＼
+</li>
+	<li>
+`Priority$h ~headerの代わりに，
+応答の初期~優先度を通達する
+◎
+or to signal the initial priority of a response instead of the Priority header field.
+</li>
+</ul>
+
+<p>
+`PRIORITY_UPDATE^ft ~frameは、
+`~Priority~field値^i ~field内に［
+すべての優先度~parameterたちが成す完全な集合
+］を通信する。
+ある優先度~parameterを省略した場合、
+その既定の値を利用する通達になる。
+`~Priority~field値^i の構文解析に失敗した場合、［
+~HTTP2においては
+`接続~error$( `PROTOCOL_ERROR$er ) ／
+~HTTP3においては
+`接続~error$( `H3_GENERAL_PROTOCOL_ERROR$er )
+］として扱ってもヨイ。
+◎
+A PRIORITY_UPDATE frame communicates a complete set of all priority parameters in the Priority Field Value field. Omitting a priority parameter is a signal to use its default value. Failure to parse the Priority Field Value MAY be treated as a connection error. In HTTP/2, the error is of type PROTOCOL_ERROR; in HTTP/3, the error is of type H3_GENERAL_PROTOCOL_ERROR.
+</p>
+
+<p>
+~clientは、
+`PRIORITY_UPDATE^ft ~frameを［
+それが参照する~streamが~openになる前
+］に送信してもヨイ
+（ただし、
+~HTTP2用の~push~streamを除く
+— `7.1§を見よ）。
+さらには、［
+~HTTP3は、
+~streamたちの順序付けに何も保証を提供しない
+］ので，［
+当の~frameが意図されるより早く受信される
+］こともある。
+どちらの事例も、
+~serverが［
+まだ~openでない要請~streamを参照する `PRIORITY_UPDATE^ft ~frame
+］を受信した場合，競走~条件へ至らす
+— これを解くため、
+~schedule法の目的においては，［
+`PRIORITY_UPDATE^ft ~frameのうち最も近過去に受信されたもの
+］が［
+他の通達を上書きする~~最新な情報である
+］と見なせる。
+~serverは、
+最も近過去に受信した `PRIORITY_UPDATE^ft ~frameを~bufferして，
+参照された~streamが~openされたなら それを適用するベキである。
+各~stream用に `PRIORITY_UPDATE^ft ~frameを保持することは、
+~server資源が要求されるので，局所的な実装~施策に束縛され得る。
+送信され得る `PRIORITY_UPDATE^ft ~frameの個数には上限は無いが、
+最も近過去に受信した~frameに限り格納することで，資源を~~節約できる。
+◎
+A client MAY send a PRIORITY_UPDATE frame before the stream that it references is open (except for HTTP/2 push streams; see Section 7.1). Furthermore, HTTP/3 offers no guaranteed ordering across streams, which could cause the frame to be received earlier than intended. Either case leads to a race condition where a server receives a PRIORITY_UPDATE frame that references a request stream that is yet to be opened. To solve this condition, for the purposes of scheduling, the most recently received PRIORITY_UPDATE frame can be considered as the most up-to-date information that overrides any other signal. Servers SHOULD buffer the most recently received PRIORITY_UPDATE frame and apply it once the referenced stream is opened. Holding PRIORITY_UPDATE frames for each stream requires server resources, which can be bounded by local implementation policy. Although there is no limit to the number of PRIORITY_UPDATE frames that can be sent, storing only the most recently received frame limits resource commitment.
+</p>
+
+		<section id="h2-update-frame">
+<h3 title="HTTP/2 PRIORITY_UPDATE Frame">7.1. ~HTTP2 `PRIORITY_UPDATE^ft ~frame</h3>
+
+<p>
+~HTTP2 `PRIORITY_UPDATE^ft ~frame（種別 `0x10^hex ）は、
+~clientにより［
+ある応答の初期~優先度を通達する／
+ある［
+応答／~push~stream
+］を優先度化し直す
+］ために利用される。
+それは、
+当の応答の~stream~IDを運ぶとともに，優先度を
+— `Priority$h ~header値と同じ表現を利用して，~ASCII~textで —
+運ぶ。
+◎
+The HTTP/2 PRIORITY_UPDATE frame (type=0x10) is used by clients to signal the initial priority of a response, or to reprioritize a response or push stream. It carries the stream ID of the response and the priority in ASCII text, using the same representation as the Priority header field value.
+</p>
+
+<p>
+`PRIORITY_UPDATE^ft ~frame~header内の `~stream識別子^i ~field
+（`HTTP/2$r `~stream識別子＠~HTTPv2#StreamIdentifiers§を見よ）
+は、
+0（ `0x0^hex ）でなければナラナイ。
+この~fieldが他の値をとる `PRIORITY_UPDATE^ft ~frameを受信したときは、
+`接続~error$( `PROTOCOL_ERROR$er )
+として扱わなければナラナイ。
+◎
+The Stream Identifier field (see Section 5.1.1 of [HTTP/2]) in the PRIORITY_UPDATE frame header MUST be zero (0x0). Receiving a PRIORITY_UPDATE frame with a field of any other value MUST be treated as a connection error of type PROTOCOL_ERROR.
+</p>
+
+<figure id="figure-1">
+<pre class="frame-diagram">
+~HTTP2 `PRIORITY_UPDATE^ft ~frame {
+  長さ (24),
+  種別 (8) = 0x10,
+
+  ~flag群（利用されない） (8),
+
+  予約-済み (1),
+  ~stream識別子 (31),
+
+  予約-済み (1),
+  優先度化された~stream~ID (31),
+  ~Priority~field値 (..),
+}
+◎
+HTTP/2 PRIORITY_UPDATE Frame {
+  Length (24),
+  Type (8) = 0x10,
+
+  Unused Flags (8),
+
+  Reserved (1),
+  Stream Identifier (31),
+
+  Reserved (1),
+  Prioritized Stream ID (31),
+  Priority Field Value (..),
+}
+</pre>
+<figcaption>
+~HTTP2 `PRIORITY_UPDATE^ft ~frame形式
+◎
+Figure 1: HTTP/2 PRIORITY_UPDATE Frame Format
+</figcaption></figure>
+
+<p>
+`PRIORITY_UPDATE^ft ~frameを成す次に挙げる~fieldは、
+`HTTP/2$r `~HTTP~frame＠~HTTPv2#FramingLayer§
+にて述べられる
+⇒＃
+`長さ^i,
+`種別^i,
+`~flag群^i（利用されない）,
+`予約-済み^i（ 1 個目）,
+`~stream識別子^i
+◎
+The Length, Type, Unused Flag(s), Reserved, and Stream Identifier fields are described in Section 4 of [HTTP/2].＼
+</p>
+
+<p>
+`PRIORITY_UPDATE^ft ~frameを成す~payload
+【 ~HTTP2~frameを成す `~frame~payload^i — 2 個目の `予約-済み^i ~field以下】
+は、
+次に挙げる追加的な~fieldを包含する：
+◎
+The PRIORITY_UPDATE frame payload contains the following additional fields:
+</p>
+<ul>
+	<li>
+`優先度化された~stream~ID^i
+⇒
+優先度~更新の~targetである~stream用の 31 ~bitの~stream識別子。
+◎
+Prioritized Stream ID:
+• A 31-bit stream identifier for the stream that is the target of the priority update.
+</li>
+	<li>
+`~Priority~field値^i
+⇒
+`有構造~field$を利用して~ASCII~textに`符号化され$sFた優先度~更新~値。
+これは、
+`Priority$h ~header値と同じ表現である。
+◎
+Priority Field Value:
+• The priority update value in ASCII text, encoded using Structured Fields. This is the same representation as the Priority header field value.
+</li>
+</ul>
+
+<p>
+~clientは、
+要請~streamに `PRIORITY_UPDATE^ft ~frameを適用するときは，
+`優先度化された~stream~ID^i として［
+"open" ／ "half-closed (local)" ／ "idle"
+］いずれかの状態にある~stream
+（すなわち，依然として~dataが受信されるかもしれない~stream）
+を指すものを供するベキである。
+~serverは、
+`優先度化された~stream~ID^i が［
+"half-closed (local)" ／ "closed"
+］状態にある~stream
+（すなわち、更なる~dataは送信されない~stream）
+を指す所では，当の~frameを破棄できる。
+［
+優先度化されたが "idle" 状態にあり続ける~streamの個数
+］ ~PLUS ［
+作動中な（［
+"open" ／ "half-closed (local)" ／ "half-closed (remote)"
+］状態にある）
+~streamの個数は
+（ `HTTP/2$r `~streamの同時並行性＠~HTTPv2#n-stream-concurrency§を見よ）、
+`SETTINGS_MAX_CONCURRENT_STREAMS$sp ~parameterの値を超過してはナラナイ。
+~serverは、
+受信した `PRIORITY_UPDATE^ft がこれを満たさないときは，
+`接続~error$( `PROTOCOL_ERROR$er )
+で応答しなければナラナイ。
+◎
+When the PRIORITY_UPDATE frame applies to a request stream, clients SHOULD provide a prioritized stream ID that refers to a stream in the "open", "half-closed (local)", or "idle" state (i.e., streams where data might still be received). Servers can discard frames where the prioritized stream ID refers to a stream in the "half-closed (local)" or "closed" state (i.e., streams where no further data will be sent). The number of streams that have been prioritized but remain in the "idle" state plus the number of active streams (those in the "open" state or in either of the "half-closed" states; see Section 5.1.2 of [HTTP/2]) MUST NOT exceed the value of the SETTINGS_MAX_CONCURRENT_STREAMS parameter. Servers that receive such a PRIORITY_UPDATE MUST respond with a connection error of type PROTOCOL_ERROR.
+</p>
+
+<p>
+~clientは、
+~push~streamに`PRIORITY_UPDATE^ft ~frameを適用するときは，
+`優先度化された~stream~ID^i として［
+"reserved (remote)" ／ "half-closed (local)"
+］状態にある~streamを指すものを供するベキである。
+~serverは、
+`優先度化された~stream~ID^i が "closed" 状態にある~streamを指す所では，
+当の~frameを破棄できる。
+~clientは、
+`優先度化された~stream~ID^i として
+"idle" 状態にある~push~streamを指すものを供してはナラナイ。
+~serverは、
+受信した `PRIORITY_UPDATE^ft が "idle" 状態にある~push~streamを指す場合には，
+`接続~error$( `PROTOCOL_ERROR$er )
+で応答しなければナラナイ。
+◎
+When the PRIORITY_UPDATE frame applies to a push stream, clients SHOULD provide a prioritized stream ID that refers to a stream in the "reserved (remote)" or "half-closed (local)" state. Servers can discard frames where the prioritized stream ID refers to a stream in the "closed" state. Clients MUST NOT provide a prioritized stream ID that refers to a push stream in the "idle" state. Servers that receive a PRIORITY_UPDATE for a push stream in the "idle" state MUST respond with a connection error of type PROTOCOL_ERROR.
+</p>
+
+<p>
+受信した `PRIORITY_UPDATE^ft ~frameが`優先度化された~stream~ID^i として `0x0^hex を伴う場合、
+受信者は，
+`接続~error$( `PROTOCOL_ERROR$er )
+で応答しなければナラナイ。
+◎
+If a PRIORITY_UPDATE frame is received with a prioritized stream ID of 0x0, the recipient MUST respond with a connection error of type PROTOCOL_ERROR.
+</p>
+
+<p>
+~serverは、
+`PRIORITY_UPDATE^ft ~frameを送信してはナラナイ。
+~clientは、
+`PRIORITY_UPDATE^ft ~frameを受信した場合には，
+`接続~error$( `PROTOCOL_ERROR$er )
+で応答しなければナラナイ。
+◎
+Servers MUST NOT send PRIORITY_UPDATE frames. If a client receives a PRIORITY_UPDATE frame, it MUST respond with a connection error of type PROTOCOL_ERROR.
+</p>
+
+		</section>
+		<section id="h3-update-frame">
+<h3 title="HTTP/3 PRIORITY_UPDATE Frame">7.2. ~HTTP3 `PRIORITY_UPDATE^ft ~frame</h3>
+
+<p>
+~HTTP3 `PRIORITY_UPDATE^ft ~frame
+（種別 `0xF0700^hex ／ `0xF0701^hex ）
+は、
+~clientにより［
+応答の初期~優先度を通達する／
+［
+応答／`~push~stream$h3
+］を優先度化し直す
+］ために利用される。
+それは、
+優先度化される要素の識別子を運ぶとともに，更新された優先度を
+— `Priority$h ~header値と同じ表現を利用して，~ASCII~textで —
+運ぶ。
+`PRIORITY_UPDATE^ft ~frameのうち，~frame種別［
+`0xF0700^hex を伴うものは`要請~stream$h3 ／
+`0xF0701^hex を伴うものは`~push~stream$h3
+］用に利用される。
+◎
+The HTTP/3 PRIORITY_UPDATE frame (type=0xF0700 or 0xF0701) is used by clients to signal the initial priority of a response, or to reprioritize a response or push stream. It carries the identifier of the element that is being prioritized and the updated priority in ASCII text that uses the same representation as that of the Priority header field value. PRIORITY_UPDATE with a frame type of 0xF0700 is used for request streams, while PRIORITY_UPDATE with a frame type of 0xF0701 is used for push streams.
+</p>
+
+<p>
+`PRIORITY_UPDATE^ft ~frameは、
+~clientの`制御~stream$h3 `HTTP/3$r 上に送信しなければナラナイ。
+受信者は、
+それ以外の~stream上で `PRIORITY_UPDATE^ft ~frameを受信したときは，
+`接続~error$( `H3_FRAME_UNEXPECTED$er )
+として扱わなければナラナイ。
+◎
+The PRIORITY_UPDATE frame MUST be sent on the client control stream (see Section 6.2.1 of [HTTP/3]). Receiving a PRIORITY_UPDATE frame on a stream other than the client control stream MUST be treated as a connection error of type H3_FRAME_UNEXPECTED.
+</p>
+
+<figure id="fig-h3-reprioritization-frame">
+<pre class="frame-diagram">
+~HTTP3 `PRIORITY_UPDATE^ft ~frame {
+  種別 (i) = 0xF0700..0xF0701,
+  長さ (i),
+  優先度化された要素~ID (i),
+  ~Priority~field値 (..),
+}
+◎
+HTTP/3 PRIORITY_UPDATE Frame {
+  Type (i) = 0xF0700..0xF0701,
+  Length (i),
+  Prioritized Element ID (i),
+  Priority Field Value (..),
+}
+</pre>
+<figcaption>
+~HTTP3 `PRIORITY_UPDATE^ft ~frame
+◎
+Figure 2: HTTP/3 PRIORITY_UPDATE Frame
+</figcaption></figure>
+
+<p>
+`PRIORITY_UPDATE^ft ~frameの~payloadは、
+次に挙げる~fieldを有する：
+◎
+The PRIORITY_UPDATE frame payload has the following fields:
+</p>
+<ul>
+	<li>
+`優先度化された要素~ID^i
+⇒
+優先度~更新の~targetになる［
+`~stream~ID$h3／`~push~ID$h3
+］。
+◎
+Prioritized Element ID:
+The stream ID or push ID that is the target of the priority update.
+</li>
+	<li>
+`~Priority~field値^i
+⇒
+`有構造~field$を利用して~ASCII~textに`符号化され$sFた優先度~更新~値。
+これは，
+`Priority$h ~header値と同じ表現である。
+◎
+Priority Field Value:
+The priority update value in ASCII text, encoded using Structured Fields. This is the same representation as the Priority header field value.
+</li>
+</ul>
+
+<p>
+`PRIORITY_UPDATE^ft のうち要請~stream用の変種（種別 `0xF0700^hex ）は、
+ある`要請~stream$h3を参照しなければナラナイ。
+~serverは、
+受信した `PRIORITY_UPDATE^ft （種別 `0xF0700^hex ）に伴われる`~stream~ID$h3が
+`要請~stream$h3を参照していない場合には，
+`接続~error$( `H3_ID_ERROR$er )
+として扱わなければナラナイ。
+`~stream~ID$h3は、［
+~clientから起動される双方向~stream
+］用の上限を超えてはナラナイ。
+~serverは、
+受信した `PRIORITY_UPDATE^ft （種別 `0xF0700^hex ）に伴われる`~stream~ID$h3が この上限を超える場合には，
+`接続~error$( `H3_ID_ERROR$er )
+として扱うベキである。
+~errorを生成することは義務ではない
+— ~HTTP3実装には、
+~QUIC層により適用された［
+作動中な~streamの同時並行~度に対する上限
+］を決定するときに，実施~上の障壁があるかもしれないので。
+◎
+The request-stream variant of PRIORITY_UPDATE (type=0xF0700) MUST reference a request stream. If a server receives a PRIORITY_UPDATE (type=0xF0700) for a stream ID that is not a request stream, this MUST be treated as a connection error of type H3_ID_ERROR. The stream ID MUST be within the client-initiated bidirectional stream limit. If a server receives a PRIORITY_UPDATE (type=0xF0700) with a stream ID that is beyond the stream limits, this SHOULD be treated as a connection error of type H3_ID_ERROR. Generating an error is not mandatory because HTTP/3 implementations might have practical barriers to determining the active stream concurrency limit that is applied by the QUIC layer.
+</p>
+
+<p>
+`PRIORITY_UPDATE^ft のうち~push~stream用の変種（種別 `0xF0701^hex ）は、
+~promiseされた`~push~stream$h3を参照しなければナラナイ。
+~serverは受信した `PRIORITY_UPDATE^ft （種別 `0xF0701^hex ）に伴われる`~push~ID$h3が［
+`最大~push~ID$h3を超える／まだ~promiseされてない
+］場合には、
+`接続~error$( `H3_ID_ERROR$er )
+として扱わなければナラナイ。
+◎
+The push-stream variant of PRIORITY_UPDATE (type=0xF0701) MUST reference a promised push stream. If a server receives a PRIORITY_UPDATE (type=0xF0701) with a push ID that is greater than the maximum push ID or that has not yet been promised, this MUST be treated as a connection error of type H3_ID_ERROR.
+</p>
+
+<p>
+~serverは、
+`PRIORITY_UPDATE^ft ~frameを（その種別を問わず）送信してはナラナイ。
+~clientは、
+`PRIORITY_UPDATE^ft ~frameを受信した場合には，
+`接続~error$( `H3_FRAME_UNEXPECTED$er )
+として扱わなければナラナイ。
+◎
+Servers MUST NOT send PRIORITY_UPDATE frames of either type. If a client receives a PRIORITY_UPDATE frame, this MUST be treated as a connection error of type H3_FRAME_UNEXPECTED.
+</p>
+
+		</section>
+	</section>
+	<section id="merging">
+<h2 title="Merging Client- and Server-Driven Priority Parameters">8. ~client駆動な, ~server駆動な優先度~parameterの併合-法</h2>
+
+<p>
+~clientは、
+各~HTTP応答が どう優先度化されるに~~価するか，常に最善に解するとは限らない。
+~serverは、［
+当の応答の優先度化を改善する
+］ために［
+~clientが指示した優先度と組合せれる
+］ような追加的な情報を有するかもしれない。
+例えば、
+ある~HTML文書の利用は，数ある~inline画像のうち一つに大きく依存するかもしれない
+— そのような依存関係の存在を最良に知れるのは、
+概して~serverである。
+あるいは、
+~serverは，［
+~font, 画像
+］ `RFC8081$r への要請として同じ`緊急度$を伴うもの受信したとき、
+視覚的な~clientが~textな情報を より早く描画できるよう，
+~fontの優先順位を画像より高くするかもしれない。
+◎
+It is not always the case that the client has the best understanding of how the HTTP responses deserve to be prioritized. The server might have additional information that can be combined with the client's indicated priority in order to improve the prioritization of the response. For example, use of an HTML document might depend heavily on one of the inline images; the existence of such dependencies is typically best known to the server. Or, a server that receives requests for a font [RFC8081] and images with the same urgency might give higher precedence to the font, so that a visual client can render textual information at an early moment.
+</p>
+
+<p>
+生成元~server【！origin】は、
+`Priority$h 応答~headerを利用して［
+~HTTP応答が，自身にとって どう優先度化されるべきか
+］を指示できる。
+~HTTP応答を回送する`中継者$は、
+その優先度化~処理nへの入力として，
+`Priority$h 応答~header内に見出された優先度~parameterを
+~clientの `Priority$h 要請~headerと組合せて利用できる。
+これらの優先度を併合するために供される指導は無い
+— それは、
+実装の裁定に委ねられる。
+◎
+An origin can use the Priority response header field to indicate its view on how an HTTP response should be prioritized. An intermediary that forwards an HTTP response can use the priority parameters found in the Priority response header field, in combination with the client Priority request header field, as input to its prioritization process. No guidance is provided for merging priorities; this is left as an implementation decision.
+</p>
+
+<p>
+~HTTP応答~内に優先度~parameterが無い場合、
+~serverは，~clientが供する値の変化に関心が無いことを指示する。
+これは、
+要請~headerとは異なる
+— そこでは、
+優先度~parameterの省略は，その既定の値の利用を含意する
+（ `4§を見よ）。
+◎
+The absence of a priority parameter in an HTTP response indicates the server's disinterest in changing the client-provided value. This is different from the request header field, in which omission of a priority parameter implies the use of its default value (see Section 4).
+</p>
+
+<div class="example">
+<p>
+規範的でない例として、
+~clientが送信した~HTTP要請が［
+`緊急度$は 5, `増分的か$は ~T
+］に設定された~parameterを伴っていて：
+◎
+As a non-normative example, when the client sends an HTTP request with the urgency parameter set to 5 and the incremental parameter set to true
+</p>
+
+<pre class="lang-http">
+:method = GET
+:scheme = https
+:authority = example.net
+:path = /menu.png
+priority = u=5, i
+</pre>
+
+<p>
+生成元~server【！origin】は、
+次で応答したとする：
+◎
+and the origin responds with
+</p>
+
+<pre class="lang-http">
+:status = 200
+content-type = image/png
+priority = u=1
+</pre>
+
+<p>
+`中継者$は、［
+~clientが供した値より~serverが供した値を選好する
+］ならば［
+自身が解する緊急度を 5 から 1 へ改める
+］かもしれない。
+`増分的か$（ `i^c ）は、
+~serverが指定しなかったので，~clientが指定した値 ~T であり続ける。
+◎
+the intermediary might alter its understanding of the urgency from 5 to 1, because it prefers the server-provided value over the client's. The incremental value continues to be true, i.e., the value specified by the client, as the server did not specify the incremental (i) parameter.
+</p>
+</div>
+
+	</section>
+	<section id="client-scheduling">
+<h2 title="Client Scheduling">9. ~clientにおける~schedule法</h2>
+
+<p>
+~clientは、［
+自身が起動する要請たちについて，自身に局所的な［
+処理-法／~schedule法
+］の選択を為す
+］にあたって，優先度~値を利用してもヨイ。
+◎
+A client MAY use priority values to make local processing or scheduling choices about the requests it initiates.
+</p>
+
+	</section>
+	<section id="server-scheduling">
+<h2 title="Server Scheduling">10. ~serverにおける~schedule法</h2>
+
+<p>
+~HTTP~serverにとっては、
+一般に，すべての応答をアリな限り早く送信することが有益になる。
+しかしながら、
+複数の要請に対し単独の接続~上で~serveするときには，
+それら`資源$への要請どうしで［
+接続~帯域幅などの争い
+］が生じることもある。
+この節では、
+そのような争いが存在するとき，~serverが［
+争っている応答たちを どの順序で送信するよう~scheduleできるか
+］に関する考慮点を述べる。
+◎
+It is generally beneficial for an HTTP server to send all responses as early as possible. However, when serving multiple requests on a single connection, there could be competition between the requests for resources such as connection bandwidth. This section describes considerations regarding how servers can schedule the order in which the competing responses will be sent when such competition exists.
+</p>
+
+<p>
+~serverにおける~schedule法は，多くの入力に基づく優先度化~処理nであり、
+優先度~通達は，入力を成す一つの形でしかない。
+実装による選択や配備~環境などの要因も，その役割を担う。
+所与のどの接続も、
+動的な並替えを何回も経る見込みが高い。
+これらの理由から、［
+普遍的な~schedule法を成す~algo
+］を述べることはアリではない。
+この文書は、
+~serverが［
+優先度~parameterに対し どう動作し得るか
+］について［
+基本的な網羅的でない推奨
+］をいくつか供する
+— ~serverが［
+優先度~通達を他の要因と どう組合できるか
+］は、
+詳細に述べないが。
+端点は、
+特定0の［
+優先度~通達に基づく扱い
+］には依存できない。
+優先度を表出することは、
+示唆でしかない。
+◎
+Server scheduling is a prioritization process based on many inputs, with priority signals being only one form of input. Factors such as implementation choices or deployment environment also play a role. Any given connection is likely to have many dynamic permutations. For these reasons, it is not possible to describe a universal scheduling algorithm. This document provides some basic, non-exhaustive recommendations for how servers might act on priority parameters. It does not describe in detail how servers might combine priority signals with other factors. Endpoints cannot depend on particular treatment based on priority signals. Expressing priority is only a suggestion.
+</p>
+
+<p>
+~serverには、
+アリなときは［
+`緊急度$を尊重して，応答のうち`緊急度$が高いものほど早く送信する
+］ことが`推奨される^2119。
+◎
+It is RECOMMENDED that, when possible, servers respect the urgency parameter (Section 4.1), sending higher-urgency responses before lower-urgency responses.
+</p>
+
+<p>
+`増分的か$は、［
+応答を成す各~byte列が到着するに伴い，それらを~clientがどう処理するか
+］を指示する。
+~serverには、
+アリなときは［
+`増分的か$を尊重する
+］ことが`推奨される^2119。
+◎
+The incremental parameter indicates how a client processes response bytes as they arrive. It is RECOMMENDED that, when possible, servers respect the incremental parameter (Section 4.2).
+</p>
+
+<p>
+同じ`緊急度$を伴う非-増分的な応答たちは、［
+帯域幅の割振nを各~応答の~stream~IDの昇順で優先度化する
+］ことにより，~serveされるベキである
+— この順序は、［
+それらの応答が応対した要請たち
+］を~clientが為した順序に対応する。
+そうすることは、
+~clientが［
+要請の順序付けを応答の順序に波及させるために利用できる
+］ことを確保する。
+◎
+Non-incremental responses of the same urgency SHOULD be served by prioritizing bandwidth allocation in ascending order of the stream ID, which corresponds to the order in which clients make requests. Doing so ensures that clients can use request ordering to influence response order.
+</p>
+
+<p>
+同じ`緊急度$を伴う増分的な応答たちは、
+それらで帯域幅を共有することにより~serveするベキである。
+増分的な応答の`~message内容$は、
+それを成す［
+各部／各~chunk
+］が受信されるに伴い利用される。
+~clientは、
+単独の`資源$を成す全体よりも［
+これらすべての資源を成す ある部位
+］を受信する方が便益があるかもしれない。
+処理能を改善するにあたって有用になるために必要な［
+資源を成す部位の大きさ
+］は、
+資源の型【`~MIME型$など】に応じて変わる
+— ~criticalな要素を先頭近くに配置する型もあれば、
+情報を漸進的に利用できる型もある。
+この~schemeは、
+~serverが優先度化する方法を裁定するために［
+~size, 型, その他の入力
+］をどう利用するべきかについて，明示的に義務付けるものを何も供さない。
+◎
+Incremental responses of the same urgency SHOULD be served by sharing bandwidth among them. The message content of incremental responses is used as parts, or chunks, are received. A client might benefit more from receiving a portion of all these resources rather than the entirety of a single resource. How large a portion of the resource is needed to be useful in improving performance varies. Some resource types place critical elements early; others can use information progressively. This scheme provides no explicit mandate about how a server should use size, type, or any other input to decide how to prioritize.
+</p>
+
+<p>
+~serverが複数の［
+増分的な応答, 非-増分的な応答
+］を同じ`緊急度$で~scheduleする必要がある局面もあり得る。
+［
+`緊急度$, 要請の生成~順序
+］に基づく~schedule法の指導を厳密に守ることは、
+~clientにおいて最適とは言えない結果へ至らすかもしれない
+— 早く来た非-増分的な応答が，後で発行される増分的な応答を~serveできなくするかもしれないので。
+そのような難題の例として，次が挙げられる：
+◎
+There can be scenarios where a server will need to schedule multiple incremental and non-incremental responses at the same urgency level. Strictly abiding by the scheduling guidance based on urgency and request generation order might lead to suboptimal results at the client, as early non-incremental responses might prevent the serving of incremental responses issued later. The following are examples of such challenges:
+</p>
+<ul>
+	<li>
+同じ`緊急度$で、［
+大きい資源~用の非-増分的な要請
+］に［
+小さい資源~用の増分的な要請
+］が後続する。
+◎
+At the same urgency level, a non-incremental request for a large resource followed by an incremental request for a small resource.
+</li>
+	<li>
+同じ`緊急度$で、［
+長さが不確定な増分的な要請
+］に［
+大きい資源~用の非-増分的な要請
+］が後続する。
+◎
+At the same urgency level, an incremental request of indeterminate length followed by a non-incremental large resource.
+</li>
+</ul>
+
+<p>
+~serverには、
+アリな所では，そのような後回を避けることが`推奨される^2119。
+そのための手法は、
+実装の裁定である。
+例えば、
+~serverは、
+他の情報
+— `内容$の~sizeなど —
+に基づいて，
+特定0の増分的な【！incremental type】応答を先取的に送信するかもしれない。
+◎
+It is RECOMMENDED that servers avoid such starvation where possible. The method for doing so is an implementation decision. For example, a server might preemptively send responses of a particular incremental type based on other information such as content size.
+</p>
+
+<p>
+~server~pushの最適な~schedule法は、
+困難である
+— とりわけ、
+~pushされる資源と作動中な同時並行な要請たちが争っているときには。
+~serverは、
+~scheduleするときに，多くの要因を考慮できる
+— ~pushされている資源の型や~size,
+当の~pushを誘発した要請の優先度,
+作動中な同時並行な応答たちの総数,
+他の作動中な同時並行な各~応答の優先度,
+等々
+— など。
+これらを最善な仕方で適用するための一般な指導は無い。
+単純~過ぎる~serverは，［
+高過ぎる優先度で~pushして~client要請を阻む／
+低過ぎる優先度で~pushして応答を遅延する
+］ようにもなり易く、
+その結果，~server~pushに意図された目標を否定することになる。
+◎
+Optimal scheduling of server push is difficult, especially when pushed resources contend with active concurrent requests. Servers can consider many factors when scheduling, such as the type or size of resource being pushed, the priority of the request that triggered the push, the count of active concurrent responses, the priority of other active concurrent responses, etc. There is no general guidance on the best way to apply these. A server that is too simple could easily push at too high a priority and block client requests, or push at too low a priority and delay the response, negating intended goals of server push.
+</p>
+
+<p>
+優先度~通達は、
+~server~pushを~scheduleするための要因を成す。
+~clientが明示的に通達する初期~優先度は無いので、
+既定の~parameter値の概念は，その適用-法が少し異なる。
+~serverは、
+生成元~server【！origin】からの応答~内に供された優先度~通達を適用できる
+— `8§ にて与えた併合-法の指導を見よ。
+生成元~server【！origin】からの通達が無い場合、
+既定の~parameter値を適用すると，最適とは言えない結果になることもある。
+~serverは、［
+~pushされる応答たちを~scheduleするための手段
+］として自身が裁定したものが何であれ，［［
+`PUSH_PROMISE^ft ／ `HEADERS^ft
+］~frame内に`~Priority~field値^i ~fieldを内包する
+］ことにより，
+意図される優先度を~clientへ通達できる。
+◎
+Priority signals are a factor for server push scheduling. The concept of parameter value defaults applies slightly differently because there is no explicit client-signaled initial priority. A server can apply priority signals provided in an origin response; see the merging guidance given in Section 8. In the absence of origin signals, applying default parameter values could be suboptimal. By whatever means a server decides to schedule a pushed response, it can signal the intended priority to the client by including the Priority field in a PUSH_PROMISE or HEADERS frame.
+</p>
+
+		<section id="intermediaries-with-multiple-backend-connections">
+<h3 title="Intermediaries with Multiple Backend Connections">10.1. 複数の~backend接続を伴う中継者</h3>
+
+<p>
+~HTTP接続を~serveしている`中継者$は、
+要請たちを複数の~backend接続に分割するかもしれない。
+中継者が優先度化~規則を厳密に適用すると、
+ある要請が伝送途上にある間は，それより優先度が低い要請の進捗は阻まれ、
+それは~backend接続へ伝播し得る
+— その結果、
+相手の端点は，それを接続の停滞として解釈するかもしれない。
+端点は、
+停滞に抗する保護を実装することが多い
+— 一定期間を経た接続に対しては，中途で~closeするなど。
+これが生じるアリ性を抑制するため、
+中継者は，優先度化に厳密に従うことを避ける代わりに次を行える
+⇒
+自身が回送している どの要請にも
+— それらが時間~越しに少しでも進捗を為せるよう —
+小さな帯域幅を割振る。
+◎
+An intermediary serving an HTTP connection might split requests over multiple backend connections. When it applies prioritization rules strictly, low-priority requests cannot make progress while requests with higher priorities are in flight. This blocking can propagate to backend connections, which the peer might interpret as a connection stall. Endpoints often implement protections against stalls, such as abruptly closing connections after a certain time period. To reduce the possibility of this occurring, intermediaries can avoid strictly following prioritization and instead allocate small amounts of bandwidth for all the requests that they are forwarding, so that every request can make some progress over time.
+</p>
+
+<p>
+類似に，~serverは、
+`~tunnel$として動作している各~streamに，いくぶんの帯域幅を割振るベキである。
+◎
+Similarly, servers SHOULD allocate some amount of bandwidths to streams acting as tunnels.
+</p>
+
+		</section>
+	</section>
+	<section id="connect-scheduling">
+<h2 title="Scheduling and the CONNECT Method">11. ~schedule法と `CONNECT^m ~method</h2>
+
+<p>
+この文書における~schedule方の指導は、
+ある~streamが `CONNECT$m 要請を運ぶときには，
+当の~stream上の~frameたちに適用される。
+複数の `CONNECT$m 要請を発行する~clientは、
+`増分的か$を ~T に設定し得る。
+`増分的か$を取扱うための推奨（ `10§ ）を実装する~serverは、
+そのような~streamが他の~streamを阻まないようにするために，
+それらを公平に~scheduleする見込みが高い。
+◎
+When a stream carries a CONNECT request, the scheduling guidance in this document applies to the frames on the stream. A client that issues multiple CONNECT requests can set the incremental parameter to true. Servers that implement the recommendations for handling of the incremental parameter (Section 10) are likely to schedule these fairly, preventing one CONNECT stream from blocking others.
+</p>
+
+	</section>
+	<section id="retransmission-scheduling">
+<h2 title="Retransmission Scheduling">12. 再~伝送の~schedule法</h2>
+
+<p>
+~TCPや~QUICなどの~transport~protocolは、［
+~packet喪失を検出して，喪失した情報を伝送し直す
+］ことにより，依拠-能を供する。
+`10§ における考慮点に加えて、
+再~伝送~dataの~schedule法も，新たな~dataのそれと争うことがある。
+以下では、
+~QUICを利用しているときの考慮点を論じる。
+◎
+Transport protocols such as TCP and QUIC provide reliability by detecting packet losses and retransmitting lost information. In addition to the considerations in Section 10, scheduling of retransmission data could compete with new data. The remainder of this section discusses considerations when using QUIC.
+</p>
+
+<p>
+`QUIC$r `13.3＠~RFCx/rfc9000#section-13.3§
+は、
+<q>
+端点は、
+応用により指定された優先度が他を指示しない限り，
+新たな~dataの送信よりも~dataの再~伝送を優先するベキである
+</q>
+と言明する。
+ある~HTTP3応用が［
+この文書にて定義された優先度~scheme
+］を利用していて，
+当の~QUIC~transport実装は［
+応用が指示した~stream優先度
+］を~supportするとき、
+当の~transportが［
+新たな~dataと再~伝送~dataの両者を~scheduleするときに，
+~streamどうしの相対的な優先度を考慮する
+］ならば，当の応用の期待に より良く合致するかもしれない。
+しかしながら，［
+~transportが，この情報に基づく~schedule法をどう選ぶか
+］に対する要件は無い
+— そのような裁定は、
+いくつかの要因や~trade-offに依存するので。
+~transportは、［
+優先度がより低い~stream用の再~伝送~dataより，
+緊急度がより高い~stream用の新たな~dataを優先する
+］こともあれば、［
+緊急度に関わらず，新たな~dataよりも再~伝送~dataを優先する
+］こともある。
+◎
+Section 13.3 of [QUIC] states the following: "Endpoints SHOULD prioritize retransmission of data over sending new data, unless priorities specified by the application indicate otherwise". When an HTTP/3 application uses the priority scheme defined in this document and the QUIC transport implementation supports application-indicated stream priority, a transport that considers the relative priority of streams when scheduling both new data and retransmission data might better match the expectations of the application. However, there are no requirements on how a transport chooses to schedule based on this information because the decision depends on several factors and trade-offs. It could prioritize new data for a higher-urgency stream over retransmission data for a lower-priority stream, or it could prioritize retransmission data over new data irrespective of urgencies.
+</p>
+
+<p>
+`QUIC-RECOVERY$r `6.2.4＠~RFCx/rfc9002#section-6.2.4§
+は、［
+`Probe Timeout timer^en の失効より後に探査~packetを送信する
+］ときの［
+応用~優先度に関する考慮点
+］も特に挙げている。
+~QUIC実装のうち［
+応用が指示する優先度を~supportするもの
+］は、［
+探査~dataを選ぶときに，
+~streamどうしの相対的な優先度を利用する
+］かもしれない。
+◎
+Section 6.2.4 of [QUIC-RECOVERY] also highlights considerations regarding application priorities when sending probe packets after Probe Timeout timer expiration. A QUIC implementation supporting application-indicated priorities might use the relative priority of streams when choosing probe data.
+</p>
+
+	</section>
+	<section id="fairness">
+<h2 title="Fairness">13. 公平性</h2>
+
+<p>
+~HTTP実装は、［
+帯域幅を争っている接続どうしの公平性
+］を，概して下層の~transportに依存して保守する。
+`中継者$は、［
+いくつかの~client
+］からの［
+いくつかの接続
+］上で受信した［
+いくつかの~HTTP要請
+］を［
+いくつかの~backend接続
+］へ回送する。
+中継者が異なる~backend接続たちにわたって，要請たちを どう［
+合体する／分割する
+］かに依存して、
+各~clientが経験する処理能は，類似でないかもしれない。
+この非類似性は、
+中継者が各~要請を回送するときに優先度~通達も利用する場合には，
+拡大するかもしれない。
+［
+`13.1§,
+`13.2§ 
+］では、
+この［
+不公平性の拡大
+］に対する軽減策を論じる。
+◎
+Typically, HTTP implementations depend on the underlying transport to maintain fairness between connections competing for bandwidth. When an intermediary receives HTTP requests on client connections, it forwards them to backend connections. Depending on how the intermediary coalesces or splits requests across different backend connections, different clients might experience dissimilar performance. This dissimilarity might expand if the intermediary also uses priority signals when forwarding requests. Sections 13.1 and 13.2 discuss mitigations of this expansion of unfairness.
+</p>
+
+<p>
+逆に，`13.3§では、
+~serverが［
+接続たちに割振る帯域幅
+］を［
+優先度~通達に依存して，どう意図的に不均等にし得るか
+］を論じる。
+◎
+Conversely, Section 13.3 discusses how servers might intentionally allocate unequal bandwidth to some connections, depending on the priority signals.
+</p>
+
+		<section id="coalescing">
+<h3 title="Coalescing Intermediaries">13.1. 中継者による合体-法</h3>
+
+<p>
+`中継者$が複数の~clientから出生した~HTTP要請たちを~backend~serverへ行く 1 個の［
+~HTTP2／~HTTP3
+］接続の中へ合体するとき、
+ある要請が運んでいる通達は，他より高い優先度を指示しているかもしれない
+◎
+When an intermediary coalesces HTTP requests coming from multiple clients into one HTTP/2 or HTTP/3 connection going to the backend server, requests that originate from one client might carry signals indicating higher priority than those coming from others.
+</p>
+
+<p>
+`中継者$の背後で稼働している~serverにとっては、
+`Priority$h ~headerの値を順守することが有益になることもある。
+例として、
+資源が拘束された~serverは，［
+`緊急度$ 7（~background~task用）を伴う~software更新~fileの伝送
+］を先送りするかもしれない。
+しかしながら，最悪な事例では、［
+複数の~clientにより宣言された優先度どうしに非対称性がある
+］とき，［
+ある~UAへ行く すべての応答
+］が［
+別の~UAへ行く すべての応答が送信される
+］まで遅延されるかもしれない。
+◎
+It is sometimes beneficial for the server running behind an intermediary to obey Priority header field values. As an example, a resource-constrained server might defer the transmission of software update files that have the background urgency level (7). However, in the worst case, the asymmetry between the priority declared by multiple clients might cause all responses going to one user agent to be delayed until all responses going to another user agent have been sent.
+</p>
+
+<p>
+この公平性~問題を軽減するため、
+~serverは，［
+`中継者$についての知識
+］を［
+自身の優先度化~裁定に対する別の入力として利用する
+］こともできる。
+一例として、
+~serverは，［
+中継者が要請たちを合体している
+］ことを知る場合には，代わりに［
+帯域幅を（例えば，持回り方式で）【各~応答に】分配する
+］ことにより［
+応答たちを［
+それら全体として~serveする
+］ことを避ける
+］こともできる。
+これは、
+拘束された資源が［
+中継者↔~UA間の~network容量
+］である場合には，働くものになり得る
+— 中継者は、
+自身が実装する優先度化~schemeに基づいて，
+各~応答を~bufferして~chunkたちを回送するので。
+◎
+In order to mitigate this fairness problem, a server could use knowledge about the intermediary as another input in its prioritization decisions. For instance, if a server knows the intermediary is coalescing requests, then it could avoid serving the responses in their entirety and instead distribute bandwidth (for example, in a round-robin manner). This can work if the constrained resource is network capacity between the intermediary and the user agent, as the intermediary buffers responses and forwards the chunks based on the prioritization scheme it implements.
+</p>
+
+<p>
+~serverは、［
+所与の要請が どの`中継者$から来たか否か
+］を環境設定あるいは［
+当の要請が次に挙げる~headerを包含するか否かを検査する
+］ことを通して決定できる
+⇒＃
+`Forwarded^h `FORWARDED$r, 【その旧来の別名】`X-Forwarded-For^h ／
+`Via$h `HTTP$r
+◎
+A server can determine if a request came from an intermediary through configuration or can check to see if the request contains one of the following header fields:
+• Forwarded [FORWARDED], X-Forwarded-For
+• Via (see Section 7.6.3 of [HTTP])
+</p>
+
+		</section>
+		<section id="h1-backends">
+<h3 title="HTTP/1.x Back Ends">13.2. ~HTTP1x~backend</h3>
+
+<p>
+~CDN基盤が［
+~frontendと~backendで異なる~HTTP~versionを~supportする
+］ことは、
+共通的にある。
+一例として、
+~clientが面している~frontend【！edge】は［
+~HTTP2／~HTTP3
+］を~supportする一方で，
+~backend~serverへの通信は~HTTP11を利用して行われるかもしれない。
+接続の合体-法と違って、
+~CDNは，要請たちを~~別々な~backendへの接続たちへ “逆~多重化する” ことになる。
+~HTTP11（または，それ以前）では、
+単独の接続における応答の多重化は~supportされないので，公平性の問題は無い。
+それでも、
+~backend~serverは，~clientによる~headerを利用して要請~scheduleしてもヨイ。
+~backend~serverは、
+~clientによる優先度~情報の視野を個々の末端-~clientに絞れる所では、
+その情報のみに基づいて~scheduleするベキである。
+認証~その他の~session情報は、
+この~link能を供するかもしれない。
+◎
+It is common for Content Delivery Network (CDN) infrastructure to support different HTTP versions on the front end and back end. For instance, the client-facing edge might support HTTP/2 and HTTP/3 while communication to backend servers is done using HTTP/1.1. Unlike connection coalescing, the CDN will "demux" requests into discrete connections to the back end. Response multiplexing in a single connection is not supported by HTTP/1.1 (or older), so there is not a fairness problem. However, backend servers MAY still use client headers for request scheduling. Backend servers SHOULD only schedule based on client priority information where that information can be scoped to individual end clients. Authentication and other session information might provide this linkability.
+</p>
+
+		</section>
+		<section id="intentional-unfairness">
+<h3 title="Intentional Introduction of Unfairness">13.3. 不公平性の意図的な導入</h3>
+
+<p>
+ときには、
+ある接続の伝送を他より優先しないことが有益になる
+— さもなければ、
+接続どうしに
+— したがって，それらの接続~上で~serveされる要請どうしに —
+不公平性が導入されることを知っている下では。
+◎
+It is sometimes beneficial to deprioritize the transmission of one connection over others, knowing that doing so introduces a certain amount of unfairness between the connections and therefore between the requests served on those connections.
+</p>
+
+<p>
+例えば，~serverは、
+`緊急度$ 7（~background~task用）を伴う応答
+— ~software更新~fileなど —
+しか伝達しない接続に対しては， “余りをかき集める” 輻輳~制御器を利用するかもしれない。
+そうすれば、
+更新の送達を遅延することと引き換えに，他の接続の応答性は改善される。
+◎
+For example, a server might use a scavenging congestion controller on connections that only convey background priority responses such as software update images. Doing so improves responsiveness of other connections at the cost of delaying the delivery of updates.
+</p>
+
+		</section>
+	</section>
+	<section id="header-field-rationale">
+<h2 title="Why Use an End-to-End Header Field?">14. なぜ端点間な~headerを利用するか？</h2>
+
+<p>
+~HTTP2による［
+`隣点間$な~frameを利用する優先度化~scheme
+］とは対照的に、
+`Priority$h ~headerは、
+“端点間” として定義される。
+◎
+In contrast to the prioritization scheme of HTTP/2, which uses a hop-by-hop frame, the Priority header field is defined as "end-to-end".
+</p>
+
+<p>
+~clientが応答を処理する仕方は、［
+`中継者$ではなく，当の応答が応対した要請を生成した~client
+］に結付けられる特質であり、
+したがって，`端点間$な特質である。
+［
+`Priority$h ~headerにより運ばれる これら端点間な特質
+］が［
+同じ接続を共有する応答どうしの優先度化にどう影響するか
+］は、
+`隣点間$な課題である。
+◎
+The way that a client processes a response is a property associated with the client generating that request, not that of an intermediary. Therefore, it is an end-to-end property. How these end-to-end properties carried by the Priority header field affect the prioritization between the responses that share a connection is a hop-by-hop issue.
+</p>
+
+<p>
+`Priority$h ~headerを`隣点間$ではなく`端点間$として定義したことは、
+~cacheしている`中継者$にとって重要である。
+そのように定義するだけで、
+中継者は［
+`Priority$h ~headerの値を応答と伴に~cacheして、
+~cacheした応答を~serveするときに，その値も用立てれる
+］ようになるので。
+◎
+Having the Priority header field defined as end-to-end is important for caching intermediaries. Such intermediaries can cache the value of the Priority header field along with the response and utilize the value of the cached header field when serving the cached response, only because the header field is defined as end-to-end rather than hop-by-hop.
+</p>
+
+	</section>
+	<section id="security-considerations">
+<h2 title="Security Considerations">15. ~securityの考慮点</h2>
+
+<p>
+`7§は、
+`PRIORITY_UPDATE$ft ~frameを~bufferしている~server用の考慮点を述べる。
+◎
+Section 7 describes considerations for server buffering of PRIORITY_UPDATE frames.
+</p>
+
+<p>
+`10§は、
+応答たちをある種の仕方で優先度化する~serverは，
+一部の応答を伝送する能が後回され得る例を呈示する。
+◎
+Section 10 presents examples where servers that prioritize responses in a certain way might be starved of the ability to transmit responses.
+</p>
+
+<p>
+`STRUCTURED-FIELDS$r による~securityの考慮点は、
+`4§に定義される優先度~parameterの処理にも適用される。
+◎
+The security considerations from [STRUCTURED-FIELDS] apply to the processing of priority parameters defined in Section 4.
+</p>
+
+	</section>
+	<section id="iana-considerations">
+<h2 title="IANA Considerations">16. ~IANA考慮点</h2>
+
+<p>
+この仕様は、
+`HTTP$r【！`HTTP/2$r】 にて定義される
+`~HTTP~field名~registry＠~IANA-a/http-fields/$cite
+内に，次の~entryを登録する：
+◎
+This specification registers the following entry in the "Hypertext Transfer Protocol (HTTP) Field Name Registry" defined in [HTTP/2]:
+</p>
+<ul>
+	<li>
+~field名
+⇒
+`Priority$h
+◎
+Field Name:
+• Priority
+</li>
+	<li>
+位置付け
+⇒
+`恒久的^i
+◎
+Status:
+• permanent
+</li>
+	<li>
+参照
+⇒
+この文書
+◎
+Reference:
+• This document
+</li>
+</ul>
+
+<p>
+この仕様は、
+`HTTP/2$r にて定義された
+`~HTTP2設定群~registry＠~IANA-a/http2-parameters/#settings$cite
+内に，次の~entryを登録する：
+◎
+This specification registers the following entry in the "HTTP/2 Settings" registry defined in [HTTP/2]:
+</p>
+<ul>
+	<li>
+~code
+⇒
+`0x9^hex
+◎
+Code:
+• 0x9
+</li>
+	<li>
+名前
+⇒
+`SETTINGS_NO_RFC7540_PRIORITIES$sp
+◎
+Name:
+• SETTINGS_NO_RFC7540_PRIORITIES
+</li>
+	<li>
+初期~値
+⇒
+0
+◎
+Initial Value:
+• 0
+</li>
+	<li>
+参照
+⇒
+この文書
+◎
+Reference:
+• This document
+</li>
+</ul>
+
+<p>
+この仕様は、
+`HTTP/2$r にて定義された
+`~HTTP2~frame種別~registry＠~IANA-a/http2-parameters/#frame-type$cite
+内に，次の~entryを登録する：
+◎
+This specification registers the following entry in the "HTTP/2 Frame Type" registry defined in [HTTP/2]:
+</p>
+<ul>
+	<li>
+~code
+⇒
+`0x10^hex
+◎
+Code:
+• 0x10
+</li>
+	<li>
+~frame種別
+⇒
+`PRIORITY_UPDATE$ft
+◎
+Frame Type:
+• PRIORITY_UPDATE
+</li>
+	<li>
+参照
+⇒
+この文書
+◎
+Reference:
+• This document
+</li>
+</ul>
+
+<p>
+この仕様は、
+`HTTP/3$r により確立された
+`~HTTP3~frame種別~registry＠~IANA-a/http3-parameters/#http3-parameters-frame-types$cite
+内に，次の~entryを登録する：
+◎
+This specification registers the following entry in the "HTTP/3 Frame Types" registry established by [HTTP/3]:
+</p>
+<ul>
+	<li>
+値
+⇒
+`0xF0700^hex 〜 `0xF0701^hex
+◎
+Value:
+• 0xF0700-0xF0701
+</li>
+	<li>
+~frame種別
+⇒
+`PRIORITY_UPDATE$ft
+◎
+Frame Type:
+• PRIORITY_UPDATE
+</li>
+	<li>
+位置付け
+⇒
+`恒久的^i
+◎
+Status:
+• permanent
+</li>
+	<li>
+参照
+⇒
+この文書
+◎
+Reference:
+• This document
+</li>
+	<li>
+変更~制御者
+⇒
+~IETF
+◎
+Change Controller:
+• IETF
+</li>
+	<li>
+連絡先
+⇒
+ietf-http-wg@w3.org
+◎
+Contact:
+• ietf-http-wg@w3.org
+</li>
+</ul>
+
+<p>
+~IANAは、
+`~HTTP優先度~registry＠~IANA-a/http-priority$cite
+を作成して，
+それを`次の表t＠#iana-parameter-table§に挙げる~entryたちで拡充した。
+登録~手続-は、
+`4.3.1§を見よ。
+◎
+IANA has created the "Hypertext Transfer Protocol (HTTP) Priority" registry at &lt;https://www.iana.org/assignments/http-priority&gt; and has populated it with the entries in Table 1; see Section 4.3.1 for its associated procedures.
+</p>
+
+<div>
+<table id="iana-parameter-table">
+<caption>
+初期~優先度~parameter
+</caption>
+<thead>
+<tr>
+<th>名前
+<th>記述
+<th>参照
+<tbody>
+
+<tr><td>`u^c
+<td>~HTTP応答の緊急度
+<td>`4.1§
+
+<tr><td>`i^c
+<td>~HTTP応答は増分的に処理できるかどうか
+<td>`4.2§
+</table>
+◎
+Table 1: Initial Priority Parameters Name 	Description 	Reference
+u 	The urgency of an HTTP response. 	Section 4.1
+i 	Whether an HTTP response can be processed incrementally. 	Section 4.2
+</div>
+
+	</section>
+	<section id="acknowledgements">
+<h2 title="Acknowledgements">謝辞</h2>
+
+<p>
+`Roy Fielding^en 氏は、
+`https://www.ietf.org/proceedings/83/slides/slides-83-httpbis-5.pdf＠https://www.ietf.org/proceedings/83/slides/slides-83-httpbis-5.pdf$
+にて，優先度を表現する~headerを利用する案を呈示された。
+`Patrick Meenan^en 氏は、
+`https://github.com/pmeenan/http3-prioritization-proposal＠https://github.com/pmeenan/http3-prioritization-proposal$
+にて，
+( 緊急度, 同時並行~度 )
+が成す~tupleを利用して優先度を表現することを提唱された。
+~HTTP2優先度化を不能化する能は、
+`PRIORITY-SETTING$r により着想された
+— それは、
+`Brad Lassey^en, `Lucas Pardue^en 各氏により著作され，
+その文書の更新の中へは組入れられなかった~feedbackに基づく改変を伴う。
+◎
+Roy Fielding presented the idea of using a header field for representing priorities in &lt;https://www.ietf.org/proceedings/83/slides/slides-83-httpbis-5.pdf&gt;. In &lt;https://github.com/pmeenan/http3-prioritization-proposal&gt;, Patrick Meenan advocated for representing the priorities using a tuple of urgency and concurrency. The ability to disable HTTP/2 prioritization is inspired by [PRIORITY-SETTING], authored by Brad Lassey and Lucas Pardue, with modifications based on feedback that was not incorporated into an update to that document.
+</p>
+
+<p>
+~HTTP2優先度の代替を定義する動機は、
+広範な~HTTP~communityの中での論点から引き出された。
+この文書~内に明示的に組入れられた~textを寄せられた
+`Roberto Peon^en 氏, `Martin Thomson^en 氏, Netflix
+に特に感謝する。
+◎
+The motivation for defining an alternative to HTTP/2 priorities is drawn from discussion within the broad HTTP community. Special thanks to Roberto Peon, Martin Thomson, and Netflix for text that was incorporated explicitly in this document.
+</p>
+
+<p>
+上に挙げた方々に加えて、
+この文書は，~HTTP優先度~設計~teamの［
+次に挙げる方々, この文書の著作者
+］による多方面な論点に多くを負っている
+⇒＃
+`Alan Frindell^en,
+`Andrew Galloni^en,
+`Craig Taylor^en,
+`Ian Swett^en,
+`Matthew Cox^en,
+`Mike Bishop^en,
+`Roberto Peon^en,
+`Robin Marx^en,
+`Roy Fielding^en
+◎
+In addition to the people above, this document owes a lot to the extensive discussion in the HTTP priority design team, consisting of Alan Frindell, Andrew Galloni, Craig Taylor, Ian Swett, Matthew Cox, Mike Bishop, Roberto Peon, Robin Marx, Roy Fielding, and the authors of this document.
+</p>
+
+<p>
+`Yang Chi^en 氏は、
+再~伝送の~schedule法についての節を貢献された。
+◎
+Yang Chi contributed the section on retransmission scheduling.
+</p>
+
+	</section>
+</main></div>
+
