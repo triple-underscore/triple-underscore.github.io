@@ -3182,6 +3182,7 @@ filename::::ファイル名
 対話性:interactivity::~::インタラクティブ性
 ヤリトリ-:interact::やりとり
 ヤリトリ:interaction::やりとり
+toggle::::トグル
 
 印刷:print:~:::プリント
 印刷-:print:~:::プリント
