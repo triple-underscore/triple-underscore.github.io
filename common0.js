@@ -3167,6 +3167,9 @@ view::::ビュー
 UIwindow:window:::ウィンドウ
 UItab:tab:::タブ
 menu::::メニュー
+bar::::バー
+	~URL~bar:address bar
+	~URL~bar:location bar
 dialog::::ダイアログ
 icon::::アイコン
 widget::::ウィジェット
