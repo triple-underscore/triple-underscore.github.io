@@ -3175,6 +3175,7 @@ icon::::アイコン
 widget::::ウィジェット
 caption::::キャプション
 pointer::::ポインタ
+cursor::::カーソル
 file::::ファイル
 filename::::ファイル名
 外観:appearance:~
