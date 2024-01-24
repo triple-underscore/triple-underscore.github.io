@@ -1296,7 +1296,7 @@ WORKLETS:worklets-ja.html
 WEBSOCKET:WebSocket-ja.html
 STORAGE:storage-ja.html
 WEBSTORAGE:WebStorage-ja.html
-MATHML:https://w3c.github.io/mathml/spec.html
+MATHMLcore:https://w3c.github.io/mathml-core/
 INDEXEDDB:IndexedDB-ja.html
 TIMELINE:performance-timeline-ja.html
 HRTIME:hr-time-ja.html
