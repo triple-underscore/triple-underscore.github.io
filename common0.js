@@ -1167,8 +1167,7 @@ CSSCOUNTER:css-counter-styles-ja.html
 CSSDISP:css-display-ja.html
 CSSEXCLUSION:css-exclusions-ja.html
 CSSFLEX:css-flexbox-ja.html
-CSSFONT:css-fonts-ja.html
-CSSFONT4:css-fonts4-ja.html
+CSSFONT:css-fonts4-ja.html
 CSSFONTLOADING:css-font-loading-ja.html
 CSSGRID:css-grid-ja.html
 CSSIMAGE:css-images-ja.html
