@@ -188,8 +188,8 @@ return text;
 ●●options
 
 spec_title:DeviceOrientation Event Specification
-spec_date:2024-01-05
-trans_update:2024-01-12
+spec_date:2024-01-22
+trans_update:2024-01-27
 source_checked:231205
 spec_status:ED
 original_url:https://w3c.github.io/deviceorientation/
@@ -344,9 +344,8 @@ l.gyroscope:#permissiondef-gyroscope
 l.magnetometer:#permissiondef-magnetometer
 
 l.denied:~PERMISSIONS#dom-permissionstate-denied
-	~PERMISSIONS#dfn-denied
 l.granted:~PERMISSIONS#dom-permissionstate-granted
-	~PERMISSIONS#dfn-granted
+l.prompt:~PERMISSIONS#dom-permissionstate-prompt
 
 vsT.absolute-orientation:#absolute-orientation-virtual-sensor-type
 vsT.relative-orientation:#relative-orientation-virtual-sensor-type
@@ -409,9 +408,8 @@ map.値:~INFRA#map-value
 
 新たな~obj:~WEBIDLjs#new
 新たな~promise:~WEBIDLjs#a-new-promise
-却下される~promise:~WEBIDLjs#a-promise-rejected-with
 ~promiseを解決する:~WEBIDLjs#resolve
-
+~promiseを却下する:~WEBIDLjs#reject
 ~eventを発火する:~DOM4#concept-event-fire
 
 利用は許容されて:~HEembed#allowed-to-use
@@ -450,6 +448,7 @@ gL.~realm:~WAPI#concept-global-object-realm
 既定の強力な特能:~PERMISSIONS#dfn-default-powerful-feature
 強力な特能:~PERMISSIONS#dfn-powerful-feature
 利用する許可を要請する:~PERMISSIONS#dfn-request-permission-to-use
+許可~状態:~PERMISSIONS#dfn-permission-state
 現在の許可~状態を取得する:~PERMISSIONS#dfn-getting-the-current-permission-state
 許可を表出する:~PERMISSIONS#dfn-express-permission
 施策により制御される特能:~PERMISSIONS-POLICY#policy-controlled-feature
@@ -663,6 +662,7 @@ virtual:
 	%~platform回転~率:platformRotationRate
 	%~parameter群:parameters
 	%読取り:reading
+	%一過な作動化か:hasTransientActivation
 
 	●保安
 露呈-:reveal::露わに
@@ -1280,8 +1280,9 @@ The sequence of rotation steps is a set of intrinsic Tait-Bryan angles of type Z
 ~X1は 最初に~Z軸周りの回転を適用した後の~X軸，
 ~Y2は さらに~X1軸周りの回転を適用した後の~Y軸を表す。
 】</p>
-		<ul>
-			<li>
+
+<ul>
+	<li>
 ~xは［
 ~screen／~keyboard
 ］の平面~内にあり，正な値は［
@@ -1290,7 +1291,7 @@ The sequence of rotation steps is a set of intrinsic Tait-Bryan angles of type Z
 ◎
 x is in the plane of the screen or keyboard and is positive towards the right hand side of the screen or keyboard.
 </li>
-			<li>
+	<li>
 ~yは［
 ~screen／~keyboard
 ］の平面~内にあり，正な値は［
@@ -1299,7 +1300,7 @@ x is in the plane of the screen or keyboard and is positive towards the right ha
 ◎
 y is in the plane of the screen or keyboard and is positive towards the top of the screen or keyboard.
 </li>
-			<li>
+	<li>
 ~zは［
 ~screen／~keyboard
 ］の平面に垂直であり，正な値は［
@@ -1308,7 +1309,7 @@ y is in the plane of the screen or keyboard and is positive towards the top of t
 ◎
 z is perpendicular to the screen or keyboard, positive out of the screen or keyboard.
 </li>
-		</ul>
+</ul>
 
 <p>
 電話や~tabletなどの携帯~device用には、
@@ -1942,13 +1943,14 @@ The requestPermission(absolute) method steps are:
 Let global be the current global object.
 </li>
 	<li>
-~IF［
-コレに`関連な大域~obj$は`一過な作動化を有して$いない
+%一過な作動化か ~LET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
 ］
 ⇒
-~RET `却下される~promise$( `NotAllowedError$E 例外 )
+コレに`関連な大域~obj$は`一過な作動化を有して$いる
 ◎
-If this’s relevant global object does not have transient activation, return a promise rejected with a "NotAllowedError" DOMException.
+Let hasTransientActivation be true if this’s relevant global object has transient activation, and false otherwise.
 </li>
 	<li>
 %結果 ~LET `新たな~promise$( コレに`関連な~realm$ )
@@ -1980,6 +1982,50 @@ Otherwise:
 • Let permissions be « "accelerometer", "gyroscope" ».
 </li>
 			<li>
+<p>
+%許可~群 を成す
+~EACH( %名前 )
+に対し：
+◎
+For each name of permissions:
+</p>
+				<ol>
+					<li>
+<p>
+~IF［
+%名前 の`許可~状態$ ~EQ `prompt$l
+］~AND［
+%一過な作動化か ~EQ ~F
+］：
+◎
+If name’s permission state is "prompt" and hasTransientActivation is false:
+</p>
+						<ol>
+							<li>
+<p>
+`大域~taskを~queueする$( `~deviceの動きと方位~task~source$, %大域~obj, 次の手続き )
+◎
+Queue a global task on the device motion and orientation task source given global to＼
+</p>
+
+<div class="algo">
+手続きは
+⇒
+`~promiseを却下する$( %結果, `NotAllowedError$E 例外 )
+◎
+reject result with a "NotAllowedError" DOMException.
+</div>
+							</li>
+							<li>
+~RET
+◎
+Return.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+			<li>
 %許可~状態 ~LET `granted$l
 ◎
 Let permissionState be "granted".
@@ -2007,10 +2053,10 @@ Note: There is no algorithm for requesting multiple permissions at once. However
 					<li>
 <p>
 ~IF［
-`利用する許可を要請する$( %名前 ) ~EQ `denied$l
+`利用する許可を要請する$( %名前 ) ~NEQ `granted$l
 ］：
 ◎
-If the result of requesting permission to use name is "denied":
+If the result of requesting permission to use name is not "granted":
 </p>
 						<ol>
 							<li>
@@ -2800,13 +2846,14 @@ The requestPermission() method steps are:
 Let global be the current global object.
 </li>
 	<li>
-~IF［
-コレに`関連な大域~obj$は`一過な作動化を有して$いない
+%一過な作動化か ~LET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
 ］
 ⇒
-~RET `却下される~promise$( `NotAllowedError$E 例外 )
+コレに`関連な大域~obj$は`一過な作動化を有して$いる
 ◎
-If this’s relevant global object does not have transient activation, return a promise rejected with a "NotAllowedError" DOMException.
+Let hasTransientActivation be true if this’s relevant global object has transient activation, and false otherwise.
 </li>
 	<li>
 %結果 ~LET `新たな~promise$( コレに`関連な~realm$ )
@@ -2821,17 +2868,66 @@ Run these steps in parallel:
 </p>
 		<ol>
 			<li>
+%許可~群 ~LET « `accelerometer$l, `gyroscope$l »
+◎
+Let permissions be « "accelerometer", "gyroscope" ».
+</li>
+			<li>
+<p>
+%許可~群 を成す
+~EACH( %名前 )
+に対し：
+◎
+For each name of permissions:
+</p>
+				<ol>
+					<li>
+<p>
+~IF［
+%名前 の`許可~状態$ ~EQ `prompt$l
+］~AND［
+%一過な作動化か ~EQ ~F
+］：
+◎
+If name’s permission state is "prompt" and hasTransientActivation is false:
+</p>
+						<ol>
+							<li>
+<p>
+`大域~taskを~queueする$( `~deviceの動きと方位~task~source$, %大域~obj, 次の手続き )
+◎
+Queue a global task on the device motion and orientation task source given global to＼
+</p>
+
+<div class="algo">
+手続きは
+⇒
+`~promiseを却下する$( %結果, `NotAllowedError$E 例外 )
+◎
+reject result with a "NotAllowedError" DOMException.
+</div>
+							</li>
+							<li>
+~RET
+◎
+Return.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+			<li>
 %許可~状態 ~LET `granted$l
 ◎
 Let permissionState be "granted".
 </li>
 			<li>
 <p>
-« `accelerometer$l, `gyroscope$l » を成す
+%許可~群 を成す
 ~EACH( %名前 )
 に対し：
 ◎
-For each name of « "accelerometer", "gyroscope" »:
+For each name of permissions:
 </p>
 
 <p class="note">注記：
@@ -2848,10 +2944,10 @@ Note: There is no algorithm for requesting multiple permissions at once. However
 					<li>
 <p>
 ~IF［
-`利用する許可を要請する$( %名前 ) ~EQ `denied$l
+`利用する許可を要請する$( %名前 ) ~NEQ `granted$l
 ］：
 ◎
-If the result of requesting permission to use name is "denied":
+If the result of requesting permission to use name is not "granted":
 </p>
 						<ol>
 							<li>
