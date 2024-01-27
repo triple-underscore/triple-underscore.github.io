@@ -120,8 +120,8 @@ return text;
 ●●options
 
 spec_title:Long Tasks API
-spec_date:2024-01-12
-trans_update:2024-01-15
+spec_date:2024-01-15
+trans_update:2024-01-27
 source_checked:240108
 page_state_key:TIMING
 original_url:https://w3c.github.io/longtasks/
@@ -317,7 +317,7 @@ ftI.現在の~taskの開始~時刻:#frame-timing-info-current-task-start-time
 ftI.描画~更新の開始~時刻:#frame-timing-info-update-the-rendering-start-time
 ftI.~styleと~layoutの開始~時刻:#frame-timing-info-style-and-layout-start-time
 ftI.終了~時刻:#frame-timing-info-end-time
-ftI.最も長い~task所要時間:#frame-timing-info-longest-task-duration
+ftI.~task所要時間~群:#frame-timing-info-task-durations
 ftI.最初の~UI~event時刻印:#frame-timing-info-first-ui-event-timestamp
 ftI.~script群:#frame-timing-info-scripts
 ftI.処理待ち~script:#frame-timing-info-pending-script
@@ -382,6 +382,7 @@ sct.~item:~INFRA#struct-item
 ~list:~INFRA#list
 付加する:~INFRA#list-append
 連結する:~INFRA#string-concatenate
+~listを降順に~sortする:~INFRA#list-sort-in-descending-order
 
 ~realm:~TC39#sec-code-realms
 
@@ -506,6 +507,7 @@ process::::プロセス
 黙秘-:mute::~
 塗り:paint::~
 刻む:markする::~
+降順:descending order:~
 
 	〜に応じて:corresponding to the first matching statement
 
@@ -523,8 +525,9 @@ process::::プロセス
 	-:destinationOrigin
 	新たな~entry:newEntry
 	%非同一-生成元~能力は隔離されるか:crossOriginIsolatedCapability
-	%作業~所要時間:workDuration
 	%描画-所要時間:renderDuration
+	%~sort済み~task所要時間~群:sortedTaskDurations
+	%他を阻んだ所要時間の合計:totalBlockingDuration
 	%文書:document
 	%先祖~群:ancestors
 	%先祖~navigable:ancestorNavigable
@@ -535,7 +538,6 @@ process::::プロセス
 	%計時~報:timingInfo
 	%安全な~task終了~時刻:safeTaskEndTime
 	%安全な~task開始~時刻:safeTaskStartTime
-	%現在の~task所要時間:currentTaskDuration
 	%安全でない~styleと~layoutの開始~時刻:unsafeStyleAndLayoutStart
 	%安全でない~styleと~layout開始~時刻:unsafeStyleAndLayoutStartTime
 	%安全でない終了~時刻:unsafeEndTime
@@ -631,8 +633,9 @@ moment:
 	長い~task用の~API:Long Tasks API
 	長い~animation~frame用の~API:Long Animation Frames API
 	ms:millisecond
-	^en:the sequence
-	^en:a sequence
+	^en:sequence
+	他を阻んだ:blocking
+	合計:total
 
 	●UI
 critical:
@@ -670,7 +673,7 @@ social::::ソーシャル
 permalink:
 私的:private::~::プライベート
 対象層:demographic:~
-利用量:usage:~
+利用度:usage:~
 	~~丸める:clampする
 適格:eligible:~
 忠実度:fidelity:~
@@ -711,6 +714,7 @@ patch::::パッチ
 演繹-:deduce:~
 慣習:custom:~
 感じる:feelする:~
+肯定的:positive:~
 
 	もっと相関する:better correlation
 	~~相関する:independent
@@ -765,6 +769,9 @@ patch::::パッチ
 	ちょっと:bit
 	担当していた:responsible
 	-:assuming
+	得られた際には:upon
+	この節の内容:these
+	^en:upstream
 
 	●未分類
 agent:
@@ -833,6 +840,7 @@ src:
 	整数:number
 	先頭に〜挿入する-:prepend
 	内的に:inner
+	同時に起こる:coincided with
 
 ●●ref_normative
 
@@ -853,7 +861,7 @@ src:
 [INFRA]
     Anne van Kesteren; Domenic Denicola. ＜Infra Standard＞. Living Standard. URL: https://infra.spec.whatwg.org/
 [PAINT-TIMING]
-    Nicolas Pena Moreno; Noam Rosenthal. ＜Paint Timing＞. URL: https://w3c.github.io/paint-timing/
+    Ian Clelland; Noam Rosenthal. ＜Paint Timing＞. URL: https://w3c.github.io/paint-timing/
 [PERFORMANCE-TIMELINE]
     Nicolas Pena Moreno. ＜Performance Timeline＞. URL: https://w3c.github.io/performance-timeline/
 [RFC2119]
@@ -1141,7 +1149,7 @@ Register observer for previous and future long animation frame notifications. Af
 — 長い~animation~frameは、
 ~main~threadが遊休になったときから［
 当の~frameが描画されるか，~UAが描画するものは何も無いと裁定する
-］ときまでを成す `a sequence^en を測定するので。
+］ときまでを成す ある `sequence^en を測定するので。
 ◎
 While both long tasks and long animation frames measure congestion and jank, long animation frames provide information that has a better correlation with how user preceive this type of congestion. That’s because long animation frames measure a sequence that begins when the main thread is idle, and end when the frame either renders or the user agents decides there is nothing to render.
 </p>
@@ -1786,41 +1794,69 @@ The blockingDuration attribute’s getter steps are:
 </p>
 <ol>
 	<li>
-%作業~所要時間 ~LET コレの`計時~報$の`最も長い~task所要時間$ftI
+%~sort済み~task所要時間~群 ~LET `~listを降順に~sortする$( `計時~報$の`~task所要時間~群$ftI )
 ◎
-Let workDuration be this's timing info's longest task duration.
+Let sortedTaskDurations be timing info's task durations, sorted in descending order.
 </li>
 	<li>
-%描画-所要時間 ~LET 0
-◎
-Let renderDuration be the 0.
-</li>
-	<li>
+<p>
 ~IF［
 コレの`計時~報$の`描画~更新の開始~時刻$ftI ~NEQ 0
-］
-⇒
-%描画-所要時間 ~SET `所要時間を得る$( ↓ )
+］：
+◎
+If this's timing info's update the rendering start time is not zero, then:
+</p>
+		<ol>
+			<li>
+%描画-所要時間 ~LET `所要時間を得る$( ↓ )
 ⇒＃
 コレの `renderStart$m が返す値,
 `相対的な高分解能~時刻$( コレの`計時~報$の`終了~時刻$ftI )
 ◎
-If this's timing info's update the rendering start time is not zero, then:
-• Set renderDuration to the duration between this's renderStart and the relative high resolution time given this's timing info's end time.
+Let renderDuration be the duration between this's renderStart and the relative high resolution time given this's timing info's end time.
+</li>
+			<li>
+<p>
+%~sort済み~task所要時間~群[ 0 ] ~INCBY %描画-所要時間
+◎
+Increment sortedTaskDurations[0] by renderDuration.
+</p>
+
+<p class="note">注記：
+これは、
+最も長い~task所要時間に対しては，【それ自体ではなく】［
+それに描画-所要時間を加えた結果
+］が 50ms を超える場合に［
+他を阻んだものと見なされる
+］ようにする。
+◎
+Note: This makes it so that the longest task duration + render duration would be considered blocking if their total duration is &gt;50ms.
+</p>
+			</li>
+		</ol>
+	</li>
+	<li>
+%他を阻んだ所要時間の合計 ~LET 0
+◎
+Let totalBlockingDuration be 0.
 </li>
 	<li>
+%~sort済み~task所要時間~群 を成す
+~EACH( %所要時間 )
+に対し
+⇒
 ~IF［
-%作業~所要時間 ~PLUS %描画-所要時間 ~GT 50
+%所要時間 ~GT 50
 ］
 ⇒
-~RET %作業~所要時間 ~PLUS %描画-所要時間 ~MINUS 50ms
+%他を阻んだ所要時間の合計 ~INCBY %所要時間 ~MINUS 50
 ◎
-If workDuration + renderDuration is greater than 50, then return workDuration + renderDuration - 50 milliseconds.
+For each duration in sortedTaskDurations, if duration is greater than 50 then increment totalBlockingDuration by duration - 50.
 </li>
 	<li>
-~RET 0
+~RET %他を阻んだ所要時間の合計
 ◎
-Return 0.
+Return totalBlockingDuration.
 </li>
 </ol>
 </div>
@@ -2981,15 +3017,15 @@ Note: all the above are [=monotonic clock/unsafe current time=|unsafe=], and sho
 </dd>
 
 	<dt>
-`最も長い~task所要時間@ftI
+`~task所要時間~群@ftI
 ◎
-longest task duration
+task durations
 </dt>
 	<dd>
-`DOMHighResTimeStamp$I
-— 初期~時は 0 とする。
+`DOMHighResTimeStamp$I たちが成す`~list$
+— 初期~時は空とする。
 ◎
-A DOMHighResTimeStamp, initially 0.
+A list of DOMHighResTimeStamp, initially empty.
 </dd>
 
 	<dt>
@@ -3283,7 +3319,7 @@ If timingInfo is null, then return.
 
 <p class="note">注記：
 これは、
-~browserが `the sequence^en の間に可視でなくなる場合に生じ得る。
+~browserが当の `sequence^en の間に可視でなくなる場合に生じ得る。
 ◎
 Note: This can occur if the browser becomes hidden during the sequence.
 </p>
@@ -3299,21 +3335,11 @@ Let safeTaskEndTime be the relative high resolution time given unsafeTaskEndTime
 Let safeTaskStartTime be the relative high resolution time given timingInfo’s current task start time and document’s relevant global object.
 </li>
 	<li>
-%現在の~task所要時間 ~LET `所要時間を得る$( ↓ )
-⇒＃
-%安全な~task開始~時刻,
-%安全な~task終了~時刻
-◎
-Let currentTaskDuration be the duration between safeTaskStartTime and safeTaskEndTime.
-</li>
-	<li>
-~IF［
-%現在の~task所要時間 ~GT %計時~報 の`最も長い~task所要時間$ftI
-］
+%計時~報 の`~task所要時間~群$ftIに次の結果を`付加する$
 ⇒
-%計時~報 の`最も長い~task所要時間$ftI ~SET %現在の~task所要時間
+`所要時間を得る$( %安全な~task開始~時刻, %安全な~task終了~時刻 )
 ◎
-If currentTaskDuration is greater than timingInfo’s longest task duration, then set timingInfo’s longest task duration to currentTaskDuration.
+Append the duration between safeTaskStartTime and safeTaskEndTime to timingInfo’s task durations.
 </li>
 	<li>
 <p>
@@ -3330,7 +3356,8 @@ If the user agent believes that updating the rendering of document’s node navi
 <p class="note">注記：
 ここでは、
 実際には視覚的な更新が不要であったとしても，`長い~animation~frame$を刻む
-— `because it would be blocking^en in ある局面 `where it coincided with^en ある無関係な視覚的~更新【？】。
+— それが，ある無関係な視覚的~更新と同時に起こる局面においては、
+それは，他を阻むことになるので。
 ◎
 Note: even though there was no actual visual update, we mark a long animation frame here because it would be blocking in a scenario where it coincided with an unrelated visual update.
 </p>
@@ -3367,7 +3394,7 @@ If timingInfo is null, then return.
 
 <p class="note">注記：
 これは、
-~browserが `the sequence^en の間に可視でなくなる場合に生じ得る。
+~browserが当の `sequence^en の間に可視でなくなる場合に生じ得る。
 ◎
 Note: This can occur if the browser becomes hidden during the sequence.
 </p>
@@ -4175,6 +4202,15 @@ Increment frameTimingInfo’s pending script's pause duration by the millisecond
 	<section id="other-standards">
 <h2 title="Additions to existing standards">6. 既存の標準に対する追加</h2>
 
+<p class="issue">
+この節の内容は、［
+`Gecko＠https://github.com/mozilla/standards-positions/issues/929$ ／
+`WebKit＠https://github.com/WebKit/standards-positions/issues/283$
+］から肯定的な通達が正式に得られた際には， `upstream^en される【各~仕様に統合される】べきである。
+◎
+these should be upstreamed upon formal positive signals from Gecko /WebKit.
+</p>
+
 		<section id="webidl-monkey-patches">
 <h3 title="Monkey-patches to the WebIDL standard">6.1. ~Web~IDL標準に対する~monkey~patch</h3>
 
@@ -4592,7 +4628,7 @@ Conversely, if the culprit is the top level page, then a deeply embedded iframe 
 <h3 title="Attack Scenarios Considered">7.2. 考慮される攻撃~局面</h3>
 
 <p>
-考慮される計時~攻撃には次に挙げるものがある：
+考慮される計時~攻撃として，次が挙げられる：
 ◎
 The following are the timing attacks considered:
 </p>
@@ -4616,10 +4652,10 @@ Traditional timing attacks: using external resource load time to reveal the size
 ~script構文解析／
 ~app~cache読取n【この特能は~HTMLから廃された】／
 `Cache$I ~API（~sw）
-］の利用量に関する時間を利用して、
+］の利用度に関する時間を利用して、
 利用者を一意に識別するか, 利用者の［
 年齢, 性別, 所在, 関心事, 等々
-］の~profileを作成する。
+］が成す~profileを作成する。
 `一例として＠https://tom.vg/papers/timing-attacks_ccs2015.pdf$，
 ~social~network内の ある~permalink用の~pageからの状態s更新は、
 一定の対象層（例： 20 代の女性）に制限-【するように公開-】され得る。
@@ -4646,7 +4682,9 @@ These scenarios are addressed by the 50ms threshold AND respecting cross-origin 
 
 <p>
 非同一-生成元に属するいくつかの文書が同じ~event~loopを共有し得るので、
-それらも， `the same sequence^en を成す一部として描画され得る
+それらも，同じ `sequence^en を成す一部として
+【すなわち，`描画を更新する段$の中で同時に】
+描画され得る
 — その結果、
 互いの描画~時刻に波及する。
 これらの計時は，すでに非同一-生成元からも いくぶん観測-可能であるが
@@ -4665,7 +4703,7 @@ To mitigate this, long animation frames are only reported to "participating loca
 <ul>
 	<li>
 長い~animation~frameを観測する文書として適格になるものは、［
-`the sequence^en に寄与した ある作業~taskに結付けられたもの／
+当の `sequence^en に寄与した ある作業~taskに結付けられたもの／
 当の~frameを成す一部として描画されたもの
 ］に限られる。
 ◎
