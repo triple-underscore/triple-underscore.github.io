@@ -120,7 +120,7 @@ return text;
 ●●options
 
 spec_date:2024-01-12
-trans_update:2024-01-12
+trans_update:2024-02-01
 source_checked:231004
 page_state_key:HTML
 spec_status:LS
@@ -537,7 +537,6 @@ mt.text/css:~HTMLindex#text/css
 at.import:~CASCADE#at-ruledef-import
 
 p.content-visibility:~CSSCONTAIN#propdef-content-visibility
-	~CSSCONTAIN#content-visibility
 
 	●用語
 ~scriptingは可能化されて:#concept-environment-script
@@ -755,6 +754,7 @@ tK.~script評価 環境~設定群~obj集合:#script-evaluation-environment-setti
 利用者~対話~task~source:#user-interaction-task-source
 ~network用~task~source:#networking-task-source
 ~JS~engine~task~source:#javascript-engine-task-source
+描画~task~source:#rendering-task-source
 ~taskを~queueする:#queue-a-task
 ~queueする:#queue-a-task
 ~queueされ:#queue-a-task
@@ -844,6 +844,8 @@ eH.~target:#event-handler-target
 l.none:~HTMLds#cross-origin-isolation-none
 
 ~navigable:~HTMLds#navigable
+nav.作動中な文書:~HTMLds#nav-document
+nav.作動中な~window:~HTMLds#nav-window
 ~navigable容器:~HTMLds#navigable-container
 ~node~navigable:~HTMLds#node-navigable
 doc.容器~文書:~HTMLds#doc-container-document
@@ -976,9 +978,7 @@ sl.Realm:~WEBIDLjs#js-platform-objects
 
 	●CSSOMVIEW
 文書の~resize手続き:~CSSOMVIEW#document-run-the-resize-steps
-	:~CSSOMVIEW#run-the-resize-steps
 文書の~scroll手続き:~CSSOMVIEW#document-run-the-scroll-steps
-	:~CSSOMVIEW#run-the-scroll-steps
 文書~用の媒体~queryを評価して変化を報告する:~CSSOMVIEW#evaluate-media-queries-and-report-changes
 
 	●FETCH
@@ -1583,6 +1583,7 @@ encapsulate:::カプセル化
 単直:straightforward:簡単
 誤記:typo:~
 欠如:lack:~
+冗長:redundant:~
 
 	●仕様（他）
 	アリ性:possibility
@@ -1913,7 +1914,6 @@ as:
 	%Bの生成元:originB
 	%~agent~cluster:agentCluster
 	%文書~群:docs
-	%描画~機会はあるか:hasARenderingOpportunity
 	%実行候補:candidateExecution
 	%~platform~obj:platformObject
 	%所有者~agent:ownerAgent
@@ -2019,6 +2019,8 @@ as:
 	%~event~loop:eventLoop
 	%~event~loop:event loop
 	%既定の行先:defaultDestination
+	%~frame時刻印:frameTimestamp
+	%文書:doc
 
 	●指示語
 現在:currently:~
@@ -2049,8 +2051,6 @@ as:
 	-:th
 	戻-:back
 	どこか:somewhere
-	今:now
-	今の所:for now
 	前もって:up front
 	以前の／前の／それまで／ここまでの:previous
 	より長い:longer
@@ -3059,11 +3059,10 @@ A realm execution context
 ］ときは、
 この実行~文脈が`~JS実行~文脈~stack$の一番上になり，その上に当の~scriptに特有な別の実行~文脈が~pushされる。
 （こう設定しておけば、［
-`ParseScript$jA ／
 `~source~text~module~Record$の `Evaluate$jA
 ］は，どの~realmを利用するかを知れるようになる。）
 ◎
-A JavaScript execution context shared by all scripts that use this settings object, i.e., all scripts in a given realm. When we run a classic script or run a module script, this execution context becomes the top of the JavaScript execution context stack, on top of which another execution context specific to the script in question is pushed. (This setup ensures ParseScript and Source Text Module Record's Evaluate know which realm to use.)
+A JavaScript execution context shared by all scripts that use this settings object, i.e., all scripts in a given realm. When we run a classic script or run a module script, this execution context becomes the top of the JavaScript execution context stack, on top of which another execution context specific to the script in question is pushed. (This setup ensures Source Text Module Record's Evaluate knows which realm to use.)
 </dd>
 
 	<dt>
@@ -12736,11 +12735,6 @@ Perform a microtask checkpoint.
 		</ol>
 	</li>
 	<li>
-%描画~機会はあるか ~LET ~F
-◎
-Let hasARenderingOpportunity be false.
-</li>
-	<li>
 %now ~LET `安全でない共有される現在の時刻$ `HRT$r
 ◎
 Let now be the unsafe shared current time. [HRT]
@@ -12823,657 +12817,15 @@ Report long tasks, passing in taskStartTime, now (the end time of the task), top
 </li>
 		</ol>
 	</li>
-	<li>
-<p>
-`描画を更新する@：
-◎
-Update the rendering:＼
-</p>
-
+	<li id="idle-deadline-computation">
 <p>
 ~IF［
 %~event~loop は`~window~event~loop$である
+］~AND［
+%~event~loop の`~task~queue$内に`可走な~task$は無い
 ］：
 ◎
-if this is a window event loop, then:
-</p>
-		<ol>
-			<li>
-<p>
-%文書~群 ~LET `文書$のうち［
-それに`関連な~agent$の`~event~loop$aG ~EQ %~event~loop
-］を満たすものたちが成す~list
-— ~list内の どの 2 つの`文書$ %A, %B に対しても，
-それらの順序は、
-%B の`容器~文書$docを %B1 とするとき，
-次に挙げる条件を満たすモノトスル（条件~以外は任意）：
-◎
-Let docs be all Document objects whose relevant agent's event loop is this event loop, sorted arbitrarily except that the following conditions must be met:
-</p>
-				<ul>
-					<li>
-［
-%A ~EQ %B1
-］ならば、
-%B は %A より後になる。
-◎
-Any Document B whose container document is A must be listed after A in the list.
-</li>
-					<li>
-［
-%A の`容器~文書$doc ~EQ %B1
-］ならば、
-%A, %B の順序は，［
-%B1 の`~node~tree$における`~shadowも含めた~tree順序$
-］による［
-%A の`~navigable容器$, %B の`~navigable容器$
-］の順序に合致する。
-◎
-If there are two documents A and B that both have the same non-null container document C, then the order of A and B in the list must match the shadow-including tree order of their respective navigable containers in C's node tree.
-</li>
-				</ul>
-
-<p>
-以下において %文書~群 を成す
-~EACH( `文書$ )
-にわたって反復する段においては、
-この順序で処理するモノトスル。
-◎
-In the steps below that iterate over docs, each Document must be processed in the order it is found in the list.
-</p>
-			</li>
-			<li>
-<p>
-`描画~機会^i
-⇒
-%文書~群 から次を満たす`文書$をすべて除去する
-⇒
-その`~node~navigable$には、
-`描画~機会$は無い
-◎
-Rendering opportunities: Remove from docs all Document objects whose node navigables do not have a rendering opportunity.
-</p>
-
-<p>
-次に該当する`~navigable$には、
-`描画~機会@
-が有るとされる
-⇒
-~UAは、
-現在［
-~hardware更新率による拘束 ／ 処理能の理由による~UAによる減速
-］を織り込む下で，利用者に当の`~navigable$を成す内容を【一部でも】呈示-可能である
-— 表示域の外側に呈示-可能な内容も考慮して。
-◎
-A navigable has a rendering opportunity if the user agent is currently able to present the contents of the navigable to the user, accounting for hardware refresh rate constraints and user agent throttling for performance reasons, but considering content presentable even if it's outside the viewport.
-</p>
-
-<p>
-`~navigable$の`描画~機会$は、
-その`作動中な文書$の［
-`具現化は阻まれて$いる／
-`~view遷移~用の具現化は抑止されて＠~CSSVT#document-rendering-suppression-for-view-transitions$いる
-］間は，無い
-— 他のときは、
-表示-更新率などの~hardwareによる拘束, その他の要因
-— ~pageの処理能, 文書の`可視性~状態$doc ~EQ `visible^l かどうかなど —
-に基づいて決定される。
-描画~機会は、
-概して~~定期的に生じる。
-◎
-A navigable has no rendering opportunities if its active document is render-blocked or if it is suppressed for view transitions; otherwise, rendering opportunities are determined based on hardware constraints such as display refresh rates and other factors such as page performance or whether the document's visibility state is "visible". Rendering opportunities typically occur at regular intervals.
-</p>
-
-<p class="note">注記：
-この仕様は、
-描画~機会を選定する特定0の~modelは何ら義務付けない。
-例えば，~browserが更新率 60Hz を達成しようと試みている場合、
-描画~機会が生じるのは，最大でも毎秒 60 回（ およそ 16.7ms ごと）になる。
-~browserは、
-ある`~navigable$に対し この更新率を維持-不能と見出した場合には，その~navigable用には
-— ~frameを時々落とすのではなく —
-描画~機会を より維持-可能な毎秒 30 回に落とすこともある。
-同様に，`~navigable$は可視でない場合、
-~UAは，その~pageの描画~機会をずっと低速な毎秒 4 回 または それ未満にすら落とすものと裁定することもある。
-◎
-This specification does not mandate any particular model for selecting rendering opportunities. But for example, if the browser is attempting to achieve a 60Hz refresh rate, then rendering opportunities occur at a maximum of every 60th of a second (about 16.7ms). If the browser finds that a navigable is not able to sustain this rate, it might drop to a more sustainable 30 rendering opportunities per second for that navigable, rather than occasionally dropping frames. Similarly, if a navigable is not visible, the user agent might decide to drop that page to a much slower 4 rendering opportunities per second, or even less.
-</p>
-			</li>
-			<li>
-~IF［
-%文書~群 は空でない
-］
-⇒＃
-%描画~機会はあるか ~SET ~T；
-%~event~loop の`最後の描画-機会~時刻$ ~SET %~task開始~時刻
-◎
-If docs is not empty, then set hasARenderingOpportunity to true and set this event loop's last render opportunity time to taskStartTime.
-</li>
-			<li>
-<p>
-`不必要な描画^i
-⇒
-%文書~群 から ~AND↓ を満たす`文書$をすべて除去する：
-◎
-Unnecessary rendering: Remove from docs all Document objects which meet both of the following conditions:
-</p>
-				<ul>
-					<li>
-~UAは、
-`文書$の`~node~navigable$の描画を更新しても，可視な効果はないものと予見している
-◎
-the user agent believes that updating the rendering of the Document's node navigable would have no visible effect, and
-</li>
-					<li>
-`文書$の`~animation~frame~callback~map$は空である
-◎
-the Document's map of animation frame callbacks is empty.
-</li>
-				</ul>
-			</li>
-			<li>
-<p>
-%文書~群 から次に該当する`文書$をすべて除去する
-⇒
-~UAは、
-その他の理由により，文書の描画を更新するのは飛ばした方が好ましいと予見している
-◎
-Remove from docs all Document objects for which the user agent believes that it's preferable to skip updating the rendering for other reasons.
-</p>
-
-<div class="note">
-<p>注記：
-<p>
-
-<ul>
-	<li>
-`描画~機会^i 段は、
-新たな内容を利用者に呈示-不能なとき（`描画~機会$が無いとき）に，~UAが描画を更新するのを防止する。
-◎
-The step labeled Rendering opportunities prevents the user agent from updating the rendering when it is unable to present new content to the user (there's no rendering opportunity).
-</li>
-	<li>
-`不必要な描画^i 段は、
-新たに描く内容が無いときに，~UAが描画を更新するのを防止する。
-◎
-The step labeled Unnecessary rendering prevents the user agent from updating the rendering when there's no new content to draw.
-</li>
-	<li>
-この段は、［
-他の理由でも，以下の手続きを走らすのを防止する
-］ことを，~UAに可能化する
-— 例えば、
-ある種の`~task$たちを［
-~~間断なく順に実行して、
-間に差挟まれるのは，`小task~checkpointを遂行する$ことに限る
-］ことを確保するなど
-（例えば，`各~animation~frame~callbackを走らす$ことなく）。
-具体的には、
-~UAは，例えば［
-複数の~timer~callbackを，描画~更新を挟まずに合体したい
-］と望むかもしれない。
-◎
-This step enables the user agent to prevent the steps below from running for other reasons, for example, to ensure certain tasks are executed immediately after each other, with only microtask checkpoints interleaved (and without, e.g., animation frame callbacks interleaved). Concretely, a user agent might wish to coalesce timer callbacks together, with no intermediate rendering updates.
-</li>
-</ul>
-</div>
-
-			</li>
-			<li>
-<p>
-この段の中の各~段における “~EACH( %文書 ) ” は、
-%文書~群 を成す`文書$のうち［
-当の段を走らす時点において，`全部的に作動中$である
-］ものたちに対し，適用するものとする：
-◎
-↓
-</p>
-				<ol>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`文書を露呈する$( %文書 )
-◎
-For each fully active Document in docs, reveal that Document.
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-~IF［
-%文書 の`~node~navigable$は`~top-level辿可能$である
-］
-⇒
-`自動focus候補~群を洗出す$( %文書 )
-◎
-For each fully active Document in docs, flush autofocus candidates for that Document if its node navigable is a top-level traversable.
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`文書の~resize手続き$( %文書 )
-`CSSOMVIEW$r
-◎
-For each fully active Document in docs, run the resize steps for that Document. [CSSOMVIEW]
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`文書の~scroll手続き$( %文書 )
-`CSSOMVIEW$r
-◎
-For each fully active Document in docs, run the scroll steps for that Document. [CSSOMVIEW]
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`文書~用の媒体~queryを評価して変化を報告する$( %文書 )
-`CSSOMVIEW$r
-◎
-For each fully active Document in docs, evaluate media queries and report changes for that Document. [CSSOMVIEW]
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`~animationを更新して~eventを送信する$( %文書, `相対的な高分解能~時刻$( %now, %文書 に`関連な大域~obj$ ) )
-`WEBANIMATIONS$r
-◎
-For each fully active Document in docs, update animations and send events for that Document, passing in relative high resolution time given now and that Document's relevant global object as the timestamp. [WEBANIMATIONS]
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`全screen化~手続き$( %文書 )
-`FULLSCREEN$r
-◎
-For each fully active Document in docs, run the fullscreen steps for that Document. [FULLSCREEN]
-</li>
-					<li>
-<p>
-~EACH( %文書 )
-に対し
-⇒
-~IF［
-~UAは，ある［
-`CanvasRenderingContext2D$I ／ `OffscreenCanvasRenderingContext2D$I
-］文脈に結付けられた裏~storageを喪失したことを検出した
-］
-⇒
-そのような
-~EACH( 文脈 %文脈 )
-に対し
-⇒
-`文脈~喪失d時の手続き$を走らす
-◎
-For each fully active Document in docs, if the user agent detects that the backing storage associated with a CanvasRenderingContext2D or an OffscreenCanvasRenderingContext2D, context, has been lost, then it must run the context lost steps for each such context:
-</p>
-
-<div class="algo">
-<p>
-`文脈~喪失d時の手続き@
-は：
-◎
-↑</p>
-						<ol>
-							<li>
-%~canvas ~LET %文脈 に応じて
-⇒＃
-`CanvasRenderingContext2D$I であるならば %文脈 の `canvas$m 属性の値 ／
-`OffscreenCanvasRenderingContext2D$I であるならば %文脈 の`~OffscreenCanvas~obj$o2D
-◎
-Let canvas be the value of context's canvas attribute, if context is a CanvasRenderingContext2D, or the associated OffscreenCanvas object for context otherwise.
-</li>
-							<li>
-%文脈 の`文脈~喪失dか$ ~SET ~T
-◎
-Set context's context lost to true.
-</li>
-							<li>
-`描画~文脈を既定の状態に設定し直す$( %文脈 )
-◎
-Reset the rendering context to its default state given context.
-</li>
-							<li>
-%復旧するべきか ~LET `~eventを発火する$( %~canvas, `contextlost$et )
-— 次のように初期化して
-⇒
-`cancelable$m 属性 ~SET ~T
-◎
-Let shouldRestore be the result of firing an event named contextlost at canvas, with the cancelable attribute initialized to true.
-</li>
-							<li>
-~IF［
-%復旧するべきか ~EQ ~F
-］
-⇒
-~RET
-◎
-If shouldRestore is false, then abort these steps.
-</li>
-							<li>
-%文脈 を復旧するよう試みる
-— %文脈 の属性~群を利用して裏~storageを作成して， %文脈 にそれを結付けることにより
-◎
-Attempt to restore context by creating a backing storage using context's attributes and associating them with context.＼
-</li>
-							<li>
-~IF［
-前~段に失敗した
-］
-⇒
-~RET
-◎
-If this fails, then abort these steps.
-</li>
-							<li>
-%文脈 の`文脈~喪失dか$ ~SET ~F
-◎
-Set context's context lost to false.
-</li>
-							<li>
-`~eventを発火する$( %~canvas, `contextrestored$et )
-◎
-Fire an event named contextrestored at canvas.
-</li>
-						</ol>
-</div>
-
-					</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`各~animation~frame~callbackを走らす$( %文書, `相対的な高分解能~時刻$( %now, %文書 に`関連な大域~obj$ ) )
-◎
-For each fully active Document in docs, run the animation frame callbacks for that Document, passing in the relative high resolution time given now and that Document's relevant global object as the timestamp.
-</li>
-					<li>
-<p>
-~EACH( %文書 )
-に対し：
-◎
-For each fully active Document doc in docs:
-</p>
-					<ol>
-						<li>
-%~resize観測器の深さ ~LET 0
-◎
-Let resizeObserverDepth be 0.
-</li>
-							<li>
-<p>
-~WHILE 無条件
-◎
-While true:
-</p>
-								<ol>
-									<li>
-%文書 の~styleを計算し直して，その~layoutを更新する
-◎
-Recalculate styles and update layout for doc.
-</li>
-									<li>
-%内容~可視性に関する初期~決定を経たか ~LET ~F
-◎
-Let hadInitialVisibleContentVisibilityDetermination be false.
-</li>
-									<li>
-<p id="_content-visibility-auto">
-【%文書 内の】［
-`content-visibility$p の使用~値 ~EQ `auto^v
-］を満たす
-~EACH( 要素 %要素 )
-に対し：
-◎
-For each element element with 'auto' used value of 'content-visibility':
-</p>
-										<ol>
-											<li>
-%初期~決定~用に検査するか ~LET ［
-次が満たされるならば ~T ／
-~ELSE_ ~F
-］
-⇒
-［
-%要素 の`表示域への近接度$ ~EQ `未決定$i
-］~AND［
-~NOT %要素 は`利用者に関連する$
-］
-◎
-Let checkForInitialDetermination be true if element's proximity to the viewport is not determined and it is not relevant to the user. Otherwise, let checkForInitialDetermination be false.
-</li>
-											<li>
-%要素 の`表示域への近接度を決定する$
-◎
-Determine proximity to the viewport for element.
-</li>
-											<li>
-~IF［
-%初期~決定~用に検査するか ~EQ ~T
-］~AND［
-%要素 は`利用者に関連する$
-］
-⇒
-%内容~可視性に関する初期~決定を経たか ~SET ~T
-◎
-If checkForInitialDetermination is true and element is now relevant to the user, then set hadInitialVisibleContentVisibilityDetermination to true.
-</li>
-										</ol>
-									</li>
-									<li>
-<p>
-~IF［
-%内容~可視性に関する初期~決定を経たか ~EQ ~T
-］
-⇒
-~CONTINUE
-◎
-If hadInitialVisibleContentVisibilityDetermination is true, then continue.
-</p>
-
-<p class="note">注記：
-この段の意図は、［
-表示域への近接度に対する初期~決定
-］が即時に効果を発揮するよう，この~loopを成す始めの段で遂げられた［
-~styleと~layoutの計算
-］に反映させることにある。
-近接度に対する初期~以外の決定は、
-次回の描画~機会にて効果を発揮する。
-`CSSCONTAIN$r
-◎
-The intent of this step is for the initial viewport proximity determination, which takes effect immediately, to be reflected in the style and layout calculation which is carried out in a previous step of this loop. Proximity determinations other than the initial one take effect at the next rendering opportunity. [CSSCONTAIN]
-</p>
-									</li>
-									<li>
-`ある深さ以上で作動中な~resize観測nを集める$( %文書, %~resize観測器の深さ )
-◎
-Gather active resize observations at depth resizeObserverDepth for doc.
-</li>
-									<li>
-<p>
-~IF［
-`作動中な~resize観測nはあるか？$( %文書 ) ~EQ ~T
-］：
-◎
-If doc has active resize observations:
-</p>
-
-										<ol>
-											<li>
-%~resize観測器の深さ ~SET `作動中な~resize観測nを~broadcastする$( %文書 )
-◎
-Set resizeObserverDepth to the result of broadcasting active resize observations given doc.
-</li>
-											<li>
-~CONTINUE
-◎
-Continue.
-</li>
-										</ol>
-									</li>
-									<li>
-~ELSE
-⇒
-~BREAK
-◎
-Otherwise, break.
-</li>
-								</ol>
-							</li>
-							<li>
-~IF［
-`飛ばした~resize観測nはあるか？$( %文書 ) ~EQ ~T
-］
-⇒
-`~resize~loop~errorを送達する$( %文書 )
-◎
-If doc has skipped resize observations, then deliver resize loop error given doc.
-</li>
-						</ol>
-					</li>
-					<li>
-<div>
-<p id="focus-fixup-rule">
-~EACH( %文書 )
-に対し
-</p>
-						<ol>
-							<li>
-~IF［
-%文書 が`指名する被focus区画$docは`~focus可能な区画$である
-］
-⇒
-~CONTINUE
-</li>
-							<li>
-`~objを~focusする$( %文書 の`表示域$ )
-</li>
-							<li>
-%文書 に`関連な大域~obj$の`~navi~API$の`進行中な~naviの間に~focusは変化したか$ ~SET ~F
-</li>
-						</ol>
-◎
-For each fully active Document in docs, if the focused area of that Document is not a focusable area, then run the focusing steps for that Document's viewport, and set the Document's relevant global object's navigation API's focus changed during ongoing navigation to false.
-</div>
-
-<p class="example">
-これは，例えば、
-要素に `hidden$a 属性が追加され，`具現化されなく＠~HTMLrendering#being-rendered$なったときに起こり得る。
-また、
-`input$e 要素においては，それが`不能化され＠~HTMLforms#concept-fe-disabled$たときにも起こり得る。
-◎
-For example, this might happen because an element has the hidden attribute added, causing it to stop being rendered. It might also happen to an input element when the element gets disabled.
-</p>
-
-<p class="note">注記：
-これは、
-`通例的＠~HTMLinteraction#note-sometimes-no-blur-event$には
-`blur$et ~eventを発火することになり，
-場合によっては `change$et ~eventも発火することになる。
-◎
-This will usually fire blur events, and possibly change events.
-</p>
-
-<p class="note">注記：
-`指名する被focus区画$docが %文書 から除去された場合、
-この非同期的な~focusの修復に加えて，
-`同期的な修復＠~HTMLINFRA#node-remove-focus-fixup$もある。
-そこでは、［
-`blur$et ／ `change$et
-］~eventは`発火されない^em。
-◎
-In addition to this asynchronous fixup, if the focused area of the document is removed, there is a synchronous fixup. That one will not fire blur or change events.
-</p>
-					</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`処理待ち遷移~演算を遂行する＠~CSSVT#perform-pending-transition-operations$( %文書 )
-`CSSVIEWTRANSITIONS$r
-◎
-For each fully active Document in docs, perform pending transition operations for that Document. [CSSVIEWTRANSITIONS]
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`交差~観測nを更新する$( %文書, %now )
-`INTERSECTIONOBSERVER$r
-◎
-For each fully active Document in docs, run the update intersection observations steps for that Document, passing in now as the timestamp. [INTERSECTIONOBSERVER]
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`塗り計時を刻む$( %文書, %now )
-`PAINTTIMING$r
-◎
-Invoke the mark paint timing algorithm for each Document object in docs.
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-［
-%文書, および その`~node~navigable$
-］の描画や~UIを，現在の状態を反映するように更新する
-◎
-For each fully active Document in docs, update the rendering or user interface of that Document and its node navigable to reflect the current state.
-</li>
-					<li>
-~EACH( %文書 )
-に対し
-⇒
-`上端~層からの除去を処理する$( %文書 )
-◎
-For each fully active Document doc in docs run process top layer removals given doc.
-</li>
-				</ol>
-			</li>
-		</ol>
-	</li>
-	<li>
-<p>
-~IF［
-~AND↓
-］…
-◎
-If all of the following are true:
-</p>
-		<ul>
-			<li>
-%~event~loop は`~window~event~loop$である
-◎
-this is a window event loop
-</li>
-			<li>
-%~event~loop の`~task~queue$を成すどの`~task$も，その`文書$tKは`全部的に作動中$でない
-◎
-there is no task in this event loop's task queues whose document is fully active;
-</li>
-			<li>
-%~event~loop の`小task~queue$は`空$である
-◎
-this event loop's microtask queue is empty; and
-</li>
-			<li>
-%描画~機会はあるか ~EQ ~F
-◎
-hasARenderingOpportunity is false,
-</li>
-		</ul>
-<p id="idle-deadline-computation">
-…ならば：
-◎
-then:
+If this is a window event loop that has no runnable task in this event loop's task queues, then:
 </p>
 		<ol>
 			<li>
@@ -13671,7 +13023,7 @@ If this event loop's agent's single realm's global object is a supported Dedicat
 </p>
 				<ol>
 					<li>
-%now ~LET `現在の高分解能~時刻$( %~worker【！that DedicatedWorkerGlobalScope】 )
+%now ~LET `現在の高分解能~時刻$( %~worker【！the DedicatedWorkerGlobalScope】 )
 `HRT$r
 ◎
 Let now be the current high resolution time given the DedicatedWorkerGlobalScope. [HRT]
@@ -13690,6 +13042,7 @@ Run the animation frame callbacks for that DedicatedWorkerGlobalScope, passing i
 Update the rendering of that dedicated worker to reflect the current state.
 </li>
 				</ol>
+
 <p class="note">注記：
 `~window~event~loop$における`描画を更新する$ときの注記と同様に、
 ~UAは，専用~workerにおける描画の更新率を決定できる。
@@ -13721,6 +13074,683 @@ If there are no tasks in the event loop's task queues and the WorkerGlobalScope 
 	</li>
 </ol>
 </div>
+
+<div class="algo">
+<p>
+`~window~event~loop$ %~event~loop は、
+存在する限り，次も`並列的$に走らすモノトスル：
+◎
+A window event loop eventLoop must also run the following in parallel, as long as it exists:
+</p>
+<ol>
+	<li>
+次を満たす`~navigable$のうち 1 つ以上が，`描画~機会$を有し得るようになるまで待機する
+⇒
+それにて`作動中な文書$navに`関連な~agent$の`~event~loop$aG ~EQ %~event~loop
+◎
+Wait until at least one navigable whose active document's relevant agent's event loop is eventLoop might have a rendering opportunity.
+</li>
+	<li>
+%~event~loop の`最後の描画-機会~時刻$ ~SET `安全でない共有される現在の時刻$
+◎
+Set eventLoop's last render opportunity time to the unsafe shared current time.
+</li>
+	<li>
+<p>
+~EACH( `描画~機会$を有する`~navigable$ %~navigable )
+に対し
+⇒
+`大域~taskを~queueする$( `描画~task~source$, %~navigable にて`作動中な~window$nav, 
+`描画を更新する$ )
+◎
+For each navigable that has a rendering opportunity, queue a global task on the rendering task source given navigable's active window to update the rendering:
+</p>
+
+<p class="note">注記：
+これは、
+`描画を更新する$手続きを冗長に~callするかもしれないが、
+そのような~callによる効果は，観測-可能にならない
+— `不必要な描画^i 段により、
+必要yな描画は無いので。
+実装は、
+更なる最適化を導入できる
+— この~taskを~task~queue内に無いときに限り~queueするなど。
+しかしながら、
+この~taskの`文書$tKは，~taskが処理される前に作動中でなくなることもあることに注意。
+◎
+This might cause redundant calls to update the rendering. However, these calls would have no observable effect because there will be no rendering necessary, as per the Unnecessary rendering step. Implementations can introduce further optimizations such as only queuing this task when it is not already queued. However, note that the document associated with the task might become inactive before the task is processed.
+</p>
+
+<div class="algo">
+<p>
+`描画を更新する@
+手続きは：
+</p>
+		<ol>
+			<li>
+%~frame時刻印 ~LET %~event~loop の`最後の描画-機会~時刻$
+◎
+Let frameTimestamp be eventLoop's last render opportunity time.
+</li>
+			<li>
+<p>
+%文書~群 ~LET `全部的に作動中$な`文書$のうち［
+それに`関連な~agent$の`~event~loop$aG ~EQ %~event~loop
+］を満たすものたちが成す~list
+— ~list内の どの 2 つの`文書$ %A, %B に対しても，
+それらの順序は、
+%B の`容器~文書$docを %B1 とするとき，
+次に挙げる条件を満たすモノトスル（条件~以外は任意）：
+◎
+Let docs be all fully active Document objects whose relevant agent's event loop is eventLoop, sorted arbitrarily except that the following conditions must be met:
+</p>
+				<ul>
+					<li>
+［
+%A ~EQ %B1
+］ならば、
+%B は %A より後になる。
+◎
+Any Document B whose container document is A must be listed after A in the list.
+</li>
+					<li>
+［
+%A の`容器~文書$doc ~EQ %B1
+］ならば、
+%A, %B の順序は，［
+%B1 の`~node~tree$における`~shadowも含めた~tree順序$
+］による［
+%A の`~navigable容器$, %B の`~navigable容器$
+］の順序に合致する。
+◎
+If there are two documents A and B that both have the same non-null container document C, then the order of A and B in the list must match the shadow-including tree order of their respective navigable containers in C's node tree.
+</li>
+				</ul>
+<p>
+以下において
+%文書~群 を成す
+~EACH( %文書 )
+にわたって反復する各~段においては、
+この順序で処理するモノトスル。
+◎
+In the steps below that iterate over docs, each Document must be processed in the order it is found in the list.
+</p>
+			</li>
+			<li>
+<p>
+`描画-可能でない文書を~filterする^i
+⇒
+%文書~群 から ~OR↓ を満たす`文書$を除去する
+◎
+Filter non-renderable documents: Remove from docs any Document object doc for which any of the following are true:
+</p>
+				<ul>
+					<li>
+その`具現化は阻まれて$いる
+◎
+doc is render-blocked;
+</li>
+					<li>
+その`可視性~状態$doc ~EQ `hidden^l
+◎
+doc's visibility state is "hidden";
+</li>
+					<li>
+その描画は`~view遷移~用の具現化は抑止されて＠~CSSVT#document-rendering-suppression-for-view-transitions$いる
+◎
+doc's rendering is suppressed for view transitions; or
+</li>
+					<li>
+その`~node~navigable$には，現在は`描画~機会$を有さない
+◎
+doc's node navigable doesn't currently have a rendering opportunity.
+</li>
+			</ul>
+
+<p class="note">注記：
+`並列的$な手続き内で検査した描画~機会の有無は、
+ここでも検査する必要がある
+— %文書~群 【！that share the same event loop】を成す一部の文書は、
+この時点では`描画~機会$を有さないかもしれないので。
+◎
+We have to check for rendering opportunities here, in addition to checking that in the in parallel steps, as some documents that share the same event loop might not have a rendering opportunity at the same time.
+</p>
+			</li>
+			<li>
+<p>
+`不必要な描画^i
+⇒
+%文書~群 から ~AND↓ を満たす`文書$ %文書 をすべて除去する：
+◎
+Unnecessary rendering: Remove from docs any Document object doc for which all of the following are true:
+</p>
+				<ul>
+					<li>
+~UAは、
+%文書 の`~node~navigable$の描画を更新しても，可視な効果はないものと予見している
+◎
+the user agent believes that updating the rendering of doc's node navigable would have no visible effect; and
+</li>
+					<li>
+%文書 の`~animation~frame~callback~map$は空である
+◎
+doc's map of animation frame callbacks is empty.
+</li>
+				</ul>
+			</li>
+			<li>
+<p>
+%文書~群 から次に該当する`文書$をすべて除去する
+⇒
+~UAは、
+その他の理由により，文書の描画を更新するのは飛ばした方が好ましいと予見している
+◎
+Remove from docs all Document objects for which the user agent believes that it's preferable to skip updating the rendering for other reasons.
+</p>
+
+<div class="note">
+<p>
+`描画-可能でない文書を~filterする^i 段は、
+新たな内容を利用者に呈示-不能なときに，~UAが描画を更新するのを防止する。
+◎
+The step labeled Filter non-renderable documents prevents the user agent from updating the rendering when it is unable to present new content to the user.
+</p>
+
+<p>
+`不必要な描画^i 段は、
+新たに描く内容が無いときに，~UAが描画を更新するのを防止する。
+◎
+The step labeled Unnecessary rendering prevents the user agent from updating the rendering when there's no new content to draw.
+</p>
+
+<p>
+この段は、~UAが［
+他の理由でも，以下の手続きを走らすのを防止する
+］ことを可能化する
+— 例えば、
+ある種の`~task$たちを［
+~~間断なく順に実行して、
+間に差挟まれるのは，`小task~checkpointを遂行する$ことに限る
+］ことを確保するなど
+（例えば，`各~animation~frame~callbackを走らす$ことなく）。
+具体的には、
+~UAは，例えば［
+複数の~timer~callbackを，描画~更新を挟まずに合体したい
+］と望むかもしれない。
+◎
+This step enables the user agent to prevent the steps below from running for other reasons, for example, to ensure certain tasks are executed immediately after each other, with only microtask checkpoints interleaved (and without, e.g., animation frame callbacks interleaved). Concretely, a user agent might wish to coalesce timer callbacks together, with no intermediate rendering updates.
+</p>
+</div>
+			</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`文書を露呈する$( %文書 )
+◎
+For each doc of docs, reveal doc.
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+~IF［
+%文書 の`~node~navigable$は`~top-level辿可能$である
+］
+⇒
+`自動focus候補~群を洗出す$( %文書 )
+◎
+For each doc of docs, flush autofocus candidates for doc if its node navigable is a top-level traversable.
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`文書の~resize手続き$( %文書 )
+`CSSOMVIEW$r
+◎
+For each doc of docs, run the resize steps for doc. [CSSOMVIEW]
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`文書の~scroll手続き$( %文書 )
+`CSSOMVIEW$r
+◎
+For each doc of docs, run the scroll steps for doc. [CSSOMVIEW]
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`文書~用の媒体~queryを評価して変化を報告する$( %文書 )
+`CSSOMVIEW$r
+◎
+For each doc of docs, evaluate media queries and report changes for doc. [CSSOMVIEW]
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`~animationを更新して~eventを送信する$( %文書, `相対的な高分解能~時刻$( %~frame時刻印, %文書 に`関連な大域~obj$ ) )
+`WEBANIMATIONS$r
+◎
+For each doc of docs, update animations and send events for doc, passing in relative high resolution time given frameTimestamp and doc's relevant global object as the timestamp [WEBANIMATIONS]
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`全screen化~手続き$( %文書 )
+`FULLSCREEN$r
+◎
+For each doc of docs, run the fullscreen steps for doc. [FULLSCREEN]
+</li>
+			<li>
+<p>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+~IF［
+~UAは，ある［
+`CanvasRenderingContext2D$I ／ `OffscreenCanvasRenderingContext2D$I
+］文脈に結付けられた裏~storageを喪失したことを検出した
+］
+⇒
+そのような
+~EACH( 文脈 %文脈 )
+に対し
+⇒
+`文脈~喪失d時の手続き$を走らす
+◎
+For each doc of docs, if the user agent detects that the backing storage associated with a CanvasRenderingContext2D or an OffscreenCanvasRenderingContext2D, context, has been lost, then it must run the context lost steps for each such context:
+</p>
+
+<div class="algo">
+<p>
+`文脈~喪失d時の手続き@
+は：
+◎
+↑</p>
+				<ol>
+					<li>
+%~canvas ~LET %文脈 に応じて
+⇒＃
+`CanvasRenderingContext2D$I であるならば %文脈 の `canvas$m 属性の値 ／
+`OffscreenCanvasRenderingContext2D$I であるならば %文脈 の`~OffscreenCanvas~obj$o2D
+◎
+Let canvas be the value of context's canvas attribute, if context is a CanvasRenderingContext2D, or the associated OffscreenCanvas object for context otherwise.
+</li>
+					<li>
+%文脈 の`文脈~喪失dか$ ~SET ~T
+◎
+Set context's context lost to true.
+</li>
+					<li>
+`描画~文脈を既定の状態に設定し直す$( %文脈 )
+◎
+Reset the rendering context to its default state given context.
+</li>
+					<li>
+%復旧するべきか ~LET `~eventを発火する$( %~canvas, `contextlost$et )
+— 次のように初期化して
+⇒
+`cancelable$m 属性 ~SET ~T
+◎
+Let shouldRestore be the result of firing an event named contextlost at canvas, with the cancelable attribute initialized to true.
+</li>
+					<li>
+~IF［
+%復旧するべきか ~EQ ~F
+］
+⇒
+~RET
+◎
+If shouldRestore is false, then abort these steps.
+</li>
+					<li>
+%文脈 を復旧するよう試みる
+— %文脈 の属性~群を利用して裏~storageを作成して， %文脈 にそれを結付けることにより
+◎
+Attempt to restore context by creating a backing storage using context's attributes and associating them with context.＼
+</li>
+					<li>
+~IF［
+前~段に失敗した
+］
+⇒
+~RET
+◎
+If this fails, then abort these steps.
+</li>
+					<li>
+%文脈 の`文脈~喪失dか$ ~SET ~F
+◎
+Set context's context lost to false.
+</li>
+					<li>
+`~eventを発火する$( %~canvas, `contextrestored$et )
+◎
+Fire an event named contextrestored at canvas.
+</li>
+				</ol>
+</div>
+			</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`各~animation~frame~callbackを走らす$( %文書, `相対的な高分解能~時刻$( %~frame時刻印, %文書 に`関連な大域~obj$ ) )
+◎
+For each doc of docs, run the animation frame callbacks for doc, passing in the relative high resolution time given frameTimestamp and doc's relevant global object as the timestamp.
+</li>
+			<li>
+<p>
+%文書~群 を成す
+~EACH( %文書 )
+に対し：
+◎
+For each doc of docs:
+</p>
+				<ol>
+					<li>
+%~resize観測器の深さ ~LET 0
+◎
+Let resizeObserverDepth be 0.
+</li><li>
+
+<p>
+~WHILE 無条件
+◎
+While true:
+</p>
+						<ol>
+							<li>
+%文書 の~styleを計算し直して，その~layoutを更新する
+◎
+Recalculate styles and update layout for doc.
+</li>
+							<li>
+%内容~可視性に関する初期~決定を経たか ~LET ~F
+◎
+Let hadInitialVisibleContentVisibilityDetermination be false.
+</li>
+							<li>
+<p id="_content-visibility-auto">
+【%文書 内の】［
+`content-visibility$p の使用~値 ~EQ `auto^v
+］を満たす
+~EACH( 要素 %要素 )
+に対し：
+◎
+For each element element with 'auto' used value of 'content-visibility':
+</p>
+								<ol>
+									<li>
+%初期~決定~用に検査するか ~LET ［
+次が満たされるならば ~T ／
+~ELSE_ ~F
+］
+⇒
+［
+%要素 の`表示域への近接度$ ~EQ `未決定$i
+］~AND［
+~NOT %要素 は`利用者に関連する$
+］
+◎
+Let checkForInitialDetermination be true if element's proximity to the viewport is not determined and it is not relevant to the user. Otherwise, let checkForInitialDetermination be false.
+</li>
+									<li>
+%要素 の`表示域への近接度を決定する$
+◎
+Determine proximity to the viewport for element.
+</li>
+									<li>
+~IF［
+%初期~決定~用に検査するか ~EQ ~T
+］~AND［
+%要素 は`利用者に関連する$
+］
+⇒
+%内容~可視性に関する初期~決定を経たか ~SET ~T
+◎
+If checkForInitialDetermination is true and element is now relevant to the user, then set hadInitialVisibleContentVisibilityDetermination to true.
+</li>
+								</ol>
+							</li>
+							<li>
+<p>
+~IF［
+%内容~可視性に関する初期~決定を経たか ~EQ ~T
+］
+⇒
+~CONTINUE
+◎
+If hadInitialVisibleContentVisibilityDetermination is true, then continue.
+</p>
+
+<p class="note">注記：
+この段の意図は、［
+表示域への近接度に対する初期~決定
+］が即時に効果を発揮するよう，この~loopを成す始めの段で遂げられた［
+~styleと~layoutの計算
+］に反映させることにある。
+近接度に対する初期~以外の決定は、
+次回の`描画~機会$にて効果を発揮する。
+`CSSCONTAIN$r
+◎
+The intent of this step is for the initial viewport proximity determination, which takes effect immediately, to be reflected in the style and layout calculation which is carried out in a previous step of this loop. Proximity determinations other than the initial one take effect at the next rendering opportunity. [CSSCONTAIN]
+</p>
+							</li>
+							<li>
+`ある深さ以上で作動中な~resize観測nを集める$( %文書, %~resize観測器の深さ )
+◎
+Gather active resize observations at depth resizeObserverDepth for doc.
+</li>
+							<li>
+~IF［
+`作動中な~resize観測nはあるか？$( %文書 ) ~EQ ~T
+］：
+◎
+If doc has active resize observations:
+<p></p>
+								<ol>
+									<li>
+%~resize観測器の深さ ~SET `作動中な~resize観測nを~broadcastする$( %文書 )
+◎
+Set resizeObserverDepth to the result of broadcasting active resize observations given doc.
+</li>
+									<li>
+~CONTINUE
+◎
+Continue.
+</li>
+								</ol>
+							</li>
+							<li>
+~ELSE
+⇒
+~BREAK
+◎
+Otherwise, break.
+</li>
+						</ol>
+					</li>
+					<li>
+~IF［
+`飛ばした~resize観測nはあるか？$( %文書 ) ~EQ ~T
+］
+⇒
+`~resize~loop~errorを送達する$( %文書 )
+◎
+If doc has skipped resize observations, then deliver resize loop error given doc.
+</li>
+				</ol>
+			</li>
+			<li>
+<div>
+<p id="focus-fixup-rule">
+%文書~群 を成す
+~EACH( %文書 )
+に対し：
+</p>
+						<ol>
+							<li>
+~IF［
+%文書 が`指名する被focus区画$docは`~focus可能な区画$である
+］
+⇒
+~CONTINUE
+</li>
+							<li>
+`~objを~focusする$( %文書 の`表示域$ )
+</li>
+							<li>
+%文書 に`関連な大域~obj$の`~navi~API$の`進行中な~naviの間に~focusは変化したか$ ~SET ~F
+</li>
+						</ol>
+◎
+For each doc of docs, if the focused area of doc is not a focusable area, then run the focusing steps for doc's viewport, and set doc's relevant global object's navigation API's focus changed during ongoing navigation to false.
+</div>
+
+<p class="example">
+これは，例えば、
+要素に `hidden$a 属性が追加され，`具現化されなく＠~HTMLrendering#being-rendered$なったときに起こり得る。
+また、
+`input$e 要素においては，それが`不能化され＠~HTMLforms#concept-fe-disabled$たときにも起こり得る。
+◎
+For example, this might happen because an element has the hidden attribute added, causing it to stop being rendered. It might also happen to an input element when the element gets disabled.
+</p>
+
+<p class="note">注記：
+これは、
+`通例的＠~HTMLinteraction#note-sometimes-no-blur-event$には
+`blur$et ~eventを発火することになり，
+場合によっては `change$et ~eventも発火することになる。
+◎
+This will usually fire blur events, and possibly change events.
+</p>
+
+<p class="note">注記：
+`指名する被focus区画$docが %文書 から除去された場合、
+この非同期的な~focusの修復に加えて，
+`同期的な修復＠~HTMLINFRA#node-remove-focus-fixup$もある。
+そこでは、［
+`blur$et ／ `change$et
+］~eventは`発火されない^em。
+◎
+In addition to this asynchronous fixup, if the focused area of the document is removed, there is a synchronous fixup. That one will not fire blur or change events.
+</p>
+			</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`処理待ち遷移~演算を遂行する＠~CSSVT#perform-pending-transition-operations$( %文書 )
+`CSSVIEWTRANSITIONS$r
+◎
+For each doc of docs, perform pending transition operations for doc. [CSSVIEWTRANSITIONS]
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`交差~観測nを更新する$( %文書, `相対的な高分解能~時刻$( %~frame時刻印【！%now】, %文書 に`関連な大域~obj$ ) )
+`INTERSECTIONOBSERVER$r
+◎
+For each doc of docs, run the update intersection observations steps for doc, passing in the relative high resolution time given now and doc's relevant global object as the timestamp. [INTERSECTIONOBSERVER]
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`塗り計時を刻む$( %文書 )
+`PAINTTIMING$r
+◎
+For each doc of docs, mark paint timing for doc.
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+［
+%文書, および その`~node~navigable$
+］の描画や~UIを，現在の状態を反映するように更新する
+◎
+For each doc of docs, update the rendering or user interface of doc and its node navigable to reflect the current state.
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
+`上端~層からの除去を処理する$( %文書 )
+◎
+For each doc of docs, process top layer removals given doc.
+</li>
+		</ol>
+</div>
+
+	</li>
+</ol>
+</div>
+
+<p>
+`~navigable$は、
+次に該当するとき，
+`描画~機会@
+を有するとされる
+⇒
+~UAは、
+現在［
+~hardware更新率による拘束 ／ 処理能の理由による~UAによる減速
+］を織り込む下で，利用者に当の~navigableを成す内容を【一部でも】呈示-可能である
+— 表示域の外側に呈示-可能な内容も考慮して。
+◎
+A navigable has a rendering opportunity if the user agent is currently able to present the contents of the navigable to the user, accounting for hardware refresh rate constraints and user agent throttling for performance reasons, but considering content presentable even if it's outside the viewport.
+</p>
+
+<p>
+`~navigable$の`描画~機会$は、
+表示-更新率などの~hardwareによる拘束, その他の要因
+— ~pageの処理能, ［
+それにて`作動中な文書$navの`可視性~状態$doc ~EQ `visible^l
+］かどうかなど —
+に基づいて決定される。
+描画~機会は、
+概して~~定期的に生じる。
+◎
+A navigable's rendering opportunities are determined based on hardware constraints such as display refresh rates and other factors such as page performance or whether its active document's visibility state is "visible". Rendering opportunities typically occur at regular intervals.
+</p>
+
+<p class="note">注記：
+この仕様は、
+描画~機会を選定する特定0の~modelは何ら義務付けない。
+例えば，~browserが更新率 60Hz を達成しようと試みている場合、
+描画~機会が生じるのは，最大でも毎秒 60 回（ およそ 16.7ms ごと）になる。
+~browserは、
+ある`~navigable$に対し この更新率を維持-不能と見出した場合には，その~navigable用には
+— ~frameを時々落とすのではなく —
+描画~機会を より維持-可能な毎秒 30 回に落とすこともある。
+同様に，`~navigable$は可視でない場合、
+~UAは，その~pageの描画~機会をずっと低速な毎秒 4 回 または それ未満にすら落とすものと裁定することもある。
+◎
+This specification does not mandate any particular model for selecting rendering opportunities. But for example, if the browser is attempting to achieve a 60Hz refresh rate, then rendering opportunities occur at a maximum of every 60th of a second (about 16.7ms). If the browser finds that a navigable is not able to sustain this rate, it might drop to a more sustainable 30 rendering opportunities per second for that navigable, rather than occasionally dropping frames. Similarly, if a navigable is not visible, the user agent might decide to drop that page to a much slower 4 rendering opportunities per second, or even less.
+</p>
 
 <hr>
 
@@ -14387,6 +14417,18 @@ The navigation and traversal task source
 `~navi$や`履歴の辿り＠~HTMLnav#apply-the-traverse-history-step$に孕まれる~taskを~queueするために利用される。
 ◎
 This task source is used to queue tasks involved in navigation and history traversal.
+</dd>
+
+	<dt>
+`描画~task~source@
+◎
+The rendering task source
+</dt>
+	<dd>
+この`~task~source$は、
+もっぱら，`描画を更新する$ために利用される。
+◎
+This task source is used solely to update the rendering.
 </dd>
 </dl>
 
@@ -15933,7 +15975,6 @@ typedef `OnBeforeUnloadEventHandlerNonNull$I? `OnBeforeUnloadEventHandler@I;
 ◎
 An internal raw uncompiled handler is a tuple with the following information:
 </p>
-
 <ul>
 	<li>
 未compileな~script本体
