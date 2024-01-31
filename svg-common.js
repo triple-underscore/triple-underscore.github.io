@@ -431,8 +431,7 @@ p.font-kerning:~CSSFONT#propdef-font-kerning
 p.font-family:~CSSFONT#propdef-font-family
 p.font-size-adjust:~CSSFONT#propdef-font-size-adjust
 p.font-size:~CSSFONT#propdef-font-size
-	p.font-stretch:~CSSFONT#propdef-font-stretch
-p.font-stretch:~CSSFONT#font-stretch
+p.font-stretch:~CSSFONT#propdef-font-stretch
 p.font-style:~CSSFONT#propdef-font-style
 p.font-variant:~CSSFONT#propdef-font-variant
 p.font-weight:~CSSFONT#propdef-font-weight
