@@ -207,8 +207,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2024-01-31
-trans_update:2024-02-02
+spec_date:2024-02-14
+trans_update:2024-02-15
 source_checked:230718
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -1211,6 +1211,7 @@ aB.中止-事由:~DOM4#abortsignal-abort-reason
 可読~byte~stream:~STREAMS#readable-byte-stream
 RS.~closeする:~STREAMS#readablestream-close
 RS.~errorにする:~STREAMS#readablestream-error
+RS.~lockされて:~STREAMS#readablestream-locked
 RS.~chunkを~enqueueする:~STREAMS#readablestream-enqueue
 RS.~byte列から~pullする:~STREAMS#readablestream-pull-from-bytes
 RS.~byte読取り~support付きで設定しておく:~STREAMS#readablestream-set-up-with-byte-reading-support
@@ -5359,14 +5360,85 @@ This needs to be done in workers too. See #127 and whatwg/html#6731.
 ~UAは、
 所与の
 ( `WebTransport$I ~obj %~transport )
-に対し
-⇒
-%~transport が次を満たす間は，
-%~transport を~garbage収集しないモノトスル
-⇒
-%~transport . `State$sl ~IN { `connecting^l, `connected^l }
+に対し，
+%~transport が ~OR↓ を満たす間は，
+%~transport を~garbage収集しないモノトスル：
 ◎
-The user agent MUST NOT garbage collect a WebTransport object whose [[State]] is either "connecting" or "connected".
+↓</p>
+<ul>
+	<li>
+<p>
+~AND↓：
+</p>
+		<ul>
+			<li>
+%~transport . `State$sl ~IN { `connecting^l, `connected^l, `draining^l }
+</li>
+			<li>
+［
+関連な~streamのうち`~lockされて$RSいるものがある
+］~OR［
+関連な~promiseのうち観測されているものがある
+］
+</li>
+		</ul>
+
+<p>
+上の条件において：
+		<ul>
+			<li>
+関連な~streamとは、
+次に挙げる~streamの総称である
+⇒＃
+%~transport . `IncomingBidirectionalStreams$sl,
+%~transport . `IncomingUnidirectionalStreams$sl,
+【%~transport . `ReceiveStreams$sl を成す】各 `WebTransportReceiveStream$I,
+%~transport . `Datagrams$sl . `Readable$sl
+</li>
+			<li>
+関連な~promiseとは、［
+%~transport . `State$sl に応じて，次に挙げる %~transport の属性（たち）
+］が返した~promiseの総称である
+⇒＃
+`connecting^l ならば［ `ready$mT, `draining$mT, `closed$mT ］ ／
+`connected^l ならば［ `draining$mT, `closed$mT ］ ／
+`draining^l ならば `closed$mT
+</li>
+		</ul>
+
+◎
+A WebTransport object whose [[State]] is "connecting" must not be garbage collected if [[IncomingBidirectionalStreams]], [[IncomingUnidirectionalStreams]], any WebTransportReceiveStream, or [[Datagrams]].[[Readable]] are locked, or if the ready, draining, or closed promise is being observed.
+◎
+A WebTransport object whose [[State]] is "connected" must not be garbage collected if [[IncomingBidirectionalStreams]], [[IncomingUnidirectionalStreams]], any WebTransportReceiveStream, or [[Datagrams]].[[Readable]] are locked, or if the draining or closed promise is being observed.
+◎
+A WebTransport object whose [[State]] is "draining" must not be garbage collected if [[IncomingBidirectionalStreams]], [[IncomingUnidirectionalStreams]], any WebTransportReceiveStream, or [[Datagrams]].[[Readable]] are locked, or if the closed promise is being observed.
+</li>
+	<li>
+<p>
+~AND↓：
+</p>
+		<ul>
+			<li>
+`~WebTransport~session$を`確立した＠#session-establish$
+</li>
+			<li>
+~networkへ伝送するよう~queueされた~dataがある
+— この~dataには、
+%~transport . `Datagrams$sl . `OutgoingDatagramsQueue$sl 内の~datagramも含まれる。
+</li>
+		</ul>
+◎
+A WebTransport object with an established WebTransport session that has data queued to be transmitted to the network, including datagrams in [[Datagrams]].[[OutgoingDatagramsQueue]], must not be garbage collected.
+</li>
+</ul>
+
+<p>
+`WebTransport$I ~objが，その`下層~接続$がまだ~openな間に~garbage収集された場合、
+~UAは，`~WebTransport~sessionを終了する＠~WT-OVERVIEW#terminate-a-session$モノトスル
+— ( ~error~code 0, ~error~message 空~文字列 )
+を与える下で
+◎
+If a WebTransport object is garbage collected while the underlying connection is still open, the user agent must terminate the WebTransport session with an Application Error Code of 0 and Application Error Message of "".
 </p>
 
 		</section>
