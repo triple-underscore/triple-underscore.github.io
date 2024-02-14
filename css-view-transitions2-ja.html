@@ -122,8 +122,8 @@ return text;
 ●●options
 
 spec_title:CSS View Transitions Module Level 1
-spec_date:2024-02-02
-trans_update:2024-02-08
+spec_date:2024-02-13
+trans_update:2024-02-14
 source_checked:231219
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-view-transitions-2/
@@ -187,6 +187,7 @@ DOMString:~WEBIDL#idl-DOMString
 unsigned short:~WEBIDL#idl-unsigned-short
 E.TimeoutError:~WEBIDL#timeouterror
 E.AbortError:~WEBIDL#aborterror
+E.InvalidStateError:~WEBIDL#invalidstateerror
 I.CSSRule:~CSSOM1#cssrule
 I.DOMException:~WEBIDL#idl-DOMException
 I.Document:~DOM4#document
@@ -211,7 +212,6 @@ m.navigation:#dom-cssviewtransitionrule-navigation
 m.type:#dom-cssviewtransitionrule-type
 m.sessionStorage:~WEBSTORAGE#dom-sessionstorage
 m.updateCallbackDone:~CSSVT#dom-viewtransition-updatecallbackdone
-m.requestAnimationFrame:~HTMLGAPI#dom-animationframeprovider-requestanimationframe
 mb.update:#dom-startviewtransitionoptions-update
 mb.type:#dom-startviewtransitionoptions-type
 m.viewTransition:~WINDOW#dom-pagerevealevent-viewtransition
@@ -265,8 +265,15 @@ pe.view-transition-new():~CSSVT#selectordef-view-transition-new
 非同一-文書な~view遷移を設定しておく:#setup-cross-document-view-transition
 ~naviは非同一-文書な~view遷移を誘発し得るか？:#navigation-can-trigger-a-cross-document-view-transition
 vT.作動中な型~群:#viewtransition-active-types
-vT.内へ来る非同一-文書な遷移か:#viewtransition-is-inbound-cross-document-transition
+vT.外へ出る捕捉-後の手続き:#viewtransition-outbound-post-capture-steps
 cE.~class~list:#captured-element-class-list
+
+
+doc.内へ来る~view遷移~params:#document-inbound-view-transition-params
+~view遷移~params:#view-transition-params
+vTP.有名~要素:#view-transition-params-named-elements
+vTP.初期~snapshot包含塊~size:#view-transition-params-initial-snapshot-containing-block-size
+
 
 	●用語（level 1
 ~level 1:#biblio-css-view-transitions-1
@@ -276,7 +283,7 @@ cE.~class~list:#captured-element-class-list
 ~view遷移を~clearする:~CSSVT#clear-view-transition
 ~view遷移を作動化する:~CSSVT#activate-view-transition
 doc.作動中な~view遷移:~CSSVT#document-active-view-transition
-doc.~view遷移を自動で飛ばすか:~CSSVT#document-auto-skip-view-transitions
+doc.~view遷移~用の描画を抑止するか:~CSSVT#document-rendering-suppression-for-view-transitions
 捕捉された要素:~CSSVT#captured-element
 有名~view遷移~疑似要素:~CSSVT#named-view-transition-pseudo-elements
 ~view遷移:~CSSVT#view-transitions
@@ -290,6 +297,7 @@ vT.有名~要素~群:~CSSVT#viewtransition-named-elements
 vT.相:~CSSVT#viewtransition-phase
 vT.旧-状態~捕捉-時の処理n:~CSSVT#viewtransition-process-old-state-captured
 vT.更新~callback済み時の~promise:~CSSVT#viewtransition-update-callback-done-promise
+vT.更新~callback:~CSSVT#viewtransition-update-callback
 ~view遷移を設定しておく:~CSSVT#setup-view-transition
 ~view遷移を飛ばす:~CSSVT#skip-the-view-transition
 
@@ -311,6 +319,11 @@ i.更新~callbackは~call済み:~CSSVT#_update-callback-called
 ~list:~INFRA#list
 実装定義:~INFRA#implementation-defined
 	~IN:~INFRA#list-contain
+構造体:~INFRA#struct
+sct.~item:~INFRA#struct-item
+有順序~map:~INFRA#ordered-map
+map.~cloneする:~INFRA#map-clone
+~tuple:~INFRA#tuple
 
 ~method手続き:~WEBIDL#method-steps
 新たな~obj:~WEBIDLjs#new
@@ -319,17 +332,20 @@ i.更新~callbackは~call済み:~CSSVT#_update-callback-called
 文書:~DOM4#concept-document
 ~node文書:~DOM4#concept-node-document
 文書~要素:~DOM4#document-element
-	doc.生成元:~DOM4#concept-document-origin → 生成元
-生成元:~ORIGIN#concept-origin
 
 並列的:~HTMLINFRA#in-parallel
 
 doc.非同一-生成元~redirectを介して作成されたか:~HTMLdom#was-created-via-cross-origin-redirects
 
+doc.可視性~状態:~HTMLinteraction#visibility-state
+
 同一-生成元:~ORIGIN#same-origin
-	browsers.html
+生成元:~ORIGIN#concept-origin
+
+全部的に作動中:~HTMLds#fully-active
 ~navigable:~HTMLds#navigable
 nav.作動中な~window:~HTMLds#nav-window
+
 履歴~stepを適用する:~HTMLnav#apply-the-history-step
 ~navigableを変更している継続の状態:~HTMLnav#changing-navigable-continuation-state
 cnC.更新のみか:~HTMLnav#changing-nav-continuation-update-only
@@ -338,11 +354,13 @@ cnC.更新のみか:~HTMLnav#changing-nav-continuation-update-only
 露呈され:~HTMLnav#reveal
 ~naviに対する利用者-関与i:~HTMLnav#user-navigation-involvement
 i.~browser~UI:~HTMLnav#uni-browser-ui
+doc.露呈されたか:~HTMLnav#has-been-revealed
 ~unloadされ:~HTMLlifecycle#unload-a-document
 
 結付けられた文書:~WINDOW#concept-document-window
 
 描画~機会:~WAPI#rendering-opportunity
+~task:~WAPI#concept-task
 大域~taskを~queueする:~WAPI#queue-a-global-task
 関連な大域~obj:~WAPI#concept-relevant-global
 関連な~realm:~WAPI#concept-relevant-realm
@@ -386,6 +404,7 @@ lifecycle:
 続行-:proceed:~
 処理待ち:pending:~
 為され:makeされ:~
+params::::パラメタ群
 
 	直前:right before
 	直前に:currently
@@ -398,11 +417,8 @@ lifecycle:
 	%解決-済み規則:resolvedRule
 	%~view遷移:viewTransition
 	%外へ出る遷移:outboundTransition
-	%内へ来る遷移:inboundTransition
-	%準備済み時の手続き:onReady
 	%~navigableを変更している継続:changingNavigationContinuation
 	ときが来た:it’s time to
-	優先される:take precedent
 	再-作動化:reactivation
 	-:accepting
 	設定-法:setting up
@@ -414,6 +430,12 @@ lifecycle:
 	%旧-生成元:oldOrigin
 	%新-生成元:newOrigin
 	%~naviは非同一-生成元な~redirectを経たか:navigationHasCrossOriginRedirects
+	%更新~callback:updateCallback
+	%文書:document
+	%~view遷移~params:viewTransitionParams
+	%内へ来る~view遷移~params:inboundViewTransitionParams
+	%~naviで続行する手続き:proceedWithNavigation
+	%飛ばされる前の遷移:preSkippedTransition
 
 	●保安
 脅威:threat:~
@@ -457,6 +479,7 @@ patch::::パッチ
 	`~view遷移^cite:View Transitions
 	~level 1$:previously
 	~level 1$:L1
+	~~本当は:in fact
 
 	●未分類
 step:
@@ -465,7 +488,10 @@ step:
 BF:
 横取-:intercept:横取り
 複写-:replicate:~
+実数:number:~
 
+	現れる:appearする
+	文書:Document
 	残りの:remaining
 	ある種の:certain
 	より多く:more
@@ -1328,38 +1354,74 @@ The method steps for startViewTransition(callbackOptions) are as follows:
 </p>
 <ol>
 	<li>
-%startViewTransition ~LET ［
-`~level 1$ に定義される `startViewTransition＠~CSSVT#dom-document-startviewtransition$m 用の~method手続き
-］をコレ上で適用する手続き
+%更新~callback ~LET ~NULL
 ◎
-↓</li>
-	<li>
-~IF［
-%callbackOptions ~EQ ε
-］
-⇒
-~RET %startViewTransition()
-◎
-If callbackOptions is not provided, then run the method steps for startViewTransition() and return the result.
+Let updateCallback be null.
 </li>
 	<li>
 ~IF［
 %callbackOptions は `UpdateCallback$I である
 ］
 ⇒
-~RET %startViewTransition( %callbackOptions )
+%更新~callback ~SET %callbackOptions
 ◎
-If callbackOptions is an UpdateCallback, then run the method steps for startViewTransition(updateCallback) given callbackOptions and return the result.
+If callbackOptions is an an UpdateCallback, set updateCallback to callbackOptions.
 </li>
 	<li>
-%~view遷移 ~LET %startViewTransition( %callbackOptions[ "`update$mb" ] )
+~ELIF［
+%callbackOptions は `StartViewTransitionOptions$I である
+］
+⇒
+%更新~callback ~SET %callbackOptions[ "`update$mb" ]
 ◎
-Let viewTransition be the result of running method steps for startViewTransition(updateCallback) given callbackOptions’s update.
+Otherwise, if callbackOptions is a StartViewTransitionOptions, then set updateCallback to callbackOptions’s update.
 </li>
 	<li>
-%~view遷移 にて`作動中な型~群$vT ~SET %callbackOptions[ "`type$mb" ] )
+<p>
+~IF［
+コレにて`作動中な~view遷移$doc ~NEQ ~NULL
+］~AND［
+~its`外へ出る捕捉-後の手続き$vT ~NEQ ~NULL
+］：
 ◎
-Set viewTransition’s active types to callbackOptions’s type.
+If this’s active view transition is not null and its outbound post-capture steps is not null, then:
+</p>
+		<ol>
+			<li>
+%飛ばされる前の遷移 ~LET コレに`関連な~realm$に属する新たな `ViewTransition$I
+— その
+⇒＃
+`更新~callback$vT ~SET %更新~callback
+◎
+Let preSkippedTransition be a new ViewTransition in this’s relevant realm whose update callback is updateCallback.
+</li>
+			<li>
+`~view遷移を飛ばす$( %飛ばされる前の遷移, `InvalidStateError$E 例外 )
+◎
+Skip preSkippedTransition with an "InvalidStateError" DOMException.
+</li>
+			<li>
+~RET %飛ばされる前の遷移
+◎
+Return preSkippedTransition.
+</li>
+		</ol>
+	</li>
+	<li>
+%~view遷移 ~LET コレ上の［
+`~level 1$ に定義される `startViewTransition＠~CSSVT#dom-document-startviewtransition$m 用の`~method手続き$
+］( %更新~callback )
+◎
+Let viewTransition be the result of running the method steps for startViewTransition(updateCallback) given updateCallback.
+</li>
+	<li>
+~IF［
+%callbackOptions は `StartViewTransitionOptions$I である
+］
+⇒
+%~view遷移 にて`作動中な型~群$vT ~SET %callbackOptions[ "`type$mb" ]
+◎
+If callbackOptions is a StartViewTransitionOptions, then set viewTransition’s active types to callbackOptions’s type.
 </li>
 	<li>
 ~RET %~view遷移
@@ -1414,8 +1476,77 @@ interface `CSSViewTransitionRule@I : `CSSRule$I {
 		<section id="concepts">
 <h3 title="Data Structures">7.1. ~data構造</h3>
 
+			<section id="additions-to-document">
+<h4 title="Additions to Document">7.1.1. 文書に対する追加</h4>
+
+<p>
+各`文書$は、
+次に挙げるものを追加的に有する：
+◎
+A Document additionaly has:
+</p>
+<ul>
+	<li>
+`内へ来る~view遷移~params@doc
+⇒
+ある`~view遷移~params$ ／ ~NULL
+— 初期~時は~NULLとする。
+◎
+inbound view transition params
+◎
+a view transition params, or null. Initially null.
+</li>
+</ul>
+
+<p class="trans-note">【＊
+“内へ来る（ `inbound^en ）〜”
+（あるいは “外へ出る（ `outbound^en ）〜” ）は、
+非同一-文書な遷移に利用される概念であり，
+“〜 は新-文書（あるいは旧-文書）に結付けられる”
+ことを意味する。
+】</p>
+
+			</section>
+			<section id="view-transition-params-struct">
+<h4 title="The View transition params struct">7.1.2. ~view遷移~params</h4>
+
+<p>
+`~view遷移~params@
+は、
+次に挙げる`~item$sctからなる`構造体$である。
+その目的は、
+文書たちにまたがって，~view遷移~情報を直列化する
+【旧-文書から新-文書へ情報を渡す】
+ことにある：
+◎
+A view transition params is a struct whose purpose is to serialize view transition information across documents. It has the following items:
+</p>
+<ul>
+	<li>
+`有名~要素@vTP
+⇒
+`有順序~map$
+— 各~entryの［
+~keyは文字列／
+値は`捕捉された要素$
+］を与える。
+◎
+named elements
+• a map, whose keys are strings and whose values are captured elements.
+</li>
+	<li>
+`初期~snapshot包含塊~size@vTP
+⇒
+2 個の実数 ( 横幅, 縦幅 ) が成す`~tuple$。
+◎
+initial snapshot containing block size
+• a tuple of two numbers (width and height).
+</li>
+</ul>
+
+			</section>
 			<section id="view-transitions-extension">
-<h4 title="Additions to ViewTransition">7.1.1. `ViewTransition^I に対する追加</h4>
+<h4 title="Additions to ViewTransition">7.1.3. `ViewTransition^I に対する追加</h4>
 
 <p>
 各 `ViewTransition$I は、
@@ -1425,33 +1556,14 @@ A ViewTransition additionally has:
 </p>
 <ul>
 	<li>
-<p>
-`内へ来る非同一-文書な遷移か@vT
+`外へ出る捕捉-後の手続き@vT
 ⇒
-真偽値
-— 初期~時は ~F とする。
+~NULL ／ ある手続き
+— 初期~時は ~NULL とする。
 ◎
-is inbound cross-document transition
-• a boolean, initially false.
-</p>
-
-<p class="trans-note">【
-“内へ来る（ `inbound^en ）” とは、
-新-文書における遷移であることを意味する
-（すなわち， ~T ならば、
-当の遷移は非同一-文書な~view遷移であって，
-当の `ViewTransition$I に`関連な大域~obj$に`結付けられた文書$は新-文書である）。
-対して，以下に現れる “外へ出る（ `outbound^en ）” は、
-旧-文書における遷移であることを意味する。
-】</p>
-
-<p class="issue">
-非同一-文書な~view遷移は【同一-文書な~view遷移が作動中な場合でも】優先されるベキか？
-`9512$issue を見よ。
-◎
-should a cross-document transition take precedent? See #9512
-</p>
-	</li>
+outbound post-capture steps
+• Null or a set of steps, initially null.
+</li>
 	<li>
 `作動中な型~群@vT
 ⇒
@@ -1464,9 +1576,8 @@ active types
 </ul>
 
 			</section>
-		</section>
-		<section id="additions-to-captured-element-struct">
-<h3 title="Additions to captured element struct">7.2. `捕捉された要素$に対する追加</h3>
+			<section id="additions-to-captured-element-struct">
+<h4 title="Additions to captured element struct">7.1.4. `捕捉された要素$に対する追加</h4>
 
 <p>
 構造体 `捕捉された要素$は、
@@ -1489,9 +1600,10 @@ initially empty.
 </dd>
 </dl>
 
+			</section>
 		</section>
 		<section id="vt-class-algorithms">
-<h3 title="Algorithms to capture view-transition-class:">7.3. `view-transition-class$p に対し捕捉する~algo</h3>
+<h3 title="Algorithms to capture view-transition-class:">7.2. `view-transition-class$p に対し捕捉する~algo</h3>
 
 <div class="algo">
 <p>
@@ -1520,8 +1632,153 @@ Note: This is written in a monkey-patch manner, and will be merged into the algo
 </div>
 
 		</section>
+		<section id="additional-skip-steps">
+<h3 title="Additions to skip steps:">7.3. 遷移を飛ばす手続きに対する追加</h3>
+
+<div class="algo">
+<p>
+`~level 1$ の`~view遷移を飛ばす$ ~algoの末尾には、
+所与の
+( `ViewTransition$I %遷移 )
+に対し，次を遂行する段を追加する：
+◎
+Append the following steps to skip the view transition given a ViewTransition transition:
+</p>
+
+<ol>
+	<li>
+~IF［
+%遷移 の`外へ出る捕捉-後の手続き$vT ~NEQ ~NULL
+］
+⇒
+%遷移 の`外へ出る捕捉-後の手続き$vT( ~NULL )
+◎
+If transition’s outbound post-capture steps is not null, then run transition’s outbound post-capture steps with null.
+</li>
+</ol>
+
+<p class="note">注記：
+これは、
+~monkey~patch方式で書かれており，
+`~level 1$ 仕様が熟したときには，その~algoの中へ併合されることになる。
+◎
+Note: This is written in a monkey-patch manner, and will be merged into the algorithm once the L1 spec graduates.
+</p>
+</div>
+
+		</section>
+		<section id="additions-to-pending-transition-operation">
+<h3 title="Addition to pending transition operations">7.4. 処理待ち遷移~演算に対する追加</h3>
+
+<div class="algo">
+<p>
+`~level 1$ の`処理待ち遷移~演算を遂行する$ ~algoの先頭には、
+所与の
+( `文書$ %文書 )
+に対し，次を遂行する段たちを追加する：
+◎
+Prepend this to the Perform pending transition operations algorithm given a Document document:
+</p>
+<ol>
+	<li>
+%~view遷移 ~LET %文書 にて`作動中な~view遷移$doc
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%~view遷移 ~NEQ ~NULL
+］~AND［
+%~view遷移 の`外へ出る捕捉-後の手続き$vT ~NEQ ~NULL
+］：
+◎
+If document’s active view transition is not null and its outbound post-capture steps is not null, then:
+</p>
+		<ol>
+			<li>
+~Assert：
+%~view遷移 の`相$vT ~EQ `捕捉-待ち$i
+◎
+Assert: document’s active view transition's phase is "pending-capture".
+</li>
+			<li>
+%~view遷移~params ~LET ~NULL
+◎
+Let viewTransitionParams be null;
+</li>
+			<li>
+%文書 の`~view遷移~用の描画を抑止するか$doc ~SET ~T
+◎
+Set document’s rendering suppression for view transitions to true.
+</li>
+	<li>
+<p>
+%結果 ~LET `旧-状態を捕捉する$( %遷移 )
+</p>
+
+<p class="issue">
+ここでは，同期的に`旧-状態を捕捉する$が、
+~~本当は，非同期的に行われる
+— 要素を画像の中へ描画することは
+同期的には行い得ないので。
+これは、
+`~level 1$ 仕様にて，もっと明示的に指定されるべきである。
+</p>
+
+◎
+though capture the old state appears here as a synchronous step, it is in fact an asynchronous step as rendering an element into an image cannot be done synchronously. This should be more explicit in the L1 spec.
+◎
+Capture the old state for transition.
+</li>
+	<li>
+%文書 の`~view遷移~用の描画を抑止するか$doc ~SET ~F
+◎
+Set document’s rendering suppression for view transitions to false.
+</li>
+	<li>
+~IF［
+%結果 ~EQ `成功^i
+］
+⇒
+%~view遷移~params ~SET 新たな`~view遷移~params$
+— その
+⇒＃
+`有名~要素$vTP ~SET %遷移 の`有名~要素~群$vTを`~cloneする$map,
+`初期~snapshot包含塊~size$vTP ~SET %遷移 の`初期~snapshot包含塊~size$vT
+◎
+If this succeeded, then set viewTransitionParams to a new view transition params whose named elements is a clone of transition’s named elements, and whose initial snapshot containing block size is transition’s initial snapshot containing block size.
+</li>
+	<li>
+`~view遷移を~clearする$( %遷移 )
+◎
+Clear view transition transition.
+</li>
+			<li>
+<p>
+%遷移 の`外へ出る捕捉-後の手続き$vT( %~view遷移~params )
+</p>
+
+<p class="note">注記：
+旧-文書~上の `ViewTransition$I ~objは、
+ここで その状態が新-文書に複製された後には，破壊されるべきである。
+この段は、
+それを明示的に~clearする
+— 旧-文書は、
+~UAにより~cacheされることもあるので。
+</p>
+◎
+Note: The ViewTransition object on the old Document should be destroyed after its state has been copied to the new Document below. We explicitly clear it here since the old Document may be cached by the UA.
+◎
+Call transition’s outbound post-capture steps given viewTransitionParams.
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+		</section>
 		<section id="monkey-patch-to-html">
-<h3 title="Monkey patches to HTML">7.4. ~HTMLに対する~monkey~patch</h3>
+<h3 title="Monkey patches to HTML">7.5. ~HTMLに対する~monkey~patch</h3>
 
 <p>
 `履歴~stepを適用する$
@@ -1605,10 +1862,10 @@ Note: This would wait until a transition is captured or skipped before proceedin
 
 		</section>
 		<section id="setting-up-and-activating-the-cross-document-view-transition">
-<h3 title="Setting up and activating the cross-document view transition">7.5. 非同一-文書な~view遷移の設定-法と作動化-法</h3>
+<h3 title="Setting up and activating the cross-document view transition">7.6. 非同一-文書な~view遷移の設定-法と作動化-法</h3>
 
 			<section id="resolve-view-transition-rule-algo">
-<h4 title="Resolving the @view-transition' rule">7.5.1. `view-transition$at 規則の解決-法</h4>
+<h4 title="Resolving the @view-transition' rule">7.6.1. `view-transition$at 規則の解決-法</h4>
 
 <div class="algo">
 <p>
@@ -1621,6 +1878,15 @@ Note: This would wait until a transition is captured or skipped before proceedin
 To get the resolve @view-transition rule for a Document document:
 </p>
 <ol>
+	<li>
+~IF［
+%文書 の`可視性~状態$doc ~EQ `hidden^l
+］
+⇒
+~RET `遷移を飛ばす^i
+◎
+If document’s visibility state is "hidden", then return "skip transition".
+</li>
 	<li>
 <p>
 %合致している規則 ~LET %文書 内に `view-transition$at 規則は［
@@ -1684,7 +1950,7 @@ Return a list of strings corresponding to typesDescriptor’s computed value.
 
 			</section>
 			<section id="setup-old-document-vt">
-<h4 title="Setting up the view-transition in the old Document">7.5.2. 旧-文書~内で~view遷移を設定しておく</h4>
+<h4 title="Setting up the view-transition in the old Document">7.6.2. 旧-文書~内で~view遷移を設定しておく</h4>
 
 <div class="algo">
 <p>
@@ -1692,7 +1958,7 @@ Return a list of strings corresponding to typesDescriptor’s computed value.
 検査するときは、
 所与の
 ⇒＃
-`生成元$ %旧-生成元, 
+`生成元$ %旧-生成元,
 `生成元$ %新-生成元,
 真偽値 %~naviは非同一-生成元な~redirectを経たか,
 `NavigationType$I %~navi種別,
@@ -1782,13 +2048,29 @@ Return true.
 ⇒＃
 `文書$ %旧-文書,
 `文書$ %新-文書,
-~algo %準備済み時の手続き
+~algo %~naviで続行する手続き
 ◎終
 に対し：
 ◎
-To setup cross-document view-transition given a Document oldDocument, a Document newDocument, and onReady, which is an algorithm accepting nothing: 
+To setup cross-document view-transition given a Document oldDocument, a Document newDocument, and proceedWithNavigation, which is an algorithm accepting nothing: 
 </p>
 <ol>
+	<li>
+~Assert：
+この手続きは、
+%旧-文書 に対し~queueされた`~task$を成す一部として走っている。
+◎
+Assert: These steps are running as part of a task queued on oldDocument.
+</li>
+	<li>
+~IF［
+%旧-文書 の`露呈されたか$doc ~EQ ~F
+］
+⇒
+~RET ~NULL
+◎
+If oldDocument’s has been revealed is false, then return null.
+</li>
 	<li>
 %解決-済み規則 ~LET `~view遷移~規則を解決する$( %旧-文書 )
 ◎
@@ -1834,180 +2116,46 @@ Note: this means that any running transition would be skipped when the document 
 </p>
 	</li>
 	<li>
-<p>
-%旧-文書 の`~view遷移を自動で飛ばすか$doc ~SET ~T
-◎
-Set oldDocument’s auto-skip view transitions to true.
-</p>
-
-<p class="note">注記：
-これは、
-非同一-文書な~view遷移~用に旧-文書を捕捉している間に `startViewTransition()$m が~callされたときは、［
-その引数に渡した~callbackは走らすが，~animationは飛ばす
-］ようにすることを意味する。
-◎
-Note: this means that calling startViewTransition() while capturing the old document for a cross-document view-transition would run the callback but skip the animation.
-</p>
-	</li>
-	<li>
-%外へ出る遷移 ~LET `新たな~obj$( `ViewTransition$I, %旧-文書 に`関連な~realm$ )
-◎
-Let outboundTransition be a new ViewTransition object in oldDocument’s relevant Realm,＼
-</li>
-	<li>
-<p>
-%外へ出る遷移 の
+%外へ出る遷移 ~LET %旧-文書 に`関連な~realm$に属する新たな `ViewTransition$I ~obj
+— その
 ⇒＃
 `作動中な型~群$vT ~SET %解決-済み規則
-`旧-状態~捕捉-時の処理n$vT ~SET 次の手続き：
 ◎
-whose active types is resolvedRule, and whose process old state captured is set to the following steps:
-</p>
-
-<p class="issue">
-ここでも再び~opt-inを検査するベキか？
-— `requestAnimationFrame()$m に渡した~callbackが~CSSOMを変更した事例~用に。
-◎
-should we check for the opt-in again, in case there was a CSSOM change in a requestAnimationFrame callback?
-</p>
-<div class="algo">
+Let outboundTransition be a new ViewTransition object in oldDocument’s relevant Realm, whose active types is resolvedRule.
+</li>
+	<li class="algo">
 <p>
-手続きは：
+%外へ出る遷移 の`外へ出る捕捉-後の手続き$vT ~SET 
+所与の
+( ［
+`~view遷移~params$／ ~NULL
+］ %~params )
+に対し，次を遂行する手続き：
+◎
+Set outboundTransition’s outbound post-capture steps to the following steps given a view transition params-or-null params:
 </p>
 		<ol>
 			<li>
-~IF［
-%外へ出る遷移 の`相$vT ~EQ `済み$i
-］
-⇒＃
-%準備済み時の手続き()；
-~RET
-◎
-If outboundTransition’s phase is "done", then call onReady and return.
-</li>
-			<li>
-~Assert：
-%外へ出る遷移 の`相$vT ~EQ `捕捉-待ち$i
-◎
-Assert: outboundTransition’s phase is "pending-capture".
-</li>
-			<li>
 <p>
-`~view遷移を~clearする$( %外へ出る遷移 )
+%新-文書 の`内へ来る~view遷移~params$doc ~SET %~params
 ◎
-Clear view transition outboundTransition.
+Set newDocument’s inbound view transition params to params.
 </p>
 
 <p class="note">注記：
-旧-文書~上の `ViewTransition$I ~objは、
-旧-状態が新-文書~下に複製された後には，破壊されるベキである。
-この段は、
-それを明示的に~clearする
-— 旧-文書は、
-~UAにより~cacheされることもあるので。
-◎
-Note: The ViewTransition object on the old Document should be destroyed after its state has been copied to the new Document below. We explicitly clear it here since the old Document may be cached by the UA.
-</p>
-			</li>
-			<li>
-%旧-文書 の`~view遷移を自動で飛ばすか$doc ~SET ~F
-◎
-Set oldDocument’s auto-skip view transitions to false.
-</li>
-			<li>
-<p>
-`大域~taskを~queueする$( `~DOM操作~task~source$, %新-文書 に`関連な大域~obj$, 次の手続き )
-◎
-Queue a global task on the DOM manipulation task source given newDocument’s relevant global object, to perform＼
-</p>
-
-<div class="algo">
-<p>
-手続きは：
-◎
-the following steps:
-</p>
-				<ol>
-					<li>
-%内へ来る遷移 ~LET `新たな~obj$( `ViewTransition$I, %新-文書 に`関連な~realm$ )
-◎
-Let inboundTransition be a new ViewTransition in newDocument’s relevant Realm,＼
-</li>
-					<li>
-%内へ来る遷移 の
-⇒＃
-`有名~要素~群$vT ~SET %外へ出る遷移 の`有名~要素~群$vT,
-`初期~snapshot包含塊~size$vT ~SET %外へ出る遷移 の`初期~snapshot包含塊~size$vT,
-`内へ来る非同一-文書な遷移か$vT ~SET ~T
-◎
-whose named elements is outboundTransition’s named elements, initial snapshot containing block size is outboundTransition’s initial snapshot containing block size, and whose is inbound cross-document transition is true.
-</li>
-					<li>
-%新-文書 にて`作動中な~view遷移$doc ~SET %内へ来る遷移
-◎
-Set newDocument’s active view transition to inboundTransition.
-</li>
-					<li>
-`~promiseを解決する$( %内へ来る遷移 の`更新~callback済み時の~promise$vT )
-◎
-Resolve inboundTransition’s update callback done promise with undefined.
-</li>
-					<li>
-%内へ来る遷移 の`相$vT ~SET `更新~callbackは~call済み$i
-◎
-Set inboundTransition’s phase to "update-callback-called".
-</li>
-					<li>
-<p>
-%準備済み時の手続き()
-◎
-Call onReady.
-</p>
-
-<p class="note">注記：
-%内へ来る遷移 は、
+内へ来る遷移は、
 `pagereveal$et ~eventを配送した後に作動化される
 — この~event【用の~handler】において為された変異が捕捉された新-状態に適用されることを確保するため。
 ◎
-Note: The inboundTransition is activated after the dispatch of pagereveal to ensure mutations made in this event apply to the captured new state.
+Note: The inbound transition is activated after the dispatch of pagereveal to ensure mutations made in this event apply to the captured new state.
 </p>
-					</li>
-					<li>
-<p>
-~UAは、
-いつでも， %内へ来る遷移 を飛ばすものと裁定してもヨイ
-— 例：`実装定義$な時間切れになった後に。
-そうする場合、
-~UAは，次を行うベキである
-⇒
-`大域~taskを~queueする$( `~DOM操作~task~source$, %新-文書 に`関連な大域~obj$, 次の手続き )
-</p>
-
-<div class="algo">
-手続きは
-⇒
-~IF［
-%遷移 の`相$vT ~NEQ `済み$i
-］
-⇒
-`~view遷移を飛ばす$( %遷移, `TimeoutError$E 例外 )
-</div>
-◎
-At any given time, the UA may decide to skip inboundTransition, e.g. after an implementation-defined timeout. To do so, the UA should queue a global task on the DOM manipulation task source given newDocument’s relevant global object to perform the following step: If transition’s phase is not "done", then skip the view transition transition with a "TimeoutError" DOMException.
-</li>
-				</ol>
-</div>
 			</li>
-		</ol>
-</div>
-
-<p class="note">注記：
-%外へ出る遷移 は~JSには公開されない
-— それは、
-旧-文書の状態を捕捉するために限り利用される。
+			<li>
+%~naviで続行する手続き()
 ◎
-Note: outboundTransition is not exposed to JavaScript, it is used only for capturing the state of the old document.
-</p>
+Call proceedWithNavigation.
+</li>
+		</ol>
 	</li>
 	<li>
 <p>
@@ -2018,10 +2166,9 @@ Set oldDocument’s active view transition to outboundTransition.
 
 <p class="note">注記：
 以降の処理nは、
-`~view遷移を設定しておく$中で，
-`処理待ち遷移~演算を遂行する$ことを介して継続される【？】。
+`処理待ち遷移~演算を遂行する$中で継続される。
 ◎
-Note: The process continues in setup view transition, via perform pending transition operations.
+Note: The process continues in perform pending transition operations.
 </p>
 	</li>
 	<li>
@@ -2064,7 +2211,7 @@ Return outboundTransition.
 
 			</section>
 			<section id="access-view-transition-in-new-doc">
-<h4 title="Accessing the view-transition in the new Document">7.5.3. 新-文書~内での~view遷移の~access法</h4>
+<h4 title="Accessing the view-transition in the new Document">7.6.3. 新-文書における~view遷移の~access法</h4>
 
 <div class="algo">
 <p>
@@ -2078,30 +2225,48 @@ To resolve cross-document view-transition for Document document:
 </p>
 <ol>
 	<li>
-%遷移 ~LET %文書 にて`作動中な~view遷移$doc
+~Assert：
+%文書 は`全部的に作動中$である。
 ◎
-Let transition be document’s active view transition.
+Assert: document is fully active.
 </li>
 	<li>
-<p>
+%内へ来る~view遷移~params ~LET %文書 の`内へ来る~view遷移~params$doc
+◎
+Let inboundViewTransitionParams be document’s inbound view transition params.
+</li>
+	<li>
 ~IF［
-%遷移 ~EQ ~NULL
-］~OR［
-%遷移 の`内へ来る非同一-文書な遷移か$vT ~EQ ~F
+%内へ来る~view遷移~params ~EQ ~NULL
 ］
 ⇒
 ~RET ~NULL
 ◎
-If transition is null or transition’s is inbound cross-document transition is false, then return null.
+If inboundViewTransitionParams is null, then return null.
+</li>
+	<li>
+%文書 の`内へ来る~view遷移~params$doc ~SET ~NULL
+◎
+Set document’s inbound view transition params to null.
+</li>
+	<li>
+<p>
+~IF［
+%文書 にて`作動中な~view遷移$doc ~NEQ ~NULL
+］
+⇒
+~RET ~NULL
+◎
+If document’s active view transition is not null, then return null.
 </p>
 
 <p class="note">注記：
-%遷移 の`内へ来る非同一-文書な遷移か$vTは、
-ある同一-文書な遷移が開始される前に
-`pagereveal$et ~eventが発火されたときは
-~F になる。
+これは、［
+非同一-文書な遷移が処理待ちにある下で，
+当の文書が露呈される前に同一-文書な遷移が開始された
+］ときは，前者の遷移を取消すようにすることを意味する。
 ◎
-Note: transition’s is inbound cross-document transition would be false if a same-document transition was started before the pagereveal event was fired.
+Note: this means that starting a same-document transition before revealing the document would cancel a pending cross-document transition.
 </p>
 	</li>
 	<li>
@@ -2113,16 +2278,62 @@ Resolve @view-transition rule for document and let resolvedRule be the result.
 ~IF［
 %解決-済み規則 ~EQ `遷移を飛ばす^i
 ］
-⇒＃
-`~view遷移を飛ばす$( %遷移 )；
+⇒
 ~RET ~NULL
 ◎
-If resolvedRule is "skip transition", then skip transition and return null.
+If resolvedRule is "skip transition", then return null.
+</li>
+	<li>
+%遷移 ~LET %文書 に`関連な~realm$に属する新たな `ViewTransition$I
+— その
+⇒＃
+`有名~要素~群$vT ~SET %内へ来る~view遷移~params の`有名~要素$vTP,
+`初期~snapshot包含塊~size$vT ~SET %内へ来る~view遷移~params の`初期~snapshot包含塊~size$vTP
+◎
+Let transition be a new ViewTransition in document’s relevant Realm, whose named elements is inboundViewTransitionParams’s named elements, and initial snapshot containing block size is inboundViewTransitionParams’s initial snapshot containing block size.
+</li>
+	<li>
+%文書 の`作動中な~view遷移$doc ~SET %遷移
+◎
+Set document’s active view transition to transition.
+</li>
+	<li>
+`~promiseを解決する$( %遷移 の`更新~callback済み時の~promise$vT )
+◎
+Resolve transition’s update callback done promise with undefined.
+</li>
+	<li>
+%遷移 の`相$vT ~SET `更新~callbackは~call済み$i
+◎
+Set transition’s phase to "update-callback-called".
 </li>
 	<li>
 %遷移 の`作動中な型~群$vT ~SET %解決-済み規則
 ◎
 Set transition’s active types to resolvedRule.
+</li>
+	<li>
+<p>
+~UAは、
+いつでも，内へ来る遷移を飛ばすものと裁定してもヨイ
+— 例：`実装定義$な時間切れになった後に。
+そうする場合、
+~UAは，次を行うベキである
+⇒
+`大域~taskを~queueする$( `~DOM操作~task~source$, %文書 に`関連な大域~obj$, 次の手続き )
+</p>
+
+<div class="algo">
+手続きは
+⇒
+~IF［
+%遷移 の`相$vT ~NEQ `済み$i
+］
+⇒
+`~view遷移を飛ばす$( %遷移, `TimeoutError$E 例外 )
+</div>
+◎
+At any given time, the UA may decide to skip the inbound transition, e.g. after an implementation-defined timeout. To do so, the UA should queue a global task on the DOM manipulation task source given document’s relevant global object to perform the following step: If transition’s phase is not "done", then skip the view transition transition with a "TimeoutError" DOMException.
 </li>
 	<li>
 ~RET %遷移
