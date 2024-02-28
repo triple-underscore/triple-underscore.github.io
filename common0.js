@@ -2734,6 +2734,9 @@ list::::リスト
 配列:array::~
 配列-:arrange::~
 辞書:dictionary::~::ディクショナリ
+capsule::::カプセル
+	~capsule化-:encapsulate
+	~capsule化:encapsulation
 collection::::コレクション
 record::::レコード
 table::::テーブル

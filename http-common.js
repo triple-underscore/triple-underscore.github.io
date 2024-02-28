@@ -842,9 +842,6 @@ component::::コンポーネント
 container:::コンテナ
 crash::::クラッシュ
 database::::データベース
-encapsulate::::カプセル化
-encapsulation::::カプセル化
-	~err::
 folder::::フォルダ
 guide::::ガイド
 	~hypertext:hypertext note
