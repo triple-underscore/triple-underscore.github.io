@@ -14,6 +14,7 @@ img {
 	width: 1em;
 	height: 1em;
 	border: solid thin var(--N-color);
+	vertical-align: middle;
 }
 
 .contrast-ratio {
@@ -173,8 +174,8 @@ return text;
 ●●options
 
 spec_title:CSS Color Module Level 5
-spec_date:2024-02-29
-trans_update:2024-02-27
+spec_date:2024-03-14
+trans_update:2024-03-15
 source_checked:231004
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-color-5/
@@ -497,6 +498,7 @@ Lab:
 HSL:
 	hsl^v:``hsl()``
 sRGB:
+Display-P3:Display P3
 	~sRGB:srgb
 	`srgb^v:srgb
 	srgb$v:``srgb``
@@ -741,6 +743,7 @@ math:
 量:amount:~
 切詰めら:clampさ:切り詰めら
 切詰める:clampする:切り詰める
+	切詰めら:clip
 切捨てる:truncateする:切り捨てる
 	およそ:approximately
 半分:half:~
@@ -792,6 +795,7 @@ clipping:
 中心の:centralな:~
 	真中で:in the middle
 	〜が占める:maximal
+	2 倍する:double
 
 	●構文／直列化
 有効数字:significant figures:~
@@ -980,6 +984,7 @@ locale::::ロケール
 風景:scene:~
 検索-:look up:~
 元々:originalに:~
+発生-:arise:~
 
 	取得子:on getting
 	一定:constant
@@ -1061,6 +1066,7 @@ locale::::ロケール
 	`WCAG21$r:WCAG 2.1
 	^en:AA large
 	往復-可能に:enable round-tripping
+	そのまま:as-is
 
 ●●images
 ＠css-color/
@@ -2690,7 +2696,64 @@ In this example, the r, g, and b channels of the origin color are unchanged, ind
 </p>
 </div>
 
+<p>
+相対~色~構文が利用されるときは、
+色~channel値は
+— 直に指定されたもの, 色~空間の変換から発生したもの，どちらであろうが —
+基準~範囲へは`切詰められず^em，そのままに維持される。
+これは、
+色域~外にある値を
+— 行先~色~空間に それを表現する能力があるならば —
+保全する。
+◎
+When relative color syntax is used, color channel values, whether directly specified or arising from color space conversion, are not clamped to the reference ranges but are retained as-is. This preserves out of gamut values, if the destination color space is capable of representing them.
+</p>
+
 <div class="example">
+<p>
+例えば，~Display-P3色が~sRGBの色域の外側にあっても、
+切詰められないので，依然として表現できる。
+◎
+For example, a Display P3 color which is outside the gamut of sRGB can still be represented, as it is not clipped.
+</p>
+
+<pre class="lang-css">
+--vivid-yellow: color(display-p3 1 1 0);
+--paler-yellow: `100% 100% 15.37%^rgb color(from var(--vivid-yellow) srgb r g calc(b + 0.5));
+</pre>
+
+<p>
+ここで `--vivid-yellow^p を~sRGBへ変換した結果は、
+`rgb(100% 100% -34.63%)^v になり，
+負な~blue成分は切詰められない。
+当の`相対~色~関数$を計算した結果は、
+`rgb(100% 100% 15.37%)^vc になる。
+◎
+Here --vivid-yellow, once converted to sRGB, is rgb(100% 100% -34.63%) and the negative blue component is not clamped. The result of the RCS calculation is rgb(100% 100% 15.37%)
+</p>
+</div>
+
+<p>
+しかしながら，~alpha~channelは、
+相対~色~構文が利用されるときでも，基準~範囲へ`切詰められる^em。
+◎
+However, when relative color syntax is used, alpha channels are clamped to the reference range.
+</p>
+
+<div class="example">
+<p>
+例えば，起点~色の~alpha 0.7 を 2 倍するよう試みた場合、
+結果の~alphaは， 1.4 ではなく 1 になる。
+◎
+For example, attempting to double an alpha of 0.7 in the origin color results in an alpha in the result of 1, not 1.4.
+</p>
+
+<pre class="lang-css">
+--tan: `80.93% 70% 55.27% / 70%^rgb oklch(78% 0.06 75 / 0.7);
+--deeper-tan: `80.93% 70% 55.27%^rgb oklch(from var(--tan) l c h / calc(alpha * 2));
+</pre>
+</div>
+
 <p>
 `~channel~keyword$は
 — ほとんどの`相対~色~構文$の利用では、
@@ -2699,6 +2762,8 @@ In this example, the r, g, and b channels of the origin color are unchanged, ind
 ◎
 While most uses of relative color syntax will use the channel keywords in their corresponding argument, you can use them in any position.
 </p>
+
+<div class="example">
 <p>
 例えば，次は、
 色を~grayscale化する大まかな近似を行う：
@@ -3522,7 +3587,7 @@ However, unlike HSL, manipulations are not guaranteed to be in-gamut.
 新たな色
 — 同じ明度, 色度を伴いつつ，色相は 120° 相違する色 —
 を生産することを目指す。
-`起点~色$は~RGB色域の内側にあるが，~LCH内で色相を回転すると色域~外の色を生産する。
+`起点~色$は~RGB色域の内側にあるが，~LCH内で色相を回転すると色域~外にある色を生産する。
 ◎
 In this example, the aim is to produce a new color with the same Lightness and Chroma, but the triad (hue differs by 120 degrees). The origin color is inside the RGB gamut, but rotating the hue in LCH produces an out of gamut color.
 </p>
@@ -3585,7 +3650,7 @@ This diagram shows the sRGB gamut, in the CIE ab plane. Small circles indicate t
 </figcaption></figure>
 
 <p>
-同じ演算を~HSL内で遂行すると，色域~内の結果を返すことになる。
+同じ演算を~HSL内で遂行すると，色域~内に入る結果を返すことになる。
 が、それは他を満たしていない：
 ◎
 Performing the same operation in HSL will return an in-gamut result. But it is unsatisfactory in other ways:
@@ -3703,7 +3768,7 @@ Because Oklch is both perceptually uniform and chroma-preserving, and because th
 この例では、
 ~Oklch内で操作を行う。
 `起点~色$は，~RGB色域の内側にあるが、
-ここでも，~Oklch内で色相を回転すると色域~外の色を生産する。
+ここでも，~Oklch内で色相を回転すると色域~外にある色を生産する。
 ◎
 In this example, the aim is again to produce a new color with the same Lightness and Chroma, but the triad (hue differs by 120 degrees). In this example, we will do the manipulation in Oklch. The origin color is inside the RGB gamut, but rotating the hue in Oklch again produces an out of gamut color.
 </p>
@@ -4412,7 +4477,7 @@ The media-relative colorimetric rendering intent is often used with black point 
 変換元の色のうち，変換先~媒体の色域~外になるものは、
 種々の手法を利用して，色域~境界の色に対応付けられる。
 この手法は、
-色域~内の色については，最も正確aに合致する色を生産するが、
+色域~内にある色については，最も正確aに合致する色を生産するが、
 変換先~媒体の白色点が変換元~媒体の白色点より~~暗い場合，
 高明度（ `highlight^en ）付近がつぶれる結果になる。
 この理由から、
@@ -4488,7 +4553,7 @@ v4 ~profileを利用しても，その問題は解消できない。
 それらの~profileの組合nの下で，欲される結果が生産されるものと検査-済みであれば別だが。
 この~optionは、
 元の画素の相対的な彩度（色度）値を保全する。
-色域~外の色は、
+色域~外にある色は、
 色域~内に入る同じ彩度の色に変換するベキである。
 ◎
 This option was created to preserve the relative saturation (chroma) of the original, and to keep solid colors pure. However, it experienced interoperability problems like the perceptual intent, and as solid color preservation is not amenable to a reference medium solution using v4 profiles does not solve the problem. Use of this rendering intent is not recommended unless the specific source and destination profiles to be used have been checked to ensure the combination produces the desired result. This option should preserve the relative saturation (chroma) values of the original pixels. Out of gamut colors should be converted to colors that have the same saturation but fall just inside the gamut.
@@ -6846,7 +6911,7 @@ Changed serialization of color-mix() which uses hsl or hwb, to maximize precisio
 Added an out of gamut color-mix example
 </dd>
 	<dd>
-拡張された色域~外の色を表現し得ない［
+拡張された色域~外にある色を表現し得ない［
 ~HSL／~HWB
 ］~modelを述べるため、
 用語 “色を表出し得ない” を利用するようにした。
