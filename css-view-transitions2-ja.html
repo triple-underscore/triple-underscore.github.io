@@ -122,8 +122,8 @@ return text;
 ●●options
 
 spec_title:CSS View Transitions Module Level 2
-spec_date:2024-03-14
-trans_update:2024-03-15
+spec_date:2024-03-15
+trans_update:2024-03-16
 source_checked:231219
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-view-transitions-2/
@@ -260,17 +260,21 @@ pe.view-transition-new():~CSSVT#selectordef-view-transition-new
 
 
 	●用語
-非同一-文書な~view遷移を解決する:#resolve-cross-document-view-transition
+内へ来る非同一-文書な~view遷移を解決する:#resolve-inbound-cross-document-view-transition
 ~view遷移~規則を解決する:#resolve-view-transition-rule
 非同一-文書な~view遷移を設定しておく:#setup-cross-document-view-transition
 ~naviは非同一-文書な~view遷移を誘発し得るか？:#navigation-can-trigger-a-cross-document-view-transition
+外へ出る遷移~用の~opt-in状態を更新する:#update-the-opt-in-state-for-outbound-transitions
+
 vT.作動中な型~群:#viewtransition-active-types
 vT.外へ出る捕捉-後の手続き:#viewtransition-outbound-post-capture-steps
-cE.~class~list:#captured-element-class-list
 
+cE.~class~list:#captured-element-class-list
 
 doc.内へ来る~view遷移~params:#document-inbound-view-transition-params
 ~view遷移~params:#view-transition-params
+doc.外へ出る~view遷移を起動できるか:#document-can-initiate-outbound-view-transition
+
 vTP.有名~要素:#view-transition-params-named-elements
 vTP.初期~snapshot包含塊~size:#view-transition-params-initial-snapshot-containing-block-size
 
@@ -336,6 +340,7 @@ map.~cloneする:~INFRA#map-clone
 文書:~DOM4#concept-document
 ~node文書:~DOM4#concept-node-document
 文書~要素:~DOM4#document-element
+doc.生成元:~DOM4#concept-document-origin
 tL.~token集合:~DOM4#concept-dtl-tokens
 
 並列的:~HTMLINFRA#in-parallel
@@ -429,15 +434,13 @@ params::::パラメタ群
 	%~browser~UIによる~naviか:isBrowserUINavigation
 	%旧-文書:oldDocument
 	%新-文書:newDocument
-	%旧-生成元:oldOrigin
-	%新-生成元:newOrigin
-	%~naviは非同一-生成元な~redirectを経たか:navigationHasCrossOriginRedirects
 	%更新~callback:updateCallback
 	%文書:document
 	%~view遷移~params:viewTransitionParams
 	%内へ来る~view遷移~params:inboundViewTransitionParams
 	%~naviで続行する手続き:proceedWithNavigation
 	%飛ばされる前の遷移:preSkippedTransition
+	%規則からの遷移~型~群:~transitionTypesFromRule
 	%~token群:-
 	%~token:-
 
@@ -900,7 +903,7 @@ The following style would apply to all the boxes, thanks to 'view-transition-cla
 <h3 title="Applying the same style to multiple participating elements: the view-transition-class property">2.1. 遷移に関与している複数の要素に対する同じ~styleの適用-法： `view-transition-class^p ~prop</h3>
 
 ◎名 `view-transition-class@p
-◎値 `~noneC$v | `custom-ident$t*
+◎値 `~noneC$v | `custom-ident$t#
 ◎初 `none^v
 ◎適 すべての要素
 ◎継 されない
@@ -944,7 +947,7 @@ Note that view-transition-class by itself doesn’t mark an element for capturin
 No class would apply to the named view transition pseudo-elements generated for this element.
 </dd>
 
-	<dt id="valdef-view-transition-class-custom-ident">`custom-ident$t*</dt>
+	<dt id="valdef-view-transition-class-custom-ident">`custom-ident$t#</dt>
 	<dd>
 指定された `custom-ident$t 値（ `none^v 以外）すべてが、
 `有名~view遷移~疑似要素$`選択子$内で利用されるときに適用される。
@@ -1346,7 +1349,7 @@ Note: Navigations excluded from auto are for example, navigating via the URL add
 
 ◎述 `type@d
 ◎用 `view-transition$at
-◎値 `none^v | `custom-ident$t*
+◎値 `none^v | `custom-ident$t#
 ◎初 `none^v
 ◎表終
 
@@ -1368,6 +1371,19 @@ The 'type' descriptor sets the active types for the transition when capturing an
 作者にある。
 ◎
 Note: the type descriptor only applies to the Document in which it is defined. The author is responsible for using their chosen set of types in both documents.
+</p>
+
+		</section>
+		<section id="respond-to-rule-changes">
+<h3 title="Responding to changes in the @view-transition rule">5.5. `view-transition$at 規則における変化に対する応答-法</h3>
+
+<p>
+`文書$ %文書 用の `view-transition$at 規則が変化したときは、
+次を遂行するとする
+⇒
+`外へ出る遷移~用の~opt-in状態を更新する$( %文書 )
+◎
+When the @view-transition rule changes for Document document, update the opt-in state for outbound transitions given document.
 </p>
 
 		</section>
@@ -1578,6 +1594,24 @@ inbound view transition params
 ◎
 a view transition params, or null. Initially null.
 </li>
+	<li>
+<p>
+`外へ出る~view遷移を起動できるか@doc
+⇒
+真偽値
+— 初期~時は ~F とする。
+◎
+can initiate outbound view transition
+• a boolean. Initially false.
+</p>
+
+<p class="note">注記：
+この値は、
+~navigateしている間に`並列的$に読取られ得る。
+◎
+Note: this value can be read in parallel while navigating.
+</p>
+	</li>
 </ul>
 
 <p class="trans-note">【
@@ -1995,25 +2029,23 @@ Return a set of strings corresponding to typesDescriptor’s computed value.
 検査するときは、
 所与の
 ⇒＃
-`生成元$ %旧-生成元,
-`生成元$ %新-生成元,
-真偽値 %~naviは非同一-生成元な~redirectを経たか,
+`文書$ %旧-文書,
+`文書$ %新-文書,
 `NavigationType$I %~navi種別,
 真偽値 %~browser~UIによる~naviか
 ◎終
 に対し：
 ◎
-To check if a navigation can trigger a cross-document view-transition? given an origin oldOrigin, an origin newOrigin, a boolean navigationHasCrossOriginRedirects, a NavigationType navigationType, and a boolean isBrowserUINavigation:
+To check if a navigation can trigger a cross-document view-transition? given a Document oldDocument, a Document newDocument, a NavigationType navigationType, and a boolean isBrowserUINavigation:
 </p>
 
 <p class="note">注記：
 これは、
 ~naviの間に［
 ~callされる／`並列的$に~callされる
-］
-— `view-transition$at 規則を利用して~view遷移を~opt-inした文書~用に。
+］。
 ◎
-Note: this is called during navigation, potentially in parallel, for documents that have opted-in to view-transitions using the @view-transition rule.
+Note: this is called during navigation, potentially in parallel.
 </p>
 
 <ol>
@@ -2032,6 +2064,15 @@ If the user agent decides to display an implementation-defined navigation experi
 </li>
 	<li>
 ~IF［
+%旧-文書 の`外へ出る~view遷移を起動できるか$doc ~EQ ~F
+］
+⇒
+~RET ~F
+◎
+If oldDocument’s can initiate outbound view transition is false, then return false.
+</li>
+	<li>
+~IF［
 %~navi種別 ~EQ `reload$l
 ］
 ⇒
@@ -2041,33 +2082,40 @@ If navigationType is reload, then return false.
 </li>
 	<li>
 ~IF［
-%~browser~UIによる~naviか ~EQ ~T
-］~AND［
-%~navi種別 ~IN { `push$l, `replace$l }
-］
-⇒
-~RET ~F
-◎
-If isBrowserUINavigation is true, and navigationType is push or replace, then return false.
-</li>
-	<li>
-~IF［
-( %旧-生成元, %新-生成元 )
+( %旧-文書 の`生成元$doc, %新-文書 の`生成元$doc )
 は`同一-生成元$でない
 ］
 ⇒
 ~RET ~F
 ◎
-If oldOrigin is not same origin as newOrigin then return false.
+If oldDocument’s origin is not same origin as newDocument’s origin, then return false.
 </li>
 	<li>
 ~IF［
-%~naviは非同一-生成元な~redirectを経たか ~EQ ~T
+%~navi種別 ~EQ `traverse$l
+］
+⇒
+~RET ~T
+◎
+If navigationType is traverse, then return true.
+</li>
+	<li>
+~IF［
+%~browser~UIによる~naviか ~EQ ~T
 ］
 ⇒
 ~RET ~F
 ◎
-If navigationHasCrossOriginRedirects is true, then return false.
+If isBrowserUINavigation is true, then return false.
+</li>
+	<li>
+~IF［
+%新-文書 の`非同一-生成元~redirectを介して作成されたか$doc ~EQ ~T
+］
+⇒
+~RET ~F
+◎
+If newDocument was created via cross-origin redirects, then return false.
 </li>
 	<li>
 ~RET ~T
@@ -2101,27 +2149,24 @@ Assert: These steps are running as part of a task queued on oldDocument.
 </li>
 	<li>
 ~IF［
-%旧-文書 の`露呈されたか$doc ~EQ ~F
+%旧-文書 の`外へ出る~view遷移を起動できるか$doc ~EQ ~F
 ］
 ⇒
 ~RET ~NULL
 ◎
-If oldDocument’s has been revealed is false, then return null.
+If oldDocument’s can initiate outbound view transition is false, then return null.
 </li>
 	<li>
-%解決-済み規則 ~LET `~view遷移~規則を解決する$( %旧-文書 )
+%規則からの遷移~型~群 ~LET `~view遷移~規則を解決する$( %旧-文書 )
 ◎
-Let resolvedRule be the result of resolving the @view-transition rule for oldDocument.
+Let transitionTypesFromRule be the result of resolving the @view-transition rule for oldDocument.
 </li>
 	<li>
 <p>
-~IF［
-%解決-済み規則 ~EQ `遷移を飛ばす^i
-］
-⇒
-~RET ~NULL
+~Assert：
+%規則からの遷移~型~群 ~NEQ `遷移を飛ばす^i
 ◎
-If resolvedRule is "skip transition", then return null.
+Assert: transitionTypesFromRule is not "skip transition".
 </p>
 
 <p class="note">注記：
@@ -2159,9 +2204,9 @@ Let outboundTransition be a new ViewTransition object in oldDocument’s relevan
 </li>
 	<li>
 <p>
-%外へ出る遷移 の`作動中な型~群$vTの`~token集合$tL ~SET %解決-済み規則
+%外へ出る遷移 の`作動中な型~群$vTの`~token集合$tL ~SET %規則からの遷移~型~群
 ◎
-Set outboundTransition’s active types's token set to resolvedRule.
+Set outboundTransition’s active types's token set to transitionTypesFromRule.
 </p>
 
 <p class="note">注記：
@@ -2275,13 +2320,13 @@ Return outboundTransition.
 
 <div class="algo">
 <p>
-`非同一-文書な~view遷移を解決する@
+`内へ来る非同一-文書な~view遷移を解決する@
 ときは、
 所与の
 ( `文書$ %文書 )
 に対し：
 ◎
-To resolve cross-document view-transition for Document document:
+To resolve inbound cross-document view-transition for Document document:
 </p>
 <ol>
 	<li>
@@ -2289,6 +2334,17 @@ To resolve cross-document view-transition for Document document:
 %文書 は`全部的に作動中$である。
 ◎
 Assert: document is fully active.
+</li>
+	<li>
+~Assert：
+%文書 の`露呈されたか$doc ~EQ ~T
+◎
+Assert: document has been revealed is true.
+</li>
+	<li>
+`外へ出る遷移~用の~opt-in状態を更新する$( %文書 )
+◎
+Update the opt-in state for outbound transitions for document.
 </li>
 	<li>
 %内へ来る~view遷移~params ~LET %文書 の`内へ来る~view遷移~params$doc
@@ -2399,6 +2455,44 @@ At any given time, the UA may decide to skip the inbound transition, e.g. after 
 ~RET %遷移
 ◎
 Return transition.
+</li>
+</ol>
+</div>
+
+			</section>
+			<section id="update-opt-in-state-for-outbound">
+<h4 title="Updating the opt-in state for outbound view transitions">7.6.4. 外へ出る遷移~用の~opt-in状態の更新-法</h4>
+
+<div class="algo">
+<p>
+`外へ出る遷移~用の~opt-in状態を更新する@
+ときは、
+所与の
+( `文書$ %文書 )
+に対し：
+◎
+To update the opt-in state for outbound transitions for a Document document:
+</p>
+<ol>
+	<li>
+<p>
+%文書 の`外へ出る~view遷移を起動できるか$doc ~SET ［
+~AND↓ が満たされるならば ~T ／
+~ELSE_ ~F
+］：
+</p>
+		<ul>
+			<li>
+%文書 の`露呈されたか$doc ~EQ ~T
+</li>
+			<li>
+`~view遷移~規則を解決する$( %文書 ) ~NEQ `遷移を飛ばす^i
+</li>
+		</ul>
+◎
+If document has been revealed, and the result of resolving the @view-transition rule is not "skip transition", then set document’s can initiate outbound view transition to true.
+◎
+Otherwise, set document’s can initiate outbound view transition to false.
 </li>
 </ol>
 </div>
