@@ -1053,6 +1053,7 @@ THROW:<b>THROW</b>
 WHILE:<b>WHILE</b>
 RET:<b>RETURN</b>
 IF:<b>IF</b>
+IS:<b>IS</b>
 ELSE:<b>ELSE</b>
 ELIF:<b>ELSE IF</b>
 ELSE_:他の場合は
