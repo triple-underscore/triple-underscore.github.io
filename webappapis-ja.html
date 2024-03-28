@@ -119,8 +119,8 @@ return text;
 
 ●●options
 
-spec_date:2024-03-15
-trans_update:2024-03-02
+spec_date:2024-03-27
+trans_update:2024-03-29
 source_checked:231004
 page_state_key:HTML
 spec_status:LS
@@ -1163,6 +1163,16 @@ sub.符号単位:~INFRA#code-unit-less-than
 相対的な高分解能~時刻:~HRTIME#dfn-relative-high-resolution-time
 安全でない共有される現在の時刻:~HRTIME#dfn-unsafe-shared-current-time
 時刻を粗化する:~HRTIME#dfn-coarsen-time
+所要時間を得る:~HRTIME#dfn-duration-from
+
+古典~scriptの作成~時刻を記録する:~LONGAF#record-classic-script-creation-time
+古典~scriptの実行~開始~時刻を記録する:~LONGAF#record-classic-script-execution-start-time
+~module~scriptの実行~開始~時刻を記録する:~LONGAF#record-module-script-execution-start-time
+~task開始~時刻を記録する:~LONGAF#record-task-start-time
+~task終了~時刻を記録する:~LONGAF#record-task-end-time
+描画~時刻を記録する:~LONGAF#record-rendering-time
+小task~checkpoint用に計時~報を記録する:~LONGAF#record-timing-info-for-microtask-checkpoint
+静止-所要時間を記録する:~LONGAF#record-pause-duration
 
 塗り計時を刻む:~PAINTTIMING#mark-paint-timing
 交差~観測nを更新する:~INTERSECTIONOBSERVER#run-the-update-intersection-observations-steps
@@ -1213,6 +1223,7 @@ JSON-MODULES:https://tc39.es/proposal-json-modules/
 PAINTTIMING:paint-timing-ja.html
 REQUESTIDLECALLBACK:requestidlecallback-ja.html
 LONGTASKS:longtasks-ja.html
+LONGAF:long-animation-frames-ja.html
 BATTERY:battery-ja.html
 RESIZEOBSERVER:https://drafts.csswg.org/resize-observer-1/
 CONSOLE:console-ja.html
@@ -1900,6 +1911,7 @@ as:
 	%~task:oldestTask
 	%~task~queue:taskQueue
 	%~task開始~時刻:taskStartTime
+	%~task終了~時刻:taskEndTime
 	%大域~obj:global
 	%~task~source:source
 	%~referrer:referrer
@@ -1914,6 +1926,7 @@ as:
 	%Aの生成元:originA
 	%Bの生成元:originB
 	%~agent~cluster:agentCluster
+	%文書:doc
 	%文書~群:docs
 	%実行候補:candidateExecution
 	%~platform~obj:platformObject
@@ -2021,7 +2034,10 @@ as:
 	%~event~loop:event loop
 	%既定の行先:defaultDestination
 	%~frame時刻印:frameTimestamp
-	%文書:doc
+	%~window~script用の~source~URL:sourceURLForWindowScripts
+	%安全でない~layout開始~時刻:unsafeLayoutStartTime
+	%安全でない~layout開始~時刻:~unsafeStyleAndLayoutStartTime
+	%静止-前の時刻:timeBeforePause
 
 	●指示語
 現在:currently:~
@@ -5300,16 +5316,16 @@ The decode algorithm overrides encoding if the file contains a BOM.
 Let mutedErrors be true if response was CORS-cross-origin, and false otherwise.
 </li>
 			<li>
-%~script ~LET
-`古典~scriptを作成する$( ↓ )
+%~script ~LET `古典~scriptを作成する$( ↓ )
 ⇒＃
 %~source~text,
 %設定群~obj,
 %応答 の`~URL$rs,
 %~option群,
-%~errorは黙秘するか
+%~errorは黙秘するか,
+%~URL
 ◎
-Let script be the result of creating a classic script given sourceText, settingsObject, response's URL, options, and mutedErrors.
+Let script be the result of creating a classic script given sourceText, settingsObject, response's URL, options, mutedErrors, and url.
 </li>
 			<li>
 %完了-時の手続き( %~script )
@@ -5465,8 +5481,7 @@ Other fetch schemes are exempted from MIME type checking for historical web-comp
 Let sourceText be the result of UTF-8 decoding bodyBytes.
 </li>
 			<li>
-%~script ~LET
-`古典~scriptを作成する$( ↓ )
+%~script ~LET `古典~scriptを作成する$( ↓ )
 ⇒＃
 %~source~text,
 %設定群~obj,
@@ -5643,8 +5658,7 @@ Let sourceText be the result of UTF-8 decoding bodyBytes.
 Let mutedErrors be true if response was CORS-cross-origin, and false otherwise.
 </li>
 	<li>
-%~script ~LET
-`古典~scriptを作成する$( ↓ )
+%~script ~LET `古典~scriptを作成する$( ↓ )
 ⇒＃
 %~source~text,
 %設定群~obj,
@@ -6779,11 +6793,12 @@ Fetch a single module script given url, fetchClient, destination, options, setti
 `環境~設定群~obj$ %設定群,
 `~URL$ %基底~URL,
 `~script~fetch~option群$ %~option群,
-真偽値 %~errorは黙秘するか（省略時は ~F ）
+真偽値 %~errorは黙秘するか（省略時は ~F ）,
+［`~URL$／~NULL］ %~window~script用の~source~URL（省略時は ~NULL ）
 ◎終
 に対し，次を走らす：
 ◎
-To create a classic script, given a string source, an environment settings object settings, a URL baseURL, a script fetch options options, and an optional boolean mutedErrors (default false):
+To create a classic script, given a string source, an environment settings object settings, a URL baseURL, a script fetch options options, an optional boolean mutedErrors (default false), and an optional URL-or-null sourceURLForWindowScripts (default null):
 </p>
 <ol>
 	<li>
@@ -6839,6 +6854,11 @@ Set script's fetch options to options.
 Set script's muted errors to mutedErrors.
 ◎
 Set script's parse error and error to rethrow to null.
+</li>
+	<li>
+`古典~scriptの作成~時刻を記録する$( %~script, %~window~script用の~source~URL )
+◎
+Record classic script creation time given script and sourceURLForWindowScripts.
 </li>
 	<li>
 <p>
@@ -7421,6 +7441,11 @@ Let settings be the settings object of script.
 Check if we can run script with settings. If this returns "do not run" then return NormalCompletion(empty).
 </li>
 	<li>
+`古典~scriptの実行~開始~時刻を記録する$( %~script )
+◎
+Record classic script execution start time given script.
+</li>
+	<li>
 `~scriptを走らすために準備する$( %設定群 )
 ◎
 Prepare to run script given settings.
@@ -7592,6 +7617,11 @@ Let settings be the settings object of script.
 ~RET `却下される~promise$( `undefined^jv )
 ◎
 Check if we can run script with settings. If this returns "do not run", then return a promise resolved with with undefined.
+</li>
+	<li>
+`~module~scriptの実行~開始~時刻を記録する$( %~script )
+◎
+Record module script execution start time given script.
 </li>
 	<li>
 `~scriptを走らすために準備する$( %設定群 )
@@ -12711,6 +12741,15 @@ Set oldestTask to the first runnable task in taskQueue, and remove it from taskQ
 ◎
 ↑</li>
 			<li>
+~IF［
+%~task の`文書$tK ~NEQ ~NULL
+］
+⇒
+`~task開始~時刻を記録する$( %~task開始~時刻, %~task の`文書$tK )
+◎
+If oldestTask's document is not null, then record task start time given taskStartTime and oldestTask's document.
+</li>
+			<li>
 %~event~loop の`現在~走っている~task$ ~SET %~task
 ◎
 Set the event loop's currently running task to oldestTask.
@@ -12733,9 +12772,9 @@ Perform a microtask checkpoint.
 		</ol>
 	</li>
 	<li>
-%now ~LET `安全でない共有される現在の時刻$ `HRT$r
+%~task終了~時刻 ~LET `安全でない共有される現在の時刻$ `HRT$r
 ◎
-Let now be the unsafe shared current time. [HRT]
+Let taskEndTime be the unsafe shared current time. [HRT]
 </li>
 	<li>
 <p>
@@ -12807,11 +12846,20 @@ If tlbc is not null, then append it to top-level browsing contexts.
 `長い~taskを報告する$( ↓ )
 ⇒＃
 %~task開始~時刻,
-%now（~taskの終了~時刻）,
+%~task終了~時刻,
 %~top-level閲覧~文脈~群,
 %~task
 ◎
-Report long tasks, passing in taskStartTime, now (the end time of the task), top-level browsing contexts, and oldestTask.
+Report long tasks, passing in taskStartTime, taskEndTime, top-level browsing contexts, and oldestTask.
+</li>
+			<li>
+~IF［
+%~task の`文書$tK ~NEQ ~NULL
+］
+⇒
+`~task終了~時刻を記録する$( %~task終了~時刻, %~task の`文書$tK )
+◎
+If oldestTask's document is not null, then record task end time given taskEndTime and oldestTask's document.
 </li>
 		</ol>
 	</li>
@@ -12886,7 +12934,7 @@ If windowInSameLoop's map of animation frame callbacks is not empty, or if the u
 </li>
 							<li>
 %~timer~callback見積もり群 ~LET 
-%~window の`作動中な~timer群が成す~map$の`値~群$
+%~window の`作動中な~timer群が成す~map$の`値~群$map
 ◎
 Let timerCallbackEstimates be the result of getting the values of windowInSameLoop's map of active timers.
 </li>
@@ -13453,6 +13501,11 @@ Fire an event named contextrestored at canvas.
 For each doc of docs, run the animation frame callbacks for doc, passing in the relative high resolution time given frameTimestamp and doc's relevant global object as the timestamp.
 </li>
 			<li>
+%安全でない~layout開始~時刻 ~LET `安全でない共有される現在の時刻$
+◎
+Let unsafeLayoutStartTime be the unsafe shared current time.
+</li>
+			<li>
 <p>
 %文書~群 を成す
 ~EACH( %文書 )
@@ -13670,6 +13723,15 @@ For each doc of docs, run the update intersection observations steps for doc, pa
 ~EACH( %文書 )
 に対し
 ⇒
+`描画~時刻を記録する$( %文書, %安全でない~layout開始~時刻【！unsafeStyleAndLayoutStartTime】 )
+◎
+For each doc of docs, record rendering time for doc given unsafeStyleAndLayoutStartTime.
+</li>
+			<li>
+%文書~群 を成す
+~EACH( %文書 )
+に対し
+⇒
 `塗り計時を刻む$( %文書 )
 `PAINTTIMING$r
 ◎
@@ -13853,6 +13915,11 @@ When WeakRef.prototype.deref() returns an object, that object is kept alive unti
 %~event~loop の`小task~checkpoint遂行-中か$ ~SET ~F
 ◎
 Set the event loop's performing a microtask checkpoint to false.
+</li>
+	<li>
+`小task~checkpoint用に計時~報を記録する$()
+◎
+Record timing info for microtask checkpoint.
 </li>
 </ol>
 </div>
@@ -14276,6 +14343,16 @@ Some of the algorithms in this specification, for historical reasons, require th
 </p>
 <ol>
 	<li>
+%大域~obj ~LET `現在の大域~obj$
+◎
+Let global be the current global object.
+</li>
+	<li>
+%静止-前の時刻 ~LET `現在の高分解能~時刻$( %大域~obj )
+◎
+Let timeBeforePause be the current high resolution time given global.
+</li>
+	<li>
 必要yなら、［
 `文書$ ／ `~navigable$
 ］の描画や~UIを，現在の状態を反映するよう更新する
@@ -14305,6 +14382,11 @@ If necessary, update the rendering or user interface of any Document or navigabl
 		</ul>
 ◎
 Wait until the condition goal is met. While a user agent has a paused task, the corresponding event loop must not run further tasks, and any script in the currently running task must block. User agents should remain responsive to user input while paused, however, albeit in a reduced capacity since the event loop will not be doing anything.
+</li>
+	<li>
+`静止-所要時間を記録する$( `所要時間を得る$( %静止-前の時刻, `現在の高分解能~時刻$( %大域~obj ) )
+◎
+Record pause duration given the duration from timeBeforePause to the current high resolution time given global.
 </li>
 </ol>
 </div>
