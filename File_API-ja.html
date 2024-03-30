@@ -136,7 +136,7 @@ return text;
 
 spec_title:File API
 spec_date:2023-02-17
-trans_update:2023-03-23
+trans_update:2024-03-30
 source_checked:190315
 original_url:https://w3c.github.io/FileAPI/
 spec_status:ED
@@ -1562,14 +1562,14 @@ Let stream be a new ReadableStream created in blob’s relevant Realm.
 ◎
 Set up stream with byte reading support.
 </li>
-	<li>
-~RET %~stream
-— ただし、
-以降も`並列的$に走らす
+	<li class="algo">
+<p>
+この段は`並列的$に走らす：
 ◎
 Run the following steps in parallel:
-</li>
-	<li>
+</p>
+		<ol>
+			<li>
 <p>
 ~WHILE［
 %~blob 内にまだ読取っていない~byteがある
@@ -1577,8 +1577,8 @@ Run the following steps in parallel:
 ◎
 While not all bytes of blob have been read:
 </p>
-		<ol>
-			<li>
+				<ol>
+					<li>
 %~byte列 ~LET %~blob から`~chunk$を［
 読取れるならば その結果を成す`~byte列$／
 読取れないならば `失敗^i
@@ -1586,46 +1586,53 @@ While not all bytes of blob have been read:
 ◎
 Let bytes be the byte sequence that results from reading a chunk from blob, or failure if a chunk cannot be read.
 </li>
-			<li>
+					<li>
 <p>
-次の手続きを遂行する`大域~taskを~queueする$( `~file読取り~task~source$, %~blob に`関連な大域~obj$ )：
+`大域~taskを~queueする$( `~file読取り~task~source$, %~blob に`関連な大域~obj$, 次の手続き )
 ◎
 Queue a global task on the file reading task source given blob’s relevant global object to perform the following steps:
 </p>
-				<ol>
-					<li>
+
+<div class="algo">
+<p>
+手続きは：
+◎
+↑</p>
+						<ol>
+							<li>
 ~IF［
 %~byte列 ~EQ `失敗^i
 ］
 ⇒＃
 %~stream を`~errorにする$RS( `失敗~事由$ )；
-~BREAK
+~RET
 ◎
 If bytes is failure, then error stream with a failure reason and abort these steps.
 </li>
-					<li>
+							<li>
 %~chunk ~LET %~byte列 を包含している `ArrayBuffer$I を包装している新たな `Uint8Array$I
 ◎
 Let chunk be a new Uint8Array wrapping an ArrayBuffer containing bytes.＼
 </li>
-					<li>
+							<li>
 ~IF［
 前~段にて `ArrayBuffer$I の作成-時に例外が投出された
 ］
 ⇒＃
 %~stream を`~errorにする$RS( その例外 )；
-~BREAK
+~RET
 ◎
 If creating the ArrayBuffer throws an exception, then error stream with that exception and abort these steps.
 </li>
-					<li>
+							<li>
 %~stream に`~chunkを~enqueueする$RS( %~chunk ) 
 ◎
 Enqueue chunk in stream.
 </li>
+						</ol>
+</div>
+					</li>
 				</ol>
-			</li>
-		</ol>
 
 <p class="issue">
 ~Blobからの読取りが実際には何を行うか，起こり得る~errorは何かについて、
@@ -1633,10 +1640,15 @@ Enqueue chunk in stream.
 — たぶん，~chunk~sizeについての何か, 等々。
 ◎
 We need to specify more concretely what reading from a Blob actually does, what possible errors can happen, perhaps something about chunk sizes, etc.
-◎
-↑↑Return stream.
 </p>
+			</li>
+		</ol>
 	</li>
+	<li>
+~RET %~stream
+◎
+Return stream.
+</li>
 </ol>
 </div>
 
@@ -3226,14 +3238,14 @@ Let chunkPromise be the result of reading a chunk from stream with reader.
 ◎
 Let isFirstChunk be true.
 </li>
-	<li>
-~RET
-— ただし、
-以降も`並列的$に走らす
+	<li class="algo">
+<p>
+この段は`並列的$に走らす：
 ◎
 In parallel, while true:
-</li>
-	<li>
+</p>
+		<ol>
+			<li>
 `(A)^i
 %~chunk~promise が［
 充足される／却下される
@@ -3241,26 +3253,32 @@ In parallel, while true:
 ◎
 Wait for chunkPromise to be fulfilled or rejected.
 </li>
-	<li>
+			<li>
 <p>
 ~IF［
 %~chunk~promise は %~obj で充足された
 ］：
 ◎
 ↓</p>
-		<ol>
-			<li>
+				<ol>
+					<li>
 <p>
 ~IF［
 %最初の~chunkか ~EQ ~T
 ］
 ⇒
-次を走らす`~taskを~queueする$
+`~taskを~queueする$( `~file読取り~task~source$, 次の手続き )
+◎
+If chunkPromise is fulfilled, and isFirstChunk is true, queue a task to＼
+</p>
+
+<div class="algo">
+手続きは
 ⇒
 `進捗~eventを発火する$( %fr, `loadstart$et )
 ◎
-If chunkPromise is fulfilled, and isFirstChunk is true, queue a task to fire a progress event called loadstart at fr.
-</p>
+fire a progress event called loadstart at fr.
+</div>
 
 <p class="issue">
 `XMLHttpRequest$I の挙動と揃えるため、
@@ -3269,13 +3287,13 @@ If chunkPromise is fulfilled, and isFirstChunk is true, queue a task to fire a p
 ◎
 We might change loadstart to be dispatched synchronously, to align with XMLHttpRequest behavior. [Issue #119]
 </p>
-			</li>
-			<li>
+					</li>
+					<li>
 %最初の~chunkか ~SET ~F
 ◎
 Set isFirstChunk to false.
 </li>
-			<li>
+					<li>
 <p>
 ~IF［
 %~obj の `done^c ~prop ~EQ ~F
@@ -3283,15 +3301,15 @@ Set isFirstChunk to false.
 ◎
 If chunkPromise is fulfilled with an object whose done property is false and＼
 </p>
-				<ol>
-					<li>
+						<ol>
+							<li>
 ~Assert：
 %~obj の `value^c ~prop は `Uint8Array$I ~objである
 【これは、原文では条件であるかのように記されているが，おそらく表明と解釈するべきであろう。】
 ◎
 whose value property is a Uint8Array object, run these steps:
 </li>
-					<li>
+							<li>
 %~byte列 に［
 %~obj の `value^c ~propが表現する`~byte列$
 ］を付加する
@@ -3300,46 +3318,58 @@ Let bs be the byte sequence represented by the Uint8Array object.
 ◎
 Append bs to bytes.
 </li>
-					<li>
+							<li>
+<p>
 ~IF［
 この手続きが最後に呼出されてから概ね 50ms ~~経過した
 ］
 ⇒
-次を走らす`~taskを~queueする$
+`~taskを~queueする$( `~file読取り~task~source$, 次の手続き )
+</p>
+
+<div class="algo">
+手続きは
 ⇒
 `進捗~eventを発火する$( %fr, `progress$et )
+</div>
 ◎
 If roughly 50ms have passed since these steps were last invoked, queue a task to fire a progress event called progress at fr.
 </li>
-					<li>
+							<li>
 %~chunk~promise ~SET %読取器 から`~chunkを読取る$RSR( )
 ◎
 Set chunkPromise to the result of reading a chunk from stream with reader.
 </li>
-					<li>
+							<li>
 ~GOTO `(A)^i
 ◎
 ↑↑</li>
-				</ol>
-			</li>
-			<li>
+						</ol>
+					</li>
+					<li>
 <p>
-次を走らす`~taskを~queueする$：
+`~taskを~queueする$( `~file読取り~task~source$, 次の手続き )
 ◎
 Otherwise, if chunkPromise is fulfilled with an object whose done property is true, queue a task to run the following steps and abort this algorithm:
 </p>
-				<ol>
-					<li>
+
+<div class="algo">
+<p>
+手続きは：
+◎
+↑</p>
+						<ol>
+							<li>
 %fr の`状態$fR ~SET `done^l
 ◎
 Set fr’s state to "done".
 </li>
-					<li>
+							<li>
 %結果 ~LET %~blob の`~dataを梱包する$( %~byte列, %種別, %~blob の `type$m, %符号化法の名前 )
 ◎
 Let result be the result of package data given bytes, type, blob’s type, and encodingName.
 </li>
-					<li>
+							<li>
 <p>
 ~IF［
 前~段にて例外 %~error が投出された
@@ -3347,39 +3377,39 @@ Let result be the result of package data given bytes, type, blob’s type, and e
 ◎
 If package data threw an exception error:
 </p>
-						<ol>
-							<li>
+								<ol>
+									<li>
 %fr の`~error$fR ~SET %~error
 ◎
 Set fr’s error to error.
 </li>
-							<li>
+									<li>
 `進捗~eventを発火する$( %fr, `error$et )
 ◎
 Fire a progress event called error at fr.
 </li>
-						</ol>
-					</li>
-					<li>
+								</ol>
+							</li>
+							<li>
 <p>
 ~ELSE：
 ◎
 Else:
 </p>
-						<ol>
-							<li>
+								<ol>
+									<li>
 %fr の`結果$fR ~SET %結果
 ◎
 Set fr’s result to result.
 </li>
-							<li>
+									<li>
 `進捗~eventを発火する$( %fr, `load$et )
 ◎
 Fire a progress event called load at the fr.
 </li>
-						</ol>
-					</li>
-					<li>
+								</ol>
+							</li>
+							<li>
 <p>
 ~IF［
 %fr の`状態$fR ~NEQ `loading^l
@@ -3398,36 +3428,42 @@ If fr’s state is not "loading", fire a progress event called loadend at the fr
 ◎
 Note: Event handler for the load or error events could have started another load, if that happens the loadend event for this load is not fired.
 </p>
+							</li>
+						</ol>
+</div>
 					</li>
 				</ol>
 			</li>
-		</ol>
-	</li>
-	<li>
+			<li>
 <p>
 ~ELSE（ %~chunk~promise は %~error で却下された ）
 ⇒
-次を走らす`~taskを~queueする$：
+`~taskを~queueする$( `~file読取り~task~source$, 次の手続き )
 ◎
 Otherwise, if chunkPromise is rejected with an error error, queue a task to run the following steps and abort this algorithm:
 </p>
-		<ol>
-			<li>
+<div class="algo">
+<p>
+手続きは：
+◎
+↑</p>
+				<ol>
+					<li>
 %fr の`状態$fR ~SET `done^l
 ◎
 Set fr’s state to "done".
 </li>
-			<li>
+					<li>
 %fr の`~error$fR ~SET %~error
 ◎
 Set fr’s error to error.
 </li>
-			<li>
+					<li>
 `進捗~eventを発火する$( %fr, `error$et )
 ◎
 Fire a progress event called error at fr.
 </li>
-			<li>
+					<li>
 <p>
 ~IF［
 %fr の`状態$fR ~NEQ `loading^l
@@ -3444,14 +3480,16 @@ If fr’s state is not "loading", fire a progress event called loadend at fr.
 ◎
 Note: Event handler for the error event could have started another load, if that happens the loadend event for this load is not fired.
 </p>
+					</li>
+				</ol>
+</div>
 			</li>
 		</ol>
 	</li>
 </ol>
 
 <p>
-上に現れる すべての~taskは、
-`~file読取り~task~source$を利用する。
+【！この訳では、すべての箇所に明示的に与えているので不要】
 ◎
 Use the file reading task source for all these tasks.
 </p>
