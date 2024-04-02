@@ -117,8 +117,8 @@ return text;
 ●●options
 
 spec_title:Web Platform Design Principles
-spec_date:2024-03-11
-trans_update:2024-03-12
+spec_date:2024-04-01
+trans_update:2024-04-03
 source_checked:230406
 original_url:https://w3ctag.github.io/design-principles/
 	abbr_url:DESIGN-PRINCIPLES
@@ -512,6 +512,7 @@ main::::メイン
 冪等性:idempotence::~
 累積:accumulation::~
 timer::::タイマー
+差挟まれ:interleaveされ:差し挟まれ
 
 	遅過ぎる:too slow
 	遅い／遅く:slow
@@ -1162,7 +1163,6 @@ paste::::ペースト
 	〜よう希望される:hopefully
 	~~十分な~~根拠になる:warrant
 	信じた:believe
-	~~確信できる:can be sure
 	必ず:making sure
 	〜すること。:be sure to 〜
 	〜すること。:make sure 〜
@@ -5507,28 +5507,35 @@ Follow the advice in the Writing Promise-Using Specifications guideline.
 
 		</section>
 		<section id="promises-and-events">
-<h3 title="Events should fire before Promises resolve">7.2. ~eventは~promiseを解決する前に発火するべきである</h3>
+<h3 title="Events should fire before related Promises resolve">7.2. ~eventは関係する~promiseを解決する前に発火するべきである</h3>
 
 <p>
-~promiseに基づく非同期的な~algoが~eventを配送する場合、
-当の~Promiseを解決した後ではなく，解決する前に配送するべきである。
+~Promiseに基づく非同期的な~algoが ある~event %~event を配送する場合、
+当の~Promise %~promise を解決した後ではなく，解決する前に配送するべきである：
 ◎
 If a Promise-based asynchronous algorithm dispatches events, it should dispatch them before the Promise resolves, rather than after.
 </p>
 
 <p>
-これは、［
-当の~algoによる効果は、
-当の~Promiseが解決された時点で，すべて適用-済みになる
-］ことを保証する。
-例えば，作者が［
-当の~Promiseが配送した~eventに対する反応において，何らかの状態を変更する場合
-］、
-作者は［
-当の~Promiseが解決された時点で，すべての状態は一貫である
-］ことを~~確信できる。
+%~promise が解決されるときは、
+その反応~callback %~callback を走らすための`小task$ %小task が~queueされる。
+%小task は、
+~JS~stackを空にするとき処理される。
+`~eventの配送-法＠~DOM4#dispatching-events$は、
+同期的であり，各~listener【に対する~call】の合間に~JS~stackを空にすることを孕む。
+よって、
+%~event を配送する前に %~promise を解決した場合，
+%小task は %~event 用の 1 個目の~listenerと 2 個目の~listenerの合間に呼出されることになる。
 ◎
-This guarantees that once the Promise resolves, all effects of the algorithm have been applied. For example, if an author changes some state in reaction to an event which the Promise dispatches, they can be sure that all of the state is consistent if the Promise is resolved.
+When a promise is resolved, a microtask is queued to run its reaction callbacks. Microtasks are processed when the JavaScript stack empties. Dispatching an event is synchronous, which involves the JavaScript stack emptying between each listener. As a result, if a promise is resolved before dispatching a related event, any microtasks that are scheduled in reaction to a promise will be invoked between the first and second listeners of the event.
+</p>
+
+<p>
+初めに %~event を配送するようにしておけば、
+%小task が そのように差挟まれることは防止され，
+すべての~event~listenerは， %~callback より前に呼出されるようになる。
+◎
+Dispatching the event first prevents this interleaving. All event listeners are then invoked before any promise reaction callbacks.
 </p>
 
 		</section>
