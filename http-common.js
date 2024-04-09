@@ -530,9 +530,7 @@ c.realm:~HTTPsem#realm
 
 	§#conformance
 適合性:~HTTPinfra#conformance
-生成され:~HTTPinfra#generate
-生成し:~HTTPinfra#generate
-生成する:~HTTPinfra#generate
+生成-:~HTTPinfra#generate
 
 ~protocol~version:~HTTPinfra#protocol.version
 	~version番号:~HTTPinfra#version-number
