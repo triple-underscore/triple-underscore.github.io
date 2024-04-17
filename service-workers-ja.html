@@ -264,8 +264,8 @@ mWC: 'code',
 
 ●●options
 
-spec_date:2024-03-13
-trans_update:2024-03-15
+spec_date:2024-04-16
+trans_update:2024-04-18
 source_checked:240222
 original_url:https://w3c.github.io/ServiceWorker/
 	abbr_url:SW1
@@ -645,6 +645,7 @@ n.register:#dom-serviceworkercontainer-register
 	RouterCondition.requestDestination:#dom-routercondition-requestdestination
 	RouterCondition.runningStatus:#dom-routercondition-runningstatus
 	RouterCondition.or:#dom-routercondition-or
+	RouterCondition.not:#dom-routercondition-not
 
 	ServiceWorker.onstatechange:#dom-serviceworker-onstatechange
 	ServiceWorker.postMessage:#dom-serviceworker-postmessage
@@ -1773,6 +1774,7 @@ disk::::ディスク
 	●変数
 最大-:max:~
 or:
+not:
 ナマ:raw:生
 	%~target~realm:targetRealm
 	%~cacheは存在するか:cacheExists
@@ -1946,6 +1948,7 @@ or:
 	%条件は在るか:hasCondition
 	%~or条件~群:orConditions
 	%~or条件:orCondition
+	%~not条件:-
 	%~method:~method
 	%~mode:~mode
 	%行先:destination
@@ -7268,6 +7271,7 @@ dictionary `RouterCondition@I {
   `RunningStatus$I `runningStatus@m;
 
   `sequence$&lt;`RouterCondition$I&gt; _`or@m;
+  `RouterCondition$I `not@m;
 };
 
 typedef (`RouterSourceDict$I or `RouterSourceEnum$I) `RouterSource@I;
@@ -16009,14 +16013,15 @@ If condition["runningStatus"] exists, set hasCondition to true.
 ◎
 ↓</li>
 	<li>
+<p>
 ~IF［
-%~or条件~群 ~EQ ε
-］
-⇒
-~RET %条件は在るか
+%~or条件~群 ~NEQ ε
+］：
 ◎
-↓</li>
-	<li>
+If condition["_or"] exists, then:
+</p>
+		<ol>
+			<li>
 <p>
 ~IF［
 %条件は在るか ~EQ ~T
@@ -16024,19 +16029,18 @@ If condition["runningStatus"] exists, set hasCondition to true.
 ⇒
 ~RET ~F
 ◎
-If condition["_or"] exists, then:
-• If hasCondition is true, return false.
+If hasCondition is true, return false.
 </p>
 
 <p class="note">注記：
 ~router規則を理解し易くするため、
-“~or” 条件と他の条件は，互いに排他的である。
+%~or条件~群 と他の条件は，互いに排他的である。
 【言い換えれば、両者が在る場合，当の規則は無視される。】
 ◎
-• Note: For ease of understanding the router rule, the "or" condition is mutually exclusive with other conditions.
+Note: For ease of understanding the router rule, the "or" condition is mutually exclusive with other conditions.
 </p>
-	</li>
-	<li>
+			</li>
+			<li>
 %~or条件~群 を成す
 ~EACH( %~or条件 )
 に対し
@@ -16048,15 +16052,69 @@ If condition["_or"] exists, then:
 ~RET ~F
 ◎
 Let orConditions be condition["_or"].
-• For each orCondition of orConditions:
-•• If running the Verify Router Condition algorithm with orCondition and serviceWorker returns false, return false.
+◎
+For each orCondition of orConditions:
+• If running the Verify Router Condition algorithm with orCondition and serviceWorker returns false, return false.
 </li>
+			<li>
+%条件は在るか ~SET ~T
+◎
+Set hasCondition to true.
+</li>
+		</ol>
+	</li>
 	<li>
-~RET ~T
+%~not条件 ~LET %条件[ "`not$m1" ]
 ◎
-•• Set hasCondition to true.
+↓</li>
+	<li>
+<p>
+~IF［
+%~not条件 ~NEQ ε
+］：
 ◎
-↑↑ Return hasCondition.
+If condition["not"] exists, then:
+</p>
+		<ol>
+			<li>
+<p>
+~IF［
+%条件は在るか ~EQ ~T
+］
+⇒
+~RET ~F
+◎
+If hasCondition is true, return false.
+</p>
+
+<p class="note">注記：
+~router規則を理解し易くするため、
+%~not条件 と他の条件は，互いに排他的である。
+【言い換えれば、両者が在る場合，当の規則は無視される。】
+◎
+Note: For ease of understanding the router rule, the "not" condition is mutually exclusive with other conditions.
+</p>
+			</li>
+			<li>
+~IF［
+`~router条件を検証yする$( %~not条件, %~sw ) ~EQ ~F
+］
+⇒
+~RET ~F
+◎
+If running the Verify Router Condition algorithm with condition["not"] and serviceWorker returns false, return false.
+</li>
+			<li>
+%条件は在るか ~SET ~T
+◎
+Set hasCondition to true.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET %条件は在るか
+◎
+Return hasCondition.
 </li>
 </ol>
 
@@ -16134,6 +16192,24 @@ Return false.
 		</ol>
 	</li>
 	<li>
+%~not条件 ~LET %条件[ "`not$m1" ]
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%~not条件 ~NEQ ε
+］
+⇒
+~RET ~IS［
+`~router条件を照合する$( %~not条件, %~sw, %要請 ) ~EQ ~F
+］
+◎
+If condition["not"] exists, then:
+• If running the Match Router Condition algorithm with condition["not"], serviceWorker and request returns true, then return false.
+• Return true.
+</li>
+	<li>
 <p>
 ~ELSE：
 ◎
@@ -16142,9 +16218,10 @@ Else:
 
 <p class="note">注記：
 `~router条件を検証yする$ ~algoにより，［
-`or$m1 と他の条件は、
-【この~algoを呼出すに先立って】互いに排他的になる
-］ことが保証される。
+`or$m1【, `not$m1】, 他の条件
+］は、
+【この~algoを呼出すに先立って】
+互いに排他的になることが保証される。
 ◎
 Note: The Verify Router Condition algorithm guarantees that or and other conditions are mutual exclusive.
 </p>
