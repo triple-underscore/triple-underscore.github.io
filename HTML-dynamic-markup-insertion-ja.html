@@ -113,9 +113,9 @@ return text;
 
 ●●options
 
-spec_date:2024-04-10
-trans_update:2024-04-11
-source_checked:210301
+spec_date:2024-04-15
+trans_update:2024-04-17
+source_checked:240415
 page_state_key:HTML
 spec_status:LS
 original_url:https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html
@@ -160,11 +160,13 @@ domparser:API/DOMParser
 
 	●IDL
 CEReactions:~HEcustom#cereactions
+LegacyNullToEmptyString:~WEBIDLjs#LegacyNullToEmptyString
 
 E.DOMException:~WEBIDL#idl-DOMException
 E.InvalidAccessError:~WEBIDL#invalidaccesserror
 E.InvalidStateError:~WEBIDL#invalidstateerror
 E.SecurityError:~WEBIDL#securityerror
+E.SyntaxError:~WEBIDL#syntaxerror
 
 HTMLString:~TRUSTED-TYPES#typedefdef-htmlstring
 
@@ -173,6 +175,7 @@ I.DOMParser:#domparser
 I.DOMParserSupportedType:#domparsersupportedtype
 I.Element:~DOM4#interface-element
 I.ShadowRoot:~DOM4#interface-shadowroot
+	I.Node:~DOM4#interface-node → %~node
 	I.DocumentFragment:~DOM4#interface-documentfragment → 文書片
 I.GetHTMLOptions:#gethtmloptions
 
@@ -190,6 +193,8 @@ m.writeln:#dom-document-writeln
 m.document.writeln:#dom-document-writeln
 	m.document:~HTMLdom#document
 m.window.open:~WINDOW#dom-window-open
+m.innerHTML:#dom-element-innerhtml
+m1.innerHTML:#dom-shadowroot-innerhtml
 m.setHTMLUnsafe:#dom-element-sethtmlunsafe
 m1.setHTMLUnsafe:#dom-shadowroot-sethtmlunsafe
 m.parseHTMLUnsafe:#dom-parsehtmlunsafe
@@ -224,6 +229,7 @@ l.application/xhtml+xml:#dom-domparsersupportedtype-otherwise
 l.image/svg+xml:#dom-domparsersupportedtype-otherwise
 
 
+	●用語
 
 動的~markup挿入-時には投出する~counter:#throw-on-dynamic-markup-insertion-counter
 破壊的な書込nは無視する~counter:#ignore-destructive-writes-counter
@@ -231,6 +237,8 @@ l.image/svg+xml:#dom-domparsersupportedtype-otherwise
 ~scriptにより作成された構文解析器:#script-created-parser
 文字列から~HTMLを構文解析する:#parse-html-from-a-string
 ~HTMLを安全でなく設定する:#unsafely-set-html
+素片に直列化する:#fragment-serializing-algorithm-steps
+素片を構文解析する:#fragment-parsing-algorithm-steps
 
 
 	●用語（HTML
@@ -290,6 +298,9 @@ doc.変異~eventを発火するか:~HTMLdom#concept-document-fire-mutation-event
 静止するか:~HTMLparsing#parser-pause-flag
 	~HTMLparsing#check-parser-pause-flag
 ~HTML素片の構文解析~algo:~HTMLparsing#html-fragment-parsing-algorithm
+	V.文脈~要素:~HTMLparsing#concept-frag-parse-context
+
+~XML素片の構文解析~algo:~HTMLxml#xml-fragment-parsing-algorithm
 
 ~iframe~loadを黙らすか:~HEembed#mute-iframe-load
 ~iframe~loadは進捗-中か:~HEembed#iframe-load-in-progress
@@ -303,6 +314,7 @@ doc.変異~eventを発火するか:~HTMLdom#concept-document-fire-mutation-event
 
 url.素片:~URL1#concept-url-fragment
 
+~tree順序:~DOM4#concept-tree-order
 文書片:~DOM4#_concept-documentfragment
 要素:~DOM4#concept-element
 doc.~URL:~DOM4#concept-document-url
@@ -319,6 +331,7 @@ doc.宣言的な~shadow根を許容するか:~DOM4#document-allow-declarative-sh
 ~shadow根:~DOM4#concept-shadow-root
 sR.直列化-可能か:~DOM4#shadowroot-serializable
 ~shadowも含めた広義-子孫:~DOM4#concept-shadow-including-inclusive-descendant
+子~群:~DOM4#concept-tree-child
 全~内容を~nodeで置換する:~DOM4#concept-node-replace-all
 ~nodeを付加する:~DOM4#concept-node-append
 要素を作成する:~DOM4#concept-create-element
@@ -326,6 +339,8 @@ sR.直列化-可能か:~DOM4#shadowroot-serializable
 多重定義~解決~algo:~WEBIDLjs#dfn-overload-resolution-algorithm
 
 ~UTF-8:~ENCODING#utf-8
+
+~XML直列化:~DOM-Parsing#dfn-xml-serialization
 
 ●●words_table1
 TRUSTED-TYPES:https://w3c.github.io/trusted-types/dist/spec/
@@ -360,6 +375,7 @@ timer::::タイマー
 	%文脈~要素:contextElement
 	%新たな子~群:newChildren
 	%文書片:fragment
+	%整形式が要求されるか:require_well-formed
 
 	●データ／型／構造／操作
 消去-:erase:~
@@ -377,6 +393,7 @@ tokenizer:::token 化器:トークン化器:トークナイザ
 	非~構文解析器:non-parser
 確度:confidence::~
 	改行文字:newline character
+整形式:well-formed::~
 整形式性:well-formedness::整形式
 
 	●
@@ -409,6 +426,8 @@ discourage
 不幸:unfortunate:~
 遺物:artifact:~
 今日:today:~
+追跡器:tracker::~::トラッカー
+未決:outstanding:~
 
 	-:per
 	注記
@@ -1287,11 +1306,15 @@ The document.writeln(...) method steps are to run the document write steps with 
 partial interface <span id="Element-partial">`Element$I</span> {
   [`CEReactions$] undefined `setHTMLUnsafe$m(`HTMLString$ %html);
   DOMString `getHTML$m(optional `GetHTMLOptions$I %options = {});
+
+  [`CEReactions$] attribute [`LegacyNullToEmptyString$] `HTMLString$ `innerHTML$m;
 };
 
 partial interface <span id="ShadowRoot-partial">`ShadowRoot$I</span> {
   [`CEReactions$] undefined `setHTMLUnsafe$m1(`HTMLString$ %html);
   DOMString `getHTML$m1(optional `GetHTMLOptions$I options = {});
+
+  [`CEReactions$] attribute [`LegacyNullToEmptyString$] `HTMLString$ `innerHTML$m1;
 };
 
 dictionary `GetHTMLOptions@I {
@@ -1820,6 +1843,250 @@ Element's getHTML(options) method steps are to return the result of HTML fragmen
 ~RET `~HTML素片~直列化~algo$( コレ, %options[ "`serializableShadowRoots$mb" ], %options[ "`shadowRoots$mb" ] )
 ◎
 ShadowRoot's getHTML(options) method steps are to return the result of HTML fragment serialization algorithm with this, options["serializableShadowRoots"], and options["shadowRoots"].
+</div>
+
+			</section>
+			<section id="the-innerhtml-property">
+<h4 title="The innerHTML property">8.5.4. `innerHTML^m ~prop</h4>
+
+<p class="XXX">
+`innerHTML$m ~propには、
+`DOMPARSING$r の`課題~追跡器＠https://github.com/w3c/DOM-Parsing/issues$において，いくつか未決な課題がある
+— その仕様では、
+様々な問題が文書化されている。
+◎
+The innerHTML property has a number of outstanding issues in the DOM Parsing and Serialization issue tracker, documenting various problems with its specification.
+</p>
+
+<dl class="domintro">
+	<dt>%element.`innerHTML$m</dt>
+	<dd>
+%element の内容を表現する［［
+~HTML／~XML
+］を成す素片
+］を返す。
+◎
+Returns a fragment of HTML or XML that represents the element's contents.
+</dd>
+	<dd>
+~XML文書の事例では、
+%element を~XMLへ直列化できない場合には，
+`InvalidStateError$E 例外を投出する。
+◎
+In the case of an XML document, throws a "InvalidStateError" DOMException if the element cannot be serialized to XML.
+</dd>
+
+	<dt>%element.`innerHTML$m = %value</dt>
+	<dd>
+所与の文字列を構文解析した結果の~nodeたちで， %element の内容を置換する。
+◎
+Replaces the contents of the element with nodes parsed from the given string.
+</dd>
+	<dd>
+~XML文書の事例では、
+所与の文字列は整形式でない場合には，
+`SyntaxError$E 例外を投出する。
+◎
+In the case of an XML document, throws a "SyntaxError" DOMException if the given string is not well-formed.
+</dd>
+
+
+	<dt>%shadowRoot.`innerHTML$m1</dt>
+	<dd>
+%element の内容を表現する［［
+~HTML【／~XML】
+］を成す素片
+］を返す。
+◎
+Returns a fragment of HTML that represents the shadow roots's contents.
+</dd>
+
+	<dt>%shadowRoot.`innerHTML$m1 = %value</dt>
+	<dd>
+所与の文字列を構文解析した結果の~nodeたちで，
+%shadowRoot の内容を置換する。
+◎
+Replaces the contents of the shadow root with nodes parsed from the given string.
+</dd>
+</dl>
+
+<p class="warning">
+これらの~propの設定子は、
+`script$e や`~event~handler内容~属性$の様な危険にもなり得る［
+要素, 属性
+］を除去するための無毒化を遂行しない。
+◎
+These properties' setters perform no sanitization to remove potentially-dangerous elements and attributes like script or event handler content attributes.
+</p>
+
+<div class="algo">
+`素片に直列化する@
+ときは、
+所与の
+( ［
+`要素$／`文書片$
+］ %~node, 真偽値 %整形式が要求されるか )
+に対し
+⇒
+~RET %~node の`~node文書$に応じて
+⇒＃
+`~HTML文書$であるならば `~HTML素片~直列化~algo$( %~node, ~F, « » ) ／
+`~XML文書$であるならば `~XML直列化$( %~node, %整形式が要求されるか )
+◎
+The fragment serializing algorithm steps, given an Element or DocumentFragment node and a boolean require well-formed, are:
+• Let context document be node's node document.
+• If context document is an HTML document, return the result of HTML fragment serialization algorithm with node, false, and « ».
+• Return the XML serialization of node given require well-formed.
+</div>
+
+<div class="algo">
+<p>
+`素片を構文解析する@
+ときは、
+所与の
+( ［
+`要素$／`文書片$
+］%文脈, 文字列 %~markup )
+に対し：
+◎
+The fragment parsing algorithm steps, given an Element or DocumentFragment context and a string markup, are:
+</p>
+<ol>
+	<li>
+%~algo ~LET %文脈 の`~node文書$に応じて
+⇒＃
+`~HTML文書$であるならば `~HTML素片の構文解析~algo$ ／
+`~XML文書$であるならば `~XML素片の構文解析~algo$
+◎
+Let algorithm be the HTML fragment parsing algorithm.
+◎
+If context's node document is an XML document, then set algorithm to the XML fragment parsing algorithm.
+</li>
+	<li>
+%新たな子~群 ~LET %~algo( %文脈, %~markup )
+◎
+Let new children be the result of invoking algorithm given markup, with context set to context.
+</li>
+	<li>
+%文書片 ~LET 新たな`文書片$
+— その
+⇒
+`~node文書$ ~SET %文脈 の`~node文書$
+◎
+Let fragment be a new DocumentFragment whose node document is context's node document.
+</li>
+	<li>
+<p>
+%新たな子~群 を成す
+~EACH( %~node )
+に対し，`~tree順序$で
+⇒
+%文書片 に`~nodeを付加する$( %~node )
+◎
+Append each Node in new children to fragment (in tree order).
+</p>
+
+<p class="note">注記：
+これは、
+%~node 用の`~node文書$が正しくなることを確保する。
+◎
+This ensures the node document for the new nodes is correct.
+</p>
+	</li>
+	<li>
+~RET %文書片
+◎
+Return fragment.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+`Element$I の
+`innerHTML@m
+取得子~手続きは
+⇒
+~RET `素片に直列化する$( コレ, ~T )
+◎
+Element's innerHTML getter steps are to return the result of running fragment serializing algorithm steps with this and true.
+</div>
+
+<div class="algo">
+`ShadowRoot$I の `innerHTML@m1
+取得子~手続きは
+⇒
+~RET `素片に直列化する$( コレ, ~T )
+◎
+ShadowRoot's innerHTML getter steps are to return the result of running fragment serializing algorithm steps with this and true.
+</div>
+
+<div class="algo">
+<p>
+`Element$I の `innerHTML$m 設定子~手続きは：
+◎
+Element's innerHTML setter steps are:
+</p>
+<ol>
+	<li>
+%文脈 ~LET コレ
+◎
+Let context be this.
+</li>
+	<li>
+%文書片 ~LET `素片を構文解析する$( %文脈, 所与の値 )
+◎
+Let fragment be the result of invoking the fragment parsing algorithm steps with context and the given value.
+</li>
+	<li>
+<p>
+~IF［
+%文脈 は `template$e 要素である
+］
+⇒
+%文脈 ~SET %文脈 の`~template内容$（ある`文書片$）
+◎
+If context is a template element, then set context to the template element's template contents (a DocumentFragment).
+</p>
+
+<p class="note">注記：
+`template$e 要素に対し `innerHTML$m を設定した場合、
+その`子~群$ではなく，その`~template内容$を成すすべての~nodeを置換することになる。
+◎
+Setting innerHTML on a template element will replace all the nodes in its template contents rather than its children.
+</p>
+	</li>
+	<li>
+%文脈 の`全~内容を~nodeで置換する$( %文書片 )
+◎
+Replace all with fragment within context.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`ShadowRoot$I の `innerHTML$m1
+設定子~手続きは：
+◎
+ShadowRoot's innerHTML setter steps are:
+</p>
+<ol>
+	<li>
+%文脈 ~LET コレの`~host$
+◎
+Let context be this's host.
+</li>
+	<li>
+%文書片 ~LET `素片を構文解析する$( %文脈, 所与の値 )
+◎
+Let fragment be the result of invoking the fragment parsing algorithm steps with context and the given value.
+</li>
+	<li>
+コレの`全~内容を~nodeで置換する$( %文書片 )
+◎
+Replace all with fragment within this.
+</li>
+</ol>
 </div>
 
 			</section>
