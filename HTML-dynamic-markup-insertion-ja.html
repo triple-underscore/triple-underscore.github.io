@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
-<title>HTML Standard — Dynamic markup insertion（日本語訳）</title>
+<title>HTML Standard — Dynamic markup insertion, DOM parsing and serialization APIs（日本語訳）</title>
 
 <link rel="stylesheet" href="common.css" type="text/css">
 <link rel="stylesheet" href="common-whatwg.css" type="text/css">
@@ -73,6 +73,9 @@ case 'm1':
 case 'U':
 	text = `U+${key}`;
 	break;
+case 'en':
+	text = `<span lang="en">${key}</span>`;
+	break;
 }
 
 let tag = tag_map[klass];
@@ -113,8 +116,8 @@ return text;
 
 ●●options
 
-spec_date:2024-04-15
-trans_update:2024-04-17
+spec_date:2024-04-18
+trans_update:2024-04-18
 source_checked:240415
 page_state_key:HTML
 spec_status:LS
@@ -167,6 +170,7 @@ E.InvalidAccessError:~WEBIDL#invalidaccesserror
 E.InvalidStateError:~WEBIDL#invalidstateerror
 E.SecurityError:~WEBIDL#securityerror
 E.SyntaxError:~WEBIDL#syntaxerror
+E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
 
 HTMLString:~TRUSTED-TYPES#typedefdef-htmlstring
 
@@ -195,6 +199,7 @@ m.document.writeln:#dom-document-writeln
 m.window.open:~WINDOW#dom-window-open
 m.innerHTML:#dom-element-innerhtml
 m1.innerHTML:#dom-shadowroot-innerhtml
+m.outerHTML:#dom-element-outerhtml
 m.setHTMLUnsafe:#dom-element-sethtmlunsafe
 m1.setHTMLUnsafe:#dom-shadowroot-sethtmlunsafe
 m.parseHTMLUnsafe:#dom-parsehtmlunsafe
@@ -212,6 +217,7 @@ et.pagehide:~HTMLindex#event-pagehide
 et.unload:~HTMLindex#event-unload
 et.readystatechange:~HTMLindex#event-readystatechange
 
+e.body:~HEsections#the-body-element
 e.script:~HEscripting#the-script-element
 e.meta:~HEmetadata#the-meta-element
 e.template:~HEscripting#the-template-element
@@ -246,7 +252,6 @@ sc.~about_blank:~HTMLdep#about:blank
 
 文書:~HTMLdom#the-document-object
 	文書:~HTMLdom#document
-	I.Document:~HTMLdom#document
 doc.初期~about_blankか:~HTMLdom#is-initial-about:blank
 doc.変異~eventを発火するか:~HTMLdom#concept-document-fire-mutation-events-flag
 作動中な構文解析器:~HTMLdom#active-parser
@@ -311,10 +316,12 @@ doc.変異~eventを発火するか:~HTMLdom#concept-document-fire-mutation-event
 
 	●用語（外部
 文字列:~INFRA#string
+~HTML名前空間:~INFRA#html-namespace
 
 url.素片:~URL1#concept-url-fragment
 
 ~tree順序:~DOM4#concept-tree-order
+親:~DOM4#concept-tree-parent
 文書片:~DOM4#_concept-documentfragment
 要素:~DOM4#concept-element
 doc.~URL:~DOM4#concept-document-url
@@ -335,6 +342,7 @@ sR.直列化-可能か:~DOM4#shadowroot-serializable
 全~内容を~nodeで置換する:~DOM4#concept-node-replace-all
 ~nodeを付加する:~DOM4#concept-node-append
 要素を作成する:~DOM4#concept-create-element
+子を~nodeに置換する:~DOM4#concept-node-replace
 
 多重定義~解決~algo:~WEBIDLjs#dfn-overload-resolution-algorithm
 
@@ -374,7 +382,9 @@ timer::::タイマー
 	%~HTML:html
 	%文脈~要素:contextElement
 	%新たな子~群:newChildren
+	%親:parent
 	%文書片:fragment
+	%文書片:element
 	%整形式が要求されるか:require_well-formed
 
 	●データ／型／構造／操作
@@ -500,7 +510,7 @@ template:
 ●●trans_metadata
 <p>
 ~THIS_PAGEは、~WHATWGによる HTML 仕様の
-<a href="~SPEC_URL">§ Dynamic markup insertion</a>
+<a href="~SPEC_URL">§ Dynamic markup insertion, § DOM parsing and serialization APIs</a>
 を日本語に翻訳したものです。
 ~PUB
 </p>
@@ -512,7 +522,7 @@ template:
 
 <header>
 	<hgroup>
-<h1>HTML — 動的マークアップ挿入, 他</h1>
+<h1>HTML — 動的マークアップ挿入, DOM の構文解析 API と直列化 API</h1>
 	</hgroup>
 </header>
 
@@ -1308,6 +1318,7 @@ partial interface <span id="Element-partial">`Element$I</span> {
   DOMString `getHTML$m(optional `GetHTMLOptions$I %options = {});
 
   [`CEReactions$] attribute [`LegacyNullToEmptyString$] `HTMLString$ `innerHTML$m;
+  [`CEReactions$] attribute [`LegacyNullToEmptyString$] `HTMLString$ `outerHTML$m;
 };
 
 partial interface <span id="ShadowRoot-partial">`ShadowRoot$I</span> {
@@ -2001,49 +2012,48 @@ Return fragment.
 </ol>
 </div>
 
-<div class="algo">
+<p>
 `Element$I の
 `innerHTML@m
+属性の
+◎
+↓</p>
+<ul>
+	<li class="algo">
+<p>
 取得子~手続きは
 ⇒
 ~RET `素片に直列化する$( コレ, ~T )
 ◎
 Element's innerHTML getter steps are to return the result of running fragment serializing algorithm steps with this and true.
-</div>
-
-<div class="algo">
-`ShadowRoot$I の `innerHTML@m1
-取得子~手続きは
-⇒
-~RET `素片に直列化する$( コレ, ~T )
 ◎
-ShadowRoot's innerHTML getter steps are to return the result of running fragment serializing algorithm steps with this and true.
-</div>
-
-<div class="algo">
+↓ ShadowRoot's innerHTML getter steps are to return the result of running fragment serializing algorithm steps with this and true.
+</li>
+	<li class="algo">
 <p>
-`Element$I の `innerHTML$m 設定子~手続きは：
+設定子~手続きは：
 ◎
 Element's innerHTML setter steps are:
 </p>
-<ol>
-	<li>
+		<ol>
+			<li>
 %文脈 ~LET コレ
 ◎
 Let context be this.
 </li>
-	<li>
+			<li>
 %文書片 ~LET `素片を構文解析する$( %文脈, 所与の値 )
 ◎
 Let fragment be the result of invoking the fragment parsing algorithm steps with context and the given value.
 </li>
-	<li>
+			<li>
 <p>
 ~IF［
 %文脈 は `template$e 要素である
 ］
 ⇒
-%文脈 ~SET %文脈 の`~template内容$（ある`文書片$）
+%文脈 ~SET %文脈 の`~template内容$
+（ある`文書片$）
 ◎
 If context is a template element, then set context to the template element's template contents (a DocumentFragment).
 </p>
@@ -2054,40 +2064,213 @@ If context is a template element, then set context to the template element's tem
 ◎
 Setting innerHTML on a template element will replace all the nodes in its template contents rather than its children.
 </p>
-	</li>
-	<li>
+			</li>
+			<li>
 %文脈 の`全~内容を~nodeで置換する$( %文書片 )
 ◎
 Replace all with fragment within context.
 </li>
-</ol>
-</div>
+		</ol>
+	</li>
+</ul>
 
-<div class="algo">
 <p>
-`ShadowRoot$I の `innerHTML$m1
+`ShadowRoot$I の
+`innerHTML@m1
+属性の：
+◎
+↓</p>
+<ul>
+	<li class="algo">
+取得子~手続きは
+⇒
+~RET `素片に直列化する$( コレ, ~T )
+◎
+↑</li>
+	<li class="algo">
+<p>
 設定子~手続きは：
 ◎
 ShadowRoot's innerHTML setter steps are:
 </p>
-<ol>
-	<li>
+		<ol>
+			<li>
 %文脈 ~LET コレの`~host$
 ◎
 Let context be this's host.
 </li>
-	<li>
+			<li>
 %文書片 ~LET `素片を構文解析する$( %文脈, 所与の値 )
 ◎
 Let fragment be the result of invoking the fragment parsing algorithm steps with context and the given value.
 </li>
-	<li>
+			<li>
 コレの`全~内容を~nodeで置換する$( %文書片 )
 ◎
 Replace all with fragment within this.
 </li>
-</ol>
-</div>
+		</ol>
+	</li>
+</ul>
+
+			</section>
+			<section id="the-outerhtml-property">
+<h4 title="The outerHTML property">8.5.5. `outerHTML^m ~prop</h4>
+
+<p class="XXX">
+`outerHTML$m ~propには、
+`DOMPARSING$r の`課題~追跡器＠https://github.com/w3c/DOM-Parsing/issues$において，いくつか未決な課題がある
+— その仕様では、
+様々な問題が文書化されている。
+◎
+The outerHTML property has a number of outstanding issues in the DOM Parsing and Serialization issue tracker, documenting various problems with its specification.
+</p>
+
+<dl class="domintro">
+	<dt>%element.`outerHTML$m</dt>
+	<dd>
+［
+要素とその内容
+］を表現する［［
+~HTML／~XML
+］を成す素片
+］を返す。
+◎
+Returns a fragment of HTML or XML that represents the element and its contents.
+</dd>
+	<dd>
+~XML文書の事例では、
+%element を~XMLに直列化できない場合，
+`InvalidStateError$E 例外が投出される。
+◎
+In the case of an XML document, throws a "InvalidStateError" DOMException if the element cannot be serialized to XML.
+</dd>
+
+	<dt>%element.`outerHTML$m = %value</dt>
+	<dd>
+%element を所与の文字列から構文解析した結果の~nodeたちで置換する。
+◎
+Replaces the element with nodes parsed from the given string.
+</dd>
+	<dd>
+~XML文書の事例では、
+所与の文字列は整形式でない場合，
+`SyntaxError$E 例外が投出される。
+◎
+In the case of an XML document, throws a "SyntaxError" DOMException if the given string is not well-formed.
+</dd>
+	<dd>
+%element の親は`文書$である場合、
+`NoModificationAllowedError$E 例外が投出される。
+◎
+Throws a "NoModificationAllowedError" DOMException if the parent of the element is a Document.
+</dd>
+</dl>
+
+<p class="warning">
+この~propの設定子は、
+`script$e や`~event~handler内容~属性$の様な危険にもなり得る［
+要素, 属性
+］を除去するための無毒化を遂行しない。
+◎
+This property's setter performs no sanitization to remove potentially-dangerous elements and attributes like script or event handler content attributes.
+</p>
+
+<p>
+`Element$I の
+`outerHTML@m
+属性の：
+◎
+↓</p>
+<ul>
+	<li class="algo">
+<p>
+取得子~手続きは：
+◎
+Element's outerHTML getter steps are:
+</p>
+		<ol>
+			<li>
+%文書片 ~LET 新たな`文書片$
+— その
+⇒
+`~node文書$ ~SET コレの`~node文書$
+◎
+Let element be a fictional node＼
+</li>
+			<li>
+%文書片 に`~nodeを付加する$( コレ )
+◎
+whose only child is this.
+</li>
+			<li>
+~RET `素片に直列化する$( %文書片, ~T )
+◎
+Return the result of running fragment serializing algorithm steps with element and true.
+</li>
+		</ol>
+
+<p class="trans-note">【
+%文書片 は、
+要素~自身の~tagも含めて直列化するために必要になる
+— これは、
+原文では “`fictional node^en （架空な~node）” としか記されていないが，
+`文書片$で用を成すであろう。
+】</p>
+	</li>
+	<li class="algo">
+<p>
+設定子~手続きは：
+◎
+Element's outerHTML setter steps are:
+</p>
+		<ol>
+			<li>
+%親 ~LET コレの`親$
+◎
+Let parent be this's parent.
+</li>
+			<li>
+~IF［
+%親 ~EQ ~NULL
+］
+⇒
+~RET
+（以降の手続きを走らせても，作成される~nodeへの参照を得する仕方はないので。）
+◎
+If parent is null, return. There would be no way to obtain a reference to the nodes created even if the remaining steps were run.
+</li>
+			<li>
+~IF［
+%親 は`文書$である
+］
+⇒
+~THROW `NoModificationAllowedError$E
+◎
+If parent is a Document, throw a "NoModificationAllowedError" DOMException.
+</li>
+			<li>
+~IF［
+%親 は`文書片$である
+］
+⇒
+%親 ~LET `要素を作成する$( コレの`~node文書$, "`body$e", `~HTML名前空間$ )
+◎
+If parent is a DocumentFragment, set parent to the result of creating an element given this's node document, body, and the HTML namespace.
+</li>
+			<li>
+%文書片 ~LET `素片を構文解析する$( %親, 所与の値 )
+◎
+Let fragment be the result of invoking the fragment parsing algorithm steps given parent and the given value.
+</li>
+			<li>
+コレの`親$の中で`子を~nodeに置換する$( コレ, %文書片 )
+◎
+Replace this with fragment within this's parent.
+</li>
+		</ol>
+	</li>
+</ul>
 
 			</section>
 		</section>
