@@ -1106,9 +1106,11 @@ HTMLLS:https://html.spec.whatwg.org/multipage
 HTMLissue:https://github.com/whatwg/html/issues
 IANA-a:https://www.iana.org/assignments
 
+APPMANIFEST:appmanifest-ja.html
 ARIA1:https://w3c.github.io/aria/
 BROWSERS:HTML-document-sequences-ja.html
 CASCADE:css-cascade-ja.html
+COMPAT:compat-ja.html
 COMPOSITING:compositing-ja.html
 CSP3:CSP3-ja.html
 CSS22:https://www.w3.org/TR/CSS22
@@ -1159,6 +1161,7 @@ CSSREGION:https://drafts.csswg.org/css-regions-1/
 CSSRUBY:css-ruby-ja.html
 CSSSCOPING:css-scoping-ja.html
 CSSSCROLLSNAP:css-scroll-snap-ja.html
+CSSSHADOWPARTS:css-shadow-parts-ja.html
 CSSSHAPES:css-shapes-ja.html
 CSSSNAPSHOT:css-snapshot-ja.html
 CSSSPEECH:css-speech-ja.html
@@ -1252,6 +1255,8 @@ IETFcommon:ietf-common-ja.html
 INDEXEDDB:IndexedDB-ja.html
 INFRA:infra-ja.html
 INTERSECTIONOBSERVER:IntersectionObserver-ja.html
+LONGAF:long-animation-frames-ja.html
+LONGTASKS:longtasks-ja.html
 MASKING1:css-masking-ja.html
 MATHMLcore:https://w3c.github.io/mathml-core/
 MIMESNIFF:mimesniff-ja.html
@@ -1265,6 +1270,7 @@ PERMISSIONS:webappsec-permissions-ja.html
 POINTEREVENTS:pointerevents3-ja.html
 REFERRER-POLICY:webappsec-referrer-policy-ja.html
 REPORTING:reporting1-ja.html
+REQUESTIDLECALLBACK:requestidlecallback-ja.html
 RESOURCE-TIMING:resource-timing-ja.html
 SCREEN-ORIENTATION:screen-orientation-ja.html
 SECQ:security-questionnaire-ja.html
