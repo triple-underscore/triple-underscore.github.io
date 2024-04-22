@@ -1305,6 +1305,7 @@ TRANSFORM2:css-transforms2-ja.html
 TRANSFORM:css-transforms-ja.html
 TRANSITION2:css-transitions2-ja.html
 TRANSITION:css-transitions-ja.html
+TRUSTED-TYPES:https://w3c.github.io/trusted-types/dist/spec/
 UIEVENTS:uievents-ja.html
 URL1:URL-ja.html
 W3Ccommon:w3c-common-ja.html
