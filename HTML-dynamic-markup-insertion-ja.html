@@ -116,8 +116,8 @@ return text;
 
 ●●options
 
-spec_date:2024-04-19
-trans_update:2024-04-23
+spec_date:2024-04-24
+trans_update:2024-04-25
 source_checked:240415
 page_state_key:HTML
 spec_status:LS
@@ -178,15 +178,19 @@ HTMLString:~TRUSTED-TYPES#typedefdef-htmlstring
 I.Document:~HTMLdom#document
 I.DOMParser:#domparser
 I.DOMParserSupportedType:#domparsersupportedtype
-I.Element:~DOM4#interface-element
-I.ShadowRoot:~DOM4#interface-shadowroot
-	I.Node:~DOM4#interface-node → %~node
-	I.DocumentFragment:~DOM4#interface-documentfragment → 文書片
+I.Element:~DOM4#element
+I.Text:~DOM4#text
+I.Comment:~DOM4#comment
+I.ShadowRoot:~DOM4#shadowroot
+	I.DocumentFragment:~DOM4#documentfragment → 文書片
+I.DocumentFragment:~DOM4#documentfragment
+I.Range:~DOM4#range
 I.GetHTMLOptions:#gethtmloptions
 
 m.new DOMParser:#dom-domparser-constructor
 m.parseFromString:#dom-domparser-parsefromstring
 m.close:#dom-document-close
+m.createContextualFragment:#dom-range-createcontextualfragment
 m.document.close:#dom-document-close
 m.~openW:#dom-document-open-window
 m.open:#dom-document-open
@@ -261,6 +265,8 @@ doc.変異~eventを発火するか:~HTMLdom#concept-document-fire-mutation-event
 文書の現在の準備度を更新する:~HTMLdom#update-the-current-document-readiness
 
 ~template内容:~HEscripting#template-contents
+scE.すでに開始したか:~HEscripting#already-started
+scE.構文解析器~文書:~HEscripting#parser-document
 
 生成元:~ORIGIN#concept-origin
 同一-生成元:~ORIGIN#same-origin
@@ -328,6 +334,8 @@ url.素片:~URL1#concept-url-fragment
 ~tree順序:~DOM4#concept-tree-order
 ~node:~DOM4#concept-node
 親:~DOM4#concept-tree-parent
+親~要素:~DOM4#parent-element
+子孫:~DOM4#concept-tree-descendant
 最初の子？:~DOM4#concept-tree-first-child
 直後の同胞？:~DOM4#concept-tree-next-sibling
 文書片:~DOM4#_concept-documentfragment
@@ -354,8 +362,10 @@ sR.直列化-可能か:~DOM4#shadowroot-serializable
 要素を作成する:~DOM4#concept-create-element
 子を~nodeに置換する:~DOM4#concept-node-replace
 ~nodeを子の前に挿入する:~DOM4#concept-node-insert
+始端~node:~DOM4#concept-range-start-node
 
 多重定義~解決~algo:~WEBIDLjs#dfn-overload-resolution-algorithm
+実装-:~WEBIDLjs#implements
 
 ~UTF-8:~ENCODING#utf-8
 
@@ -396,6 +406,7 @@ timer::::タイマー
 	%親:parent
 	%文書片:fragment
 	%文書片:element
+	%文書片:fragment node
 	%整形式が要求されるか:require_well-formed
 
 	●データ／型／構造／操作
@@ -2558,6 +2569,144 @@ Insert fragment into this's parent before this's next sibling.
 ◎
 As with other direct Node-manipulation APIs (and unlike innerHTML), insertAdjacentHTML() does not include any special handling for template elements. In most cases you will want to use templateEl.content.insertAdjacentHTML() instead of directly manipulating the child nodes of a template element.
 </p>
+			</section>
+			<section id="the-createcontextualfragment()-method">
+<h4 title="The createContextualFragment() method">8.5.7. `createContextualFragment()^m ~method</h4>
+
+<p class="XXX">
+`createContextualFragment()$m ~methodには、
+`DOMPARSING$r の`課題~追跡器＠https://github.com/w3c/DOM-Parsing/issues$において，いくつか未決な課題がある
+— そこには、
+その仕様に伴われる様々な問題が文書化されている。
+◎
+The createContextualFragment() method has a number of outstanding issues in the DOM Parsing and Serialization issue tracker, documenting various problems with its specification.
+</p>
+
+<dl class="domintro">
+	<dt>%docFragment = %range.`createContextualFragment(string)$m</dt>
+	<dd>
+~markup文字列 %string から作成される`文書片$を返す
+— %string を構文解析する際の文脈として， %range の`始端~node$を利用する下で。
+◎
+Returns a DocumentFragment created from the markup string string using range's start node as the context in which fragment is parsed.
+</dd>
+</dl>
+
+<p class="warning">
+この~methodは、
+`script$e や`~event~handler内容~属性$の様な危険にもなり得る［
+要素, 属性
+］を除去するための無毒化を遂行しない。
+◎
+This method performs no sanitization to remove potentially-dangerous elements and attributes like script or event handler content attributes.
+</p>
+
+<pre class="idl">
+partial interface `Range$I {
+  [`CEReactions$, NewObject] `DocumentFragment$I `createContextualFragment$m(`HTMLString$ %string);
+};
+</pre>
+
+<div class="algo">
+<p>
+`createContextualFragment(string)@m
+~method手続きは：
+◎
+Range's createContextualFragment(string) method steps are:
+</p>
+<ol>
+	<li>
+%~node ~LET コレの`始端~node$
+◎
+Let node be this's start node.
+</li>
+	<li>
+%要素 ~LET ~NULL
+◎
+Let element be null.
+</li>
+	<li>
+~IF［
+%~node は `Element$I を`実装-$する
+］
+⇒
+%要素 ~SET %~node
+◎
+If node implements Element, set element to node.
+</li>
+	<li>
+~ELIF［
+%~node は `Text$I を`実装-$する
+］~OR［
+%~node は `Comment$I を`実装-$する
+］
+⇒
+%要素 ~SET %~node の`親~要素$
+◎
+Otherwise, if node implements Text or Comment, set element to node's parent element.
+</li>
+	<li>
+<p>
+~IF［
+%要素 ~EQ ~NULL
+］~OR［
+~AND↓
+］…
+◎
+If element is null or all of the following are true:
+</p>
+		<ul>
+			<li>
+%要素 の`~node文書$は~HTML文書である
+◎
+element's node document is an HTML document;
+</li>
+			<li>
+%要素 の`局所~名$el ~EQ "`html$e"
+◎
+element's local name is "html"; and
+</li>
+			<li>
+%要素 の`名前空間$el ~EQ `~HTML名前空間$
+◎
+element's namespace is the HTML namespace,
+</li>
+		</ul>
+<p>
+…ならば
+⇒
+%要素 ~SET `要素を作成する$( コレの`~node文書$, "`body$e", `~HTML名前空間$ )
+◎
+then set element to the result of creating an element given this's node document, body, and the HTML namespace.
+</p>
+	</li>
+	<li>
+%文書片 ~LET `素片を構文解析する$( %要素, %string )
+◎
+Let fragment node be the result of invoking the fragment parsing algorithm steps with element and string.
+</li>
+	<li>
+%文書片 の`子孫$である
+~EACH( `script$e 要素 %~script )
+に対し
+⇒
+%~script の
+⇒＃
+`すでに開始したか$scE ~SET ~F
+`構文解析器~文書$scE ~SET ~NULL
+◎
+For each script of fragment node's script element descendants:
+• Set script's already started to false.
+• Set script's parser document to null.
+</li>
+	<li>
+~RET %文書片
+◎
+Return fragment node.
+</li>
+</ol>
+</div>
+
 			</section>
 		</section>
 </main>
