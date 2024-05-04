@@ -571,8 +571,8 @@ return;
 ●●options
 
 spec_title:CSSOM View Module
-spec_date:2024-04-30
-trans_update:2024-05-01
+spec_date:2024-05-03
+trans_update:2024-05-04
 source_checked:220729
 page_state_key:CSS
 original_url:https://drafts.csswg.org/cssom-view-1/
@@ -684,6 +684,7 @@ I.Document:~DOM4#document
 I.Element:~DOM4#element
 I.Text:~DOM4#text
 I.Node:~DOM4#node
+I.ShadowRoot:~DOM4#shadowroot
 I.Range:~DOM4#range
 
 I.EventTarget:~DOM4#eventtarget
@@ -991,24 +992,37 @@ ev.配送-中か:~DOM4#dispatch-flag
 doc.生成元:~DOM4#concept-document-origin
 包含され:~DOM4#contained
 部分的に包含され:~DOM4#partially-contained
+
 要素:~DOM4#concept-element
-範囲o:~DOM4#concept-range
-中身:~DOM4#_concept-range-content
-境界点:~DOM4#concept-range-bp
-
-始端:~DOM4#concept-range-start
-終端:~DOM4#concept-range-end
-始端~node:~DOM4#concept-range-start-node
-始端~offset:~DOM4#concept-range-start-offset
-
 	文書:~DOM4#concept-document
+~node:~DOM4#concept-node
+~index:~DOM4#concept-tree-index
+根:~DOM4#concept-tree-root
+親:~DOM4#concept-tree-parent
 ~node文書:~DOM4#concept-node-document
 文書~要素:~DOM4#document-element
 親~要素:~DOM4#parent-element
+~host:~DOM4#concept-documentfragment-host
 閉な~shadowで非可視:~DOM4#concept-closed-shadow-hidden
+~shadow根:~DOM4#concept-shadow-root
+	誤）el.~shadow根:~DOM4#concept-element-shadow-root
+~shadowも含めた広義-先祖:~DOM4#concept-shadow-including-inclusive-ancestor
+
+~live範囲o:~DOM4#concept-live-range
+範囲o:~DOM4#concept-range
+rG.始端:~DOM4#concept-range-start
+rG.終端:~DOM4#concept-range-end
+中身:~DOM4#_concept-range-content
+境界~点:~DOM4#concept-range-bp
+bp.~node:~DOM4#boundary-point-node
+bp.~offset:~DOM4#boundary-point-offset
+
+	始端~node:~DOM4#concept-range-start-node → rG.始端
+	始端~offset:~DOM4#concept-range-start-offset → rG.始端
+	終端~node:~DOM4#concept-range-end-node → rG.終端
+	終端~offset:~DOM4#concept-range-end-offset → rG.終端
 
 	●補完
-畳まれて:~DOM4#range-collapsed
 限界~box:~SVGcoords#TermBoundingBox
 
 ●●words_table1
@@ -1076,7 +1090,6 @@ pinch::::ピンチ
 拡縮率:scale factor::~
 処理待ち:pending:~
 接触判定:hit-testing::~
-挿入位置指示:insertion point indicator:~
 瞬時:instant::~
 計量:metric:~
 量:amount:~
@@ -1121,7 +1134,6 @@ y:
 dx:
 dy:
 幾何:geometry:~
-地点:position:~
 点:point:~
 右横書き:right-to-left:~
 	右横書き:RTL
@@ -1157,7 +1169,6 @@ dy:
 	●DOM／IDL
 閉な:closed::閉じた
 補助:auxiliary:~
-境界点:boundary point::~
 範囲o:range::範囲°
 中身:内容
 
@@ -1187,6 +1198,11 @@ dy:
 	%留め容器:snapcontainer
 	-:newBlockTarget
 	-:newInlineTarget
+	`~node$bp:caretPositionNode
+	`~offset$bp:caretPositionOffset
+	%~caret位置:caretPosition
+	%始端~node:startNode
+	%始端~offset:startOffset
 
 	●仕様
 utility::ユーティリティ
@@ -4237,7 +4253,7 @@ Note: Some non-conforming implementations are known to return 32 instead of 24.
 partial interface `Document$I {`Document^I0
   `Element$I? `elementFromPoint$m(`double$ %x, `double$ %y);
   `sequence$&lt;`Element$I&gt; `elementsFromPoint$m(`double$ %x, `double$ %y);
-  `CaretPosition$I? `caretPositionFromPoint$m(`double$ %x, `double$ %y);
+  `CaretPosition$I? `caretPositionFromPoint$m(`double$ %x, `double$ %y, `ShadowRoot$I... %shadowRoots);
   readonly attribute `Element$I? `scrollingElement$m;
 };
 </pre>
@@ -4284,7 +4300,7 @@ If either argument is negative, x is greater than the viewport width excluding t
 </li>
 	<li>
 ~IF［
-`表示域$の子孫に対する`変形$を適用したとするとき，［
+`表示域$の子孫に適用される`変形$を適用したとするとき，［
 座標 (%x, %y) にて`接触判定$の~targetになる`~box$
 ］は`表示域$内にある
 ］
@@ -4343,7 +4359,7 @@ If either argument is negative, x is greater than the viewport width excluding t
 %~list に次を満たす すべての要素を付加する
 — 最~上端な【すなわち，最も手前に塗られる】~boxから順に，要素の`~box$の塗り順序で
 ⇒
-`表示域$の子孫に対する`変形$を適用したとするとき、
+`表示域$の子孫に適用される`変形$を適用したとするとき、
 要素の`~box$は，
 `表示域$内にあり, かつ座標 ( %x, %y ) にて`接触判定$の~targetになる
 （そこに何も `overlap^en していないとしても【要素には塗られる内容がないとしても？】）
@@ -4373,7 +4389,7 @@ Return sequence.
 
 <div class="algo">
 <p>
-`caretPositionFromPoint(x, y)@m
+`caretPositionFromPoint(x, y, ...shadowRoots)@m
 ~method手続きは：
 ◎
 The caretPositionFromPoint(x, y) method must return the result of running these steps:
@@ -4415,27 +4431,30 @@ If there is no viewport associated with the document, return null.
 If either argument is negative, x is greater than the viewport width excluding the size of a rendered scroll bar (if any), y is greater than the viewport height excluding the size of a rendered scroll bar (if any) return null.
 </li>
 	<li>
-~IF［
-~NOT `表示域$の子孫に対する`変形$を適用したとするとき，
-`表示域$内の座標 ( %x, %y ) にて~text挿入位置指示が挿入される
-］
+<p>
+`表示域$の子孫に適用される`変形$を適用したとするときの，
+`表示域$内の座標 ( %x, %y ) に対し、
+~text挿入~点~指示子を：
+◎
+↓</p>
+		<ul class="switch">
+			<li>
+挿入できない場合
 ⇒
 ~RET ~NULL
 ◎
 If at the coordinates x,y in the viewport no text insertion point indicator would have been inserted when applying the transforms that apply to the descendants of the viewport, return null.
 </li>
-	<li>
-~IF［
-`表示域$の子孫に対する`変形$を適用したとするとき，
-`表示域$内の座標 ( %x, %y ) にて, かつ`置換d要素$による~text手入力~widget内に
-~text挿入位置指示が挿入される
-］
+			<li>
+挿入でき，そこは［
+ある`置換d要素$による~text手入力~widget %~widget
+］内である場合
 ⇒
 ~RET 次のように設定された`~caret位置$
 ⇒＃
 `~caret範囲$ ~SET ~NULL,
-`~caret~node$ ~SET ~text手入力~widgetに対応する~node,
-`~caret~offset$ ~SET 左端から~text挿入位置指示が挿入される地点までにある`符号単位$の個数
+`~caret~node$ ~SET %~widget に対応する~node,
+`~caret~offset$ ~SET 左端から~text挿入~点~指示子が挿入される位置までにある`符号単位$の個数
 ◎
 If at the coordinates x,y in the viewport a text insertion point indicator would have been inserted in a text entry widget which is also a replaced element, when applying the transforms that apply to the descendants of the viewport, return a caret position with its properties set as follows:
 • caret node
@@ -4445,28 +4464,100 @@ If at the coordinates x,y in the viewport a text insertion point indicator would
 • caret range
 •• null
 </li>
-	<li>
-%~caret範囲 ~LET 次を指すような`畳まれて$いる `Range$I ~obj
-⇒
-`表示域$の子孫に対する`変形$を適用したとするとき，
-~text挿入位置指示が挿入される地点
+			<li>
+<p>
+挿入でき，そこは［
+ある`境界~点$ %~caret位置
+］に一致する場合：
 ◎
-Otherwise, return a caret position where the caret range is a collapsed Range object for the position where the text insertion point indicator would have been inserted when applying the transforms that apply to the descendants of the viewport, and＼
+Otherwise:
+• Let caretPosition be a tuple consisting of a caretPositionNode (a node) and a caretPositionOffset (a non-negative integer) for the position where the text insertion point indicator would have been inserted when applying the transforms that apply to the descendants of the viewport.
+</p>
+				<ol>
+					<li>
+%始端~node ~LET %~caret位置 の`~node$bp
+◎
+Let startNode be the caretPositionNode of the caretPosition,＼
 </li>
-	<li>
+					<li>
+%始端~offset ~LET %~caret位置 の`~offset$bp
+◎
+and let startOffset be the caretPositionOffset of the caretPosition.
+</li>
+					<li>
+<p>
+~WHILE［
+%始端~node ~NEQ ~NULL【！は ~DOM4#boundary-point-node である】
+］：
+◎
+While startNode is a node,＼
+</p>
+						<ol>
+							<li>
+%根 ~LET %始端~node の`根$
+◎
+↓</li>
+							<li>
+~IF［
+%根 は`~shadow根$【！~DOM4#concept-element-shadow-root】でない
+］
+⇒
+~BREAK
+◎
+startNode’s root is a shadow root,＼
+</li>
+							<li>
+%shadowRoots を成す
+~EACH( %~shadow根 )
+に対し
+⇒
+~IF［
+%根 は %~shadow根 の`~shadowも含めた広義-先祖$である
+］
+⇒
+~BREAK
+◎
+and startNode’s root is not a shadow-including inclusive ancestor of any of shadowRoots, repeat these steps:
+</li>
+							<li>
+%始端~offset ~SET %根 の`~host$の`~index$
+◎
+Set startOffset to index of startNode’s root's host.
+</li>
+							<li>
+%始端~node ~SET %根 の`~host$の`親$
+◎
+Set startNode to startNode’s root's host's parent.
+</li>
+						</ol>
+					</li>
+					<li>
+%始端 ~LET `境界~点$( %始端~node, %始端~offset )
+◎
+↓</li>
+					<li>
+%~caret範囲 ~LET 次のように設定された`~live範囲o$
+⇒＃
+`始端$rG ~SET %始端,
+`終端$rG ~SET %始端 の複製
+◎
+↓</li>
+					<li>
 ~RET 次のように設定された`~caret位置$
 ⇒＃
-`~caret範囲$ ~SET %~caret範囲,
-`~caret~node$ ~SET %~caret範囲 の`始端~node$,
-`~caret~offset$ ~SET %~caret範囲 の`始端~offset$
+`~caret~node$ ~SET %始端~node,
+`~caret~offset$ ~SET %始端~offset,
+`~caret範囲$ ~SET %~caret範囲
 ◎
-the other properties are set as follows:
-◎
-caret node
-• The start node of the caret range.
-caret offset
-• The start offset of the caret range. 
+Return a caret position with its properties set as follows:
+• caret node is set to startNode.
+• caret offset is set to startOffset.
+• caret range is set to a collapsed Range object which start node and end node are startNode, and which start offset and end offset are startOffset.
 </li>
+				</ol>
+			</li>
+		</ul>
+	</li>
 </ol>
 </div>
 
@@ -4568,19 +4659,43 @@ Note: the body element is different from HTML’s document.body in that the latt
 		<section id="the-caretposition-interface">
 <h3 title="The CaretPosition Interface">5.1. `CaretPosition^I ~interface</h3>
 
+<div>
 <p>
 `~caret位置@
-とは、
-~text挿入位置指示の位置を与えるものであり，常に［
-`~caret~node@,
-`~caret~offset@,
+は、
+~text挿入~点~指示子の位置を与える
+— それは、
+`CaretPosition$I ~objにより表現され，次に挙げるものが結付けられる：
+</p>
+<ul>
+	<li>
+`~caret~node@
+⇒
+ある`~node$
+</li>
+	<li>
+`~caret~offset@
+⇒
+ある整数
+</li>
+	<li>
 `~caret範囲@
-］が結付けられる。
-~caret位置は、
-`CaretPosition$I ~objにより表現される。
+⇒
+ある`~live範囲o$
+</li>
+</ul>
+
+<p class="trans-note">【
+( `~caret~node$, `~caret~offset$ ) は、
+挿入~点を指す`境界~点$を表現する。
+`~caret範囲$は、
+この`境界~点$を［
+始端, 終端
+］とする畳まれた範囲oになる。
+】</p>
 ◎
 A caret position gives the position of a text insertion point indicator. It always has an associated caret node, caret offset, and caret range. It is represented by a CaretPosition object.
-</p>
+</div>
 
 <pre class="idl">
 [`Exposed$=Window]
@@ -4642,7 +4757,7 @@ Let list be the result of invoking the getClientRects() method on the range.
 If list is empty, return null.
 </li>
 			<li>
-~RET %~list 内の最初の `DOMRect$I ~obj
+~RET %~list を成す最初の `DOMRect$I ~obj
 ◎
 Return the DOMRect object in list at index 0.
 </li>
@@ -4656,7 +4771,7 @@ Return the DOMRect object in list at index 0.
 文書~内に在る【！＊in the document】
 ］］
 ⇒
-~RET %node とその先祖に対する`変形$を適用したとするときの，
+~RET %node とその先祖に適用される`変形$を適用したとするときの，
 %node 内の［
 `~caret~offset$の値で表現される~caret
 ］用の`有拡縮$な `DOMRect$I ~obj
@@ -4764,19 +4879,17 @@ If the element on which it was invoked does not have an associated box return an
 ⇒
 ~RET 次で与えられる矩形を表す 1 個の `DOMRect$I ~objからなる`有拡縮$な `DOMRectList$I ~obj
 ⇒
-コレとその先祖に対する`変形$を適用したとするときの，
+コレとその先祖に適用される`変形$を適用したとするときの，
 コレの`限界~box$ `SVG2$r
 ◎
 If the element has an associated SVG layout box return a scaled DOMRectList object containing a single DOMRect object that describes the bounding box of the element as defined by the SVG specification, applying the transforms that apply to the element and its ancestors.
 </li>
 	<li>
 <p>
-%断片~list ~LET
-コレの`~box$内の`~box断片$からなる~list
+%断片~list ~LET コレの`~box$内の`~box断片$たちが成す~list
 — ここで：
 </p>
-
-<ul>
+		<ul>
 			<li>
 コレの `display$p ~propの算出d値
 ~IN { `table$v, `inline-table$v }
@@ -4888,12 +5001,12 @@ If the list is empty return a DOMRect object whose x, y, width and height member
 </li>
 	<li>
 ~IF［
-%~list 内の矩形は，どれも［
+%~list を成す矩形は，どれも［
 横幅, 縦幅
 ］どちらかは 0
 ］
 ⇒
-~RET %~list 内の最初の矩形
+~RET %~list を成す最初の矩形
 ◎
 If all rectangles in list have zero width or height, return the first rectangle in list.
 </li>
@@ -4902,7 +5015,7 @@ If all rectangles in list have zero width or height, return the first rectangle 
 ⇒
 次をすべてを包含する最~小な矩形
 ⇒
-%~list 内の［
+%~list を成す［
 横幅, 縦幅
 ］どちらかは【どちらも？】 0 でない矩形
 ◎
@@ -6650,8 +6763,8 @@ return an empty DOMRectList object if the range is not in the document and＼
 	<li>
 <p>
 ~RET ［
-次の拘束に合致するような `DOMRect$I ~obj
-］からなる，内容~順の~listを包含する `DOMRectList$I ~obj：
+次の拘束に合致する `DOMRect$I ~obj
+］たちが成す，内容~順の~listを包含する `DOMRectList$I ~obj：
 ◎
 otherwise a DOMRectList object containing a list of DOMRect objects in content order that matches the following constraints:
 </p>
@@ -6670,7 +6783,7 @@ For each element selected by the range, whose parent is not selected by the rang
 コレに［
 `部分的に包含され$ているか`包含され$ている†
 ］各 `Text$I ~node
-（`始端$と`終端$が同じになるものも含まれる）に対する
+（`始端$rGと`終端$rGが同じになるものも含まれる）に対する
 ⇒
 （行l~box全体ではなく）選択された部分のみを囲む`有拡縮$な `DOMRect$I ~obj
 ◎
@@ -6744,12 +6857,12 @@ If list is empty return a DOMRect object whose x, y, width and height members ar
 </li>
 	<li>
 ~IF［
-%~list 内の矩形は，どれも［
+%~list を成す矩形は，どれも［
 横幅, 縦幅
 ］どちらかは 0
 ］
 ⇒
-~RET %~list 内の最初の矩形
+~RET %~list を成す最初の矩形
 ◎
 If all rectangles in list have zero width or height, return the first rectangle in list.
 </li>
@@ -6758,9 +6871,9 @@ If all rectangles in list have zero width or height, return the first rectangle 
 ⇒
 次をすべてを包含する最~小な矩形
 ⇒
-%~list 内の［
+%~list を成す矩形のうち［
 横幅, 縦幅
-］どちらかは【どちらも？】 0 でない矩形
+］どちらかは【どちらも？】 0 でないもの
 ◎
 Otherwise, return a DOMRect object describing the smallest rectangle that includes all of the rectangles in list of which the height or width is not zero.
 </li>
@@ -6817,7 +6930,7 @@ partial dictionary `MouseEventInit$I {
 `screenX@m ｜ `screenY@m
 ］取得子~手続きは
 ⇒
-~RET `~Webに公開される~screen区画$の原点に相対的な，コレが生じた地点の［
+~RET `~Webに公開される~screen区画$の原点に相対的な，コレが生じた位置の［
 ~x座標 ｜ ~y座標
 ］
 ◎
@@ -6839,7 +6952,7 @@ The screenY attribute must return the y-coordinate of the position where the eve
 ］
 ⇒
 ~RET
-`初期~包含塊$の原点に相対的な，コレが生じた地点の［
+`初期~包含塊$の原点に相対的な，コレが生じた位置の［
 ~x座標 ｜ ~y座標
 ］
 </li>
@@ -6881,7 +6994,7 @@ The pageY attribute must follow these steps:
 `clientX@m ｜ `clientY@m
 ］取得子~手続きは
 ⇒
-~RET `表示域$の原点に相対的な，コレが生じた地点の［
+~RET `表示域$の原点に相対的な，コレが生じた位置の［
 ~x座標 ｜ ~y座標
 ］
 ◎
@@ -6919,7 +7032,7 @@ The offsetX attribute must follow these steps:
 ⇒
 ~RET 
 要素とその先祖に対する`変形$は適用しない下で，
-target ~nodeの`~padding辺$の原点に相対的な，コレが生じた地点の［
+target ~nodeの`~padding辺$の原点に相対的な，コレが生じた位置の［
 ~x座標 ｜ ~y座標
 ］
 ◎
