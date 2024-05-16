@@ -575,8 +575,8 @@ return;
 ●●options
 
 spec_title:CSSOM View Module
-spec_date:2024-05-07
-trans_update:2024-05-04
+spec_date:2024-05-15
+trans_update:2024-05-16
 source_checked:220729
 page_state_key:CSS
 original_url:https://drafts.csswg.org/cssom-view-1/
@@ -863,7 +863,6 @@ sS.完了-:#smooth-scroll-completed
 ~caret位置:#caret-position
 ~caret~node:#caret-node
 ~caret~offset:#caret-offset
-~caret範囲:#caret-range
 
 ~overflow方向:#overflow-directions
 
@@ -1207,8 +1206,10 @@ dy:
 	`~node$bp:caretPositionNode
 	`~offset$bp:caretPositionOffset
 	%~caret位置:caretPosition
+	%~caret範囲:caretRange
 	%始端~node:startNode
 	%始端~offset:startOffset
+	%境界~点:-
 
 	●仕様
 utility::ユーティリティ
@@ -4502,7 +4503,6 @@ If at the coordinates x,y in the viewport no text insertion point indicator woul
 ⇒
 ~RET 次のように設定された`~caret位置$
 ⇒＃
-`~caret範囲$ ~SET ~NULL,
 `~caret~node$ ~SET %~widget に対応する~node,
 `~caret~offset$ ~SET 左端から~text挿入~点~指示子が挿入される位置までにある`符号単位$の個数
 ◎
@@ -4511,8 +4511,6 @@ If at the coordinates x,y in the viewport a text insertion point indicator would
 •• The node corresponding to the text entry widget.
 • caret offset
 •• The amount of 16-bit units to the left of where the text insertion point indicator would have inserted. 
-• caret range
-•• null
 </li>
 			<li>
 <p>
@@ -4582,27 +4580,14 @@ Set startNode to startNode’s root's host's parent.
 						</ol>
 					</li>
 					<li>
-%始端 ~LET `境界~点$( %始端~node, %始端~offset )
-◎
-↓</li>
-					<li>
-%~caret範囲 ~LET 次のように設定された`~live範囲o$
-⇒＃
-`始端$rG ~SET %始端,
-`終端$rG ~SET %始端 の複製
-◎
-↓</li>
-					<li>
 ~RET 次のように設定された`~caret位置$
 ⇒＃
 `~caret~node$ ~SET %始端~node,
 `~caret~offset$ ~SET %始端~offset,
-`~caret範囲$ ~SET %~caret範囲
 ◎
 Return a caret position with its properties set as follows:
 • caret node is set to startNode.
 • caret offset is set to startOffset.
-• caret range is set to a collapsed Range object which start node and end node are startNode, and which start offset and end offset are startOffset.
 </li>
 				</ol>
 			</li>
@@ -4610,6 +4595,12 @@ Return a caret position with its properties set as follows:
 	</li>
 </ol>
 </div>
+
+<p class="note">注記：
+`~caret位置$は`~live$でない。
+◎
+Note: This caret position is not live.
+</p>
 
 <p class="note">注記：
 `接触判定@
@@ -4728,23 +4719,16 @@ Note: the body element is different from HTML’s document.body in that the latt
 ⇒
 ある整数
 </li>
-	<li>
-`~caret範囲@
-⇒
-ある`~live範囲o$
-</li>
 </ul>
 
 <p class="trans-note">【
-( `~caret~node$, `~caret~offset$ ) は、
-挿入~点を指す`境界~点$を表現する。
-`~caret範囲$は、
-この`境界~点$を［
-始端, 終端
-］とする畳まれた範囲oになる。
+挿入~点が ある~text~node内を指す場合、
+それは，
+`境界~点$( `~caret~node$, `~caret~offset$ )
+に一致する。
 】</p>
 ◎
-A caret position gives the position of a text insertion point indicator. It always has an associated caret node, caret offset, and caret range. It is represented by a CaretPosition object.
+A caret position gives the position of a text insertion point indicator. It always has an associated caret node and caret offset. It is represented by a CaretPosition object.
 </div>
 
 <pre class="idl">
@@ -4783,55 +4767,41 @@ The getClientRect() method must follow these steps, aborting on the first step t
 </p>
 <ol>
 	<li>
-<p>
-~IF［
-コレの`~caret範囲$ ~NEQ ~NULL
-］：
+%~node ~LET コレの`~caret~node$
 ◎
-If caret range is not null:
-</p>
-		<ol>
-			<li>
-%~list ~LET コレの`~caret範囲$上の 
-`Range^I1 `getClientRects$m1 ~method手続き()
-◎
-Let list be the result of invoking the getClientRects() method on the range.
-</li>
-			<li>
-~IF［
-%~list は空である
-］
-⇒
-~RET ~NULL
-◎
-If list is empty, return null.
-</li>
-			<li>
-~RET %~list を成す最初の `DOMRect$I ~obj
-◎
-Return the DOMRect object in list at index 0.
-</li>
-		</ol>
-	</li>
+↓</li>
 	<li>
 ~IF［
-コレの`~caret~node$ %node は，［
-`置換d要素$による~text手入力~widgetである
+%~node は`置換d要素$による~text手入力~widgetである
 ］~AND［
-文書~内に在る【！＊in the document】
-］］
+%~node は文書~内に在る【！＊in the document】
+］
 ⇒
-~RET %node とその先祖に適用される`変形$を適用したとするときの，
-%node 内の［
+~RET %~node とその先祖に適用される`変形$を適用したとするときの，
+%~node 内の［
 `~caret~offset$の値で表現される~caret
 ］用の`有拡縮$な `DOMRect$I ~obj
 ◎
 If caret node is a text entry widget that is a replaced element, and that is in the document, return a scaled DOMRect object for the caret in the widget as represented by the caret offset value. The transforms that apply to the element and its ancestors are applied.
 </li>
 	<li>
-~RET ~NULL
+%境界~点 ~LET `境界~点$( %始端~node, %始端~offset )
 ◎
-Return null.
+↓</li>
+	<li>
+%~caret範囲 ~LET 新たな`~live範囲o$
+— その
+⇒＃
+`始端$rG ~SET %境界~点,
+`終端$rG ~SET %境界~点 の複製
+◎
+Otherwise:
+• Let caretRange be a collapsed Range object whose start node and end node are set to caret node, and whose start offset and end offset are set to caret offset.
+</li>
+	<li>
+~RET %~caret範囲 上の `Range^I1 `getBoundingClientRect$m1 ~method手続き()
+◎
+• Return the DOMRect object which is the result of invoking the getBoundingClientRect() method on caretRange.
 </li>
 </ol>
 
@@ -4842,13 +4812,6 @@ Return null.
 Note: This DOMRect object is not live.
 </p>
 </div>
-
-<p class="issue">
-`~caret位置$から`~caret範囲$の概念を除去することを考慮する。
-[`10230$issue]
-◎
-Consider removing caret range concept from caret position interface. [Issue #10230]
-</p>
 
 		</section>
 	</section>
@@ -7106,8 +7069,7 @@ The offsetX attribute must follow these steps:
 】</p>
 ◎
 If the event’s dispatch flag is set, return the x-coordinate of the position where the event occurred relative to the origin of the padding edge of the target node, ignoring the transforms that apply to the element and its ancestors, and terminate these steps.
-</p>
-	</li>
+</li>
 	<li>
 ~RET コレの［
 `pageX$m ｜ `pageY$m
