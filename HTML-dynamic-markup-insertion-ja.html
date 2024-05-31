@@ -116,8 +116,8 @@ return text;
 
 ●●options
 
-spec_date:2024-04-24
-trans_update:2024-04-25
+spec_date:2024-05-30
+trans_update:2024-05-31
 source_checked:240415
 page_state_key:HTML
 spec_status:LS
@@ -174,6 +174,7 @@ E.SyntaxError:~WEBIDL#syntaxerror
 E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
 
 HTMLString:~TRUSTED-TYPES#typedefdef-htmlstring
+I.TrustedHTML:~TRUSTED-TYPES#trustedhtml
 
 	I.Node:~DOM4#interface-node → ~node
 I.Document:~HTMLdom#document
@@ -372,6 +373,9 @@ sR.直列化-可能か:~DOM4#shadowroot-serializable
 
 ~XML直列化:~DOM-Parsing#dfn-xml-serialization
 
+tH.~data:~TRUSTED-TYPES#trustedhtml-data
+信用-済みな型に準拠な文字列を取得する:~TRUSTED-TYPES#get-trusted-type-compliant-string-algorithm
+
 ●●words_table1
 openW:open
 about_blank:about:blank
@@ -409,6 +413,14 @@ timer::::タイマー
 	%文書片:element
 	%文書片:fragment node
 	%整形式が要求されるか:require_well-formed
+	%文字列:string
+	%~text:text
+	%値:value
+	%信用-済みか:isTrusted
+sink::::シンク
+	%~sink:sink
+LF:
+	%~LFを付加するか:lineFeed
 
 	●データ／型／構造／操作
 消去-:erase:~
@@ -461,6 +473,7 @@ discourage
 今日:today:~
 追跡器:tracker::~::トラッカー
 未決:outstanding:~
+準拠な:compliantな:準拠する
 
 	-:per
 	注記
@@ -1152,13 +1165,83 @@ Document objects have an ignore-destructive-writes counter, which is used in con
 `document.write 手続き@
 は、
 所与の
-( `文書$ %文書, 文字列 %入力 )
-に対し，次を走らす：
+( `文書$ %文書, ~list %~text, 真偽値 %~LFを付加するか, 文字列 %~sink )
+に対し：
 ◎
-The document write steps, given a Document object document and a string input, are as follows:
+The document write steps, given a Document object document, a list text, a boolean lineFeed and a string sink, are as follows:
 </p>
-
 <ol>
+	<li>
+~Assert：
+%~text を成す各~itemは［
+文字列／ `TrustedHTML$I ~obj
+］である。
+【この段は、この訳による補完。】
+</li>
+	<li>
+%文字列 ~LET 空~文字列
+◎
+Let string be the empty string.
+</li>
+	<li>
+%信用-済みか ~LET ~IS［
+%~text を成す各~itemは、
+いずれも `TrustedHTML$I ~objである
+］
+◎
+Let isTrusted be false if text contains a string; otherwise true.
+</li>
+	<li>
+<p>
+%~text を成す
+~EACH( %値 )
+に対し：
+◎
+For each value of text:
+</p>
+		<ol>
+			<li>
+~IF［
+%値 は `TrustedHTML$I ~objである
+］
+⇒
+%文字列 に %値 の`~data$tHを付加する
+◎
+If value is a TrustedHTML object, then append value's associated data to string.
+</li>
+			<li>
+~ELSE
+⇒
+%文字列 に %値 を付加する
+◎
+Otherwise, append value to string.
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+%信用-済みか ~EQ ~F
+］
+⇒
+%文字列 ~SET `信用-済みな型に準拠な文字列を取得する$( ↓ )
+⇒＃
+`TrustedHTML$I,
+コレに`関連な大域~obj$,
+%文字列,
+%~sink,
+`script^l
+◎
+If isTrusted is false, set string to the result of invoking the Get Trusted Type compliant string algorithm with TrustedHTML, this's relevant global object, string, sink, and "script".
+</li>
+	<li>
+~IF［
+%~LFを付加するか ~EQ ~T
+］
+⇒
+%文字列 に `000A^U LINE FEED を付加する
+◎
+If lineFeed is true, append U+000A LINE FEED to string.
+</li>
 	<li>
 ~IF［
 %文書 は`~XML文書$である
@@ -1214,9 +1297,9 @@ Run the document open steps with document.
 		</ol>
 	</li>
 	<li>
-%入力 を`入力~stream$内の`挿入~地点$に挿入する
+%文字列 を`入力~stream$内の`挿入~地点$に挿入する
 ◎
-Insert input into the input stream just before the insertion point.
+Insert string into the input stream just before the insertion point.
 </li>
 	<li>
 ~IF［
@@ -1229,15 +1312,17 @@ If document's pending parsing-blocking script is null,＼
 </li>
 	<li>
 <p>
-%入力 を`~HTML構文解析器$に処理させる：
+%文字列 を`~HTML構文解析器$に処理させる：
 ◎
+If document's pending parsing-blocking script is null, then have the HTML parser process string,＼
+
 then have the HTML parser process input,＼
 </p>
 		<ul>
 			<li>
 符号位置を 1 個ずつ与え，結果の~tokenが発される度にそれを処理する。
 ◎
-one code point at a time, processing resulting tokens as they are emitted, and＼
+one code point at a time, processing resulting tokens as they are emitted,＼
 </li>
 			<li>
 次のいずれかが生じたときに停止する
@@ -1247,12 +1332,12 @@ one code point at a time, processing resulting tokens as they are emitted, and�
 （これは、
 `script$e 終了~tag~tokenが~tokenizerにより発された場合に起こり得る）。
 ◎
-stopping when the tokenizer reaches the insertion point or when the processing of the tokenizer is aborted by the tree construction stage (this can happen if a script end tag token is emitted by the tokenizer).
+and stopping when the tokenizer reaches the insertion point or when the processing of the tokenizer is aborted by the tree construction stage (this can happen if a script end tag token is emitted by the tokenizer).
 </li>
 		</ul>
 
 <p class="note">注記：
-`document.write()$c が，~inlineに実行している~scriptから~callされている場合（すなわち，構文解析器が  `script$e を終了~tagまで構文解析したことにより，~callされた）、
+`document.write()$c が，~inlineに実行している~scriptから~callされている場合（すなわち，構文解析器が `script$e を終了~tagまで構文解析したことにより，~callされた）、
 これは
 `構文解析器の再入呼出し＠~HTMLparsing#nestedParsing$になる。
 ［
@@ -1271,14 +1356,12 @@ If the document.write() method was called from script executing inline (i.e. exe
 
 <div class="algo">
 `Document$I の
-`write(...)@m
+`write(...text)@m
 ~method手続きは
 ⇒
-`document.write 手続き$( コレ, 次に与える文字列 )
-⇒
-渡されたすべての引数を順に連結した結果
+`document.write 手続き$( コレ, %text, ~F, `Document write^l )
 ◎
-The document.write(...) method steps are to run the document write steps with this and a string that is the concatenation of all arguments passed.
+The document.write(...text) method steps are to run the document write steps with this, text, false and "Document write".
 </div>
 
 			</section>
@@ -1319,15 +1402,12 @@ This method performs no sanitization to remove potentially-dangerous elements an
 
 <div class="algo">
 `Document$I の
-`writeln(...)@m
+`writeln(...text)@m
 ~method手続きは
 ⇒
-`document.write 手続き$( コレ, 次に与える文字列 )
-⇒
-渡されたすべての引数を順に連結した結果に
-`000A^U LINE FEED を付加した結果
+`document.write 手続き$( コレ, %text, ~T, `Document writeln^l )
 ◎
-The document.writeln(...) method steps are to run the document write steps with this and a string that is the concatenation of all arguments passed and U+000A LINE FEED.
+The document.writeln(...text) method steps are to run the document write steps with this, text, true and "Document writeln".
 </div>
 
 			</section>
