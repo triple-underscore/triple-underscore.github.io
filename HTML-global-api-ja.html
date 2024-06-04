@@ -121,8 +121,8 @@ return text;
 
 ●●options
 
-spec_date:2024-03-27
-trans_update:2024-03-29
+spec_date:2024-06-03
+trans_update:2024-06-04
 source_checked:191126
 page_state_key:HTML
 spec_status:LS
@@ -143,6 +143,7 @@ sl:js-slot
 h:header
 E:error
 U:code-point
+cn:cp-name
 
 ●●tag_map
 I:code
@@ -158,6 +159,7 @@ et:code
 h:code
 jA:span
 U:span
+cn:span
 sl:span
 V:var
 i:i
@@ -218,6 +220,7 @@ I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
 I.DedicatedWorkerGlobalScope:~WORKERS#dedicatedworkerglobalscope
 I.OffscreenCanvas:~HEcanvas#offscreencanvas
 I.StructuredSerializeOptions:~HTMLcomms#structuredserializeoptions
+I.TrustedScript:~TRUSTED-TYPES#trustedscript
 
 E.NotSupportedError:~WEBIDL#notsupportederror
 E.InvalidCharacterError:~WEBIDL#invalidcharactererror
@@ -406,6 +409,7 @@ nav.作動中な文書:~HTMLds#nav-document
 ~forgiving-base64符号化する:~INFRA#forgiving-base64-encode
 同型に符号化する:~INFRA#isomorphic-encode
 改行文字を正規化する:~INFRA#normalize-newlines
+連結する:~INFRA#string-concatenate
 有順序~map:~INFRA#ordered-map
 map.~key:~INFRA#map-key
 map.値:~INFRA#map-value
@@ -425,6 +429,8 @@ c.import():~TC39#sec-import-calls
 現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
 
 ~timer~handler用に計時~報を記録する:~LONGAF#record-timing-info-for-timer-handler
+
+信用-済みな型に準拠な文字列を取得する:~TRUSTED-TYPES#get-trusted-type-compliant-string-algorithm
 
 	●ImageBitmap
 ~bitmap~dataを取得する:#_get-a-bitmap-data-from-image
@@ -527,12 +533,15 @@ surrounding:
 保持体:holder::~::ホルダ
 宛先:target::~
 優先度:priority::~
+連結-:concatenate:~
+	連結した結果:concatenation of
 
 	%大域~obj:global
 	%前回の~ID:previousId
 	%~ID:id
 	%引数~群:arguments
-	%thisArg:thisArg
+this:
+	%~this引数:thisArg
 	%繰返すか:repeat
 	%~realm:realm
 	%~timeout:timeout
@@ -542,6 +551,7 @@ surrounding:
 	%設定群~obj:settings object
 	%基底~URL:base URL
 	%~fetch~option群:fetch options
+	%~script~fetch~option群:-
 	%~script:script
 	%入子ng~level:nesting level
 	%開始-時刻:startTime
@@ -581,6 +591,10 @@ surrounding:
 	%~milli秒数:~milliseconds:#1
 	%完了~手続き:completionSteps
 	%~timer~key:~timerKey:
+	%大域~名:globalName
+	%~method名:methodName
+sink::::シンク
+	%~sink:sink
 
 	●btoa
 base64:
@@ -777,6 +791,7 @@ sprite-sheet:sprite sheet:::スプライトシート
 過度:undue:~
 寄与-:contribute:~
 給-:supply:~
+準拠な:compliantな:準拠する
 
 	易く:easy
 	~~考える:Imagine
@@ -908,7 +923,7 @@ Other standards are encouraged to further extend it using partial interface mixi
 </p>
 
 <pre class="idl">
-typedef (DOMString or `Function$I) `TimerHandler@I;
+typedef (DOMString or `Function$I or `TrustedScript$I) `TimerHandler@I;
 
 interface mixin `WindowOrWorkerGlobalScope@I {
   [Replaceable] readonly attribute USVString `origin$m;
@@ -1378,7 +1393,7 @@ Because clearTimeout() and clearInterval() clear entries from the same map, eith
 は、所与の
 ⇒＃
 `WindowOrWorkerGlobalScope$I %大域~obj,
-文字列または `Function$I %~handler,
+［ 文字列 ／ `Function$I ／ `TrustedScript$I ］ %~handler,
 ~~整数 %~timeout,
 ~list %引数~群,
 %繰返すか ~IN { `繰返す^i, ε } （省略時は ε ）,
@@ -1386,11 +1401,11 @@ Because clearTimeout() and clearInterval() clear entries from the same map, eith
 ◎終
 に対し，次を走らす：
 ◎
-The timer initialization steps, given a WindowOrWorkerGlobalScope global, a string or Function handler, a number timeout, a list arguments, a boolean repeat, and optionally (and only if repeat is true) a number previousId, are:
+The timer initialization steps, given a WindowOrWorkerGlobalScope global, a string or Function or TrustedScript handler, a number timeout, a list arguments, a boolean repeat, and optionally (and only if repeat is true) a number previousId, are:
 </p>
 <ol>
 	<li>
-%thisArg ~LET %大域~obj に応じて
+%~this引数 ~LET %大域~obj に応じて
 ⇒＃
 `WorkerGlobalScope$I ~objであるならば %大域~obj ／
 `Window$I ~objであるならば %大域~obj に対応する `WindowProxy$I ~obj
@@ -1500,7 +1515,7 @@ Record timing info for timer handler given handler, global's relevant settings o
 %~handler は `Function$I である
 ］
 ⇒
-`~callback関数を呼出す$( %~handler, %引数~群, %thisArg )
+`~callback関数を呼出す$( %~handler, %引数~群, %~this引数 )
 ⇒
 例外が投出されたときは、~catchして
 ⇒＃
@@ -1515,6 +1530,49 @@ If handler is a Function, then invoke handler given arguments with the callback 
 Otherwise:
 </p>
 				<ol>
+					<li>
+<p>
+~IF［
+%前回の~ID ~EQ ε
+］：
+◎
+If previousId was not given:
+</p>
+						<ol>
+							<li>
+%大域~名 ~LET コレに`関連な大域~obj$に応じて
+⇒＃
+`Window$I ~objであるならば `Window^l ／
+~ELSE_ `Worker^l
+◎
+Let globalName be "Window" if this's relevant global object is a Window object; "Worker" otherwise.
+</li>
+							<li>
+%~method名 ~LET %繰返すか に応じて
+⇒＃
+`繰返す^i ならば `setInterval^l ／
+~ELSE_ `setTimeout^l
+◎
+Let methodName be "setInterval" if repeat is true; "setTimeout" otherwise.
+</li>
+							<li>
+%~sink ~LET « %大域~名, %~method名 » を `0020^U `SPACE^cn で`連結する$
+◎
+Let sink be a concatenation of globalName, U+0020 SPACE, and methodName.
+</li>
+							<li>
+%~handler ~SET `信用-済みな型に準拠な文字列を取得する$( ↓ )
+⇒＃
+`TrustedScript$I,
+コレに`関連な大域~obj$,
+%~handler,
+%~sink,
+`script^l
+◎
+Set handler to the result of invoking the Get Trusted Type compliant string algorithm with TrustedScript, this's relevant global object, handler, sink, and "script".
+</li>
+						</ol>
+					</li>
 					<li>
 ~Assert：
 %~handler は文字列である
@@ -1557,14 +1615,18 @@ If initiating script is not null, then:
 </p>
 						<ol>
 							<li>
+%~script~fetch~option群 ~LET %起動ng~script の`~fetch~option群$sC
+◎
+↓</li>
+							<li>
 %~fetch~option群 ~SET 新たな`~script~fetch~option群$
 — その
 ⇒＃
-`暗号用~nonce$sfO ~SET %起動ng~script の`~fetch~option群$sC の`暗号用~nonce$sfO,
+`暗号用~nonce$sfO ~SET %~script~fetch~option群 の`暗号用~nonce$sfO,
 `完全性~metadata$sfO ~SET 空~文字列,
 `構文解析器~metadata$sfO ~SET `not-parser-inserted^l,
-`資格証~mode$sfO ~SET %起動ng~script の`~fetch~option群$sC の`資格証~mode$sfO,
-`~referrer施策$sfO ~SET %起動ng~script の`~fetch~option群$sC の`~referrer施策$sfO,
+`資格証~mode$sfO ~SET %~script~fetch~option群 の`資格証~mode$sfO,
+`~referrer施策$sfO ~SET %~script~fetch~option群 の`~referrer施策$sfO,
 `~fetch優先度$sfO ~SET `auto^l
 ◎
 Let fetch options be a script fetch options whose cryptographic nonce is initiating script's fetch options's cryptographic nonce, integrity metadata is the empty string, parser metadata is "not-parser-inserted", credentials mode is initiating script's fetch options's credentials mode, referrer policy is initiating script's fetch options's referrer policy, and fetch priority is "auto".
@@ -2242,7 +2304,7 @@ Set message to the result of normalizing newlines given message.
 Set message to the result of optionally truncating message.
 </li>
 	<li>
-`000A^U LF を改行として扱う下で，利用者に %message を示す
+`000A^U `LF^cn を改行として扱う下で，利用者に %message を示す
 ◎
 Show message to the user, treating U+000A LF as a line break.
 </li>
@@ -2302,7 +2364,7 @@ Set message to the result of normalizing newlines given message.
 Set message to the result of optionally truncating message.
 </li>
 	<li>
-`000A^U LF を改行として扱う下で，利用者に %message を示して、
+`000A^U `LF^cn を改行として扱う下で，利用者に %message を示して、
 利用者に肯定か否定か訊ねる
 ◎
 Show message to the user, treating U+000A LF as a line break, and ask the user to respond with a positive or negative response.
@@ -2366,7 +2428,7 @@ Set message to the result of optionally truncating message.
 Set default to the result of optionally truncating default.
 </li>
 	<li>
-`000A^U LF を改行として扱う下で，利用者に %message を示して、
+`000A^U `LF^cn を改行として扱う下で，利用者に %message を示して、
 既定の応答を %default 値にする下で，利用者に 文字列~値で応答するか中止するか訊ねる
 ◎
 Show message to the user, treating U+000A LF as a line break, and ask the user to either respond with a string value or abort. The response must be defaulted to the value given by default.
