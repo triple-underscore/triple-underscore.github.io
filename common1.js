@@ -65,7 +65,7 @@ ref_id_lowercase
 ref_id_prefix
 	参照文献の id 接頭辞（ 'biblio-', 'ref-', 等々
 ref_rfc
-	在るならば、参照文献の RFC（~RFCXXXX）を生成用に置換
+	廃
 site_nav
 	他の一覧へのナビゲーション用キーワードリスト
 nav_prev／nav_next
@@ -1367,7 +1367,6 @@ Util.addAltRefs = () => {
 
 	const ref_id_prefix = PAGE_DATA.options.ref_id_prefix || '';
 	const ref_id_lowercase = PAGE_DATA.options.ref_id_lowercase || false;
-	const ref_rfc = !!PAGE_DATA.options.ref_rfc;
 
 	Util.get_mapping(
 		COMMON_DATA.REF_DATA2
@@ -1376,8 +1375,6 @@ Util.addAltRefs = () => {
 		JA_LINKS
 	);
 
-	const mapping = Object.create(null);
-
 	const refKey = (s) => {
 		const key = s.replace(/[^\w]/g, '').toUpperCase();
 		return REF_KEY_MAP[key] || key;
@@ -1385,44 +1382,22 @@ Util.addAltRefs = () => {
 
 	const ref_types = ['normative', 'informative', 'additional'];
 
-	const rfc_list = [];
-	const ref_node_list = ref_types.filter( (id) => {
-		let ref_data = PAGE_DATA[`ref_${id}`];
+	const ref_node_list = ref_types.filter( (type) => {
+		let ref_data = PAGE_DATA[`ref_${type}`];
 		if(!ref_data) return false;
-		ref_data.replace(/\n\[.+\]/g, (ref_name) => {
-			const key = refKey(ref_name);
-			if(/^RFC\d+$/.test(key)){
-				// for google translate ( RFC only )
-				rfc_list.push(key.slice(3));
-			}
-			mapping[key] = '';
-			return '';
-		});
 		return true;
 	});
 
-//	console.log(JSON.stringify(JA_LINKS));
-
-	const add_ref_link = (key, url, label) => {
-		const v = mapping[key];
-		if(v === undefined) return;
-		const html = `<a href="${url}">${label}</a>`;
-		mapping[key] += html;
+	const altrefs = Object.create(null);
+	const add_altref_link = (key, url, label) => {
+		if(altrefs[key] === undefined) {
+			altrefs[key] = '';
+		};
+		altrefs[key] += `<a href="${url}">${label}</a>`;
 	}
 
 	//和訳リンク先データ
-	const REF_DATA = (PAGE_DATA.ref_data || '')
-	+ COMMON_DATA.REF_DATA
-	+ rfc_list.join('\n').replace(/\d+/g, 
-		'RFC$&=副 rfcs.web.fc2.com/rfc$&.html●google 翻訳'
-	)
-	+ '\n'
-	+ rfc_list.filter( (e) => {
-		return ( parseInt(e) >= 2220 );
-	}).join('\n').replace(/\d+/g, 
-		'RFC$&=副 tex2e.github.io/rfc-translater/html/rfc$&.html●rfc-translater'
-	)
-	;
+	const REF_DATA = (PAGE_DATA.ref_data || '') + COMMON_DATA.REF_DATA;
 
 	let m;
 	const rxp = /^(\w+)=(\S)(\d*)[\t ]+(~\w*)?([^\s●]+)(●.*)?$/mg;
@@ -1439,7 +1414,6 @@ Util.addAltRefs = () => {
 		} else {
 			if(prefix){
 				prefix = prefix.slice(1);
-//				console.assert(prefix in JA_BASIS, '未知な接頭辞:', prefix);
 				url1 = JA_BASIS[prefix] + url0;
 			}
 			url = ( url1[0] === '＃' ) ?
@@ -1449,7 +1423,7 @@ Util.addAltRefs = () => {
 			case '主':
 				JA_REFS[key] = url;
 			case '副':
-				add_ref_link(key, url, label);
+				add_altref_link(key, url, label);
 				break;
 			case '・':
 				if(url && !(url1 in JA_LINKS))
@@ -1459,7 +1433,6 @@ Util.addAltRefs = () => {
 				break;
 		}
 	}
-
 
 	const generateRefsHTML = () => {
 		let refs = E('references');
@@ -1471,55 +1444,73 @@ Util.addAltRefs = () => {
 			document.body.appendChild(refs);
 		}
 
-		const html_data = {
-normative: '<h3>文献（規範）</h3>',
-informative: '<h3>文献（参考）</h3>',
-additional: '<h3>文献（この訳による追加）</h3>'
+		const ref_titles = {
+normative: '文献（規範）',
+informative: '文献（参考）',
+additional: '文献（この訳による追加）'
 		};
 
 		const refHTML = (data) => {
-			let last_key = '';
-			if(ref_rfc) {
-				data = data.replace(/~RFC(\d+)\b(.*)/g,
+			const result = [];
+			let ref_key = '';
+			let ref_id = '';
+			data = data
+				.replace(
+					/＜(.+?)＞/g,
+					'<cite>$1</cite>'
+				).replace(/~RFC(\d+)\b(.*)/g,
 'RFC $1$2 URL: https://www.rfc-editor.org/rfc/rfc$1'
+				).replace(
+					/\bURL: +(https?:[^\s]+)/g,
+					'\n＠$1\n'
+				).replace(
+					/\n\[/g,
+					'\n＆\n['
 				);
-			}
-			let html = data
-			.replace(
-				/＜(.+?)＞/g,
-				'<cite>$1</cite>'
-			)
-			.replace(/\n\[(.+)\]/g, (match, ref_name) => {
-				const id = ref_id_prefix +
-					(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
-				const last_key1 = last_key;
-				const key = refKey(ref_name);
-				const altref = mapping[key];
-				if(altref){
-					if(altref[0] !== '<'){
-						last_key = 
-`\n<dd class="trans-ja-refs"><a href="#${altref}">【↑】</a></dd>`;
-					} else {
-						last_key = 
-`\n<dd class="trans-ja-refs">${altref}</dd>`;
-						mapping[key] = id;
+			data += '\n＆';
+			data.split('\n').forEach( (line) => {
+				line = line.trim();
+				if( line === '') return;
+				if(/^\[(.+)\]$/.test(line)){
+					const ref_name = line.slice(1,-1);
+					ref_id = ref_id_prefix +
+						(ref_id_lowercase ? ref_name.toLowerCase() : ref_name );
+					ref_key = refKey(ref_name);
+					result.push(
+`<dt id="${ref_id}">[${ref_name}]</dt>`
+					);
+				} else if(line[0] === '＠') {
+					const url = line.slice(1);
+					result.push(
+`<dd><a href="${url}">${url}</a></dd>`
+					);
+					const rfc_n = url.match(/\/(?:rfc)\/rfc(\d+)/);
+					if(!rfc_n) return;
+					const rfc_num = rfc_n[1];
+					add_altref_link(ref_key, `https://rfcs.web.fc2.com/rfc${rfc_num}.html`, 'google 翻訳');
+					if(parseInt(rfc_num) >= 2220){
+						add_altref_link(ref_key, `https://tex2e.github.io/rfc-translater/html/rfc${rfc_num}.html`, 'rfc-translater');
 					}
+				} else if(line === '＆') {
+					const altref = altrefs[ref_key];
+					if(!altref) return;
+					let altlinks;
+					if(altref[0] !== '<'){
+						altlinks = `<a href="#${altref}">【↑】</a>`;
+					} else {
+						altlinks = altref;
+						altrefs[ref_key] = ref_id;
+					}
+					result.push(
+`<dd class="trans-ja-refs">${altlinks}</dd>`
+					);
 				} else {
-					last_key = '';
+					result.push(
+`<dd lang="en">${line}</dd>`
+					);
 				}
-				return (
-`${last_key1}\n\n<dt id="${id}">[${ref_name}]</dt>`
-				);
-			})
-			.replace(
-				/\s+URL: +(https?:[^\s]+)/g,
-				'\n<dd><a href="$1">$1</a></dd>'
-			).replace(
-				/\n +(.+)/g,
-				'\n<dd lang="en">$1</dd>'
-			);
-			html += last_key;
-			return html;
+			});
+			return result.join('\n');
 		}
 
 		for(const id of ref_node_list){
@@ -1529,7 +1520,7 @@ additional: '<h3>文献（この訳による追加）</h3>'
 			const section = C('section');
 			section.id = id;
 			section.innerHTML = `
-${html_data[id]}
+<h3>${ref_titles[id]}</h3>
 <dl>
 ${refHTML(ref_data)}
 </dl>
