@@ -270,8 +270,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2024-04-22
-trans_update:2024-04-23
+spec_date:2024-06-05
+trans_update:2024-06-06
 source_checked:240422
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -395,6 +395,8 @@ poll:
 	~pollしている:polling
 捕捉-:capture::~
 処理待ち:pending:~
+不可分:atomic::~
+	不可分に:atomically
 
 	一度限りか:once
 	通達-時:signaling
@@ -406,6 +408,9 @@ poll:
 	別~thread:cross-thread
 	走り終えた
 	引数:parameter
+	順に:in order
+	一括して:a batch of
+	一括:batch
 
 	●変数
 	%A:A
@@ -420,6 +425,7 @@ poll:
 	%集合:set
 	%node
 	%~node
+	%挿入される~node:node
 	%~node群:nodes
 	%node:-
 	%nodeA:-
@@ -559,6 +565,7 @@ poll:
 	
 	%直前の同胞:previousSibling
 	%広義-子孫:inclusiveDescendant
+	%静的な~node~list:staticNodeList
 	%除去-済み~node群:removedNodes
 	%追加-済み~node群:addedNodes
 	%除去された~node:removedNode
@@ -668,6 +675,8 @@ poll:
 	%temporary:temporary
 	-:isScriptElement
 	%新たな~node群:newNodes
+	挿入された`~node$:insertedNode
+	接続された`~node$:connectedNode
 
 	●計時
 時計:clock:~
@@ -852,7 +861,11 @@ bitmask::::ビットマスク
 	引き続き:remain
 	表に出-:surface
 	ようにする:opt
-
+	とりわけ:among other things
+	~~実際に:indeed
+	HTML$r:HTML Standard
+	主要:major
+	至る:leading
 
 	●未分類
 重複:duplicate:~
@@ -1314,6 +1327,7 @@ DOMException:~WEBIDL#idl-DOMException
 ●●link_map
 
 e.script:~HEscripting#the-script-element
+e.style:~HEmetadata#the-style-element
 e.input:~HEinput#the-input-element
 e.title:~HEmetadata#the-title-element
 e.html:~HEmetadata#the-html-element
@@ -1514,6 +1528,7 @@ aB.~source通達~群:#abortsignal-source-signals
 子~群~変更-時の手続き:#concept-node-children-changed-ext
 前除去-時の手続き:#nodeiterator-pre-removing-steps
 除去-時の手続き:#concept-node-remove-ext
+接続~後の手続き:#concept-node-post-connection-ext
 ~clone時の手続き:#concept-node-clone-ext
 
 ~node文書:#concept-node-document
@@ -2006,7 +2021,7 @@ CONSOLE=副    ~/console-ja.html
 [CONSOLE]
     Dominic Farolino; Robert Kowalski; Terin Stock. ＜Console Standard＞. Living Standard. URL: https://console.spec.whatwg.org/
 [DEVICE-ORIENTATION]
-    Marcos Caceres; Reilly Grant; Raphael Kubo da Costa. ＜DeviceOrientation Event Specification＞. URL: https://w3c.github.io/deviceorientation/
+    Reilly Grant; Raphael Kubo da Costa; Marcos Caceres. ＜Device Orientation and Motion＞. URL: https://w3c.github.io/deviceorientation/
 [ECMASCRIPT]
     ＜ECMAScript Language Specification＞. URL: https://tc39.es/ecma262/multipage/
 [ENCODING]
@@ -2071,7 +2086,7 @@ Participate:
 	<a href="https://whatwg.org/chat">Chat on Matrix</a>
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/abaa3fb25a4ec8f7f3bcd7deea9083d0dcb1787a/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/0616094da9e308fbf50e5bd1da17462dca19d121/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -8601,6 +8616,7 @@ Return node.
 </ol>
 </div>
 
+<div>
 <p>
 `適用-可能な仕様$は、
 すべてまたは一部の`~node$用に
@@ -8608,11 +8624,138 @@ Return node.
 を定義してもヨイ。
 この~algoは、
 `~nodeを子の前に挿入する$~algo内から，
-( `~node$ )
-【！＊insertedNode】
+( 挿入された`~node$【！insertedNode】 )
+を渡して呼出される。
+この手続きは：
+</p>
+<ul>
+	<li>
+次を【同期的に】行ってはナラナイ
+⇒＃
+挿入された~nodeが`関与-$する`~node~tree$を改変する／
+`閲覧~文脈$作成する／
+`~eventを発火する$／
+その他，~JSを実行する【~JSの同期的な実行を伴い得る何らかの動作】
+</li>
+	<li>
+が、
+次をしてもヨイ
+⇒
+前項に挙げたものを非同期に行うための`大域~taskを~queueする$
+</li>
+</ul>
+◎
+Specifications may define insertion steps for all or some nodes. The algorithm is passed insertedNode, as indicated in the insert algorithm below. These steps must not modify the node tree that insertedNode participates in, create browsing contexts, fire events, or otherwise execute JavaScript. These steps may queue tasks to do these things asynchronously, however.
+</div>
+
+<div class="example">
+<p>
+`挿入-時の手続き$は，とりわけ~JSを実行し得ないが、
+その帰結が~~実際に~scriptから観測-可能になることもある。
+次の例を考える：
+◎
+While the insertion steps cannot execute JavaScript (among other things), they will indeed have script-observable consequences. Consider the below example:
+</p>
+
+<pre class="lang-js">
+const %h1 = document.querySelector('h1');
+
+const %fragment = new DocumentFragment();
+const %script = %fragment.appendChild(document.createElement('script'));
+const %style = %fragment.appendChild(document.createElement('style'));
+
+%script.innerText= 'console.log(getComputedStyle(%h1).color)'; /* <span class="comment">
+これは '`rgb(255, 0, 0)^c' を~logする
+◎
+Logs 'rgb(255, 0, 0)'
+</span> */
+%style.innerText = 'h1 {color: rgb(255, 0, 0);}';
+
+document.body.append(%fragment);
+</pre>
+
+<p>
+この例における %script は、
+'`rgb(255, 0, 0)^c' を~logする
+— 次が順に起こるので：
+◎
+The script in the above example logs 'rgb(255, 0, 0)' because the following happen in order:
+</p>
+<ol>
+	<li>
+<p>
+`~nodeを子の前に挿入する$~algoを走らす。
+これは、
+当の［
+`script$e, `style$e
+］要素を順に挿入することになる。
+その結果、
+`HTML$r においては：
+◎
+The insert algorithm runs, which will insert the script and style elements in order.
+</p>
+		<ol>
+			<li>
+`script$e 要素~用に`挿入-時の手続き$を走らす。
+これは、
+何もしない。
+◎
+The HTML Standard’s insertion steps run for the script element; they do nothing. [HTML]
+</li>
+			<li>
+`style$e 要素~用に`挿入-時の手続き$を走らす。
+これは、
+即時に，その~style規則を文書に適用する。
+◎
+The HTML Standard’s insertion steps run for the style element; they immediately apply its style rules to the document. [HTML]
+</li>
+			<li>
+`script$e 要素~用に`接続~後の手続き$を走らす。
+これは、
+当の~scriptを走らす
+— ~scriptは、
+前~段で適用された~style規則を即時に観測する。
+◎
+The HTML Standard’s post-connection steps run for the script element; they run the script, which immediately observes the style rules that were applied in the above step. [HTML]
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+<p>
+`適用-可能な仕様$は、
+すべてまたは一部の`~node$用に
+`接続~後の手続き@
+を定義してもヨイ。
+この~algoは、
+`~nodeを子の前に挿入する$~algo内から，
+( 接続された`~node$【！%connectedNode 】 )
 を渡して呼出される。
 ◎
-Specifications may define insertion steps for all or some nodes. The algorithm is passed insertedNode, as indicated in the insert algorithm below.
+Specifications may also define post-connection steps for all or some nodes. The algorithm is passed connectedNode, as indicated in the insert algorithm below.
+</p>
+
+<p class="note">注記：
+`接続~後の手続き$の目的は、
+`~node$用に［
+接続に関係する演算を遂行する機会
+］を供することにある
+— ［
+`接続され＠#connected$た`~node$が`関与-$している`~node~tree$を改変する／
+`閲覧~文脈$を作成する／
+その他，~JSを実行する
+］ために。
+この手続きは、
+`~node$たちが一括して`不可分^emに`挿入される＠#concept-node-insert$ことを許容する
+— ~scriptに関する主要な副作用~すべてが，`~node~tree$の中への一括~挿入が`完了した後^emに生じるよう。
+これは、［
+処理待ちな`~node~tree$への挿入
+］すべてが［
+さらなる挿入が生じ得る前に完全に完遂する
+］ことを確保する。
+◎
+The purpose of the post-connection steps is to provide an opportunity for nodes to perform any connection-related operations that modify the node tree that connectedNode participates in, create browsing contexts, or otherwise execute JavaScript. These steps allow a batch of nodes to be inserted atomically with respect to script, with all major side effects occurring after the batch insertions into the node tree is complete. This ensures that all pending node tree insertions completely finish before more insertions can occur.
 </p>
 
 <p>
@@ -8648,17 +8791,17 @@ Specifications may define children changed steps for all or some nodes. The algo
 `~nodeを子の前に挿入する@
 ときは、
 所与の
-( %~node, %子, %観測器は抑止するか ~IN { `観測器は抑止する^i, ε }（省略時は ε ） )
+( %挿入される~node【！node】, %子, %観測器は抑止するか ~IN { `観測器は抑止する^i, ε }（省略時は ε ） )
 に対し，次を走らす：
 ◎
 To insert a node into a parent before a child, with an optional suppress observers flag, run these steps:
 </p>
 <ol>
 	<li id="cp-let-nodes">
-%~node群 ~LET ［
-%~node は`文書片$であるならば %~node の`子~群$【を`~cloneする$】 ／
-~ELSE_ « %~node »
-］
+%~node群 ~LET %挿入される~node に応じて
+⇒＃
+`文書片$であるならば %挿入される~node の`子~群$【を`~cloneする$】 ／
+~ELSE_ « %挿入される~node »
 ◎
 Let nodes be node’s children, if node is a DocumentFragment node; otherwise « node ».
 </li>
@@ -8679,7 +8822,7 @@ If count is 0, then return.
 	<li>
 <p>
 ~IF［
-%~node は`文書片$である
+%挿入される~node は`文書片$である
 ］：
 ◎
 If node is a DocumentFragment node, then:
@@ -8687,16 +8830,16 @@ If node is a DocumentFragment node, then:
 		<ol>
 			<li>
 %~node群 を成す
-~EACH( %C )
-に対し【！順序は関係なし】
+~EACH( %~node )
+に対し
 ⇒
-`~nodeを除去する$( %C, `観測器は抑止する^i )
+`~nodeを除去する$( %~node, `観測器は抑止する^i )
 ◎
 Remove its children with the suppress observers flag set.
 </li>
 			<li>
 <p>
-%~node 用に`~tree変異~記録を~queueする$( « », %~node群, ~NULL, ~NULL )
+%挿入される~node 用に`~tree変異~記録を~queueする$( « », %~node群, ~NULL, ~NULL )
 ◎
 Queue a tree mutation record for node with « », nodes, null, and null.
 </p>
@@ -8715,13 +8858,19 @@ This step intentionally does not pay attention to the suppress observers flag.
 %子 ~NEQ ~NULL
 ］
 ⇒
-~EACH( `~live範囲o$ %範囲o )
-に対し：
+
 ◎
 If child is non-null, then:
 </p>
 		<ol>
 			<li>
+<p>
+~EACH( `~live範囲o$ %範囲o )
+に対し：
+◎
+↓</p>
+				<ol>
+					<li>
 ~IF［
 %範囲o の`始端~node$ ~EQ %親
 ］~AND［
@@ -8732,7 +8881,7 @@ If child is non-null, then:
 ◎
 For each live range whose start node is parent and start offset is greater than child’s index, increase its start offset by count.
 </li>
-			<li>
+					<li>
 ~IF［
 %範囲o の`終端~node$ ~EQ %親
 ］~AND［
@@ -8743,7 +8892,7 @@ For each live range whose start node is parent and start offset is greater than 
 ◎
 For each live range whose end node is parent and end offset is greater than child’s index, increase its end offset by count.
 </li>
-		</ol>
+				</ol>
 
 <p class="trans-note">【†
 挿入される地点にちょうど一致する［
@@ -8761,6 +8910,8 @@ For each live range whose end node is parent and end offset is greater than chil
 ］の位置変化のふるまいが，対称でない
 — 同様のことは，`~dataを置換する$~algoにも該当する）。
 】</p>
+			</li>
+		</ol>
 	</li>
 	<li>
 %直前の同胞 ~LET ［
@@ -8906,6 +9057,63 @@ If suppress observers flag is unset, then queue a tree mutation record for paren
 %手続き()
 ◎
 Run the children changed steps for parent.
+</li>
+	<li>
+<p>
+%静的な~node~list ~LET 新たな`~list$
+◎
+Let staticNodeList be a list of nodes, initially « ».
+</p>
+
+<p class="note">注記：
+以下では、
+`接続~後の手続き$を~callする`前^emに，その対象になる`~node$すべてを収集する
+— `~node~tree$を辿って`いる間^emに`接続~後の手続き$を~callする代わりに。
+`接続~後の手続き$は，~treeの構造を改変し得るので、
+~liveな辿りは安全でない
+— そうすると、
+場合によっては，同じ`~node$に対し`接続~後の手続き$が複数回~callされる結果に至る。
+◎
+We collect all nodes before calling the post-connection steps on any one of them, instead of calling the post-connection steps while we’re traversing the node tree. This is because the post-connection steps can modify the tree’s structure, making live traversal unsafe, possibly leading to the post-connection steps being called multiple times on the same node.
+</p>
+	</li>
+	<li>
+<p>
+%~node群 を成す
+~EACH( %~node )
+に対し，`~tree順序$で
+⇒
+%~node の`~shadowも含めた広義-子孫$を成す
+~EACH( %広義-子孫 )
+に対し，`~shadowも含めた~tree順序$で
+⇒
+%静的な~node~list に %広義-子孫 を`付加する$
+</p>
+
+<p class="trans-note">【
+%~node群 を成す~nodeどうしは，
+互いに先祖, 子孫の関係にないので、
+同じ~nodeが重複して収集されることはない。
+】</p>
+◎
+For each node of nodes, in tree order:
+• For each shadow-including inclusive descendant inclusiveDescendant of node, in shadow-including tree order, append inclusiveDescendant to staticNodeList.
+</li>
+	<li>
+%静的な~node~list を成す
+~EACH( %~node )
+に対し
+⇒
+~IF［
+%~node は`接続されて$いる
+］
+⇒
+`適用-可能な仕様$にて %~node 用に`定義された各$( `接続~後の手続き$ %手続き )
+に対し
+⇒
+%手続き( %~node )
+◎
+For each node of staticNodeList, if node is connected, then run the post-connection steps with node.
 </li>
 </ol>
 </div>
