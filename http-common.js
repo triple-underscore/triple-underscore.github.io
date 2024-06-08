@@ -564,7 +564,7 @@ c.realm:~HTTPsem#realm
 受信者:~HTTPinfra#recipient
 ~UA:~HTTPinfra#user-agent
 生成元~server:~HTTPinfra#origin-server
-中継者:~HTTPinfra#intermediary
+媒介者:~HTTPinfra#intermediary
 ~proxy:~HTTPinfra#proxy
 回送-~proxy:~HTTPinfra#forward-proxy
 ~gateway:~HTTPinfra#gateway
@@ -1115,9 +1115,7 @@ direct::::ダイレクト
 双方向:bidirectional::~
 上流:upstream::~
 下流:downstream::~
-中継:intermediate::~
 中継-:relay::~
-中継者:intermediary::~
 介在-:intervene:~
 伝送処理:transmitting::~
 回送-:forward::~
@@ -1129,10 +1127,7 @@ direct::::ダイレクト
 携わっ:engageし:~
 参加者:participant:~
 参照元:referring:refer 元:~
-受信:receiving::~
-受信者:recipient::~
 受領:receipt::~
-送信者:sender::~
 広告-:advertise:~
 広告:advertisement:~
 昇格:upgrade::~::アップグレード

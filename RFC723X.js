@@ -628,7 +628,7 @@ c.application/http:~7230#internet.media.type.application.http
 下流:~7230#downstream
 不完全:~7230#incomplete
 完全:~7230#incomplete
-中継者:~7230#intermediary
+媒介者:~7230#intermediary
 内方:~7230#inbound
 受信者:~7230#recipient
 外方:~7230#outbound
@@ -1195,9 +1195,8 @@ direct::::ダイレクト
 双方向:bidirectional::~
 上流:upstream::~
 下流:downstream::~
-中継:intermediate::~
 中継-:relay::~
-中継者:intermediary::~
+媒介:intermediate::~
 介在-:intervene:~
 伝送処理:transmitting::~
 回送-:forward::~
@@ -1208,10 +1207,7 @@ direct::::ダイレクト
 分散型の:distributed::~
 参加-:engage:~
 参加者:participant:~
-受信:receiving::~
-受信者:recipient::~
 受領:receipt::~
-送信者:sender::~
 広告-:advertise:~
 広告:advertisement:~
 昇格:upgrade::~::アップグレード
@@ -1694,7 +1690,7 @@ IETF Review:~5226#section-4.1
 〜下流:~7230#downstream
 不完全:~7230#incomplete
 完全:~7230#incomplete
-〜中継者:~7230#intermediary
+〜媒介者:~7230#intermediary
 〜内方:~7230#inbound
 〜受信者:~7230#recipient
 〜外方:~7230#outbound

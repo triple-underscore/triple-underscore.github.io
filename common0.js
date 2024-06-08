@@ -3249,7 +3249,10 @@ remote::::リモート
 通信:communication::~
 送信:sending::~
 送信-:send::~
+送信者:sender::~
 受信-:receive::~
+受信:receiving::~
+受信者:recipient::~
 送達:delivery::~
 送達-:deliver::~
 転送-:transfer::~
@@ -3266,6 +3269,7 @@ client::::クライアント
 server::::サーバ
 serve::::サーブ
 service::::サービス
+媒介者:intermediary::~
 proxy::::プロキシ
 transport::::トランスポート
 cache::::キャッシュ
