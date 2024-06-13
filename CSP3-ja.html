@@ -137,8 +137,8 @@ return text;
 ●●options
 
 spec_title:Content Security Policy Level 3
-spec_date:2024-04-24
-trans_update:2024-04-25
+spec_date:2024-06-13
+trans_update:2024-06-14
 source_checked:230220
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-csp/
@@ -296,7 +296,6 @@ sniff:
 	●CSP 対象
 	CSSOM
 compilation::::コンパイル
-compile::::コンパイル
 track::::トラック
 	~script以外には~~直に:scripts but not any other non-script channels
 bookmarklet::::ブックマークレット
@@ -399,6 +398,7 @@ params::::パラメタ群
 	modification
 	すぐに:shortly
 	成り行き:outcome
+	何もしない:returns normally
 
 	●変数
 	%element
@@ -441,7 +441,12 @@ params::::パラメタ群
 	%応答~CSP~list:response CSP list
 	%~target:target
 	%~realm:realm
-	%source:source
+	%~parameter文字列~群:parameterStrings
+	%本体~文字列:bodyString
+	%~code文字列:codeString
+	%~compilation種別:compilationType,
+	%~parameter引数~群:parameterArgs
+	%本体~引数:bodyArg
 	-:globals
 	%~source~list:source-list
 	%~source~list:source list
@@ -672,6 +677,7 @@ dashboard::::ダッシュボード
 重複:duplicate:~
 重複な:duplicate:重複した
 和集合:union:~
+列挙値:enum::~
 
 	追加すること:adding additional
 	-:stem
@@ -1424,7 +1430,7 @@ RFC3492=副            crieit.net/posts/RFC3492-Punycode-IDNA-Unicode-Bootstring
 ●●ref_informative
 
 [APPMANIFEST]
-    Marcos Caceres; et al. ＜Web Application Manifest＞. 10 April 2024. WD. URL: https://www.w3.org/TR/appmanifest/
+    Marcos Caceres; et al. ＜Web Application Manifest＞. 17 May 2024. WD. URL: https://www.w3.org/TR/appmanifest/
 [BEACON]
     Ilya Grigorik; Alois Reitbauer. ＜Beacon＞. 3 August 2022. CR. URL: https://www.w3.org/TR/beacon/
 [CSP2]
@@ -2304,7 +2310,7 @@ Note: Directive names are case-insensitive, that is: script-SRC 'none' and ScRiP
 ~IF［
 %指令~集合 内に［
 `名前$ ~EQ %指令~名
-］なる`指令$はある
+］なる`指令$は在る
 ］
 ⇒
 ~CONTINUE
@@ -4755,19 +4761,27 @@ ECMAScript defines a HostEnsureCanCompileStrings() abstract operation which allo
 </p>
 
 			<section id="can-compile-strings">
-<h4 title="EnsureCSPDoesNotBlockStringCompilation(realm, source)">4.4.1. `EnsureCSPDoesNotBlockStringCompilation^jA( %~realm, %~source )</h4>
+<h4 title="EnsureCSPDoesNotBlockStringCompilation(realm, parameterStrings, bodyString, codeString, compilationType, parameterArgs, bodyArg)">4.4.1. `EnsureCSPDoesNotBlockStringCompilation^jA( %~realm, %~parameter文字列~群, %本体~文字列, %~code文字列, %~compilation種別, %~parameter引数~群, %本体~引数 )</h4>
 
 <p>
 この~algoは、
 所与の
-( `~realm$ %~realm, 【文字列】 %~source )
+⇒＃
+`~realm$ %~realm,
+文字列たちが成す~list %~parameter文字列~群,
+文字列 %本体~文字列,
+文字列 %~code文字列,
+列挙値 %~compilation種別,
+~ES言語~値たちが成す~list %~parameter引数~群,
+~ES言語~値 %本体~引数
+◎終
 に対し，
-%~source の~compilationは［
+文字列の~compilationは［
 許容されるならば何もしない／
 許容されないならば `EvalError$E を投出する
 ］：
 ◎
-Given a realm realm and a string source, this algorithm returns normally if string compilation is allowed, and throws an "EvalError" if not:
+Given a realm realm, a list of strings parameterStrings, a string bodyString, a string codeString, an enum (compilationType), a list of ECMAScript language values (parameterArgs), and an ECMAScript language value (bodyArg), this algorithm returns normally if string compilation is allowed, and throws an "EvalError" if not:
 </p>
 <ol>
 	<li>
@@ -4798,7 +4812,7 @@ Let source-list be null.
 ~IF［
 %施策 内に［
 `名前$ ~EQ `script-src^l
-］なる`指令$はある
+］なる`指令$は在る
 ］
 ⇒
 %~source~list ~SET その`指令$の`値$
@@ -4809,7 +4823,7 @@ If policy contains a directive whose name is "script-src", then set source-list 
 ~ELIF［
 %施策 内に［
 `名前$ ~EQ `default-src^l
-］なる`指令$はある
+］なる`指令$は在る
 ］
 ⇒
 %~source~list ~SET その`指令$の`値$
@@ -4844,9 +4858,11 @@ Set violation’s resource to "eval".
 `report-sample^pl `~IN$ %~source~list
 ］
 ⇒
-%指令 の`見本$vr ~SET %~source の最初の 40 文字からなる文字列
+%指令 の`見本$vr ~SET ［
+%~code文字列 を成す最初から 40 個までの文字たち
+］が成す文字列
 ◎
-If source-list contains the expression "'report-sample'", then set violation’s sample to the substring of source containing its first 40 characters.
+If source-list contains the expression "'report-sample'", then set violation’s sample to the substring of codeString containing its first 40 characters.
 </li>
 					<li>
 `違反を報告する$A( %違反 )
@@ -4877,14 +4893,17 @@ If result is "Blocked", throw an EvalError exception.
 </li>
 </ol>
 
-<p class="issue">
-`HostEnsureCanCompileStrings$jA()
-は、
-~compileされようとしている文字列を~parameterにとらない。
-その値が~CSPを通して~pipeされるよう，~HTMLを更新する必要がある。
-[`tc39/ecma262 課題 #938＠https://github.com/tc39/ecma262/issues/938$]
+<p class="note">注記：
+［
+%~parameter文字列~群,
+%本体~文字列,
+%~compilation種別,
+%~parameter引数~群,
+%本体~引数
+］は、
+現時点では利用されないが，将来の利用~用に含まれている。
 ◎
-HostEnsureCanCompileStrings() does not include the string which is going to be compiled as a parameter. We’ll also need to update HTML to pipe that value through to CSP. [Issue #tc39/ecma262#938]
+Note: parameterStrings, bodyString, compilationType, parameterArgs, and bodyArg are currently unused. They are included for future use.
 </p>
 
 			</section>
@@ -4949,7 +4968,7 @@ Let source-list be null.
 ~IF［
 %施策 内に［
 `名前$ ~EQ `script-src^l
-］なる`指令$はある
+］なる`指令$は在る
 ］
 ⇒
 %~source~list ~SET その`指令$の`値$
@@ -4960,7 +4979,7 @@ If policy contains a directive whose name is "script-src", then set source-list 
 ~ELIF［
 %施策 内に［
 `名前$ ~EQ `default-src^l
-］なる`指令$はある
+］なる`指令$は在る
 ］
 ⇒
 %~source~list ~SET その指令の`値$
@@ -5593,7 +5612,7 @@ Note: Both effectiveDirective and violatedDirective are the same value. This is 
 ~IF［
 %違反 の`施策$vrの`指令~集合$内に［
 `名前$ ~EQ  `report-uri$dir
-］なる`指令$ %指令 はある
+］なる`指令$ %指令 は在る
 ］：
 ◎
 If violation’s policy’s directive set contains a directive named "report-uri" directive:
@@ -5603,7 +5622,7 @@ If violation’s policy’s directive set contains a directive named "report-uri
 ~IF［
 %違反 の`施策$の`指令~集合$内に［
 `名前$ ~EQ `report-to$dir
-］なる`指令$はある
+］なる`指令$は在る
 ］
 ⇒
 ~BREAK `(A)^i
@@ -5721,7 +5740,7 @@ Note: report-uri only takes effect if report-to is not present. That is, the lat
 ~IF［
 %違反 の`施策$の`指令~集合$内に［
 `名前$ ~EQ  `report-to$dir
-］なる`指令$ %指令 はある
+］なる`指令$ %指令 は在る
 ］：
 ◎
 If violation’s policy’s directive set contains a directive named "report-to" directive:
@@ -9128,7 +9147,7 @@ Let source list be null.
 ~IF［
 %施策 の`指令~集合$内に［
 `名前$ ~EQ `base-uri^l
-］なる`指令$はある
+］なる`指令$は在る
 ］
 ⇒
 %~source~list ~SET その`指令$の`値$
