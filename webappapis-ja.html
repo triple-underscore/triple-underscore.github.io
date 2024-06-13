@@ -119,8 +119,8 @@ return text;
 
 ●●options
 
-spec_date:2024-06-03
-trans_update:2024-06-04
+spec_date:2024-06-13
+trans_update:2024-06-14
 source_checked:231004
 page_state_key:HTML
 spec_status:LS
@@ -254,6 +254,7 @@ I.PromiseRejectionEventInit:#promiserejectioneventinit
 I.ServiceWorkerGlobalScope:~SW1#serviceworkerglobalscope
 I.SharedArrayBuffer:~TC39#sec-sharedarraybuffer-objects
 I.SharedWorkerGlobalScope:~WORKERS#sharedworkerglobalscope
+I.TrustedScript:~TRUSTED-TYPES#trusted-script
 I.Window:~WINDOW#window
 I.WindowProxy:~HTMLWPROXY#windowproxy
 I.WindowEventHandlers:#windoweventhandlers
@@ -1074,7 +1075,6 @@ jA.HostEnqueueGenericJob:~TC39#sec-hostenqueuegenericjob
 jA.HostEnqueuePromiseJob:~TC39#sec-hostenqueuepromisejob
 jA.HostEnqueueTimeoutJob:~TC39#sec-hostenqueuetimeoutjob
 jA.HostEnsureCanAddPrivateElement:~TC39#sec-hostensurecanaddprivateelement
-jA.HostEnsureCanCompileStrings:~TC39#sec-hostensurecancompilestrings
 jA.HostGetImportMetaProperties:~TC39#sec-hostgetimportmetaproperties
 jA.HostMakeJobCallback:~TC39#sec-hostmakejobcallback
 jA.HostPromiseRejectionTracker:~TC39#sec-host-promise-rejection-tracker
@@ -1090,6 +1090,8 @@ jA.ParseScript:~TC39#sec-parse-script
 jA.ScriptEvaluation:~TC39#sec-runtime-semantics-scriptevaluation
 jA.ToString:~TC39#sec-tostring
 
+jA.HostEnsureCanCompileStrings:https://tc39.es/proposal-dynamic-code-brand-checks/#sec-hostensurecancompilestrings
+jA.HostGetCodeForEval:https://tc39.es/proposal-dynamic-code-brand-checks/#sec-hostgetcodeforeval
 jA.HostGetSupportedImportAttributes:https://tc39.es/proposal-import-attributes/#sec-hostgetsupportedimportattributes
 jA.CreateDefaultExportSyntheticModule:~JSON-MODULES#sec-create-default-export-synthetic-module
 jA.ParseJSONModule:~JSON-MODULES#sec-parse-json-module
@@ -1336,6 +1338,7 @@ import:
 	~import法:importing
 close:
 未compile:uncompiled:::未コンパイル
+compilation::::コンパイル
 timer::::タイマー
 timeout::::タイムアウト
 粗化-:coarsen:粗く
@@ -1962,6 +1965,7 @@ as:
 	%構文解析した~URL:parsed
 	%構文解析した結果:parsed
 	%引数~list:argumentsList
+	%引数:argument
 	%~callable:callable
 	%完結~registry:finalizationRegistry
 	%~top-level閲覧~文脈~群:top-level browsing contexts
@@ -2051,6 +2055,12 @@ as:
 	%安全でない~layout開始~時刻:unsafeLayoutStartTime
 	%安全でない~layout開始~時刻:~unsafeStyleAndLayoutStartTime
 	%静止-前の時刻:timeBeforePause
+	%~parameter文字列~群:parameterStrings
+	%本体~文字列:bodyString
+	%~code文字列:codeString
+	%~compilation種別:compilationType,
+	%~parameter引数~群:parameterArgs
+	%本体~引数:bodyArg
 
 	●指示語
 現在:currently:~
@@ -7515,7 +7525,7 @@ Let settings be the settings object of script.
 `~scriptは走れるかどうか検査する$( %設定群 ) ~EQ `走るな^i
 ］
 ⇒
-~RET `NormalCompletion$jA( `empty^jv )
+~RET `NormalCompletion$jA( `empty^i )
 ◎
 Check if we can run script with settings. If this returns "do not run" then return NormalCompletion(empty).
 </li>
@@ -10598,7 +10608,7 @@ User agents must use the following implementation: [JAVASCRIPT]
 If O is a WindowProxy object, or implements Location, then return Completion { [[Type]]: throw, [[Value]]: a new TypeError }.
 </li>
 	<li>
-~RET `NormalCompletion$jA( `unused^jv )
+~RET `NormalCompletion$jA( `unused^i )
 ◎
 Return NormalCompletion(unused).
 </li>
@@ -10614,27 +10624,30 @@ Return NormalCompletion(unused).
 ~host定義な判定基準を満たしている~obj上では，~private~fieldを却下する
 ］ことを~hostに許容するために供する。
 ~HTMLの事例では、［
-`WindowProxy$I. `Location$I
-］が，~private~field意味論の実装を
+`WindowProxy$I, `Location$I
+］に複雑な意味論があり，
+~private~field意味論の実装を
 — 特に，~naviと~security周りで —
-難題にする複雑な意味論を伴う。
-なので，ここでの実装は、
-単純に，それらの~objを却下する。
+難題にする。
+なので、
+ここでの実装は，単純に それらの~objを却下する。
 ◎
 JavaScript private fields can be applied to arbitrary objects. Since this can dramatically complicate implementation for particularly-exotic host objects, the JavaScript language specification provides this hook to allow hosts to reject private fields on objects meeting a host-defined criteria. In the case of HTML, WindowProxy and Location have complicated semantics — particularly around navigation and security — that make implementation of private field semantics challenging, so our implementation simply rejects those objects.
 </p>
 
 				</section>
 				<section id="hostensurecancompilestrings(realm)">
-<h5 title="HostEnsureCanCompileStrings(realm)">8.1.6.2. `HostEnsureCanCompileStrings^A( %~realm )</h5>
+<h5 title="HostEnsureCanCompileStrings(realm, parameterStrings, bodyString, codeString, compilationType, parameterArgs, bodyArg)">8.1.6.2. `HostEnsureCanCompileStrings^A( %~realm, %~parameter文字列~群, %本体~文字列, %~code文字列, %~compilation種別, %~parameter引数~群, %本体~引数 )</h5>
 
 <p>
 ~JS `JAVASCRIPT$r は、
 その抽象-演算
 `HostEnsureCanCompileStrings$jA
-を`実装定義$としている。
+を`実装定義$としている
+— それは、
+`Dynamic Code Brand Checks^cite 提案 `JSDYNAMICCODEBRANDCHECKS$r により定義し直された。
 ◎
-JavaScript contains an implementation-defined HostEnsureCanCompileStrings(realm) abstract operation.＼
+JavaScript contains an implementation-defined HostEnsureCanCompileStrings abstract operation, redefined by the Dynamic Code Brand Checks proposal.＼
 </p>
 
 <div class="algo">
@@ -10642,21 +10655,57 @@ JavaScript contains an implementation-defined HostEnsureCanCompileStrings(realm)
 ~UAは、
 次の実装を利用するモノトスル：
 ◎
-User agents must use the following implementation: [JAVASCRIPT]
+User agents must use the following implementation: [JAVASCRIPT] [JSDYNAMICCODEBRANDCHECKS]
 </p>
 <ol>
 	<li>
-~ABRUPT `EnsureCSPDoesNotBlockStringCompilation$jA( %~realm )
+~ABRUPT `EnsureCSPDoesNotBlockStringCompilation$jA( %~realm, %~parameter文字列~群, %本体~文字列, %~code文字列, %~compilation種別, %~parameter引数~群, %本体~引数 )
 `CSP$r
 ◎
-Perform ? EnsureCSPDoesNotBlockStringCompilation(realm). [CSP]
+Perform ? EnsureCSPDoesNotBlockStringCompilation(realm, parameterStrings, bodyString, codeString, compilationType, parameterArgs, bodyArg). [CSP]
 </li>
 </ol>
 </div>
 
   				</section>
+				<section id="hostgetcodeforeval(argument)">
+<h5 title="HostGetCodeForEval(argument)">8.1.6.3. `HostGetCodeForEval^A( %引数 )</h5>
+
+<p>
+`Dynamic Code Brand Checks^cite 提案 `JSDYNAMICCODEBRANDCHECKS$r は、
+その `HostGetCodeForEval$jA 抽象-演算を`実装定義$としている。
+◎
+The Dynamic Code Brand Checks proposal contains an implementation-defined HostGetCodeForEval(argument) abstract operation.＼
+</p>
+
+<div class="algo">
+<p>
+~UAは、
+次の実装を利用するモノトスル：
+◎
+User agents must use the following implementation: [JSDYNAMICCODEBRANDCHECKS]
+</p>
+<ol>
+	<li>
+~IF［
+%引数 は `TrustedScript$I ~objである
+］
+⇒
+~RET %引数 の`~data＠~TRUSTED-TYPES#trustedscript-data$
+◎
+If argument is a TrustedScript object, then return argument's data.
+</li>
+	<li>
+~RET `no-code^i
+◎
+Otherwise, return no-code.
+</li>
+</ol>
+</div>
+
+				</section>
 				<section id="the-hostpromiserejectiontracker-implementation">
-<h5 title="HostPromiseRejectionTracker(promise, operation)">8.1.6.3. `HostPromiseRejectionTracker^A( %promise, %演算 )</h5>
+<h5 title="HostPromiseRejectionTracker(promise, operation)">8.1.6.4. `HostPromiseRejectionTracker^A( %promise, %演算 )</h5>
 
 <p>
 ~JS `JAVASCRIPT$r は、
@@ -10786,7 +10835,7 @@ Queue a global task on the DOM manipulation task source given global to fire an 
 
 				</section>
 				<section id="integration-with-javascript-jobs">
-<h5 title="Job-related host hooks">8.1.6.4. ~jobに関係する~host用の~hook</h5>
+<h5 title="Job-related host hooks">8.1.6.5. ~jobに関係する~host用の~hook</h5>
 
 <p>
 ~JS仕様は、
@@ -10816,7 +10865,7 @@ The JavaScript specification defines Jobs to be scheduled and run later by the h
 </p>
 
 					<section id="hostcalljobcallback">
-<h6 title="HostCallJobCallback(callback, V, argumentsList)">8.1.6.4.1. `HostCallJobCallback^A( %~callback, %V, %引数~list )</h6>
+<h6 title="HostCallJobCallback(callback, V, argumentsList)">8.1.6.5.1. `HostCallJobCallback^A( %~callback, %V, %引数~list )</h6>
 
 <p>
 ~JS `JAVASCRIPT$r は、
@@ -10912,7 +10961,7 @@ Return result.
 
 					</section>
 					<section id="hostenqueuefinalizationregistrycleanupjob">
-<h6 title="HostEnqueueFinalizationRegistryCleanupJob(finalizationRegistry)">8.1.6.4.2. `HostEnqueueFinalizationRegistryCleanupJob^A( %完結~registry )</h6>
+<h6 title="HostEnqueueFinalizationRegistryCleanupJob(finalizationRegistry)">8.1.6.5.2. `HostEnqueueFinalizationRegistryCleanupJob^A( %完結~registry )</h6>
 
 <p>
 ~JSには、［
@@ -11037,7 +11086,7 @@ If result is an abrupt completion, then report the exception given by result.[[V
 
 					</section>
 					<section id="hostenqueuegenericjob">
-<h6 title="HostEnqueueGenericJob(job, realm)">8.1.6.4.3. `HostEnqueueGenericJob^A( %~job, %~realm )</h6>
+<h6 title="HostEnqueueGenericJob(job, realm)">8.1.6.5.3. `HostEnqueueGenericJob^A( %~job, %~realm )</h6>
 
 <p>
 ~JS `JAVASCRIPT$r は、
@@ -11075,7 +11124,7 @@ Queue a global task on the JavaScript engine task source given global to perform
 
 					</section>
 					<section id="hostenqueuepromisejob">
-<h6 title="HostEnqueuePromiseJob(job, realm)">8.1.6.4.4. `HostEnqueuePromiseJob^A( %~job, %~realm )</h6>
+<h6 title="HostEnqueuePromiseJob(job, realm)">8.1.6.5.4. `HostEnqueuePromiseJob^A( %~job, %~realm )</h6>
 
 <p>
 ~JS `JAVASCRIPT$r は、
@@ -11232,7 +11281,7 @@ If result is an abrupt completion, then report the exception given by result.[[V
 
 					</section>
 					<section id="hostenqueuetimeoutjob">
-<h6 title="HostEnqueueTimeoutJob(job, realm, milliseconds)">8.1.6.4.5. `HostEnqueueTimeoutJob^A( %~job, %~realm, %~milli秒数 )</h6>
+<h6 title="HostEnqueueTimeoutJob(job, realm, milliseconds)">8.1.6.5.5. `HostEnqueueTimeoutJob^A( %~job, %~realm, %~milli秒数 )</h6>
 
 <p>
 ~JS `JAVASCRIPT$r は、
@@ -11277,7 +11326,7 @@ Run steps after a timeout given global, "JavaScript", milliseconds, and timeoutS
 
 					</section>
 					<section id="hostmakejobcallback">
-<h6 title="HostMakeJobCallback(callable)">8.1.6.4.6. `HostMakeJobCallback^A( %~callable )</h6>
+<h6 title="HostMakeJobCallback(callable)">8.1.6.5.6. `HostMakeJobCallback^A( %~callable )</h6>
 
 <p>
 ~JS `JAVASCRIPT$r は、
@@ -11437,7 +11486,7 @@ Return the JobCallback Record { [[Callback]]: callable, [[HostDefined]]: { [[Inc
 					</section>
 				</section>
 				<section id="integration-with-the-javascript-module-system">
-<h5 title="Module-related host hooks">8.1.6.5. ~moduleに関係する~host~hook</h5>
+<h5 title="Module-related host hooks">8.1.6.6. ~moduleに関係する~host~hook</h5>
 
 <p>
 ~JS仕様は、
@@ -11745,7 +11794,7 @@ All of the following will fail, assuming that the imported .mjs files are served
 </div>
 
 					<section id="hostgetimportmetaproperties">
-<h6 title="HostGetImportMetaProperties(moduleRecord)">8.1.6.5.1. `HostGetImportMetaProperties^A( %~module~record )</h6>
+<h6 title="HostGetImportMetaProperties(moduleRecord)">8.1.6.6.1. `HostGetImportMetaProperties^A( %~module~record )</h6>
 
 <p>
 ~JS `JAVASCRIPT$r は、
@@ -11839,7 +11888,7 @@ Return « Record { [[Key]]: "url", [[Value]]: urlString }, Record { [[Key]]: "re
 
 					</section>
 					<section id="hostgetsupportedimportattributes">
-<h6 title="HostGetSupportedImportAttributes()">8.1.6.5.2. `HostGetSupportedImportAttributes^A()</h6>
+<h6 title="HostGetSupportedImportAttributes()">8.1.6.6.2. `HostGetSupportedImportAttributes^A()</h6>
 
 <p>
 `~import属性^cite （ `Import Attributes^en ）提案 `JSIMPORTATTRIBUTES$r は、
@@ -11868,7 +11917,7 @@ Return « "type" ».
 
 					</section>
 					<section id="hostloadimportedmodule">
-<h6 title="HostLoadImportedModule(referrer, moduleRequest, loadState, payload)">8.1.6.5.3. `HostLoadImportedModule^A( %~referrer, %~module要請, %読込n状態, %~payload )</h6>
+<h6 title="HostLoadImportedModule(referrer, moduleRequest, loadState, payload)">8.1.6.6.3. `HostLoadImportedModule^A( %~referrer, %~module要請, %読込n状態, %~payload )</h6>
 
 <p>
 ~JS `JAVASCRIPT$r は、
