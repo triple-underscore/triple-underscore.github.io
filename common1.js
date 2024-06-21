@@ -1752,18 +1752,17 @@ REFERRERPOLICY=副     ~/webappsec-referrer-policy-ja.html
 REPORTING1=副         ~/reporting1-ja.html
 SCREENORIENTATION=副  ~/screen-orientation-ja.html
 PERMISSIONS=副        ~/webappsec-permissions-ja.html
-DEVICEORIENTATION=副  ~/deviceorientation-ja.html
-GEOLOCATIONAPI=・     ~TR/geolocation-API/
-GEOLOCATIONAPI=副     ~/geolocation-api-ja.html
-GEOLOCATIONAPI=副2    www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-20220901.html
 AMBIENTLIGHT=副       ~/ambient-light-ja.html
 ACCELEROMETER=副      ~/accelerometer-ja.html
+DEVICEORIENTATION=副  ~/deviceorientation-ja.html
 GENERICSENSOR=副      ~/sensors-ja.html
+GEOLOCATION=副        ~/geolocation-api-ja.html
+GEOLOCATION=副2       www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-20220901.html
+GEOLOCATIONSENSOR=副  ~/geolocation-sensor-ja.html
 GYROSCOPE=副          ~/gyroscope-ja.html
 MAGNETOMETER=副       ~/magnetometer-ja.html
 ORIENTATIONSENSOR=副  ~/orientation-sensor-ja.html
 PROXIMITY=副          ~/proximity-ja.html
-GEOLOCATIONSENSOR=副  ~/geolocation-sensor-ja.html
 MOTIONSENSORS=副      ~/motion-sensors-ja.html
 WEBBLUETOOTH=副       tkybpp.github.io/web-bluetooth-jp/
 
@@ -1909,6 +1908,7 @@ CSS21:CSS2
 CSS22:CSS2
 CSSOM:CSSOM1
 CSSOMVIEW:CSSOMVIEW1
+GEOLOCATIONAPI:GEOLOCATION
 HTTP:RFC9110
 HTTPCACHING:RFC9111
 HTTP1:RFC9112
