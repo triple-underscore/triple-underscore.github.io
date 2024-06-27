@@ -3085,7 +3085,9 @@ comment::::コメント
 escape::::エスケープ
 literal::::リテラル
 引用符:quote::~
+接頭-:prefix::~
 接頭辞:prefix::~
+接尾-:suffix::~
 接尾辞:suffix::~
 小文字:lowercase::~
 大文字:uppercase::~
