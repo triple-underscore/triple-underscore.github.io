@@ -154,8 +154,8 @@ return text;
 
 ●●options
 
-spec_date:2024-03-26
-trans_update:2023-05-05
+spec_date:2024-07-15
+trans_update:2024-07-17
 source_checked:230717
 spec_status:LS
 original_url:https://mimesniff.spec.whatwg.org/
@@ -259,7 +259,6 @@ h.Content-Type:~HTTPsem#field.content-type
 資源~headerを読取る:#read-the-resource-header
 資源~header:#resource-header
 
-資源は~feedか~HTMLかを判別する規則:#rules-for-distinguishing-if-a-resource-is-a-feed-or-html
 資源は~textか~binaryかを判別する規則:#rules-for-text-or-binary
 未知な~MIME型を識別する規則:#rules-for-identifying-an-unknown-mime-type
 V.~script可否を~sniffするか:#sniff-scriptable-flag
@@ -363,7 +362,6 @@ Rshift: <span class="op">&gt;&gt;</span>
 	●MIME
 template::::テンプレート
 essence:
-feed:
 ZIP:
 ID3:
 MP3:
@@ -498,7 +496,6 @@ payload::::ペイロード
 
 低速:slow:~
 	一定範囲の:certain subset of
-並列:parallel::~
 厳密比較で:strictに:~
 	strictly
 量:amount:~
@@ -2959,6 +2956,19 @@ To determine the computed MIME type of a resource, user agents must use the foll
 ↓</li>
 	<li>
 ~IF［
+%~MIME型 は［
+`~XML~MIME型$／`~HTML~MIME型$
+］である
+］
+⇒
+~RET %~MIME型
+◎
+If the supplied MIME type is an XML MIME type or HTML MIME type, the computed MIME type is the supplied MIME type.
+◎
+Abort these steps.
+</li>
+	<li>
+~IF［
 %~MIME型 ~EQ ε
 ］~OR［
 %~MIME型 の`~essence$ ~IN
@@ -2988,26 +2998,6 @@ Abort these steps.
 ~RET `資源は~textか~binaryかを判別する規則$( %資源~header )
 ◎
 If the check-for-apache-bug flag is set, execute the rules for distinguishing if a resource is text or binary and abort these steps.
-</li>
-	<li>
-~IF［
-%~MIME型 は`~XML~MIME型$である
-］
-⇒
-~RET %~MIME型
-◎
-If the supplied MIME type is an XML MIME type, the computed MIME type is the supplied MIME type.
-◎
-Abort these steps.
-</li>
-	<li>
-~IF［
-%~MIME型 の`~essence$ ~EQ `text/html^l
-］
-⇒
-~RET `資源は~feedか~HTMLかを判別する規則$( %資源~header )
-◎
-If the supplied MIME type’s essence is "text/html", execute the rules for distinguishing if a resource is a feed or HTML and abort these steps.
 </li>
 	<li>
 ~IF［
@@ -3344,13 +3334,6 @@ The string "&lt;?xml".
 ◎
 The string "%PDF-", the PDF signature.
 </table>
-
-<p class="XXX">
-~feedについてはどうなのか？
-◎
-What about feeds?
-</p>
-
 	</li>
 	<li>
 <p>
@@ -3575,430 +3558,6 @@ It is critical that the rules for distinguishing if a resource is text or binary
 </p>
 	</li>
 </ol>
-</div>
-
-		</section>
-		<section id="sniffing-a-mislabeled-feed">
-<h3 title="Sniffing a mislabeled feed">7.3. 誤labelされた~feedの~sniff法</h3>
-
-<div class="algo">
-<p>
-次に与える
-`資源は~feedか~HTMLかを判別する規則@
-は、［
-~feedが~HTMLとして誤labelされたかどうか
-］を決定するときに利用される
-— それは、
-所与の
-( `資源~header$ %~byte列 )
-に対し，`~MIME型$を返す：
-◎
-To determine whether a feed has been mislabeled as HTML, execute the following rules for distinguishing if a resource is a feed or HTML:
-• Let sequence be the resource header, where sequence[s] is byte s in sequence and sequence[0] is the first byte in sequence.
-</p>
-
-<ol>
-	<li>
-%長さ ~LET %~byte列 の`長さ$byte
-◎
-Let length be the number of bytes in sequence.
-</li>
-	<li>
-%s ~LET 0
-◎
-Initialize s to 0.
-</li>
-	<li>
-~IF［
-%~byte列[ 0 `+〜$ 3 ] ~EQ `EF BB BF^X （ ~UTF-8~BOM ）
-］
-⇒
-%s ~INCBY 3
-◎
-If length is greater than or equal to 3 and the three bytes from sequence[0] to sequence[2] are equal to 0xEF 0xBB 0xBF (UTF-8 BOM), increment s by 3.
-</li>
-	<li>
-<p>
-~WHILE［
-%s ~LT %長さ
-］：
-◎
-While s is less than length, continuously loop through these steps:
-</p>
-		<ol>
-			<li>
-<p>
-~WHILE［
-%s ~LT %長さ
-］：
-◎
-Enter loop L:
-◎
-• If sequence[s] is undefined, the computed MIME type is the supplied MIME type.
-•• Abort these steps.
-</p>
-				<ol>
-					<li>
-~IF［
-%~byte列[ %s ] ~EQ `&lt;^lX
-］
-⇒＃
-%s ~INCBY 1；
-~BREAK
-◎
-If sequence[s] is equal to 0x3C ("&lt;"), increment s by 1 and exit loop L.
-</li>
-					<li>
-~IF［
-%~byte列[ %s ] は`空白~byte$でない
-］
-⇒
-~RET `給された~MIME型$
-◎
-If sequence[s] is not a whitespace byte, the computed MIME type is the supplied MIME type.
-◎
-Abort these steps.
-</li>
-					<li>
-%s ~INCBY 1
-◎
-Increment s by 1.
-</li>
-				</ol>
-			</li>
-			<li>
-<p>
-~IF［
-%~byte列[ %s `+〜$ 3 ] ~EQ `!--^lX
-］：
-◎
-Enter loop L:
-• If sequence[s] is undefined, the computed MIME type is the supplied MIME type.
-•• Abort these steps.
-◎
-If length is greater than or equal to s + 3 and the three bytes from sequence[s] to sequence[s + 2] are equal to 0x21 0x2D 0x2D ("!--"),＼
-</p>
-				<ol>
-					<li>
-%s ~INCBY 3
-◎
-increment s by 3 and＼
-</li>
-					<li>
-<p>
-~WHILE［
-%s ~LT %長さ
-］：
-◎
-enter loop M:
-• If sequence[s] is undefined, the computed MIME type is the supplied MIME type.
-•• Abort these steps.
-</p>
-						<ol>
-							<li>
-~IF［
-%~byte列[ %s `+〜$ 3 ] ~EQ `--&gt;^lX
-］
-⇒＃
-%s ~INCBY 3；
-~BREAK
-◎
-If length is greater than or equal to s + 3 and the three bytes from sequence[s] to sequence[s + 2] are equal to 0x2D 0x2D 0x3E ("--&gt;"), increment s by 3 and exit loops M and L.
-</li>
-							<li>
-%s ~INCBY 1
-◎
-Increment s by 1.
-</li>
-						</ol>
-					</li>
-					<li>
-~CONTINUE
-◎
-↑</li>
-				</ol>
-			</li>
-			<li>
-<p>
-~IF［
-%~byte列[ %s ] ~EQ `!^lX
-］
-⇒
-◎
-If length is greater than or equal to s + 1 and sequence[s] is equal to 0x21 ("!"),＼
-</p>
-				<ol>
-					<li>
-%s ~INCBY 1
-◎
-increment s by 1 and＼
-</li>
-					<li>
-<p>
-~WHILE［
-%s ~LT %長さ
-］：
-◎
-enter loop M:
-• If sequence[s] is undefined, the computed MIME type is the supplied MIME type.
-•• Abort these steps.
-</p>
-						<ol>
-							<li>
-~IF［
-%~byte列[ %s ] ~EQ `&gt;^lX
-］
-⇒＃
-%s ~INCBY 1；
-~BREAK
-◎
-If length is greater than or equal to s + 1 and sequence[s] is equal to 0x3E ("&gt;"), increment s by 1 and exit loops M and L.
-</li>
-							<li>
-%s ~INCBY 1
-◎
-Increment s by 1.
-</li>
-						</ol>
-					</li>
-					<li>
-~CONTINUE
-◎
-↑</li>
-				</ol>
-			</li>
-			<li>
-<p>
-~IF［
-%~byte列[ %s ] ~EQ `?^lX
-］：
-◎
-If length is greater than or equal to s + 1 and sequence[s] is equal to 0x3F ("?"),＼
-</p>
-				<ol>
-					<li>
-%s ~INCBY 1
-◎
-increment s by 1 and＼
-</li>
-					<li>
-<p>
-~WHILE［
-%s ~LT %長さ
-］：
-◎
-enter loop M:
-• If sequence[s] is undefined, the computed MIME type is the supplied MIME type.
-•• Abort these steps.
-</p>
-						<ol>
-							<li>
-~IF［
-%~byte列[ %s `+〜$ 2 ] ~EQ `?&gt;^lX
-］
-⇒＃
-%s ~INCBY 2；
-~BREAK
-◎
-If length is greater than or equal to s + 2 and the two bytes from sequence[s] to sequence[s + 1] are equal to 0x3F 0x3E ("?&gt;"), increment s by 2 and exit loops M and L.
-</li>
-							<li>
-%s ~INCBY 1
-◎
-Increment s by 1.
-</li>
-						</ol>
-					</li>
-					<li>
-~CONTINUE
-◎
-↑</li>
-				</ol>
-			</li>
-			<li>
-~IF［
-%~byte列[ %s `+〜$ 3 ] ~EQ `rss^lX
-］
-⇒
-~RET `application/rss+xml^l
-◎
-If length is greater than or equal to s + 3 and the three bytes from sequence[s] to sequence[s + 2] are equal to 0x72 0x73 0x73 ("rss"), the computed MIME type is "application/rss+xml".
-◎
-Abort these steps.
-</li>
-			<li>
-~IF［
-%~byte列[ %s `+〜$ 4 ] ~EQ `feed^lX
-］
-⇒
-~RET `application/atom+xml^l
-◎
-If length is greater than or equal to s + 4 and the four bytes from sequence[s] to sequence[s + 3] are equal to 0x66 0x65 0x65 0x64 ("feed"), the computed MIME type is "application/atom+xml".
-◎
-Abort these steps.
-</li>
-			<li>
-<p>
-~IF［
-%~byte列[ %s `+〜$ 7 ] ~EQ `rdf:RDF^lX
-］
-⇒
-◎
-If length is greater than or equal to s + 7 and the seven bytes from sequence[s] to sequence[s + 6] are equal to 0x72 0x64 0x66 0x3A 0x52 0x44 0x46 ("rdf:RDF"),＼
-</p>
-				<ol>
-					<li>
-%s ~INCBY 7
-◎
-increment s by 7 and＼
-</li>
-					<li>
-%RSS10 ~LET `http://purl.org/rss/1.0/^lX
-◎
-↓</li>
-					<li>
-%RDF ~LET `http://www.w3.org/1999/02/22-rdf-syntax-ns#^lX
-◎
-↓</li>
-					<li>
-<p>
-~WHILE［
-%s ~LT %長さ
-］：
-◎
-enter loop M:
-◎
-• If sequence[s] is undefined, the computed MIME type is the supplied MIME type.
-•• Abort these steps.
-</p>
-						<ol>
-							<li>
-<p>
-~IF［
-%~byte列[ %s `+〜$ 24 ] ~EQ %RSS10
-］：
-◎
-If length is greater than or equal to s + 24 and the twenty-four bytes from sequence[s] to sequence[s + 23] are equal to 0x68 0x74 0x74 0x70 0x3A 0x2F 0x2F 0x70 0x75 0x72 0x6C 0x2E 0x6F 0x72 0x67 0x2F 0x72 0x73 0x73 0x2F 0x31 0x2E 0x30 0x2F ("http://purl.org/rss/1.0/"),＼
-</p>
-								<ol>
-									<li>
-%s ~INCBY 24
-◎
-increment s by 24 and＼
-</li>
-									<li>
-<p>
-~WHILE［
-%s ~LT %長さ
-］：
-◎
-enter loop N:
-• If sequence[s] is undefined, the computed MIME type is the supplied MIME type.
-•• Abort these steps.
-</p>
-										<ol>
-											<li>
-~IF［
-%~byte列[ %s `+〜$ 43 ] ~EQ %RDF
-］
-⇒
-~RET `application/rss+xml^l
-◎
-If length is greater than or equal to s + 43 and the forty-three bytes from sequence[s] to sequence[s + 42] are equal to 0x68 0x74 0x74 0x70 0x3A 0x2F 0x2F 0x77 0x77 0x77 0x2E 0x77 0x33 0x2E 0x6F 0x72 0x67 0x2F 0x31 0x39 0x39 0x39 0x2F 0x30 0x32 0x2F 0x32 0x32 0x2D 0x72 0x64 0x66 0x2D 0x73 0x79 0x6E 0x74 0x61 0x78 0x2D 0x6E 0x73 0x23 ("http://www.w3.org/1999/02/22-rdf-syntax-ns#"), the computed MIME type is "application/rss+xml".
-◎
-Abort these steps.
-</li>
-											<li>
-%s ~INCBY 1
-◎
-Increment s by 1.
-</li>
-										</ol>
-									</li>
-								</ol>
-							</li>
-							<li>
-<p>
-~IF［
-%~byte列[ %s `+〜$ 43 ] ~EQ %RDF
-【！ 原文誤 24 】
-］：
-◎
-If length is greater than or equal to s + 24 and the twenty-four bytes from sequence[s] to sequence[s + 23] are equal to 0x68 0x74 0x74 0x70 0x3A 0x2F 0x2F 0x77 0x77 0x77 0x2E 0x77 0x33 0x2E 0x6F 0x72 0x67 0x2F 0x31 0x39 0x39 0x39 0x2F 0x30 0x32 0x2F 0x32 0x32 0x2D 0x72 0x64 0x66 0x2D 0x73 0x79 0x6E 0x74 0x61 0x78 0x2D 0x6E 0x73 0x23 ("http://www.w3.org/1999/02/22-rdf-syntax-ns#"),＼
-</p>
-								<ol>
-									<li>
-%s ~INCBY 43
-【！ 原文誤 24 】
-◎
-increment s by 24 and＼
-</li>
-									<li>
-<p>
-~WHILE［
-%s ~LT %長さ
-］：
-◎
-enter loop N:
-• If sequence[s] is undefined, the computed MIME type is the supplied MIME type.
-•• Abort these steps.
-</p>
-										<ol>
-											<li>
-~IF［
-%~byte列[ %s `+〜$ 24 ] ~EQ %RSS10
-【！ 原文誤 43 】
-］
-⇒
-~RET `application/rss+xml^l
-◎
-If length is greater than or equal to s + 43 and the forty-three bytes from sequence[s] to sequence[s + 42] are equal to 0x68 0x74 0x74 0x70 0x3A 0x2F 0x2F 0x70 0x75 0x72 0x6C 0x2E 0x6F 0x72 0x67 0x2F 0x72 0x73 0x73 0x2F 0x31 0x2E 0x30 0x2F ("http://purl.org/rss/1.0/"), the computed MIME type is "application/rss+xml".
-◎
-Abort these steps.
-</li>
-											<li>
-%s ~INCBY 1
-◎
-Increment s by 1.
-</li>
-										</ol>
-									</li>
-								</ol>
-							</li>
-							<li>
-%s ~INCBY 1
-◎
-Increment s by 1.
-</li>
-						</ol>
-					</li>
-				</ol>
-			</li>
-			<li>
-~BREAK
-◎
-The computed MIME type is the supplied MIME type.
-◎
-Abort these steps.
-</li>
-		</ol>
-	</li>
-	<li>
-~RET `給された~MIME型$
-◎
-The computed MIME type is the supplied MIME type.
-</li>
-</ol>
-
-<p class="note">注記：
-~UAにとっては
-`資源は~feedか~HTMLかを判別する規則$を，自身による［
-~HTML文書の文字~符号化法を検出する~algo
-］と並列に実装する方が、
-より効率的になるかもしれない。
-◎
-It might be more efficient for the user agent to implement the rules for distinguishing if a resource is a feed or HTML in parallel with its algorithm for detecting the character encoding of an HTML document.
-</p>
 </div>
 
 		</section>
@@ -4402,7 +3961,7 @@ portions in the source code are licensed under the <a href="https://opensource.o
 </p>
 
 <p>
-This is the Living Standard. Those interested in the patent-review version should view the <a href="https://mimesniff.spec.whatwg.org/review-drafts/2023-07/">Living Standard Review Draft</a>.
+This is the Living Standard. Those interested in the patent-review version should view the <a href="https://mimesniff.spec.whatwg.org/review-drafts/2024-07/">Living Standard Review Draft</a>.
 </p>
 </div>
 
