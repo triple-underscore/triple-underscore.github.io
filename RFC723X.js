@@ -1149,16 +1149,14 @@ escaping::::エスケープ処理
 折返さな:foldしな::~
 折返し:folding::~
 記号:symbol:~
-符号化:encoding::~::エンコーディング
-	符号化-済み:encoded
 符号法:coding::~::コーディング
-復号:decoding::~::デコーディング
 暗号化-:encrypt::~
 暗号化:encryption::~
 暗号用の:cryptographic::~
 形式変換ng:transforming::形式変換
 形式変換-:transform::~
 形式変換:transformation::~
+	符号化-済み:encoded
 
 	●network
 

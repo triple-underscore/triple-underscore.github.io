@@ -1069,10 +1069,8 @@ escaping::::エスケープ処理
 圧縮:compression::~
 下位成分:subcomponent::~
 記号:symbol:~
-符号化:encoding::~::エンコーディング
 	符号化-済み:encoded
 符号法:coding::~::コーディング
-復号:decoding::~::デコーディング
 暗号化-:encrypt::~
 暗号化:encryption::~
 暗号用の:cryptographic::~

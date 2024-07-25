@@ -3020,7 +3020,11 @@ sort::::ソート
 
 符号化-:encode::~::エンコード
 符号化法:encoding::~::エンコーディング
+符号化:encoding::~::エンコーディング
+符号化器:encoder::~::エンコーダ
 復号-:decode::~::デコード
+	復号-可能:decodable
+復号:decoding::~::デコーディング
 復号器:decoder::~::デコーダ
 
 読込n:load::読み込み::ロード
