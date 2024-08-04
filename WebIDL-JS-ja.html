@@ -338,7 +338,7 @@ source_data.populate = function(){
 ●●options
 
 spec_title:Web IDL Standard
-trans_update:2024-07-20
+trans_update:2024-08-04
 original_url:https://webidl.spec.whatwg.org/
 	abbr_url:WEBIDLjs
 page_state_key:WEBIDL
@@ -1021,6 +1021,8 @@ C.missing:#_missing
 観測-可能な配列~exotic~objの有index値を設定する:#observable-array-exotic-object-set-the-indexed-value
 観測-可能な配列~exotic~objの長さを設定する:#observable-array-exotic-object-set-the-length
 
+~scriptと~callbackを準備する:#_prepare-for-script-and-callback
+
 	●外部
 実装定義:~INFRA#implementation-defined
 符号単位:~INFRA#code-unit
@@ -1062,6 +1064,7 @@ byte.長さ:~INFRA#byte-sequence-length
 ~task~source:~WAPI#task-source
 小taskを~queueする:~WAPI#queue-a-microtask
 ~taskを~queueする:~WAPI#queue-a-task
+例外を報告する:~WAPI#report-an-exception
 
 並列的:~HTMLINFRA#in-parallel
 
@@ -1071,8 +1074,6 @@ enV.非同一-生成元~能力は隔離されるか？:~WAPI#concept-settings-ob
 	●外部（JS
 
 	A.XxxYyy:~TC39#sec-xxxyyy
-A.CleanupSettings:#_CleanupSettings
-A.PrepareSettings:#_PrepareSettings
 A.LegacyPlatformObjectGetOwnProperty:#LegacyPlatformObjectGetOwnProperty
 A.IntegerPart:#abstract-opdef-integerpart
 A.ConvertToInt:#abstract-opdef-converttoint
@@ -1298,6 +1299,7 @@ main::::メイン
 	投出し直す:rethrow
 	走り得る:run
 	~call元:caller
+	この~algoを~callする:call site
 	先に進む:proceed
 	へ進む:continue
 	生じさせ:cause
@@ -1420,7 +1422,8 @@ wildcard::::ワイルドカード
 	注意:notice
 	易くする:help
 	助けになる:help
-	付与:mark／
+	付与:-
+	を伴う:marked with
 	見える:made to look like
 	まかなう:cater
 	集約:-
@@ -1597,7 +1600,6 @@ idl:IDL
 	%uint32長さ:uint32Len
 	%~buffer~source:bufferSource
 	%~byte列:bytes
-	%~call結果:callResult
 	%~callable:callable
 	%~callback:callback
 	%~callback関数:callbackFn
@@ -1707,7 +1709,6 @@ idl:IDL
 	%原型:proto
 	%反復子~record:iteratorRecord
 	%反復子:iterator
-	%取得-結果:getResult
 	%取得子:getter
 	%可反復:iterable
 	%合計:total
@@ -1753,6 +1754,9 @@ idl:IDL
 	%種類:kind
 	%結果:result
 	%結果~群:results
+	%結果:callResult
+	%結果:completion
+	%結果:getResult
 	%返り値:retVal
 	%自前の~key群:ownKeys
 	%自前の記述子:ownDesc
@@ -1764,7 +1768,6 @@ idl:IDL
 	%記述子~obj:descriptorObj
 	%設定する~algo:setAlgorithm
 	%設定子:setter
-	%設定群~組:-
 	%識別子:id
 	%辞書:dictionary
 	%長さ:length
@@ -1784,9 +1787,9 @@ idl:IDL
 	%最小:-
 	%回送-~ID:forwardId
 	%完了~record:completion
-	%結果:completion
 	%例外:ex
 	%例外:O
+	%例外の挙動:exceptionBehavior
 
 	%A
 	%B
@@ -2279,7 +2282,7 @@ Note: All interfaces define which realms they are exposed in. This allows, for e
 
 <p>
 これを書いた時点では，~JS仕様には まだ反映されてないが、
-どの~JS~objにも ある`~realm$が結付けられるモノトスル
+どの~JS~objにも，ある`~realm$が結付けられるモノトスル
 — この~realmを指して，~objが
 `属する~realm@
 という。
@@ -2295,18 +2298,16 @@ The mechanisms for associating objects with realms are, for now, underspecified.
 </p>
 <ul>
 	<li>
-`~platform~obj$については、
-それが`属する~realm$は，その~objに`関連な~realm$に等しい。
+`~platform~obj$用には、
+それが`属する~realm$は，当の~objに`関連な~realm$に等しい。
 ◎
 in the case of platform objects, the associated realm is equal to the object’s relevant realm, and＼
 </li>
 	<li>
 ~exoticでない`関数~obj$
-（すなわち，［
-`~callable$な~proxy／~bindされた関数
-］ではない）
-についても、
-それが`属する~realm$は，その`関数~obj$の `Realm^sl 内部~slotの値に等しい。
+（すなわち，`~callable$な~proxyでも, ~bindされた関数でもない それ）
+用には、
+それが`属する~realm$は，当の~objの `Realm^sl 内部~slotの値に等しい。
 ◎
 for non-exotic function objects (i.e. not callable proxies, and not bound functions) the associated realm is equal to the value of the function object's [[Realm]] internal slot.
 </li>
@@ -7126,10 +7127,13 @@ To transfer an ArrayBuffer arrayBuffer, optionally given a realm targetRealm:
 Let jsArrayBuffer be the result of converting arrayBuffer to a JavaScript value.
 </li>
 	<li>
-~Assert：
+~IF［
 `IsDetachedBuffer$A( %~js配列~buffer ）~EQ ~F
+］
+⇒
+`~THROW$ `TypeError$jt
 ◎
-Assert: IsDetachedBuffer(jsArrayBuffer) is false.
+If IsDetachedBuffer(jsArrayBuffer) is false, then throw a TypeError.
 </li>
 	<li>
 %配列~buffer~data ~LET 
@@ -7181,10 +7185,13 @@ Return the result of converting jsTransferred to an IDL value of type ArrayBuffe
 </ol>
 
 <p class="note">注記：
-これは、
-`配列~bufferを切離す$ときと同じ状況下で，例外を投出することになる。
+これは、［
+`配列~bufferを切離す$ときと同じ状況下
+］で, および［
+%配列~buffer が すでに`切離されて$いた場合
+］に，例外を投出することになる。
 ◎
-This will throw an exception under the same circumstances as detaching.
+This will throw an exception under the same circumstances as detaching, and also for ArrayBuffers that are already detached.
 </p>
 </div>
 
@@ -20447,22 +20454,17 @@ Otherwise, the implementation of the operation is calling the result of invoking
 Note that JavaScript objects need not have properties corresponding to constants on them to be considered as implementing callback interfaces that happen to have constants declared on them.
 </p>
 
-<p class="trans-note">【
-共通な記述を集約するため、
-この訳では，以下に定義される各種 手続きの中から一部分を抽出して，次の 2 つの手続き
-"PrepareSettings",
-"CleanupSettings"
-に~~分離する：
-】</p>
-
 <div class="algo">
 <p>
-`PrepareSettings@A( %~realm, %値 )
-は、
-次を遂行する：
+`~scriptと~callbackを準備する@
+ときは、
+所与の
+( `~realm$ %~realm, `~callback~ifc型$の値 %値 )
+に対し：
 </p>
 <ol>
-<li>%関連な設定群 ~LET %~realm の`設定群~obj$
+	<li>
+%関連な設定群 ~LET %~realm の`設定群~obj$
 </li>
 	<li>
 %格納-済み設定群 ~LET %値 の`~callback文脈$
@@ -20475,78 +20477,20 @@ Note that JavaScript objects need not have properties corresponding to constants
 </li>
 	<li>
 ~RET ( %関連な設定群, %格納-済み設定群 )
-</li></ol>
+</li>
+</ol>
+
+<p class="trans-note">【
+この手続きは、
+以下に定義される各~手続きに共通な記述を集約するために，
+この訳にて導入したものである。
+】</p>
+
 ◎
 • Let relevant settings be realm’s settings object.
 • Let stored settings be XXX’s callback context.
 • Prepare to run script with relevant settings.
 • Prepare to run a callback with stored settings.
-</div>
-
-<div class="algo">
-<p>
-`CleanupSettings@A( %設定群~組, %結果, %T )
-は、
-次を遂行する
-— ここで：
-</p>
-<ul>
-	<li>
-%設定群~組 は `PrepareSettings$A から返された 2 つの設定群が成す組
-</li>
-	<li>
-%結果 は［
-`中途完了$／~IDL値
-］
-【この引数に渡された “例外を表現している値” は、`中途完了$を表す。】
-</li>
-	<li>
-%T はある~IDL型
-</li>
-</ul>
-<ol>
-	<li>
-( %関連な設定群, %格納-済み設定群 ) ~LET %設定群~組
-</li>
-	<li>
-`走らせた~callbackを片付ける$( %格納-済み設定群 )
-</li>
-	<li>
-`走らせた~scriptを片付ける$( %関連な設定群 )
-</li>
-	<li>
-~IF［
-%結果 は~IDL値である
-］
-⇒
-~RET %結果
-</li>
-	<li>
-%値 ~LET %結果.`Value^sl
-</li>
-	<li>
-~IF［
-%T は`~promise型$でない
-］
-⇒
-`~THROW$ %値
-</li>
-	<li>
-%却下される~promise ~LET
-~NOABRUPT `Call$A( `Promise.reject$jI, `Promise$jI, « %値 » )
-</li>
-	<li>
-~RET `~IDL値に変換する$( %却下される~promise, %T )
-</li>
-</ol>
-
-◎
-• Clean up after running a callback with stored settings.
-• Clean up after running script with relevant settings.
-• If completion is an IDL value, return completion.
-• If completion is an abrupt completion and the T is not a promise type, throw completion.[[Value]].
-• Let rejectedPromise be ! Call(%Promise.reject%, %Promise%, «completion.[[Value]]»).
-• Return the result of converting rejectedPromise to T.
 </div>
 
 <p>
@@ -20671,11 +20615,11 @@ To call a user object’s operation, given a callback interface type value value
 </p>
 <ol>
 	<li>
-%完了~record ~LET ε
+%結果 ~LET ε
 ◎
 Let completion be an uninitialized variable.
 ◎
-If thisArg was not given, let thisArg be undefined.
+↑ If thisArg was not given, let thisArg be undefined.
 </li>
 	<li>
 %O ~LET %値 に対応している~JS~obj
@@ -20688,7 +20632,7 @@ Let O be the JavaScript object corresponding to value.
 Let realm be O’s associated realm.
 </li>
 	<li>
-%設定群~組 ~LET `PrepareSettings$A( %~realm, %値 )
+( %関連な設定群, %格納-済み設定群 ) ~LET `~scriptと~callbackを準備する$( %~realm, %値 )
 ◎
 • Let relevant settings be realm’s settings object.
 • Let stored settings be value’s callback context.
@@ -20696,7 +20640,7 @@ Let realm be O’s associated realm.
 • Prepare to run a callback with stored settings.
 </li>
 	<li>
-%T ~LET 当の演算の返り値~型
+%T ~LET 当の演算の`返り値~型$
 ◎
 ↓</li>
 	<li>
@@ -20714,36 +20658,33 @@ If IsCallable(O) is false, then:
 </p>
 		<ol>
 			<li>
-%取得-結果 ~LET
+%結果 ~SET
 `Completion$A( `Get$A( %O, %演算~名 ) )
 ◎
 Let getResult be Completion(Get(O, opName)).
 </li>
 			<li>
 ~IF［
-%取得-結果 は`中途完了$である
+%結果 は`中途完了$である
 ］
 ⇒
-~RET `CleanupSettings$A( %設定群~組, %取得-結果, %T )
+~GOTO `最後の段^i
 ◎
 If getResult is an abrupt completion, set completion to getResult and jump to the step labeled return.
 </li>
 			<li>
-%X ~SET %取得-結果.`Value^sl
-◎
-Set X to getResult.[[Value]].
-</li>
-			<li>
 <p>
 ~IF［
-`IsCallable$A( %X ) ~EQ ~F
+`IsCallable$A( %結果.`Value^sl ) ~EQ ~F
 ］：
+◎
+Set X to getResult.[[Value]].
 ◎
 If IsCallable(X) is false, then＼
 </p>
 				<ol>
 					<li>
-%完了~record ~SET 新たな`完了record$ {
+%結果 ~SET 新たな`完了record$ {
 `Type^sl: `throw^i,
 `Value^sl: 新たな `TypeError^jE ~obj,
 `Target^sl: 空
@@ -20752,7 +20693,7 @@ If IsCallable(X) is false, then＼
 set completion to Completion Record { [[Type]]: throw, [[Value]]: a newly created TypeError object, [[Target]]: empty }, and＼
 </li>
 					<li>
-~RET `CleanupSettings$A( %設定群~組, %完了~record, %T )
+~GOTO `最後の段^i
 ◎
 jump to the step labeled return.
 </li>
@@ -20777,31 +20718,31 @@ Let jsArgs be the result of converting args to a JavaScript arguments list.＼
 ~IF［
 変換-時に例外が投出された
 ］
-⇒
-~RET `CleanupSettings$A( %設定群~組, その例外を表現している値, %T )
+⇒＃
+%結果 ~SET その例外を表現している`中途完了$【！completion value】
+~GOTO `最後の段^i
 ◎
 If this throws an exception, set completion to the completion value representing the thrown exception and jump to the step labeled return.
 </p>
 	</li>
 	<li>
-%~call結果 ~LET
-`Completion$A( `Call$A( %X, %~this引数, %~js引数~群 ) )
+%結果 ~SET `Completion$A( `Call$A( %X, %~this引数, %~js引数~群 ) )
 ◎
 Let callResult be Completion(Call(X, thisArg, jsArgs)).
 </li>
 	<li id="cp-callResult-is-abrupt">
 ~IF［
-%~call結果 は`中途完了$である
+%結果 は`中途完了$である
 ］
 ⇒
-~RET `CleanupSettings$A( %設定群~組, %~call結果, %T )
+~GOTO `最後の段^i
 ◎
 If callResult is an abrupt completion, set completion to callResult and jump to the step labeled return.
 </li>
 	<li>
 <div id="cp-set-completion-callResult">
 <p>
-%結果 ~LET `~IDL値に変換する$( %~call結果.`Value^sl, %T )
+%結果 ~SET `~IDL値に変換する$( %結果.`Value^sl, %T )
 </p>
 
 <p>
@@ -20809,25 +20750,73 @@ If callResult is an abrupt completion, set completion to callResult and jump to 
 変換-時に例外が投出された
 ］
 ⇒
-%結果 ~SET その例外を表現している値
+%結果 ~SET その例外を表現している`中途完了$【！completion value】；
 </p>
 </div>
 ◎
 Set completion to the result of converting callResult.[[Value]] to an IDL value of the same type as the operation’s return type. If this throws an exception, set completion to the completion value representing the thrown exception.
 </li>
-	<li id="call-user-object-operation-return">
-<p>
-~RET `CleanupSettings$A( %設定群~組, %結果, %T )
-</p>
+	<li>
+<p id="call-user-object-operation-return">
+`最後の段^i：
 ◎
-Return: at this point completion will be set to an IDL value or an abrupt completion.
-• Clean up after running a callback with stored settings.
-• Clean up after running script with relevant settings.
-• If completion is an IDL value, return completion.
-• If completion is an abrupt completion and the operation has a return type that is not a promise type, throw completion.[[Value]].
-• Let rejectedPromise be ! Call(%Promise.reject%, %Promise%, «completion.[[Value]]»).
-• Return the result of converting rejectedPromise to the operation’s return type.
+Return:＼
+</p>
+		<ol>
+			<li id="cp-is-IDL-value-or-abrupt">
+~Assert：
+%結果 は［
+~IDL値／`中途完了$
+］である
+◎
+at this point completion will be set to an IDL value or an abrupt completion.
 </li>
+
+			<li id="cp-cleanup-callback">
+`走らせた~callbackを片付ける$( %格納-済み設定群 )
+◎
+Clean up after running a callback with stored settings.
+</li>
+			<li id="cp-cleanup-script">
+`走らせた~scriptを片付ける$( %関連な設定群 )
+◎
+Clean up after running script with relevant settings.
+</li>
+			<li>
+~IF［
+%結果 は~IDL値である
+］
+⇒
+~RET %結果
+◎
+If completion is an IDL value, return completion.
+</li>
+			<li>
+%値 ~LET %結果.`Value^sl
+◎
+↓</li>
+			<li>
+~IF［
+%T は`~promise型$でない
+］
+⇒
+`~THROW$ %値
+◎
+If completion is an abrupt completion and the operation has a return type that is not a promise type, throw completion.[[Value]].
+</li>
+			<li>
+%却下される~promise ~LET
+~NOABRUPT `Call$A( `Promise.reject$jI, `Promise$jI, « %値 » )
+◎
+Let rejectedPromise be ! Call(%Promise.reject%, %Promise%, «completion.[[Value]]»).
+</li>
+			<li>
+~RET `~IDL値に変換する$( %却下される~promise, %T )
+◎
+Return the result of converting rejectedPromise to the operation’s return type.
+</li>
+		</ol>
+	</li>
 </ol>
 </div>
 
@@ -20914,7 +20903,7 @@ Define the constants of interface on F given realm.
 
 <p>
 `~callback関数$値として利用されている`~callable$な~JS~objは、
-（前~節【の`利用元~objの演算を~callする$】に述べたように）
+（前~節【の`利用元~objの演算を~callする$】にて述べたとおり）
 `~callback~ifc$の`演算$と類似な方式で~callされる。
 ◎
 A JavaScript callable object that is being used as a callback function value is called in a manner similar to how operations on callback interface values are called (as described in the previous section).
@@ -20928,31 +20917,53 @@ A JavaScript callable object that is being used as a callback function value is 
 ⇒＃
 `~callback関数~型$の値 %~callable,
 `~Web~IDL引数~list$ %~idl引数~群,
+%例外の挙動 ~IN { `報告する^i, `投出し直す^i, ε },
 `~callback this 値$ %~this引数 （省略時は `undefined^jv ）
 ◎終
-に対し，次の手続きを遂行する
-— この手続きは、
-~IDL値を返すか，例外を投出する。
+に対し，~IDL値を返すか, 例外を投出する。
 ◎
-To invoke a callback function type value callable with a Web IDL arguments list args and an optional callback this value thisArg, perform the following steps. These steps will either return an IDL value or throw an exception.
+To invoke a callback function type value callable with a Web IDL arguments list args, exception behavior exceptionBehavior (either "report" or "rethrow"), and an optional callback this value thisArg, perform the following steps. These steps will either return an IDL value or throw an exception.
 </p>
+
 <ol>
 	<li>
-%完了~record ~LET ε
+%T ~LET %~callable の`返り値~型$
+◎
+↓</li>
+	<li>
+<p>
+~Assert：
+%例外の挙動 は %T に応じて
+⇒＃
+`~promise型$であるならば ε ／
+`undefined$T ならば ε 以外 ／
+`any$T ならば ε 以外 ／
+~ELSE_ `投出し直す^i
+◎
+The exceptionBehavior argument must be supplied if, and only if, callable’s return type is not a promise type. If callable’s return type is neither undefined nor any, it must be "rethrow".
+</p>
+
+<p class="XXX">
+この~algoを~callする他の仕様のうち，
+新たに追加された引数 %例外の挙動 をまだ織り込んでないものは、
+ε でない（ %T は`~promise型$でない）場合には，
+`投出し直す^i を給しているものと解するべきである。
+◎
+Until call sites are updated to respect this, specifications which fail to provide a value here when it would be mandatory should be understood as supplying "rethrow".
+</p>
+	</li>
+	<li>
+%結果 ~LET ε
 ◎
 Let completion be an uninitialized variable.
 ◎
-If thisArg was not given, let thisArg be undefined.
+↑ If thisArg was not given, let thisArg be undefined.
 </li>
 	<li id="cp-let-F-callable">
 %F ~LET %~callable に対応している~JS~obj
 ◎
 Let F be the JavaScript object corresponding to callable.
 </li>
-	<li>
-%T ~LET %~callable の`返り値~型$
-◎
-↓</li>
 	<li>
 <p>
 ~IF［
@@ -20964,7 +20975,7 @@ Let F be the JavaScript object corresponding to callable.
 
 <p class="note">注記：
 これがアリになるのは、
-当の`~callback関数$（ %~callable ）が `LegacyTreatNonObjectAsNull$x が付与された属性から来ている場合に限られる。
+当の`~callback関数$（ %~callable ）が `LegacyTreatNonObjectAsNull$x を伴う属性から来ている場合に限られる。
 </p>
 ◎
 If IsCallable(F) is false:
@@ -20976,8 +20987,8 @@ If IsCallable(F) is false:
 ◎
 Let realm be F’s associated realm.
 </li>
-	<li id="cp-PrepareSettings1">
-%設定群~組 ~LET `PrepareSettings$A( %~realm, %~callable )
+	<li id="cp-prepare-script-callback">
+( %関連な設定群, %格納-済み設定群 ) ~LET `~scriptと~callbackを準備する$( %~realm, %~callable )
 ◎
 • Let relevant settings be realm’s settings object.
 • Let stored settings be callable’s callback context.
@@ -20986,8 +20997,7 @@ Let realm be F’s associated realm.
 </li>
 	<!--cp-convert-to-js-args-->
 	<li>
-%~call結果 ~LET
-`Completion$A( `Call$A( %F, %~this引数, %~js引数~群 ) )
+%結果 ~SET `Completion$A( `Call$A( %F, %~this引数, %~js引数~群 ) )
 ◎
 Let callResult be Completion(Call(F, thisArg, jsArgs)).
 </li>
@@ -20997,17 +21007,86 @@ Let callResult be Completion(Call(F, thisArg, jsArgs)).
 ◎
 Set completion to the result of converting callResult.[[Value]] to an IDL value of the same type as callable’s return type. If this throws an exception, set completion to the completion value representing the thrown exception.
 </li>
-	<li id="invoke-return">
-~RET `CleanupSettings$A( %設定群~組, %結果, %T )
+	<li>
+<p id="invoke-return">
+`最後の段^i：
 ◎
-Return: at this point completion will be set to an IDL value or an abrupt completion.
-• Clean up after running a callback with stored settings.
-• Clean up after running script with relevant settings.
-• If completion is an IDL value, return completion.
-• If completion is an abrupt completion and the callback function has a return type that is not a promise type, throw completion.[[Value]].
-• Let rejectedPromise be ! Call(%Promise.reject%, %Promise%, «completion.[[Value]]»).
-• Return the result of converting rejectedPromise to the callback function’s return type.
+Return:＼
+</p>
+		<ol>
+			<!--cp-is-IDL-value-or-abrupt-->
+			<!--cp-cleanup-callback-->
+			<!--cp-cleanup-script-->
+			<li>
+~IF［
+%結果 は~IDL値である
+］
+⇒
+~RET %結果
+◎
+If completion is an IDL value, return completion.
 </li>
+			<li>
+%値 ~LET %結果.`Value^sl
+◎
+↑ Assert: completion is an abrupt completion.
+◎
+↓</li>
+			<li>
+~IF［
+%例外の挙動 ~EQ `投出し直す^i
+］
+⇒
+~THROW %値
+◎
+If exceptionBehavior is "rethrow", throw completion.[[Value]].
+</li>
+			<li>
+<p>
+~ELIF［
+%例外の挙動 ~EQ `報告する^i
+］：
+◎
+Otherwise, if exceptionBehavior is "report":
+</p>
+				<ol>
+					<li>
+~Assert：
+%~callable の`返り値~型$ ~IN { `undefined$T, `any$T }
+◎
+Assert: callable’s return type is undefined or any.
+</li>
+					<li>
+`例外を報告する$( %値, %~realm の`大域~obj$ )
+◎
+Report an exception completion.[[Value]] for realm’s global object.
+</li>
+					<li>
+~RET 一意な `undefined$T ~IDL値
+◎
+Return the unique undefined IDL value.
+</li>
+				</ol>
+			</li>
+			<li>
+~Assert：
+%T は`~promise型$である
+◎
+Assert: callable’s return type is a promise type.
+</li>
+			<li>
+%却下される~promise ~LET
+~NOABRUPT `Call$A( `Promise.reject$jI, `Promise$jI, « %値 » )
+◎
+Let rejectedPromise be ! Call(%Promise.reject%, %Promise%, «completion.[[Value]]»).
+</li>
+			<li>
+~RET `~IDL値に変換する$( %却下される~promise, %T )
+◎
+Return the result of converting rejectedPromise to the callback function’s return type.
+</li>
+		</ol>
+	</li>
 </ol>
 </div>
 
@@ -21036,7 +21115,7 @@ To construct a callback function type value callable with a Web IDL arguments li
 </p>
 <ol>
 	<li>
-%完了~record ~LET ε
+%結果 ~LET ε
 ◎
 Let completion be an uninitialized variable.
 </li>
@@ -21055,11 +21134,10 @@ If IsConstructor(F) is false, throw a TypeError exception.
 %T ~LET 当の~callback関数の返り値~型
 ◎
 ↓</li>
-	<!--cp-PrepareSettings1-->
+	<!--cp-prepare-script-callback-->
 	<!--cp-convert-to-js-args-->
 	<li>
-%~call結果 ~LET
-`Completion$A( `Construct$A( %F, %~js引数~群 ) )
+%結果 ~LET `Completion$A( `Construct$A( %F, %~js引数~群 ) )
 ◎
 Let callResult be Completion(Construct(F, jsArgs)).
 </li>
@@ -21070,14 +21148,31 @@ Let callResult be Completion(Construct(F, jsArgs)).
 Set completion to the result of converting callResult.[[Value]] to an IDL value of the same type as callable’s return type. If this throws an exception, set completion to the completion value representing the thrown exception.
 </li>
 	<li>
-~RET `CleanupSettings$A( %設定群~組, %結果, %T )
+<p id="construct-return">
+`最後の段^i：
 ◎
-Return: at this point completion will be set to an IDL value or an abrupt completion.
-• Clean up after running a callback with stored settings.
-• Clean up after running script with relevant settings.
-• If completion is an abrupt completion, throw completion.[[Value]].
-• Return completion.
+Return:＼
+</p>
+		<ol>
+			<!--cp-is-IDL-value-or-abrupt-->
+			<!--cp-cleanup-callback-->
+			<!--cp-cleanup-script-->
+			<li>
+~IF［
+%結果 は`中途完了$である
+］
+⇒
+`~THROW$ %結果.`Value^sl
+◎
+If completion is an abrupt completion, throw completion.[[Value]].
 </li>
+			<li>
+~RET %結果
+◎
+Return completion.
+</li>
+		</ol>
+	</li>
 </ol>
 </div>
 
