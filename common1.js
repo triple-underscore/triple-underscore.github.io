@@ -1615,6 +1615,7 @@ CSS2=副3              ~adagio/tr_css2/toc.html●2.0 日本語訳
 CSS2TABLE=主          ~momdoG/css2/tables.html
 CSS2TABLE=・          ~CSSWG/css2/tables.html/../
 CSSALIGN3=副          ~/css-align-ja.html
+CSSANCHORPOSITION1=副 ~/css-anchor-position-ja.html
 CSSANIMATIONS1=副     ~/css-animations-ja.html
 CSSANIMATIONS2=副     ~/css-animations2-ja.html
 CSSBACKGROUNDS3=副    ~/css-backgrounds-ja.html
