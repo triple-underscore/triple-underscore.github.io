@@ -1268,7 +1268,7 @@ NOTIFICATIONS:notifications-ja.html
 ORIGIN:HTML-origin-ja.html
 PERMISSIONS-POLICY:webappsec-permissions-policy-ja.html
 PERMISSIONS:webappsec-permissions-ja.html
-POINTEREVENTS:pointerevents3-ja.html
+POINTEREVENTS:pointerevents-ja.html
 REFERRER-POLICY:webappsec-referrer-policy-ja.html
 REPORTING:reporting1-ja.html
 REQUESTIDLECALLBACK:requestidlecallback-ja.html
