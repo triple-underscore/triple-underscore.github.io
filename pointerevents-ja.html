@@ -154,7 +154,7 @@ return text;
 ●●options
 spec_title:Pointer Events Level 4
 spec_date:2024-08-14
-trans_update:2024-08-15
+trans_update:2024-08-17
 source_checked:211206
 page_state_key:UIEVENTS
 original_url:https://w3c.github.io/pointerevents/
@@ -313,6 +313,7 @@ mb.pointerType:#dom-pointereventinit-pointertype
 mb.altitudeAngle:#dom-pointereventinit-altitudeangle
 mb.azimuthAngle:#dom-pointereventinit-azimuthangle
 mb.isPrimary:#dom-pointereventinit-isprimary
+mb.persistentDeviceId:#dom-pointereventinit-persistentdeviceid
 mb.coalescedEvents:#dom-pointereventinit-coalescedevents
 mb.predictedEvents:#dom-pointereventinit-predictedevents
 
@@ -329,6 +330,7 @@ m.pointerType:#dom-pointerevent-pointertype
 m.altitudeAngle:#dom-pointerevent-altitudeangle
 m.azimuthAngle:#dom-pointerevent-azimuthangle
 m.isPrimary:#dom-pointerevent-isprimary
+m.persistentDeviceId:#dom-pointerevent-persistentdeviceid
 m.getCoalescedEvents:#dom-pointerevent-getcoalescedevents
 m.getPredictedEvents:#dom-pointerevent-getpredictedevents
 	getCoalescedEvents:#getCoalescedEvents
@@ -844,6 +846,7 @@ opt-in:
 最小化-:minimize:~
 模倣-:simulate:~
 義務:mandatory:~
+説明書き:explainer:~
 
 	あり得る／可能性もある:possible
 	節:section:~
@@ -1627,6 +1630,61 @@ const %event2 = new PointerEvent("pointermove", %pointerEventInitDict);
 </pre>
 </div>
 
+<div class="example">
+<p>
+`5@ex：
+`pointerdown^et に対し，~penの色をアテガう例
+◎
+Example 5: Assigning a pen color on PointerDown
+</p>
+
+<pre class="lang-html">
+&lt;div style="position:absolute; top:0px; left:0px; width:100px;height:100px;"&gt;&lt;/div&gt;
+</pre>
+
+<pre class="lang-js">
+window.addEventListener("pointerdown", assignPenColor);
+window.addEventListener("pointermove", assignPenColor);
+const %colorMap = new Map();
+
+function assignPenColor(%event) {
+    const %uniqueId = %event.persistentDeviceId;
+    /* <span class="comment">
+一意な~IDが存在するか否か検査する
+◎
+Check if a unique Id exists.
+</span> */
+    if (%uniqueId == 0) {
+        return;
+    }
+    /* <span class="comment">
+当の装置には色はアテガわれたか否か検査する
+◎
+Check if a color has been assigned to the device.
+</span> */
+    if (%colorMap【！map】.has(%uniqueId)) {
+        return;
+    }
+    /* <span class="comment">
+当の装置に色をアテガう
+◎
+Assign a color to the device.
+</span> */
+    let %newColor = getNewColor();
+    %colorMap【！map】.set(%uniqueId, %newColor);
+    return %newColor;
+}
+
+function getNewColor() {
+    /* <span class="comment">
+何らかの色~値を返す
+◎
+return some color value
+</span> */
+}
+</pre>
+</div>
+
 	</section>
 	<section id="pointer-events-and-interfaces">
 <h2 title="Pointer Events and interfaces">4. 各種~pointer~eventと各種~interface</h2>
@@ -1647,6 +1705,7 @@ dictionary `PointerEventInit$I : `MouseEventInit$I {
     `double$    `azimuthAngle@mb;
     `DOMString$ `pointerType@mb = "";
     `boolean$   `isPrimary@mb = false;
+    `long$      `persistentDeviceId@mb = 0;
     `sequence$&lt;`PointerEvent$I&gt; `coalescedEvents@mb = [];
     `sequence$&lt;`PointerEvent$I&gt; `predictedEvents@mb = [];
 };
@@ -1666,6 +1725,7 @@ interface `PointerEvent@I : `MouseEvent$I {
     readonly attribute `double$    `azimuthAngle$m;
     readonly attribute `DOMString$ `pointerType$m;
     readonly attribute `boolean$   `isPrimary$m;
+    readonly attribute `long$      `persistentDeviceId$m;
     [`SecureContext$] sequence&lt;`PointerEvent$I&gt; `getCoalescedEvents()$m;
     sequence&lt;`PointerEvent$I&gt; `getPredictedEvents()$m;
 };
@@ -1675,7 +1735,8 @@ interface `PointerEvent@I : `MouseEvent$I {
 	<dt>`pointerId@m</dt>
 	<dd>
 ~eventを生じさせた~pointerを一意に識別する識別子
-— 以下，ここでは、単に~IDと称する。
+— 以下、
+ここでは，単に~IDと称する。
 ◎
 A unique identifier for the pointer causing the event.＼
 </dd>
@@ -2096,6 +2157,85 @@ See Example 2 for a basic demonstration of how the pointerType can be used. Also
 Indicates if the pointer represents the primary pointer of this pointer type.
 </dd>
 
+	<dt>`persistentDeviceId@m</dt>
+	<dd>
+~pointing装置~用の一意な識別子【を与える整数】
+— 以下、
+ここでは，単に~ID【！ persistentDeviceId 】と称する。
+◎
+A unique identifier for the pointing device.＼
+</dd>
+	<dd>
+当の~hardwareは複数の~pointerを~supportする場合†、
+同じ~pointing装置から生成された~pointer~eventは
+— それらの~pointerが~sessionを通して一意に識別-可能ならば†† —
+一つの~IDに限り取得するモノトスル。
+当の~pointerが一意に識別-可能になって以降は††、
+その~pointing装置へアテガわれる~IDは，
+当の~sessionを通して一定であり続けることになる。
+◎
+If the hardware supports multiple pointers, pointer events generated from pointing devices MUST only get a persistentDeviceId if those pointers are uniquely identifiable over the session. If the pointer is uniquely identifiable, the assigned persistentDeviceId to that pointing device will remain constant for the remainder of the session.＼
+</dd>
+	<dd class="trans-note">【†
+同じ`~digitizer$を複数の~pointing装置が共有する状況
+（例：
+用途が異なる複数の~pen（あるいは交換-可能な~pen先）を利用している，など）
+が想定されていると思われる。
+】【††
+下の注記を見よ。
+】【
+原文からは明瞭でないが、
+同じ~pointing装置を複数の`~digitizer$で利用している場合も含めて，それら［
+`~digitizer$, ~pointing装置
+］の組合nごとに異なる~IDになろう。
+】【
+参考：
+`この属性についての説明書き＠https://github.com/WICG/pointer-event-extensions/blob/main/pointer-event-device-id-explainer.md$
+】</dd>
+	<dd>
+~ID用の値 0 は、［
+当の~eventを生成している装置を識別できなかったこと
+］を指示するものとして［
+予約され, 利用する
+］モノトスル。
+◎
+The persistentDeviceId value of 0 MUST be reserved and used to indicate events whose generating device could not be identified.＼
+</dd>
+	<dd>
+`pointerId$m と同様に，［
+異なる~pageや~domainにまたがる指紋収集や追跡
+］の機会cを最小化するため、
+当の［
+~page／~session
+］が存続する限り，この~IDを当の装置のみに明示的に結付けるモノトスル
+— 次回に，当の装置が新たな~sessionにて再び利用されたときは、
+新たな~IDを~randomに選ぶモノトスル。
+◎
+Like pointerId, to minimize the chance of fingerprinting and tracking across different pages or domains, the persistentDeviceId MUST only be associated explicitly with that particular pointing device for the lifetime of the page / session, and a new randomized persistentDeviceId MUST be chosen the next time that particular pointing device is used again in a new session.
+</dd>
+	<dd class="note">注記：
+［
+`~digitizer$／~pointing装置
+］~hardwareの拘束に因り、［
+~IDが，ある~pointing装置から生成される すべての~pointer~event用に可用になる
+］ことは保証されない。
+例えば、
+当の装置は［
+`pointerdown$et† が 0 でない~IDを有する
+］よう［
+その~hardware~IDを~digitizerへ報告する
+］とは限らない。
+そのような事例では、
+`persistentDeviceId^m は，初期~時は 0 であっても妥当な値へ変化する†。
+◎
+Due to digitizer and pointing device hardware constraints, a persistentDeviceId is not guaranteed to be available for all pointer events from a pointing device. For example, the device may not report its hardware id to the digitizer in time for pointerdown to have a persistentDeviceId. In such a case, the persistentDeviceId may initially be 0 and change to a valid value.
+</dd>
+	<dd class="trans-note">【†
+なぜ `pointerdown^et だけ挙げられているのか，
+初期~時だけ~IDを取得できないことの背後に どんな論理があるのか
+（および，この 2 つには関連性があるのか）は、
+よくわからない。
+】</dd>
 	<dt>`getCoalescedEvents()@m</dt>
 	<dd>
 コレの`合体d~event~list$【！合体された~event群】を返す。
@@ -3154,7 +3294,7 @@ azimuthAngle / altitudeAngle (adopted from the Touch Events - Level 2 specificat
 上の属性~組 (T), (A)
 ］のうち片方しか受取らない見込みが高い。
 ~UAは，これらの値を変換するときは、
-以下の~algo【 `12$ex 】を利用するモノトスル。
+以下の~algo【 `6$ex 】を利用するモノトスル。
 ◎
 Depending on the specific hardware and platform, user agents will likely only receive one set of values for the transducer orientation relative to the screen plane — either tiltX / tiltY or altitudeAngle / azimuthAngle. User agents MUST use the following algorithm for converting these values.
 </p>
@@ -3168,14 +3308,14 @@ When the user agent calculates tiltX / tiltY from azimuthAngle / altitudeAngle i
 
 <div class="example">
 <p>
-`12@ex：
+`6@ex：
 ［
 `tiltX$m ／ `tiltY$m
 ］と［
 `azimuthAngle$m ／ `altitudeAngle$m
 ］の間の変換-法：
 ◎
-Example 12: Converting between tiltX/tiltY and altitudeAngle/azimuthAngle
+Example 6: Converting between tiltX/tiltY and altitudeAngle/azimuthAngle
 ◎
 /* Converting between tiltX/tiltY and altitudeAngle/azimuthAngle */
 </p>
@@ -4858,10 +4998,10 @@ Disabling some default direct manipulation behaviors for panning and zooming may
 		</section>
 
 <div class="example">
-<p>`5@ex：
+<p>`7@ex：
 `直な操作$用の挙動をすべて許容しない例：
 ◎
-Example 5: Disallowing all direct manipulation behaviors
+Example 7: Disallowing all direct manipulation behaviors
 </p>
 
 <pre class="lang-html">
@@ -4879,10 +5019,10 @@ This element receives pointer events for all direct manipulation interactions th
 </div>
 
 <div class="example">
-<p>`6@ex：
+<p>`8@ex：
 横方向への~panningに限り許容する例：
 ◎
-Example 6: Allowing horizontal panning only
+Example 8: Allowing horizontal panning only
 </p>
 
 <pre class="lang-html">
@@ -4898,10 +5038,10 @@ This element receives pointer events when not panning in the horizontal directio
 </div>
 
 <div class="example">
-<p>`7@ex：
+<p>`9@ex：
 `直な~pan-zoom$用の挙動を許容しない子~領域がある例：
 ◎
-Example 7: Child regions that disallow direct manipulation behaviors for panning and zooming
+Example 9: Child regions that disallow direct manipulation behaviors for panning and zooming
 </p>
 
 <pre class="lang-html">
@@ -4929,10 +5069,10 @@ Direct manipulation interactions on this element MAY be consumed for manipulatin
 </div>
 
 <div class="example">
-<p>`8@ex：
+<p>`10@ex：
 `直な~pan-zoom$用の挙動を許容しない親が挟まれている例：
 ◎
-Example 8: Intermediate parent that disallows direct manipulation behaviors for panning and zooming
+Example 10: Intermediate parent that disallows direct manipulation behaviors for panning and zooming
 </p>
 
 <pre class="lang-html">
@@ -4960,10 +5100,10 @@ handled by the user agent.
 </div>
 
 <div class="example">
-<p>`9@ex：
+<p>`11@ex：
 許容される`直な~pan-zoom$用の挙動を制約する親が挟まれている例：
 ◎
-Example 9: Intermediate parent that restricts allowed direct manipulation behaviors for panning and zooming
+Example 11: Intermediate parent that restricts allowed direct manipulation behaviors for panning and zooming
 </p>
 
 <pre class="lang-html">
@@ -5443,11 +5583,11 @@ Empty coalesced events list and predicted events list of their own.
 </ul>
 
 <div class="example">
-<p>`10@ex：
+<p>`12@ex：
 合体d~event~listを利用している
 基本的な~canvasの描き~app
 ◎
-Example 10: Basic canvas drawing application using the coalesced events list
+Example 12: Basic canvas drawing application using the coalesced events list
 </p>
 
 <pre class="lang-html">
@@ -5754,10 +5894,10 @@ Note that authors should only consider predicted events as valid predictions unt
 
 <div class="example">
 
-<p>`11@ex：
+<p>`13@ex：
 合体された~event群, 予測された~event群を利用して何か描く概念的な~approach。
 ◎
-Example 11: Conceptual approach to drawing using coalesced events and predicted events
+Example 13: Conceptual approach to drawing using coalesced events and predicted events
 </p>
 
 <pre class="lang-js">
