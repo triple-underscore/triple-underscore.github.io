@@ -136,8 +136,8 @@ return text;
 
 ●●options
 
-spec_date:2024-06-11
-trans_update:2024-06-23
+spec_date:2024-08-20
+trans_update:2024-08-25
 source_checked:231212
 original_url:https://ietf-wg-webtrans.github.io/draft-ietf-webtrans-http3/draft-ietf-webtrans-http3.html
 	abbr_url:WT-HTTP3
@@ -207,8 +207,8 @@ h.Capsule-Protocol:~HTTPdatagram#hdr
 h.Priority:~HTTPpriority#header-field
 h.Origin:~FETCH#http-origin
 	h.Origin:~RFCx/rfc6454#section-4
-h.WebTransport-Subprotocols-Available:#field-webtransport-subprotocols-available
-h.WebTransport-Subprotocol:#field-webtransport-subprotocols
+h.WT-Available-Protocols:#field-wt-available-protocol
+h.WT-Protocol:#field-wt-protocol
 
 m.CONNECT:~HTTPsem#CONNECT
 
@@ -229,6 +229,7 @@ ft.DATAGRAM:~RFCx/rfc9221#datagram-frame-types
 ft.SETTINGS:~HTTPv3#frame-settings
 ft.GOAWAY:~HTTPv3#frame-goaway
 ft.PRIORITY_UPDATE:~HTTPpriority#frame
+ft.RESET_STREAM_AT:https://datatracker.ietf.org/doc/html/draft-ietf-quic-reliable-stream-reset#name-reset_stream_at-frame
 
 sp.SETTINGS_WEBTRANSPORT_MAX_SESSIONS:#SETTINGS_WEBTRANSPORT_MAX_SESSIONS
 sp.SETTINGS_H3_DATAGRAM:~HTTPdatagram#setting
@@ -345,6 +346,7 @@ handshake::::ハンドシェイク
 送信器:sender::~
 受信器:receiver::~
 運ぶ:carryする:~
+不正形:malformed:~
 
 	^en:head-of-line~blocking
 
@@ -453,7 +455,6 @@ Upgrade:
 	順に:correspondingly
 	変更~log:changelog
 	最善な労:best-effort
-	最善な労:best effort
 	互換でない:incompatible
 	変換した上で:within 〜 range
 	前項:the previous method
@@ -465,6 +466,7 @@ Upgrade:
 	知れる:will 〜 know
 	何かを意見するものではない:unopinionated
 	~byte列:bytestring
+	single choice from:選んだ いずれか 1 つ
 
 	●未分類
 衝突:collision:~
@@ -544,6 +546,9 @@ WEBSOCKET:RFC6455
     URL: https://datatracker.ietf.org/doc/html/draft-ietf-webtrans-overview
 [QUIC-DATAGRAM]
     Pauly, T., Kinnear, E., and D. Schinazi, "An Unreliable Datagram Extension to QUIC", ~RFC9221, March 2022
+[RESET-STREAM-AT]
+    Seemann, M. and K. Oku, "QUIC Stream Resets with Partial Delivery", Work in Progress, Internet-Draft, draft-ietf-quic-reliable-stream-reset-06, 28 February 2024
+    URL: https://datatracker.ietf.org/doc/html/draft-ietf-quic-reliable-stream-reset-06
 [RFC2119]
     Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", BCP 14, ~RFC2119, March 1997
 [RFC3986]
@@ -728,7 +733,7 @@ The keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SH
 
 <p>
 この文書は、
-`OVERVIEW$r `§ 規約と定義＠~WT-OVERVIEW#conventions-and-definitions$
+`OVERVIEW$r `規約と定義＠~WT-OVERVIEW#conventions-and-definitions§
 にて定義された各種用語に従う。
 この文書は、
 `~WebTransport~server$と`~HTTP3~server$を判別することに注意。
@@ -770,7 +775,7 @@ This document follows terminology defined in Section 1.2 of [OVERVIEW]. Note tha
 ~QUICは，~transport~serviceとして~streamを供するが、
 その用法については，何かを意見するものではない。
 ~streamの適用能は、
-`RFC9308$r `§ ~streamの利用＠~RFCx/rfc9308#section-4$にて述べられる。
+`RFC9308$r `~streamの利用＠~RFCx/rfc9308#section-4§にて述べられる。
 ◎
 QUIC version 1 [RFC9000] is a secure transport protocol with flow control and congestion control. QUIC supports application data exchange via streams; reliable and ordered byte streams that can be multiplexed. Stream independence can mitigate head-of-line blocking. While QUIC provides streams as a transport service, it is unopinionated about their usage. The applicability of streams is described by section 4 of [RFC9308].
 </p>
@@ -1007,7 +1012,7 @@ A client can create a bidirectional stream and transfer its ownership to WebTran
 最初の~byte列~内に特別な通達を供する
 ］ことにより~WebTransportへ転送する。
 ◎
-A server can create a bidirectional stream and transfer its ownership to WebTransport by providing a special signal in the first bytes..
+A server can create a bidirectional stream and transfer its ownership to WebTransport by providing a special signal in the first bytes.
 </li>
 	<li>
 ~client, ~serverどちらも、
@@ -1049,7 +1054,7 @@ A WebTransport session is terminated when the CONNECT stream that created it is 
 ］ことを意味する。
 ~clientは、
 `~WebTransport~session$を確立している `CONNECT$m 要請~内に~Upgrade~tokenとして `webtransport^c を利用することにより
-（ `§ ~Upgrade~tokenの登録＠#upgrade-token$を見よ），
+（ `~Upgrade~tokenの登録＠#upgrade-token§を見よ），
 ~WebTransport用の~supportを指示する。
 ◎
 In order to indicate support for WebTransport, the server MUST send a SETTINGS_WEBTRANSPORT_MAX_SESSIONS value greater than "0" in its SETTINGS frame. The default value for the SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter is "0", meaning that the endpoint is not willing to receive any WebTransport sessions. Note that the client does not need to send any value to indicate support for WebTransport; clients indicate support for WebTransport by using the "webtransport" upgrade token in CONNECT requests establishing WebTransport sessions (see Section 8.1).
@@ -1099,8 +1104,7 @@ For draft verisons of WebTransport only, the server MUST NOT process any incomin
 ］が
 — 他の~messageに加えて —
 到着し得ることに注意するべきである
-（ `§ 流入~stream／~datagramの~buffer法＠#buffering-incoming$
-を見よ）。
+（ `流入~stream／~datagramの~buffer法＠#buffering-incoming§を見よ）。
 ◎
 Because WebTransport over HTTP/3 requires support for HTTP/3 datagrams and the Capsule Protocol, both the client and the server MUST indicate support for HTTP/3 datagrams by sending a SETTINGS_H3_DATAGRAM value set to 1 in their SETTINGS frame (see Section 2.1.1 of [HTTP-DATAGRAM]). Servers should also note that CONNECT requests to establish new WebTransport sessions, in addition to other messages, may arrive before this SETTING is received (see Section 4.5).
 </p>
@@ -1116,12 +1120,36 @@ Because WebTransport over HTTP/3 requires support for HTTP/3 datagrams and the C
 WebTransport over HTTP/3 also requires support for QUIC datagrams. To indicate support, both the client and the server MUST send a max_datagram_frame_size transport parameter with a value greater than 0 (see Section 3 of [QUIC-DATAGRAM]).
 </p>
 
+<p>
+~serverは、
+~clientが［
+~QUIC~datagram, ~HTTP~datagram
+］を可能化することなく送信した~WebTransport要請に対しては，それを
+— `HTTP3$r `不正形な~message＠~HTTPv3#malformed§ にて述べられるとおり —
+不正形として扱わなければナラナイ。
+◎
+Any WebTransport requests sent by the client without enabling QUIC and HTTP datagrams MUST be treated as malformed by the server, as described in Section 4.1.2 of [HTTP3].
+</p>
+
+<p>
+~HTTP3越しの~WebTransportは、
+`RESET-STREAM-AT$r にて定義される `RESET_STREAM_AT$ft ~frameに依拠する。
+~supportを指示するためには、［
+~client, ~server
+］どちらも，この拡張を
+— `RESET-STREAM-AT$r `拡張~利用の折衝-法＠https://datatracker.ietf.org/doc/html/draft-ietf-quic-reliable-stream-reset#section-3§
+にて述べられるとおり —
+可能化しなければナラナイ。
+◎
+WebTransport over HTTP/3 relies on the RESET_STREAM_AT frame defined in [RESET-STREAM-AT]. To indicate support, both the client and the server MUST enable the extension as described in Section 3 of [RESET-STREAM-AT].
+</p>
+
 		</section>
 		<section id="extended-connect-in-http3">
 <h3 title="Extended CONNECT in HTTP/3">3.2. ~HTTP3における拡張d~CONNECT</h3>
 
 <p>
-`RFC8441$r `§ 4＠~RFCx/rfc8441#section-4$ は、
+`RFC8441$r `4＠~RFCx/rfc8441#section-4§は、
 拡張d `CONNECT$m ~methodを定義する
 — それは、
 `SETTINGS_ENABLE_CONNECT_PROTOCOL^sp 設定により可能化される。
@@ -1244,12 +1272,11 @@ The server may reply with a 3xx response, indicating a redirection (Section 15.4
 <p>
 `CONNECT$m ~methodは`安全$とは見なされないので、
 ~clientは，~WebTransportを~0-RTT~packet内では起動し得ない
-（ `HTTP3$r `§ 早期~data＠~HTTPv3#early-data$
-を見よ）。
+（ `HTTP3$r `早期~data＠~HTTPv3#early-data§を見よ）。
 しかしながら，
 ~WebTransportに関係する `SETTINGS$ft ~parameterは、
-`HTTP3$r `§ 初期化＠~HTTPv3#settings-initialization$
-にて述べられるとおり，前回の~sessionから維持してもよい。
+`HTTP3$r `初期化＠~HTTPv3#settings-initialization§にて述べられるとおり，
+前回の~sessionから維持してもよい。
 ~serverは、
 ~0-RTTを受容する場合には，［
 ~openな`~WebTransport~session$の最大な個数
@@ -1293,43 +1320,42 @@ WebTransport over HTTP/3 offers a subprotocol negotiation mechanism, similar to 
 
 <p>
 ~UAは、
-`CONNECT$m 要請~内に［
-アリな下位protocolたちを列挙している `WebTransport-Subprotocols-Available$h ~header
-］を内包しても`ヨイ^2119。
+`CONNECT$m 要請~内に `WT-Available-Protocols$h ~headerを内包しても`ヨイ^2119。
+この~headerは、
+アリな下位protocolたちを選好~順序で列挙する。
 この~headerを受信した~serverは、
-対する成功裡な応答（ `2xx$st ）内に `WebTransport-Subprotocol$h ~fieldを内包しても`ヨイ^2119。
+対する成功裡な応答（ `2xx$st ）内に `WT-Protocol$h ~fieldを内包しても`ヨイ^2119。
 そうする場合、
 ~serverは，その~fieldに［
-~clientからの~listを成す下位protocolのうち いずれか 1 つ
+~clientからの~listから選んだ いずれか 1 つ
 ］を内包しなければ`ナラナイ^2119【！SHALL】。
 ~serverは、
 ~clientが相応しい下位protocolを内包しなかった場合には，
 当の要請を却下しても`ヨイ^2119。
 ◎
-The user agent MAY include a WebTransport-Subprotocols-Available header field in the CONNECT request, enumerating the possible subprotocols. If the server receives such a header, it MAY include a WebTransport-Subprotocol field in a successful (2xx) response. If it does, the server SHALL include a single subprotocol from the client's list in that field. Servers MAY reject the request if the client did not include a suitable subprotocol.
+The user agent MAY include a WT-Available-Protocols header field in the CONNECT request. The WT-Available-Protocols enumerates the possible subprotocols in preference order. If the server receives such a header, it MAY include a WT-Protocol field in a successful (2xx) response. If it does, the server SHALL include a single choice from the client's list in that field. Servers MAY reject the request if the client did not include a suitable subprotocol.
 </p>
 
 <p>
 ［
-`WebTransport-Subprotocols-Available@h ／
-`WebTransport-Subprotocol@h
+`WT-Available-Protocols@h ／
+`WT-Protocol@h
 ］は、
 `有構造~field$ `RFC8941$r である。
-`WebTransport-Subprotocols-Available$h は、
+`WT-Available-Protocols$h は、
 `~sf~token$たちが成す`~sf~list$をとる。
-`WebTransport-Subprotocol$h は、
+`WT-Protocol$h は、
 `~sf~token$をとる。
-`WebTransport-Subprotocol$h 応答~header内の~tokenは、
-それが応対した要請の `WebTransport-Subprotocols-Available$h 内に挙げられた，いずれかの~tokenでなければ`ナラナイ^2119。
+`WT-Protocol$h 応答~header内の~tokenは、
+それが応対した要請の `WT-Available-Protocols$h 内に挙げられた，いずれかの~tokenでなければ`ナラナイ^2119。
 個々の~token値の意味論は、
 当の~WebTransport資源により決定される
 — ~IANAの
 `~ALPN~protocol~ID~registry＠~IANA-a/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids$cite
 には登録されない。
 ◎
-Both WebTransport-Subprotocols-Available and WebTransport-Subprotocol are Structured Fields [RFC8941]. WebTransport-Subprotocols-Available is a List of Tokens, and WebTransport-Subprotocol is a Token. The token in the WebTransport-Subprotocol response header field MUST be one of the tokens listed in WebTransport-Subprotocols-Available of the request. The semantics of individual token values is determined by the WebTransport resource in question, and are not registered in IANA's "ALPN Protocol IDs" registry.
+Both WT-Available-Protocols and WT-Protocol are Structured Fields [RFC8941]. WT-Available-Protocols is a List of Tokens, and WT-Protocol is a Token. The token in the WT-Protocol response header field MUST be one of the tokens listed in WT-Available-Protocols of the request. The semantics of individual token values is determined by the WebTransport resource in question and are not registered in IANA's "ALPN Protocol IDs" registry.
 </p>
-
 
 		</section>
 		<section id="limiting-the-number-of-simultaneous-sessions">
@@ -1400,7 +1426,7 @@ HTTP status code 429 indicates that the request was rejected due to rate limitin
 <p>
 各`~WebTransport~session$は、
 拡張d `CONNECT$m を利用して起動される。
-`RFC9218$r `§ 11＠~HTTPpriority#connect-scheduling$ は，［
+`RFC9218$r `11＠~HTTPpriority#connect-scheduling§は，［
 拡張-可能な優先度が`~CONNECT~stream$上に送信された~dataに どう適用できるか
 ］を述べるが、
 ~WebTransportは，［
@@ -1427,8 +1453,8 @@ WebTransport sessions are initiated using extended CONNECT. While Section 11 of 
 ~WebTransport~datagram
 を含む —
 に［
-`RFC9218$r `§ 9＠~HTTPpriority#client-scheduling$,
-`RFC9218$r `§ 10＠~HTTPpriority#server-scheduling$
+`RFC9218$r `9＠~HTTPpriority#client-scheduling§,
+`RFC9218$r `10＠~HTTPpriority#server-scheduling§
 ］による~schedule法の指導をどちらも適用することが`推奨される^2119。
 ~WebTransportは、
 `~WebTransport~session$の中の［
@@ -1444,8 +1470,7 @@ WebTransport CONNECT requests and responses MAY contain the Priority header fiel
 </p>
 
 <p>
-`RFC9218$r `§ 8＠~HTTPpriority#merging$
-にて与えられる［
+`RFC9218$r `8＠~HTTPpriority#merging§にて与えられる［
 ~clientの優先度, ~serverの優先度
 ］を併合するための指導は、
 `~WebTransport~session$にも適用される。
@@ -1521,7 +1546,7 @@ The client MAY optimistically open unidirectional and bidirectional streams, as 
 ］になり得ない`~session~ID$を受信したときは，
 ~error~code `H3_ID_ERROR$er で当の接続を~closeしなければ`ナラナイ^2119。
 ◎
-If at any point a session ID is received that cannot a valid ID for a client-initiated bidirectional stream, the recipient MUST close the connection with an H3_ID_ERROR error code.
+If at any point a session ID is received that cannot be a valid ID for a client-initiated bidirectional stream, the recipient MUST close the connection with an H3_ID_ERROR error code.
 </p>
 
 		<section id="unidirectional-streams">
@@ -1572,10 +1597,7 @@ Figure 2: Unidirectional WebTransport stream format
 ~HTTP3により，すべて要請~streamとして予約される
 — それは、
 各種~規則を伴う~HTTP3~frameたちが成す連列である
-（ `HTTP3$r
-`§ ~HTTPの~message~frame法＠~HTTPv3#request-response$,
-`§ 双方向~stream＠~HTTPv3#request-streams$
-を見よ）。
+（ `HTTP3$r `~HTTPの~message~frame法＠~HTTPv3#request-response§, `双方向~stream＠~HTTPv3#request-streams§を見よ）。
 ◎
 All client-initiated bidirectional streams are reserved by HTTP/3 as request streams, which are a sequence of HTTP/3 frames with a variety of rules (see Sections 4.1 and 6.1 of [HTTP3]).
 </p>
@@ -1696,7 +1718,7 @@ A WebTransport endpoint may send a RESET_STREAM or a STOP_SENDING frame for a We
 自身の演算~用に~error~codeを供さなければ`ナラナイ^2119【！SHALL】。
 ~WebTransportは，~error~code空間を~HTTP3と共有するので、
 ~stream用の~WebTransport応用~errorは、
-無符号な 32 ~bit整数
+無符号な 32 ~bitな整数
 — `0x00000000^hex 〜 `0xffffffff^hex —
 に制限される。
 ~WebTransport実装は、
@@ -1704,7 +1726,7 @@ A WebTransport endpoint may send a RESET_STREAM or a STOP_SENDING frame for a We
 — `0x00000000^hex は `0x52e4a40fa8db^hex に,
 `0xffffffff^hex は `0x52e5ac983162^hex に対応するよう。
 この範囲の内側には、
-`HTTP3$r `§ ~HTTP3~error~code＠~HTTPv3#http-error-codes$により予約-済みな符号点たち
+`HTTP3$r `~HTTP3~error~code＠~HTTPv3#http-error-codes§により予約-済みな符号点たち
 { `0x1f^hex ~MUL %N ~PLUS `0x21^hex ； %N は負でない整数 }
 があることに注意
 — これらの符号点は、
@@ -1739,24 +1761,24 @@ Figure 4: Pseudocode for converting between WebTransport application errors and 
 </figcaption></figure>
 
 <p>
-各~WebTransport~data~streamには、
-当の~streamの始めにある~headerを通して`~WebTransport~session$が結付けられる
-— ~streamを`~reset$すると、
-その結果，その~dataは破棄され得る。
-このことから、
-~WebTransport応用~error~codeは，最善な労である
-— ~WebTransport~stackは、
-~reset~codeを~sessionに結付ける能力があるとは限らないので。
-唯一の例外は、
-所与の`~HTTP3接続$上に 1 個の~sessionしかなく，
-~client↔~server間に`媒介者$は無い状況に限られる。
+各~WebTransport~data~stream %~stream には、
+当の~streamの始めにある~header %~header を通して，ある`~WebTransport~session$ %~session が結付けられる
+— %~stream を`~reset$すると、
+その~data【`~session~ID$】は， `RESET_STREAM$ft ~frameを利用するときに破棄される結果になるかもしれない。
+これを防止するため、
+~WebTransport実装は， %~stream を`~reset$するときに `RESET_STREAM_AT$ft ~frame `RESET-STREAM-AT$r を利用しなければナラナイ
+— その~frameを成す `依拠-可能な~size^i（ `Reliable Size^en ） ~fieldを %~header の~size以上に設定して。
+これは、［
+%~stream を %~session へ結付けている~ID~field【`~session~ID$】
+］が常に送達されることを確保する。
 ◎
-WebTransport data streams are associated with sessions through a header at the beginning of the stream; resetting a stream may result in that data being discarded. Because of that, WebTransport application error codes are best effort, as the WebTransport stack is not always capable of associating the reset code with a session. The only exception is the situation where there is only one session on a given HTTP/3 connection, and no intermediaries between the client and the server.
+WebTransport data streams are associated with sessions through a header at the beginning of the stream; resetting a stream might result in that data being discarded when using a RESET_STREAM frame. To prevent this, WebTransport implementations MUST use the RESET_STREAM_AT frame [RESET-STREAM-AT] with a Reliable Size set to at least the size of the WebTransport header when resetting a WebTransport data stream. This ensures that the ID field associating the data stream with a WebTransport session is always delivered.
 </p>
 
 <p>
-~WebTransport実装は、
-既知な~sessionに結付けられた~stream用の~error~codeを当の~sessionを所有する応用へ回送しなければ`ナラナイ^2119【！SHALL】。
+~WebTransport実装は、［
+既知な~sessionが結付けられた~stream
+］用の~error~codeを当の~sessionを所有する応用へ回送しなければ`ナラナイ^2119【！SHALL】。
 類似に，`媒介者$は、
 相手の端点から~resetを受信したときは，
 対応する~error~codeで~streamを`~reset$しなければ`ナラナイ^2119【！SHALL】。
@@ -1797,7 +1819,7 @@ Datagrams can be sent using HTTP Datagrams. The WebTransport datagram payload is
 ~clientは，`~WebTransport~session$を確立する前に［
 ~WebTransport用の~Upgrade~tokenを利用している `CONNECT$m 要請
 ］を送信する
-（ `§ ~transport能力がある~HTTP3接続の確立-法＠#establishing$を見よ）
+（ `~transport能力がある~HTTP3接続の確立-法＠#establishingを見よ）
 ことにより［
 ~serverから `SETTINGS$ft ~frameが受信される
 ］のを待機しなければナラナイ。
@@ -1862,7 +1884,7 @@ To handle this case, WebTransport endpoints SHOULD buffer streams and datagrams 
 <p>
 ~HTTP3は、
 上品な~shutdownの仕組みを定義する
-（ `HTTP3$r `§ 接続の~shutdown＠~HTTPv3#connection-shutdown$）
+（ `HTTP3$r `接続の~shutdown＠~HTTPv3#connection-shutdown§）
 — それは、
 双方の端点に次を許容する
 ⇒
@@ -2031,8 +2053,7 @@ Upon learning that the session has been terminated,＼
 </li>
 		</ul>
 <p>
-（ `RFC9000$r `§ ~streamに対する演算＠~RFCx/rfc9000#stream-operations$
-を見よ。）
+（ `RFC9000$r `~streamに対する演算＠~RFCx/rfc9000#stream-operations§を見よ。）
 </p>
 ◎
 the endpoint MUST reset the send side and abort reading on the receive side of all of the streams associated with the session (see Section 2.4 of [RFC9000]) using the WEBTRANSPORT_SESSION_GONE error code;＼
@@ -2069,7 +2090,7 @@ CLOSE_WEBTRANSPORT_SESSION ~capsule {
   種別 (i) = CLOSE_WEBTRANSPORT_SESSION,
   長さ (i),
   応用~error~code (32),
-  応用~error~code~message (..8192),
+  応用~error~message (..8192【1024？】),
 }
 ◎
 CLOSE_WEBTRANSPORT_SESSION Capsule {
@@ -2082,26 +2103,25 @@ CLOSE_WEBTRANSPORT_SESSION Capsule {
 
 <p>
 `CLOSE_WEBTRANSPORT_SESSION$cps は、
-次に挙げる~fieldを有する：
+次に挙げる~fieldを有する
+— いずれも、
+その値は，当の接続を~closeしている応用により供される：
 ◎
 CLOSE_WEBTRANSPORT_SESSION has the following fields:
 </p>
-
 <ul>
 	<li>
 `応用~error~code^i
 ⇒
-32 ~bit~error~code
-— 当の接続を~closeしている応用により供される。
+~error~codeを与える 32 ~bitな整数
 ◎
 Application Error Code:
 • A 32-bit error code provided by the application closing the connection.
 </li>
 	<li>
-`応用~error~code~message^i
+`応用~error~message^i
 ⇒
-~UTF-8に符号化された~error~message文字列
-— 当の接続を~closeしている応用により供される。
+~error~messageを与える~UTF-8に符号化された文字列。
 この~messageは、
 当の`~capsule$を成す残りを占める
 — その長さは、
@@ -2170,7 +2190,7 @@ In some scenarios, an endpoint might want to send a CLOSE_WEBTRANSPORT_SESSION w
 — ［
 ~serverが同時に複数の~versionを提供する
 ］ことを許容するよう
-（ `§ ~Upgrade~tokenの登録＠#upgrade-token$ を見よ）。
+（ `~Upgrade~tokenの登録＠#upgrade-token§を見よ）。
 ◎
 Future versions of WebTransport that change the syntax of the CONNECT requests used to establish WebTransport sessions will need to modify the upgrade token used to identify WebTransport, allowing servers to offer multiple versions simultaneously (see Section 8.1).
 </p>
@@ -2178,8 +2198,7 @@ Future versions of WebTransport that change the syntax of the CONNECT requests u
 <p>
 ~WebTransportの互換でない将来~versionを~supportする~serverは、
 `SETTINGS_WEBTRANSPORT_MAX_SESSIONS$sp ~parameter用に利用される符号点を変更することにより，その~supportを通達する
-（ `§ ~HTTP3設定~parameterの登録＠#http3-settings$
-を見よ）。
+（ `~HTTP3設定~parameterの登録＠#http3-settings§を見よ）。
 ~clientは、
 適用-可能な場合には，［
 新たな~sessionを確立するときに利用する
@@ -2196,9 +2215,9 @@ Servers that support future incompatible versions of WebTransport signal that su
 <p>
 将来の~stream形式に対する変更は、［
 `一方向~stream$の種別
-（ `§ 一方向~stream＠#unidirectional-streams$ を見よ）,
+（ `一方向~stream＠#unidirectional-streams§を見よ）,
 `双方向~stream$の通達~値
-（ `§ 双方向~stream＠#bidirectional-streams$ を見よ）
+（ `双方向~stream＠#bidirectional-streams§を見よ）
 ］に対する変更を要求する
 — 流入~frameの受信者が，［
 当の~WebTransport~version
@@ -2308,8 +2327,7 @@ A client could attempt to exhaust resources by opening too many WebTransport ses
 <h3 title="Upgrade Token Registration">8.1. ~Upgrade~tokenの登録</h3>
 
 <p>
-`HTTP$r `§ ~Upgrade~token~registry＠~HTTPinfra#upgrade.token.registry$
-により確立された
+`HTTP$r `~Upgrade~token~registry＠~HTTPinfra#upgrade.token.registry§により確立された
 `~HTTP~Upgrade~token~registry＠~IANA-a/http-upgrade-tokens$cite
 には、
 以下に挙げる~entryが追加される。
