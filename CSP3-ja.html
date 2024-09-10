@@ -137,8 +137,8 @@ return text;
 ●●options
 
 spec_title:Content Security Policy Level 3
-spec_date:2024-06-13
-trans_update:2024-06-14
+spec_date:2024-09-09
+trans_update:2024-09-11
 source_checked:230220
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-csp/
@@ -444,7 +444,9 @@ params::::パラメタ群
 	%~parameter文字列~群:parameterStrings
 	%本体~文字列:bodyString
 	%~code文字列:codeString
-	%~compilation種別:compilationType,
+	%~source文字列:sourceString
+	%~compilation種別:compilationType
+	%~compilation~sink:compilationSink
 	%~parameter引数~群:parameterArgs
 	%本体~引数:bodyArg
 	-:globals
@@ -500,6 +502,10 @@ params::::パラメタ群
 	%~fallback指令:fallback directive
 	%既定の指令:defaultDirective
 	-:remaining
+	%信用-済みか:isTrusted
+	%~index:index
+	%引数:arg
+	%検証される~source:sourceToValidate
 
 	●仕様
 	W3C
@@ -563,6 +569,8 @@ modular::::モジュール式
 問答無用:draconian:~
 補足-:supplement:~
 利用度:usage:~
+準拠な:compliantな:準拠する
+
 	勧める:it is advisable to
 	アリでない:impossible
 	最も~~簡単:best
@@ -1185,6 +1193,8 @@ jA.HostEnsureCanCompileWasmBytes:https://webassembly.github.io/content-security-
 E.EvalError:~WEBIDL#exceptiondef-evalerror
 E.CompileError:~WASM/js-api/#zexceptiondef-compileerror
 
+I.TrustedScript:~TRUSTED-TYPES#trustedscript
+
 	●INFRA
 
 ~byte列:~INFRA#byte-sequence
@@ -1213,6 +1223,7 @@ sub.大小無視:#_ascii-case_insensitive
 包含して:~INFRA#list-contain
 空:~INFRA#list-is-empty
 ~size:~INFRA#list-size
+範囲:~INFRA#the-range
 付加する:~INFRA#list-append
 有順序~集合:~INFRA#ordered-set
 set.付加する:~INFRA#set-append
@@ -1346,6 +1357,7 @@ doc.~referrer:~HTMLdom#the-document's-referrer
 
 	●他
 実装-:~WEBIDLjs#implements
+新たな~obj:~WEBIDLjs#new
 
 ~at_import:~CASCADE#at-ruledef-import
 
@@ -1372,6 +1384,9 @@ iM.値:~SRI1#_integrity-metadata-digest
 
 ~UTF-8符号化する:~ENCODING#utf-8-encode
 
+信用-済みな型に準拠な文字列を取得する:~TRUSTED-TYPES#abstract-opdef-get-trusted-type-compliant-string
+trS.~data:~TRUSTED-TYPES#trustedscript-data
+
 
 ●●ref_data
 RFC3492=副            crieit.net/posts/RFC3492-Punycode-IDNA-Unicode-Bootstring
@@ -1397,7 +1412,7 @@ RFC3492=副            crieit.net/posts/RFC3492-Punycode-IDNA-Unicode-Bootstring
 [REPORTING]
     Ilya Gregorik; Mike West. ＜Reporting API＞. URL: https://wicg.github.io/reporting/
 [REPORTING-1]
-    Douglas Creager; Ian Clelland; Mike West. ＜Reporting API＞. 10 November 2023. WD. URL: https://www.w3.org/TR/reporting-1/
+    Douglas Creager; Ian Clelland; Mike West. ＜Reporting API＞. 13 August 2024. WD. URL: https://www.w3.org/TR/reporting-1/
 [RFC2119]
     S. Bradner. ＜Key words for use in RFCs to Indicate Requirement Levels＞. March 1997. Best Current Practice. URL: https://datatracker.ietf.org/doc/html/rfc2119
 [RFC3492]
@@ -1420,6 +1435,8 @@ RFC3492=副            crieit.net/posts/RFC3492-Punycode-IDNA-Unicode-Bootstring
     Jake Archibald; Marijn Kruisselbrink. ＜Service Workers＞. 12 July 2022. CR. URL: https://www.w3.org/TR/service-workers/
 [SRI]
     Devdatta Akhawe; et al. ＜Subresource Integrity＞. 23 June 2016. REC. URL: https://www.w3.org/TR/SRI/
+[TRUSTED-TYPES]
+    Krzysztof Kotowicz. ＜Trusted Types＞. 18 July 2024. WD. URL: https://www.w3.org/TR/trusted-types/
 [URL]
     Anne van Kesteren. ＜URL Standard＞. Living Standard. URL: https://url.spec.whatwg.org/
 [WEBIDL]
@@ -1430,7 +1447,7 @@ RFC3492=副            crieit.net/posts/RFC3492-Punycode-IDNA-Unicode-Bootstring
 ●●ref_informative
 
 [APPMANIFEST]
-    Marcos Caceres; et al. ＜Web Application Manifest＞. 17 May 2024. WD. URL: https://www.w3.org/TR/appmanifest/
+    Marcos Caceres; et al. ＜Web Application Manifest＞. 5 September 2024. WD. URL: https://www.w3.org/TR/appmanifest/
 [BEACON]
     Ilya Grigorik; Alois Reitbauer. ＜Beacon＞. 3 August 2022. CR. URL: https://www.w3.org/TR/beacon/
 [CSP2]
@@ -3086,13 +3103,15 @@ representing the HTTP status code of the resource for which the global object wa
 Each violation has a resource,＼
 </dt>
 	<dd>
-`~URL$／~NULL／次に挙げるいずれかの文字列
+~NULL／`~URL$／次に挙げるいずれかの文字列
 ⇒＃
 `inline^l ／
 `eval^l ／
-`wasm-eval^l
+`wasm-eval^l ／
+`trusted-types-policy^l ／
+`trusted-types-sink^l
 ◎
-which is either null, "inline", "eval", "wasm-eval", or a URL.＼
+which is either null, "inline", "eval", "wasm-eval", "trusted-types-policy", "trusted-types-sink" or a URL.＼
 </dd>
 	<dd>
 施策に違反した資源を表現する。
@@ -4785,6 +4804,155 @@ Given a realm realm, a list of strings parameterStrings, a string bodyString, a 
 </p>
 <ol>
 	<li>
+~IF［
+%~compilation種別 ~EQ `TIMER^l
+］
+⇒
+%~source文字列 ~LET %~code文字列
+◎
+If compilationType is "TIMER", then:
+• Let sourceString be codeString.
+</li>
+	<li>
+<p>
+~ELSE：
+◎
+Else:
+</p>
+		<ol>
+			<li>
+%~compilation~sink ~LET %~compilation種別 に応じて
+⇒＃
+`FUNCTION^l ならば `Function^l ／
+~ELSE_ `Eval^l
+◎
+Let compilationSink be "Function" if compilationType is "FUNCTION", and "Eval" otherwise.
+</li>
+			<li>
+%信用-済みか ~LET ~IS［
+%本体~引数 は `TrustedScript$I を`実装-$する
+］
+◎
+Let isTrusted be true if bodyArg implements TrustedScript, and false otherwise.
+</li>
+			<li>
+<p>
+~IF［
+%信用-済みか ~EQ ~T
+］~AND［
+%本体~文字列 ~NEQ %本体~引数 の`~data$trS
+］
+⇒
+%信用-済みか ~SET ~F
+◎
+If isTrusted is true then:
+• If bodyString is not equal to bodyArg’s data, set isTrusted to false.
+</li>
+			<li>
+<p>
+~IF［
+%信用-済みか ~EQ ~T
+］：
+◎
+If isTrusted is true, then:
+</p>
+				<ol>
+					<li>
+~Assert:
+%~parameter引数~群 の`~size$ ~EQ %~parameter文字列~群 の`~size$
+◎
+Assert: parameterArgs’ [list/size=] is equal to [parameterStrings]' size.
+</li>
+					<li>
+<p>
+`範囲$ { 0 〜 %~parameter引数~群 の`~size$ ~MINUS 1 } 
+を成す
+~EACH( %~index )
+に対し：
+◎
+For each index of the range 0 to |parameterArgs]' [list/size=]:
+</p>
+						<ol>
+							<li>
+%引数 ~LET %~parameter引数~群[ %~index ]
+◎
+Let arg be parameterArgs[index].
+</li>
+							<li>
+<p>
+~IF［
+%引数 は `TrustedScript$I を`実装-$する
+］：
+◎
+If arg implements TrustedScript, then:
+</p>
+								<ol>
+									<li>
+~IF［
+%~parameter文字列~群[ %~index ] ~NEQ %引数 の`~data$trS
+］
+⇒
+%信用-済みか ~SET ~F
+◎
+if parameterStrings[index] is not equal to arg’s data, set isTrusted to false.
+</li>
+								</ol>
+							</li>
+							<li>
+~ELSE
+⇒
+%信用-済みか ~SET ~F
+◎
+Otherwise, set isTrusted to false.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+			<li>
+%検証される~source ~LET `新たな~obj$( `TrustedScript$I, %~realm )
+— その
+`~data$trS ~SET %信用-済みか に応じて
+⇒＃
+~T ならば %~code文字列 ／
+~F ならば %~code文字列【？】
+◎
+Let sourceToValidate be a new TrustedScript object created in realm whose data is set to codeString if isTrusted is true, and codeString otherwise.
+</li>
+			<li>
+<p>
+%~source文字列 ~LET `信用-済みな型に準拠な文字列を取得する$( ↓ )
+⇒＃
+`TrustedScript$I,
+%~realm,
+%検証される~source,
+%~compilation~sink,
+`script^l
+◎
+Let sourceString be the result of executing the Get Trusted Type compliant string algorithm, with TrustedScript, realm, sourceToValidate, compilationSink, and 'script'.
+</p>
+
+<p>
+例外が投出されたときは、
+~catchして
+⇒
+~THROW `EvalError$E
+◎
+If the algorithm throws an error, throw an EvalError.
+</p>
+			</li>
+			<li>
+~IF［
+%~source文字列 ~NEQ %~code文字列
+］
+⇒
+~THROW `EvalError$E
+◎
+If sourceString is not equal to codeString, throw an EvalError.
+</li>
+		</ol>
+	</li>
+	<li>
 %結果 ~LET `許容される^i
 ◎
 Let result be "Allowed".
@@ -4859,10 +5027,10 @@ Set violation’s resource to "eval".
 ］
 ⇒
 %指令 の`見本$vr ~SET ［
-%~code文字列 を成す最初から 40 個までの文字たち
+＊sourceString %~code文字列 を成す最初から 40 個までの文字たち
 ］が成す文字列
 ◎
-If source-list contains the expression "'report-sample'", then set violation’s sample to the substring of codeString containing its first 40 characters.
+If source-list contains the expression "'report-sample'", then set violation’s sample to the substring of sourceString containing its first 40 characters.
 </li>
 					<li>
 `違反を報告する$A( %違反 )
@@ -4892,19 +5060,6 @@ If policy’s disposition is "enforce", then set result to "Blocked".
 If result is "Blocked", throw an EvalError exception.
 </li>
 </ol>
-
-<p class="note">注記：
-［
-%~parameter文字列~群,
-%本体~文字列,
-%~compilation種別,
-%~parameter引数~群,
-%本体~引数
-］は、
-現時点では利用されないが，将来の利用~用に含まれている。
-◎
-Note: parameterStrings, bodyString, compilationType, parameterArgs, and bodyArg are currently unused. They are included for future use.
-</p>
 
 			</section>
 		</section>
