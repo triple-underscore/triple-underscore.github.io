@@ -207,8 +207,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2024-08-27
-trans_update:2024-08-29
+spec_date:2024-09-16
+trans_update:2024-09-18
 source_checked:230718
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -236,7 +236,7 @@ wS:js-slot
 ft:frame-type
 er:error-code
 sp:settings-parameter
-
+st:status
 
 ●●tag_map
 h:code
@@ -262,6 +262,7 @@ mbR:code
 mbS:code
 mbE:code
 mbD:code
+st:code
 jv:code
 sl:span
 slS:span
@@ -354,11 +355,11 @@ contact:
 	受信される:reception
 窓:window::~::ウインドウ
 credit:
-
 不依拠-:unrely:~
 	不依拠-可能:unreliable
 	依拠-可能:reliable
 	依拠-可能でない:unreliable
+下位protocol:subprotocol::下位 protocol:下位プロトコル
 
 	送信者~側:sender-side
 	接続:the first hop
@@ -496,6 +497,7 @@ in-flight:
 	%~network区分~key:networkPartitionKey
 	%~offset:offset
 	-:allowPooling
+	%~protocol群:protocols
 	%~promise:promise
 	%~promise:p
 	-:pullAlgorithm
@@ -716,6 +718,12 @@ balance::::バランス
 	包含されない:absent
 	その妥当~性:to be valid
 	〜しない所まで:but not to the point of
+	満たさない:fail to match
+	連列／~list:〜 array
+	解決されたなら:pending
+	成す:comprise
+	~IN { 1 〜 512 }:0 or exceeding 512
+	省略可能な:optionally
 
 	●未分類
 throughput::::スループット
@@ -920,6 +928,7 @@ mT.reliability:#dom-webtransport-reliability
 mT.congestionControl:#dom-webtransport-congestioncontrol
 mT.anticipatedConcurrentIncomingUnidirectionalStreams:#dom-webtransport-anticipatedconcurrentincomingunidirectionalstreams
 mT.anticipatedConcurrentIncomingBidirectionalStreams:#dom-webtransport-anticipatedconcurrentincomingbidirectionalstreams
+mT.protocol:#dom-webtransport-protocol
 mT.close:#dom-webtransport-close
 mT.getStats:#dom-webtransport-getstats
 mT.createBidirectionalStream:#dom-webtransport-createbidirectionalstream
@@ -942,6 +951,7 @@ mb.serverCertificateHashes:#dom-webtransportoptions-servercertificatehashes
 mb.congestionControl:#dom-webtransportoptions-congestioncontrol
 mb.anticipatedConcurrentIncomingUnidirectionalStreams:#dom-webtransportoptions-anticipatedconcurrentincomingunidirectionalstreams
 mb.anticipatedConcurrentIncomingBidirectionalStreams:#dom-webtransportoptions-anticipatedconcurrentincomingbidirectionalstreams
+mb.protocols:#dom-webtransportoptions-protocols
 mb.sendGroup:#dom-webtransportsendstreamoptions-sendgroup
 mb.waitUntilAvailable:#dom-webtransportsendstreamoptions-waituntilavailable
 
@@ -1021,6 +1031,8 @@ ws.abort:~STREAMS#ws-abort
 ws.getWriter:~STREAMS#ws-get-writer
 m.new WritableStreamDefaultWriter:~STREAMS#default-writer-constructor
 
+M.CONNECT:~HTTPsem#CONNECT
+
 	●sl
 sl.Readable:#dom-webtransportdatagramduplexstream-readable-slot
 sl.Writable:#dom-webtransportdatagramduplexstream-writable-slot
@@ -1042,6 +1054,7 @@ sl.Ready:#dom-webtransport-ready-slot
 sl.Reliability:#dom-webtransport-reliability-slot
 sl.CongestionControl:#dom-webtransport-congestioncontrol-slot
 sl.Closed:#dom-webtransport-closed-slot
+sl.Protocol:#dom-webtransport-protocol-slot
 sl.Draining:#dom-webtransport-draining-slot
 sl.Datagrams:#dom-webtransport-datagrams-slot
 sl.Session:#dom-webtransport-session-slot
@@ -1078,6 +1091,11 @@ ft.RESET_STREAM:#stream-signal-reset_stream
 ft.SETTINGS:~HTTPv3#frame-settings
 
 h.Origin:~FETCH#http-origin
+h.WT-Available-Protocols:~WT-HTTP3#field-wt-available-protocol
+h.WT-Protocol:~WT-HTTP3#field-wt-protocol
+
+st.2xx:~HTTPsem#status.2xx
+
 
 	●用語
 下層~接続:#underlying-connection
@@ -1152,12 +1170,16 @@ wtB.作成する:#bidirectionalstream-create
 
 送信-~group:#grouped
 	＠#ungrouped
+~protocol名:#protocol-names
 
 ~WebTransport用の例外を作成する:#_create-exception-for-webtransport
 
 	●用語（外部
 依拠-可能:~WT-OVERVIEW#reliable
 不依拠-可能:~WT-OVERVIEW#unreliable
+§ 下位protocolの折衝:~WT-HTTP3#subprotocol-negotiation
+	~WT-HTTP3#section-3.4
+
 実装定義:~INFRA#implementation-defined
 ときは中止する:~INFRA#abort-when
 中止されたときは:~INFRA#if-aborted
@@ -1173,6 +1195,8 @@ byte.長さ:~INFRA#byte-sequence-length
 有順序~集合:~INFRA#ordered-set
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 set.付加する:~INFRA#set-append
+~list:~INFRA#list
+付加する:~INFRA#list-append
 除去する:~INFRA#list-remove
 ~size:~INFRA#list-size
 空にする:~INFRA#list-empty
@@ -1483,6 +1507,15 @@ Note: The API presented in this specification represents a preliminary proposal 
 There are two main protocol concepts for WebTransport: sessions and streams. Each WebTransport session can contain multiple WebTransport streams.
 </p>
 
+<p>
+これらは、
+`~protocol名$と混同するべきでない
+— それは、
+応用~levelの~API構成子である。
+◎
+These should not be confused with protocol names which is an application-level API construct.
+</p>
+
 		<section id="webtransport-session">
 <h3 title="WebTransport session">3.1. ~WebTransport~session</h3>
 
@@ -1565,12 +1598,14 @@ receive a bidirectional stream｜[WEB-TRANSPORT-OVERVIEW] Section 4.3
 `~WebTransport~sessionを確立する@
 ときは、
 所与の
-( `生成元$ %生成元 )
+( `生成元$ %生成元, `~list$ %~protocol群 【！~array】 )
 に対し，［
 `~WebTransport~session$ ／ `失敗^i
 ］を返す
 — `WEB-TRANSPORT-OVERVIEW$r `新たな~sessionの作成-法＠~WT-OVERVIEW#establish-a-session$【！4.1】
 および次に従う下で：
+◎
+To establish a WebTransport session with an origin origin and a protocols array, follow [WEB-TRANSPORT-OVERVIEW] Section 4.1,＼
 </p>
 <ul>
 	<li>
@@ -1578,22 +1613,64 @@ receive a bidirectional stream｜[WEB-TRANSPORT-OVERVIEW] Section 4.3
 次の結果を利用する
 ⇒
 `同型に符号化する$( `生成元を直列化する$( %生成元 ) )
+◎
+with using origin, serialized and isomorphic encoded, as the `Origin` header of the request.＼
 </li>
 	<li>
+<p>
 ~sessionを確立するときは、
 ~clientは，`資格証$を供さないモノトスル。
-</li>
-</ul>
+◎
+When establishing a session, the client MUST NOT provide any credentials.＼
+</p>
 
 <p>
 結果の下層~transport~streamは、
 当の~sessionの
 `~CONNECT~stream@
 と称される。
-</p>
-
 ◎
-To establish a WebTransport session with an origin origin, follow [WEB-TRANSPORT-OVERVIEW] Section 4.1, with using origin, serialized and isomorphic encoded, as the `Origin` header of the request. When establishing a session, the client MUST NOT provide any credentials. The resulting underlying transport stream is referred to as the session’s CONNECT stream.
+The resulting underlying transport stream is referred to as the session’s CONNECT stream.＼
+</p>
+</li>
+	<li>
+<div>
+<p>
+加えて， %~protocol群 は空でない場合、
+`WEB-TRANSPORT-HTTP3$r `§ 下位protocolの折衝$ に従って，
+当の `CONNECT$M 要請に次の結果を包含する `WT-Available-Protocols$h ~headerを追加する：
+</p>
+		<ol>
+			<li>
+%結果 ~LET 新たな`~list$
+</li>
+			<li>
+%~protocol群 を成す
+~EACH( %~protocol名 )
+に対し
+⇒
+%結果 に次の結果を`付加する$
+⇒
+`同型に符号化する$( %~protocol名 )
+</li>
+			<li>
+~RET %結果
+</li>
+		</ol>
+◎
+Additionally, if the protocols array is non-empty, add a WT-Available-Protocols header field to the CONNECT request, containing isomorphic encoded protocols from protocols in the order given, following [WEB-TRANSPORT-HTTP3] Section 3.4.
+</div>
+
+<p class="note">注記：
+これは、
+代わりに `WEB-TRANSPORT-OVERVIEW$r を参照するべきである
+— その`課題 #15＠https://github.com/ietf-wg-webtrans/draft-ietf-webtrans-overview/issues/15$
+が解決されたなら。
+◎
+This should reference [WEB-TRANSPORT-OVERVIEW] instead pending issue 15.
+</p>
+	</li>
+</ul>
 </div>
 
 <div>
@@ -1644,7 +1721,7 @@ To terminate a WebTransport session session with an optional integer code and an
 </p>
 <ul>
 	<li>(1)
-当の~sessionを起動した `CONNECT^M 要請に結付けられた~HTTP3~streamが~serverにより~closeされた
+当の~sessionを起動した `CONNECT$M 要請に結付けられた~HTTP3~streamが~serverにより~closeされた
 </li>
 	<li>(2)
 整数 %~code,
@@ -2935,6 +3012,8 @@ interface `WebTransport@I {
   readonly attribute `WebTransportCongestionControl$I `congestionControl$mT;
   [`EnforceRange$] attribute `unsigned short$? `anticipatedConcurrentIncomingUnidirectionalStreams$mT;
   [`EnforceRange$] attribute `unsigned short$? `anticipatedConcurrentIncomingBidirectionalStreams$mT;
+  readonly attribute DOMString `protocol$mT;
+
   readonly attribute `Promise$&lt;`WebTransportCloseInfo$I&gt; `closed$mT;
   readonly attribute `Promise$&lt;`undefined$&gt; `draining$mT;
   `undefined$ `close$mT(optional `WebTransportCloseInfo$I %closeInfo = {});
@@ -3132,6 +3211,23 @@ The number of concurrently open incoming unidirectional streams the application 
 The number of concurrently open bidirectional streams the application anticipates the server creating, or null.
 </dd>
 
+	<dt>`Protocol@sl</dt>
+	<dd>
+ある文字列
+◎
+A string＼
+</dd>
+	<dd>
+~serverにより選定された応用~levelの~protocolを指示する。
+◎
+indicating the application-level protocol selected by the server, if any.＼
+</dd>
+	<dd>
+初期~時は空~文字列とする。
+◎
+Initially an empty string.
+</dd>
+
 	<dt>`Closed@sl</dt>
 	<dd>
 ある~promise
@@ -3294,6 +3390,43 @@ Let congestionControl be options's congestionControl.
 If congestionControl is not "default", and the user agent does not support any congestion control algorithms that optimize for congestionControl, as allowed by [RFC9002] Section 7, then set congestionControl to "default".
 </li>
 	<li>
+%~protocol群 ~LET %options[ "`protocols$mb" ]
+◎
+Let protocols be options's protocols
+</li>
+	<li>
+<p>
+~IF［
+%~protocol群 を成す ある~itemの値は ~AND↓ を満たさない
+］…
+</p>
+		<ul>
+			<li>
+%~protocol群 を成す他の~itemの値に一致しない
+</li>
+			<li>
+~WebTransport~protocolにより定義されるとおり，
+`WT-Protocol$h の~field値を成すための要件を満たす
+</li>
+			<li>
+次の結果の長さ ~IN { 1 〜 512 }
+⇒
+`同型に符号化する$( 当の~itemの値 )
+</li>
+		</ul>
+<p>
+…ならば
+⇒
+~THROW `SyntaxError$E
+</p>
+
+<p>
+`WEB-TRANSPORT-HTTP3$r `§ 下位protocolの折衝$ を見よ。
+</p>
+◎
+If any of the values in protocols occur more than once, fail to match the requirements for elements that comprise the value of WT-Protocol fields as defined by the WebTransport protocol, or have an isomorphic encoded length of 0 or exceeding 512, throw a SyntaxError exception. [WEB-TRANSPORT-HTTP3] Section 3.4.
+</li>
+	<li>
 %見越される同時並行な流入~一方向~stream数 ~LET %options[ "`anticipatedConcurrentIncomingUnidirectionalStreams$mb" ]
 ◎
 Let anticipatedConcurrentIncomingUnidirectionalStreams be options's anticipatedConcurrentIncomingUnidirectionalStreams.
@@ -3332,6 +3465,7 @@ Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its 
 `CongestionControl$sl ~SET %輻輳~制御,
 `AnticipatedConcurrentIncomingUnidirectionalStreams$sl ~SET %見越される同時並行な流入~一方向~stream数,
 `AnticipatedConcurrentIncomingBidirectionalStreams$sl ~SET %見越される同時並行な流入~双方向~stream数,
+`Protocol$sl ~SET 空~文字列,
 `Closed$sl ~SET `新たな~promise$,
 `Draining$sl ~SET `新たな~promise$,
 `Datagrams$sl ~SET %~datagram群,
@@ -3358,6 +3492,8 @@ Let transport be a newly constructed WebTransport object, with:
 •• anticipatedConcurrentIncomingUnidirectionalStreams
 • [[AnticipatedConcurrentIncomingBidirectionalStreams]]
 •• anticipatedConcurrentIncomingBidirectionalStreams
+• [[Protocol]]
+•• an empty string
 • [[Closed]]
 •• a new promise
 • [[Draining]]
@@ -3473,9 +3609,10 @@ Set up transport.[[IncomingUnidirectionalStreams]] with pullAlgorithm set to pul
 %専用か,
 %不依拠-可能が要求されるか,
 %輻輳~制御,
+%~protocol群,
 %~server証明書~hash群
 ◎
-Initialize WebTransport over HTTP with transport, parsedURL, dedicated, requireUnreliable, congestionControl, and serverCertificateHashes.
+Initialize WebTransport over HTTP with transport, parsedURL, dedicated, requireUnreliable, congestionControl, protocols, and serverCertificateHashes.
 </li>
 	<li>
 ~RET %~transport
@@ -3496,12 +3633,13 @@ Return transport.
 真偽値 %専用か,
 真偽値 %不依拠-可能が要求されるか,
 `WebTransportCongestionControl$I %輻輳~制御,
+文字列たちが成す連列 %~protocol群 【！array】,
 `WebTransportHash$I たちが成す連列 %~server証明書~hash群
 ◎終
 に対し，
 次の手続きを走らす：
 ◎
-To initialize WebTransport over HTTP, given a WebTransport object transport, a URL record url, a boolean dedicated, a boolean requireUnreliable, a WebTransportCongestionControl congestionControl, and a sequence&lt;WebTransportHash&gt; serverCertificateHashes, run these steps.
+To initialize WebTransport over HTTP, given a WebTransport object transport, a URL record url, a boolean dedicated, a boolean requireUnreliable, a WebTransportCongestionControl congestionControl, a protocols array, and a sequence&lt;WebTransportHash&gt; serverCertificateHashes, run these steps.
 </p>
 <ol>
 	<li>
@@ -3799,9 +3937,9 @@ Cleanup transport with error.
 			</li>
 			<li>
 <p>
-%~session ~LET `~WebTransport~sessionを確立する$( %生成元, %接続 )
+%~session ~LET `~WebTransport~sessionを確立する$( %生成元, %~protocol群 ) `on^en %接続
 ◎
-Establish a WebTransport session with origin on connection.
+Establish a WebTransport session with origin and protocols on connection.
 </p>
 
 <p class="note">注記：
@@ -3907,19 +4045,47 @@ In parallel, terminate session.
 Abort these steps.
 </li>
 						</ol>
-</li></ol></div>
 					</li>
-					<li>
+				</ol>
+</div>
+			</li>
+			<li>
 %~transport . `State$sl ~SET `connected^l
 ◎
 Set transport.[[State]] to "connected".
 </li>
-					<li>
+			<li>
 %~transport . `Session$sl ~SET %~session
 ◎
 Set transport.[[Session]] to session.
 </li>
-					<li>
+			<li>
+%~transport .`Protocol$sl ~SET 空~文字列
+◎
+↓</li>
+			<li>
+<p>
+`WEB-TRANSPORT-HTTP3$r `§ 下位protocolの折衝$ に従って
+⇒
+~IF［
+当の `CONNECT$M 要請に対する `2xx$st 応答~内に `WT-Protocol$h ~headerは在る
+］
+⇒
+%~transport .`Protocol$sl ~SET 当の~headerの値を成す文字列
+◎
+Set transport.[[Protocol]] to either the string value of the WT-Protocol header field in the 2xx response to the CONNECT request if present, following [WEB-TRANSPORT-HTTP3] Section 3.4, or "" if not present.
+</p>
+
+<p class="note">注記：
+これは、
+代わりに `WEB-TRANSPORT-OVERVIEW$r を参照するべきである
+— その`課題 #15＠https://github.com/ietf-wg-webtrans/draft-ietf-webtrans-overview/issues/15$
+が解決されたなら。
+◎
+This should reference [WEB-TRANSPORT-OVERVIEW] instead pending issue 15.
+</p>
+			</li>
+			<li>
 %~transport . `Reliability$sl ~SET %接続 【！the connection】に応じて
 ⇒＃
 ~HTTP3接続であるならば `supports-unreliable$l ／
@@ -3929,14 +4095,14 @@ If the connection is an HTTP/3 connection, set transport’s [[Reliability]] to 
 ◎
 If the connection is an HTTP/2 connection [WEB-TRANSPORT-HTTP2], set transport’s [[Reliability]] to "reliable-only".
 </li>
-					<li>
+			<li>
 `~promiseを解決する$( %~transport . `Ready$sl )
 ◎
 Resolve transport.[[Ready]] with undefined.
 </li>
-				</ol>
-			</li>
 		</ol>
+	</li>
+</ol>
 </div>
 
 <div class="algo">
@@ -4351,9 +4517,7 @@ The getter steps are to return this's [[AnticipatedConcurrentIncomingBidirection
 ◎
 The setter steps, given value, are to set this's [[AnticipatedConcurrentIncomingBidirectionalStreams]] to value.
 </dd>
-</dl>
-
-<p class="note">注記：
+	<dd class="note">注記：
 ［
 `anticipatedConcurrentIncomingUnidirectionalStreams$mT ／
 `anticipatedConcurrentIncomingBidirectionalStreams$mT
@@ -4363,7 +4527,34 @@ The setter steps, given value, are to set this's [[AnticipatedConcurrentIncoming
 ］ことを保証するものではない。
 ◎
 Note: Setting anticipatedConcurrentIncomingUnidirectionalStreams or anticipatedConcurrentIncomingBidirectionalStreams does not guarantee the application will receive the number of streams it anticipates.
-</p>
+</dd>
+
+	<dt>
+`protocol@mT
+◎
+protocol, of type DOMString, readonly
+</dt>
+	<dd>
+［
+構築子~optionとして空でない `protocols$mb が利用された
+］下で［
+`~WebTransport~session$が確立された
+］なら、［
+~serverにより選定された応用~levelの~protocol
+］が在る場合は，それを指示する文字列を返す。
+他の場合、
+空~文字列を返す。
+◎
+Once a WebTransport session has been established and the protocols constructor option was used to provide a non-empty array, returns the application-level protocol selected by the server, if any. Otherwise, an empty string.＼
+</dd>
+	<dd class="algo">
+取得子~手続きは
+⇒
+~RET コレ .`Protocol$sl
+◎
+The getter steps are to return this's [[Protocol]].
+</dd>
+</dl>
 
 		</section>
 		<section id="webtransport-methods">
@@ -5615,6 +5806,7 @@ dictionary `WebTransportOptions@I {
   `WebTransportCongestionControl$I `congestionControl$mb = "default";
   [`EnforceRange$] `unsigned short$? `anticipatedConcurrentIncomingUnidirectionalStreams$mb = null;
   [`EnforceRange$] `unsigned short$? `anticipatedConcurrentIncomingBidirectionalStreams$mb = null;
+  `sequence$&lt;`DOMString$&gt; `protocols$mb = [];
 };
 
 enum `WebTransportCongestionControl@I {
@@ -5824,6 +6016,31 @@ The user agent MUST initially allow the server to create at least 100 bidirectio
 ］ベキである。
 ◎
 If not null, the user agent SHOULD attempt to reduce round-trips by taking [[AnticipatedConcurrentIncomingBidirectionalStreams]] into consideration in its negotiations with the server.
+</dd>
+
+	<dt>
+`protocols@mb
+◎
+protocols, of type sequence&lt;DOMString&gt;, defaulting to []
+</dt>
+	<dd>
+応用~levelの
+`~protocol名@
+たちが成す連列
+— 省略可能。
+◎
+An optionally provided array of application-level protocol names.＼
+</dd>
+	<dd>
+【空でない場合】
+当の接続は、
+次が生じた場合に限り，確立されることになる
+⇒
+~serverは、［
+これらが指示する応用~levelの~protocolのうちいずれか
+］を選定して，それを【~clientへ】報告した。
+◎
+The connection will only be established if the server reports that it has selected one of these application-level protocols.
 </dd>
 </dl>
 
