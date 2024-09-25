@@ -2756,6 +2756,7 @@ prop:property:::プロパティ
 構造体:struct::~
 共用体:union::~
 連列:sequence::~::シーケンス
+連列的:sequential::~::シーケンシャル
 stack::::スタック
 cluster::::クラスタ
 集合:set::~::セット
