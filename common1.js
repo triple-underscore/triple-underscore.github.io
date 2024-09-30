@@ -1731,6 +1731,7 @@ MOTION1=副            ~/motion-ja.html
 HTML=副               ~/index.html#spec-list-html●日本語訳（このサイト）
 HTML=副               ~momdoG/html/●日本語（部分）訳
 HTML=副               ~momdoG/html/dev/●日本語訳（ Web 開発者向け）
+HTML=副               jp.htmlspecs.com/●日本語訳
 HTMLMICRODATA=・      ~HTMLLS/microdata.html
 HTMLMICRODATA=主      ~momdoG/html/microdata.html
 HTML401=副            www.asahi-net.or.jp/~sd5a-ucd/rec-html401j/cover.html
