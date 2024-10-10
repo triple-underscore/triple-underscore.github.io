@@ -207,8 +207,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2024-09-16
-trans_update:2024-09-18
+spec_date:2024-10-08
+trans_update:2024-10-11
 source_checked:230718
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -451,6 +451,7 @@ overflow::::オーバーフロー
 real-time:real time:::リアルタイム
 deadlock::::デッドロック
 割振り:allocation:割り振り
+支続-:sustain:維持
 
 	渡-:pass
 	~milli秒数:milliseconds
@@ -644,6 +645,7 @@ balance::::バランス
 見越す:anticipateする:~
 見越した:anticipateした:~
 見越され:anticipateされ:~
+拙い:poorな:~
 
 	きちんと:wellに
 	重要なこととして:It is important to
@@ -738,6 +740,7 @@ epoch:
 満足-:satisfy:~
 上界:upper bound:~
 上限:upper limit:~
+天井:ceiling:上限
 枯渇:exhaustion:~
 番号:number:~
 素早く:quickに:~
@@ -817,6 +820,7 @@ bottleneck::::ボトルネック
 	すべて:everything
 	時点:moment
 	一片:piece
+	少ない:less
 
 ●●original_id_map
 	webtransportdatagramduplexstream-create:webtransportdatagramduplexstream-create-readable
@@ -973,6 +977,7 @@ mb.smoothedRtt:#dom-webtransportconnectionstats-smoothedrtt
 mb.rttVariation:#dom-webtransportconnectionstats-rttvariation
 mb.minRtt:#dom-webtransportconnectionstats-minrtt
 mb.estimatedSendRate:#dom-webtransportconnectionstats-estimatedsendrate
+mb.atSendCapacity:#dom-webtransportconnectionstats-atsendcapacity
 
 mbD.timestamp:#dom-webtransportdatagramstats-timestamp
 mbD.expiredIncoming:#dom-webtransportdatagramstats-expiredincoming
@@ -3111,7 +3116,10 @@ consisting of WebTransportReceiveStreams.
 	<dd class="trans-note">【†
 “からなる（ `consisting of^en ）”
 とは、
-これら各~objが `ReadableStream$I に~chunkとして~enqueueされることを意味する（次節）。
+これら各~objが `ReadableStream$I に~chunkとして~enqueueされることを意味する
+— ［
+`双方向~streamを~pullする$, `一方向~streamを~pullする$
+］を見よ。
 】</dd>
 
 	<dt>`State@sl</dt>
@@ -4741,13 +4749,9 @@ If transport.[[State]] is "failed", reject p with an InvalidStateError and abort
 ◎
 Run the following steps in parallel:
 </p>
-
-<p class="trans-note">【
-この段を成すいくつかの段（~promiseを解決する／却下する段など）は、
-原文では並列的に遂行されないかのように~markupされているが，誤りであろう。
-】</p>
 				<ol>
 					<li>
+<p>
 ~IF［
 %~transport . `State$sl ~EQ `failed^l
 ］
@@ -4755,7 +4759,14 @@ Run the following steps in parallel:
 `~promiseを却下する$( %p, `InvalidStateError$E 例外 )；
 ~RET
 ◎
-↑</li>
+↑</p>
+<p class="trans-note">【
+この段は、
+原文では並列的に遂行されていないが，誤りであろう
+（さもなければ、
+代わりに`却下される~promise$を返すべきである）。
+】</p>
+					</li>
 					<li>
 ~IF［
 %~transport . `State$sl ~EQ `connecting^l
@@ -6440,7 +6451,8 @@ dictionary `WebTransportConnectionStats@I {
   required `DOMHighResTimeStamp$ `rttVariation$mb;
   required `DOMHighResTimeStamp$ `minRtt$mb;
   required `WebTransportDatagramStats$I `datagrams$mb;
-  required `unsigned long long$? `estimatedSendRate$mb;
+  required `unsigned long long$? `estimatedSendRate$mb = null;
+  `boolean$ `atSendCapacity$mb = false;
 };
 </pre>
 
@@ -6576,7 +6588,7 @@ The minimum round-trip time observed on the entire connection.
 	<dt>
 `estimatedSendRate@mb
 ◎
-estimatedSendRate, of type unsigned long long, nullable
+estimatedSendRate, of type unsigned long long, nullable, defaulting to null
 </dt>
 	<dd>
 ［
@@ -6595,6 +6607,43 @@ estimatedSendRate, of type unsigned long long, nullable
 以前の結果では ~NULL でなかった場合でも， ~NULL になり得る。
 ◎
 The estimated rate at which queued data will be sent by the user agent, in bits per second. This rate applies to all streams and datagrams that share a WebTransport session and is calculated by the congestion control algorithm (potentially chosen by congestionControl). If the user agent does not currently have an estimate, the member MUST be the null value. The member can be null even if it was not null in previous results.
+</dd>
+
+	<dt>
+`atSendCapacity@mb
+◎
+atSendCapacity, of type boolean, defaulting to false
+</dt>
+	<dd>
+値 ~F は、
+`estimatedSendRate$mb は，応用により制限された
+— すなわち、
+当の応用が送信している~dataは，輻輳~制御器が許容するよりも有意に少ない —
+かもしれないことを指示する。
+その間は、［
+輻輳~制御器は，可用な~network容量として拙い見積もりを生産する
+］かもしれない。
+◎
+A value of false indicates the estimatedSendRate might be application limited, meaning the application is sending significantly less data than the congestion controller allows. A congestion controller might produce a poor estimate of the available network capacity while it is application limited.
+</dd>
+	<dd>
+値 ~T は、［
+当の応用は，~dataを~network容量ぎりぎりまで送信している
+］ので［
+`estimatedSendRate$mb は，応用に可用な~network容量を反映する
+］ことを指示する。
+◎
+A value of true indicates the application is sending data at network capacity, and the estimatedSendRate reflects the network capacity available to the application.
+</dd>
+	<dd class="note">注記：
+`estimatedSendRate$mb は、
+`atSendCapacity$mb が ~T をとる間は［
+応用の送信-~rateが支続される限り，~network条件に順応するよう天井を反映する
+］ことになる
+— しかしながら、
+その間でも ~NULL になることは許容される。
+◎
+When atSendCapacity is true, the estimatedSendRate reflects a ceiling. As long as the application send rate is sustained, the estimatedSendRate will adapt to network conditions. However, estimatedSendRate is allowed to be null while atSendCapacity is true.
 </dd>
 
 	<dt>
@@ -9883,7 +9932,7 @@ Networking APIs can be commonly used to scan the local network for available hos
 
 		</section>
 		<section id="certificate-hashes">
-<h3 title="Authentication using Certificate Hashes {#certificate-hashes}">13.4. 証明書~hash群を利用している認証</h3>
+<h3 title="Authentication using Certificate Hashes">13.4. 証明書~hash群を利用している認証</h3>
 
 <p>
 ~UAは、
