@@ -1838,7 +1838,7 @@ RFC7540=副            summerwind.jp/docs/rfc7540/
 RFC7540=副            summerwind.jp/docs/rfc9113/●日本語訳（RFC9113）
 RFC8259=副            www.asahi-net.or.jp/~ax2s-kmtn/internet/rfc8259j.html
 RFC8470=副            ~/http-early-data-ja.html
-RFC8941=副            ~/http-structured-fields-ja.html
+RFC8941=副            ~/http-structured-fields-ja.html●日本語訳（RFC9651）
 RFC8942=副            ~/http-client-hints-ja.html
 RFC8949=副            ~/CBOR-ja.html
 RFC9110=副            ~/http-semantics-ja.html
@@ -1848,6 +1848,7 @@ RFC9113=副            summerwind.jp/docs/rfc9113/
 RFC9114=副            ~/http3-ja.html
 RFC9218=副            ~/http-priority-ja.html
 RFC9297=副            ~/http-datagram-ja.html
+RFC9651=副            ~/http-structured-fields-ja.html
 SELECTORS4=副         ~/selectors4-ja.html
 SELECTORS3=副         ~mitsue/css3-selectors/
 SELECTORS3=副2        ＃zng.info/specs/css3-selectors.html
@@ -1921,7 +1922,7 @@ MIX:MIXEDCONTENT
 MEDIAFRAGS:MEDIAFRAG
 SELECT:SELECTORS3
 XMLHTTPREQUEST:XHR
-STRUCTUREDFIELDS:RFC8941
+STRUCTUREDFIELDS:RFC9651
 HTML5:HTML
 REPORTING:REPORTING1
 SVG:SVG11
