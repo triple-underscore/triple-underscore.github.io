@@ -198,8 +198,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2024-10-08
-trans_update:2024-10-11
+spec_date:2024-10-22
+trans_update:2024-10-23
 source_checked:230718
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -3050,7 +3050,7 @@ enum `WebTransportReliabilityMode@I {
 <p>
 各 `WebTransport$I %~transport は、
 次に挙げる内部~slotを有する
-— 各項に与える記述は規範的ではない：
+— 各項に与える【~data型~以外の】記述は規範的ではない：
 ◎
 A WebTransport object has the following internal slots.
 ◎
@@ -3082,27 +3082,23 @@ of WebTransportReceiveStreams owned by this WebTransport.
 </dd>
 
 	<dt>`IncomingBidirectionalStreams@sl</dt>
-	<dd>
-ある `ReadableStream$I
-◎
-A ReadableStream＼
-</dd>
-	<dd>
-~serverから受信した `WebTransportBidirectionalStream$I たちからなる†
-◎
-consisting of WebTransportBidirectionalStream objects.
-</dd>
-
 	<dt>`IncomingUnidirectionalStreams@sl</dt>
 	<dd>
-ある `ReadableStream$I
+いずれも，ある `ReadableStream$I
 ◎
 A ReadableStream＼
 </dd>
 	<dd>
-~serverから受信した一方向~streamを表現する `WebTransportReceiveStream$I たちからなる†
+順に，~serverから受信した［
+双方向~streamを表現する `WebTransportBidirectionalStream$I たち／
+一方向~streamを表現する `WebTransportReceiveStream$I たち
+］からなる†
 ◎
-consisting of WebTransportReceiveStreams.
+consisting of WebTransportBidirectionalStream objects.
+◎
+IncomingUnidirectionalStreams
+◎
+A ReadableStream consisting of WebTransportReceiveStreams.
 </dd>
 	<dd class="trans-note">【†
 “からなる（ `consisting of^en ）”
@@ -3112,11 +3108,15 @@ consisting of WebTransportReceiveStreams.
 `双方向~streamを~pullする$, `一方向~streamを~pullする$
 ］を見よ。
 】</dd>
+	<dd class="note">注記：
+流入~stream上にすでに~dataがあるかどうかは、
+~serverの挙動に依存することになる。
+【！Note: Whether the incoming streams already have data on them will depend on server behavior.】
+</dd>
 
 	<dt>`State@sl</dt>
 	<dd>
-%~transport の状態を指示する
-— 次に挙げるいずれかとして
+次に挙げるいずれか
 ⇒＃
 `connecting^l,
 `connected^l,
@@ -3126,6 +3126,10 @@ consisting of WebTransportReceiveStreams.
 ◎
 An enum indicating the state of the transport. One of "connecting", "connected", "draining", "closed", and "failed".
 </dd>
+	<dd>
+%~transport の状態を指示する
+◎
+↑</dd>
 
 	<dt>`Ready@sl</dt>
 	<dd>
@@ -4399,6 +4403,9 @@ incomingBidirectionalStreams, of type ReadableStream, readonly
 ~RET コレ . `IncomingBidirectionalStreams$sl
 ◎
 ↑↑ Returns a ReadableStream of WebTransportBidirectionalStreams that have been received from the server.＼
+◎
+↑↑ Note: Whether the incoming streams already have data on them will depend on server behavior.
+◎
 The getter steps for the incomingBidirectionalStreams attribute SHALL be:
 • Return this's [[IncomingBidirectionalStreams]].
 </dd>
@@ -4414,6 +4421,9 @@ incomingUnidirectionalStreams, of type ReadableStream, readonly
 ~RET コレ . `IncomingUnidirectionalStreams$sl
 ◎
 ↑↑ A ReadableStream of unidirectional streams, each represented by a WebTransportReceiveStream, that have been received from the server.＼
+◎
+↑↑ Note: Whether the incoming streams already have data on them will depend on server behavior.
+◎
 The getter steps for incomingUnidirectionalStreams are:
 • Return this.[[IncomingUnidirectionalStreams]].
 </dd>
@@ -4732,32 +4742,34 @@ Let transport be this.
 ◎
 Let p be a new promise.
 </li>
-			<li class="algo">
-<p>
-この段は`並列的$に走らす：
-◎
-If transport.[[State]] is "failed", reject p with an InvalidStateError and abort these steps.
-◎
-Run the following steps in parallel:
-</p>
-				<ol>
-					<li>
+			<li>
 <p>
 ~IF［
 %~transport . `State$sl ~EQ `failed^l
 ］
-⇒＃
-`~promiseを却下する$( %p, `InvalidStateError$E 例外 )；
-~RET
+⇒
+~RET `却下される~promise$( `InvalidStateError$E 例外 )
 ◎
 ↑</p>
+
 <p class="trans-note">【
 この段は、
-原文では並列的に遂行されていないが，誤りであろう
-（さもなければ、
-代わりに`却下される~promise$を返すべきである）。
+原文では［
+`~promiseを却下する$( %p, `InvalidStateError^E 例外 )
+］を行ってから値を返さずに手続きを終えているが，誤りであろう。
+`failed^l は、
+以下で`並列的$に走らす手続きの中でも取扱われているので，この段は不要かもしれない。
 】</p>
-					</li>
+◎
+If transport.[[State]] is "failed", reject p with an InvalidStateError and abort these steps.
+</li>
+			<li class="algo">
+<p>
+この段は`並列的$に走らす：
+◎
+Run the following steps in parallel:
+</p>
+				<ol>
 					<li>
 ~IF［
 %~transport . `State$sl ~EQ `connecting^l
@@ -4862,6 +4874,13 @@ createBidirectionalStream()
 ◎
 Creates a WebTransportBidirectionalStream object for an outgoing bidirectional stream. Note that the mere creation of a stream is not immediately visible to the peer until it is used to send data.
 </dd>
+	<dd class="note">注記：
+当の~stream上に~dataが送信されるまでは、
+~serverが当の~streamを自覚するようになることは期待されない。
+◎
+Note: There is no expectation that the server will be aware of the stream until data is sent on it.
+</dd>
+
 	<dd class="algo">
 <p>
 ~method手続きは：
@@ -5030,6 +5049,12 @@ createUnidirectionalStream()
 ~serverからは即時に可視にならないことに注意。
 ◎
 Creates a WebTransportSendStream for an outgoing unidirectional stream. Note that the mere creation of a stream is not immediately visible to the server until it is used to send data.
+</dd>
+	<dd class="note">注記：
+当の~stream上に~dataが送信されるまでは、
+~serverが当の~streamを自覚するようになることは期待されない。
+◎
+Note: There is no expectation that the server will be aware of the stream until data is sent on it.
 </dd>
 	<dd class="algo">
 <p>
