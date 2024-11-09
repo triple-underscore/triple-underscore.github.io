@@ -288,6 +288,7 @@ none::なし
 	%閉-を防止し得るか:canPreventClose
 	%対象:-
 	%ある所:hideUntil
+	%取消されなかったか:-
 
 	●仕様
 背後:behind:~
@@ -434,6 +435,7 @@ et.cancel:~HTMLindex#event-cancel
 et.click:~UIEVENTS#event-type-click
 et.close:~HTMLindex#event-close
 et.toggle:~HTMLindex#event-toggle
+et.beforetoggle:~HTMLindex#event-beforetoggle
 
 
 	●要素／属性／値
@@ -500,6 +502,8 @@ dG.閉-注視器:#dialog-close-watcher
 
 ~dialogを閉じる:#close-the-dialog
 ~dialogを~focusする:#dialog-focusing-steps
+~dialog用の~toggle~task追跡子:#dialog-toggle-task-tracker
+~dialog用の~toggle~event~taskを~queueする:#queue-a-dialog-toggle-event-task
 
 有名~details~group:#details-name-group
 ~details通知~task手続き:#details-notification-task-steps
@@ -582,6 +586,7 @@ text/html における~tag省略:~HTMLdom#concept-element-tag-omission
 表現-:~HTMLdom#represents
 
 関連な大域~obj:~WAPI#concept-relevant-global
+	~task:~WAPI#concept-task
 ~DOM操作~task~source:~WAPI#dom-manipulation-task-source
 利用者~対話~task~source:~WAPI#user-interaction-task-source
 ~click~eventを発火する:~WAPI#fire-a-click-event
@@ -2830,6 +2835,97 @@ Can be set, to update the return value.
 </dd>
 </dl>
 
+<p>
+各 `dialog$e 要素は
+`~dialog用の~toggle~task追跡子@
+を有する
+— それは、［
+~NULL ／`~toggle~task追跡子$
+］であり，
+初期~時は ~NULL とする。
+◎
+Every dialog element has a dialog toggle task tracker, which is a toggle task tracker or null, initially null.
+</p>
+
+<div class="algo">
+<p>
+`~dialog用の~toggle~event~taskを~queueする@
+ときは、
+所与の
+( `dialog$e 要素 %要素, 文字列 %旧-状態, 文字列 %新-状態 )
+に対し：
+◎
+To queue a dialog toggle event task given a dialog element element, a string oldState, and a string newState:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%要素 の`~dialog用の~toggle~task追跡子$ ~NEQ ~NULL
+］：
+◎
+If element's dialog toggle task tracker is not null, then:
+</p>
+		<ol>
+			<li>
+%旧-状態 ~SET %要素 の`~dialog用の~toggle~task追跡子$の`旧-状態$tTk
+◎
+Set oldState to element's dialog toggle task tracker's old state.
+</li>
+			<li>
+%要素 の`~dialog用の~toggle~task追跡子$の`~task$tTkを それが属する`~task~queue$から除去する
+◎
+Remove element's dialog toggle task tracker's task from its task queue.
+</li>
+			<li>
+%要素 の`~dialog用の~toggle~task追跡子$ ~SET ~NULL
+◎
+Set element's dialog toggle task tracker to null.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+%~task ~LET `要素~taskを~queueする$( `~DOM操作~task~source$, %要素, 次の手続き )
+◎
+Queue an element task given the DOM manipulation task source and element to＼
+</p>
+
+<div class="algo">
+<p>
+手続きは：
+◎
+run the following steps:
+</p>
+		<ol>
+			<li>
+`~eventを発火する$( %要素, `toggle$et, `ToggleEvent$I )
+— 次のように初期化して
+⇒＃
+`oldState$m 属性 ~SET %旧-状態,
+`newState$m 属性 ~SET %新-状態
+◎
+Fire an event named toggle at element, using ToggleEvent, with the oldState attribute initialized to oldState and the newState attribute initialized to newState.
+</li>
+			<li>
+%要素 の`~dialog用の~toggle~task追跡子$ ~SET ~NULL
+◎
+Set element's dialog toggle task tracker to null.
+</li>
+		</ol>
+</div>
+	</li>
+	<li>
+%要素 の`~dialog用の~toggle~task追跡子$ ~SET 次を伴う構造体
+⇒＃
+`~task$tTk ~SET %~task,
+`旧-状態$tTk ~SET %旧-状態
+◎
+Set element's dialog toggle task tracker to a struct with task set to the just-queued task and old state set to oldState.
+</li>
+</ol>
+</div>
+
 <div class="algo">
 <p>
 ``show()@m
@@ -2860,6 +2956,45 @@ The show() method steps are:
 If this has an open attribute and the is modal flag of this is false, then return.
 ◎
 If this has an open attribute, then throw an "InvalidStateError" DOMException.
+</li>
+	<li>
+%取消されなかったか ~LET `~eventを発火する$( コレ, `beforetoggle$et, `ToggleEvent$I )
+— 次のように初期化して
+⇒＃
+`cancelable$m 属性 ~SET ~T,
+`oldState$m 属性 ~SET `closed^l,
+`newState$m 属性 ~SET `open^l
+◎
+If the result of firing an event named beforetoggle, using ToggleEvent, with the cancelable attribute initialized to true, the oldState attribute initialized to "closed", and the newState attribute initialized to "open" at this＼
+</li>
+	<li>
+<p>
+~IF［
+~OR↓
+］…
+</p>
+		<ul>
+			<li>
+%取消されなかったか ~EQ ~F
+</li>
+			<li>
+コレは ``open$a 属性を有する
+</li>
+		</ul>
+<p>
+…ならば
+⇒
+~RET
+</p>
+◎
+is false, then return.
+◎
+If this has an open attribute, then return.
+</li>
+	<li>
+`~dialog用の~toggle~event~taskを~queueする$( コレ【！subject】, `closed^l, `open^l )
+◎
+Queue a dialog toggle event task given subject, "closed", and "open".
 </li>
 	<li>
 コレに［
@@ -2953,6 +3088,55 @@ If this's node document is not fully active, then throw an "InvalidStateError" D
 If this is not connected, then throw an "InvalidStateError" DOMException.
 ◎
 If this is in the popover showing state, then throw an "InvalidStateError" DOMException.
+</li>
+			<li>
+%取消されなかったか ~LET `~eventを発火する$( コレ, `beforetoggle$et, `ToggleEvent$I )
+— 次のように初期化して
+⇒＃
+`cancelable$m 属性 ~SET ~T,
+`oldState$m 属性 ~SET `closed^l,
+`newState$m 属性 ~SET `open^l
+◎
+If the result of firing an event named beforetoggle, using ToggleEvent, with the cancelable attribute initialized to true, the oldState attribute initialized to "closed", and the newState attribute initialized to "open" at this＼
+</li>
+	<li>
+<p>
+~IF［
+~OR↓
+］…
+</p>
+		<ul>
+			<li>
+%取消されなかったか ~EQ ~F
+</li>
+			<li>
+コレは ``open$a 属性を有する
+</li>
+			<li>
+コレは`接続されて$いない
+</li>
+			<li>
+コレの`~popover可視性~状態$ ~EQ `示している$i
+</li>
+		</ul>
+<p>
+…ならば
+⇒
+~RET
+</p>
+◎
+is false, then return.
+◎
+If this has an open attribute, then return.
+◎
+If this is not connected, then return.
+◎
+If this is in the popover showing state, then return.
+</li>
+	<li>
+`~dialog用の~toggle~event~taskを~queueする$( コレ【！subject】, `closed^l, `open^l )
+◎
+Queue a dialog toggle event task given subject, "closed", and "open".
 </li>
 	<li>
 コレに［
@@ -3230,6 +3414,29 @@ When a dialog element subject is to be closed, with null or a string result, run
 ~RET
 ◎
 If subject does not have an open attribute, then return.
+</li>
+	<li>
+`~eventを発火する$( %dialog, `beforetoggle$et, `ToggleEvent$I )
+— 次のように初期化して
+⇒＃
+`oldState$m 属性 ~SET `open^l,
+`newState$m 属性 ~SET `closed^l
+◎
+Fire an event named beforetoggle, using ToggleEvent, with the oldState attribute initialized to "open" and the newState attribute initialized to "closed" at subject.
+</li>
+	<li>
+~IF［
+%dialog は ``open$a 属性を有さない
+］
+⇒
+~RET
+◎
+If subject does not have an open attribute, then return.
+</li>
+	<li>
+`~dialog用の~toggle~event~taskを~queueする$( コレ【！subject】, `open^l, `closed^l )
+◎
+Queue a dialog toggle event task given subject, "open", and "closed".
 </li>
 	<li>
 %dialog から ``open$a `属性を除去する$
