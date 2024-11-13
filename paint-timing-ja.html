@@ -105,8 +105,8 @@ return text;
 
 ●●options
 spec_title:Paint Timing
-spec_date:2024-01-12
-trans_update:2024-02-01
+spec_date:2024-11-12
+trans_update:2024-11-13
 source_checked:240112
 page_state_key:TIMING
 original_url:https://w3c.github.io/paint-timing/
@@ -147,6 +147,7 @@ performancepainttiming:API/PerformancePaintTiming
 
 Exposed:~WEBIDLjs#Exposed
 
+I.PaintTimingMixin:#painttimingmixin
 I.PerformancePaintTiming:#performancepainttiming
 I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
 I.PerformanceEntry:~TIMELINE#dom-performanceentry
@@ -156,6 +157,9 @@ I.HTMLVideoElement:~HEmedia#htmlvideoelement
 I.Text:~DOM4#text
 	I.Element:~DOM4#element → 要素
 	I.Document:~DOM4#document → 文書
+
+m.paintTime:#dom-painttimingmixin-painttime
+m.presentationTime:#dom-painttimingmixin-presentationtime
 
 m.duration:~TIMELINE#dom-performanceentry-duration
 m.entryType:~TIMELINE#dom-performanceentry-entrytype
@@ -218,10 +222,18 @@ piR.読込n時刻:#pending-image-record-loadtime
 読込ngを完遂した画像を処理する:#process-an-image-that-finished-loading
 塗り計時~用に公開されて:#exposed-for-paint-timing
 
+ptM.塗り計時~報:#painttimingmixin-paint-timing-info
+塗り計時~報:#paint-timing-info
+ptI.描画~更新~終了~時刻:#paint-timing-info-rendering-update-end-time
+ptI.実装定義な呈示~時刻:#paint-timing-info-implementation-defined-presentation-time
+既定の塗り時刻印:#default-paint-timestamp
+
 空でない~text:#non-empty
 
 	●用語（外部
-新たな:~WEBIDLjs#new
+新たな~obj:~WEBIDLjs#new
+実装-:~WEBIDLjs#implements
+内包-:~WEBIDL#include
 
 文字列:~INFRA#string
 有順序~集合:~INFRA#ordered-set
@@ -231,13 +243,15 @@ sct.~item:~INFRA#struct-item
 付加する:~INFRA#list-append
 set.付加する:~INFRA#set-append
 
+並列的:~HTMLINFRA#in-parallel
+
 url.~scheme:~URL1#concept-url-scheme
 
+処理能~時列線~task~source:~TIMELINE#dfn-performance-timeline-task-source
 処理能~entryを~queueする:~TIMELINE#dfn-queue-a-performanceentry
 現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
 要素の計時を報告する:https://wicg.github.io/element-timing/#report-element-timing
-画像~要素の計時を報告する:https://wicg.github.io/element-timing/#report-image-element-timing
-最~大な有内容な塗りを報告する:https://wicg.github.io/largest-contentful-paint/#report-largest-contentful-paint
+最~大な有内容な塗りを報告する:https://w3c.github.io/largest-contentful-paint/#report-largest-contentful-paint
 
 要素:~DOM4#concept-element
 子孫:~DOM4#concept-tree-descendant
@@ -246,8 +260,6 @@ url.~scheme:~URL1#concept-url-scheme
 文書:~DOM4#concept-document
 子孫~text内容:~DOM4#concept-descendant-text-content
 ~text内容:~HTMLdom#text-content
-
-~TAO検査:~FETCH#concept-tao-check
 
 表現-:~HTMLdom#represents
 画像~要請:~HEimages#image-request
@@ -276,6 +288,8 @@ st.部分的に可用:~HEimages#img-inc
 関連な~realm:~WAPI#concept-relevant-realm
 関連な大域~obj:~WAPI#concept-relevant-global
 rM.大域~obj:~WAPI#concept-realm-global
+enV.非同一-生成元~能力は隔離されるか？:~WAPI#concept-settings-object-cross-origin-isolated-capability
+大域~taskを~queueする:~WAPI#queue-a-global-task
 
 ~box:~CSSDISP#box
 包含塊:~CSSDISP#containing-block
@@ -316,15 +330,6 @@ typographic::::タイポグラフィック
 阻み:block::~::ブロック
 期間:period:~
 高分解能:high resolution::~
-	時点:moments
-	時点:the point
-	時点:time when
-	時点:the time at which
-	時点:the points
-	時点:when
-	時点:when the point
-	起こる:happen
-
 計量:metric::~
 捕捉-:capture::~
 	~page読込:pageload
@@ -341,15 +346,32 @@ typographic::::タイポグラフィック
 	最初の塗りと最初の有内容な塗り:First Paint and First Contentful Paint
 	塗りの種別:minimal frame attribution
 	塗り計時:paint-timing／paint timing
+milli::::ミリ
+	~milli秒数で:millisecond
+
+粗化-:coarsen:粗く
+粗く:coarseに:~
+	より粗く:coarser
+
 	処理能~entryを~queueする:Add the PerformanceEntry
 	-:record
 	~~記録可能:able to note
 	報告-法:reporting
+	時点:moments
+	時点:the point
+	時点:time when
+	時点:the time at which
+	時点:the points
+	時点:when
+	時点:when the point
+	起こる:happen
+	整数倍になるよう切り上げ:the next multiple
 
 	●処理一般
 pipeline:
 	何もしない:do nothing
 処理待ち:pending:~
+書出す:flushする::書き出す
 
 	-:ctx
 	%限界~矩形:boundingRect
@@ -358,13 +380,16 @@ pipeline:
 	%根:root
 	%今:now
 	%記録:record
-	%塗り時刻印:paintTimestamp
+	%塗り計時~報:paintTimingInfo
+	%時刻印:-
 	%文書:document
-	%塗られた画像~群~paintedImages
+	%塗られた画像~群:paintedImages
 	%塗られた~text~node群:paintedTextNodes
+	%塗り計時~群を書出す:flushPaintTimings
 	%文書:doc
 	%報告-済み塗り群:reportedPaints
 	%~text:text
+	%大域~obj:-
 
 	●仕様
 
@@ -393,8 +418,8 @@ pipeline:
 解析:analytics:~
 白紙:blank:~
 露呈-:reveal:露わに
-TAO:
 main:
+内包-:include::~
 
 	含まれない:exclude
 	文字列:DOMString
@@ -440,7 +465,7 @@ main:
 [CSS-DISPLAY-4]
     ＜CSS Display Module Level 4＞. Editor's Draft. URL: https://drafts.csswg.org/css-display-4/
 [CSS-FONTS-4]
-    John Daggett; Myles Maxfield; Chris Lilley. ＜CSS Fonts Module Level 4＞. URL: https://drafts.csswg.org/css-fonts-4/
+    Chris Lilley. ＜CSS Fonts Module Level 4＞. URL: https://drafts.csswg.org/css-fonts-4/
 [CSS-TEXT-4]
     Elika Etemad; et al. ＜CSS Text Module Level 4＞. URL: https://drafts.csswg.org/css-text-4/
 [CSS22]
@@ -451,8 +476,6 @@ main:
     Anne van Kesteren. ＜DOM Standard＞. Living Standard. URL: https://dom.spec.whatwg.org/
 [ELEMENT-TIMING]
     ＜Element Timing API＞. cg-draft. URL: https://wicg.github.io/element-timing/
-[FETCH]
-    Anne van Kesteren. ＜Fetch Standard＞. Living Standard. URL: https://fetch.spec.whatwg.org/
 [HR-TIME-3]
     Yoav Weiss. ＜High Resolution Time＞. URL: https://w3c.github.io/hr-time/
 [HTML]
@@ -472,8 +495,6 @@ main:
 
 ●●ref_informative
 
-[RFC2397]
-    L. Masinter. ＜The "data" URL scheme＞. August 1998. Proposed Standard. URL: https://www.rfc-editor.org/rfc/rfc2397
 [URL]
     Anne van Kesteren. ＜URL Standard＞. Living Standard. URL: https://url.spec.whatwg.org/
 
@@ -1060,8 +1081,8 @@ entry contains a DOMHighResTimeStamp reporting the time when the user agent firs
 ↓</dt>
 	<dd>
 <p>
-`閲覧~文脈$のうち ~OR↓ を満たすものは、
-`塗り計時に適格$であるとされる：
+所与の`閲覧~文脈$が`塗り計時に適格$であるとは、
+~OR↓ を満たすことをいう：
 ◎
 A browsing context ctx is paint-timing eligible when one of the following apply:
 </p>
@@ -1093,7 +1114,9 @@ ctx is a nested browsing context, and the user agent has configured ctx to repor
 非同一-生成元に属する~iframe用には，
 塗り計時を不能化するよう裁定してもヨイ
 — 一部の局面においては、
-それらの塗り計時は~main~frameについての情報を露呈するかもしれないので。
+それらの塗り計時は［
+~main~frameについての情報を露呈する
+］かもしれないので。
 ◎
 NOTE: this allows user agents to enable paint-timing only for some of the frames, in addition to the main frame, if they so choose. For example, a user agent may decide to disable paint-timing for cross-origin iframes, as in some scenarios their paint-timing might reveal information about the main frame.
 </p>
@@ -1102,6 +1125,105 @@ NOTE: this allows user agents to enable paint-timing only for some of the frames
 	</dd>
 </dl>
 
+		<section id="sec-PaintTimingMixin">
+<h3 title="The PaintTimingMixin interface {#sec-PaintTimingMixin}">`PaintTimingMixin^I ~interface~mixin</h3>
+
+<pre class="idl">
+[`Exposed$=Window]
+interface mixin `PaintTimingMixin@I {
+    readonly attribute `DOMHighResTimeStamp$I `paintTime@m;
+    readonly attribute `DOMHighResTimeStamp$I? `presentationTime@m;
+};
+</pre>
+
+<p>
+`PaintTimingMixin$I ~interface~mixinを`内包-$【する~interfaceを`実装-$】している各~objには、
+`塗り計時~報@ptM
+が結付けられる
+— それは、［
+~NULL ／ある`塗り計時~報$
+］である。
+◎
+Objects including the PaintTimingMixin interface mixin have an associated paint timing info (null or a paint timing info).
+</p>
+
+<p>
+`塗り計時~報@
+は、
+次に挙げる`~item$sctを伴う`構造体$である：
+◎
+paint timing info is a struct. It has the following items:
+</p>
+<ul>
+	<li>
+`描画~更新~終了~時刻@ptI
+⇒
+ある `DOMHighResTimeStamp$I
+◎
+rendering update end time
+• A DOMHighResTimeStamp
+</li>
+	<li>
+`実装定義な呈示~時刻@ptI
+⇒
+~NULL ／ ある `DOMHighResTimeStamp$I
+◎
+implementation-defined presentation time
+• Null or a DOMHighResTimeStamp
+</li>
+</ul>
+
+<div class="algo">
+`paintTime$m 取得子~手続きは
+⇒
+~RET コレの`塗り計時~報$ptM†の`描画~更新~終了~時刻$ptI
+◎
+The paintTime attribute’s getter step is to return this's paint timing info's rendering update end time.
+</div>
+
+<div class="algo">
+`presentationTime$m
+取得子~手続きは
+⇒
+【！if exists,】
+~RET コレの`塗り計時~報$ptM†の`実装定義な呈示~時刻$ptI
+◎
+The presentationTime attribute’s getter step, if exists, is to return this's paint timing info's implementation-defined presentation time.
+</div>
+
+<p class="trans-note">【†
+`塗り計時~報$ptM ~EQ ~NULL の場合にどうなるか指定されていないが、
+この仕様が定義する~interface（ `PerformancePaintTiming$I ）においては， ~NULL をとり得ない。
+】</p>
+
+<div class="algo">
+<p>
+`既定の塗り時刻印@
+は、
+所与の
+( `塗り計時~報$ %塗り計時~報 )
+に対し：
+</p>
+<ol>
+	<li>
+%時刻印 ~LET %塗り計時~報 の`実装定義な呈示~時刻$ptI
+</li>
+	<li>
+~IF［
+%時刻印 ~NEQ ~NULL
+］
+⇒
+~RET %時刻印
+</li>
+	<li>
+~RET %塗り計時~報 の`描画~更新~終了~時刻$ptI
+</li>
+</ol>
+◎
+To get the default paint timestamp for a paint timing info paintTimingInfo, return paintTimingInfo’s implementation-defined presentation time if it is non-null, otherwise paintTimingInfo’s rendering update end time.
+</div>
+
+		</section>
 	</section>
 	<section id="sec-PerformancePaintTiming">
 <h2 title="The PerformancePaintTiming interface">3. `PerformancePaintTiming^I ~interface</h2>
@@ -1109,6 +1231,8 @@ NOTE: this allows user agents to enable paint-timing only for some of the frames
 <pre class="idl">
 [`Exposed$=Window]
 interface `PerformancePaintTiming@I : `PerformanceEntry$I {};
+
+`PerformancePaintTiming$I includes `PaintTimingMixin$I;
 </pre>
 
 <p>
@@ -1449,28 +1573,9 @@ Let now be the current high resolution time given element’s relevant global ob
 Let record be a pending image record with element element, request imageRequest and loadTime now.
 </li>
 	<li>
-~IF［
-%画像~要請 は~data~URL `RFC2397$r である
-］~OR［
-%画像~要請 の資源~用の`~TAO検査$は成功した
-］
-⇒
 %根 の`描画~処理待ち画像~群$に %記録 を`付加する$【！add】
 ◎
-If imageRequest is a data URL [RFC2397], or the timing allow check succeeds for imageRequest’s resource, add record to root’s images pending rendering.
-</li>
-	<li>
-<p>
-~ELSE
-⇒
-`要素の計時を報告する$( %根, %今, « %記録 », « » )
-</p>
-<p class="trans-note">【
-~link先は存在しない
-— 代わりに，`画像~要素の計時を報告する$( %要素, %画像~要請, %今 ) ？
-】</p>
-◎
-Otherwise, report element timing given root, now, «record» and «».
+Add record to root’s images pending rendering.
 </li>
 </ol>
 </div>
@@ -1525,9 +1630,17 @@ When asked to mark paint timing given a Document document as input, perform the 
 If the document's browsing context is not paint-timing eligible, return.
 </li>
 	<li>
-%塗り時刻印 ~LET `現在の高分解能~時刻$( %文書 に`関連な大域~obj$ )
+%大域~obj ~LET %文書 に`関連な大域~obj$
 ◎
-Let paintTimestamp be the current high resolution time given document’s relevant global object.
+↓</li>
+	<li>
+%塗り計時~報 ~LET 新たな`塗り計時~報$
+— その
+⇒＃
+`描画~更新~終了~時刻$ptI ~SET `現在の高分解能~時刻$( %大域~obj ),
+【`実装定義な呈示~時刻$ptI ~SET ~NULL】
+◎
+Let paintTimingInfo be a new paint timing info, whose rendering update end time is the current high resolution time given document’s relevant global object.
 </li>
 	<li>
 %塗られた画像~群 ~LET 新たな`有順序~集合$
@@ -1618,17 +1731,25 @@ Append element to paintedTextNodes.
 ◎
 Let reportedPaints be the document’s set of previously reported paints.
 </li>
-	<li>
+	<li class="algo">
+<p>
+%塗り計時~群を書出す ~LET 次を遂行する手続き：
+◎
+Let flushPaintTimings be the following steps:
+</p>
+		<ol>
+			<li>
+<p>
 ~IF［
 `first-paint^l ~NIN %報告-済み塗り群
 ］~AND［
 ~UAは`最初の塗り$を刻むよう環境設定されている
 ］
 ⇒
-`塗り計時を報告する$( %文書, `first-paint^l, %塗り時刻印 )
+`塗り計時を報告する$( %文書, `first-paint^l, %塗り計時~報 )
 ◎
-If reportedPaints does not contain "first-paint", and the user agent is configured to mark first paint, then invoke the § 4.3.3 Report paint timing algorithm with document, "first-paint", and paintTimestamp.
-<p></p>
+If reportedPaints does not contain "first-paint", and the user agent is configured to mark first paint, then report paint timing given document, "first-paint", and paintTimingInfo.
+</p>
 
 <p class="note">注記：
 `最初の塗り$には、
@@ -1643,17 +1764,17 @@ NOTE: First paint excludes the default background paint, but includes non-defaul
 ◎
 This should be turned into a normative note.
 </p>
-	</li>
-	<li>
+			</li>
+			<li>
 <p>
 ~IF［
 %文書 は`最初の有内容な塗りを報告するべき$である
 ］
 ⇒
-`塗り計時を報告する$( %文書, `first-contentful-paint^l, %塗り時刻印 )
+`塗り計時を報告する$( %文書, `first-contentful-paint^l, %塗り計時~報 )
 ◎
 If document should report first contentful paint, then:
-• Invoke the § 4.3.3 Report paint timing algorithm with document, "first-contentful-paint", and paintTimestamp as arguments.
+• Report paint timing given document, "first-contentful-paint", and paintTimingInfo.
 </p>
 
 <p class="note">注記：
@@ -1686,18 +1807,95 @@ NOTE: A document is not guaranteed to mark "first-paint" or "first-contentful-pa
 ◎
 NOTE: The marking of first paint is optional. User-agents implementing paint timing should at the very least mark first contentful paint.
 </p>
+			</li>
+			<li>
+`最~大な有内容な塗りを報告する$( %文書, %塗り計時~報, %塗られた画像~群, %塗られた~text~node群 )
+◎
+Report largest contentful paint given document, paintTimingInfo, paintedImages and paintedTextNodes.
+</li>
+			<li>
+`要素の計時を報告する$( %文書, %塗り計時~報, %塗られた画像~群, %塗られた~text~node群 )
+◎
+Report element timing given document, paintTimingInfo, paintedImages and paintedTextNodes.
+</li>
+		</ol>
 	</li>
 	<li>
-`最~大な有内容な塗りを報告する$【~link先は存在しない】
-( %文書, %塗り時刻印, %塗られた画像~群, %塗られた~text~node群 )
+~IF［
+~UAは`実装定義な呈示~時刻$ptIを~supportしない
+］
+⇒＃
+%塗り計時~群を書出す()；
+~RET
 ◎
-Report largest contentful paint given document, paintTimestamp, paintedImages and paintedTextNodes.
+If the user-agent does not support implementation-defined presentation times, call flushPaintTimings and return.
 </li>
 	<li>
-`要素の計時を報告する$( %文書, %塗り時刻印, %塗られた画像~群, %塗られた~text~node群 )
+<p>
+この段は`並列的$に走らす：
 ◎
-Report element timing given document, paintTimestamp, paintedImages and paintedTextNodes.
+Run the following steps In parallel:
+</p>
+		<ol>
+			<li>
+実装定義な時刻
+— 現在の~frameが利用者へ呈示されるとき —
+まで待機する
+◎
+Wait until an implementation-defined time when the current frame has been presented to the user.
 </li>
+			<li>
+%呈示~時刻 ~LET `現在の高分解能~時刻$( %大域~obj )
+◎
+Set paintTimingInfo’s implementation-defined presentation time to the current high resolution time given document’s relevant global object.
+</li>
+			<li>
+<p>
+~IF［
+%文書 の`非同一-生成元~能力は隔離されるか？$enV ~EQ ~F
+］：
+◎
+If document’s cross-origin isolated capability is false, then:
+</p>
+				<ol>
+					<li>
+<p>
+%呈示~時刻 ~SET %呈示~時刻 を次のように粗化した結果
+⇒
+~milli秒数で
+4 の整数倍になる
+— または，それより粗くなる† —
+よう切り上げる
+</p>
+
+<p class="trans-note">【†
+［
+4 以上の数
+］の整数倍なのか［
+4 の倍数
+］の整数倍なのか明瞭でない。
+】</p>
+◎
+Coarsen paintTimingInfo’s implementation-defined presentation time to the next multiple of 4 milliseconds, or coarser.
+</li>
+					<li>
+`現在の高分解能~時刻$( %大域~obj ) が %呈示~時刻 になるまで待機する
+◎
+Wait until the current high resolution time is paintTimingInfo’s implementation-defined presentation time.
+</li>
+				</ol>
+			</li>
+			<li>
+%塗り計時~報 の`実装定義な呈示~時刻$ptI ~SET %呈示~時刻
+◎
+↑</li>
+			<li>
+`大域~taskを~queueする$( `処理能~時列線~task~source$, %大域~obj, %塗り計時~群を書出す )
+◎
+Queue a global task on the performance timeline task source given document’s relevant global object to run flushPaintTimings.
+</li>
+		</ol>
+	</li>
 </ol>
 </div>
 
@@ -1709,35 +1907,40 @@ Report element timing given document, paintTimestamp, paintedImages and paintedT
 <p>
 `塗り計時を報告する$ときは、
 所与の
-( %文書, %塗り種別, %塗り時刻印 )
+( %文書, %塗り種別, `塗り計時~報$ %塗り計時~報 )
 に対し，次の手続きを遂行する：
 ◎
-When asked to report paint timing given document, paintType, and paintTimestamp as arguments, perform the following steps:
+To report paint timing given document, paintType, and a paint timing info paintTimingInfo as arguments, perform the following steps: 
 </p>
 <ol>
 	<li>
-%新たな~entry ~LET %文書 に`関連な~realm$内の`新たな$ `PerformancePaintTiming$I ~obj
+%新たな~entry ~LET `新たな~obj$( `PerformancePaintTiming$I, %文書 に`関連な~realm$ )
 ◎
-Create a new PerformancePaintTiming object newEntry with document’s relevant realm＼
+Create a new PerformancePaintTiming object newEntry with document’s relevant realm and＼
 </li>
 	<li>
 %新たな~entryの
 ⇒＃
-`name$m 属性 ~SET %塗り種別
-`entryType$m 属性 ~SET `paint^l
-`startTime$m 属性 ~SET %塗り時刻印
+`name$m 属性 ~SET %塗り種別,
+`entryType$m 属性 ~SET `paint^l,
+`startTime$m 属性 ~SET `既定の塗り時刻印$( %塗り計時~報 ),
 `duration$m 属性 ~SET 0
 ◎
 and set its attributes as follows:
 • Set newEntry’s name attribute to paintType.
 • Set newEntry’s entryType attribute to "paint".
-• Set newEntry’s startTime attribute to paintTimestamp.
+• Set newEntry’s startTime attribute to the default paint timestamp given paintTimingInfo.
 • Set newEntry’s duration attribute to 0.
 </li>
 	<li>
-`処理能~entryを~queueする$( %新たな~entry )
+%新たな~entry の`塗り計時~報$ptM ~SET %塗り計時~報
 ◎
-Add the PerformanceEntry newEntry object.
+Set newEntry’s paint timing info to paintTimingInfo.
+</li>
+	<li>
+`処理能~entryを~queueする$( %新たな~entry )【！余計：in document’s relevant realm】
+◎
+Queue newEntry in document’s relevant realm.
 </li>
 	<li>
 %文書 の`以前に報告した塗り群$に %塗り種別 を`付加する$
