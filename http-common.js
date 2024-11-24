@@ -688,7 +688,6 @@ c.realm:~HTTPsem#realm
 	範囲~指定子
 範囲~単位:~HTTPsem#range-unit
 ~byte範囲:~HTTPsem#byte-range
-複部位:~HTTPsem#multipart
 
 	§#status.codes
 応答~状態s~code:~HTTPsem#status-code
@@ -1266,7 +1265,6 @@ stateful::::ステートフル
 	選ぶ／選ばれ／選ん／選べ／ことにする:choice
 部位:portion:~
 部位t:part::部位
-複部位:multipart::~
 重み:weight::~
 量:amount:~
 開く:openする::~
