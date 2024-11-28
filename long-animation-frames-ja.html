@@ -120,8 +120,8 @@ return text;
 ●●options
 
 spec_title:Long Animation Frames API
-spec_date:2024-04-16
-trans_update:2024-04-18
+spec_date:2024-11-26
+trans_update:2024-11-28
 source_checked:240108
 page_state_key:TIMING
 original_url:https://w3c.github.io/long-animation-frames/
@@ -174,6 +174,7 @@ DOMString:~WEBIDL#idl-DOMString
 I.Function:~WEBIDL#Function
 I.Promise:~WEBIDL#idl-promise
 
+I.PaintTimingMixin:~PAINTTIMING#painttimingmixin
 I.PerformanceEntry:~TIMELINE#the-performanceentry-interface
 I.PerformanceLongAnimationFrameTiming:#performancelonganimationframetiming
 I.PerformanceScriptTiming:#performancescripttiming
@@ -290,7 +291,7 @@ stI.~window:#script-timing-info-window
 doc.現在の~frame計時~報:#current-frame-timing-info
 同一-生成元に属する最も近い根:#nearest-same-origin-root
 関連な~frame計時~報:#relevant-frame-timing-info
-~frame計時を報告する:#report-frame-timing
+長い~animation~frame~entryを~queueする:#queue-a-long-animation-frame-entry
 
 ~task開始~時刻を記録する:#record-task-start-time
 ~task終了~時刻を記録する:#record-task-end-time
@@ -380,12 +381,13 @@ rM.設定群~obj:~WAPI#concept-realm-settings-object
 
 時刻を粗化する:~HRTIME#dfn-coarsen-time
 所要時間:~HRTIME#dfn-duration
-所要時間を得る:~HRTIME#dfn-duration-from
 相対的な高分解能~時刻:~HRTIME#dfn-relative-high-resolution-time
 安全でない共有される現在の時刻:~HRTIME#dfn-unsafe-shared-current-time
-	1.安全でない現在の時刻:~HRTIME#monotonic-clock-unsafe-current-time
-	→ 安全でない共有される現在の時刻
 安全でない~moment:~HRTIME#dfn-unsafe-moment
+現在の高分解能~時刻:~HRTIME#dfn-current-high-resolution-time
+
+塗り計時~報:~PAINTTIMING#paint-timing-info
+ptM.塗り計時~報:~PAINTTIMING#painttimingmixin-paint-timing-info
 
 
 ●●words_table1
@@ -433,13 +435,15 @@ checkpoint:
 	%安全でない~task終了~時刻:unsafeTaskEndTime
 	%計時~報:-
 	%計時~報:timingInfo
+	%塗り計時~報:paintTimingInfo
 	%安全な~task終了~時刻:safeTaskEndTime
 	%安全な~task開始~時刻:safeTaskStartTime
 	%安全でない~styleと~layoutの開始~時刻:unsafeStyleAndLayoutStart
-	%安全でない終了~時刻:unsafeEndTime
 	%大域~obj:global
 	%大域:global
 	%~frame所要時間:frameDuration
+	%処理能~entry:-
+	%~frame計時~報:frameTimingInfo
 
 	%~script群:scripts
 	%~script報:scriptInfo
@@ -453,7 +457,6 @@ checkpoint:
 	-:setTimeoutOrInterval
 	%~event:event
 	%~listener:listener
-	%~frame計時~報:frameTimingInfo
 	%~target:target
 	%~promise:promise
 	%~URL:url
@@ -516,7 +519,7 @@ moment:
 	以内:threshold
 	になる時機:time to
 	長い~animation~frame用の~API:Long Animation Frames API
-	ms:millisecond
+	ms:milliseconds
 	^en:sequence
 	他を阻んだ:blocking
 	合計:total
@@ -719,6 +722,8 @@ src:
     Anne van Kesteren; et al. ＜HTML Standard＞. Living Standard. URL: https://html.spec.whatwg.org/multipage/
 [INFRA]
     Anne van Kesteren; Domenic Denicola. ＜Infra Standard＞. Living Standard. URL: https://infra.spec.whatwg.org/
+[PAINT-TIMING]
+    Ian Clelland; Noam Rosenthal. ＜Paint Timing＞. URL: https://w3c.github.io/paint-timing/
 [PERFORMANCE-TIMELINE]
     Nicolas Pena Moreno. ＜Performance Timeline＞. URL: https://w3c.github.io/performance-timeline/
 [RFC2119]
@@ -995,7 +1000,7 @@ Register observer for previous and future long animation frame notifications. Af
 当の~frameが描画されるか，~UAが描画するものは何も無いと裁定する
 ］ときまでを成す ある `sequence^en を測定するので。
 ◎
-While both long tasks and long animation frames measure congestion and jank, long animation frames provide information that has a better correlation with how user preceive this type of congestion. That’s because long animation frames measure a sequence that begins when the main thread is idle, and end when the frame either renders or the user agents decides there is nothing to render.
+While both long tasks and long animation frames measure congestion and jank, long animation frames provide information that has a better correlation with how users preceive this type of congestion. That’s because long animation frames measure a sequence that begins when the main thread is idle, and end when the frame either renders or the user agents decides there is nothing to render.
 </p>
 
 <p>
@@ -1081,6 +1086,8 @@ Overloading PerformanceEntry
     [`SameObject$] readonly attribute `FrozenArray$&lt;`PerformanceScriptTiming$I&gt; `scripts$m;
     [`Default$] `object$ `toJSON@m1();
 };
+
+`PerformanceLongAnimationFrameTiming$I includes `PaintTimingMixin$I;
 </pre>
 
 <p>
@@ -1129,9 +1136,9 @@ The startTime attribute’s getter step is to return the relative high resolutio
 `duration@m1
 取得子~手続きは
 ⇒
-~RET `所要時間を得る$( ↓ )
+~RET 次の前者から後者までの`所要時間$
 ⇒＃
-`相対的な高分解能~時刻$( コレの`計時~報$の`開始~時刻$ftI, コレに`関連な大域~obj$ )【！コレの`startTime$m】,
+`相対的な高分解能~時刻$( コレの`計時~報$の`開始~時刻$ftI, コレに`関連な大域~obj$ )【！コレの`startTime$m】
 `相対的な高分解能~時刻$( コレの`計時~報$の`終了~時刻$ftI, コレに`関連な大域~obj$ )
 ◎
 The duration attribute’s getter step is to return the duration between this's startTime and the relative high resolution time given this's timing info's end time and this's relevant global object.
@@ -1187,7 +1194,7 @@ If this's timing info's update the rendering start time is not zero, then:
 </p>
 		<ol>
 			<li>
-%描画-所要時間 ~LET `所要時間を得る$( ↓ )
+%描画-所要時間 ~LET 次の前者から後者までの`所要時間$
 ⇒＃
 コレの `renderStart$m が返す値,
 `相対的な高分解能~時刻$( コレの`計時~報$の`終了~時刻$ftI )
@@ -1620,7 +1627,7 @@ The startTime attribute’s getter step is to return the relative high resolutio
 `duration@m1
 取得子~手続きは
 ⇒
-~RET `所要時間を得る$( ↓ )
+~RET 次の前者から後者までの`所要時間$
 ⇒＃
 `相対的な高分解能~時刻$( コレの`計時~報$psTの`開始~時刻$stI, コレに`関連な大域~obj$ )【！this's startTime】,
 `相対的な高分解能~時刻$( コレの`計時~報$psTの`終了~時刻$stI, コレに`関連な大域~obj$ )
@@ -2150,7 +2157,7 @@ Let safeTaskStartTime be the relative high resolution time given timingInfo’s 
 	<li>
 %計時~報 の`~task所要時間~群$ftIに次の結果を`付加する$
 ⇒
-`所要時間を得る$( %安全な~task開始~時刻, %安全な~task終了~時刻 )
+%安全な~task開始~時刻 から %安全な~task終了~時刻 までの`所要時間$
 ◎
 Append the duration between safeTaskStartTime and safeTaskEndTime to timingInfo’s task durations.
 </li>
@@ -2159,12 +2166,35 @@ Append the duration between safeTaskStartTime and safeTaskEndTime to timingInfo�
 ~IF［
 ~UAは、
 %文書 の`~node~navigable$の描画を更新しても，可視な効果は無いものと予見する
+］：
+◎
+If the user agent believes that updating the rendering of document’s node navigable would have no visible effect, then:
+</p>
+		<ol>
+			<li>
+%文書 の`同一-生成元に属する最も近い根$の`現在の~frame計時~報$doc ~SET ~NULL
+◎
+set document’s nearest same-origin root's current frame timing info to null.
+</li>
+			<li>
+%~frame所要時間 ~LET 次の前者から後者までの`所要時間$
+⇒＃
+`相対的な高分解能~時刻$( %計時~報 の`開始~時刻$ftI, %大域~obj ),
+`相対的な高分解能~時刻$( %安全でない~task終了~時刻, %大域~obj )
+◎
+Let frameDuration be the duration between the relative high resolution time given timingInfo’s start time and global, and the relative high resolution time given unsafeTaskEndTime and global.
+</li>
+			<li>
+~IF［
+%~frame所要時間 ~GTE 50ms
 ］
 ⇒
-`~frame計時を報告する$( %文書 )【！~RET】
+`長い~animation~frame~entryを~queueする$( %文書, %計時~報, 新たな`塗り計時~報$†【！[/=paint timing info=]】 )
+【† 各~itemをどう初期化するか指定されていない。】
 ◎
-If the user agent believes that updating the rendering of document’s node navigable would have no visible effect, then report frame timing given document and return.
-</p>
+If frameDuration is equal or greater than 50 milliseconds, then queue a long animation frame entry given document, timingInfo, and a new [/=paint timing info=].
+</li>
+		</ol>
 
 <p class="note">注記：
 ここでは、
@@ -2213,6 +2243,24 @@ Note: This can occur if the browser becomes hidden during the sequence.
 </p>
 	</li>
 	<li>
+%~frame所要時間 ~LET 次の前者から後者までの`所要時間$
+⇒＃
+`相対的な高分解能~時刻$( %計時~報 の`開始~時刻$ftI, %大域~obj ),
+`現在の高分解能~時刻$( %大域~obj )
+◎
+Let frameDuration be the duration between the relative high resolution time given timingInfo’s start time and global, and the current high resolution time given global.
+</li>
+	<li>
+~IF［
+%~frame所要時間 ~LT 50ms
+］
+⇒＃
+%文書 の`同一-生成元に属する最も近い根$の`現在の~frame計時~報$doc ~SET ~NULL；
+~RET
+◎
+If frameDuration is less than 50 milliseconds, then set document’s nearest same-origin root's current frame timing info to null and return.
+</li>
+	<li>
 %計時~報 の`描画~更新の開始~時刻$ftI ~SET %計時~報 の`現在の~taskの開始~時刻$ftI
 ◎
 Set timingInfo’s update the rendering start time to timingInfo’s current task start time.
@@ -2222,75 +2270,33 @@ Set timingInfo’s update the rendering start time to timingInfo’s current tas
 ◎
 Set timingInfo’s style and layout start time to unsafeStyleAndLayoutStart.
 </li>
-	<li>
-`~frame計時を報告する$( %文書, `安全でない共有される現在の時刻$ )
-◎
-report frame timing given document and the unsafe shared current time.
-</li>
 </ol>
 </div>
 
 <div class="algo">
 <p>
-`~frame計時を報告する@
+`長い~animation~frame~entryを~queueする@
 ときは、
 所与の
-( `文書$ %文書, `DOMHighResTimeStamp$I %安全でない終了~時刻 )
+( `文書$ %文書, `~frame計時~報$ %計時~報, `塗り計時~報$ %塗り計時~報 )
 に対し：
-◎
-To report frame timing given a Document document and a DOMHighResTimeStamp unsafeEndTime:
 </p>
 <ol>
 	<li>
-%計時~報 ~LET %文書 に`関連な~frame計時~報$
-◎
-Let timingInfo be document’s relevant frame timing info.
-</li>
-	<li>
-~Assert：
-%計時~報 ~NEQ ~NULL
-◎
-Assert: timingInfo is not null.
-</li>
-	<li>
-%大域~obj ~LET %文書 に`関連な大域~obj$
-◎
-Let global be document’s relevant global object.
-</li>
-	<li>
-%~frame所要時間 ~LET `所要時間を得る$( ↓ )
-⇒＃
-`相対的な高分解能~時刻$( %計時~報 の`開始~時刻$ftI, %大域~obj ),
-`相対的な高分解能~時刻$( %安全でない終了~時刻, %大域~obj )
-◎
-Let frameDuration be the duration between the relative high resolution time given timingInfo’s start time and global, and the relative high resolution time given unsafeEndTime and global.
-</li>
-	<li>
-<p>
-~IF［
-%~frame所要時間 ~GT 50ms
-］：
-</p>
-		<ol>
-			<li>
 %処理能~entry ~LET `新たな~obj$( `PerformanceLongAnimationFrameTiming$I, %文書 に`関連な~realm$ )
 </li>
-			<li>
-%処理能~entry の`計時~報$ ~SET %計時~報
-</li>
-			<li>
-`処理能~entryを~queueする$( %処理能~entry )
-</li>
-		</ol>
-◎
-If frameDuration is greater than 50 milliseconds, then Queue a new PerformanceLongAnimationFrameTiming in document’s relevant realm, whose timing info is timingInfo.
+	<li>
+%処理能~entry の
+⇒＃
+`計時~報$ ~SET %計時~報,
+`塗り計時~報$ptM ~SET %塗り計時~報
 </li>
 	<li>
-%文書 と`同一-生成元に属する最も近い根$の`現在の~frame計時~報$doc ~SET ~NULL
-◎
-set document’s nearest same-origin root's current frame timing info to null.
+`処理能~entryを~queueする$( %処理能~entry )
 </li>
 </ol>
+◎
+To queue a long animation frame entry given a Document document, a frame timing info timingInfo, and a paint timing info paintTimingInfo, queue a new PerformanceLongAnimationFrameTiming in document’s relevant realm, whose timing info is timingInfo and whose paint timing info is paintTimingInfo.
 </div>
 			</section>
 			<section id="long-script-monitoring">
