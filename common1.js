@@ -1867,6 +1867,7 @@ MATHML=副             takamu.sakura.ne.jp/mathml3-ja/index.html●Version 3 日
 MATHMLCORE=副         takamu.sakura.ne.jp/mathml-core-ja/index.html
 SERVICEWORKERS=副     ~/service-workers-ja.html
 URL=副                ~/URL-ja.html
+URLPATTERN=副         ~/urlpattern-ja.html
 UIEVENTS=副           ~/uievents-ja.html
 POINTEREVENTS=副      ~/pointerevents-ja.html
 POINTEREVENTS2=副     ~/pointerevents2-ja.html
