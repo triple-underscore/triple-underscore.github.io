@@ -137,8 +137,8 @@ return text;
 ●●options
 
 spec_title:Content Security Policy Level 3
-spec_date:2024-10-22
-trans_update:2024-10-15
+spec_date:2024-12-06
+trans_update:2024-12-09
 source_checked:230220
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-csp/
@@ -386,6 +386,8 @@ pipe:
 剥ぐ:stripする:~
 候補:candidate:~
 params::::パラメタ群
+連結-:concatenate:~
+	連結する$:joining
 
 	渡す:pass する
 	伝播する:captured on its way into, and will bubble its way out of
@@ -398,7 +400,7 @@ params::::パラメタ群
 	すぐに:shortly
 	成り行き:outcome
 	何もしない:returns normally
-	~~連結:join
+	必要なら:potentially
 
 	●変数
 	%element
@@ -409,6 +411,9 @@ params::::パラメタ群
 	%処置先:disposition
 	%指令~集合:policy
 	%指令~集合:-
+	%~algo:algorithm
+	%~hash~list:-
+	%~hash:hash
 	%~token:-
 	%~token:token
 	%~token群:-
@@ -455,6 +460,8 @@ params::::パラメタ群
 	%~source~list:source-list
 	%~source~list:source list
 	%本体:body
+	%報告~用~URL:stripped-document-URL
+	%報告-先~指令:report-to-directive
 	%報告先:endpoint
 	%名前:name
 	%基底:base
@@ -477,7 +484,8 @@ params::::パラメタ群
 	%~URL~port:-
 	%~redirect回数:redirect count
 	%s
-	%~port成分:port-part
+	%~scheme成分:-
+	-:port-part
 	%~URL~path:path
 	%A:-
 	%B:-
@@ -724,8 +732,10 @@ dashboard::::ダッシュボード
 	~~省くよう最適化-:use it to optimize away
 	面する:surface
 	現れる:appear
+	~CSP~hash報告:csp hash report
+	文書~URL:documentURL
+	下位資源~URL:subresourceURL
 
-	●
 	抗-:against
 	他の:different
 	長い:long
@@ -846,6 +856,9 @@ securitypolicyviolationevent:API/SecurityPolicyViolationEvent
 	pl.report-sample:#grammardef-report
 	pl.unsafe-allow-redirects:#grammardef-unsafe-allow-redirects
 	pl.wasm-unsafe-eval:#grammardef-wasm-unsafe-eval
+	pl.report-sha256:#grammardef-report-sha256
+	pl.report-sha384:#grammardef-report-sha384
+	pl.report-sha512:#grammardef-report-sha512
 
 	p.optional-ascii-whitespace:#grammardef-optional-ascii-whitespace
 	p.required-ascii-whitespace:#grammardef-required-ascii-whitespace
@@ -1087,7 +1100,8 @@ gO.~CSP~list:#global-object-csp-list
 ~ABNF:#biblio-rfc5234
 
 違反:#violation
-報告:#reports
+報告:~REPORTING#report
+rP.本体:~REPORTING#report-body
 報告先:~REPORTING#endpoint
 	#directive-report-uri
 	端点:~REPORTING#endpoint
@@ -1110,6 +1124,14 @@ vr.行番号:#violation-line-number
 vr.要素:#violation-element
 vr.見本:#violation-sample
 
+~CSP~hash報告:#csp-hash-report
+~CSP~hash報告の本体:#csp-hash-report-body
+hrB.文書~URL:#csp-hash-report-body-documenturl
+hrB.下位資源~URL:#csp-hash-report-body-subresourceurl
+hrB.~hash:#csp-hash-report-body-hash
+hrB.行先:#csp-hash-report-body-destination
+hrB.種別:#csp-hash-report-body-type
+
 
 	●演算
 A.要請前~検査:#directive-pre-request-check
@@ -1127,6 +1149,8 @@ A.~WebRTC接続前~検査:#directive-webrtc-pre-connect-check
 A.直列形の~CSPを構文解析する:#abstract-opdef-parse-a-serialized-csp
 構文解析-:#abstract-opdef-parse-a-serialized-csp
 A.応答の~CSPを構文解析する:#abstract-opdef-parse-a-responses-content-security-policies
+
+A.必要なら~hashを報告する:#potentially-report-hash
 	A.応答の~CSPを構文解析する:#parse-response-csp
 A1.新たな違反~obj:#create-violation-for-global
 A.新たな違反~obj:#create-violation-for-request
@@ -1210,6 +1234,7 @@ sub.大小無視:#_ascii-case_insensitive
 ~ASCII空白:~INFRA#ascii-whitespace
 ~ASCII空白で分割する:~INFRA#split-on-ascii-whitespace
 区切子で厳密に分割する:~INFRA#strictly-split
+連結する:~INFRA#string-concatenate
 同型に復号する:~INFRA#isomorphic-decode
 ~scalar値~文字列に変換する:~INFRA#javascript-string-convert
 終端までを成す符号単位~部分文字列:~INFRA#code-unit-substring-to-the-end-of-the-string
@@ -1218,7 +1243,7 @@ sub.大小無視:#_ascii-case_insensitive
 	符号位置~並びを収集する:~INFRA#collect-a-sequence-of-code-points
 
 ~list:~INFRA#list
-~IN:~INFRA#list-contain
+	~IN:~INFRA#list-contain
 包含して:~INFRA#list-contain
 空:~INFRA#list-is-empty
 ~size:~INFRA#list-size
@@ -1228,6 +1253,7 @@ sub.大小無視:#_ascii-case_insensitive
 set.付加する:~INFRA#set-append
 空である:~INFRA#is-empty
 ~map:~INFRA#ordered-map
+構造体:~INFRA#struct
 ~Infra値を~JSON~byte列に直列化する:~INFRA#serialize-an-infra-value-to-json-bytes
 
 	＊？contains:~INFRA#map-exists
@@ -1265,6 +1291,7 @@ A.~header~listから値を抽出する:~FETCH#extract-header-list-values
 応答:~FETCH#concept-response
 rs.~header~list:~FETCH#concept-response-header-list
 rs.~URL:~FETCH#concept-response-url
+rs.本体:~FETCH#concept-response-body
 
 要請:~FETCH#concept-request
 rq.本体:~FETCH#concept-request-body
@@ -1298,6 +1325,8 @@ rq.施策~容器:~FETCH#concept-request-policy-container
 	●HTML
 ~plugin:~HTMLINFRA#plugin
 
+~CORS同一-生成元:~HTMLurl#cors-same-origin
+
 子~navigable:~HTMLds#child-navigable
 ~navigable:~HTMLds#navigable
 ~node~navigable:~HTMLds#node-navigable
@@ -1307,6 +1336,7 @@ nav.容器~文書:~HTMLds#nav-container-document
 生成元:~ORIGIN#concept-origin
 	＊？生成元:~HTMLINFRA#concept-request-origin
 不透明な生成元:~ORIGIN#concept-origin-opaque
+成分組~生成元:~ORIGIN#concept-origin-tuple
 o.~scheme:~ORIGIN#concept-origin-scheme
 o.~host:~ORIGIN#concept-origin-host
 o.~port:~ORIGIN#concept-origin-port
@@ -1367,6 +1397,8 @@ doc.生成元:~DOM4#concept-document-origin
 要素:~DOM4#concept-element
 属性~list:~DOM4#concept-element-attribute
 ~node文書:~DOM4#concept-node-document
+文書:~DOM4#concept-document
+doc.~URL:~DOM4#concept-document-url
 
 表現:~HTTPinfra#representation
 資源~表現:~HTTPinfra#representation
@@ -1376,6 +1408,7 @@ doc.生成元:~DOM4#concept-document-origin
 ~metadataを構文解析する:~SRI1#parse-metadata
 iM.~algo:~SRI1#_integrity-metadata-hash-algo
 iM.値:~SRI1#_integrity-metadata-digest
+~byte列に~algoを適用する:~SRI1#apply-algorithm-to-response
 
 	https://www.w3.org/TR/SRI/#parse-metadata
 	https://w3c.github.io/webappsec-subresource-integrity/#parse-metadata
@@ -1408,7 +1441,7 @@ RFC3492=副            crieit.net/posts/RFC3492-Punycode-IDNA-Unicode-Bootstring
 [INFRA]
     Anne van Kesteren; Domenic Denicola. ＜Infra Standard＞. Living Standard. URL: https://infra.spec.whatwg.org/
 [REPORTING]
-    Ilya Gregorik; Mike West. ＜Reporting API＞. URL: https://wicg.github.io/reporting/
+    Ilya Grigorik; Mike West. ＜Reporting API＞. URL: https://wicg.github.io/reporting/
 [REPORTING-1]
     Douglas Creager; Ian Clelland; Mike West. ＜Reporting API＞. 13 August 2024. WD. URL: https://www.w3.org/TR/reporting-1/
 [RFC2119]
@@ -1598,7 +1631,8 @@ This document defines Content Security Policy (CSP), a tool which developers can
 原文の［
 “`Content Security Policy^en” ／
 “`content security policy^en” ／
-“`CSP^en”
+“`CSP^en” ／
+“`csp^en”
 ］を，一律に~CSPと記すことにする。
 】</p>
 
@@ -1799,7 +1833,7 @@ A worker-src directive has been added, deferring to child-src if not present (wh
 ~URL照合~algoは，今や、
 ~secureでない［
 ~scheme／~port
-］を その~secure~scheme版に合致するように扱う。
+］を その~secureな~scheme版に合致するように扱う。
 すなわち、
 `~source式$
 `http://example.com:80^s
@@ -2221,9 +2255,8 @@ A CSP list contains a header-delivered Content Security Policy if it contains a 
 <p>
 `直列形の~CSP@
 （ `serialized CSP^en ）は、
-次の`~ABNF$文法を固守している［
-`~semicolon$で区切られた一連の`直列形の指令$
-］からなる`~ASCII文字列$である：
+次の`~ABNF$文法を固守している`~ASCII文字列$であり，
+`~semicolon$で区切られた一連の`直列形の指令$からなる：
 ◎
 A serialized CSP is an ASCII string consisting of a semicolon-delimited series of serialized directives, adhering to the following ABNF grammar [RFC5234]:
 </p>
@@ -2236,9 +2269,8 @@ A serialized CSP is an ASCII string consisting of a semicolon-delimited series o
 <p>
 `直列形の~CSP~list@
 は、
-次の`~ABNF$文法を固守している［
-`~comma$で区切られた一連の`直列形の~CSP$
-］からなる`~ASCII文字列$である：
+次の`~ABNF$文法を固守している`~ASCII文字列$であり，
+`~comma$で区切られた一連の`直列形の~CSP$からなる：
 ◎
 A serialized CSP list is an ASCII string consisting of a comma-delimited series of serialized CSPs, adhering to the following ABNF grammar [RFC5234]:
 </p>
@@ -2535,29 +2567,24 @@ Each policy contains an ordered set of directives (its directive set), each of w
 <p>
 各
 `指令@
-（ `directive^en ）は、［
-`名前$, `値$
-］が成す~pairである：
+（ `directive^en ）は、
+次の 2 つからなる~pairである：
 </p>
 <ul>
 	<li>
 `名前@
-（ `name^en ）は、
-空でない`文字列$である。
+（ `name^en ）
+⇒
+空でない`文字列$
 </li>
 	<li>
-<p>
 `値@
-（ `value^en ）は、［
+（ `value^en ）
+⇒
+［
 空でない`文字列$
-］たちが成す`有順序~集合$†であり，空にもなり得る。
-</p>
-
-<p class="trans-note">【†
-と記されているが、
-文脈に応じて，直列形の文字列（ `directive-value$p ）を表している箇所も一部ある。
-】</p>
-	</li>
+］たちが成す`有順序~集合$
+</li>
 </ul>
 ◎
 Each directive is a name / value pair. The name is a non-empty string, and the value is a set of non-empty strings. The value MAY be empty.
@@ -2574,7 +2601,8 @@ Each directive is a name / value pair. The name is a non-empty string, and the v
 <p>
 `直列形の指令@
 （ `serialized-directive$p ）は、
-次の`~ABNF$文法に従う，空白で区切られた 1 個以上の~tokenからなる`~ASCII文字列$である：
+次の`~ABNF$文法を固守している`~ASCII文字列$であり，
+空白で区切られた 1 個以上の~tokenからなる：
 ◎
 A serialized directive is an ASCII string, consisting of one or more whitespace-delimited tokens, and adhering to the following ABNF [RFC5234]:
 </p>
@@ -2841,11 +2869,11 @@ It returns "Allowed" unless otherwise specified.
 （ `serialized-source-list$p ）をその`値$にとる。
 各`~source~list$は、
 `文字列$たちが成す集合である
-— その各 `文字列$は、［
+— この~listを成す各`文字列$は、［
 ~fetchし得る内容であって［
 埋込まれ得る／実行され得る
-］もの
-］を識別するような，次のいずれかの型の
+］ものを識別するもの
+］であり，次に挙げるいずれかの型の
 `~source式@
 （ `source-expression$p ）を表現する：
 ◎
@@ -2868,16 +2896,15 @@ Keywords such as 'none' and 'self' (which match nothing and the current URL’s 
 	<li>
 直列形の~URL（ `scheme-part$p を伴う `host-source$p ）
 — 例
-⇒
-`https://example.com/path/to/file.js^s
-（特定の資源に合致する）や,
-`https://example.com/^s
-（その生成元に属する どの資源にも合致する）
+⇒＃
+`https://example.com/path/to/file.js^s （特定の資源に合致する）／
+`https://example.com/^s （その生成元に属する どの資源にも合致する）
 ◎
 Serialized URLs such as https://example.com/path/to/file.js (which matches a specific file) or https://example.com/ (which matches everything on that origin)
 </li>
 	<li>
-~scheme（ `scheme-source$p ）は、
+~scheme（ `scheme-source$p ）
+⇒
 指定された~schemeを有する どの資源にも合致する
 — 例
 ⇒
@@ -2888,14 +2915,15 @@ Schemes such as https: (which matches any resource having the specified scheme)
 	<li>
 ~host（ `scheme-part$p を伴わない `host-source$p ）
 — 例
-⇒
-`example.com^s （~schemeに関わらず，~host上の どの資源にも合致する）や,
+⇒＃
+`example.com^s （~schemeに関わらず，~host上の どの資源にも合致する）／
 `*.example.com^s （~hostの下位domain（下位domainの下位domain, 等々も含む）上の どの資源にも合致する）
 ◎
 Hosts such as example.com (which matches any resource on the host, regardless of scheme) or *.example.com (which matches any resource on the host’s subdomains (and any of its subdomains' subdomains, and so on))
 </li>
 	<li>
-~nonce（ `nonce-source$p ）は、
+~nonce（ `nonce-source$p ）
+⇒
 ~page上の特定の要素に合致し得る
 — 例
 ⇒
@@ -2904,7 +2932,8 @@ Hosts such as example.com (which matches any resource on the host, regardless of
 Nonces such as 'nonce-ch4hvvbHDpv7xCSvXCs3BrNggHdTzxUA' (which can match specific elements on a page)
 </li>
 	<li>
-~digest（ `hash-source$p ）は、
+~digest（ `hash-source$p ）
+⇒
 ~page上の特定の要素に合致し得る
 — 例
 ⇒
@@ -2918,8 +2947,8 @@ Digests such as 'sha256-abcd...' (which can match specific elements on a page)
 `直列形の~source~list@
 （ `serialized-source-list$p ）
 は、
-次の`~ABNF$文法に従う，
-空白で区切られた一連の`~source式$からなる`~ASCII文字列$である：
+次の`~ABNF$文法を固守している`~ASCII文字列$であり，
+空白で区切られた一連の`~source式$からなる：
 ◎
 A serialized source list is an ASCII string, consisting of a whitespace-delimited series of source expressions, adhering to the following ABNF grammar [RFC5234]:
 </p>
@@ -2980,6 +3009,9 @@ A serialized source list is an ASCII string, consisting of a whitespace-delimite
 	/ "`report-sample@pl"
 	/ "`unsafe-allow-redirects@pl"
 	/ "`wasm-unsafe-eval@pl"
+	/ "`report-sha256@pl"
+	/ "`report-sha384@pl"
+	/ "`report-sha512@pl"
 【！ ＊ISSUE: Bikeshed unsafe-allow-redirects.】
 
 ; <span class="comment">~nonce ~source式：</span>
@@ -3380,6 +3412,11 @@ Given a request request, a policy policy, the following algorithm creates a new 
 Let directive be the result of executing § 6.8.1 Get the effective directive for request on request.
 </li>
 	<li>
+~Assert：
+%要請 の`~client$rq ~NEQ ~NULL
+【この段は、この訳による補完。】
+</li>
+	<li>
 %違反 ~LET `新たな違反~obj$A1( %要請 の`~client$rqの`大域~obj$enV, %施策, %指令~名 )
 ◎
 Let violation be the result of executing § 2.4.1 Create a violation object for global, policy, and directive on request’s client’s global object, policy, and directive.
@@ -3438,7 +3475,7 @@ A server MAY declare a policy for a particular resource representation via an HT
 <p>
 `施策$は、
 <a href="#meta-element">§ `meta^e 要素</a>
-に述べるように，［
+にて述べられるとおり，［
 `meta$e 要素の `http-equiv$a 属性を介して ~HTML文書~内に~inlineに宣言する
 ］こともできる。
 ◎
@@ -3490,9 +3527,9 @@ A server MAY send different Content-Security-Policy header field values with dif
 
 <p>
 `Content-Security-Policy^h ~headerを受信した~UAは、
-それが包含する各 `直列形の~CSP$を`構文解析-$した上で，［
+それが包含する各 `直列形の~CSP$を`構文解析-$した結果を［
 `§ ~Fetchとの統合$ ／ `§ ~HTMLとの統合$
-］にしたがって それを`施行-$するモノトスル。
+］にて述べられるとおり`施行-$するモノトスル。
 ◎
 When the user agent receives a Content-Security-Policy header field, it MUST parse and enforce each serialized CSP it contains as described in § 4.1 Integration with Fetch, § 4.2 Integration with HTML.
 </p>
@@ -3557,9 +3594,9 @@ A server MAY send different Content-Security-Policy-Report-Only header field val
 
 <p>
 `Content-Security-Policy-Report-Only^h ~headerを受信した~UAは、
-それが包含する各 `直列形の~CSP$を`構文解析-$した上で，［
+それが包含する各 `直列形の~CSP$を`構文解析-$した結果を［
 `§ ~Fetchとの統合$ ／ `§ ~HTMLとの統合$
-］にしたがって，それを`監視-$するモノトスル。
+］にて述べられるとおり`監視-$するモノトスル。
 ◎
 When the user agent receives a Content-Security-Policy-Report-Only header field, it MUST parse and monitor each serialized CSP it contains as described in § 4.1 Integration with Fetch and § 4.2 Integration with HTML.
 </p>
@@ -3954,6 +3991,159 @@ Return result.
 </ol>
 
 			</section>
+			<section id="potentially-report-hash">
+<h4 title="Potentially report hash">4.1.4. 必要なら~hashを報告する</h4>
+
+<p>
+所与の
+( `応答$ %応答, `要請$ %要請, `指令$ %指令 `施策$ %施策 )
+に対し，次の手続きを走らす：
+◎
+Given a response response, a request request, a directive directive and a content security policy object policy, run the following steps:
+</p>
+<ol>
+	<li>
+%~algo ~LET ε【！the empty string】
+◎
+Let algorithm be the empty string.
+</li>
+	<li>
+~IF［
+"`report-sha256$pl" ~IN %指令 の`値$
+］
+⇒
+%~algo ~SET `sha256^l
+◎
+If directive’s value contains the expression "'report-sha256'", set algorithm to "sha256".
+</li>
+	<li>
+~IF［
+"`report-sha384$pl" ~IN %指令 の`値$
+］
+⇒
+%~algo ~SET `sha384^l
+◎
+If directive’s value contains the expression "'report-sha384'", set algorithm to "sha384".
+</li>
+	<li>
+~IF［
+"`report-sha512$pl" ~IN %指令 の`値$
+］
+⇒
+%~algo ~SET `sha512^l
+◎
+If directive’s value contains the expression "'report-sha512'", set algorithm to "sha512".
+</li>
+	<li>
+~IF［
+%~algo ~EQ ε【！the empty string】
+］
+⇒
+~RET
+◎
+If algorithm is the empty string, return.
+</li>
+	<li>
+%~hash ~LET 空`文字列$
+◎
+Let hash be the empty string.
+</li>
+	<li>
+~IF［
+%応答 は`~CORS同一-生成元$である
+］
+⇒
+%~hash ~SET 次を順に`連結する$
+⇒＃
+%~algo,
+`002D^U ( `-^l ),
+`~byte列に~algoを適用する$( %応答 の`本体$rs, %~algo )
+◎
+If response is CORS-same-origin, then:
+• Let hash list be a list of strings, initially empty.
+• Append algorithm to hash list.
+• Append the result of applying algorithm to bytes on response’s body and algorithm to hash list.
+• Let hash be the result of concatenating hash list with U+002D (-).
+</li>
+	<li>
+~Assert：
+%要請 の`~client$rq ~NEQ ~NULL
+【この段は、この訳による補完。】
+</li>
+	<li>
+%大域~obj ~LET %要請 の`~client$rqの`大域~obj$enV
+◎
+Let global be the request’s client's global object.
+</li>
+	<li>
+~IF［
+%大域~obj は `Window$I でない
+］
+⇒
+~RET
+◎
+If global is not a Window, return.
+</li>
+	<li>
+%報告~用~URL ~LET `報告~内の利用-用に~URLを剥ぐ$A( %大域~obj の`文書$の`~URL$doc )
+◎
+Let stripped document URL to be the result of executing § 5.4 Strip URL for use in reports on global’s document's URL.
+</li>
+	<li>
+%報告-先~指令 ~LET ［
+%施策 の`指令~集合$内に［
+`名前$ `report-to$dir を伴う`指令$
+］は［
+在るならば それ／
+無いならば ε
+］
+◎
+↓</li>
+	<li>
+~IF［
+%報告-先~指令 ~EQ ε
+］
+⇒
+~RET
+◎
+If policy’s directive set does not contain a directive named "report-to", return.
+◎
+Let report-to directive be a directive named "report-to" from policy’s directive set.
+</li>
+	<li>
+%本体 ~LET 新たな`~CSP~hash報告の本体$
+— その
+⇒＃
+`文書~URL$hrB ~SET %報告~用~URL,
+`下位資源~URL$hrB ~SET %要請 の`~URL$rq,
+`~hash$hrB ~SET %~hash,
+`行先$hrB ~SET %要請 の`行先$rq,
+`種別$hrB ~SET `subresource^l
+◎
+Let body be a csp hash report body with stripped document URL as its documentURL, request’s URL as its subresourceURL, hash as its hash, request’s destination as its destination, and "subresource" as its type.
+</li>
+	<li>
+`報告を生成して~queueする$( ↓ )
+⇒＃
+%大域~obj【！settings object】,
+`csp-hash^l,
+%報告-先~指令 の`値$,
+%本体
+◎
+Generate and queue a report with the following arguments:
+◎
+• context
+•• settings object
+• type
+•• "csp-hash"
+• destination
+•• report-to directive’s value.
+• data
+•• body
+</li>
+</ol>
+
+			</section>
 		</section>
 		<section id="html-integration">
 <h3 title="Integration with HTML">4.2. ~HTMLとの統合</h3>
@@ -4257,7 +4447,7 @@ Set violation’s element to element.
 </li>
 					<li>
 ~IF［
-`report-sample^pl `~IN$ ［
+`report-sample^pl ~IN ［
 %指令 の`値$
 ］］
 ⇒
@@ -5062,7 +5252,7 @@ Set violation’s resource to "eval".
 </li>
 					<li>
 ~IF［
-`report-sample^pl `~IN$ %~source~list
+`report-sample^pl ~IN %~source~list
 ］
 ⇒
 %指令 の`見本$vr ~SET ［
@@ -5279,6 +5469,125 @@ interface `CSPViolationReportBody@I : `ReportBody$I {
   readonly attribute `unsigned long$? `columnNumber@vB;
 };
 </pre>
+
+<p>
+［
+`行先$rqとして`~scriptに類する$ものを伴う`要請$
+］が~fetchされるとき、
+ある`施策$の`指令~集合$を成すある`指令$として［
+そのような行先に影響iする
+］かつ［
+その`値$は［
+`report-sha256$pl, `report-sha384$pl, `report-sha512$pl
+］いずれかを含む
+］ものが在る場合には、
+`~CSP~hash報告@
+と呼ばれる`報告$が生成され，
+当の施策に結付けられた報告先†へ送信されることになる。
+◎
+When a directive that impacts script-like destinations has a report-sha256, report-sha384 or report-sha512 value, and a request with a script-like destination is fetched, a csp hash report will be generated and sent out to a reporting endpoint associated with the policy.
+</p>
+
+<p class="trans-note">【†
+当の施策を成す `report-to$dir 指令に指定されたそれ
+（そのような指令は無い場合、
+送信されない）
+— `必要なら~hashを報告する$Aを見よ。
+】</p>
+
+<p>
+`~CSP~hash報告$の`報告~種別$は、
+`csp-hash^l とする。
+◎
+csp hash reports have the report type "csp-hash".
+</p>
+
+<p>
+`~CSP~hash報告$は、
+`報告用~観測器から可視$でない。
+◎
+csp hash reports are not visible to ReportingObservers.
+</p>
+
+<div>
+<p>
+`~CSP~hash報告の本体@
+— `~CSP~hash報告$の`本体$rP —
+は、
+次に挙げる~item【！field】からなる`構造体$である：
+</p>
+<ul>
+	<li>
+`文書~URL@hrB
+（ `document_url^l ）
+</li>
+	<li>
+`下位資源~URL@hrB
+（ `subresource_url^l ）
+</li>
+	<li>
+`~hash@hrB
+（ `hash^l ）
+</li>
+	<li>
+`行先@hrB
+（ `destination^l ）
+</li>
+	<li>
+`種別@hrB
+（ `type^l ）
+</li>
+</ul>
+
+<p class="trans-note">【
+括弧内（この訳による補完）は、
+~JSON~dataに変換される際の~key
+— 下の例を見よ。
+】</p>
+◎
+A csp hash report body is a struct with the following fields: documentURL, subresourceURL, hash, destination, type.
+</div>
+
+<div class="example">
+<p>
+ある文書【を~fetchしたとき】の応答が，次の~headerを包含していて：
+◎
+When a document’s response contains the headers:
+</p>
+
+<pre class="lang-http">
+Reporting-Endpoints: hashes-endpoint="https://example.com/reports"
+Content-Security-Policy: script-src 'self' 'report-sha256'; report-to hashes-endpoint
+</pre>
+
+<p>
+当の文書が~script "`main.js^c" を読込むときには、
+次に類似な報告が送信されことになる：
+◎
+and the document loads the script "main.js", a report similar to the following one will be sent:
+</p>
+
+<pre class="lang-http">
+POST /reports HTTP/1.1
+Host: example.com
+...
+Content-Type: application/reports+json
+
+[{
+  "type": "csp-hash-report",
+  "age": 12,
+  "url": "https://example.com/",
+  "user_agent": "Mozilla/5.0 (X11; Linux i686; rv:132.0) Gecko/20100101 Firefox/132.0",
+  "body": {
+    "document_url": "https://example.com/",
+    "subresource_url": "https://example.com/main.js",
+    "hash": "sha256-badbeef",
+    "type": "subresource",
+    "destination": "script"
+  }
+}]
+</pre>
+</div>
 
 		<section id="violation-events">
 <h3 title="Violation DOM Events">5.1. 違反~DOM~event</h3>
@@ -10095,6 +10404,11 @@ If request’s destination is script-like:
 </p>
 		<ol>
 			<li>
+`必要なら~hashを報告する$A( %応答, %要請, %指令, %施策 )
+◎
+Call potentially report hash with response, request, directive and policy.
+</li>
+			<li>
 ~IF［
 `~nonceは~source~listに合致するか？$A( %要請 の`暗号用~nonce~metadata$rq, %~list )
 ~EQ `合致する^i
@@ -10607,10 +10921,23 @@ Note: origin is the origin of the resource relative to which the expression shou
 ↓</li>
 	<li>
 <p>
+( %生成元~scheme, %生成元~host, %生成元~port ) ~LET ( %生成元 の`~scheme$o, %生成元 の`~host$o, %生成元 の`~port$o )
+</p>
+
+<p class="trans-note">【
+この~algoは、
+%生成元 が`不透明な生成元$である場合を［
+これらの変数が利用される各所
+］で取扱っていない。
+】</p>
+◎
+↓</li>
+	<li>
+<p>
 ~IF［
 %式 ~EQ `~asterisk$
 ］~AND［
-%~URL~scheme ~IN { `~HTTP_S~scheme$, %生成元 の`~scheme$o }
+%~URL~scheme ~IN { `~HTTP_S~scheme$, %生成元~scheme }
 ］
 ⇒
 ~RET `合致する^i
@@ -10636,15 +10963,11 @@ Note: This logic means that in order to allow a resource from a non-HTTP(S) sche
 %式 は `scheme-source$p 文法に合致する
 ］
 ⇒
-~RET
-`~scheme成分は合致するか？$A(
-%式 の `scheme-part$p, %~URL~scheme
-)
+~RET `~scheme成分は合致するか？$A( %式 の `scheme-part$p, %~URL~scheme )
 ◎
-If expression matches the scheme-source or host-source grammar:
-◎
+If expression matches the scheme-source＼
+↓ or host-source grammar:
 • If expression has a scheme-part, and it does not scheme-part match url’s scheme, return "Does Not Match".
-◎
 • If expression matches the scheme-source grammar, return "Matches".
 ◎
 ↓</li>
@@ -10667,47 +10990,34 @@ If expression matches the host-source grammar:
 If url’s host is null, return "Does Not Match".
 </li>
 			<li>
-~IF［
-%式 は `scheme-part$p を含む
-］~AND［
-`~scheme成分は合致するか？$A(
-%式 の `scheme-part$p, %~URL~scheme
-)
-~EQ `合致しない^i
-］
-⇒
-~RET `合致しない^i
-◎
-↑</li>
-			<li>
 <p>
+%~scheme成分 ~LET ［
+%式 は `scheme-part$p を含むならば それ ／
+~ELSE_ %生成元~scheme
+］
+</p>
+
+<p class="note">注記：
+~schemeを伴わない `host-source$p 式は、
+~schemeを伴うときと同様に，
+~secureでない~schemeから~secureな~schemeへの昇格を許容する。
+</p>
+◎
+↑↓</li>
+			<li>
 ~IF［
-%式 は `scheme-part$p を含まない
-］~AND［
-`~scheme成分は合致するか？$A(
-%生成元 の`~scheme$o, %~URL~scheme
-)
-~EQ `合致しない^i
+`~scheme成分は合致するか？$A( %~scheme成分, %~URL~scheme ) ~EQ `合致しない^i
 ］
 ⇒
 ~RET `合致しない^i
 ◎
 If expression does not have a scheme-part, and origin’s scheme does not scheme-part match url’s scheme, return "Does Not Match".
-</p>
-
-<p class="note">注記：
-上の `scheme-part$p に対するときと同様に、
-~schemeを伴わない `host-source$p 式は，
-~secureでない~schemeから~secure~schemeへの昇格を許容する。
 ◎
 Note: As with scheme-part above, we allow schemeless host-source expressions to be upgraded from insecure schemes to secure schemes.
-</p>
-			</li>
+</li>
 			<li>
 ~IF［
-`~host成分は合致するか？$A(
-%式 の `host-part$p, %~URL~host
-)
+`~host成分は合致するか？$A( %式 の `host-part$p, %~URL~host )
 ~EQ `合致しない^i
 ］
 ⇒
@@ -10716,27 +11026,25 @@ Note: As with scheme-part above, we allow schemeless host-source expressions to 
 If expression’s host-part does not host-part match url’s host, return "Does Not Match".
 </li>
 			<li>
-%~port成分 ~LET ［
-%式 は `port-part$p を含むならば それ ／
-~ELSE_ ~NULL
-］
-◎
-Let port-part be expression’s port-part if present, and null otherwise.
-</li>
-			<li>
 ~IF［
-`~port成分は合致するか？$A( %~port成分, %~URL )
+%式 は `port-part$p を含む
+］~AND［
+`~port成分は合致するか？$A( %式 の `port-part$p, %~URL )
 ~EQ `合致しない^i
 ］
 ⇒
 ~RET `合致しない^i
+◎
+Let port-part be expression’s port-part if present, and null otherwise.
 ◎
 If port-part does not port-part match url, return "Does Not Match".
 </li>
 			<li>
 <p>
 ~IF［
-%式 は 空でない `path-part$p を含む
+%式 は［
+空でない `path-part$p
+］を含む
 ］~AND［
 %~redirect回数 ~EQ 0
 ］：
@@ -10745,7 +11053,15 @@ If expression contains a non-empty path-part, and redirect count is 0, then:
 </p>
 				<ol>
 					<li>
-%~URL~path ~LET %~URL の`~path$urlの各~成分を`~slash$で区切って~~連結した結果
+%~URL~path ~LET %~URL の`~path$url
+◎
+↓</li>
+					<li>
+~IF［
+%~URL~path は`~list$である
+］
+⇒
+%~URL~path ~SET %~URL~path を`~slash$で`連結する$
 ◎
 Let path be the resulting of joining url’s path on the U+002F SOLIDUS character (/).
 </li>
@@ -10768,7 +11084,6 @@ Return "Matches".
 </li>
 		</ol>
 	</li>
-
 	<li>
 <p>
 ~IF［
@@ -10792,24 +11107,31 @@ origin is the same as url’s origin
 			<li>
 <p>
 ~IF［
-~AND↓
-］…
+%生成元~host ~EQ %~URL~host
+］：
 </p>
-				<ul>
+				<ol>
 					<li>
-%生成元 の`~host$o ~EQ %~URL~host
+~IF［
+%生成元~port ~EQ ~NULL
+］
+⇒
+%生成元~port ~SET %生成元~scheme 用の`既定~port$
 </li>
 					<li>
-%生成元 の`~port$o ~EQ %~URL~port
-— この~~比較においては
+~IF［
+%~URL~port ~EQ ~NULL
+］
 ⇒
-両~URLとも，［
-その`~port$urlに対する~NULL値は，その`~scheme$url用の`既定~port$
-］と見なす。
+%~URL~port ~SET %~URL~scheme 用の`既定~port$
 </li>
 					<li>
 <p>
-~OR↓：
+~IF［
+%生成元~port ~EQ %~URL~port
+］~AND［
+~OR↓
+］…
 </p>
 						<ul>
 							<li>
@@ -10819,18 +11141,17 @@ origin is the same as url’s origin
 ［
 %~URL~scheme ~IN { `http^l, `ws^l }
 ］~AND［
-%生成元 の`~scheme$o ~EQ `http^l
+%生成元~scheme ~EQ `http^l
 ］
 </li>
 						</ul>
-					</li>
-				</ul>
-
 <p>
-ならば
+…ならば
 ⇒
 ~RET `合致する^i：
 </p>
+					</li>
+				</ol>
 ◎
 origin’s host is the same as url’s host, origin’s port and url’s port are either the same or the default ports for their respective schemes, and one or more of the following conditions is met:
 • url’s scheme is "https" or "wss"
@@ -10842,7 +11163,7 @@ origin’s host is the same as url’s host, origin’s port and url’s port ar
 上の `scheme-part$p の~logicと同様に、
 "`self$pl" 照合~algoは、
 そうするのが安全なときには，
-~secure~schemeへの昇格を許容する。
+~secureな~schemeへの昇格を許容する。
 これらの昇格は、［
 特定0の~scheme用の既定~port ／
 保護される資源の生成元に合致する~port
@@ -11379,7 +11700,7 @@ This processing is meant to mitigate the risk of dangling markup attacks that st
 とされる
 ⇒
 `keyword-source$p 式 `unsafe-inline^pl を包含する, かつ
-— 次の~algoにて述べるように —
+— 次の~algoにて述べられるとおり —
 その式を上書きしない
 ◎
 A source list allows all inline behavior of a given type if it contains the keyword-source expression 'unsafe-inline', and does not override that expression as described in the following algorithm:
@@ -12525,7 +12846,7 @@ The relatively long thread "Remove paths from CSP?" from public-webappsec@w3.org
 ］ことを許容しない。
 <a href="#match-schemes">§ `scheme-part^p の照合-法</a>
 にて述べたとおり、
-~source式の~scheme成分に対しては，常に~secure~schemeへの昇格が許容されることになる。
+~source式の~scheme成分に対しては，常に~secureな~schemeへの昇格が許容されることになる。
 ◎
 To mitigate one variant of history-scanning attacks like Yan Zhu’s Sniffly, CSP will not allow pages to lock themselves into insecure URLs via policies like script-src http://example.com. As described in § 6.7.2.9 scheme-part matching, the scheme portion of a source expression will always allow upgrading to a secure variant.
 </p>
@@ -13104,7 +13425,7 @@ script-src: Only use nonce source-expression and/or hash source-expression with 
 <p class="note">注記：
 `strict-dynamic$pl は、
 配備の容易さを許容するが
-（ ~strict-dynamic-usageに述べたとおり），
+（ ~strict-dynamic-usageにて述べられるとおり），
 アリなときは避けるべきである。
 ◎
 Note: While "'strict-dynamic'" allows ease of deployment (as described in § 8.2 Usage of "'strict-dynamic'"), it should be avoided when possible.
@@ -13379,8 +13700,9 @@ worker-src
 
 <p>
 恒久的~message~header~registry `RFC3864$r
+【今や，`~HTTP~field名~registry＠~IANA-a/http-fields$】
 は、
-次の登録により更新されるべきである：
+次の登録により更新されるべきである【すでに更新された】：
 ◎
 The permanent message header field registry should be updated with the following registrations: [RFC3864]
 </p>
@@ -13394,7 +13716,7 @@ The permanent message header field registry should be updated with the following
 <td>http
 
 <tr><th>位置付け
-<td>standard
+<td>standard【恒久的】
 
 <tr><th>著作者／変更~制御者
 <td>W3C
