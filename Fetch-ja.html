@@ -207,8 +207,8 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2024-11-13
-trans_update:2024-11-05
+spec_date:2024-12-09
+trans_update:2024-12-10
 source_checked:231107
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -971,6 +971,7 @@ fP.~preloadされる応答の候補:#fetch-params-preloaded-response-candidate
 ~HTTP~network~fetch:#concept-http-network-fetch
 ~CORS予行~fetch:#cors-preflight-fetch-0
 ~fetch応答を引渡す:#fetch-finale
+要請~環境を決定する:#request-determine-the-environment
 
 V.要請の本体~chunk長さの処理n:#process-request-body
 V.要請の本体~終了~時の処理n:#process-request-end-of-body
@@ -1348,8 +1349,8 @@ fD.~entry:~HTMLforms#form-entry
 	廃）fD.~entry:~XHR#concept-formdata-entry
 
 ~streamを取得する:~FILEAPI#blob-get-stream
-bU.~obj:~FILEAPI#blob-url-entry-object
 ~blobを切出す:~FILEAPI#slice-blob
+~blob~objを得する:~FILEAPI#blob-url-obtain-object
 
 ~CSP指令:~CSP3#csp-directives
 
@@ -1765,6 +1766,9 @@ background::::バックグラウンド
 	%内容:contents
 	%通達:signal
 	%通達~群:signals
+	%要請~環境:requestEnvironment
+	%~top-levelの~naviか:isTopLevelNavigation
+	%~naviまたは環境:navigationOrEnvironment
 
 	●URL
 hostname::::ホスト名
@@ -2390,7 +2394,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/bdb452ef7847a6c394e6914ba13675537eea2180/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/0ce45ae44008a91209ead87ff1354cf0c42ce6bd/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -5630,11 +5634,23 @@ Let « out1, out2 » be the result of teeing body’s stream.
 Set body’s stream to out1.
 </li>
 	<li>
+<p>
 ~RET 新たな`本体$
 — その
 ⇒＃
 `~stream$bd ~SET %out2；
-他の~memberは %本体 から複製する
+他の~memberは %本体 から複製する†
+</p>
+
+<p class="trans-note">【†
+すなわち，［
+`長さ$bd ~SET %本体 の`長さ$bd,
+`~source$bd ~SET %本体 の`~source$bd
+］を意味すると思われるが、
+~sourceが~objである場合に［
+新たな~instanceを作成するよう複製する必要もある
+］か否かは，はっきりしない。
+】</p>
 ◎
 Return a body whose stream is out2 and other members are copied from body.
 </li>
@@ -6021,9 +6037,7 @@ To handle content codings given codings and bytes, run these steps:
 <ol>
 	<li>
 ~IF［
-%符号法s
-【内のいずれかの符号法】
-は~supportされていない
+~UAは %符号法s 【を成す いずれかの符号法】を~supportしない
 ］
 ⇒
 ~RET %~byte列
@@ -13626,7 +13640,7 @@ URLs such as "about:config" are handled during navigation and result in a networ
 			<dd>
 				<ol>
 					<li>
-%~blob~URL~entry ~LET %要請 の`現在の~URL$rqの`~blob~URL~entry$url
+%~blob~URL~entry ~LET %要請 の`現在の~URL$rqの`~blob~URL~entry$url `FILEAPI$r
 ◎
 Let blobURLEntry be request’s current URL’s blob URL entry.
 </li>
@@ -13635,25 +13649,65 @@ Let blobURLEntry be request’s current URL’s blob URL entry.
 ~IF［
 %要請 の`~method$rq ~NEQ `GET$hm
 ］~OR［
-%~blob~URL~entry の`~obj$bU は `Blob$I ~objでない `FILEAPI$r
+%~blob~URL~entry ~EQ ~NULL
 ］
 ⇒
 ~RET `~network~error$
 ◎
-If request’s method is not `GET`, blobURLEntry is null, or blobURLEntry’s object is not a Blob object, then return a network error. [FILEAPI]
+If request’s method is not `GET` or blobURLEntry is null, then return a network error. [FILEAPI]
 </p>
 
 <p class="note">注記：
-`GET^hm `~method$の制約には、
+`GET^hm `~method$に制約することには、
 相互運用可能にする以外に有用な目的はない。
 ◎
 The `GET` method restriction serves no useful purpose other than being interoperable.
 </p>
 					</li>
 					<li>
-%~blob ~LET %~blob~URL~entry の`~obj$bU
+%要請~環境 ~LET `要請~環境を決定する$( %要請 )
 ◎
-Let blob be blobURLEntry’s object.
+Let requestEnvironment be the result of determining the environment given request.
+</li>
+					<li>
+%~top-levelの~naviか ~LET ~IS［
+%要請 の`行先$rq ~EQ `document^l
+］
+◎
+Let isTopLevelNavigation be true if request’s destination is "document"; otherwise, false.
+</li>
+					<li>
+~IF［
+%~top-levelの~naviか ~EQ ~F
+］~AND［
+%要請~環境 ~EQ ~NULL
+］
+⇒
+~RET `~network~error$
+◎
+If isTopLevelNavigation is false and requestEnvironment is null, then return a network error.
+</li>
+					<li>
+%~naviまたは環境 ~LET %~top-levelの~naviか に応じて
+⇒＃
+~T ならば `navigation^l ／
+~F ならば %要請~環境
+◎
+Let navigationOrEnvironment be the string "navigation" if isTopLevelNavigation is true; otherwise, requestEnvironment.
+</li>
+					<li>
+%~blob ~LET `~blob~objを得する$( %~blob~URL~entry, %~naviまたは環境 )
+◎
+Let blob be the result of obtaining a blob object given blobURLEntry and navigationOrEnvironment.
+</li>
+					<li>
+~IF［
+%~blob は `Blob$I ~objでない
+］
+⇒
+~RET `~network~error$
+◎
+If blob is not a Blob object, then return a network error.
 </li>
 					<li>
 %応答 ~LET 新たな`応答$
@@ -13919,6 +13973,43 @@ Return the result of running HTTP fetch given fetchParams.
 ~RET `~network~error$
 ◎
 Return a network error.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`要請~環境を決定する@
+ときは、
+所与の
+( `要請$ %要請 )
+に対し：
+◎
+To determine the environment, given a request request:
+</p>
+<ol>
+	<li>
+~IF［
+%要請 の`予約-済み~client$rq ~NEQ ~NULL
+］
+⇒
+~RET %要請 の`予約-済み~client$rq
+◎
+If request’s reserved client is non-null, then return request’s reserved client.
+</li>
+	<li>
+~IF［
+%要請 の`~client$rq ~NEQ ~NULL
+］
+⇒
+~RET %要請 の`~client$rq
+◎
+If request’s client is non-null, then return request’s client.
+</li>
+	<li>
+~RET ~NULL
+◎
+Return null.
 </li>
 </ol>
 </div>
@@ -23103,6 +23194,7 @@ Alexey Proskuryakov,
 Andreas Kling,
 Andrés Gutiérrez,
 Andrew Sutherland,
+Andrew Williams,
 Ángel González,
 Anssi Kostiainen,
 Arkadiusz Michalski,
