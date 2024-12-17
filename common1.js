@@ -1450,6 +1450,7 @@ informative: '文献（参考）',
 additional: '文献（この訳による追加）'
 		};
 
+		const altdone = Object.create(null);
 		const refHTML = (data) => {
 			const result = [];
 			let ref_key = '';
@@ -1495,11 +1496,11 @@ additional: '文献（この訳による追加）'
 					const altref = altrefs[ref_key];
 					if(!altref) return;
 					let altlinks;
-					if(altref[0] !== '<'){
-						altlinks = `<a href="#${altref}">【↑】</a>`;
+					if(altdone[ref_key]){
+						altlinks = `<a href="#${altdone[ref_key]}">【↑】</a>`;
 					} else {
 						altlinks = altref;
-						altrefs[ref_key] = ref_id;
+						altdone[ref_key] = ref_id;
 					}
 					result.push(
 `<dd class="trans-ja-refs">${altlinks}</dd>`
