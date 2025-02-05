@@ -254,8 +254,8 @@ mWC: 'code',
 
 ●●options
 
-spec_date:2025-01-28
-trans_update:2025-01-29
+spec_date:2025-02-04
+trans_update:2025-02-06
 source_checked:240222
 original_url:https://w3c.github.io/ServiceWorker/
 	abbr_url:SW1
@@ -724,6 +724,9 @@ sw.古典~scriptは~import済みか:#dfn-classic-scripts-imported-flag
 sw.取扱う~event型の集合:#dfn-set-of-event-types-to-handle
 sw.延長-済み~event集合:#dfn-set-of-extended-events
 sw.すべての~fetch~listenerは空か:#service-worker-all-fetch-listeners-are-empty-flag
+sw.~router規則~list:#service-worker-list-of-router-rules
+sw.手続き~queue:#service-worker-service-worker-queue
+sw.~sw~queue:#service-worker-service-worker-queue
 
 ~sw~event:#dfn-service-worker-events
 ~lifecycle~event:#dfn-lifecycle-events
@@ -847,7 +850,6 @@ enV.~sw登録~obj~map:#environment-settings-object-service-worker-registration-o
 swT.開始~時刻:#service-worker-timing-info-start-time
 swT.~fetch~event配送-時刻:#service-worker-timing-info-fetch-event-dispatch-time
 
-~router規則~list:#service-worker-list-of-router-rules
 競走~応答:#dfn-race-response
 rV.値:#race-response-value
 
@@ -1225,6 +1227,8 @@ wG.非同一-生成元~能力は隔離-済みか:~WORKERS#concept-workerglobalsc
 ~workerを走らす:~WORKERS#run-a-worker
 
 並列的:~HTMLINFRA#in-parallel
+並列~queue:~HTMLINFRA#parallel-queue
+手続きを~enqueueする:~HTMLINFRA#enqueue-the-following-steps
 
 作動中な~timer群が成す~map:~HTMLGAPI#map-of-active-timers
 
@@ -1528,6 +1532,7 @@ timer::::タイマー
 起点:origin::~
 粗化-:coarsen:粗く
 検索-:lookup:~
+並列:parallel::~
 
 	却下-時:upon rejection
 	同時に:simultaneous
@@ -1633,6 +1638,7 @@ timer::::タイマー
 	起こされる:wake
 	観測される〜が:observably
 	理解し易く:ease of understanding
+	ようにする:for making
 
 	●未分類
 派生-:derive::~
@@ -1823,6 +1829,9 @@ not:
 	%~script~URL:scriptURL
 	%~source設定群:sourceSettings
 	%~sw:serviceWorker
+	%~sw大域~scope:serviceWorkerGlobalScope
+	%~sw登録:serviceWorkerRegistration
+	%~sw~event~loop:serviceWorkerEventLoop
 	%~target~client群:targetClients
 	%~target~client:targetClient
 	%~target~storage:targetStorage
@@ -1833,7 +1842,6 @@ not:
 	%~worker~obj:workerObject
 	%~worker種別:workerType
 	%~worker大域~scope:workerGlobalScope
-	%~sw大域~scope:serviceWorkerGlobalScope
 	%予約-済み~client:reservedClient
 	%作動中な~worker:activeWorker
 	%合致した~client群:matchedClients
@@ -1892,7 +1900,6 @@ not:
 	%資源を更新したか:hasUpdatedResources
 	%ある~prop名:propertyName
 	%別の~prop名:%anotherPropertyName
-	%~sw登録:serviceWorkerRegistration
 	%配送した~event:dispatchedEvent
 	%~size~algo:sizeAlgorithm
 	%走らせた結果:runResult
@@ -1924,7 +1931,7 @@ not:
 	%~preload~fetch制御器:preloadFetchController
 	%逆直列化された~error:deserializedError
 	%中止-制御器:abortController
-	%~router規則~群:routerRules
+	%~router規則~群:allRules
 	%規則:rule
 	%設定upに失敗したか:setupFailed
 	%大域~obj:globalObject
@@ -1952,6 +1959,7 @@ not:
 	%走っているか否か:runningStatus
 	%完了-時の手続き:onComplete
 	%~fetchを遂行する:performFetch
+	%存続期間~promise:lifetimePromise
 
 	TODO
 	＊%~custom~fetch応答の処理n:processCustomFetchResponse
@@ -2618,7 +2626,7 @@ It is initially unset.
 </dd>
 
 	<dt>
-`~router規則~list@
+`~router規則~list@sw
 ◎
 A service worker has an associated list of router rules＼
 </dt>
@@ -2632,6 +2640,15 @@ A service worker has an associated list of router rules＼
 ◎
 It is initially an empty list.
 </dd>
+
+	<dt>
+`手続き~queue@sw
+◎
+↓</dt>
+	<dd>
+ある`並列~queue$
+◎
+↓</dd>
 </dl>
 
 <p>
@@ -2641,6 +2658,8 @@ It is initially an empty list.
 という。
 ◎
 A service worker is said to be running if its event loop is running.
+◎
+↑ A service worker has an associated [[service worker queue]] (a parallel queue).
 </p>
 
 			<section id="service-worker-lifetime">
@@ -4581,7 +4600,7 @@ Let registration be the result of running Match Service Worker Registration give
 <div class="algo">
 手続きは
 ⇒
-次の結果で %準備済み~promise を解決する
+`~promiseを解決する$( %準備済み~promise, 次の結果 )
 ⇒
 `~sw登録~objを取得する$( %登録, %準備済み~promise に`関連な設定群~obj$ )
 </div>
@@ -4777,7 +4796,7 @@ If registration is null, resolve promise with undefined and abort these steps.
 			<li>
 ~ELSE
 ⇒
-次の結果で %~promise を解決する
+`~promiseを解決する$( %~promise, 次の結果 )
 ⇒
 `~sw登録~objを取得する$( %登録, %~promise に`関連な設定群~obj$ )
 ◎
@@ -7323,16 +7342,6 @@ The addRoutes(rules) method steps are:
 </p>
 <ol>
 	<li>
-%~sw ~LET `現在の大域~obj$の`~sw$SWG
-◎
-Let serviceWorker be the current global object’s associated service worker.
-</li>
-	<li>
-%~router規則~群 ~LET %~sw の`~router規則~list$の複製
-◎
-Let routerRules be a copy of serviceWorker’s list of router rules.
-</li>
-	<li>
 ~IF［
 %rules は `RouterRule$I 辞書である
 ］
@@ -7342,17 +7351,23 @@ Let routerRules be a copy of serviceWorker’s list of router rules.
 If rules is a RouterRule dictionary, set rules to « rules ».
 </li>
 	<li>
+%~sw ~LET `現在の大域~obj$の`~sw$SWG
+◎
+Let serviceWorker be the current global object’s associated service worker.
+</li>
+	<li>
 <p>
 %rules を成す
 ~EACH( %規則 )
 に対し：
+`RouterRule^I1
 ◎
 For each rule of rules:
 </p>
 		<ol>
 			<li>
 ~IF［
-`~router条件を検証yする$( %規則[ `RouterRule^I1"`condition$m1" ], %~sw ) ~EQ ~F
+`~router条件を検証yする$( %規則[ "`condition$m1" ], %~sw ) ~EQ ~F
 ］
 ⇒
 ~RET `却下される~promise$( `TypeError$E )
@@ -7360,40 +7375,116 @@ For each rule of rules:
 If running the Verify Router Condition algorithm with rule["condition"] and serviceWorker returns false, return a promise rejected with a TypeError.
 </li>
 			<li>
-%~router規則~群 に %規則 を`付加する$
-◎
-Append rule to routerRules.
-</li>
-		</ol>
-	</li>
-	<li>
 ~IF［
-`fetch$et ~NIN %~sw の`取扱う~event型の集合$sw
-］
-⇒
-%~router規則~群 を成す
-~EACH( %規則 )
-に対し
-⇒
-~IF［
-%規則 は `RouterRule$I である
+%規則 [ "`source$m1" ] ~IN { `fetch-event$l, `race-network-and-fetch-handler$l }
 ］~AND［
-%規則 の `RouterRule^I1`source$m1 ~IN { `fetch-event$l, `race-network-and-fetch-handler$l }
+`fetch$et ~NIN %~sw の`取扱う~event型の集合$sw
 ］
 ⇒
 ~RET `却下される~promise$( `TypeError$E )
 ◎
-If routerRules contains a RouterRule whose source is either of "fetch-event" or "race-network-and-fetch-handler", and serviceWorker’s set of event types to handle does not contain fetch, return a promise rejected with a TypeError.
+If rule["source"] is either of "fetch-event" or "race-network-and-fetch-handler", and serviceWorker’s set of event types to handle does not contain fetch, return a promise rejected with a TypeError.
+</li>
+		</ol>
+	</li>
+	<li>
+%存続期間~promise ~LET `新たな~promise$
+◎
+Let lifetimePromise be a new promise.
 </li>
 	<li>
-%~sw の`~router規則~list$ ~SET %~router規則~群
+<p>
+`存続期間~promiseを追加する$( %存続期間~promise, コレ )
 ◎
-Set serviceWorker’s list of router rules to routerRules.
+Add lifetime promise lifetimePromise to this.
+</p>
+
+<p class="note">注記：
+この~methodは、
+既定では，当の~eventの存続期間を延長する
+— コレに対し `ExtendableEvent^I0`waitUntil(promise)$m が~callされたかのように。
+◎
+Note: event.addRoutes(rules) extends the lifetime of the event by default as if event.waitUntil(promise) is called.
+</p>
+	</li>
+	<li>
+%~promise ~LET `新たな~promise$
+◎
+Let promise be a new promise.
 </li>
 	<li>
-~RET `解決される~promise$( `undefined^jv )
+<div class="algo">
+%~promise の［
+`充足-時$／`却下-時$
+］には
+⇒
+`~promiseを解決する$( %存続期間~promise )
 ◎
-Return a promise resolved with undefined.
+Upon fulfillment or rejection of promise, resolve lifetimePromise with undefined.
+</div>
+
+<p class="note">注記：
+~install~eventの失敗を避けるため、
+この段は， %存続期間~promise が常に充足されるようにする。
+◎
+Note: this step is for making lifetimePromise always fullfilled to avoid the install event failure.
+</p>
+	</li>
+	<li>
+<p>
+%~sw の`手続き~queue$swに次の`手続きを~enqueueする$【！~INFRA#queue-enqueue】：
+◎
+Enqueue the following steps to [[service worker queue]]:
+</p>
+<div class="algo">
+<p>
+手続きは：
+◎
+↑</p>
+		<ol>
+			<li>
+%~router規則~群 ~LET %~sw の`~router規則~list$swを`~cloneする$【！の複製】
+◎
+Let allRules be a copy of serviceWorker’s list of router rules.
+</li>
+			<li>
+%~router規則~群 を %rules で`拡張する$
+◎
+For each rule of rules:
+• Append rule to allRules.
+</li>
+			<li>
+%~sw の`~router規則~list$sw ~SET %~router規則~群
+◎
+Set serviceWorker’s list of router rules to allRules.
+</li>
+			<li>
+%~sw~event~loop ~LET `現在の大域~obj$の`~event~loop$
+◎
+Let serviceWorkerEventLoop be the current global object’s event loop.
+</li>
+			<li>
+<p>
+`~taskを~queueする$( `~DOM操作~task~source$, 次の手続き, %~sw~event~loop )
+◎
+Queue a task to run the following steps on serviceWorkerEventLoop using the DOM manipulation task source:
+</p>
+
+<div class="algo">
+手続きは
+⇒
+`~promiseを解決する$( %~promise )
+◎
+Resolve promise with undefined.
+</div>
+			</li>
+		</ol>
+</div>
+	</li>
+	<li>
+~RET %~promise
+◎
+Return promise.
 </li>
 </ol>
 </div>
@@ -13336,7 +13427,7 @@ If readyPromise is null, then continue.
 %準備済み~promise は決着していない
 ］
 ⇒
-次の結果で %準備済み~promise を解決する
+`~promiseを解決する$( %準備済み~promise, 次の結果 )
 ⇒
 `~sw登録~objを取得する$( %登録, %準備済み~promise に`関連な設定群~obj$ )
 ◎
@@ -14622,7 +14713,7 @@ Let shouldSoftUpdate be true if any of the following are true, and false otherwi
 	<li>
 <p>
 ~IF［
-%作動中な~worker の`~router規則~list$は`空$である
+%作動中な~worker の`~router規則~list$swは`空$である
 ］：
 ◎
 If activeWorker’s list of router rules is not empty:
@@ -16400,7 +16491,7 @@ Output
 
 <ol>
 	<li>
-%~sw の`~router規則~list$を成す
+%~sw の`~router規則~list$swを成す
 ~EACH( %規則 )
 に対し
 ⇒
