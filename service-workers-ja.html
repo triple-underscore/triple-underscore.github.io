@@ -254,8 +254,8 @@ mWC: 'code',
 
 ●●options
 
-spec_date:2025-02-04
-trans_update:2025-02-06
+spec_date:2025-02-13
+trans_update:2025-02-15
 source_checked:240222
 original_url:https://w3c.github.io/ServiceWorker/
 	abbr_url:SW1
@@ -853,6 +853,10 @@ swT.~fetch~event配送-時刻:#service-worker-timing-info-fetch-event-dispatch-t
 競走~応答:#dfn-race-response
 rV.値:#race-response-value
 
+~router条件を数えた結果:#dfn-count-router-condition-result
+rcR.条件~計数:#dfn-count-router-condition-result-condition-count
+rcR.~quotaを超過したか:#dfn-dfn-count-router-condition-result-quota-exceeded
+
 	●algo
 ~jobを作成する:#create-job
 ~jobを~scheduleする:#schedule-job
@@ -875,6 +879,8 @@ rV.値:#race-response-value
 ~URL~patternを構文解析する:#parse-url-pattern
 ~router条件を検証yする:#verify-router-condition
 ~router条件を照合する:#match-router-condition
+~router登録~上限を検査する:#check-router-registration-limit
+~router内縁~条件~群を数える:#count-router-inner-conditions
 ~router~sourceを取得する:#get-router-source
 競走~応答を検索する:#lookup-race-response
 ~swを終了する:#terminate-service-worker
@@ -1390,6 +1396,7 @@ agent:
 	対応-:correspond
 作成元:creator::~
 循環な:cyclicな::~
+深さ:depth::~
 
 	●data型／操作
 chunk::::チャンク
@@ -1533,6 +1540,11 @@ timer::::タイマー
 粗化-:coarsen:粗く
 検索-:lookup:~
 並列:parallel::~
+指数関数的:exponential:~
+数えて:countして:~
+数えた:countした:~
+数える:countする:~
+計数:count:~
 
 	却下-時:upon rejection
 	同時に:simultaneous
@@ -1595,6 +1607,7 @@ timer::::タイマー
 禁制-:prohibit:~
 排他的:exclusive:~
 最小限:minimal:~
+過度:excessive:~
 
 	前方-互換にする:forward compatibility across
 	不良でない:good
@@ -1772,6 +1785,7 @@ disk::::ディスク
 	大多数の:major
 	残り:rest
 	非同期~拡張を待機する^i:WaitForAsynchronousExtensions
+	総数:total number
 
 	●変数
 最大-:max:~
@@ -1932,6 +1946,7 @@ not:
 	%逆直列化された~error:deserializedError
 	%中止-制御器:abortController
 	%~router規則~群:allRules
+	%~router規則~群:routerRules
 	%規則:rule
 	%設定upに失敗したか:setupFailed
 	%大域~obj:globalObject
@@ -1960,6 +1975,8 @@ not:
 	%完了-時の手続き:onComplete
 	%~fetchを遂行する:performFetch
 	%存続期間~promise:lifetimePromise
+	%結果:result
+	%深さ:depth
 
 	TODO
 	＊%~custom~fetch応答の処理n:processCustomFetchResponse
@@ -7321,6 +7338,30 @@ enum `RouterSourceEnum@I {
 };
 </pre>
 
+<p>
+`~router条件を数えた結果@
+は、
+次に挙げる~itemからなる`構造体$である：
+◎
+A count router condition result is a struct that consists of:
+</p>
+<ul>
+	<li>
+`条件~計数@rcR
+⇒
+~number
+◎
+A condition count (a number).
+</li>
+	<li>
+`~quotaを超過したか@rcR
+⇒
+真偽値
+◎
+A quota exceeded (a boolean).
+</li>
+</ul>
+
 `InstallEvent^I0
 
 			<section id="register-router-method">
@@ -7452,6 +7493,15 @@ Let allRules be a copy of serviceWorker’s list of router rules.
 ◎
 For each rule of rules:
 • Append rule to allRules.
+</li>
+			<li>
+~IF［
+`~router登録~上限を検査する$( %~router規則~群 ) ~EQ ~F
+］
+⇒
+`~promiseを却下する$( %~promise, `TypeError$E )
+◎
+If running the Check Router Registration Limit with allRules returns false, reject promise with a TypeError.
 </li>
 			<li>
 %~sw の`~router規則~list$sw ~SET %~router規則~群
@@ -10411,7 +10461,7 @@ A service worker executes in the registering service worker client’s origin. O
 `importScripts(urls)$n
 ~method手続きは
 ⇒
-`~scriptを~worker大域~scopeの中に~importする$( ↓ )
+`~scriptを~worker大域~scopeの中へ~importする$( ↓ )
 ⇒＃
 コレ,
 %urls,
@@ -16460,6 +16510,238 @@ Return true.
 </li>
 		</ol>
 	</li>
+</ol>
+
+		</section>
+		<section id="check-router-registration-limit-algorithm">
+<h3 title="Check Router Registration Limit">`~router登録~上限を検査する@</h3>
+
+<ul>
+	<li>
+入力
+⇒＃
+%~router規則~群 — `~router規則~list$sw
+◎
+Input
+• routerRules, a list of router rules
+</li>
+	<li>
+出力
+⇒＃
+真偽値
+◎
+Output
+• a boolean
+</li>
+</ul>
+
+<div class="note">
+<p>注記：
+~router条件は、［
+`RouterCondition^I1
+`or$m1, `not$m1
+］を利用して入子にされ得るなど，複階的なこともある。
+過度な処理を防止するため、
+この~algoは，次に挙げる上限を導入する：
+◎
+Note: Router conditions can be complex and nested using _or and not. To prevent excessive processing, this algorithm introduces two limits.＼
+</p>
+<ul>
+	<li>
+条件の総数
+は、
+入子にされた条件もすべて数えて，
+1024 を超過し得ない。
+◎
+First, the total number of conditions, counting all nested conditions, cannot exceed 1024.＼
+</li>
+	<li>
+指数関数的な算出を避けるため、
+入子ng深さは 10 ~levelまでに制限される。
+◎
+Second, the nesting depth is limited to 10 levels to avoid exponential computation.
+</li>
+</ul>
+</div>
+
+<ol>
+	<li>
+%結果 ~LET `~router条件を数えた結果$
+— その
+⇒＃
+`条件~計数$rcR ~SET 1024,
+`~quotaを超過したか$rcR ~SET ~F
+◎
+Let result be a count router condition result.
+◎
+Set result’s condition count to 1024.
+◎
+Set result’s quota exceeded to false.
+</li>
+	<li>
+<p>
+%~router規則~群 を成す
+~EACH( %規則 )
+に対し：
+◎
+For each rule of routerRules:
+</p>
+		<ol>
+			<li>
+%結果 ~SET `~router内縁~条件~群を数える$( %規則[ `RouterRule^I1"`condition$m1" ], %結果, 10 )
+◎
+Set result to be the result of running Count Router Inner Conditions with rule["condition"], result, and 10.
+</li>
+			<li>
+~IF［
+%結果 の`~quotaを超過したか$rcR ~EQ ~T
+］
+⇒
+~RET ~F
+◎
+If result’s quota exceeded is true, return false.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET ~T
+◎
+Return true.
+</li>
+</ol>
+
+		</section>
+		<section id="count-router-inner-conditions-algorithm">
+<h3 title="Count Router Inner Conditions">`~router内縁~条件~群を数える@</h3>
+
+<ul>
+	<li>
+入力
+⇒＃
+%条件 — `RouterCondition$I1
+%結果 — `~router条件を数えた結果$
+%深さ — ~number【負でない整数】
+◎
+Input
+• condition, a RouterCondition
+• result, a count router condition result
+• depth, a number
+</li>
+	<li>
+出力
+⇒
+`~router条件を数えた結果$
+◎
+Output
+• result, a count router condition result
+</li>
+</ul>
+
+<ol>
+	<li>
+%結果 の`条件~計数$rcR ~DECBY 1
+◎
+Decrement result’s condition count by one.
+</li>
+	<li>
+<p>
+~IF［
+%結果 の`条件~計数$rcR ~EQ 0
+］~OR［
+%深さ ~EQ 0
+］：
+◎
+If result’s condition count is zero, or depth is zero, then:
+</p>
+		<ol>
+			<li>
+%結果 の`~quotaを超過したか$rcR ~SET ~T
+◎
+Set result’s quota exceeded to be true.
+</li>
+			<li>
+~RET %結果
+◎
+Return result.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~IF［
+%条件[ "`or$m1" ] ~NEQ ε
+］：
+◎
+If condition["_or"] exists, then:
+</p>
+		<ol>
+			<li>
+%深さ ~DECBY 1
+◎
+Decrement depth by one.
+</li>
+			<li>
+<p>
+%条件[ "`or$m1" ] を成す
+~EACH( %~or条件 )
+に対し：
+◎
+For each orCondition of condition["_or"]:
+</p>
+				<ol>
+					<li>
+%結果 ~SET `~router内縁~条件~群を数える$( %~or条件, %結果, %深さ )
+◎
+Set result to be the result of running Count Router Inner Conditions with orCondition, result, and depth.
+</li>
+					<li>
+~IF［
+%結果 の`~quotaを超過したか$rcR ~EQ ~T
+］
+⇒
+~RET %結果
+◎
+If result’s quota exceeded is true, return result.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~ELIF［
+%条件[ "`not$m1" ] ~NEQ ε
+］：
+◎
+Else if condition["not"] exists, then:
+</p>
+		<ol>
+			<li>
+%深さ ~DECBY 1
+◎
+Decrement depth by one.
+</li>
+			<li>
+%結果 ~SET`~router内縁~条件~群を数える$( %条件[ "`not$m1" ], %結果, %深さ )
+◎
+Set result to be the result of running Count Router Inner Conditions with condition["not"], result, and depth.
+</li>
+			<li>
+~IF［
+%結果 の`~quotaを超過したか$rcR ~EQ ~T
+］
+⇒
+~RET %結果
+◎
+If result’s quota exceeded is true, return result.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET %結果
+◎
+Return result.
+</li>
 </ol>
 
 		</section>
