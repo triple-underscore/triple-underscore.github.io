@@ -198,8 +198,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2025-02-12
-trans_update:2025-02-15
+spec_date:2025-02-26
+trans_update:2025-02-27
 source_checked:230718
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -351,6 +351,7 @@ credit:
 	依拠-可能:reliable
 	依拠-可能でない:unreliable
 下位protocol:subprotocol::下位 protocol:下位プロトコル
+payload::::ペイロード
 
 	送信者~側:sender-side
 	接続:the first hop
@@ -1214,7 +1215,7 @@ BS.~byte長さ:~WEBIDLjs#buffersource-byte-length
 eX.~message:~WEBIDL#domexception-message
 eX.名前:~WEBIDL#domexception-name
 	コレ:~WEBIDL#this
-新たな:~WEBIDLjs#new
+新たな~obj:~WEBIDLjs#new
 	~THROW:~WEBIDL#dfn-throw
 保持された~byte列の複製を取得する:~WEBIDLjs#dfn-get-buffer-source-copy
 ~buffer~sourceを~byte列から作成する:~WEBIDLjs#_buffersource-create
@@ -1390,6 +1391,7 @@ WEBTRANSPORTHTTP3=副      ~/webtrans-http3-ja.html
 編集
 	Nidhi Jaju (Google)
 	Victor Vasiliev (Google)
+	Jan-Ivar Bruaroey (Mozilla)
 前任編集者
 	Bernard Aboba (Microsoft Corporation)
 	Peter Thatcher (Google)
@@ -2091,7 +2093,7 @@ To create a WebTransportDatagramDuplexStream given a readable, and a writable, p
 <ol>
 	<li>
 <p>
-%~stream ~LET `新たな$ `WebTransportDatagramDuplexStream$I
+%~stream ~LET `新たな~obj$( `WebTransportDatagramDuplexStream$I )
 — その
 ⇒＃
 `Readable$sl ~SET %可読~stream,
@@ -3439,12 +3441,12 @@ Let anticipatedConcurrentIncomingUnidirectionalStreams be options’s anticipate
 Let anticipatedConcurrentIncomingBidirectionalStreams be options’s anticipatedConcurrentIncomingBidirectionalStreams.
 </li>
 	<li>
-%流入~datagram群 ~LET `新たな$ `ReadableStream$I
+%流入~datagram群 ~LET `新たな~obj$( `ReadableStream$I )
 ◎
 Let incomingDatagrams be a new ReadableStream.
 </li>
 	<li>
-%流出~datagram群 ~LET `新たな$ `WritableStream$I
+%流出~datagram群 ~LET `新たな~obj$( `WritableStream$I )
 ◎
 Let outgoingDatagrams be a new WritableStream.
 </li>
@@ -3454,13 +3456,13 @@ Let outgoingDatagrams be a new WritableStream.
 Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its readable set to incomingDatagrams and its writable set to outgoingDatagrams.
 </li>
 	<li>
-%~transport ~LET `新たな$ `WebTransport$I ~obj
+%~transport ~LET `新たな~obj$( `WebTransport$I )
 — その
 ⇒＃
 `SendStreams$sl ~SET 新たな`有順序~集合$,
 `ReceiveStreams$sl ~SET 新たな`有順序~集合$,
-`IncomingBidirectionalStreams$sl ~SET `新たな$ `ReadableStream$I,
-`IncomingUnidirectionalStreams$sl ~SET `新たな$ `ReadableStream$I,
+`IncomingBidirectionalStreams$sl ~SET `新たな~obj$( `ReadableStream$I ),
+`IncomingUnidirectionalStreams$sl ~SET `新たな~obj$( `ReadableStream$I ),
 `State$sl ~SET `connecting^l,
 `Ready$sl ~SET `新たな~promise$,
 `Reliability$sl ~SET `pending^l,
@@ -4755,10 +4757,8 @@ Let p be a new promise.
 <p class="trans-note">【
 この段は、
 原文では［
-`~promiseを却下する$( %p, `InvalidStateError^E 例外 )
+`~promiseを却下する$( %~promise, `InvalidStateError^E 例外 )
 ］を行ってから値を返さずに手続きを終えているが，誤りであろう。
-`failed^l は、
-以下で`並列的$に走らす手続きの中でも取扱われているので，この段は不要かもしれない。
 】</p>
 ◎
 If transport.[[State]] is "failed", reject p with an InvalidStateError and abort these steps.
@@ -4780,47 +4780,70 @@ Run the following steps in parallel:
 If transport.[[State]] is "connecting", wait until it changes.
 </li>
 					<li>
-~IF［
-%~transport . `State$sl ~EQ `failed^l
-］
-⇒＃
-`~promiseを却下する$( %p, `InvalidStateError$E 例外 )；
-~RET
-◎
-If transport.[[State]] is "failed", reject p with an InvalidStateError and abort these steps.
-</li>
-					<li>
 <p>
-~IF［
-%~transport . `State$sl ~EQ `closed^l
-］：
-</p>
-						<ol>
+%~transport . `State$sl に応じて：
+◎
+↓</p>
+						<ul class="switch">
 							<li>
-%統計 ~LET `新たな$ `WebTransportConnectionStats$I ~obj
+<p>
+`failed^l
+⇒
+`~network~taskを~queueする$( %~transport, 次の手続き )
+◎
+If transport.[[State]] is "failed", abort these steps after queueing a network task with transport to＼
+</p>
+
+<div class="algo">
+手続きは
+⇒
+`~promiseを却下する$( %~promise, `InvalidStateError$E 例外 )
+</div>
+◎
+reject p with an InvalidStateError.
 </li>
 							<li>
+<p>
+`closed^l
+⇒
+`~network~taskを~queueする$( %~transport, 次の手続き )
+◎
+If transport.[[State]] is "closed", abort these steps after queueing a network task with transport to＼
+</p>
+<div class="algo">
+<p>
+手続きは：
+</p>
+								<ol>
+									<li>
+%統計 ~LET 新たな `WebTransportConnectionStats$I
+</li>
+									<li>
 %統計 を成す各~memberを当の接続~用に可用な最も近過去な統計を表現するよう設定する
 — 統計が収集される正確な時点は、
 `実装定義$とする。
 </li>
-							<li>
-`~promiseを解決する$( %p, %統計 )
+									<li>
+`~promiseを解決する$( %~promise, %統計 )
 </li>
-							<li>
-~RET
-</li>
-						</ol>
+								</ol>
 ◎
-If transport.[[State]] is "closed", resolve p with the most recent stats available for the connection and abort these steps. The exact point at which those stats are collected is implementation-defined.
-</li>
-					<li>
+resolve p with the most recent stats available for the connection. The exact point at which those stats are collected is implementation-defined.
+</div>
+							</li>
+							<li>
+<p>
+その他：
+◎
+↑↓</p>
+								<ol>
+									<li>
 `下層~接続$から統計を集める
 — 各~datagram上の統計も含む
 ◎
 Gather the stats from the underlying connection, including stats on datagrams.
 </li>
-					<li>
+									<li>
 <p>
 `~network~taskを~queueする$( %~transport, 次の手続き )
 ◎
@@ -4832,24 +4855,28 @@ Queue a network task with transport to＼
 ◎
 run the following steps:
 </p>
-						<ol>
-							<li>
-%統計 ~LET `新たな$ `WebTransportConnectionStats$I ~obj
+										<ol>
+											<li>
+%統計 ~LET 新たな `WebTransportConnectionStats$I
 ◎
 Let stats be a new WebTransportConnectionStats object＼
 </li>
-							<li>
+											<li>
 %統計 を成す各~memberを集められた統計を表現するよう設定する
 ◎
 representing the gathered stats.
 </li>
-							<li>
+											<li>
 `~promiseを解決する$( %~promise, %統計 )
 ◎
 Resolve p with stats.
 </li>
-						</ol>
+										</ol>
 </div>
+									</li>
+								</ol>
+							</li>
+						</ul>
 					</li>
 				</ol>
 			</li>
@@ -4969,13 +4996,28 @@ reject p with an InvalidStateError:
 </p>
 						<ol>
 							<li>
+<p>
 ~IF［
 %可用になるまで待機するか ~EQ ~F
-］
-⇒＃
-`~promiseを却下する$( %p, `QuotaExceededError$E 例外 )；
+］：
+</p>
+								<ol>
+									<li>
+<p>
+`~network~taskを~queueする$( %~transport, 次の手続き )
+</p>
+
+<div class="algo">
+手続きは
+⇒
+`~promiseを却下する$( %~promise, `QuotaExceededError$E 例外 )
+</div>
+									</li>
+									<li>
 ~RET
 </li>
+								</ol>
+							</li>
 							<li>
 ~stream~IDが可用になるまで待機する
 </li>
@@ -4984,7 +5026,7 @@ reject p with an InvalidStateError:
 </li>
 						</ol>
 ◎
-Let streamId be a new stream ID that is valid and unique for transport.[[Session]], as defined in [QUIC] Section 19.11. If one is not immediately available due to exhaustion, wait for it to become available if waitUntilAvailable is true, reject p with a QuotaExceededError and abort these steps otherwise.
+Let streamId be a new stream ID that is valid and unique for transport.[[Session]], as defined in [QUIC] Section 19.11. If one is not immediately available due to exhaustion, either wait for it to become available if waitUntilAvailable is true, or if waitUntilAvailable is false, abort these steps after queueing a network task with transport to reject p with a QuotaExceededError.
 </li>
 					<li>
 %内部~stream ~LET `双方向~streamを作成する$( %~transport . `Session$sl, %~stream~ID )
@@ -5144,13 +5186,28 @@ reject p with an InvalidStateError:
 </p>
 						<ol>
 							<li>
+<p>
 ~IF［
 %可用になるまで待機するか ~EQ ~F
-］
-⇒＃
-`~promiseを却下する$( %p, `QuotaExceededError$E 例外 )；
+］：
+</p>
+								<ol>
+									<li>
+<p>
+`~network~taskを~queueする$( %~transport, 次の手続き )
+</p>
+
+<div class="algo">
+手続きは
+⇒
+`~promiseを却下する$( %~promise, `QuotaExceededError$E 例外 )
+</div>
+									</li>
+									<li>
 ~RET
 </li>
+								</ol>
+							</li>
 							<li>
 ~stream~IDが可用になるまで待機する
 </li>
@@ -5159,7 +5216,7 @@ reject p with an InvalidStateError:
 </li>
 						</ol>
 ◎
-Let streamId be a new stream ID that is valid and unique for transport.[[Session]], as defined in [QUIC] Section 19.11. If one is not immediately available due to exhaustion, wait for it to become available if waitUntilAvailable is true, reject p with a QuotaExceededError and abort these steps otherwise.
+Let streamId be a new stream ID that is valid and unique for transport.[[Session]], as defined in [QUIC] Section 19.11. If one is not immediately available due to exhaustion, either wait for it to become available if waitUntilAvailable is true, or if waitUntilAvailable is false, abort these steps after queueing a network task with transport to reject p with a QuotaExceededError.
 </li>
 					<li>
 <p>
@@ -5539,7 +5596,7 @@ If transport.[[State]] is "closed" or "failed", abort these steps.
 Let error be a newly created WebTransportError whose source is "session".
 </li>
 			<li>
-%~close報 ~LET `新たな$ `WebTransportCloseInfo$I
+%~close報 ~LET 新たな `WebTransportCloseInfo$I
 ◎
 Let closeInfo be a new WebTransportCloseInfo.
 </li>
@@ -6369,7 +6426,9 @@ A send order number that,＼
 
 <p class="trans-note">【
 `sendOrder$mb の既定~値は，更新により ~NULL から 0 に改められたため、
-上の条件が明示的に 0 を供した場合と省略した場合を区別するのかどうか不明瞭になっている。
+上の条件（供されたか否か）が明示的に 0 を供した場合と省略した場合を区別するのかどうか不明瞭になっている
+（ ~IDL~levelでは、
+これらは同じに挙動する）。
 】</p>
 ◎
 if provided, opts the created WebTransportSendStream in to participating in strict ordering. Bytes currently queued on strictly ordered WebTransportSendStreams will be sent ahead of bytes currently queued on other strictly ordered WebTransportSendStreams created with lower send order numbers.
@@ -6617,12 +6676,16 @@ estimatedSendRate, of type unsigned long long, nullable, defaulting to null
 輻輳~制御~algo
 （ `congestionControl$mT により選ばれるそれにもなり得る）
 により計算される。
-~UAが現在の見積もりを有さない場合、
-この~memberの値は， ~NULL にするモノトスル。
+この見積もりには、
+~frame法による~overheadは含まれない。
+この見積もりは、
+応用~payloadが送信されるであろう~rateを表現する。
+~UAは、
+現在の見積もりを有さない場合には，この~memberの値を ~NULL にするモノトスル。
 この~memberは、
 以前の結果では ~NULL でなかった場合でも， ~NULL になり得る。
 ◎
-The estimated rate at which queued data will be sent by the user agent, in bits per second. This rate applies to all streams and datagrams that share a WebTransport session and is calculated by the congestion control algorithm (potentially chosen by congestionControl). If the user agent does not currently have an estimate, the member MUST be the null value. The member can be null even if it was not null in previous results.
+The estimated rate at which queued data will be sent by the user agent, in bits per second. This rate applies to all streams and datagrams that share a WebTransport session and is calculated by the congestion control algorithm (potentially chosen by congestionControl). This estimate excludes any framing overhead and represents the rate at which an application payload might be sent. If the user agent does not currently have an estimate, the member MUST be the null value. The member can be null even if it was not null in previous results.
 </dd>
 
 	<dt>
@@ -6632,22 +6695,28 @@ atSendCapacity, of type boolean, defaulting to false
 </dt>
 	<dd>
 値 ~F は、
-`estimatedSendRate$mb は，応用により制限された
+次を指示する
+⇒
+`estimatedSendRate$mb は、
+応用により制限された
 — すなわち、
-当の応用が送信している~dataは，輻輳~制御器が許容するよりも有意に少ない —
-かもしれないことを指示する。
-その間は、［
-輻輳~制御器は，可用な~network容量として拙い見積もりを生産する
-］かもしれない。
+当の応用が送信している~dataは，
+輻輳~制御器が許容するよりも有意に少ない —
+かもしれない。
+その間は、
+輻輳~制御器は，
+可用な~network容量として拙い見積もりを生産するかもしれない。
 ◎
 A value of false indicates the estimatedSendRate might be application limited, meaning the application is sending significantly less data than the congestion controller allows. A congestion controller might produce a poor estimate of the available network capacity while it is application limited.
 </dd>
 	<dd>
-値 ~T は、［
-当の応用は，~dataを~network容量ぎりぎりまで送信している
-］ので［
-`estimatedSendRate$mb は，応用に可用な~network容量を反映する
-］ことを指示する。
+値 ~T は、
+次を指示する
+⇒
+当の応用は，
+~dataを~network容量ぎりぎりまで送信しているので、
+`estimatedSendRate$mb は，
+応用に可用な~network容量を反映する。
 ◎
 A value of true indicates the application is sending data at network capacity, and the estimatedSendRate reflects the network capacity available to the application.
 </dd>
@@ -6668,7 +6737,7 @@ When atSendCapacity is true, the estimatedSendRate reflects a ceiling. As long a
 </dt>
 	<dd class="trans-note">【
 この~memberについては、
-原文には何も述べられていない。
+原文には（他所も含めて）何も述べられていない。
 】</dd>
 </dl>
 
@@ -6927,7 +6996,7 @@ run the following steps:
 </p>
 						<ol>
 							<li>
-%統計 ~LET `新たな$ `WebTransportSendStreamStats$I ~obj
+%統計 ~LET 新たな `WebTransportSendStreamStats$I
 ◎
 Let stats be a new WebTransportSendStreamStats object＼
 </li>
@@ -7053,7 +7122,7 @@ To create a WebTransportSendStream, with an outgoing unidirectional or bidirecti
 
 <ol>
 	<li>
-%~stream ~LET `新たな$ `WebTransportSendStream$I
+%~stream ~LET `新たな~obj$( `WebTransportSendStream$I )
 — その
 ⇒＃
 `InternalStream$slS ~SET %内部~stream,
@@ -7992,7 +8061,7 @@ When getStats is called, the user agent MUST run the following steps:
 </p>
 		<ol>
 			<li>
-%p ~LET `新たな~promise$
+%~promise ~LET `新たな~promise$
 ◎
 Let p be a new promise.
 </li>
@@ -8029,12 +8098,17 @@ run the following steps:
 </p>
 						<ol>
 							<li>
-%統計 ~LET %統計~data を表現している`新たな$ `WebTransportSendStreamStats$I ~obj
+%統計 ~LET 新たな `WebTransportSendStreamStats$I
 ◎
-Let stats be a new WebTransportSendStreamStats object representing the aggregate numbers of the gathered stats.
+Let stats be a new WebTransportSendStreamStats object＼
 </li>
 							<li>
-`~promiseを解決する$( %p, %統計 )
+%統計 を成す各~memberを %統計~data を表現するよう初期化する
+◎
+representing the aggregate numbers of the gathered stats.
+</li>
+							<li>
+`~promiseを解決する$( %~promise, %統計 )
 ◎
 Resolve p with stats.
 </li>
@@ -8044,7 +8118,7 @@ Resolve p with stats.
 				</ol>
 			</li>
 			<li>
-~RET %p
+~RET %~promise
 ◎
 Return p.
 </li>
@@ -8093,7 +8167,7 @@ To create a WebTransportSendGroup, with a WebTransport transport, run these step
 </p>
 <ol>
 	<li>
-%送信-~group ~LET `新たな$ `WebTransportSendGroup$I
+%送信-~group ~LET `新たな~obj$( `WebTransportSendGroup$I )
 — その
 ⇒＃
 `Transport$slG ~SET %~transport
@@ -8226,7 +8300,7 @@ run the following steps:
 </p>
 						<ol>
 							<li>
-%統計 ~LET `新たな$ `WebTransportReceiveStreamStats$I
+%統計 ~LET 新たな `WebTransportReceiveStreamStats$I
 ~obj
 ◎
 Let stats be a new WebTransportReceiveStreamStats object＼
@@ -8305,7 +8379,7 @@ To create a WebTransportReceiveStream, with an incoming unidirectional or bidire
 </p>
 <ol>
 	<li>
-%~stream ~LET `新たな$ `WebTransportReceiveStream$I
+%~stream ~LET `新たな~obj$( `WebTransportReceiveStream$I )
 — その
 ⇒＃
 `InternalStream$slR ~SET %内部~stream,
@@ -8444,9 +8518,8 @@ Set maxBytes to an implementation-defined size.
 </li>
 			<li>
 <p>
-%~buffer ~SET `新たな$ `ArrayBuffer$I
-— ~size %最大-~byte数 の
-【！`~buffer~sourceを~byte列から作成する$】
+%~buffer ~SET `~buffer~sourceを~byte列から作成する$( `ArrayBuffer$I, ~size %最大-~byte数 の~byte列† )
+【† ~byte列の内容は指定されていない（すべて 0 ？）。】
 </p>
 
 <p>
@@ -9007,7 +9080,7 @@ Let readable be the result of creating a WebTransportReceiveStream with internal
 Let writable be the result of creating a WebTransportSendStream with internalStream, transport, and sendOrder.
 </li>
 	<li>
-%~stream ~LET `新たな$ `WebTransportBidirectionalStream$I
+%~stream ~LET `新たな~obj$( `WebTransportBidirectionalStream$I )
 — その
 ⇒＃
 `Readable$slB ~SET %可読~stream,
@@ -9108,18 +9181,18 @@ When atomicWrite is called, the user agent MUST run the following steps:
 </p>
 		<ol>
 			<li>
-%p ~LET コレ上の `write$dw 手続き( %chunk )
+%~promise ~LET コレ上の `write$dw 手続き( %chunk )
 ◎
 Let p be the result of write(chunk) on WritableStreamDefaultWriter with chunk.
 </li>
 			<li>
-%~stream . `AtomicWriteRequests$slS に %p を`付加する$set
+%~stream . `AtomicWriteRequests$slS に %~promise を`付加する$set
 ◎
 Append p to stream.[[AtomicWriteRequests]].
 </li>
 			<li>
 <p>
-~RET `~promiseに反応する$( %p )
+~RET `~promiseに反応する$( %~promise )
 — 次を与える下で：
 </p>
 				<ul>
@@ -9129,7 +9202,7 @@ Append p to stream.[[AtomicWriteRequests]].
 </p>
 						<ol>
 							<li>
-%~stream . `AtomicWriteRequests$slS から %p を`除去する$
+%~stream . `AtomicWriteRequests$slS から %~promise を`除去する$
 </li>
 							<li>
 ~RET `undefined^jv
@@ -9145,7 +9218,7 @@ Append p to stream.[[AtomicWriteRequests]].
 </p>
 						<ol>
 							<li>
-%~stream . `AtomicWriteRequests$slS から %p を`除去する$
+%~stream . `AtomicWriteRequests$slS から %~promise を`除去する$
 </li>
 							<li>
 ~RET `却下される~promise$( %r )
@@ -9180,7 +9253,7 @@ To create a WebTransportWriter, with a WebTransportSendStream stream, run these 
 </p>
 <ol>
 	<li>
-%書込器 ~LET `新たな$ `WebTransportWriter$I
+%書込器 ~LET `新たな~obj$( `WebTransportWriter$I )
 ◎
 Let writer be a new WebTransportWriter.
 </li>
@@ -9193,7 +9266,9 @@ Run the new WritableStreamDefaultWriter(stream) constructor steps passing writer
 ~RET %書込器
 ◎
 Return writer.
-</li></ol></div>
+</li>
+</ol>
+</div>
 
 		</section>
 	</section>
@@ -9253,17 +9328,10 @@ enum `WebTransportErrorSource@I {
 </p>
 <ol>
 	<li>
-%~option群 ~LET 新たな `WebTransportErrorOptions$I
-— その
-⇒＃
-`source$mbE ~SET %~source,
-`streamErrorCode$mbE ~SET %~code
+%~error ~LET `新たな~obj$( `WebTransportError$I )
 </li>
 	<li>
-%~error ~LET `新たな$ `WebTransportError$I
-</li>
-	<li>
-%~error 上の `new WebTransportError$m 構築子~手続き( "", %~option群 )
+%~error 上の `new WebTransportError$m 構築子~手続き( "", «[ "`source$mbE" → %~source, "`streamErrorCode$mbE" → %~code ]» )
 </li>
 	<li>
 ~RET %~error
@@ -9398,7 +9466,7 @@ WebTransportError objects are serializable objects.＼
 <ul>
 	<li class="algo">
 <p>
-その`直列化~手続き$は、
+`直列化~手続き$は、
 所与の
 ( %値, %直列形 )
 に対し：
@@ -9425,7 +9493,7 @@ Set serialized.[[StreamErrorCode]] to value.[[StreamErrorCode]].
 	</li>
 	<li class="algo">
 <p>
-その`逆直列化~手続き$は、
+`逆直列化~手続き$は、
 所与の
 ( %直列形, %値 )
 に対し：
