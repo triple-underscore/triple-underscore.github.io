@@ -2749,6 +2749,9 @@ capsule::::カプセル
 collection::::コレクション
 record::::レコード
 table::::テーブル
+row:
+col:column
+cell:
 field::::フィールド
 slot::::スロット
 prop:property:::プロパティ
