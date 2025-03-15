@@ -163,9 +163,9 @@ return text;
 
 ●●options
 
-spec_date:2024-12-17
-trans_update:2024-12-18
-source_checked:230630
+spec_date:2025-03-14
+trans_update:2025-03-15
+source_checked:250314
 page_state_key:HTML
 spec_status:LS
 original_url:https://html.spec.whatwg.org/multipage/custom-elements.html
@@ -296,6 +296,8 @@ checkpoint:
 	%反応~stack:reactionsStack
 	%引数~list:args
 	%~callback:callback
+	%切断-時の~callback:disconnectedCallback
+	%接続-時の~callback:connectedCallback
 	%属性~名:attributeName
 	%~queue:queue
 	%反応~queue:reactions
@@ -481,6 +483,9 @@ statement::文
 	注釈-:decorated with
 	選んだ:choice
 	〜から見て:as viewed by
+	登場以前:predate
+	~~任意で選べる:opt in
+	取って代わる:supercede
 
 	●未分類
 role:
@@ -549,6 +554,10 @@ MathML:
 	重ねて:twice
 	~F を返す場合:in the latter case
 	より低:lower-
+	し直-:re-
+	存在するとき:existence of
+	順に:one after the other
+	場:place
 
 ●●original_id_map
 
@@ -615,6 +624,7 @@ m.upgrade:#dom-customelementregistry-upgrade
 
 m.attachInternals:#dom-attachinternals
 m.attachShadow:~DOM4#dom-element-attachshadow
+	＠~DOM4#dom-parentnode-movebefore
 	＠~HEforms#dom-form-elements
 
 m.document.open:~HTMLdynamic#dom-document-open
@@ -876,7 +886,7 @@ attr.名前空間:~DOM4#concept-attribute-namespace
 要素の内部特能から可用か:~DOM4#shadowroot-available-to-element-internals
 属性~list:~DOM4#concept-element-attribute
 要素~interface:~DOM4#concept-element-interface
-
+移動-:~DOM4#concept-node-move-ext
 	＠~DOM4#concept-node-adopt
 	＠~DOM4#concept-element-attributes-change
 	＠~DOM4#concept-element-attributes-append
@@ -1633,7 +1643,7 @@ In addition to any default visual styling provided for taco-button elements, the
 With these points in mind, a full-featured taco-button that took on the responsibility of conveying button semantics (including the ability to be disabled) might look something like this:
 </p>
 
-<pre class="lang-js">
+<pre class="lang-js" id="custom-elements-autonomous-drawbacks-example">
 class TacoButton extends HTMLElement {
   static observedAttributes = ["disabled"];
 
@@ -1875,6 +1885,7 @@ Now that we've moved the element into the document, it too was upgraded:
 &lt;/script&gt;
 </pre>
 
+				</section>
 				<section id="exposing-custom-element-states">
 <h5 title="Exposing custom element states">4.13.1.7. ~custom要素~状態の公開-法</h5>
 
@@ -1995,8 +2006,8 @@ The element must not gain any attributes or children, as this violates the expec
 一般に、
 アリな限り，作業は
 — とりわけ，資源の~fetchingや具現化を孕むものは —
-`connectedCallback()^c へ先送りされるべきである。
-しかしながら， `connectedCallback()^c は複数回~callされ得ることに注意
+`connectedCallback^c へ先送りされるべきである。
+しかしながら， `connectedCallback^c は複数回~callされ得ることに注意
 — 初期化を行うような~~真に一度限りの作業は、
 重ねて走らないよう，防護する必要がある。
 ◎
@@ -2037,9 +2048,9 @@ When authoring custom element reactions, authors should avoid manipulating the n
 
 <div class="example">
 <p>
-要素の `connectedCallback()^c は，要素が切断される前に~queueされ得るが、［
+要素の `connectedCallback^c は，要素が切断される前に~queueされ得るが、［
 ~callback~queueがまだ処理されているため，もはや接続されていない要素
-］用の `connectedCallback()^c になる例：
+］用の `connectedCallback^c になる例：
 ◎
 An element's connectedCallback can be queued before the element is disconnected, but as the callback queue is still processed, it results in a connectedCallback for an element that is no longer connected:
 </p>
@@ -2068,6 +2079,109 @@ document.body.append(%parent);
 // CChild connectedCallback: isConnected = false
 </pre>
 </div>
+
+				<section id="preserving-custom-element-state-when-moved">
+<h5 title="Preserving custom element state when moved">4.13.2.1 ~custom要素が移動される際の状態の保全-法</h5>
+
+◎非規範的
+
+<p>
+~DOM~treeを操作しているとき、
+要素は，接続されている間に~tree内で`移動-$され得る。
+これは，~custom要素にも適用される。
+既定では、
+当の要素に対し［
+`disconnectedCallback^c, `connectedCallback^c
+］が順に~callされる。
+これは、
+`moveBefore()＠~DOM4#dom-parentnode-movebefore$c ~methodの登場以前における既存の~custom要素との互換性を保守するために行われる。
+このことは、
+~custom要素は，既定では
+— 除去されてから挿入し直されたかのように —
+自身の状態を設定し直すことを意味する。
+`上の例＠#custom-elements-autonomous-drawbacks-example$においては、
+その影響iにより［
+当の変異~観測器（ `_observer^c ）は切断されてから接続し直され，
+~tab~indexは設定し直される
+］ことになる。
+◎
+When manipulating the DOM tree, an element can be moved in the tree while connected. This applies to custom elements as well. By default, the "disconnectedCallback" and "connectedCallback" would be called on the element, one after the other. This is done to maintain compatibility with existing custom elements that predate the moveBefore() method. This means that by default, custom elements reset their state as if they were removed and re-inserted. In the example above, the impact would be that the observer would be disconnected and re-connected, and the tab index would be reset.
+</p>
+
+<p>
+作者は、
+`connectedMoveCallback^c を実装することで，［
+`移動-$している間も状態を保全する挙動
+］を~~任意で選べる。
+この~callbackが存在するときは、
+それが空であっても，
+`disconnectedCallback^c と `connectedCallback^c を~callする既定の挙動に取って代わるようになる。
+`connectedMoveCallback^c は、
+要素の先祖に依存する~logicを実行する場としても適切になり得る。
+例えば：
+◎
+To opt in to a state-preserving behavior while moving, the author can implement a "connectedMoveCallback". The existence of this callback, even if empty, would supercede the default behavior of calling "disconnectedCallback" and "connectedCallback". "connectedMoveCallback" can also be an appropriate place to execute logic that depends on the element's ancestors. For example:
+</p>
+
+<pre class="lang-js">
+class TacoButton extends HTMLElement {
+  static observedAttributes = ["disabled"];
+
+  constructor() {
+    super();
+    this._internals = this.attachInternals();
+    this._internals.role = "button";
+
+    this._observer = new MutationObserver(() =&gt; {
+      this._internals.ariaLabel = this.textContent;
+    });
+  }
+
+  _notifyMain() {
+    if (this.parentElement.tagName === "MAIN") {
+	  /* <span class="comment">
+先祖に依存する~logicを実行する
+◎
+Execute logic that depends on ancestors.
+</span> */
+    }
+  }
+
+  connectedCallback() {
+    this.setAttribute("tabindex", "0");
+
+    this._observer.observe(this, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+
+    this._notifyMain();
+  }
+
+  disconnectedCallback() {
+    this._observer.disconnect();
+  }
+
+  /* <span class="comment">
+次の関数を実装することで、
+この要素が~DOMの内側で移動されたときは，切断されることなく［
+~tab~indexが設定し直される／
+変異~観測器（ `_observer^c ）が登録し直される
+］ことを避けるようになる。
+◎
+Implementing this function would avoid resetting the tab index or re-registering the mutation observer when this element is moved inside the DOM without being disconnected.
+</span> */
+  connectedMoveCallback() {
+    /* <span class="comment">
+状態を保全しながら移動する間も，親は変化し得る／を変更できる
+◎
+The parent can change during a state-preserving move.
+</span> */
+    this._notifyMain();
+  }
+}
+</pre>
 
 				</section>
 			</section>
@@ -2480,7 +2594,7 @@ They do not contain any ASCII upper alphas, ensuring that the user agent can alw
 （将来において、［
 ~hyphenを包含する局所~名
 ］を伴う要素が［
-~HTML ／ ~SVG ／ ~MathML
+~HTML／~SVG／~MathML
 ］に追加されることはないので）。
 ◎
 They contain a hyphen, used for namespacing and to ensure forward compatibility (since no elements will be added to HTML, SVG, or MathML with hyphen-containing local names in the future).
@@ -2582,13 +2696,14 @@ A collection of lifecycle callbacks
 `connectedCallback^l,
 `disconnectedCallback^l,
 `adoptedCallback^l,
+`connectedMoveCallback^l,
 `attributeChangedCallback^l,
 `formAssociatedCallback^l,
 `formDisabledCallback^l,
 `formResetCallback^l,
 `formStateRestoreCallback^l
 ◎
-A map, whose keys are the strings "connectedCallback", "disconnectedCallback", "adoptedCallback", "attributeChangedCallback", "formAssociatedCallback", "formDisabledCallback", "formResetCallback", and "formStateRestoreCallback".＼
+A map, whose keys are the strings "connectedCallback", "disconnectedCallback", "adoptedCallback", "connectedMoveCallback", "attributeChangedCallback", "formAssociatedCallback", "formDisabledCallback", "formResetCallback", and "formStateRestoreCallback".＼
 </dd>
 	<dd>
 どの~keyに対応する値も，次のいずれかをとる
@@ -2717,7 +2832,7 @@ If document's browsing context is null, then return null.
 	<li>
 %定義~集合 ~LET %文書 に`関連な大域~obj$の`~custom要素~registry$の`~custom要素~定義~集合$
 ◎
-Let registry be document's relevant global object's custom element registry.object.
+Let registry be document's relevant global object's custom element registry.
 </li>
 	<li>
 ~IF［
@@ -3118,6 +3233,7 @@ If prototype is not an Object, then throw a TypeError exception.
 `connectedCallback^l,
 `disconnectedCallback^l,
 `adoptedCallback^l,
+`connectedMoveCallback^l,
 `attributeChangedCallback^l
 »
 を成す
@@ -3125,7 +3241,7 @@ If prototype is not an Object, then throw a TypeError exception.
 に対し：
 ◎
 ↑ Let lifecycleCallbacks be the ordered map＼
-«[ "connectedCallback" → null, "disconnectedCallback" → null, "adoptedCallback" → null, "attributeChangedCallback" → null ]».
+«[ "connectedCallback" → null, "disconnectedCallback" → null, "adoptedCallback" → null, "connectedMoveCallback" → null, "attributeChangedCallback" → null ]».
 ◎
 For each callbackName of the keys of lifecycleCallbacks:
 </p>
@@ -3236,7 +3352,7 @@ Set formAssociated to the result of converting formAssociatedValue to a boolean.
 に対し：
 ◎
 ↓If formAssociated is true,＼
-then for each of "formAssociatedCallback", "formResetCallback", "formDisabledCallback", and "formStateRestoreCallback" callbackName:
+then for each callbackName of « "formAssociatedCallback", "formResetCallback", "formDisabledCallback", "formStateRestoreCallback" »:
 </p>
 				<ol>
 					<li>
@@ -3956,29 +4072,34 @@ If definition is not null, then enqueue a custom element upgrade reaction given 
 ◎
 A custom element possesses the ability to respond to certain occurrences by running author code:
 </p>
-
 <ul>
 	<li>
 %要素 が`昇格$されたときは、
-`~custom要素~構築子$を引数なしで走らす。
+`~custom要素~構築子$が引数なしで走る。
 ◎
 When upgraded, its constructor is run, with no arguments.
 </li>
 	<li>
 %要素 が`接続されたとき$は、
-%要素 の `connectedCallback()^c が引数なしで~callされる。
+%要素 の `connectedCallback^c が引数なしで~callされる。
 ◎
 When it becomes connected, its connectedCallback is called, with no arguments.
 </li>
 	<li>
 %要素 が`切断されたとき$は、
-%要素 の `disconnectedCallback()^c が引数なしで~callされる。
+%要素 の `disconnectedCallback^c が引数なしで~callされる。
 ◎
 When it becomes disconnected, its disconnectedCallback is called, with no arguments.
 </li>
 	<li>
+%要素 が`移動-$されたときは、
+%要素 の `connectedMoveCallback^c が引数なしで~callされる。
+◎
+When it is moved, its connectedMoveCallback is called, with no arguments.
+</li>
+	<li>
 %要素 が他の文書に`受入された＠~DOM4#concept-node-adopt$ときは、
-%要素 の `adoptedCallback()^c が
+%要素 の `adoptedCallback^c が
 ( 旧-文書, 新-文書 )
 を引数に~callされる。
 ◎
@@ -3991,7 +4112,7 @@ When it is adopted into a new document, its adoptedCallback is called, given the
 `除去された＠~DOM4#concept-element-attributes-remove$ ／
 `置換された＠~DOM4#concept-element-attributes-replace$
 ］ときは、
-%要素 の `attributeChangedCallback()^c が当の属性の
+%要素 の `attributeChangedCallback^c が当の属性の
 ( `局所~名$attr, 旧-`値$attr, 新-`値$attr, `名前空間$attr )
 を引数に~callされる
 （属性が［
@@ -4010,24 +4131,28 @@ When any of its attributes are changed, appended, removed, or replaced, its attr
 ↓</p>
 		<ul>
 			<li>
+［
 %要素 の`~form所有者を設定し直す$ことにより，
-%要素 の`~form所有者$が変化したときは、
-%要素 の `formAssociatedCallback()^c が
+%要素 の`~form所有者$が変化した
+］ときは、
+%要素 の `formAssociatedCallback^c が
 ( 変化-後の~form所有者（ ~NULL にもなり得る） )
 を引数に~callされる。
 ◎
 When the user agent resets the form owner of a form-associated custom element and doing so changes the form owner, its formAssociatedCallback is called, given the new form owner (or null if no owner) as an argument.
 </li>
 			<li>
+［
 `~formを再設定する$ことにより，
-%要素 の`再設定~algo$が呼出されるときは、
-%要素 の `formResetCallback()^c が~callされる。
+%要素 の`再設定~algo$が呼出された
+］ときは、
+%要素 の `formResetCallback^c が~callされる。
 ◎
 When the form owner of a form-associated custom element is reset, its formResetCallback is called.
 </li>
 			<li>
 %要素 が`不能化されて$feいるか否かが変化したときは、
-%要素 の `formDisabledCallback()^c が
+%要素 の `formDisabledCallback^c が
 ( 新たな状態 )
 を引数に~callされる。
 ◎
@@ -4036,9 +4161,9 @@ When the disabled state of a form-associated custom element is changed, its form
 			<li>
 ~UAが［
 利用者に利するため／
-`~naviの一部＠~HTMLnav#restore-persisted-state$として
-］，`~formに所有され得る~custom要素$の値【`値＠~HTMLforms#concept-fe-value$？】を更新したときは、
-%要素 の `formStateRestoreCallback()^c が
+`~naviの一部＠~HTMLnav#restore-persisted-state$
+］として`~formに所有され得る~custom要素$の値【`値＠~HTMLforms#concept-fe-value$？】を更新したときは、
+%要素 の `formStateRestoreCallback^c が
 ( 新たな状態, 理由を指示する文字列［
 `autocomplete^l ／ `restore^l
 ］ )
@@ -4320,6 +4445,67 @@ Let definition be element's custom element definition.
 Let callback be the value of the entry in definition's lifecycle callbacks with key callbackName.
 </li>
 	<li>
+<p>
+~IF［
+%~callback名 ~EQ `connectedMoveCallback^l
+］~AND［
+%~callback ~EQ ~NULL
+］：
+◎
+If callbackName is "connectedMoveCallback" and callback is null:
+</p>
+		<ol>
+			<li>
+%切断-時の~callback ~LET %定義 の`~lifecycle~callback~map$cD[ `disconnectedCallback^l ]
+◎
+Let disconnectedCallback be the value of the entry in definition's lifecycle callbacks with key "disconnectedCallback".
+</li>
+			<li>
+%接続-時の~callback ~LET %定義 の`~lifecycle~callback~map$cD[ `connectedCallback^l ]
+◎
+Let connectedCallback be the value of the entry in definition's lifecycle callbacks with key "connectedCallback".
+</li>
+			<li>
+~IF［
+%接続-時の~callback ~EQ ~NULL
+］~AND［
+%切断-時の~callback ~EQ ~NULL
+］
+⇒
+~RET
+◎
+If connectedCallback and disconnectedCallback are null, then return.
+</li>
+			<li class="algo">
+<p>
+%~callback ~SET 次の手続き：
+◎
+Set callback to the following steps:
+</p>
+				<ol>
+					<li>
+~IF［
+%切断-時の~callback ~NEQ ~NULL
+］
+⇒
+%切断-時の~callback を引数なしで~callする
+◎
+If disconnectedCallback is not null, then call disconnectedCallback with no arguments.
+</li>
+					<li>
+~IF［
+%接続-時の~callback ~NEQ ~NULL
+］
+⇒
+%接続-時の~callback を引数なしで~callする
+◎
+If connectedCallback is not null, then call connectedCallback with no arguments.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+	<li>
 ~IF［
 %~callback ~EQ ~NULL
 ］
@@ -4331,10 +4517,10 @@ If callback is null, then return.
 	<li>
 <p>
 ~IF［
-%~callback名 ~EQ  `attributeChangedCallback^l
+%~callback名 ~EQ `attributeChangedCallback^l
 ］：
 ◎
-If callbackName is "attributeChangedCallback", then:
+If callbackName is "attributeChangedCallback":
 </p>
 		<ol>
 			<li>
@@ -4532,8 +4718,8 @@ The [CEReactions] extended attribute must take no arguments, and must not appear
 演算, 属性, 設定子, 削除子
 ］に対しては、
 その［
-演算 ／ 設定子 ／ 削除子 ／ 属性の設定子
-］の記述に指定されている手続き %手続き に代えて，次を走らすモノトスル：
+演算／設定子／削除子／属性の設定子
+］の記述に指定された手続き %手続き に代えて，次を走らすモノトスル：
 ◎
 Operations, attributes, setters, or deleters annotated with the [CEReactions] extended attribute must run the following steps in place of the ones specified in their description:
 </p>
@@ -4549,7 +4735,7 @@ Push a new element queue onto this object's relevant agent's custom element reac
 ◎
 ↓</li>
 	<li>
-%値 ~SET %手続き を走らせた結果
+%値 ~SET %手続き を【渡された引数を そのまま渡して】走らせた結果
 ⇒
 例外が投出されたときは、
 ~catchして
@@ -4618,7 +4804,7 @@ and to allow implementers to optimize away unnecessary cases (where no DOM mutat
 — ある実装は、
 一部の事例で，この手続きを呼出すのを忘れるかもしれない。
 相互運用可能な挙動を確保する代わりの仕方として、
-次の~approachにより決着された
+次の~approachに決着した
 ⇒
 関連な どの~IDL構成子にも，この拡張d属性で明示的に注釈して、
 この手続きが必要yな事例~すべてを，実装者が容易に見分けられるようする。
@@ -4642,7 +4828,7 @@ Any nonstandard APIs introduced by the user agent that could modify the DOM in s
 
 <div class="note">
 <p>注記：
-これを書いている時点では、
+これを書いた時点では、
 次に挙げる［
 標準でない, または標準~化されていない
 ］~APIが，これに該当するものとして知られている：
@@ -4831,14 +5017,14 @@ Form-associated custom elements
   boolean `checkValidity$eI();
   boolean `reportValidity$eI();
 
+  readonly attribute `NodeList$I `labels$eI;
+
   /* <span class="comment">
 `~custom状態~疑似類＠#custom-state-pseudo-class$
 ◎
 Custom state pseudo-class
 </span> */
   [SameObject] readonly attribute `CustomStateSet$I `states$eI;
-
-  readonly attribute `NodeList$I `labels$eI;
 };
 
 /* <span class="comment">
@@ -4990,7 +5176,7 @@ Marks internals's target element as suffering from the constraints indicated by 
 	<dd>
 %anchor も指定された場合、
 ~UAは，［
-`~form所有者$は対話的に検証された ／ `reportValidity()$eI が~callされた
+`~form所有者$は対話的に検証された／ `reportValidity()$eI が~callされた
 ］とき［
 %internals の`~target要素$iNの拘束についての問題を指示する
 ］ために，それを利用するかもしれない。
@@ -5069,34 +5255,41 @@ Returns a NodeList of all the label elements that internals's target element is 
 </dd>
 </dl>
 
+<div>
 <p>
 各`~formに所有され得る~custom要素$は、
-次に挙げるものを有する：
-◎
-↓</p>
+`提出~値@cF,
+`状態@cF
+を有する：
+</p>
 <ul>
 	<li>
-`提出~値@cF
-⇒
-~form提出~用に 1 個~以上の`~entry$fDを供するために利用される。
-次に挙げる いずれかの値をとり，初期~時は ~NULL とする
+どちらも，
+次に挙げる いずれかの値をとる
 ⇒＃
 ~NULL ／
-文字列 ／
-`File$I ~obj ／
+文字列／
+`File$I ~obj／
 `~entry~list$【！`~entry$fDが成す`~list$】
-◎
-Each form-associated custom element has submission value. It is used to provide one or more entries on form submission. The initial value of submission value is null, and submission value can be null, a string, a File, or a list of entries.
 </li>
 	<li>
-`状態@cF
-⇒
-この要素~用に，~UAが利用者の入力を復旧できる情報。
-`提出~値$cFと同じ範囲の値をとり，初期~時は ~NULL とする。
-◎
-Each form-associated custom element has state. It is information with which the user agent can restore a user's input for the element. The initial value of state is null, and state can be null, a string, a File, or a list of entries.
+どちらも，
+初期~時は ~NULL とする。
+</li>
+	<li>
+`提出~値$cFは、
+~form提出~用に 1 個~以上の`~entry$fDを供するために利用される。
+</li>
+	<li>
+`状態$cFは、
+この要素~用に，~UAが利用者の入力を復旧できる情報を与える。
 </li>
 </ul>
+◎
+Each form-associated custom element has submission value. It is used to provide one or more entries on form submission. The initial value of submission value is null, and submission value can be null, a string, a File, or a list of entries.
+◎
+Each form-associated custom element has state. It is information with which the user agent can restore a user's input for the element. The initial value of state is null, and state can be null, a string, a File, or a list of entries.
+</div>
 
 <p>
 ~custom要素の作者は、
@@ -5113,31 +5306,39 @@ The setFormValue() method is used by the custom element author to set the elemen
 ◎
 ↓</p>
 <ul>
-	<li>
-%要素 の`状態$cFを復旧することが良案になると予見するときには
+	<li class="algo">
+<p>
+%要素 の`状態$cFを復旧することが良案になると
 — 例えば，`~naviの後＠~HTMLnav#restore-persisted-state$や再起動~後に —
-次をしてもヨイ
-⇒
-`~custom要素~callback反応を~enqueueする$(
-%要素,
-`formStateRestoreCallback^l,
-« 復旧されることになる状態, `restore^l »
-)
+予見するときには、
+次を遂行してもヨイ：
+</p>
+		<ol>
+			<li>
+%状態 ~LET 復旧されることになる状態
+</li>
+			<li>
+`~custom要素~callback反応を~enqueueする$( %要素, `formStateRestoreCallback^l, « %状態, `restore^l » )
+</li>
+		</ol>
 ◎
 When the user agent believes it is a good idea to restore a form-associated custom element's state, for example after navigation or restarting the user agent, they may enqueue a custom element callback reaction with that element, callback name "formStateRestoreCallback", and « the state to be restored, "restore" ».
 </li>
-	<li>
-~formを埋めるための支援-特能を備えていて，当の特能が呼出されたときは、
-次をしてもヨイ
-⇒
-`~custom要素~callback反応を~enqueueする$(
-%要素, 
-`formStateRestoreCallback^l,
-« ［
+	<li class="algo">
+<p>
+~formを埋めるための支援-特能を有していて，当の特能が呼出されたときは、
+次を遂行してもヨイ：
+</p>
+		<ol>
+			<li>
+%状態 ~LET ［
 状態~値の履歴, 何らかの経験則
-］により決定される状態~値,
-`autocomplete^l »
-)
+］により決定される状態~値
+</li>
+			<li>
+`~custom要素~callback反応を~enqueueする$( %要素, `formStateRestoreCallback^l, « %状態, `autocomplete^l » )
+</li>
+		</ol>
 ◎
 If the user agent has a form-filling assist feature, then when the feature is invoked, it may enqueue a custom element callback reaction with a form-associated custom element, callback name "formStateRestoreCallback", and « the state value determined by history of state value and some heuristics, "autocomplete" ».
 </li>
@@ -5156,12 +5357,12 @@ In general, the state is information specified by a user, and the submission val
 </p>
 
 <p class="example">
-`~formに所有され得る~custom要素$が在って，日付を指定するよう利用者に依頼するとする。
+`~formに所有され得る~custom要素$が在って，日付を指定するよう利用者に依頼したとする。
 利用者は
 "<kbd>3/15/2019</kbd>"
-と指定したが，~controlは
+を指定したが，~controlは
 `2019-03-15^l
-を~serverへ提出したいと望む場合、
+を~serverへ提出するよう望む場合、
 要素の
 ⇒＃
 `状態$cFは "<kbd>3/15/2019</kbd>" になる／
@@ -5284,7 +5485,7 @@ Each form-associated custom element has validity flags named valueMissing, typeM
 
 <p class="trans-note">【
 原文では，これら各~memberと同じ名前の~flagを列挙している
-（加えて `badInput^m も抜けている）が、
+（加えて， `badInput^m に対応する~flagも欠落である）が、
 総称し易くするため，この訳ではこの用語に代えることにする。
 】【†
 値 ~T は、
@@ -5303,7 +5504,7 @@ Each form-associated custom element has a validation message string. It is the e
 	<li>
 `検証~anchor@cF
 ⇒
-要素／ ~NULL
+~NULL ／要素
 — 初期~時は ~NULL とする。
 【拘束を`対話的に検証する$ときに利用される。】
 ◎
