@@ -136,8 +136,8 @@ return text;
 
 ●●options
 
-spec_date:2024-10-22
-trans_update:2024-11-10
+spec_date:2025-03-20
+trans_update:2025-03-20
 source_checked:231212
 original_url:https://ietf-wg-webtrans.github.io/draft-ietf-webtrans-http3/draft-ietf-webtrans-http3.html
 	abbr_url:WT-HTTP3
@@ -189,6 +189,14 @@ abstract:
 	fig-bidi-client:figure-3
 	fig-remap-errors:name-pseudocode-for-converting-b
 	fig-remap-errors:figure-4
+	fig-wt_max_streams:name-wt_max_streams-capsule-form
+	fig-wt_max_streams:figure-5
+	fig-wt_streams_blocked:name-wt_streams_blocked-capsule-
+	fig-wt_streams_blocked:figure-6
+	fig-wt_max_data:name-wt_max_data-capsule-format
+	fig-wt_max_data:figure-7
+	fig-wt_data_blocked:name-wt_data_blocked-capsule-for
+	fig-wt_data_blocked:figure-8
 
 ●●link_map
 
@@ -216,14 +224,19 @@ st.404:~HTTPsem#status.404
 st.403:~HTTPsem#status.403
 st.2xx:~HTTPsem#status.2xx
 st.3xx:~HTTPsem#status.3xx
-st.429:~RFC6585#status-429
 
 cps.CLOSE_WEBTRANSPORT_SESSION:#CLOSE_WEBTRANSPORT_SESSION
 cps.DRAIN_WEBTRANSPORT_SESSION:#DRAIN_WEBTRANSPORT_SESSION
+cps.WT_MAX_STREAMS:#WT_MAX_STREAMS
+cps.WT_STREAMS_BLOCKED:#WT_STREAMS_BLOCKED
+cps.WT_MAX_DATA:#WT_MAX_DATA
+cps.WT_DATA_BLOCKED:#WT_DATA_BLOCKED
+	cps.WT_STREAM:？
 
 ft.WEBTRANSPORT_STREAM:#WEBTRANSPORT_STREAM
 ft.RESET_STREAM:~RFCx/rfc9000#frame-reset-stream
 ft.STOP_SENDING:~RFCx/rfc9000#frame-stop-sending
+ft.MAX_STREAMS:~RFCx/rfc9000#frame-max-streams
 ft.CONNECTION_CLOSE:~RFCx/rfc9000#frame-connection-close
 ft.DATAGRAM:~RFCx/rfc9221#datagram-frame-types
 ft.SETTINGS:~HTTPv3#frame-settings
@@ -232,9 +245,14 @@ ft.PRIORITY_UPDATE:~HTTPpriority#frame
 ft.RESET_STREAM_AT:https://datatracker.ietf.org/doc/html/draft-ietf-quic-reliable-stream-reset#name-reset_stream_at-frame
 
 sp.SETTINGS_WEBTRANSPORT_MAX_SESSIONS:#SETTINGS_WEBTRANSPORT_MAX_SESSIONS
+sp.SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA:#SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA
+sp.SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI:#SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI
+sp.SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI:#SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI
+
 sp.SETTINGS_H3_DATAGRAM:~HTTPdatagram#setting
 	~HTTPdatagram#section-2.1.1
 	sp.SETTINGS_ENABLE_CONNECT_PROTOCOL:~RFCx/rfc8441#
+
 
 ~HTTP~datagram:~HTTPdatagram#dfn-http-datagram
 ~HTTP3~datagram:~HTTPdatagram#format
@@ -261,6 +279,8 @@ er.H3_REQUEST_REJECTED:~HTTPv3#H3_REQUEST_REJECTED
 要請~message:~HTTPinfra#request
 応答~message:~HTTPinfra#response
 媒介者:~HTTPinfra#intermediary
+隣点間:~HTTPinfra#hop-by-hop
+端点間:~HTTPinfra#end-to-end
 
 ~HTTP3接続:~HTTPv3#h3-connection
 ~stream~ID:~HTTPv3#quic-stream-id
@@ -284,6 +304,7 @@ er.H3_REQUEST_REJECTED:~HTTPv3#H3_REQUEST_REJECTED
 ~reset:~RFCx/rfc9000#stream-operations
 ~capsule:~HTTPdatagram#dfn-capsule
 ~capsule~protocol:~HTTPdatagram#dfn-capsule-protocol
+1.~capsule~protocol:~HTTPdatagram#capsule-protocol
 	~HTTPdatagram#section-3
 	~HTTPdatagram#name-capsules
 
@@ -291,12 +312,13 @@ er.H3_REQUEST_REJECTED:~HTTPv3#H3_REQUEST_REJECTED
 ~sf~list:~STRUCTURED-FIELDS#sf-list
 ~sf~token:~STRUCTURED-FIELDS#sf-token
 
+cite.~HTTP2越しの~WebTransport:https://ietf-wg-webtrans.github.io/draft-ietf-webtrans-http2/draft-ietf-webtrans-http2.html
+
 ●●words_table1
 
 WEBTRANSPORT:webtransport-ja.html
 WT-OVERVIEW:webtrans-overview-ja.html
 HTTPdatagram:http-datagram-ja.html
-RFC6585:http-status-code-428-429-431-511-ja.html
 
 sf:<sub>sf-</sub>
 
@@ -306,6 +328,7 @@ sf:<sub>sf-</sub>
 QUIC:
 WebTransport:
 HTTP3:HTTP/3
+HTTP2:HTTP/2
 HTTP11:HTTP/1.1
 CONNECT:
 URI:
@@ -346,6 +369,11 @@ handshake::::ハンドシェイク
 受信器:receiver::~
 運ぶ:carryする:~
 不正形:malformed:~
+端点間:end-to-end::~
+隣点間:hop-by-hop::~
+隣点:hop::~
+広告-:advertise:~
+受領:receipt::~
 
 	^en:head-of-line~blocking
 
@@ -366,6 +394,8 @@ payload::::ペイロード
 	~HTTP~datagram:HTTP Datagram
 	~datagram^i:Datagram
 	~HTTP~datagram~payload^i:HTTP Datagram Payload
+	最大~stream数^i:Maximum Streams
+	最大~data量^i:Maximum Data
 
 	●処理
 reset:
@@ -385,12 +415,16 @@ clean:
 open:
 close:
 credit:
-rate::::レート
 schedule::::スケジュール
 	~schedule法:scheduling
 pool:
 解凍:decompression::~
 圧縮:compression::~
+翻訳-:translate:~
+調律-:tune::~
+繰返し:repeatedly:繰り返し
+
+	表出し直す:reexpress
 
 	●保安
 枯渇-:exhaust:~
@@ -426,6 +460,10 @@ Upgrade:
 メモ:memo:~
 必要最小限:minimal:~
 独立性:independence:~
+禁制-:prohibit:~
+責務:responsibilty:~
+	責務がある:responsible for
+	責務を負いたくない:does not want to be responsible for
 
 	課され:impose
 	と称される:referred to as
@@ -441,6 +479,7 @@ Upgrade:
 	~~追加の:extra
 	見込みが高いこともある:can likely
 	~~任意で~~選べる:opt
+	総称される:referred to as
 
 	●言い換え
 	1 以上の値:greater than "0"
@@ -449,6 +488,7 @@ Upgrade:
 	相手の端点:peer
 	双方の端点:peer
 	双方の端点:the peer
+	双方の端点:both endopoint
 	所有者であること:ownership
 	〜能力がある:〜-capable
 	順に:correspondingly
@@ -466,6 +506,11 @@ Upgrade:
 	何かを意見するものではない:unopinionated
 	~byte列:bytestring
 	single choice from:選んだ いずれか 1 つ
+	未満になる:cannot exceed
+	阻まれるようになった時点:at which blocking occurred
+	最大~数:max
+	~capsule$:HTTP capsule
+	それを指定した:the specified
 
 	●未分類
 衝突:collision:~
@@ -480,19 +525,24 @@ Upgrade:
 維持-:retain:~
 追従-:follow:~
 上限:limit:~
+総和:sum:~
 内包-:include::~
 欠如:lack:~
 欠如-:lack:~
 数えら:countさ:~
-	向かって数えられる:counted against
-量:amount:~
 後続-:follow:~
 対応-:correspond:~
 対応付直さな:remapしな::対応付け直さな
 lifecycle:
 給-:supply:~
 多層化:layering::~
+存続期間:lifetime:~
+最終-:final:~
+伝える:informする:~
+累積的:cumulative:~
 
+	量:amount
+	量:how much
 	上層:on top of
 	~sf~token$:Token
 	~sf~list$:List
@@ -523,6 +573,16 @@ lifecycle:
 	他のもの:anything else
 	始まる:begin
 	残り:the remainder
+	〜 乗<sup>〜</sup>
+	表出し直す:reexpress
+	それまでに:previously
+	前回より増やされた:increasing
+	非-:non-
+	総:total
+	時点で:at the time
+	を超える:higher
+	0 以外の:non-zero
+	全体:as a whole
 
 
 ●●ref_data
@@ -541,7 +601,7 @@ WEBSOCKET:RFC6455
 [HTTP3]
     Bishop, M., Ed., "HTTP/3", ~RFC9114, June 2022
 [OVERVIEW]
-    Vasiliev, V., "The WebTransport Protocol Framework", Work in Progress, Internet-Draft, draft-ietf-webtrans-overview-08, 25 August 2024
+    Vasiliev, V., "The WebTransport Protocol Framework", Work in Progress, Internet-Draft
     URL: https://datatracker.ietf.org/doc/html/draft-ietf-webtrans-overview
 [QUIC-DATAGRAM]
     Pauly, T., Kinnear, E., and D. Schinazi, "An Unreliable Datagram Extension to QUIC", ~RFC9221, March 2022
@@ -554,8 +614,6 @@ WEBSOCKET:RFC6455
     Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform Resource Identifier (URI): Generic Syntax", STD 66, ~RFC3986, January 2005
 [RFC6454]
     Barth, A., "The Web Origin Concept", ~RFC6454, December 2011
-[RFC6585]
-    Nottingham, M. and R. Fielding, "Additional HTTP Status Codes", ~RFC6585, April 2012
 [RFC8174]
     Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words", BCP 14, ~RFC8174, May 2017
 [RFC8441]
@@ -577,7 +635,7 @@ WEBSOCKET:RFC6455
 
 ●●ref_informative
 [I-D.ietf-webtrans-http2]
-    Frindell, A., Kinnear, E., Pauly, T., Thomson, M., Vasiliev, V., and G. Xie, "WebTransport over HTTP/2", Work in Progress, Internet-Draft, draft-ietf-webtrans-http2-10, 21 October 2024,
+    Frindell, A., Kinnear, E., Pauly, T., Thomson, M., Vasiliev, V., and G. Xie, "WebTransport over HTTP/2", Work in Progress, Internet-Draft,
     URL: https://datatracker.ietf.org/doc/html/draft-ietf-webtrans-http2
 [RFC6455]
     Fette, I. and A. Melnikov, "The WebSocket Protocol", ~RFC6455, December 2011
@@ -684,15 +742,12 @@ The web API draft corresponding to this document can be found at &lt;https://w3c
 `~IETF日本語訳 共通~page＠~IETFcommon#status-draft$に移譲。
 】</p>
 
-<!-- 
-This Internet-Draft will expire on 14 June 2024.
--->
 	</section>
 	<section id="copyright">
 <h2 title="Copyright Notice">著作権の告知</h2>
 
 <p lang="en">
-Copyright (c) 2024 IETF Trust and the persons identified as the document authors. All rights reserved.
+Copyright (c) 2025 IETF Trust and the persons identified as the document authors. All rights reserved.
 </p>
 
 <p class="trans-note">【
@@ -1041,7 +1096,7 @@ A WebTransport session is terminated when the CONNECT stream that created it is 
 <h2 title="Session Establishment">3. ~sessionの確立</h2>
 
 		<section id="establishing">
-<h3 title="Establishing a Transport-Capable HTTP/3 Connection">3.1. ~transport能力がある~HTTP3接続の確立-法</h3>
+<h3 title="Establishing a WebTransport-Capable HTTP/3 Connection">3.1. ~WebTransport能力がある~HTTP3接続の確立-法</h3>
 
 <p>
 ~WebTransport用の~supportを指示するためには、
@@ -1056,7 +1111,7 @@ A WebTransport session is terminated when the CONNECT stream that created it is 
 （ `~Upgrade~tokenの登録＠#upgrade-token§を見よ），
 ~WebTransport用の~supportを指示する。
 ◎
-In order to indicate support for WebTransport, the server MUST send a SETTINGS_WEBTRANSPORT_MAX_SESSIONS value greater than "0" in its SETTINGS frame. The default value for the SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter is "0", meaning that the endpoint is not willing to receive any WebTransport sessions. Note that the client does not need to send any value to indicate support for WebTransport; clients indicate support for WebTransport by using the "webtransport" upgrade token in CONNECT requests establishing WebTransport sessions (see Section 8.1).
+In order to indicate support for WebTransport, the server MUST send a SETTINGS_WEBTRANSPORT_MAX_SESSIONS value greater than "0" in its SETTINGS frame. The default value for the SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter is "0", meaning that the endpoint is not willing to receive any WebTransport sessions. Note that the client does not need to send any value to indicate support for WebTransport; clients indicate support for WebTransport by using the "webtransport" upgrade token in CONNECT requests establishing WebTransport sessions (see Section 9.1).
 </p>
 
 <p>
@@ -1357,70 +1412,8 @@ Both WT-Available-Protocols and WT-Protocol are Structured Fields [RFC8941]. WT-
 </p>
 
 		</section>
-		<section id="limiting-the-number-of-simultaneous-sessions">
-<h3 title="Limiting the Number of Simultaneous Sessions">3.5. 同時な~sessionの個数の制限-法</h3>
-
-<p>
-この文書は、
-`SETTINGS_WEBTRANSPORT_MAX_SESSIONS$sp ~parameterを定義する
-— それは、
-単独の`~HTTP3接続$上で同時並行な`~WebTransport~session$の最大~個数を制限することを
-~serverに許容する。
-~clientは、
-~serverからの `SETTINGS$ft ~parameter内に指示された個数より多い~sessionを~openしては`ナラナイ^2119。
-~serverは、
-~clientがこの上限を超過している~sessionを~openした場合でも，
-当の接続を~closeしては`ナラナイ^2119
-— ~WebTransport~protocolの非同期的な資質に因り、
-~openな~sessionの個数についての~viewは，~clientと~serverとで整合でない【ときもある】ので。
-代わりに，［
-`~CONNECT~stream$のうち，自身が処理する用意がないもの
-］すべてを `HTTP3$r にて定義される `H3_REQUEST_REJECTED$er 【！HTTP_REQUEST_REJECTED】状態sで`~reset$しなければ`ナラナイ^2119。
-◎
-This document defines a SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter that allows the server to limit the maximum number of concurrent WebTransport sessions on a single HTTP/3 connection. The client MUST NOT open more sessions than indicated in the server SETTINGS parameters. The server MUST NOT close the connection if the client opens sessions exceeding this limit, as the client and the server do not have a consistent view of how many sessions are open due to the asynchronous nature of the protocol; instead, it MUST reset all of the CONNECT streams it is not willing to process with the HTTP_REQUEST_REJECTED status defined in [HTTP3].
-</p>
-
-<p>
-他の~HTTP要請と同じく，
-`~WebTransport~session$たち, それらに対し送信される~dataは、
-~flow制御の上限に向かって数えられる。
-この文書は、［
-各`~WebTransport~session$により消費される~flow制御~creditの量
-］を［
-異なる~sessionどうしで相対的に制限する
-］ための［
-端点~用の追加的な仕組み
-］を導入しない。
-しかしながら、
-~serverが［
-特定0の~session上の流入~要請たちの~rateを制限する
-］よう望む場合，
-代替な仕組みがある：
-◎
-Just like other HTTP requests, WebTransport sessions, and data sent on those sessions, are counted against flow control limits. This document does not introduce additional mechanisms for endpoints to limit the relative amount of flow control credit consumed by different WebTransport sessions, however servers that wish to limit the rate of incoming requests on any particular session have alternative mechanisms:
-</p>
-<ul>
-	<li>
-`HTTP3$r にて定義される~error~code `H3_REQUEST_REJECTED$er【！HTTP_REQUEST_REJECTED】 は、［
-当の要請は，どの仕方でも処理されなかった
-］ことを受信している~HTTP3~stackに対し指示する。
-◎
-The HTTP_REQUEST_REJECTED error code defined in [HTTP3] indicates to the receiving HTTP/3 stack that the request was not processed in any way.
-</li>
-	<li>
-~HTTP状態s~code `429$st `RFC6585$r は、［
-当の要請は，~rate制限-法に因り却下された
-］ことを指示する。
-前項と違って、
-この通達は，応用へ直に伝播される。
-◎
-HTTP status code 429 indicates that the request was rejected due to rate limiting [RFC6585]. Unlike the previous method, this signal is directly propagated to the application.
-</li>
-</ul>
-
-		</section>
 		<section id="prioritization">
-<h3 title="Prioritization">3.6. 優先度化</h3>
+<h3 title="Prioritization">3.5. 優先度化</h3>
 
 <p>
 各`~WebTransport~session$は、
@@ -1896,10 +1889,11 @@ HTTP/3 defines a graceful shutdown mechanism (Section 5.2 of [HTTP3]) that allow
 
 <p>
 `GOAWAY$ft ~frameを受信した~clientは、
-新たな`~WebTransport~session$用の `CONNECT$m 要請を起動し得ない
-— 当の【何の？】~stream識別子が指示された`~stream~ID$以上の場合には。
+当の`~HTTP3接続$に対し，新たな`~WebTransport~session$用の `CONNECT$m 要請を起動し得ない
+— 同じ相手の端点との新たな`~WebTransport~session$を起動するためには、
+新たな`~HTTP3接続$を~openしなければならない。
 ◎
-A client receiving GOAWAY cannot initiate CONNECT requests for new WebTransport sessions if the stream identifier is equal to or greater than the indicated stream ID.
+A client receiving GOAWAY cannot initiate CONNECT requests for new WebTransport sessions on that HTTP/3 connection; it must open a new HTTP/3 connection to initiate new WebTransport sessions with the same peer.
 </p>
 
 <p>
@@ -1971,7 +1965,7 @@ After sending or receiving either a DRAIN_WEBTRANSPORT_SESSION capsule or a HTTP
 ］の直列化に設定されたそれ —
 でなければ`ナラナイ^2119【！SHALL】。
 ◎
-WebTransport over HTTP/3 supports the use of TLS keying material exporters [RFC8446], Section 7.5. Since the underlying QUIC connection may be shared by multiple WebTransport sessions, WebTransport defines its own mechanism for deriving a TLS exporter that separates keying material for different sessions. If the user requests an exporter for a given WebTransport session with a specified label and context, the resulting exporter SHALL be a TLS exporter as defined in [RFC8446], Section 7.5 with the label set to "EXPORTER-WebTransport" and the context set to the serialization of the "WebTransport Exporter Context" struct as defined below.
+WebTransport over HTTP/3 supports the use of TLS keying material exporters [RFC8446], Section 7.5. Since the underlying QUIC connection may be shared by multiple WebTransport sessions, WebTransport defines its own mechanism for deriving a TLS exporter that separates keying material for different sessions. If the user requests an exporter for a given WebTransport session with a specified label and context, the resulting exporter SHALL be a TLS exporter as defined in[RFC8446], Section 7.5 with the label set to "EXPORTER-WebTransport" and the context set to the serialization of the "WebTransport Exporter Context" struct as defined below.
 </p>
 
 <pre class="frame-diagram">
@@ -2004,8 +1998,763 @@ A TLS exporter API might permit the context field to be omitted. In this case, a
 
 		</section>
 	</section>
+	<section id="flow-control">
+<h2 title="Flow Control">5. ~flow制御</h2>
+
+<p>
+~flow制御は、［
+消費できる資源／送信できる~data
+］の量を統治する。
+端点は、
+~HTTP3越しの~WebTransportを利用しているときは，
+次を制限できる：
+◎
+Flow control governs the amount of resources that can be consumed or data that can be sent. When using WebTransport over HTTP/3, endpoints can limit＼
+</p>
+
+<ul>
+	<li>
+相手の端点が単独の~HTTP3接続~上で作成できる~sessionの個数
+◎
+the number of sessions that a peer can create on a single HTTP/3 connection＼
+</li>
+	<li>
+相手の端点が ある~sessionの中で作成できる~streamの個数
+◎
+and the number of streams that a peer can create within a session.＼
+</li>
+	<li>
+各~sessionが消費できる~data量
+◎
+Endpoints can also limit the amount of data that can be consumed by each session＼
+</li>
+	<li>
+ある~sessionの中の各~streamが消費できる~data量
+◎
+and by each stream within a session.
+</li>
+</ul>
+
+<p>
+~HTTP3越しの~WebTransportは：
+◎
+WebTransport over HTTP/3＼
+</p>
+<ul>
+	<li>
+接続~levelの上限を供する
+— それは、
+所与の~HTTP3接続に対し
+⇒
+そこで作成できる~sessionの個数を統治する
+— `同時な~session数の制限-法＠#flow-control-limit-sessions§を見よ。
+◎
+provides connection-level limit that governs the number of sessions that can be created on an HTTP/3 connection; see Section 5.1.＼
+</li>
+	<li>
+<p>
+~session~levelの上限も供する
+— それは、
+所与の~sessionに対し：
+</p>
+		<ul>
+			<li>
+そこで作成できる~streamの個数を統治する
+— `~sessionの中の~stream数の制限-法＠#flow-control-limit-streams§
+を見よ。
+</li>
+			<li>
+その中のすべての~streamにわたって交換できる総~data量を制限する
+【— `~data上限＠#flow-control-limit-data§を見よ】。
+</li>
+		</ul>
+◎
+It also provides the session-level limits that govern the number of streams that can be created in a session and limit the amount of data that can be exchanged across all streams in each session; see Section 5.2.
+</li>
+</ul>
+
+<p>
+下層の~QUIC接続も［
+接続~level, ~stream~level
+］の~flow制御を供する。
+接続に対する~data上限は、［
+すべての`~WebTransport~session$,
+他の非-~WebTransport~stream
+］にわたって送信できる~dataの総~量を定義する。
+~streamに対する~data上限は、
+~WebTransport~streamか否かを問わず，
+当の~stream上に送信できる~dataの量を制御する
+— `RFC9000$r `~flow制御＠~RFCx/rfc9000#flow-control§ を見よ。
+◎
+The underlying QUIC connection provides connection and stream level flow control. The connection data limit defines the total amount of data that can be sent across all WebTransport sessions and other non-WebTransport streams. A stream's data limit controls the amount of data that can be sent on that stream, WebTransport or otherwise; see Section 4 of [RFC9000].
+</p>
+
+		<section id="flow-control-limit-sessions">
+<h3 title="Limiting the Number of Simultaneous Sessions">5.1. 同時な~session数の制限-法</h3>
+
+<p>
+この文書は、
+`SETTINGS_WEBTRANSPORT_MAX_SESSIONS$sp ~parameterを定義する
+— それは、
+単独の`~HTTP3接続$上で同時並行な`~WebTransport~session$の最大~個数を制限することを
+~serverに許容する。
+~clientは、
+~serverからの `SETTINGS$ft ~parameter内に指示された個数より多い~sessionを同時に~openしては`ナラナイ^2119。
+~serverは、
+~clientが この上限を超過して~sessionを~openした場合でも，
+当の接続を~closeしては`ナラナイ^2119
+— ~WebTransport~protocolの非同期的な資質に因り、
+~openな~sessionの個数についての~viewは，~clientと~serverとで整合でない【ときもある】ので。
+代わりに，［
+`~CONNECT~stream$のうち，自身が処理する用意がないもの
+］すべてを `HTTP3$r 【！＠~HTTPv3#http-error-codes】にて定義される `H3_REQUEST_REJECTED$er 状態sで`~reset$しなければ`ナラナイ^2119。
+◎
+This document defines a SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter that allows the server to limit the maximum number of concurrent WebTransport sessions on a single HTTP/3 connection. The client MUST NOT open more simultaneous sessions than indicated in the server SETTINGS parameter. The server MUST NOT close the connection if the client opens sessions exceeding this limit, as the client and the server do not have a consistent view of how many sessions are open due to the asynchronous nature of the protocol; instead, it MUST reset all of the CONNECT streams it is not willing to process with the H3_REQUEST_REJECTED status defined in Section 8.1 of [HTTP3].
+</p>
+
+		</section>
+		<section id="flow-control-limit-streams">
+<h3 title="Limiting the Number of Streams Within a Session">5.2. ~sessionの中の~stream数の制限-法</h3>
+
+<p>
+`WT_MAX_STREAMS$cps `~capsule$は、
+`~WebTransport~session$の中の~streamの個数に対する上限を確立する。
+~QUIC `MAX_STREAMS$ft ~frameと同様に、
+この~capsuleには 2 つの `種別^i があり，
+相手の端点により起動された［
+`一方向~stream$, `双方向~stream$
+］用に別々な上限を供する。
+◎
+The WT_MAX_STREAMS capsule (Section 5.6.1) establishes a limit on the number of streams within a WebTransport session. Like the QUIC MAX_STREAMS frame (Section 19.11 of [RFC9000]), this capsule has two types that provide separate limits for unidirectional and bidirectional streams that are initiated by a peer.
+</p>
+
+<p>
+~session用の`~CONNECT~stream$は、［
+`双方向~stream$, `一方向~stream$
+］どちらの上限にも含まれないことに注意
+— ~clientが~openできる`~CONNECT~stream$の個数は、［
+`SETTINGS_WEBTRANSPORT_MAX_SESSIONS$sp 設定,
+~QUIC~flow制御の~stream上限
+］により制限される。
+◎
+Note that the CONNECT stream for the session is not included in either the bidirectional or the unidirectional stream limits; the number of CONNECT streams a client can open is limited by the SETTINGS_WEBTRANSPORT_MAX_SESSIONS setting and QUIC flow control's stream limits.
+</p>
+
+<p>
+~session~levelの~stream上限は、［
+接続~levelの~stream上限を供する~QUIC `MAX_STREAMS$ft ~frame
+］に加えて適用される。
+新たな~streamを作成できるのは、
+当の~sessionの中で［
+~stream~level, 接続~level
+］どちらの上限からも許可される場合に限られる
+— ~QUIC~stream上限がどう適用されるかの詳細は、
+`RFC9000$r `同時並行性の制御-法＠~RFCx/rfc9000#controlling-concurrency§ を見よ。
+◎
+The session-level stream limit applies in addition to the QUIC MAX_STREAMS frame, which provides a connection-level stream limit. New streams can only be created within the session if both the stream- and the connection-level limit permit; see Section 4.6 of [RFC9000] for details on how QUIC stream limits are applied.
+</p>
+
+<p>
+~QUIC `MAX_STREAMS$ft ~frameとは違って、
+この~frame内の値と~QUIC `STREAM^ft ~frame内の`~stream~ID$との間には，
+単純な関係性は無い。
+このことは、
+とりわけ，当の接続~上の~streamに他の利用元もある場合に適用される。
+◎
+Unlike the the QUIC MAX_STREAMS frame, there is no simple relationship between the value in this frame and stream IDs in QUIC STREAM frames. This especially applies if there are other users of streams on the connection.
+</p>
+
+<p>
+`WT_STREAMS_BLOCKED$cps `~capsule$は、
+次を指示するために送信できる
+⇒
+端点は、
+~session~levelの~stream上限に因り，
+~streamを作成-可能でなかった。
+◎
+The WT_STREAMS_BLOCKED capsule (Section 5.7) can be sent to indicate that an endpoint was unable to create a stream due to the session-level stream limit.
+</p>
+
+<p>
+この上限を施行するためには、［
+双方の端点が~openな~stream数に対し合意できる
+］よう［
+~stream~header用に依拠-可能な`~reset$が要求される
+］ことに注意。
+◎
+Note that enforcing this limit requires reliable resets for stream headers so that both endpoints can agree on the number of streams that are open.
+</p>
+
+		</section>
+		<section id="flow-control-limit-data">
+<h3 title="Data Limits">5.3. ~data上限</h3>
+
+<p>
+`WT_MAX_DATA$cps `~capsule$は、
+同じ`~WebTransport~session$の中で送信できる~data量に対する上限を確立する。
+その `種別^i に対応する各~stream上に送信される すべての~dataは、
+この上限へ向けて数えられる。
+ただし、
+~stream~header
+（ `一方向~stream＠#unidirectional-streams§,
+`双方向~stream＠#bidirectional-streams§ を見よ）
+は，この上限からは除外される
+— この上限が［
+新たな~streamを特定の`~WebTransport~session$へ~linkするために本質的な情報
+］の送信を防止しないようにするため。
+◎
+The WT_MAX_DATA capsule (Section 5.8) establishes a limit on the amount of data that can be sent within a WebTransport session. This limit counts all data that is sent on streams of the corresponding type, excluding the stream header (see Section 4.1 and Section 4.2). The stream header is excluded from this limit so that this limit does not prevent the sending of information that is essential in linking new streams to a specific WebTransport session.
+</p>
+
+<p>
+`WT_MAX_DATA$cps を実装するためには、［
+~QUIC~stackが，各~streamの最終-~sizeについての情報を~WebTransport実装に供する
+］ことが要求される
+— `RFC9000$r `~streamの最終-~size＠~RFCx/rfc9000#final-size§ を見よ。
+これは、［
+双方の端点が，~streamにより消費された~data量について合意する
+］ことを許容する
+— 上述した~stream~headerの除外は適用されるが。
+◎
+Implementing WT_MAX_DATA requires that the QUIC stack provide the WebTransport implementation with information about the final size of streams; see { {Section 4.5 of !RFC9000}}. This allows both endpoints to agree on how much data was consumed by that stream, although the stream header exclusion above applies.
+</p>
+
+<p>
+`WT_DATA_BLOCKED$cps `~capsule$は、
+次を指示するために送信できる
+⇒
+端点は、
+`WT_MAX_DATA$cps ~capsuleにより設定された上限に因り，
+~dataを送信-可能でなかった。
+◎
+The WT_DATA_BLOCKED capsule (Section 5.9) can be sent to indicate that an endpoint was unable to send data due to a limit set by the WT_MAX_DATA capsule.
+</p>
+
+<p>
+~HTTP3越しの~WebTransportは，
+各~WebTransport~stream用に~nativeな~QUIC~streamを利用するので、
+~streamごとの~data上限は，~QUICにより~nativeに供される
+— `RFC9000$r `~data~flowの制御＠~RFCx/rfc9000#data-flow-control§ を見よ。
+［
+`WT_MAX_STREAM_DATA^cps,
+`WT_STREAM_DATA_BLOCKED^cps
+］`~capsule$†
+（ `I-D.ietf-webtrans-http2$r 【~HTTP2越しの~WebTransport】【！`Part XX＠https://datatracker.ietf.org/doc/html/draft-ietf-webtrans-http2-11#appendix-Xx§】 ）
+は、
+利用されない
+— それらは、
+禁制される。
+端点は、
+これらの~capsuleの受領を~session~errorとして扱わなければ`ナラナイ^2119。
+◎
+Because WebTransport over HTTP/3 uses a native QUIC stream for each WebTransport stream, per-stream data limits are provided by QUIC natively; see Section 4.1 of [RFC9000]. The WT_MAX_STREAM_DATA and WT_STREAM_DATA_BLOCKED capsules (Part XX of [I-D.ietf-webtrans-http2]) are not used and so are prohibited. Endpoints MUST treat receipt of a WT_MAX_STREAM_DATA or a WT_STREAM_DATA_BLOCKED capsule as a session error.
+</p>
+
+<p class="trans-note">【†
+これらの~capsuleは、
+`~HTTP2越しの~WebTransport$cite用には定義されているが，
+~HTTP3越しの~WebTransport用には定義されていない
+（将来には定義されると思われる）。
+】</p>
+
+		</section>
+		<section id="flow-control-intermediaries">
+<h3 title="Flow Control and Intermediaries">5.4. ~flow制御と媒介者</h3>
+
+<p>
+~HTTP3越しの~WebTransportは、
+次に挙げる`~capsule$を~flow制御~用に利用する
+⇒＃
+`WT_MAX_DATA$cps,
+`WT_MAX_STREAMS$cps,
+`WT_DATA_BLOCKED$cps,
+`WT_STREAMS_BLOCKED$cps
+◎終
+これらの~capsuleは、
+“~flow制御~capsule” と総称され，いずれも
+— `HTTP-DATAGRAM$r `~capsule~protocol§1 にて述べられるとおり —
+`媒介者$による特別な取扱いを定義する。
+◎
+WebTransport over HTTP/3 uses several capsules for flow control, and all of these capsules define special intermediary handling as described in Section 3.2 of [HTTP-DATAGRAM]. These capsules, referred to as the "flow control capsules" are WT_MAX_DATA, WT_MAX_STREAMS, WT_DATA_BLOCKED, and WT_STREAMS_BLOCKED.
+</p>
+
+<p>
+~WebTransportにおける~flow制御は，`隣点間$であり`端点間$の通達を供さないので、
+`媒介者$は，
+~flow制御~通達を消費した上で，
+次の隣点へ自前の［
+~flow制御~用の上限
+］を表出しなければ`ナラナイ^2119。
+`媒介者$は、
+これらの通達を［
+~HTTP3~flow制御~message,
+~HTTP2~flow制御~message,
+~WebTransport~flow制御~capsule
+］のうち適切になる いずれかを介して送信できる。
+`媒介者$は、
+~dataを次の隣点へ即時に回送できない場合には，
+自身が広告する~flow制御~creditまでは格納する責務がある。
+◎
+Because flow control in WebTransport is hop-by-hop and does not provide an end-to-end signal, intermediaries MUST consume flow control signals and express their own flow control limits to the next hop. The intermediary can send these signals via HTTP/3 flow control messages, HTTP/2 flow control messages, or as WebTransport flow control capsules, where appropriate. Intermediaries are responsible for storing any data for which they advertise flow control credit if that data cannot be immediately forwarded to the next hop.
+</p>
+
+<p>
+実施においては、
+類似な~WebTransport~protocol
+（例： 2 つの~HTTP3接続）
+どうしの間で~flow制御~通達を翻訳している`媒介者$は，
+単純に［
+一方の接続で受信した上限と同じ上限を他方の接続へ直に表出し直せる
+］ことが多い。
+◎
+In practice, an intermediary that translates flow control signals between similar WebTransport protocols, such as between two HTTP/3 connections, can often simply reexpress the same limits received on one connection directly on the other connection.
+</p>
+
+<p>
+`媒介者$は、
+翻訳-先の接続へ即時に送信できなかった~dataを格納する責務を負いたくないならば，
+他方の接続に対しては［
+対応する［
+翻訳-先の接続~上の上限
+］を超える~flow制御~用の上限
+］を広告しないこと【により負わないこと？】を確保できる。
+◎
+An intermediary that does not want to be responsible for storing data that cannot be immediately sent on its translated connection can ensure that it does not advertise a higher flow control limit on one connection than the corresponding limit on the translated connection.
+</p>
+
+		</section>
+		<section id="flow-control-settings">
+<h3 title="Flow Control SETTINGS">5.5. ~flow制御~用の設定</h3>
+
+<p>
+~flow制御~用の初期~時の上限は、
+~HTTP3 `SETTINGS$ft を介して，
+次に挙げる~parameter
+（`~HTTP3設定~parameterの登録＠#http3-settings§を見よ）
+に 0 以外の値を供することにより交換される：
+◎
+Initial flow control limits can be exchanged via HTTP/3 SETTINGS (Section 9.2) by providing non-zero values for
+</p>
+<ul>
+	<li>
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI$sp
+（を介した `WT_MAX_STREAMS$cps 用の値）
+◎
+↓</li>
+	<li>
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI$sp
+（を介した `WT_MAX_STREAMS$cps 用の値）
+◎
+WT_MAX_STREAMS via SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI and SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI
+</li>
+	<li>
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA$sp
+（を介した `WT_MAX_DATA$cps 用の値）
+◎
+WT_MAX_DATA via SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA
+</li>
+</ul>
+
+		</section>
+		<section id="flow-control-capsules">
+<h3 title="Flow Control Capsules">5.6. ~flow制御~capsule</h3>
+
+			<section id="WT_MAX_STREAMS">
+<h4 title="WT_MAX_STREAMS Capsule">5.6.1. `WT_MAX_STREAMS^cps ~capsule</h4>
+
+<p>
+`WT_MAX_STREAMS^cps `~capsule$ `HTTP-DATAGRAM$r は、［
+その `種別^i に対応する~stream【すなわち，双方向か一方向か】として~openすることが許可される累積的な個数
+］を相手の端点へ伝えるために導入された。
+`WT_MAX_STREAMS^cps ~capsuleのうち［
+`種別^i `0x190B4D3F^hex を伴うものは，`双方向~stream$／
+`種別^i `0x190B4D40^hex を伴うものは，`一方向~stream$
+］に適用される。
+◎
+An HTTP capsule [HTTP-DATAGRAM] called WT_MAX_STREAMS is introduced to inform the peer of the cumulative number of streams of a given type it is permitted to open. A WT_MAX_STREAMS capsule with a type of 0x190B4D3F applies to bidirectional streams, and a WT_MAX_STREAMS capsule with a type of 0x190B4D40 applies to unidirectional streams.
+</p>
+
+<p>
+`最大~stream数^i は、
+許容される総~stream数
+— それまでに~closeされた~streamも含めた数 —
+を表現している累積的な値なので、
+端点は、
+各~streamが~openされるに伴い，
+新たな `WT_MAX_STREAMS^cps ~capsuleを
+— `最大~stream数^i に前回より増やされた値を伴わせて —
+繰返し送信することに注意。
+◎
+Note that, because Maximum Streams is a cumulative value representing the total allowed number of streams, including previously closed streams, endpoints repeatedly send new WT_MAX_STREAMS capsules with increasing Maximum Streams values as streams are opened.
+</p>
+
+<figure id="fig-wt_max_streams">
+<pre class="frame-diagram">
+WT_MAX_STREAMS ~capsule {
+  種別 (i) = 0x190B4D3F..0x190B4D40,
+  長さ (i),
+  最大~stream数 (i),
+}
+◎
+WT_MAX_STREAMS Capsule {
+  Type (i) = 0x190B4D3F..0x190B4D40,
+  Length (i),
+  Maximum Streams (i),
+}
+</pre>
+<figcaption>
+図 5.
+`WT_MAX_STREAMS^cps ~capsule形式
+◎
+Figure 5:
+WT_MAX_STREAMS Capsule Format
+</figcaption></figure>
+
+<p>
+各 `WT_MAX_STREAMS^cps ~capsuleは、
+次に挙げる~fieldを包含する：
+◎
+WT_MAX_STREAMS capsules contain the following field:
+</p>
+<dl>
+	<dt>
+`最大~stream数^i
+◎
+Maximum Streams:
+</dt>
+	<dd>
+当の~sessionの存続期間にわたって~openできる［
+その `種別^i に対応する~stream
+］の累積的な個数
+◎
+A count of the cumulative number of streams of the corresponding type that can be opened over the lifetime of the session.＼
+</dd>
+	<dd>
+この値は、
+2 の 60 乗~未満になる
+— 2 の 62 乗~以上の`~stream~ID$を符号化することはアリでないので。
+◎
+This value cannot exceed 260, as it is not possible to encode stream IDs larger than 262-1.
+</dd>
+</dl>
+
+<p>
+端点は、［
+相手の端点により設定された現在の~stream上限により許可される個数
+］より多い~streamを~openしては`ナラナイ^2119。
+一例として，
+`一方向~stream$数の上限として 3 を受信した~serverには、
+~stream 3, 7, 11 を~openすることは許可されるが，
+~stream 15 は許可されない。
+【 3, 7, 11, 15 は`~stream~ID$。】
+◎
+An endpoint MUST NOT open more streams than permitted by the current stream limit set by its peer. For instance, a server that receives a unidirectional stream limit of 3 is permitted to open streams 3, 7, and 11, but not stream 15.
+</p>
+
+<p>
+この上限は、
+~openな~streamのみならず，~closeされた~streamも含むことに注意。
+◎
+Note that this limit includes streams that have been closed as well as those that are open.
+</p>
+
+<p>
+`WT_MAX_STREAMS^cps ~capsuleは、
+`HTTP-DATAGRAM$r `~capsule~protocol§1にて述べられるとおり，
+`媒介者$による特別な取扱いを定義する。
+`媒介者$は、
+`WT_MAX_STREAMS^cps ~capsuleを~flow制御~目的~用に消費した上で，
+自身の上限~用に適切な~flow制御~通達を生成して送信しなければ`ナラナイ^2119。
+◎
+The WT_MAX_STREAMS capsule defines special intermediary handling, as described in Section 3.2 of [HTTP-DATAGRAM]. Intermedaries MUST consume WT_MAX_STREAMS capsules for flow control purposes and MUST generate and send appropriate flow control signals for their limits.
+</p>
+
+<p>
+これらの上限~用の初期~値は、［
+【一方向~stream用には】 `SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI$sp ／
+【双方向~stream用には】 `SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI$sp
+］用に 0 以外の値を送信することにより，通信しても`ヨイ^2119。
+◎
+Initial values for these limits MAY be communicated by sending non-zero values for SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI and SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI.
+</p>
+
+			</section>
+		</section>
+		<section id="WT_STREAMS_BLOCKED">
+<h3 title="WT_STREAMS_BLOCKED Capsule">5.7. `WT_STREAMS_BLOCKED^cps ~capsule</h3>
+
+<p>
+`送信器$は、［
+~streamを~openするよう望むが，
+相手の端点により設定された最大~stream数の上限に因り可能でない
+］ときは，
+`WT_STREAMS_BLOCKED^cps `~capsule$を送信する`ベキ^2119である。
+それ【！STREAMS_BLOCKED】は、
+その `種別^i に応じて，［
+`0x190B4D43^hex ならば`双方向~stream$／
+`0x190B4D44^hex ならば`一方向~stream$
+］の個数が上限に達したことを指示する。
+◎
+A sender SHOULD send a WT_STREAMS_BLOCKED capsule (type=0x190B4D43 or 0x190B4D44) when it wishes to open a stream but is unable to do so due to the maximum stream limit set by its peer. A WT_STREAMS_BLOCKED capsule of type 0x190B4D43 is used to indicate reaching the bidirectional stream limit, and a STREAMS_BLOCKED capsule of type 0x190B4D44 is used to indicate reaching the unidirectional stream limit.
+</p>
+
+<p>
+`WT_STREAMS_BLOCKED^cps ~capsuleは、
+~streamを~openしないが，［
+新たな~streamが必要になったが，
+~stream上限により~streamの作成が防止された
+］ことを相手の端点へ伝える。
+◎
+A WT_STREAMS_BLOCKED capsule does not open the stream, but informs the peer that a new stream was needed and the stream limit prevented the creation of the stream.
+</p>
+
+<figure id="fig-wt_streams_blocked">
+<pre class="frame-diagram">
+WT_STREAMS_BLOCKED ~capsule {
+  種別 (i) = 0x190B4D43..0x190B4D44,
+  長さ (i),
+  最大~stream数 (i),
+}
+◎
+WT_STREAMS_BLOCKED Capsule {
+  Type (i) = 0x190B4D43..0x190B4D44,
+  Length (i),
+  Maximum Streams (i),
+}
+</pre>
+<figcaption>
+図 6.
+`WT_STREAMS_BLOCKED^cps ~capsule形式
+◎
+Figure 6:
+WT_STREAMS_BLOCKED Capsule Format
+</figcaption></figure>
+
+<p>
+各 `WT_STREAMS_BLOCKED^cps ~capsuleは、
+次に挙げる~fieldを包含する：
+◎
+WT_STREAMS_BLOCKED capsules contain the following field:
+</p>
+<dl>
+	<dt>
+`最大~stream数^i
+◎
+Maximum Streams:
+</dt>
+	<dd>
+次を指示する`可変長な整数$
+⇒
+この~capsuleを送信した時点で許容されていた最大な~stream数。
+◎
+A variable-length integer indicating the maximum number of streams allowed at the time the capsule was sent.＼
+</dd>
+	<dd>
+この値は、
+2 の 60 乗~未満になる
+— 2 の 62 乗~以上の`~stream~ID$を符号化することはアリでないので。
+◎
+This value cannot exceed 260, as it is not possible to encode stream IDs larger than 262-1.
+</dd>
+</dl>
+
+<p>
+`WT_STREAMS_BLOCKED^cps ~capsuleは、
+`HTTP-DATAGRAM$r `~capsule~protocol§1にて述べられるとおり，
+`媒介者$による特別な取扱いを定義する。
+`媒介者$は、
+`WT_STREAMS_BLOCKED^cps ~capsuleを~flow制御~目的~用に消費した上で，
+自身の上限~用に適切な~flow制御~通達を生成して送信しなければ`ナラナイ^2119。
+◎
+The WT_STREAMS_BLOCKED capsule defines special intermediary handling, as described in Section 3.2 of [HTTP-DATAGRAM]. Intermedaries MUST consume WT_STREAMS_BLOCKED capsules for flow control purposes and MUST generate and send appropriate flow control signals for their limits.
+</p>
+
+		</section>
+		<section id="WT_MAX_DATA">
+<h3 title="WT_MAX_DATA Capsule">5.8. `WT_MAX_DATA^cps ~capsule</h3>
+
+<p>
+`WT_MAX_DATA^cps（ `種別^i `0x190B4D3D^hex ）`~capsule$ `HTTP-DATAGRAM$r は、
+`~WebTransport~session$全体に送信できる最大な~data量を相手の端点へ伝えるために導入された。
+◎
+An HTTP capsule [HTTP-DATAGRAM] called WT_MAX_DATA (type=0x190B4D3D) is introduced to inform the peer of the maximum amount of data that can be sent on the WebTransport session as a whole.
+</p>
+
+<p>
+その `種別^i に対応する各~stream上に送信される すべての~dataは、
+この上限へ向けて数えられる
+— ただし、
+~stream~header
+（ `一方向~stream＠#unidirectional-streams§,
+`双方向~stream＠#bidirectional-streams§ を見よ）
+は，この上限からは除外される。
+◎
+This limit counts all data that is sent on streams of the corresponding type, excluding the stream header (see Section 4.1 and Section 4.2).＼
+</p>
+
+<p>
+`WT_MAX_DATA^cps  を実装するためには、［
+~QUIC~stackが，各~streamの最終-~sizeについての情報を~WebTransport実装に供する
+］ことが要求される
+— `RFC9000$r `~streamの最終-~size＠~RFCx/rfc9000#final-size§ を見よ。
+◎
+Implementing WT_MAX_DATA requires that the QUIC stack provide the WebTransport implementation with information about the final size of streams; see Section 4.5 of [RFC9000].
+</p>
+
+<figure id="fig-wt_max_data">
+<pre class="frame-diagram">
+WT_MAX_DATA ~capsule {
+  種別 (i) = 0x190B4D3D,
+  長さ (i),
+  最大~data量 (i),
+}
+◎
+WT_MAX_DATA Capsule {
+  Type (i) = 0x190B4D3D,
+  Length (i),
+  Maximum Data (i),
+}
+</pre>
+<figcaption>
+図 7.
+`WT_MAX_DATA^cps ~capsule形式
+◎
+Figure 7:
+WT_MAX_DATA Capsule Format
+</figcaption></figure>
+
+<p>
+各 `WT_MAX_DATA^cps ~capsuleは、
+次に挙げる~fieldを包含する：
+◎
+WT_MAX_DATA capsules contain the following field:
+</p>
+<dl>
+	<dt>
+`最大~data量^i
+◎
+Maximum Data:
+</dt>
+	<dd>
+次を~byte単位で指示する`可変長な整数$
+⇒
+当の~session全体に対し送信できる最大な~data量
+◎
+A variable-length integer indicating the maximum amount of data that can be sent on the entire session, in units of bytes.
+</dd>
+</dl>
+
+<p>
+`WT_STREAM^cps ~capsule内に送信されたすべての~dataは、
+この上限へ向けて数えられる。
+`WT_STREAM^cps ~capsule内の `~stream~data^i ~fieldの長さの総和は、
+`受信器$により広告された値を超過しては`ナラナイ^2119。
+◎
+All data sent in WT_STREAM capsules counts toward this limit. The sum of the lengths of Stream Data fields in WT_STREAM capsules MUST NOT exceed the value advertised by a receiver.
+</p>
+
+<p class="trans-note">【
+`WT_STREAM^cps は、
+`~HTTP2越しの~WebTransport$cite用には定義されているが，
+~HTTP3越しの~WebTransport用には定義されていない
+（将来には定義されると思われる）。
+】</p>
+
+<p>
+`WT_MAX_DATA^cps ~capsuleは、
+`HTTP-DATAGRAM$r `~capsule~protocol§1にて述べられるとおり，
+`媒介者$による特別な取扱いを定義する。
+`媒介者$は、
+`WT_MAX_DATA^cps ~capsuleを~flow制御~目的~用に消費した上で，
+自身の上限~用に適切な~flow制御~通達を生成して送信しなければ`ナラナイ^2119。
+— `~flow制御と媒介者＠#flow-control-intermediaries§ を見よ。
+◎
+The WT_MAX_DATA capsule defines special intermediary handling, as described in Section 3.2 of [HTTP-DATAGRAM]. Intermedaries MUST consume WT_MAX_DATA capsules for flow control purposes and MUST generate and send appropriate flow control signals for their limits; see Section 5.4.
+</p>
+
+<p>
+この上限~用の初期~値は、
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA$sp 用に 0 以外の値を送信することにより，
+通信しても`ヨイ^2119。
+◎
+The initial value for this limit MAY be communicated by sending a non-zero value for SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA.
+</p>
+
+		</section>
+		<section id="WT_DATA_BLOCKED">
+<h3 title="WT_DATA_BLOCKED Capsule">5.9. `WT_DATA_BLOCKED^cps ~capsule</h3>
+
+<p>
+`送信器$は、［
+~dataを送信するよう望むが，
+`~WebTransport~session$~levelの~flow制御に因り可能でない
+］ときには，
+`WT_DATA_BLOCKED^cps `~capsule$（ `種別^i`0x190B4D41^hex ）を送信する`ベキ^2119である
+— それは、
+~flow制御~algoを調律するための入力として利用され得る。
+◎
+A sender SHOULD send a WT_DATA_BLOCKED capsule (type=0x190B4D41) when it wishes to send data but is unable to do so due to WebTransport session-level flow control. WT_DATA_BLOCKED capsules can be used as input to tuning of flow control algorithms.
+</p>
+
+<figure id="fig-wt_data_blocked">
+<pre class="frame-diagram">
+WT_DATA_BLOCKED ~capsule {
+  種別 (i) = 0x190B4D41,
+  長さ (i),
+  最大~data量 (i),
+}
+◎
+WT_DATA_BLOCKED Capsule {
+  Type (i) = 0x190B4D41,
+  Length (i),
+  Maximum Data (i),
+}
+</pre>
+<figcaption>
+図 8.
+`WT_DATA_BLOCKED^cps ~capsule形式
+◎
+Figure 8:
+WT_DATA_BLOCKED Capsule Format
+</figcaption></figure>
+
+<p>
+各 `WT_DATA_BLOCKED^cps ~capsuleは、
+次に挙げる~fieldを包含する：
+◎
+WT_DATA_BLOCKED capsules contain the following field:
+</p>
+<dl>
+	<dt>
+`最大~data量^i
+◎
+Maximum Data:
+</dt>
+	<dd>
+次を指示する`可変長な整数$
+⇒
+阻まれるようになった時点における~session~levelの上限
+◎
+A variable-length integer indicating the session-level limit at which blocking occurred.
+</dd>
+</dl>
+
+<p>
+`WT_DATA_BLOCKED^cps ~capsuleは、
+`HTTP-DATAGRAM$r `~capsule~protocol§1にて述べられるとおり，
+`媒介者$による特別な取扱いを定義する。
+`媒介者$は、
+`WT_DATA_BLOCKED^cps ~capsuleを~flow制御~目的~用に消費した上で，
+自身の上限~用に適切な~flow制御~通達を生成して送信しなければ`ナラナイ^2119
+— `~flow制御と媒介者＠#flow-control-intermediaries§を見よ。
+◎
+The WT_DATA_BLOCKED capsule defines special intermediary handling, as described in Section 3.2 of [HTTP-DATAGRAM]. Intermedaries MUST consume WT_DATA_BLOCKED capsules for flow control purposes and MUST generate and send appropriate flow control signals for their limits; see Section 5.4.
+</p>
+
+		</section>
+	</section>
 	<section id="session-termination">
-<h2 title="Session Termination">5. ~sessionの終了n</h2>
+<h2 title="Session Termination">6. ~sessionの終了n</h2>
 
 <p>
 ~HTTP3越しの`~WebTransport~session$は、
@@ -2077,8 +2826,8 @@ it MUST NOT send any new datagrams or open any new streams.
 <p>
 応用は、
 ~sessionを終了する際に詳細な~error~messageを伴わせるためとして，
-種別 `CLOSE_WEBTRANSPORT_SESSION$cps （ `0x2843^hex ）の~HTTP`~capsule$ `HTTP-DATAGRAM$r を送信しても`ヨイ^2119。
-この`~capsule$の形式は、
+種別 `CLOSE_WEBTRANSPORT_SESSION$cps （ `0x2843^hex ）の`~capsule$ `HTTP-DATAGRAM$r を送信しても`ヨイ^2119。
+この~capsuleの形式は、
 次に従わなければ`ナラナイ^2119【！SHALL】：
 ◎
 To terminate a session with a detailed error message, an application MAY send an HTTP capsule [HTTP-DATAGRAM] of type CLOSE_WEBTRANSPORT_SESSION (0x2843). The format of the capsule SHALL be as follows:
@@ -2104,7 +2853,7 @@ CLOSE_WEBTRANSPORT_SESSION Capsule {
 `CLOSE_WEBTRANSPORT_SESSION$cps は、
 次に挙げる~fieldを有する
 — いずれも、
-その値は，当の接続を~closeしている応用により供される：
+その値は，当の~sessionを~closeしている応用により供される：
 ◎
 CLOSE_WEBTRANSPORT_SESSION has the following fields:
 </p>
@@ -2115,7 +2864,7 @@ CLOSE_WEBTRANSPORT_SESSION has the following fields:
 ~error~codeを与える 32 ~bitな整数
 ◎
 Application Error Code:
-• A 32-bit error code provided by the application closing the connection.
+• A 32-bit error code provided by the application closing the session.
 </li>
 	<li>
 `応用~error~message^i
@@ -2127,7 +2876,7 @@ Application Error Code:
 1024 ~byteを超過しては`ナラナイ^2119。
 ◎
 Application Error Message:
-• A UTF-8 encoded error message string provided by the application closing the connection. The message takes up the remainder of the capsule, and its length MUST NOT exceed 1024 bytes.
+• A UTF-8 encoded error message string provided by the application closing the session. The message takes up the remainder of the capsule, and its length MUST NOT exceed 1024 bytes.
 </li>
 </ul>
 
@@ -2140,7 +2889,7 @@ Application Error Message:
 ］を送信しても`ヨイ^2119。
 受信者は、
 それらに呼応して，当の~streamを~closeするか`~reset$しなければ`ナラナイ^2119。
-`CLOSE_WEBTRANSPORT_SESSION$cps `~capsule$を受信した後に`~CONNECT~stream$上に追加的な~stream~dataを受信した場合、
+`CLOSE_WEBTRANSPORT_SESSION$cps ~capsuleを受信した後に`~CONNECT~stream$上に追加的な~stream~dataを受信した場合、
 当の~streamは，~code `H3_MESSAGE_ERROR$er で`~reset$されなければ`ナラナイ^2119。
 ◎
 An endpoint that sends a CLOSE_WEBTRANSPORT_SESSION capsule MUST immediately send a FIN. The endpoint MAY send a STOP_SENDING to indicate it is no longer reading from the CONNECT stream. The recipient MUST either close or reset the stream in response. If any additional stream data is received on the CONNECT stream after receiving a CLOSE_WEBTRANSPORT_SESSION capsule, the stream MUST be reset with code H3_MESSAGE_ERROR.
@@ -2179,7 +2928,7 @@ In some scenarios, an endpoint might want to send a CLOSE_WEBTRANSPORT_SESSION w
 
 	</section>
 	<section id="considerations-for-future-versions">
-<h2 title="Considerations for Future Versions">6. 将来~version用の考慮点</h2>
+<h2 title="Considerations for Future Versions">7. 将来~version用の考慮点</h2>
 
 <p>
 ~WebTransportの将来~versionは、［
@@ -2191,7 +2940,7 @@ In some scenarios, an endpoint might want to send a CLOSE_WEBTRANSPORT_SESSION w
 ］ことを許容するよう
 （ `~Upgrade~tokenの登録＠#upgrade-token§を見よ）。
 ◎
-Future versions of WebTransport that change the syntax of the CONNECT requests used to establish WebTransport sessions will need to modify the upgrade token used to identify WebTransport, allowing servers to offer multiple versions simultaneously (see Section 8.1).
+Future versions of WebTransport that change the syntax of the CONNECT requests used to establish WebTransport sessions will need to modify the upgrade token used to identify WebTransport, allowing servers to offer multiple versions simultaneously (see Section 9.1).
 </p>
 
 <p>
@@ -2208,7 +2957,7 @@ Future versions of WebTransport that change the syntax of the CONNECT requests u
 各~流入~要請ごとに，それ用に利用-中にある構文
 ］を常に知れることを確保するよう。
 ◎
-Servers that support future incompatible versions of WebTransport signal that support by changing the codepoint used for the SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter (see Section 8.2). Clients can select the associated upgrade token, if applicable, to use when establishing a new session, ensuring that servers will always know the syntax in use for every incoming request.
+Servers that support future incompatible versions of WebTransport signal that support by changing the codepoint used for the SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter (see Section 9.2). Clients can select the associated upgrade token, if applicable, to use when establishing a new session, ensuring that servers will always know the syntax in use for every incoming request.
 </p>
 
 <p>
@@ -2228,7 +2977,7 @@ Changes to future stream formats require changes to the Unidirectional Stream ty
 </p>
 
 		<section id="negotiating-the-draft-version">
-<h3 title="Negotiating the Draft Version">6.1. 草案~versionの折衝-法</h3>
+<h3 title="Negotiating the Draft Version">7.1. 草案~versionの折衝-法</h3>
 
 <p class="note">注記：
 この節は、
@@ -2254,7 +3003,7 @@ The wire format aspects of the protocol are negotiated by changing the codepoint
 		</section>
 	</section>
 	<section id="security-considerations">
-<h2 title="Security Considerations">7. ~securityの考慮点</h2>
+<h2 title="Security Considerations">8. ~securityの考慮点</h2>
 
 <p>
 ~HTTP3越しの~WebTransportは、
@@ -2320,10 +3069,10 @@ A client could attempt to exhaust resources by opening too many WebTransport ses
 
 	</section>
 	<section id="iana-considerations">
-<h2 title="IANA Considerations">8. ~IANA考慮点</h2>
+<h2 title="IANA Considerations">9. ~IANA考慮点</h2>
 
 		<section id="upgrade-token">
-<h3 title="Upgrade Token Registration">8.1. ~Upgrade~tokenの登録</h3>
+<h3 title="Upgrade Token Registration">9.1. ~Upgrade~tokenの登録</h3>
 
 <p>
 `HTTP$r `~Upgrade~token~registry＠~HTTPinfra#upgrade.token.registry§により確立された
@@ -2370,7 +3119,7 @@ Reference:
 
 		</section>
 		<section id="http3-settings">
-<h3 title="HTTP/3 SETTINGS Parameter Registration">8.2. ~HTTP3設定~parameterの登録</h3>
+<h3 title="HTTP/3 SETTINGS Parameter Registration">9.2. ~HTTP3設定~parameterの登録</h3>
 
 <p>
 `HTTP3$r により確立された
@@ -2381,20 +3130,35 @@ Reference:
 The following entry is added to the "HTTP/3 Settings" registry established by [HTTP3]:
 </p>
 
+<div>
 <p>
 `SETTINGS_WEBTRANSPORT_MAX_SESSIONS@sp
-~parameterは、［
-指定された~HTTP3端点には，~WebTransport能力があること
+~parameterは、
+次を指示する：
+</p>
+<ul>
+	<li>
+0 以外ならば
+⇒
+［
+それを指定した~HTTP3端点には~WebTransport能力があること
 ］および［
 受信する用意がある同時並行な~sessionの個数
-］を指示する。
-この~parameter用の既定の値は 0 とする
-— それは、［
-端点は`~WebTransport~session$を受信する用意はない
-］ことを意味する。
+］。
+</li>
+	<li>
+0 ならば
+⇒
+当の端点には、
+`~WebTransport~session$を受信する用意はない。
+</li>
+</ul>
+<p>
+この~parameter用の既定の値は 0 とする。
+</p>
 ◎
 The SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter indicates that the specified HTTP/3 endpoint is WebTransport-capable and the number of concurrent sessions it is willing to receive. The default value for the SETTINGS_WEBTRANSPORT_MAX_SESSIONS parameter is "0", meaning that the endpoint is not willing to receive any WebTransport sessions.
-</p>
+</div>
 
 <ul>
 	<li>
@@ -2432,10 +3196,234 @@ Specification:
 </li>
 </ul>
 
+<div>
+<p>
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI@sp
+~parameterは、
+次を指示する：
+</p>
+<ul>
+	<li>
+<p>
+0 以外ならば
+⇒
+一方向~streamの最大~数を与える上限~用の初期~値。
+</p>
+
+<p>
+この上限は、
+この `SETTINGS$ft が送信された~HTTP3接続を利用している`~WebTransport~session$すべてに適用されることに注意。
+</p>
+	</li>
+	<li>
+0 ならば
+⇒
+上限は `WT_MAX_STREAMS$cps ~capsuleにより通信される
+— 当の端点は、
+各`~WebTransport~session$に対し，［
+その中で一方向~streamを作成することが相手の端点に許容される前
+］に `WT_MAX_STREAMS$cps `~capsule$を送信する必要がある。
+</li>
+</ul>
+
+<p>
+この~parameter用の既定の値は 0 とする。
+</p>
+◎
+The SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI parameter indicates the initial value for the unidirectional max stream limit, otherwise communicated by the WT_MAX_STREAMS capsule (see Section 5.6.1). The default value for the SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI parameter is "0", indicating that the endpoint needs to send WT_MAX_STREAMS capsules on each individual WebTransport session before its peer is allowed to create any unidirectional streams within that session.
+◎
+Note that this limit applies to all WebTransport sessions that use the HTTP/3 connection on which this SETTING is sent.
+</div>
+
+<ul>
+	<li>
+設定~名
+⇒
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI$sp
+【！WEBTRANSPORT_MAX_SESSIONS】
+◎
+Setting Name:
+• SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI
+</li>
+	<li>
+値
+⇒
+`0x2b64^hex
+◎
+Value:
+• 0x2b64
+</li>
+	<li>
+既定
+⇒
+0
+◎
+Default:
+• 0
+</li>
+	<li>
+仕様
+⇒
+この文書
+◎
+Specification:
+• This document
+</li>
+</ul>
+
+<div>
+<p>
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI@sp
+~parameterは、
+次を指示する：
+</p>
+<ul>
+	<li>
+<p>
+0 以外ならば
+⇒
+双方向~streamの最大~数を与える上限~用の初期~値
+</p>
+
+<p>
+この上限は、
+この `SETTINGS$ft が送信された~HTTP3接続を利用している`~WebTransport~session$すべてに適用されることに注意。
+</p>
+	</li>
+	<li>
+0 ならば
+⇒
+`WT_MAX_STREAMS$cps ~capsuleにより通信される
+— 当の端点は、
+各`~WebTransport~session$に対し，［
+その中で双方向~streamを作成することが相手の端点に許容される前
+］に `WT_MAX_STREAMS$cps `~capsule$を送信する必要がある。
+</li>
+</ul>
+
+<p>
+この~parameter用の既定の値は 0 とする。
+</p>
+◎
+The SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI parameter indicates the initial value for the bidirectional max stream limit, otherwise communicated by the WT_MAX_STREAMS capsule (see Section 5.6.1). The default value for the SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI parameter is "0", indicating that the endpoint needs to send WT_MAX_STREAMS capsules on each individual WebTransport session before its peer is allowed to create any bidirectional streams within that session.
+◎
+Note that this limit applies to all WebTransport sessions that use the HTTP/3 connection on which this SETTING is sent.
+</div>
+
+<ul>
+	<li>
+設定~名
+⇒
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI$sp
+【！WEBTRANSPORT_MAX_SESSIONS】
+◎
+Setting Name:
+• SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI
+</li>
+	<li>
+値
+⇒
+`0x2b65^hex
+◎
+Value:
+• 0x2b65
+</li>
+	<li>
+既定
+⇒
+0
+◎
+Default:
+• 0
+</li>
+	<li>
+仕様
+⇒
+この文書
+◎
+Specification:
+• This document
+</li>
+</ul>
+
+<div>
+<p>
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA@sp
+~parameterは、
+次を指示する：
+</p>
+<ul>
+	<li>
+<p>
+0 以外ならば
+⇒
+~session~data量の上限~用の初期~値。
+</p>
+
+<p>
+この上限は、
+この `SETTINGS$ft が送信された~HTTP3接続を利用している`~WebTransport~session$すべてに適用されることに注意。
+</p>
+	</li>
+	<li>
+0 ならば
+⇒
+上限は `WT_MAX_DATA$cps ~capsuleにより通信される
+— 当の端点は、
+各~sessionに対し，［
+その中で~stream~dataを送信することが相手の端点に許容される前
+］に `WT_MAX_DATA$cps `~capsule$を送信する必要がある。
+</li>
+</ul>
+
+<p>
+この~parameter用の既定の値は 0 とする。
+</p>
+◎
+The SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA parameter indicates the initial value for the session data limit, otherwise communicated by the WT_MAX_DATA capsule (see Section 5.8). The default value for the SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA parameter is "0", indicating that the endpoint needs to send a WT_MAX_DATA capsule within each session before its peer is allowed to send any stream data within that session.
+◎
+Note that this limit applies to all WebTransport sessions that use the HTTP/3 connection on which this SETTING is sent.
+</div>
+
+<ul>
+	<li>
+設定~名
+⇒
+`SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA$sp
+【！WEBTRANSPORT_MAX_SESSIONS】
+◎
+Setting Name:
+• SETTINGS_WEBTRANSPORT_INITIAL_MAX_DATA
+</li>
+	<li>
+値
+⇒
+`0x2b61^hex
+◎
+Value:
+• 0x2b61
+</li>
+	<li>
+既定
+⇒
+0
+◎
+Default:
+• 0
+</li>
+	<li>
+仕様
+⇒
+この文書
+◎
+Specification:
+• This document
+</li>
+</ul>
 
 		</section>
 		<section id="frame-type-registration">
-<h3 title="Frame Type Registration">8.3. ~frame種別の登録</h3>
+<h3 title="Frame Type Registration">9.3. ~frame種別の登録</h3>
 
 <p>
 `HTTP3$r により確立された
@@ -2483,7 +3471,7 @@ Specification:
 
 		</section>
 		<section id="stream-type-registration">
-<h3 title="Stream Type Registration">8.4. ~stream種別の登録</h3>
+<h3 title="Stream Type Registration">9.4. ~stream種別の登録</h3>
 
 <p>
 `HTTP3$r により確立された
@@ -2529,7 +3517,7 @@ Specification:
 • This document
 </li>
 	<li>
-送信者
+送信器
 ⇒
 `両方^i
 ◎
@@ -2538,10 +3526,9 @@ Sender:
 </li>
 </ul>
 
-
 		</section>
 		<section id="http3-error-code-registration">
-<h3 title="HTTP/3 Error Code Registration">8.5. ~HTTP3~error~codeの登録</h3>
+<h3 title="HTTP/3 Error Code Registration">9.5. ~HTTP3~error~codeの登録</h3>
 
 <p>
 `HTTP3$r により確立された
@@ -2674,7 +3661,7 @@ Specification:
 
 		</section>
 		<section id="capsule-types">
-<h3 title="Capsule Types">8.6. ~capsule種別</h3>
+<h3 title="Capsule Types">9.6. ~capsule種別</h3>
 
 <p>
 `HTTP-DATAGRAM$r により確立された
@@ -2783,6 +3770,270 @@ Capsule Type:
 ◎
 Status:
 • provisional (when this document is approved this will become permanent)
+</li>
+	<li>
+仕様
+⇒
+この文書
+◎
+Specification:
+• This document
+</li>
+	<li>
+変更~制御者
+⇒
+~IETF
+◎
+Change Controller:
+• IETF
+</li>
+	<li>
+連絡先
+⇒
+~WebTransport~WG
+<a href="mailto:webtransport@ietf.org">webtransport@ietf.org</a>
+◎
+Contact:
+• WebTransport Working Group webtransport@ietf.org
+</li>
+	<li>
+注記
+⇒
+なし
+◎
+Notes:
+• None
+</li>
+</ul>
+
+<p>
+`WT_MAX_STREAMS@cps
+`~capsule$
+◎
+The WT_MAX_STREAMS capsule.
+</p>
+<ul>
+	<li>
+値
+⇒
+`0x190B4D3F..0x190B4D40^hex
+◎
+Value:
+• 0x190B4D3F..0x190B4D40
+</li>
+	<li>
+~capsule種別
+⇒
+`WT_MAX_STREAMS$cps
+◎
+Capsule Type:
+• WT_MAX_STREAMS
+</li>
+	<li>
+位置付け
+⇒
+`恒久的^i
+◎
+Status:
+• permanent
+</li>
+	<li>
+仕様
+⇒
+この文書
+◎
+Specification:
+• This document
+</li>
+	<li>
+変更~制御者
+⇒
+~IETF
+◎
+Change Controller:
+• IETF
+</li>
+	<li>
+連絡先
+⇒
+~WebTransport~WG
+<a href="mailto:webtransport@ietf.org">webtransport@ietf.org</a>
+◎
+Contact:
+• WebTransport Working Group webtransport@ietf.org
+</li>
+	<li>
+注記
+⇒
+なし
+◎
+Notes:
+• None
+</li>
+</ul>
+
+<p>
+`WT_STREAMS_BLOCKED@cps
+`~capsule$
+◎
+The WT_STREAMS_BLOCKED capsule.
+</p>
+<ul>
+	<li>
+値
+⇒
+`0x190B4D43..0x190B4D44^hex
+◎
+Value:
+• 0x190B4D43..0x190B4D44
+</li>
+	<li>
+~capsule種別
+⇒
+`WT_STREAMS_BLOCKED$cps
+◎
+Capsule Type:
+• WT_STREAMS_BLOCKED
+</li>
+	<li>
+位置付け
+⇒
+`恒久的^i
+◎
+Status:
+• permanent
+</li>
+	<li>
+仕様
+⇒
+この文書
+◎
+Specification:
+• This document
+</li>
+	<li>
+変更~制御者
+⇒
+~IETF
+◎
+Change Controller:
+• IETF
+</li>
+	<li>
+連絡先
+⇒
+~WebTransport~WG
+<a href="mailto:webtransport@ietf.org">webtransport@ietf.org</a>
+◎
+Contact:
+• WebTransport Working Group webtransport@ietf.org
+</li>
+	<li>
+注記
+⇒
+なし
+◎
+Notes:
+• None
+</li>
+</ul>
+
+<p>
+`WT_MAX_DATA@cps
+`~capsule$
+◎
+The WT_MAX_DATA capsule.
+</p>
+<ul>
+	<li>
+値
+⇒
+`0x190B4D3D^hex
+◎
+Value:
+• 0x190B4D3D
+</li>
+	<li>
+~capsule種別
+⇒
+`WT_MAX_DATA$cps
+◎
+Capsule Type:
+• WT_MAX_DATA
+</li>
+	<li>
+位置付け
+⇒
+`恒久的^i
+◎
+Status:
+• permanent
+</li>
+	<li>
+仕様
+⇒
+この文書
+◎
+Specification:
+• This document
+</li>
+	<li>
+変更~制御者
+⇒
+~IETF
+◎
+Change Controller:
+• IETF
+</li>
+	<li>
+連絡先
+⇒
+~WebTransport~WG
+<a href="mailto:webtransport@ietf.org">webtransport@ietf.org</a>
+◎
+Contact:
+• WebTransport Working Group webtransport@ietf.org
+</li>
+	<li>
+注記
+⇒
+なし
+◎
+Notes:
+• None
+</li>
+</ul>
+
+<p>
+`WT_DATA_BLOCKED@cps
+`~capsule$
+◎
+The WT_DATA_BLOCKED capsule.
+</p>
+<ul>
+	<li>
+値
+⇒
+`0x190B4D41^hex
+◎
+Value:
+• 0x190B4D41
+</li>
+	<li>
+~capsule種別
+⇒
+`WT_DATA_BLOCKED$cps
+◎
+Capsule Type:
+• WT_DATA_BLOCKED
+</li>
+	<li>
+位置付け
+⇒
+`恒久的^i
+◎
+Status:
+• permanent
 </li>
 	<li>
 仕様
