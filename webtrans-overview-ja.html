@@ -101,8 +101,8 @@ return text;
 
 ●●options
 
-spec_date:2024-10-22
-trans_update:2024-11-11
+spec_date:2025-03-18
+trans_update:2025-04-03
 source_checked:230906
 original_url:https://ietf-wg-webtrans.github.io/draft-ietf-webtrans-overview/draft-ietf-webtrans-overview.html
 	abbr_url:WT-OVERVIEW
@@ -160,13 +160,14 @@ STUN:
 URI:
 HTTP3:HTTP/3
 HTTP2:HTTP/2
-
+ALPN:
 	^i:FIN
 	^ft:DATAGRAM
 	~CSP:Content Security Policy
 	~IANA
 	`RFC7675$r:STUN Consent Freshness `RFC7675$r
 	^cite:WebTransport Protocol Framework
+	`~ALPN^cite:TLS Application-Layer Protocol Negotiation Extension (ALPN)
 
 	●transport／network
 open:
@@ -186,9 +187,9 @@ pool:
 喪失-:lose::~
 	喪失した:lost
 middlebox:
-
 不依拠-:unrely:~
 	不依拠-可能:unreliable
+下位protocol:subprotocol::下位 protocol:下位プロトコル
 
 	相手の端点:peer
 	^en:peer-to-peer
@@ -198,6 +199,7 @@ middlebox:
 	~transport層を成す:transport-layer 〜
 	送信-側:send-side
 	`Data Recvd^i:Data Recvd
+	確立する試み:establishment attempt
 
 	●stream
 datagram::::データグラム
@@ -266,6 +268,7 @@ commit:
 	〜が上手く収まらない:makes it a poor fit for
 	〜に上手く収まらない:fits poorly with
 妨げる:preventする:~
+選択:choice:~
 
 	交換-可能:interchangeable
 	要請-者:requester
@@ -308,6 +311,8 @@ commit:
 	注目すべき:notable
 	事実:fact
 	区別:distinction
+	当の:in question
+	したい:would like
 
 	●未分類
 無符号:unsigned:~
@@ -365,12 +370,14 @@ kernel::::カーネル
 ●●ref_informative
 
 [CSP]
-    W3C, ＜Content Security Policy Level 3＞, October 2024
+    W3C, ＜Content Security Policy Level 3＞, March 2025
     URL: https://www.w3.org/TR/CSP/
 [RFC5681]
     Allman, M., Paxson, V., and E. Blanton, ＜TCP Congestion Control＞, ~RFC5681, September 2009
 [RFC6455]
     Fette, I. and A. Melnikov, ＜The WebSocket Protocol＞, ~RFC6455
+[RFC7301]
+    Friedl, S., Popov, A., Langley, A., and E. Stephan, ＜Transport Layer Security (TLS) Application-Layer Protocol Negotiation Extension＞, ~RFC7301
 [RFC7675]
     Perumal, M., Wing, D., Ravindranath, R., Reddy, T., and M. Thomson, ＜Session Traversal Utilities for NAT (STUN) Usage for Consent Freshness＞, ~RFC7675, October 2015
 [RFC8831]
@@ -485,15 +492,12 @@ The web API draft corresponding to this document can be found at &lt;https://wic
 `~IETF日本語訳 共通~page＠~IETFcommon#status-draft$に移譲。
 】</p>
 
-<!-- 
-This Internet-Draft will expire on 9 March 2024.
--->
 	</section>
 	<section id="copyright">
 <h2 title="Copyright Notice">著作権の告知</h2>
 
 <p lang="en">
-Copyright (c) 2024 IETF Trust and the persons identified as the document authors. All rights reserved.
+Copyright (c) 2025 IETF Trust and the persons identified as the document authors. All rights reserved.
 </p>
 
 <p class="trans-note">【
@@ -654,7 +658,7 @@ the same connection (for instance, it might be possible for the client to reques
 `不依拠-可能$な~datagramを送信するためにも利用できる
 （~UDPと類似に）。
 ◎
-WebTransport avoids all of those issues by letting applications create a single transport object that can contain multiple streams multiplexed together in a single context (similar to SCTP, HTTP/2, QUIC and others), and can be also used to send unreliable datagrams (similar to UDP).
+WebTransport avoids all of those issues by letting applications create a single transport object that can contain multiple streams multiplexed together in a single context (similar to SCTP, HTTP/2, QUIC and others), and can also be used to send unreliable datagrams (similar to UDP).
 </p>
 
 		</section>
@@ -908,6 +912,26 @@ All WebTransport protocols MUST provide a way for a server endpoint location to 
 </li>
 </ul>
 
+<p>
+すべての~WebTransport~protocolは、
+~sessionの起動元~向けに［
+~WebTransport~sessionを確立するときに，相手の端点と下位protocolを折衝するための仕方
+］を供さなければ`ナラナイ^2119。
+~sessionの起動元は、
+省略可能な下位protocolたちが成す~listを相手の端点へ供する。
+相手の端点は、［
+いずれか一つの下位protocolを選定して，それを指示するよう応答する
+］か［
+どの下位protocolも~supportしない場合は，~session確立~要請を却下する
+］ことになる。
+個々の下位protocol~tokenの意味論は、
+当の~WebTransport資源により決定され，
+~IANAの`~ALPN~protocol~ID~registry＠~IANA-a/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids$cite
+には登録されないことに注意。
+◎
+All WebTransport protocols MUST provide a way for the session initiator to negotiate a subprotocol with the peer when establishing a WebTransport session. The session initiator provides an optional list of subprotocols to the peer. The peer selects one and responds indicating the selected subprotocol or rejects the session establishment request if none of the subprotocols are supported. Note that the semantics of individual subprotocol token values is determined by the WebTransport resource in question and are not registered in IANA's "ALPN Protocol IDs" registry.
+</p>
+
 	</section>
 	<section id="session-establishment">
 <h2 title="Session Establishment">3. ~sessionの確立</h2>
@@ -917,10 +941,13 @@ All WebTransport protocols MUST provide a way for a server endpoint location to 
 非同期的な処理nである。
 ~clientの視点からは、
 ~sessionは，［
-~serverが供された生成元と~URIを伴う~sessionを受容する用意がある
+~serverが［
+供された生成元と~URIを伴う~session
+］を受容する用意がある
 ］ことが確認されたとき<em>準備済み</em>と見なされる。
-~WebTransport~protocolは、
-~sessionが準備済みになる前に~dataを送信することを~clientに許容しても`ヨイ^2119
+~WebTransport~protocolは、［
+~sessionが準備済みになる前に~dataを送信する
+］ことを~clientに許容しても`ヨイ^2119
 — しかしながら、
 ~clientから明示的に指示されない限り，
 再現~攻撃（ `replay attack^en ）に対し安全でない仕組みを利用しては`ナラナイ^2119。
@@ -928,6 +955,31 @@ All WebTransport protocols MUST provide a way for a server endpoint location to 
 WebTransport session establishment is an asynchronous process. A session is considered ready from the client's perspective when the server has confirmed that it is willing to accept the session with the provided origin and URI. WebTransport protocols MAY allow clients to send data before the session is ready; however, they MUST NOT use mechanisms that are unsafe against replay attacks without an explicit indication from the client.
 </p>
 
+		<section id="application-protocol-negotiation">
+<h3 title="Application Protocol Negotiation">3.1. 応用~protocolの折衝</h3>
+
+<p>
+~WebTransport~sessionは、
+`~ALPN^cite `RFC7301$r に類似な~protocol折衝の仕組みを提供する。
+◎
+WebTransport sessions offer a protocol negotiation mechanism, similar to TLS Application-Layer Protocol Negotiation Extension (ALPN) [RFC7301].
+</p>
+
+<p>
+~WebTransport~clientは、
+~sessionを確立するときは，［
+その~sessionで利用したい~protocolたちが成す選好~順序による~list
+］を~serverへ提供できる。
+そのような~listを受信した~serverは、
+~listから どれか一つを選定して，その選択を~clientへ通信する。
+~serverは、
+~clientにより提供されたどの~protocolも利用するよう望まない場合には，
+~WebTransport~sessionを確立する試みを却下できる。
+◎
+When establishing a session, a WebTransport client can offer the server a list of protocols that it would like to use on that session, in preference order. When the server receives such a list, it selects a single choice from that list and communicates that choice to the client. A server that does not wish to use any of the protocols offered by the client can reject the WebTransport session establishment attempt.
+</p>
+
+		</section>
 	</section>
 	<section id="transport-features">
 <h2 title="Transport Features">4. ~transport特能</h2>
@@ -1235,9 +1287,9 @@ Removes a stream from the queue of incoming unidirectional streams, if one is av
 receive a bidirectional stream
 </dt>
 	<dd>
-流入~一方向【双方向？】~streamたちが成す~queueから，可用な ある~streamを除去する。
+流入~双方向~streamたちが成す~queueから，可用な ある~streamを除去する。
 ◎
-Removes a stream from the queue of incoming unidirectional streams, if one is available.
+Removes a stream from the queue of incoming bidirectional streams, if one is available.
 </dd>
 </dl>
 
@@ -1292,12 +1344,12 @@ abort send side
 現在~待機中な［
 伝送される／伝送し直される
 ］~dataは無い。
-無符号な 8 ~bitの~error~codeが
+無符号な 32 ~bitの~error~codeが
 相手の端点への通達を成す一部として給され得る
 — 省略された場合、
 ~error~codeは 0 であるものと予め見做される。
 ◎
-Sends a signal to the peer that the write side of the stream has been aborted. Discards the send buffer; if possible, no currently outstanding data is transmitted or retransmitted. An unsigned 8-bit error code can be supplied as a part of the signal to the peer; if omitted, the error code is presumed to be 0.
+Sends a signal to the peer that the write side of the stream has been aborted. Discards the send buffer; if possible, no currently outstanding data is transmitted or retransmitted. An unsigned 32-bit error code can be supplied as a part of the signal to the peer; if omitted, the error code is presumed to be 0.
 </dd>
 
 	<dt id="abort-receive-side">
@@ -1310,9 +1362,9 @@ abort receive side
 受信-~bufferを破棄する
 — 相手の端点には、
 概して，それに呼応して対応する送信-側を中止することが期待される。
-無符号な 8 ~bitの~error~codeが相手の端点への通達を成す一部として給され得る。
+無符号な 32 ~bitの~error~codeが相手の端点への通達を成す一部として給され得る。
 ◎
-Sends a signal to the peer that the read side of the stream has been aborted. Discards the receive buffer; the peer is typically expected to abort the corresponding send side in response. An unsigned 8-bit error code can be supplied as a part of the signal to the peer.
+Sends a signal to the peer that the read side of the stream has been aborted. Discards the receive buffer; the peer is typically expected to abort the corresponding send side in response. An unsigned 32-bit error code can be supplied as a part of the signal to the peer.
 </dd>
 </dl>
 
@@ -1332,9 +1384,9 @@ send side aborted
 	<dd>
 相手の端点は、
 当の~streamを成す受信-側を中止したことを指示する。
-相手の端点から無符号な 8 ~bitの~error~codeが可用になることもある。
+相手の端点から無符号な 32 ~bitの~error~codeが可用になることもある。
 ◎
-Indicates that the peer has aborted the corresponding receive side of the stream. An unsigned 8-bit error code from the peer may be available.
+Indicates that the peer has aborted the corresponding receive side of the stream. An unsigned 32-bit error code from the peer may be available.
 </dd>
 
 	<dt id="receive-side-aborted">
@@ -1345,12 +1397,12 @@ receive side aborted
 	<dd>
 相手の端点は、
 当の~streamを成す送信-側を中止したことを指示する。
-相手の端点から無符号な 8 ~bitの~error~codeが可用になることもある。
+相手の端点から無符号な 32 ~bitの~error~codeが可用になることもある。
 ◎
-Indicates that the peer has aborted the corresponding send side of the stream. An unsigned 8-bit error code from the peer may be available.
+Indicates that the peer has aborted the corresponding send side of the stream. An unsigned 32-bit error code from the peer may be available.
 </dd>
 
-	<dt id="all data committed">
+	<dt id="all-data-committed">
 すべての~dataは~commitされた
 ◎
 all data committed
