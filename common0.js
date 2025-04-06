@@ -3202,11 +3202,10 @@ filename::::ファイル名
 外観:appearance:~
 手入力-:enter:~
 手入力:entry:~
-対話:interaction::~::インタラクション
-対話的:interactive::~::インタラクティブ
-対話性:interactivity::~::インタラクティブ性
-ヤリトリ-:interact::やりとり
-ヤリトリ:interaction::やりとり
+ヤリトリ-:interact::やりとり::インタラクト
+ヤリトリ:interaction::やりとり::インタラクション
+ヤリトリあり:interactive::やりとり可能::インタラクティブ
+	ヤリトリ-~~能:interactivity
 toggle::::トグル
 
 印刷:print:~:::プリント

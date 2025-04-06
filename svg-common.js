@@ -531,8 +531,7 @@ t.dasharray:~SVGpainting#DataTypeDasharray
 
 処理~mode:~SVGconform#processing-modes
 ~animate化~mode:~SVGconform#animated-mode
-動的~対話的~mode:~SVGconform#dynamic-interactive-mode
-動的~対話的~処理~mode:~SVGconform#dynamic-interactive-mode
+動的かつヤリトリあり~mode:~SVGconform#dynamic-interactive-mode
 ~secure~animate化~mode:~SVGconform#secure-animated-mode
 ~secure静的~mode:~SVGconform#secure-static-mode
 静的~mode:~SVGconform#static-mode
