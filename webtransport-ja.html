@@ -200,8 +200,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2025-03-11
-trans_update:2025-03-16
+spec_date:2025-04-08
+trans_update:2025-04-09
 source_checked:250311
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -536,7 +536,7 @@ in-flight:
 	%流入~datagram群:incomingDatagrams
 	%流入~一方向~stream群:incomingUnidirectionalStreams
 	%流入~双方向~stream群:incomingBidirectionalStreams
-	%流出~datagram群:outgoingDatagrams
+	%流出~datagram可書~stream群:outgoingDatagramWritables
 	%準備済み時の~promise:ready
 	%生成元:origin
 	%統計:stats
@@ -646,6 +646,8 @@ balance::::バランス
 見越した:anticipateした:~
 見越され:anticipateされ:~
 拙い:poorな:~
+polyfill:
+総意:consensus:~
 
 	きちんと:wellに
 	重要なこととして:It is important to
@@ -687,6 +689,9 @@ balance::::バランス
 	知れる:learn
 	ただし:except
 	限りにおいて:provided
+	が、:in spite of
+	^en:the chairs
+	以前は 〜 していた:used to
 
 	●言い換え
 	^en:first-strong
@@ -905,9 +910,7 @@ I.TextEncoderStream:~ENCODING#textencoderstream
 	●#dom-
 
 mD.createWritable:#dom-webtransportdatagramduplexstream-createwritable
-	createWritable:#dom-webtransport-createwritable
 mD.readable:#dom-webtransportdatagramduplexstream-readable
-mD.writable:#dom-webtransportdatagramduplexstream-writable
 mD.incomingMaxAge:#dom-webtransportdatagramduplexstream-incomingmaxage
 mD.maxDatagramSize:#dom-webtransportdatagramduplexstream-maxdatagramsize
 mD.outgoingMaxAge:#dom-webtransportdatagramduplexstream-outgoingmaxage
@@ -1045,7 +1048,7 @@ M.CONNECT:~HTTPsem#CONNECT
 
 	●sl
 sl.Readable:#dom-webtransportdatagramduplexstream-readable-slot
-sl.Writable:#dom-webtransportdatagramduplexstream-writable-slot
+sl.Writables:#dom-webtransportdatagramduplexstream-writables-slot
 sl.IncomingDatagramsQueue:#dom-webtransportdatagramduplexstream-incomingdatagramsqueue-slot
 sl.IncomingDatagramsPullPromise:#dom-webtransportdatagramduplexstream-incomingdatagramspullpromise-slot
 sl.IncomingDatagramsHighWaterMark:#dom-webtransportdatagramduplexstream-incomingdatagramshighwatermark-slot
@@ -2011,14 +2014,19 @@ An optional send order number, defaulting to 0.
 </dl>
 
 <div class="algo">
+<p>
 `WebTransportDatagramsWritable$I を
 `作成する@DW
 ~algoは、
 所与の
 ( `WebTransport$I %~transport, %送信-~group, %送信-順序 )
-に対し
-⇒
-~RET `新たな~obj$( `WebTransportDatagramsWritable$I )
+に対し：
+◎
+To create a WebTransportDatagramsWritable, given a WebTransport transport, a sendGroup, and a sendOrder, perform the following steps.
+</p>
+<ol>
+	<li>
+%~stream ~LET `新たな~obj$( `WebTransportDatagramsWritable$I )
 — その
 ⇒＃
 `OutgoingDatagramsQueue$slW ~SET 空~queue,
@@ -2026,17 +2034,39 @@ An optional send order number, defaulting to 0.
 `SendGroup$slW ~SET %送信-~group,
 `SendOrder$slW ~SET %送信-順序
 ◎
-To create a WebTransportDatagramsWritable, given a WebTransport transport, a sendGroup, and a sendOrder, perform the following steps.
-• Let stream be a new WebTransportDatagramsWritable, with:
-•• [[OutgoingDatagramsQueue]]
-••• an empty queue
-•• [[Transport]]
-••• transport
-•• [[SendGroup]]
-••• sendGroup
-•• [[SendOrder]]
-••• sendOrder
-• Return stream.
+Let stream be a new WebTransportDatagramsWritable, with:
+• [[OutgoingDatagramsQueue]]
+•• an empty queue
+• [[Transport]]
+•• transport
+• [[SendGroup]]
+•• sendGroup
+• [[SendOrder]]
+•• sendOrder
+</li>
+	<li>
+<p>
+%~stream を`設定しておく$WS
+— 次を与える下で：
+</p>
+		<ul>
+			<li class="algo">
+`書込n~algo^i ~SET 【所与の ( %~chunk ) に対し，】次を走らす動作
+⇒
+`~datagram群を書込む$( %~transport, %~stream【, %~chunk】 )
+</li>
+		</ul>
+◎
+Let writeDatagramsAlgorithm be an action that runs writeDatagrams with transport and stream.
+◎
+Set up stream with writeAlgorithm set to writeDatagramsAlgorithm.
+</li>
+	<li>
+~RET %~stream
+◎
+Return stream.
+</li>
+</ol>
 </div>
 
 		</section>
@@ -2421,8 +2451,8 @@ The send-order rules are that sending in general MAY be interleaved with sending
 </p>
 <ul>
 	<li>
-【 %~transport . `Datagrams$sl . `Writable$sl . 】
-`OutgoingDatagramsQueue$slW 内に格納される
+【 %~transport . `Datagrams$sl . `Writables$sl を成す各~可書~streamの】
+`OutgoingDatagramsQueue$slW 内に格納される。
 </li>
 	<li>
 `connected^l 状態にあるときと同じ方式で破棄され得る／できる。
@@ -2454,8 +2484,9 @@ A WebTransportDatagramDuplexStream is a generic duplex stream.
 [`Exposed$=(Window,Worker), `SecureContext$]
 interface `WebTransportDatagramDuplexStream@I {
   `WebTransportDatagramsWritable$I `createWritable$mD( optional `WebTransportSendOptions$I %options = {});
+  readonly attribute ReadableStream readable;
+
   readonly attribute `ReadableStream$I `readable$mD;
-  readonly attribute `WebTransportDatagramsWritable$I `writable$mD;
 
   readonly attribute `unsigned long$ `maxDatagramSize$mD;
   attribute `unrestricted double$? `incomingMaxAge$mD;
@@ -2485,11 +2516,12 @@ Internal Slot｜Description (non-normative)
 A ReadableStream for incoming datagrams.
 </dd>
 
-	<dt>`Writable@sl</dt>
+	<dt>`Writables@sl</dt>
 	<dd>
-流出~datagram用の既定の `WebTransportDatagramsWritable$I ~obj
+`WebTransportDatagramsWritable$I ~streamたちが成す`有順序~集合$
+— 初期~時は空とする。
 ◎
-A default WebTransportDatagramsWritable for outgoing datagrams.
+An ordered set of WebTransportDatagramsWritable streams, initially empty.
 </dd>
 
 	<dt>`IncomingDatagramsQueue@sl</dt>
@@ -2594,10 +2626,10 @@ The user agent MAY update [[OutgoingMaxDatagramSize]] for any WebTransport objec
 `作成する@DPS
 ~algoは、
 所与の
-( %可読~stream, %可書~stream )
+( %可読~stream )
 に対し：
 ◎
-To create a WebTransportDatagramDuplexStream given a readable, and a writable, perform the following steps.
+To create a WebTransportDatagramDuplexStream given a readable, perform the following steps
 </p>
 <ol>
 	<li>
@@ -2606,7 +2638,7 @@ To create a WebTransportDatagramDuplexStream given a readable, and a writable, p
 — その
 ⇒＃
 `Readable$sl ~SET %可読~stream,
-`Writable$sl ~SET %可書~stream,
+`Writables$sl ~SET 新たな`有順序~集合$,
 `IncomingDatagramsQueue$sl ~SET 新たな`~queue$,
 `IncomingDatagramsPullPromise$sl ~SET ~NULL,
 `IncomingDatagramsHighWaterMark$sl ~SET `実装定義$な値,
@@ -2627,8 +2659,8 @@ To create a WebTransportDatagramDuplexStream given a readable, and a writable, p
 Let stream be a new WebTransportDatagramDuplexStream, with:
 • [[Readable]]
 •• readable
-• [[Writable]]
-•• writable
+• [[Writables]]
+•• an empty ordered set.
 • [[IncomingDatagramsQueue]]
 •• an empty queue
 • [[IncomingDatagramsPullPromise]]
@@ -2659,7 +2691,6 @@ Return stream.
 <dl>
 	<dt>
 `createWritable(options)@mD
-【！id=dom-webtransport-createwritable】
 ◎
 createWritable()
 </dt>
@@ -2730,20 +2761,6 @@ The getter steps are:
 </dd>
 
 	<dt>
-`writable@mD
-◎
-writable, of type WebTransportDatagramsWritable, readonly
-</dt>
-	<dd class="algo">
-取得子~手続きは
-⇒
-~RET コレ . `Writable$sl
-◎
-The getter steps are:
-• Return this.[[Writable]].
-</dd>
-
-	<dt>
 `incomingMaxAge@mD
 ◎
 incomingMaxAge, of type unrestricted double, nullable
@@ -2798,9 +2815,9 @@ Set this.[[IncomingDatagramsExpirationDuration]] to value.
 maxDatagramSize, of type unsigned long, readonly
 </dt>
 	<dd>
-`writable$mD に渡してもよい~dataの最大~size
+【コレ . `Writables$sl を成す各】 `WebTransportDatagramsWritable$I に渡してもよい~dataの最大~size
 ◎
-The maximum size data that may be passed to writable.＼
+The maximum size data that may be passed to a WebTransportDatagramsWritable.＼
 </dd>
 	<dd class="algo">
 取得子~手続きは
@@ -3732,14 +3749,9 @@ Let anticipatedConcurrentIncomingBidirectionalStreams be options’s anticipated
 Let incomingDatagrams be a new ReadableStream.
 </li>
 	<li>
-%流出~datagram群 ~LET `WebTransportDatagramsWritable$I を`作成する$DW( %~transport )
+%~datagram群 ~LET `WebTransportDatagramDuplexStream$I を`作成する$DPS( %流入~datagram群 )
 ◎
-Let outgoingDatagrams be the result of creating a WebTransportDatagramsWritable with transport.
-</li>
-	<li>
-%~datagram群 ~LET `WebTransportDatagramDuplexStream$I を`作成する$DPS( %流入~datagram群, %流出~datagram群 )
-◎
-Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its readable set to incomingDatagrams and its writable set to outgoingDatagrams.
+Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its readable set to incomingDatagrams.
 </li>
 	<li>
 %~transport ~LET `新たな~obj$( `WebTransport$I )
@@ -3808,22 +3820,6 @@ Let transport be a newly constructed WebTransport object, with:
 `限界水位^i ~SET 0
 </li>
 		</ul>
-◎
-↓</li>
-	<li>
-<p>
-%流出~datagram群 を`設定しておく$WS
-— 次を与える下で：
-</p>
-		<ul>
-			<li class="algo">
-`書込n~algo^i ~SET 
-【所与の ( %~data ) に対し，】
-次を走らす動作
-⇒
-`~datagram群を書込む$( %~transport【, %~data】 )
-</li>
-		</ul>
 
 <p class="note">注記：
 各~datagramには 64kB ~bufferを利用することが推奨される
@@ -3839,17 +3835,12 @@ Let transport be a newly constructed WebTransport object, with:
 ある~datagramが~bufferより大きいことに因り，当の~streamが~errorする
 ］ことは生じないことを確保する。
 </p>
-
 ◎
 Let pullDatagramsAlgorithm be an action that runs pullDatagrams with transport.
-◎
-Let writeDatagramsAlgorithm be an action that runs writeDatagrams with transport.
 ◎
 Note: Using 64kB buffers with datagrams is recommended because the effective maximum WebTransport datagram frame size has an upper bound of the QUIC maximum datagram frame size which is recommended to be 64kB (See [QUIC-DATAGRAM] Section 3). This will ensure the stream is not errored due to a datagram being larger than the buffer.
 ◎
 Set up with byte reading support incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0.
-◎
-Set up outgoingDatagrams with writeAlgorithm set to writeDatagramsAlgorithm.
 </li>
 	<li>
 <p>
@@ -5619,9 +5610,9 @@ Let sendStreams be a copy of transport.[[SendStreams]].
 Let receiveStreams be a copy of transport.[[ReceiveStreams]].
 </li>
 	<li>
-%流出~datagram群 ~LET %~transport . `Datagrams$sl . `Writable$sl
+%流出~datagram可書~stream群 ~LET %~transport . `Datagrams$sl . `Writables$sl
 ◎
-Let outgoingDatagrams be transport.[[Datagrams]].[[Writable]].
+Let outgoingDatagramWritables be transport.[[Datagrams]].[[Writables]].
 </li>
 	<li>
 %流入~datagram群 ~LET %~transport . `Datagrams$sl . `Readable$sl
@@ -5758,9 +5749,13 @@ Close incomingBidirectionalStreams.
 Close incomingUnidirectionalStreams.
 </li>
 			<li>
-%流出~datagram群 を`~closeする$WS()
+%流出~datagram可書~stream群 を成す
+~EACH( %可書~stream )
+に対し
+⇒
+%可書~stream を`~closeする$WS()
 ◎
-Close outgoingDatagrams.
+For each writable in outgoingDatagramWritables, close writable.
 </li>
 			<li>
 %流入~datagram群 を`~closeする$RS()
@@ -5807,9 +5802,13 @@ Error incomingBidirectionalStreams with error.
 Error incomingUnidirectionalStreams with error.
 </li>
 			<li>
-%流出~datagram群 を`~errorにする$WS( %~error )
+%流出~datagram可書~stream群 を成す
+~EACH( %可書~stream )
+に対し
+⇒
+%可書~stream を`~errorにする$WS( %~error )
 ◎
-Error outgoingDatagrams with error.
+For each writable in outgoingDatagramWritables, error writable with error.
 </li>
 			<li>
 %流入~datagram群 を`~errorにする$RS( %~error )
@@ -6286,6 +6285,19 @@ If supported and non-empty, the user agent SHALL deem a server certificate trust
 `allowPooling$mb と伴には利用できない。
 ◎
 This cannot be used with allowPooling.
+</dd>
+	<dd class="issue">
+`serverCertificateHashes$mb には， 2 つの実装があるが、
+`the chairs^en により，~risk下にある特能として識別された。
+これは、
+次に挙げる~openな課題に関する総意の欠如に因る
+⇒
+`課題 #623＠https://github.com/w3c/webtransport/issues/623$,
+`課題 #59＠https://github.com/w3c/webtransport/issues/59$
+◎
+serverCertificateHashes has been identified by the chairs as a feature at risk, in spite of having two implementations. This is due to lack of consensus over the following two open issues:
+• https://github.com/w3c/webtransport/issues/623
+• https://github.com/w3c/webtransport/issues/59 
 </dd>
 
 	<dt>
@@ -9632,7 +9644,7 @@ enum `WebTransportErrorSource@I {
 %~error ~LET `新たな~obj$( `WebTransportError$I )
 </li>
 	<li>
-%~error 上の `new WebTransportError$m 構築子~手続き( "", «[ "`source$mbE" → %~source, "`streamErrorCode$mbE" → %~code ]» )
+%~error 上の `new WebTransportError$m 構築子~手続き( 空~文字列, «[ "`source$mbE" → %~source, "`streamErrorCode$mbE" → %~code ]» )
 </li>
 	<li>
 ~RET %~error
@@ -10692,23 +10704,26 @@ The use of a shared connection already allows the server to correlate sessions. 
 ◎非規範的
 
 <p>
-~datagramたちが成す~bufferの送信は、
-`datagrams$mT の `writable$mD 属性を利用して達成できる。
+~datagramたちが成す~bufferの送信は、［
+`datagrams$mT の `createWritable()$mD ~methodと その結果の~streamの書込器
+］を利用して達成できる。
 次の例では、
 ~datagramたちは，
 ~transportがそれを送信するに準備済みな場合に限り送信される。
 ◎
-Sending a buffer of datagrams can be achieved by using the datagrams' writable attribute. In the following example datagrams are only sent if the transport is ready to send.
+Sending a buffer of datagrams can be achieved by using the datagrams' createWritable method and the resulting stream’s writer. In the following example datagrams are only sent if the transport is ready to send.
 </p>
 
 <pre class="lang-js">
 async function sendDatagrams(%url, %datagrams) {
   const %wt = new WebTransport(%url);
-  const %writer = %wt.datagrams.writable.getWriter();
+  const %writable = %wt.datagrams.createWritable();
+  const %writer = %writable.getWriter();
   for (const %bytes of %datagrams) {
     await %writer.ready;
     %writer.write(%bytes).catch(() =&gt; {});
   }
+  await %writer.close();
 }
 </pre>
 
@@ -10723,13 +10738,11 @@ async function sendDatagrams(%url, %datagrams) {
 ~transportがそれを送信するに準備済みか否か
 ］に関わらず固定的な~rateで送信することは、
 単純に［
-`datagrams$mT の `writable$mD を利用して，
-`ready$mT 属性を利用しないこと
-］により達成できる。
-もっと複階的な局面では、
-`ready$mT 属性を用立てれる。
+`datagrams$mT の `createWritable()$mD ~methodと その結果の~streamの書込器
+］を利用して達成できる
+— `ready$mT 属性を待受けることなく。
 ◎
-Sending datagrams at a fixed rate regardless if the transport is ready to send can be achieved by simply using datagrams' writable and not using the ready attribute. More complex scenarios can utilize the ready attribute.
+Sending datagrams at a fixed rate regardless if the transport is ready to send can be achieved by simply using datagrams' createWritable method and the resulting stream’s writer without awaiting the ready attribute.
 </p>
 
 <pre class="lang-js">
@@ -10740,10 +10753,10 @@ Sends datagrams every 100 ms.
 </span> */
 async function sendFixedRate(%url, %createDatagram, %ms = 100) {
   const %wt = new WebTransport(%url);
-  await %wt.ready;
-  const %writer = wt.datagrams.writable.getWriter();
+  const %writable = %wt.datagrams.createWritable();
+  const %writer = %writable.getWriter();
   const %bytes = createDatagram();
-  setInterval(() =&gt; %writer.write(%bytes).catch(() =&gt; {}), %ms);
+  setInterval(() =&gt; writer.write(%bytes).catch(() =&gt; {}), %ms);
 }
 </pre>
 
@@ -11100,6 +11113,19 @@ and sending and receiving datagrams.
 </li>
 </ul>
 
+<div class="note">
+<p>注記：
+以前は~transportの `datagrams$mT に存在していた `writable^m 属性は、
+次のように容易に~polyfillできる：
+◎
+The writable attribute that used to exist on a transport’s datagrams is easy to polyfill as follows:
+</p>
+
+<pre class="lang-js">
+%wt.datagrams.writable ||= %wt.datagrams.createWritable();
+</pre>
+</div>
+
 <pre class="lang-js">
 /* <span class="comment">
 ~page上の~event~logに~entryを追加する。
@@ -11115,6 +11141,7 @@ connect.onclick = async () =&gt; {
     const %url = document.getElementById('url').value;
 
     %wt = new WebTransport(%url);
+    %wt.datagrams.writable ||= %wt.datagrams.createWritable();
     addToEventLog('接続を起動しています...');
     await %wt.ready;
     addToEventLog(``^${(%wt.reliability == "reliable-only")? "TCP" : "UDP"} 接続は準備済み。``^);
