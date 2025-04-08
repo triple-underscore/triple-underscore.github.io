@@ -1652,6 +1652,7 @@ CSSFLEXBOX1=副        ~/css-flexbox-ja.html
 CSSFONTS3=副          ~/css-fonts-ja.html
 CSSFONTS4=副          ~/css-fonts4-ja.html
 CSSFONTLOADING3=副    ~/css-font-loading-ja.html
+CSSFORMS1=副          ~/css-forms-ja.html
 CSSGRID1=副           ~/css-grid-ja.html●Level 2 日本語訳
 CSSGRID2=副           ~/css-grid-ja.html
 CSSINLINE3=副         ~/css-inline-ja.html
