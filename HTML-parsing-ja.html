@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="common-whatwg.css" type="text/css">
 
 <style>
-.bytes, 
+.bytes,
 .literal {
 	color: var(--literal-color-2);
 }
@@ -244,8 +244,8 @@ return text;
 
 ●●options
 
-spec_date:2025-04-09
-trans_update:2025-04-03
+spec_date:2025-04-14
+trans_update:2025-04-16
 source_checked:240712
 page_state_key:HTML
 spec_status:LS
@@ -560,6 +560,7 @@ a.shadowrootmode:~HEscripting#attr-template-shadowrootmode
 a.shadowrootclonable:~HEscripting#attr-template-shadowrootclonable
 a.shadowrootserializable:~HEscripting#attr-template-shadowrootserializable
 a.shadowrootdelegatesfocus:~HEscripting#attr-template-shadowrootdelegatesfocus
+a.shadowrootcustomelementregistry:~HEscripting#attr-template-shadowrootcustomelementregistry
 
 l.referrer:~HEmetadata#meta-referrer
 
@@ -1025,6 +1026,7 @@ doc.読込ng中における~WebDriver-BiDi用の~navi~ID:~HTMLdom#concept-docume
 ~custom要素~反応を呼出す:~HEcustom#invoke-custom-element-reactions
 ~custom要素~定義を検索する:~HEcustom#look-up-a-custom-element-definition
 ~formに所有され得る~custom要素:~HEcustom#form-associated-custom-element
+~custom要素~registryを検索する:~HEcustom#look-up-a-custom-element-registry
 
 ~scriptを阻んでいる~stylesheetは在るか？:~HEmetadata#has-a-style-sheet-that-is-blocking-scripts
 ~CSP状態:~HEmetadata#attr-meta-http-equiv-content-security-policy
@@ -1107,6 +1109,7 @@ el.属性~list:~DOM4#concept-element-attribute
 el.局所~名:~DOM4#concept-element-local-name
 el.~shadow根:~DOM4#concept-element-shadow-root
 ~shadow~host:~DOM4#element-shadow-host
+el.~custom要素~registry:~DOM4#element-custom-element-registry
 
 ~eventを発火する:~DOM4#concept-event-fire
 ~HTML文書:~DOM4#html-document
@@ -1134,6 +1137,7 @@ dT.~system~ID:~DOM4#concept-doctype-systemid
 
 sR.宣言的か:~DOM4#shadowroot-declarative
 sR.要素の内部特能から可用か:~DOM4#shadowroot-available-to-element-internals
+sR.~custom要素~registryを~NULLに保つか:~DOM4#shadowroot-keep-custom-element-registry-null
 ~shadow根を付する:~DOM4#concept-attach-a-shadow-root
 
 
@@ -1238,6 +1242,7 @@ load:
 投機的:speculative::~
 模擬:mock::~
 書込んだ:writeした::書き込んだ
+保つ:keepする:~
 
 	開始し直す:restart
 	~cache用の:caching
@@ -12044,9 +12049,14 @@ Let local name be the tag name of the token.
 Let is be the value of the "is" attribute in the given token, if such an attribute exists, or null otherwise.
 </li>
 	<li>
-%定義 ~LET `~custom要素~定義を検索する$( %文書, %名前空間, %局所~名, %is )
+%~registry ~LET `~custom要素~registryを検索する$( %意図される親 )
 ◎
-Let definition be the result of looking up a custom element definition given document, given namespace, local name, and is.
+Let registry be the result of looking up a custom element registry given intended parent.
+</li>
+	<li>
+%定義 ~LET `~custom要素~定義を検索する$( %~registry, %名前空間, %局所~名, %is )
+◎
+Let definition be the result of looking up a custom element definition given registry, given namespace, local name, and is.
 </li>
 	<li>
 %~scriptを実行するか ~LET ~IS［
@@ -12090,9 +12100,17 @@ Push a new element queue onto document's relevant agent's custom element reactio
 	</li>
 	<li>
 <p>
-%要素 ~LET `要素を作成する$( %文書, %局所~名, %名前空間, ~NULL, %is, %~scriptを実行するか )
+%要素 ~LET `要素を作成する$( ↓ )
+⇒＃
+%文書,
+%局所~名,
+%名前空間,
+~NULL,
+%is,
+%~scriptを実行するか,
+%~registry
 ◎
-Let element be the result of creating an element given document, localName, given namespace, null, is, and willExecuteScript.
+Let element be the result of creating an element given document, localName, given namespace, null, is, willExecuteScript, and registry.
 </p>
 
 <p class="note">注記：
@@ -14354,9 +14372,10 @@ Otherwise:
 %~clone可能か,
 %直列化-可能か,
 %~focusを委任するか,
-`named^l
+`named^l,
+%~registry
 ◎
-Attach a shadow root with declarative shadow host element, mode, clonable, serializable, delegatesFocus, and "named".
+Attach a shadow root with declarative shadow host element, mode, clonable, serializable, delegatesFocus, "named", and registry.
 </p>
 
 <p>
@@ -14405,6 +14424,15 @@ Set template's template contents property to shadow.
 %~shadow の`要素の内部特能から可用か$sR ~SET ~T
 ◎
 Set shadow's available to element internals to true.
+</li>
+					<li>
+~IF［
+%~template開始~tag は `shadowrootcustomelementregistry$a 属性を有する
+］
+⇒
+%~shadow の`~custom要素~registryを~NULLに保つか$sR ~SET ~T
+◎
+If template start tag has a shadowrootcustomelementregistry attribute, then set shadow's keep custom element registry null to true.
 </li>
 				</ol>
 			</li>
@@ -23168,9 +23196,17 @@ For performance reasons, an implementation that does not report errors and that 
 </p>
 	</li>
 	<li>
-%根 ~LET `要素を作成する$( %文書, `html^l, `~HTML名前空間$ )
+%根 ~LET `要素を作成する$( ↓ )
+⇒＃
+%文書,
+`html^l,
+`~HTML名前空間$,
+~NULL,
+~NULL,
+~F,
+%文脈 の`~custom要素~registry$el
 ◎
-Let root be the result of creating an element given document, "html", and the HTML namespace.
+Let root be the result of creating an element given document, "html", the HTML namespace, null, null, false, and context's custom element registry.
 </li>
 	<li>
 %文書 に`~nodeを付加する$( %根 )
