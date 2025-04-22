@@ -244,8 +244,8 @@ return text;
 
 ●●options
 
-spec_date:2025-04-14
-trans_update:2025-04-16
+spec_date:2025-04-22
+trans_update:2025-04-23
 source_checked:240712
 page_state_key:HTML
 spec_status:LS
@@ -1100,6 +1100,8 @@ sub.大小無視:~INFRA#ascii-case-insensitive
 ~BOMを~sniffする:~ENCODING#bom-sniff
 ~Unicodeに復号する:~ENCODING#decode
 
+~node:~DOM4#concept-node
+	Node object → ~node
 属性を付加する:~DOM4#concept-element-attributes-append
 ~nodeを付加する:~DOM4#concept-node-append
 
@@ -1402,16 +1404,19 @@ void:
 	%投機的な文書:speculativeDoc
 	%~tag名:tagName
 	%意図された親:intended parent
+	%意図された親:intendedParent
 	%宣言的な~shadow根を許容するか:allowDeclarativeShadowRoots
 	%要素~queue:-
 	%要素~stackのみに追加するか:onlyAddToElementStack
-	%~template開始~tag:template start tag
+	%~template開始~tag:templateStartTag
 	%~template:template
 	%~focusを委任するか:delegates focus
-	%宣言的~shadowの~host要素:declarative shadow host
+	%宣言的~shadowの~host要素:declarativeShadowHostElement
 	%~mode:mode
 	%~clone可能か:clonable
 	%~scriptを実行するか:willExecuteScript
+	%調整-済み挿入-先:adjustedInsertionLocation
+	%調整-済み挿入-先:adjusted insertion location
 
 	●環境／保安
 locale::::ロケール
@@ -11989,10 +11994,10 @@ Return the adjusted insertion location.
 `~tokenから要素を作成する@
 ~algoは、
 所与の
-( %~token, %名前空間, %意図される親 )
+( ~token %~token, 文字列 %名前空間, `~node$ %意図される親 )
 に対し：
 ◎
-When the steps below require the UA to create an element for a token in a particular given namespace and with a particular intended parent, the UA must run the following steps:
+To create an element for a token, given a token token, a string namespace and a Node object intendedParent:
 </p>
 <ol>
 	<li>
@@ -12002,7 +12007,7 @@ When the steps below require the UA to create an element for a token in a partic
 ⇒
 ~RET `投機的な模擬~要素を作成する$( %名前空間, %~token の~tag名, %~token の属性~list )
 ◎
-If the active speculative HTML parser is not null, then return the result of creating a speculative mock element given given namespace, the tag name of the given token, and the attributes of the given token.
+If the active speculative HTML parser is not null, then return the result of creating a speculative mock element given namespace, token's tag name, and token's attributes.
 </li>
 	<li>
 <p>
@@ -12012,7 +12017,7 @@ If the active speculative HTML parser is not null, then return the result of cre
 ⇒
 `投機的な模擬~要素を作成する$( %名前空間, %~token の~tag名, %~token の属性~list )
 ◎
-Otherwise, optionally create a speculative mock element given given namespace, the tag name of the given token, and the attributes of the given token.
+Otherwise, optionally create a speculative mock element given namespace, token's tag name, and token's attributes.
 </p>
 
 <p class="note">注記：
@@ -12033,12 +12038,12 @@ The result is not used. This step allows for a speculative fetch to be initiated
 	<li>
 %文書 ~LET %意図される親 の`~node文書$
 ◎
-Let document be intended parent's node document.
+Let document be intendedParent's node document.
 </li>
 	<li>
 %局所~名 ~LET %~token の~tag名
 ◎
-Let local name be the tag name of the token.
+Let localName be token's tag name.
 </li>
 	<li>
 %is ~LET %~token 内に `is$a 属性が［
@@ -12046,17 +12051,17 @@ Let local name be the tag name of the token.
 無いならば ~NULL
 ］
 ◎
-Let is be the value of the "is" attribute in the given token, if such an attribute exists, or null otherwise.
+Let is be the value of the "is" attribute in token, if such an attribute exists; otherwise null.
 </li>
 	<li>
 %~registry ~LET `~custom要素~registryを検索する$( %意図される親 )
 ◎
-Let registry be the result of looking up a custom element registry given intended parent.
+Let registry be the result of looking up a custom element registry given intendedParent.
 </li>
 	<li>
 %定義 ~LET `~custom要素~定義を検索する$( %~registry, %名前空間, %局所~名, %is )
 ◎
-Let definition be the result of looking up a custom element definition given registry, given namespace, local name, and is.
+Let definition be the result of looking up a custom element definition given registry, namespace, localName, and is.
 </li>
 	<li>
 %~scriptを実行するか ~LET ~IS［
@@ -12110,7 +12115,7 @@ Push a new element queue onto document's relevant agent's custom element reactio
 %~scriptを実行するか,
 %~registry
 ◎
-Let element be the result of creating an element given document, localName, given namespace, null, is, willExecuteScript, and registry.
+Let element be the result of creating an element given document, localName, namespace, null, is, willExecuteScript, and registry.
 </p>
 
 <p class="note">注記：
@@ -12140,7 +12145,8 @@ Append each attribute in the given token to element.
 <p class="note">注記：
 これは、
 `attributeChangedCallback^c 用の`~custom要素~callback反応を~enqueueする$こともある
-— それは（次~段にて）即時に走るかもしれない。
+— それは、
+（次~段にて）即時に走るかもしれない。
 ◎
 This can enqueue a custom element callback reaction for the attributeChangedCallback, which might run immediately (in the next step).
 </p>
@@ -12261,7 +12267,7 @@ element is either not listed or doesn't have a form attribute,＼
 			<li>
 ( %form, %意図される親 ) は同じ`~tree$内に在る
 ◎
-and the intended parent is in the same tree as the element pointed to by the form element pointer,＼
+and the intendedParent is in the same tree as the element pointed to by the form element pointer,＼
 </li>
 		</ul>
 <p>
@@ -12364,29 +12370,28 @@ If the adjusted insertion location cannot accept more elements, e.g., because it
 
 <div class="algo">
 <p>
-以下の各~手続きにて
 `要素を挿入する@
 ~algoは、
 所与の
 ⇒＃
-開始~tag~token %~token,
-名前空間 %名前空間 （省略時は `~HTML名前空間$）,
+~token %~token,
+文字列 %名前空間 （省略時は `~HTML名前空間$）,
 真偽値 %要素~stackのみに追加するか （省略時は ~F ）
 ◎終
 に対し：
 ◎
-When the steps below require the user agent to insert a foreign element for a token in a given namespace and with a boolean onlyAddToElementStack, the user agent must run these steps:
+To insert a foreign element, given a token token, a string namespace, and a boolean onlyAddToElementStack:
 </p>
 <ol>
 	<li>
 %調整-済み挿入-先 ~LET `適切な~node挿入-先$( `現在の~node$ )
 ◎
-Let the adjusted insertion location be the appropriate place for inserting a node.
+Let the adjustedInsertionLocation be the appropriate place for inserting a node.
 </li>
 	<li>
 %要素 ~LET `~tokenから要素を作成する$( %~token, %名前空間, %調整-済み挿入-先 が所属する要素 )
 ◎
-Let element be the result of creating an element for the token in the given namespace, with the intended parent being the element in which the adjusted insertion location finds itself.
+Let element be the result of creating an element for the token given token, namespace, and the element in which the adjustedInsertionLocation finds itself.
 </li>
 	<li>
 ~IF［
@@ -12409,6 +12414,7 @@ Return element.
 </li>
 </ol>
 
+<div>
 <p class="trans-note">【
 この訳では、
 原文による 2 つの手続き［
@@ -12418,10 +12424,10 @@ Return element.
 （これらは順に，この手続きにて %名前空間 を［
 明示的に与えた場合, 省略した場合
 ］に対応する）。
-】
+】</p>
 ◎
-When the steps below require the user agent to insert an HTML element for a token, the user agent must insert a foreign element for the token, with the HTML namespace and false.
-</p>
+To insert an HTML element given a token token: insert a foreign element given token, the HTML namespace, and false.
+</div>
 </div>
 
 <hr>
@@ -14227,11 +14233,15 @@ Act as described in the "anything else" entry below.
 A start tag whose tag name is "template"
 </dt>
 	<dd>
+<p>
+◎
+Run these steps:
+</p>
 		<ol>
 			<li>
 %~template開始~tag ~LET 現token【！the start tag】
 ◎
-Let template start tag be the start tag.
+Let templateStartTag be the start tag.
 </li>
 			<li>
 `作動中な整形~要素~list$に`~marker$を付加する
@@ -14256,17 +14266,17 @@ Push "in template" onto the stack of template insertion modes so that it is the 
 			<li>
 %調整-済み挿入-先 ~LET `適切な~node挿入-先$
 ◎
-Let the adjusted insertion location be the appropriate place for inserting a node.
+Let the adjustedInsertionLocation be the appropriate place for inserting a node.
 </li>
 			<li>
 %意図された親 ~LET %調整-済み挿入-先 が所属する要素
 ◎
-Let intended parent be the element in which the adjusted insertion location finds itself.
+Let intendedParent be the element in which the adjustedInsertionLocation finds itself.
 </li>
 			<li>
 %文書 ~LET %意図された親 の`~node文書$
 ◎
-Let document be intended parent's node document.
+Let document be intendedParent's node document.
 </li>
 			<li>
 <p>
@@ -14280,7 +14290,7 @@ If any of the following are false:
 					<li>
 %~template開始~tag の `shadowrootmode$a 属性の状態 ~EQ `なし$ast
 ◎
-template start tag's shadowrootmode is not in the none state;
+templateStartTag's shadowrootmode is not in the none state;
 </li>
 					<li>
 %文書 の`宣言的な~shadow根を許容するか$doc ~EQ ~F
@@ -14314,38 +14324,38 @@ Otherwise:
 			<li>
 %宣言的~shadowの~host要素 ~LET `現在の調整-済み~node$
 ◎
-Let declarative shadow host element be adjusted current node.
+Let declarativeShadowHostElement be adjusted current node.
 </li>
 			<li>
 %~template ~LET `要素を挿入する$( %~template開始~tag, `~HTML名前空間$, ~T )
 ◎
-Let template be the result of insert a foreign element for template start tag, with HTML namespace and true.
+Let template be the result of insert a foreign element for templateStartTag, with HTML namespace and true.
 </li>
 			<li id="_template-shadowrootmode">
 %~mode ~LET %~template開始~tag の `shadowrootmode$a 属性の値
 ◎
-Let mode be template start tag's shadowrootmode attribute's value.
+Let mode be templateStartTag's shadowrootmode attribute's value.
 </li>
 			<li>
 %~clone可能か ~LET ~IS［
 %~template開始~tag は `shadowrootclonable$a 属性を有する
 ］
 ◎
-Let clonable be true if template start tag has a shadowrootclonable attribute; otherwise false.
+Let clonable be true if templateStartTag has a shadowrootclonable attribute; otherwise false.
 </li>
 			<li>
 %直列化-可能か ~LET ~IS［
 %~template開始~tag は `shadowrootserializable$a 属性を有する
 ］
 ◎
-Let serializable be true if template start tag has a shadowrootserializable attribute; otherwise false.
+Let serializable be true if templateStartTag has a shadowrootserializable attribute; otherwise false.
 </li>
 			<li>
 %~focusを委任するか ~LET ~IS［
 %~template開始~tag は `shadowrootdelegatesfocus$a 属性を有する
 ］
 ◎
-Let delegatesFocus be true if template start tag has a shadowrootdelegatesfocus attribute; otherwise false.
+Let delegatesFocus be true if templateStartTag has a shadowrootdelegatesfocus attribute; otherwise false.
 </li>
 			<li>
 ~IF［
@@ -14354,7 +14364,7 @@ Let delegatesFocus be true if template start tag has a shadowrootdelegatesfocus 
 ⇒
 `要素を調整-済み挿入-先に挿入する$( %~template )
 ◎
-If declarative shadow host element is a shadow host, then insert an element at the adjusted insertion location with template.
+If declarativeShadowHostElement is a shadow host, then insert an element at the adjusted insertion location with template.
 </li>
 			<li>
 <p>
@@ -14363,6 +14373,20 @@ If declarative shadow host element is a shadow host, then insert an element at t
 Otherwise:
 </p>
 				<ol>
+					<li>
+%~registry ~LET %宣言的~shadowの~host要素 の`~custom要素~registry$el
+◎
+Let registry be declarativeShadowHostElement's custom element registry.
+</li>
+					<li>
+~IF［
+%~template開始~tag は `shadowrootcustomelementregistry$a 属性を有する
+］
+⇒
+%~registry ~SET ~NULL
+◎
+If templateStartTag has a shadowrootcustomelementregistry attribute, then set registry to null.
+</li>
 					<li>
 <p>
 `~shadow根を付する$( ↓ )
@@ -14375,7 +14399,7 @@ Otherwise:
 `named^l,
 %~registry
 ◎
-Attach a shadow root with declarative shadow host element, mode, clonable, serializable, delegatesFocus, "named", and registry.
+Attach a shadow root with declarativeShadowHostElement, mode, clonable, serializable, delegatesFocus, "named", and registry.
 </p>
 
 <p>
@@ -14407,7 +14431,7 @@ Return.
 					<li>
 %~shadow ~LET %宣言的~shadowの~host要素 の`~shadow根$el
 ◎
-Let shadow be declarative shadow host element's shadow root.
+Let shadow be declarativeShadowHostElement's shadow root.
 </li>
 					<li>
 %~shadow の`宣言的か$sR ~SET ~T
@@ -14432,7 +14456,7 @@ Set shadow's available to element internals to true.
 ⇒
 %~shadow の`~custom要素~registryを~NULLに保つか$sR ~SET ~T
 ◎
-If template start tag has a shadowrootcustomelementregistry attribute, then set shadow's keep custom element registry null to true.
+If templateStartTag has a shadowrootcustomelementregistry attribute, then set shadow's keep custom element registry null to true.
 </li>
 				</ol>
 			</li>
