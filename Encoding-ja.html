@@ -20,7 +20,7 @@ b.ename {
 	color: var(--K-color);
 }
 
-#_big5-lead > tr > td:nth-child(2) {
+#_big5-leading > tr > td:nth-child(2) {
 	white-space: nowrap;
 }
 
@@ -227,6 +227,9 @@ case 'tA': // 型注釈
 case 'U':
 	text = `U+${key}`;
 	break;
+case 'U1':
+	text = `<span class="code-point">U+${key}</span> ( <span class="char-symbol">&#x${key}</span> )`;
+	break;
 case 'X':
 	text = `0x${key}`;
 	break;
@@ -234,7 +237,7 @@ case 'idx':
 	return idx_html(key);
 	break;
 case 'smb':
-	text = `(<span class="char-symbol">${text}</span>)`;
+	text = `( <span class="char-symbol">${text}</span> )`;
 	break;
 case 'en':
 	text = `<span lang="en">${key}</span>`;
@@ -305,8 +308,8 @@ return text;
 ●●options
 
 spec_title:Encoding
-spec_date:2025-04-23
-trans_update:2025-04-24
+spec_date:2025-04-24
+trans_update:2025-04-25
 source_checked:240613
 spec_status:LS
 original_url:https://encoding.spec.whatwg.org/
@@ -568,6 +571,7 @@ enc.頭部~surrogate:#textencoderstream-pending-high-surrogate
 符号化して書出す:#encode-and-flush
 書出して~enqueueする:#flush-and-enqueue
 
+	Uint8Array ~objを作成する:#create-a-uint8array-object → ~buffer~sourceを作成する
 
 	●各種 encoder／decoder
 
@@ -589,12 +593,12 @@ enc.頭部~surrogate:#textencoderstream-pending-high-surrogate
 ~gb18030復号器:#gb18030-decoder
 ~gb18030符号化器:#gb18030-encoder
 
-~Big5~lead:#big5-lead
+~Big5頭部:#big5-lead
 ~Big5復号器:#big5-decoder
 ~Big5符号化器:#big5-encoder
 
-~EUC-JP~lead:#euc-jp-lead
-~EUC-JP~jis0212:#euc-jp-jis0212-flag
+~EUC-JP頭部:#euc-jp-lead
+~EUC-JP~jis0212か:#euc-jp-jis0212-flag
 ~EUC-JP復号器:#euc-jp-decoder
 ~EUC-JP符号化器:#euc-jp-encoder
 
@@ -603,31 +607,31 @@ enc.頭部~surrogate:#textencoderstream-pending-high-surrogate
 
 ~ISO-2022-JP復号器~状態:#iso-2022-jp-decoder-state
 ~ISO-2022-JP復号器~出力~状態:#iso-2022-jp-decoder-output-state
-~ISO-2022-JP~lead:#iso-2022-jp-lead
-~ISO-2022-JP出力:#iso-2022-jp-output-flag
+~ISO-2022-JP頭部:#iso-2022-jp-lead
+~ISO-2022-JP出力するか:#iso-2022-jp-output-flag
 
-i.ASCII:#iso-2022-jp-decoder-ascii
-i.Roman:#iso-2022-jp-decoder-roman
-i.katakana:#iso-2022-jp-decoder-katakana
-i.~lead~byte:#iso-2022-jp-decoder-lead-byte
-i.~trail~byte:#iso-2022-jp-decoder-trail-byte
+i.~ASCII:#iso-2022-jp-decoder-ascii
+i.~Roman:#iso-2022-jp-decoder-roman
+i.~katakana:#iso-2022-jp-decoder-katakana
+i.頭部~byte:#iso-2022-jp-decoder-lead-byte
+i.尾部~byte:#iso-2022-jp-decoder-trail-byte
 i.~escape開始:#iso-2022-jp-decoder-escape-start
 i.~escape:#iso-2022-jp-decoder-escape
 
 ~ISO-2022-JP符号化器~状態:#iso-2022-jp-encoder-state
-i1.ASCII:#iso-2022-jp-encoder-ascii
-i1.Roman:#iso-2022-jp-encoder-roman
+i1.~ASCII:#iso-2022-jp-encoder-ascii
+i1.~Roman:#iso-2022-jp-encoder-roman
 i1.jis0208:#iso-2022-jp-encoder-jis0208
 
-~Shift_JIS~lead:#shift_jis-lead
+~Shift_JIS頭部:#shift_jis-lead
 ~Shift_JIS復号器:#shift_jis-decoder
 ~Shift_JIS符号化器:#shift_jis-encoder
 
-~EUC-KR~lead:#euc-kr-lead
+~EUC-KR頭部:#euc-kr-lead
 ~EUC-KR復号器:#euc-kr-decoder
 ~EUC-KR符号化器:#euc-kr-encoder
 
-~UTF-16~lead~byte:#utf-16-lead-byte
+~UTF-16頭部~byte:#utf-16-lead-byte
 ~UTF-16頭部~surrogate:#utf-16-lead-surrogate
 ~UTF-16復号器:#utf-16-decoder
 ~UTF-16LE復号器:#utf-16le-decoder
@@ -897,7 +901,7 @@ gb2:
 gb3:
 jis0212:
 jis0208:
-	Roman
+Roman:
 utf-16be:
 UTF-16:
 Hangul::::ハングル
@@ -950,8 +954,6 @@ coder:
 一掃-:flush::~
 	書出さないか:do not flush
 覗見る:peekする:覗き見る
-lead::頭部
-trail::尾部
 頭部:leading:~
 尾部:trailing:~
 連結-:concatenate:~
@@ -959,13 +961,8 @@ sniff:
 不定:indefinite:~
 
 	前後の:leading and trailing
-	~buffer~source:bufferSource
-	出力~chunk:outputChunk
-	書出n~algo:flushAlgorithm
-	形式変換~algo:transformAlgorithm
 	来て:coming
 	来る:come
-	個数:number
 
 	●一般処理
 繰返す:繰り返す
@@ -1029,8 +1026,8 @@ JSON:
 	%~pointer:pointer
 	%~cp:codePoint
 	%~offset:offset
-	%~cp~offset:-
-	%~pointer~offset:-
+	%~cp~offset:codePointOffset
+	%~pointer~offset:pointerOffset
 	%~buffer:buffer
 	%復号器:-
 	%復号器:decoder
@@ -1053,22 +1050,26 @@ JSON:
 	%~byte列:bytes
 	%~byte:byte
 	%temp
-	%~lead:lead
-	%~trail:trail
 	%byte1
 	%byte2
 	%byte3:byte3
 	%byte4:byte4
 	%状態:state
-	%~lead~offset:lead offset
+	%頭部~offset:leadingOffset
 	%~cu:codeUnit
 	%~utf-16be
+	^i:書出n~algo:flushAlgorithm
+	^i:形式変換~algo:transformAlgorithm
 
 	●未分類
 XML:
 被覆域:coverage:~
 覆う:coverする:~
 組立直せ:reassembleでき:組み立て直せ
+無符号整数:number:~
+	数値:number
+	個数:number
+	〜数:number of
 
 	視覚-化:visualize
 	視覚-化:visualization
@@ -1076,8 +1077,6 @@ XML:
 	~~統合:Unified
 	伴われない:no 〜 present
 	優先される:has priority over／more authoritative
-	数
-	数値:number
 	桁:digit
 	〜進数
 	〜進表記
@@ -1220,6 +1219,10 @@ XML:
 
 ●●ref_normative
 
+[ECMASCRIPT]
+    ＜ECMAScript Language Specification＞. URL: https://tc39.es/ecma262/multipage/
+[HTML]
+    Anne van Kesteren; et al. ＜HTML Standard＞. Living Standard. URL: https://html.spec.whatwg.org/multipage/
 [INFRA]
     Anne van Kesteren; Domenic Denicola. ＜Infra Standard＞. Living Standard. URL: https://infra.spec.whatwg.org/
 [STREAMS]
@@ -1231,8 +1234,6 @@ XML:
 
 ●●ref_informative
 
-[HTML]
-    Anne van Kesteren; et al. ＜HTML Standard＞. Living Standard. URL: https://html.spec.whatwg.org/multipage/
 [ISO646]
     ＜Information technology — ISO 7-bit coded character set for information interchange＞. December 1991. Published. URL: https://www.iso.org/standard/4777.html
 [ISO8859-1]
@@ -1260,7 +1261,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/encoding/commits
-	<a href="https://encoding.spec.whatwg.org/commit-snapshots/36fb4e7a5582873b3700a5a72912a8e91163a092/">Snapshot as of this commit</a>
+	<a href="https://encoding.spec.whatwg.org/commit-snapshots/2f2e8121c67b1f050e5262800e62de27e96854bc/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/encodings">@encodings</a>
 
 Tests:
@@ -1306,7 +1307,7 @@ Tests:
 ］に対し，~UTF-8符号化法を要求する
 （また，それを定義する）。
 ◎
-The UTF-8 encoding is the most appropriate encoding for interchange of Unicode, the universal coded character set. Therefore for new protocols and formats, as well as existing formats deployed in new contexts, this specification requires (and defines) the UTF-8 encoding.
+The UTF-8 encoding is the most appropriate encoding for interchange of Unicode, the universal coded character set. Therefore, for new protocols and formats, as well as existing formats deployed in new contexts, this specification requires (and defines) the UTF-8 encoding.
 </p>
 
 <p>
@@ -1369,11 +1370,11 @@ User agents have also significantly deviated from the labels listed in the IANA 
 そこでは、［
 攻撃者が何らかの~fieldを制御し得るような，~JSON資源
 ］内で，
-`Shift_JIS$n の~lead~byte `82^X が~trail~byte `22^X を “隠す” ために利用された。
+`Shift_JIS$n の頭部~byte `82^X が尾部~byte `22^X を “隠す” ために利用された。
 生産器からは，これが違法な~byte対であっても問題が見えない一方で、
-消費器は，この~byte対を 1 個の `FFFD^U `�^smb として復号する~~結果、
+消費器は，この~byte対を 1 個の `FFFD^U1 として復号する~~結果、
 全体的な解釈が変わってしまう
-— `0022^U `"^smb は重要な区切子なので。
+— `0022^U1 は重要な区切子なので。
 ［
 `~scalar値$に対し複数~byteを利用する符号化法
 ］の復号器には、
@@ -1382,18 +1383,18 @@ User agents have also significantly deviated from the labels listed in the IANA 
 ］を “隠せない” ようにすることが要求される
 — 前述の~byte対に対しては、
 出力が［
-`FFFD^U `0022^U
+`FFFD^U1
 ］になるよう
 （あいにく，これには例外があり、
 `~gb18030復号器$は，`~EoQ$にある そのような~byte 1 個を “隠して” しまう）。
 ◎
-There is a set of encoding security issues when the producer and consumer do not agree on the encoding in use, or on the way a given encoding is to be implemented. For instance, an attack was reported in 2011 where a Shift_JIS lead byte 0x82 was used to “mask” a 0x22 trail byte in a JSON resource of which an attacker could control some field. The producer did not see the problem even though this is an illegal byte combination. The consumer decoded it as a single U+FFFD (�) and therefore changed the overall interpretation as U+0022 (") is an important delimiter. Decoders of encodings that use multiple bytes for scalar values now require that in case of an illegal byte combination, a scalar value in the range U+0000 to U+007F, inclusive, cannot be “masked”. For the aforementioned sequence the output would be U+FFFD U+0022. (As an unfortunate exception to this, the gb18030 decoder will “mask” up to one such byte at end-of-queue.)
+There is a set of encoding security issues when the producer and consumer do not agree on the encoding in use, or on the way a given encoding is to be implemented. For instance, an attack was reported in 2011 where a Shift_JIS leading byte 0x82 was used to “mask” a 0x22 trailing byte in a JSON resource of which an attacker could control some field. The producer did not see the problem even though this is an illegal byte combination. The consumer decoded it as a single U+FFFD (�) and therefore changed the overall interpretation as U+0022 (") is an important delimiter. Decoders of encodings that use multiple bytes for scalar values now require that in case of an illegal byte combination, a scalar value in the range U+0000 to U+007F, inclusive, cannot be “masked”. For the aforementioned sequence the output would be U+FFFD U+0022. (As an unfortunate exception to this, the gb18030 decoder will “mask” up to one such byte at end-of-queue.)
 </p>
 
 <p>
 これは、
 より~~一般的には，［
-~lead~byteが伴われないときに，`~ASCII~byte$を`~ASCII~cp$でない何かに対応付ける
+頭部~byteが伴われないときに，`~ASCII~byte$を`~ASCII~cp$でない何かへ対応付ける
 ］ような符号化法における課題である。
 これらは， “~ASCII互換でない” 符号化法であり、
 あいにく，配備-済みな内容に因り要求されるが、［
@@ -1408,7 +1409,7 @@ There is a set of encoding security issues when the producer and consumer do not
 注意深く細工された内容を資源の中へ注入して，利用者に符号化法を上書きするよう促す~~結果、
 例えば，~scriptの実行へ至らすものがある。
 ◎
-This is a larger issue for encodings that map anything that is an ASCII byte to something that is not an ASCII code point, when there is no lead byte present. These are “ASCII-incompatible” encodings and other than ISO-2022-JP and UTF-16BE/LE, which are unfortunately required due to deployed content, they are not supported. (Investigation is ongoing whether more labels of other such encodings can be mapped to the replacement encoding, rather than the unknown encoding fallback.) An example attack is injecting carefully crafted content into a resource and then encouraging the user to override the encoding, resulting in, e.g., script execution.
+This is a larger issue for encodings that map anything that is an ASCII byte to something that is not an ASCII code point, when there is no leading byte present. These are “ASCII-incompatible” encodings and other than ISO-2022-JP and UTF-16BE/LE, which are unfortunately required due to deployed content, they are not supported. (Investigation is ongoing whether more labels of other such encodings can be mapped to the replacement encoding, rather than the unknown encoding fallback.) An example attack is injecting carefully crafted content into a resource and then encouraging the user to override the encoding, resulting in, e.g., script execution.
 </p>
 
 <p>
@@ -1629,7 +1630,7 @@ Remove ioQueue[0] and return it.
 `入出力~queueから~item列を読取る@
 ~algoは、
 所与の
-( `入出力~queue$ %入出力~queue, %個数 )
+( `入出力~queue$ %入出力~queue, 無符号整数 %個数 )
 に対し：
 ◎
 To read a number number of items from ioQueue, run these steps:
@@ -1701,7 +1702,7 @@ Return readItems.
 `入出力~queueを覗見る@
 ~algoは、
 所与の
-( `入出力~queue$ %入出力~queue, 整数 %個数 )
+( `入出力~queue$ %入出力~queue, 無符号整数 %個数 )
 に対し：
 ◎
 To peek a number number of items from an I/O queue ioQueue, run these steps:
@@ -1898,9 +1899,11 @@ To convert an I/O queue ioQueue into a list, string, or byte sequence, return th
 `~list$
 </li>
 	<li>
-~Assert：
-%入力 は`~list$であるならば、
-次を満たす
+~IF［
+%入力 は`~list$である
+］
+⇒
+~Assert
 ⇒
 ［
 %入力 を成す すべての~itemは同じ型である
@@ -1927,7 +1930,7 @@ To convert an I/O queue ioQueue into a list, string, or byte sequence, return th
 </ol>
 ◎
 To convert a list, string, or byte sequence input into an I/O queue, run these steps:
-• Assert: if input is a list, then it does not contain end-of-queue.
+• Assert: input is not a list or it does not contain end-of-queue.
 • Return an I/O queue containing the items in input, in order, followed by end-of-queue.
 </div>
 
@@ -2015,6 +2018,23 @@ To obtain a scalar value from surrogates, given a leading surrogate leading and 
 （ “~cp列 « … »” という記法が無いのは、
 複数個の~cpからなる~item列が利用される所が，一箇所しかないからである。）
 </small></p>
+
+<div class="algo">
+<p>
+`<code>Uint8Array</code> ~objを作成する＠#create-a-uint8array-object@
+~algoは…
+◎
+To create a Uint8Array object, given an I/O queue ioQueue and a realm realm:
+• Let bytes be the result of converting ioQueue into a byte sequence.
+• Return the result of creating a Uint8Array object from bytes in realm.
+</p>
+
+<p class="trans-note">【
+この訳では、
+この~algoを利用しない
+— 代わりに，この~algoが利用する`~buffer~sourceを作成する$~algo `WEBIDL$r を直に呼出す。
+】</p>
+</div>
 
 	</section>
 	<section id="encodings">
@@ -2266,26 +2286,34 @@ To process an item given an item item, encoding’s encoder or decoder instance 
 </p>
 <ol>
 	<li>
-~Assert：
-%~coder は`符号化器$の~instanceであるならば、
+~IF［
+%~coder は`符号化器$の~instanceである
+］
+⇒
+~Assert
+⇒
+［
 %~mode ~NEQ `replacement^l
+］~AND［
+%~item は`~surrogate$ではない
+］
 ◎
-Assert: if encoderDecoder is an encoder instance, mode is not "replacement".
+Assert: encoderDecoder is not an encoder instance or mode is not "replacement".
+◎
+Assert: encoderDecoder is not a decoder instance or mode is not "html".
+◎
+Assert: encoderDecoder is not an encoder instance or item is not a surrogate.
 </li>
 	<li>
-~Assert：
-%~coder は`復号器$の~instanceであるならば、
+~IF［
+%~coder は`復号器$の~instanceである
+］
+⇒
+~Assert
+⇒
 %~mode ~NEQ `html^l
 ◎
-Assert: if encoderDecoder is a decoder instance, mode is not "html".
-</li>
-	<li>
-~Assert：
-%~coder は`符号化器$の~instanceであるならば、
-%~item は`~surrogate$ではない。
-◎
-Assert: if encoderDecoder is an encoder instance, item is not a surrogate.
-</li>
+↑</li>
 	<li>
 %結果 ~LET %~coder の`~handler$( %入力, %~item )
 ◎
@@ -2313,11 +2341,15 @@ Otherwise, if result is one or more items:
 </p>
 		<ol>
 			<li>
-~Assert：
-%~coder は`復号器$の~instanceであるならば、
+~IF［
+%~coder は`復号器$の~instanceである
+］
+⇒
+~Assert
+⇒
 %結果 は`~surrogate$を包含しない。
 ◎
-Assert: if encoderDecoder is a decoder instance, result does not contain any surrogates.
+Assert: encoderDecoder is not a decoder instance or result does not contain any surrogates.
 </li>
 			<li>
 `入出力~queueに~pushする$( %出力, %結果 )
@@ -2345,7 +2377,7 @@ switch on mode and run the associated steps:
 					<li>
 `replacement^l
 ⇒
-`入出力~queueに~pushする$( %出力, « `FFFD^U `�^smb » )
+`入出力~queueに~pushする$( %出力, « `FFFD^U1 » )
 ◎
 "replacement"
 • Push U+FFFD (�) to output.
@@ -2487,7 +2519,7 @@ otherwise return failure.
 
 <p class="note">注記：
 この［
-~labelを`符号化法$に対応付ける~algo
+~labelを`符号化法$へ対応付ける~algo
 ］は、
 `Unicode Technical Standard #22 § 1.4＠https://www.unicode.org/reports/tr22/tr22-8.html#Charset_Alias_Matching$
 によるものより基本的かつ制約的である
@@ -2875,7 +2907,7 @@ The set of supported encodings is primarily based on the intersection of the set
 例えば `80^X を［
 “~Latin1” ／ “~ASCII”
 ］用に復号するよう依頼されたときには，
-`20AC^U `€^smb として復号することになる。
+`20AC^U1 として復号することになる。
 ◎
 The windows-1252 encoding has various labels, such as "latin1", "iso-8859-1", and "ascii", which have historically been confusing for developers. On the web, and in any software that seeks to be web-compatible by implementing this standard, these are synonyms: "latin1" and "ascii" are just labels for windows-1252, and any software following this standard will, for example, decode 0x80 as U+20AC (€) when asked for the "Latin1" or "ASCII" decoding of that byte.
 </p>
@@ -3006,7 +3038,7 @@ An efficient implementation likely has two indexes per encoding. One optimized f
 </li>
 	<li>
 %行l~list から［
-空~行l ／ `0023^U `#^smb で開始される行l
+空~行l ／ `0023^U1 から開始する行l
 ］をすべて除去する。
 </li>
 	<li>
@@ -3162,7 +3194,6 @@ CJK Compatibility Ideograph
 ◎
 CJK Unified Ideographs Extension A
 </table>
-
 </div>
 
 <p>
@@ -3214,13 +3245,13 @@ This matches the KS X 1001 standard and the Unified Hangul Code, more commonly k
 これは、
 2 ~byteに符号化される~cp用の GB18030-2022 標準に合致する
 — ただし，配備-済みな内容と互換になるよう、
-`A3^X `A0^X は `3000^U に対応付けられる。
+`A3^X `A0^X は `3000^U へ対応付けられる。
 この索引~全体で、
 ~Unicodeの~CJK統合漢字（ `CJK Unified Ideographs^en ）~blockを覆う。
-その~block内の~entryのうち，視覚-化における（最初の） `3000^U より上または左にあるものは、
+その~block内の~entryのうち，視覚-化における（最初の） `3000^U `IDEOGRAPHIC SPACE^cn より上または左にあるものは、
 ~Unicode順に並ぶ。
 ◎
-This matches the GB18030-2022 standard for code points encoded as two bytes, except for 0xA3 0xA0 which maps to U+3000 to be compatible with deployed content. This index covers the CJK Unified Ideographs block of Unicode in its entirety. Entries from that block that are above or to the left of (the first) U+3000 in the visualization are in the Unicode order.
+This matches the GB18030-2022 standard for code points encoded as two bytes, except for 0xA3 0xA0 which maps to U+3000 IDEOGRAPHIC SPACE to be compatible with deployed content. This index covers the CJK Unified Ideographs block of Unicode in its entirety. Entries from that block that are above or to the left of (the first) U+3000 in the visualization are in the Unicode order.
 
 <tr><td>`索引~gb18030範囲~群@
 <td>`gb18030-ranges$idx
@@ -3265,23 +3296,33 @@ This is the JIS X 0212 standard. It is only used by the EUC-JP decoder due to la
 <tr><td>`索引~ISO-2022-JP~katakana@
 <td>`iso-2022-jp-katakana$idx
 <td>
+<p>
 これは、
-~Unicode正規化~形（ `Normalization Form^en ） KC に従って，半角~katakanaを全角~katakanaに対応付ける。
-ただし、［
-`FF9E^U ／ `FF9F^U
-］は［
-`309B^U ／ `309C^U
-］に対応付ける
-— ［
-`3099^U ／ `309A^U
-］ではなく
-【これらはいずれも、濁点／半濁点】
-。
-これを利用するのは、
+~Unicode正規化~形（ `Normalization Form^en ） KC に従って，半角~katakanaを全角~katakanaへ対応付ける。
+ただし：
+</p>
+<ul>
+	<li>
+`FF9E^U1 は、
+`309B^U1 へ対応付ける
+— `3099^U1 ではなく
+【いずれも，濁点】
+</li>
+	<li>
+`FF9F^U1 は、
+`309C^U1 へ対応付ける
+— `309A^U1 ではなく
+【いずれも，半濁点】
+</li>
+</ul>
+
+<p>
+これを利用するものは、
 `~ISO-2022-JP符号化器$に限られる。
 `UNICODE$r
+</p>
 ◎
-This maps halfwidth to fullwidth katakana as per Unicode Normalization Form KC, except that U+FF9E and U+FF9F map to U+309B and U+309C rather than U+3099 and U+309A. It is only used by the ISO-2022-JP encoder. [UNICODE]
+This maps halfwidth to fullwidth katakana as per Unicode Normalization Form KC, except that U+FF9E (ﾞ) and U+FF9F (ﾟ) map to U+309B (゛) and U+309C (゜) rather than U+3099 (◌゙) and U+309A (◌゚). It is only used by the ISO-2022-JP encoder. [UNICODE]
 </table>
 
 <div class="algo">
@@ -3317,18 +3358,18 @@ If pointer is 7457, then return code point U+E7C7.
 	<li>
 %~offset ~LET `索引~gb18030範囲~群$の中で %~pointer を超えない最後の~pointer
 ◎
-Let offset be the last pointer in index gb18030 ranges that is less than or equal to pointer and let code point offset be its corresponding code point.
+Let offset be the last pointer in index gb18030 ranges that is less than or equal to pointer and let codePointOffset be its corresponding code point.
 </li>
 	<li>
 %~cp~offset ~LET %~offset が指している~cp
 ◎
 ↑</li>
 	<li>
-~RET 値が［
+~RET 次を値にとる~cp
+⇒
 %~cp~offset ~PLUS %~pointer ~MINUS %~offset
-］なる~cp
 ◎
-Return a code point whose value is code point offset + pointer − offset.
+Return a code point whose value is codePointOffset + pointer − offset.
 </li>
 </ol>
 </div>
@@ -3355,18 +3396,18 @@ If codePoint is U+E7C7, then return pointer 7457.
 	<li>
 %~offset ~LET `索引~gb18030範囲~群$の中で %~cp を超えない最後の~cp
 ◎
-Let offset be the last code point in index gb18030 ranges that is less than or equal to codePoint and let pointer offset be its corresponding pointer.
+Let offset be the last code point in index gb18030 ranges that is less than or equal to codePoint and let pointerOffset be its corresponding pointer.
 </li>
 	<li>
 %~pointer~offset ~LET %~offset に対応する~pointer
 ◎
 ↑</li>
 	<li>
-~RET 値が［
+~RET 次を値にとる~cp
+⇒
 %~pointer~offset ~PLUS %~cp ~MINUS %~offset
-］なる~pointer
 ◎
-Return a pointer whose value is pointer offset + codePoint − offset.
+Return a pointer whose value is pointerOffset + codePoint − offset.
 </li>
 </ol>
 </div>
@@ -3435,13 +3476,13 @@ Avoid returning Hong Kong Supplementary Character Set extensions literally.
 <p>
 ~IF［
 %~cp ~IN
-{ `2550^U, `255E^U, `2561^U, `256A^U, `5341^U, `5345^U }
+{ `2550^U1, `255E^U1, `2561^U1, `256A^U1, `5341^U1, `5345^U1 }
 ］
 ⇒
 ~RET
 %索引 の中で %~cp に対応する`最後の^em ~pointer
 ◎
-If codePoint is U+2550, U+255E, U+2561, U+256A, U+5341, or U+5345, return the last pointer corresponding to codePoint in index.
+If codePoint is U+2550 (═), U+255E (╞), U+2561 (╡), U+256A (╪), U+5341 (十), or U+5345 (卅), then return the last pointer corresponding to codePoint in index.
 </p>
 
 <p class="note">注記：
@@ -3997,13 +4038,13 @@ This is a legacy hook for URL percent-encoding. The caller will have to keep an 
 </p>
 
 <p>
-特に，`~ISO-2022-JP符号化器$が `Roman$i 状態にある下で `~error$i を返す場合、
+特に，`~ISO-2022-JP符号化器$が `~Roman$i 状態にある下で `~error$i を返す場合、
 ~call元は，
 `5C^X `\^smb を出力し得ない
 — それは、
-`005C^U `\^smb として復号されなくなるので。
+`005C^U1 として復号されなくなるので。
 この理由から，`符号化するか失敗する$を意図されない目的に利用している応用
-— `005C^U `\^smb を置換~構文【~escape法】（例： `\u2603^c ）の一部として利用している，~JSや~CSSなど —
+— `005C^U1 を置換~構文【~escape法】（例： `\u2603^c ）の一部として利用している，~JSや~CSSなど —
 は、
 次のいずれかで~~対処すること
 ⇒＃
@@ -4144,82 +4185,66 @@ interface mixin `TextDecoderCommon@I {
 `TextDecoder$I, `TextDecoderStream$I
 ］~objで共有される共通な取得子を定義する。
 これらの各~objには、
-次が結付けられる：
-
+次に挙げるものが結付けられる：
 ◎
 The TextDecoderCommon interface mixin defines common getters that are shared between TextDecoder and TextDecoderStream objects. These objects have an associated:
 </p>
 
-<dl class="def-list">
-	<dt>
+<ul>
+	<li>
 `符号化法@dec
+⇒
+ある`符号化法$
 ◎
 encoding
-</dt>
-	<dd>
-`符号化法$。
-◎
-An encoding.
-</dd>
-
-	<dt>
+• An encoding.
+</li>
+	<li>
 `復号器@dec
+⇒
+ある［
+`復号器$の~instance
+］
 ◎
 decoder
-</dt>
-	<dd>
-`復号器$の~instance。
-◎
-A decoder instance.
-</dd>
-
-	<dt>
+• A decoder instance.
+</li>
+	<li>
 `入出力~queue@dec
+⇒
+ある`入出力~queue$`~byte^tA
 ◎
 I/O queue
-</dt>
-	<dd>
-`入出力~queue$`~byte^tA。
-◎
-An I/O queue of bytes.
-</dd>
-
-	<dt>
+• An I/O queue of bytes.
+</li>
+	<li>
 `~BOMは無視するか@dec
+⇒
+ある真偽値
+— 初期~時は ~F とする。
 ◎
 ignore BOM
-</dt>
-	<dd>
-真偽値
-— 初期~時は ~F とする。
-◎
-A boolean, initially false.
-</dd>
-
-	<dt>
+• A boolean, initially false.
+</li>
+	<li>
 `~BOMを見つけたか@dec
+⇒
+ある真偽値
+— 初期~時は ~F とする。
 ◎
 BOM seen
-</dt>
-	<dd>
-真偽値
-— 初期~時は ~F とする。
-◎
-A boolean, initially false.
-</dd>
-
-	<dt>
+• A boolean, initially false.
+</li>
+	<li>
 `~error~mode@dec
-◎
-error mode
-</dt>
-	<dd>
-`~error~mode$
+⇒
+ある`~error~mode$
 — 初期~時は `replacement^l とする。
 ◎
-An error mode, initially "replacement".
-</dd>
-</dl>
+error mode
+• An error mode, initially "replacement".
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -4283,7 +4308,7 @@ Set decoder’s BOM seen to true.
 ⇒
 ~CONTINUE
 ◎
-If item is U+FEFF, then continue.
+If item is U+FEFF BOM, then continue.
 </li>
 				</ol>
 			</li>
@@ -4793,7 +4818,7 @@ The UTF-8 encoder cannot return error.
 </li>
 				</ol>
 ◎
-If result is finished, then convert output into a byte sequence and return a Uint8Array object wrapping an ArrayBuffer containing output.
+If result is finished, then return the result of creating a Uint8Array object given output and this’s relevant realm.
 </li>
 		</ol>
 	</li>
@@ -5209,12 +5234,12 @@ Let outputChunk be the result of running serialize I/O queue with decoder and ou
 </li>
 					<li>
 ~IF［
-%出力~chunk は空でない
+%出力~chunk ~NEQ 空~文字列
 ］
 ⇒
 %復号器 の`形式変換$に`~chunkを~enqueueする$TS( %出力~chunk )
 ◎
-If outputChunk is non-empty, then enqueue outputChunk in decoder’s transform.
+If outputChunk is not the empty string, then enqueue outputChunk in decoder’s transform.
 </li>
 					<li>
 ~RET
@@ -5293,12 +5318,13 @@ Let outputChunk be the result of running serialize I/O queue with decoder and ou
 </li>
 					<li>
 ~IF［
-%出力~chunk は空でない
+%出力~chunk ~NEQ 空~文字列
 ］
 ⇒
 %復号器 の`形式変換$に`~chunkを~enqueueする$TS( %出力~chunk )
 ◎
-If outputChunk is non-empty, then enqueue outputChunk in decoder’s transform.
+
+If outputChunk is not the empty string, then enqueue outputChunk in decoder’s transform.
 </li>
 					<li>
 ~RET
@@ -5337,40 +5363,39 @@ interface `TextEncoderStream@I {
 
 <p>
 各 `TextEncoderStream$I ~objには、
-次が結付けられる：
+次に挙げるものが結付けられる：
 ◎
 A TextEncoderStream object has an associated:
 </p>
-
-<dl class="def-list">
-	<dt>
+<ul>
+	<li>
+<p>
 `符号化器@enc
-◎
-encoder
-</dt>
-	<dd>
+⇒
+ある［
 `符号化器$の~instance
-◎
-An encoder instance.
-</dd>
-	<dd class="trans-note">【
+］
+</p>
+
+<p class="trans-note">【
 下に注記されるとおり， `UTF-8$n のそれしかとらない。
 また、
 `復号器$decのときと違って，状態を保持する~fieldは無い。
-】</dd>
-
-	<dt>
-`頭部~surrogate@enc
+】</p>
 ◎
-leading surrogate
-</dt>
-	<dd>
+encoder
+• An encoder instance.
+</li>
+	<li>
+`頭部~surrogate@enc
+⇒
 ~NULL ／`頭部~surrogate$
 — 初期~時は ~NULL とする。
 ◎
-Null or a surrogate, initially null.
-</dd>
-</dl>
+leading surrogate
+• Null or a leading surrogate, initially null.
+</li>
+</ul>
 
 <p class="note">注記：
 `TextEncoderStream$I ~objは `UTF-8$n しか~supportしないので、
@@ -5514,7 +5539,7 @@ Convert input to an I/O queue of code units.
 そのようにしているのは、［
 2 つの~chunkに分割された~surrogate~pairを，適切な~scalar値に組立直せるようにする
 ］ためであり，他の挙動は `USVString^I と一致する。
-特に，~~孤立した~surrogateは `FFFD^U `�^smb に置換されることになる。
+特に，~~孤立した~surrogateは `FFFD^U1 に置換されることになる。
 ◎
 DOMString, as well as an I/O queue of code units rather than scalar values, are used here so that a surrogate pair that is split between chunks can be reassembled into the appropriate scalar value. The behavior is otherwise identical to USVString. In particular, lone surrogates will be replaced with U+FFFD (�).
 </p>
@@ -5553,16 +5578,16 @@ Convert output into a byte sequence.
 					<li>
 <p>
 ~IF［
-%出力 は空でない
+%出力 は`空$でない
 ］：
 ◎
-If output is non-empty:
+If output is not empty:
 </p>
 						<ol>
 							<li>
 %~chunk ~LET `~buffer~sourceを作成する$( `Uint8Array$I, %出力, %符号化器 に`関連な~realm$ )
 ◎
-Let chunk be a Uint8Array object wrapping an ArrayBuffer containing output.
+Let chunk be the result of creating a Uint8Array object given output and encoder’s relevant realm.
 </li>
 	<li>
 %符号化器 の`形式変換$に`~chunkを~enqueueする$TS( %~chunk )
@@ -5642,7 +5667,7 @@ If item is a trailing surrogate, then return a scalar value from surrogates give
 Restore item to input.
 </li>
 			<li>
-~RET `FFFD^U `�^smb
+~RET `FFFD^U1
 ◎
 Return U+FFFD (�).
 </li>
@@ -5663,7 +5688,7 @@ If item is a leading surrogate, then set encoder’s leading surrogate to item a
 %~item は`尾部~surrogate$である
 ］
 ⇒
-~RET `FFFD^U `�^smb
+~RET `FFFD^U1
 ◎
 If item is a trailing surrogate, then return U+FFFD (�).
 </li>
@@ -5708,23 +5733,22 @@ If encoder’s leading surrogate is non-null:
 			<li>
 <p>
 %~byte列 ~LET ~byte列 `EF^X `BF^X `BD^X
-◎
-Let chunk be a Uint8Array object wrapping an ArrayBuffer containing＼
-0xEF 0xBF 0xBD.
 </p>
 
 <p class="note">注記：
 これは、
-`FFFD^U `�^smb を成す~UTF-8~byte列である。
-◎
-This is U+FFFD (�) in UTF-8 bytes.
+`FFFD^U1 を成す~UTF-8~byte列である。
 </p>
-			</li>
+◎
+↓</li>
 			<li>
 <p>
 %~chunk ~LET `~buffer~sourceを作成する$( `Uint8Array$I, %~byte列, %符号化器 に`関連な~realm$ )
 ◎
-↑</li>
+Let chunk be the result of creating a Uint8Array object given « 0xEF, 0xBF, 0xBD » and encoder’s relevant realm.
+◎
+This is U+FFFD (�) in UTF-8 bytes.
+</li>
 			<li>
 %符号化器 の`形式変換$に`~chunkを~enqueueする$TS( %~chunk )
 ◎
@@ -5757,29 +5781,70 @@ Enqueue chunk into encoder’s transform.
 ~BOMは、
 ~labelより~~優先される
 — その方が配備-済みな内容において正確aになるものと見出されたので。
-したがってそれは、
+したがって，それは、
 `~UTF-8復号器$~algoの一部を成さない
 — 代わりに［
-`~Unicodeに復号する$ ／ `~UTF-8復号する$
+`~Unicodeに復号する$／`~UTF-8復号する$
 ］~algoの一部を成す。
 ◎
-A byte order mark has priority over a label as it has been found to be more accurate in deployed content. Therefore it is not part of the UTF-8 decoder algorithm but rather the decode and UTF-8 decode algorithms.
+A byte order mark has priority over a label as it has been found to be more accurate in deployed content. Therefore it is not part of the UTF-8 decoder algorithm, but rather the decode and UTF-8 decode algorithms.
 </p>
 
 <p>
 各［
 `UTF-8$n の`復号器$
 ］には、
-次が結付けられる
-⇒＃
-`~UTF-8~cp@（初期~時は 0 ）,
-`~UTF-8出現~byte数@（初期~時は 0 ）,
-`~UTF-8要~byte数@（初期~時は 0 ）,
-`~UTF-8下限@（初期~時は `80^X ）,
-`~UTF-8上限@（初期~時は `BF^X ）
+次に挙げるものが結付けられる：
 ◎
-UTF-8’s decoder has an associated UTF-8 code point, UTF-8 bytes seen, and UTF-8 bytes needed (all initially 0), a UTF-8 lower boundary (initially 0x80), and a UTF-8 upper boundary (initially 0xBF).
+UTF-8’s decoder has an associated:
 </p>
+<ul>
+	<li>
+`~UTF-8~cp@
+⇒
+ある無符号整数
+— 初期~時は 0 とする。
+◎
+UTF-8 code point
+• ↓
+</li>
+	<li>
+`~UTF-8出現~byte数@
+⇒
+ある無符号整数
+— 初期~時は 0 とする。
+◎
+UTF-8 bytes seen
+• ↓
+</li>
+	<li>
+`~UTF-8要~byte数@
+⇒
+ある無符号整数
+— 初期~時は 0 とする。
+◎
+UTF-8 bytes needed
+• Each a number, initially 0.
+</li>
+	<li>
+`~UTF-8下限@
+⇒
+ある~byte
+— 初期~時は `80^X とする。
+◎
+UTF-8 lower boundary
+• A byte, initially 0x80.
+</li>
+	<li>
+`~UTF-8上限@
+⇒
+ある~byte
+— 初期~時は `BF^X とする。
+◎
+UTF-8 upper boundary
+• A byte, initially 0xBF.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -5801,7 +5866,7 @@ UTF-8’s decoder’s handler, given ioQueue and byte, runs these steps:
 `~UTF-8要~byte数$ ~SET 0；
 ~RET `~error$i
 ◎
-If byte is end-of-queue and UTF-8 bytes needed is not 0, set UTF-8 bytes needed to 0 and return error.
+If byte is end-of-queue and UTF-8 bytes needed is not 0, then set UTF-8 bytes needed to 0 and return error.
 </li>
 	<li>
 ~IF［
@@ -5818,25 +5883,31 @@ If byte is end-of-queue, then return finished.
 `~UTF-8要~byte数$ ~EQ 0
 ］：
 ◎
-If UTF-8 bytes needed is 0, based on byte:
+If UTF-8 bytes needed is 0,＼
 </p>
 		<ol>
 			<li>
 <p>
 %~byte に応じて：
 ◎
-↑</p>
-
-				<dl class="switch">
-					<dt>`00^X 〜 `7F^X</dt>
-					<dd>
+based on byte:
+</p>
+				<ul class="switch">
+					<li>
+<p>
+`00^X 〜 `7F^X
+⇒
 ~RET ~cp « %~byte »
 ◎
-Return a code point whose value is byte.
-</dd>
-
-					<dt>`C2^X 〜 `DF^X</dt>
-					<dd>
+0x00 to 0x7F
+• Return a code point whose value is byte.
+</li>
+					<li>
+<p>
+`C2^X 〜 `DF^X：
+◎
+0xC2 to 0xDF
+</p>
 						<ol>
 							<li>
 `~UTF-8要~byte数$ ~SET 1
@@ -5852,10 +5923,13 @@ Set UTF-8 code point to byte &amp; 0x1F.
 The five least significant bits of byte.
 </li>
 						</ol>
-					</dd>
-
-					<dt>`E0^X 〜 `EF^X</dt>
-					<dd>
+					</li>
+					<li>
+<p>
+`E0^X 〜 `EF^X：
+◎
+0xE0 to 0xEF
+</p>
 						<ol>
 							<li>
 ~IF［
@@ -5864,7 +5938,7 @@ The five least significant bits of byte.
 ⇒
 `~UTF-8下限$ ~SET `A0^X
 ◎
-If byte is 0xE0, set UTF-8 lower boundary to 0xA0.
+If byte is 0xE0, then set UTF-8 lower boundary to 0xA0.
 </li>
 							<li>
 ~IF［
@@ -5873,7 +5947,7 @@ If byte is 0xE0, set UTF-8 lower boundary to 0xA0.
 ⇒
 `~UTF-8上限$ ~SET `9F^X
 ◎
-If byte is 0xED, set UTF-8 upper boundary to 0x9F.
+If byte is 0xED, then set UTF-8 upper boundary to 0x9F.
 </li>
 							<li>
 `~UTF-8要~byte数$ ~SET 2
@@ -5889,10 +5963,13 @@ Set UTF-8 code point to byte &amp; 0xF.
 The four least significant bits of byte.
 </li>
 						</ol>
-					</dd>
-
-					<dt>`F0^X 〜 `F4^X</dt>
-					<dd>
+					</li>
+					<li>
+<p>
+`F0^X 〜 `F4^X：
+◎
+0xF0 to 0xF4
+</p>
 						<ol>
 							<li>
 ~IF［
@@ -5901,7 +5978,7 @@ The four least significant bits of byte.
 ⇒
 `~UTF-8下限$ ~SET `90^X
 ◎
-If byte is 0xF0, set UTF-8 lower boundary to 0x90.
+If byte is 0xF0, then set UTF-8 lower boundary to 0x90.
 </li>
 							<li>
 ~IF［
@@ -5910,7 +5987,7 @@ If byte is 0xF0, set UTF-8 lower boundary to 0x90.
 ⇒
 `~UTF-8上限$ ~SET `8F^X
 ◎
-If byte is 0xF4, set UTF-8 upper boundary to 0x8F.
+If byte is 0xF4, then set UTF-8 upper boundary to 0x8F.
 </li>
 							<li>
 `~UTF-8要~byte数$ ~SET 3
@@ -5926,19 +6003,16 @@ Set UTF-8 code point to byte &amp; 0x7.
 The three least significant bits of byte.
 </li>
 						</ol>
-					</dd>
-
-					<dt>
+					</li>
+					<li>
 その他
-◎
-Otherwise
-</dt>
-					<dd>
+⇒
 ~RET `~error$i
 ◎
-Return error.
-</dd>
-				</dl>
+Otherwise
+• Return error.
+</li>
+				</ul>
 			</li>
 			<li>
 ~RET `継続-$i
@@ -6385,14 +6459,39 @@ Not fully aliasing GBK with gb18030 is a conservative move to decrease the chanc
 各［
 `gb18030$n の`復号器$
 ］には、
-次が結付けられる
-⇒＃
-`~gb1@（初期~時は 0 ）,
-`~gb2@（初期~時は 0 ）,
-`~gb3@（初期~時は 0 ）
+次に挙げるものが結付けられる：
 ◎
-gb18030’s decoder has an associated gb18030 first, gb18030 second, and gb18030 third (all initially 0x00).
+gb18030’s decoder has an associated:
 </p>
+<ul>
+	<li>
+`~gb1@
+⇒
+ある~byte
+— 初期~時は 0 とする。
+◎
+gb18030 first
+• ↓
+</li>
+	<li>
+`~gb2@
+⇒
+ある~byte
+— 初期~時は 0 とする。
+◎
+gb18030 second
+• ↓
+</li>
+	<li>
+`~gb3@
+⇒
+ある~byte
+— 初期~時は 0 とする。
+◎
+gb18030 third
+• Each a byte, initially 0x00.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -6521,7 +6620,7 @@ If byte is in the range 0x81 to 0xFE, inclusive, then set gb18030 third to byte 
 			<li>
 `入出力~queueに格納し直す$( %入出力~queue, ~byte列 « `~gb2$, %~byte » )
 ◎
-Restore « gb18030 second, byte » to ioQueue＼
+Restore « gb18030 second, byte » to ioQueue,＼
 </li>
 			<li>
 ( `~gb1$, `~gb2$ ) ~SET ( `00^X, `00^X )
@@ -6552,22 +6651,22 @@ If gb18030 first is not 0x00:
 `~gb2$ ~SET %~byte ；
 ~RET `継続-$i
 ◎
-If byte is in the range 0x30 to 0x39, inclusive, set gb18030 second to byte and return continue.
+If byte is in the range 0x30 to 0x39, inclusive, then set gb18030 second to byte and return continue.
 </li>
 			<li>
-%~lead ~LET `~gb1$
+%頭部 ~LET `~gb1$
 ◎
-Let lead be gb18030 first,＼
-</li>
-			<li>
-%~pointer ~LET ~NULL
-◎
-let pointer be null, and＼
+Let leading be gb18030 first.
 </li>
 			<li>
 `~gb1$ ~SET `00^X
 ◎
-set gb18030 first to 0x00.
+Set gb18030 first to 0x00.
+</li>
+			<li>
+%~pointer ~LET ~NULL
+◎
+Let pointer be null.
 </li>
 			<li>
 %~offset ~LET ［
@@ -6582,9 +6681,9 @@ Let offset be 0x40 if byte is less than 0x7F; otherwise 0x41.
 %~byte ~IN { `40^X 〜 `7E^X, `80^X 〜 `FE^X }
 ］
 ⇒
-%~pointer ~SET ( %~lead ~MINUS `81^X ) ~MUL 190 ~PLUS ( %~byte ~MINUS %~offset )
+%~pointer ~SET ( %頭部 ~MINUS `81^X ) ~MUL 190 ~PLUS ( %~byte ~MINUS %~offset )
 ◎
-If byte is in the range 0x40 to 0x7E, inclusive, or 0x80 to 0xFE, inclusive, set pointer to (lead − 0x81) × 190 + (byte − offset).
+If byte is in the range 0x40 to 0x7E, inclusive, or 0x80 to 0xFE, inclusive, then set pointer to (leading − 0x81) × 190 + (byte − offset).
 </li>
 			<li>
 %~cp ~LET %~pointer に応じて
@@ -6632,14 +6731,14 @@ Return error.
 ~RET %~byte に応じて
 ⇒＃
 `~ASCII~byte$ならば ~cp « %~byte » ／
-`80^X ならば ~cp « `20AC^U `€^smb » ／
+`80^X ならば ~cp « `20AC^U1 » ／
 `FF^X ならば `~error$i
 ◎
 If byte is an ASCII byte, then return a code point whose value is byte.
 ◎
 If byte is 0x80, then return code point U+20AC (€).
 ◎
-If byte is in the range 0x81 to 0xFE, inclusive, set gb18030 first to byte and return continue.
+If byte is in the range 0x81 to 0xFE, inclusive, then set gb18030 first to byte and return continue.
 ◎
 Return error.
 </li>
@@ -6654,13 +6753,20 @@ Return error.
 各［
 `gb18030$n の`符号化器$
 ］には、
-次が結付けられる
-⇒
-`~GBK用か@
-（初期~時は ~F ）
+次に挙げるものが結付けられる：
 ◎
-gb18030’s encoder has an associated is GBK (initially false).
+gb18030’s encoder has an associated＼
 </p>
+<ul>
+	<li>
+`~GBK用か@
+⇒
+ある真偽値
+— 初期~時は ~F とする。
+◎
+is GBK, which is a boolean, initially false.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -6705,11 +6811,11 @@ If codePoint is U+E5E5, then return error with codePoint.
 配備-済みな内容との互換性を得るため、
 `索引~gb18030$ は［
 `A3^X `A0^X
-］を `E5E5^U ではなく `3000^U に対応付けている。
+］を `E5E5^U ではなく `3000^U `IDEOGRAPHIC SPACE^cn へ対応付けている。
 したがって、
 それは往復し得ない。
 ◎
-Index gb18030 maps 0xA3 0xA0 to U+3000 rather than U+E5E5 for compatibility with deployed content. Therefore it cannot roundtrip.
+Index gb18030 maps 0xA3 0xA0 to U+3000 IDEOGRAPHIC SPACE rather than U+E5E5 for compatibility with deployed content. Therefore it cannot roundtrip.
 </p>
 
 </li>
@@ -6717,7 +6823,7 @@ Index gb18030 maps 0xA3 0xA0 to U+3000 rather than U+E5E5 for compatibility with
 ~IF［
 `~GBK用か$ ~EQ ~T
 ］~AND［
-%~cp ~EQ `20AC^U `€^smb
+%~cp ~EQ `20AC^U1
 ］
 ⇒
 ~RET ~byte « `80^X »
@@ -6823,27 +6929,27 @@ If pointer is non-null:
 </p>
 		<ol>
 			<li>
-%~lead ~LET ( %~pointer ~DIV 190 ) ~PLUS `81^X
+%頭部 ~LET ( %~pointer ~DIV 190 ) ~PLUS `81^X
 ◎
-Let lead be pointer / 190 + 0x81.
+Let leading be pointer / 190 + 0x81.
 </li>
 			<li>
-%~trail ~LET %~pointer ~MOD 190
+%尾部 ~LET %~pointer ~MOD 190
 ◎
-Let trail be pointer % 190.
+Let trailing be pointer % 190.
 </li>
 			<li>
 %~offset ~LET ［
-%~trail ~IN { `00^X 〜 `3E^X } ならば `40^X【！0x7F-0x40 】 ／
+%尾部 ~IN { `00^X 〜 `3E^X } ならば `40^X【！0x7F-0x40 】 ／
 ~ELSE_ `41^X
 ］
 ◎
-Let offset be 0x40 if trail is less than 0x3F, otherwise 0x41.
+Let offset be 0x40 if trailing is less than 0x3F, otherwise 0x41.
 </li>
 			<li>
-~RET ~byte列 « %~lead, ( %~trail ~PLUS %~offset ) »
+~RET ~byte列 « %頭部, ( %尾部 ~PLUS %~offset ) »
 ◎
-Return two bytes whose values are lead and trail + offset.
+Return two bytes whose values are leading and trailing + offset.
 </li>
 		</ol>
 	</li>
@@ -6912,7 +7018,7 @@ Return four bytes whose values are byte1 + 0x81, byte2 + 0x30, byte3 + 0x81, byt
 	<section id="legacy-multi-byte-chinese-(traditional)-encodings">
 <h2 title="Legacy multi-byte Chinese (traditional) encodings">11. 旧来の複-~byte~Chinese（繁体字）符号化法</h2>
 
-【！ Lead:  0x81 to 0xFE ／ Trail: 0x40 to 0x7E or 0xA1 to 0xFE 】
+【！ Leading:  0x81 to 0xFE ／ Trailing: 0x40 to 0x7E or 0xA1 to 0xFE 】
 
 		<section id="big5">
 <h3 title="Big5">11.1. ~Big5</h3>
@@ -6924,12 +7030,20 @@ Return four bytes whose values are byte1 + 0x81, byte2 + 0x30, byte3 + 0x81, byt
 各［
 `Big5$n の`復号器$
 ］には、
-次が結付けられる
-⇒
-`~Big5~lead@（初期~時は `00^X ）
+次に挙げるものが結付けられる：
 ◎
-Big5’s decoder has an associated Big5 lead (initially 0x00).
+Big5’s decoder has an associated＼
 </p>
+<ul>
+	<li>
+`~Big5頭部@
+⇒
+ある~byte
+— 初期~時は `00^X とする。
+◎
+Big5 leading, which is a byte, initially 0x00.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -6950,10 +7064,10 @@ Big5’s decoder’s handler, given ioQueue and byte, runs these steps:
 		<ol>
 			<li>
 ~IF［
-`~Big5~lead$ ~NEQ `00^X
+`~Big5頭部$ ~NEQ `00^X
 ］
 ⇒＃
-`~Big5~lead$ ~SET `00^X ；
+`~Big5頭部$ ~SET `00^X ；
 ~RET `~error$i
 </li>
 			<li>
@@ -6961,28 +7075,28 @@ Big5’s decoder’s handler, given ioQueue and byte, runs these steps:
 </li>
 		</ol>
 ◎
-If byte is end-of-queue and Big5 lead is not 0x00, then set Big5 lead to 0x00 and return error.
+If byte is end-of-queue and Big5 leading is not 0x00, then set Big5 leading to 0x00 and return error.
 ◎
-If byte is end-of-queue and Big5 lead is 0x00, then return finished.
+If byte is end-of-queue and Big5 leading is 0x00, then return finished.
 </li>
 	<li>
 <p>
 ~IF［
-`~Big5~lead$ ~NEQ `00^X
+`~Big5頭部$ ~NEQ `00^X
 ］：
 ◎
-If Big5 lead is not 0x00:
+If Big5 leading is not 0x00:
 </p>
 		<ol>
 			<li>
-%~lead ~LET `~Big5~lead$
+%頭部 ~LET `~Big5頭部$
 ◎
-Let lead be Big5 lead.
+Let leading be Big5 leading.
 </li>
 			<li>
-`~Big5~lead$ ~SET `00^X
+`~Big5頭部$ ~SET `00^X
 ◎
-Set Big5 lead to 0x00.
+Set Big5 leading to 0x00.
 </li>
 			<li>
 %~pointer ~LET ~NULL
@@ -7002,9 +7116,9 @@ Let offset be 0x40 if byte is less than 0x7F; otherwise 0x62.
 %~byte ~IN { `40^X 〜 `7E^X, `A1^X 〜 `FE^X }
 ］
 ⇒
-%~pointer ~SET ( %~lead ~MINUS `81^X ) ~MUL 157 ~PLUS ( %~byte ~MINUS %~offset )
+%~pointer ~SET ( %頭部 ~MINUS `81^X ) ~MUL 157 ~PLUS ( %~byte ~MINUS %~offset )
 ◎
-If byte is in the range 0x40 to 0x7E, inclusive, or 0xA1 to 0xFE, inclusive, set pointer to (lead − 0x81) × 157 + (byte − offset).
+If byte is in the range 0x40 to 0x7E, inclusive, or 0xA1 to 0xFE, inclusive, then set pointer to (leading − 0x81) × 157 + (byte − offset).
 </li>
 			<li>
 <p>
@@ -7023,7 +7137,7 @@ If there is a row in the table below whose first column is pointer, then return 
 <tr><th>~pointer
 <th>~cp
 <th>注記（この段には関連しない）
-<tbody id="_big5-lead">
+<tbody id="_big5-leading">
 
 <tr><td>1133【！ 0x88 0x62 】
 <td>`00CA^U `0304^U
@@ -7113,10 +7227,10 @@ If byte is an ASCII byte, then return a code point whose value is byte.
 %~byte ~IN { `81^X 〜 `FE^X }
 ］
 ⇒＃
-`~Big5~lead$ ~SET %~byte ；
+`~Big5頭部$ ~SET %~byte ；
 ~RET `継続-$i
 ◎
-If byte is in the range 0x81 to 0xFE, inclusive, then set Big5 lead to byte and return continue.
+If byte is in the range 0x81 to 0xFE, inclusive, then set Big5 leading to byte and return continue.
 </li>
 	<li>
 ~RET `~error$i
@@ -7173,27 +7287,27 @@ Let pointer be the index Big5 pointer for codePoint.
 If pointer is null, then return error with codePoint.
 </li>
 	<li>
-%~lead ~LET ( %~pointer ~DIV 157 ) ~PLUS `81^X
+%頭部 ~LET ( %~pointer ~DIV 157 ) ~PLUS `81^X
 ◎
-Let lead be pointer / 157 + 0x81.
+Let leading be pointer / 157 + 0x81.
 </li>
 	<li>
-%~trail ~LET %~pointer ~MOD 157
+%尾部 ~LET %~pointer ~MOD 157
 ◎
-Let trail be pointer % 157.
+Let trailing be pointer % 157.
 </li>
 	<li>
 %~offset ~LET ［
-%~trail ~IN { `00^X 〜 `3E^X } ならば `40^X【！0x7F-0x40 】 ／
+%尾部 ~IN { `00^X 〜 `3E^X } ならば `40^X【！0x7F-0x40 】 ／
 ~ELSE_ `62^X【！0xA1-0x3F 】
 ］
 ◎
-Let offset be 0x40 if trail is less than 0x3F, otherwise 0x62.
+Let offset be 0x40 if trailing is less than 0x3F, otherwise 0x62.
 </li>
 	<li>
-~RET ~byte列 « %~lead, ( %~trail ~PLUS %~offset) »»
+~RET ~byte列 « %頭部, ( %尾部 ~PLUS %~offset) »»
 ◎
-Return two bytes whose values are lead and trail + offset.
+Return two bytes whose values are leading and trailing + offset.
 </li>
 </ol>
 </div>
@@ -7216,13 +7330,30 @@ Return two bytes whose values are lead and trail + offset.
 各［
 `EUC-JP$n の`復号器$
 ］には、
-次が結付けられる
-⇒＃
-`~EUC-JP~jis0212@（初期~時は ~F ）；
-`~EUC-JP~lead@（初期~時は `00^X ）
+次に挙げるものが結付けられる：
 ◎
-EUC-JP’s decoder has an associated EUC-JP jis0212 (initially false) and EUC-JP lead (initially 0x00).
+EUC-JP’s decoder has an associated:
 </p>
+<ul>
+	<li>
+`~EUC-JP~jis0212か@
+⇒
+ある真偽値
+— 初期~時は ~F とする。
+◎
+EUC-JP jis0212
+• A boolean, initially false.
+</li>
+	<li>
+`~EUC-JP頭部@
+⇒
+ある~byte
+— 初期~時は `00^X とする。
+◎
+EUC-JP leading
+• A byte, initially 0x00.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -7244,67 +7375,67 @@ EUC-JP’s decoder’s handler, given ioQueue and byte, runs these steps:
 		<ol>
 			<li>
 ~IF［
-`~EUC-JP~lead$ ~NEQ `00^X
+`~EUC-JP頭部$ ~NEQ `00^X
 ］
 ⇒＃
-`~EUC-JP~lead$ ~SET `00^X ；
+`~EUC-JP頭部$ ~SET `00^X ；
 ~RET `~error$i
 ◎
-If byte is end-of-queue and EUC-JP lead is not 0x00, then set EUC-JP lead to 0x00, and return error.
+If byte is end-of-queue and EUC-JP leading is not 0x00, then set EUC-JP leading to 0x00 and return error.
 </li>
 			<li>
 ~ELSE
 ⇒
 ~RET `完遂d$i
 ◎
-If byte is end-of-queue and EUC-JP lead is 0x00, then return finished.
+If byte is end-of-queue and EUC-JP leading is 0x00, then return finished.
 </li>
 		</ol>
 	</li>
 	<li>
 ~IF［
-`~EUC-JP~lead$ ~EQ `8E^X
+`~EUC-JP頭部$ ~EQ `8E^X
 ］~AND［
 %~byte ~IN { `A1^X 〜 `DF^X }
 ］
 【！ katakana; subtraction is done first to avoid upsetting compilers 】
 ⇒＃
-`~EUC-JP~lead$ ~SET `00^X ；
+`~EUC-JP頭部$ ~SET `00^X ；
 ~RET ~cp « `FF61^X ~MINUS `A1^X ~PLUS %~byte »
 ◎
-If EUC-JP lead is 0x8E and byte is in the range 0xA1 to 0xDF, inclusive, set EUC-JP lead to 0x00 and return a code point whose value is 0xFF61 − 0xA1 + byte.
+If EUC-JP leading is 0x8E and byte is in the range 0xA1 to 0xDF, inclusive, then set EUC-JP leading to 0x00 and return a code point whose value is 0xFF61 − 0xA1 + byte.
 </li>
 	<li>
 ~IF［
-`~EUC-JP~lead$ ~EQ `8F^X
+`~EUC-JP頭部$ ~EQ `8F^X
 ］~AND［
 %~byte ~IN { `A1^X 〜 `FE^X }
 ］
 ⇒＃
-`~EUC-JP~jis0212$ ~SET ~T ；
-`~EUC-JP~lead$ ~SET %~byte ；
+`~EUC-JP~jis0212か$ ~SET ~T ；
+`~EUC-JP頭部$ ~SET %~byte ；
 ~RET `継続-$i
 ◎
-If EUC-JP lead is 0x8F and byte is in the range 0xA1 to 0xFE, inclusive, set EUC-JP jis0212 to true, set EUC-JP lead to byte, and return continue.
+If EUC-JP leading is 0x8F and byte is in the range 0xA1 to 0xFE, inclusive, then set EUC-JP jis0212 to true, set EUC-JP leading to byte, and return continue.
 </li>
 	<li>
 <p>
 ~IF［
-`~EUC-JP~lead$ ~NEQ `00^X
+`~EUC-JP頭部$ ~NEQ `00^X
 ］：
 ◎
-If EUC-JP lead is not 0x00:
+If EUC-JP leading is not 0x00:
 </p>
 		<ol>
 			<li>
-%~lead ~LET `~EUC-JP~lead$
+%頭部 ~LET `~EUC-JP頭部$
 ◎
-Let lead be EUC-JP lead.
+Let leading be EUC-JP leading.
 </li>
 			<li>
-`~EUC-JP~lead$ ~SET `00^X
+`~EUC-JP頭部$ ~SET `00^X
 ◎
-Set EUC-JP lead to 0x00.
+Set EUC-JP leading to 0x00.
 </li>
 			<li>
 %~cp ~LET ~NULL
@@ -7314,29 +7445,29 @@ Let codePoint be null.
 			<li>
 <p>
 ~IF［
-%~lead ~IN { `A1^X 〜 `FE^X }
+%頭部 ~IN { `A1^X 〜 `FE^X }
 ］~AND［
 %~byte ~IN { `A1^X 〜 `FE^X }
 ］：
 </p>
 				<ol>
 					<li>
-%索引 ~LET `~EUC-JP~jis0212$に応じて
+%索引 ~LET `~EUC-JP~jis0212か$に応じて
 ⇒＃
 ~F ならば`索引~jis0208$ ／
 ~T ならば `索引~jis0212$
 </li>
 					<li>
 %~cp ~SET %索引 の中で
-( ( %~lead ~MINUS `A1^X ) ~MUL 94 ~PLUS %~byte ~MINUS `A1^X )
+( ( %頭部 ~MINUS `A1^X ) ~MUL 94 ~PLUS %~byte ~MINUS `A1^X )
 が指す`索引~cp$
 </li>
 				</ol>
 ◎
-If lead and byte are both in the range 0xA1 to 0xFE, inclusive, then set codePoint to the index code point for (lead − 0xA1) × 94 + byte − 0xA1 in index jis0208 if EUC-JP jis0212 is false and in index jis0212 otherwise.
+If leading and byte are both in the range 0xA1 to 0xFE, inclusive, then set codePoint to the index code point for (leading − 0xA1) × 94 + byte − 0xA1 in index jis0208 if EUC-JP jis0212 is false and in index jis0212 otherwise.
 </li>
 			<li>
-`~EUC-JP~jis0212$ ~SET ~F
+`~EUC-JP~jis0212か$ ~SET ~F
 ◎
 Set EUC-JP jis0212 to false.
 </li>
@@ -7356,7 +7487,7 @@ If codePoint is non-null, then return a code point whose value is codePoint.
 ⇒
 `入出力~queueに格納し直す$( %入出力~queue, %~byte )
 ◎
-If byte is an ASCII byte, restore byte to ioQueue.
+If byte is an ASCII byte, then restore byte to ioQueue.
 </li>
 			<li>
 ~RET `~error$i
@@ -7379,10 +7510,10 @@ If byte is an ASCII byte, then return a code point whose value is byte.
 %~byte ~IN { `8E^X, `8F^X, `A1^X 〜 `FE^X }
 ］
 ⇒＃
-`~EUC-JP~lead$ ~SET %~byte ；
+`~EUC-JP頭部$ ~SET %~byte ；
 ~RET `継続-$i
 ◎
-If byte is 0x8E, 0x8F, or in the range 0xA1 to 0xFE, inclusive, then set EUC-JP lead to byte and return continue.
+If byte is 0x8E, 0x8F, or in the range 0xA1 to 0xFE, inclusive, then set EUC-JP leading to byte and return continue.
 </li>
 	<li>
 ~RET `~error$i
@@ -7411,9 +7542,9 @@ EUC-JP’s encoder’s handler, given unused and codePoint, runs these steps:
 ⇒＃
 `~EoQ$ ならば `完遂d$i ／
 `~ASCII~cp$ならば ~byte « %~cp » ／
-`00A5^U `¥^smb ならば ~byte « `5C^X » ／
-`203E^U `‾^smb ならば ~byte « `7E^X » ／
-`FF61^U 〜 `FF9F^U ならば ~byte列 « `8E^X, ( %~cp ~MINUS `FF61^X ~PLUS `A1^X ) » ／
+`00A5^U1 ならば ~byte « `5C^X » ／
+`203E^U1 ならば ~byte « `7E^X » ／
+`FF61^U1 〜 `FF9F^U1 ならば ~byte列 « `8E^X, ( %~cp ~MINUS `FF61^X ~PLUS `A1^X ) » ／
 ~ELSE_ ~NULL
 ◎
 If codePoint is end-of-queue, then return finished.
@@ -7424,7 +7555,7 @@ If codePoint is U+00A5 (¥), then return byte 0x5C.
 ◎
 If codePoint is U+203E (‾), then return byte 0x7E.
 ◎
-If codePoint is in the range U+FF61 to U+FF9F, inclusive, then return two bytes whose values are 0x8E and codePoint − 0xFF61 + 0xA1.
+If codePoint is in the range U+FF61 (｡) to U+FF9F (ﾟ), inclusive, then return two bytes whose values are 0x8E and codePoint − 0xFF61 + 0xA1.
 </li>
 	<li>
 ~IF［
@@ -7436,10 +7567,10 @@ If codePoint is in the range U+FF61 to U+FF9F, inclusive, then return two bytes 
 ↑</li>
 	<li>
 ~IF［
-%~cp ~EQ `2212^U `−^smb
+%~cp ~EQ `2212^U1
 ］
 ⇒
-%~cp ~SET `FF0D^U `－^smb
+%~cp ~SET `FF0D^U1
 ◎
 If codePoint is U+2212 (−), then set it to U+FF0D (－).
 </li>
@@ -7468,19 +7599,19 @@ If pointer is non-null, it is less than 8836 due to the nature of index jis0208 
 If pointer is null, then return error with codePoint.
 </li>
 	<li>
-%~lead ~LET ( %~pointer ~DIV 94 ) ~PLUS `A1^X
+%頭部 ~LET ( %~pointer ~DIV 94 ) ~PLUS `A1^X
 ◎
-Let lead be pointer / 94 + 0xA1.
+Let leading be pointer / 94 + 0xA1.
 </li>
 	<li>
-%~trail ~LET ( %~pointer ~MOD 94 ) ~PLUS `A1^X
+%尾部 ~LET ( %~pointer ~MOD 94 ) ~PLUS `A1^X
 ◎
-Let trail be pointer % 94 + 0xA1.
+Let trailing be pointer % 94 + 0xA1.
 </li>
 	<li>
-~RET ~byte列 « %~lead, %~trail »
+~RET ~byte列 « %頭部, %尾部 »
 ◎
-Return two bytes whose values are lead and trail.
+Return two bytes whose values are leading and trailing.
 </li>
 </ol>
 </div>
@@ -7501,15 +7632,48 @@ Return two bytes whose values are lead and trail.
 各［
 `ISO-2022-JP$n の`復号器$
 ］には、
-次が結付けられる
-⇒＃
-`~ISO-2022-JP復号器~状態@（初期~時は `ASCII$i ）,
-`~ISO-2022-JP復号器~出力~状態@（初期~時は `ASCII$i ）,
-`~ISO-2022-JP~lead@（初期~時は `00^X ）,
-`~ISO-2022-JP出力@（初期~時は ~F ）
+次に挙げるものが結付けられる：
 ◎
-ISO-2022-JP’s decoder has an associated ISO-2022-JP decoder state (initially ASCII), ISO-2022-JP decoder output state (initially ASCII), ISO-2022-JP lead (initially 0x00), and ISO-2022-JP output (initially false).
+ISO-2022-JP’s decoder has an associated:
 </p>
+<ul>
+	<li>
+`~ISO-2022-JP復号器~状態@
+⇒
+ある状態
+— 初期~時は `~ASCII$i とする。
+◎
+ISO-2022-JP decoder state
+• A state, initially ASCII.
+</li>
+	<li>
+`~ISO-2022-JP復号器~出力~状態@
+⇒
+ある状態
+— 初期~時は `~ASCII$i とする。
+◎
+ISO-2022-JP decoder output state
+• A state, initially ASCII.
+</li>
+	<li>
+`~ISO-2022-JP頭部@
+⇒
+ある~byte
+— 初期~時は `00^X とする。
+◎
+ISO-2022-JP leading
+• A byte, initially 0x00.
+</li>
+	<li>
+`~ISO-2022-JP出力するか@
+⇒
+ある真偽値
+— 初期~時は ~F とする。
+◎
+ISO-2022-JP output
+• A boolean, initially false.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -7522,14 +7686,18 @@ ISO-2022-JP’s decoder’s handler, given ioQueue and byte, runs these steps, s
 </p>
 
 <dl class="switch">
-	<dt>`ASCII@i</dt>
+	<dt>
+`~ASCII@i
+◎
+ASCII
+</dt>
 	<dd>
 <p>
 %~byte に応じて：
 ◎
 Based on byte:
 </p>
-		<ol class="switch">
+		<ul class="switch">
 			<li>
 `1B^X
 ⇒＃
@@ -7542,7 +7710,7 @@ Based on byte:
 			<li>
 `0E^X, `0F^X, `1B^X 以外の`~ASCII~byte$
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
+`~ISO-2022-JP出力するか$ ~SET ~F ；
 ~RET ~cp « %~byte »
 ◎
 0x00 to 0x7F, excluding 0x0E, 0x0F, and 0x1B
@@ -7559,23 +7727,27 @@ end-of-queue
 			<li>
 その他
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
+`~ISO-2022-JP出力するか$ ~SET ~F ；
 ~RET `~error$i
 ◎
 Otherwise
 • Set ISO-2022-JP output to false and return error.
 </li>
-		</ol>
+		</ul>
 	</dd>
 
-	<dt>`Roman@i</dt>
+	<dt>
+`~Roman@i
+◎
+Roman
+</dt>
 	<dd>
 <p>
 %~byte に応じて：
 ◎
 Based on byte:
 </p>
-		<ol class="switch">
+		<ul class="switch">
 			<li>
 `1B^X
 ⇒＃
@@ -7588,8 +7760,8 @@ Based on byte:
 			<li>
 `5C^X
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
-~RET ~cp « `00A5^U `¥^smb »
+`~ISO-2022-JP出力するか$ ~SET ~F ；
+~RET ~cp « `00A5^U1 »
 ◎
 0x5C
 • Set ISO-2022-JP output to false and return code point U+00A5 (¥).
@@ -7597,8 +7769,8 @@ Based on byte:
 			<li>
 `7E^X
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
-~RET ~cp « `203E^U `‾^smb »
+`~ISO-2022-JP出力するか$ ~SET ~F ；
+~RET ~cp « `203E^U1 »
 ◎
 0x7E
 • Set ISO-2022-JP output to false and return code point U+203E (‾).
@@ -7607,7 +7779,7 @@ Based on byte:
 `0E^X, `0F^X, `1B^X, `5C^X, `7E^X
 以外の`~ASCII~byte$
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
+`~ISO-2022-JP出力するか$ ~SET ~F ；
 ~RET ~cp « %~byte »
 ◎
 0x00 to 0x7F, excluding 0x0E, 0x0F, 0x1B, 0x5C, and 0x7E
@@ -7624,23 +7796,27 @@ end-of-queue
 			<li>
 その他
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
+`~ISO-2022-JP出力するか$ ~SET ~F ；
 ~RET `~error$i
 ◎
 Otherwise
 • Set ISO-2022-JP output to false and return error.
 </li>
-		</ol>
+		</ul>
 	</dd>
 
-	<dt>`katakana@i</dt>
+	<dt>
+`~katakana@i
+◎
+katakana
+</dt>
 	<dd>
 <p>
 %~byte に応じて：
 ◎
 Based on byte:
 </p>
-		<ol class="switch">
+		<ul class="switch">
 			<li>
 `1B^X
 ⇒＃
@@ -7654,7 +7830,7 @@ Based on byte:
 `21^X 〜 `5F^X
 【！ katakana; subtraction is done first to avoid upsetting compilers 】
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
+`~ISO-2022-JP出力するか$ ~SET ~F ；
 ~RET ~cp « `FF61^X ~MINUS `21^X ~PLUS %~byte »
 ◎
 0x21 to 0x5F
@@ -7671,23 +7847,27 @@ end-of-queue
 			<li>
 その他
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
+`~ISO-2022-JP出力するか$ ~SET ~F ；
 ~RET `~error$i
 ◎
 Otherwise
 • Set ISO-2022-JP output to false and return error.
 </li>
-		</ol>
+		</ul>
 	</dd>
 
-	<dt>`~lead~byte@i</dt>
+	<dt>
+`頭部~byte@i
+◎
+Leading byte
+</dt>
 	<dd>
 <p>
 %~byte に応じて：
 ◎
 Based on byte:
 </p>
-		<ol class="switch">
+		<ul class="switch">
 			<li>
 `1B^X
 ⇒＃
@@ -7700,13 +7880,13 @@ Based on byte:
 			<li>
 `21^X 〜 `7E^X
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
-`~ISO-2022-JP~lead$ ~SET %~byte ；
-`~ISO-2022-JP復号器~状態$ ~SET `~trail~byte$i ；
+`~ISO-2022-JP出力するか$ ~SET ~F ；
+`~ISO-2022-JP頭部$ ~SET %~byte ；
+`~ISO-2022-JP復号器~状態$ ~SET `尾部~byte$i ；
 ~RET `継続-$i
 ◎
 0x21 to 0x7E
-• Set ISO-2022-JP output to false, ISO-2022-JP lead to byte, ISO-2022-JP decoder state to trail byte, and return continue.
+• Set ISO-2022-JP output to false, ISO-2022-JP leading to byte, ISO-2022-JP decoder state to trailing byte, and return continue.
 </li>
 			<li>
 `~EoQ$
@@ -7719,26 +7899,30 @@ end-of-queue
 			<li>
 その他
 ⇒＃
-`~ISO-2022-JP出力$ ~SET ~F ；
+`~ISO-2022-JP出力するか$ ~SET ~F ；
 ~RET `~error$i
 ◎
 Otherwise
 • Set ISO-2022-JP output to false and return error.
 </li>
-		</ol>
+		</ul>
 	</dd>
 
-	<dt>`~trail~byte@i</dt>
+	<dt>
+`尾部~byte@i
+◎
+Trailing byte
+</dt>
 	<dd>
 <p>
 %~byte に応じて：
 ◎
 Based on byte:
 </p>
-		<ol class="switch">
+		<ul class="switch">
 			<li>
 `1B^X
-【！ iso-2022-jp decoder output state is still lead byte 】
+【！ iso-2022-jp decoder output state is still leading byte 】
 ⇒＃
 `~ISO-2022-JP復号器~状態$ ~SET `~escape開始$i ；
 ~RET `~error$i
@@ -7755,14 +7939,14 @@ Based on byte:
 </p>
 				<ol>
 					<li>
-`~ISO-2022-JP復号器~状態$ ~SET `~lead~byte$i
+`~ISO-2022-JP復号器~状態$ ~SET `頭部~byte$i
 ◎
-Set the ISO-2022-JP decoder state to lead byte.
+Set the ISO-2022-JP decoder state to leading byte.
 </li>
 					<li>
-%~pointer ~LET ( `~ISO-2022-JP~lead$ ~MINUS `21^X ) ~MUL 94 ~PLUS %~byte ~MINUS `21^X
+%~pointer ~LET ( `~ISO-2022-JP頭部$ ~MINUS `21^X ) ~MUL 94 ~PLUS %~byte ~MINUS `21^X
 ◎
-Let pointer be (ISO-2022-JP lead − 0x21) × 94 + byte − 0x21.
+Let pointer be (ISO-2022-JP leading − 0x21) × 94 + byte − 0x21.
 </li>
 					<li>
 %~cp ~LET
@@ -7789,26 +7973,30 @@ Return a code point whose value is codePoint.
 			<li>
 `~EoQ$
 ⇒＃
-`~ISO-2022-JP復号器~状態$ ~SET `~lead~byte$i ；
+`~ISO-2022-JP復号器~状態$ ~SET `頭部~byte$i ；
 ~RET `~error$i
 ◎
 end-of-queue
-• Set the ISO-2022-JP decoder state to lead byte and return error.
+• Set the ISO-2022-JP decoder state to leading byte and return error.
 </li>
 			<li>
 その他
-【！ iso-2022-jp decoder output state is still lead byte 】
+【！ iso-2022-jp decoder output state is still leading byte 】
 ⇒＃
-`~ISO-2022-JP復号器~状態$ ~SET `~lead~byte$i ；
+`~ISO-2022-JP復号器~状態$ ~SET `頭部~byte$i ；
 ~RET `~error$i
 ◎
 Otherwise
-• Set ISO-2022-JP decoder state to lead byte and return error.
+• Set ISO-2022-JP decoder state to leading byte and return error.
 </li>
-		</ol>
+		</ul>
 	</dd>
 
-	<dt>`~escape開始@i</dt>
+	<dt>
+`~escape開始@i
+◎
+Escape start
+</dt>
 	<dd>
 		<ol>
 			<li>
@@ -7816,11 +8004,11 @@ Otherwise
 %~byte ~IN { `24^X【！ $ 】, `28^X【！ ( 】 }
 ］
 ⇒＃
-`~ISO-2022-JP~lead$ ~SET %~byte ；
+`~ISO-2022-JP頭部$ ~SET %~byte ；
 `~ISO-2022-JP復号器~状態$ ~SET `~escape$i ；
 ~RET `継続-$i
 ◎
-If byte is either 0x24 or 0x28, set ISO-2022-JP lead to byte, ISO-2022-JP decoder state to escape, and return continue.
+If byte is either 0x24 or 0x28, then set ISO-2022-JP leading to byte, ISO-2022-JP decoder state to escape, and return continue.
 </li>
 			<li>
 ~IF［
@@ -7832,7 +8020,7 @@ If byte is either 0x24 or 0x28, set ISO-2022-JP lead to byte, ISO-2022-JP decode
 If byte is not end-of-queue, then restore byte to ioQueue.
 </li>
 			<li>
-`~ISO-2022-JP出力$ ~SET ~F
+`~ISO-2022-JP出力するか$ ~SET ~F
 ◎
 Set ISO-2022-JP output to false,＼
 </li>
@@ -7849,40 +8037,44 @@ return error.
 		</ol>
 	</dd>
 
-	<dt>`~escape@i</dt>
+	<dt>
+`~escape@i
+◎
+Escape
+</dt>
 	<dd>
 		<ol>
 			<li>
-%~lead ~LET `~ISO-2022-JP~lead$
+%頭部 ~LET `~ISO-2022-JP頭部$
 ◎
-Let lead be ISO-2022-JP lead and＼
+Let leading be ISO-2022-JP leading and＼
 </li>
 			<li>
-`~ISO-2022-JP~lead$ ~SET `00^X
+`~ISO-2022-JP頭部$ ~SET `00^X
 ◎
-set ISO-2022-JP lead to 0x00.
+set ISO-2022-JP leading to 0x00.
 </li>
 			<li>
 %状態 ~LET
-( %~lead, %~byte )
+( %頭部, %~byte )
 に応じて
 ⇒＃
-( `28^X, `42^X【！B 】 ) ならば `ASCII$i ／
-( `28^X, `4A^X【！J 】 ) ならば `Roman$i1 ／
-( `28^X, `49^X【！I 】 ) ならば `katakana$i ／
-( `24^X, `40^X【！@ 】 ) ならば `~lead~byte$i ／
-( `24^X, `42^X【！B 】 ) ならば `~lead~byte$i ／
+( `28^X, `42^X【！B 】 ) ならば `~ASCII$i ／
+( `28^X, `4A^X【！J 】 ) ならば `~Roman$i1 ／
+( `28^X, `49^X【！I 】 ) ならば `~katakana$i ／
+( `24^X, `40^X【！@ 】 ) ならば `頭部~byte$i ／
+( `24^X, `42^X【！B 】 ) ならば `頭部~byte$i ／
 ~ELSE_ ~NULL
 ◎
 Let state be null.
 ◎
-If lead is 0x28 and byte is 0x42, set state to ASCII.
+If leading is 0x28 and byte is 0x42, then set state to ASCII.
 ◎
-If lead is 0x28 and byte is 0x4A, set state to Roman.
+If leading is 0x28 and byte is 0x4A, then set state to Roman.
 ◎
-If lead is 0x28 and byte is 0x49, set state to katakana.
+If leading is 0x28 and byte is 0x49, then set state to katakana.
 ◎
-If lead is 0x24 and byte is either 0x40 or 0x42, set state to lead byte.
+If leading is 0x24 and byte is either 0x40 or 0x42, then set state to leading byte.
 </li>
 			<li>
 <p>
@@ -7903,12 +8095,12 @@ If state is non-null:
 Set ISO-2022-JP decoder state and ISO-2022-JP decoder output state to state.
 </li>
 					<li>
-%出力 ~LET `~ISO-2022-JP出力$
+%出力 ~LET `~ISO-2022-JP出力するか$
 ◎
 Let output be the value of ISO-2022-JP output.
 </li>
 					<li>
-`~ISO-2022-JP出力$ ~SET ~T
+`~ISO-2022-JP出力するか$ ~SET ~T
 ◎
 Set ISO-2022-JP output to true.
 </li>
@@ -7927,19 +8119,19 @@ Return continue, if output is false, and error otherwise.
 %~byte ~EQ `~EoQ$
 ］
 ⇒
-`入出力~queueに格納し直す$( %入出力~queue, %~lead )
+`入出力~queueに格納し直す$( %入出力~queue, %頭部 )
 ◎
-If byte is end-of-queue, then restore lead to ioQueue;＼
+If byte is end-of-queue, then restore leading to ioQueue;＼
 </li>
 			<li>
 ~ELSE
 ⇒
-`入出力~queueに格納し直す$( %入出力~queue, ~byte列 « %~lead, %~byte » )
+`入出力~queueに格納し直す$( %入出力~queue, ~byte列 « %頭部, %~byte » )
 ◎
-otherwise, restore « lead, byte » to ioQueue.
+otherwise, restore « leading, byte » to ioQueue.
 </li>
 			<li>
-`~ISO-2022-JP出力$ ~SET ~F
+`~ISO-2022-JP出力するか$ ~SET ~F
 ◎
 Set ISO-2022-JP output to false,＼
 </li>
@@ -7974,33 +8166,37 @@ The ISO-2022-JP encoder is the only encoder for which the concatenation of multi
 </p>
 
 <p class="example">
-`00A5^U を符号化した結果は
+`00A5^U1 を符号化した結果は
 [ `1B^X `28^X `4A^X `5C^X `1B^X `28^X `42^X ]
 になる。
 その結果に同じ結果を連結してから復号した結果は、
 [ `00A5^U `FFFD^U `00A5^U ]
 になる。
 ◎
-Encoding U+00A5 gives 0x1B 0x28 0x4A 0x5C 0x1B 0x28 0x42. Doing that twice, concatenating the results, and then decoding yields U+00A5 U+FFFD U+00A5.
+Encoding U+00A5 (¥) gives 0x1B 0x28 0x4A 0x5C 0x1B 0x28 0x42. Doing that twice, concatenating the results, and then decoding yields U+00A5 U+FFFD U+00A5.
 </p>
-
 </div>
 
 <p>
 各［
 `ISO-2022-JP$n の`符号化器$
 ］には、
-次が結付けられる
-⇒
-`~ISO-2022-JP符号化器~状態@
-— 次のいずれかをとり得る（初期~時は `ASCII$i1 ）
-⇒
-`ASCII@i1 ／
-`Roman@i1 ／
-`jis0208@i1
+次に挙げるものが結付けられる：
 ◎
-ISO-2022-JP’s encoder has an associated ISO-2022-JP encoder state which is ASCII, Roman, or jis0208 (initially ASCII).
+ISO-2022-JP’s encoder has an associated＼
 </p>
+<ul>
+	<li>
+`~ISO-2022-JP符号化器~状態@
+⇒
+`~ASCII@i1 ／
+`~Roman@i1 ／
+`jis0208@i1
+— 初期~時は `~ASCII$i1 とする
+◎
+ISO-2022-JP encoder state which is ASCII, Roman, or jis0208, initially ASCII.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -8022,10 +8218,10 @@ ISO-2022-JP’s encoder’s handler, given ioQueue and codePoint, runs these ste
 		<ol>
 			<li>
 ~IF［
-`~ISO-2022-JP符号化器~状態$ ~NEQ `ASCII$i1
+`~ISO-2022-JP符号化器~状態$ ~NEQ `~ASCII$i1
 ］
 ⇒＃
-`~ISO-2022-JP符号化器~状態$ ~SET `ASCII$i1 ；
+`~ISO-2022-JP符号化器~状態$ ~SET `~ASCII$i1 ；
 ~RET ~byte列 « `1B^X, `28^X, `42^X »
 ◎
 If codePoint is end-of-queue and ISO-2022-JP encoder state is not ASCII, then set ISO-2022-JP encoder state to ASCII and return three bytes 0x1B 0x28 0x42.
@@ -8041,12 +8237,12 @@ If codePoint is end-of-queue and ISO-2022-JP encoder state is ASCII, then return
 <p>
 ~IF［
 `~ISO-2022-JP符号化器~状態$ ~IN
-{ `ASCII$i1, `Roman$i1 }
+{ `~ASCII$i1, `~Roman$i1 }
 ］~AND［
 %~cp ~IN { `000E^U, `000F^U, `001B^U }
 ］
 ⇒
-~RET `~error$i( `FFFD^U `�^smb )
+~RET `~error$i( `FFFD^U1 )
 ◎
 If ISO-2022-JP encoder state is ASCII or Roman, and codePoint is U+000E, U+000F, or U+001B, then return error with U+FFFD (�).
 </p>
@@ -8054,7 +8250,7 @@ If ISO-2022-JP encoder state is ASCII or Roman, and codePoint is U+000E, U+000F,
 <p class="note">注記：
 攻撃を防ぐため、
 ここでは，［
-%~cp ではなく， `FFFD^U `�^smb
+%~cp ではなく， `FFFD^U1
 ］を返す。
 ◎
 This returns U+FFFD (�) rather than codePoint to prevent attacks.
@@ -8063,7 +8259,7 @@ This returns U+FFFD (�) rather than codePoint to prevent attacks.
 	</li>
 	<li>
 ~IF［
-`~ISO-2022-JP符号化器~状態$ ~EQ `ASCII$i1
+`~ISO-2022-JP符号化器~状態$ ~EQ `~ASCII$i1
 ］~AND［
 %~cp ~IN `~ASCII~cp$
 ］
@@ -8075,16 +8271,16 @@ If ISO-2022-JP encoder state is ASCII and codePoint is an ASCII code point, then
 	<li>
 <p>
 ~IF［
-`~ISO-2022-JP符号化器~状態$ ~EQ `Roman$i1
+`~ISO-2022-JP符号化器~状態$ ~EQ `~Roman$i1
 ］：
 </p>
 		<ol>
 			<li>
 %結果 ~LET %~cp に応じて
 ⇒＃
-`005C^U `\^smb, `007E^U `~^smb 以外の`~ASCII~cp$ならば ~byte « %~cp » ／
-`00A5^U `¥^smb ならば ~byte « `5C^X » ／
-`203E^U `‾^smb ならば ~byte « `7E^X » ／
+`005C^U1, `007E^U1 以外の`~ASCII~cp$ならば ~byte « %~cp » ／
+`00A5^U1 ならば ~byte « `5C^X » ／
+`203E^U1 ならば ~byte « `7E^X » ／
 ~ELSE_ ~NULL
 </li>
 			<li>
@@ -8106,47 +8302,47 @@ If ISO-2022-JP encoder state is Roman and codePoint is an ASCII code point, excl
 ~IF［
 %~cp ~IN `~ASCII~cp$
 ］~AND［
-`~ISO-2022-JP符号化器~状態$ ~NEQ `ASCII$i1
+`~ISO-2022-JP符号化器~状態$ ~NEQ `~ASCII$i1
 ］
 ⇒＃
 `入出力~queueに格納し直す$( %入出力~queue, %~cp )；
-`~ISO-2022-JP符号化器~状態$ ~SET `ASCII$i1 ；
+`~ISO-2022-JP符号化器~状態$ ~SET `~ASCII$i1 ；
 ~RET ~byte列 « `1B^X, `28^X, `42^X »
 ◎
 If codePoint is an ASCII code point, and ISO-2022-JP encoder state is not ASCII, then restore codePoint to ioQueue, set ISO-2022-JP encoder state to ASCII, and return three bytes 0x1B 0x28 0x42.
 </li>
 	<li>
 ~IF［
-%~cp ~NIN { `00A5^U `¥^smb, `203E^U `‾^smb }
+%~cp ~NIN { `00A5^U1, `203E^U1 }
 ］~AND［
-`~ISO-2022-JP符号化器~状態$ ~NEQ `Roman$i1
+`~ISO-2022-JP符号化器~状態$ ~NEQ `~Roman$i1
 ］
 ⇒＃
 `入出力~queueに格納し直す$( %入出力~queue, %~cp )；
-`~ISO-2022-JP符号化器~状態$ ~SET `Roman$i1 ；
+`~ISO-2022-JP符号化器~状態$ ~SET `~Roman$i1 ；
 ~RET ~byte列 « `1B^X, `28^X, `4A^X »
 ◎
 If codePoint is either U+00A5 (¥) or U+203E (‾), and ISO-2022-JP encoder state is not Roman, then restore codePoint to ioQueue, set ISO-2022-JP encoder state to Roman, and return three bytes 0x1B 0x28 0x4A.
 </li>
 	<li>
 ~IF［
-%~cp ~EQ `2212^U `−^smb
+%~cp ~EQ `2212^U1
 ］
 ⇒
-%~cp ~SET `FF0D^U `－^smb
+%~cp ~SET `FF0D^U1
 ◎
 If codePoint is U+2212 (−), then set it to U+FF0D (－).
 </li>
 	<li>
 ~IF［
-%~cp ~IN { `FF61^U 〜 `FF9F^U }
+%~cp ~IN { `FF61^U1 〜 `FF9F^U1 }
 ］
 ⇒
 %~cp ~SET `索引~ISO-2022-JP~katakana$の中で
 ( %~cp ~MINUS `FF61^X )
 が指す`索引~cp$
 ◎
-If codePoint is in the range U+FF61 to U+FF9F, inclusive, then set it to the index code point for codePoint − 0xFF61 in index ISO-2022-JP katakana.
+If codePoint is in the range U+FF61 (｡) to U+FF9F (ﾟ), inclusive, then set it to the index code point for codePoint − 0xFF61 in index ISO-2022-JP katakana.
 </li>
 	<li>
 <p>
@@ -8178,7 +8374,7 @@ If pointer is null:
 ］
 ⇒＃
 `入出力~queueに格納し直す$( %入出力~queue, %~cp )；
-`~ISO-2022-JP符号化器~状態$ ~SET `ASCII$i1 ；
+`~ISO-2022-JP符号化器~状態$ ~SET `~ASCII$i1 ；
 ~RET ~byte列 « `1B^X, `28^X, `42^X »
 ◎
 If ISO-2022-JP encoder state is jis0208, then restore codePoint to ioQueue, set ISO-2022-JP encoder state to ASCII, and return three bytes 0x1B 0x28 0x42.
@@ -8199,22 +8395,22 @@ Return error with codePoint.
 `~ISO-2022-JP符号化器~状態$ ~SET `jis0208$i1 ；
 ~RET ~byte列 « `1B^X, `24^X, `42^X »
 ◎
-If ISO-2022-JP encoder state is not jis0208, restore codePoint to ioQueue, set ISO-2022-JP encoder state to jis0208, and return three bytes 0x1B 0x24 0x42.
+If ISO-2022-JP encoder state is not jis0208, then restore codePoint to ioQueue, set ISO-2022-JP encoder state to jis0208, and return three bytes 0x1B 0x24 0x42.
 </li>
 	<li>
-%~lead ~LET ( %~pointer ~DIV 94 ) ~PLUS `21^X
+%頭部 ~LET ( %~pointer ~DIV 94 ) ~PLUS `21^X
 ◎
-Let lead be pointer / 94 + 0x21.
+Let leading be pointer / 94 + 0x21.
 </li>
 	<li>
-%~trail ~LET ( %~pointer ~MOD 94 ) ~PLUS `21^X
+%尾部 ~LET ( %~pointer ~MOD 94 ) ~PLUS `21^X
 ◎
-Let trail be pointer % 94 + 0x21.
+Let trailing be pointer % 94 + 0x21.
 </li>
 	<li>
-~RET ~byte列 « %~lead, %~trail »
+~RET ~byte列 « %頭部, %尾部 »
 ◎
-Return two bytes whose values are lead and trail.
+Return two bytes whose values are leading and trailing.
 </li>
 </ol>
 </div>
@@ -8231,12 +8427,20 @@ Return two bytes whose values are lead and trail.
 各［
 `Shift_JIS$n の`復号器$
 ］には、
-次が結付けられる
-⇒
-`~Shift_JIS~lead@（初期~時は `00^X ）
+次に挙げるものが結付けられる：
 ◎
-Shift_JIS’s decoder has an associated Shift_JIS lead (initially 0x00).
+Shift_JIS’s decoder has an associated＼
 </p>
+<ul>
+	<li>
+`~Shift_JIS頭部@
+⇒
+ある~byte
+— 初期~時は `00^X とする。
+◎
+Shift_JIS leading, which is a byte, initially 0x00.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -8258,41 +8462,41 @@ Shift_JIS’s decoder’s handler, given ioQueue and byte, runs these steps:
 		<ol>
 			<li>
 ~IF［
-`~Shift_JIS~lead$ ~NEQ `00^X
+`~Shift_JIS頭部$ ~NEQ `00^X
 ］
 ⇒＃
-`~Shift_JIS~lead$ ~SET `00^X ；
+`~Shift_JIS頭部$ ~SET `00^X ；
 ~RET `~error$i
 ◎
-If byte is end-of-queue and Shift_JIS lead is not 0x00, set Shift_JIS lead to 0x00 and return error.
+If byte is end-of-queue and Shift_JIS leading is not 0x00, then set Shift_JIS leading to 0x00 and return error.
 </li>
 			<li>
 ~ELSE
 ⇒
 ~RET `完遂d$i
 ◎
-If byte is end-of-queue and Shift_JIS lead is 0x00, then return finished.
+If byte is end-of-queue and Shift_JIS leading is 0x00, then return finished.
 </li>
 		</ol>
 	</li>
 	<li>
 <p>
 ~IF［
-`~Shift_JIS~lead$ ~NEQ `00^X
+`~Shift_JIS頭部$ ~NEQ `00^X
 ］：
 ◎
-If Shift_JIS lead is not 0x00:
+If Shift_JIS leading is not 0x00:
 </p>
 		<ol>
 			<li>
-%~lead ~LET `~Shift_JIS~lead$
+%頭部 ~LET `~Shift_JIS頭部$
 ◎
-Let lead be Shift_JIS lead.
+Let leading be Shift_JIS leading.
 </li>
 			<li>
-`~Shift_JIS~lead$ ~SET `00^X
+`~Shift_JIS頭部$ ~SET `00^X
 ◎
-Set Shift_JIS lead to 0x00.
+Set Shift_JIS leading to 0x00.
 </li>
 			<li>
 %~pointer ~LET ~NULL
@@ -8308,21 +8512,21 @@ Let pointer be null.
 Let offset be 0x40 if byte is less than 0x7F; otherwise 0x41.
 </li>
 			<li>
-%~lead~offset ~LET ［
-%~lead ~IN { `00^X 〜 `9F^X } ならば `81^X ／
+%頭部~offset ~LET ［
+%頭部 ~IN { `00^X 〜 `9F^X } ならば `81^X ／
 ~ELSE_ `C1^X
 ］
 ◎
-Let lead offset be 0x81 if lead is less than 0xA0; otherwise 0xC1.
+Let leadingOffset be 0x81 if leading is less than 0xA0; otherwise 0xC1.
 </li>
 			<li>
 ~IF［
 %~byte ~IN { `40^X 〜 `7E^X, `80^X 〜 `FC^X }
 ］
 ⇒
-%~pointer ~SET ( %~lead ~MINUS %~lead~offset ) ~MUL 188 ~PLUS %~byte ~MINUS %~offset
+%~pointer ~SET ( %頭部 ~MINUS %頭部~offset ) ~MUL 188 ~PLUS %~byte ~MINUS %~offset
 ◎
-If byte is in the range 0x40 to 0x7E, inclusive, or 0x80 to 0xFC, inclusive, then set pointer to (lead − lead offset) × 188 + byte − offset.
+If byte is in the range 0x40 to 0x7E, inclusive, or 0x80 to 0xFC, inclusive, then set pointer to (leading − leadingOffset) × 188 + byte − offset.
 </li>
 			<li>
 <p>
@@ -8409,10 +8613,10 @@ If byte is in the range 0xA1 to 0xDF, inclusive, then return a code point whose 
 %~byte ~IN { `81^X 〜 `9F^X, `E0^X 〜 `FC^X }
 ］
 ⇒＃
-`~Shift_JIS~lead$ ~SET %~byte ；
+`~Shift_JIS頭部$ ~SET %~byte ；
 ~RET `継続-$i
 ◎
-If byte is in the range 0x81 to 0x9F, inclusive, or 0xE0 to 0xFC, inclusive, then set Shift_JIS lead to byte and return continue.
+If byte is in the range 0x81 to 0x9F, inclusive, or 0xE0 to 0xFC, inclusive, then set Shift_JIS leading to byte and return continue.
 </li>
 	<li>
 ~RET `~error$i
@@ -8442,9 +8646,9 @@ Shift_JIS’s encoder’s handler, given unused and codePoint, runs these steps:
 `~EoQ$ ならば `完遂d$i ／
 `~ASCII~cp$ならば ~byte « %~cp » ／
 `0080^U ならば ~byte « %~cp » ／
-`00A5^U `¥^smb ならば ~byte « `5C^X » ／
-`203E^U `‾^smb ならば ~byte « `7E^X » ／
-`FF61^U 〜 `FF9F^U ならば ~byte « ( %~cp ~MINUS `FF61^X ) ~PLUS `A1^X » ／
+`00A5^U1 ならば ~byte « `5C^X » ／
+`203E^U1 ならば ~byte « `7E^X » ／
+`FF61^U1 〜 `FF9F^U1 ならば ~byte « ( %~cp ~MINUS `FF61^X ) ~PLUS `A1^X » ／
 ~ELSE_ ~NULL
 ◎
 If codePoint is end-of-queue, then return finished.
@@ -8455,7 +8659,7 @@ If codePoint is U+00A5 (¥), then return byte 0x5C.
 ◎
 If codePoint is U+203E (‾), then return byte 0x7E.
 ◎
-If codePoint is in the range U+FF61 to U+FF9F, inclusive, then return a byte whose value is codePoint − 0xFF61 + 0xA1.
+If codePoint is in the range U+FF61 (｡) to U+FF9F (ﾟ), inclusive, then return a byte whose value is codePoint − 0xFF61 + 0xA1.
 </li>
 	<li>
 ~IF［
@@ -8467,10 +8671,10 @@ If codePoint is in the range U+FF61 to U+FF9F, inclusive, then return a byte who
 ↑</li>
 	<li>
 ~IF［
-%~cp ~EQ `2212^U `−^smb
+%~cp ~EQ `2212^U1
 ］
 ⇒
-%~cp ~SET `FF0D^U `－^smb
+%~cp ~SET `FF0D^U1
 ◎
 If codePoint is U+2212 (−), then set it to U+FF0D (－).
 </li>
@@ -8490,35 +8694,35 @@ Let pointer be the index Shift_JIS pointer for codePoint.
 If pointer is null, then return error with codePoint.
 </li>
 	<li>
-%~lead ~LET ( %~pointer ~DIV 188 )
+%頭部 ~LET ( %~pointer ~DIV 188 )
 ◎
-Let lead be pointer / 188.
+Let leading be pointer / 188.
 </li>
 	<li>
-%~lead~offset ~LET ［
-%~lead ~IN { `00^X 〜 `1E^X } ならば `81^X ／
+%頭部~offset ~LET ［
+%頭部 ~IN { `00^X 〜 `1E^X } ならば `81^X ／
 ~ELSE_ `C1^X【！ 0xA0-0x81 】
 ］
 ◎
-Let lead offset be 0x81 if lead is less than 0x1F; otherwise 0xC1.
+Let leadingOffset be 0x81 if leading is less than 0x1F; otherwise 0xC1.
 </li>
 	<li>
-%~trail ~LET %~pointer ~MOD 188
+%尾部 ~LET %~pointer ~MOD 188
 ◎
-Let trail be pointer % 188.
+Let trailing be pointer % 188.
 </li>
 	<li>
 %~offset ~LET ［
-%~trail ~IN { `00^X 〜 `3E^X } ならば `40^X ／
+%尾部 ~IN { `00^X 〜 `3E^X } ならば `40^X ／
 ~ELSE_ `41^X
 ］
 ◎
-Let offset be 0x40 if trail is less than 0x3F; otherwise 0x41.
+Let offset be 0x40 if trailing is less than 0x3F; otherwise 0x41.
 </li>
 	<li>
-~RET ~byte列 « ( %~lead ~PLUS %~lead~offset ), ( %~trail ~PLUS %~offset ) »
+~RET ~byte列 « ( %頭部 ~PLUS %頭部~offset ), ( %尾部 ~PLUS %~offset ) »
 ◎
-Return two bytes whose values are lead + lead offset and trail + offset.
+Return two bytes whose values are leading + leadingOffset and trailing + offset.
 </li>
 </ol>
 </div>
@@ -8539,12 +8743,20 @@ Return two bytes whose values are lead + lead offset and trail + offset.
 各［
 `EUC-KR$n の`復号器$
 ］には、
-次が結付けられる
-⇒
-`~EUC-KR~lead@（初期~時は `00^X ）
+次に挙げるものが結付けられる：
 ◎
-EUC-KR’s decoder has an associated EUC-KR lead (initially 0x00).
+EUC-KR’s decoder has an associated＼
 </p>
+<ul>
+	<li>
+`~EUC-KR頭部@
+⇒
+ある~byte
+— 初期~時は `00^X とする。
+◎
+EUC-KR leading, which is a byte, initially 0x00.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -8566,41 +8778,41 @@ EUC-KR’s decoder’s handler, given ioQueue and byte, runs these steps:
 		<ol>
 			<li>
 ~IF［
-`~EUC-KR~lead$ ~NEQ `00^X
+`~EUC-KR頭部$ ~NEQ `00^X
 ］
 ⇒＃
-`~EUC-KR~lead$ ~SET `00^X ；
+`~EUC-KR頭部$ ~SET `00^X ；
 ~RET `~error$i
 ◎
-If byte is end-of-queue and EUC-KR lead is not 0x00, then set EUC-KR lead to 0x00 and return error.
+If byte is end-of-queue and EUC-KR leading is not 0x00, then set EUC-KR leading to 0x00 and return error.
 </li>
 			<li>
 ~ELSE
 ⇒
 ~RET `完遂d$i
 ◎
-If byte is end-of-queue and EUC-KR lead is 0x00, then return finished.
+If byte is end-of-queue and EUC-KR leading is 0x00, then return finished.
 </li>
 		</ol>
 	</li>
 	<li>
 <p>
 ~IF［
-`~EUC-KR~lead$ ~NEQ `00^X
+`~EUC-KR頭部$ ~NEQ `00^X
 ］：
 ◎
-If EUC-KR lead is not 0x00:
+If EUC-KR leading is not 0x00:
 </p>
 		<ol>
 			<li>
-%~lead ~LET `~EUC-KR~lead$
+%頭部 ~LET `~EUC-KR頭部$
 ◎
-Let lead be EUC-KR lead.
+Let leading be EUC-KR leading.
 </li>
 			<li>
-`~EUC-KR~lead$ ~SET `00^X
+`~EUC-KR頭部$ ~SET `00^X
 ◎
-Set EUC-KR lead to 0x00.
+Set EUC-KR leading to 0x00.
 </li>
 			<li>
 %~pointer ~LET ~NULL
@@ -8612,9 +8824,9 @@ Let pointer be null.
 %~byte ~IN { `41^X 〜 `FE^X }
 ］
 ⇒
-%~pointer ~SET ( %~lead ~MINUS `81^X ) ~MUL 190 ~PLUS ( %~byte ~MINUS `41^X )
+%~pointer ~SET ( %頭部 ~MINUS `81^X ) ~MUL 190 ~PLUS ( %~byte ~MINUS `41^X )
 ◎
-If byte is in the range 0x41 to 0xFE, inclusive, set pointer to (lead − 0x81) × 190 + (byte − 0x41).
+If byte is in the range 0x41 to 0xFE, inclusive, then set pointer to (leading − 0x81) × 190 + (byte − 0x41).
 </li>
 			<li>
 %~cp ~LET ［
@@ -8663,10 +8875,10 @@ If byte is an ASCII byte, then return a code point whose value is byte.
 %~byte ~IN { `81^X 〜 `FE^X }
 ］
 ⇒＃
-`~EUC-KR~lead$ ~SET %~byte ；
+`~EUC-KR頭部$ ~SET %~byte ；
 ~RET `継続-$i
 ◎
-If byte is in the range 0x81 to 0xFE, inclusive, then set EUC-KR lead to byte and return continue.
+If byte is in the range 0x81 to 0xFE, inclusive, then set EUC-KR leading to byte and return continue.
 </li>
 	<li>
 ~RET `~error$i
@@ -8725,19 +8937,19 @@ Let pointer be the index pointer for codePoint in index EUC-KR.
 If pointer is null, then return error with codePoint.
 </li>
 	<li>
-%~lead ~LET ( %~pointer ~DIV 190 ) ~PLUS `81^X
+%頭部 ~LET ( %~pointer ~DIV 190 ) ~PLUS `81^X
 ◎
-Let lead be pointer / 190 + 0x81.
+Let leading be pointer / 190 + 0x81.
 </li>
 			<li>
-%~trail ~LET ( %~pointer ~MOD 190 ) ~PLUS `41^X
+%尾部 ~LET ( %~pointer ~MOD 190 ) ~PLUS `41^X
 ◎
-Let trail be pointer % 190 + 0x41.
+Let trailing be pointer % 190 + 0x41.
 </li>
 	<li>
-~RET ~byte列 « %~lead, %~trail »
+~RET ~byte列 « %頭部, %尾部 »
 ◎
-Return two bytes whose values are lead and trail.
+Return two bytes whose values are leading and trailing.
 </li>
 </ol>
 </div>
@@ -8768,12 +8980,20 @@ The replacement encoding exists to prevent certain attacks that abuse a mismatch
 各［
 `replacement$n の`復号器$
 ］には、
-次が結付けられる
-⇒
-`~replacement~errorは返したか@（初期~時は ~F ）
+次に挙げるものが結付けられる：
 ◎
-replacement’s decoder has an associated replacement error returned (initially false).
+replacement’s decoder has an associated＼
 </p>
+<ul>
+	<li>
+`~replacement~errorは返したか@
+⇒
+ある真偽値
+— 初期~時は ~F とする。
+◎
+replacement error returned, which is a boolean, initially false.
+</li>
+</ul>
 
 <div class="algo">
 <p>
@@ -8838,24 +9058,50 @@ UTF-16BE/LE is UTF-16BE or UTF-16LE.
 ~BOMは~labelより優先される。
 それは，配備-済みな内容において、
 どの~labelよりも正確aであることが見出されているので。
-したがって それは、
+したがって，それは、
 `共用~UTF-16復号器$の一部ではなく，`~Unicodeに復号する$ ~algoの一部を成す。
 ◎
-A byte order mark has priority over a label as it has been found to be more accurate in deployed content. Therefore it is not part of the shared UTF-16 decoder algorithm but rather the decode algorithm.
+A byte order mark has priority over a label as it has been found to be more accurate in deployed content. Therefore it is not part of the shared UTF-16 decoder algorithm, but rather the decode algorithm.
 </p>
 
 <p>
 各［
 `共用~UTF-16復号器$
 ］には、
-次が結付けられる
-⇒＃
-`~UTF-16~lead~byte@（初期~時は ~NULL ）,
-`~UTF-16頭部~surrogate@（初期~時は ~NULL ）,
-`~UTF-16BE復号器~用か@（初期~時は ~F ）
+次に挙げるものが結付けられる：
 ◎
-shared UTF-16 decoder has an associated UTF-16 lead byte and UTF-16 leading surrogate (both initially null), and is UTF-16BE decoder (initially false).
+shared UTF-16 decoder has an associated:
 </p>
+<ul>
+	<li>
+`~UTF-16頭部~byte@
+⇒
+~NULL ／ある~byte
+— 初期~時は ~NULL とする。
+◎
+UTF-16 leading byte
+• Null or a byte, initially null. 
+</li>
+	<li>
+`~UTF-16頭部~surrogate@
+⇒
+~NULL ／ある`頭部~surrogate$
+— 初期~時は ~NULL とする。
+◎
+UTF-16 leading surrogate
+• Null or a leading surrogate, initially null. 
+</li>
+	<li>
+`~UTF-16BE復号器~用か@
+⇒
+ある真偽値
+— 初期~時は ~F とする。
+◎
+is UTF-16BE decoder
+• A boolean, initially false.
+</li>
+</ul>
+
 
 <div class="algo">
 <p>
@@ -8877,52 +9123,52 @@ shared UTF-16 decoder’s handler, given ioQueue and byte, runs these steps:
 		<ol>
 			<li>
 ~IF［
-`~UTF-16~lead~byte$ ~NEQ ~NULL
+`~UTF-16頭部~byte$ ~NEQ ~NULL
 ］~OR［
 `~UTF-16頭部~surrogate$ ~NEQ ~NULL
 ］
 ⇒＃
-`~UTF-16~lead~byte$ ~SET ~NULL；
+`~UTF-16頭部~byte$ ~SET ~NULL；
 `~UTF-16頭部~surrogate$ ~SET ~NULL；
 ~RET `~error$i
 ◎
-If byte is end-of-queue and either UTF-16 lead byte or UTF-16 leading surrogate is non-null, set UTF-16 lead byte and UTF-16 leading surrogate to null, and return error.
+If byte is end-of-queue and either UTF-16 leading byte or UTF-16 leading surrogate is non-null, then set UTF-16 leading byte and UTF-16 leading surrogate to null, and return error.
 </li>
 			<li>
 ~ELSE
 ⇒
 ~RET `完遂d$i
 ◎
-If byte is end-of-queue and UTF-16 lead byte and UTF-16 leading surrogate are null, then return finished.
+If byte is end-of-queue and UTF-16 leading byte and UTF-16 leading surrogate are null, then return finished.
 </li>
 		</ol>
 	</li>
 	<li>
 ~IF［
-`~UTF-16~lead~byte$ ~EQ ~NULL
+`~UTF-16頭部~byte$ ~EQ ~NULL
 ］
 ⇒＃
-`~UTF-16~lead~byte$ ~SET %~byte ；
+`~UTF-16頭部~byte$ ~SET %~byte ；
 ~RET `継続-$i
 ◎
-If UTF-16 lead byte is null, then set UTF-16 lead byte to byte and return continue.
+If UTF-16 leading byte is null, then set UTF-16 leading byte to byte and return continue.
 </li>
 	<li>
 %~cu ~LET `~UTF-16BE復号器~用か$に応じて
 ⇒＃
-~T ならば ( ( `~UTF-16~lead~byte$ ~Lshift 8 ) ~PLUS %~byte ) ／
-~F ならば ( ( %~byte ~Lshift 8 ) ~PLUS `~UTF-16~lead~byte$ )
+~T ならば ( ( `~UTF-16頭部~byte$ ~Lshift 8 ) ~PLUS %~byte ) ／
+~F ならば ( ( %~byte ~Lshift 8 ) ~PLUS `~UTF-16頭部~byte$ )
 ◎
 Let codeUnit be the result of:
 • is UTF-16BE decoder is true
-•• (UTF-16 lead byte &lt;&lt; 8) + byte.
+•• (UTF-16 leading byte &lt;&lt; 8) + byte.
 • is UTF-16BE decoder is false
-•• (byte &lt;&lt; 8) + UTF-16 lead byte.
+•• (byte &lt;&lt; 8) + UTF-16 leading byte.
 </li>
 	<li>
-`~UTF-16~lead~byte$ ~SET ~NULL
+`~UTF-16頭部~byte$ ~SET ~NULL
 ◎
-Then set UTF-16 lead byte to null.
+Set UTF-16 leading byte to null.
 </li>
 	<li>
 <p>
@@ -9319,5 +9565,4 @@ portions in the source code are licensed under the <a href="https://opensource.o
 This is the Living Standard. Those interested in the patent-review version should view the <a href="https://encoding.spec.whatwg.org/review-drafts/2024-12/">Living Standard Review Draft</a>.
 </p>
 </div>
-
 </div>
