@@ -1281,6 +1281,7 @@ SELECTIONAPI:selection-api-ja.html
 SELECTORS4:selectors4-ja.html
 SENSORS:sensors-ja.html
 SIZING:css-sizing-ja.html
+SRI:webappsec-subresource-integrity-ja.html
 STORAGE:storage-ja.html
 STREAMS:Streams-ja.html
 STRUCTURED-FIELDS:http-structured-fields-ja.html
