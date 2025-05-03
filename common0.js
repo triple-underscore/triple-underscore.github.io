@@ -2786,6 +2786,7 @@ node::::ノード
 子孫:descendant::~
 先祖:ancestor::~
 同胞:sibling::~
+広義-:inclusive:~
 要素:element::~
 文書:document::~
 文書片:document fragment::~::文書フラグメント
