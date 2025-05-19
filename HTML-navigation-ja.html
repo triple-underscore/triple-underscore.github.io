@@ -180,8 +180,8 @@ return text;
 
 ●●options
 
-spec_date:2025-05-12
-trans_update:2025-05-14
+spec_date:2025-05-19
+trans_update:2025-05-19
 source_checked:240625
 page_state_key:HTML
 spec_status:LS
@@ -704,6 +704,7 @@ pC.埋込元~施策:~ORIGIN#policy-container-embedder-policy
 ~CSPから導出される~sandbox法~flag群:~ORIGIN#csp-derived-sandboxing-flags
 ~fetch応答から施策~容器を作成する:~ORIGIN#creating-a-policy-container-from-a-fetch-response
 生成元:~ORIGIN#concept-origin
+不透明な生成元:~ORIGIN#concept-origin-opaque
 ~navi~paramsの施策~容器を決定する:~ORIGIN#determining-navigation-params-policy-container
 ~navi応答の埋込元~施策に対する固守を検査する:~ORIGIN#check-a-navigation-response's-adherence-to-its-embedder-policy
 ~sandbox化( ~modal )~flag:~ORIGIN#sandboxed-modals-flag
@@ -749,6 +750,7 @@ nav.容器~文書:~HTMLds#nav-container-document
 nav.現在の~session履歴~entry:~HTMLds#nav-current-history-entry
 nav.現在の~session履歴~step:~HTMLds#tn-current-session-history-step
 nav.親:~HTMLds#nav-parent
+nav.~top-level辿可能:~HTMLds#nav-top
 親~navigable:~HTMLds#nav-parent
 nav.辿可能な~navigable:~HTMLds#nav-traversable
 ~Jake図式:~HTMLds#jake-diagram
@@ -962,6 +964,8 @@ rq.置換する~client~ID:~FETCH#concept-request-replaces-client-id
 rq.行先:~FETCH#concept-request-destination
 rq.資格証~mode:~FETCH#concept-request-credentials-mode
 rq.起動元~種別:~FETCH#request-initiator-type
+rq.利用者~prompt用の辿可能:~FETCH#concept-request-window
+rq.~sw~mode:~FETCH#request-service-workers-mode
 rs.~URL:~FETCH#concept-response-url
 rs.~header~list:~FETCH#concept-response-header-list
 rs.本体:~FETCH#concept-response-body
@@ -1346,6 +1350,7 @@ back-up:back up:::バックアップ
 	%~source~snapshot~params:sourceSnapshotParams
 	%~sourceは~downloadを許容するか:sourceAllowsDownloading
 	%~source文書:sourceDocument
+	%~source施策~容器:sourcePolicyContainer
 	%~step:step
 	%~step群:steps
 	%~target~entry:targetEntry
@@ -3649,11 +3654,12 @@ allows downloading
 	<li>
 `~fetch~client@ssP
 ⇒
-`環境~設定群~obj$
-— 【要請の】`~client$rqとしてに限り，利用される
+~NULL ／`環境~設定群~obj$
+— これは、
+【要請の】`~client$rqにしか利用されない。
 ◎
 fetch client
-• an environment settings object, only to be used as a request client
+• an environment settings object or null, only to be used as a request client
 </li>
 	<li>
 `~source施策~容器@ssP
@@ -3670,50 +3676,74 @@ source policy container
 `~source~snapshot~paramsを~snapshotする@
 ~algoは、
 所与の
-( `文書$ %~source文書 )
-に対し
+( ［
+~NULL ／ `文書$
+］ %~source文書 )
+に対し：
+◎
+To snapshot source snapshot params given a Document-or-null sourceDocument:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%~source文書 ~EQ ~NULL
+］
 ⇒
 ~RET 新たな`~source~snapshot~params$
-— その：
+— その
+⇒＃
+`一過な作動化を有するか$ssP ~SET ~T,
+`~sandbox法~flag群$ssP ~SET 空な`~sandbox法~flag集合$,
+`~downloadを許容するか$ssP ~SET ~T,
+`~fetch~client$ssP ~SET ~NULL,
+`~source施策~容器$ssP ~SET 新たな `施策~容器$
 ◎
-To snapshot source snapshot params given a Document sourceDocument, return a new source snapshot params with
+If sourceDocument is null, then return a new source snapshot params with
+◎
+has transient activation
+• true
+sandboxing flags
+• an empty sandboxing flag set
+allows downloading
+• true
+fetch client
+• null
+source policy container
+• a new policy container
 </p>
-<ul>
+
+<p class="note">注記：
+これは、
+~browser~UIが起動した~naviの事例で`しか生じない＠#assert-null-sourcedocument$。
+◎
+This only occurs in the case of a browser UI-initiated navigation.
+</p>
+	</li>
 	<li>
-`一過な作動化を有するか$ssP ~SET ~IS［
-%~source文書 に`関連な大域~obj$は`一過な作動化を有して$いる
-］
+~RET 新たな`~source~snapshot~params$
+— その
+⇒＃
+`一過な作動化を有するか$ssP ~SET ~IS［ %~source文書 に`関連な大域~obj$は`一過な作動化を有して$いる］,
+`~sandbox法~flag群$ssP ~SET %~source文書 にて`作動中な~sandbox法~flag集合$,
+`~downloadを許容するか$ssP ~SET ~IS［ `閲覧~文脈~sandbox化( ~download )~flag$ ~NIN %~source文書 にて`作動中な~sandbox法~flag集合$］,
+`~fetch~client$ssP ~SET %~source文書 に`関連な設定群~obj$,
+`~source施策~容器$ssP ~SET `施策~容器を~cloneする$( %~source文書 の`施策~容器$doc )
+◎
+Return a new source snapshot params with
 ◎
 has transient activation
 • true if sourceDocument's relevant global object has transient activation; otherwise false
-</li>
-	<li>
-`~sandbox法~flag群$ssP ~SET %~source文書 にて`作動中な~sandbox法~flag集合$
-◎
 sandboxing flags
 • sourceDocument's active sandboxing flag set
-</li>
-	<li>
-`~downloadを許容するか$ssP ~SET ~IS［
-`閲覧~文脈~sandbox化( ~download )~flag$ ~NIN %~source文書 にて`作動中な~sandbox法~flag集合$
-］
-◎
 allows downloading
 • false if sourceDocument's active sandboxing flag set has the sandboxed downloads browsing context flag set; otherwise true
-</li>
-	<li>
-`~fetch~client$ssP ~SET %~source文書 に`関連な設定群~obj$
-◎
 fetch client
 • sourceDocument's relevant settings object
-</li>
-	<li>
-`~source施策~容器$ssP ~SET `施策~容器を~cloneする$( %~source文書 の`施策~容器$doc )
-◎
 source policy container
 • a clone of sourceDocument's policy container
 </li>
-</ul>
+</ol>
 </div>
 
 <hr>
@@ -4132,10 +4162,10 @@ Return "none".
 `~navigableを~URLへ~navigateする@
 ~algoは、
 所与の
-( `~navigable$ %~navigable, `~URL$ %~URL, `文書$ %~source文書 )
+( `~navigable$ %~navigable, `~URL$ %~URL, ［ ~NULL／`文書$ ］ %~source文書 （省略時は ~NULL ） )
 および，所与の：
 ◎
-To navigate a navigable navigable to a URL url using a Document sourceDocument, with＼
+To navigate a navigable navigable to a URL url using an optional Document-or-null sourceDocument (default null), with＼
 </p>
 <ul>
 	<li id="navigation-resource">
@@ -4210,7 +4240,7 @@ and an optional boolean initialInsertion (default false):
 “~navigateする” ／ “~navi” ／ “~navi~algo”
 ］などの句でも参照される。
 %~source文書 は、
-~naviを起動した文書を表す。
+（ ~NULL でないならば）~naviを起動した文書を表す。
 】</p>
 
 <ol>
@@ -4228,16 +4258,55 @@ Let cspNavigationType be "form-submission" if formDataEntryList is non-null; oth
 Let sourceSnapshotParams be the result of snapshotting source snapshot params given sourceDocument.
 </li>
 	<li>
-%起動元~生成元~snapshot ~LET %~source文書 の`生成元$doc
+%起動元~生成元~snapshot ~LET 新たな`不透明な生成元$
 ◎
-Let initiatorOriginSnapshot be sourceDocument's origin.
+Let initiatorOriginSnapshot be a new opaque origin.
 </li>
 	<li>
 %起動元~基底~URL~snapshot ~LET %~source文書 の`文書~基底~URL$
 ◎
 Let initiatorBaseURLSnapshot be sourceDocument's document base URL.
 </li>
-	<li id="sandboxLinks">
+	<li>
+<p>
+~IF［
+%~source文書 ~EQ ~NULL
+］：
+◎
+If sourceDocument is null:
+</p>
+		<ol>
+			<li id="assert-null-sourcedocument">
+~Assert：
+%利用者-関与i ~EQ `~browser~UI$i
+◎
+Assert: userInvolvement is "browser UI".
+</li>
+			<li>
+~IF［
+%~url の`~scheme$url ~EQ `~javascript0$sc
+］
+⇒
+%起動元~生成元~snapshot ~SET %~navigable にて`作動中な文書$navの`生成元$doc
+◎
+If url's scheme is "javascript", then set initiatorOriginSnapshot to navigable's active document's origin.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+		<ol>
+			<li>
+~Assert：
+%利用者-関与i ~NEQ `~browser~UI$i
+◎
+Assert: userInvolvement is not "browser UI".
+</li>
+			<li id="sandboxLinks">
 <p>
 ~IF［
 %~source文書 の`~node~navigable$が
@@ -4245,10 +4314,10 @@ Let initiatorBaseURLSnapshot be sourceDocument's document base URL.
 %~navigable を`~navigateすることは~sandbox法により許容され$ない
 ］：
 ◎
-If sourceDocument's node navigable is not allowed by sandboxing to navigate navigable given sourceSnapshotParams, then:
+If sourceDocument's node navigable is not allowed by sandboxing to navigate navigable given sourceSnapshotParams:
 </p>
-		<ol>
-			<li>
+				<ol>
+					<li>
 ~IF［
 %例外を可能化するか ~EQ ~T
 ］
@@ -4257,10 +4326,22 @@ If sourceDocument's node navigable is not allowed by sandboxing to navigate navi
 ◎
 If exceptionsEnabled is true, then throw a "SecurityError" DOMException.
 </li>
-			<li>
+					<li>
 ~RET
 ◎
 Return.
+</li>
+				</ol>
+			</li>
+			<li>
+%起動元~生成元~snapshot ~SET %~source文書 の`生成元$doc
+◎
+Set initiatorOriginSnapshot to sourceDocument's origin.
+</li>
+			<li>
+%起動元~基底~URL~snapshot ~SET %~source文書 の`文書~基底~URL$
+◎
+Set initiatorBaseURLSnapshot to sourceDocument's document base URL.
 </li>
 		</ol>
 	</li>
@@ -4835,15 +4916,23 @@ or for processing parts of multipart/x-mixed-replace responses after the initial
 </div>
 				<ol>
 					<li>
+%~source施策~容器 ~LET %~source文書 に応じて
+⇒＃
+~NULL ならば ~NULL ／
+~ELSE_ `施策~容器を~cloneする$( %~source文書 の`施策~容器$doc )
+◎
+Let sourcePolicyContainer be a clone of the sourceDocument's policy container, if sourceDocument is not null; otherwise null.
+</li>
+					<li>
 %施策~容器 ~LET `~navi~paramsの施策~容器を決定する$( ↓ )
 ⇒＃
 `応答$の`~URL$rs,
 ~NULL,
-`施策~容器を~cloneする$( %~source文書 の`施策~容器$doc ),
+%~source施策~容器,
 %~navigable の`容器~文書$navの`施策~容器$doc,
 ~NULL
 ◎
-Let policyContainer be the result of determining navigation params policy container given response's URL, null, a clone of the sourceDocument's policy container, navigable's container document's policy container, and null.
+Let policyContainer be the result of determining navigation params policy container given response's URL, null, sourcePolicyContainer, navigable's container document's policy container, and null.
 </li>
 					<li>
 %最終-~sandbox~flag群 ~LET 次の`和集合$
@@ -8328,7 +8417,8 @@ Let documentResource be entry's document state's resource.
 `~mode$rq ~SET `navigate^l,
 `~referrer$rq ~SET %~entry の`文書~状態$shEの`要請~referrer$dS,
 `~referrer施策$rq ~SET %~entry の`文書~状態$shEの`要請~referrer施策$dS,
-`施策~容器$rq ~SET %~source~snapshot~params の`~source施策~容器$ssP
+`施策~容器$rq ~SET %~source~snapshot~params の`~source施策~容器$ssP,
+`利用者~prompt用の辿可能$rq ~SET %~navigable の`~top-level辿可能$nav
 ◎
 Let request be a new request, with
 ◎
@@ -8354,6 +8444,34 @@ referrer policy
 • entry's document state's request referrer policy
 policy container
 • sourceSnapshotParams's source policy container
+traversable for user prompts
+• navigable's top-level traversable
+</li>
+	<li>
+<p>
+~IF［
+%要請 の`~client$rq ~EQ ~NULL
+］
+⇒
+%要請 の
+⇒＃
+`生成元$rq ~SET 新たな`不透明な生成元$,
+`~sw~mode$rq ~SET `all^l,
+`~referrer$rq ~SET `no-referrer^l
+</p>
+
+<p class="note">注記：
+これは、
+~browser~UIが起動した~naviの事例で`しか生じない＠#assert-null-sourcedocument$。
+</p>
+◎
+If request's client is null:
+◎
+This only occurs in the case of a browser UI-initiated navigation.
+◎
+• Set request's origin to a new opaque origin.
+• Set request's service-workers mode to "all".
+• Set request's referrer to "no-referrer".
 </li>
 	<li>
 <p>
@@ -8361,7 +8479,7 @@ policy container
 %文書~資源 は`~POST資源$である
 ］：
 ◎
-If documentResource is a POST resource, then:
+If documentResource is a POST resource:
 </p>
 		<ol>
 			<li>
