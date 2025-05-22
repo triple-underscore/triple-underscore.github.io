@@ -173,8 +173,8 @@ return text;
 ●●options
 
 spec_title:CSS Values and Units Module Level 4
-spec_date:2025-04-30
-trans_update:2025-05-02
+spec_date:2025-05-21
+trans_update:2025-05-22
 source_checked:231218
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-values-4/
@@ -1420,10 +1420,11 @@ p.animation-iteration-count:~CSSANIM#propdef-animation-iteration-count
 p.animation-name:~CSSANIM#propdef-animation-name
 p.animation-timing-function:~CSSANIM#propdef-animation-timing-function
 p.animation:~CSSANIM#propdef-animation
+p.background:~CSSBG#propdef-background
 p.background-attachment:~CSSBG#propdef-background-attachment
 p.background-image:~CSSBG#propdef-background-image
 p.background-position:~CSSBG#propdef-background-position
-p.background:~CSSBG#propdef-background
+p.background-size:~CSSBG#propdef-background-size
 p.block-step-round:~CSSWG/css-rhythm-1/#propdef-block-step-round
 p.block-step-size:~CSSWG/css-rhythm-1/#propdef-block-step-size
 p.border-bottom-width:~CSSBG#propdef-border-bottom-width
@@ -1577,6 +1578,7 @@ v.NaN:#valdef-calc-nan
 v.none:#valdef-clamp-none
 
 	●func
+f.anchor:~CSSANCHOR#funcdef-anchor
 f.var:~CSSVAR#funcdef-var
 f.rgba:~CSSCOLOR#funcdef-rgba
 f.hsl:~CSSCOLOR#funcdef-hsl
@@ -1611,7 +1613,6 @@ f.tan:#funcdef-tan
 
 	f.rect:~CSSCHAPES#funcdef-basic-shape-rect
 f.rect:~MASKING1#funcdef-clip-rect
-	廃）f.media-progress:~CSSVAL5#funcdef-media-progress
 
 t.url():#funcdef-url
 t.src():#funcdef-src
@@ -1732,6 +1733,7 @@ g.?:#mult-opt
 無限大:#css-infinity
 ~NaN:#css-nan
 計算式:#calc-calculation
+計算~文脈:#calculation-contexts
 計算式~tree:#calculation-tree
 計算式を構文解析する:#parse-a-calculation
 計算式~treeを単純~化する:#simplify-a-calculation-tree
@@ -1827,7 +1829,6 @@ g.?:#mult-opt
 ~tree視野な参照:~CSSSCOPING#css-tree-scoped-reference
 ~tree視野な名前:~CSSSCOPING#css-tree-scoped-name
 
-媒体~特能:~MQ5#media-feature
 媒体~query:~MQ5#media-query
 連続的~媒体:~MQ5#continuous-media
 ~paged媒体:~MQ5#paged-media
@@ -1847,6 +1848,8 @@ ss.生成元~cleanか:~CSSOM1#concept-css-style-sheet-origin-clean-flag
 現代の色~構文:~CSSCOLOR#modern-color-syntax
 相対~色~構文:~CSSCOLOR5#relative-color
 色~関数:~CSSCOLOR#color-functions
+
+既定の~anchor要素:~CSSANCHOR#default-anchor-element
 
 	●外部（他
 
@@ -1905,6 +1908,8 @@ MEDIAQ:MEDIAQUERIES4
 
 [CSS-2023]
     Chris Lilley; et al. ＜CSS Snapshot 2023＞. URL: https://drafts.csswg.org/css-2023/
+[CSS-ANCHOR-POSITION-1]
+    Tab Atkins Jr.; Elika Etemad; Ian Kilpatrick. ＜CSS Anchor Positioning＞. URL: https://drafts.csswg.org/css-anchor-position-1/
 [CSS-BOX-4]
     Elika Etemad. ＜CSS Box Model Module Level 4＞. URL: https://drafts.csswg.org/css-box-4/
 [CSS-CASCADE-5]
@@ -9833,28 +9838,6 @@ Operators form sub-expressions, which gain types based on their arguments.
 Note: In previous versions of this specification, multiplication and division were limited in what arguments they could take, to avoid producing more complex intermediate results (such as 1px * 1em, which is &lt;length&gt;²) and to make division-by-zero detectable at parse time. This version now relaxes those restrictions.
 </p>
 
-<p>
-`計算式$は、
-どこに配置されたかに依存して，何らかの “文脈” の下で評価される。
-文脈は、［
-単位がどう解決されるか, 百分率がどう扱われるか, 等々
-］を決定する。
-この文脈は、
-既定では，当の計算式を利用している［
-~prop／記述子／等々
-］により定義される。
-各~関数は、
-それが包含している値~用に他と異なる文脈を定義し得る
-（例えば， `media-progress^f は、
-自身の`計算式$を それが言及する`媒体~特能$の文脈において評価する）。
-`計算式~tree$の中へ直に入子にされた`~math関数$は、
-常に，その根を成す`~math関数$の文脈を利用する
-— なので、
-当の計算式~treeは，全体が一貫する。
-◎
-Calculations are evaluated in terms of some "context", depending on where they are placed, which determines how units are resolved, how percentages are treated, etc. By default, this context is defined by the property/descriptor/etc that the calculation is being used in. Functions can define a different context for their contained values. (For example, media-progress() evaluates its calculations in the context of the media feature it mentions.) Directly nested math functions (forming a larger calculation tree) always use the context of their top-most math function, so the entire calculation tree is consistent.
-</p>
-
 <div class="algo">
 <p>
 `計算式$の
@@ -10252,8 +10235,64 @@ Note: Although there are a few properties in which a bare &lt;number&gt; becomes
 Note: In Quirks Mode [QUIRKS], some properties that would normally only accept &lt;length&gt;s are defined to also accept &lt;number&gt;s, interpreting them as px lengths. Like unitless zeroes, this has no effect on the parsing or behavior of math functions, though a math function that resolves to a &lt;number&gt; value might become valid in Quirks Mode (and have its result interpreted as a px length).
 </p>
 
+			<section id="calc-context">
+<h4 title="Calculation Contexts">10.9.1. 計算~文脈</h4>
+
+<p>
+数量-値は、
+様々な`計算~文脈$において解釈され得る
+— それがどこで利用されたかに依存して。
+各種
+`計算~文脈@
+は、
+`percentage$t 値がどう解決されるか, 等々を定義する。
+◎
+Numeric values can be interpreted in various calculation contexts, depending on where they are used, which defines how &lt;percentage&gt; values resolve, etc.
+</p>
+
+<p class="example">
+例えば， `top$p においては、
+`percentage$t 値は，包含塊の~sizeを~~基準に解決され、
+それが `length$t として動作するようにする。
+単独の~propは、
+複数の`計算~文脈$を定義し得る
+— 例えば， `background-size$p においては、
+その値を成す一方の `percentage^t は`背景~位置決め区画$の横幅を~~基準に解決され，
+他方は縦幅を~~基準に解決される。
+◎
+For example, in top, a &lt;percentage&gt; value is resolved against the size of the containing block, making it act as a &lt;length&gt;. A single property can define multiple calculation contexts; for example, in background-size one value resolves &lt;percentage&gt;s against the width of the background positioning area while the other resolves them against the height.
+</p>
+
+<p>
+`~math関数$は、
+どこで利用されようが，常に そこから`計算~文脈$を継承する。
+例えば， `top: calc(25% + 50px)$p における `percentage$t は、
+`通常通り^em `top^p 用に
+— `top: 25%^p が指定されたかのように —
+解決される
+（それから，結果の値に `50px^v が加算される）。
+◎
+Math functions always inherit the calculation context from wherever they’re used. That is, in top: calc(25% + 50px), the &lt;percentage&gt; is resolved as normal for top, as if top: 25% were specified (and then has 50px added to its value).
+</p>
+
+<p>
+他のすべての関数は、
+他が定義されない限り，
+<strong>`計算~文脈$を継承しない</strong>
+— 代わりに，各自の各［
+数量-引数
+］用に自前の`計算~文脈$を定義する。
+例えば， `top: anchor(25%)$p においては、
+`anchor$f 関数~内の `percentage$t は，完全に異なる方式で
+（この事例では，`既定の~anchor要素$の縦幅を~~基準に）
+解決するものと定義される。
+◎
+Unless otherwise defined, all other functions do not inherit a calculation context, and instead define their own calculation contexts for their numeric arguments. For example, in top: anchor(25%), the &lt;percentage&gt; in the anchor() function is instead defined to resolve in a completely different manner (against the height of the default anchor element).
+</p>
+
+			</section>
 			<section id="calc-ieee">
-<h4 title="Infinities, NaN, and Signed Zero">10.9.1. 無限大, ~NaN, 有符号 0</h4>
+<h4 title="Infinities, NaN, and Signed Zero">10.9.2. 無限大, ~NaN, 有符号 0</h4>
 
 <p>
 `~math関数$は、
