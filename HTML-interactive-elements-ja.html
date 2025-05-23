@@ -119,7 +119,7 @@ return text;
 
 ●●options
 
-spec_date:2025-05-22
+spec_date:2025-05-23
 trans_update:2025-05-23
 source_checked:250115
 page_state_key:HTML
@@ -318,6 +318,7 @@ none::なし
 	%呼出元:invoker
 	-:value
 	%~command:command
+	%返り値:returnValue
 
 	●仕様
 背後:behind:~
@@ -541,6 +542,7 @@ st.なし:#attr-dialog-closedby-none-state
 st.自動:#attr-dialog-closedby-auto-state
 
 st.閉じる:~HEforms#attr-button-command-close-state
+st.閉じるよう要請する:~HEforms#attr-button-command-request-close-state
 st.~modalを示す:~HEforms#attr-button-command-show-modal-state
 
 pe.backdrop:~CSSPOS4#selectordef-backdrop
@@ -567,6 +569,7 @@ dG.閉-要請~method用の閉-注視器を可能化するか:#enable-close-watch
 
 ~modal~dialogを示す:#show-a-modal-dialog
 ~dialogを閉じる:#close-the-dialog
+~dialogを閉じるよう要請する:#dialog-request-close
 ~dialogを~focusする:#dialog-focusing-steps
 ~dialog用の~toggle~event~taskを~queueする:#queue-a-dialog-toggle-event-task
 ~dialogの~closed-by状態を算出する:#computed-closed-by-state
@@ -3269,26 +3272,6 @@ The requestClose(returnValue) method steps are:
 <ol>
 	<li>
 ~IF［
-コレは ``open$a 属性を有していない
-］
-⇒
-~RET
-◎
-If this does not have an open attribute, then return.
-</li>
-	<li>
-~Assert：
-コレの`閉-注視器$dG ~NEQ ~NULL
-◎
-Assert: this's close watcher is not null.
-</li>
-	<li>
-コレ【！dialog】の`閉-要請~method用の閉-注視器を可能化するか$dG ~SET ~T
-◎
-Set dialog's enable close watcher for requestClose() to true.
-</li>
-	<li>
-~IF［
 %returnValue ~EQ ε
 ］
 ⇒
@@ -3297,19 +3280,9 @@ Set dialog's enable close watcher for requestClose() to true.
 If returnValue is not given, then set it to null.
 </li>
 	<li>
-コレの`閉-要請の返り値$dG ~SET %returnValue
+`~dialogを閉じるよう要請する$( コレ, %returnValue )
 ◎
-Set this's request close return value to returnValue.
-</li>
-	<li>
-`閉-注視器に閉じるよう要請する$( %dialog の`閉-注視器$dG, ~F )
-◎
-Request to close dialog's close watcher with false.
-</li>
-	<li>
-%dialog の`閉-要請~method用の閉-注視器を可能化するか$dG ~SET ~F
-◎
-Set dialog's enable close watcher for requestClose() to false.
+Request to close the dialog this with returnValue.
 </li>
 </ol>
 </div>
@@ -3563,13 +3536,26 @@ Each dialog element has a close watcher, which is a close watcher or null, initi
 Each dialog element has a request close return value, which is a string, initially null.
 </li>
 	<li>
+<p>
 `閉-要請~method用の閉-注視器を可能化するか@dG
 ⇒
 真偽値
 — 初期~時は ~F とする。
 ◎
-Each dialog element has an enable close watcher for requestClose() boolean, initially false.
-</li>
+Each dialog element has an enable close watcher for request close boolean, initially false.
+</p>
+
+<p class="note">注記：
+~T をとる下では、
+当の `dialog$e 要素 %dialog を`閉じるよう要請-＠#dialog-request-close$している間は，
+%dialog の`閉-注視器$dGを可能化するよう強制する。
+~F をとる下では、
+%dialog に`算出された~closed-by状態＠#computed-closed-by-state$が `なし$st になる場合には， %dialog の`閉-注視器$dGは不能化される。
+◎
+dialog's enable close watcher for request close is used to force enable the dialog's close watcher while requesting to close it. A dialog whose computed closed-by state is the None state would otherwise have a disabled close watcher.
+</p>
+
+	</li>
 	<li>
 `~modalか@dG
 ⇒
@@ -3904,7 +3890,7 @@ closeAction being to close the dialog given dialog and dialog's request close re
 `~dialogの~closed-by状態を算出する$( %dialog ) ~NEQ `なし$st
 ］
 ◎
-getEnabledState being to return true if dialog's enable close watcher for requestClose() is true or dialog's computed closed-by state is not None; otherwise false.
+getEnabledState being to return true if dialog's enable close watcher for request close is true or dialog's computed closed-by state is not None; otherwise false.
 </li>
 		</ul>
 	</li>
@@ -3920,11 +3906,11 @@ getEnabledState being to return true if dialog's enable close watcher for reques
 に対し
 ⇒
 ~RET ~IS［
-%~command の状態 ~IN { `閉じる$st, `~modalを示す$st }
+%~command の状態 ~IN { `閉じる$st, `閉じるよう要請する$st, `~modalを示す$st }
 ］
 ◎
 The is valid invoker command steps for dialog elements, given a command attribute command, are:
-• If command is in the Close state or in the Show Modal state, then return true.
+• If command is in the Close state, Request Close state, or the Show Modal state, then return true.
 • Return false.
 </div>
 
@@ -3956,9 +3942,18 @@ If element is in the popover showing state, then return.
 ⇒
 `~dialogを閉じる$( %dialog, %呼出元 の`省略可能な値$fe )
 ◎
-If command is in the Close state and element has an open attribute:
-• Let value be invoker's optional value.
-• Close the dialog element with value.
+If command is in the Close state and element has an open attribute, then close the dialog element with invoker's optional value.
+</li>
+	<li>
+~IF［
+%~command の状態 ~EQ `閉じるよう要請する$st
+］~AND［
+%dialog は ``open$a 属性を有する
+］
+⇒
+`~dialogを閉じるよう要請する$( %dialog, %呼出元 の`省略可能な値$fe )
+◎
+If command is in the Request Close state and element has an open attribute, then request to close the dialog element with invoker's optional value.
 </li>
 	<li>
 ~IF［
@@ -4149,6 +4144,57 @@ Set subject's close watcher to null.
 </li>
 		</ol>
 	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`~dialogを閉じるよう要請する@
+~algoは、
+所与の
+( `dialog$e 要素 %dialog, ［
+~NULL ／ 文字列
+］ %返り値 )
+に対し：
+◎
+To request to close dialog element subject, given null or a string returnValue:
+</p>
+<ol>
+	<li>
+~IF［
+%dialog は ``open$a 属性を有さない
+］
+⇒
+~RET
+◎
+If subject does not have an open attribute, then return.
+</li>
+	<li>
+~Assert：
+%dialog の`閉-注視器$dG ~NEQ ~NULL
+◎
+Assert: subject's close watcher is not null.
+</li>
+	<li>
+%dialog の`閉-要請~method用の閉-注視器を可能化するか$dG ~SET ~T
+◎
+Set subject's enable close watcher for request close to true.
+</li>
+	<li>
+%dialog の`閉-要請の返り値$dG ~SET %返り値
+◎
+Set subject's request close return value to returnValue.
+</li>
+	<li>
+`閉-注視器に閉じるよう要請する$( %dialog の`閉-注視器$dG, ~F )
+◎
+Request to close subject's close watcher with false.
+</li>
+	<li>
+%dialog の`閉-要請~method用の閉-注視器を可能化するか$dG ~SET ~F
+◎
+Set subject's enable close watcher for request close to false.
+</li>
 </ol>
 </div>
 
