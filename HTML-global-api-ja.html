@@ -122,8 +122,8 @@ return text;
 
 ●●options
 
-spec_date:2025-05-23
-trans_update:2025-05-24
+spec_date:2025-05-26
+trans_update:2025-05-26
 source_checked:240712
 page_state_key:HTML
 spec_status:LS
@@ -450,6 +450,8 @@ map.~key群:~INFRA#map-getting-the-keys
 	~NEQ ε:~INFRA#map-exists
 	~SET:~INFRA#map-set
 
+新たな~obj:~WEBIDLjs#new
+
 並列的:~HTMLINFRA#in-parallel
 l.cross-origin-isolated:~HTMLINFRA#cross-origin-isolated-feature
 
@@ -473,6 +475,7 @@ BS.~byte長さ:~WEBIDLjs#buffersource-byte-length
 	●ImageBitmap
 ~bitmap~dataを取得する:#_get-a-bitmap-data-from-image
 代表する~bitmap~data:#_get-a-bitmap-data-from-animated-image
+~bitmap~task~source:#bitmap-task-source
 
 矩形な~bitmapを表現する:#concept-imagedata-bitmap-representation
 画像~dataを初期化する:#initialize-an-imagedata-object
@@ -572,6 +575,9 @@ surrounding:
 連結-:concatenate:~
 	連結した結果:concatenation of
 setTimeout-setInterval:setTimeout／setInterval
+決着-:settle::~
+
+	~promise:Promise
 
 	●変数
 	%大域~obj:global
@@ -613,7 +619,7 @@ this:
 	%直列形:serialized
 	%宛先~realm:targetRealm
 	%xywh:-
-	%~bitmapを得る手続き
+	%~bitmapを取得する手続き
 	%~bitmap~data:-
 	%生成元cleanか:-
 	%image:-
@@ -3894,6 +3900,15 @@ Set value's bitmap data to dataHolder.[[BitmapData]].
 
 <hr>
 
+<p>
+`createImageBitmap()$m ~methodは、
+それが返す~promiseを決着する際に
+`~bitmap~task~source@
+を利用する。
+◎
+The createImageBitmap method uses the bitmap task source to settle its returned Promise.
+</p>
+
 <div class="algo">
 <p>
 ［
@@ -3977,7 +3992,7 @@ or returns bad, then return a promise rejected with an "InvalidStateError" DOMEx
 	<li>
 %promise ~LET `新たな~promise$
 ◎
-Let p be a new promise.
+Let promise be a new promise.
 </li>
 	<li>
 <p>
@@ -3986,13 +4001,13 @@ Let p be a new promise.
 
 <p class="trans-note">【
 この訳では，原文の~algoを再構成している
-— その重複している~logicを この段の中に集約して，
-重複していない部分を 下の “`~bitmap~dataを取得する$” に抜き出すことにより。
+— それを成す重複している~logicを この段の中に集約して，
+重複していない部分を “`~bitmap~dataを取得する$” 下位-手続きに抜き出すことにより。
 】</p>
 		<ol>
 			<li class="algo">
 <p>
-%~bitmapを得る手続き ~LET 次を走らす手続き：
+%~bitmapを取得する手続き ~LET 次を走らす手続き：
 </p>
 				<ol>
 					<li>
@@ -4006,7 +4021,7 @@ Let p be a new promise.
 ~RET ε
 </li>
 					<li>
-%O ~LET 新たな `ImageBitmap$I ~obj
+%O ~LET `新たな~obj$( `ImageBitmap$I【, コレに`関連な大域~obj$】 )
 </li>
 					<li>
 %O の`~bitmap~data$ ~SET `~source矩形に切抜いて整形する$( %~bitmap~data )
@@ -4018,7 +4033,7 @@ Let p be a new promise.
 ~RET %O
 </li>
 				</ol>
-</li>
+			</li>
 			<li>
 <p>
 ~IF［
@@ -4033,19 +4048,27 @@ Let p be a new promise.
 </p>
 						<ol>
 							<li>
-%~bitmap ~LET %~bitmapを得る手続き()
+%~bitmap ~LET %~bitmapを取得する手続き()
 </li>
 							<li>
-~IF［
-%~bitmap ~NEQ ε
-］
+<p>
+%手続き ~LET %~bitmap に応じて：
+</p>
+								<ul class="switch">
+									<li class="algo">
+ε ならば次を走らす手続き
+⇒
+`~promiseを却下する$( %promise, `InvalidStateError$E 例外 )
+</li>
+									<li class="algo">
+~ELSE_ 次を走らす手続き
 ⇒
 `~promiseを解決する$( %promise, %~bitmap )
 </li>
+								</ul>
+							</li>
 							<li>
-~ELSE
-⇒
-`~promiseを却下する$( %promise, `InvalidStateError$E 例外 )
+`大域~taskを~queueする$( `~bitmap~task~source$【, コレに`関連な大域~obj$】, %手続き )
 </li>
 						</ol>
 					</li>
@@ -4057,7 +4080,7 @@ Let p be a new promise.
 </p>
 				<ol>
 					<li>
-%~bitmap ~LET %~bitmapを得る手続き()
+%~bitmap ~LET %~bitmapを取得する手続き()
 </li>
 					<li>
 ~IF［
@@ -4066,11 +4089,17 @@ Let p be a new promise.
 ⇒
 ~RET `却下される~promise$( `InvalidStateError$E 例外 )
 </li>
-					<li class="algo">
-次を`並列的$に走らす
+					<li>
+<p>
+`大域~taskを~queueする$( `~bitmap~task~source$【, コレに`関連な大域~obj$】, 次の手続き )
+</p>
+
+<div class="algo">
+手続きは
 ⇒
 `~promiseを解決する$( %promise, %~bitmap )
-</li>
+</div>
+					</li>
 				</ol>
 </li>
 			<li>
@@ -4089,7 +4118,7 @@ Let p be a new promise.
 所与の
 ( %image )
 に対し，
-%image に応じて次を走らす：
+%image に応じて：
 ◎
 Let imageBitmap be a new ImageBitmap object.
 ◎
@@ -4150,8 +4179,7 @@ If image is not origin-clean, then set the origin-clean flag of imageBitmap's bi
 			<li>
 ~RET ( %~bitmap~data, %生成元cleanか )
 ◎
-Run this step in parallel:
-• Resolve p with imageBitmap.
+Queue a global task, using the bitmap task source, to resolve promise with imageBitmap.
 </li>
 		</ol>
 	</dd>
@@ -4188,8 +4216,7 @@ If image is not origin-clean, then set the origin-clean flag of imageBitmap's bi
 			<li>
 ~RET ( %~bitmap~data, %生成元cleanか )
 ◎
-Run this step in parallel:
-• Resolve p with imageBitmap.
+Queue a global task, using the bitmap task source, to resolve promise with imageBitmap.
 </li>
 		</ol>
 	</dd>
@@ -4204,8 +4231,7 @@ Set imageBitmap's bitmap data to a copy of image's bitmap data, cropped to the s
 ◎
 Set the origin-clean flag of the imageBitmap's bitmap to the same value as the origin-clean flag of image's bitmap.
 ◎
-Run this step in parallel:
-• Resolve p with imageBitmap.
+Queue a global task, using the bitmap task source, to resolve promise with imageBitmap.
 </li>
 		</ol>
 	</dd>
@@ -4222,16 +4248,13 @@ Run this step in parallel:
 ~RET ( ε, ε )
 ◎
 Run these steps in parallel:
-◎
-Let imageData be the result of reading image's data. If an error occurs during reading of the object, then reject p with an "InvalidStateError" DOMException and abort these steps.
+• Let imageData be the result of reading image's data. If an error occurs during reading of the object, then queue a global task, using the bitmap task source, to reject promise with an "InvalidStateError" DOMException and abort these steps.
 </li>
 			<li>
-%画像~data の公式的な型 ~LET ［
-%image の `type$m 属性で与えられる~MIME型
-］を与える下で，`画像を特定的に~sniffするための規則$を適用して、
-%画像~data の~file形式を決定した結果
+%画像~data の公式的な型 ~LET %画像~data の~file形式を決定した結果
+— ~MIME型として %image の `type$m 属性を与える下で，`画像を特定的に~sniffするための規則$を適用することにより
 ◎
-Apply the image sniffing rules to determine the file format of imageData, with MIME type of image (as given by image's type attribute) giving the official type.
+• Apply the image sniffing rules to determine the file format of imageData, with MIME type of image (as given by image's type attribute) giving the official type.
 </li>
 			<li>
 <p>
@@ -4258,16 +4281,17 @@ Apply the image sniffing rules to determine the file format of imageData, with M
 ~RET ( ε, ε )
 </p>
 ◎
-If imageData is not in a supported image file format (e.g., it's not an image at all), or if imageData is corrupted in some fatal way such that the image dimensions cannot be obtained (e.g., a vector graphic with no natural size), then reject p with an "InvalidStateError" DOMException and abort these steps.
+• If imageData is not in a supported image file format (e.g., it's not an image at all), or if imageData is corrupted in some fatal way such that the image dimensions cannot be obtained (e.g., a vector graphic with no natural size), then reject p with an "InvalidStateError" DOMException and abort these steps.
 </li>
 			<li>
 %~bitmap~data ~LET %画像~data を`代表する~bitmap~data$
 ◎
-Set imageBitmap's bitmap data to imageData, cropped to the source rectangle with formatting. If this is an animated image, imageBitmap's bitmap data must only be taken from the default image of the animation (the one that the format defines is to be used when animation is not supported or is disabled), or, if there is no such image, the first frame of the animation.
+• Set imageBitmap's bitmap data to imageData, cropped to the source rectangle with formatting. If this is an animated image, imageBitmap's bitmap data must only be taken from the default image of the animation (the one that the format defines is to be used when animation is not supported or is disabled), or, if there is no such image, the first frame of the animation.
 </li>
 			<li>
 ~RET ( %~bitmap~data, ~T )
 ◎
+• Queue a global task, using the bitmap task source, to resolve promise with imageBitmap.
 Resolve p with imageBitmap.
 </li>
 		</ol>
@@ -4288,12 +4312,11 @@ Let buffer be image's data attribute value's [[ViewedArrayBuffer]] internal slot
 If IsDetachedBuffer(buffer) is true, then return a promise rejected with an "InvalidStateError" DOMException.
 </li>
 			<li>
-~RET ( %image が与える画像~data, ~T )
+~RET ( %image が`表現する画像~data＠#concept-imagedata-bitmap-representation$, ~T )
 ◎
 Set imageBitmap's bitmap data to image's image data, cropped to the source rectangle with formatting.
 ◎
-Run this step in parallel:
-• Resolve p with imageBitmap.
+Queue a global task, using the bitmap task source, to resolve promise with imageBitmap.
 </li>
 		</ol>
 	</dd>
@@ -4308,8 +4331,7 @@ Set imageBitmap's bitmap data to a copy of image's bitmap data, cropped to the s
 ◎
 Set the origin-clean flag of imageBitmap's bitmap to the same value as the origin-clean flag of image's bitmap.
 ◎
-Run this step in parallel:
-• Resolve p with imageBitmap.
+Queue a global task, using the bitmap task source, to resolve promise with imageBitmap.
 </li>
 		</ol>
 	</dd>
@@ -4322,8 +4344,7 @@ Run this step in parallel:
 ◎
 Set imageBitmap's bitmap data to a copy of image's visible pixel data, cropped to the source rectangle with formatting.
 ◎
-Run this step in parallel:
-• Resolve p with imageBitmap.
+Queue a global task, using the bitmap task source, to resolve promise with imageBitmap.
 </li>
 		</ol>
 	</dd>
@@ -4331,7 +4352,7 @@ Run this step in parallel:
 
 <p>
 ◎
-↑↑Return p.
+↑↑Return promise.
 </p>
 </div>
 
