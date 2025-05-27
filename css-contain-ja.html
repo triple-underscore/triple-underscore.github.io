@@ -144,8 +144,8 @@ return text;
 ●●options
 
 spec_title:CSS Containment Module Level 2
-spec_date:2025-01-18
-trans_update:2024-06-15
+spec_date:2025-05-10
+trans_update:2024-05-27
 source_checked:240614
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-contain-2/
@@ -275,7 +275,6 @@ I.EventInit:~DOM4#dictdef-eventinit
 I.ResizeObserver:~CSSWG/resize-observer-1/#resizeobserver
 I.IntersectionObserver:~INTERSECTIONOBSERVER#intersectionobserver
 
-m.requestAnimationFrame:~HTMLGAPI#dom-animationframeprovider-requestanimationframe
 m.getBoundingClientRect:~CSSOMVIEW#dom-element-getboundingclientrect
 m.scrollIntoView:~CSSOMVIEW#dom-element-scrollintoview
 m.innerText:~HTMLdom#dom-innertext
@@ -317,6 +316,9 @@ i.表示域に近い:#close-to-the-viewport
 i.表示域から遠い:#far-away-from-the-viewport
 i.未決定:#not-determined
 表示域への近接度を決定する:#_determine-the-proximity-to-the-viewport
+現在~利用者に関連するか:#currently-relevant-to-the-user
+現在~利用者に関連するか否かを更新する:#update-currently-relevant-to-the-user
+文書~用に内容の関連性を更新する:#update-content-relevancy-for-a-document
 
 
 	●用語（CSS
@@ -443,6 +445,7 @@ autoS:auto
 持続-:persist:~
 近接度:proximity::~
 未決定:not determined:~
+関連性:relevancy:~
 	飛ばされるか否か:skipped state
 	変化するに伴い:entering and exiting 〜 as a result
 	格段に:much ／ much more
@@ -563,6 +566,16 @@ ink::::インク
 	組にされた:paired
 	先祖へ遡って:percolate further up the tree 
 	子孫:descendent
+
+	●変数
+	%要素:the scoping element
+	%要素:element
+	%現在~関連するか:currentlyRelevant
+	%文書:doc
+	%初期~以外も更新するか:updateNonInitial
+	%結果:changed
+	%変化したか:-
+	%初期~決定か:isInitialDetermination
 
 	●保安
 誤導な:misleadingな:誤認させる
@@ -767,6 +780,8 @@ post:
 単調:monotonic:~
 復帰-:revert:~
 循環:cycle:~
+次回の:next:~
+
 	戻る:back
 	3 個目の:final
 	戻され:returned to
@@ -823,7 +838,6 @@ post:
 	以前の:earlier
 	同様，:like 〜,
 	直後:right after
-	次回の:next
 	一括して:at once
 	一回:once
 	し過ぎる:overly
@@ -832,7 +846,6 @@ post:
 	もうすぐ:soon
 	含む:include
 	~~後続する:later
-	%要素:the scoping element
 	~~進行:goes on
 
 
@@ -902,6 +915,8 @@ post:
     Anne van Kesteren. ＜DOM Standard＞. Living Standard. URL: https://dom.spec.whatwg.org/
 [HTML]
     Anne van Kesteren; et al. ＜HTML Standard＞. Living Standard. URL: https://html.spec.whatwg.org/multipage/
+[INFRA]
+    Anne van Kesteren; Domenic Denicola. ＜Infra Standard＞. Living Standard. URL: https://infra.spec.whatwg.org/
 [INTERSECTION-OBSERVER]
     Stefan Zager; Emilio Cobos Álvarez; Traian Captan. ＜Intersection Observer＞. URL: https://w3c.github.io/IntersectionObserver/
 [RESIZE-OBSERVER-1]
@@ -918,7 +933,7 @@ post:
 ●●ref_informative
 
 [CSS-GRID-2]
-    Tab Atkins Jr.; Elika Etemad; Rossen Atanassov. ＜CSS Grid Layout Module Level 2＞. URL: https://drafts.csswg.org/css-grid-2/
+    Tab Atkins Jr.; et al. ＜CSS Grid Layout Module Level 2＞. URL: https://drafts.csswg.org/css-grid-2/
 [CSS-MULTICOL-1]
     Florian Rivoal; Rachel Andrew. ＜CSS Multi-column Layout Module Level 1＞. URL: https://drafts.csswg.org/css-multicol/
 [CSS-OVERFLOW-5]
@@ -1862,7 +1877,7 @@ The layout engine first attempts to place the article flush with the top of the 
 しかしながら、
 3 個目の浮動体の側方にある狭い `40px^v 幅の空間~内に %A 【の内容 "Article" 】が収まるには， %A の `min-width$p は大き過ぎた
 — その結果、
-%A は それよりさらに下へ＊ズラされ，
+%A は それよりさらに下へズラされ，
 3 個の浮動体~すべてより下に 200px の正方形を形成する。
 ◎
 It then attempts to position the article flush with the top of the third float, in the narrow 40px-wide space to its right. However, since the article’s min-width makes it too large to fit in the 40px-wide space beside the third float, it shifts below that one as well, forming a 200px square below all the floated boxes.
@@ -2818,9 +2833,9 @@ Note that in the content-visibility: auto case, layout containment, style contai
 
 <div>
 <p>
-各~要素には、
+各~要素は、
 `表示域への近接度@
-が有る
+を有する
 — それは、
 次に挙げるいずれかの状態をとり，
 初期~時は `未決定$i とする
@@ -2854,9 +2869,11 @@ Note that in the content-visibility: auto case, layout containment, style contai
 
 <div class="algo">
 <p>
-所与の要素 %要素 の
 `表示域への近接度を決定する@
-~algoは：
+~algoは、
+所与の
+( 要素 %要素 )
+に対し：
 </p>
 <ol>
 	<li>
@@ -2864,7 +2881,7 @@ Note that in the content-visibility: auto case, layout containment, style contai
 ［
 %要素 は`接続されて$いる
 ］~AND［
-%要素 の `content-visibility$p ~EQ `auto^v
+%要素 の `content-visibility$p 【の使用~値？（`文書~用に内容の関連性を更新する$~algoを見よ）】~EQ `auto^v
 ］
 </li>
 	<li>
@@ -2928,10 +2945,181 @@ When the element becomes disconnected, the element’s proximity to the viewport
 </p>
 
 <p>
-所与の要素 %要素 は、
-~OR↓ を満たすならば，
+各~要素は、
+`現在~利用者に関連するか@
+を有する
+— それは、
+真偽値であり，初期~時は ~F とする。
+◎
+All elements have a currently relevant to the user flag, initially false.
+</p>
+
+<div class="algo">
+<p>
+`現在~利用者に関連するか否かを更新する@
+~algoは、
+所与の
+( 要素 %要素 )
+に対し：
+◎
+To update currently relevant to the user given an element element:
+</p>
+<ol>
+	<li>
+%現在~関連するか ~LET ~IS［
+%要素 は`利用者に関連する$
+］
+◎
+Let currentlyRelevant be true if element is relevant to the user, otherwise false.
+</li>
+	<li>
+~IF［
+%要素 の`現在~利用者に関連するか$ ~EQ %現在~関連するか
+］
+⇒
+~RET ~F
+◎
+If element’s currently relevant to the user flag is equal to currentlyRelevant, then return false.
+</li>
+	<li>
+%要素 の`現在~利用者に関連するか$ ~SET %現在~関連するか
+◎
+Set element’s currently relevant to the user flag to currentlyRelevant.
+</li>
+	<li>
+~RET ~T
+◎
+return true.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`文書~用に内容の関連性を更新する@
+~algoは、
+所与の
+( 文書 %文書, 真偽値 %初期~以外も更新するか )
+に対し：
+◎
+To update content relevancy for a document given a document doc, and a boolean updateNonInitial:
+</p>
+<ol>
+	<li>
+%結果 ~LET ~F
+◎
+Let changed be false.
+</li>
+	<li>
+<p>
+%文書 に`接続されて$いる
+~EACH( %要素 )
+に対し：
+◎
+For each element connected to doc＼
+</p>
+		<ol>
+			<li>
+~IF［
+%要素 の `content-visibility$p の使用~値 ~NEQ `auto$vC
+］
+⇒
+~CONTINUE
+◎
+with auto used value of content-visibility:
+</li>
+			<li>
+<p>
+~IF［
+%初期~以外も更新するか ~EQ ~T
+］：
+◎
+If updateNonInitial is true:
+</p>
+				<ol>
+					<li>
+%変化したか ~LET `現在~利用者に関連するか否かを更新する$( %要素 )
+◎
+↓</li>
+					<li>
+~IF［
+%変化したか ~EQ ~T
+］
+⇒
+%結果 ~SET ~T
+◎
+If update currently relevant to the user for element returns true.
+• Set changed to true.
+</li>
+				</ol>
+			</li>
+			<li>
+%初期~決定か ~LET ~IS［
+%要素 の`表示域への近接度$ ~EQ `未決定$i
+］
+◎
+Let isInitialDetermination be true if element’s proximity to the viewport is not determined, otherwise false.
+</li>
+			<li>
+`表示域への近接度を決定する$( %要素 )
+◎
+Determine proximity to the viewport for element.
+</li>
+			<li>
+~IF［
+%初期~決定か ~EQ ~F
+］
+⇒
+~CONTINUE
+◎
+If isInitialDetermination is false, then continue.
+</li>
+			<li>
+%変化したか ~LET `現在~利用者に関連するか否かを更新する$( %要素 )
+◎
+↓</li>
+			<li>
+~IF［
+%変化したか ~EQ ~T
+］
+⇒
+%結果 ~SET ~T
+◎
+If update currently relevant to the user for element returns true.
+• Set changed to true.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET %結果
+◎
+return changed.
+</li>
+</ol>
+
+<p class="note">注記：
+変数［
+%変化したか, %初期~以外も更新するか
+］の意図は、
+初期~時における【！initial】［
+表示域への近接度の決定
+］が現在の【！this】~frameの［
+~style, ~layout
+］の計算に反映され，即時に効果を発揮するようにするためにある
+— 初期~以外の近接度の決定は、
+次回の描画~機会にて効果を発揮する。
+◎
+The intent of the changed and updateNonInitial variables is for the initial viewport proximity determination, which takes effect immediately, to be reflected in the style and layout calculation this frame.
+◎
+Proximity determinations other than the initial one take effect at the next rendering opportunity.
+</p>
+</div>
+
+<p>
+所与の要素 %要素 が
 `利用者に関連する@
-とされる：
+とは、
+~OR↓ が満たされることをいう：
 ◎
 An element is relevant to the user if any of the following conditions are true:
 </p>
@@ -2943,7 +3131,7 @@ The element is close to the viewport.
 </li>
 	<li>
 %要素 または その`内容$【の一部（以下同様）】は、
-`~focusされて$いる。
+`~focusされて$いる
 `HTML$r
 ◎
 Either the element or its contents are focused, as described in the focus section of the HTML spec.
@@ -2952,19 +3140,19 @@ Either the element or its contents are focused, as described in the focus sectio
 %要素 または その`内容$は、
 選択されている
 — `選択~API＠~SELECTIONAPI$cite
-にて述べられる選択として。
+にて述べられる選択として
 ◎
 Either the element or its contents are selected, where selection is described in the selection API
 </li>
 	<li>
 %要素 または その`内容$は、
-`上端~層$に配置されている。
+`上端~層$に配置されている
 ◎
 Either the element or its contents are placed in the top layer.
 </li>
 	<li>
 `平坦~tree$における %要素 のある子孫は、
-`ある~view遷移~内に捕捉されて＠~CSSVT#captured-in-a-view-transition$いる。
+`ある~view遷移~内に捕捉されて＠~CSSVT#captured-in-a-view-transition$いる
 ◎
 The element has a flat tree descendant that is captured in a view transition.
 </li>
@@ -3385,14 +3573,9 @@ From the perspective of a ResizeObserver, the skipped contents of an element nev
 	<li>
 <p>
 要素の内容が`飛ばされ$るか否かが変化するのは、
-それによる効果を描画する~frameにおいて `requestAnimationFrame()$m ~callbackを走らせた後に起こる。
-特定的には、
-そのような変化が効果を発揮するのは，
-`HTML^r の`描画を更新する手続き$の中の
-“各~animation~frame~callbackを走らす” 段と
-“交差~観測nを更新する” 段の合間【！between steps 13 and 14】になる。
+`文書~用に内容の関連性を更新する$ときに起こる。
 ◎
-If an element starts or stops skipping its contents, this change happens after the requestAnimationFrame callbacks of the frame that renders the effects of the change have run. Specifically, such changes will take effect between steps 13 and 14 of update the rendering step of the Processing Model (between “run the animation frame callbacks” and “run the update intersection observations steps”).
+If an element starts or stops skipping its contents, this change happens when update content relevancy for a document runs.
 </p>
 
 <p class="note">注記：
@@ -3593,7 +3776,7 @@ If script queries the style of a skipped element (causing a style change event) 
 ~dataとして何を伴うか
 ］を定義する。
 ◎
-CSS Animations 2 § 5 Animation Events and CSS Transitions 2 § 5 Transition Events defines what objects are created and what events are fired, with what data, when an animation or transition is updated,.
+CSS Animations 2 § 6 Animation Events and CSS Transitions 2 § 5 Transition Events defines what objects are created and what events are fired, with what data, when an animation or transition is updated,.
 </li>
 			<li>
 要素が`飛ばされ$なくなったとき，その［
