@@ -109,8 +109,8 @@ return text;
 ●●options
 
 spec_title:Event Timing API
-spec_date:2025-04-16
-	trans_update:
+spec_date:2025-05-26
+trans_update:2025-06-03
 	source_checked:
 page_state_key:TIMING
 original_url:https://w3c.github.io/event-timing/
@@ -260,6 +260,7 @@ w.利用者ヤリトリ値:#user-interaction-value
 w.処理待ちな~keydown~map:#pending-key-downs
 w.~pointerヤリトリ値~map:#pointer-interaction-value-map
 w.処理待ちな~pointerdown~map:#pending-pointer-downs
+w.~contextmenuを誘発したか:#is-contextmenu-triggered
 w.~event回数~map:#window-eventcounts
 w.ヤリトリ回数:#window-interactioncount
 
@@ -342,6 +343,7 @@ keydown:
 IME:
 pointerdown:
 	~pointerdown:pointer down
+contextmenu:
 突出した:disproportionateな:~
 突出して:disproportionateに:~
 動き:movement:~
@@ -1758,6 +1760,14 @@ pointer interaction value map, a map of integers which is initially empty.
 pending pointer downs, a map of integers to PerformanceEventTimings which is initially empty.
 </li>
 	<li>
+`~contextmenuを誘発したか@w
+⇒
+真偽値
+— 初期~時は ~F とする。
+◎
+is contextmenu triggered, a boolean which is initially set to false.
+</li>
+	<li>
 <p>
 `~event回数~map@w
 ⇒
@@ -2015,12 +2025,13 @@ Let type be event’s type attribute value.
 `input$et,
 `pointercancel$et,
 `pointerup$et,
-`click$et }
+`click$et,
+`contextmenu$et }
 ］
 ⇒
 ~RET 0
 ◎
-If type is not one among keyup, compositionstart, input, pointercancel, pointerup, or click, return 0.
+If type is not one among keyup, compositionstart, input, pointercancel, pointerup, click, or contextmenu, return 0.
 </p>
 
 <p class="note">注記：
@@ -2208,9 +2219,9 @@ Return window’s user interaction value.
 	</li>
 	<li>
 ~Assert：
-%型 ~IN { `pointercancel$et, `pointerup$et, `click$et }
+%型 ~IN { `pointercancel$et, `pointerup$et, `click$et, `contextmenu$et }
 ◎
-Otherwise (type is pointercancel, pointerup, or click):
+Otherwise (type is pointercancel, pointerup, click, or contextmenu):
 </li>
 	<li>
 ~Assert：
@@ -2260,38 +2271,77 @@ Otherwise (type is pointercancel, pointerup, or click):
 	</li>
 	<li>
 ~Assert：
-%型 ~IN { `pointerup$et, `pointercancel$et }
+%型 ~IN { `pointerup$et, `pointercancel$et, `contextmenu$et }
 ◎
-• Assert that type is pointerup or pointercancel.
+• Assert that type is pointerup, pointercancel, or contextmenu.
 </li>
 	<li>
 %~pointerdown~entry ~LET %処理待ちな~pointerdown~map[ %~pointer~ID ]
 ◎
 • ↓</li>
 	<li>
+<p>
 ~IF［
 %~pointerdown~entry ~EQ ε
+］：
+◎
+• If pendingPointerDowns[pointerId] does not exist:
+</p>
+		<ol>
+			<li>
+~IF［
+%型 ~EQ `contextmenu$et
 ］
 ⇒
+~RET %~window の`利用者ヤリトリ値$w
+◎
+• If type is contextmenu, return window’s user interaction value.
+</li>
+			<li>
+<p>
+~IF［
+%型 ~EQ `pointerup$et
+］~AND［
+%~window の`~contextmenuを誘発したか$w ~EQ ~T
+］：
+◎
+• If type is pointerup and window’s is contextmenu triggered flag is true:
+</p>
+				<ol>
+					<li>
+%~window の`~contextmenuを誘発したか$w ~SET ~F
+◎
+• Set window’s is contextmenu triggered flag to false.
+</li>
+					<li>
+~RET %~window の`利用者ヤリトリ値$w
+◎
+• Return window’s user interaction value.
+</li>
+				</ol>
+			</li>
+			<li>
 ~RET 0
 ◎
-• If pendingPointerDowns[pointerId] does not exist, return 0.
-◎
-• Let pointerDownEntry be pendingPointerDowns[pointerId].
+• Otherwise, return 0.
 </li>
+		</ol>
+	</li>
 	<li>
 ~Assert：
 %~pointerdown~entry は `PerformanceEventTiming$I を`実装-$する。
+◎
+• Let pointerDownEntry be pendingPointerDowns[pointerId].
 ◎
 • Assert that pointerDownEntry is a PerformanceEventTiming entry.
 </li>
 	<li>
 <p>
 ~IF［
-%型 ~EQ `pointerup$et
+%型 ~IN { `pointerup$et, `contextmenu$et }
 ］：
 ◎
-• If type is pointerup:
+• If type is pointerup or contextmenu:
 </p>
 		<ol>
 			<li>
@@ -2320,6 +2370,15 @@ Otherwise (type is pointercancel, pointerup, or click):
 %処理待ちな~pointerdown~map[ %~pointer~ID ] ~SET ε
 ◎
 • Remove pendingPointerDowns[pointerId].
+</li>
+	<li>
+~IF［
+%型 ~EQ `contextmenu$et
+］
+⇒
+%~window の`~contextmenuを誘発したか$w ~SET ~T
+◎
+• If type is contextmenu, set window’s is contextmenu triggered to true.
 </li>
 	<li>
 ~IF［
@@ -2574,6 +2633,11 @@ If pendingPointerDowns[pointerId] exists:
 %処理待ちな~pointerdown~map[ %~pointer~ID ] ~SET %計時~entry
 ◎
 Set pendingPointerDowns[pointerId] to timingEntry.
+</li>
+			<li>
+%~window の`~contextmenuを誘発したか$w ~SET ~F
+◎
+Set window’s is contextmenu triggered to false.
 </li>
 		</ol>
 	</li>
