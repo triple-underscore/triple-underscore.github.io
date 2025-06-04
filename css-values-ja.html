@@ -173,8 +173,8 @@ return text;
 ●●options
 
 spec_title:CSS Values and Units Module Level 4
-spec_date:2025-05-21
-trans_update:2025-05-22
+spec_date:2025-06-03
+trans_update:2025-06-04
 source_checked:231218
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-values-4/
@@ -751,20 +751,22 @@ footer::::フッタ
 組立てら:assembleさ:組み立てら
 為す:makeする:~
 
+	%規則または宣言:cssRuleOrDeclaration
+	%規則:-
 	%~CORS~mode:corsMode
 	%応答の処理n:processResponse
 	%~byte~stream:byteStream
-	%構文解析した~URL:parsedUrl
+	%構文解析-済み~URL:parsedUrl
 	%要請:req
 	%応答:res
-	%環境~設定群:environmentSettings
+	%設定群~obj:settingsObject
 	応答の本体を消費する処理n:processResponseConsumeBody
 	%長さ:len
 	%~stylesheet:sheet
 	%基底:base
+	%基底:-
 	%~URL値:urlValue
 	%~URL:url
-	%基底:base
 	%入力:input
 	%別の型:-
 
@@ -1353,11 +1355,14 @@ x:CSS/resolution#x
 
 	●IDL
 I.CSSMathValue:~CSSTOM1#cssmathvalue
-I.CSSStyleSheet:~CSSOM1#cssstylesheet
 I.RequestDestination:~FETCH#requestdestination
 I.ShadowRoot:~DOM4#shadowroot
 I.Document:~DOM4#document
 
+	I.CSSRule:~CSSOM1#cssrule → ~CSS規則
+	I.CSSStyleDeclaration:~CSSOM1#cssstyledeclaration → ~CSS宣言~block
+	parentRule:~CSSOM1#dom-cssstyledeclaration-parentrule → dB.親~CSS規則
+	parentStyleSheet:~CSSOM1#dom-cssrule-parentstylesheet → 親~stylesheet
 c.CSS.supports():~CSSCOND#dom-css-supports
 	:~CSSCOND#dom-css-supports-conditiontext
 
@@ -1764,6 +1769,8 @@ g.?:#mult-opt
 型を入力と一貫させる:#css-make-a-type-consistent
 
 ~style資源を~fetchする:#fetch-a-style-resource
+~style資源の基底~URLを算出する:#style-resource-base-url
+~style資源の~URLを解決する:#resolve-a-style-resource-url
 ~URLの要請~改変子~用の手続き:#url-request-modifier-steps
 
 協調している~list~prop~group:#coordinating-list-property
@@ -1839,8 +1846,13 @@ g.?:#mult-opt
 
 背景~位置決め区画:~CSSBG#background-positioning-area
 
+~CSS規則:~CSSOM1#css-rule
+~CSS宣言:~CSSOM1#css-declaration
+~CSS宣言~block:~CSSOM1#css-declaration-block
+dB.親~CSS規則:~CSSOM1#cssstyledeclaration-parent-css-rule
+親~stylesheet:~CSSOM1#concept-css-rule-parent-css-style-sheet
 ss.所在:~CSSOM1#concept-css-style-sheet-location
-ss.~stylesheet基底~URL:~CSSOM1#concept-css-style-sheet-stylesheet-base-url
+ss.基底~URL:~CSSOM1#concept-css-style-sheet-stylesheet-base-url
 ss.生成元~cleanか:~CSSOM1#concept-css-style-sheet-origin-clean-flag
 
 可用な最初の~font:~CSSFONT#first-available-font
@@ -3828,11 +3840,11 @@ Note: For HTML documents, the base URL is mutable.
 
 <p>
 ~propの算出d値に現れる `url$t は、
-前段落で述べたように，絶対~URLに解決される。
+`絶対~URLに解決される＠#resolve-a-style-resource-url$。
 ~UAが~URLを絶対~URLに解決できない場合、
 指定d値がその算出d値になる。
 ◎
-When a &lt;url&gt; appears in the computed value of a property, it is resolved to an absolute URL, as described in the preceding paragraph. The computed value of a URL that the UA cannot resolve to an absolute URL is the specified value.
+When a &lt;url&gt; appears in the computed value of a property, it is resolved to an absolute URL. The computed value of a URL that the UA cannot resolve to an absolute URL is the specified value.
 </p>
 
 <div class="example">
@@ -4071,51 +4083,104 @@ Note: A &lt;url&gt; that is either unquoted or not wrapped in url() notation can
 			<section id="url-processing">
 <h4 title="URL Processing Model">4.5.4. ~URL処理~model</h4>
 
+<p class="trans-note">【
+この節に定義される各~algoがとる引数 %規則または宣言 がとる`~CSS宣言$は、
+実際には，それを包含する`~CSS宣言~block$として解釈し直す必要がある。
+】</p>
+
 <div class="algo">
 <p>
-~URLから
-`~style資源を~fetchする@
+`~style資源の基底~URLを算出する@
 ~algoは、
-所与の
-⇒＃
-［ `~URL$／ `url$t ］ %~URL値,
-`CSSStyleSheet$I ~obj %~stylesheet,
-文字列 %行先,
-文字列 %~CORS~mode,
-~algo %応答の処理n
-◎終
+所与の ( ［
+`~CSS規則$／`~CSS宣言$
+］ %規則または宣言 )
 に対し：
 ◎
-To fetch a style resource from a url or &lt;url&gt; urlValue, given a CSSStyleSheet sheet, a string destination matching a RequestDestination, a "no-cors" or "cors" corsMode, and an algorithm processResponse accepting a response and a null, failure or byte stream:
+To compute the style resource base URL for a CSS rule or a CSS declaration cssRuleOrDeclaration:
 </p>
 <ol>
 	<li>
-~Assert
+%規則 ~LET %規則または宣言 に応じて
 ⇒＃
-%行先 は `RequestDestination$I 値である／
-%~CORS~mode ~IN { `no-cors^l, `cors^l } ／
-%応答の処理n は ( `応答$, ［ ~NULL／ `失敗^i ／~byte~stream ］) を受容する
+`~CSS規則$【！CSSRule】であるならば %規則または宣言／
+`~CSS宣言$【！CSSStyleDeclaration】であるならば %規則または宣言 の`親~CSS規則$dB【！parentRule】
 ◎
-↑</li>
+↓</li>
 	<li>
-%環境~設定群 ~LET %~stylesheet に`関連な設定群~obj$
-◎
-Let environmentSettings be sheet’s relevant settings object.
+<p>
+~IF［
+%規則 ~NEQ ~NULL
+］：
+</p>
+		<ol>
+			<li>
+%~stylesheet ~LET %規則 の`親~stylesheet$【！parentStyleSheet】
 </li>
-	<li>
-%基底 ~LET %~stylesheet の`~stylesheet基底~URL$ss
-`CSSOM$r
-◎
-Let base be sheet’s stylesheet base URL＼
+			<li>
+<p>
+~IF［
+%~stylesheet ~NEQ ~NULL
+］：
+</p>
+				<ol>
+					<li>
+%基底 ~LET %~stylesheet の`基底~URL$ss
 </li>
-	<li>
+					<li>
 ~IF［
 %基底 ~EQ ~NULL
 ］
 ⇒
-%環境~設定群 の`~API用~基底~URL$enV
+%基底 ~SET %~stylesheet の`所在$ss
+</li>
+					<li>
+~IF［
+%基底 ~NEQ ~NULL
+］
+⇒
+~RET %基底
+</li>
+				</ol>
+			</li>
+		</ol>
 ◎
-if it is not null, otherwise environmentSettings’s API base URL. [CSSOM]
+Let sheet be null.
+◎
+If cssRuleOrDeclaration is a CSSStyleDeclaration whose parentRule is not null, set cssRuleOrDeclaration to cssRuleOrDeclaration’s parentRule.
+◎
+If cssRuleOrDeclaration is a CSSRule, set sheet to cssRuleOrDeclaration’s parentStyleSheet.
+◎
+If sheet is not null:
+• If sheet’s stylesheet base URL is not null, return sheet’s stylesheet base URL.
+• If sheet’s location is not null, return sheet’s location.
+</li>
+	<li>
+~RET %規則または宣言 に`関連な設定群~obj$の`~API用~基底~URL$enV
+◎
+Return cssRuleOrDeclaration’s relevant settings object’s API base URL.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`~style資源の~URLを解決する@
+~algoは、
+所与の (［
+`~URL$ ／ `url$t
+］%~URL値, ［
+`~CSS規則$／`~CSS宣言$
+］ %規則または宣言 )
+に対し：
+◎
+To resolve a style resource URL from a url or &lt;url&gt; urlValue, and a a CSS rule or a CSS declaration cssRuleOrDeclaration:
+</p>
+<ol>
+	<li>
+%基底 ~LET `~style資源の基底~URLを算出する$( %規則または宣言 )
+◎
+Let base be the style resource base URL given cssRuleOrDeclaration.
 </li>
 	<li>
 <p>
@@ -4131,33 +4196,72 @@ if it is not null, otherwise environmentSettings’s API base URL. [CSSOM]
 】</p>
 	</li>
 	<li>
-%構文解析した~URL ~LET `~URL構文解析する$( %~URL文字列, %基底 )
+~RET `~URL構文解析する$( %~URL文字列, %基底 )
 ◎
-Let parsedUrl be the result of the URL parser steps with urlValue’s url and base.＼
+Return the result of the URL parser steps with urlValue’s url and base.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+~URLから
+`~style資源を~fetchする@
+~algoは、
+所与の
+⇒＃
+［ `~URL$／ `url$t ］ %~URL値,
+［ `~CSS規則$／`~CSS宣言$ ］ %規則または宣言,
+文字列 %行先,
+文字列 %~CORS~mode,
+~algo %応答の処理n
+◎終
+に対し：
+◎
+To fetch a style resource from a url or &lt;url&gt; urlValue, given an CSS rule or a css declaration cssRuleOrDeclaration, a string destination matching a RequestDestination, a "no-cors" or "cors" corsMode, and an algorithm processResponse accepting a response and a null, failure or byte stream:
+</p>
+<ol>
+	<li>
+~Assert
+⇒＃
+%行先 は `RequestDestination$I 値である／
+%~CORS~mode ~IN { `no-cors^l, `cors^l } ／
+%応答の処理n は ( `応答$, ［ ~NULL／ `失敗^i ／~byte~stream ］) を受容する
+◎
+↑</li>
+	<li>
+%構文解析-済み~URL ~LET `~style資源の~URLを解決する$( %規則または宣言 )
+◎
+Let parsedUrl be the result of resolving urlValue given cssRuleOrDeclaration.＼
 </li>
 	<li>
 ~IF［
-%構文解析した~URL ~EQ `失敗^i
+%構文解析-済み~URL ~EQ `失敗^i
 ］
 ⇒
 ~RET
 ◎
-If the algorithm returns an error, return.
+If that failed, return.
+</li>
+	<li>
+%設定群~obj ~LET %規則または宣言 に`関連な設定群~obj$
+◎
+Let settingsObject be cssRuleOrDeclaration’s relevant settings object.
 </li>
 	<li>
 %要請 ~LET 新たな`要請$
 — その
 ⇒＃
-`~URL$rq ~SET %構文解析した~URL,
+`~URL$rq ~SET %構文解析-済み~URL,
 `行先$rq ~SET %行先,
 `~mode$rq ~SET %~CORS~mode,
-`生成元$rq ~SET %環境~設定群 の`生成元$enV,
+`生成元$rq ~SET %設定群~obj の`生成元$enV,
 `資格証~mode$rq ~SET `same-origin^l,
 `~URL資格証を利用するか$rq ~SET ~T,
-`~client$rq ~SET %環境~設定群,
-`~referrer$rq ~SET %環境~設定群 の`~API用~基底~URL$enV
+`~client$rq ~SET %設定群~obj,
+`~referrer$rq ~SET `client^l
 ◎
-Let req be a new request whose url is parsedUrl, whose destination is destination, mode is corsMode, origin is environmentSettings’s origin, credentials mode is "same-origin", use-url-credentials flag is set, client is environmentSettings, and whose referrer is environmentSettings’s API base URL.
+Let req be a new request whose url is parsedUrl, whose destination is destination, mode is corsMode, origin is settingsObject’s origin, credentials mode is "same-origin", use-url-credentials flag is set, client is settingsObject, and whose referrer is "client".
 </li>
 	<li>
 ~IF［
@@ -4196,22 +4300,37 @@ Note: This specification does not define any URL request modification steps, but
 
 	</li>
 	<li>
+<p>
 ~IF［
 %要請 の`~mode$rq~EQ `cors^l
+］~AND［
+%~stylesheet ~NEQ null
 ］
 ⇒
-%要請 の`~referrer$rq ~SET %~stylesheet の`所在$ss
-`CSSOM$r
+%要請 の`~referrer$rq ~SET `~style資源の基底~URLを算出する$( %規則または宣言 )
+【！[CSSOM]】
+</p>
+
+<p class="trans-note">【
+変数 %~stylesheet が宣言されていない
+— たぶん，`~style資源の基底~URLを算出する$ときと同じ仕方で決定されるであろう。
+】</p>
 ◎
-If req’s mode is "cors", set req’s referrer to sheet’s location. [CSSOM]
+If req’s mode is "cors", and sheet is not null, then set req’s referrer to the style resource base URL given cssRuleOrDeclaration. [CSSOM]
 </li>
 	<li>
+<p>
 ~IF［
 %~stylesheet の`生成元~cleanか$ss ~EQ ~T
 ］
 ⇒
 %要請 の`起動元~種別$rq ~SET `css^l
 `CSSOM$r
+</p>
+
+<p class="trans-note">【
+%~stylesheet ~EQ ~NULL の場合にどうなるか指定されていない。
+】</p>
 ◎
 If sheet’s origin-clean flag is set, set req’s initiator type to "css". [CSSOM]
 </li>
@@ -4221,7 +4340,7 @@ If sheet’s origin-clean flag is set, set req’s initiator type to "css". [CSS
 ⇒＃
 `応答の本体を消費する処理n$i ~SET %応答の処理n
 ◎
-Fetch req, with processresponseconsumebody set to processResponse.
+Fetch req, with processResponseConsumeBody set to processResponse.
 </li>
 </ol>
 </div>
@@ -4398,9 +4517,11 @@ CSS theoretically supports infinite precision and infinite ranges for all value 
 </p>
 
 <p>
-`角括弧付き範囲~記法$を利用して, あるいは~propの記述にて，範囲が指示されていない場合、
+［
+`角括弧付き範囲~記法$を利用して／~propの記述にて
+］範囲が指示されていない場合、
 `[−∞,∞]^g
-と見做される。
+を伴うものと見做される。
 ◎
 If no range is indicated, either by using the bracketed range notation or in the property description, then [−∞,∞] is assumed.
 </p>
@@ -4429,7 +4550,8 @@ Values of −∞ or ∞ must be written without units, even if the value type us
 範囲
 `[0, ∞]^g
 を指示する）。
-これは、~~制限を~~緩めるものではない。
+これは、
+~~制限を~~緩めるものではない。
 ◎
 Note: At the time of writing, the bracketed range notation is new; thus in most CSS specifications any range limitations are described only in prose. (For example, “Negative values are not allowed” or “Negative values are invalid” indicate a [0,∞] range.) This does not make them any less binding.
 </p>
