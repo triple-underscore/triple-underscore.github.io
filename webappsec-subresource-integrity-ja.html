@@ -116,8 +116,8 @@ return text;
 
 ●●options
 
-spec_date:2025-05-27
-trans_update:2025-05-28
+spec_date:2025-06-05
+trans_update:2025-06-06
 source_checked:210222
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-subresource-integrity/
@@ -452,8 +452,6 @@ iM.~option群:#_integrity-metadata-options
 ~source:#source
 行先:#destination
 完全性~施策:#integrity-policy
-報告のみの完全性~施策:#report-only-integrity-policy
-完全性~施策~構造体:#integrity-policy-struct
 iPs.~source群:#sources
 iPs.阻止される行先~群:#blocked-destinations
 iPs.報告先~群:#endpoints
@@ -501,6 +499,7 @@ rq.~URL:~FETCH#concept-request-url
 rq.完全性~metadata:~FETCH#concept-request-integrity-metadata
 ~main~fetch:~FETCH#concept-main-fetch
 	~main~fetch:~FETCH#main-fetch
+局所的な~URL:~FETCH#is-local
 
 有構造~header:~STRUCTURED-FIELDS#structured-header
 ~sf辞書:~STRUCTURED-FIELDS#sf-dictionary
@@ -510,6 +509,8 @@ rq.完全性~metadata:~FETCH#concept-request-integrity-metadata
 ~field値:~HTTPinfra#field-value
 
 施策~容器:~ORIGIN#policy-container
+pC.完全性~施策:~ORIGIN#policy-container-integrity-policy
+pC.報告のみの完全性~施策:~ORIGIN#policy-container-report-only-integrity-policy
 ~fetch応答から施策~容器を作成する:~ORIGIN#creating-a-policy-container-from-a-fetch-response
 結付けられた文書:~WINDOW#concept-document-window
 enV.~secureな文脈:~WAPI#secure-context
@@ -517,8 +518,8 @@ enV.大域~obj:~WAPI#concept-settings-object-global
 wG.~URL:~WORKERS#concept-workerglobalscope-url
 doc.~URL:~DOM4#concept-document-url
 	doc.~URL:~DOM4#dom-document-url
-報告~内の利用-用に~URLを剥ぐ:~CSP3#strip-url-for-use-in-reports
-	報告~内の利用-用に~URLを剥ぐ:~TR/CSP3/#strip-url-for-use-in-reports
+
+報告~内の利用-用に~URLを剥ぐ:~REPORTING#strip-url-for-use-in-reports
 報告を生成して~queueする:~REPORTING#generate-and-queue-a-report
 	~REPORTING#generate-and-queue-a-report-context
 	~REPORTING#generate-and-queue-a-report-type
@@ -1767,11 +1768,11 @@ A destination is a string. The only possible value for it is "script".
 </p>
 
 <p>
-`完全性~施策~構造体@
+`完全性~施策@
 は、
 次に挙げる~itemからなる`構造体$である：
 ◎
-An integrity policy struct, is a struct that contains the following:
+An integrity policy, is a struct that contains the following:
 </p>
 <ul>
 	<li>
@@ -1812,9 +1813,9 @@ When processing an integrity policy, with a header list headers and a header nam
 </p>
 <ol>
 	<li>
-%完全性~施策 ~LET 新たな`完全性~施策~構造体$
+%完全性~施策 ~LET 新たな`完全性~施策$
 ◎
-Let integrityPolicy be a new integrity policy struct.
+Let integrityPolicy be a new integrity policy.
 </li>
 	<li>
 %辞書 ~LET %~header群 から`有構造~field値を取得する$( %~header名, `辞書^i )
@@ -1919,7 +1920,7 @@ Let headers be response’s header list.
 %施策 ~NEQ ~NULL
 ］
 ⇒
-%容器 の`完全性~施策$ ~SET %施策
+%容器 の`完全性~施策$pC ~SET %施策
 ◎
 If headers contains integrity-policy, set container’s integrity policy be the result of running processing an integrity policy with the corresponding header value.
 </li>
@@ -1932,7 +1933,7 @@ If headers contains integrity-policy, set container’s integrity policy be the 
 %報告のみ施策 ~NEQ ~NULL
 ］
 ⇒
-%容器 の`報告のみの完全性~施策$ ~SET %報告のみ施策
+%容器 の`報告のみの完全性~施策$pC ~SET %報告のみ施策
 ◎
 ↑↑ If headers contains integrity-policy-report-only, set container’s report only integrity policy be the result of running processing an integrity policy with the corresponding header value.
 </li>
@@ -1965,29 +1966,22 @@ Let policyContainer be request’s policy container.
 Let parsedMetadata be the result of calling parse metadata with request’s integrity metadata.
 </li>
 	<li>
-~IF［
-%構文解析-済み~metadata は`空$でない
-］~AND［
-%要請 の`~mode$rq ~IN { `cors^l, `same-origin^l }
-］
-⇒
-~RET `許容される^i
-◎
-If parsedMetadata is not the empty set and request’s mode is either "cors" or "same-origin", return "Allowed".
-◎
-↓ Let policy be policyContainer’s integrity policy.
-◎
-↓ Let reportPolicy be policyContainer’s report only integrity policy.
-◎
-↓ （不要）If both policy and reportPolicy are empty integrity policy structs, return "Allowed".
-</li>
-	<li>
 <p>
 ~IF［
 ~OR↓
 ］…
 </p>
 		<ul>
+			<li>
+［
+%構文解析-済み~metadata は`空$でない
+］~AND［
+%要請 の`~mode$rq ~IN { `cors^l, `same-origin^l }
+］
+</li>
+			<li>
+%要請 の`~URL$rqは`局所的な~URL$である
+</li>
 			<li>
 %要請 の`~client$rq ~EQ ~NULL
 【この条件は、この訳による補完。】
@@ -2004,6 +1998,16 @@ If parsedMetadata is not the empty set and request’s mode is either "cors" or 
 ~RET `許容される^i
 </p>
 ◎
+If parsedMetadata is not the empty set and request’s mode is either "cors" or "same-origin", return "Allowed".
+◎
+If request’s url is local, return "Allowed".
+◎
+↓ Let policy be policyContainer’s integrity policy.
+◎
+↓ Let reportPolicy be policyContainer’s report only integrity policy.
+◎
+↓ （不要）If both policy and reportPolicy are empty integrity policys, return "Allowed".
+◎
 Let global be request’s client’s global object.
 ◎
 If global is not a Window nor a WorkerGlobalScope, return "Allowed".
@@ -2011,14 +2015,16 @@ If global is not a Window nor a WorkerGlobalScope, return "Allowed".
 	<li>
 %結果 ~LET `許容される^i
 ◎
-↓</li>
+Let block be a boolean, initially false.
+</li>
 	<li>
 %報告のみか ~LET ~F
 ◎
-↓</li>
+Let reportBlock be a boolean, initially false.
+</li>
 	<li>
 <p>
-« %施策~容器 の`完全性~施策$, %施策~容器 の`報告のみの完全性~施策$ »
+« %施策~容器 の`完全性~施策$pC, %施策~容器 の`報告のみの完全性~施策$pC »
 を成す
 ~EACH( %施策 )
 に対し：
@@ -2049,10 +2055,6 @@ If global is not a Window nor a WorkerGlobalScope, return "Allowed".
 %報告のみか ~SET ~T
 </li>
 		</ol>
-◎
-Let block be a boolean, initially false.
-◎
-Let reportBlock be a boolean, initially false.
 ◎
 If policy’s sources contains "inline" and policy’s blocked destinations contains request’s destination, set block to true.
 ◎
@@ -2088,17 +2090,17 @@ interface `IntegrityPolicyViolationReportBody@I : `ReportBody$I {
 `違反を報告する@
 ~algoは、
 所与の
-( `要請$ %要請, `完全性~施策~構造体$ %施策, 真偽値 %報告のみか )
+( `要請$ %要請, `完全性~施策$ %施策, 真偽値 %報告のみか )
 に対し：
 ◎
-To report violation given a Request request, a boolean block, a boolean reportBlock, an integrity policy struct policy, and an integrity policy struct reportPolicy, do the following:
+To report violation given a Request request, a boolean block, a boolean reportBlock, an integrity policy policy, and an integrity policy reportPolicy, do the following:
 </p>
 
 <p class="trans-note">【
 この~algoは、
 原文では， %報告のみか が［
 ~T の場合, ~F の場合
-］を一括して遂行しているが、
+］を（各~場合~用に別個な完全性~施策を与える下で）一括して遂行しているが、
 この訳では，別々に遂行する（この~algoを利用する箇所で，それら各場合を遂行する）よう改める。
 】</p>
 
@@ -2230,37 +2232,6 @@ If reportBlock is true, for each endpoint in reportPolicy’s endpoints:
 			</section>
 			<section id="integration">
 <h4 title="Integration">3.8.4. 【他の仕様への】統合</h4>
-
-<p>
-各`施策~容器$は、
-次に挙げる~itemも有する：
-◎
-A policy container has extra items:
-</p>
-<ul>
-	<li>
-`完全性~施策@
-⇒
-ある`完全性~施策~構造体$
-◎
-integrity policy, an integrity policy struct.
-</li>
-	<li>
-`報告のみの完全性~施策@
-⇒
-ある`完全性~施策~構造体$
-◎
-report only integrity policy, an integrity policy struct.
-</li>
-</ul>
-
-<p>
-`~fetch応答から施策~容器を作成する$ ~algo `HTML$r を成す “%結果 を返す段” 【最後の段】の前に，次を走らす段を追加する
-⇒
-`完全性~施策~headerを構文解析する$( %応答, %結果 )
-◎
-Add an extra step to create a policy container from a fetch response before it returns, that runs parse Integrity-Policy headers with response and result.
-</p>
 
 <p>
 `~main~fetch$ `FETCH$r を成す段 7 を成す条件~群に次の条件を追加する
@@ -2409,7 +2380,7 @@ Consider a JSON response that looks like this:
 </p>
 
 <pre class="lang-json">
-{'status': 'authenticated', 'username': 'admin'}
+{"status": "authenticated", "username": "admin"}
 </pre>
 
 <p>
@@ -2444,13 +2415,13 @@ Much of the content here is inspired heavily by Gervase Markham’s Link Fingerp
 
 <p>
 この仕様の初期~versionに貴重な貢献された `Mike West^en 氏に特別な謝意を。
-貴重な~feedbackを寄せられた次の方々にも：
+貴重な~feedbackを寄せられた次に挙げる方々にも：
 ◎
 A special thanks to Mike West for his invaluable contributions to the initial version of this spec.＼
 </p>
 
 <div lang="en">
-Thanks to Brad Hill, Anne van Kesteren, Jonathan Kingston, Mark Nottingham, Sergey Shekyan , Dan Veditz, Eduardo Vela, Tanvi Vyas, and Michal Zalewski for providing invaluable feedback.
+Thanks to Brad Hill, Anne van Kesteren, Jonathan Kingston, Fatih Kilic, Mark Nottingham, Sergey Shekyan, Dan Veditz, Eduardo Vela, Tanvi Vyas, Yoav Weiss, and Michal Zalewski for providing invaluable feedback.
 </div>
 
 	</section>
