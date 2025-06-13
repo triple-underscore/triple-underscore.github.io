@@ -116,8 +116,8 @@ return text;
 
 ●●options
 
-spec_date:2025-06-05
-trans_update:2025-06-06
+spec_date:2025-06-12
+trans_update:2025-06-14
 source_checked:210222
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-subresource-integrity/
@@ -147,6 +147,7 @@ p:var
 P:code
 h:code
 m:code
+mb:code
 I:code
 e:code
 a:code
@@ -179,6 +180,7 @@ sri:SRI
 優先度:priority:~
 	優先度:prioritization
 報告先:endpoint::~::レポート先
+	報告先:reporting endpoint
 	完全性~施策~header:Integrity-Policy header
 
 	:loading
@@ -186,7 +188,6 @@ sri:SRI
 	要請-者:requestor
 
 	●処理
-main:
 剥ぐ:stripする:~
 
 	`阻止される^i:"Blocked"
@@ -382,23 +383,19 @@ sf:<sub>sf-</sub>
 
 	●IDL
 
-Exposed:~WEBIDLjs#Exposed
-Default:~WEBIDLjs#Default
-
 USVString:~WEBIDL#idl-USVString
 boolean:~WEBIDL#idl-boolean
-object:~WEBIDL#idl-object
 
 I.Window:~WINDOW#window
 I.WorkerGlobalScope:~WORKERS#workerglobalscope
 I.ReportBody:~REPORTING#reportbody
-I.IntegrityPolicyViolationReportBody:#integritypolicyviolationreportbody
+I.ReportingObserver:~REPORTING#reportingobserver
+I.IntegrityViolationReportBody:#dictdef-integrityviolationreportbody
 
-m.toJSON:#dom-integritypolicyviolationreportbody-tojson
-m.documentURL:#dom-integritypolicyviolationreportbody-documenturl
-m.blockedURL:#dom-integritypolicyviolationreportbody-blockedurl
-m.destination:#dom-integritypolicyviolationreportbody-destination
-m.reportOnly:#dom-integritypolicyviolationreportbody-reportonly
+mb.documentURL:#dom-integrityviolationreportbody-documenturl
+mb.blockedURL:#dom-integrityviolationreportbody-blockedurl
+mb.destination:#dom-integrityviolationreportbody-destination
+mb.reportOnly:#dom-integrityviolationreportbody-reportonly
 
 	●code
 P.integrity-metadata:#grammardef-integrity-metadata
@@ -415,6 +412,7 @@ P.link-param:~HTTPweblink#p.link-param
 
 h.Link:~HTTPweblink#field.link
 h.Cache-Control:~HTTPcache#field.cache-control
+h.Reporting-Endpoints:~REPORTING#reporting-endpoints
 
 dir.no-transform:~HTTPcache#cache-response-directive.no-transform
 
@@ -497,9 +495,8 @@ rq.~client:~FETCH#concept-request-client
 rq.行先:~FETCH#concept-request-destination
 rq.~URL:~FETCH#concept-request-url
 rq.完全性~metadata:~FETCH#concept-request-integrity-metadata
-~main~fetch:~FETCH#concept-main-fetch
-	~main~fetch:~FETCH#main-fetch
 局所的な~URL:~FETCH#is-local
+行先~種別:~FETCH#destination-type
 
 有構造~header:~STRUCTURED-FIELDS#structured-header
 ~sf辞書:~STRUCTURED-FIELDS#sf-dictionary
@@ -519,6 +516,7 @@ wG.~URL:~WORKERS#concept-workerglobalscope-url
 doc.~URL:~DOM4#concept-document-url
 	doc.~URL:~DOM4#dom-document-url
 
+報告~種別:~REPORTING#report-type
 報告~内の利用-用に~URLを剥ぐ:~REPORTING#strip-url-for-use-in-reports
 報告を生成して~queueする:~REPORTING#generate-and-queue-a-report
 	~REPORTING#generate-and-queue-a-report-context
@@ -1761,10 +1759,10 @@ A source is a string. The only possible value for it is "inline".
 <p>
 `行先@
 は、
-文字列であり，
+`行先~種別$であり，
 アリな値は `script^l に限られる。
 ◎
-A destination is a string. The only possible value for it is "script".
+A destination is a destination type. The only possible value for it is "script".
 </p>
 
 <p>
@@ -1890,6 +1888,35 @@ If dictionary["endpoints"] exists:
 Return integrityPolicy.
 </li>
 </ol>
+</div>
+
+<div class="example">
+<p>
+次の~headerは、
+外部~scriptへの要請のうち，
+完全性~metadataを伴わずに読込まれるもの（あるいは~CORSを伴わないもの）を阻止する。
+◎
+The following header block the request for any external script that’s loaded without integrity metadata (or any no-CORS external script).
+</p>
+
+<pre class="lang-http">
+Integrity-Policy: blocked-destinations=(script), endpoints=(integrity-endpoint)
+</pre>
+
+<p>
+この阻止-法は、
+（関連な `Reporting-Endpoints$h ~headerにより定義される） `integrity-endpoint^l 報告先への報告も誘発することになる。
+◎
+The blocking will also trigger a report to the "integrity-endpoint" reporting endpoint (defined by the relevant Reporting-Endpoints header).
+</p>
+
+<p>
+開発者は、
+【`報告~種別$】 `integrity-violation^l 用の `ReportingObserver$I を登録して，
+~JSに基づく報告も取得できる。
+◎
+Developers can also register a ReportingObserver for "integrity-violation" to get JavaScript-based reports.
+</p>
 </div>
 
 			<section id="parse-integrity-policy-headers-section">
@@ -2075,13 +2102,11 @@ If block is true, then return "Blocked"; otherwise "Allowed".
 <h4 title="Report violations">3.8.3. 違反を報告する</h4>
 
 <pre class="idl">
-[`Exposed$=Window]
-interface `IntegrityPolicyViolationReportBody@I : `ReportBody$I {
-  [`Default$] `object$ `toJSON@m();
-  readonly attribute `USVString$ `documentURL@m;
-  readonly attribute `USVString$ `blockedURL@m;
-  readonly attribute `USVString$ `destination@m;
-  readonly attribute `boolean$   `reportOnly@m;
+dictionary `IntegrityViolationReportBody@I : `ReportBody$I {
+  `USVString$ `documentURL@mb;
+  `USVString$ `blockedURL@mb;
+  `USVString$ `destination@mb;
+  `boolean$   `reportOnly@mb;
 };
 </pre>
 
@@ -2166,21 +2191,19 @@ Let blockedURL be the result of strip URL for use in reports on request’s URL.
 </p>
 		<ol>
 			<li>
-%本体 ~LET `新たな~obj$( `IntegrityPolicyViolationReportBody$I )
-</li>
-			<li>
-%本体 の各種~属性を次に従って初期化する
+%本体 ~LET 新たな `IntegrityViolationReportBody$I
+— その
 ⇒＃
-`documentURL$m ~SET %文書~URL,
-`blockedURL$m ~SET %阻止された~URL,
-`destination$m ~SET %要請 の`行先$rq,
-`reportOnly$m ~SET %報告のみか
+`documentURL$mb ~SET %文書~URL,
+`blockedURL$mb ~SET %阻止された~URL,
+`destination$mb ~SET %要請 の`行先$rq,
+`reportOnly$mb ~SET %報告のみか
 </li>
 			<li>
 `報告を生成して~queueする$( ↓ )
 ⇒＃
 %設定群~obj,
-`integrity-policy-violation^l,
+`integrity-violation^l,
 %報告先,
 %本体
 </li>
@@ -2200,7 +2223,7 @@ If block is true, for each endpoint in policy’s endpoints:
 •• context
 ••• settingsObject
 •• type
-••• "integrity-policy-violation"
+••• "integrity-violation"
 •• destination
 ••• endpoint
 •• data
@@ -2220,7 +2243,7 @@ If reportBlock is true, for each endpoint in reportPolicy’s endpoints:
 •• context
 ••• settingsObject
 •• type
-••• "integrity-policy-violation"
+••• "integrity-violation"
 •• destination
 ••• endpoint
 •• data
@@ -2228,19 +2251,6 @@ If reportBlock is true, for each endpoint in reportPolicy’s endpoints:
 </li>
 </ol>
 </div>
-
-			</section>
-			<section id="integration">
-<h4 title="Integration">3.8.4. 【他の仕様への】統合</h4>
-
-<p>
-`~main~fetch$ `FETCH$r を成す段 7 を成す条件~群に次の条件を追加する
-（満たされる場合、`~network~error$を返すことになる）
-⇒
-`要請は完全性~施策により阻止されるべきか？$( %要請 ) ~EQ `阻止される^i 
-◎
-Expand step 7 of main fetch to call should request be blocked by integrity policy and return a network error if it returns "Blocked".
-</p>
 
 			</section>
 		</section>
