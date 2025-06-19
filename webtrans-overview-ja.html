@@ -101,8 +101,8 @@ return text;
 
 ●●options
 
-spec_date:2025-03-18
-trans_update:2025-04-03
+spec_date:2025-06-10
+trans_update:2025-06-20
 source_checked:230906
 original_url:https://ietf-wg-webtrans.github.io/draft-ietf-webtrans-overview/draft-ietf-webtrans-overview.html
 	abbr_url:WT-OVERVIEW
@@ -186,10 +186,11 @@ pool:
 輻輳:congestion::~
 喪失-:lose::~
 	喪失した:lost
-middlebox:
 不依拠-:unrely:~
 	不依拠-可能:unreliable
 下位protocol:subprotocol::下位 protocol:下位プロトコル
+drain:
+	~drain中:draining
 
 	相手の端点:peer
 	^en:peer-to-peer
@@ -230,8 +231,10 @@ rate::::レート
 認知-:acknowledge:~
 commit:
 	いつでも:at any time
+上品:graceful:~
 
 	完了:for it to be completed
+	早く:soon
 
 	●保安
 走査-:scan:~
@@ -240,6 +243,9 @@ commit:
 認証:authentication::~
 証明書:certificate::~
 潜在的:potential:~
+施行:enforcement:~
+機密性:confidentiality:~
+
 	信用-済みでない:untrusted
 	安全でない:unsafe
 
@@ -370,7 +376,7 @@ kernel::::カーネル
 ●●ref_informative
 
 [CSP]
-    W3C, ＜Content Security Policy Level 3＞, March 2025
+    W3C, ＜Content Security Policy Level 3＞, June 2025
     URL: https://www.w3.org/TR/CSP/
 [RFC5681]
     Allman, M., Paxson, V., and E. Blanton, ＜TCP Congestion Control＞, ~RFC5681, September 2009
@@ -557,7 +563,8 @@ Historically, web applications that needed a bidirectional data stream between a
 `不依拠-可能@
 （ `unreliable^en ）は，`依拠-可能$の否定を意味するが、
 “依拠-不能”, “依拠-可能でない”, “非~依拠-可能” ではなく，この対訳が選ばれたのは、
-その用法に “依拠することなく処理-可能である” という肯定的な意味合いがあることによる。
+その用法に “依拠することなく処理-可能である” という肯定的な意味合いがある
+（ `un-reliable^en ではなく `unrely-able^en である）ことによる。
 】</p>
 
 <p>
@@ -822,6 +829,20 @@ A WebTransport client is an application that initiates the transport session＼
 and may be running in a constrained security context, for instance, a JavaScript application running inside a browser.
 </dd>
 
+	<dt id="webtransport-endpoint">
+~WebTransport端点
+（略して，端点）
+◎
+Endpoint:
+</dt>
+	<dd>
+［
+~WebTransport~server, ~WebTransport~client
+］の総称。
+◎
+An endpoint refers to either a Server or a Client.
+</dd>
+
 	<dt id="webtransport-ua">
 ~WebTransport~UA
 （略して，~UA）
@@ -1044,6 +1065,26 @@ terminate a session
 ◎
 Terminate the session while communicating to the peer an unsigned 32-bit error code and an error reason string of at most 1024 bytes. As soon as the session is terminated, no further application data will be exchanged on it. The error code and string are optional; the default values are 0 and "". The delivery of the error code and string MAY be best-effort.
 </dd>
+
+	<dt>
+~sessionを~drainする
+◎
+drain a session
+</dt>
+	<dd>
+相手の端点に対し，［
+当の~sessionは，アリな限り早く上品に終了される
+］ものと期待することを指示する。
+どちらの端点も，
+当の~sessionを利用し続けても, （さらには）新たな~streamを~openしてもヨイ。
+この通達は、［
+施行を伴わずに，~sessionの流通が~drainされるよう要請する
+］ことを［
+媒介者／端点
+］に許容することが意図される。
+◎
+Indicate to the peer that it expects the session to be gracefully terminated as soon as possible. Either endpoint MAY continue using the session and MAY open new streams. This signal is intended to allow intermediaries and endpoints to request a session be drained of traffic without enforcement.
+</dd>
 </dl>
 
 <p>
@@ -1069,6 +1110,19 @@ session terminated event
 対応する ( ~error~code, ~error文字列 ) が供され得る。
 ◎
 Indicates that the WebTransport session has been terminated, either by the peer or by the local networking stack, and no user data can be exchanged on it any further. If the session has been terminated as a result of the peer performing the "terminate a session" operation above, a corresponding error code and an error string can be provided.
+</dd>
+
+	<dt id="session-draining">
+~sessionは~drain中
+◎
+session draining event
+</dt>
+	<dd>
+当の~WebTransport~sessionに対し，アリな限り早く~drainするよう依頼されたことを指示する。
+当の~sessionを利用し続けることは、
+新たな~streamを~openすることも含めて忌避されるが，許容される。
+◎
+Indicates that the WebTransport session has been asked to drain as soon as possible. Continued use of the session, including opening new streams is discouraged, but allowed.
 </dd>
 </dl>
 
@@ -1510,19 +1564,13 @@ Providing untrusted clients with a reasonably low-level access to the network co
 <p>
 ~WebTransportは、
 それを実装しているすべての~protocol用に，~TLSの利用を義務付ける。
-これには二つの目的がある。
-一つは、
-~transportを~networkから保護すること
-— 潜在的な攻撃者,
-~middleboxによる硬直化
+これは、
+当の~transport用の機密性と完全性を供して，~network内の［
+潜在的な攻撃者, 媒介者による硬直化
 【新たに標準~化された拡張に対し誤動作する問題（`参考＠https://en.wikipedia.org/wiki/Protocol_ossification$）】
-どちらからも。
-もう一つは、
-~network要素を潜在的な混同~攻撃
-— `RFC6455$r `§ 10.3＠~RFC6455#section-10.3$ にて論じられたものなど —
-から保護すること。
+］どちらからも保護する。
 ◎
-WebTransport mandates the use of TLS for all protocols implementing it. This has a dual purpose. On one hand, it protects the transport from the network, including both potential attackers and ossification by middleboxes. On the other hand, it protects the network elements from potential confusion attacks such as the one discussed in Section 10.3 of [RFC6455].
+WebTransport mandates the use of TLS for all protocols implementing it. This provides confidentiality and integrity for the transport, protecting it from both potential attackers and ossification by intermediaries in the network.
 </p>
 
 <p>
