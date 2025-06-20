@@ -1164,6 +1164,7 @@ CSSSCOPING:css-scoping-ja.html
 CSSSCROLLSNAP:css-scroll-snap-ja.html
 CSSSHADOWPARTS:css-shadow-parts-ja.html
 CSSSHAPES:css-shapes-ja.html
+CSSSIZEADJUST:css-size-adjust-ja.html
 CSSSNAPSHOT:css-snapshot-ja.html
 CSSSPEECH:css-speech-ja.html
 CSSSTYLEATTR:css-style-attr-ja.html

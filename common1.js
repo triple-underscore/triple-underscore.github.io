@@ -1684,6 +1684,7 @@ CSSPSEUDO4=副         ~/css-pseudo-ja.html
 CSSSCOPING1=副        ~/css-scoping-ja.html
 CSSSHADOWPARTS1=副    ~/css-shadow-parts-ja.html
 CSSSCROLLSNAP1=副     ~/css-scroll-snap-ja.html
+CSSSIZEADJUST1=副     ~/css-size-adjust-ja.html
 CSSSTYLEATTR1=副      ~/css-style-attr-ja.html
 CSSSTYLEATTR1=副2     ~mitsue/css-style-attr/
 CSSSYNTAX3=副         ~/css-syntax-ja.html
