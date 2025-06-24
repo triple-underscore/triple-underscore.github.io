@@ -1135,6 +1135,7 @@ CSSCONTENT:css-content-ja.html
 CSSCOUNTER:css-counter-styles-ja.html
 CSSDISP:css-display-ja.html
 CSSEASING:css-easing-ja.html
+CSSENV:css-env-ja.html
 CSSEXCLUSION:css-exclusions-ja.html
 CSSFLEX:css-flexbox-ja.html
 CSSFONT:css-fonts4-ja.html

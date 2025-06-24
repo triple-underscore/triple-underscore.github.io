@@ -1647,6 +1647,7 @@ CSSDISPLAY3=副        ~/css-display-ja.html●Level 4 日本語訳
 CSSDISPLAY4=副        ~/css-display-ja.html
 CSSEASING1=副         ~/css-easing-ja.html●Level 2 日本語訳
 CSSEASING2=副         ~/css-easing-ja.html
+CSSENV1=副            ~/css-env-ja.html
 CSSEXCLUSIONS1=副     ~/css-exclusions-ja.html
 CSSFLEXBOX1=副        ~/css-flexbox-ja.html
 CSSFONTS3=副          ~/css-fonts-ja.html
