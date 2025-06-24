@@ -175,7 +175,7 @@ return text;
 
 ●●options
 
-trans_update:2025-02-01
+trans_update:2025-06-24
 	source_checked:→web-animations-ja
 original_url:https://drafts.csswg.org/web-animations-1/
 	abbr_url:WANIMapi
@@ -560,7 +560,6 @@ r.SELECTORS-4:~WANIM#biblio-selectors-4
 	●用語
 ~WAnim~model:~WANIM#web-animations-model
 ~WAnim~API:~WANIM#web-animations-api
-
 関連な~animation群:~WANIM#relevant-animations
 下位tree用の関連な~animation群:~WANIM#relevant-animations-for-a-subtree
 
@@ -628,11 +627,13 @@ i.両方:~WANIM#fill-mode-both
 再生-状態:~WANIM#animation-play-state
 置換-状態:~WANIM#replace-state
 
-
+相:~WANIM#_phase
 i.完遂d:~WANIM#play-state-finished
 i.遊休中:~WANIM#play-state-idle
 i.静止中:~WANIM#play-state-paused
 i.稼働中:~WANIM#play-state-running
+
+V.作動~区間に終端点を含めるか:~WANIM#endpoint-inclusive-active-interval
 
 i.作動中:~WANIM#active-replace-state
 i.除去-済み:~WANIM#removed-replace-state
@@ -849,9 +850,9 @@ easing:
 始める:beginする:::~
 	〜から:beginning
 反転-:invert::~
-
 相:phase:::~
 作動:active::~::アクティブ
+持続-:persist::~
 持続化:persisted:::~
 rate::::レート
 keyframe:
@@ -864,6 +865,7 @@ schedule::::スケジュール
 	~~加減速／easing^en:easing
 維持-:retain::~
 際限なく:indefiniteに::~
+終端点:endpoint::~
 
 	変化-後:after-change
 	変化-前:before-change
@@ -973,6 +975,7 @@ ES:ECMAScript
 	及ぼす:take
 	併用:in combination with
 	次により拡張される:following extensions are made to
+	にもかかわらず:despite
 
 
 ●未分類
@@ -1724,6 +1727,33 @@ Unlike most other methods defined on this interface, calling this method does tr
 </dd>
 	<dd class="note">
 <p>注記：
+共通的な［
+完了した~animationを持続する事例
+］を単純~化するするため、
+`算出d~styleを~commitする$手続-は，
+当の~animationの`相$【！~WANIM#animation-effect-phases-and-states】を決定するときに【`作動~区間$の】終端点を`含めた^em計時（`§ 区間の計時＠~WANIM#interval-timing$を見よ）を利用する。
+◎
+In order to simplify the common case of persisting a completed animation, the procedure to commit computed styles uses endpoint-inclusive timing (see § 4.6.9.3 Interval timing) when determining the phase of the animation (see § 4.6.6 Animation effect phases and states).
+</p>
+
+<p>
+その結果，次の~codeは、
+指定された~style内の `transform: translateY(100px)^css を持続することになる
+— `延伸~mode$が［
+`前方$i ／ `両方$i
+］でないにもかかわらず。
+◎
+As a result, the following code will persist the transform: translateY(100px) style in specified style despite not having a fill mode of forwards or both.
+</p>
+
+<pre class="lang-js">
+%elem.animate({ transform: 'translateY(100px)' }, 200).finished.then(() =&gt; {
+  %elem.commitStyles();
+});
+</pre>
+	</dd>
+	<dd class="note">
+<p>注記：
 `算出d~styleを~commitする$手続-は［
 この~animationが`除去-済み$iであっても，それ用の`効果~値$を含む
 ］ので、
@@ -1739,13 +1769,13 @@ Since the procedure to commit computed styles includes the effect values for the
 ~commitされる値は、
 この~methodが~callされた時点における，
 `~animation効果$により生産された`算出d値^emであることに注意。
-これらの値は算出d値【言い換えれば、確定的な値】なので、［
-~live~animationが生産する値のように，文脈に対する変更を反映する
-］ことはない
+これらの値は算出d値【言い換えれば，確定的な値】なので、
+~live~animationが値を生産する仕方のように文脈に対する変更を反映する
 — ［
 ~CSS変数の変化に対し応答する／
 `font-size^p の算出d値の変化に基づいて `em^u 単位を計算し直す
-］など。
+］など —
+ことは，ない。
 ◎
 Note that the values committed are the computed values produced by the animation effects at the time when this method is called. Since these values are computed values, they do not reflect to changes to context such as responding to changes to CSS variables or recalculating em units based on changes to the computed font-size in the way the values produced by a live animation would.
 </p>
@@ -1777,7 +1807,7 @@ To commit computed styles for an animation, animation:
 <ol>
 	<li>
 <p>
-%~targetたち ~LET 
+%~target群 ~LET 
 %~animation に`結付けられた効果$【！~animation効果】たち†の`効果~target$からなる`集合$
 </p>
 
@@ -1791,7 +1821,7 @@ Let targets be the set of all effect targets for animation effects associated wi
 </li>
 	<li>
 <p>
-%~targetたち を成す
+%~target群 を成す
 ~EACH( %~target )
 に対し：
 ◎
@@ -1846,29 +1876,27 @@ The definition of being rendered [HTML] with regards to display: contents is sti
 Let inline style be the result of getting the CSS declaration block corresponding to target’s style attribute. If target does not have a style attribute, let inline style be a new empty CSS declaration block with the owner node set to target.
 </li>
 			<li>
-%~targetにされた~propたち ~LET 次を満たす~prop %~prop が成す`集合$
+%~targetにされた~prop群 ~LET ~AND↓ を満たす~prop %~prop が成す`集合$
 ⇒
 ［
-%~prop は `physical longhand^en
-【`論理-~prop＠~CSSLOGICAL$でない下位prop】
-である
+%~prop は `physical longhand^en 【`論理-~prop＠~CSSLOGICAL$でない下位prop】である
 ］~AND［
-次を満たす~animation効果 %効果 がある
+ある`~animation効果$ %効果 に関して次が満たされる
 ］
 ⇒
 ［
-%~prop は %効果 の`~target~prop$である
-］~AND［
 %効果 を`結付けた~animation$ ~EQ %~animation
 ］~AND［
 %効果 の`効果~target$ ~EQ %~target
+］~AND［
+%~prop は %効果 の`~target~prop$である
 ］
 ◎
 Let targeted properties be the set of physical longhand properties that are a target property for at least one animation effect associated with animation whose effect target is target.
 </li>
 			<li>
 <p>
-%~targetにされた~propたち を成す
+%~targetにされた~prop群 を成す
 ~EACH( %~prop )
 に対し：
 ◎
@@ -1906,10 +1934,20 @@ If animation’s replace state is removed, add all animation effects associated 
 Remove from partialEffectStack any animation effects whose associated animation has a higher composite order than animation.
 </li>
 					<li>
+<p>
 %効果~値 ~LET `組成d値$( %部分的な効果~stack, %~target 上の %~prop の算出d値 )
 【！＠~WANIM#calculating-the-result-of-an-effect-stack】
+`and^en†
+~animation効果の`相$【！~WANIM#animation-effect-phases-and-states】を計算するときには、
+`作動~区間に終端点を含めるか$V を ~T に設定する
+</p>
+
+<p class="trans-note">【†
+この `and^en をどう解釈すべきかわからない
+— `組成d値$と`相$の計算は直に関係しないので。
+】</p>
 ◎
-Let effect value be the result of calculating the result of partialEffectStack for property using target’s computed style (see § 5.4.3 Calculating the result of an effect stack).
+Let effect value be the result of calculating the result of partialEffectStack for property using target’s computed style (see § 5.4.3 Calculating the result of an effect stack) and setting the endpoint-inclusive active interval flag to true when calculating the animation effect phase (see § 4.6.6 Animation effect phases and states).
 </li>
 					<li>
 `~CSS宣言を設定する$( %~inline~style, %~prop, %効果~値 )
