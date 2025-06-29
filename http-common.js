@@ -977,7 +977,6 @@ agent::::エージェント
 英語:English:~
 偶発的:accidental:~
 理論:theory:~
-高度:advanced:~
 類別:category:~
 維持-:retain:~
 維持させ:sustainし:~

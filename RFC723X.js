@@ -1062,7 +1062,6 @@ app:application:::アプリケーション
 理論:theory:~
 透過性:transparency::~
 透過的:transparent::~
-高度:advance:~
 類別:category:~
 維持-:retain:~
 維持させ:sustainし:~
