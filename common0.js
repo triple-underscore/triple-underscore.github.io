@@ -1062,6 +1062,7 @@ GOTO:<b>GOTO</b>
 BREAK:<b>BREAK</b>
 CONTINUE:<b>CONTINUE</b>
 コレ:<b>これ°</b>
+DF:<b>?=</b>
 Assert:<b>Assert</b>
 ABRUPT:<b>?</b>
 NOABRUPT:<b>!</b>
