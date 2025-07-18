@@ -190,8 +190,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2025-07-01
-trans_update:2025-07-03
+spec_date:2025-07-16
+trans_update:2025-07-18
 source_checked:250311
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -362,10 +362,6 @@ exporter:
 	^sp:SETTINGS_ENABLE_WEBTRANPORT
 	^sp:H3_DATAGRAM
 	$ft:SETTINGS
-	^ft:CONNECTION_CLOSE
-	STOP_SENDING:stop_sending
-	STOP_SENDING
-	RESET_STREAM
 	`RESET_STREAM^ft:reset
 
 	●stream
@@ -488,6 +484,8 @@ in-flight:
 	%~datagram群:datagrams
 	-:pullDatagramsAlgorithm
 	-:writeDatagramsAlgorithm
+	%~datagram可読~mode:datagramsReadableMode
+	%可読~mode:readableMode
 	%所要時間:duration
 	%~error:error
 	%~hash:hash
@@ -735,7 +733,7 @@ polyfill:
 	解決されたなら:pending
 	成す:comprise
 	~IN { 1 〜 512 }:0 or exceeding 512
-	省略可能な:optionally
+	省略可能:optionally
 	失敗-時における:in the event that 〜 fails
 	により後回されない各~obj:subset (determined by
 
@@ -840,6 +838,9 @@ bottleneck::::ボトルネック
 	少ない:less
 
 ●●original_id_map
+
+	web-transport-context-cleanup-steps:context-cleanup-steps
+
 	webtransportdatagramduplexstream-create:webtransportdatagramduplexstream-create-readable
 	webtransportdatagramduplexstream-create:webtransportdatagramduplexstream-create-writable
 
@@ -913,6 +914,7 @@ I.WebTransportSendStream:#webtransportsendstream
 I.WebTransportSendStreamOptions:#dictdef-webtransportsendstreamoptions
 I.WebTransportSendStreamStats:#dictdef-webtransportsendstreamstats
 I.WebTransportWriter:#webtransportwriter
+I.DatagramsReadableMode:#enumdef-datagramsreadablemode
 I.ReadableStream:~STREAMS#readablestream
 I.WritableStream:~STREAMS#writablestream
 I.WritableStreamDefaultWriter:~STREAMS#writablestreamdefaultwriter
@@ -939,6 +941,8 @@ mD.outgoingHighWaterMark:#dom-webtransportdatagramduplexstream-outgoinghighwater
 l.pending:#dom-webtransportreliabilitymode-pending
 l.reliable-only:#dom-webtransportreliabilitymode-reliable-only
 l.supports-unreliable:#dom-webtransportreliabilitymode-supports-unreliable
+
+l.bytes:#dom-datagramsreadablemode-bytes
 
 m.new WebTransport:#dom-webtransport-webtransport
 	constructor:#dom-webtransport-webtransport
@@ -979,6 +983,7 @@ mb.anticipatedConcurrentIncomingBidirectionalStreams:#dom-webtransportoptions-an
 mb.protocols:#dom-webtransportoptions-protocols
 mb.sendGroup:#dom-webtransportsendoptions-sendgroup
 mb.waitUntilAvailable:#dom-webtransportsendstreamoptions-waituntilavailable
+mb.datagramsReadableMode:#dom-webtransportoptions-datagramsreadablemode
 
 mb.closeCode:#dom-webtransportcloseinfo-closecode
 mb.reason:#dom-webtransportcloseinfo-reason
@@ -1062,6 +1067,7 @@ M.CONNECT:~HTTPsem#CONNECT
 
 	●sl
 sl.Readable:#dom-webtransportdatagramduplexstream-readable-slot
+sl.ReadableMode:#dom-webtransportdatagramduplexstream-readablemode-slot
 sl.Writables:#dom-webtransportdatagramduplexstream-writables-slot
 sl.IncomingDatagramsQueue:#dom-webtransportdatagramduplexstream-incomingdatagramsqueue-slot
 sl.IncomingDatagramsPullPromise:#dom-webtransportdatagramduplexstream-incomingdatagramspullpromise-slot
@@ -1119,8 +1125,6 @@ wS.writeRequests:~STREAMS#writablestream-writerequests
 sl.stream:~STREAMS#writablestreamdefaultwriter-stream
 
 	●code 他
-STOP_SENDING:#stream-signal-stop_sending
-RESET_STREAM:#stream-signal-reset_stream
 
 ft.STREAM:~RFCx/rfc9000#name-stream-frames
 ft.STOP_SENDING:~RFCx/rfc9000#frame-stop-sending
@@ -1152,7 +1156,6 @@ h.WT-Available-Protocols:~WT-HTTP3#field-wt-available-protocol
 ~WebTransport~sessionを確立する:#session-establish
 	＠#session-establish
 ~CONNECT~stream:#connect-stream
-~WebTransport~sessionを~drainする:#session-drain
 ~WebTransport~sessionを終了する:#session-terminate
 ~drain:#session-draining
 終了され:#session-terminated
@@ -1165,18 +1168,19 @@ WT.受信-:#stream-receive
 WT.受信する:#stream-receive
 	read:#stream-receive
 	received:#stream-receive
-WT.送信を停止させる:#stream-send-stop_sending
-	STOP_SENDING を送信する:#stream-send-stop_sending
-WT.設定し直す:#stream-reset
-WT.設定し直され:#stream-reset
-	RESET_STREAM を送信する:#stream-reset
-	RESET.送信する:#stream-reset
+WT.受信を中止する:#stream-abort-receiving
+WT.送信を中止-:#stream-abort-sending
+WT.送信を中止する:#stream-abort-sending
+
+受信は中止された:#stream-signal-receiving-aborted
+送信は中止された:#stream-signal-sending-aborted
 ~flow制御:#stream-signal-flow-control
 
 DW.作成する:#webtransportdatagramswritable-create
 DPS.作成する:#webtransportdatagramduplexstream-create
 	%readable:#webtransportdatagramduplexstream-create-readable
 	%writable:#webtransportdatagramduplexstream-create-writable
+	%可読~mode:#webtransportdatagramduplexstream-create-readablemode
 TSG.作成する:#webtransportsendgroup-create
 TW.作成する:#webtransportwriter-create
 
@@ -1188,7 +1192,6 @@ TW.作成する:#webtransportwriter-create
 一方向~streamを~pullする:#pullunidirectionalstream
 ~WebTransportを片付ける:#webtransport-cleanup
 ~network~taskを~queueする:#webtransport-queue-a-network-task
-文脈を片付ける手続き:#context-cleanup-steps
 証明書~hashを算出する:#compute-a-certificate-hash
 証明書~hashを検証yする:#verify-a-certificate-hash
 ~custom証明書~要件:#custom-certificate-requirements
@@ -1208,7 +1211,6 @@ wtR.取消す:#webtransportreceivestream-cancel
 wtB.作成する:#bidirectionalstream-create
 
 送信-~group:#grouped
-	＠#ungrouped
 ~protocol名:#protocol-names
 送信-順序の規則:#send-order-rules
 
@@ -1291,6 +1293,7 @@ aB.中止-事由:~DOM4#abortsignal-abort-reason
 ~BYOB読取器:~STREAMS#byob-reader
 既定の読取器:~STREAMS#default-reader
 限界水位:~STREAMS#high-water-mark
+可読~stream:~STREAMS#readable-stream
 可読~byte~stream:~STREAMS#readable-byte-stream
 RS.~closeする:~STREAMS#readablestream-close
 RS.~errorにする:~STREAMS#readablestream-error
@@ -1317,8 +1320,6 @@ WS.設定しておく:~STREAMS#writablestream-set-up
 逆直列化~手続き:~HTMLcloning#deserialization-steps
 aG.~event~loop:~WAPI#concept-agent-event-loop
 ~network用~task~source:~WAPI#networking-task-source
-生成元:~ORIGIN#concept-origin
-	origin:~HTMLLS/browsers.html#concept-origin
 enV.生成元:~WAPI#concept-settings-object-origin
 enV.施策~容器:~WAPI#concept-settings-object-policy-container
 enV.~API用~基底~URL:~WAPI#api-base-url
@@ -1327,10 +1328,13 @@ enV.~API用~基底~URL:~WAPI#api-base-url
 関連な~realm:~WAPI#concept-relevant-realm
 直列化-可能:~HTMLcloning#serializable-objects
 直列化~手続き:~HTMLcloning#serialization-steps
-生成元を直列化する:~ORIGIN#ascii-serialisation-of-an-origin
-	serialized:~HTMLLS/browsers.html#ascii-serialisation-of-an-origin
 転送-手続き:~HTMLcloning#transfer-steps
 転送-受信-時の手続き:~HTMLcloning#transfer-receiving-steps
+生成元:~ORIGIN#concept-origin
+	origin:~HTMLLS/browsers.html#concept-origin
+生成元を直列化する:~ORIGIN#ascii-serialisation-of-an-origin
+	serialized:~HTMLLS/browsers.html#ascii-serialisation-of-an-origin
+文書~unload時の片付け手続き:~HTMLlifecycle#unloading-document-cleanup-steps
 
 ~URL構文解析する:~URL1#concept-url-parser
 ~URL~record:~URL1#concept-url
@@ -1400,9 +1404,6 @@ WEBTRANSPORTHTTP3=副      ~/webtrans-http3-ja.html
     Victor Vasiliev. ＜WebTransport Protocol Framework＞. Internet-Draft. URL: https://datatracker.ietf.org/doc/html/draft-ietf-webtrans-overview
 [WEBIDL]
     Edgar Chen; Timothy Gu. ＜Web IDL Standard＞. Living Standard. URL: https://webidl.spec.whatwg.org/
-[WEBTRANSPORT]
-    Nidhi Jaju; Victor Vasiliev. ＜WebTransport＞. URL: https://w3c.github.io/webtransport/
-
 
 ●●ref_informative
 
@@ -1727,18 +1728,6 @@ The resulting underlying transport stream is referred to as the session’s CONN
 </ul>
 </div>
 
-<div class="algo">
-`~WebTransport~sessionを~drainする@
-~algoは、
-所与の
-( `~WebTransport~session$ )
-に対し，
-`WEB-TRANSPORT-OVERVIEW$r `§ ~session全般な特能＠~WT-OVERVIEW#features-session$
-に従う。
-◎
-To drain a WebTransport session session, follow [WEB-TRANSPORT-OVERVIEW] Section 4.1.
-</div>
-
 <p>
 `~WebTransport~session$は、
 `WEB-TRANSPORT-OVERVIEW$r `§ ~session全般な特能＠~WT-OVERVIEW#features-session$
@@ -1865,17 +1854,15 @@ A WebTransport stream has the following capabilities:
 
 <tr><td>
 %~stream 上の
-`送信を停止させる@WT
-（ `STOP_SENDING$ 通達を送信する）
+`受信を中止する@WT
 <td>`受信-側を中止する＠~WT-OVERVIEW#abort-receive-side$
 <td>可
 <td>不可
 <td>可
 
 <tr><td>
-%~stream を
-`設定し直す@WT
-（ `RESET_STREAM$ 通達を送信する）
+%~stream 上の
+`送信を中止する@WT
 <td>`送信-側を中止する＠~WT-OVERVIEW#abort-send-side$
 <td>不可
 <td>可
@@ -1886,8 +1873,8 @@ A WebTransport stream has the following capabilities:
 capability｜definition｜incoming unidirectional｜outgoing unidirectional｜bidirectional
 send bytes (potentially with FIN)｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜No｜Yes｜Yes
 receive bytes (potentially with FIN)｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜Yes｜No｜Yes
-send STOP_SENDING｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜Yes｜No｜Yes
-reset a WebTransport stream｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜No｜Yes｜Yes
+abort receiving on a WebTransport stream｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜Yes｜No｜Yes
+abort sending on a WebTransport stream｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜No｜Yes｜Yes
 </div>
 
 <p>
@@ -1906,14 +1893,14 @@ A WebTransport stream has the following signals:
 <th>`双方向$
 <tbody>
 
-<tr><td>`STOP_SENDING@
-<td>`受信-側は中止された＠~WT-OVERVIEW#receive-side-aborted$【！受信-側を中止する】
+<tr><td>`受信は中止された@
+<td>`受信-側は中止された＠~WT-OVERVIEW#receive-side-aborted$
 <td>生じない
 <td>生じ得る
 <td>生じ得る
 
-<tr><td>`RESET_STREAM@
-<td>`送信-側は中止された＠~WT-OVERVIEW#send-side-aborted$【！送信-側を中止する】
+<tr><td>`送信は中止された@
+<td>`送信-側は中止された＠~WT-OVERVIEW#send-side-aborted$
 <td>生じ得る
 <td>生じない
 <td>生じ得る
@@ -1926,9 +1913,9 @@ A WebTransport stream has the following signals:
 </table>
 ◎
 event｜definition｜incoming unidirectional｜outgoing unidirectional｜bidirectional
-STOP_SENDING｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜No｜Yes｜Yes
-RESET_STREAM｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜Yes｜No｜Yes
-flow control｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜No｜Yes｜Yes 
+receiving aborted｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜No｜Yes｜Yes
+sending aborted｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜Yes｜No｜Yes
+flow control｜[WEB-TRANSPORT-OVERVIEW] Section 4.3｜No｜Yes｜Yes
 </div>
 
 		</section>
@@ -2543,6 +2530,19 @@ Internal Slot｜Description (non-normative)
 A ReadableStream for incoming datagrams.
 </dd>
 
+	<dt>`ReadableMode@sl</dt>
+	<dd>
+ ~NULL† ／
+流入~datagram用に利用される `DatagramsReadableMode$I
+◎
+The DatagramsReadableMode used for incoming datagrams.
+</dd>
+	<dd class="trans-note">【†
+~NULL は、
+明確化するための この訳による追加であり，
+この~slot用の値が指定されなかったことを表現する。
+】</dd>
+
 	<dt>`Writables@sl</dt>
 	<dd>
 `WebTransportDatagramsWritable$I ~streamたちが成す`有順序~集合$
@@ -2678,10 +2678,10 @@ The user agent MAY update [[OutgoingMaxDatagramSize]] for any WebTransport objec
 `作成する@DPS
 ~algoは、
 所与の
-( %可読~stream )
+( %可読~stream, %可読~mode )
 に対し：
 ◎
-To create a WebTransportDatagramDuplexStream given a readable, perform the following steps
+To create a WebTransportDatagramDuplexStream given a readable and readableMode, perform the following steps.
 </p>
 <ol>
 	<li>
@@ -2690,6 +2690,7 @@ To create a WebTransportDatagramDuplexStream given a readable, perform the follo
 — その
 ⇒＃
 `Readable$sl ~SET %可読~stream,
+`ReadableMode$sl ~SET %可読~mode,
 `Writables$sl ~SET 新たな`有順序~集合$,
 `IncomingDatagramsQueue$sl ~SET 新たな`~queue$,
 `IncomingDatagramsPullPromise$sl ~SET ~NULL,
@@ -3085,10 +3086,23 @@ Return datagrams.[[IncomingDatagramsPullPromise]].
 Let datagram and timestamp be the result of dequeuing queue.
 </li>
 	<li>
+<p>
+%~datagram群 . `ReadableMode$sl に応じて：
+◎
+↓</p>
+		<ul class="switch">
+			<li>
+<p>
+`bytes$l ：
+◎
+If datagrams.[[ReadableMode]] is "bytes", then:
+</p>
+				<ol>
+					<li>
 %~view ~LET %~datagram群 . `Readable$sl 用の`現在の~BYOB要請~view$RS
 ◎
 ↓</li>
-	<li>
+					<li>
 <p>
 ~IF［
 %~view ~NEQ ~NULL
@@ -3096,8 +3110,8 @@ Let datagram and timestamp be the result of dequeuing queue.
 ◎
 If datagrams.[[Readable]]’s current BYOB request view is not null, then:
 </p>
-		<ol>
-			<li>
+						<ol>
+							<li>
 ~IF［
 %~view の`~byte長さ$BS ~LT %~datagram の~size
 ］
@@ -3108,11 +3122,11 @@ Let view be datagrams.[[Readable]]’s current BYOB request view.
 ◎
 If view’s byte length is less than the size of datagram, return a promise rejected with a RangeError.
 </li>
-			<li>
+							<li>
 %要素~size ~LET 0
 ◎
 ↓</li>
-			<li>
+							<li>
 ~IF［
 %~view は `TypedArrayName^sl 内部~slotを有する
 （すなわち， %~view は `DataView$I でない）
@@ -3124,7 +3138,7 @@ If view’s byte length is less than the size of datagram, return a promise reje
 ◎
 Let elementSize be the element size specified in the typed array constructors table for view.[[TypedArrayName]]. If view does not have a [[TypedArrayName]] internal slot (i.e. it is a DataView), let elementSize be 0.
 </li>
-	<li>
+							<li>
 ~IF［
 %要素~size ~NEQ 1
 ］
@@ -3133,13 +3147,36 @@ Let elementSize be the element size specified in the typed array constructors ta
 ◎
 If elementSize is not 1, return a promise rejected with a TypeError.
 </li>
-		</ol>
-	</li>
-	<li>
+						</ol>
+					</li>
+					<li>
 %~datagram群 . `Readable$sl の中へ`~byte列から~pullする$RS( %~datagram )
 ◎
 Pull from bytes datagram into datagrams.[[Readable]].
 </li>
+				</ol>
+			</li>
+			<li>
+<p>
+~NULL：
+◎
+Otherwise:
+</p>
+				<ol>
+					<li>
+%~chunk ~LET `~buffer~sourceを作成する$( `Uint8Array$I, %~datagram, %~transport に`関連な~realm$ )
+◎
+Let chunk be a new Uint8Array object representing datagram.
+</li>
+					<li>
+`~chunkを~enqueueする$RS( %~chunk, %~transport . `Datagrams$sl . `Readable$sl )
+◎
+Enqueue chunk to transport.[[Datagrams]].[[Readable]].
+</li>
+				</ol>
+			</li>
+		</ul>
+	</li>
 	<li>
 ~RET `解決される~promise$( `undefined^jv )
 ◎
@@ -3792,14 +3829,19 @@ Let anticipatedConcurrentIncomingUnidirectionalStreams be options’s anticipate
 Let anticipatedConcurrentIncomingBidirectionalStreams be options’s anticipatedConcurrentIncomingBidirectionalStreams.
 </li>
 	<li>
+%~datagram可読~mode ~LET %options[ "`datagramsReadableMode$mb" ] ~DF ~NULL
+◎
+Let datagramsReadableMode be options’s datagramsReadableMode.
+</li>
+	<li>
 %流入~datagram群 ~LET `新たな~obj$( `ReadableStream$I )
 ◎
 Let incomingDatagrams be a new ReadableStream.
 </li>
 	<li>
-%~datagram群 ~LET `WebTransportDatagramDuplexStream$I を`作成する$DPS( %流入~datagram群 )
+%~datagram群 ~LET `WebTransportDatagramDuplexStream$I を`作成する$DPS( %流入~datagram群, %~datagram可読~mode )
 ◎
-Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its readable set to incomingDatagrams.
+Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its readable set to incomingDatagrams and readableMode set to datagramsReadableMode.
 </li>
 	<li>
 %~transport ~LET `新たな~obj$( `WebTransport$I )
@@ -3855,7 +3897,10 @@ Let transport be a newly constructed WebTransport object, with:
 </li>
 	<li>
 <p>
-%流入~datagram群 を`~byte読取り~support付きで設定しておく$RS
+%流入~datagram群 を %~datagram可読~mode に応じて［
+`bytes^l ならば`~byte読取り~support付きで設定しておく$RS ／
+~NULL ならば`設定しておく$RS
+］
 — 次を与える下で：
 </p>
 		<ul>
@@ -3888,7 +3933,7 @@ Let pullDatagramsAlgorithm be an action that runs pullDatagrams with transport.
 ◎
 Note: Using 64kB buffers with datagrams is recommended because the effective maximum WebTransport datagram frame size has an upper bound of the QUIC maximum datagram frame size which is recommended to be 64kB (See [QUIC-DATAGRAM] Section 3). This will ensure the stream is not errored due to a datagram being larger than the buffer.
 ◎
-Set up with byte reading support incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0.
+If datagramsReadableMode is "bytes", set up with byte reading support incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0. Otherwise, set up incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0.
 </li>
 	<li>
 <p>
@@ -4329,17 +4374,10 @@ Cleanup transport with error.
 				</ol>
 			</li>
 			<li>
-~Assert：
-%maxDatagramSize は整数である。
-【未定義な変数。前後との関係が不明で意図不明な段。】
-◎
-↑↑ Let session be the established WebTransport session.
-◎
-Assert: maxDatagramSize is an integer.
-</li>
-			<li>
 <p>
 `~network~taskを~queueする$( %~transport, 次の手続き )
+◎
+↑↑ Let session be the established WebTransport session.
 ◎
 Queue a network task with transport to＼
 </p>
@@ -4351,6 +4389,12 @@ Queue a network task with transport to＼
 run these steps:
 </p>
 				<ol>
+					<li>
+~Assert:
+%~transport【！コレ】 . `Datagrams$sl . `OutgoingMaxDatagramSize$sl は整数である。
+◎
+Assert: this’s [[Datagrams]]’s [[OutgoingMaxDatagramSize]] is an integer.
+</li>
 					<li>
 <p>
 ~IF［
@@ -4366,9 +4410,6 @@ If transport.[[State]] is not "connecting":
 `~WebTransport~sessionを終了する$( %~session )
 ◎
 In parallel, terminate session.
-</li>
-							<li>
-~RET
 ◎
 Abort these steps.
 </li>
@@ -4474,15 +4515,15 @@ Run the following steps in parallel:
 </p>
 		<ol>
 			<li>
-%~session に可用な流入~双方向~streamが在るようになるまで待機する
-【！`双方向~streamを受信する$】
+%~session 内に可用な流入~双方向~streamが在るようになるまで待機する
+【！↓ 双方向~streamを受信する$】
 ◎
-Wait until there is an available incoming bidirectional stream.
+Wait until there is an available incoming bidirectional stream in session.
 </li>
 			<li>
 %内部~stream ~LET `双方向~streamを受信する$( %~session )
 ◎
-Let internalStream be the result of receiving a bidirectional stream.
+Let internalStream be the result of receiving a bidirectional stream from session.
 </li>
 			<li>
 <p>
@@ -4582,15 +4623,15 @@ Run the following steps in parallel:
 </p>
 		<ol>
 			<li>
-%~session に可用な流入~一方向~streamが在るようになるまで待機する
-【！`流入~一方向~streamを受信する$】
+%~session 内に可用な流入~一方向~streamが在るようになるまで待機する
+【！ ↓流入~一方向~streamを受信する$】
 ◎
-Wait until there is an available incoming unidirectional stream.
+Wait until there is an available incoming unidirectional stream in session.
 </li>
 			<li>
 %内部~stream ~LET `流入~一方向~streamを受信する$( %~session )
 ◎
-Let internalStream be the result of receiving an incoming unidirectional stream.
+Let internalStream be the result of receiving an incoming unidirectional stream from session.
 </li>
 			<li>
 <p>
@@ -5007,11 +5048,10 @@ In parallel, terminate session with code and reason.
 %~transport . `SendStreams$sl,
 %~transport . `ReceiveStreams$sl
 ］内に包含された各`~WebTransport~stream$に対しても［
-`設定し直す$WT／
-`送信を停止させる$WT
+`送信を中止する$WT／`受信を中止する$WT
 ］
 ◎
-Note: This also resets or sends STOP_SENDING WebTransport streams contained in transport.[[SendStreams]] and [[ReceiveStreams]].
+Note: This also aborts sending or aborts receiving on WebTransport streams contained in transport.[[SendStreams]] and [[ReceiveStreams]].
 </p>
 			</li>
 			<li>
@@ -6146,13 +6186,14 @@ Cleanup transport with error.
 
 <div class="algo">
 <p>
-`文脈を片付ける手続き@
-は、
+この仕様は、
+`文書~unload時の片付け手続き$【の一部を成す “文脈を片付ける手続き” 】として，次を定義する
+— それは、
 所与の
 ( `WebTransport$I %~transport )
 に対し：
 ◎
-This specification defines context cleanup steps as the following steps, given WebTransport transport:
+This specification defines unloading document cleanup steps as the following steps, given WebTransport transport:
 </p>
 <ol>
 	<li>
@@ -6226,11 +6267,6 @@ This needs to be done in workers too. See #127 and whatwg/html#6731.
 </p>
 	</li>
 </ol>
-
-<p class="trans-note">【
-この手続き（この仕様~内では利用されていない）は、
-~HTMLの`文書~unload時の片付け手続き＠~HTMLlifecycle#unloading-document-cleanup-steps$から呼び出される。
-】</p>
 </div>
 
 		</section>
@@ -6340,12 +6376,17 @@ dictionary `WebTransportOptions@I {
   [`EnforceRange$] `unsigned short$? `anticipatedConcurrentIncomingUnidirectionalStreams$mb = null;
   [`EnforceRange$] `unsigned short$? `anticipatedConcurrentIncomingBidirectionalStreams$mb = null;
   `sequence$&lt;`DOMString$&gt; `protocols$mb = [];
+  `DatagramsReadableMode$I `datagramsReadableMode$mb;
 };
 
 enum `WebTransportCongestionControl@I {
   `default@l,
   `throughput@l,
   `low-latency@l,
+};
+
+enum `DatagramsReadableMode@I {
+  `bytes@l
 };
 </pre>
 
@@ -6400,39 +6441,39 @@ This option is only supported for transports using dedicated connections.＼
 	<dd>
 <p>
 ~UAは、
-次に従うモノトスル
+以下に従うモノトスル
 — 以下における %~hash群 は、
 この~fieldに与えた値を表すとする：
 </p>
 		<ul>
 			<li>
-［
-~transport~protocolが この特能を~supportしない
-］~AND［
-%~hash群 は空でない
-］場合、
-`NotSupportedError$E 例外を投出する。
-</li>
-			<li>
 <p>
-［
-~transport~protocolが この特能を~supportする
-］~AND［
-%~hash群 は空でない
-］場合、
-~server証明書は，［
-~AND↓ が満たされる場合，その場合に限り
-］信用されるものと判断する：
+%~hash群 は空でない場合、
+~transport~protocolが この特能を：
 </p>
 				<ul>
 					<li>
+~supportしない場合、
+`NotSupportedError$E 例外を投出する。
+</li>
+					<li>
+<p>
+~supportする場合、
+~server証明書は［
+~AND↓ が満たされる場合，その場合に限り
+］信用されるものと判断する：
+</p>
+						<ul>
+							<li>
 次の結果 ~EQ ~T
 ⇒
 `証明書~hashを検証yする$( 当の証明書, %~hash群 )
 </li>
-					<li>
+							<li>
 当の証明書は`~custom証明書~要件$を満足する
 </li>
+						</ul>
+					</li>
 				</ul>
 			</li>
 			<li>
@@ -6449,7 +6490,7 @@ For transport protocols that do not support this feature, having this field non-
 If supported and non-empty, the user agent SHALL deem a server certificate trusted if and only if it can successfully verify a certificate hash against serverCertificateHashes and satisfies custom certificate requirements. The user agent SHALL ignore any hash that uses an unknown algorithm. If empty, the user agent SHALL use certificate verification procedures it would use for normal fetch operations.
 </dd>
 	<dd>
-これは、
+この~optionは、
 `allowPooling$mb と伴には利用できない。
 ◎
 This cannot be used with allowPooling.
@@ -6494,7 +6535,7 @@ anticipatedConcurrentIncomingUnidirectionalStreams, of type unsigned short, null
 </dt>
 	<dd>
 ［
-同時並行に~openな，`流入~一方向$な~streamたち
+同時並行に~openな`流入~一方向$な~streamたち
 ］として［
 ~serverが作成するものと応用が見越す個数
 ］を応用が任意選択で指定できるようにする。
@@ -6526,7 +6567,7 @@ anticipatedConcurrentIncomingBidirectionalStreams, of type unsigned short, nulla
 </dt>
 	<dd>
 ［
-同時並行に~openな，`双方向$な~streamたち
+同時並行に~openな`双方向$な~streamたち
 ］として［
 ~serverが作成するものと応用が見越す個数
 ］を応用が任意選択で指定できるようにする。
@@ -6573,6 +6614,29 @@ An optionally provided array of application-level protocol names.＼
 相応しい~protocolが供されなかった場合には，当の要請を却下するかもしれない。
 ◎
 Selecting a preferred application-protocol and communicating it to the client is optional for the server. Servers might reject the request if a suitable protocol was not provided.
+</dd>
+
+	<dt>
+`datagramsReadableMode@mb
+◎
+datagramsReadableMode, of type DatagramsReadableMode
+</dt>
+	<dd>
+流入~datagram用に利用する可読~streamに関する応用の選好を指定する。
+`bytes$l を与えた場合，`可読~byte~stream$が利用され、
+他の場合【省略された場合】，既定の`可読~stream$が利用される。
+◎
+Optionally specifies an application’s preference for using a readable byte stream for incoming datagrams. Otherwise, a default readable stream is used.
+</dd>
+	<dd class="note">注記：
+長さ 0 な~datagramを検出するためには、
+既定の`可読~stream$が必要yある。
+しかしながら，`可読~byte~stream$は、
+~byte列をもっと効率的に取扱える
+— 特に，
+`~BYOB読取器$と伴に利用されるときは複製を最小~化することにより。
+◎
+Note: A default readable stream is necessary to detect zero-length datagrams. However, a readable byte stream can handle bytes more efficiently, in particular by minimizing copies when used with a BYOB reader.
 </dd>
 </dl>
 
@@ -6754,13 +6818,11 @@ It MUST NOT contain RSA keys ([RFC3279], Section 2.3.1).
 
 <p>
 `WebTransportCloseInfo$I 辞書は、
-`WebTransport$I を~closeする際の~error~codeに関係している情報を含む。
-この情報は、
-`CONNECTION_CLOSE^ft ~frame用に［
+`~WebTransport~sessionを終了する$ときに［
 ~error~code, 事由
-］を設定するために利用される。
+］を設定するために利用される情報を含む。
 ◎
-The WebTransportCloseInfo dictionary includes information relating to the error code for closing a WebTransport. This information is used to set the error code and reason for a CONNECTION_CLOSE frame.
+The WebTransportCloseInfo dictionary includes information used to set the error code and reason when terminating a WebTransport session.
 </p>
 
 <pre class="idl">
@@ -7592,12 +7654,12 @@ The number of bytes that have been written to the stream.
 
 	<dt>`CommittedOffset@slS</dt>
 	<dd>
-当の~stream【 `InternalStream$slS 】内の［
-当の~streamが`設定し直され$WTたとしても，相手の端点へ送達されることになる~byte数
-］を記録する~offset
-— `RELIABLE-RESET$r を見よ。
+当の~stream【 `InternalStream$slS 】内の次を記録する~offset
+⇒
+当の~stream上の`送信を中止-$WTしたときでも，相手の端点へ送達されることになる~byte数
+— `RELIABLE-RESET$r を見よ
 ◎
-An offset in the stream that records the number of bytes that will be delivered to a peer, even when the stream is reset; see [RELIABLE-RESET].
+An offset in the stream that records the number of bytes that will be delivered to a peer, even when the stream has aborted sending; see [RELIABLE-RESET].
 </dd>
 </dl>
 
@@ -8222,9 +8284,9 @@ Run the following steps in parallel:
 </p>
 		<ol>
 			<li>
-%~stream . `InternalStream$slS を`設定し直す$WT( %~code, %~commitされた~offset )
+%~stream . `InternalStream$slS 上の`送信を中止する$WT( %~code, %~commitされた~offset )
 ◎
-Reset stream.[[InternalStream]] with code and committedOffset.
+Abort sending on stream.[[InternalStream]] with code and committedOffset.
 </li>
 			<li>
 <p>
@@ -8316,15 +8378,15 @@ In parallel, for each promise in requestsToAbort, abort the sending of bytes ass
 </div>
 
 		</section>
-		<section id="send-stream-STOP_SENDING">
-<h3 title="STOP_SENDING signal coming from the server">7.5. ~serverから来ている `STOP_SENDING^ 通達</h3>
+		<section id="send-stream-receiving-aborted">
+<h3 title="Receiving aborted signal coming from the server">7.5. ~serverから来ている受信は中止された通達</h3>
 
 <div class="algo">
 <p>
-`WebTransportSendStream$I %~stream に結付けられた`~WebTransport~stream$が，~serverから `STOP_SENDING$ 通達 %通達 を取得したときは、
+`WebTransportSendStream$I %~stream に結付けられた`~WebTransport~stream$が，~serverから`受信は中止された$通達 %通達 を取得したときは、
 次の手続きを走らす：
 ◎
-Whenever a WebTransport stream associated with a WebTransportSendStream stream gets a STOP_SENDING signal from the server, run these steps:
+Whenever a WebTransport stream associated with a WebTransportSendStream stream gets a receiving aborted signal from the server, run these steps:
 </p>
 <ol>
 	<li>
@@ -8337,7 +8399,7 @@ Let transport be stream.[[Transport]].
 %~code ~LET %通達 に付された応用~protocol~error~code
 `QUIC$r
 ◎
-Let code be the application protocol error code attached to the STOP_SENDING frame. [QUIC]
+Let code be the application protocol error code attached to the receiving aborted signal.
 </p>
 
 <p class="note">注記：
@@ -8512,9 +8574,7 @@ A WebTransportSendGroup is an optional organizational object that tracks transmi
 `送信-~group@
 に属するようにし得る。
 既定では、
-どの`送信-~group$にも
-`属さない＠#ungrouped@
-とする†。
+どの`送信-~group$にも属さないとする†。
 ◎
 WebTransportSendStreams can, at their creation or through assignment of their sendGroup attribute, be grouped under at most one WebTransportSendGroup at any time. By default, they are ungrouped.
 </p>
@@ -9287,9 +9347,9 @@ Run the following steps in parallel:
 </p>
 		<ol>
 			<li>
-%内部~stream 上の`送信を停止させる$WT( %~code )
+%内部~stream 上の`受信を中止する$WT( %~code )
 ◎
-Send STOP_SENDING with internalStream and code.
+Abort receiving on internalStream with code.
 </li>
 			<li>
 <p>
@@ -9336,13 +9396,13 @@ Return promise.
 
 		</section>
 		<section id="receive-stream-RESET_STREAM">
-<h3 title="Reset signal coming from the server">9.4. ~serverから来ている `RESET_STREAM^ 通達</h3>
+<h3 title="Sending aborted signal coming from the server">9.4. ~serverから来ている送信は中止された通達</h3>
 
 <div class="algo">
 <p>
-`WebTransportReceiveStream$I %~stream に結付けられた`~WebTransport~stream$が ~serverから `RESET_STREAM$ 通達 %通達 を取得したときは，次の手続きを走らす：
+`WebTransportReceiveStream$I %~stream に結付けられた`~WebTransport~stream$が ~serverから`送信は中止された$通達 %通達 を取得したときは，次の手続きを走らす：
 ◎
-Whenever a WebTransport stream associated with a WebTransportReceiveStream stream gets a RESET_STREAM signal from the server, run these steps:
+Whenever a WebTransport stream associated with a WebTransportReceiveStream stream gets a sending aborted signal from the server, run these steps:
 </p>
 <ol>
 	<li>
@@ -9351,17 +9411,10 @@ Whenever a WebTransport stream associated with a WebTransportReceiveStream strea
 Let transport be stream.[[Transport]].
 </li>
 	<li>
-~Assert：
-%通達 は［
-`RESET_STREAM_AT$ft ／ `WT_RESET_STREAM$ft
-］~frameである
-◎
-↓</li>
-	<li>
 <p>
 %~code ~LET %通達 に付された応用~protocol~error~code
 ◎
-Let code be the application protocol error code attached to the RESET_STREAM_AT or WT_RESET_STREAM frame. [RELIABLE-RESET] [WEB-TRANSPORT-HTTP2]
+Let code be the application protocol error code attached to the sending aborted signal.
 </p>
 
 <p class="note">注記：
@@ -9759,22 +9812,23 @@ Return the result of reacting to p with the following steps:
 <p>
 ~streamの `CommittedOffset$slS を当の~streamへ書込まれた~byte数（ `BytesWritten$slS ）に合致するよう更新する。
 これは、［
-書込みが`中止-＠#webtransportsendstream-abort$wtSされ，それに伴い，当の~streamは`設定し直され$WTるようになった後
+書込みが`中止-＠#webtransportsendstream-abort$wtSされた結果，当の~stream上の
+`送信を中止-$WTした後
 ］でも［
 書込まれた~byte列は相手の端点へ依拠-可能に送達される
 ］ようになることを確保する。
 これは、
 `RELIABLE-RESET$r にて述べられる仕組みを利用する。
 ◎
-The commit method will update the [[CommittedOffset]] of a stream to match the number of bytes written to that stream ([[BytesWritten]]). This ensures that those bytes will be delivered to a peer reliably, even after writing is aborted, causing the stream to be reset. This uses the mechanism described in [RELIABLE-RESET].
+The commit method will update the [[CommittedOffset]] of a stream to match the number of bytes written to that stream ([[BytesWritten]]). This ensures that those bytes will be delivered to a peer reliably, even after writing is aborted, causing the stream to abort sending. This uses the mechanism described in [RELIABLE-RESET].
 </p>
 
 <p class="note">注記：
 これは、
 接続の失敗-時における送達を保証するものではない
-— ~streamが`設定し直され$WTたときに限られる。
+— ~stream上の`送信を中止-$WTしたときに限られる。
 ◎
-Note: This does not guarantee delivery in the event that a connection fails, only when a stream is reset.
+Note: This does not guarantee delivery in the event that a connection fails, only when a stream has aborted sending.
 </p>
 	</dd>
 	<dd>
@@ -10159,20 +10213,19 @@ The application streamErrorCode in the WebTransportError error is converted to a
 <tr><td>
 <code>`writable$mB.`abort(error)$ws</code>
 <td>
-`設定し直す$WT( %~code ) ことにより，［
-%~HTTP~error~code,
-当の~stream（ `writable$mB ）用の `CommittedOffset$slS に対応する~offset,
-~stream~header
-］を伴う `RESET_STREAM_AT$ft を送信する
+`writable^mB 上の`送信を中止する$WT( %~code, `writable^mB . `CommittedOffset$slS )
+ことにより，
+`STREAM$ft 上の送信を［
+%~HTTP~error~code, ~offset, ~~追加の~stream~header
+］を伴わせて中止する
 — `RELIABLE-RESET$r を見よ
-
 <tr><td>
 <code>`writable$mB.`close$ws()</code>
 <td>
 ~FIN~bitを伴う `STREAM$ft を`送信する$WT
 
 <tr><td>
-<code>`writable$mB.getWriter().`write(chunk)$dw</code>
+<code>`writable$mB.getWriter().`write(chunk)$dw【！()】</code>
 <td>
 `STREAM$ft を`送信する$WT
 
@@ -10184,24 +10237,22 @@ The application streamErrorCode in the WebTransportError error is converted to a
 <tr><td>
 <code>`writable$mB.getWriter().`abort(error)$dw</code>
 <td>
-`設定し直す$WT( %~code ) ことにより，［
-%~HTTP~error~code,
-当の~stream（ `writable$mB ）用の `CommittedOffset$slS に対応する~offset,
-~stream~header
-］を伴う `RESET_STREAM_AT$ft を送信する
+`writable^mB 上の`送信を中止する$WT( %~code, `writable^mB . `CommittedOffset$slS ) により，
+`STREAM$ft 上の送信を［
+%~HTTP~error~code, ~offset, ~~追加の~stream~header
+］を伴わせて中止する
 — `RELIABLE-RESET$r を見よ
-
 <tr><td>
 <code>`readable$mB.`cancel(error)$rs</code>
 <td>
-`送信を停止させる$WT( %~code ) ことにより，
-%~HTTP~error~code を伴う `STOP_SENDING$ft を送信する
+`readable^mB 上の`受信を中止する$WT( %~code ) により，
+`STREAM$ft 上の受信を %~HTTP~error~code を伴わせて中止する
 
 <tr><td>
 <code>`readable$mB.getReader().`cancel(error)$gr</code>
 <td>
-`送信を停止させる$WT( %~code ) ことにより，
-%~HTTP~error~code を伴う `STOP_SENDING$ft を送信する
+`readable^mB 上の`受信を中止する$WT( %~code ) により，
+`STREAM$ft 上の受信を %~HTTP~error~code を伴わせて中止する
 
 <tr><td>
 <code>wt.`close(closeInfo)$mT</code>
@@ -10211,13 +10262,13 @@ The application streamErrorCode in the WebTransportError error is converted to a
 </table>
 ◎
 API Method｜QUIC Protocol Action
-writable.abort(error)｜sends RESET_STREAM_AT with httpErrorCode and an offset that corresponds to the [[CommittedOffset]] for the stream, plus any stream header; see [RELIABLE-RESET]
+writable.abort(error)｜aborts sending on STREAM with httpErrorCode and an offset that corresponds to the [[CommittedOffset]] for the stream, plus any stream header; see [RELIABLE-RESET]
 writable.close()｜sends STREAM with FIN bit set
-writable.getWriter().(chunk)()｜sends STREAM
+writable.getWriter().write(chunk)()｜sends STREAM
 writable.getWriter().close()｜sends STREAM with FIN bit set
-writable.getWriter().abort(error)｜sends RESET_STREAM_AT with httpErrorCode and an offset that corresponds to the [[CommittedOffset]] for the stream, plus any stream header; see [RELIABLE-RESET]
-readable.cancel(error)｜sends STOP_SENDING with httpErrorCode
-readable.getReader().cancel(error)｜sends STOP_SENDING with httpErrorCode
+writable.getWriter().abort(error)｜aborts sending on STREAM with httpErrorCode and an offset that corresponds to the [[CommittedOffset]] for the stream, plus any stream header; see [RELIABLE-RESET]
+readable.cancel(error)｜aborts receiving on STREAM with httpErrorCode
+readable.getReader().cancel(error)｜aborts receiving on STREAM with httpErrorCode
 wt.close(closeInfo)｜terminates session with closeInfo
 </div>
 
@@ -10230,7 +10281,7 @@ wt.close(closeInfo)｜terminates session with closeInfo
 <tbody>
 
 <tr><td>
-%~HTTP~error~code を伴う `STOP_SENDING$ft を受信した
+%~HTTP~error~code を伴う `STOP_SENDING$ft を受信したことにより`受信は中止された$
 <td>
 `writable$mB を`~errorにする$WS( %~code )
 
@@ -10240,16 +10291,14 @@ wt.close(closeInfo)｜terminates session with closeInfo
 <code>(await `readable$mB.getReader().`read()$dr).value</code>
 【に反映される】
 
-
 <tr><td>
 ~FIN~bitを伴う `STREAM$ft を`受信-$WTした
 <td>
 <code>(await `readable$mB.getReader().`read()$dr).done</code>
 【に反映される】
 
-
 <tr><td>
-%~HTTP~error~code を伴う `RESET_STREAM$ft を受信した
+%~HTTP~error~code を伴う `RESET_STREAM$ft を受信したことにより`送信は中止された$
 <td>
 `readable$mB を`~errorにする$RS( %~code )
 
@@ -10261,7 +10310,6 @@ wt.close(closeInfo)｜terminates session with closeInfo
 <code>(await wt.`closed$mT).closeInfo</code>
 【に反映されること】に加え，
 ~openな各~streamを`~errorにする$RS( )
-
 
 <tr><td>
 ~network~error
@@ -10295,7 +10343,9 @@ Network error｜(await wt.closed) rejects, and errors open streams
 `RESET_STREAM_AT$ft ~frame内の `依拠-可能~size^i （ `Reliable Size^en ）~fieldにより指示される~dataの送達
 ］を許容するため，遅延されるかもしれない。
 当の~stream~dataは完全に受信されたが，当の応用により まだ読取られてない場合、
-この通達は，抑止され得る。
+当の［
+送信は中止された通達
+］は，抑止され得る。
 ~WebTransportは、
 ~stream~headerの依拠-可能な送達を確保するため，
 常に `RESET_STREAM_AT$ft ~frameを利用する
@@ -10306,7 +10356,7 @@ Network error｜(await wt.closed) rejects, and errors open streams
 を見よ。
 【† 原文は § 4.1, § 4.2 を参照しているが， § 4.3 の誤りと思われる。】
 ◎
-Note: As discussed in Section 3.2 of [QUIC], receipt of a RESET_STREAM frame or RESET_STREAM_AT frame ([RELIABLE-RESET]) is not always indicated to the application. Receipt of the reset can be signaled immediately, interrupting delivery of stream data with any data not consumed being discarded. However, immediate signaling is not required. In particular, this signal might be delayed to allow delivery of the data indicated by the Reliable Size field in a RESET_STREAM_AT frame. If stream data has been completely received but has not yet been read by the application, the signal can be suppressed. WebTransport always uses the RESET_STREAM_AT frame to ensure reliable delivery of the stream header; see Section 4.1 and Section 4.2 of [WEB-TRANSPORT-HTTP3].
+Note: As discussed in Section 3.2 of [QUIC], receipt of a RESET_STREAM frame or RESET_STREAM_AT frame ([RELIABLE-RESET]) is not always indicated to the application. Receipt of the reset can be signaled immediately, interrupting delivery of stream data with any data not consumed being discarded. However, immediate signaling is not required. In particular, this signal might be delayed to allow delivery of the data indicated by the Reliable Size field in a RESET_STREAM_AT frame. If stream data has been completely received but has not yet been read by the application, the sending aborted signal can be suppressed. WebTransport always uses the RESET_STREAM_AT frame to ensure reliable delivery of the stream header; see Section 4.1 and Section 4.2 of [WEB-TRANSPORT-HTTP3].
 </p>
 
 <div>
@@ -10350,7 +10400,7 @@ If the underlying connection is using HTTP/2, the following protocol behaviors f
 <tr><td>
 <code>`writable$mB.`abort(error)$ws</code>
 <td>
-`設定し直す$WT( %~code )
+`WT_STREAM$ft 上の`送信を中止する$WT( %~code )
 
 <tr><td>
 <code>`writable$mB.`close$ws()</code>
@@ -10370,19 +10420,17 @@ If the underlying connection is using HTTP/2, the following protocol behaviors f
 <tr><td>
 <code>`writable$mB.getWriter().`abort(error)$dw</code>
 <td>
-`設定し直す$WT( %~code )
+`WT_STREAM$ft 上の`送信を中止する$WT( %~code )
 
 <tr><td>
 <code>`readable$mB.`cancel(error)$rs</code>
 <td>
-`送信を停止させる$WT( %~code ) ことにより，
-`WT_STOP_SENDING$ft を送信する
+`WT_STREAM$ft 上の`受信を中止する$WT( %~code )
 
 <tr><td>
 <code>`readable$mB.getReader().`cancel(error)$gr</code>
 <td>
-`送信を停止させる$WT( %~code ) ことにより，
-`WT_STOP_SENDING$ft を送信する
+`WT_STREAM$ft 上の`受信を中止する$WT( %~code )
 
 <tr><td>
 <code>wt.`close(closeInfo)$mT</code>
@@ -10392,13 +10440,13 @@ If the underlying connection is using HTTP/2, the following protocol behaviors f
 </table>
 ◎
 API Method｜HTTP/2 Protocol Action
-writable.abort(error)｜sends WT_RESET_STREAM with error
+writable.abort(error)｜aborts sending on WT_STREAM with error
 writable.close()｜sends WT_STREAM with FIN bit set
 writable.getWriter().write()｜sends WT_STREAM
 writable.getWriter().close()｜sends WT_STREAM with FIN bit set
-writable.getWriter().abort(error)｜sends WT_RESET_STREAM with error
-readable.cancel(error)｜sends WT_STOP_SENDING with error
-readable.getReader().cancel(error)｜sends WT_STOP_SENDING with error
+writable.getWriter().abort(error)｜aborts sending on WT_STREAM with error 
+readable.cancel(error)｜aborts receiving on WT_STREAM with error 
+readable.getReader().cancel(error)｜aborts receiving on WT_STREAM with error 
 wt.close(closeInfo)｜terminates session with closeInfo
 </div>
 
@@ -10410,7 +10458,7 @@ wt.close(closeInfo)｜terminates session with closeInfo
 <tbody>
 
 <tr><td>
-~errorを伴う `STOP_SENDING$ を受信した
+~errorを伴う `WT_STOP_SENDING$ft を受信したことにより`受信は中止された$
 <td>
 `writable$mB を`~errorにする$WS( %~code )
 
@@ -10427,7 +10475,7 @@ wt.close(closeInfo)｜terminates session with closeInfo
 【に反映される】
 
 <tr><td>
-~errorを伴う `WT_RESET_STREAM$ft を受信した
+~errorを伴う `WT_RESET_STREAM$ft を受信したことにより`送信は中止された$
 <td>
 `readable$mB を`~errorにする$RS( %~code )
 
@@ -11490,7 +11538,7 @@ sendData.onclick = async () =&gt; {
       }
     }
   } catch (%e) {
-    addToEventLog(``^~dataの送信-中に~error: ${%e}``^, 'error');
+    addToEventLog(``^~dataの送信-中に~error ${%e} が生じました。``^, 'error');
   }
 }
 
@@ -11509,7 +11557,7 @@ async function readDatagrams() {
     }
     addToEventLog('~datagramを読取りました。');
   } catch (%e) {
-    addToEventLog(``^~datagramの読取n中に~error: ${%e}``^, 'error');
+    addToEventLog(``^~datagramの読取n中に~error ${%e} が生じました。``^, 'error');
   }
 }
 
@@ -11522,7 +11570,7 @@ async function acceptUnidirectionalStreams() {
     }
     addToEventLog('一方向~streamを受容しました。');
   } catch (%e) {
-    addToEventLog(``^~stream ${%e} の受容-中に~error。``^, 'error');
+    addToEventLog(``^~stream #${%number} の受容-中に~error ${%e} が生じました。``^, 'error');
   }
 }
 
@@ -11534,7 +11582,7 @@ async function readFromIncomingStream(%readable, %number) {
     }
     addToEventLog(``^~stream #${%number} は~closeされました。``^);
   } catch (%e) {
-    addToEventLog(``^~stream #${%number} から読取n中に~error: ${%e}``^, 'error');
+    addToEventLog(``^~stream #${%number} から読取n中に~error ${%e} が生じました。``^, 'error');
     addToEventLog(``^    ${%e.message}``^);
   }
 }
