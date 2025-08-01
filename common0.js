@@ -2612,6 +2612,7 @@ promise:
 解決:resolution::~
 	処理待ち:pending:~
 先送り:defer::~
+先送d:deferred::先送り
 遅延-:delay::~
 遅延:delay::~
 待時間:latency::待ち時間
