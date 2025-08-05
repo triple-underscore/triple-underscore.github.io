@@ -1555,6 +1555,7 @@ timer::::タイマー
 数える:countする:~
 計数:count:~
 最終-:final:~
+投機的:speculative::~
 
 	none:-
 	却下-時:upon rejection
@@ -1796,6 +1797,7 @@ disk::::ディスク
 	残り:rest
 	非同期~拡張を待機する^i:WaitForAsynchronousExtensions
 	総数:total number
+	最小~化-:minimize
 
 	●変数
 最大-:max:~
@@ -1842,6 +1844,10 @@ not:
 	%~preload応答~obj:preloadResponseObject
 	%~preload要請:preloadRequest
 	%~preload要請~header群:preloadRequestHeaders
+	%~preload~fetch制御器:preloadFetchController
+	%自動-~preload~fetch制御器:autoPreloadFetchController
+	%自動-~preload用の応答:responseForAutoPreload
+	%自動-~preload要請~応答:autoPreloadRequestResponse
 	%~promise:Promise
 	%~realm実行~文脈:realmExecutionContext
 	%~storage~key:storage key
@@ -1953,7 +1959,6 @@ not:
 	%要請された~module:requested
 	%seen:seen
 	%安全でない作成~時刻:unsafeCreationTime
-	%~preload~fetch制御器:preloadFetchController
 	%逆直列化された~error:deserializedError
 	%中止-制御器:abortController
 	%~router規則~群:allRules
@@ -15538,6 +15543,11 @@ Assert: source is "fetch-event"
 		</ol>
 	</li>
 	<li>
+%自動-~preload用の応答 ~LET ~NULL
+◎
+Let responseForAutoPreload be null.
+</li>
+	<li>
 <p>
 ~IF［
 ~AND↓
@@ -15550,11 +15560,6 @@ If＼
 %要請 は`~navi要請$である
 ◎
 request is a navigation request,＼
-</li>
-			<li>
-%登録 の`~navi~preloadは可能化されるか$swr ~EQ ~T
-◎
-registration’s navigation preload enabled flag is set,＼
 </li>
 			<li>
 %要請 の`~method$rq ~EQ `GET^bl
@@ -15572,29 +15577,38 @@ registration’s active worker’s set of event types to handle contains fetch,�
 and registration’s active worker’s all fetch listeners are empty flag is not set then:
 </li>
 		</ul>
-
-<p class="note">注記：
-これらの条件が， ※ を除いて満たされる場合、
-開発者の意図は明瞭でないので，~UAは~consoleに警告を示したいと望むかもしれない。
-◎
-Note: If the above is true except registration’s active worker’s set of event types to handle does not contain fetch, then the user agent may wish to show a console warning, as the developer’s intent isn’t clear.
-</p>
-
 <p>
 …ならば：
 </p>
+
+<p class="note">注記：
+これらの条件が ※ を除いて満たされる場合、
+開発者の意図は明瞭でないので，~UAは~consoleに警告を示すよう望むこともあろう。
+◎
+↓</p>
 		<ol>
 			<li>
+<p>
+~IF［
+%登録 の`~navi~preloadは可能化されるか$swr ~EQ ~T
+］：
+◎
+If registration’s navigation preload enabled flag is set then:
+◎
+Note: If the above is true except registration’s active worker’s set of event types to handle does not contain fetch, then the user agent may wish to show a console warning, as the developer’s intent isn’t clear.
+</p>
+				<ol>
+					<li>
 %~preload要請 ~LET `要請を~cloneする$( %要請 )
 ◎
 Let preloadRequest be the result of cloning the request request.
 </li>
-			<li>
+					<li>
 %~preload要請~header群 ~LET %~preload要請 の`~header~list$rq
 ◎
 Let preloadRequestHeaders be preloadRequest’s header list.
 </li>
-			<li>
+					<li>
 <p>
 %~preload応答~obj ~LET 
 `~Response~objを作成する$( 新たな`応答$†, `immutable^l, %~worker~realm )
@@ -15607,24 +15621,24 @@ Let preloadRequestHeaders be preloadRequest’s header list.
 ◎
 Let preloadResponseObject be a new Response object associated with a new Headers object whose guard is "immutable".
 </li>
-			<li>
+					<li>
 %~preload要請~header群 に`~headerを付加する$(
 ( `Service-Worker-Navigation-Preload^h, %登録 の`~navi~preload~header値$swr )
 ) 
 ◎
 Append to preloadRequestHeaders a new header whose name is `Service-Worker-Navigation-Preload` and value is registration’s navigation preload header value.
 </li>
-			<li>
+					<li>
 %~preload要請 の`~sw~mode$rq ~SET `none^l
 ◎
 Set preloadRequest’s service-workers mode to "none".
 </li>
-			<li>
+					<li>
 %~preload~fetch制御器 ~LET ~NULL
 ◎
 Let preloadFetchController be null.
 </li>
-			<li class="algo">
+					<li class="algo">
 <p>
 この段は`並列的$に走らすが、［
 %~fetch制御器 の`状態$fC ~IN { `terminated^l, `aborted^l }
@@ -15636,8 +15650,8 @@ Let preloadFetchController be null.
 Run the following substeps in parallel, but abort when fetchController’s state is "terminated" or "aborted":
 • Set preloadFetchController to the result of fetching preloadRequest.
 </p>
-				<ul>
-					<li class="algo">
+						<ul>
+							<li class="algo">
 <p>
 `応答の処理n^i は、
 所与の
@@ -15646,8 +15660,8 @@ Run the following substeps in parallel, but abort when fetchController’s state
 ◎
 To processResponse for navigationPreloadResponse, run these substeps:
 </p>
-						<ol>
-							<li>
+								<ol>
+									<li>
 ~IF［
 %~navi~preload応答 の`種別$rs ~EQ `error^l
 ］
@@ -15656,43 +15670,149 @@ To processResponse for navigationPreloadResponse, run these substeps:
 ◎
 If navigationPreloadResponse’s type is "error", reject preloadResponse with a TypeError＼
 </li>
-							<li>
+									<li>
 <p>
 ~ELSE：
 ◎
 and terminate these substeps.
 </p>
-								<ol>
-									<li>
+										<ol>
+											<li>
 %~preload応答~obj の`応答$Rs ~SET %~navi~preload応答
 ◎
 Associate preloadResponseObject with navigationPreloadResponse.
 </li>
-									<li>
+											<li>
 `~promiseを解決する$( %~preload応答~promise, %~preload応答~obj )
 ◎
 Resolve preloadResponse with preloadResponseObject.
 </li>
+										</ol>
+									</li>
 								</ol>
 							</li>
-						</ol>
-					</li>
-				</ul>
+						</ul>
 <p>
 `中止されたときは$：
 ◎
 If aborted, then:
 </p>
-				<ol>
-					<li>
+						<ol>
+							<li>
 %逆直列化された~error ~LET `直列化された中止-事由を逆直列化する$( ~NULL, %~worker~realm )
 ◎
 Let deserializedError be the result of deserialize a serialized abort reason given null and workerRealm.
 </li>
-					<li>
+							<li>
 `~fetchを中止する$( %~preload~fetch制御器, %逆直列化された~error )
 ◎
 Abort preloadFetchController with deserializedError.
+</li>
+						</ol>
+					</li>
+				</ol>
+			</li>
+			<li>
+<p>
+~ELIF［
+%計時~報 の`~worker合致した~router~source$swT ~NEQ `fetch-event$l
+］
+⇒
+任意選択で
+⇒
+この段を成す以下の手続きを走らす
+◎
+Else if timingInfo’s worker matched router source is not "fetch-event", a user agent may run the following substeps:
+</p>
+
+<p class="note">注記：
+すなわち，~UAは、
+~bootstrap~costを最小~化するためとして、
+投機的に，~network要請を並列的に配送してもヨイ
+— ある~fetch~eventを作成すると伴に。
+◎
+Note: A user agent may speculatively dispatch a network request in parallel with creating a fetch event in order to minimize the bootstrap cost.
+</p>
+				<ol>
+					<li>
+~Assert：
+%計時~報 の`~worker合致した~router~source$swT ~EQ ~NULL
+◎
+Assert: timingInfo’s worker matched router source is null.
+</li>
+					<li>
+%自動-~preload~fetch制御器 ~LET ~NULL
+◎
+Let autoPreloadFetchController be null.
+</li>
+					<li>
+%自動-~preload用の応答 ~SET 新たな`競走~応答$
+— その
+⇒＃
+`値$rV ~SET `pending^l
+◎
+Set responseForAutoPreload to be a race response whose value is "pending".
+</li>
+					<li class="algo">
+<p>
+この段は`並列的$に走らすが、［
+%~fetch制御器 の`状態$fC ~IN { `terminated^l, `aborted^l }
+］になった`ときは中止する$
+⇒
+%自動-~preload~fetch制御器 ~SET %要請 を`~fetchする$
+— 次を与える下で：
+◎
+Run the following substeps in parallel, but abort when fetchController’s state is "terminated" or "aborted":
+• Set autoPreloadFetchController to the result of calling fetch given request, with＼
+</p>
+						<ul>
+							<li class="algo">
+`応答の処理n^i は、
+所与の
+( `応答$ %自動-~preload要請~応答 )
+に対し
+⇒
+%自動-~preload用の応答 の`値$rV ~SET  %自動-~preload要請~応答
+◎
+processResponse set to the following steps given a response autoPreloadRequestResponse:
+• Set responseForAutoPreload’s value to autoPreloadRequestResponse.
+</li>
+						</ul>
+<p>
+`中止されたときは$：
+◎
+If aborted＼
+</p>
+						<ol>
+							<li>
+<p>
+~IF［
+%自動-~preload~fetch制御器 ~NEQ ~NULL
+］：
+◎
+and autoPreloadFetchController is not null, then:
+</p>
+ 								<ol>
+									<li>
+`~fetchを中止する$( %自動-~preload~fetch制御器 )
+◎
+Abort autoPreloadFetchController.
+</li>
+									<li>
+%自動-~preload用の応答 ~SET 新たな`競走~応答$
+⇒＃
+その`値$rV ~SET ~NULL
+◎
+Set responseForAutoPreload to a race response whose value is null.
+</li>
+								</ol>
+							</li>
+						</ol>
+					</li>
+					<li>
+`~promiseを解決する$( %~preload応答~promise )
+◎
+Resolve preloadResponse with undefined.
 </li>
 				</ol>
 			</li>
@@ -15715,9 +15835,9 @@ Else, resolve preloadResponse with undefined.
 %~worker~realm,
 %予約-済み~client,
 %~preload応答~promise,
-~NULL
+%自動-~preload用の応答
 ◎
-Let fetchResult be the result of Create Fetch Event and Dispatch with request, registration, useHighResPerformanceTimers, timingInfo, workerRealm, reservedClient, preloadResponse, and null.
+Let fetchResult be the result of Create Fetch Event and Dispatch with request, registration, useHighResPerformanceTimers, timingInfo, workerRealm, reservedClient, preloadResponse, and responseForAutoPreload.
 </li>
 	<li>
 <p>
