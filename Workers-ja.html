@@ -118,8 +118,8 @@ return text;
 
 ●●options
 
-spec_date:2025-08-01
-trans_update:2025-08-02
+spec_date:2025-08-21
+trans_update:2025-08-22
 source_checked:240730
 page_state_key:HTML
 original_url:https://html.spec.whatwg.org/multipage/workers.html
@@ -347,6 +347,7 @@ wG.構築子~URL:#concept-sharedworkerglobalscope-constructor-url
 wG.資格証:#concept-sharedworkerglobalscope-credentials
 
 共用~worker管理器:#shared-worker-manager
+次回の読込nまでの共用~worker制限時間:#between-loads-shared-worker-timeout
 
 	●用語（HTML
 
@@ -357,6 +358,8 @@ wG.資格証:#concept-sharedworkerglobalscope-credentials
 ~URLを符号化法の下で相対的に構文解析する:~HTMLurl#encoding-parsing-a-url
 
 文書:~HTMLdom#the-document-object
+
+~BF~cache:~HTMLnav#note-bfcache
 
 ~portを連絡する:~HTMLcomms#entangle
 連絡-:~HTMLcomms#entangle
@@ -681,8 +684,8 @@ transaction::::トランザクション
 agent:
 埋込元:embedder::埋め込み元
 
-	●IDL／型／構造
 孤立:orphan::~
+	孤立~worker:orphans
 	設定しておく:set up
 
 	●処理
@@ -692,34 +695,47 @@ close:
 再投出-:rethrow::~
 timer::::タイマー
 制限時間:timeout::~
-	制限時間:timeout value
+	制限時間に達するまで 〜 達したなら:for that duration 〜 the timeout is reached
 待機中:outstanding:~
 background::::バックグラウンド
 尚早:premature:~
 並列:parallel::~
 活動:activities::~
-休止:suspending::~
 作成時の:creation::~
 作成元:creator::~
 存続期間:lifetime::~
 処理待ち:pending:~
 開始時:start-up 時:~
-生残れる:surviveできる:生き残れる
+生残る:surviveする:生き残る
+生存:alive:~
 起点:origin::~
 粗化-:coarsen:粗く
 連結-:concatenate:~
-	連結-:followed by
+保つ:keepする:~
 
+	休止-中:suspending
+	休止されなく:un-suspended
+	連結-:followed by
 	~instance化-:instantiate
 	最適化されていない:unoptimized
 	開始し直す:restart
 	不具合があれば:went amiss
+	実行し続け:keep executing
+	過ぎていない:for no more than
+	次回の読込nまでの:between-loads
+	短い時間:small amount of time
+	いつまで長く:how long
+	秒:seconds
+	なくなったときから:no sooner than it stops being
+	なくなるときまで:no later than it stops being
+	でなくなった:stop being
 
 	●変数
 	%~worker大域~scope:workerGlobal
 	%~worker大域~scope:workerGlobalScope
 	%~worker大域~scope:worker global scope
 	%G:-
+	%G:global
 	%P:-
 	%Q:-
 	%O:o
@@ -737,6 +753,7 @@ background::::バックグラウンド
 	%options:options
 	%共用か:is shared
 	%所有者:owner
+	-:owner
 	%安全でない~worker作成~時刻:unsafeWorkerCreationTime
 	%~agent:agent
 	%~realm実行~文脈:realm execution context
@@ -782,6 +799,7 @@ background::::バックグラウンド
 保守的:conservative:~
 協調-:coordinate:~
 準拠な:compliantな:準拠する
+裁量:discretion:~
 
 	任意選択で:may
 	観測され得:observably
@@ -791,6 +809,10 @@ background::::バックグラウンド
 	設計し直:redesign
 	~~解明する:figure out
 	深く関わる:involved
+	れるようになる:let
+	ようになる:get
+	逆:converse
+	成立しない:do not hold
 
 	●未分類
 管理器:manager::~::マネージャ
@@ -806,6 +828,9 @@ CPUs:processor 数::CPU 数
 	数:number
 仕切り:partition::~
 同一性:identity:~
+BF:
+	~BF~cache:bfcache
+推移的:transitive:~
 
 	後続:following
 	対応-
@@ -3226,25 +3251,28 @@ A worker event loop's task queues only have events, callbacks, and networking ac
 
 <p>
 各 `WorkerGlobalScope$I ~objは、
-真偽値をとる
 `~close中か@wG
-を有する：
+を有する
+— それは、
+真偽値であり：
 ◎
 Each WorkerGlobalScope object has a closing flag,＼
 </p>
 
 <ul>
 	<li>
-初期~時には ~F になるモノトスル。
+初期~時は ~F になるモノトスル。
 下の処理~model節の~algoにより， ~T にされ得る。
 ◎
 which must be initially false, but which can get set to true by the algorithms in the processing model section below.
 </li>
 	<li>
-~T にされたときは、
-`~event~loop$の`~task~queue$に追加される それ以降の`~task$は，破棄するモノトスル
+~T になったときは、
+それ以降に［
+`~event~loop$の`~task~queue$に追加される`~task$
+］を破棄するモノトスル
 （~queue内にすでにある~taskは、
-特に指定されない限り，影響されない）。
+他が指定されない限り，影響されない）。
 実質的には、
 ~T になったら，~timerは発火を止め, 処理待ちにあるすべての~background演算の通知は取り除かれる, 等々が行われることになる。
 ◎
@@ -3331,148 +3359,237 @@ Otherwise, o's global object is a Window object, and the relevant owner is that 
 <hr>
 
 <p>
-~workerは、
-その `WorkerGlobalScope$I を %G とするとき：
+各~UAは、
+`次回の読込nまでの共用~worker制限時間@
+を有する
+— それは、
+`実装定義$な何らかの短い時間である。
+これは、［
+ある~pageを読込んでいる間に当の~pageが共用~workerに再び繋がろうとしている事例
+］で［
+当の~UAが，共用~workerは いつまで長く生残ることを許容するか
+］を表現する。
+~UAは、
+これを 0 より大きい値に設定することで，［
+利用者が ある~siteの中で~pageから~pageへ~navigateするとき
+］に［
+当の~siteが利用している共用~workerを開始し直す~cost
+］を避けれるようになる。
+◎
+A user agent has an implementation-defined value, the between-loads shared worker timeout, which is some small amount of time. This represents how long the user agent allows shared workers to survive while a page is loading, in case that page is going to contact the shared worker again. Setting this value to greater than zero lets user agents avoid the cost of restarting a shared worker used by a site when the user is navigating from page to page within that site.
+</p>
+
+<p class="note">注記：
+`次回の読込nまでの共用~worker制限時間$用の代表的な値は、
+5 秒くらいになろう。
+◎
+A typical value for the between-loads shared worker timeout might be 5 seconds.
+</p>
+
+<hr>
+
+<p>
+所与の `WorkerGlobalScope$I %G が所与の時点で：
 ◎
 ↓</p>
 <ul>
 	<li>
 <p>
-~OR↓ を満たしている間は、
-`許可-可能@
-（ `permissible^en ）とされる：
-◎
-A worker is said to be a permissible worker if＼
-</p>
-		<ul>
-			<li>
-%G の`所有者~集合$wGは`空$でない
-◎
-its WorkerGlobalScope's owner set is not empty or:
-</li>
-			<li>
-<p>
-~AND↓
-◎
-↓</p>
-				<ul>
-					<li>
-%G の`所有者~集合$wGは空であり続けているが、
-`実装定義$な短い制限時間を過ぎていない
-◎
-its owner set has been empty for no more than a short implementation-defined timeout value,
-</li>
-					<li>
-%G は `SharedWorkerGlobalScope$I ~objである（すなわち，~workerは共用~workerである）
-◎
-its WorkerGlobalScope object is a SharedWorkerGlobalScope object (i.e., the worker is a shared worker), and
-</li>
-					<li>
-~UAの ある`~navigable$にて`作動中な文書$navは、
-まだ`完全に読込まれ$ていない
-◎
-the user agent has a navigable whose active document is not completely loaded.
-</li>
-				</ul>
-
-<p class="note">注記：
-上の定義の 2 個目の項は、
-読込まれている短い間に~pageが共用~workerに再び繋がろうとしている下でも，
-共用~workerが生残れるようにする。
-これを利用すれば，~UAは、
-利用者が ある~siteの中で~pageから~pageへ~navigateするときに，
-その~siteが利用している共用~workerを開始し直す~costを避けれるようになる。
-◎
-The second part of this definition allows a shared worker to survive for a short time while a page is loading, in case that page is going to contact the shared worker again. This can be used by user agents as a way to avoid the cost of restarting a shared worker used by a site when the user is navigating from page to page within that site.
-</p>
-			</li>
-		</ul>
-	</li>
-	<li>
-次を満たしている間は、
 `作動中なため必要@
-である（ `active needed^en ）とされる
-⇒
-%G の`所有者~集合$wG内に［
-`全部的に作動中$である`文書$／
-`作動中なため必要$である~worker
-］が在る
+（ `actively needed^en ）であるとは、［
+%G の`所有者~集合$wG内に ~OR↓ を満たすものが在る
+］ことをいう：
+</p>
+		<ul>
+			<li>
+［
+`Document$I である
+］~AND［
+`全部的に作動中$である
+］
+</li>
+			<li>
+［
+`WorkerGlobalScope$I である
+］~AND［
+`作動中なため必要$である
+］
+</li>
+		</ul>
 ◎
-A worker is said to be an active needed worker if any of its owners are either Document objects that are fully active or active needed workers.
+A WorkerGlobalScope global is actively needed if the following algorithm returns true:
+• For each owner of global's owner set:
+•• If owner is a Document, and owner is fully active, then return true.
+•• If owner is a WorkerGlobalScope that is actively needed, then return true.
+• Return false.
 </li>
 	<li>
 <p>
-~AND↓ を満たしている間は、
 `保護され@
-ている（ `protected^en ）とされる：
-◎
-A worker is said to be a protected worker if＼
+ている（ `protected^en ）とは、
+~AND↓ が満たされることをいう：
 </p>
-
 		<ul>
 			<li>
-`作動中なため必要$である
-◎
-it is an active needed worker＼
+%G は`作動中なため必要$である
 </li>
 			<li>
 <p>
 ~OR↓：
-◎
-and either＼
 </p>
 				<ul>
 					<li>
-【%G 内に】待機中な~timerがある
-◎
-it has outstanding timers,＼
+%G は `SharedWorkerGlobalScope$I である
 </li>
 					<li>
-【%G 内に】~database~transactionがある【 `INDEXEDDB$r 】
-◎
-database transactions, or＼
+%G の`~port~list$wGは`空$でない
 </li>
 					<li>
-【%G 内に】~network接続がある
-◎
-network connections, or＼
+%G は待機中な~timerを有する
 </li>
 					<li>
-%G の`~port~list$wGは空でない
-◎
-its list of the worker's ports is not empty, or＼
+%G は~database~transaction【 `INDEXEDDB$r 】を有する
 </li>
 					<li>
-%G は`SharedWorkerGlobalScope$I ~objである（すなわち，~workerは共用~workerである）
-◎
-its WorkerGlobalScope is actually a SharedWorkerGlobalScope object (i.e., the worker is a shared worker).
+%G は~network接続を有する
 </li>
 				</ul>
 			</li>
 		</ul>
-	</li>
+◎
+A WorkerGlobalScope global is protected if the following algorithm returns true:
+• If global is not actively needed, then return false.
+• If global is a SharedWorkerGlobalScope, then return true.
+• If global's the worker's ports is not empty, then return true.
+• If global has outstanding timers, database transactions, or network connections, then return true.
+• Return false.
+</li>
 	<li>
 <p>
-~AND↓ を満たしている間は、
-`休止-可能@
-である（ `suspendable^en ）とされる
-◎
-A worker is said to be a suspendable worker if＼
+`許可-可能@
+（ `permissible^en ）であるとは、
+~OR↓ が満たされることをいう：
 </p>
 		<ul>
 			<li>
-`作動中なため必要$ではない
-◎
-it is not an active needed worker＼
+%G の`所有者~集合$wGは`空$でない
 </li>
 			<li>
-`許可-可能$である
-◎
-but it is a permissible worker.
+<p>
+~AND↓：
+</p>
+				<ul>
+					<li>
+%G は `SharedWorkerGlobalScope$I である
 </li>
+					<li>
+%G の`所有者~集合$wGが最後に`空$であったときから~UAの`次回の読込nまでの共用~worker制限時間$を過ぎていない
+</li>
+					<li>
+~UAは、
+次を満たす`~navigable$を有する
+⇒
+それにて`作動中な文書$navは`完全に読込まれ$ていない
+</li>
+				</ul>
+			</li>
 		</ul>
-	</li>
+
+◎
+A WorkerGlobalScope global is permissible if the following algorithm returns true:
+• If global's owner set is not empty, then return true.
+• If all of the following are true:
+•• global is a SharedWorkerGlobalScope;
+•• global's owner set has been empty for no more than the user agent's between-loads shared worker timeout; and
+•• the user agent has a navigable whose active document is not completely loaded,
+• then return true.
+• Return false.
+</li>
+	<li>
+`休止-可能@
+（ `suspendable^en ）であるとは、
+次が満たされることをいう
+⇒
+［
+%G は`作動中なため必要$でない
+］~AND［
+%G は`許可-可能$である
+］
+◎
+A WorkerGlobalScope global is suspendable if the following algorithm returns true:
+• If global is actively needed, then return false.
+• If global is permissible, then return true.
+• Return false.
+</li>
 </ul>
+
+<div class="note" id="note-worker-lifetime-terminology">
+<p>注記：
+これらの概念は、
+この仕様の他所における規範的な要件に利用される：
+◎
+These concepts are used elsewhere in the specification's normative requirements as follows:
+</p>
+<ul>
+	<li>
+~workerは、
+`保護され$なくなったときから`許可-可能$でなくなるときまでは，
+`孤立~workerとして~closeされ＠#step-closing-orphan-workers$るようになる。
+◎
+Workers get closed as orphans between when they stop being protected and when they stop being permissible.
+</li>
+	<li>
+~workerは、
+`休止-可能$かどうかに基づいて［
+`休止される／休止されない＠#step-suspending-workers$
+］ようになる。
+◎
+Workers get suspended or un-suspended based on whether they are suspendable.
+</li>
+	<li>
+~workerのうち~closeされたが実行し続けているものは、
+`作動中なため必要$でなくなったなら，
+~UAの裁量で`終了され得る＠#terminate-rampant-workers$。
+◎
+Workers that have been closed, but keep executing, can be terminated at the user agent's discretion, once they stop being actively needed.
+</li>
+</ul>
+
+<p>
+どの `WorkerGlobalScope$I も［
+`作動中なため必要$であるならば`保護され$ている【明らかに逆であろう】／
+`保護され$ているならば`許可-可能$である
+］（が，これらの逆は成立しない）ことに注意。
+◎
+Note that every WorkerGlobalScope that is actively needed is protected, and every WorkerGlobalScope that is protected is permissible. (But the converses do not hold.)
+</p>
+
+<p>
+`WorkerGlobalScope$I %G が［
+`保護され$ていること, `許可-可能$であること
+］の重要な相違は、
+前者は［
+%G の所有者たちが成す推移的な集合が 1 個以上の`全部的に作動中$な`文書$を包含する場合
+］に限り満たされる一方で，
+後者は［
+%G の所有者たちが成す推移的な集合を成す すべての`文書$が`~BF~cache$内に在る場合
+］でも満たされ得ることである。
+◎
+An important difference between protected and permissible is that a WorkerGlobalScope is protected only if its transitive set of owners contains at least one fully active Document, whereas a WorkerGlobalScope can be permissible even if all the Documents in its transitive set of owners are in bfcache.
+</p>
+</div>
+
+<p class="note" id="note-between-loads-shared-worker-timeout-lifetime">注記：
+`次回の読込nまでの共用~worker制限時間$は，［
+`許可-可能$, `保護され$ている
+］のうち前者の定義にしか波及しないので、
+実装には，［
+この制限時間に達するまで共用~workerたちの生存を保つこと
+］は要求されないが、
+達したなら，共用~workerたちを~closeすることが要求される。
+◎
+The between-loads shared worker timeout only influences the definition of permissible, not protected, and so implementations are not required to keep shared workers alive for that duration. Rather, they are required to close shared workers after the timeout is reached.
+</p>
 
 			</section>
 			<section id="worker-processing-model">
@@ -3903,32 +4020,32 @@ Create a new WorkerLocation object and associate it with worker global scope.
 </li>
 			<li>
 <p>
-~workerの監視を開始する：
+%~worker大域~scope の監視を開始する：
 ◎
 ↓</p>
 				<ul>
-					<li>
+					<li id="step-closing-orphan-workers">
 `孤立~workerは~close中^i
 ⇒
-~workerが`保護され$なくなり次第、
-`許可-可能$であり続ける間まで，
-%~worker大域~scope の`~close中か$wGは ~T にする
+%~worker大域~scope が`保護され$なくなったときから`許可-可能$でなくなるときまで，
+%~worker大域~scope の`~close中か$wGを ~T に設定する
 ◎
-Closing orphan workers: Start monitoring the worker such that no sooner than it stops being a protected worker, and no later than it stops being a permissible worker, worker global scope's closing flag is set to true.
+Closing orphan workers: Start monitoring worker global scope such that no sooner than it stops being protected, and no later than it stops being permissible, worker global scope's closing flag is set to true.
 </li>
-					<li>
-`~workerの休止^i
+					<li id="step-suspending-workers">
+`~workerは休止-中^i
 ⇒
-次が満たされるようになったときは、
-満たされなくなるまで，~worker内の~scriptの実行を休止する
+%~worker大域~scope が次を満たすようになったときは、
+満たさなくなるときまで，
+%~worker大域~scope 内の~scriptの実行を休止する
 ⇒
 ［
-%~worker大域~scope の`~close中か$wG ~EQ ~F
+その`~close中か$wG ~EQ ~F
 ］~AND［
-~workerは`休止-可能$である
+`休止-可能$である
 ］
 ◎
-Suspending workers: Start monitoring the worker, such that whenever worker global scope's closing flag is false and the worker is a suspendable worker, the user agent suspends execution of script in that worker until such time as either the closing flag switches to true or the worker stops being a suspendable worker.
+Suspending workers: Start monitoring worker global scope, such that whenever worker global scope's closing flag is false and it is suspendable, the user agent suspends execution of script in worker global scope until such time as either the closing flag switches to true or worker global scope stops being suspendable.
 </li>
 				</ul>
 			</li>
@@ -4110,25 +4227,19 @@ If the worker's WorkerGlobalScope object is actually a DedicatedWorkerGlobalScop
 </ol>
 </div>
 
-<div>
-<p>
+<p id="terminate-rampant-workers">
 ~UAは、
-~AND↓ を満たす~workerを`終了-$wKさせてもヨイ：
-</p>
-<ul>
-	<li>
+次を満たす~workerが実行し続けているならば，
+それを`終了-$wKしてもヨイ
+⇒
+［
 `作動中なため必要$ではない
-</li>
-	<li>
+］~AND［
 `~close中か$wG ~EQ ~T
-</li>
-	<li>
-実行し続けている
-</li>
-</ul>
+］
 ◎
-User agents may invoke the terminate a worker algorithm when a worker stops being an active needed worker and the worker continues executing even after its closing flag was set to true.
-</div>
+User agents may invoke the terminate a worker algorithm when a worker stops being actively needed and the worker continues executing even after its closing flag was set to true.
+</p>
 
 			</section>
 			<section id="runtime-script-errors-2">
