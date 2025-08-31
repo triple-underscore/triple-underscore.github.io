@@ -1179,7 +1179,6 @@ CSSUI:css-ui-ja.html
 CSSVAL5:css-values5-ja.html
 CSSVAL:css-values-ja.html
 CSSVAR:css-variables-ja.html
-CSSVT2:css-view-transitions2-ja.html
 CSSVT:css-view-transitions-ja.html
 CSSWILLCHANGE:css-will-change-ja.html
 CSSWM:css-writing-modes-ja.html
