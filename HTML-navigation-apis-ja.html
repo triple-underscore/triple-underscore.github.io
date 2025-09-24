@@ -145,9 +145,8 @@ return text;
 
 ●●options
 
-spec_date:2025-09-02
-trans_update:2025-09-03
-trans_update:2025-08-23
+spec_date:2025-09-24
+trans_update:2025-09-24
 	source_checked: → WINDOW
 page_state_key:HTML
 spec_status:LS
@@ -408,7 +407,6 @@ NHE:
 	%~navigableの履歴~entry群:navigableSHEs
 	%~navi~API状態:navigationAPIState
 	%~navi種別:navigationType
-	%~navi種別:navigationType
 	%~option群:options
 	%~promise~list:promisesList
 	%~source~snapshot~params:sourceSnapshotParams
@@ -450,8 +448,6 @@ NHE:
 	%~event名:eventName
 	%持続されるか:persisted
 	%事由:reason
-	%取消す:cancel
-	%~commitする:commit
 	%~precommit制御器:precommitController
 	%~precommit~promise~list:precommitPromisesList
 
@@ -859,6 +855,8 @@ amT.完遂-時の~promise:#navigation-api-method-tracker-finished
 	arg:#fire-navigate-download-filename
 ~navigate_ev~eventを発火する内縁~algo:#inner-navigate-event-firing-algorithm
 ~navigate_ev~eventを完遂する:#navigateevent-finish
+~navigate_ev~eventを~commitする:#commit-a-navigate-event
+~navigate_ev~event~handlerの失敗を処理する:#process-navigate-event-handler-failure
 
 子~navigableの破壊について~navi~APIに伝える:#inform-the-navigation-api-about-child-navigable-destruction
 ~naviを中止したことについて~navi~APIに伝える:#inform-the-navigation-api-about-aborting-navigation
@@ -7616,460 +7614,6 @@ Return false.
 	</li>
 	<li>
 <p>
-%取消す ~LET 次の手続き
-◎
-Let cancel be the following steps given reason:
-</p>
-
-<div class="algo">
-<p>
-手続きは、
-所与の
-( %事由 )
-に対し：
-</p>
-		<ol>
-			<li>
-~IF［
-%~event に`関連な大域~obj$に`結付けられた文書$は`全部的に作動中$でない
-］
-⇒
-~RET
-◎
-If event's relevant global object's associated Document is not fully active, then abort these steps.
-</li>
-			<li>
-~IF［
-%~event の`中止-制御器$nEvの`通達$aCは`中止-済み$aBである
-］
-⇒
-~RET
-◎
-If event's abort controller's signal is aborted, then abort these steps.
-</li>
-			<li>
-~Assert：
-%~event ~EQ %~navi の`進行中な~navigate_ev~event$
-◎
-Assert: event equals navigation's ongoing navigate event.
-</li>
-			<li>
-~IF［
-%~event の`横取~状態$nEv ~NEQ `intercepted^l
-］
-⇒
-`~navigate_ev~eventを完遂する$( %~event, ~F )
-◎
-If event's interception state is not "intercepted", then finish event given false.
-</li>
-			<li>
-`~navigate_ev~eventを中止する$( %~event, %事由 )
-◎
-Abort event given reason.
-</li>
-		</ol>
-</div>
-	</li>
-	<li>
-<p>
-%~commitする ~LET 次の手続き
-◎
-Let commit be the following steps:
-</p>
-
-<div class="algo">
-<p>
-手続きは：
-◎
-↑</p>
-		<ol>
-			<li>
-~IF［
-%~event に`関連な大域~obj$に`結付けられた文書$は`全部的に作動中$でない
-］
-⇒
-~RET
-◎
-If event's relevant global object's associated Document is not fully active, then abort these steps.
-</li>
-			<li>
-~IF［
-%~event の`中止-制御器$nEvの`通達$aCは`中止-済み$aBである
-］
-⇒
-~RET
-◎
-If event's abort controller's signal is aborted, then abort these steps.
-</li>
-			<li>
-%~event の`横取~状態$nEv ~SET `committed^l
-◎
-Set event's interception state to "committed".
-</li>
-			<li>
-%終了~結果は同一-文書か ~LET ~IS［
-%~event の`横取~状態$nEv ~NEQ `none^l
-］~OR［
-%~event の`destination$mE の`同一-文書か$nDt~EQ ~T
-］
-◎
-Let endResultIsSameDocument be true if event's interception state is not "none" or event's destination's is same document is true.
-</li>
-			<li>
-<p>
-`~scriptを走らすために準備する$( %~navi に`関連な設定群~obj$ )
-◎
-Prepare to run script given navigation's relevant settings object.
-</p>
-
-<div class="note" id="note-suppress-microtasks-during-navigation-events">
-<p>注記：
-これは、［
-すぐに起こることもある`~URLと履歴を更新する$手続き
-］の結果，［
-`currententrychange$et ~event~handlerが走った直後
-］に［
-`~JS実行~文脈~stack$が空になる
-］のを避けるために行われる。
-その時点で~stackが空になった場合、
-即時に`小task~checkpointを遂行する$ことになる結果，
-様々な~promiseの充足~handlerを［
-`currententrychange$et ~event~handlerたちに差挟んで ／
-`intercept()$mE【！navigateEvent.intercept()】 に渡された~handlerたちより前に
-］走らすことになり，望ましくない
-— それは、［
-~promise~handler,
-`currententrychange$et ~event~handler,
-`intercept()$mE ~handler
-］の順序付けが［
-当の~naviが起きているのは`~JS実行~文脈~stack$が［
-空なとき
-（例：利用者が~naviを起動したため）／
-空でないとき
-（例：当の~naviは~JS~API~callにより起動されたため）
-］どちらなのか
-］に依存することを意味するので。
-◎
-This is done to avoid the JavaScript execution context stack becoming empty right after any currententrychange event handlers run as a result of the URL and history update steps that could soon happen. If the stack were to become empty at that time, then it would immediately perform a microtask checkpoint, causing various promise fulfillment handlers to run interleaved with the event handlers and before any handlers passed to navigateEvent.intercept(). This is undesirable since it means promise handler ordering vs. currententrychange event handler ordering vs. intercept() handler ordering would be dependent on whether the navigation is happening with an empty JavaScript execution context stack (e.g., because the navigation was user-initiated) or with a nonempty one (e.g., because the navigation was caused by a JavaScript API call).
-</p>
-
-<p>
-この段で，他では不必要な`~JS実行~文脈$を~stackに挿入することにより、
-本質的に，
-`小task~checkpointを遂行する$~algoを後の時点まで抑止する
-— したがって、
-各種~handlerは，常に次の順に走るようになることが確保される
-⇒＃
-`currententrychange$et ~event~handlerたち,
-`intercept()$mE ~handlerたち,
-~promise~handlerたち
-◎
-By inserting an otherwise-unnecessary JavaScript execution context onto the stack in this step, we essentially suppress the perform a microtask checkpoint algorithm until later, thus ensuring that the sequence is always: currententrychange event handlers, then intercept() handlers, then promise handlers.
-</p>
-</div>
-			</li>
-			<li>
-~IF［
-%~navi の`遷移$ ~NEQ ~NULL
-］
-⇒
-`~promiseを解決する$( %~navi の`遷移$の`~commit時の~promise$nTr )
-◎
-If navigation's transition is not null, then resolve navigation's transition's committed promise with undefined.
-</li>
-			<li>
-<p>
-~IF［
-%~event の`横取~状態$nEv ~NEQ `none^l
-］：
-◎
-If event's interception state is not "none":
-</p>
-				<ol>
-					<li>
-<p>
-%~navi種別 に応じて：
-◎
-Switch on navigationType:
-</p>
-						<dl class="switch">
-							<dt>`push$l</dt>
-							<dt>`replace$l</dt>
-							<dd>
-`~URLと履歴を更新する$( %文書, %~event の`destination$mE の`~URL$nDt【！`url$mD】 )
-— 次を与える下で
-⇒＃
-`直列形の~data^i ~SET %~event の`古典~履歴~API用の状態$nEv,
-`履歴~取扱い^i ~SET %~navi種別【！%~event の `navigationType$mE 】
-◎
-Run the URL and history update steps given document and event's destination's URL, with serializedData set to event's classic history API state and historyHandling set to event's navigationType.
-</dd>
-							<dt>`reload$l</dt>
-							<dd>
-`同一-文書~navi用に~navi~API~entry群を更新する$( %~navi, %~navigable にて`作動中な~entry$nav, `reload$l )
-◎
-Update the navigation API entries for a same-document navigation given navigation, navigable's active session history entry, and "reload".
-</dd>
-							<dt>`traverse$l</dt>
-							<dd>
-								<ol>
-									<li>
-<p>
-%~navi の`進行中な~naviの間は通常の~scroll復旧を抑止するか$ ~SET ~T
-◎
-Set navigation's suppress normal scroll restoration during ongoing navigation to true.
-</p>
-
-<p class="note">注記：
-%~event の`~scroll用の挙動$nEvが `after-transition$lS に設定された場合、
-~scroll復旧は、
-関連な `NavigateEvent$I を`完遂する＠#navigateevent-finish$ときの一部として起こることになる。
-他の場合、
-~scroll復旧は無い。
-すなわち、
-`intercept()$mE により横取された~naviは，
-通常の~scroll復旧~処理nを経ない
-— そのような~navi用の~scroll復旧は、
-~web開発者により手動で行われるか，当の遷移より後に行われる。
-◎
-If event's scroll behavior was set to "after-transition", then scroll restoration will happen as part of finishing the relevant NavigateEvent. Otherwise, there will be no scroll restoration. That is, no navigation which is intercepted by intercept() goes through the normal scroll restoration process; scroll restoration for such navigations is either done manually, by the web developer, or is done after the transition.
-</p>
-									</li>
-									<li>
-%利用者-関与i ~LET `なし$i
-◎
-Let userInvolvement be "none".
-</li>
-									<li>
-<p>
-~IF［
-%~event の `userInitiated$mE ~EQ ~T
-］
-⇒
-%利用者-関与i ~SET `作動化$i
-◎
-If event's userInitiated is true, then set userInvolvement to "activation".
-</p>
-
-<p class="note">注記：
-横取~後における この時点では、
-当の作動化が~browser~UIの結果であったとしても，
-帰結は同じになる。
-◎
-At this point after interception, it is not consequential whether the activation was a result of browser UI.
-</p>
-									</li>
-									<li>
-<p>
-`~session履歴~辿り手続きを付加する$( %~navigable の`辿可能な~navigable$nav, 次の手続き )
-◎
-Append the following session history traversal steps to navigable's traversable navigable:
-</p>
-
-<div class="algo">
-手続きは
-⇒
-`辿-用に履歴~stepを適用することを再開する$( ↓ )
-⇒＃
-%行先 の`~entry$nDtの`~session履歴~entry$nheの`~step$shE,
-%~navigable の`辿可能な~navigable$nav,
-%利用者-関与i
-◎
-Resume applying the traverse history step given destination's entry's session history entry's step, navigable's traversable navigable, and userInvolvement.
-</div>
-									</li>
-								</ol>
-							</dd>
-						</dl>
-					</li>
-				</ol>
-			</li>
-			<li>
-<p>
-~IF［
-%終了~結果は同一-文書か ~EQ ~T
-］：
-◎
-If endResultIsSameDocument is true:
-</p>
-				<ol>
-					<li>
-%~promise~list ~LET 新たな`~list$
-◎
-Let promisesList be an empty list.
-</li>
-					<li>
-%~event の`~navi~handler~list$nEvを成す
-~EACH( %~handler )
-に対し
-⇒
-%~promise~list に次の結果を`付加する$
-⇒
-`~callback関数を呼出す$( %~handler, « », ε )
-◎
-For each handler of event's navigation handler list:
-• Append the result of invoking handler with an empty arguments list to promisesList.
-</li>
-					<li>
-<p>
-~IF［
-%~promise~list の`~size$ ~EQ 0
-］
-⇒
-%~promise~list ~SET « `解決される~promise$( `undefined^jv ) »
-◎
-If promisesList's size is 0, then set promisesList to « a promise resolved with undefined ».
-</p>
-
-<p class="note">注記：
-`すべての~promiseを待機する$間に，その［
-成功~手続き, 失敗~手続き
-］をどう~scheduleするかに関して、
-所与の~promiseが［
-無いとき, 1 個以上あるとき
-］で微妙な時機の相違がある。
-このことは、
-`すべての~promiseを待機する$ほとんどの利用においては問われない。
-しかしながら、
-この~APIには，同時期に発火することもある［
-~event~handler, ~promise~handler
-］がいくつもあるので、
-その相違はかなり容易に観測-可能になる
-— それは、
-これらの~handlerが走る順序を変え得るので。
-次に挙げる［
-~event／~promise
-］は、
-そこに孕まれる
-⇒＃
-`navigatesuccess$et,
-`navigateerror$et,
-`currententrychange$et,
-`dispose$et,
-%~API~method追跡子 の~promise,
-`navigation.transition.finished$c ~promise
-◎
-There is a subtle timing difference between how waiting for all schedules its success and failure steps when given zero promises versus ≥1 promises. For most uses of waiting for all, this does not matter. However, with this API, there are so many events and promise handlers which could fire around the same time that the difference is pretty easily observable: it can cause the event/promise handler sequence to vary. (Some of the events and promises involved include: navigatesuccess / navigateerror, currententrychange, dispose, apiMethodTracker's promises, and the navigation.transition.finished promise.)
-</p>
-					</li>
-					<li>
-<p>
-`すべての~promiseを待機する$( %~promise~list )
-— 次を与える下で：
-◎
-Wait for all of promisesList, with＼
-</p>
-						<ul>
-							<li class="algo">
-<p>
-`成功~手続き^i は：
-◎
-the following success steps:
-</p>
-								<ol>
-									<li>
-~IF［
-%~event に`関連な大域~obj$に`結付けられた文書$は`全部的に作動中$でない
-］
-⇒
-~RET
-◎
-If event's relevant global object is not fully active, then abort these steps.
-</li>
-									<li>
-~IF［
-%~event の`中止-制御器$nEvの`通達$aCは`中止-済み$aBである
-］
-⇒
-~RET
-◎
-If event's abort controller's signal is aborted, then abort these steps.
-</li>
-									<li>
-~Assert：
-%~event ~EQ %~navi の`進行中な~navigate_ev~event$
-◎
-Assert: event equals navigation's ongoing navigate event.
-</li>
-									<li>
-%~navi の`進行中な~navigate_ev~event$ ~SET ~NULL
-◎
-Set navigation's ongoing navigate event to null.
-</li>
-									<li>
-`~navigate_ev~eventを完遂する$( %~event, ~T )
-◎
-Finish event given true.
-</li>
-									<li>
-~IF［
-%~API~method追跡子 ~NEQ ~NULL
-］
-⇒
-`完遂-時の~promiseを解決する$( %~API~method追跡子 )
-◎
-If apiMethodTracker is non-null, then resolve the finished promise for apiMethodTracker.
-</li>
-									<li>
-`~eventを発火する$( %~navi, `navigatesuccess$et )
-◎
-Fire an event named navigatesuccess at navigation.
-</li>
-									<li>
-~IF［
-%~navi の`遷移$ ~NEQ ~NULL
-］
-⇒
-`~promiseを解決する$( %~navi の`遷移$の`完遂-時の~promise$nTr )
-◎
-If navigation's transition is not null, then resolve navigation's transition's finished promise with undefined.
-</li>
-									<li>
-%~navi の`遷移$ ~SET ~NULL
-◎
-Set navigation's transition to null.
-</li>
-								</ol>
-							</li>
-							<li>
-`失敗~手続き^i ~SET %取消す
-◎
-and cancel as failure step.
-</li>
-						</ul>
-					</li>
-				</ol>
-			</li>
-			<li>
-~ELIF［
-%~API~method追跡子 ~NEQ ~NULL
-］
-⇒
-`追跡子を片付ける$( %~API~method追跡子 )
-◎
-Otherwise, if apiMethodTracker is non-null, then clean up apiMethodTracker.
-</li>
-			<li>
-<p>
-`走らせた~scriptを片付ける$( %~navi に`関連な設定群~obj$ )
-◎
-Clean up after running script given navigation's relevant settings object.
-</p>
-
-<p class="note">注記：
-`上の注記＠#note-suppress-microtasks-during-navigation-events$の一環として、
-これは，この時点で、
-~promise~handler用の小task（もしあれば）を抑止することを止めて，
-それが走れるようにする。
-◎
-Per the previous note, this stops suppressing any potential promise handler microtasks, causing them to run at this point or later.
-</p>
-			</li>
-		</ol>
-</div>
-	</li>
-	<li>
-<p>
 ~IF［
 %~event の`横取~状態$nEv ~NEQ `none^l
 ］：
@@ -8133,9 +7677,9 @@ Mark as handled navigation's transition's committed promise.
 %~event の`~navi~precommit~handler~list$nEvは`空$である
 ］
 ⇒
-%~commitする( )
+`~navigate_ev~eventを~commitする$( %~event, %~API~method追跡子 )
 ◎
-If event's navigation precommit handler list is empty then run commit.
+If event's navigation precommit handler list is empty then run commit event given apiMethodTracker.
 </li>
 	<li>
 <p>
@@ -8172,14 +7716,32 @@ For each handler of event's navigation precommit handler list:
 • Append the result of invoking handler with « precommitController » to precommitPromisesList.
 </li>
 			<li>
+<p>
 `すべての~promiseを待機する$( %~precommit~promise~list )
-— 次を与える下で
-⇒＃
-`成功~手続き^i ~SET %~commitする,
-`失敗~手続き^i ~SET %取消す
+— 次を与える下で：
 ◎
-Wait for all precommitPromisesList with success steps set to commit, and failure steps set to cancel.
+Wait for all precommitPromisesList with＼
+</p>
+				<ul>
+					<li class="algo">
+`成功~手続き^i は
+⇒
+`~navigate_ev~eventを~commitする$( %~event, %~API~method追跡子 )
+◎
+the following success steps: commit event given apiMethodTracker,＼
 </li>
+					<li class="algo">
+`失敗~手続き^i は、
+所与の
+( %事由 )
+に対し
+⇒
+`~navigate_ev~event~handlerの失敗を処理する$( %~event, %事由 )
+◎
+and the following failure step given reason: process navigate event handler failure given event and reason.
+</li>
+				</ul>
+			</li>
 		</ol>
 	</li>
 	<li>
@@ -8190,6 +7752,461 @@ Wait for all precommitPromisesList with success steps set to commit, and failure
 If event's interception state is "none", then return true.
 ◎
 Return false.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`~navigate_ev~eventを~commitする@
+~algoは、
+所与の
+( `NavigateEvent$I ~obj %~event, `~navi~API~method追跡子$ %~API~method追跡子 )
+に対し：
+◎
+To commit a navigate event given a NavigateEvent object event and a navigation API method tracker apiMethodTracker:
+</p>
+<ol>
+	<li>
+%~navi ~LET %~event の`~target$
+◎
+Let navigation be event's target.
+</li>
+	<li>
+%~navigable ~LET %~event に`関連な大域~obj$に`対応する~navigable$
+◎
+Let navigable be event's relevant global object's navigable.
+</li>
+	<li>
+~IF［
+%~event に`関連な大域~obj$に`結付けられた文書$は`全部的に作動中$でない
+］
+⇒
+~RET
+◎
+If event's relevant global object's associated Document is not fully active, then return.
+</li>
+	<li>
+~IF［
+%~event の`中止-制御器$nEvの`通達$aCは`中止-済み$aBである
+］
+⇒
+~RET
+◎
+If event's abort controller's signal is aborted, then return.
+</li>
+	<li>
+%~event の`横取~状態$nEv ~SET `committed^l
+◎
+Set event's interception state to "committed".
+</li>
+	<li>
+%終了~結果は同一-文書か ~LET ~IS［
+%~event の`横取~状態$nEv ~NEQ `none^l
+］~OR［
+%~event の`destination$mE の`同一-文書か$nDt~EQ ~T
+］
+◎
+Let endResultIsSameDocument be true if event's interception state is not "none" or event's destination's is same document is true.
+</li>
+	<li>
+<p>
+`~scriptを走らすために準備する$( %~navi に`関連な設定群~obj$ )
+◎
+Prepare to run script given navigation's relevant settings object.
+</p>
+
+<div class="note" id="note-suppress-microtasks-during-navigation-events">
+<p>注記：
+これは、［
+すぐに起こることもある`~URLと履歴を更新する$手続き
+］の結果，［
+`currententrychange$et ~event~handlerが走った直後
+］に［
+`~JS実行~文脈~stack$が空になる
+］のを避けるために行われる。
+その時点で~stackが空になった場合、
+即時に`小task~checkpointを遂行する$ことになる結果，
+様々な~promiseの充足~handlerを［
+`currententrychange$et ~event~handlerたちに差挟んで ／
+`intercept()$mE【！navigateEvent.intercept()】 に渡された~handlerたちより前に
+］走らすことになり，望ましくない
+— それは、［
+~promise~handler,
+`currententrychange$et ~event~handler,
+`intercept()$mE ~handler
+］の順序付けが［
+当の~naviが起きているのは`~JS実行~文脈~stack$が［
+空なとき
+（例：利用者が~naviを起動したため）／
+空でないとき
+（例：当の~naviは~JS~API~callにより起動されたため）
+］どちらなのか
+］に依存することを意味するので。
+◎
+This is done to avoid the JavaScript execution context stack becoming empty right after any currententrychange event handlers run as a result of the URL and history update steps that could soon happen. If the stack were to become empty at that time, then it would immediately perform a microtask checkpoint, causing various promise fulfillment handlers to run interleaved with the event handlers and before any handlers passed to navigateEvent.intercept(). This is undesirable since it means promise handler ordering vs. currententrychange event handler ordering vs. intercept() handler ordering would be dependent on whether the navigation is happening with an empty JavaScript execution context stack (e.g., because the navigation was user-initiated) or with a nonempty one (e.g., because the navigation was caused by a JavaScript API call).
+</p>
+
+<p>
+この段で，他では不必要な`~JS実行~文脈$を~stackに挿入することにより、
+本質的に，
+`小task~checkpointを遂行する$~algoを後の時点まで抑止する
+— したがって、
+各種~handlerは，常に次の順に走るようになることが確保される
+⇒＃
+`currententrychange$et ~event~handlerたち,
+`intercept()$mE ~handlerたち,
+~promise~handlerたち
+◎
+By inserting an otherwise-unnecessary JavaScript execution context onto the stack in this step, we essentially suppress the perform a microtask checkpoint algorithm until later, thus ensuring that the sequence is always: currententrychange event handlers, then intercept() handlers, then promise handlers.
+</p>
+</div>
+	</li>
+	<li>
+~IF［
+%~navi の`遷移$ ~NEQ ~NULL
+］
+⇒
+`~promiseを解決する$( %~navi の`遷移$の`~commit時の~promise$nTr )
+◎
+If navigation's transition is not null, then resolve navigation's transition's committed promise with undefined.
+</li>
+	<li>
+<p>
+~IF［
+%~event の`横取~状態$nEv ~NEQ `none^l
+］：
+◎
+If event's interception state is not "none":
+</p>
+		<ol>
+			<li>
+<p>
+%~event の `navigationType$mE に応じて：
+◎
+Switch on event's navigationType:
+</p>
+				<dl class="switch">
+					<dt>`push$l</dt>
+					<dt>`replace$l</dt>
+					<dd>
+`~URLと履歴を更新する$( %~event に`関連な大域~obj$に`結付けられた文書$, %~event の `destination$mE の`~URL$nDt【！`url$mD】 )
+— 次を与える下で
+⇒＃
+`直列形の~data^i ~SET %~event の`古典~履歴~API用の状態$nEv,
+`履歴~取扱い^i ~SET %~event の `navigationType$mE
+◎
+Run the URL and history update steps given event's relevant global object's associated Document and event's destination's URL, with serializedData set to event's classic history API state and historyHandling set to event's navigationType.
+</dd>
+
+					<dt>`reload$l</dt>
+					<dd>
+`同一-文書~navi用に~navi~API~entry群を更新する$( %~navi, %~navigable にて`作動中な~entry$nav, `reload$l )
+◎
+Update the navigation API entries for a same-document navigation given navigation, navigable's active session history entry, and "reload".
+</dd>
+
+					<dt>`traverse$l</dt>
+					<dd>
+						<ol>
+							<li>
+<p>
+%~navi の`進行中な~naviの間は通常の~scroll復旧を抑止するか$ ~SET ~T
+◎
+Set navigation's suppress normal scroll restoration during ongoing navigation to true.
+</p>
+
+<p class="note">注記：
+%~event の`~scroll用の挙動$nEvが `after-transition$lS に設定された場合、
+~scroll復旧は、
+関連な `NavigateEvent$I を`完遂する＠#navigateevent-finish$ときの一部として起こることになる。
+他の場合、
+~scroll復旧は無い。
+すなわち、
+`intercept()$mE により横取された~naviは，
+通常の~scroll復旧~処理nを経ない
+— そのような~navi用の~scroll復旧は、
+~web開発者により手動で行われるか，当の遷移より後に行われる。
+◎
+If event's scroll behavior was set to "after-transition", then scroll restoration will happen as part of finishing the relevant NavigateEvent. Otherwise, there will be no scroll restoration. That is, no navigation which is intercepted by intercept() goes through the normal scroll restoration process; scroll restoration for such navigations is either done manually, by the web developer, or is done after the transition.
+</p>
+							</li>
+							<li>
+%利用者-関与i ~LET `なし$i
+◎
+Let userInvolvement be "none".
+</li>
+	<li>
+~IF［
+%~event の `userInitiated$mE ~EQ ~T
+］
+⇒
+%利用者-関与i ~SET `作動化$i
+◎
+If event's userInitiated is true, then set userInvolvement to "activation".
+</p>
+
+<p class="note">注記：
+横取~後における この時点では、
+当の作動化が~browser~UIの結果であったとしても，
+帰結は同じになる。
+◎
+At this point after interception, it is not consequential whether the activation was a result of browser UI.
+</p>
+							</li>
+							<li>
+`~session履歴~辿り手続きを付加する$( %~navigable の`辿可能な~navigable$nav, 次の手続き )
+◎
+Append the following session history traversal steps to navigable's traversable navigable:
+</p>
+
+<div class="algo">
+手続きは
+⇒
+`辿-用に履歴~stepを適用することを再開する$( ↓ )
+⇒＃
+%~event の `destination$mE の`~entry$nDtの`~session履歴~entry$nhe の`~step$shE,
+%~navigable の`辿可能な~navigable$nav,
+%利用者-関与i
+◎
+• Resume applying the traverse history step given event's destination's entry's session history entry's step, navigable's traversable navigable, and userInvolvement.
+</div>
+							</li>
+						</ol> 
+					</dd>
+				</dl>
+			</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+%終了~結果は同一-文書か ~EQ ~T
+］：
+◎
+If endResultIsSameDocument is true:
+</p>
+		<ol>
+			<li>
+%~promise~list ~LET 新たな`~list$
+◎
+Let promisesList be an empty list.
+</li>
+			<li>
+%~event の`~navi~handler~list$nEvを成す
+~EACH( %~handler )
+に対し
+⇒
+%~promise~list に次の結果を`付加する$
+⇒
+`~callback関数を呼出す$( %~handler, « », ε )
+◎
+For each handler of event's navigation handler list:
+• Append the result of invoking handler with an empty arguments list to promisesList.
+</li>
+			<li>
+~IF［
+%~promise~list の`~size$ ~EQ 0
+］
+⇒
+%~promise~list ~SET « `解決される~promise$( `undefined^jv ) »
+◎
+If promisesList's size is 0, then set promisesList to « a promise resolved with undefined ».
+</p>
+
+<p class="note">注記：
+`すべての~promiseを待機する$間に，その［
+成功~手続き, 失敗~手続き
+］をどう~scheduleするかに関して、
+所与の~promiseが［
+無いとき, 1 個以上あるとき
+］で微妙な時機の相違がある。
+このことは、
+`すべての~promiseを待機する$ほとんどの利用においては問われない。
+しかしながら、
+この~APIには，同時期に発火することもある［
+~event~handler, ~promise~handler
+］がいくつもあるので、
+その相違はかなり容易に観測-可能になる
+— それは、
+これらの~handlerが走る順序を変え得るので。
+次に挙げる［
+~event／~promise
+］は、
+そこに孕まれる
+⇒＃
+`navigatesuccess$et,
+`navigateerror$et,
+`currententrychange$et,
+`dispose$et,
+%~API~method追跡子 の~promise,
+`navigation.transition.finished$c ~promise
+◎
+There is a subtle timing difference between how waiting for all schedules its success and failure steps when given zero promises versus ≥1 promises. For most uses of waiting for all, this does not matter. However, with this API, there are so many events and promise handlers which could fire around the same time that the difference is pretty easily observable: it can cause the event/promise handler sequence to vary. (Some of the events and promises involved include: navigatesuccess / navigateerror, currententrychange, dispose, apiMethodTracker's promises, and the navigation.transition.finished promise.)
+</p>
+			</li>
+			<li>
+`すべての~promiseを待機する$( %~promise~list )
+— 次を与える下で：
+◎
+Wait for all of promisesList, with＼
+</p>
+				<ul>
+					<li class="algo">
+<p>
+`成功~手続き^i は：
+◎
+the following success steps:
+</p>
+						<ol>
+							<li>
+~IF［
+%~event に`関連な大域~obj$に`結付けられた文書$は`全部的に作動中$でない
+］
+⇒
+~RET
+◎
+If event's relevant global object is not fully active, then abort these steps.
+</li>
+							<li>
+If event's abort controller's signal is aborted, then abort these steps.
+</li>
+							<li>
+~Assert：
+%~event ~EQ %~navi の`進行中な~navigate_ev~event$
+◎
+Assert: event equals navigation's ongoing navigate event.
+</li>
+							<li>
+%~navi の`進行中な~navigate_ev~event$ ~SET ~NULL
+◎
+Set navigation's ongoing navigate event to null.
+</li>
+							<li>
+`~navigate_ev~eventを完遂する$( %~event, ~T )
+◎
+Finish event given true.
+</li>
+							<li>
+~IF［
+%~API~method追跡子 ~NEQ ~NULL
+］
+⇒
+`完遂-時の~promiseを解決する$( %~API~method追跡子 )
+◎
+If apiMethodTracker is non-null, then resolve the finished promise for apiMethodTracker.
+</li>
+							<li>
+`~eventを発火する$( %~navi, `navigatesuccess$et )
+◎
+Fire an event named navigatesuccess at navigation.
+</li>
+							<li>
+~IF［
+%~navi の`遷移$ ~NEQ ~NULL
+］
+⇒
+`~promiseを解決する$( %~navi の`遷移$の`完遂-時の~promise$nTr )
+◎
+If navigation's transition is not null, then resolve navigation's transition's finished promise with undefined.
+</li>
+							<li>
+%~navi の`遷移$ ~SET ~NULL
+◎
+Set navigation's transition to null.
+</li>
+						</ol>
+					</li>
+					<li class="algo">
+<p>
+`失敗~手続き^i は、
+所与の
+( %事由 )
+に対し
+⇒
+`~navigate_ev~event~handlerの失敗を処理する$( %~event, %事由 )
+◎
+and the following failure step given reason: process navigate event handler failure given event and reason.
+</p>
+					</li>
+				</ul>
+			</li>
+		</ol>
+	</li>
+	<li>
+~ELIF［
+%~API~method追跡子 ~NEQ ~NULL
+］
+⇒
+`追跡子を片付ける$( %~API~method追跡子 )
+◎
+Otherwise, if apiMethodTracker is non-null, then clean up apiMethodTracker.
+</li>
+	<li>
+`走らせた~scriptを片付ける$( %~navi に`関連な設定群~obj$ )
+◎
+Clean up after running script given navigation's relevant settings object.
+</p>
+
+<p class="note">注記：
+`上の注記＠#note-suppress-microtasks-during-navigation-events$の一環として、
+これは，この時点で、
+~promise~handler用の小task（もしあれば）を抑止することを止めて，
+それが走れるようにする。
+◎
+Per the previous note, this stops suppressing any potential promise handler microtasks, causing them to run at this point or later.
+</p>
+	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`~navigate_ev~event~handlerの失敗を処理する@
+~algoは、
+所与の
+( `NavigateEvent$I ~obj %~event, %事由 )
+に対し：
+◎
+To process navigate event handler failure given a NavigateEvent object event and a reason:
+</p>
+<ol>
+	<li>
+~IF［
+%~event に`関連な大域~obj$に`結付けられた文書$は`全部的に作動中$でない
+］
+⇒
+~RET
+◎
+If event's relevant global object's associated Document is not fully active, then return.
+</li>
+	<li>
+~IF［
+%~event の`中止-制御器$nEvの`通達$aCは`中止-済み$aBである
+］
+⇒
+~RET
+◎
+If event's abort controller's signal is aborted, then return.
+</li>
+	<li>
+~Assert：
+%~event ~EQ %~event に`関連な大域~obj$の`~navi~API$の`進行中な~navigate_ev~event$
+◎
+Assert: event is event's relevant global object's navigation API's ongoing navigate event.
+</li>
+	<li>
+~IF［
+%~event の`横取~状態$nEv ~NEQ `intercepted^l
+］
+⇒
+`~navigate_ev~eventを完遂する$( %~event, ~F )
+◎
+If event's interception state is not "intercepted", then finish event given false.
+</li>
+	<li>
+`~navigate_ev~eventを中止する$( %~event, %事由 )
+◎
+Abort event given reason.
 </li>
 </ol>
 </div>
