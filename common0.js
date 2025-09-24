@@ -1242,6 +1242,7 @@ HTMLparsing:HTML-parsing-ja.html
 HTMLpopover:HTML-popover-ja.html
 HTMLrendering:HTML-rendering-ja.html
 HTMLselectors:selectors-html-ja.html
+HTMLsl:HTML-speculative-loading-ja.html
 HTMLsse:HTML-server-sent-events-ja.html
 HTMLurl:HTML-urls-and-fetching-ja.html
 HTMLwriting:HTML-writing-ja.html

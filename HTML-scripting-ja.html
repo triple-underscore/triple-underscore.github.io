@@ -132,8 +132,8 @@ return text;
 
 ●●options
 
-spec_date:2025-08-01
-trans_update:2025-08-04
+spec_date:2025-09-19
+trans_update:2025-09-24
 source_checked:240415
 page_state_key:HTML
 spec_status:LS
@@ -420,6 +420,7 @@ set.付加する:~INFRA#set-append
 並列的:~HTMLINFRA#in-parallel
 文書の中へ挿入された:~HTMLINFRA#insert-an-element-into-a-document
 ~HTML要素~接続~後の手続き:~HTMLINFRA#html-element-post-connection-steps
+~HTML要素~除去-時の手続き:~HTMLINFRA#html-element-removing-steps
 
 真偽-属性:~HTMLcms#boolean-attribute
 列挙d属性:~HTMLcms#enumerated-attribute
@@ -507,6 +508,10 @@ sfO.具現化を阻んでいるか:~WAPI#concept-script-fetch-options-render-blo
 ~import~mapを登録する:~WAPI#register-an-import-map
 ~import~map著作~要件:~WAPI#import-map-authoring-requirements
 
+投機~規則~群の構文解析-結果:~WAPI#speculation-rules-parse-result
+投機~規則~群を未登録にする:~WAPI#unregister-speculation-rules
+投機~規則~群の構文解析-結果を作成する:~WAPI#create-a-speculation-rules-parse-result
+投機~規則~群を登録する:~WAPI#register-speculation-rules
 
 	●HTML
 構文解析-~error:~HTMLparsing#parse-errors
@@ -521,6 +526,8 @@ V.文脈~要素:~HTMLparsing#concept-frag-parse-context
 
 閲覧~文脈:~HTMLds#browsing-context
 属する閲覧~文脈:~HTMLds#concept-document-bc
+投機~規則~集合:~HTMLsl#speculation-rule-set
+投機~規則~集合の著作~要件:~HTMLsl#speculation-rule-set-authoring-requirements
 
 生成元:~ORIGIN#concept-origin
 ~scriptを阻んでいる~stylesheetは在るか？:~HEmetadata#has-a-style-sheet-that-is-blocking-scripts
@@ -643,11 +650,13 @@ import:
 	%完了-時の手続き:onComplete
 	%~fetch優先度:fetch priority
 	%挿入された~node:insertedNode
+	%除去された~node:removedNode
 	%要素:element
 	%局所~名:localName
 	%旧-値:oldValue
 	%値:value
 	%名前空間:namespace
+	%~CSP種別:cspType
 
 	●fetch／network／保安
 	事前~fetching:prefetching
@@ -657,6 +666,7 @@ load:
 暗号用:cryptographic::~
 	阻止される^i:Blocked
 	~stream法:streaming
+投機:speculation::~
 
 	●内容model
 句ng:phrasing::句::フレージング
@@ -1398,6 +1408,18 @@ Setting the attribute to an ASCII case-insensitive match for "module" means that
 Setting the attribute to an ASCII case-insensitive match for "importmap" means that the script is an import map, containing JSON that will be used to control the behavior of module specifier resolution.
 </li>
 	<li>
+［
+`~ASCII大小無視$で `speculationrules^l に合致する文字列
+］に設定することは、
+次を意味する
+⇒
+ある`投機~規則~集合$を定義する
+— それは、
+`投機的な読込n＠~HTMLsl#speculative-loading$を述べるために利用される~JSONを包含する。
+◎
+Setting the attribute to an ASCII case-insensitive match for "speculationrules" means that the script defines a speculation rule set, containing JSON that will be used to describe speculative loads.
+</li>
+	<li>
 <p>
 他の値に設定することは、
 次を意味する
@@ -1523,6 +1545,16 @@ Which other attributes may be specified on a given script element is determined 
 <td class="no">·
 <td class="no">·
 
+<tr><th>投機~規則~群
+<td class="no">·
+<td class="no">·
+<td class="no">·
+<td class="no">·
+<td class="no">·
+<td class="no">·
+<td class="no">·
+<td class="no">·
+
 <tr><th>~data~block
 <td class="no">·
 <td class="no">·
@@ -1540,6 +1572,7 @@ Inline classic scripts｜Yes｜·｜·｜·｜Yes*｜Yes*｜·｜·†
 External module scripts｜·｜Yes｜·｜Yes｜Yes｜Yes｜Yes｜Yes
 Inline module scripts｜·｜Yes｜·｜·｜Yes*｜Yes*｜·｜·†
 Import maps｜·｜·｜·｜·｜·｜·｜·｜·
+Speculation rules｜·｜·｜·｜·｜·｜·｜·｜·
 Data blocks｜·｜·｜·｜·｜·｜·｜·｜·
 </div>
 
@@ -1584,6 +1617,13 @@ The contents of inline script elements, or the external script resource, must co
 `~import~map著作~要件$に適合しなければナラナイ。
 ◎
 The contents of inline script elements for import maps must conform with the import map authoring requirements.
+</p>
+
+<p>
+`投機~規則~集合$用の~inlineな `script$e 要素の内容は
+`投機~規則~集合の著作~要件$に適合しなければナラナイ。
+◎
+The contents of inline script elements for speculation rule sets must conform with the speculation rule set authoring requirements.
 </p>
 
 <p>
@@ -2073,7 +2113,7 @@ The static supports(type) method steps are:
 <ol>
 	<li>
 ~IF［
-%type ~IN { `classic^l, `module^l, `importmap^l }
+%type ~IN { `classic^l, `module^l, `importmap^l, `speculationrules^l }
 ］
 ⇒
 ~RET ~T
@@ -2083,6 +2123,8 @@ If type is "classic", then return true.
 If type is "module", then return true.
 ◎
 If type is "importmap", then return true.
+◎
+If type is "speculationrules", then return true.
 </li>
 	<li>
 ~RET ~F
@@ -2439,9 +2481,10 @@ A script element has a type,＼
 ~NULL,
 `classic^l,
 `module^l,
-`importmap^l
+`importmap^l,
+`speculationrules^l
 ◎
-which is either null, "classic", "module", or "importmap", initially null.＼
+which is either null, "classic", "module", "importmap", or "speculationrules", initially null.＼
 </dd>
 	<dd>
 これは、
@@ -2462,9 +2505,10 @@ A script element has a result,＼
 `未初期化^i,
 ~NULL （~errorを表現する）,
 `~script$,
-`~import~map構文解析-結果$
+`~import~map構文解析-結果$,
+`投機~規則~群の構文解析-結果$
 ◎
-which is either "uninitialized", null (representing an error), a script, or an import map parse result. It is initially "uninitialized".
+which is either "uninitialized", null (representing an error), a script, an import map parse result, or a speculation rules parse result. It is initially "uninitialized".
 </dd>
 
 	<dt id="the-script-is-ready">
@@ -2587,48 +2631,6 @@ The script HTML element post-connection steps, given insertedNode, are:
 </p>
 <ol>
 	<li>
-<p>
-~IF［
-%挿入された~node は`接続されて$いない
-］
-⇒
-~RET
-◎
-If insertedNode is not connected, then return.
-</p>
-
-<div class="example">
-<p>
-これは、
-先に挿入された `script$e が後から挿入された `script$e （ %挿入された~node ）を除去する事例で起こり得る。
-一例として：
-◎
-This can happen in the case where an earlier-inserted script removes a later-inserted script. For instance:
-</p>
-
-`script-processing-model-1^xCode
-
-<p>
-この例では、
-~consoleへは何も~printされない。
-2 個の `script$e %script1, %script2 は，
-`append()$m により不可分に挿入されるが、
-%script1 は［
-%script1 用に`~HTML要素~接続~後の手続き$を走らす時点
-］までに［
-%script2 が~DOMへ`接続されて$いること
-］を観測でき，［
-<em>%script2 用</em>に`~HTML要素~接続~後の手続き$を走らす時点
-］までに %script2 を除去する
-— その結果、
-%script2 は，その時点では`接続されて$いなくなり、
-%script2 用に`~script要素を準備する$こともなくなる。
-◎
-Nothing is printed to the console in this example. By the time the HTML element post-connection steps run for the first script that was atomically inserted by append(), it can observe that the second script is already connected to the DOM. It removes the second script, so that by the time its HTML element post-connection steps run, it is no longer connected, and does not get prepared.
-</p>
-</div>
-	</li>
-	<li>
 ~IF［
 %挿入された~node は`構文解析器により挿入された$
 ］
@@ -2645,13 +2647,96 @@ Prepare the script element given insertedNode.
 </ol>
 </div>
 
-<div class="algo">
-`script$e 要素 %要素 用の`子~群~変更-時の手続き$は
-⇒
-`script$e 用の`~HTML要素~接続~後の手続き$( %要素 )
+<div class="example">
+<p>
+`~HTML要素~接続~後の手続き$は、
+挿入された要素が依然として`接続されて$いない限り走らない
+— 先に挿入された `script$e が後から挿入された `script$e を除去する事例に対し保護するため。
+一例として：
 ◎
-The script children changed steps are:
-• Run the script HTML element post-connection steps, given the script element.
+The HTML element post-connection steps only run when the inserted element is still connected, which protects against cases where an earlier-inserted script removes a later-inserted script. For instance:
+</p>
+
+`script-processing-model-1^xCode
+
+<p>
+この例では、
+~consoleへは何も~printされない。
+2 個の `script$e %script1, %script2 は，
+`append()$m により不可分に挿入されるが、
+%script1 は［
+%script1 用に`~HTML要素~接続~後の手続き$を走らす時点
+］までに［
+%script2 が~DOMへ`接続されて$いること
+］を観測でき，
+%script2 を~DOMから除去する。
+%script2 は，もはや`接続されて$いないので、
+それ用の`~HTML要素~接続~後の手続き$を走らすことも, `~script要素を準備する$こともなくなる。
+◎
+Nothing is printed to the console in this example. By the time the HTML element post-connection steps run for the first script that was atomically inserted by append(), it can observe that the second script is already connected to the DOM, and it removes it from the DOM. Because the second script is no longer connected, its HTML element post-connection steps do not run, and it does not get prepared.
+</p>
+</div>
+
+<div class="algo">
+<p>
+`script$e 要素~用の`~HTML要素~除去-時の手続き$は、
+所与の
+( %除去された~node ) に対し：
+◎
+The script HTML element removing steps given removedNode are:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%除去された~node の`結果$scEは`投機~規則~群の構文解析-結果$である
+］：
+◎
+If removedNode's result is a speculation rules parse result, then:
+</p>
+		<ol>
+			<li>
+`投機~規則~群を未登録にする$( %除去された~node に`関連な大域~obj$, %除去された~node の`結果$scE )
+◎
+Unregister speculation rules given removedNode's relevant global object and removedNode's result.
+</li>
+			<li>
+%除去された~node の`すでに開始したか$scE ~SET ~F
+◎
+Set removedNode's already started to false.
+</li>
+			<li>
+%除去された~node の`結果$scE ~SET ~NULL
+◎
+Set removedNode's result to null.
+</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`script$e 要素 %要素【！changedNode】 用の`子~群~変更-時の手続き$は：
+◎
+The script children changed steps given changedNode are:
+</p>
+<ol>
+	<li>
+~IF［
+%要素【！the script element】 は`接続されて$いない
+］
+⇒
+~RET
+◎
+If the script element is not connected, then return.
+</li>
+	<li>
+`script$e 用の`~HTML要素~接続~後の手続き$( %要素【！changedNode】 )
+◎
+Run the script HTML element post-connection steps, given changedNode.
+</li>
+</ol>
 </div>
 
 <div class="example">
@@ -2725,13 +2810,15 @@ The script HTML element post-connection steps finally run for innerScript, causi
 %名前空間 ~EQ ~NULL
 ］~AND［
 %局所~名 ~EQ "`src$a"
+］~AND［
+%要素 は`接続されて$いる
 ］
 ⇒
 `script$e 用の`~HTML要素~接続~後の手続き$( %要素 )
 ◎
 The following attribute change steps, given element, localName, oldValue, value, and namespace, are used for all script elements:
 • If namespace is not null, then return.
-• If localName is src, then run the script HTML element post-connection steps, given element.
+• If localName is src and element is connected, then run the script HTML element post-connection steps, given element.
 </div>
 
 <div class="algo">
@@ -2935,6 +3022,15 @@ Otherwise, if the script block's type string is an ASCII case-insensitive match 
 Otherwise, if the script block's type string is an ASCII case-insensitive match for the string "importmap", then set el's type to "importmap".
 </li>
 	<li>
+~ELIF［
+%~script~blockの種別~文字列 は `speculationrules^l に`~ASCII大小無視$で合致する
+］
+⇒
+%S の`種別$scE ~SET `speculationrules^l
+◎
+Otherwise, if the script block's type string is an ASCII case-insensitive match for the string "speculationrules", then set el's type to "speculationrules".
+</li>
+	<li>
 ~ELSE
 ⇒
 ~RET
@@ -3048,20 +3144,30 @@ If el has a nomodule content attribute and its type is "classic", then return.
 This means specifying nomodule on a module script has no effect; the algorithm continues onward.
 </p>
 	</li>
+	<li>
+%~CSP種別 ~LET %S の`種別$scE に応じて
+⇒＃
+`speculationrules^l ならば `script speculationrules^l ／
+~ELSE_ `script^l
+◎
+Let cspType be "script speculationrules" if el's type is "speculationrules"; otherwise, "script".
+</li>
 	<li id="script-processing-csp">
 ~IF［
 %src ~EQ ε
 ］
 ⇒
 ~IF［
-`要素における~inline型の挙動は~CSPにより阻止されるべきか？$( %S, `script^l, %~source~text )
+`要素における~inline型の挙動は~CSPにより阻止されるべきか？$( %S, %~CSP種別, %~source~text )
 `CSP$r
 の結果 ~EQ `阻止される^i
 ］
 ⇒
 ~RET
 ◎
-If el does not have a src content attribute, and the Should element's inline behavior be blocked by Content Security Policy? algorithm returns "Blocked" when given el, "script", and source text, then return. [CSP]
+If el does not have a src content attribute, and the Should element's inline behavior be blocked by Content Security Policy? algorithm returns "Blocked" when given el, cspType, and source text, then return. [CSP]
+
+when given el, "script"
 </li>
 	<li id="script-processing-for">
 <p>
@@ -3200,10 +3306,10 @@ If el has a src content attribute, then:
 			<li>
 <p>
 ~IF［
-%S の`種別$scE ~EQ `importmap^l
+%S の`種別$scE ~IN { `importmap^l, `speculationrules^l }
 ］：
 ◎
-If el's type is "importmap", then＼
+If el's type is "importmap" or "speculationrules", then＼
 </p>
 				<ol>
 					<li>
@@ -3229,13 +3335,16 @@ and return.
 				</ol>
 
 <p class="note">注記：
-現時点では、
-外部~import~map~scriptは，~supportされない。
+現時点では、外部［
+~import~map~script, 投機~規則~群
+］は，~supportされない。
 ~supportを追加することについての論点は、
-`WICG/import-maps 課題 #235＠https://github.com/WICG/import-maps/issues/235$
-を見よ。
+次を見よ
+⇒＃
+`WICG/import-maps 課題 #235＠https://github.com/WICG/import-maps/issues/235$,
+`WICG/nav-speculation 課題 #348＠https://github.com/WICG/nav-speculation/issues/348$
 ◎
-External import map scripts are not currently supported. See WICG/import-maps issue #235 for discussions on adding support.
+External import maps and speculation rules are not currently supported. See WICG/import-maps issue #235 and WICG/nav-speculation issue #348 for discussions on adding support.
 </p>
 			</li>
 			<li>
@@ -3574,13 +3683,32 @@ Queueing a task here means that, even if the inline module script has no depende
 <p>
 `importmap^l：
 ◎
-"module"
+"importmap"
 </p>
 						<ol>
 							<li>
 %結果 ~LET `~import~map構文解析-結果を作成する$( %~source~text, %基底~URL )
 ◎
 Let result be the result of creating an import map parse result given source text and base URL.
+</li>
+							<li>
+`~script要素を準備済みにする$( %S, %結果 )
+◎
+Mark as ready el given result.
+</li>
+						</ol>
+					</li>
+					<li>
+<p>
+`speculationrules^l：
+◎
+"speculationrules"
+</p>
+						<ol>
+							<li>
+%結果 ~LET `投機~規則~群の構文解析-結果を作成する$( %~source~text, %文書 )
+◎
+Let result be the result of creating a speculation rules parse result given source text and el's node document.
 </li>
 							<li>
 `~script要素を準備済みにする$( %S, %結果 )
@@ -4076,6 +4204,15 @@ Run the module script given by el's result.
 "importmap"
 • Register an import map given el's relevant global object and el's result.
 </li>
+					<li>
+`speculationrules^l
+⇒
+`投機~規則~群を登録する$( %S に`関連な大域~obj$, %S の`結果$scE )
+◎
+"speculationrules"
+• Register speculation rules given el's relevant global object and el's result.
+</li>
+
 				</ol>
 			</li>
 		</ul>
@@ -5864,4 +6001,3 @@ Run assign slottables for a tree for this's root.
 		</section>
 	</section>
 </main>
-
