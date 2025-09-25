@@ -105,8 +105,8 @@ return text;
 
 ●●options
 spec_title:Paint Timing
-spec_date:2025-05-17
-trans_update:2025-05-24
+spec_date:2025-09-15
+trans_update:2025-09-25
 source_checked:240112
 page_state_key:TIMING
 original_url:https://w3c.github.io/paint-timing/
@@ -151,6 +151,11 @@ object:~WEBIDL#idl-object
 
 I.PaintTimingMixin:#painttimingmixin
 I.PerformancePaintTiming:#performancepainttiming
+I.PerformanceElementTiming:https://w3c.github.io/element-timing/#performanceelementtiming
+I.PerformanceEventTiming:~EVENT-TIMING#performanceeventtiming
+I.PerformanceLongAnimationFrameTiming:~LONGAF#performancelonganimationframetiming
+I.LargestContentfulPaint:~LCPAINT#largestcontentfulpaint
+
 I.DOMHighResTimeStamp:~HRTIME#dom-domhighrestimestamp
 I.PerformanceEntry:~TIMELINE#dom-performanceentry
 I.SVGImageElement:~SVGembedded#InterfaceSVGImageElement
@@ -170,6 +175,9 @@ m.entryType:~TIMELINE#dom-performanceentry-entrytype
 m.name:~TIMELINE#dom-performanceentry-name
 m.startTime:~TIMELINE#dom-performanceentry-starttime
 m.supportedEntryTypes:~TIMELINE#dom-performanceobserver-supportedentrytypes
+
+m.renderTime:~LCPAINT#dom-largestcontentfulpaint-rendertime
+m.startTime:~TIMELINE#dom-performanceentry-starttime
 
 m.getBoundingClientRect:~CSSOMVIEW#dom-element-getboundingclientrect
 
@@ -238,6 +246,7 @@ ptI.実装定義な呈示~時刻:#paint-timing-info-implementation-defined-prese
 新たな~obj:~WEBIDLjs#new
 実装-:~WEBIDLjs#implements
 内包-:~WEBIDL#include
+~platform~obj:~WEBIDL#dfn-platform-object
 既定の~toJSON手続き:~WEBIDLjs#default-tojson-steps
 
 文字列:~INFRA#string
@@ -313,6 +322,8 @@ enV.非同一-生成元~能力は隔離されるか？:~WAPI#concept-settings-ob
 
 ●●words_table1
 
+EVENT-TIMING:event-timing-ja.html
+LCPAINT:https://w3c.github.io/largest-contentful-paint/
 
 ●●words_table
 
@@ -343,6 +354,7 @@ typographic::::タイポグラフィック
 	~page読込:pageload
 刻む:markする::~
 刻まな:markしな::~
+刻まれ:markされ::~
 有内容:contentful::~
 塗り:paint::~
 塗る:paintする::~
@@ -382,6 +394,9 @@ pipeline:
 書出す:flushする::書き出す
 toJSON:
 	-:ctx
+cycle::::サイクル
+
+	●変数
 	%限界~矩形:boundingRect
 	%要素:element
 	%画像~要請:imageRequest
@@ -422,6 +437,7 @@ toJSON:
 	~~意見:input
 	満たす:apply
 	注記-:note
+	依らなく:agnostic
 
 	●未分類
 解析:analytics:~
@@ -501,6 +517,12 @@ main:
 
 ●●ref_informative
 
+[EVENT-TIMING]
+    Michal Mocny. ＜Event Timing API＞. URL: https://w3c.github.io/event-timing/
+[LARGEST-CONTENTFUL-PAINT]
+    Yoav Weiss; Nicolas Pena Moreno. ＜Largest Contentful Paint＞. URL: https://w3c.github.io/largest-contentful-paint/
+[LONG-ANIMATION-FRAMES]
+    ＜Long Animation Frames API＞. Editor's Draft. URL: https://w3c.github.io/long-animation-frames/
 [URL]
     Anne van Kesteren. ＜URL Standard＞. Living Standard. URL: https://url.spec.whatwg.org/
 
@@ -1129,14 +1151,63 @@ NOTE: this allows user agents to enable paint-timing only for some of the frames
 	</dd>
 </dl>
 
+	</section>
+	<section id="the-paint-timing-mixin">
+<h2 title="The Paint Timing Mixin">3. 塗り計時~mixin</h2>
+
+◎非規範的
+
+<p>
+`PaintTimingMixin$I ~interfaceは、
+描画~cycleに関係する時刻印を公開する。
+それは、
+`PerformanceEntry$I を拡張する`~platform~obj$
+— 特定的に，次に挙げるもの —
+に`内包-$される
+⇒＃
+`PerformanceElementTiming$I,
+`LargestContentfulPaint$I,
+`PerformanceEventTiming$I,
+`PerformancePaintTiming$I,
+`PerformanceLongAnimationFrameTiming$I
+◎
+The PaintTimingMixin interface exposes timestamps related to the rendering cycle. It is included in platform objects that extend PerformanceEntry, specifically by PerformanceElementTiming, LargestContentfulPaint, PerformanceEventTiming, PerformancePaintTiming, and PerformanceLongAnimationFrameTiming.
+</p>
+
+<p>
+`paintTime$m 属性は，
+~event~loopを成す`描画を更新する手続き$の終端における時刻印を表現する一方で、
+`presentationTime$m は，当の~frameが利用者へ呈示されるとき刻まれる［
+実装に特有な時刻印
+］を表現する。
+`塗り計時を刻む$~algoは、
+~HTML標準において`描画を更新する手続き$から~callされ，
+これら両~属性を拡充する。
+◎
+The paintTime attribute represent the timestamp at the end of the update the rendering loop while the presentationTime represents an implementation-specific timestamp marked when the frame is presented to the user. The mark paint timing alorithm, called from update the rendering in the HTML standard, populates both attributes.
+</p>
+
+<p>
+処理能~entry内の塗り計時に依拠する属性
+（ `LargestContentfulPaint$I の `renderTime$m や `startTime$m など）
+は、
+通例的に［
+当の特定の時刻印たち【？】のうちいずれかではなく，`既定の塗り時刻印$
+］を返すので，［
+`presentationTime$m を成す実装に特有な資質
+］に依らなくなる。
+◎
+Attributes in entries that rely on paint timing, like LargestContentfulPaint’s renderTime (as well as its startTime), usually return the default paint timestamp rather than one of the specific timestamps, making them agnostic to the implementation-specific nature of presentationTime.
+</p>
+
 		<section id="sec-PaintTimingMixin">
-<h3 title="The PaintTimingMixin interface">3. `PaintTimingMixin^I ~interface~mixin</h3>
+<h3 title="The PaintTimingMixin interface">3.1. `PaintTimingMixin^I ~interface~mixin</h3>
 
 <pre class="idl">
 [`Exposed$=Window]
 interface mixin `PaintTimingMixin@I {
-    readonly attribute `DOMHighResTimeStamp$I `paintTime@m;
-    readonly attribute `DOMHighResTimeStamp$I? `presentationTime@m;
+    readonly attribute `DOMHighResTimeStamp$I `paintTime$m;
+    readonly attribute `DOMHighResTimeStamp$I? `presentationTime$m;
 };
 </pre>
 
@@ -1178,7 +1249,8 @@ implementation-defined presentation time
 </ul>
 
 <div class="algo">
-`paintTime$m 取得子~手続きは
+`paintTime@m
+取得子~手続きは
 ⇒
 ~RET コレの`塗り計時~報$ptM†の`描画~更新~終了~時刻$ptI
 ◎
@@ -1186,7 +1258,7 @@ The paintTime attribute’s getter step is to return this’s paint timing info�
 </div>
 
 <div class="algo">
-`presentationTime$m
+`presentationTime@m
 取得子~手続きは
 ⇒
 【！if exists,】
