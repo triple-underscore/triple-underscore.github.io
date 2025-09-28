@@ -136,8 +136,8 @@ return text;
 ●●options
 
 spec_title:CSS Values and Units Module Level 5
-spec_date:2025-07-28
-trans_update:2025-07-29
+spec_date:2025-09-26
+trans_update:2025-09-28
 source_checked:250311
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-values-5/
@@ -399,6 +399,8 @@ keyframe:
 	重み付け:weighting
 残余:leftover:~
 縮小-:scale down:~
+剥いだ:stripした:~
+剥ぐ:stripする:~
 
 	初めから無かったかのように~~扱う:drop 〜, go with what’s left
 	初めから:all along
@@ -1016,6 +1018,7 @@ t.hash-token:~CSSSYN#typedef-hash-token
 t.ident-token:~CSSSYN#typedef-ident-token
 t.percentage-token:~CSSSYN#typedef-percentage-token
 t.string-token:~CSSSYN#typedef-string-token
+t.number-token:~CSSSYN#typedef-number-token
 
 	●t （構文用の構文
 t.attr-name:#typedef-attr-name
@@ -1142,6 +1145,7 @@ t.interpolate():#funcdef-interpolate
 v.by:#valdef-calc-interpolate-by
 v.else:#valdef-if-else
 v.raw-string:#_valdef-attr-type-raw-string
+v.number:#_valdef-attr-type-number
 
 vP.top:#valdef-position-top
 vP.right:#valdef-position-right
@@ -1430,6 +1434,7 @@ attr() に染まっ:#attr-taint
 文字列:~INFRA#string
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 ~ASCII数字:~INFRA#ascii-digit
+前後の~ASCII空白~列を剥ぐ:~INFRA#strip-leading-and-trailing-ascii-whitespace
 ~list:~INFRA#list
 拡張する:~INFRA#list-extend
 ~stack:~INFRA#stack
@@ -1982,7 +1987,7 @@ The following generic productions are comma-containing productions:
 になる。
 それは：
 ◎
-For legacy compat reasons, the &lt;declaration-value&gt; defined the fallback value for var() is a non-strict comma-containing production.＼
+For legacy compat reasons, the &lt;declaration-value&gt; defined for the fallback value of var() is a non-strict comma-containing production.＼
 </p>
 <ul>
 	<li>
@@ -5634,6 +5639,7 @@ The attr() function substitutes the value of an attribute on an element into a p
 `attr-type@t
 	= `type()$t
 	| `raw-string$v
+	| `number$v
 	| `attr-unit$t
 `type()@t
 	= type( `syntax$t )
@@ -5772,18 +5778,27 @@ Specifies how the attribute value is parsed into a CSS value.
 If given as a type() function, the value is parsed according to the &lt;syntax&gt; argument, and substitutes as the resulting tokens. Values that fail to parse according to the syntax trigger fallback.
 </dd>
 	<dd>
+`number@v
+~keywordとして与えられた場合、
+当の属性の値【！~literal値】は，
+`前後の~ASCII空白~列を剥いだ＠~INFRA#strip-leading-and-trailing-ascii-whitespace$後に `number-token$t の`文法に則って構文解析-$される。
+構文解析に失敗した場合、
+~fallbackが誘発される。
+◎
+If given as the number keyword, it causes the attribute’s literal value, after stripping leading and trailing whitespace, to be parsed as a &lt;number-token&gt;. Values that fail to parse trigger fallback.
+</dd>
+	<dd>
 `attr-unit$t 値として与えられた場合、
-当の属性の値【！the value】は，まず［
-`type(&lt;number&gt;)^v が指定された
-］かのように `number$t として構文解析される。
+当の属性の値【！the value】は，
+まず `number^v ~keywordが指定された場合と同じく `number$t として構文解析される。
 結果の数量-値は、
 所与の単位を伴う次元
 — あるいは `%^v が与えられた場合は百分率 —
 へ転換される。
-構文解析に失敗した場合、
-~fallbackが誘発される。
+当の値が `number-token$t 生成規則に対応しない場合、
+`number$v と同じく，~fallbackが誘発される。
 ◎
-If given as an &lt;attr-unit&gt; value, the value is first parsed as if type(&lt;number&gt;) was specified, then the resulting numeric value is turned into a dimension with the corresponding unit, or a percentage if % was given. Values that fail to parse as a &lt;number&gt; trigger fallback.
+If given as an &lt;attr-unit&gt; value, the value is first parsed as if number keyword was specified, then the resulting numeric value is turned into a dimension with the corresponding unit, or a percentage if % was given. Same as for number &lt;attr-type&gt;, values that do not correspond to the &lt;number-token&gt; production trigger fallback.
 </dd>
 	<dd>
 <p>
@@ -5969,9 +5984,56 @@ otherwise jump to the last step (labeled FAILURE).
 </li>
 			<li>
 <p>
+%属性~型 に応じて：
+</p>
+				<ul class="switch">
+					<li>
+<p>
+`number$v ／ `attr-unit$t ：
+</p>
+						<ol>
+							<li>
+%属性~値 ~SET `前後の~ASCII空白~列を剥ぐ$( %属性~値 )
+【この段は、この訳による補完（ `number$v を見よ）。】
+</li>
+							<li>
+%結果 ~LET `文法に則って構文解析する$( %属性~値, `number-token$t )
+【！ against `attr-type$t 】
+</li>
+							<li>
+<p>
 ~IF［
-%属性~型 ~IN { ~NULL, `raw-string$v }
+%結果 ~NEQ `失敗^i
 ］
+⇒
+~RET %属性~型 に応じて
+⇒＃
+`number$v ならば %結果 が表現する実数 ／
+`%^v ならば %結果 が表現する実数を伴う百分率~値／
+~ELSE_ ( %結果 が表現する実数, 単位として %属性~型 ) を伴う`次元$値
+</p>
+
+<p class="note">注記：
+この場合、
+%属性~値 に対しては，
+【前~段~以外の】
+いかなる種類の［
+構文解析／改変
+］も遂行されない。
+</p>
+							</li>
+						</ol>
+◎
+If syntax is the keyword number or an &lt;attr-unit&gt; value,＼
+parse attr value against &lt;attr-type&gt;.＼
+If that succeeds, return the result;＼
+otherwise, jump to the last step (labeled FAILURE).
+◎
+Note: No parsing or modification of any kind is performed on the value.
+</li>
+					<li>
+<p>
+~NULL ／ `raw-string$v
 ⇒
 ~RET %属性~値 を値にとる `string$t
 ◎
@@ -5986,51 +6048,41 @@ If syntax is null or the keyword raw-string, return a CSS &lt;string&gt; whose v
 ◎
 Note: No parsing or modification of any kind is performed on the value.
 </p>
-			</li>
-			<li>
+					</li>
+					<li>
+<p>
+`type()$t
+◎
+↓</p>
+						<ol>
+							<li>
 %代入~文脈 ~LET `代入~文脈$ ( `属性^i, %属性~名 )
 ◎
 ↓</li>
-			<li>
+							<li>
 `任意-代入~関数たちへ代入する$( %属性~値, %代入~文脈 )
 ◎
 Substitute arbitrary substitution functions in attr value, with «"attribute", attr name» as the substitution context,＼
 </li>
-			<li>
-<p>
-( %構文, %単位 ) ~LET %属性~型 に応じて
-⇒＃
-`type()$t であるならば ( %属性~型 の引数, ~NULL ) ／
-`attr-unit$t であるならば ( `&lt;number&gt;^v, %属性~型 が表現する単位 )
-</p>
-
-<p class="trans-note">【
-この段は、
-この訳による補完
-（原文には、
-“%属性~名, %属性~型 を それらの引数の定義にて指定されたとおりに処理する”
-としか述べられていない）。
-】</p>
-			</li>
-			<li>
-%結果 ~LET `構文~値で構文解析する$( %属性~値, %構文, %要素 )
+							<li>
+%結果 ~LET `構文~値で構文解析する$( %属性~値, %属性~型 の引数, %要素 )
 ◎
 then parse with a &lt;syntax&gt; attr value, with syntax and el.＼
 </li>
-			<li>
+							<li>
 ~IF［
 %結果 ~NEQ `失敗^i
 ］
 ⇒
-~RET %単位 に応じて
-⇒＃
-~NULL ならば %結果 ／
-~ELSE_ `%^v ならば %結果 が表現する実数を伴う百分率~値 ／
-~ELSE_ ( %結果 が表現する実数, %単位 ) を伴う`次元$値
+~RET %結果
 ◎
 If that succeeds, return the result;＼
 otherwise, jump to the last step (labeled FAILURE).
 </li>
+						</ol>
+					</li>
+				</ul>
+			</li>
 		</ol>
 	</li>
 	<li>
@@ -6040,7 +6092,7 @@ otherwise, jump to the last step (labeled FAILURE).
 ⇒
 ~RET %属性~型 に応じて
 ⇒＃
-~NULL 空~文字列を値にとる `string$t ／
+~NULL ならば空~文字列を値にとる `string$t ／
 ~ELSE_ `無効が保証される値$
 ◎
 FAILURE:
