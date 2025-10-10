@@ -145,8 +145,8 @@ return text;
 
 ●●options
 
-spec_date:2025-09-24
-trans_update:2025-09-24
+spec_date:2025-10-08
+trans_update:2025-10-10
 	source_checked: → WINDOW
 page_state_key:HTML
 spec_status:LS
@@ -5142,14 +5142,12 @@ To inform the navigation API about aborting navigation in a navigable navigable:
 If this algorithm is running on navigable's active window's relevant agent's event loop, then continue on to the following steps.＼
 </li>
 	<li>
-<p>
 ~ELSE
 ⇒
 `大域~taskを~queueする$( `~naviと辿り~task~source$, %~window, 下に与える `中止-用の手続き^i )
 ◎
 Otherwise, queue a global task on the navigation and traversal task source given navigable's active window to run the following steps.
-</p>
-	</li>
+</li>
 </ol>
 
 <div class="algo">
@@ -5164,19 +5162,74 @@ Otherwise, queue a global task on the navigation and traversal task source given
 Let navigation be navigable's active window's navigation API.
 </li>
 	<li>
-~IF［
-%~navi の`進行中な~navigate_ev~event$ ~EQ ~NULL
+<p>
+~WHILE［
+%~navi の`進行中な~navigate_ev~event$ ~NEQ ~NULL
 ］
 ⇒
-~RET
-◎
-If navigation's ongoing navigate event is null, then return.
-</li>
-	<li>
 `進行中な~naviを中止する$( %~navi )
 ◎
-Abort the ongoing navigation given navigation.
-</li>
+While navigation's ongoing navigate event is not null:
+• Abort the ongoing navigation given navigation.
+</p>
+
+<div class="note">
+<p>注記：
+この段は、［
+進行中な非同一-文書な~navi
+］が在る場合には，［
+それが中止されたものとして，~navi~APIへ通達されることになる
+］ことを意味する
+（例： `navigateerror$et ~eventを発火することにより）。
+これは、
+いくぶん正確aである
+— 当の`文書$が経験する次回の~naviは、
+この同一-文書な~naviになるので。
+なので，［
+次回の~navi完了が非同一-文書な~naviのそれになる
+］ものと期待していた開発者は、
+それが起こらなかったという有用な通達を取得する。
+しかしながら，いくぶん不正確でもある
+— ~browserは、［
+進行中な非同一-文書な~navi
+］を処理し続けるので
+（この同一-文書な~naviが同期的に完遂した後に，それを適用するよう）。
+◎
+If there is an ongoing cross-document navigation, this means it will be signaled to the navigation API as aborted, e.g., by firing navigateerror events. This is somewhat accurate, since the next navigation the Document experiences will be this same-document navigation, so a developer which was expecting the next navigation completion to be that of the cross-document navigation gets a useful signal that this did not happen. However, it is also somewhat inaccurate, as the browser will continue to process the ongoing cross-document navigation (applying it after this same-document one synchronously finishes).
+</p>
+
+<p>
+最終的には、
+~navi~APIは，［
+非同一-文書な~navi, 同一-文書な~navi
+］が重合することで少し散らかっている
+— `進行中~navi追跡＠#ongoing-navigation-tracking$の［
+機構, ~API
+］は、
+進行中な~naviを一つしか公開しないよう築かれたので。
+~web開発者は、
+そのような重合している状況を作成しなければ，最善に~serveされることになる
+— 例：
+新たな~naviを開始する前に
+`navigation.navigate()$c から返された~promiseを（ `await^c で）待受けることにより。
+◎
+Ultimately, the navigation API gets a bit messy with overlapping cross- and same-document navigations, as the ongoing navigation tracking machinery and APIs are built to expose only a single ongoing navigation. Web developers will be best-served if they do not create such overlapping situations, e.g., by awaiting promises returned from navigation.navigate() before starting new navigations.
+</p>
+</div>
+
+<p class="note">注記：
+この段が~loopになっているのは、
+`進行中な~naviを中止する$ことに伴い~JSが走った場合に
+（例： `navigateerror$et ~eventを介して），
+それが新たな~naviを開始するかもしれないからである。
+そのように開始された~naviは，［
+この~naviの完了により取って代わられる
+］ことになるので、
+~navi~APIへは，中止されたものとして通達されるようになる。
+◎
+This is a loop, since abort the ongoing navigation can run JavaScript (e.g., via the navigateerror event), which might start a new navigation. Since such a newly-started navigation will be superseded by the completion of this navigation, it gets signaled to the navigation API as aborted.
+</p>
+	</li>
 </ol>
 </div>
 </div>
@@ -6448,7 +6501,7 @@ If the current Document cannot have its URL rewritten to url, a "SecurityError" 
 Each NavigationPrecommitController has a NavigateEvent event.
 </p>
 
-<div class="algo" j="">
+<div class="algo">
 <p>
 `redirect(url, options)@m
 ~method手続きは：
@@ -7047,85 +7100,10 @@ To fire a push/replace/reload navigate event at a Navigation navigation given a 
 </div>
 <ol>
 	<li>
-<p>
-~IF［
-%同一-文書か ~EQ ~T
-］：
+`~naviを中止したことについて~navi~APIに伝える$( %~navi に`関連な大域~obj$に`結付けられた文書$の`~node~navigable$ )
 ◎
-If isSameDocument is true:
-</p>
-		<ol>
-			<li>
-<p>
-~WHILE［
-%~navi の`進行中な~navigate_ev~event$ ~NEQ ~NULL
-］
-⇒
-`進行中な~naviを中止する$( %~navi )
-◎
-While navigation's ongoing navigate event is not null:
-• Abort the ongoing navigation given navigation.
-</p>
-
-<div class="note">
-<p>注記：
-この段は、［
-進行中な非同一-文書な~navi
-］が在る場合には，［
-それが中止されたものとして，~navi~APIへ通達されることになる
-］ことを意味する
-（例： `navigateerror$et ~eventを発火することにより）。
-これは、
-いくぶん正確aである
-— 当の`文書$が経験する次回の~naviは、
-この同一-文書な~naviになるので。
-なので，［
-次回の~navi完了が非同一-文書な~naviのそれになる
-］ものと期待していた開発者は、
-それが起こらなかったという有用な通達を取得する。
-しかしながら，いくぶん不正確でもある
-— ~browserは、［
-進行中な非同一-文書な~navi
-］を処理し続けるので
-（この同一-文書な~naviが同期的に完遂した後に，それを適用するよう）。
-◎
-If there is an ongoing cross-document navigation, this means it will be signaled to the navigation API as aborted, e.g., by firing navigateerror events. This is somewhat accurate, since the next navigation the Document experiences will be this same-document navigation, so a developer which was expecting the next navigation completion to be that of the cross-document navigation gets a useful signal that this did not happen. However, it is also somewhat inaccurate, as the browser will continue to process the ongoing cross-document navigation (applying it after this same-document one synchronously finishes).
-</p>
-
-<p>
-最終的には、
-~navi~APIは，［
-非同一-文書な~navi, 同一-文書な~navi
-］が重合することで少し散らかっている
-— `進行中~navi追跡＠#ongoing-navigation-tracking$の［
-機構, ~API
-］は、
-進行中な~naviを一つしか公開しないよう築かれたので。
-~web開発者は、
-そのような重合している状況を作成しなければ，最善に~serveされることになる
-— 例：
-新たな~naviを開始する前に
-`navigation.navigate()$c から返された~promiseを（ `await^c で）待受けることにより。
-◎
-Ultimately, the navigation API gets a bit messy with overlapping cross- and same-document navigations, as the ongoing navigation tracking machinery and APIs are built to expose only a single ongoing navigation. Web developers will be best-served if they do not create such overlapping situations, e.g., by awaiting promises returned from navigation.navigate() before starting new navigations.
-</p>
-</div>
-
-<p class="note">注記：
-この段が~loopになっているのは、
-`進行中な~naviを中止する$ことに伴い~JSが走った場合に
-（例： `navigateerror$et ~eventを介して），
-それが新たな~naviを開始するかもしれないからである。
-そのように開始された~naviは，［
-この~naviの完了により取って代わられる
-］ことになるので、
-~navi~APIへは，中止されたものとして通達されるようになる。
-◎
-This is a loop, since abort the ongoing navigation can run JavaScript (e.g., via the navigateerror event), which might start a new navigation. Since such a newly-started navigation will be superseded by the completion of this navigation, it gets signaled to the navigation API as aborted.
-</p>
-			</li>
-		</ol>
-	</li>
+Inform the navigation API about aborting navigation in navigation's relevant global object's associated Document's node navigable.
+</li>
 	<li>
 %~event ~LET `~eventを作成する$( `NavigateEvent$I, %~navi に`関連な~realm$ )
 ◎
@@ -7937,6 +7915,7 @@ If event's scroll behavior was set to "after-transition", then scroll restoratio
 Let userInvolvement be "none".
 </li>
 	<li>
+<p>
 ~IF［
 %~event の `userInitiated$mE ~EQ ~T
 ］
@@ -7955,6 +7934,7 @@ At this point after interception, it is not consequential whether the activation
 </p>
 							</li>
 							<li>
+<p>
 `~session履歴~辿り手続きを付加する$( %~navigable の`辿可能な~navigable$nav, 次の手続き )
 ◎
 Append the following session history traversal steps to navigable's traversable navigable:
@@ -7979,6 +7959,7 @@ Append the following session history traversal steps to navigable's traversable 
 		</ol>
 	</li>
 	<li>
+<p>
 ~IF［
 %終了~結果は同一-文書か ~EQ ~T
 ］：
@@ -8004,6 +7985,7 @@ For each handler of event's navigation handler list:
 • Append the result of invoking handler with an empty arguments list to promisesList.
 </li>
 			<li>
+<p>
 ~IF［
 %~promise~list の`~size$ ~EQ 0
 ］
@@ -8045,6 +8027,7 @@ There is a subtle timing difference between how waiting for all schedules its su
 </p>
 			</li>
 			<li>
+<p>
 `すべての~promiseを待機する$( %~promise~list )
 — 次を与える下で：
 ◎
@@ -8142,6 +8125,7 @@ and the following failure step given reason: process navigate event handler fail
 Otherwise, if apiMethodTracker is non-null, then clean up apiMethodTracker.
 </li>
 	<li>
+<p>
 `走らせた~scriptを片付ける$( %~navi に`関連な設定群~obj$ )
 ◎
 Clean up after running script given navigation's relevant settings object.
