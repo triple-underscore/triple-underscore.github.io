@@ -126,6 +126,7 @@ copyright:2025,permissive
 ●●class_map
 E:error
 et:event-type
+a:attr
 
 ●●tag_map
 I:code
@@ -134,6 +135,7 @@ m:code
 mET:code
 mb:code
 et:code
+a:code
 c:code
 cite:cite
 b:b
@@ -160,6 +162,7 @@ I.Event:~DOM4#event
 I.EventTarget:~DOM4#eventtarget
 I.InputEvent:~UIEVENTS#inputevent
 I.Node:~DOM4#node
+I.Element:~DOM4#element
 I.Performance:~HRTIME#dom-performance
 I.PerformanceEntry:~TIMELINE#the-performanceentry-interface
 I.PerformanceEventTiming:#performanceeventtiming
@@ -172,6 +175,7 @@ I.PointerEvent:~POINTEREVENTS#dom-pointerevent
 
 mET.target:#dom-performanceeventtiming-target
 	mET.target:#target
+mET.targetSelector:#dom-performanceeventtiming-targetselector
 mET.processingStart:#dom-performanceeventtiming-processingstart
 mET.processingEnd:#dom-performanceeventtiming-processingend
 mET.cancelable:#dom-performanceeventtiming-cancelable
@@ -277,6 +281,7 @@ w.ヤリトリ回数:#window-interactioncount
 ~event計時を完結する:#finalize-event-timing
 処理待ちな各~event計時~entryを配送する:#dispatch-pending-event-timing-entries
 ~event計時~entryの所要時間を設定する:#set-event-timing-entry-duration
+~CSS選択子を生成する:#generate-a-css-selector
 
 	●用語（外部
 
@@ -295,6 +300,7 @@ map.値~群:~INFRA#map-getting-the-values
 	~SET:~INFRA#map-set
 	~NEQ ε:~INFRA#map-exists
 有順序~map:~INFRA#ordered-map
+連結する:~INFRA#string-concatenate
 
 文書:~DOM4#concept-document
 ~node文書:~DOM4#concept-node-document
@@ -303,6 +309,7 @@ map.値~群:~INFRA#map-getting-the-values
 ~target:~DOM4#concept-event-target
 ~targetし直す:~DOM4#retarget
 接続されて:~DOM4#connected
+~ID:~DOM4#concept-id
 
 処理能~entryを~queueする:~TIMELINE#dfn-queue-a-performanceentry
 ~supportする~entry型~群:~TIMELINE#dfn-frozen-array-of-supported-entry-types
@@ -1307,7 +1314,6 @@ Measure the 75’th percentile of the latency of the first user click (whenever 
 Event Timing adds the following interfaces:
 </p>
 
-		</section>
 		<section id="sec-performance-event-timing">
 <h3 title="PerformanceEventTiming interface">2.1. `PerformanceEventTiming^I ~interface</h3>
 
@@ -1318,6 +1324,7 @@ interface `PerformanceEventTiming@I : `PerformanceEntry$I {
     readonly attribute `DOMHighResTimeStamp$I `processingEnd$mET;
     readonly attribute `boolean$ `cancelable$mET;
     readonly attribute `Node$I? `target$mET;
+    readonly attribute `DOMString$ `targetSelector$mET;
     readonly attribute `unsigned long long$ `interactionId$mET;
     [`Default$] `object$ `toJSON@mET();
 };
@@ -1487,6 +1494,15 @@ The target attribute’s getter returns the associated event’s last target whe
 具体的に どう設定されるのか わからない。
 】</dd>
 
+	<dt>`targetSelector@mET</dt>
+	<dd>
+この属性の取得子は、［
+`結付けられた~event$の最後の `target$m を識別する文字列
+］を返す。
+◎
+The targetSelector attribute’s getter returns a string that identifies the associated event’s last target.
+</dd>
+
 	<dt>`interactionId@mET</dt>
 	<dd>
 <p>
@@ -1580,11 +1596,11 @@ The eventCounts attribute’s getter returns this’s relevant global object’s
 The interactionCount attribute’s getter returns this’s relevant global object’s interactionCount.
 </div>
 
+		</section>
 	</section>
 	<section id="sec-processing-model">
 <h2 title="Processing model">3. 処理~model</h2>
 
-		</section>
 		<section id="sec-modifications-DOM">
 <h3 title="Modifications to the DOM specification">3.1. ~DOM仕様に対する改変</h3>
 
@@ -2585,6 +2601,11 @@ Note: This will set eventTarget to the last event target. So if retargeting occu
 </p>
 	</li>
 	<li>
+%計時~entry の `targetSelector$mET ~SET `~CSS選択子を生成する$( %~target )
+◎
+Set timingEntry’s targetSelector to the result of running the algorithm to generate a CSS selector with target as input.
+</li>
+	<li>
 ~IF［
 %~event の `type$m 属性の値 ~NIN { `keydown$et, `pointerdown$et }
 ］
@@ -2909,7 +2930,91 @@ Set window’s has dispatched input event to true.
 	</li>
 </ol>
 </div>
+		</section>
 
+		<section id="sec-target-selectors">
+<h3 title="Target Selectors">3.10. ~target選択子</h3>
+
+<div class="algo">
+<p>
+`~CSS選択子を生成する@
+~algoは、
+所与の
+( `EventTarget$I %~target )
+に対し：
+◎
+To generate a CSS selector given an EventTarget target, run the following steps:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%~target は `Node$I を実装する
+］：
+◎
+If target is a Node, run the following steps:
+</p>
+		<ol>
+			<li>
+%選択子 ~LET %~target の `nodeName＠~DOM4#dom-node-nodename$m の初期~値
+◎
+Let selector be a string with an initial value of target’s nodeName.
+</li>
+			<li>
+<p>
+~IF［
+%~target は `Element$I を実装する
+］：
+◎
+If target is an Element, run the following steps:
+</p>
+				<ol>
+					<li>
+~IF［
+%~target の`~ID$ ~NEQ ε【！has an `id` attribute】
+］
+⇒
+%選択子 ~SET 次を順に`連結する$
+⇒＃
+%選択子,
+`#^l,
+%~target の`~ID$
+◎
+If target has an `id` attribute, set selector to the concatenation of « selector, "#", the value of the `id` attribute ».
+</li>
+					<li>
+~ELIF［
+%~target は `src^a 属性を有する
+］
+⇒
+%選択子 ~SET 次を順に`連結する$
+⇒＃
+%選択子,
+`[src=^l,
+%~target の `src^a 属性の値,
+`]^l
+◎
+Otherwise, if target has a `src` attribute, set selector to the concatenation of « selector, "[src=", the value of the `src` attribute, "]" ».
+</li>
+				</ol>
+			</li>
+			<li>
+~RET %選択子
+◎
+Return selector.
+</li>
+		</ol>
+	</li>
+	<li>
+【！不要：Otherwise,】
+~RET 空~文字列
+◎
+Otherwise, return an empty string.
+</li>
+</ol>
+</div>
+
+		</section>
 	</section>
 	<section id="priv-sec">
 <h2 title="Security &amp; privacy considerations">4. ~security／~privacyの考慮点</h2>
