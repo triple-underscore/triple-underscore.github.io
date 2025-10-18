@@ -257,8 +257,8 @@ return text;
 ●●options
 
 spec_title:CSS View Transitions Module Level 2
-spec_date:2025-10-02
-trans_update:2025-10-05
+spec_date:2025-10-17
+trans_update:2025-10-18
 source_checked:250205
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-view-transitions-2/
@@ -410,6 +410,7 @@ m1.types:#dom-cssviewtransitionrule-types
 m.updateCallbackDone:#dom-viewtransition-updatecallbackdone
 m.viewTransition:~HTMLnavAPI#dom-pagerevealevent-viewtransition
 m1.viewTransition:~HTMLnavAPI#dom-pageswapevent-viewtransition
+m.waitUntil:#dom-viewtransition-waituntil
 m.width:~GEOMETRY#dom-domrect-width
 
 	m.blocking:~HEscripting#dom-script-blocking → a.blocking
@@ -556,14 +557,14 @@ i.~animate中:#_animating
 i.更新~callbackは~call済み:#_update-callback-called
 i.済み:#_done
 
-el.作動中な~view遷移:#_element-active-view-transition
-
 doc.作動中な~view遷移:#document-active-view-transition
 doc.~view遷移~用の描画を抑止するか:#document-rendering-suppression-for-view-transitions
 doc.動的な~view遷移~stylesheet:#document-dynamic-view-transition-style-sheet
 doc.~view遷移~treeを示すか:#document-show-view-transition-tree
 doc.更新~callback~queue:#document-update-callback-queue
+doc.決着するまで待機する~promise数:#document-wait-until-promise-count
 
+el.作動中な~view遷移:#_element-active-view-transition
 el.ある~view遷移~内に捕捉されたか:#captured-in-a-view-transition
 
 捕捉された要素:#captured-element
@@ -600,6 +601,7 @@ cE.旧-~border幅:#captured-element-old-border-width
 飛ばされ:#skip-the-view-transition
 画像を捕捉する:#capture-the-image
 描画~特性を捕捉する:#capture-rendering-characteristics
+遷移の完遂-を遅延する~promiseを追加する:#delay-finish-for-promise
 遷移~frameを取扱う:#handle-transition-frame
 疑似要素~styleを更新する:#update-pseudo-element-styles
 ~view遷移を~clearする:#clear-view-transition
@@ -758,6 +760,8 @@ map.~cloneする:~INFRA#map-clone
 ~promiseを解決する:~WEBIDLjs#resolve
 ~promiseに反応する:~WEBIDLjs#dfn-perform-steps-once-promise-is-settled
 ~promiseを却下する:~WEBIDLjs#reject
+充足-時:~WEBIDLjs#upon-fulfillment
+却下-時:~WEBIDLjs#upon-rejection
 ~promiseを取扱済みとして~markする:~WEBIDLjs#mark-a-promise-as-handled
 取扱済みとして~markされ:~WEBIDLjs#mark-a-promise-as-handled
 	コレ:~WEBIDL#this
@@ -1042,6 +1046,7 @@ params::::パラメタ群
 	再-作動化:reactivation
 	-:accepting
 	設定-法:setting up
+	次回の:the next
 
 	●変数
 	%~view遷移:-
@@ -1109,7 +1114,8 @@ params::::パラメタ群
 	%~ID:-
 	-:ancestorGroup
 	%型~群:-
-
+	%~promise:-
+	%~promise:p
 
 
 	●保安
@@ -1431,7 +1437,7 @@ phone-browser-scrolled-to-top-without-url｜height:297px｜｜.svg
 [CSS-POSITION-3]
     Elika Etemad; Tab Atkins Jr.. ＜CSS Positioned Layout Module Level 3＞. URL: https://drafts.csswg.org/css-position-3/
 [CSS-POSITION-4]
-    ＜CSS Positioned Layout Module Level 4＞. URL: https://drafts.csswg.org/css-position-4/
+    Elika Etemad; Tab Atkins Jr.. ＜CSS Positioned Layout Module Level 4＞. URL: https://drafts.csswg.org/css-position-4/
 [CSS-PSEUDO-4]
     Elika Etemad; Alan Stearns. ＜CSS Pseudo-Elements Module Level 4＞. URL: https://drafts.csswg.org/css-pseudo-4/
 [CSS-SCOPING-1]
@@ -5440,6 +5446,7 @@ interface `ViewTransition@I {
   `undefined$ `skipTransition$m();
   attribute `ViewTransitionTypeSet$I `types$m;
   readonly attribute `Element$I `transitionRoot$m;
+  `undefined$ `waitUntil$m(`Promise$&lt;`any$&gt; %promise);
 };
 </pre>
 
@@ -5590,6 +5597,18 @@ The ViewTransition’s root element.
 これは，`文書~要素$になる。
 ◎
 For view transitions started on the Document, this is the document element.
+</dd>
+
+	<dt>
+`viewTransition$V.`waitUntil(promise)$m
+viewTransition.waitUntil()
+</dt>
+	<dd>
+~view遷移の完遂-を所与の~promiseが決着するまで遅延する。
+◎
+Delays view transition finish until the given promise is settled
+◎
+↓ When invoked with Promise p, run delay finish for promise steps with p.
 </dd>
 </dl>
 
@@ -5890,6 +5909,14 @@ The types getter steps are to return this’s active types.
 ◎
 The transitionRoot getter steps are to return this’s root element.
 </div>
+
+<div class="algo">
+`waitUntil(promise)@m
+~method手続きは
+⇒
+`遷移の完遂-を遅延する~promiseを追加する$( %promise )
+◎
+↑</div>
 
 			<section id="the-viewtransitiontypeset-interface">
 <h4 title="The ViewTransitionTypeSet Interface">10.3.1. `ViewTransitionTypeSet^I ~interface</h4>
@@ -6645,6 +6672,27 @@ Initially false.
 ~navigateしている間に`並列的$に読取られ得る。
 ◎
 Note: this value can be read in parallel while navigating.
+</dd>
+
+	<dt>
+`決着するまで待機する~promise数@doc
+◎
+wait until promise count
+</dt>
+	<dd>
+ある整数
+◎
+an integer,＼
+</dd>
+	<dd>
+初期~時は 0 とする。
+◎
+initially 0.
+</dd>
+	<dd>
+`waitUntil()$m ~method【！function】を介して追加された~promiseのうち決着-済みでないものの個数を表現する
+◎
+Represents the count of promises that have been added via waitUntil function and have not settled.
 </dd>
 </dl>
 
@@ -10341,6 +10389,59 @@ Note: This is necessary since the descendant will generate its own snapshot whic
 	</li>
 </ul>
 
+<div class="algo">
+<p>
+`遷移の完遂-を遅延する~promiseを追加する@
+~algoは、
+所与の
+( ~promise %~promise )
+に対し：
+◎
+To delay finish for promise, given promise p:
+</p>
+<ol>
+	<li>
+~IF［
+%~promise は決着-済みである
+］
+⇒
+~RET
+◎
+If p is settled, abort the remainder of the steps and return.
+</li>
+	<li>
+コレの`決着するまで待機する~promise数$doc ~INCBY 1
+◎
+Increment this’s wait until promise count.
+</li>
+	<li>
+<p>
+%~promise の［
+`充足-時$／`却下-時$
+］には、
+次の手続きを遂行するようにする
+◎
+Upon fulfillment or rejection of p:
+</p>
+
+<div class="algo">
+手続きは
+⇒
+コレの`決着するまで待機する~promise数$doc ~DECBY 1
+◎
+• Decrement this’s wait until promise count.
+</div>
+
+<p class="note">注記：
+コレの`決着するまで待機する~promise数$doc ~EQ 0 の場合、
+当の遷移は，次回の`描画~機会$に完遂することになる。
+◎
+Note: If this’s wait until promise count is 0, the transition will finish at the next rendering opportunity.
+</p>
+	</li>
+</ol>
+</div>
+
 			</section>
 		</section>
 		<section id="handle-transition-frame-algorithm">
@@ -11039,6 +11140,12 @@ See Issue #8684 and WICG/view-transitions#200 for detailed discussion.
 ◎
 Changes from 2024-05-16 Working Draft
 </dt>
+	<dd>
+`waitUntil()$m ~methodを追加した。
+（ `9901$issue ）
+◎
+Add waitUntil() (#9901)
+</dd>
 	<dd>
 層~化~捕捉（ `layered capture^en ）の初期~仕様。
 【今や除去された。】
