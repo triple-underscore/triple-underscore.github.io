@@ -1124,6 +1124,7 @@ CSSANIM2:css-animations2-ja.html
 CSSANIM:css-animations-ja.html
 CSSBG:css-backgrounds-ja.html
 CSSBOX:css-box-ja.html
+CSSBORDER:css-borders-ja.html
 CSSBREAK:css-break-ja.html
 CSSCOLOR5:css-color5-ja.html
 CSSCOLOR:css-color-ja.html

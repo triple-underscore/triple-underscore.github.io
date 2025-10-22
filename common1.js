@@ -1621,6 +1621,7 @@ CSSANIMATIONS1=副     ~/css-animations-ja.html
 CSSANIMATIONS2=副     ~/css-animations2-ja.html
 CSSBACKGROUNDS3=副    ~/css-backgrounds-ja.html
 CSSBACKGROUNDS3=副2   ~mitsue/css3-background/
+CSSBORDERS4=副        ~/css-borders-ja.html
 CSSBOX3=副            ~/css-box-ja.html●Level 4 日本語訳
 CSSBOX4=副            ~/css-box-ja.html
 CSSBREAK3=副          ~/css-break-ja.html●Level 4 日本語訳
