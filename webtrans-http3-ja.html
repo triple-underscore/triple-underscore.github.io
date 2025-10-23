@@ -136,8 +136,8 @@ return text;
 
 ●●options
 
-spec_date:2025-08-26
-trans_update:2025-09-10
+spec_date:2025-10-23
+trans_update:2025-10-23
 source_checked:250624
 original_url:https://ietf-wg-webtrans.github.io/draft-ietf-webtrans-http3/draft-ietf-webtrans-http3.html
 	abbr_url:WT-HTTP3
@@ -243,6 +243,7 @@ ft.WT_STREAM:#WT_STREAM
 ft.RESET_STREAM:~RFCx/rfc9000#frame-reset-stream
 ft.STOP_SENDING:~RFCx/rfc9000#frame-stop-sending
 ft.MAX_STREAMS:~RFCx/rfc9000#frame-max-streams
+ft.MAX_DATA:~RFCx/rfc9000#frame-max-data
 ft.CONNECTION_CLOSE:~RFCx/rfc9000#frame-connection-close
 ft.DATAGRAM:~RFCx/rfc9221#datagram-frame-types
 ft.SETTINGS:~HTTPv3#frame-settings
@@ -266,6 +267,7 @@ sp.SETTINGS_ENABLE_CONNECT_PROTOCOL:~RFCx/rfc9220#websockets-upgrade-over-http3
 
 er.WT_BUFFERED_STREAM_REJECTED:#WT_BUFFERED_STREAM_REJECTED
 er.WT_SESSION_GONE:#WT_SESSION_GONE
+er.WT_FLOW_CONTROL_ERROR:#WT_FLOW_CONTROL_ERROR
 er.WT_APPLICATION_ERROR:#WT_APPLICATION_ERROR
 
 er.H3_SETTINGS_ERROR:~HTTPv3#H3_SETTINGS_ERROR
@@ -273,6 +275,8 @@ er.H3_FRAME_ERROR:~HTTPv3#H3_FRAME_ERROR
 er.H3_MESSAGE_ERROR:~HTTPv3#H3_MESSAGE_ERROR
 er.H3_ID_ERROR:~HTTPv3#H3_ID_ERROR
 er.H3_REQUEST_REJECTED:~HTTPv3#H3_REQUEST_REJECTED
+
+c.max_datagram_frame_size:~RFCx/rfc9221#section-3
 
 	●用語
 ~CONNECT~stream:#connect-stream
@@ -312,6 +316,7 @@ er.H3_REQUEST_REJECTED:~HTTPv3#H3_REQUEST_REJECTED
 	~WebTransport~UA:~WT-OVERVIEW#webtransport-ua
 ~WebTransport~session:~WT-OVERVIEW#webtransport-session
 	~datagram:~WT-OVERVIEW#datagram
+不依拠-可能:~WT-OVERVIEW#unreliable
 
 ~reset:~RFCx/rfc9000#stream-operations
 ~capsule:~HTTPdatagram#dfn-capsule
@@ -348,6 +353,8 @@ HTTP3:HTTP/3
 HTTP2:HTTP/2
 HTTP11:HTTP/1.1
 CONNECT:
+	~CONNECT~stream:connect stream
+	~CONNECT~stream:CONNECT stream
 URI:
 TLS:
 0-RTT:
@@ -392,8 +399,14 @@ handshake::::ハンドシェイク
 広告-:advertise:~
 受領:receipt::~
 backend::::バックエンド
+不依拠-:unrely:~
+	不依拠-可能:unreliable
+喪失-:lose:~
+	喪失した:lost
 
 	^en:head-of-line~blocking
+	伝送し直-:retransmit
+	順序どおり:in order
 
 	●stream／frame
 可変長:variable length:長さ可変
@@ -414,6 +427,12 @@ payload::::ペイロード
 	~HTTP~datagram~payload^i:HTTP Datagram Payload
 	最大~stream数^i:Maximum Streams
 	最大~data量^i:Maximum Data
+	~stream本体^i:Stream Body
+	通達~値^i:Signal Value
+	~stream種別^i:Stream Type
+	~session~ID^i:Session ID
+	応用~error~code^i:Application Error Code
+	~error~code^i:Error Code
 
 	●処理
 reset:
@@ -436,6 +455,7 @@ credit:
 schedule::::スケジュール
 	~schedule法:scheduling
 pool:
+	~pool法:pooling
 解凍:decompression::~
 圧縮:compression::~
 翻訳-:translate:~
@@ -504,6 +524,7 @@ Upgrade:
 	~~任意で~~選べる:opt
 	総称される:referred to as
 	なし:none
+	要約すると:in summary
 
 	●言い換え
 	1 以上の:greater than "0"
@@ -544,6 +565,7 @@ Upgrade:
 隣接な:adjacentな:隣接する
 符号点:codepoint:~
 超過-:exceed:~
+	超過した:in excess
 近過去:recent:~
 疑似-:pseudo-:~
 	疑似-~code:pseudocode
@@ -568,6 +590,9 @@ lifecycle:
 面して:faceして:~
 運ばれ:carryされ:~
 合意-:agree:~
+遭遇-:encounter:~
+限界域:bounds:~
+収まる:fitする:~
 
 	量:amount
 	量:how much
@@ -593,6 +618,8 @@ lifecycle:
 	属する:belonging
 	置かれる:~put
 	〜以下:inclusive
+	含む:include
+	含めること:inclusion
 	残り:the remainder
 	両方^i:Both
 	前回:the previous
@@ -605,6 +632,7 @@ lifecycle:
 	〜 乗<sup>〜</sup>
 	表出し直す:reexpress
 	それまでに:previously
+	以前に:previously
 	前回より増やされた:increasing
 	非-:non-
 	総:total
@@ -614,6 +642,8 @@ lifecycle:
 	全体:as a whole
 	当の:in question
 	〜すべてが:the entirety of
+	~~反映:mirror
+	有無:presence
 
 ●●ref_data
 OVERVIEW=副 ~/webtrans-overview-ja.html
@@ -886,8 +916,8 @@ An application client is user or developer-provided code, often untrusted, that 
 ］を伴う~secureな~transport~protocolである。
 ~QUICは、
 ~stream
-— 多重化し得る, 依拠-可能な, 有順序~byte~stream —
-を介する応用~dataの交換を~supportする。
+— 多重化し得る，依拠-可能かつ有順序な~byte~streamたち —
+を介した応用~dataの交換を~supportする。
 ~streamの独立性により、
 渋滞（ `head-of-line blocking^en ）は軽減され得る。
 ~QUICは，~transport~serviceとして~streamを供するが、
@@ -1189,19 +1219,12 @@ A WebTransport session is terminated when the CONNECT stream that created it is 
 ］両者に対し，［
 ある設定を利用して，~HTTP3越しに~WebTransport用に~supportを通達する
 ］ことを要求する。
-~clientは、
-また，~sessionを確立するときに
-拡張d `CONNECT$m ~CONNECT要請~内に "`webtransport^c" ~Upgrade~tokenを利用することにより~supportを通達する
-（`~Upgrade~tokenの登録＠#upgrade-token§を見よ）。
 ◎
-A WebTransport-Capable HTTP/3 connection requires the client and server to both signal support for WebTransport over HTTP/3 using a setting. Clients also signal support by using the "webtransport" upgrade token in extended CONNECT requests when establishing sessions (see Section 9.1).
+A WebTransport-Capable HTTP/3 connection requires the client and server to both signal support for WebTransport over HTTP/3 using a setting.
 </p>
 
 <p>
-~HTTP3越しの~WebTransportは、
-`RFC9220$r にて述べられるとおり，
-~HTTP3における拡張d `CONNECT$m を利用する
-— それは、
+この文書は、
 `SETTINGS_ENABLE_CONNECT_PROTOCOL$sp 設定を定義する。
 この文書は、
 接続が~supportする`~WebTransport~session$の個数を指示するためとして，
@@ -1209,36 +1232,148 @@ A WebTransport-Capable HTTP/3 connection requires the client and server to both 
 — この設定~用の既定の値は 0 であり、［
 当の端点は，`~WebTransport~session$を受信する用意はない
 ］ことを意味する。
+~HTTP3越しの~WebTransportを~supportしている［
+~client, ~server
+］は、
+どちらも［
+1 以上の値を伴う `SETTINGS_WT_MAX_SESSIONS$sp 設定
+］を送信しなければ`ナラナイ^2119。
+~clientは、
+~serverから［
+~WebTransport用の~supportを指示している設定
+］を受信するまでは，
+`~WebTransport~session$を確立するよう試みては`ナラナイ^2119。
 ◎
-WebTransport over HTTP/3 uses extended CONNECT in HTTP/3 as described in [RFC9220], which defines the SETTINGS_ENABLE_CONNECT_PROTOCOL setting. This document defines a SETTINGS_WT_MAX_SESSIONS setting for indicating the number of WebTransport sessions a connection supports. The default value for the SETTINGS_WT_MAX_SESSIONS setting is "0", meaning that the endpoint is not willing to receive any WebTransport sessions.
+This document defines a SETTINGS_WT_MAX_SESSIONS setting for indicating the number of WebTransport sessions a connection supports. The default value for the SETTINGS_WT_MAX_SESSIONS setting is "0", meaning that the endpoint is not willing to receive any WebTransport sessions. Both clients and servers supporting WebTransport over HTTP/3 MUST send the SETTINGS_WT_MAX_SESSIONS setting with a value greater than "0". Clients MUST NOT attempt to establish WebTransport sessions until they have received the setting indicating WebTransport support from the server.
 </p>
 
 <p>
-~HTTP3越しの~WebTransportを~supportしている~serverは、［
-1 以上の値を伴う `SETTINGS_WT_MAX_SESSIONS$sp 設定
-］および［
-値 1 を伴う `SETTINGS_ENABLE_CONNECT_PROTOCOL$sp 設定
-］を送信しなければ`ナラナイ^2119。
+~HTTP3越しの~WebTransportは：
 ◎
-A server supporting WebTransport over HTTP/3 MUST send both the SETTINGS_WT_MAX_SESSIONS setting with a value greater than "0" and the SETTINGS_ENABLE_CONNECT_PROTOCOL setting with a value of "1".
-</p>
+↓</p>
+<ul>
+	<li>
+`RFC9220$r にて述べられるとおり，
+~HTTP3における拡張d `CONNECT$m を利用する
+⇒
+それは、
+`SETTINGS_ENABLE_CONNECT_PROTOCOL$sp 設定を定義する。
+~clientも、［
+~sessionを確立するとき，
+拡張d `CONNECT$m 要請~内に "`webtransport^c" ~Upgrade~tokenを利用する
+］ことにより，~WebTransport用の~supportを通達する
+（`~Upgrade~tokenの登録＠#upgrade-token§を見よ）。
+◎
+WebTransport over HTTP/3 uses extended CONNECT in HTTP/3 as described in [RFC9220], which defines the SETTINGS_ENABLE_CONNECT_PROTOCOL setting. Clients also signal support for WebTransport by using the "webtransport" upgrade token in extended CONNECT requests when establishing sessions (see Section 9.1).
+</li>
+	<li>
+`~HTTP3~datagram$と`~capsule~protocol$ `HTTP-DATAGRAM$r
+用の~supportを要求する
+⇒
+［
+~client, ~server
+］は，どちらも、
+各自の `SETTINGS$ft ~frame内に［
+値 1 に設定された `SETTINGS_H3_DATAGRAM$sp 設定 `HTTP-DATAGRAM$r
+］を送信することにより，
+~HTTP3~datagram用の~supportを指示する。
+◎
+WebTransport over HTTP/3 requires support for HTTP/3 datagrams and the Capsule Protocol, and both the client and the server indicate support for HTTP/3 datagrams by sending a SETTINGS_H3_DATAGRAM setting value set to 1 in their SETTINGS frame (see Section 2.1.1 of [HTTP-DATAGRAM]).
+</li>
+	<li>
+~QUIC~datagram用の~supportも要求する
+⇒
+~supportを指示するためには、［
+~client, ~server
+］どちらも，［
+1 以上の値を伴う `max_datagram_frame_size$c ~transport~parameter `QUIC-DATAGRAM$r
+］を送信する。
+◎
+WebTransport over HTTP/3 also requires support for QUIC datagrams. To indicate support, both the client and the server send a max_datagram_frame_size transport parameter with a value greater than 0 (see Section 3 of [QUIC-DATAGRAM]).
+</li>
+	<li>
+`RESET-STREAM-AT$r にて定義される `RESET_STREAM_AT$ft ~frameに依拠する
+⇒
+~supportを指示するためには、［
+~client, ~server
+］どちらも，［
+`RESET-STREAM-AT$r `拡張~利用の折衝-法＠~RELIABLERESET#section-3§
+にて述べられるとおり，
+空な `reset_stream_at^c ~transport~parameterを送信する
+］ことにより，この拡張を可能化する。
+◎
+WebTransport over HTTP/3 relies on the RESET_STREAM_AT frame defined in [RESET-STREAM-AT]. To indicate support, both the client and the server enable the extension by sending an empty reset_stream_at transport parameter as described in Section 3 of [RESET-STREAM-AT].
+</li>
+</ul>
 
 <p>
-~HTTP3越しの~WebTransportを~supportしている~clientは、［
-1 以上の値を伴う `SETTINGS_WT_MAX_SESSIONS$sp 設定
-］を送信しなければ`ナラナイ^2119。
+要約すると、
+~HTTP3越しの~WebTransportを：
 ◎
-A client supporting WebTransport over HTTP/3 MUST send the SETTINGS_WT_MAX_SESSIONS setting with a value greater than "0".
+In summary,＼
+</p>
+<ul>
+	<li>
+~supportしている~serverは、
+次を送信する
+⇒＃
+1 以上の値を伴う `SETTINGS_WT_MAX_SESSIONS$sp 設定,
+値 1 を伴う `SETTINGS_ENABLE_CONNECT_PROTOCOL$sp 設定,
+値 1 を伴う `SETTINGS_H3_DATAGRAM$sp 設定,
+1 以上の値を伴う `max_datagram_frame_size$c ~transport~parameter,
+空な `reset_stream_at^c ~transport~parameter
+◎
+servers supporting WebTransport over HTTP/3 send:
+• A SETTINGS_WT_MAX_SESSIONS setting with a value greater than "0"
+• A SETTINGS_ENABLE_CONNECT_PROTOCOL setting with a value of "1"
+• A SETTINGS_H3_DATAGRAM setting with a value of 1
+• A max_datagram_frame_size transport parameter with a value greater than 0
+• An empty reset_stream_at transport parameter
+</li>
+	<li>
+~supportしている~clientは、
+次を送信する
+⇒＃
+1 以上の値を伴う `SETTINGS_WT_MAX_SESSIONS$sp 設定,
+値 1 を伴う `SETTINGS_H3_DATAGRAM$sp 設定,
+1 以上の値を伴う `max_datagram_frame_size$c ~transport~parameter,
+空な `reset_stream_at^c ~transport~parameter
+◎
+Clients supporting WebTransport over HTTP/3 send:
+• A SETTINGS_WT_MAX_SESSIONS setting with a value greater than "0"
+• A SETTINGS_H3_DATAGRAM setting with a value of 1
+• A max_datagram_frame_size transport parameter with a value greater than 0
+• An empty reset_stream_at transport parameter
+</li>
+</ul>
+
+<p>
+~serverは、
+新たな`~WebTransport~session$を確立するための `CONNECT$m 要請が
+— 他の~messageに加えて —
+~clientから `SETTINGS$ft を受信する前に到着し得ることに注意するべきである
+（ `流入~stream／~datagramの~buffer法＠#buffering-incoming§を見よ）。
+~serverは、
+要求される各種［
+設定, ~transport~parameter
+］のうち いずれかに不正な値を伴う `SETTINGS$ft を受信した場合には，
+すべての［
+確立-済みな／新たな
+］流入`~WebTransport~session$を
+—  `HTTP3$r `不正形な~message＠~HTTPv3#malformed§ にて述べられるとおり —
+不正形として扱わなければ`ナラナイ^2119。
+◎
+Servers should note that CONNECT requests to establish new WebTransport sessions, in addition to other messages, can arrive before the client's SETTINGS are received (see Section 4.6). If the server receives SETTINGS that do not have correct values for every required setting, or transport parameters that do not have correct values for every required transport parameter, the server MUST treat all established and newly incoming WebTransport sessions as malformed, as described in Section 4.1.2 of [HTTP3].
 </p>
 
 <p>
 ~clientは、
-~serverから［
-~WebTransport用の~supportを指示している設定群
-］を受信するまでは，
-`~WebTransport~session$を確立するよう試みては`ナラナイ^2119。
+~serverの `SETTINGS$ft が要求される各種［
+設定, ~transport~parameter
+］のうち いずれかに不正な値を伴う場合には，
+`~WebTransport~session$を確立しては`ナラナイ^2119。
 ◎
-Clients MUST NOT attempt to establish WebTransport sessions until they have received the settings indicating WebTransport support from the server.
+A client MUST NOT establish WebTransport sessions if the server's SETTINGS do not have correct values for every required setting or if the server's transport parameters do not have correct values for every required transport parameter.
 </p>
 
 <p class="note">注記：
@@ -1257,67 +1392,9 @@ Clients MUST NOT attempt to establish WebTransport sessions until they have rece
 — ~clientは、
 ~WebTransport拡張として［
 ~serverが利用するものとは異なる~version
-］を利用していることもあるので。
+］を利用しているかもしれないので。
 ◎
-For draft versions of WebTransport only, the server MUST NOT process any incoming WebTransport requests until the client settings have been received, as the client may be using a version of the WebTransport extension that is different from the one used by the server.
-</p>
-
-<p>
-~HTTP3越しの~WebTransportは、
-`~HTTP3~datagram$と`~capsule~protocol$ `HTTP-DATAGRAM$r
-用の~supportを要求するので、
-［
-~client, ~server
-］どちらも、
-各自の `SETTINGS$ft ~frame内に［
-値 1 に設定された `SETTINGS_H3_DATAGRAM$sp 設定 `HTTP-DATAGRAM$r
-］を送信することにより，
-~HTTP3~datagram用の~supportを指示しなければ`ナラナイ^2119。
-~serverは、
-この `SETTINGS$ft を受信する前に［
-新たな`~WebTransport~session$を確立するための `CONNECT$m 要請
-］が
-— 他の~messageに加えて —
-到着し得ることに注意するべきである
-（ `流入~stream／~datagramの~buffer法＠#buffering-incoming§を見よ）。
-◎
-Because WebTransport over HTTP/3 requires support for HTTP/3 datagrams and the Capsule Protocol, both the client and the server MUST indicate support for HTTP/3 datagrams by sending a SETTINGS_H3_DATAGRAM setting value set to 1 in their SETTINGS frame (see Section 2.1.1 of [HTTP-DATAGRAM]). Servers should also note that CONNECT requests to establish new WebTransport sessions, in addition to other messages, may arrive before this SETTING is received (see Section 4.5).
-</p>
-
-<p>
-~HTTP3越しの~WebTransportには、
-~QUIC~datagram用の~supportも要求される。
-~supportを指示するためには、［
-~client, ~server
-］どちらも，［
-1 以上の値を伴う `max_datagram_frame_size＠~RFCx/rfc9221#section-3$c ~transport~parameter `QUIC-DATAGRAM$r
-］を送信しなければ`ナラナイ^2119。
-◎
-WebTransport over HTTP/3 also requires support for QUIC datagrams. To indicate support, both the client and the server MUST send a max_datagram_frame_size transport parameter with a value greater than 0 (see Section 3 of [QUIC-DATAGRAM]).
-</p>
-
-<p>
-~serverは、
-~clientが［
-~QUIC~datagram, ~HTTP~datagram
-］を可能化することなく送信した~WebTransport要請に対しては，それを
-— `HTTP3$r `不正形な~message＠~HTTPv3#malformed§ にて述べられるとおり —
-不正形として扱わなければナラナイ。
-◎
-Any WebTransport requests sent by the client without enabling QUIC and HTTP datagrams MUST be treated as malformed by the server, as described in Section 4.1.2 of [HTTP3].
-</p>
-
-<p>
-~HTTP3越しの~WebTransportは、
-`RESET-STREAM-AT$r にて定義される `RESET_STREAM_AT$ft ~frameに依拠する。
-~supportを指示するためには、［
-~client, ~server
-］どちらも，この拡張を
-— `RESET-STREAM-AT$r `拡張~利用の折衝-法＠~RELIABLERESET#section-3§
-にて述べられるとおり —
-可能化しなければナラナイ。
-◎
-WebTransport over HTTP/3 relies on the RESET_STREAM_AT frame defined in [RESET-STREAM-AT]. To indicate support, both the client and the server MUST enable the extension as described in Section 3 of [RESET-STREAM-AT].
+For draft versions of WebTransport only, the server MUST NOT process any incoming WebTransport requests until the client settings have been received, as the client might be using a version of the WebTransport extension that is different from the one used by the server.
 </p>
 
 		</section>
@@ -1674,8 +1751,72 @@ The client MAY optimistically open unidirectional and bidirectional streams, as 
 If at any point a session ID is received that cannot be a valid ID for a client-initiated bidirectional stream, the recipient MUST close the connection with an H3_ID_ERROR error code.
 </p>
 
+		<section id="transport-properties">
+<h3 title="Transport Properties">4.1. ~transport~prop</h3>
+
+<p>
+`~WebTransport~framework^cite `OVERVIEW$r は、
+~clientが［
+各種~特能
+— ［
+すべての~WebTransport~protocolを介して可用な~propたちが成す共通な集合
+］を超えて追加的な最適化を許容するかもしれない特能 —
+の有無を決定する
+］ために利用できる［
+任意選択な`~transport~prop＠~WT-OVERVIEW#transport-properties$たちが成す集合
+］を定義する。
+◎
+The WebTransport framework [OVERVIEW] defines a set of optional transport properties that clients can use to determine the presence of features which might allow additional optimizations beyond the common set of properties available via all WebTransport protocols.
+</p>
+
+<p>
+以下は、
+~HTTP3越しの~WebTransportにおける［
+これらの~prop用の~support
+］についての詳細である：
+◎
+Below are details about support in WebTransport over HTTP/3 for the properties defined by the WebTransport framework.
+</p>
+<dl>
+	<dt>
+不依拠-可能な送達：
+◎
+Unreliable Delivery:
+</dt>
+	<dd>
+~HTTP3越しの~WebTransportは、
+`不依拠-可能$な送達を~supportする。
+喪失した~stream~data内の~stream結果を~resetしても，もはや伝送し直されなくなる。
+~HTTP3越しの~WebTransportは、
+~datagramも~supportする
+— それは、
+伝送し直されない。
+◎
+WebTransport over HTTP/3 supports unreliable delivery. Resetting a stream results in lost stream data no longer being retransmitted. WebTransport over HTTP/3 also supports datagrams, which are not retransmitted.
+</dd>
+
+	<dt>
+~pool法
+◎
+Pooling:
+</dt>
+	<dd>
+~HTTP3越しの~WebTransportは、
+任意選択な［
+~poolするための~support
+］を供する。
+端点は、
+`SETTINGS_WT_MAX_SESSIONS$sp 設定を利用して，
+特定0の~HTTP3接続~上で~pool法が~supportされるか否かを指示できる
+（`~transport能力がある~HTTP3接続の確立-法＠#establishing§）。
+◎
+WebTransport over HTTP/3 provides optional support for pooling. Endpoints can use the SETTINGS_WT_MAX_SESSIONS setting to indicate if pooling is supported on a particular HTTP/3 connection (Section 3.1).
+</dd>
+</dl>
+
+		</section>
 		<section id="unidirectional-streams">
-<h3 title="Unidirectional streams">4.1. 一方向~stream</h3>
+<h3 title="Unidirectional streams">4.2. 一方向~stream</h3>
 
 <p>
 `~WebTransport端点$は、
@@ -1715,7 +1856,7 @@ Figure 2: Unidirectional WebTransport stream format
 
 		</section>
 		<section id="bidirectional-streams">
-<h3 title="Bidirectional Streams">4.2. 双方向~stream</h3>
+<h3 title="Bidirectional Streams">4.3. 双方向~stream</h3>
 
 <p>
 ~clientが起動した`双方向~stream$は、
@@ -1828,7 +1969,7 @@ This document reserves the special signal value 0x41 as a WT_STREAM frame type. 
 
 		</section>
 		<section id="resetting-data-streams">
-<h3 title="Resetting Data Streams">4.3. ~data~streamの~reset法</h3>
+<h3 title="Resetting Data Streams">4.4. ~data~streamの~reset法</h3>
 
 <p>
 `~WebTransport端点$は、
@@ -1916,7 +2057,7 @@ WebTransport endpoints MUST forward the error code for a stream associated with 
 
 		</section>
 		<section id="datagrams">
-<h3 title="Datagrams">4.4. ~datagram</h3>
+<h3 title="Datagrams">4.5. ~datagram</h3>
 
 <p>
 ~datagramは、
@@ -1934,14 +2075,14 @@ Datagrams can be sent using HTTP Datagrams. The WebTransport datagram payload is
 
 		</section>
 		<section id="buffering-incoming">
-<h3 title="Buffering Incoming Streams and Datagrams">4.5. 流入~stream／~datagramの~buffer法</h3>
+<h3 title="Buffering Incoming Streams and Datagrams">4.6. 流入~stream／~datagramの~buffer法</h3>
 
 <p>
 ~HTTP3越しの~WebTransportにおいては、
 ~clientは，`~WebTransport~session$を確立する前に［
 ~WebTransport用の~Upgrade~tokenを利用している `CONNECT$m 要請
 ］を送信する
-（ `~transport能力がある~HTTP3接続の確立-法＠#establishing$を見よ）
+（`~transport能力がある~HTTP3接続の確立-法＠#establishing§を見よ）
 ことにより［
 ~serverから `SETTINGS$ft ~frameが受信される
 ］のを待機しなければナラナイ。
@@ -2001,7 +2142,7 @@ To handle this case, WebTransport endpoints SHOULD buffer streams and datagrams 
 
 		</section>
 		<section id="interaction-with-the-http3-goaway-frame">
-<h3 title="Interaction with the HTTP/3 GOAWAY frame">4.6. ~HTTP3 `GOAWAY$ft ~frameとの相互作用</h3>
+<h3 title="Interaction with the HTTP/3 GOAWAY frame">4.7. ~HTTP3 `GOAWAY$ft ~frameとの相互作用</h3>
 
 <p>
 ~HTTP3は、
@@ -2093,7 +2234,7 @@ The WT_DRAIN_SESSION capsule is useful when an end-to-end WebTransport session p
 
 		</section>
 		<section id="use-of-keying-material-exporters">
-<h3 title="Use of Keying Material Exporters">4.7. 鍵~用~素材~exporterの利用</h3>
+<h3 title="Use of Keying Material Exporters">4.8. 鍵~用~素材~exporterの利用</h3>
 
 <p>
 ~HTTP3越しの~WebTransportは、
@@ -2268,21 +2409,60 @@ A WebTransport endpoint that allows a WebTransport session to share an underlyin
 </p>
 
 <p>
-端点は、
-2 以上の値を伴う `SETTINGS_WT_MAX_SESSIONS$sp を送信することにより，
-複数個の`~WebTransport~session$
-— したがって，~flow制御 —
-を~supportする用意があることを指示する。
+~flow制御は、
+どちらの端点も~flow制御を利用する意図を宣言したとき，
+可能化される
+— `SETTINGS_WT_MAX_SESSIONS$sp が値 1 を伴って送信された場合でも。
+各~端点は、
+次に挙げるいずれかの動作をとることにより，
+~flow制御を利用する意図を宣言する：
 ◎
-An endpoint indicates that it is willing to support more than one WebTransport session, and thus flow control, by sending the SETTINGS_WT_MAX_SESSIONS with a value greater than "1".＼
+Flow control is enabled when both endpoints declare their intent to use flow control, even if SETTINGS_WT_MAX_SESSIONS is sent with a value of "1". Endpoints declare their intent to use flow control by taking any of the following actions:
+</p>
+<ul>
+	<li>
+2 以上の値を伴う `SETTINGS_WT_MAX_SESSIONS$sp を送信する。
+◎
+Sending SETTINGS_WT_MAX_SESSIONS with a value greater than "1".
+</li>
+	<li>
+0 以外の値を伴う `SETTINGS_WT_INITIAL_MAX_STREAMS_UNI$sp を送信する。
+◎
+Sending SETTINGS_WT_INITIAL_MAX_STREAMS_UNI with any value other than "0".
+</li>
+	<li>
+0 以外の値を伴う `SETTINGS_WT_INITIAL_MAX_STREAMS_BIDI$sp を送信する。
+◎
+Sending SETTINGS_WT_INITIAL_MAX_STREAMS_BIDI with any value other than "0".
+</li>
+	<li>
+0 以外の値を伴う `SETTINGS_WT_INITIAL_MAX_DATA$sp を送信する。
+◎
+Sending SETTINGS_WT_INITIAL_MAX_DATA with any value other than "0".
+</li>
+</ul>
+
+<p>
+どちらの端点も，これらの動作のうち一つ以上をとった場合、
+~flow制御は可能化され，
+`~flow制御＠#flow-control§にて述べられる制限sすべてが適用される。
+◎
+If both endpoints take at least one of these actions, flow control is enabled, and the limits described in the entirety of Section 5 apply.
 </p>
 
 <p>
-どちらかの端点が値 1 を伴う `SETTINGS_WT_MAX_SESSIONS$sp を送信した場合、
-~flow制御は可能化されない
-— その場合：
+これらの判定基準に `SETTINGS$ft を成す各種~flow制御~設定を含めることは、
+1 個の`~WebTransport~session$しか~supportされない場合でも，［
+互いの端点が，~flow制御を明示的に可能化することに合意する
+］ことを許容する。
 ◎
-If either endpoint sends SETTINGS_WT_MAX_SESSIONS with a value of "1", flow control is not enabled, and＼
+The inclusion of the flow control SETTINGS in these criteria allows endpoints to agree to explicitly enable flow control, even if only a single WebTransport session is supported.
+</p>
+
+<p>
+~flow制御が可能化されない場合：
+◎
+If flow control is not enabled,＼
 </p>
 <ul>
 	<li>
@@ -2301,26 +2481,17 @@ clients MUST NOT attempt to establish more than one simultaneous WebTransport se
 ◎
 A server that receives more than one session on an underlying transport connection when flow control is not enabled MUST reset the excessive CONNECT streams with a H3_REQUEST_REJECTED status (see Section 5.2).
 </li>
-</ul>
-
-<p>
-どちらの端点も 2 以上の値を伴う `SETTINGS_WT_MAX_SESSIONS$sp を送信した場合、
-~flow制御は可能化され，
-`~flow制御＠#flow-control§にて述べられる制限sすべてが適用される。
-◎
-If both endpoints send SETTINGS_WT_MAX_SESSIONS with a value greater than "1", flow control is enabled, and the limits described in the entirety of Section 5 apply.
-</p>
-
-<p>
-~flow制御が可能化されていない場合【されるまでは】、
-端点は，`~flow制御~capsule$の受領を無視しなければ`ナラナイ^2119
+	<li>
+端点は、
+`~flow制御~capsule$の受領を無視しなければ`ナラナイ^2119
 — ［
 相手の端点は，それらが送信された時点では `SETTINGS$ft をまだ受信してない／
 ~packetたちは並替えられた
 ］かもしれないので。
 ◎
-If flow control is not enabled, an endpoint MUST ignore receipt of any flow control capsules (see Section 5.6), since the peer might not have received SETTINGS at the time they were sent or packets might have been reordered.
-</p>
+Also, if flow control is not enabled, an endpoint MUST ignore receipt of any flow control capsules (see Section 5.6), since the peer might not have received SETTINGS at the time they were sent or packets might have been reordered.
+</li>
+</ul>
 
 		</section>
 		<section id="flow-control-limit-sessions">
@@ -2437,7 +2608,7 @@ Note that enforcing this limit requires reliable resets for stream headers so th
 新たな~streamを特定の`~WebTransport~session$へ~linkするために本質的な情報
 ］の送信を防止しないようにするため。
 ◎
-The WT_MAX_DATA capsule (Section 5.6.4) establishes a limit on the amount of data that can be sent within a WebTransport session. This limit counts all data that is sent on streams of the corresponding type, excluding the stream header (see Section 4.1 and Section 4.2). The stream header is excluded from this limit so that this limit does not prevent the sending of information that is essential in linking new streams to a specific WebTransport session.
+The WT_MAX_DATA capsule (Section 5.6.4) establishes a limit on the amount of data that can be sent within a WebTransport session. This limit counts all data that is sent on streams of the corresponding type, excluding the stream header (see Section 4.2 and Section 4.3). The stream header is excluded from this limit so that this limit does not prevent the sending of information that is essential in linking new streams to a specific WebTransport session.
 </p>
 
 <p>
@@ -2693,6 +2864,29 @@ Note that this limit includes streams that have been closed as well as those tha
 </p>
 
 <p>
+端点は、［
+ある~session用に受信した流入~streamが，
+広告された `最大~stream数^i の値を超過する場合
+］には，
+~error~code `WT_FLOW_CONTROL_ERROR$er で当の`~WebTransport~session$を~closeしなければ`ナラナイ^2119。
+◎
+If an endpoint receives an incoming stream for a session that would exceed the advertised Maximum Streams value, it MUST close the WebTransport session with a WT_FLOW_CONTROL_ERROR error code.
+</p>
+
+<p>
+~QUICにおける `MAX_STREAMS$ft ~frameたちは，
+どの順序でも送達され得るが、
+それとは違って、
+`~WebTransport~session$の`~CONNECT~stream$上に送信される `WT_MAX_STREAMS$cps ~capsuleたちは，
+順序どおりに送達される。
+端点は、
+受信した `WT_MAX_STREAMS$cps ~capsuleの `最大~stream数^i の値が以前に受信した値~未満である場合には，
+~error~code `WT_FLOW_CONTROL_ERROR$er で当の`~WebTransport~session$を~closeしなければ`ナラナイ^2119。
+◎
+Unlike in QUIC, where MAX_STREAMS frames can be delivered in any order, WT_MAX_STREAMS capsules are sent on the WebTransport session's connect stream and are delivered in order. If an endpoint receives a WT_MAX_STREAMS capsule with a Maximum Streams value less than a previously received value, it MUST close the WebTransport session with a WT_FLOW_CONTROL_ERROR error code.
+</p>
+
+<p>
 `WT_MAX_STREAMS^cps ~capsuleは、
 `HTTP-DATAGRAM$r `~capsule~protocol§1にて述べられるとおり，
 `媒介者$による特別な取扱いを定義する。
@@ -2822,7 +3016,7 @@ An HTTP capsule [HTTP-DATAGRAM] called WT_MAX_DATA (type=0x190B4D3D) is introduc
 `双方向~stream＠#bidirectional-streams§ を見よ）
 は，この上限からは除外される。
 ◎
-This limit counts all data that is sent on streams of the corresponding type, excluding the stream header (see Section 4.1 and Section 4.2).＼
+This limit counts all data that is sent on streams of the corresponding type, excluding the stream header (see Section 4.2 and Section 4.3).＼
 </p>
 
 <p>
@@ -2878,6 +3072,35 @@ A variable-length integer indicating the maximum amount of data that can be sent
 </dl>
 
 <p>
+この~sessionに結付けられた すべての~stream上に送信された `~stream本体^i ~dataの長さの総和は、
+受信器により広告された `最大~data量^i の値を超過しては`ナラナイ^2119。
+`CONNECT$m ~stream上に送信された`~capsule$, および［
+`通達~値^i,
+`~stream種別^i,
+`~session~ID^i
+］~fieldは、
+この上限には含まれないことに注意。
+端点は、
+この上限を超過する `~stream本体^i ~dataを受信した場合には，
+~error~code `WT_FLOW_CONTROL_ERROR$er で当の`~WebTransport~session$を~closeしなければ`ナラナイ^2119。
+◎
+The sum of the lengths of Stream Body data sent on all streams associated with this session MUST NOT exceed the Maximum Data value advertised by a receiver. Note that capsules sent on the CONNECT stream, and the Signal Value, Stream Type, and Session ID fields, are not included in this limit. If an endpoint receives Stream Body data in excess of this limit, it MUST close the WebTransport session with a WT_FLOW_CONTROL_ERROR error code.
+</p>
+
+<p>
+~QUICにおける `MAX_DATA$ft ~frameたちは，
+どの順序でも送達され得るが、
+それとは違って、
+`~WebTransport~session$の`~CONNECT~stream$上に送信される `WT_MAX_DATA$cps ~capsuleたちは，
+順序どおりに送達される。
+端点は、
+受信した `WT_MAX_DATA$cps ~capsuleの `最大~data量^i の値が以前に受信した値~未満である場合には，
+~error~code `WT_FLOW_CONTROL_ERROR$er で当の`~WebTransport~session$を~closeしなければ`ナラナイ^2119。
+◎
+Unlike in QUIC, where MAX_DATA frames can be delivered in any order, WT_MAX_DATA capsules are sent on the WebTransport session's connect stream and are delivered in order. If an endpoint receives a WT_MAX_DATA capsule with a Maximum Data value less than a previously received value, it MUST close the WebTransport session with a WT_FLOW_CONTROL_ERROR error code.
+</p>
+
+<p>
 `WT_STREAM^cps ~capsule内に送信されたすべての~dataは、
 この上限へ向けて数えられる。
 `WT_STREAM^cps ~capsule内の `~stream~data^i ~fieldの長さの総和は、
@@ -2887,7 +3110,7 @@ All data sent in WT_STREAM capsules counts toward this limit. The sum of the len
 </p>
 
 <p class="trans-note">【
-`WT_STREAM^cps は、
+`WT_STREAM^cps ~capsuleは、
 `~HTTP2越しの~WebTransport$cite用には定義されているが，
 ~HTTP3越しの~WebTransport用には定義されていない
 （将来には定義されると思われる）。
@@ -3128,6 +3351,16 @@ Application Error Message:
 </ul>
 
 <p>
+`応用~error~code^i ~fieldは、
+~QUICの `CONNECTION_CLOSE$ft ~frame内の `~error~code^i ~fieldを~~反映しないことに注意
+— ~WebTransport応用~errorは、
+`~HTTP3~error~code空間＠~HTTPv3#http-error-codes$の下位集合を利用し，その限界域の中に収まる必要があるので
+— `~data~streamの~reset法＠#resetting-data-streams§を見よ。
+◎
+Note that the Application Error Code field does not mirror the Error Code field in QUIC's CONNECTION_CLOSE frame (Section 19.19 of [RFC9000]) because WebTransport application errors use a subset of the HTTP/3 Error Code space and need to fit within those bounds, see Section 4.4.
+</p>
+
+<p>
 端点は、
 `WT_CLOSE_SESSION$cps `~capsule$を送信したときは，
 即時に当の`~CONNECT~stream$上に `FIN^i を送信しなければ`ナラナイ^2119。
@@ -3222,7 +3455,7 @@ Servers that support future incompatible versions of WebTransport signal that su
 当の~streamに結付けられた~session用に利用される伝送路~形式
 ］を決定することを許容するため。
 ◎
-Changes to future stream formats require changes to the Unidirectional Stream type (see Section 4.1) and Bidirectional Stream signal value (see Section 4.2) to allow recipients of incoming frames to determine the WebTransport version, and corresponding wire format, used for the session associated with that stream.
+Changes to future stream formats require changes to the Unidirectional Stream type (see Section 4.2) and Bidirectional Stream signal value (see Section 4.3) to allow recipients of incoming frames to determine the WebTransport version, and corresponding wire format, used for the session associated with that stream.
 </p>
 
 		<section id="negotiating-the-draft-version">
@@ -3798,7 +4031,7 @@ Sender:
 には、
 以下に挙げる~entryが追加される。
 ◎
-The following entry is added to the "HTTP/3 Error Code" registry established by [HTTP3]:
+The following entries are added to the "HTTP/3 Error Code" registry established by [HTTP3]:
 </p>
 
 <ul>
@@ -3866,6 +4099,42 @@ Value:
 ◎
 Description:
 • WebTransport data stream aborted because the associated WebTransport session has been closed. Also used to indicate that the endpoint is no longer reading from the CONNECT stream.
+</li>
+	<li>
+仕様
+⇒
+この文書
+◎
+Specification:
+• This document.
+</li>
+</ul>
+
+<ul>
+	<li>
+名前
+⇒
+`WT_FLOW_CONTROL_ERROR@er
+◎
+Name:
+• WT_FLOW_CONTROL_ERROR
+</li>
+	<li>
+値
+⇒
+`0x045d4487^hex
+◎
+Value:
+• 0x045d4487
+</li>
+	<li>
+記述
+⇒
+`~WebTransport~session$は、
+~flow制御~errorに遭遇したため，中止された。
+◎
+Description:
+• WebTransport session aborted because a flow control error was encountered.
 </li>
 	<li>
 仕様
