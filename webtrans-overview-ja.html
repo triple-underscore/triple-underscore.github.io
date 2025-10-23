@@ -101,8 +101,8 @@ return text;
 
 ●●options
 
-spec_date:2025-07-08
-trans_update:2025-07-12
+spec_date:2025-10-20
+trans_update:2025-10-23
 source_checked:230906
 original_url:https://ietf-wg-webtrans.github.io/draft-ietf-webtrans-overview/draft-ietf-webtrans-overview.html
 	abbr_url:WT-OVERVIEW
@@ -245,6 +245,12 @@ commit:
 潜在的:potential:~
 施行:enforcement:~
 機密性:confidentiality:~
+鍵:key::~
+	鍵~用:keying
+素材:material::~
+export:
+exporter:
+hash::::ハッシュ
 
 	信用-済みでない:untrusted
 	安全でない:unsafe
@@ -382,7 +388,7 @@ kernel::::カーネル
 ●●ref_informative
 
 [CSP]
-    W3C, ＜Content Security Policy Level 3＞, July 2025
+    W3C, ＜Content Security Policy Level 3＞, October 2025
     URL: https://www.w3.org/TR/CSP/
 [RFC5681]
     Allman, M., Paxson, V., and E. Blanton, ＜TCP Congestion Control＞, ~RFC5681, September 2009
@@ -1087,7 +1093,7 @@ All transport protocols MUST provide datagrams, unidirectional and bidirectional
 <h3 title="Session-Wide Features">4.1. ~session全般な特能</h3>
 
 <p>
-~WebTransport~protocolは、
+どの~WebTransport~protocolも、
 ~sessionに対し，次に挙げる演算を供さなければ`ナラナイ^2119【！SHALL】：
 ◎
 Any WebTransport protocol SHALL provide the following operations on the session:
@@ -1150,6 +1156,20 @@ drain a session
 ］に許容することが意図される。
 ◎
 Indicate to the peer that it expects the session to be gracefully terminated as soon as possible. Either endpoint MAY continue using the session and MAY open new streams. This signal is intended to allow intermediaries and endpoints to request a session be drained of traffic without enforcement.
+</dd>
+
+	<dt>
+鍵~用~素材を~exportする
+◎
+export keying material
+</dt>
+	<dd>
+当の~WebTransport~sessionに特有な鍵~用~素材を供するために，
+~TLS鍵~用~素材~exporter
+（ `RFC8446$r `7.5＠~RFCx/rfc8446#section-7.5§ ）
+を導出する。
+◎
+Derive a TLS keying material exporter (Section 7.5 of [RFC8446]) to provide keying material specific to the WebTransport session.
 </dd>
 </dl>
 
@@ -1313,11 +1333,8 @@ A unidirectional stream is a one-way reliable in-order stream of bytes where the
 <p>
 ~streamは、
 一般に，~QUIC~streamの意味論と状態~機械（ `QUIC$r【！`RFC9000$r】 § 2, § 3 ）に従うことが期待される。
-<span class="issue">
-課題：~streamの状態~機械について，明示的に述べる。
-</span>
 ◎
-The streams are in general expected to follow the semantics and the state machine of QUIC streams ([RFC9000], Sections 2 and 3). TODO: describe the stream state machine explicitly.
+The streams are in general expected to follow the semantics and the state machine of QUIC streams ([RFC9000], Sections 2 and 3).
 </p>
 
 <p>
@@ -1457,18 +1474,21 @@ Removes bytes from the stream receive buffer. FIN can be received together with 
 abort send side
 </dt>
 	<dd>
-~streamを成す書込n側を中止したことを指示する通達を相手の端点へ送信する。
-送信-~bufferを破棄する
+~streamを成す書込n側を中止したことを指示する通達
+— 当の~stream内に依拠-可能に送達された~offsetも含む —
+を相手の端点へ送信する。
+その~offsetより後の送信-~bufferを破棄する
 — アリな場合【何が？】、
-現在~待機中な［
+供された送信-~offsetより後に現在~待機中な［
 伝送される／伝送し直される
-］~dataは無い。
-無符号な 32 ~bitの~error~codeが
-相手の端点への通達を成す一部として給され得る
-— 省略された場合、
-~error~codeは 0 であるものと予め見做される。
+］~dataは無い
+— ~offsetが省略された場合、
+0 であるものと予め見做される。
+相手の端点への通達を成す一部として，無符号な 32 ~bitの~error~codeが給され得る
+— ~error~codeが省略された場合、
+0 であるものと予め見做される。
 ◎
-Sends a signal to the peer that the write side of the stream has been aborted. Discards the send buffer; if possible, no currently outstanding data is transmitted or retransmitted. An unsigned 32-bit error code can be supplied as a part of the signal to the peer; if omitted, the error code is presumed to be 0.
+Sends a signal to the peer that the write side of the stream has been aborted, including an offset in the stream that is reliably delivered. Discards the send buffer after that offset; if possible, no currently outstanding data after the provided send offset is transmitted or retransmitted. If omitted, the offset is presumed to be 0. An unsigned 32-bit error code can be supplied as a part of the signal to the peer; if omitted, the error code is presumed to be 0.
 </dd>
 
 	<dt id="abort-receive-side">
@@ -1660,12 +1680,24 @@ One potential concern is that even when a transport cannot be created, the conne
 
 <p>
 ~WebTransportは，~TLSを要求するので、
-個々の~transport~protocolは，~TLSに基づく認証~能力
-— ~client証明書など —
-を公開しても`ヨイ^2119。
+個々の~transport~protocolは，~TLSに基づく認証~能力を公開しても`ヨイ^2119
+— 次に挙げるものなど：
 ◎
-Since WebTransport requires TLS, individual transport protocols MAY expose TLS-based authentication capabilities such as client certificates.
+Since WebTransport requires TLS, individual transport protocols MAY expose TLS-based authentication capabilities such as＼
 </p>
+<ul>
+	<li>
+~client証明書
+◎
+client certificates and＼
+</li>
+	<li>
+~server証明書の~customな検証
+— ~clientが指定した~server証明書~hashたちが成す集合を利用している検証も含む
+◎
+custom validation of server certificates, including validation using a client-specified set of server certificate hashes.
+</li>
+</ul>
 
 	</section>
 	<section id="iana-considerations">
