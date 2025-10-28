@@ -672,7 +672,6 @@ t.dasharray:~SVGpainting#DataTypeDasharray
 無視する:~CSSSYN#css-ignored
 既定の~sizing~algo:~CSSIMAGE#default-sizing-algorithm
 大域~event属性:~WAPI#globaleventhandlers
-文書~要素~event属性:~WAPI#documentandelementeventhandlers
 ~CORS設定群~属性:~HTMLurl#cors-settings-attribute
 
 `
