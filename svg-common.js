@@ -214,6 +214,10 @@ cite:cite
 COMMON_DATA.link_map += `
 
 	●IDL
+Exposed:~WEBIDLjs#Exposed
+SameObject:~WEBIDLjs#SameObject
+NewObject:~WEBIDLjs#NewObject
+PutForwards:~WEBIDLjs#PutForwards
 
 E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
 E.IndexSizeError:~WEBIDL#indexsizeerror
@@ -308,8 +312,6 @@ I.DOMRectReadOnly:~GEOMETRY#domrectreadonly
 	~TR/geometry-1/#dom-domrectreadonly
 I.DOMTokenList:~DOM4#interface-domtokenlist
 I.Document:~DOM4#document
-	廃）I.DocumentAndElementEventHandlers:~WAPI#documentandelementeventhandlers
-I.DocumentAndElementEventHandlers:~SVGchanges#documentandelementeventhandlers
 I.Element:~DOM4#element
 I.CSSPseudoElement:~CSSPSEUDO#csspseudoelement
 I.GlobalEventHandlers:~WAPI#globaleventhandlers
@@ -361,7 +363,6 @@ e.mask:~MASKING1#elementdef-mask
 e.animate:~SVGanim#AnimateElement
 e.animateMotion:~SVGanim#AnimateMotionElement
 e.animateTransform:~SVGanim#AnimateTransformElement
-e.discard:~SVGanim#DiscardElement
 e.mpath:~SVGanim#MPathElement
 e.set:~SVGanim#SetElement
 
