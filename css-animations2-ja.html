@@ -133,8 +133,8 @@ return text;
 ●●options
 
 spec_title:CSS Animations Module Level 2
-spec_date:2025-10-24
-trans_update:2025-10-25
+spec_date:2025-10-27
+trans_update:2025-10-29
 source_checked:230422
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-animations-2/
@@ -385,6 +385,8 @@ milli:milli-:::ミリ
 捕捉-:capture::~
 切替える:switchする:切り替える
 限界:bounding:~
+無状態:stateless::~::ステートレス
+有状態:stateful::~::ステートフル
 
 	図:chart
 	A/B/C/D/E
@@ -403,6 +405,7 @@ milli:milli-:::ミリ
 	両方^i
 	-:final
 	目に見える:noticeable
+	毎回:repeatedly 〜 for every
 	各回:each time
 	一回だけ〜【… 用の挙動を伴わずに】:once and only once
 	~list値をとる:list-valued
@@ -411,7 +414,6 @@ milli:milli-:::ミリ
 	いくつ:how many
 	同時に:simultaneously
 	後で:later
-	各回ごとに:every time
 	~~追加の:extra
 	来た:come
 	何もしない:is to do nothing
@@ -423,6 +425,7 @@ milli:milli-:::ミリ
 	~T:triggered
 	設定し直-:reset
 	開始し直-:restart
+	オフ:turn off
 
 ●●original_id_map
 
@@ -563,6 +566,8 @@ v.~none1:~CSSDISP#valdef-display-none
 	#valdef-timeline-trigger-exit-range-auto
 	#valdef-timeline-trigger-none
 	#valdef-event-trigger-none
+	#valdef-event-trigger-source-none
+	#valdef-event-trigger-source-event-trigger-event--event-trigger-event
 
 	＠~SCROLL-ANIM#valdef-animation-timeline-range-cover
 	＠~CSSANIM#valdef-animation-fill-mode-backwards
@@ -594,13 +599,21 @@ kF.値~map:#_keyframe-values
 誘発される~animation:#triggered-animation
 誘発された~animation:#triggered-animation
 誘発体:#css-triggers
+誘発-~instance:#css-trigger-instance
 時列線~誘発体:#timeline-trigger
-入口~範囲:#timeline-trigger-enter-range
-出口~範囲:#timeline-trigger-exit-range
-誘発されたか:#timeline-trigger-trigger-state
-入口~動作:#timeline-trigger-enter-action
-出口~動作:#timeline-trigger-exit-action
+tT.入口~範囲:#timeline-trigger-enter-range
+tT.出口~範囲:#timeline-trigger-exit-range
+tT.誘発されたか:#timeline-trigger-trigger-state
+tT.入口~動作:#timeline-trigger-enter-action
+tT.出口~動作:#timeline-trigger-exit-action
 ~event誘発体:#event-trigger
+eT.入口~event群:#event-trigger-enter-event
+eT.出口~event群:#event-trigger-exit-event
+入口~event:#event-trigger-enter-event
+出口~event:#event-trigger-exit-event
+eT.誘発されたか:#event-trigger-trigger-state
+eT.入口~動作:#event-trigger-enter-action
+eT.出口~動作:#event-trigger-exit-action
 
 
 	●用語（CSSANIM／WANIM
@@ -711,8 +724,6 @@ WEBANIMATIONS:WEBANIMATIONS1
 
 [CSS-ANCHOR-POSITION-1]
     Tab Atkins Jr.; Elika Etemad; Ian Kilpatrick. ＜CSS Anchor Positioning＞. URL: https://drafts.csswg.org/css-anchor-position-1/
-[CSS-ANIMATIONS-2]
-    David Baron; Brian Birtles. ＜CSS Animations Level 2＞. URL: https://drafts.csswg.org/css-animations-2/
 [CSS-CASCADE-5]
     Elika Etemad; Miriam Suzanne; Tab Atkins Jr.. ＜CSS Cascading and Inheritance Level 5＞. URL: https://drafts.csswg.org/css-cascade-5/
 [CSS-CASCADE-6]
@@ -2486,17 +2497,26 @@ The corresponding animation is not a triggered animation.
 The corresponding animation is a triggered animation, responding to the triggers named by each &lt;dashed-ident&gt;, and responding by taking the action named by the corresponding &lt;animation-action&gt;. (See § 5.1 Trigger Scope/Resolution for how &lt;dashed-ident&gt;s are resolved to triggers.)
 </dd>
 	<dd>
+<p>
 誘発体が `animation-action$t をいくつ受容するか,
 正確に何がそれらを作動化するかは、
-当の誘発体の種別により決定される
-（`~event誘発体$は 1 個しかとらない一方で、
-`時列線~誘発体$は 1 個または 2 個をとる）。
+当の誘発体の種別により決定される。
 間違った（多過ぎる／少な過ぎる）個数の動作を指定しても，
 構文上は妥当になるが、
 当の誘発体は，効果を発揮しなくなる。
+</p>
+
+<p class="note">注記：
+［
+`~event誘発体$／`時列線~誘発体$
+］は、
+1 個または 2 個とる（ 2 個目は省略可能）
+— うち，無状態な`~event誘発体$は、
+1 個しかとらない。
+</p>
 ◎
 How many &lt;animation-action&gt;s a trigger accepts, and what exactly activates them, is determined by the type of the trigger.＼
-(Event triggers only take a single &lt;animation-action&gt;, while timeline triggers can take one or two.)＼
+(Event triggers take one and possibly an optional second, depending on whether they’re stateless or stateful; timeline triggers take one and optionally a second.)＼
 Specifying the wrong number of actions (too many or too few) is valid syntactically, but causes the trigger to have no effect.
 </dd>
 	<dd>
@@ -2726,36 +2746,34 @@ A trigger is defined on some specific triggering element. All triggers have a na
 
 <p>
 `誘発体$は、
-どの要素~上でも，何らかの特定の目的
-（現時点では、
-`animation-trigger$p だけ）
-で`利用される^em能性がある。
-誘発体を利用している要素は、［
-どの誘発体（たち）を~listenしているか,
-その作動化に呼応して何の動作を行うか
-（現時点では、
-`animation-action$t だけ）
+どの要素にも`利用される^em能性があり，
+当の要素に対し
+`誘発-~instance@
+（ `trigger instance^en ）
+を作成する。
+（例えば `animation-trigger$p は、
+当の要素~上の`誘発-~instance$を当の要素に対する特定の~animationに結付ける。）
+`誘発体$を利用している要素は、［
+当の誘発体が作動化されたとき，動作として何をとるか
 ］を指定する。
 ◎
-A trigger is used on potentially any element, for some specific purpose (currently, just animation-trigger). A trigger-using element specifies what trigger(s) it’s listening to, and what actions (currently, just &lt;animation-action&gt;s) to do in response to that activation.
+A trigger is used on potentially any element, creating a trigger instance on the element. (For example, animation-trigger associates a trigger instance with a specific animation on the element.) The trigger-using element specifies what actions to take when the trigger activates.
 </p>
 
 <p class="note">注記：
-将来において，`誘発体$を`他の^em目的に利用することを~supportするため、
-`誘発体$用のこの設計, および
+将来において，`誘発体$を`他の目的^emに利用することを~supportするため、［
+`誘発体$, `誘発-~instance$
+］用のこの設計, および
 それらに［
 `誘発される~animation$, `animation-action$t
 ］を結付ける仕方は，
 意図的に いくぶん汎用である。
 この特能を利用するものは、
 今の所は，`誘発される~animation$しかないが。
+【~animation以外の目的にも利用されるかもしれない。】
 ◎
-Note: This design for triggers, and the way they’re associated with triggered animations and &lt;animation-action&gt;s, is intentionally somewhat generic, intended to support using triggers for other purposes in the future. For now, though, triggered animations are the only user of this feature.
+Note: This design for triggers and trigger instances, and the way they’re associated with triggered animations and &lt;animation-action&gt;s, is intentionally somewhat generic, intended to support using triggers for other purposes in the future. For now, though, triggered animations are the only user of this feature.
 </p>
-
-<p class="trans-note">【
-~animation以外の目的にも利用されるかもしれない。
-】</p>
 
 		<section id="trigger-scope">
 <h3 title="Trigger Scope/Resolution">5.1. 誘発体の視野と解決</h3>
@@ -2809,15 +2827,15 @@ Note: This behavior will be improved by a trigger-scope property, not yet define
 
 		</section>
 		<section id="timeline-triggers">
-<h3 title="Timeline Triggers">5.2. 時列線誘発体</h3>
+<h3 title="Timeline Triggers">5.2. 時列線~誘発体</h3>
 
 <p>
 `時列線~誘発体@
 （ `timeline trigger^en ）は、
 何らかの`時列線$【の`現-時刻$】が当の誘発体の［
-`入口~範囲@
+`入口~範囲@tT
 （ `enter range^en ）に入る／
-`出口~範囲@
+`出口~範囲@tT
 （ `exit range^en ）から出る
 ］ときに作動化される`誘発体$である。
 それは、［
@@ -2829,7 +2847,7 @@ A timeline trigger is a trigger which is activated when some timeline enters the
 
 <p>
 各 `時列線~誘発体$ %誘発体 には、
-`誘発されたか@
+`誘発されたか@tT
 【！誘発体~状態】
 が結付けられる
 — それは、
@@ -2840,29 +2858,29 @@ A timeline trigger has a binary trigger state associated with it; it is initiall
 <ul>
 	<li>
 ~F をとる間は、
-%誘発体 に結付けられた`時列線$【の`現-時刻$】が %誘発体 の`入口~範囲$に入ったとき
+%誘発体 に結付けられた`時列線$【の`現-時刻$】が %誘発体 の`入口~範囲$tTに入ったとき
 （または，そこで開始されたとき），
 %誘発体 に結付けられた
-`入口~動作@
+`入口~動作@tT
 を遂行することに加え，
-%誘発体 の`誘発されたか$を ~T へ切替える。
+%誘発体 の`誘発されたか$tTを ~T へ切替える。
 ◎
 While it’s "untriggered", the associated timeline entering (or starting in) the trigger’s enter range performs an associated enter action and switches the trigger state to "triggered";＼
 </li>
 	<li>
 ~T をとる間は、
-%誘発体 に結付けられた`時列線$【の`現-時刻$】が %誘発体 の`出口~範囲$から`出た^emとき，
+%誘発体 に結付けられた`時列線$【の`現-時刻$】が %誘発体 の`出口~範囲$tTから`出た^emとき，
 %誘発体 に結付けられた
-`出口~動作@
+`出口~動作@tT
 を遂行することに加え，
-%誘発体 の`誘発されたか$を ~T へ切替える。
+%誘発体 の`誘発されたか$tTを ~T へ切替える。
 ◎
 while it’s "triggered", the associated timeline leaving the trigger’s exit range performs an associated exit action and switches the trigger state to "untriggered".
 </li>
 </ul>
 
 <p class="trans-note">【
-`誘発されたか$は、
+`誘発されたか$tTは、
 原文では “`trigger state^en（誘発体~状態）” と称され，［
 "`untriggered^en", "`triggered^en"
 ］をとり得るものと定義されるが、
@@ -2871,17 +2889,17 @@ while it’s "triggered", the associated timeline leaving the trigger’s exit r
 
 <p class="note">注記：
 既定では、
-`出口~範囲$は`入口~範囲$と同じになる
+`出口~範囲$tTは`入口~範囲$tTと同じになる
 — 手動で指定されときでも、
-`出口~範囲$は，常に`入口~範囲$の`上位集合^emになる。
+`出口~範囲$tTは，常に`入口~範囲$tTの`上位集合^emになる。
 この 2 つの範囲は、
 例えば，ある `animation-trigger$p が［
 要素が~screenの中央近くに~scrollされたとき，
-（`入口~範囲$として比較的~小さな窓を伴う`~view進捗~時列線$を利用して）
+（`入口~範囲$tTとして比較的~小さな窓を伴う`~view進捗~時列線$を利用して）
 ~animationを開始する
 ］が［
 要素が全部的に~screenから外れるまでは，
-（`出口~範囲$として `cover＠~SCROLL-ANIM#valdef-animation-timeline-range-cover$v を利用して）
+（`出口~範囲$tTとして `cover＠~SCROLL-ANIM#valdef-animation-timeline-range-cover$v を利用して）
 それを停止しない
 ］ことを許容する。
 ◎
@@ -2890,9 +2908,9 @@ Note: By default, the exit range is the same as the enter range; even when manua
 
 <p class="issue">
 `WEB-ANIMATIONS-2$r が，［
-出口~範囲が`入口~範囲$の限界~範囲として解釈されること
+出口~範囲が`入口~範囲$tTの限界~範囲として解釈されること
 ］および［
-`出口~範囲$用に何が指定されるか
+`出口~範囲$tT用に何が指定されるか
 ］を定義する必要があると思われる。
 ◎
 I think it’s WebAnim2 that needs to define that exit ranges are interpreted as the bounding range of the enter range and what’s specified for the exit range.
@@ -2902,8 +2920,8 @@ I think it’s WebAnim2 that needs to define that exit ranges are interpreted as
 `時列線~誘発体$は、
 ある要素~上の誘発体として（ `animation-trigger$p などにより）利用されるときは，
 1 個か 2 個の動作が結付けられ得る。
-当の誘発体の`入口~動作$は， 1 個目のそれになり、
-`出口~動作$は，
+当の誘発体の`入口~動作$tTは， 1 個目のそれになり、
+`出口~動作$tTは，
 2 個目も指定されたならば それ,
 指定されなかったならば何もしない。
 ◎
@@ -3116,7 +3134,7 @@ Animation type: 	not animatable
 `timeline-trigger-range-start$p ／
 `timeline-trigger-range-end$p
 ］~propは、
-`時列線~誘発体$に結付けられた`入口~範囲$を指定する。
+`時列線~誘発体$に結付けられた`入口~範囲$tTを指定する。
 各種~値の意味は、［
 `animation-range-start$p,
 `animation-range-end$p
@@ -3176,7 +3194,7 @@ The behavior of timeline-trigger-exit-range is defined in Web Animations 2 § 3.
 ◎名 `timeline-trigger-exit-range-start@p,
 `timeline-trigger-exit-range-end@p
 ◎値 [ `auto$v | `normal^v | `length-percentage$t | `timeline-range-name$t `length-percentage$t? ]#
-◎初 `normal^v
+◎初 `auto^v
 ◎適 すべての要素
 ◎継 されない
 ◎百 
@@ -3221,7 +3239,7 @@ Animation type: 	not animatable
 `timeline-trigger-exit-range-start$p ／
 `timeline-trigger-exit-range-end$p
 ］~propは、
-当の`時列線~誘発体$に結付けられる`出口~範囲$を指定する。
+当の`時列線~誘発体$に結付けられる`出口~範囲$tTを指定する。
 各種~値の意味は、［
 `animation-range-start$p, `animation-range-end$p
 ］用のそれらと同じであるが，
@@ -3238,7 +3256,7 @@ The timeline-trigger-exit-range-start and timeline-trigger-exit-range-end proper
 `timeline-trigger-exit-range-end$p
 ］用には、［
 始端／終端
-］は，当の`時列線~誘発体$の`入口~範囲$の［
+］は，当の`時列線~誘発体$の`入口~範囲$tTの［
 始端／終端
 ］に等しくなる。
 ◎
@@ -3301,7 +3319,7 @@ A value of none is equivalent to none none normal.
 さもなければ、［
 `timeline-trigger-name$p と `timeline-trigger-source$p 内の`時列線$の名前
 ］や［
-`入口~範囲$と`出口~範囲$
+`入口~範囲$tTと`出口~範囲$tT
 ］が多義的になり得るので。
 ◎
 Note: Due to significant potentially ambiguities in the syntax (timeline-trigger-name vs timeline names in timeline-trigger-source; enter ranges vs exit ranges), this shorthand’s values must be given in the specified order, rather than being settable in any order as is more common.
@@ -3330,13 +3348,152 @@ I think we need the / to disambiguate the two ranges?
 An event trigger is a trigger which is activated when certain Events are fired at the element. It is defined on an element with the event-trigger shorthand property, or its longhands.
 </p>
 
+<div>
 <p>
-各`~event誘発体$に結付けられる動作は、
-1 個しかない
-— それは、
-当の誘発体が作動化される各回ごとに遂行される。
+各`~event誘発体$は、［
+無状態, 有状態
+］いずれかとして定義し得る
+⇒＃
+無状態なものは`入口~event群$eTのみを有する。
+有状態なものは［ `入口~event群$eT, `出口~event群$eT ］どちらも有する。
+</p>
+
+<p>
+［
+`入口~event群@eT
+／
+`出口~event群@eT
+］は、
+いずれも，
+当の誘発体を作動化することになる~event†たちが成す集合である。
+［
+入口~event／出口~event
+］は、
+そのような~eventの総称である。
+</p>
+
+<p class="trans-note">【†
+精確には、
+どの~eventに合致するかを指定する条件。
+通例的には、
+~event型を成す文字列（ `click^et など）として与えられる
+— `event-trigger-event$t を見よ。
+】</p>
 ◎
-An event trigger only has a single action associated with it, which it performs every time the trigger is activated.
+An event trigger can be defined as either stateless or stateful:
+• If stateless, it has a single set of enter events that activate it.
+• If stateful, it has two sets of events, its enter events and another set of exit events.
+</div>
+
+<div>
+<p>
+`~event誘発体$ %誘発体 は、
+~page上で ~AND↓ を満たす `Event$I ~objが発火されたとき，
+作動化されることになる：
+</p>
+<ul>
+	<li>
+<p>
+その`~target$【！`target$m】 ~EQ %誘発体 を定義している要素
+</p>
+
+<p class="issue">
+この条件（ある提案による）は，［
+当の~eventの`~target$ ~EQ 当の要素
+］か否かしか~careしないものと指定しているが、
+おそらく，［
+浮上する／捕捉する
+］ことも許容するよう求まれる
+— 場合によっては、
+任意選択で。
+【この段落は、原文では他所に記されている（そのため、意図不明になっていた）。】
+</p>
+	</li>
+	<li>
+%誘発体 の［
+`入口~event群$eT／`入口~event群$eT
+］を成すいずれかに合致する
+</li>
+</ul>
+◎
+Event triggers are activated when one of its associated Events are fired on the page with the trigger-defining element as its target.＼
+</div>
+
+<p>
+各［
+有状態な`~event誘発体$
+］ %誘発体 には、
+`誘発されたか@eT
+【！誘発体~状態】
+が結付けられる
+— それは、
+真偽値をとり，初期~時は ~F とする：
+◎
+If it’s stateful, it has a binary trigger state associated with it, initially "untriggered":＼
+</p>
+
+<ul>
+	<li>
+~F をとる間は、
+%誘発体 は，それを定義している要素が［
+%誘発体 の`入口~event群$eTを成すいずれかに合致する~event
+］を受取ったとき限り作動化され、
+%誘発体 に結付けられた
+`入口~動作@eT
+を遂行することに加え，
+%誘発体 の`誘発されたか$eTを ~T へ切替える。
+◎
+while "untriggered", it only activates when the defining element receives one of its enter events, performing an associated enter action and switching its trigger state to "triggered";＼
+</li>
+	<li>
+~T をとる間は、
+%誘発体 は，それを定義している要素が［
+%誘発体 の`出口~event群$eTを成すいずれかに合致する~event
+］を受取ったとき限り作動化され、
+%誘発体 に結付けられた
+`出口~動作@eT
+を遂行することに加え，
+%誘発体 の`誘発されたか$tTを ~T へ切替える。
+◎
+while "triggered", it only activates when it receives one of its exit events, performing an associated exit action and switching its trigger state back to "untriggered".
+</li>
+</ul>
+
+<p class="trans-note">【
+`誘発されたか$eTは、
+原文では “`trigger state^en（誘発体~状態）” と称され，［
+"`untriggered^en", "`triggered^en"
+］をとり得るものと定義されるが、
+この訳では，真偽-~flagで表現することにする。
+】</p>
+
+<p>
+無状態な`~event誘発体$ %誘発体 には、
+その`誘発-~instance$用の動作を正確に 1 個だけ与えなければナラナイ。
+有状態な`~event誘発体$には、
+1 個か 2 個を与えれる。
+%誘発体 の`入口~動作$eTは，
+1 個目に供されたそれになる。
+%誘発体 が無状態ならば、
+その`出口~動作$eTは，［
+2 個目が供されたならば それ／
+他の場合は何もしない動作
+］になる。
+◎
+A stateless event trigger must be given exactly one action for its trigger instance. A stateful one can be given one or two: the first is its enter action, and the second, if provided, is its exit action; if the second is not provided, the exit action is to do nothing.
+</p>
+
+<p class="note">注記：
+無状態な`~event誘発体$と有状態な`~event誘発体$は、
+【後者に】動作が 1 個【`入口~動作$eT用のそれ】しかアテガわれなかった場合でも，異なるように動作する。
+有状態かつ動作が 1 個だけのものは、
+`入口~event$を受取ってから，`出口~event$を受取るまでは、
+実質的に “オフ” になる
+— その間に受取った他の`入口~event$を無視して。
+一方で，無状態な`~event誘発体$は、
+各`入口~event$に対し，毎回~動作を誘発することになる。
+◎
+Note: A stateful and stateless event trigger act differently even if you only assign a single action; a single-action stateful event trigger will effectively "turn off" until it receives one of its exit events, ignoring any of the enter events after the first, while a stateless one will repeatedly trigger for every enter event.
 </p>
 
 <p>
@@ -3352,6 +3509,8 @@ An event trigger only has a single action associated with it, which it performs 
 1 個の`~event誘発体$を成す~prop群を定義する。
 ◎
 An element can define multiple event triggers, using the same Events or different ones. The set of event-trigger longhands form a coordinating list property group, with event-trigger-name as the coordinating list base property, and each item in the coordinated value list defining the properties of a single event trigger.
+◎
+↑↑ The proposal I drew this text from specified that it only cares if the element is the *target* of the event. We probably want to allow for bubbling and/or capturing, possibly as an opt in/out.
 </p>
 
 			<section id="event-trigger-name">
@@ -3401,7 +3560,7 @@ If the same &lt;dashed-ident&gt; appears multiple times in the list, only the la
 
 <div>
 ◎名 `event-trigger-source@p
-◎値 [ `none$v | `event-trigger-event$t+ ]#
+◎値 [ `none$v | `event-trigger-event$t+ [ / `event-trigger-event$t+ ]? ]#
 ◎初 `none$v
 ◎適 すべての要素
 ◎継 されない
@@ -3424,10 +3583,47 @@ Animation type: 	not animatable
 
 <p>
 `event-trigger-source$p ~propは、
-どの~event型【！~event】（たち）が`~event誘発体$を作動化するかを指定する。
+どの~event（たち）が`~event誘発体$を作動化するかを指定する。
+その値は：
 ◎
-The event-trigger-source property specifies what event or events activate the event trigger.
+The event-trigger-source property specifies what event or events activate the event trigger. Its values are
 </p>
+
+<dl class="valdef">
+	<dt>`none@v</dt>
+	<dd>
+`協調される値~list$を成す対応する~entryは、
+`~event誘発体$を定義しない。
+◎
+The corresponding entry in the coordinated value list does not define a trigger.
+</dd>
+
+	<dt id="valdef-event-trigger-source-event-trigger-event--event-trigger-event">`event-trigger-event$t+ [ / `event-trigger-event$t+ ]?</dt>
+	<dd>
+当の`~event誘発体$が，どの~event（たち）に応答するようになるかを定義する。
+◎
+Defines what event(s) the event trigger responds to.
+</dd>
+	<dd>
+値に `/^c を利用した場合、
+当の`~event誘発体$は，有状態になる
+— `/^c より［
+前／後
+］にある~eventたちが，当の`~event誘発体$の［
+`入口~event群$eT／`出口~event群$eT
+］を成す。
+【！(The same events can occur in both sets.)】
+◎
+If a / is used in the value, the event trigger is stateful; the set of events before the / are the event trigger’s enter events, while those after the / are the exit events. (The same events can occur in both sets.)
+</dd>
+	<dd>
+他の場合、
+当の`~event誘発体$は，無状態になる
+— 供された~eventたちは，その`入口~event群$eTを成す。
+◎
+Otherwise, the event trigger is stateless, and the provided events are its enter events.
+</dd>
+</dl>
 
 <pre class="prod">
 `event-trigger-event@t
@@ -3439,61 +3635,11 @@ The event-trigger-source property specifies what event or events activate the ev
 	| ...
 </pre>
 
-
-<div>
-<p>
-当の要素は、
-~AND↓ を満たす `Event$I ~objが発火されたとき，
-作動化されることになる：
-</p>
-<ul>
-	<li>
-<p>
-その`~target$ ~EQ 当の要素
-</p>
-
 <p class="issue">
-この条件（ある提案による）は，［
-`~target$ ~EQ 当の要素
-］か否かしか~careしないものと指定しているが、
-おそらく，［
-浮上する／捕捉する
-］ことも許容するよう求まれる
-— 場合によっては、
-任意選択で。
-</p>
-	</li>
-	<li>
-<p>
-その~event型は、
-指定された いずれかの名前に一致する
-</p>
-
-<p class="issue">
-取扱うことが求まれる~event型たちが成す全部的な集合を解明する。
-</p>
-	</li>
-	<li>
-<p>
-追加的な詳細も指定された場合、
-それにも合致する†
-</p>
-
-<p class="trans-note">【†
-例： `keypress^f の引数。
-この条件は、
-この訳による補完。
-】</p>
-	</li>
-</ul>
-
-◎
-Whenever any of the specified Events are fired with this element as its target, the event target activates.
+取扱うことが求まれる~eventたちが成す全部的な集合を解明する。
 ◎
 Figure out the full set of events we want to handle.
-◎
-The proposal I drew this text from specified that it only cares if the element is the *target* of the event. We probably want to allow for bubbling and/or capturing, possibly as an opt in/out.
-</div>
+</p>
 
 			</section>
 			<section id="event-trigger-shorthand">
@@ -3678,17 +3824,20 @@ Each time a new animation frame is established and the animation does not have a
 
 <p id="multiple-events-note">
 上の表tの各欄に挙げられた記号は、
-下の表tに示す対応する~eventが，挙げられた順に間を置かずに配送されることを表す
-（空欄は、配送される~eventは無いことを表す）。
+下の表tに挙げる対応する~eventが，挙げられた順に間を置かずに配送されることを表す
+（空欄は、
+配送される~eventは無いことを表す）。
 </p>
 
-<table>
-<caption>
-上の表tの各欄に現れる記号の意味
-</caption>
-<thead>
+<p id="animation-iteration-elapsed-time">
+ただし， I に対応する~eventは、［
+当の~animationに`結付けられた効果$の`現在の反復~index$が前回の`~animation~frame$から変化した場合
+］に限り，配送される。
+</p>
+
+<table><thead>
 <tr><th>記号
-<th>配送される~event
+<th>~event
 <th>`経過d時間@
 <tbody>
 
@@ -3710,12 +3859,45 @@ Each time a new animation frame is established and the animation does not have a
 
 <tr><td>C
 <td>`animationcancel$et
-<td>（下を見よ）
+<td>（以下を見よ）
 
 <tr><td>I
 <td>`animationiteration$et
-<td>（下を見よ）
+<td>（以下を見よ）
 </table>
+
+<p>
+C に対応する~eventの`経過d時間$は、
+取消された~momentにおける~animationの`作動~時刻$として与えられ，
+`延伸~mode$に `両方^i
+【, および確立-前の相】
+を利用する下で計算される。
+</p>
+
+<div class="algo">
+<p>
+I に対応する~eventの`経過d時間$は、
+次の手続きの結果になるものと定義される：
+</p>
+<ol>
+	<li>
+%前回の現-反復 ~LET 確立-前の~animation~frameにおける`現在の反復~index$
+</li>
+	<li>
+%反復~境界 ~LET 確立-後の~animation~frameにおける`現在の反復~index$
+</li>
+	<li>
+~IF［
+%前回の現-反復 ~GT %反復~境界
+］
+⇒
+%反復~境界 ~INCBY 1
+</li>
+	<li>
+~RET ( %反復~境界 ~MINUS `反復~始端$ ) ~MUL `反復~所要時間$
+</li>
+</ol>
+</div>
 
 ◎
 Change 	Events dispatched｜Elapsed time (ms)
@@ -3731,58 +3913,15 @@ after → before *｜animationstart｜interval end
 not idle and not after → idle｜animationcancel｜The active time of the animation at the moment it was cancelled calculated using a fill mode of both.
 ◎
 * Where multiple events are listed for a state change, all events are dispatched in the order listed and in immediate succession.
-</div>
-
-<ul>
-	<li>
-C に対応する~eventの経過d時間は、
-取消された~momentにおける~animationの`作動~時刻$として与えられ，
-`延伸~mode$に `両方^i
-【, および確立-前の相】
-を利用する下で計算される。
-◎
-↑</li>
-	<li>
-<p id="animation-iteration-elapsed-time">
-I に対応する~eventは、
-~animationに`結付けられた効果$の`現在の反復~index$が前回の`~animation~frame$から変化した場合に限り配送される。
-その経過d時間は、
-次に従って定義される：
-◎
-↑
 ◎
 † The elapsed time for an animationiteration event is defined as follows:
-</p>
-		<ol>
-			<li>
-%前回の現-反復 ~LET 確立-前の~animation~frameにおける`現在の反復~index$
-◎
-Let previous current iteration be the current iteration from the previous animation frame.
-</li>
-			<li>
-%反復~境界 ~LET 確立-後の~animation~frameにおける`現在の反復~index$
-◎
-↓</li>
-			<li>
-~IF［
-%前回の現-反復 ~GT %反復~境界
-］
-⇒
-%反復~境界 ~INCBY 1
-◎
-If previous current iteration is greater than current iteration, let iteration boundary be current iteration + 1, otherwise let it be current iteration.
-</li>
-			<li>
-~RET ( %反復~境界 ~MINUS `反復~始端$ ) ~MUL `反復~所要時間$
-◎
-The elapsed time is the result of evaluating (iteration boundary - iteration start) × iteration duration).
-</li>
-		</ol>
-	</li>
-</ul>
+• Let previous current iteration be the current iteration from the previous animation frame.
+• If previous current iteration is greater than current iteration, let iteration boundary be current iteration + 1, otherwise let it be current iteration.
+• The elapsed time is the result of evaluating (iteration boundary - iteration start) × iteration duration).
+</div>
 
 <p>
-上に定義される`経過d時間$は~milli秒数で表出されるので、
+上で定義した`経過d時間$は，~milli秒数で表出されるので、
 `AnimationEvent$I の `elapsedTime$m ~memberにアテガうときは，
 その前に 1000 で除算して秒単位の値を生産するモノトスル。
 ◎
