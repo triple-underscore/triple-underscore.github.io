@@ -2774,7 +2774,7 @@ cluster::::クラスタ
 部分集合:subset::~::サブセット
 下位集合:subset::~::下位セット
 上位集合:superset::~::上位セット
-交差集合:intersection:~
+交差集合:intersection::~::交差セット
 	和集合:union:~
 列挙:enumeration::~
 列挙-:enumerate::~
