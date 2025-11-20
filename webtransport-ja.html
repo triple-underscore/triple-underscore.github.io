@@ -190,8 +190,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2025-10-21
-trans_update:2025-10-23
+spec_date:2025-11-18
+trans_update:2025-11-20
 source_checked:250311
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -363,6 +363,7 @@ exporter:
 	^sp:H3_DATAGRAM
 	$ft:SETTINGS
 	`RESET_STREAM^ft:reset
+	KiB:kibibytes
 
 	●stream
 一方向:unidirectional::~
@@ -445,6 +446,7 @@ deadlock::::デッドロック
 支続-:sustain:維持
 commit:
 合体-:coalesce:~
+並列:parallel::~
 
 	渡-:pass
 	~milli秒数:milliseconds
@@ -532,7 +534,7 @@ in-flight:
 	%maxDatagramSize
 	%最大-~size:maxSize
 	%基底~URL:baseURL
-	%構文解析した~URL:parsedURL
+	%~URL:url
 	%流入~datagram群:incomingDatagrams
 	%流入~一方向~stream群:incomingUnidirectionalStreams
 	%流入~双方向~stream群:incomingBidirectionalStreams
@@ -542,6 +544,7 @@ in-flight:
 	%統計:stats
 	%要素~size:elementSize
 	%要請:request
+	%応答:response
 	%設定群:settings
 	%証明書:certificate
 	%長さ:read
@@ -652,6 +655,7 @@ balance::::バランス
 拙い:poorな:~
 polyfill:
 変種:variant:~
+計画-:plan:~
 
 	きちんと:wellに
 	重要なこととして:It is important to
@@ -696,6 +700,7 @@ polyfill:
 	が、:in spite of
 	^en:the chairs
 	以前は 〜 していた:used to
+	〜の下で:based off
 
 	●言い換え
 	^en:first-strong
@@ -1090,6 +1095,9 @@ sl.Datagrams:#dom-webtransport-datagrams-slot
 sl.Session:#dom-webtransport-session-slot
 sl.AnticipatedConcurrentIncomingUnidirectionalStreams:#dom-webtransport-anticipatedconcurrentincomingunidirectionalstreams-slot
 sl.AnticipatedConcurrentIncomingBidirectionalStreams:#dom-webtransport-anticipatedconcurrentincomingbidirectionalstreams-slot
+sl.NewConnection:#dom-webtransport-newconnection-slot
+sl.RequireUnreliable:#dom-webtransport-requireunreliable-slot
+sl.ServerCertificateHashes:#dom-webtransport-servercertificatehashes-slot
 
 slW.OutgoingDatagramsQueue:#dom-webtransportdatagramswritable-outgoingdatagramsqueue-slot
 slW.Transport:#dom-webtransportdatagramswritable-transport-slot
@@ -1148,11 +1156,12 @@ h.WT-Available-Protocols:~WT-HTTP3#field-wt-available-protocol
 双方向~streamを作成する:#session-create-a-bidirectional-stream
 流入~一方向~streamを受信する:#session-receive-an-incoming-unidirectional-stream
 	available incoming unidirectional stream:#session-receive-an-incoming-unidirectional-stream
-~HTTP越しの~WebTransportを初期化する:#initialize-webtransport-over-http
 双方向~streamを受信する:#session-receive-a-bidirectional-stream
 	available incoming bidirectional stream:#session-receive-a-bidirectional-stream
 ~WebTransport~sessionを確立する:#session-establish
 	＠#session-establish
+~WebTransport接続を得する:#obtain-a-webtransport-connection
+~WebTransport~fetch応答を処理する:#process-a-webtransport-fetch-response
 ~CONNECT~stream:#connect-stream
 ~WebTransport~sessionを終了する:#session-terminate
 ~drain:#session-draining
@@ -1270,6 +1279,7 @@ eX.名前:~WEBIDL#domexception-name
 保持された~byte列の複製を取得する:~WEBIDLjs#dfn-get-buffer-source-copy
 ~buffer~sourceを作成する:~WEBIDLjs#_buffersource-create
 
+~network~error:~FETCH#concept-network-error
 要請:~FETCH#concept-request
 rq.生成元:~FETCH#concept-request-origin
 rq.施策~容器:~FETCH#concept-request-policy-container
@@ -1277,14 +1287,22 @@ rq.~URL:~FETCH#concept-request-url
 rq.~client:~FETCH#concept-request-client
 rq.行先:~FETCH#concept-request-destination
 rq.~redirect~mode:~FETCH#concept-request-redirect-mode
+rq.~sw~mode:~FETCH#request-service-workers-mode
+rq.~referrer:~FETCH#concept-request-referrer
+rq.~mode:~FETCH#concept-request-mode
+rq.資格証~mode:~FETCH#concept-request-credentials-mode
+rq.~cache~mode:~FETCH#concept-request-cache-mode
+rq.現在の~URL:~FETCH#concept-request-current-url
 	bd.~stream:~FETCH#concept-body-stream
 接続:~FETCH#concept-connection
 資格証:~FETCH#credentials
-~network区分~keyを決定する:~FETCH#determine-the-network-partition-key
+~network区分~key:~FETCH#network-partition-key
 ~fetchする:~FETCH#concept-fetch
 ~network区分~key:~FETCH#network-partition-keys
 接続を得する:~FETCH#concept-connection-obtain
-~fetchingは，不良~portに因り阻止されるべきか？:~FETCH#block-bad-port
+fR.要請:~FETCH#concept-fetch-record-request
+	i.並列~queueを利用するか:~FETCH#fetch-useparallelqueue
+	i.応答の処理n:~FETCH#process-response
 
 通達に~algoを追加する:~DOM4#abortsignal-add
 aB.中止-事由:~DOM4#abortsignal-abort-reason
@@ -1337,15 +1355,11 @@ enV.~API用~基底~URL:~WAPI#api-base-url
 文書~unload時の片付け手続き:~HTMLlifecycle#unloading-document-cleanup-steps
 
 ~URL構文解析する:~URL1#concept-url-parser
-~URL~record:~URL1#concept-url
 url.~scheme:~URL1#concept-url-scheme
 url.素片:~URL1#concept-url-fragment
 
 ~UTF-8復号する:~ENCODING#utf-8-decode
 ~UTF-8符号化する:~ENCODING#utf-8-encode
-
-要請に対する~CSP違反を報告する:~CSP3#report-for-request
-要請は~CSPにより阻止されるべきか？:~CSP3#should-block-request
 
 
 ●●ref_key_map
@@ -3670,6 +3684,32 @@ A WebTransportDatagramDuplexStream.
 ◎
 A WebTransport session for this WebTransport object, or null.
 </dd>
+
+	<dt>`NewConnection@sl</dt>
+	<dd>
+`no^l ／ `yes-and-dedicated^l
+◎
+Either "no" or "yes-and-dedicated".
+</dd>
+
+	<dt>`RequireUnreliable@sl</dt>
+	<dd>
+ある真偽値
+◎
+A boolean＼
+</dd>
+	<dd>
+~UDPが要求されるかどうかを指示する。
+◎
+indicating whether UDP is required.
+</dd>
+
+	<dt>`ServerCertificateHashes@sl</dt>
+	<dd>
+`WebTransportHash$I ~objたちが成す`~list$
+◎
+A list of zero or more WebTransportHash objects.
+</dd>
 </dl>
 
 		</section>
@@ -3679,7 +3719,7 @@ A WebTransport session for this WebTransport object, or null.
 <div class="algo">
 <p>
 `new WebTransport(url, options)@m
-構築子手続きは：
+構築子~手続きは：
 ◎
 When the WebTransport() constructor is invoked, the user agent MUST run the following steps:
 </p>
@@ -3690,36 +3730,36 @@ When the WebTransport() constructor is invoked, the user agent MUST run the foll
 Let baseURL be this’s relevant settings object’s API base URL.
 </li>
 	<li>
-%構文解析した~URL ~LET `~URL構文解析する$( %url, %基底~URL )
+%~URL ~LET `~URL構文解析する$( %url, %基底~URL )
 ◎
-Let parsedURL be the URL record resulting from parsing url with baseURL.
+Let url be the URL record resulting from parsing url with baseURL.
 </li>
 	<li>
 ~IF［
-%構文解析した~URL ~EQ `失敗^i
+%~URL ~EQ `失敗^i
 ］
 ⇒
 ~THROW `SyntaxError$E
 ◎
-If parsedURL is a failure, throw a SyntaxError exception.
+If url is failure, throw a SyntaxError exception.
 </li>
 	<li>
 ~IF［
-%構文解析した~URL の`~scheme$url ~NEQ `https^l
+%~URL の`~scheme$url ~NEQ `https^l
 ］
 ⇒
 ~THROW `SyntaxError$E
 ◎
-If parsedURL scheme is not https, throw a SyntaxError exception.
+If url’s scheme is not https, throw a SyntaxError exception.
 </li>
 	<li>
 ~IF［
-%構文解析した~URL の`素片$url  ~NEQ ~NULL
+%~URL の`素片$url  ~NEQ ~NULL
 ］
 ⇒
 ~THROW `SyntaxError$E
 ◎
-If parsedURL fragment is not null, throw a SyntaxError exception.
+If url’s fragment is not null, throw a SyntaxError exception.
 </li>
 	<li>
 %専用か ~LET ~IS［
@@ -3731,18 +3771,10 @@ Let allowPooling be options’s allowPooling.
 Let dedicated be the negation of allowPooling.
 </li>
 	<li>
-%~server証明書~hash群 ~LET %options[ "`serverCertificateHashes$mb" ]
+%~server証明書~hash群 ~LET %options[ "`serverCertificateHashes$mb" ] ~DF ~NULL
 ◎
 Let serverCertificateHashes be options’s serverCertificateHashes if it exists, and null otherwise.
 </li>
-	<li>
-~IF［
-%~server証明書~hash群 ~EQ ε
-］
-⇒
-%~server証明書~hash群 ~SET ~NULL
-◎
-↑</li>
 	<li>
 ~IF［
 %専用か ~EQ ~F
@@ -3753,6 +3785,14 @@ Let serverCertificateHashes be options’s serverCertificateHashes if it exists,
 ~THROW `NotSupportedError$E
 ◎
 If dedicated is false and serverCertificateHashes is non-null, then throw a NotSupportedError exception.
+</li>
+	<li>
+%新たな接続 ~LET %専用か に応じて
+⇒＃
+~F ならば `no^l／
+~T ならば `yes-and-dedicated^l
+◎
+Let newConnection be "no" if dedicated is false; otherwise "yes-and-dedicated".
 </li>
 	<li>
 %不依拠-可能が要求されるか ~LET %options[ "`requireUnreliable$mb" ]
@@ -3858,7 +3898,10 @@ Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its 
 `Closed$sl ~SET `新たな~promise$,
 `Draining$sl ~SET `新たな~promise$,
 `Datagrams$sl ~SET %~datagram群,
-`Session$sl ~SET ~NULL
+`Session$sl ~SET ~NULL,
+`NewConnection$sl ~SET %新たな接続,
+`RequireUnreliable$sl ~SET %不依拠-可能が要求されるか,
+`ServerCertificateHashes$sl ~SET %~server証明書~hash群
 ◎
 Let transport be a newly constructed WebTransport object, with:
 • [[SendStreams]]
@@ -3891,6 +3934,12 @@ Let transport be a newly constructed WebTransport object, with:
 •• datagrams
 • [[Session]]
 •• null
+• [[NewConnection]]
+•• newConnection
+• [[RequireUnreliable]]
+•• requireUnreliable
+• [[ServerCertificateHashes]]
+•• serverCertificateHashes
 </li>
 	<li>
 <p>
@@ -3912,13 +3961,13 @@ Let transport be a newly constructed WebTransport object, with:
 		</ul>
 
 <p class="note">注記：
-各~datagramには 64kB ~bufferを利用することが推奨される
+各~datagramには 64 KiB【 `kibibyte^en — 1024 ~byte単位】 ~bufferを利用することが推奨される
 — ［
 ~WebTransportにおける~datagramの実質的な最大~frame~size
 ］には，上界として［
 ~QUICにおける~datagramの最大~frame~size
 ］があり、
-それには 64kB が推奨されるので
+それには 64 KiB が推奨されるので
 （ `QUIC-DATAGRAM$r `§ 3＠~RFCx/rfc9221#section-3$
 を見よ）。
 これは、［
@@ -3928,7 +3977,7 @@ Let transport be a newly constructed WebTransport object, with:
 ◎
 Let pullDatagramsAlgorithm be an action that runs pullDatagrams with transport.
 ◎
-Note: Using 64kB buffers with datagrams is recommended because the effective maximum WebTransport datagram frame size has an upper bound of the QUIC maximum datagram frame size which is recommended to be 64kB (See [QUIC-DATAGRAM] Section 3). This will ensure the stream is not errored due to a datagram being larger than the buffer.
+Note: Using 64 kibibytes buffers with datagrams is recommended because the effective maximum WebTransport datagram frame size has an upper bound of the QUIC maximum datagram frame size which is recommended to be 64 kibibytes (See [QUIC-DATAGRAM] Section 3). This will ensure the stream is not errored due to a datagram being larger than the buffer.
 ◎
 If datagramsReadableMode is "bytes", set up with byte reading support incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0. Otherwise, set up incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0.
 </li>
@@ -3973,46 +4022,6 @@ Let pullUnidirectionalStreamAlgorithm be an action that runs pullUnidirectionalS
 Set up transport.[[IncomingUnidirectionalStreams]] with pullAlgorithm set to pullUnidirectionalStreamAlgorithm, and highWaterMark set to 0.
 </li>
 	<li>
-`~HTTP越しの~WebTransportを初期化する$( ↓ )
-⇒＃
-%~transport,
-%構文解析した~URL,
-%専用か,
-%不依拠-可能が要求されるか,
-%輻輳~制御,
-%~protocol群,
-%~server証明書~hash群
-◎
-Initialize WebTransport over HTTP with transport, parsedURL, dedicated, requireUnreliable, congestionControl, protocols, and serverCertificateHashes.
-</li>
-	<li>
-~RET %~transport
-◎
-Return transport.
-</li>
-</ol>
-</div>
-
-<div class="algo">
-<p>
-`~HTTP越しの~WebTransportを初期化する@
-~algoは、
-所与の
-⇒＃
-`WebTransport$I ~obj %~transport,
-`~URL~record$ %~URL,
-真偽値 %専用か,
-真偽値 %不依拠-可能が要求されるか,
-`WebTransportCongestionControl$I %輻輳~制御,
-文字列たちが成す連列 %~protocol群 【！array】,
-`WebTransportHash$I たちが成す連列 %~server証明書~hash群
-◎終
-に対し：
-◎
-To initialize WebTransport over HTTP, given a WebTransport object transport, a URL record url, a boolean dedicated, a boolean requireUnreliable, a WebTransportCongestionControl congestionControl, a protocols array, and a sequence&lt;WebTransportHash&gt; serverCertificateHashes, run these steps.
-</p>
-<ol>
-	<li>
 %~client ~LET %~transport に`関連な設定群~obj$
 ◎
 Let client be transport’s relevant settings object.
@@ -4028,27 +4037,247 @@ Let origin be client’s origin.
 ⇒＃
 `~URL$rq ~SET %~URL,
 `~client$rq ~SET %~client,
+`~sw~mode$rq ~SET `none^l,
+`~referrer$rq ~SET `no-referrer^l,
+`~mode$rq ~SET `webtransport^l,
+`資格証~mode$rq ~SET `omit^l,
+`~cache~mode$rq ~SET `no-store^l,
 `施策~容器$rq ~SET %~client の`施策~容器$enV,
 `行先$rq ~SET 空~文字列,
 `生成元$rq ~SET %生成元,
 `~redirect~mode$rq ~SET `error^l
 ◎
-Let request be a new request whose URL is url, client is client, policy container is client’s policy container, destination is an empty string, origin is origin and redirect mode is "error".
+Let request be a new request whose URL is url, client is client, service-workers mode is "none", referrer is "no-referrer", mode is "webtransport", credentials mode is "omit", cache mode is "no-store", policy container is client’s policy container, destination is "", origin is origin and redirect mode is "error".
 </li>
 	<li>
-`要請に対する~CSP違反を報告する$( %要請 )
+<p>
+%要請 を`~fetchする$
+— 次を与える下で：
+</p>
+		<ul>
+			<li>
+`並列~queueを利用するか^i ~SET ~T
+</li>
+			<li class="algo">
+`応答の処理n^i は、
+所与の
+( %応答 )
+に対し
+⇒
+`~WebTransport~fetch応答を処理する$( %応答, %生成元, %~protocol群, %輻輳~制御 )
 ◎
-Run report Content Security Policy violations for request.
+Fetch request, with useParallelQueue set to true, and processResponse set to the following steps given a response:
+• Process a WebTransport fetch response with response, origin, protocols, and congestionControl.
+</li>
+		</ul>
+	</li>
+	<li>
+~RET %~transport
+◎
+Return transport.
+</li>
+</ol>
+</div>
+
+<p class="note">注記：
+次の~algoは、
+`~fetch＠~FETCH#concept-fetch$により，
+新たな`~mode$rq `webtransport^l の下で~callされるものと計画されている。
+（ `fetch 課題 #1808＠https://github.com/whatwg/fetch/issues/1808$ ）
+◎
+Note: The plan is for fetch to call into the below algorithm based off a new "webtransport" mode. #1808.
+</p>
+
+<div class="algo">
+<p>
+`~WebTransport接続を得する@
+~algoは、
+所与の
+( `~network区分~key$ %~network区分~key, `要請$fR【！`要請$？】 %要請 )
+に対し：
+◎
+To obtain a WebTransport connection, given a network partition key networkPartitionKey, and a request request:
+</p>
+<ol>
+	<li>
+%~transport ~LET %要請 に結付けられた `WebTransport$I ~obj
+◎
+Let transport be the WebTransport object associated with request.
+</li>
+	<li>
+%~URL ~LET %要請 の`現在の~URL$rq
+◎
+Let url be request’s current URL.
+</li>
+	<li>
+%新たな接続 ~LET %~transport . `NewConnection$sl
+◎
+Let newConnection be transport.[[NewConnection]].
+</li>
+	<li>
+%不依拠-可能が要求されるか ~LET %~transport . `RequireUnreliable$sl
+◎
+Let requireUnreliable be transport.[[RequireUnreliable]].
+</li>
+	<li>
+%~server証明書~hash群 ~LET %~transport . `ServerCertificateHashes$sl
+◎
+Let serverCertificateHashes be the values in transport.[[ServerCertificateHashes]].
+</li>
+	<li>
+<p>
+~RET `接続を得する$( ↓ )
+⇒＃
+%~network区分~key,
+%~URL,
+~F,
+%新たな接続,
+%不依拠-可能が要求されるか
+◎
+Return the result of obtaining a connection with networkPartitionKey, url, false, newConnection, and requireUnreliable.＼
+</p>
+
+<div>
+<p>
+ただし、
+%~server証明書~hash群 が指定された【空でない】場合には，次に従うとする：
+</p>
+		<ul>
+			<li>
+<p>
+接続を得するときは，証明書は
+— 既定の証明書~検証y~algoを利用する代わりに —
+~AND↓ を満たす場合に妥当であるものと見なす：
+</p>
+				<ul>
+					<li>
+`~custom証明書~要件$を満たす
+</li>
+					<li>
+次の結果 ~EQ ~T
+⇒
+`証明書~hashを検証yする$( %~server証明書~hash群 ) 
+</li>
+				</ul>
+			</li>
+			<li>
+前項の条件が満たされない場合、
+`~network~error$で失敗する
+</li>
+		</ul>
+◎
+When obtaining a connection, if serverCertificateHashes is specified, instead of using the default certificate verification algorithm, consider the certificate valid if it meets the custom certificate requirements and if verifying the certificate hash against serverCertificateHashes returns true. If either condition is not met, fail with a network error.
+</div>
+	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`~WebTransport~fetch応答を処理する@
+~algoは、
+所与の
+( %応答, %生成元, %~protocol群, %輻輳~制御 )
+に対し：
+◎
+To process a WebTransport fetch response, given a response, origin, protocols, and congestionControl, run these steps:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%応答 は`~network~error$である
+］：
+◎
+If response is network error,＼
+then abort the remaining steps and＼
+queue a network task with transport to＼
+</p>
+		<ol>
+			<li>
+<p>
+`~network~taskを~queueする$( %~transport, 次の手続き )
+</p>
+
+<div class="algo">
+<p>
+手続きは：
+◎
+run these steps:
+</p>
+				<ol>
+					<li>
+~IF［
+%~transport . `State$sl ~IN { `closed^l, `failed^l }
+］
+⇒
+~RET
+◎
+If transport.[[State]] is "closed" or "failed", then abort these steps.
+</li>
+					<li>
+%~error ~LET `~WebTransport用の例外を作成する$( `session^l )
+◎
+Let error be a newly created WebTransportError whose source is "session".
+</li>
+					<li>
+<p>
+`~WebTransportを片付ける$( %~transport, %~error )
+◎
+Cleanup transport with error.
+</p>
+
+<p class="note">注記：
+~redirectは追従されない
+【 %要請 の`~redirect~mode$rqは `error^l に設定されたので】。
+~redirectionにより生じる~network~errorは、
+意図的に，他の~network~errorと判別-不能になる。
+非同一-生成元な文脈においては、
+これ【追従すること？】は，［
+通常は~CORSにより阻止されることになる情報
+］を露呈することになる。
+同一-生成元な文脈においては、
+これは，［
+情報を渡すための行路として~handshakeを濫用する
+］よう応用に奨励するかもしれない。
+◎
+Note: Redirects are not followed. Network errors caused by redirection are intentionally indistinguishable from other network errors. In cross-origin contexts, this would reveal information that would normally be blocked by CORS. In same-origin contexts, it might encourage applications to abuse the handshake as a vector for passing information.
+</p>
+					</li>
+				</ol>
+</div>
+			</li>
+			<li>
+~RET
+◎
+↑</li>
+		</ol>
+	</li>
+	<li>
+%接続 ~LET %応答 に結付けられた下層の接続
+◎
+Let connection be the underlying connection associated with response.
+</li>
+	<li>
+%接続 から最初の `SETTINGS$ft ~frameを受信するまで待機する
+◎
+Wait for connection to receive the first SETTINGS frame,＼
+</li>
+	<li>
+%設定群 ~LET 前~段の `SETTINGS$ft ~frameを表現する辞書
+◎
+and let settings be a dictionary that represents the SETTINGS frame.
 </li>
 	<li>
 <p>
 ~IF［
-`要請は~CSPにより阻止されるべきか？$( %要請 ) ~EQ `阻止される^i
+%設定群 [ "`SETTINGS_ENABLE_WEBTRANPORT^sp" ] ~NEQ 1
 ］~OR［
-`~fetchingは，不良~portに因り阻止されるべきか？$( %要請 ) ~EQ `阻止される^i
+%設定群 [ "`H3_DATAGRAM^sp" ] ~NEQ 1
 ］：
 ◎
-If should request be blocked by Content Security Policy? with request returns "Blocked", or if request should be blocked due to a bad port returns blocked, then abort the remaining steps and＼
+If settings doesn’t contain SETTINGS_ENABLE_WEBTRANPORT with a value of 1, or it doesn’t contain H3_DATAGRAM with a value of 1, then＼
+↓ abort the remaining steps and＼
 </p>
 		<ol>
 			<li>
@@ -4093,219 +4322,6 @@ Cleanup transport with error.
 		</ol>
 	</li>
 	<li>
-%~network区分~key ~LET `~network区分~keyを決定する$( %~transport に`関連な設定群~obj$ )
-◎
-Let networkPartitionKey be the result of determining the network partition key with transport’s relevant settings object.
-</li>
-	<li class="algo">
-<p>
-この段は、
-`並列的$に走らすことに加え：
-◎
-Run the following steps in parallel,＼
-</p>
-		<ul>
-			<li>
-次が満たされた`ときは中止する$
-⇒
-%~transport . `State$sl ~IN { `closed^l, `failed^l }
-◎
-but abort when transport.[[State]] becomes "closed" or "failed":
-</li>
-		</ul>
-		<ol>
-			<li>
-%新たな接続 ~LET %専用か に応じて
-⇒＃
-~F ならば `no^l／
-~T ならば `yes-and-dedicated^l
-◎
-Let newConnection be "no" if dedicated is false; otherwise "yes-and-dedicated".
-</li>
-			<li>
-<p>
-%接続 ~LET `接続を得する$( ↓ )
-⇒＃
-%~network区分~key,
-%~URL,
-~F,
-%新たな接続,
-%不依拠-可能が要求されるか
-◎
-Let connection be the result of obtaining a connection with networkPartitionKey, url, false, newConnection, and requireUnreliable.＼
-</p>
-<div>
-<p>
-— 次に従う下で：
-</p>
-				<ul>
-					<li>
-~UAは，複数の輻輳~制御~algoを~supportする場合、［
-この %接続 上に~dataを送信するためとして，
-%輻輳~制御 用に適切なもの
-］を選ぶ。
-</li>
-					<li>
-<p>
-%~server証明書~hash群 が指定された【空でない】場合：
-</p>
-						<ul>
-							<li>
-接続を得するときは，証明書は
-— 既定の証明書~検証y~algoを利用する代わりに —
-次を満たす場合に妥当であるものと見なす
-⇒
-［
-`~custom証明書~要件$を満たす
-］~AND［
-`証明書~hashを検証yする$( %~server証明書~hash群 ) の結果 ~EQ ~T
-］
-</li>
-							<li>
-前項の条件が満たされない場合
-⇒
-%接続 ~SET `失敗^i
-</li>
-						</ul>
-					</li>
-				</ul>
-◎
-If the user agent supports more than one congestion control algorithm, choose one appropriate for congestionControl for sending of data on this connection. When obtaining a connection, if serverCertificateHashes is specified, instead of using the default certificate verification algorithm, consider the certificate valid if it meets the custom certificate requirements and if verifying the certificate hash against serverCertificateHashes returns true. If either condition is not met, let connection be failure.
-</div>
-
-			</li>
-			<li>
-<p>
-~IF［
-%接続 ~EQ `失敗^i
-］：
-◎
-If connection is failure, then abort the remaining steps and＼
-</p>
-				<ol>
-					<li>
-<p>
-`~network~taskを~queueする$( %~transport, 次の手続き )
-◎
-queue a network task with transport to＼
-</p>
-<div class="algo">
-<p>
-手続きは：
-◎
-run these steps:
-</p>
-						<ol>
-							<li>
-~IF［
-%~transport . `State$sl ~IN { `closed^l, `failed^l }
-］
-⇒
-~RET
-◎
-If transport.[[State]] is "closed" or "failed", then abort these steps.
-</li>
-							<li>
-%~error ~LET `~WebTransport用の例外を作成する$( `session^l )
-◎
-Let error be a newly created WebTransportError whose source is "session".
-</li>
-							<li>
-<p>
-`~WebTransportを片付ける$( %~transport, %~error )
-◎
-Cleanup transport with error.
-</p>
-
-<p class="note">注記：
-~redirectは追従されない
-【 %要請 の`~redirect~mode$rqは `error^l に設定されたので】。
-~redirectionにより生じる~network~errorは、
-意図的に，他の~network~errorと判別-不能になる。
-非同一-生成元な文脈においては、
-これ【追従すること？】は，［
-通常は~CORSにより阻止されることになる情報
-］を露呈することになる。
-同一-生成元な文脈においては、
-これは，［
-情報を渡すための行路として~handshakeを濫用する
-］よう応用に奨励するかもしれない。
-◎
-Note: Redirects are not followed. Network errors caused by redirection are intentionally indistinguishable from other network errors. In cross-origin contexts, this would reveal information that would normally be blocked by CORS. In same-origin contexts, it might encourage applications to abuse the handshake as a vector for passing information.
-</p>
-							</li>
-						</ol>
-</div>
-					</li>
-					<li>
-~RET
-◎
-↑↑</li>
-				</ol>
-			</li>
-			<li>
-%接続 から最初の `SETTINGS$ft ~frameを受信するまで待機する
-◎
-Wait for connection to receive the first SETTINGS frame,＼
-</li>
-			<li>
-%設定群 ~LET 前~段の `SETTINGS$ft ~frameを表現する辞書
-◎
-and let settings be a dictionary that represents the SETTINGS frame.
-</li>
-			<li>
-<p>
-~IF［
-%設定群 [ "`SETTINGS_ENABLE_WEBTRANPORT^sp" ] ~NEQ 1
-］~OR［
-%設定群 [ "`H3_DATAGRAM^sp" ] ~NEQ 1
-］：
-◎
-If settings doesn’t contain SETTINGS_ENABLE_WEBTRANPORT with a value of 1, or it doesn’t contain H3_DATAGRAM with a value of 1, then abort the remaining steps and＼
-</p>
-				<ol>
-					<li>
-<p>
-`~network~taskを~queueする$( %~transport, 次の手続き )
-◎
-queue a network task with transport to＼
-</p>
-<div class="algo">
-<p>
-手続きは：
-◎
-run these steps:
-</p>
-						<ol>
-							<li>
-~IF［
-%~transport . `State$sl ~IN { `closed^l, `failed^l }
-］
-⇒
-~RET
-◎
-If transport.[[State]] is "closed" or "failed", then abort these steps.
-</li>
-							<li>
-%~error ~LET `~WebTransport用の例外を作成する$( `session^l )
-◎
-Let error be a newly created WebTransportError whose source is "session".
-</li>
-							<li>
-`~WebTransportを片付ける$( %~transport, %~error )
-◎
-Cleanup transport with error.
-</li>
-						</ol>
-</div>
-					</li>
-					<li>
-~RET
-◎
-↑↑</li>
-				</ol>
-			</li>
-			<li>
 <p>
 %~session ~LET `~WebTransport~sessionを確立する$( %生成元, %~protocol群 ) `on^en %接続
 ◎
@@ -4319,8 +4335,8 @@ Establish a WebTransport session with origin and protocols on connection.
 ◎
 Note: This step also contains the transport parameter exchange specified in [QUIC-DATAGRAM].
 </p>
-			</li>
-			<li>
+	</li>
+	<li>
 <p>
 ~IF［
 %~session ~EQ `失敗^i
@@ -4328,55 +4344,12 @@ Note: This step also contains the transport parameter exchange specified in [QUI
 ◎
 If the previous step fails, abort the remaining steps and＼
 </p>
-				<ol>
-					<li>
-<p>
-`~network~taskを~queueする$( %~transport, 次の手続き )
-◎
-queue a network task with transport to＼
-</p>
-<div class="algo">
-<p>
-手続きは：
-◎
-run these steps:
-</p>
-						<ol>
-							<li>
-~IF［
-%~transport . `State$sl ~IN { `closed^l, `failed^l }
-］
-⇒
-~RET
-◎
-If transport.[[State]] is "closed" or "failed", then abort these steps.
-</li>
-							<li>
-%~error ~LET `~WebTransport用の例外を作成する$( `session^l )
-◎
-Let error be a newly created WebTransportError whose source is "session".
-</li>
-							<li>
-`~WebTransportを片付ける$( %~transport, %~error )
-◎
-Cleanup transport with error.
-</li>
-						</ol>
-</div>
-					</li>
-					<li>
-~RET
-◎
-↑↑</li>
-				</ol>
-			</li>
+		<ol>
 			<li>
 <p>
 `~network~taskを~queueする$( %~transport, 次の手続き )
 ◎
-↑↑ Let session be the established WebTransport session.
-◎
-Queue a network task with transport to＼
+queue a network task with transport to＼
 </p>
 
 <div class="algo">
@@ -4387,12 +4360,62 @@ run these steps:
 </p>
 				<ol>
 					<li>
+~IF［
+%~transport . `State$sl ~IN { `closed^l, `failed^l }
+］
+⇒
+~RET
+◎
+If transport.[[State]] is "closed" or "failed", then abort these steps.
+</li>
+					<li>
+%~error ~LET `~WebTransport用の例外を作成する$( `session^l )
+◎
+Let error be a newly created WebTransportError whose source is "session".
+</li>
+					<li>
+`~WebTransportを片付ける$( %~transport, %~error )
+◎
+Cleanup transport with error.
+</li>
+				</ol>
+</div>
+			</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+~UAは，複数の輻輳~制御~algoを~supportする
+］
+⇒
+%接続 上に~dataを送信するためとして，
+%輻輳~制御 用に適切な~algoを選ぶ
+◎
+↑ Let session be the established WebTransport session.
+◎
+If the user agent supports more than one congestion control algorithm, choose one appropriate for congestionControl for sending of data on this connection.
+</li>
+	<li>
+<p>
+`~network~taskを~queueする$( %~transport, 次の手続き )
+◎
+Queue a network task with transport to＼
+</p>
+
+<div class="algo">
+<p>
+手続きは：
+◎
+run these steps:
+</p>
+		<ol>
+			<li>
 ~Assert:
 %~transport【！コレ】 . `Datagrams$sl . `OutgoingMaxDatagramSize$sl は整数である。
 ◎
 Assert: this’s [[Datagrams]]’s [[OutgoingMaxDatagramSize]] is an integer.
 </li>
-					<li>
+			<li>
 <p>
 ~IF［
 %~transport . `State$sl ~NEQ `connecting^l
@@ -4400,8 +4423,8 @@ Assert: this’s [[Datagrams]]’s [[OutgoingMaxDatagramSize]] is an integer.
 ◎
 If transport.[[State]] is not "connecting":
 </p>
-						<ol>
-							<li class="algo">
+				<ol>
+					<li class="algo">
 この段は`並列的$に走らす
 ⇒
 `~WebTransport~sessionを終了する$( %~session )
@@ -4410,10 +4433,7 @@ In parallel, terminate session.
 ◎
 Abort these steps.
 </li>
-						</ol>
-					</li>
 				</ol>
-</div>
 			</li>
 			<li>
 %~transport . `State$sl ~SET `connected^l
@@ -4441,7 +4461,7 @@ Set transport.[[Protocol]] to either the string value of the negotiated applicat
 ~HTTP3接続であるならば `supports-unreliable$l ／
 ~HTTP2接続である `WEB-TRANSPORT-HTTP2$r ならば `reliable-only$l
 ◎
-If the connection is an HTTP/3 connection, set transport’s [[Reliability]] to "supports-unreliable".
+If the connection is an HTTP/3 connection, set transport.[[Reliability]] to "supports-unreliable".
 ◎
 If the connection is an HTTP/2 connection [WEB-TRANSPORT-HTTP2], set transport’s [[Reliability]] to "reliable-only".
 </li>
@@ -4451,6 +4471,7 @@ If the connection is an HTTP/2 connection [WEB-TRANSPORT-HTTP2], set transport�
 Resolve transport.[[Ready]] with undefined.
 </li>
 		</ol>
+</div>
 	</li>
 </ol>
 </div>
@@ -11131,9 +11152,9 @@ Process the datagram
 ~bufferの割振りに対する制御
 ］を許容する。
 この例は、
-~datagramを 64kB の~memory~bufferの中へ読取る。
+~datagramを 64 KiB の~memory~bufferの中へ読取る。
 ◎
-As datagrams are readable byte streams, you can acquire a BYOB reader for them, which allows more precise control over buffer allocation in order to avoid copies. This example reads the datagram into a 64kB memory buffer.
+As datagrams are readable byte streams, you can acquire a BYOB reader for them, which allows more precise control over buffer allocation in order to avoid copies. This example reads the datagram into a 64 kibibytes memory buffer.
 </p>
 
 <pre class="lang-js">
