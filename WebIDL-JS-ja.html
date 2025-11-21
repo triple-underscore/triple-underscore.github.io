@@ -103,6 +103,22 @@ source_data.generate = function(){
 	const tag_map = this.tag_map;
 	const link_map = this.link_map;
 	const tf_map = { T: 'true', F: 'false', 0: '0', 1: '1' };
+	const TFmap = (c) => {
+		const s = tf_map[c];
+		return s ?
+			`<span class="js-value">${s}</span>` : 
+			`<var>${c}</var>`;
+	}
+	const desc = (data) => {// JS プロパティ記述子
+		const val = (data.length > 3) ?
+			`, [[Value]]: ${TFmap(data.slice(4))}` : '';
+		return (
+`{ [[Writable]]: ${TFmap(data[0])}, \
+[[Enumerable]]: ${TFmap(data[1])}, \
+[[Configurable]]: ${TFmap(data[2])}${val} \
+}`
+		);
+	}
 
 	return this.html.replace(
 		/%[\w\-~一-鿆あ-ん]+|`(.*?)([$@^§])(\w*)/g,
@@ -231,24 +247,6 @@ if(indicator !== '^'){
 return text;
 
 	}
-
-	function desc(id){// JS プロパティ記述子
-		const Val = (id.length > 3) ?
-			`,
-[[Value]]: ${TFmap(id.slice(4))}` : '';
-		return (
-`{ [[Writable]]: ${TFmap(id[0])}, \
-[[Enumerable]]: ${TFmap(id[1])}, \
-[[Configurable]]: ${TFmap(id[2])}${Val} \
-}`
-		);
-		function TFmap(c){
-			const s = tf_map[c];
-			return s ?
-				`<span class="js-value">${s}</span>` : 
-				`<var>${c}</var>`;
-		}
-	}
 }
 
 source_data.populate = function(){
@@ -307,7 +305,7 @@ source_data.populate = function(){
 ●●options
 
 spec_title:Web IDL Standard
-trans_update:2025-09-10
+trans_update:2025-11-21
 original_url:https://webidl.spec.whatwg.org/
 	abbr_url:WEBIDLjs
 page_state_key:WEBIDL
@@ -1784,7 +1782,6 @@ idl:IDL
 	%配列~buffer:arrayBuffer
 	-:sharedArrayBuffer
 	%開始-時の~offset:startingOffset
-	%拡張を防止するか:preventExtensions
 	%有符号か:signedness
 	%最大:-
 	%最小:-
@@ -1798,6 +1795,14 @@ idl:IDL
 	%完遂-:finish
 	%同期c~method:syncMethod
 	%非同期c~method:asyncMethod
+
+	%~propを定義する:defineProperty
+	%~propを削除する:deleteProperty
+	%取得する:get
+	%自前の~prop記述子を取得する:getOwnPropertyDescriptor
+	%有するか否か:has
+	%設定する:set
+	%拡張を防止するか否か:preventExtensions
 
 	%A
 	%B
@@ -1823,11 +1828,6 @@ idl:IDL
 	%Receiver
 	%M:modifiable
 	%d
-	%defineProperty
-	%deleteProperty
-	%get
-	%getOwnPropertyDescriptor
-	%has
 	%i
 	%k
 	%m
@@ -5359,9 +5359,9 @@ Return result, converted to a JavaScript value.
 	</li>
 	<li>
 %充足-時の関数 ~LET
-`CreateBuiltinFunction$A( %充足-時の手続き, « » )
+`CreateBuiltinFunction$A( %充足-時の手続き, 1, "", « » )
 ◎
-Let onFulfilled be CreateBuiltinFunction(onFulfilledSteps, « »):
+Let onFulfilled be CreateBuiltinFunction(onFulfilledSteps, 1, "", « »):
 </li>
 	<li class="algo">
 <p>
@@ -5392,9 +5392,9 @@ Return result, converted to a JavaScript value.
 	</li>
 	<li>
 %却下-時の関数 ~LET
-`CreateBuiltinFunction$A( %却下-時の手続き, « » )
+`CreateBuiltinFunction$A( %却下-時の手続き, 1, "", « » )
 ◎
-Let onRejected be CreateBuiltinFunction(onRejectedSteps, « »).
+Let onRejected be CreateBuiltinFunction(onRejectedSteps, 1, "", « »):
 </li>
 	<li>
 %構築子 ~LET %~promise.`Promise^sl.`Realm^sl.`Promise$jIsl
@@ -5585,9 +5585,9 @@ Perform failureSteps given arg.
 	</li>
 	<li>
 %却下~handler ~LET
-`CreateBuiltinFunction$A( %却下~handler手続き, « » )
+`CreateBuiltinFunction$A( %却下~handler手続き, 1, "", « » )
 ◎
-Let rejectionHandler be CreateBuiltinFunction(rejectionHandlerSteps, « »):
+Let rejectionHandler be CreateBuiltinFunction(rejectionHandlerSteps, 1, "", « »):
 </li>
 	<li>
 %合計 ~LET %~promise群 の`~size$
@@ -5677,9 +5677,9 @@ If fullfilledCount equals total, then perform successSteps given result.
 			</li>
 			<li>
 %充足~handler ~LET
-`CreateBuiltinFunction$A( %充足~handler, « » )
+`CreateBuiltinFunction$A( %充足~handler, 1, "", « » )
 ◎
-Let fulfillmentHandler be CreateBuiltinFunction(fulfillmentHandler, « »):
+Let fulfillmentHandler be CreateBuiltinFunction(fulfillmentHandler, 1, "", « »):
 </li>
 			<li>
 `PerformPromiseThen$A( %~promise, %充足~handler, %却下~handler )
@@ -13202,12 +13202,6 @@ Let constructorProto be realm.[[Intrinsics]].[[%Function.prototype%]].
 If I inherits from some other interface P, then set constructorProto to the interface object of P in realm.
 </li>
 	<li>
-%F ~LET
-`CreateBuiltinFunction$A( %手続き, « `Unforgeables^sl », %~realm, %構築子~原型 )
-◎
-Let F be CreateBuiltinFunction(steps, « [[Unforgeables]] », realm, constructorProto).
-</li>
-	<li>
 %偽造-不能~obj ~LET
 `OrdinaryObjectCreate$A( `null^jv )
 ◎
@@ -13241,11 +13235,6 @@ Set F.[[Unforgeables]] to unforgeables.
 Note: this object is never exposed to user code. It exists only to ensure all instances of an interface with an unforgeable member use the same JavaScript function objects for attribute getters, attribute setters and operation functions.
 </p>
 	</li>
-	<li id="cp-SetFunctionName-F-id">
-`SetFunctionName$A( %F, %識別子 )
-◎
-Perform SetFunctionName(F, id).
-</li>
 	<li>
 %長さ ~LET 0
 ◎
@@ -13272,10 +13261,11 @@ Set length to the length of the shortest argument list of the entries in S.
 </li>
 		</ol>
 	</li>
-	<li id="cp-SetFunctionLength-F-length">
-`SetFunctionLength$A( %F, %長さ )
+	<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, %長さ, %識別子, « `Unforgeables^sl », %~realm, %構築子~原型 )
 ◎
-Perform SetFunctionLength(F, length).
+Let F be CreateBuiltinFunction(steps, length, id, « [[Unforgeables]] », realm, constructorProto).
 </li>
 	<li>
 %proto ~LET `~ifc原型~objを作成する$( %I, %~realm )
@@ -13370,13 +13360,6 @@ Return O.
 </li>
 		</ol>
 	</li>
-	<li id="cp-CreateBuiltinFunction">
-%F ~LET
-`CreateBuiltinFunction$A( %手続き, « », %~realm )
-◎
-Let F be CreateBuiltinFunction(steps, « », realm).
-</li>
-	<!--cp-SetFunctionName-F-id-->
 	<li>
 %S ~LET %I の旧来の~factory関数~用の`有効-多重定義~集合を算出する$( `識別子$ %識別子, 引数個数 0 )
 ◎
@@ -13387,7 +13370,12 @@ Compute the effective overload set for legacy factory functions with identifier 
 ◎
 Let length be the length of the shortest argument list of the entries in S.
 </li>
-	<!--cp-SetFunctionLength-F-length-->
+	<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, %長さ, %識別子, « », %~realm )
+◎
+Let F be CreateBuiltinFunction(steps, length, id, « », realm).
+</li>
 	<li>
 %proto ~LET %~realm 内で %I を成す`~ifc原型~obj$
 ◎
@@ -14411,7 +14399,6 @@ Otherwise, end these steps and allow the exception to propagate.
 </li>
 		</ol>
 	</li>
-	<!--cp-CreateBuiltinFunction-->
 	<li>
 %名前 ~LET 次を順に`連結する$
 ⇒＃
@@ -14421,15 +14408,11 @@ Otherwise, end these steps and allow the exception to propagate.
 ◎
 Let name be the string "get " prepended to attribute’s identifier.
 </li>
-	<li id="cp-SetFunctionName-name-F">
-`SetFunctionName$A( %F, %名前 )
+	<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 0, %名前, « », %~realm )
 ◎
-Perform SetFunctionName(F, name).
-</li>
-	<li id="cp-SetFunctionLength-F-0">
-`SetFunctionLength$A( %F, 0 )
-◎
-Perform SetFunctionLength(F, 0).
+Let F be CreateBuiltinFunction(steps, 0, name, « », realm).
 </li>
 	<!--cp-ret-F-->
 </ol>
@@ -14749,7 +14732,6 @@ Return undefined
 </li>
 		</ol>
 	</li>
-	<!--cp-CreateBuiltinFunction-->
 	<li>
 %名前 ~LET 次を順に`連結する$
 ⇒＃
@@ -14759,11 +14741,11 @@ Return undefined
 ◎
 Let name be the string "set " prepended to id.
 </li>
-	<!--cp-SetFunctionName-name-F-->
-	<li id="cp-SetFunctionLength-F-1">
-`SetFunctionLength$A( %F, 1 )
+	<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 1, %名前, « », %~realm )
 ◎
-Perform SetFunctionLength(F, 1).
+Let F be CreateBuiltinFunction(steps, 1, name, « », realm).
 </li>
 	<!--cp-ret-F-->
 </ol>
@@ -15102,8 +15084,6 @@ If op has a return type that is a promise type, then return ! Call(%Promise.reje
 			<!--cp-throw-E-->
 		</ol>
 	</li>
-	<!--cp-CreateBuiltinFunction-->
-	<!--cp-SetFunctionName-F-id-->
 	<li>
 %S ~LET %target の［
 %op が［
@@ -15117,7 +15097,12 @@ Compute the effective overload set for regular operations (if op is a regular op
 ◎
 Let length be the length of the shortest argument list in the entries in S.
 </li>
-	<!--cp-SetFunctionLength-F-length-->
+	<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, %長さ, %識別子, « », %~realm )
+◎
+Let F be CreateBuiltinFunction(steps, length, id, « », realm).
+</li>
 	<!--cp-ret-F-->
 </ol>
 </div>
@@ -15717,13 +15702,12 @@ Return a newly created default iterator object for definition, with jsValue as i
 </li>
 						</ol>
 					</li>
-					<!--cp-CreateBuiltinFunction-->
-					<li id="cp-SetFunctionLength-F-entries">
-`SetFunctionName$A( %F, `entries^l)
+					<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 0, `entries^l, « », %~realm )
 ◎
-Perform SetFunctionName(F, "entries").
+Let F be CreateBuiltinFunction(steps, 0, "entries", « », realm).
 </li>
-					<!--cp-SetFunctionLength-F-0-->
 					<li>
 `DefineMethodProperty$A( %~target, `Symbol.iterator$jI, %F, `false^jv )
 ◎
@@ -15769,13 +15753,12 @@ Return a newly created default iterator object for definition, with jsValue as i
 </li>
 						</ol>
 					</li>
-					<!--cp-CreateBuiltinFunction-->
 					<li>
-`SetFunctionName$A( %F, `keys^l)
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 0, `keys^l, « », %~realm )
 ◎
-Perform SetFunctionName(F, "keys").
+Let F be CreateBuiltinFunction(steps, 0, "keys", « », realm).
 </li>
-					<!--cp-SetFunctionLength-F-0-->
 					<li>
 ~NOABRUPT `CreateDataPropertyOrThrow$A( %~target, `keys^l, %F )
 ◎
@@ -15816,13 +15799,12 @@ Return a newly created default iterator object for definition, with jsValue as i
 </li>
 						</ol>
 					</li>
-					<!--cp-CreateBuiltinFunction-->
-					<li id="cp-SetFunctionName-F-values">
-`SetFunctionName$A( %F, `values^l)
+					<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 0, `values^l, « », %~realm )
 ◎
-Perform SetFunctionName(F, "values").
+Let F be CreateBuiltinFunction(steps, 0, "values", « », realm).
 </li>
-					<!--cp-SetFunctionLength-F-0-->
 					<li id="cp-CreateDataPropertyOrThrow-target-values-F">
 ~NOABRUPT `CreateDataPropertyOrThrow$A( %~target, `values^l, %F )
 ◎
@@ -15913,13 +15895,12 @@ Set i to i + 1.
 							</li>
 						</ol>
 					</li>
-					<!--cp-CreateBuiltinFunction-->
 					<li>
-`SetFunctionName$A( %F, `forEach^l)
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 1, `forEach^l, « », %~realm )
 ◎
-Perform SetFunctionName(F, "forEach").
+Let F be CreateBuiltinFunction(steps, 1, "forEach", « », realm).
 </li>
-					<!--cp-SetFunctionLength-F-1-->
 					<li>
 ~NOABRUPT `CreateDataPropertyOrThrow$A( %~target, `forEach^l, %F )
 ◎
@@ -16338,9 +16319,12 @@ Return iterator.
 </li>
 				</ol>
 			</li>
-			<!--cp-CreateBuiltinFunction-->
-			<!--cp-SetFunctionLength-F-entries-->
-			<!--cp-SetFunctionLength-F-0-->
+			<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 0, `entries^l, « », %~realm )
+◎
+Let F be CreateBuiltinFunction(steps, 0, "entries", « », realm).
+</li>
 			<li>
 `DefineMethodProperty$A( %~target, `Symbol.asyncIterator$jI, %F, `false^jv )
 ◎
@@ -16398,13 +16382,12 @@ Return iterator.
 </li>
 				</ol>
 			</li>
-			<!--cp-CreateBuiltinFunction-->
 			<li>
-`SetFunctionName$A( %F, `keys^l)
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 0, `keys^l, « », %~realm )
 ◎
-Perform SetFunctionName(F, "keys").
+Let F be CreateBuiltinFunction(steps, 0, "keys, « », realm).
 </li>
-			<!--cp-SetFunctionLength-F-0-->
 			<li>
 ~NOABRUPT `CreateDataPropertyOrThrow$A( %~target, `keys^l, %F )
 ◎
@@ -16457,9 +16440,12 @@ Return iterator.
 </li>
 				</ol>
 			</li>
-			<!--cp-CreateBuiltinFunction-->
-			<!--cp-SetFunctionName-F-values-->
-			<!--cp-SetFunctionLength-F-0-->
+			<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 0, `values^l, « », %~realm )
+◎
+Let F be CreateBuiltinFunction(steps, 0, "values", « », realm).
+</li>
 			<!--cp-CreateDataPropertyOrThrow-target-values-F-->
 			<li>
 ~IF［
@@ -16893,11 +16879,11 @@ Return CreateIteratorResultObject(value, false).
 					</li>
 				</ol>
 			</li>
-			<li id="cp-let-onFulfilled-CreateBuiltinFunction">
+			<li>
 %充足-時の関数 ~LET
-`CreateBuiltinFunction$A( %充足-手続き, « » )
+`CreateBuiltinFunction$A( %充足-手続き, 1, "", « » )
 ◎
-Let onFulfilled be CreateBuiltinFunction(fulfillSteps, « »).
+Let onFulfilled be CreateBuiltinFunction(fulfillSteps, 1, "", « »).
 </li>
 			<li class="algo">
 <p>
@@ -16917,9 +16903,9 @@ Throw reason.
 			</li>
 			<li>
 %却下-時の関数 ~LET
-`CreateBuiltinFunction$A( %却下-手続き, « » )
+`CreateBuiltinFunction$A( %却下-手続き, 1, "", « » )
 ◎
-Let onRejected be CreateBuiltinFunction(rejectSteps, « »).
+Let onRejected be CreateBuiltinFunction(rejectSteps, 1, "", « »).
 </li>
 			<li>
 `PerformPromiseThen$A( %次回の~promise, %充足-時の関数, %却下-時の関数, %次回の~promise能力 )
@@ -16955,9 +16941,9 @@ Let afterOngoingPromiseCapability be ! NewPromiseCapability(%Promise%).
 </li>
 			<li>
 %決着-時の関数 ~LET
-`CreateBuiltinFunction$A( %次回の手続き, « » )
+`CreateBuiltinFunction$A( %次回の手続き, 0, "", « » )
 ◎
-Let onSettled be CreateBuiltinFunction(nextSteps, « »).
+Let onSettled be CreateBuiltinFunction(nextSteps, 0, "", « »).
 </li>
 			<li id="cp-PerformPromiseThen-ongoingPromise">
 `PerformPromiseThen$A( %進行中な~promise, %決着-時の関数, %決着-時の関数, %後の進行中な~promise能力 )
@@ -17111,9 +17097,9 @@ Return the result of running the asynchronous iterator return algorithm for inte
 			<!--cp-let-afterOngoingPromiseCapability-->
 			<li>
 %決着-時の関数 ~LET
-`CreateBuiltinFunction$A( %~return手続き, « » )
+`CreateBuiltinFunction$A( %~return手続き, 0, "", « » )
 ◎
-Let onSettled be CreateBuiltinFunction(returnSteps, « »).
+Let onSettled be CreateBuiltinFunction(returnSteps, 0, "", « »).
 </li>
 			<!--cp-PerformPromiseThen-ongoingPromise-->
 			<li>
@@ -17140,7 +17126,12 @@ Otherwise:
 Let fulfillSteps be the following steps:
 • Return CreateIteratorResultObject(value, true).
 </li>
-	<!--cp-let-onFulfilled-CreateBuiltinFunction-->
+			<li>
+%充足-時の関数 ~LET
+`CreateBuiltinFunction$A( %充足-手続き, 1, "", « » )
+◎
+Let onFulfilled be CreateBuiltinFunction(fulfillSteps, 1, "", « »).
+</li>
 	<li>
 `PerformPromiseThen$A( %object の`進行中な~promise$aI, %充足-時の関数, `undefined^jv, %~return~promise能力 )
 ◎
@@ -20475,65 +20466,65 @@ Set handler.[[SetAlgorithm]] to setAlgorithm.
 Set handler.[[DeleteAlgorithm]] to deleteAlgorithm.
 </li>
 	<li>
-%defineProperty ~LET
-`CreateBuiltinFunction$A( `defineProperty＠#js-observable-array-defineProperty§jp の手続き, « », %~realm )
+%~propを定義する ~LET
+`CreateBuiltinFunction$A( `defineProperty＠#js-observable-array-defineProperty§jp の手続き, 3, "", « », %~realm )
 ◎
-Let defineProperty be CreateBuiltinFunction(the steps from § 3.10.1 defineProperty, « », realm).
+Let defineProperty be CreateBuiltinFunction(the steps from § 3.10.1 defineProperty, 3, "", « », realm).
 </li>
 	<li>
-~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `defineProperty^l, %defineProperty )
+~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `defineProperty^l, %~propを定義する )
 ◎
 Perform ! CreateDataPropertyOrThrow(handler, "defineProperty", defineProperty).
 </li>
 	<li>
-%deleteProperty ~LET
-`CreateBuiltinFunction$A( `deleteProperty＠#js-observable-array-deleteProperty§jp の手続き, « », %~realm )
+%~propを削除する ~LET
+`CreateBuiltinFunction$A( `deleteProperty＠#js-observable-array-deleteProperty§jp の手続き, 2, "", « », %~realm )
 ◎
-Let deleteProperty be CreateBuiltinFunction(the steps from § 3.10.2 deleteProperty, « », realm).
+Let deleteProperty be CreateBuiltinFunction(the steps from § 3.10.2 deleteProperty, 2, "", « », realm).
 </li>
 	<li>
-~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `deleteProperty^l, %deleteProperty )
+~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `deleteProperty^l, %~propを削除する )
 ◎
 Perform ! CreateDataPropertyOrThrow(handler, "deleteProperty", deleteProperty).
 </li>
 	<li>
-%get ~LET
-`CreateBuiltinFunction$A( `get＠#js-observable-array-get§jp の手続き, « », %~realm )
+%取得する ~LET
+`CreateBuiltinFunction$A( `get＠#js-observable-array-get§jp の手続き, 3, "", « », %~realm )
 ◎
-Let get be CreateBuiltinFunction(the steps from § 3.10.3 get, « », realm).
+Let get be CreateBuiltinFunction(the steps from § 3.10.3 get, 3, "", « », realm).
 </li>
 	<li>
-~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `get^l, %get )
+~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `get^l, %取得する )
 ◎
 Perform ! CreateDataPropertyOrThrow(handler, "get", get).
 </li>
 	<li>
-%getOwnPropertyDescriptor ~LET
-`CreateBuiltinFunction$A( `getOwnPropertyDescriptor＠#js-observable-array-getOwnPropertyDescriptor§jp の手続き, « », %~realm )
+%自前の~prop記述子を取得する ~LET
+`CreateBuiltinFunction$A( `getOwnPropertyDescriptor＠#js-observable-array-getOwnPropertyDescriptor§jp の手続き, 2, "", « », %~realm )
 ◎
-Let getOwnPropertyDescriptor be CreateBuiltinFunction(the steps from § 3.10.4 getOwnPropertyDescriptor, « », realm).
+Let getOwnPropertyDescriptor be CreateBuiltinFunction(the steps from § 3.10.4 getOwnPropertyDescriptor, 2, "", « », realm).
 </li>
 	<li>
-~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `getOwnPropertyDescriptor^l, %getOwnPropertyDescriptor )
+~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `getOwnPropertyDescriptor^l, %自前の~prop記述子を取得する )
 ◎
 Perform ! CreateDataPropertyOrThrow(handler, "getOwnPropertyDescriptor", getOwnPropertyDescriptor).
 </li>
 	<li>
-%has ~LET
-`CreateBuiltinFunction$A( `has＠#js-observable-array-has§jp の手続き, « », %~realm )
+%有するか否か ~LET
+`CreateBuiltinFunction$A( `has＠#js-observable-array-has§jp の手続き, 2, "", « », %~realm )
 ◎
-Let has be CreateBuiltinFunction(the steps from § 3.10.5 has, « », realm).
+Let has be CreateBuiltinFunction(the steps from § 3.10.5 has, 2, "", « », realm).
 </li>
 	<li>
-~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `has^l, %has )
+~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `has^l, %有するか否か )
 ◎
 Perform ! CreateDataPropertyOrThrow(handler, "has", has).
 </li>
 	<li>
 %自前の~key群 ~LET
-`CreateBuiltinFunction$A( `ownKeys＠#js-observable-array-ownKeys§jp の手続き, « », %~realm )
+`CreateBuiltinFunction$A( `ownKeys＠#js-observable-array-ownKeys§jp の手続き, 1, "", « », %~realm )
 ◎
-Let ownKeys be CreateBuiltinFunction(the steps from § 3.10.6 ownKeys, « », realm).
+Let ownKeys be CreateBuiltinFunction(the steps from § 3.10.6 ownKeys, 1, "", « », realm).
 </li>
 	<li>
 ~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `ownKeys^l, %自前の~key群 )
@@ -20541,24 +20532,24 @@ Let ownKeys be CreateBuiltinFunction(the steps from § 3.10.6 ownKeys, « », re
 Perform ! CreateDataPropertyOrThrow(handler, "ownKeys", ownKeys).
 </li>
 	<li>
-%拡張を防止するか ~LET
-`CreateBuiltinFunction$A( `preventExtensions＠#js-observable-array-preventExtensions§jp の手続き, « », %~realm )
+%拡張を防止するか否か ~LET
+`CreateBuiltinFunction$A( `preventExtensions＠#js-observable-array-preventExtensions§jp の手続き, 0, "", « »【！« », 0, ""】, %~realm )
 ◎
-Let preventExtensions be CreateBuiltinFunction(the steps from § 3.10.7 preventExtensions, « », realm).
+Let preventExtensions be CreateBuiltinFunction(the steps from § 3.10.7 preventExtensions, « », 0, "", realm).
 </li>
 	<li>
-~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `preventExtensions^l, %拡張を防止するか )
+~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `preventExtensions^l, %拡張を防止するか否か )
 ◎
 Perform ! CreateDataPropertyOrThrow(handler, "preventExtensions", preventExtensions).
 </li>
 	<li>
-%set ~LET
-`CreateBuiltinFunction$A( `set＠#js-observable-array-set§jp の手続き, « », %~realm )
+%設定する ~LET
+`CreateBuiltinFunction$A( `set＠#js-observable-array-set§jp の手続き, 4, "", « »【！« », 4, ""】, %~realm )
 ◎
-Let set be CreateBuiltinFunction(the steps from § 3.10.8 set, « », realm).
+Let set be CreateBuiltinFunction(the steps from § 3.10.8 set, « », 4, "", realm).
 </li>
 	<li>
-~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `set^l, %set )
+~NOABRUPT `CreateDataPropertyOrThrow$A( %~handler, `set^l, %設定する )
 ◎
 Perform ! CreateDataPropertyOrThrow(handler, "set", set).
 </li>
@@ -21709,9 +21700,12 @@ Let steps be the following steps:
 			<!--cp-throw-typeerror-->
 		</ol>
 	</li>
-	<!--cp-CreateBuiltinFunction-->
-	<!--cp-SetFunctionName-F-id-->
-	<!--cp-SetFunctionLength-F-0-->
+	<li>
+%F ~LET
+`CreateBuiltinFunction$A( %手続き, 0, %識別子, « », %~realm )
+◎
+Let F be CreateBuiltinFunction(steps, 0, id, « », realm).
+</li>
 	<li>
 `定数を定義する$( %I, %F, %~realm )
 ◎
