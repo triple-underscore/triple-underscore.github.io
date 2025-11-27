@@ -276,8 +276,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2025-10-31
-trans_update:2025-11-05
+spec_date:2025-11-26
+trans_update:2025-11-28
 source_checked:240422
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -693,6 +693,7 @@ poll:
 	%例外:exception
 	%~registry:registry
 	%~registry:-
+	%文書~registry:-
 	%~fallback~registry:fallbackRegistry
 	%~option群:options
 	%検証y-済みな値:verifiedValue
@@ -2094,7 +2095,7 @@ CONSOLE=副    ~/console-ja.html
 [SELECTORS4]
     Elika Etemad; Tab Atkins Jr.. ＜Selectors Level 4＞. URL: https://drafts.csswg.org/selectors/
 [SERVICE-WORKERS]
-    Yoshisato Yanagisawa; Monica CHINTALA. ＜Service Workers＞. URL: https://w3c.github.io/ServiceWorker/
+    Monica CHINTALA; Yoshisato Yanagisawa. ＜Service Workers Nightly＞. URL: https://w3c.github.io/ServiceWorker/
 [TRUSTED-TYPES]
     Krzysztof Kotowicz. ＜Trusted Types＞. URL: https://w3c.github.io/trusted-types/dist/spec/
 [TOUCH-EVENTS]
@@ -2143,7 +2144,7 @@ Participate:
 	<a href="https://whatwg.org/chat">Chat on Matrix</a>
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/918ebc03e7368442d0c1d5a512a38186160f1b7e/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/31ff09c520c2265dd86ed578ef46eef9fae7138e/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -14905,7 +14906,7 @@ interface @Document : $Node {
 interface @XMLDocument : $Document {};
 
 dictionary @@ElementCreationOptions {
-  $CustomElementRegistry @customElementRegistry;
+  $CustomElementRegistry? @customElementRegistry;
   $DOMString @is;
 };
 
@@ -15699,43 +15700,56 @@ The createElementNS(namespace, qualifiedName, options) method steps are to retur
 所与の
 ( ［ 文字列／ $ElementCreationOptions 辞書 ］ %~option群, `文書$ %文書 )
 に対し：
+◎
+To flatten element creation options, given a string or ElementCreationOptions dictionary options and a document document:
 </p>
 <ol>
+	<li>
+%文書~registry ~LET %文書 の`~custom要素~registry$doc
+【！`~custom要素~registryを検索する$( %文書 )】
+◎
+Let registry be the result of looking up a custom element registry given document.
+</li>
 	<li>
 ~IF［
 %~option群 は文字列である
 ］
 ⇒
-%~option群 ~SET 空な $ElementCreationOptions
-</li>
-	<li>
-%~registry ~LET %~option群[ "$ElementCreationOptions.customElementRegistry" ] ~DF ~NULL
-</li>
+~RET ( %文書~registry, ~NULL )
+◎
+↓</li>
 	<li>
 %is ~LET %~option群[ "$ElementCreationOptions.is" ] ~DF ~NULL
+◎
+Let is be null.
+◎
+If options is a dictionary:
+◎
+• If options["is"] exists, then set is to it.
 </li>
 	<li>
-~IF［
-%~registry ~EQ ~NULL
-］
-⇒
-%~registry ~SET `~custom要素~registryを検索する$( %文書 )
-</li>
+%~registry ~SET %~option群[ "$ElementCreationOptions.customElementRegistry" ] ~DF ~NULL
+◎
+↓</li>
 	<li>
 <p>
-~ELIF［
+~IF［
 ~OR↓
 ］…
 </p>
 		<ul>
 			<li>
+［
+%~registry ~EQ ~NULL
+］~AND［
 %is ~NEQ ~NULL
+］
 </li>
 			<li>
 ［
-%~registry の`視野~付きか$cR ~EQ ~F
+%~registry ~NIN { ~NULL, %文書~registry }
 ］~AND［
-%~registry ~NEQ %文書 の`~custom要素~registry$doc
+%~registry の`視野~付きか$cR ~EQ ~F
 ］
 </li>
 		</ul>
@@ -15744,22 +15758,26 @@ The createElementNS(namespace, qualifiedName, options) method steps are to retur
 ⇒
 ~THROW `NotSupportedError$E
 </p>
-	</li>
+◎
+• If options["customElementRegistry"] exists:
+•• If is is non-null, then throw a "NotSupportedError" DOMException.
+•• Set registry to options["customElementRegistry"].
+• If registry is non-null, registry’s is scoped is false, and registry is not document’s custom element registry, then throw a "NotSupportedError" DOMException.
+</li>
+	<li>
+~IF［
+%~registry ~EQ ~NULL
+］
+⇒
+%~registry ~SET %文書~registry
+◎
+↑</li>
 	<li>
 ~RET ( %~registry, %is )
+◎
+Return registry and is.
 </li>
 </ol>
-◎
-To flatten element creation options, given a string or ElementCreationOptions dictionary options and a document document:
-• Let registry be null.
-• Let is be null.
-• If options is a dictionary:
-•• If options["customElementRegistry"] exists, then set registry to it.
-•• If registry’s is scoped is false and registry is not document’s custom element registry, then throw a "NotSupportedError" DOMException.
-•• If options["is"] exists, then set is to it.
-•• If registry is non-null and is is non-null, then throw a "NotSupportedError" DOMException.
-• If registry is null, then set registry to the result of looking up a custom element registry given document.
-• Return registry and is.
 </div>
 
 <p class="note">注記：
@@ -17544,7 +17562,7 @@ dictionary @@ShadowRootInit {
   $SlotAssignmentMode @slotAssignment = `named^l;
   $boolean @clonable = false;
   $boolean @serializable = false;
-  $CustomElementRegistry? @customElementRegistry = null;
+  $CustomElementRegistry? @customElementRegistry;
 };
 ！
 
@@ -19760,35 +19778,25 @@ The attachShadow(init) method steps are:
 </p>
 <ol>
 	<li>
-%~registry ~LET %init[ "$ShadowRootInit.customElementRegistry" ]
-◎
-↓</li>
-	<li>
 %文書~registry ~LET コレの`~node文書$の`~custom要素~registry$doc
 ◎
-↓</li>
+Let registry be this’s node document’s custom element registry.
+</li>
+	<li>
+%~registry ~LET %init[ "$ShadowRootInit.customElementRegistry" ] ~DF %文書~registry
+◎
+If init["customElementRegistry"] exists, then set registry to it.
+</li>
 	<li>
 ~IF［
-%~registry ~EQ ~NULL
-］
-⇒
-%~registry ~SET %文書~registry
-◎
-↓</li>
-	<li>
-~ELIF［
-%~registry の`視野~付きか$cR ~EQ ~F
+%~registry ~NIN { ~NULL, %文書~registry }
 ］~AND［
-%~registry ~NEQ %文書~registry
+%~registry の`視野~付きか$cR ~EQ ~F
 ］
 ⇒
 ~THROW `NotSupportedError$E
 ◎
-Let registry be this’s node document’s custom element registry.
-◎
-If init["customElementRegistry"] is non-null:
-• Set registry to init["customElementRegistry"].
-• If registry’s is scoped is false and registry is not this’s node document’s custom element registry, then throw a "NotSupportedError" DOMException.
+If registry is non-null, registry’s is scoped is false, and registry is not this’s node document’s custom element registry, then throw a "NotSupportedError" DOMException.
 </li>
 	<li>
 `~shadow根を付する$( ↓ )
