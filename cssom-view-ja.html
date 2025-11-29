@@ -570,8 +570,8 @@ return;
 ●●options
 
 spec_title:CSSOM View Module Level 1
-spec_date:2025-10-24
-trans_update:2025-10-12
+spec_date:2025-11-17
+trans_update:2025-11-29
 source_checked:250903
 page_state_key:CSS
 original_url:https://drafts.csswg.org/cssom-view-1/
@@ -832,6 +832,7 @@ v.fixed:~CSSPOS#valdef-position-fixed
 ~window用の~scroll手続き:#_window-scroll-steps
 要素~用の~scroll手続き:#_element-scroll-steps
 要素~用の限界~boxを取得する:#element-get-the-bounding-box
+矩形~群の限界~boxを算出する:#_compute-the-bounding-box-of-rect-list
 
 視覚-表示域:#visual-viewport
 ~layout表示域:#layout-viewport
@@ -977,7 +978,6 @@ sS.完了-:#smooth-scroll-completed
 
 ~scroll容器:~CSSOVERFLOW3#scroll-container
 
-
 	●用語（外部
 ~map:~INFRA#ordered-map
 符号単位:~INFRA#code-unit
@@ -990,10 +990,12 @@ sS.完了-:#smooth-scroll-completed
 一致する:~INFRA#string-is
 文字大小区別:~INFRA#string-is
 
+~platform~obj:~WEBIDL#dfn-platform-object
 新たな~promise:~WEBIDLjs#a-new-promise
 解決される~promise:~WEBIDLjs#a-promise-resolved-with
 ~promiseを解決する:~WEBIDLjs#resolve
 すべての~promiseを待機する:~WEBIDLjs#wait-for-all
+新たな~obj:~WEBIDLjs#new
 
 整数として構文解析する:~HTMLcms#rules-for-parsing-integers
 
@@ -1001,6 +1003,7 @@ sS.完了-:#smooth-scroll-completed
 
 閲覧~文脈:~HTMLds#browsing-context
 補助~閲覧~文脈:~HTMLds#auxiliary-browsing-context
+bc.作動中な~window:~HTMLds#active-window
 nav.作動中な文書:~HTMLds#nav-document
 全部的に作動中:~HTMLds#fully-active
 nav.容器~文書:~HTMLds#nav-container-document
@@ -1063,6 +1066,9 @@ bp.~offset:~DOM4#boundary-point-offset
 
 具現化されて:~HTMLrendering#being-rendered
 
+~WebDriver-BiDi模倣された総~screen区画:~WEBDRIVER-BIDI#webdriver-bidi-emulated-total-screen-area
+~WebDriver-BiDi模倣された可用な~screen区画:~WEBDRIVER-BIDI#webdriver-bidi-emulated-available-screen-area
+
 	●補完
 限界~box:~SVGcoords#TermBoundingBox
 
@@ -1070,6 +1076,7 @@ bp.~offset:~DOM4#boundary-point-offset
 
 CSSVIEWPORT:https://drafts.csswg.org/css-viewport/
 CSSSCROLLSNAP2:https://drafts.csswg.org/css-scroll-snap-2/
+WEBDRIVER-BIDI:https://w3c.github.io/webdriver-bidi/
 
 open_m: <code>open()</code>
 doc-open:open
@@ -1306,6 +1313,8 @@ dy:
 剥いだ:stripした:~
 
 	●未分類
+WebDriver-BiDi:WebDriver BiDi
+模倣-:emulate:~
 非可視:hidden:~
 隠す:hideする:~
 body:
@@ -1384,8 +1393,10 @@ display::::ディスプレイ
     Tab Atkins Jr.; Florian Rivoal; Vladimir Levin. ＜CSS Containment Module Level 2＞. URL: https://drafts.csswg.org/css-contain-2/
 [CSS-DEVICE-ADAPT]
     Florian Rivoal; Emilio Cobos Álvarez. ＜CSS Viewport Module Level 1＞. URL: https://drafts.csswg.org/css-viewport/
+[CSS-DISPLAY-3]
+    Elika Etemad; Tab Atkins Jr.. ＜CSS Display Module Level 3＞. URL: https://drafts.csswg.org/css-display/
 [CSS-DISPLAY-4]
-    Elika Etemad; Tab Atkins Jr.. ＜CSS Display Module Level 4＞. URL: https://drafts.csswg.org/css-display/
+    Elika Etemad; Tab Atkins Jr.. ＜CSS Display Module Level 4＞. URL: https://drafts.csswg.org/css-display-4/
 [CSS-OVERFLOW-3]
     Elika Etemad; Florian Rivoal. ＜CSS Overflow Module Level 3＞. URL: https://drafts.csswg.org/css-overflow-3/
 [CSS-POSITION-3]
@@ -1434,6 +1445,8 @@ display::::ディスプレイ
     Amelia Bellamy-Royds; et al. ＜Scalable Vector Graphics (SVG) 2＞. URL: https://svgwg.org/svg2-draft/
 [UIEVENTS]
     Gary Kacmarcik; Travis Leithead. ＜UI Events＞. URL: https://w3c.github.io/uievents/
+[WEBDRIVER-BIDI]
+    James Graham; Alex Rudenko; Maksim Sadym. ＜WebDriver BiDi＞. URL: https://w3c.github.io/webdriver-bidi/
 [WEBIDL]
     Edgar Chen; Timothy Gu. ＜Web IDL Standard＞. Living Standard. URL: https://webidl.spec.whatwg.org/
 
@@ -2397,41 +2410,103 @@ Note: The "scale factor" is often referred to as "pinch-zoom"; however, it can b
 User agents may choose to hide information about the screen of the output device, in order to protect the user’s privacy. In order to do so in a consistent manner across APIs, this specification defines the following terms, each having a width and a height, the origin being the top left corner, and the x- and y-coordinates increase rightwards and downwards, respectively.
 </p>
 
-<ul>
-	<li>
+
+<div class="algo">
+<p>
 `~Webに公開される~screen区画@
-— 次に挙げるいずれかになるとする
+を決定する~algoは、
+所与の
+( `~platform~obj$ %O )
+に対し：
+◎
+The Web-exposed screen area must return the result of the following algorithm:
+</p>
+<ol>
+	<li>
+%~target ~LET %O に`関連な大域~obj$に`対応する閲覧~文脈$
+◎
+Let target be this’s relevant global object’s browsing context.
+</li>
+	<li>
+%模倣された~screen区画 ~LET `~WebDriver-BiDi模倣された総~screen区画$( %~target )
+◎
+Let emulated screen area be the WebDriver BiDi emulated total screen area of target.
+</li>
+	<li>
+~IF［
+%模倣された~screen区画 ~NEQ ~NULL
+］
+⇒
+~RET %模倣された~screen区画
+◎
+If emulated screen area is not null, return emulated screen area.
+</li>
+	<li>
+~RET 次に挙げるいずれか
 ⇒＃
 出力~機器の区画／
 `表示域$の区画
 ◎
-The Web-exposed screen area is one of the following:
+Otherwise, return one of the following:
 • The area of the output device, in CSS pixels.
 • The area of the viewport, in CSS pixels.
 </li>
-	<li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
 `~Webに公開される可用な~screen区画@
-— 次に挙げるいずれかになるとする
+を決定する~algoは、
+所与の
+( `~platform~obj$ %O )
+に対し：
+◎
+The Web-exposed available screen area must return the result of the following algorithm:
+</p>
+<ol>
+	<li>
+%~target ~LET %O に`関連な大域~obj$に`対応する閲覧~文脈$
+◎
+Let target be this’s relevant global object’s browsing context.
+</li>
+	<li>
+%模倣された~screen区画 ~LET `~WebDriver-BiDi模倣された可用な~screen区画$( %~target )
+◎
+Let emulated screen area be the WebDriver BiDi emulated available screen area for target.
+</li>
+	<li>
+~IF［
+%模倣された~screen区画 ~NEQ ~NULL
+］
+⇒
+~RET %模倣された~screen区画
+◎
+If emulated screen area is not null, return emulated screen area.
+</li>
+	<li>
+~RET 次に挙げるいずれか
 ⇒＃
 出力~機器の描画面として可用な区画／
 出力~機器の区画／
-`表示域$の区画／
+`表示域$の区画
 ◎
-The Web-exposed available screen area is one of the following:
+Otherwise, return one of the following:
 • The available area of the rendering surface of the output device, in CSS pixels.
 • The area of the output device, in CSS pixels.
 • The area of the viewport, in CSS pixels.
 </li>
-</ul>
+</ol>
+</div>
 
 		</section>
 	</section>
 	<section id="common-infrastructure">
-<h2 title="Common Infrastructure">3. 共通基盤</h2>
+<h2 title="Common Infrastructure">3. 共通~基盤</h2>
 
 <p>
-この仕様は WHATWG Infra 標準に依存する。
-`INFRA$r
+この仕様は、
+`INFRA$r に依存する。
 ◎
 This specification depends on the WHATWG Infra standard. [INFRA]
 </p>
@@ -3077,9 +3152,10 @@ Should the scroll methods above return a result object and if so what informatio
 
 <div class="algo">
 `matchMedia(query)@m
-~method手続きは
+~method手続きは：
 ⇒
-~RET 次のように設定された，新たな `MediaQueryList$I ~obj
+~RET `新たな~obj$( `MediaQueryList$I )
+— その
 ⇒＃
 `媒体~query~list$mq ~SET `媒体~query~listとして構文解析する$( %query ),
 `文書$mq ~SET コレに`結付けられた文書$
@@ -3478,10 +3554,10 @@ The innerHeight attribute must return the viewport height including the size of 
 ~RET 0
 </li>
 	<li>
-~RET
-`初期~包含塊$の原点に相対的な，`表示域$の［
+~RET `初期~包含塊$の原点に相対的な［
+`表示域$の［
 左端の~x座標 ｜ 上端の~y座標
-］
+］］
 </li>
 </ol>
 ◎
@@ -3781,10 +3857,13 @@ Return the Promise returned from scroll() after the method is invoked with optio
 ~RET 0
 </li>
 	<li>
-~RET
-出力~機器の`~Webに公開される~screen区画$の原点に相対的な,  `px$u 単位による，~client~UIwindow†の［
+%~screen ~LET `~Webに公開される~screen区画$( コレ )
+</li>
+	<li>
+~RET %~screen の原点に相対的な `px$u 単位による［
+~client~UIwindow†の［
 左端の~x座標 ｜ 上端の~y座標
-］
+］］
 </li>
 </ol>
 
@@ -3900,7 +3979,7 @@ HTML defines the open() method. This section defines behavior for position and s
 ~algoは、
 所与の
 (
-`閲覧~文脈$ %target,
+`閲覧~文脈$ %~target,
 （ %features 引数から導出された）`~map$ %特能~map
 )
 に対し：
@@ -3910,19 +3989,19 @@ To set up browsing context features for a browsing context target given a map to
 
 <ol>
 	<li>
-%~pixel単位 ~LET %target における `px$u 単位
+%~pixel単位 ~LET %~target における `px$u 単位
 ◎
 ↓</li>
 	<li>
-%~UIwindow ~LET %target の~UIwindow
+%~UIwindow ~LET %~target の~UIwindow
 ◎
 ↓</li>
 	<li>
-%可用な~screen ~LET `~Webに公開される可用な~screen区画$
+%可用な~screen ~LET `~Webに公開される可用な~screen区画$( 【 %~target にて`作動中な~window$bc】 )
 ◎
 ↓</li>
 	<li>
-%~screen ~LET `~Webに公開される~screen区画$
+%~screen ~LET `~Webに公開される~screen区画$( 【 %~target にて`作動中な~window$bc】 )
 ◎
 ↓</li>
 	<li>
@@ -4304,7 +4383,6 @@ function handleOrientationChange(%event) {
 var %mql = `matchMedia＠#dom-window-matchmedia$m(`(orientation:landscape)^l);
 %mql.`onchange$m = handleOrientationChange;
 </pre>
-
 </div>
 
 <pre class="idl">
@@ -4499,13 +4577,21 @@ interface `Screen@I {
 `Screen^dgm
 
 <div class="algo">
+<p>
 ［
 `availWidth@m ｜ `availHeight@m
-］取得子~手続きは
-⇒
-~RET `~Webに公開される可用な~screen区画$の［
+］取得子~手続きは：
+</p>
+<ol>
+	<li>
+%可用な~screen ~LET `~Webに公開される可用な~screen区画$( コレ )
+</li>
+	<li>
+~RET %可用な~screen の［
 横幅 ｜ 縦幅
 ］
+</li>
+</ol>
 ◎
 The availWidth attribute must return the width of the Web-exposed available screen area.
 ◎
@@ -4513,13 +4599,20 @@ The availHeight attribute must return the height of the Web-exposed available sc
 </div>
 
 <div class="algo">
-［
+<p>［
 `width@m ｜ `height@m
-］取得子~手続きは
-⇒
-~RET `~Webに公開される~screen区画$の［
+］取得子~手続きは：
+</p>
+<ol>
+	<li>
+%~screen ~LET `~Webに公開される~screen区画$( コレ )
+</li>
+	<li>
+~RET %~screen の［
 横幅 ｜ 縦幅
 ］
+</li>
+</ol>
 ◎
 The width attribute must return the width of the Web-exposed screen area.
 ◎
@@ -4604,8 +4697,14 @@ The elementFromPoint(x, y) method must follow these steps:
 </p>
 <ol>
 	<li>
+%表示域 ~LET コレに結付けられた`表示域$は［
+在るならば それ ／無いならば ε
+］
+◎
+↓</li>
+	<li>
 ~IF［
-コレに結付けられた`表示域$は無い
+%表示域 ~EQ ε
 ］
 ⇒
 ~RET ~NULL
@@ -4619,10 +4718,10 @@ The elementFromPoint(x, y) method must follow these steps:
 </p>
 		<ul>
 			<li>
-0 ~LTE %x ~LTE `表示域$の`実効~横幅$
+0 ~LTE %x ~LTE %表示域 の`実効~横幅$
 </li>
 			<li>
-0 ~LTE %y ~LTE `表示域$の`実効~縦幅$
+0 ~LTE %y ~LTE %表示域 の`実効~縦幅$
 </li>
 		</ul>
 <p>
@@ -4635,9 +4734,9 @@ If either argument is negative, x is greater than the viewport width excluding t
 </li>
 	<li>
 ~IF［
-`表示域$の子孫に適用される`変形$を適用したとするとき，［
+%表示域 の各~子孫に適用される`変形$を適用したとするとき，［
 座標 (%x, %y) にて`接触判定$の~targetになる`~box$
-］は`表示域$内にある
+］は %表示域 内にある
 ］
 ⇒
 ~RET それを結付けている要素
@@ -4661,7 +4760,6 @@ Return null.
 ◎
 Note: The elementFromPoint() method does not necessarily return the top-most painted element. For instance, an element can be excluded from being a target for hit testing by using the pointer-events CSS property.
 </p>
-
 </div>
 
 <div class="algo">
@@ -4678,13 +4776,19 @@ The elementsFromPoint(x, y) method must follow these steps:
 Let sequence be a new empty sequence.
 </li>
 	<li>
+%表示域 ~LET コレに結付けられた`表示域$は［
+在るならば それ ／無いならば ε
+］
+◎
+↓</li>
+	<li>
 <p>
 ~IF［
-コレに結付けられた`表示域$は在る
+%表示域 ~NEQ ε
 ］~AND［
-0 ~LTE %x ~LTE `表示域$の`実効~横幅$
+0 ~LTE %x ~LTE %表示域 の`実効~横幅$
 ］~AND［
-0 ~LTE %y ~LTE `表示域$の`実効~縦幅$
+0 ~LTE %y ~LTE %表示域 の`実効~縦幅$
 ］：
 ◎
 If either argument is negative, x is greater than the viewport width excluding the size of a rendered scroll bar (if any), or y is greater than the viewport height excluding the size of a rendered scroll bar (if any), or there is no viewport associated with the document, return sequence and terminate these steps.
@@ -4694,9 +4798,9 @@ If either argument is negative, x is greater than the viewport width excluding t
 %~list に次を満たす すべての要素を付加する
 — 最~上端な【すなわち，最も手前に塗られる】~boxから順に，要素の`~box$の塗り順序で
 ⇒
-`表示域$の子孫に適用される`変形$を適用したとするとき、
+%表示域 の各~子孫に適用される`変形$を適用したとするとき、
 要素の`~box$は，
-`表示域$内にあり, かつ座標 ( %x, %y ) にて`接触判定$の~targetになる
+%表示域 内にあり, かつ座標 ( %x, %y ) にて`接触判定$の~targetになる
 （そこに何も `overlap^en していないとしても【要素には塗られる内容がないとしても？】）
 ◎
 For each box in the viewport, in paint order, starting with the topmost box, that would be a target for hit testing at coordinates x,y even if nothing would be overlapping it, when applying the transforms that apply to the descendants of the viewport, append the associated element to sequence.
@@ -4731,8 +4835,14 @@ The caretPositionFromPoint(x, y) method must return the result of running these 
 </p>
 <ol>
 	<li>
+%表示域 ~LET コレに結付けられた`表示域$は［
+在るならば それ ／無いならば ε
+］
+◎
+↓</li>
+	<li>
 ~IF［
-コレに結付けられた`表示域$は無い
+%表示域 ~EQ ε
 ］
 ⇒
 ~RET ~NULL
@@ -4747,10 +4857,10 @@ If there is no viewport associated with the document, return null.
 </p>
 		<ul>
 			<li>
-0 ~LTE %x ~LTE `表示域$の`実効~横幅$
+0 ~LTE %x ~LTE %表示域 の`実効~横幅$
 </li>
 			<li>
-0 ~LTE %y ~LTE `表示域$の`実効~縦幅$
+0 ~LTE %y ~LTE %表示域 の`実効~縦幅$
 </li>
 		</ul>
 <p>
@@ -4767,8 +4877,8 @@ If either argument is negative, x is greater than the viewport width excluding t
 </li>
 	<li>
 <p>
-`表示域$の子孫に適用される`変形$を適用したとするときの，
-`表示域$内の座標 ( %x, %y ) に対し、
+%表示域 の各~子孫に適用される`変形$を適用したとするときの，
+%表示域 内の座標 ( %x, %y ) に対し、
 ~text挿入~点~指示子を：
 ◎
 ↓</p>
@@ -5050,16 +5160,31 @@ The getClientRect() method must follow these steps, aborting on the first step t
 ◎
 ↓</li>
 	<li>
+<p>
 ~IF［
 %~node は`置換d要素$による~text手入力~widgetである
 ］~AND［
 %~node は文書~内に在る【！＊in the document】
-］
+］：
+</p>
+		<ol>
+			<li>
+%結果 ~LET `新たな~obj$( `DOMRect$I )
+</li>
+			<li>
+%結果 を次を表現するよう初期化する
 ⇒
-~RET %~node とその先祖に適用される`変形$を適用したとするときの，
+［
+%~node , %~node の各~先祖
+］に適用される`変形$を適用したとするときの，
 %~node 内の［
 `~caret~offset$の値で表現される~caret
-］用の`有拡縮$な `DOMRect$I ~obj
+］用の`有拡縮$な矩形
+</li>
+			<li>
+~RET %結果
+</li>
+		</ol>
 ◎
 If caret node is a text entry widget that is a replaced element, and that is in the document, return a scaled DOMRect object for the caret in the widget as represented by the caret offset value. The transforms that apply to the element and its ancestors are applied.
 </li>
@@ -5191,7 +5316,9 @@ If the element on which it was invoked does not have an associated box return an
 ⇒
 ~RET 次で与えられる矩形を表す 1 個の `DOMRect$I ~objからなる`有拡縮$な `DOMRectList$I ~obj
 ⇒
-コレとその先祖に適用される`変形$を適用したとするときの，
+［
+コレ, コレの各~先祖
+］に適用される`変形$を適用したとするときの，
 コレの`限界~box$ `SVG2$r
 ◎
 If the element has an associated SVG layout box return a scaled DOMRectList object containing a single DOMRect object that describes the bounding box of the element as defined by the SVG specification, applying the transforms that apply to the element and its ancestors.
@@ -5241,8 +5368,8 @@ Return a DOMRectList object containing DOMRect objects in content order, one for
 次を包含する最~小な矩形
 ⇒
 %断片 の`~border区画$に［
-コレとその先祖に対する`変形$
-］を適用して得られる図形
+コレ, コレの各~先祖
+］に適用される`変形$を適用して得られる図形
 ◎
 ↑</p>
 
@@ -5273,12 +5400,20 @@ Note: The DOMRect objects returned by getClientRects() are not live.
 </div>
 
 <div class="algo">
+<p>
 `getBoundingClientRect()@m
 ~method手続きは
 ⇒
 ~RET `要素~用の限界~boxを取得する$( コレ )
 ◎
 The getBoundingClientRect() method, when invoked on an element element, must return the result of getting the bounding box for element.
+</p>
+
+<p class="note">注記：
+この~methodが返す `DOMRect$I ~objは、
+`~live$でない。
+◎
+↓</p>
 </div>
 
 <div class="algo">
@@ -5288,59 +5423,92 @@ The getBoundingClientRect() method, when invoked on an element element, must ret
 所与の
 ( %要素 )
 に対し：
-◎
-To get the bounding box for element, run the following steps:
 </p>
 <ol>
 	<li>
-%~list ~LET %要素 の `getClientRects$m ~method手続き()
-◎
-Let list be the result of invoking getClientRects() on element.
+%矩形~群 ~LET %要素 の `getClientRects$m ~method手続き()
 </li>
 	<li>
-~IF［
-%~list は空である
-］
-⇒
-~RET 新たな `DOMRect$I ~obj
-— その
-⇒
-［
-`x^m, `y^m, `width^m, `height^m
-］属性 ~SET 0
-◎
-If the list is empty return a DOMRect object whose x, y, width and height members are zero.
-</li>
-	<li>
-~IF［
-%~list を成す矩形は，どれも［
-横幅, 縦幅
-］どちらかは 0
-］
-⇒
-~RET %~list を成す最初の矩形
-◎
-If all rectangles in list have zero width or height, return the first rectangle in list.
-</li>
-	<li>
-~RET 次を表現する新たな `DOMRect$I ~obj
-⇒
-次をすべてを包含する最~小な矩形
-⇒
-%~list を成す［
-横幅, 縦幅
-］どちらかは【どちらも？】 0 でない矩形
-◎
-Otherwise, return a DOMRect object describing the smallest rectangle that includes all of the rectangles in list of which the height or width is not zero.
+`矩形~群の限界~boxを算出する$( %矩形~群 )
 </li>
 </ol>
 
-<p class="note">注記：
-この~methodが返す `DOMRect$I ~objは、
-`~live$でない。
+<p class="trans-note">【
+この訳では、
+この~algoを成す一部を次に与える手続きに分離する
+— それは、
+他所からも利用されるので。
+】</p>
+
+◎
+To get the bounding box for element, run the following steps:
+• Let list be the result of invoking getClientRects() on element.
+• If the list is empty return a DOMRect object whose x, y, width and height members are zero.
+• If all rectangles in list have zero width or height, return the first rectangle in list.
+• Otherwise, return a DOMRect object describing the smallest rectangle that includes all of the rectangles in list of which the height or width is not zero.
 ◎
 Note: The DOMRect object returned by getBoundingClientRect() is not live.
+</div>
+
+<div class="algo">
+<p>
+`矩形~群の限界~boxを算出する@
+~algoは、
+所与の
+( `DOMRectList$I %矩形~群 )
+に対し：
 </p>
+<ol>
+	<li>
+%矩形 ~LET 次を伴う矩形
+⇒＃
+左上隅の~x座標は 0,
+左上隅の~y座標は 0,
+横幅 0,
+縦幅 0
+</li>
+	<li>
+<p>
+~IF［
+%矩形~群 は空でない
+］：
+</p>
+		<ol>
+			<li>
+~IF［
+%矩形~群 を成す各~itemが表現する矩形は，どれも［
+横幅, 縦幅
+］どちらかは 0
+］
+⇒＃
+%矩形 ~SET %矩形~群[ 0 ] が表現する矩形
+</li>
+			<li>
+~ELSE
+⇒
+%矩形 ~SET ［
+%矩形~群 を成す各~itemが表現する矩形
+］のうち［［
+横幅, 縦幅
+］どちらかは【どちらも？】 0 でないもの
+］すべてを包含する最~小な矩形
+</li>
+		</ol>
+	</li>
+	<li>
+%結果 ~LET `新たな~obj$( `DOMRect$I )
+</li>
+	<li>
+%結果 の［
+`x^m, `y^m, `width^m, `height^m
+］~memberを %矩形 を表現するよう初期化する
+</li>
+	<li>
+~RET %結果
+</li>
+</ol>
+◎
+↑</div>
 
 <div class="example">
 <p>
@@ -5357,10 +5525,15 @@ var %exampleWidth = %example.width;
 var %exampleHeight = %example.height;
 </pre>
 </div>
-</div>
+
+<div class="algo">
+<p>
+`checkVisibility(options)@m
+~method手続きは：
+</p>
 
 <p class="note">注記：
-`checkVisibility()$m ~methodは、
+この~methodは、
 要素は “可視” になり得るかどうかについて，一群の単純な検査を供する。
 それは，既定では［
 `~box~tree$に基づく，ごく単純かつ単直な~method
@@ -5369,89 +5542,99 @@ var %exampleHeight = %example.height;
 いくつかの［
 任意で選べる追加的な検査
 ］も許容する。
-◎
-Note: The checkVisibility() method provides a set of simple checks for whether an element is potentially "visible". It defaults to a very simple and straightforward method based on the box tree, but allows for several additional checks to be opted into, depending on what precise notion of "visibility" is desired.
 </p>
-
-<div class="algo">
+<ol>
+	<li>
+%先祖~群 ~LET `平坦~tree$におけるコレの先祖たちが成す集合
+</li>
+	<li>
 <p>
-`checkVisibility(options)@m
-~method手続きは
+~RET ~IS［
+~AND↓
+］：
+</p>
+		<ul>
+			<li>
+コレは`~box$を有する
+</li>
+			<li>
+%先祖~群 内に次を満たすものは無い
 ⇒
-~RET ~IS ~NOT ~OR↓：
-◎
-The checkVisibility(options) method must run these steps, when called on an element this:
-</p>
-<ul>
-	<li>
-コレは`~box$を有さない
-◎
-If this does not have an associated box, return false.
+その `content-visibility$p の値 ~EQ `hidden^v
 </li>
-	<li>
-`平坦~tree$におけるコレの先祖として，
-`content-visibility$p が `hidden^v にされたものが在る
-◎
-If an ancestor of this in the flat tree has content-visibility: hidden, return false.
-</li>
-	<li>
-<p>
-~AND↓：
-</p>
-		<ul>
 			<li>
+<p>
+~OR↓：
+</p>
+				<ul>
+					<li>
 ［
-%options[ "`opacityProperty$mb" ] ~EQ ~T
-］~OR［
-%options[ "`checkOpacity$mb" ] ~EQ ~T
+%options[ "`opacityProperty$mb" ] ~EQ ~F
+］~AND［
+%options[ "`checkOpacity$mb" ] ~EQ ~F
 ］
 </li>
-			<li>
-`平坦~tree$におけるコレの先祖として，
-`opacity$p が `0^v に算出されるものが在る
-</li>
-		</ul>
-◎
-If either the opacityProperty or the checkOpacity dictionary members of options are true, and this, or an ancestor of this in the flat tree, has a computed opacity value of 0, return false.
-</li>
-	<li>
-<p>
-~AND↓：
-</p>
-		<ul>
-			<li>
+					<li>
 ［
-%options[ "`visibilityProperty$mb" ] ~EQ ~T
-］~OR［
-%options[ "`checkVisibilityCSS$mb" ] ~EQ ~T
+コレは次を満たさない
+］~AND［
+%先祖~群 内に次を満たすものは無い
+］
+⇒
+その `opacity$p の算出d値 ~EQ `0^v
+</li>
+				</ul>
+			</li>
+			<li>
+<p>
+~OR↓：
+</p>
+				<ul>
+					<li>
+［
+%options[ "`visibilityProperty$mb" ] ~EQ ~F
+］~AND［
+%options[ "`checkVisibilityCSS$mb" ] ~EQ ~F
 ］
 </li>
-			<li>
+					<li>
 コレは`不可視$である
 </li>
-		</ul>
-◎
-If either the visibilityProperty or the checkVisibilityCSS dictionary members of options are true, and this is invisible, return false.
-</li>
-	<li>
+				</ul>
+			</li>
+			<li>
 <p>
-~AND↓：
+~OR↓：
 </p>
-		<ul>
-			<li>
-%options[ "`contentVisibilityAuto$mb" ] ~EQ ~T
+				<ul>
+					<li>
+%options[ "`contentVisibilityAuto$mb" ] ~EQ ~F
 </li>
-			<li>
-`平坦~tree$におけるコレの先祖として，
-`content-visibility$p が `auto^v にされたことに因り`内容が飛ばされ$るものが在る
+					<li>
+%先祖~群 内に次を満たすものは無い
+⇒
+［
+その `content-visibility$p の値 ~EQ `auto^v
+］~AND［
+その`内容が飛ばされ$ている
+］
+</li>
+				</ul>
 </li>
 		</ul>
+	</li>
+</ol>
+
 ◎
-If the contentVisibilityAuto dictionary member of options is true and an ancestor of this in the flat tree skips its contents due to content-visibility: auto, return false.
+Note: The checkVisibility() method provides a set of simple checks for whether an element is potentially "visible". It defaults to a very simple and straightforward method based on the box tree, but allows for several additional checks to be opted into, depending on what precise notion of "visibility" is desired.
 ◎
-Return true.
-</li>
-</ul>
+The checkVisibility(options) method must run these steps, when called on an element this:
+• If this does not have an associated box, return false.
+• If an ancestor of this in the flat tree has content-visibility: hidden, return false.
+• If either the opacityProperty or the checkOpacity dictionary members of options are true, and this, or an ancestor of this in the flat tree, has a computed opacity value of 0, return false.
+• If either the visibilityProperty or the checkVisibilityCSS dictionary members of options are true, and this is invisible, return false.
+• If the contentVisibilityAuto dictionary member of options is true and an ancestor of this in the flat tree skips its contents due to content-visibility: auto, return false.
+• Return true.
 </div>
 
 <div class="algo">
@@ -6170,23 +6353,28 @@ If document is not the active document, return zero and terminate these steps.
 ］
 </li>
 		</ul>
-
 <p>
 …ならば：
 </p>
 		<ol>
 			<li>
+%表示域 ~LET コレに結付けられた`表示域$は［
+在るならば それ ／無いならば ε
+］
+</li>
+
+			<li>
 ~IF［
-コレの`表示域$は無い
+%表示域 ~EQ ε
 ］
 ⇒
 ~RET 0
 </li>
 			<li>
 ~RET
-`max^op( `表示域$の`~scrollされる区画$の［
+`max^op( %表示域 の`~scrollされる区画$の［
 横幅 ｜ 縦幅
-］, `表示域$の［
+］, %表示域 の［
 `実効~横幅$ ｜ `実効~縦幅$
 ］ )
 </li>
@@ -6271,8 +6459,9 @@ If the element has no associated box or if the box is inline, return zero.
 </li>
 		</ul>
 <p>
-— ここで、
-コレとその先祖に対する`変形$は適用しないとする。
+— ここで、［
+コレ, コレの各~先祖
+］に適用される`変形$は適用しないとする。
 </p>
 ◎
 Return the unscaled computed value of the border-top-width property plus the height of any scrollbar rendered between the top padding edge and the top border edge, ignoring any transforms that apply to the element and its ancestors.
@@ -6350,13 +6539,16 @@ If the element is the root element and the element’s node document is not in q
 </p>
 		<ul>
 			<li>
-`~padding辺$と`~border辺$の間に~scrollbarが描画されている場合は，その分の［
+`~padding辺$と`~border辺$の間に~scrollbarが描画されている場合、
+その分の［
 横幅 ｜ 縦幅
-］は除外する。
+］を除外する。
 </li>
 			<li>
 【！or that → that】
-コレとその先祖に対する`変形$は適用しないとする。
+［
+コレ, コレの各~先祖
+］に適用される`変形$は適用しないとする。
 </li>
 		</ul>
 ◎
@@ -6374,13 +6566,22 @@ The clientHeight attribute must run these steps:
 </p>
 
 <div class="algo">
+<p>
 `currentCSSZoom@m
-取得子~手続きは
-⇒
-~RET ［
-コレは`具現化されて$いるならば コレの`実質的な~zoom$／
-~ELSE_ 1.0
+取得子~手続きは：
+</p>
+<ol>
+	<li>
+~IF［
+コレは`具現化されて$いる
 ］
+⇒
+~RET コレの`実質的な~zoom$
+</li>
+	<li>
+~RET 1.0
+</li>
+</ol>
 ◎
 The currentCSSZoom attribute must return the effective zoom of the element, or 1.0 if the element isn’t being rendered.
 </div>
@@ -7226,10 +7427,12 @@ The offsetTop attribute must return the result of running these steps:
 If the element is the body element or does not have any associated box return zero and terminate this algorithm.
 </li>
 	<li>
-以下においては
+以下においては：
 ⇒＃
 どの座標も`初期~包含塊$の原点に相対的とする ／
-コレとその先祖に対する`変形$は適用しないとする
+［
+コレ, コレの各~先祖
+］に適用される`変形$は適用しないとする
 ◎
 ↓</li>
 	<li>
@@ -7304,7 +7507,9 @@ Return the unscaled width of the axis-aligned bounding box of the border boxes o
 </p>
 		<ul>
 			<li>
-コレとその先祖に対する`変形$は適用しないとする。
+［
+コレ, コレの各~先祖
+］に適用される`変形$は適用しないとする。
 ◎
 ignoring any transforms that apply to the element and its ancestors.
 </li>
@@ -7361,8 +7566,9 @@ partial interface `HTMLImageElement$I {`HTMLImageElement^I0
 ］の`有拡縮$な［
 左端の~x座標 ｜ 上端の~y座標
 ］］
-— ここで、
-コレとその先祖に対する`変形$は適用しないとする。
+— ここで、［
+コレ, コレの各~先祖
+］に適用される`変形$は適用しないとする。
 </li>
 </ol>
 ◎
@@ -7446,7 +7652,7 @@ For each Text node selected or partially selected by the range (including when t
 コレの`中身$が `~typographic文字~単位$ `CSS-TEXT-3$r を部分的に含む場合
 （例： 代用対の片割れや書記素~clusterの一部分）、
 限界域を算出する目的においては，その`~typographic文字~単位$を全部的に含めるモノトスル。
-要素の先祖に対する`変形$は、
+要素の先祖に適用される`変形$は、
 適用される。
 ◎
 The bounds of these DOMRect objects are computed using font metrics; thus, for horizontal writing, the vertical dimension of each box is determined by the font ascent and descent, and the horizontal dimension by the text advance width. If the range covers a partial typographic character unit (e.g. half a surrogate pair or part of a grapheme cluster), the full typographic character unit must be included for the purpose of computing the bounds of the relevant DOMRect. [CSS-TEXT-3] The transforms that apply to the ancestors are applied.
@@ -7478,43 +7684,16 @@ The getBoundingClientRect() method, when invoked, must return the result of the 
 </p>
 <ol>
 	<li>
-%~list ~LET コレの `getClientRects$m ~method手続き()
+%矩形~群 ~LET コレの `getClientRects$m ~method手続き()
 ◎
 Let list be the result of invoking getClientRects() on the same range this method was invoked on.
 </li>
 	<li>
-~IF［
-%~list は空である
-］
-⇒
-~RET 新たな `DOMRect$I ~obj
-— その
-⇒
-［
-`x^m, `y^m, `width^m, `height^m
-］属性 ~SET 0
+~RET `矩形~群の限界~boxを算出する$( %矩形~群 )
 ◎
 If list is empty return a DOMRect object whose x, y, width and height members are zero.
-</li>
-	<li>
-~IF［
-%~list を成す矩形は，どれも［
-横幅, 縦幅
-］どちらかは 0
-］
-⇒
-~RET %~list を成す最初の矩形
 ◎
 If all rectangles in list have zero width or height, return the first rectangle in list.
-</li>
-	<li>
-~RET 次を表現する新たな `DOMRect$I ~obj
-⇒
-次をすべてを包含する最~小な矩形
-⇒
-%~list を成す矩形のうち［
-横幅, 縦幅
-］どちらかは【どちらも？】 0 でないもの
 ◎
 Otherwise, return a DOMRect object describing the smallest rectangle that includes all of the rectangles in list of which the height or width is not zero.
 </li>
@@ -7567,13 +7746,22 @@ partial dictionary `MouseEventInit$I {
 `MouseEvent^I0
 
 <div class="algo">
+<p>
 ［
 `screenX@m ｜ `screenY@m
-］取得子~手続きは
-⇒
-~RET `~Webに公開される~screen区画$の原点に相対的な，コレが生じた位置の［
+］取得子~手続きは：
+</p>
+<ol>
+	<li>
+%~screen ~LET `~Webに公開される~screen区画$( コレ )
+</li>
+	<li>
+~RET %~screen の原点に相対的な［
+コレが生じた位置の［
 ~x座標 ｜ ~y座標
-］
+］］
+</li>
+</ol>
 ◎
 The screenX attribute must return the x-coordinate of the position where the event occurred relative to the origin of the Web-exposed screen area.
 ◎
@@ -7593,9 +7781,10 @@ The screenY attribute must return the y-coordinate of the position where the eve
 ］
 ⇒
 ~RET
-`初期~包含塊$の原点に相対的な，コレが生じた位置の［
+`初期~包含塊$の原点に相対的な［
+コレが生じた位置の［
 ~x座標 ｜ ~y座標
-］
+］］
 </li>
 	<li>
 %offset ~LET 0
@@ -7635,9 +7824,10 @@ The pageY attribute must follow these steps:
 `clientX@m ｜ `clientY@m
 ］取得子~手続きは
 ⇒
-~RET `表示域$の原点に相対的な，コレが生じた位置の［
+~RET `表示域$の原点に相対的な［
+コレが生じた位置の［
 ~x座標 ｜ ~y座標
-］
+］］
 ◎
 The clientX attribute must return the x-coordinate of the position where the event occurred relative to the origin of the viewport.
 ◎
@@ -7677,11 +7867,14 @@ The offsetX attribute must follow these steps:
 コレの`~target$ ~NEQ ~NULL
 </li>
 			<li>
-~RET 
-要素とその先祖に対する`変形$は適用しない下で，
-コレの`~target$の`~padding辺$の原点に相対的な，コレが生じた位置の［
+~RET ［
+当の要素, 当の要素の各~先祖
+］に適用される`変形$を適用しなかったとするときの，［
+コレの`~target$の`~padding辺$の原点
+］に相対的な［
+コレが生じた位置の［
 ~x座標 ｜ ~y座標
-］
+］］
 </li>
 		</ol>
 <p class="trans-note">【
