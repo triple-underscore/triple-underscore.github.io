@@ -561,7 +561,6 @@ Util.fillHeader = () => {
 		case 'w3c.github.io':
 		case 'w3ctag.github.io':
 		case 'drafts.csswg.org':
-		case 'drafts.fxtf.org':
 			html = '<a href="https://www.w3.org/" id="_W3C" aria-label="WORLD WIDE WEB CONSORTIUM">W3C</a>';
 			break;
 		case 'html.spec.whatwg.org':
