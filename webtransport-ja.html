@@ -196,8 +196,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2025-12-03
-trans_update:2025-12-06
+spec_date:2025-12-16
+trans_update:2025-12-18
 source_checked:2512-03
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -371,6 +371,7 @@ exporter:
 	$ft:SETTINGS
 	`RESET_STREAM^ft:reset
 	KiB:kibibytes
+	順序どおりに到着するとは限らない:can arrive out of order
 
 	●stream
 一方向:unidirectional::~
@@ -445,6 +446,7 @@ overhead::::オーバーヘッド
 変動:variation:~
 後回-:starve::後回しに
 喪失-:lose:~
+喪失:loss:~
 出生-:originate:~
 overflow::::オーバーフロー
 real-time:real time:::リアルタイム
@@ -493,8 +495,8 @@ in-flight:
 	%~datagram群:datagrams
 	-:pullDatagramsAlgorithm
 	-:writeDatagramsAlgorithm
-	%~datagram可読~mode:datagramsReadableMode
-	%可読~mode:readableMode
+	%~datagram可読~stream種別:datagramsReadableType
+	%可読~stream種別:readableType
 	%所要時間:duration
 	%~error:error
 	%~hash:hash
@@ -713,6 +715,7 @@ polyfill:
 	以前は 〜 していた:used to
 	〜の下で:based off
 	戻す:back
+	実装-能:implementability
 
 	●言い換え
 	^en:first-strong
@@ -803,6 +806,7 @@ bottleneck::::ボトルネック
 	不可分~性:atomicity
 不可分的:transactional::~
 書字:writing::~
+永続的:permanent:~
 
 	NaN:
 	∞:
@@ -853,7 +857,12 @@ bottleneck::::ボトルネック
 	時点:moment
 	一片:piece
 	少ない:less
+	下回り:less
 	末端の:leaf
+	追いかける:trail
+	^en:differentiated
+	^en:undifferentiated
+	^en:delineation
 
 ●●original_id_map
 
@@ -930,7 +939,7 @@ I.WebTransportSendStream:#webtransportsendstream
 I.WebTransportSendStreamOptions:#dictdef-webtransportsendstreamoptions
 I.WebTransportSendStreamStats:#dictdef-webtransportsendstreamstats
 I.WebTransportWriter:#webtransportwriter
-I.DatagramsReadableMode:#enumdef-datagramsreadablemode
+I.ReadableStreamType:~STREAMS#enumdef-readablestreamtype
 I.ReadableStream:~STREAMS#readablestream
 I.WritableStream:~STREAMS#writablestream
 I.WritableStreamDefaultWriter:~STREAMS#writablestreamdefaultwriter
@@ -957,8 +966,6 @@ mD.outgoingHighWaterMark:#dom-webtransportdatagramduplexstream-outgoinghighwater
 l.pending:#dom-webtransportreliabilitymode-pending
 l.reliable-only:#dom-webtransportreliabilitymode-reliable-only
 l.supports-unreliable:#dom-webtransportreliabilitymode-supports-unreliable
-
-l.bytes:#dom-datagramsreadablemode-bytes
 
 m.new WebTransport:#dom-webtransport-webtransport
 	constructor:#dom-webtransport-webtransport
@@ -999,7 +1006,7 @@ mb.anticipatedConcurrentIncomingBidirectionalStreams:#dom-webtransportoptions-an
 mb.protocols:#dom-webtransportoptions-protocols
 mb.sendGroup:#dom-webtransportsendoptions-sendgroup
 mb.waitUntilAvailable:#dom-webtransportsendstreamoptions-waituntilavailable
-mb.datagramsReadableMode:#dom-webtransportoptions-datagramsreadablemode
+mb.datagramsReadableType:#dom-webtransportoptions-datagramsreadablemtype
 
 mb.closeCode:#dom-webtransportcloseinfo-closecode
 mb.reason:#dom-webtransportcloseinfo-reason
@@ -1007,6 +1014,8 @@ mb.reason:#dom-webtransportcloseinfo-reason
 mb.sendOrder:#dom-webtransportsendoptions-sendorder
 
 mb.datagrams:#dom-webtransportconnectionstats-datagrams
+mb.bytesSentOverhead:#dom-webtransportconnectionstats-bytessentoverhead
+mb.bytesAcknowledged:#dom-webtransportconnectionstats-bytesacknowledged
 mb.timestamp:#dom-webtransportconnectionstats-timestamp
 mb.bytesSent:#dom-webtransportconnectionstats-bytessent
 mb.packetsSent:#dom-webtransportconnectionstats-packetssent
@@ -1082,8 +1091,9 @@ m.new WritableStreamDefaultWriter:~STREAMS#default-writer-constructor
 M.CONNECT:~HTTPsem#CONNECT
 
 	●sl
+sl.Transport:#dom-webtransportdatagramduplexstream-transport-slot
 sl.Readable:#dom-webtransportdatagramduplexstream-readable-slot
-sl.ReadableMode:#dom-webtransportdatagramduplexstream-readablemode-slot
+sl.ReadableType:#dom-webtransportdatagramduplexstream-readabletype-slot
 sl.Writables:#dom-webtransportdatagramduplexstream-writables-slot
 sl.IncomingDatagramsQueue:#dom-webtransportdatagramduplexstream-incomingdatagramsqueue-slot
 sl.IncomingDatagramsPullPromise:#dom-webtransportdatagramduplexstream-incomingdatagramspullpromise-slot
@@ -1204,9 +1214,6 @@ WT.送信を中止する:#stream-abort-sending
 
 DW.作成する:#webtransportdatagramswritable-create
 DPS.作成する:#webtransportdatagramduplexstream-create
-	%readable:#webtransportdatagramduplexstream-create-readable
-	%writable:#webtransportdatagramduplexstream-create-writable
-	%可読~mode:#webtransportdatagramduplexstream-create-readablemode
 TSG.作成する:#webtransportsendgroup-create
 TW.作成する:#webtransportwriter-create
 
@@ -1928,7 +1935,7 @@ which is resolved when the datagram is sent or discarded.
 	<dd>
 この `WebTransportDatagramsWritable$I を所有する `WebTransport$I ~obj
 ◎
-A WebTransport which owns this WebTransportDatagramsWritable.
+The WebTransport that owns this WebTransportDatagramsWritable.
 </dd>
 
 	<dt>`SendGroup@slW</dt>
@@ -2471,6 +2478,13 @@ A WebTransportDatagramDuplexStream object has the following internal slots.
 Internal Slot｜Description (non-normative)
 </p>
 <dl>
+	<dt>`Transport@sl</dt>
+	<dd>
+この `WebTransportDatagramDuplexStream$I を所有する `WebTransport$I ~obj
+◎
+The WebTransport that owns this WebTransportDatagramDuplexStream.
+</dd>
+
 	<dt>`Readable@sl</dt>
 	<dd>
 流入~datagram用の `ReadableStream$I ~obj
@@ -2478,12 +2492,12 @@ Internal Slot｜Description (non-normative)
 A ReadableStream for incoming datagrams.
 </dd>
 
-	<dt>`ReadableMode@sl</dt>
+	<dt>`ReadableType@sl</dt>
 	<dd>
  ~NULL† ／
-流入~datagram用に利用される `DatagramsReadableMode$I
+流入~datagram用に利用される `ReadableStreamType$I
 ◎
-The DatagramsReadableMode used for incoming datagrams.
+The ReadableStreamType used for incoming datagrams.
 </dd>
 	<dd class="trans-note">【†
 ~NULL は、
@@ -2621,15 +2635,16 @@ As the processing of datagrams generally involves holding the entire datagram in
 The user agent MAY update [[OutgoingMaxDatagramSize]] for any WebTransport object whose [[State]] is either "connecting" or "connected".
 </p>
 
+<div class="algo">
 <p>
 `WebTransportDatagramDuplexStream$I を
 `作成する@DPS
 ~algoは、
 所与の
-( %可読~stream, %可読~mode )
+( `WebTransport$I %~transport, %可読~stream, %可読~stream種別 )
 に対し：
 ◎
-To create a WebTransportDatagramDuplexStream given a readable and readableMode, perform the following steps.
+To create a WebTransportDatagramDuplexStream given a WebTransport transport, a readable and readableType, perform the following steps.
 </p>
 <ol>
 	<li>
@@ -2637,8 +2652,9 @@ To create a WebTransportDatagramDuplexStream given a readable and readableMode, 
 %~stream ~LET `新たな~obj$( `WebTransportDatagramDuplexStream$I )
 — その
 ⇒＃
+`Transport$sl ~SET %~transport,
 `Readable$sl ~SET %可読~stream,
-`ReadableMode$sl ~SET %可読~mode,
+`ReadableType$sl ~SET %可読~stream種別,
 `Writables$sl ~SET 新たな`有順序~集合$,
 `IncomingDatagramsQueue$sl ~SET 新たな`~queue$,
 `IncomingDatagramsPullPromise$sl ~SET ~NULL,
@@ -2658,10 +2674,12 @@ To create a WebTransportDatagramDuplexStream given a readable and readableMode, 
 </p>
 ◎
 Let stream be a new WebTransportDatagramDuplexStream, with:
+• [[Transport]]
+•• transport
 • [[Readable]]
 •• readable
-• [[ReadableMode]]
-•• readableMode
+• [[ReadableType]]
+•• readableType
 • [[Writables]]
 •• an empty ordered set.
 • [[IncomingDatagramsQueue]]
@@ -2686,6 +2704,7 @@ Let stream be a new WebTransportDatagramDuplexStream, with:
 Return stream.
 </li>
 </ol>
+</div>
 
 		</section>
 		<section id="datagram-duplex-stream-methods">
@@ -2732,9 +2751,23 @@ Let transport be WebTransport object associated with this.
 If transport.[[State]] is "closed" or "failed", throw an InvalidStateError.
 </li>
 			<li>
-~RET `WebTransportDatagramsWritable$I を`作成する$DW( %~transport, %options[ "`sendGroup$mb" ], %options[ "`sendOrder$mb" ] )
+%送信-~group ~LET %options[ "`sendGroup$mb" ]
 ◎
 Let sendGroup be options’s sendGroup.
+</li>
+			<li>
+~IF［
+%送信-~group ~NEQ ~NULL
+］~AND［
+%送信-~group . `Transport$slG ~NEQ コレ . `Transport$sl
+］
+⇒
+~THROW `InvalidStateError$E
+◎
+If sendGroup is not null, and sendGroup.[[Transport]] is not this.[[Transport]], throw an InvalidStateError.
+</li>
+			<li>
+~RET `WebTransportDatagramsWritable$I を`作成する$DW( %~transport, %送信-~group, %options[ "`sendOrder$mb" ] )
 ◎
 Let sendOrder be options’s sendOrder.
 ◎
@@ -3037,15 +3070,15 @@ Let datagram and timestamp be the result of dequeuing queue.
 </li>
 	<li>
 <p>
-%~datagram群 . `ReadableMode$sl に応じて：
+%~datagram群 . `ReadableType$sl に応じて：
 ◎
 ↓</p>
 		<ul class="switch">
 			<li>
 <p>
-`bytes$l ：
+`bytes^l ：
 ◎
-If datagrams.[[ReadableMode]] is "bytes", then:
+If datagrams.[[ReadableType]] is "bytes", then:
 </p>
 				<ol>
 					<li>
@@ -3805,19 +3838,14 @@ Let anticipatedConcurrentIncomingUnidirectionalStreams be options’s anticipate
 Let anticipatedConcurrentIncomingBidirectionalStreams be options’s anticipatedConcurrentIncomingBidirectionalStreams.
 </li>
 	<li>
-%~datagram可読~mode ~LET %options[ "`datagramsReadableMode$mb" ] ~DF ~NULL
+%~datagram可読~stream種別 ~LET %options[ "`datagramsReadableType$mb" ] ~DF ~NULL
 ◎
-Let datagramsReadableMode be options’s datagramsReadableMode.
+Let datagramsReadableType be options’s datagramsReadableType.
 </li>
 	<li>
 %流入~datagram群 ~LET `新たな~obj$( `ReadableStream$I )
 ◎
 Let incomingDatagrams be a new ReadableStream.
-</li>
-	<li>
-%~datagram群 ~LET `WebTransportDatagramDuplexStream$I を`作成する$DPS( %流入~datagram群, %~datagram可読~mode )
-◎
-Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its readable set to incomingDatagrams and readableMode set to datagramsReadableMode.
 </li>
 	<li>
 %~transport ~LET `新たな~obj$( `WebTransport$I )
@@ -3836,7 +3864,7 @@ Let datagrams be the result of creating a WebTransportDatagramDuplexStream, its 
 `Protocol$sl ~SET 空~文字列,
 `Closed$sl ~SET `新たな~promise$,
 `Draining$sl ~SET `新たな~promise$,
-`Datagrams$sl ~SET %~datagram群,
+`Datagrams$sl ~SET `undefined^jv,
 `Session$sl ~SET ~NULL,
 `NewConnection$sl ~SET %新たな接続,
 `RequireUnreliable$sl ~SET %不依拠-可能が要求されるか,
@@ -3870,7 +3898,7 @@ Let transport be a newly constructed WebTransport object, with:
 • [[Draining]]
 •• a new promise
 • [[Datagrams]]
-•• datagrams
+•• undefined
 • [[Session]]
 •• null
 • [[NewConnection]]
@@ -3881,8 +3909,13 @@ Let transport be a newly constructed WebTransport object, with:
 •• serverCertificateHashes
 </li>
 	<li>
+%~transport . `Datagrams$sl ~SET `WebTransportDatagramDuplexStream$I を`作成する$DPS( %~transport, %流入~datagram群, %~datagram可読~stream種別 )
+◎
+Set transport.[[Datagrams]] to the result of creating a WebTransportDatagramDuplexStream, with transport, incomingDatagrams and datagramsReadableType.
+</li>
+	<li>
 <p>
-%流入~datagram群 を %~datagram可読~mode に応じて［
+%流入~datagram群 を %~datagram可読~stream種別 に応じて［
 `bytes^l ならば`~byte読取り~support付きで設定しておく$RS ／
 ~NULL ならば`設定しておく$RS
 ］
@@ -3918,7 +3951,7 @@ Let pullDatagramsAlgorithm be an action that runs pullDatagrams with transport.
 ◎
 Note: Using 64 kibibytes buffers with datagrams is recommended because the effective maximum WebTransport datagram frame size has an upper bound of the QUIC maximum datagram frame size which is recommended to be 64 kibibytes (See [QUIC-DATAGRAM] Section 3). This will ensure the stream is not errored due to a datagram being larger than the buffer.
 ◎
-If datagramsReadableMode is "bytes", set up with byte reading support incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0. Otherwise, set up incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0.
+If datagramsReadableType is "bytes", set up with byte reading support incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0. Otherwise, set up incomingDatagrams with pullAlgorithm set to pullDatagramsAlgorithm, and highWaterMark set to 0.
 </li>
 	<li>
 <p>
@@ -5466,18 +5499,13 @@ When createBidirectionalStream is called, the user agent MUST run the following 
 </p>
 		<ol>
 			<li>
-%~transport ~LET コレ
-◎
-Let transport be this.
-</li>
-			<li>
 ~IF［
-%~transport . `State$sl ~IN { `closed^l, `failed^l }
+コレ . `State$sl ~IN { `closed^l, `failed^l }
 ］
 ⇒
 ~RET `却下される~promise$( `InvalidStateError$E )
 ◎
-If transport.[[State]] is "closed" or "failed", return a new rejected promise with an InvalidStateError.
+If this.[[State]] is "closed" or "failed", return a new rejected promise with an InvalidStateError.
 </li>
 			<li>
 %送信-~group ~LET %options[ "`sendGroup$mb" ]
@@ -5490,6 +5518,17 @@ Let sendGroup be options’s sendGroup.
 Let sendOrder be options’s sendOrder.
 </li>
 			<li>
+~IF［
+%送信-~group ~NEQ ~NULL
+］~AND［
+%送信-~group . `Transport$slG ~NEQ コレ
+］
+⇒
+~THROW `InvalidStateError$E
+◎
+If sendGroup is not null, and sendGroup.[[Transport]] is not this, throw an InvalidStateError.
+</li>
+			<li>
 %可用になるまで待機するか ~LET %options[ "`waitUntilAvailable$mb" ]
 ◎
 Let waitUntilAvailable be options’s waitUntilAvailable.
@@ -5498,6 +5537,11 @@ Let waitUntilAvailable be options’s waitUntilAvailable.
 %~promise ~LET `新たな~promise$
 ◎
 Let p be a new promise.
+</li>
+			<li>
+%~transport ~LET コレ
+◎
+Let transport be this.
 </li>
 			<li class="algo">
 <p>
@@ -5656,23 +5700,29 @@ When createUnidirectionalStream() method is called, the user agent MUST run the 
 </p>
 		<ol>
 			<li>
-%~transport ~LET コレ
-◎
-Let transport be this.
-</li>
-			<li>
 ~IF［
-%~transport . `State$sl ~IN { `closed^l, `failed^l }
+コレ . `State$sl ~IN { `closed^l, `failed^l }
 ］
 ⇒
 ~RET `却下される~promise$( `InvalidStateError$E )
 ◎
-If transport.[[State]] is "closed" or "failed", return a new rejected promise with an InvalidStateError.
+If this.[[State]] is "closed" or "failed", return a new rejected promise with an InvalidStateError.
 </li>
 			<li>
 %送信-~group ~LET %options[ "`sendGroup$mb" ]
 ◎
 Let sendGroup be options’s sendGroup.
+</li>
+			<li>
+~IF［
+%送信-~group ~NEQ ~NULL
+］~AND［
+%送信-~group . `Transport$slG ~NEQ コレ
+］
+⇒
+~THROW `InvalidStateError$E
+◎
+If sendGroup is not null, and sendGroup.[[Transport]] is not this, throw an InvalidStateError.
 </li>
 			<li>
 %送信-順序 ~LET %options[ "`sendOrder$mb" ]
@@ -5688,6 +5738,11 @@ Let waitUntilAvailable be options’s waitUntilAvailable.
 %~promise ~LET `新たな~promise$
 ◎
 Let p be a new promise.
+</li>
+			<li>
+%~transport ~LET コレ
+◎
+Let transport be this.
 </li>
 			<li class="algo">
 <p>
@@ -5838,23 +5893,18 @@ When createSendGroup() method is called, the user agent MUST run the following s
 </p>
 		<ol>
 			<li>
-%~transport ~LET コレ
-◎
-Let transport be this.
-</li>
-			<li>
 ~IF［
-%~transport . `State$sl ~IN { `closed^l, `failed^l }
+コレ . `State$sl ~IN { `closed^l, `failed^l }
 ］
 ⇒
 ~THROW `InvalidStateError$E
 ◎
-If transport.[[State]] is "closed" or "failed", throw an InvalidStateError.
+If this.[[State]] is "closed" or "failed", throw an InvalidStateError.
 </li>
 			<li>
-~RET `WebTransportSendGroup$I を`作成する$TSG( %~transport )
+~RET `WebTransportSendGroup$I を`作成する$TSG( コレ )
 ◎
-Return the result of creating a WebTransportSendGroup with transport.
+Return the result of creating a WebTransportSendGroup with this.
 </li>
 		</ol>
 	</dd>
@@ -6446,17 +6496,13 @@ dictionary `WebTransportOptions@I {
   [`EnforceRange$] `unsigned short$? `anticipatedConcurrentIncomingUnidirectionalStreams$mb = null;
   [`EnforceRange$] `unsigned short$? `anticipatedConcurrentIncomingBidirectionalStreams$mb = null;
   `sequence$&lt;`DOMString$&gt; `protocols$mb = [];
-  `DatagramsReadableMode$I `datagramsReadableMode$mb;
+  `ReadableStreamType$I `datagramsReadableType$mb;
 };
 
 enum `WebTransportCongestionControl@I {
   `default@l,
   `throughput@l,
   `low-latency@l,
-};
-
-enum `DatagramsReadableMode@I {
-  `bytes@l
 };
 </pre>
 
@@ -6687,26 +6733,29 @@ Selecting a preferred application-protocol and communicating it to the client is
 </dd>
 
 	<dt>
-`datagramsReadableMode@mb
+`datagramsReadableType@mb
 ◎
-datagramsReadableMode, of type DatagramsReadableMode
+datagramsReadableType, of type ReadableStreamType
 </dt>
 	<dd>
 流入~datagram用に利用する可読~streamに関する応用の選好を指定する。
-`bytes$l を与えた場合，`可読~byte~stream$が利用され、
+`bytes^l を与えた場合，`可読~byte~stream$が利用され、
 他の場合【省略された場合】，既定の`可読~stream$が利用される。
 ◎
 Optionally specifies an application’s preference for using a readable byte stream for incoming datagrams. Otherwise, a default readable stream is used.
 </dd>
 	<dd class="note">注記：
-長さ 0 な~datagramを検出するためには、
-既定の`可読~stream$が必要yある。
-しかしながら，`可読~byte~stream$は、
-~byte列をもっと効率的に取扱える
-— 特に，
-`~BYOB読取器$と伴に利用されるときは複製を最小~化することにより。
+`可読~stream$は~datagram意味論と互換であるが、
+`可読~byte~stream$は そうでない。
+~datagramたちは、
+順序どおりに到着するとは限らない［
+0 個以上の~byteたちが成す `differentiated^en 【~byte数が不揃いな？】~message
+］たちである
+— `undifferentiated^en ~byte列ではなく。
+空な~datagramは喪失され，
+`min＠~STREAMS#dom-readablestreambyobreaderreadoptions-min$mb は【に既定の値 1 以外を指定すると？】~messageの `delineation^en を喪失する。
 ◎
-Note: A default readable stream is necessary to detect zero-length datagrams. However, a readable byte stream can handle bytes more efficiently, in particular by minimizing copies when used with a BYOB reader.
+Note: While readable stream is compatible with datagram semantics, readable byte stream is not. Datagrams are differentiated messages of zero or more bytes, that can arrive out of order, not an undifferentiated byte sequence. Empty datagrams are lost, and min loses message delineation.
 </dd>
 </dl>
 
@@ -7130,6 +7179,8 @@ Note: Any unavailable stats will be absent from the WebTransportConnectionStats 
 <pre class="idl">
 dictionary `WebTransportConnectionStats@I {
   `unsigned long long$ `bytesSent$mb;
+  `unsigned long long$ `bytesSentOverhead$mb;
+  `unsigned long long$ `bytesAcknowledged$mb;
   `unsigned long long$ `packetsSent$mb;
   `unsigned long long$ `bytesLost$mb;
   `unsigned long long$ `packetsLost$mb;
@@ -7156,12 +7207,54 @@ The dictionary SHALL have the following attributes:
 bytesSent, of type unsigned long long
 </dt>
 	<dd>
-当の`下層~接続$上に送信された~byteたちの個数
-— 再-伝送も含むが，［
-~UDPその他の外縁~frame法
-］は含まない。
+`下層~接続$越しに送信された~payloadを成す~byte数
+— ［
+~frame法／再-伝送
+］による~overheadは除外される。
 ◎
-The number of bytes sent on the underlying connection, including retransmissions. Does not include UDP or any other outer framing.
+The number of payload bytes sent over the underlying connection, excluding any framing overhead or retransmissions.
+</dd>
+
+	<dt>
+`bytesSentOverhead@mb
+◎
+bytesSentOverhead, of type unsigned long long
+</dt>
+	<dd>
+`下層~接続$上で~byte数 `bytesSent$mb の~payload~byte列を送信する際に［
+~frame法, 再-伝送
+］による~overheadにかかった~byte数。
+◎
+The framing and retransmission overhead in bytes of sending bytesSent number of payload bytes on the underlying connection.
+</dd>
+
+	<dt>
+`bytesAcknowledged@mb
+◎
+bytesAcknowledged, of type unsigned long long
+</dt>
+	<dd>
+［
+`下層~接続$上の~QUICの~ACK仕組み
+］を利用して［
+~serverにより受信されたものと認知された~payload
+］を成す~byte数
+— ~frame法によるものは除外される。
+◎
+The number of payload bytes acknowledged as received by the server using QUIC’s ACK mechanism on the underlying connection. Excludes any framing.
+</dd>
+	<dd class="note">注記：
+これは，概して `bytesSent$mb を追いかけるが、
+~packet喪失に因り，永続的に それを下回り得る。
+◎
+Note: Typically trails bytesSent but can be permanently less due to packet loss.
+</dd>
+	<dd class="issue">
+この~memberは、
+実装-能に懸念があることに因り，
+当~WGにより~risk下にある特能として識別された。
+◎
+bytesAcknowledged on WebTransportConnectionStats has been identified by the Working Group as a feature at risk due to concerns over implementability.
 </dd>
 
 	<dt>
@@ -7693,7 +7786,7 @@ A promise representing a pending write or close operation, or null.
 	<dd>
 この `WebTransportSendStream$I を所有する `WebTransport$I
 ◎
-A WebTransport which owns this WebTransportSendStream.
+The WebTransport that owns this WebTransportSendStream.
 </dd>
 
 	<dt>`SendGroup@slS</dt>
