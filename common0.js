@@ -1283,7 +1283,7 @@ SECQ:security-questionnaire-ja.html
 SECURE-CONTEXT:webappsec-secure-contexts-ja.html
 SELECTIONAPI:selection-api-ja.html
 SELECTORS4:selectors4-ja.html
-SELECTORS5:https://drafts.csswg.org/selectors-5/
+SELECTORS5:selectors5-ja.html
 SENSORS:sensors-ja.html
 SIZING:css-sizing-ja.html
 SRI:webappsec-subresource-integrity-ja.html

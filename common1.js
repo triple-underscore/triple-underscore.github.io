@@ -1857,6 +1857,7 @@ RFC9114=副            ~/http3-ja.html
 RFC9218=副            ~/http-priority-ja.html
 RFC9297=副            ~/http-datagram-ja.html
 RFC9651=副            ~/http-structured-fields-ja.html
+SELECTORS5=副         ~/selectors5-ja.html
 SELECTORS4=副         ~/selectors4-ja.html
 SELECTORS3=副         ~mitsue/css3-selectors/
 SELECTORS3=副2        ＃zng.info/specs/css3-selectors.html
