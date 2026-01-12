@@ -1163,7 +1163,7 @@ CSSPSEUDO:css-pseudo-ja.html
 CSSPV1:css-properties-values-api-ja.html
 CSSREGION:https://drafts.csswg.org/css-regions-1/
 CSSRUBY:css-ruby-ja.html
-CSSSCOPING:css-scoping-ja.html
+CSSSHADOW:css-shadow-ja.html
 CSSSCROLLSNAP:css-scroll-snap-ja.html
 CSSSHADOWPARTS:css-shadow-parts-ja.html
 CSSSHAPES:css-shapes-ja.html
