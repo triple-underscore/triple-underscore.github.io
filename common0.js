@@ -1165,7 +1165,6 @@ CSSREGION:https://drafts.csswg.org/css-regions-1/
 CSSRUBY:css-ruby-ja.html
 CSSSHADOW:css-shadow-ja.html
 CSSSCROLLSNAP:css-scroll-snap-ja.html
-CSSSHADOWPARTS:css-shadow-parts-ja.html
 CSSSHAPES:css-shapes-ja.html
 CSSSIZEADJUST:css-size-adjust-ja.html
 CSSSNAPSHOT:css-snapshot-ja.html

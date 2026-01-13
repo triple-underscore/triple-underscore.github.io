@@ -1686,7 +1686,6 @@ CSSPAINTAPI1=副       ~/css-paint-api-ja.html
 CSSPROPERTIESVALUESAPI1=副  ~/css-properties-values-api-ja.html
 CSSPSEUDO4=副         ~/css-pseudo-ja.html
 CSSSHADOW1=副         ~/css-shadow-ja.html
-CSSSHADOWPARTS1=副    ~/css-shadow-parts-ja.html
 CSSSCROLLSNAP1=副     ~/css-scroll-snap-ja.html
 CSSSIZEADJUST1=副     ~/css-size-adjust-ja.html
 CSSSTYLEATTR1=副      ~/css-style-attr-ja.html
