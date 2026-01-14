@@ -158,8 +158,8 @@ return text;
 
 ●●options
 
-spec_date:2025-12-15
-trans_update:2025-12-17
+spec_date:2026-01-13
+trans_update:2026-01-14
 source_checked:250314
 page_state_key:HTML
 spec_status:LS
@@ -535,7 +535,6 @@ a.disabled:~HTMLforms#attr-fe-disabled
 a.maxlength:~HTMLforms#attr-fe-maxlength
 a.minlength:~HTMLforms#attr-fe-minlength
 a.name:~HTMLforms#attr-fe-name
-
 a.action:~HTMLforms#attr-fs-action
 a.enctype:~HTMLforms#attr-fs-enctype
 a.formaction:~HTMLforms#attr-fs-formaction
@@ -545,6 +544,7 @@ a.formnovalidate:~HTMLforms#attr-fs-formnovalidate
 a.formtarget:~HTMLforms#attr-fs-formtarget
 a.method:~HTMLforms#attr-fs-method
 a.novalidate:~HTMLforms#attr-fs-novalidate
+a.popover:~HTMLpopover#attr-popover
 a.target:~HTMLforms#attr-fs-target
 
 a.form:~HTMLforms#attr-fae-form
@@ -666,6 +666,7 @@ st.未知:#attr-button-command-unknown-state
 ~button:#concept-button
 ~commandは妥当か？手続き:#is-valid-command-steps
 ~command手続き:#command-steps
+~commandは~target用に妥当か否か:#determine-if-command-is-valid
 
 	!form
 再設定~用に~lockされたか:#locked-for-reset
@@ -910,7 +911,6 @@ set.付加する:~INFRA#set-append
 cd.~data:~DOM4#concept-cd-data
 ~node文書:~DOM4#concept-node-document
 ~collectionにより表現され:~DOM4#represented-by-the-collection
-el.名前空間:~DOM4#concept-element-namespace
 el.局所~名:~DOM4#concept-element-local-name
 attr.値:~DOM4#concept-attribute-value
 属性~値を設定する:~DOM4#concept-element-attributes-set-value
@@ -3825,6 +3825,15 @@ Constraint validation: If the element is not a submit button, the element is bar
 </p>
 
 <p>
+`button$e 要素は、
+次を満たす間は，`不活$になる
+⇒
+【！an element of】`select$e 要素の`最初の子$である
+◎
+If a button element is the first child which is an element of a select element, then it is inert.
+</p>
+
+<p>
 ``commandfor@a
 属性に指定する値は、［
 当の属性を有する`~button$と同じ`~tree$内にある要素
@@ -3908,14 +3917,109 @@ The attribute's missing value default and invalid value default are both the Unk
 A custom command keyword is a string that starts with "--".
 </p>
 
+<div class="algo">
 <p>
-`button$e 要素は、
-次を満たす間は，`不活$になる
-⇒
-`select$e 要素の最初の子である
+`~commandは~target用に妥当か否か@
+を決定する~algoは、
+所与の
+( ``command$a 属性 %~command, 要素 %~target )
+に対し：
 ◎
-If a button element is the first child which is an element of a select element, then it is inert.
+To determine if a command is valid for a target given a command attribute command and an element target:
 </p>
+<ol>
+	<li>
+~IF［
+%~command の状態 ~EQ `未知$st
+］
+⇒
+~RET ~F
+◎
+If command is in the Unknown state, then return false.
+</li>
+	<li>
+~IF［
+%~command の状態 ~EQ `~custom$st
+］
+⇒
+~RET ~T
+◎
+If command is in the Custom state, then return true.
+</li>
+	<li>
+~IF［
+%~target は`~HTML要素$でない
+］
+⇒
+~RET ~F
+◎
+If target is not an HTML element, then return false.
+</li>
+	<li>
+~IF［
+%~command の状態 ~IN { `~popoverを~toggleする$st, `~popoverを示す$st, `~popoverを隠す$st }
+］
+⇒
+~RET ~T
+◎
+If command is in any of the following states:
+• Toggle Popover
+• Show Popover
+• Hide Popover
+◎
+then return true.
+</li>
+	<li>
+<p>
+~RET ~IS［
+~AND↓
+］…
+</p>
+		<ul>
+			<li>
+この標準が %~target の`局所~名$el用に定義する`~commandは妥当か？手続き$ %手続き はある
+</li>
+			<li>
+%手続き( %~command ) ~EQ ~T
+</li>
+		</ul>
+◎
+If this standard does not define is valid command steps for target's local name, then return false.
+◎
+Otherwise, return the result of running target's corresponding is valid command steps given command.
+</li>
+</ol>
+
+<div class="note">
+<p>注記：
+この~algoの意図は、
+当の~commandを~supportしない要素~型に対しては，
+`command$et ~eventを配送することを避けることにある。
+◎
+The intent is to avoid dispatching a command event on an element type that does not support that command.
+</p>
+
+<p>
+しかしながら、
+要素【の ``command$a 属性の】状態は考慮されない。
+ある【要素~型を成す】要素が特定0の~commandを~supportし得る場合、
+当の~commandを実行し得ない状態にある場合でも，
+`command$et ~event【！the event】は当の要素に向けて配送される。
+◎
+However, element state is not considered. If an element can support a particular command, the event is dispatched, even if that element is in a state where it cannot execute that command.
+</p>
+
+<p>
+このことは、
+例えば，［
+`command$et ~eventは、
+どの`~HTML要素$に対しても，それが`popover$a 属性を有していない場合でも~popover~command用に配送される
+］ことを意味する。
+◎
+This means, for example, that command events are dispatched for popover commands on all HTML elements, even if they do not have a popover attribute.
+</p>
+</div>
+</div>
 
 <div class="algo">
 <p>
@@ -4028,58 +4132,13 @@ Let command be element's command attribute.
 </li>
 			<li>
 ~IF［
-%~command の状態 ~EQ `未知$st
+`~commandは~target用に妥当か否か$( %~command, %~target ) の結果 ~EQ ~F
 ］
 ⇒
 ~RET
 ◎
-If command is in the Unknown state, then return.
+If the result of determining if a command is valid for a target given command and target is false, then return.
 </li>
-			<li>
-<p>
-~IF［
-%~target は`~popover要素$でない
-］~AND［
-%~command の状態 ~NEQ `~custom$st
-］：
-◎
-Let isPopover be true if target's popover attribute is not in the No Popover state; otherwise false.
-◎
-If isPopover is false and command is not in the Custom state:
-</p>
-				<ol>
-					<li>
-~Assert：
-%~target の`名前空間$el ~EQ `~HTML名前空間$
-◎
-Assert: target's namespace is the HTML namespace.
-</li>
-					<li>
-<p>
-~IF［
-~NOT ~AND↓
-］…
-</p>
-						<ul>
-							<li>
-この標準が %~target の`局所~名$el用に定義する`~commandは妥当か？手続き$ %手続き はある
-</li>
-							<li>
-%手続き( %~command ) ~EQ ~T
-</li>
-						</ul>
-<p>
-…ならば
-⇒
-~RET
-</p>
-◎
-If this standard does not define is valid command steps for target's local name, then return.
-◎
-Otherwise, if the result of running target's corresponding is valid command steps given command is false, then return.
-</li>
-				</ol>
-			</li>
 			<li>
 <p>
 %継続するか ~LET `~eventを発火する$( %~target, `command$et, `CommandEvent$I )
@@ -5092,7 +5151,7 @@ Run the show popover algorithm given select's select popover, false, and select.
 </div>
 
 <p>
-`select$e は＊`基底な外観$で具現化されている場合、
+`select$e は`基底な外観$で具現化されている場合、
 ~UAは，別の `option$e 要素 %~option_e を新たに~focusすることを利用者に許容するベキである
 — 次が遂行されるよう
 ⇒
