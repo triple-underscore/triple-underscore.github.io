@@ -116,8 +116,8 @@ return text;
 ●●options
 
 spec_title:Web Platform Design Principles
-spec_date:2025-12-18
-trans_update:2025-12-29
+spec_date:2026-01-27
+trans_update:2026-02-09
 source_checked:250918
 original_url:https://w3ctag.github.io/design-principles/
 	abbr_url:DESIGN-PRINCIPLES
@@ -125,7 +125,7 @@ spec_status:ED
 site_nav:tag-finding
 ref_id_prefix:biblio-
 ref_id_lowercase:true
-copyright:2025,permissive
+copyright:2026,permissive
 trans_1st_pub:2021-08-11
 
 ●●class_map
@@ -183,6 +183,8 @@ xA.Exposed:~WEBIDLjs#Exposed
 xA.SecureContext:~WEBIDLjs#SecureContext
 
 E.TypeError:~WEBIDL#exceptiondef-typeerror
+E.InvalidStateError:~WEBIDL#invalidstateerror
+E.AbortError:~WEBIDL#aborterror
 
 jT.BigInt:~TC39M/numbers-and-dates.html#sec-bigint-objects
 jT.Date:~TC39M/numbers-and-dates.html#sec-date-objects
@@ -346,6 +348,8 @@ u.lh:~CSSVAL#lh
 拡張~地点:#extension-point
 
 	●用語（外部
+結付けられた文書:~WINDOW#concept-document-window
+
 ~event~handler~IDL属性:~WAPI#event-handler-idl-attributes
 ~event~loop:~WAPI#event-loop
 ~task:~WAPI#concept-task
@@ -356,6 +360,7 @@ u.lh:~CSSVAL#lh
 ~task~source:~WAPI#task-source
 大域~taskを~queueする:~WAPI#queue-a-global-task
 要素~taskを~queueする:~WAPI#queue-an-element-task
+関連な大域~obj:~WAPI#concept-relevant-global
 
 反映-:~HTMLcdom#reflect
 全部的に作動中:~HTMLds#fully-active
@@ -588,6 +593,11 @@ timer::::タイマー
 剥ぐ:stripする:~
 形式変換-:transform::~
 高価:expensive:~
+解体-:tear down:~
+決着-:settle:~
+早期退出:early exit:~
+切離さ:detachさ::切り離さ
+clean:
 
 	遅過ぎる:too slow
 	遅い／遅く:slow
@@ -623,6 +633,12 @@ timer::::タイマー
 	具現化を阻む:render-blocking
 	同じ結果を生産する:something that 〜 produces itself
 	途中:in the middle
+	の途中で:mid-
+	始まった:begun
+	時間に基づく:time-based
+	する所で:at the point
+	先ず:fast
+	でなくなり:stop being
 
 	●security／privacy
 本物:genuine:~
@@ -714,12 +730,19 @@ Spectre:
 touch::::タッチ
 tap::::タップ
 picker:::選択 UI
+	~picker:picker, chooser
 選定器:selector::~::セレクタ
 	~~選ばれ:pick
 非可視:hidden:~
 clipboard::::クリップボード
 押付け:intrusive:押し付け
 前面:front:~
+面-:face:~
+退ける:dismissする:~
+退けら:dismissさ:~
+退けた:dismissした:~
+
+	~UI:interface
 
 	●呈示／CSS
 紙:paper:~
@@ -1696,6 +1719,8 @@ archive::::アーカイブ
 割振り:allocation:割り振り
 割振る:allocateする:割り振る
 埋める:fillする:~
+媒介-:mediate:~
+発生-:arise:~
 
 	`infinity^jv, `-infinity^jv:infinities
 	`infinity^jv, `-infinity^jv:±Infinity
@@ -2020,7 +2045,7 @@ WEBSHARE=副                 ~/web-share-ja.html
 [FileAPI]
     Marijn Kruisselbrink. ＜File API＞. URL: https://w3c.github.io/FileAPI/
 [FILTER-EFFECTS-2]
-    ＜Filter Effects Module Level 2＞. Editor's Draft. URL: https://drafts.fxtf.org/filter-effects-2/
+    ＜Filter Effects Module Level 2＞. Editor's Draft. URL: https://drafts.csswg.org/filter-effects-2/
 [GAMEPAD]
     Steve Agoston; Matthew Reynolds. ＜Gamepad＞. URL: https://w3c.github.io/gamepad/
 [HTML401]
@@ -4126,8 +4151,126 @@ Note that while user activation is in many cases necessary, it is not always suf
 </p>
 
 		</section>
+		<section id="handle-non-fully-active-documents">
+<h3 title="Handle non-fully-active documents">2.13. 全部的に作動中でない文書を取扱うこと</h3>
+
+<p>
+当の~APIは、［
+【それを実装している~objに】`関連な大域~obj$に`結付けられた文書$
+— 以下、
+この節では %当の文書 と記す —
+が もはや`全部的に作動中$でなくなったとき
+］の挙動を予測-可能にすること。
+%当の文書 が すでに`全部的に作動中$でないときは、
+先ず失敗すること。
+%当の文書 が演算の途中で`全部的に作動中$でなくなった場合には、
+~cleanに中止すること。
+◎
+Make sure that your API behaves predictably when its relevant global object’s associated Document is no longer fully active. Fail fast when the document is already non-fully active and abort cleanly if it becomes non-fully active mid-operation.
+</p>
+
+<p>
+ある `iframe$e （あるいは，類似なもの）が［
+除去された／~navigateされた
+］とき、
+%当の文書 は，`全部的に作動中$でなくなり得る。
+多くの事例では、
+~UAは， %当の文書 の`~JS実行~文脈＠~TC39#sec-execution-contexts$を解体することになる
+— それを休止して保つことなく。
+しかしながら、
+%当の文書 から~objへの参照は，［
+他の文書／~UAを成す他の各部
+］から到達-可能であり続け得る。
+◎
+When an iframe (or similar) is removed or navigated, its associated Document can stop being fully active. In many cases, user agents will tear down the document’s JavaScript execution contexts rather than keeping them suspended. However, references to objects from that document can remain reachable from other documents or from other parts of the user agent.
+</p>
+
+<p>
+この状況は、
+ある `iframe$e に利するためとして~browserが媒介する~UI（例：認証／支払い／資格証の呈示）が示され，
+利用者が当の~UIとヤリトリしている間に当の `iframe$e が［
+除去された／~navigateされた
+］ときに発生し得る。
+◎
+This situation can arise when browser-mediated UI (e.g., authentication, payment, or credential presentation) is shown on behalf of an iframe and the iframe is removed or navigated while a user is interacting with that interface.
+</p>
+
+<p>
+各~仕様は、［
+各~call／~UI動作
+］が`全部的に作動中$でない文書とどうヤリトリするかを［
+~call時点, 演算が始まった後
+］どちらに対しても定義しなければナラナイ。
+そうすることは、
+次を確保する助けになる
+⇒＃
+`全部的に作動中$でない文書に対する背景~作業を停止すること／
+利用者が面している~UIが上品に退けられること／
+各~UAにわたって挙動が一貫すること
+◎
+Specifications must define how calls and UI actions interact with non-fully active documents both at call time and after an operation has begun. Doing so helps ensure that background work stops on non-fully active documents, that user-facing UI is gracefully dismissed, and that user agents behave consistently.
+</p>
+
+<p>
+一般~規則として：
+◎
+As general rules:
+</p>
+<ul>
+	<li>
+~call時点で %当の文書 は`全部的に作動中$でない場合、
+当の演算は，即時に失敗しなければナラナイ。
+それには、
+`InvalidStateError$E 例外を利用することが示唆される。
+◎
+If, at call time, the relevant global object’s associated Document is not fully active, then the operation must fail immediately. We suggest using an InvalidStateError DOMException.
+</li>
+	<li>
+非同期な演算を開始した後に %当の文書 が`全部的に作動中$でなくなった場合、
+当の演算を中止した上で，
+`AbortError$E で失敗を通達しなければナラナイ。
+当の演算が利用者が面している~UI
+（例：~pickerや~prompt）
+を呈示する場合、
+%当の文書 が`全部的に作動中$でなくなったときに，
+それを退けた上で `AbortError$E で決着すること。
+◎
+If, after starting an asynchronous operation, the associated Document becomes non-fully active, the operation must be aborted and failure signaled with AbortError. If the operation presents user-facing UI (e.g., a picker, chooser, or prompt), dismiss it when the document becomes non-fully active and settle with AbortError.
+</li>
+</ul>
+
+<p>
+各~仕様は、
+後続な作業~用の`~taskを~queueする$とき
+（例：［
+~eventを配送する／
+~promiseを決着する／
+時間に基づく処理を遂行する
+］ための~task）
+には，当の`~task$を走らす所で早期退出~検査を含めるベキである。
+%当の文書 が`全部的に作動中$でない場合、
+観測-可能な効果を更に伴うことなく，当の`~task$を上品に終了すること。
+各~仕様は、
+これらの意味論を定義する際に~garbage収集に依拠してはナラナイ。
+◎
+When queueing subsequent work (for example, to dispatch an event, settle a promise, or perform time-based processing), specifications should include an early-exit check at the point the task runs: if the associated Document is not fully active, then gracefully terminate the task without further observable effects. Specifications must not rely on garbage collection to define these semantics.
+</p>
+
+<p>
+`~BF~cache$が関わる事例~用には、
+`§ 全部的に作動中でない~BF~cacheされた文書を~supportすること＠#support-non-fully-active$
+も見よ。
+`~BF~cache$は，文書を解体することなく休止し得るが、
+同じ原則を成す多くが，［
+切離された `iframe^e その他の`全部的に作動中$でなくなった文書
+］に適用される。
+◎
+See also: § 2.14 Support non-fully active BFCached documents for the BFCache case. Many of the same principles apply to detached iframes and other documents that have become non-fully active, even though BFCache may suspend a document rather than tearing it down.
+</p>
+
+		</section>
 		<section id="support-non-fully-active">
-<h3 title="Support non-fully active BFCached documents">2.13. 全部的に作動中でない~BF~cacheされた文書を~supportすること</h3>
+<h3 title="Support non-fully active BFCached documents">2.14. 全部的に作動中でない~BF~cacheされた文書を~supportすること</h3>
 
 <p>
 アリなら、
@@ -4194,7 +4337,7 @@ Note: It is possible for a document to become non-fully active for other reasons
 
 		</section>
 		<section id="third-party-tools">
-<h3 title="Prioritize usability over compatibility with third-party tools">2.14. 第三者-主体~toolとの互換性より利便性を優先すること</h3>
+<h3 title="Prioritize usability over compatibility with third-party tools">2.15. 第三者-主体~toolとの互換性より利便性を優先すること</h3>
 
 <p>
 新たな特能を設計するときは、
@@ -4298,7 +4441,7 @@ Languages should also provide mechanisms for extensibility that authors can use 
 
 		</section>
 		<section id="prefer-composition">
-<h3 title="Build complex types by composing simpler types">2.15. 複階的な型は、より単純な型から構成することにより築くこと</h3>
+<h3 title="Build complex types by composing simpler types">2.16. 複階的な型は、より単純な型から構成することにより築くこと</h3>
 
 <p>
 下位型は、
