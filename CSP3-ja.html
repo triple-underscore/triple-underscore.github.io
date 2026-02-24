@@ -137,8 +137,8 @@ return text;
 ●●options
 
 spec_title:Content Security Policy Level 3
-spec_date:2026-02-06
-trans_update:2026-02-09
+spec_date:2026-02-11
+trans_update:2026-02-24
 source_checked:250622
 page_state_key:WEBAPPSEC
 original_url:https://w3c.github.io/webappsec-csp/
@@ -214,6 +214,7 @@ IPv4:
 CDN:
 ICE:
 STUN:
+WebTransport:
 keepalive:
 manifest::::マニフェスト
 	~fetch~~処理:fetching
@@ -856,6 +857,7 @@ securitypolicyviolationevent:API/SecurityPolicyViolationEvent
 	pl.report-sha256:#grammardef-report-sha256
 	pl.report-sha384:#grammardef-report-sha384
 	pl.report-sha512:#grammardef-report-sha512
+	pl.unsafe-webtransport-hashes:#grammardef-unsafe-webtransport-hashes
 
 	p.optional-ascii-whitespace:#grammardef-optional-ascii-whitespace
 	p.required-ascii-whitespace:#grammardef-required-ascii-whitespace
@@ -1311,6 +1313,7 @@ rq.構文解析器~metadata:~FETCH#concept-request-parser-metadata
 rq.完全性~metadata:~FETCH#concept-request-integrity-metadata
 rq.~redirect回数:~FETCH#concept-request-redirect-count
 rq.施策~容器:~FETCH#concept-request-policy-container
+rq.~WebTransport~hash~list:~FETCH#request-webtransport-hash-list
 
 ~scriptに類する:~FETCH#request-destination-script-like
 
@@ -3014,7 +3017,7 @@ A serialized source list is an ASCII string, consisting of a whitespace-delimite
 	/ "`report-sha256@pl"
 	/ "`report-sha384@pl"
 	/ "`report-sha512@pl"
-【！ ＊ISSUE: Bikeshed unsafe-allow-redirects.】
+	/ "`unsafe-webtransport-hashes@pl"
 
 ; <span class="comment">~nonce ~source式：</span>
 ; `'nonce-[nonce goes here]'^s
@@ -6821,19 +6824,51 @@ Let name be the result of executing § 6.8.1 Get the effective directive for req
 If the result of executing § 6.8.4 Should fetch directive execute on name, connect-src and policy is "No", return "Allowed".
 </li>
 	<li>
-~IF［
-`要請は~source~listに合致するか？$A( %要請, この指令の`値$, %施策 )
-~EQ `合致しない^i
-］
-⇒
-~RET `阻止される^i
+%~source~list ~LET この指令の`値$
 ◎
-If the result of executing § 6.7.2.5 Does request match source list? on request, this directive’s value, and policy, is "Does Not Match", return "Blocked".
+Let source list be directive’s value.
 </li>
 	<li>
+<p>
+~IF［
+%要請 の`~mode$rq ~EQ `webtransport^l
+］~AND［
+%要請 の`~WebTransport~hash~list$rqは`空$でない
+］：
+◎
+If request’s mode is "webtransport" and request’s WebTransport-hash list is not empty:
+</p>
+		<ol>
+			<li>
+~IF［
+`unsafe-webtransport-hashes$pl ~IN`大小無視$sub %~source~list
+］
+⇒
 ~RET `許容される^i
 ◎
-Return "Allowed".
+If source list contains a source expression which is an ASCII case-insensitive match for the keyword-source "'unsafe-webtransport-hashes'", return "Allowed".
+</li>
+			<li>
+~RET `阻止される^i
+◎
+Return "Blocked".
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+`要請は~source~listに合致するか？$A( %要請, %~source~list, %施策 )
+~EQ `合致する^i
+］
+⇒
+~RET `許容される^i
+◎
+If the result of executing § 6.7.2.5 Does request match source list? on request, source list, and policy, is "Matches", return "Allowed".
+</li>
+	<li>
+~RET `阻止される^i
+◎
+Return "Blocked".
 </li>
 </ol>
 
@@ -6871,18 +6906,51 @@ Let name be the result of executing § 6.8.1 Get the effective directive for req
 If the result of executing § 6.8.4 Should fetch directive execute on name, connect-src and policy is "No", return "Allowed".
 </li>
 	<li>
-~IF［
-`要請に対する応答は~source~listに合致するか？$A( %応答, %要請, この指令の`値$, %施策 )
-~EQ `合致しない^i
-］
-⇒
-~RET `阻止される^i
+%~source~list ~LET この指令の`値$
 ◎
-If the result of executing § 6.7.2.6 Does response to request match source list? on response, request, this directive’s value, and policy, is "Does Not Match", return "Blocked".
+Let source list be directive’s value.
 </li>
 	<li>
+<p>
+~IF［
+%要請 の`~mode$rq ~EQ `webtransport^l
+］~AND［
+%要請 の`~WebTransport~hash~list$rqは`空$でない
+］：
+◎
+If request’s mode is "webtransport" and request’s WebTransport-hash list is not empty:
+</p>
+		<ol>
+			<li>
+~IF［
+`unsafe-webtransport-hashes$pl ~IN`大小無視$sub %~source~list
+］
+⇒
 ~RET `許容される^i
 ◎
+If source list contains a source expression which is an ASCII case-insensitive match for the keyword-source "'unsafe-webtransport-hashes'", return "Allowed".
+</li>
+			<li>
+~RET `阻止される^i
+◎
+Return "Blocked".
+</li>
+		</ol>
+	</li>
+	<li>
+~IF［
+`要請に対する応答は~source~listに合致するか？$A( %応答, %要請, %~source~list, %施策 )
+~EQ `合致する^i
+］
+⇒
+~RET `許容される^i
+◎
+If the result of executing § 6.7.2.6 Does response to request match source list? on response, request, source list, and policy, is "Matches", return "Allowed".
+</li>
+	<li>
+~RET `阻止される^i
+◎
+Return "Blocked".
 Return "Allowed".
 </li>
 </ol>
