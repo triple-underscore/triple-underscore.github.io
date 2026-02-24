@@ -1770,7 +1770,6 @@ DEVICEORIENTATION=副  ~/deviceorientation-ja.html
 GENERICSENSOR=副      ~/sensors-ja.html
 GEOLOCATION=副        ~/geolocation-api-ja.html
 GEOLOCATION=副2       www.asahi-net.or.jp/~ax2s-kmtn/internet/geo/REC-geolocation-20220901.html
-GEOLOCATIONSENSOR=副  ~/geolocation-sensor-ja.html
 GYROSCOPE=副          ~/gyroscope-ja.html
 MAGNETOMETER=副       ~/magnetometer-ja.html
 ORIENTATIONSENSOR=副  ~/orientation-sensor-ja.html
