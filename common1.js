@@ -1891,6 +1891,7 @@ WCAG21=主             waic.jp/translations/WCAG21/
 	WCAG21=主             waic.github.io/wcag21/guidelines/
 WCAG22=・             ~TR/WCAG/
 WCAG22=・             ~TR/WCAG22/
+WCAG22=・             w3c.github.io/wcag/guidelines/22/
 WCAG22=主             waic.jp/translations/WCAG22/
 WEBANIMATIONS1=副     ~/web-animations-ja.html
 WEBIDL=副             ~/WebIDL-ja.html
