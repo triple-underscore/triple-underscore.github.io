@@ -254,8 +254,8 @@ mWC: 'code',
 
 ●●options
 
-spec_date:2026-03-06
-trans_update:2026-03-09
+spec_date:2026-03-12
+trans_update:2026-03-14
 source_checked:250530
 original_url:https://w3c.github.io/ServiceWorker/
 	abbr_url:SW1
@@ -753,6 +753,8 @@ FE.~enteredで応答するか:#fetchevent-respond-with-entered-flag
 FE.~errorで応答するか:#fetchevent-respond-with-error-flag
 FE.応答するまで待機-中か:#fetchevent-wait-to-respond-flag
 
+EME.生成元:#extendablemessageevent-origin
+
 不良な~import~script応答:#dfn-bad-import-script-response
 
 ~job:#dfn-job
@@ -1109,6 +1111,11 @@ fC.状態:~FETCH#fetch-controller-state
 fP.取消された:~FETCH#fetch-params-canceled
 
 	●用語 HTML
+並列的:~HTMLINFRA#in-parallel
+並列~queue:~HTMLINFRA#parallel-queue
+手続きを~enqueueする:~HTMLINFRA#enqueue-the-following-steps
+
+ME.生成元:~HTMLcomms#concept-messageevent-origin
 
 enV.~ID:~WAPI#concept-environment-id
 enV.作成時の~URL:~WAPI#concept-environment-creation-url
@@ -1129,7 +1136,6 @@ enV.~secureな文脈:~WAPI#secure-context
 enV.~top-level作成時の~URL:~WAPI#concept-environment-top-level-creation-url
 enV.~top-level生成元:~WAPI#concept-environment-top-level-origin
 enV.時刻~起点:~WAPI#concept-settings-object-time-origin
-
 
 gL.~realm:~WAPI#concept-global-object-realm
 関連な~realm:~WAPI#concept-relevant-realm
@@ -1235,10 +1241,6 @@ wG.非同一-生成元~能力は隔離-済みか:~WORKERS#concept-workerglobalsc
 ~scriptを~worker大域~scopeの中へ~importする:~WORKERS#import-scripts-into-worker-global-scope
 	~scriptを~worker大域~scopeの中に取込む
 ~workerを走らす:~WORKERS#run-a-worker
-
-並列的:~HTMLINFRA#in-parallel
-並列~queue:~HTMLINFRA#parallel-queue
-手続きを~enqueueする:~HTMLINFRA#enqueue-the-following-steps
 
 作動中な~timer群が成す~map:~HTMLGAPI#map-of-active-timers
 
@@ -1685,6 +1687,7 @@ disk::::ディスク
 一過:transient::~
 最新:newest::~
 瓶:bottle::~::ボトル
+設置-:place:~
 
 	最大:maximum
 	Chromium
@@ -1904,7 +1907,7 @@ not:
 	%設定群~obj:settingsObject
 	%設定群~obj群:settingsObjects
 	%許容される~sw:serviceWorkerAllowed
-	%直列化した転送-結果:serializeWithTransferResult
+	%直列化-済み転送-結果:serializeWithTransferResult
 	%追加される~item群:addedItems
 	%逆直列化-~record:deserializeRecord
 	%演算~群:operations
@@ -3740,7 +3743,7 @@ Let incumbentSettings be the incumbent settings object.
 Let incumbentGlobal be incumbentSettings’s global object.
 </li>
 	<li>
-%直列化した転送-結果 ~LET 
+%直列化-済み転送-結果 ~LET 
 ~ABRUPT `StructuredSerializeWithTransfer$jA( %message, %options[ "`transfer$n" ] )
 ◎
 Let serializeWithTransferResult be StructuredSerializeWithTransfer(message, options["transfer"]). Rethrow any exceptions.
@@ -3818,9 +3821,9 @@ Otherwise
 						</ul>
 					</li>
 					<li>
-%生成元 ~LET `生成元を直列化する$( %現任な設定群 の`生成元$enV )
+%生成元 ~LET %現任な設定群 の`生成元$enV
 ◎
-Let origin be the serialization of incumbentSettings’s origin.
+Let origin be incumbentSettings’s origin.
 </li>
 					<li>
 %行先 ~LET %~sw に結付けられた `ServiceWorkerGlobalScope$I 【 %~sw の`大域~obj$sw】
@@ -3829,31 +3832,36 @@ Let origin be the serialization of incumbentSettings’s origin.
 Let destination be the ServiceWorkerGlobalScope object associated with serviceWorker.
 </li>
 					<li>
-%~event ~LET `~eventを作成する$( `ExtendableMessageEvent$I )
-◎
-↓</li>
-					<li>
 <p>
 %逆直列化-~record ~LET
-`StructuredDeserializeWithTransfer$jA( %直列化した転送-結果, %行先 に`関連な~realm$ )
+`StructuredDeserializeWithTransfer$jA( %直列化-済み転送-結果, %行先 に`関連な~realm$ )
 ◎
 Let deserializeRecord be StructuredDeserializeWithTransfer(serializeWithTransferResult, destination’s Realm).
 </p>
 
 <p>
+例外が投出されたときは、
+~catchして
+⇒
+%逆直列化-~record ~SET `失敗^i
+◎
+↓</p>
+					</li>
+					<li>
 ~IF［
-例外が投出された
+%逆直列化-~record ~EQ `失敗^i
 ］
 ⇒
-%~event の属性を次のように初期化する
+`~eventを発火する$( %行先, `messageerror$et, `ExtendableMessageEvent$I1 )
+— 次のように初期化して
 ⇒＃
-`type$n 属性 ~SET `messageerror$et【！etC】,
-`ExtendableMessageEvent^I1`origin$m1 属性 ~SET %生成元,
+その`生成元$EME ~SET %生成元,
 `source$m1 属性 ~SET %~source
 ◎
 If this throws an exception, let e be the result of creating an event named messageerror, using ExtendableMessageEvent, with the origin attribute initialized to origin and the source attribute initialized to source.
-</p>
-
+◎
+↓</li>
+					<li>
 <p>
 ~ELSE：
 ◎
@@ -3863,30 +3871,33 @@ Else:
 							<li>
 %新たな~port群 ~LET
 【 %行先 に`関連な~realm$内で】
-`凍結d配列を作成する$( %逆直列化-~record . `TransferredValues^sl 内のすべての `MessagePort$I ~objからなる同順の~list )
+`凍結d配列を作成する$( %逆直列化-~record . `TransferredValues^sl 内のすべての `MessagePort$I ~objたちが成す同順の~list )
 ◎
 Let messageClone be deserializeRecord.[[Deserialized]].
 ◎
 Let newPorts be a new frozen array consisting of all MessagePort objects in deserializeRecord.[[TransferredValues]], if any, maintaining their relative order.
 </li>
 							<li>
-%~event の属性を次のように初期化する
+`~eventを発火する$( %行先, `message$et, `ExtendableMessageEvent$I )
+— 次のように初期化して
 ⇒＃
-`type$n 属性 ~SET `message$et,
-`ExtendableMessageEvent^I1`origin$m1 属性 ~SET %生成元,
+その`生成元$EME ~SET %生成元,
 `source$m1 属性 ~SET %~source,
 `data$m1 属性 ~SET %逆直列化-~record . `Deserialized^sl,
 `ports$m1 属性 ~SET %新たな~port群
 ◎
-Let e be the result of creating an event named message, using ExtendableMessageEvent, with the origin attribute initialized to origin, the source attribute initialized to source, the data attribute initialized to messageClone, and the ports attribute initialized to newPorts.
+Let e be the result of creating an event named message, using ExtendableMessageEvent, with its origin initialized to origin, the source attribute initialized to source, the data attribute initialized to messageClone, and the ports attribute initialized to newPorts.
 </li>
 						</ol>
-					</li>
-					<li>
-`~eventを配送する$( %行先, %~event )
+<div>
+<p class="trans-note">【
+原文は，この段（および前~段）の中で~eventを作成してから配送しているが、
+そのように分ける必要はないので，この訳では少し簡略化する。
+】</p>
 ◎
 Dispatch e at destination.
-</li>
+</div>
+					</li>
 					<li>
 `~sw延長-済み~event集合を更新する$( %~sw, %~event )
 ◎
@@ -5820,7 +5831,7 @@ Let contextObject be this.
 Let sourceSettings be the contextObject’s relevant settings object.
 </li>
 	<li>
-%直列化した転送-結果 ~LET
+%直列化-済み転送-結果 ~LET
 ~ABRUPT `StructuredSerializeWithTransfer$jA( %message, %options[ "`transfer$n" ] )
 ◎
 Let serializeWithTransferResult be StructuredSerializeWithTransfer(message, options["transfer"]). Rethrow any exceptions.
@@ -5899,9 +5910,9 @@ Add a task that runs the following steps to destination’s client message queue
 </p>
 				<ol>
 					<li>
-%生成元 ~LET `生成元を直列化する$( %~source設定群 の`生成元$enV )
+%生成元 ~LET %~source設定群 の`生成元$enV
 ◎
-Let origin be the serialization of sourceSettings’s origin.
+Let origin be sourceSettings’s origin.
 </li>
 					<li>
 %~source ~LET `~sw~objを取得する$( コレに`関連な大域~obj$の`~sw$SWG, %~target~client )
@@ -5911,7 +5922,7 @@ Let source be the result of getting the service worker object that represents co
 					<li>
 <p>
 %逆直列化-~record ~LET 
-`StructuredDeserializeWithTransfer$jA( %直列化した転送-結果, %行先 に`関連な~realm$ )
+`StructuredDeserializeWithTransfer$jA( %直列化-済み転送-結果, %行先 に`関連な~realm$ )
 ◎
 Let deserializeRecord be StructuredDeserializeWithTransfer(serializeWithTransferResult, destination’s relevant Realm).
 </p>
@@ -5926,7 +5937,7 @@ Let deserializeRecord be StructuredDeserializeWithTransfer(serializeWithTransfer
 `~eventを発火する$( %行先, `messageerror$etC【！messageerror$et】, `MessageEvent$I )
 — 次のように初期化して
 ⇒＃
-`origin$n 属性 ~SET %生成元,
+その`生成元$ME ~SET %生成元,
 `source$n 属性 ~SET %~source
 </li>
 							<li>
@@ -5934,7 +5945,7 @@ Let deserializeRecord be StructuredDeserializeWithTransfer(serializeWithTransfer
 </li>
 						</ol>
 ◎
-If this throws an exception, catch it, fire an event named messageerror at destination, using MessageEvent, with the origin attribute initialized to origin and the source attribute initialized to source, and then abort these steps.
+If this throws an exception, catch it, fire an event named messageerror at destination, using MessageEvent, with its origin initialized to origin and the source attribute initialized to source, and then abort these steps.
 </div>
 					</li>
 					<li>
@@ -5950,12 +5961,12 @@ Let newPorts be a new frozen array consisting of all MessagePort objects in dese
 `~eventを発火する$【！`~eventを配送する$】( %行先, `message$etC【！~HTMLindex#event-message】, `MessageEvent$I )
 — 次のように初期化して
 ⇒＃
-`origin$n 属性 ~SET %生成元,
+その`生成元$ME ~SET %生成元,
 `source$n 属性 ~SET %~source,
 `data$n 属性 ~SET %逆直列化-~record . `Deserialized^sl,
 `ports$n 属性 ~SET %新たな~port群
 ◎
-Dispatch an event named message at destination, using MessageEvent, with the origin attribute initialized to origin, the source attribute initialized to source, the data attribute initialized to messageClone, and the ports attribute initialized to newPorts.
+Dispatch an event named message at destination, using MessageEvent, with its origin initialized to origin, the source attribute initialized to source, the data attribute initialized to messageClone, and the ports attribute initialized to newPorts.
 </li>
 				</ol>
 			</li>
@@ -8299,6 +8310,17 @@ dictionary `ExtendableMessageEventInit@I : `ExtendableEventInit$I {
 </pre>
 
 <p>
+各 `ExtendableMessageEvent$I は、
+`生成元@EME
+を有する
+— それは、［
+~NULL ／`生成元$／文字列
+］であり，初期~時は ~NULL とする。
+◎
+Each ExtendableMessageEvent has an origin (an origin, a string, or null), initially null.
+</p>
+
+<p>
 `~sw$は、
 `拡張-可能＠#dom-extendableevent-waituntil$な
 `message$et ~eventを定義して，
@@ -8334,15 +8356,47 @@ The data attribute must return the value it was initialized to. When the object 
 
 <p>
 `origin@m
-取得子~手続きは、
-初期化-時の値を返す。
-コレの作成-時には、
-この属性は，空~文字列に初期化するモノトスル。
-それは、
-~messageを送信した`~sw~client$の`生成元$enVを表現する。
+属性は、
+当の~messageを送信した`~sw~client$の`生成元$enVを表現する。
 ◎
-The origin attribute must return the value it was initialized to. When the object is created, this attribute must be initialized to the empty string. It represents the origin of the service worker client that sent the message.
+The origin attribute represents the origin of the service worker client that sent the message.
 </p>
+
+<div class="algo">
+<p>
+`origin$m
+取得子~手続きは：
+◎
+The origin getter steps are:
+</p>
+<ol>
+	<li>
+%生成元 ~LET コレの`生成元$EME
+◎
+↓</li>
+	<li>
+~RET %生成元 に応じて
+⇒＃
+~NULL ならば 空~文字列／
+`生成元$であるならば `生成元を直列化する$( %生成元 ) ／
+文字列であるならば %生成元
+◎
+If this’s origin is an origin, then return the serialization of this’s origin.
+◎
+If this’s origin is null, then return the empty string.
+◎
+Return this’s origin.
+</li>
+</ol>
+
+<p>
+`origin$m 属性が “初期化される” ときは
+（例えば、 `ExtendableMessageEvent$I の構築子の間に）、
+その初期化~用の値が当の~objの`生成元$EMEに設置される。
+◎
+When the origin attribute is "initialized" (during ExtendableMessageEvent’s constructor, for example), the initialization value is placed into the object’s origin.
+</p>
+</div>
 
 			</section>
 			<section id="extendablemessage-event-lasteventid">
