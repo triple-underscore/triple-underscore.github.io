@@ -531,10 +531,10 @@ t.dasharray:~SVGpainting#DataTypeDasharray
 
 
 処理~mode:~SVGconform#processing-modes
-~animate化~mode:~SVGconform#animated-mode
+~animateされる~mode:~SVGconform#animated-mode
 動的かつヤリトリあり~mode:~SVGconform#dynamic-interactive-mode
-~secure~animate化~mode:~SVGconform#secure-animated-mode
-~secure静的~mode:~SVGconform#secure-static-mode
+~secureな~animateされる~mode:~SVGconform#secure-animated-mode
+~secureな静的~mode:~SVGconform#secure-static-mode
 静的~mode:~SVGconform#static-mode
 
 適合~SVG~DOM下位tree:~SVGconform#ConformingSVGDOMSubtrees
@@ -900,8 +900,6 @@ green:
 
 
 	●呈示／UI
-	~animate化:animated
-	非~animate化:non-animated
 viewer::::ビューア
 zoom::::ズーム
 pan::::パン
