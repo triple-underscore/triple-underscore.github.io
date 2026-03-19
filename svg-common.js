@@ -695,7 +695,7 @@ COMMON_DATA.PREMAP += `
 // ●words_table
 
 COMMON_DATA.words_table1 += `
-	SVGintro:https://svgwg.org/svg2-draft/intro.html
+	SVGintro:https://w3c.github.io/svgwg/svg2-draft/intro.html
 SVGconform:svg-conform-ja.html
 	~SVG2/conform.html
 	~SVG2/render.html→common0.js
@@ -713,14 +713,14 @@ SVGconform:svg-conform-ja.html
 	~SVG2/interact.html→common0.js
 	~SVG2/linking.html→common0.js
 SVGmisc:svg-misc-ja.html
-	~SVG2/Overview.html
+	~SVG2/index.html
 SVGchanges:svg-changes-ja.html
 	~SVG2/implnote.html
 	~SVG2/access.html
 	~SVG2/animate.html
 	~SVG2/mimereg.html
 
-SVGanim:https://svgwg.org/specs/animations/
+SVGanim:https://w3c.github.io/svgwg/specs/animations/
 	GEOMETRY→common0.js
 	GEOMETRY:https://www.w3.org/TR/geometry-1/
 	GEOMETRY:https://www.w3.org/TR/2014/WD-geometry-1-20140522/

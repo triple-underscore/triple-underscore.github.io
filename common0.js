@@ -1291,7 +1291,8 @@ STORAGE:storage-ja.html
 STREAMS:Streams-ja.html
 STRUCTURED-FIELDS:http-structured-fields-ja.html
 SVG11:SVG11
-SVG2:https://svgwg.org/svg2-draft
+SVG2:https://w3c.github.io/svgwg/svg2-draft
+	SVG2:https://svgwg.org/svg2-draft
 SVGcoords:svg-coords-ja.html
 SVGembedded:svg-embedded-ja.html
 SVGgeometry:svg-geometry-ja.html
