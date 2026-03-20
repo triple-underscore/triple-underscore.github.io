@@ -2675,7 +2675,9 @@ garbage::::ガーベジ
 内側:inside:~
 外側:outside:~
 内縁:inner:~
+	最も内縁:innermost
 外縁:outer:~
+	最も外縁:outermost
 自己-:self-:~
 下位-:sub-:~
 直接的:direct:~

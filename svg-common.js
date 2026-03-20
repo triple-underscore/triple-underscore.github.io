@@ -106,7 +106,7 @@ case 'ACTION':
 	href = `https://www.w3.org/Graphics/SVG/WG/track/actions/${key}`;
 	break;
 case 'en': // english words
-	return `<span lang="en">${key}</span>`;
+	text = `<span lang="en">${key}</span>`;
 	break;
 default:
 	if(classname.slice(0, 3) === 'dom'){
@@ -584,7 +584,7 @@ t.dasharray:~SVGpainting#DataTypeDasharray
 条件付き処理~属性:~SVGstruct#TermConditionalProcessingAttribute
 ~ARIA属性:~SVGstruct#TermARIAAttribute
 
-最外縁の~svg要素:~SVGstruct#TermOutermostSVGElement
+最も外縁な~svg要素:~SVGstruct#TermOutermostSVGElement
 ~SVG文書片:~SVGstruct#TermSVGDocumentFragment
 現在の~SVG文書片:#TermCurrentSVGDocumentFragment
 ~use要素の~shadow~tree:~SVGstruct#TermUseElementShadowTree
@@ -783,9 +783,6 @@ svg:
 外来:foreign::~
 下位-:sub-:~
 部位:portion:~
-最外縁の:outermost::~
-最外縁:outermost::~
-最内縁の:innermost::~
 
 	●幾何
 CTM:
