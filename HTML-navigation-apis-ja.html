@@ -145,8 +145,8 @@ return text;
 
 ●●options
 
-spec_date:2026-02-26
-trans_update:2026-02-27
+spec_date:2026-03-20
+trans_update:2026-03-21
 	source_checked: → WINDOW
 page_state_key:HTML
 spec_status:LS
@@ -325,6 +325,8 @@ process::::プロセス
 渡せ:passでき:~
 待受ける:awaitする::待ち受ける
 続行-:proceed:~
+schedule::::スケジュール
+時機:timing:~
 
 	段階:stage
 	順に走る:the sequence
@@ -371,6 +373,7 @@ process::::プロセス
 	-:rethrowing any exceptions
 	取って代わられ:supersed
 	し続け:continue to
+	ほぼ同時に:around the same time
 
 	●変数
 新-:new:~
@@ -387,6 +390,7 @@ NHE:
 	%~error:error
 	%~error報:errorInfo
 	%~event:event
+	%~navigate_ev~event:navigateEvent
 	%~filename:filename
 	%完遂-時の~promise:finishedPromise
 	%~focus~target:focusTarget
@@ -461,6 +465,7 @@ NHE:
 	〜に注力した:-focused
 機構:machinery:~
 不正確:inaccurate:~
+微妙:subtle:~
 
 	主要:major:~
 	必要なら:potentially
@@ -490,6 +495,8 @@ NHE:
 	担当:responsible
 	散らかって:messy
 	としても，帰結は同じになる:not consequential whether
+	問われ:matter
+	かなり:pretty
 
 	●未分類
 body:
@@ -551,6 +558,7 @@ agent:
 	ようになる:gets
 	少し:a bit
 	最終的に:ultimately
+	その結果，:cause
 
 ●●original_id_map
 
@@ -850,6 +858,7 @@ amT.処理待ちか:#navigation-api-method-tracker-pending
 	arg:#fire-navigate-download-filename
 ~navigate_ev~eventを発火する内縁~algo:#inner-navigate-event-firing-algorithm
 ~navigate_ev~eventを完遂する:#navigateevent-finish
+~navigate_ev~eventを横取する~commit~handler手続き:#navigate-event-intercept-commit-handler-steps
 ~navigate_ev~eventを~commitする:#commit-a-navigate-event
 ~navigate_ev~event~handlerの失敗を処理する:#process-navigate-event-handler-failure
 
@@ -1072,6 +1081,7 @@ rs.状態s:~FETCH#concept-response-status
 
 ~referrer施策:~REFERRER-POLICY#referrer-policy
 
+~view遷移:~CSSVT#view-transitions
 文書の先頭へ~scrollする:~CSSOMVIEW#scroll-to-the-beginning-of-the-document
 表示域:~CSS2J#viewport
 
@@ -2220,6 +2230,16 @@ It is important to do this before firing the dispose or currententrychange event
 </p>
 	</li>
 	<li>
+%~navigate_ev~event ~LET %~navi の`進行中な~navigate_ev~event$
+◎
+Let navigateEvent be navigation's ongoing navigate event.
+</li>
+	<li>
+%~API~method追跡子 ~LET %~navi の`進行中な~API~method追跡子$
+◎
+Let apiMethodTracker be navigation's ongoing API method tracker
+</li>
+	<li>
 <p>
 `~scriptを走らすために準備する$( %~navi に`関連な設定群~obj$ )
 ◎
@@ -2251,6 +2271,11 @@ Fire an event named currententrychange at navigation using NavigationCurrentEntr
 ◎
 For each disposedNHE of disposedNHEs:
 • Fire an event named dispose at disposedNHE.
+</li>
+	<li>
+`~navigate_ev~eventを横取する~commit~handler手続き$( %~navi, %~navigate_ev~event, %~API~method追跡子 )
+◎
+Run the navigate event intercept commit handler steps given navigation, navigateEvent, and apiMethodTracker
 </li>
 	<li>
 `走らせた~scriptを片付ける$( %~navi に`関連な設定群~obj$ )
@@ -7365,18 +7390,15 @@ Remove navigation's upcoming traverse API method trackers[destinationKey].
 		</ol>
 	</li>
 	<li>
+<p>
 ~IF［
-%~API~method追跡子 ~EQ ~NULL
-］
-⇒
-%~API~method追跡子 ~SET `~navigate／再読込み~API~method追跡子を設定しておく$( コレ, `undefined^jv, ~NULL )
+%~API~method追跡子 ~NEQ ~NULL
+］：
 ◎
-If apiMethodTracker is null:
-• Let info be undefined.
-• Let serializedState be null.
-• Set apiMethodTracker to the result of setting up a navigate/reload API method tracker for this given info and serializedState.
-</li>
-	<li>
+If apiMethodTracker is not null:
+</p>
+		<ol>
+			<li>
 %~navi の`進行中な~API~method追跡子$ ~SET %~API~method追跡子
 ◎
 Set navigation's ongoing API method tracker to apiMethodTracker.
@@ -7386,6 +7408,8 @@ Set navigation's ongoing API method tracker to apiMethodTracker.
 ◎
 Set apiMethodTracker's pending to false.
 </li>
+		</ol>
+	</li>
 	<li>
 %~navigable ~LET %~navi に`関連な大域~obj$に`対応する~navigable$
 ◎
@@ -7464,14 +7488,12 @@ If either:
 then initialize event's cancelable to true. Otherwise, initialize it to false.
 </li>
 			<li>
-<p>
 %~event の
 ⇒＃
 `type$m ~SET "`navigate$et",
 `navigationType$mE ~SET %~navi種別,
 `destination$mE ~SET %行先,
-`downloadRequest$mE ~SET %~download要請~filename,
-`info$mE ~SET %~API~method追跡子 の`報$amT
+`downloadRequest$mE ~SET %~download要請~filename
 ◎
 Initialize event's type to "navigate".
 ◎
@@ -7480,8 +7502,15 @@ Initialize event's navigationType to navigationType.
 Initialize event's destination to destination.
 ◎
 Initialize event's downloadRequest to downloadRequestFilename.
+</li>
+			<li>
+<p>
+%~event の `info$mE ~SET %~API~method追跡子 に応じて
+⇒＃
+~NULL ならば `undefined^jv ／
+~ELSE_ %~API~method追跡子 の`報$amT
 ◎
-Initialize event's info to apiMethodTracker's info.
+If apiMethodTracker is not null, then initialize event's info to apiMethodTracker's info. Otherwise, initialize it to undefined.
 </p>
 
 <p class="note">注記：
@@ -7797,6 +7826,171 @@ Return false.
 
 <div class="algo">
 <p>
+`~navigate_ev~eventを横取する~commit~handler手続き@
+は、
+所与の
+( `Navigation$I %~navi,
+`NavigateEvent$I ~obj %~event,
+`~navi~API~method追跡子$ %~API~method追跡子 )
+に対し：
+◎
+The navigate event intercept commit handler steps, given a Navigation navigation, a NavigateEvent object event, and a navigation API method tracker apiMethodTracker are as follows:
+</p>
+<ol>
+	<li>
+%~promise~list ~LET 新たな`~list$
+◎
+Let promisesList be an empty list.
+</li>
+	<li>
+%~event の`~navi~handler~list$nEvを成す
+~EACH( %~handler )
+に対し
+⇒
+%~promise~list に次の結果を`付加する$
+⇒
+`~callback関数を呼出す$( %~handler, « », ε )
+◎
+For each handler of event's navigation handler list:
+• Append the result of invoking handler with an empty arguments list to promisesList.
+</li>
+	<li>
+<p>
+~IF［
+%~promise~list の`~size$ ~EQ 0
+］
+⇒
+%~promise~list ~SET « `解決される~promise$( `undefined^jv ) »
+◎
+If promisesList's size is 0, then set promisesList to « a promise resolved with undefined ».
+</p>
+
+<p class="note">注記：
+`すべての~promiseを待機する$が，その［
+`成功~手続き^i, `失敗~手続き^i
+］をどう~scheduleするかには、
+所与の~promiseが［
+0 個のとき, 1 個以上のとき
+］で時機に微妙な相違がある。
+このことは、
+ほとんどの［
+`すべての~promiseを待機する$の利用
+］においては，問われない。
+しかしながら，この~APIの下では、
+ほぼ同時に発火され得る［
+~event~handler／~promise~handler
+］が とても多いので、
+この相違は，かなり容易に観測-可能になる
+— その結果，［
+~event~handler／~promise~handler
+］連列【呼出される順序】が変わり得る
+（例えば，次に挙げる~eventや~promiseは、
+そこに孕まれる
+⇒＃
+`navigatesuccess$et か `navigateerror$et,
+`currententrychange$et,
+`dispose$et,
+%~API~method追跡子 の~promiseたち,
+`finished$mT ~promise
+◎
+There is a subtle timing difference between how waiting for all schedules its success and failure steps when given zero promises versus ≥1 promises. For most uses of waiting for all, this does not matter. However, with this API, there are so many events and promise handlers which could fire around the same time that the difference is pretty easily observable: it can cause the event/promise handler sequence to vary. (Some of the events and promises involved include: navigatesuccess / navigateerror, currententrychange, dispose, apiMethodTracker's promises, and the navigation.transition.finished promise.)
+</p></li>
+	<li>
+<p>
+`すべての~promiseを待機する$( %~promise~list )
+— 次を与える下で：
+◎
+Wait for all of promisesList, with＼
+</p>
+		<ul>
+			<li class="algo">
+<p>
+`成功~手続き^i は：
+◎
+the following success steps:
+</p>
+				<ol>
+					<li>
+~IF［
+%~event に`関連な大域~obj$に`結付けられた文書$は`全部的に作動中$でない
+］
+⇒
+~RET
+◎
+If event's relevant global object is not fully active, then abort these steps.
+</li>
+					<li>
+~IF［
+%~event の`中止-制御器$nEvの`通達$aCは`中止-済み$aBである
+］
+⇒
+~RET
+◎
+If event's abort controller's signal is aborted, then abort these steps.
+</li>
+					<li>
+~Assert：
+%~event ~EQ %~navi の`進行中な~navigate_ev~event$
+◎
+Assert: event equals navigation's ongoing navigate event.
+</li>
+					<li>
+%~navi の`進行中な~navigate_ev~event$ ~SET ~NULL
+◎
+Set navigation's ongoing navigate event to null.
+</li>
+					<li>
+`~navigate_ev~eventを完遂する$( %~event, ~T )
+◎
+Finish event given true.
+</li>
+					<li>
+~IF［
+%~API~method追跡子 ~NEQ ~NULL
+］
+⇒
+`完遂-時の~promiseを解決する$( %~API~method追跡子 )
+◎
+If apiMethodTracker is non-null, then resolve the finished promise for apiMethodTracker.
+</li>
+					<li>
+`~eventを発火する$( %~navi, `navigatesuccess$et )
+◎
+Fire an event named navigatesuccess at navigation.
+</li>
+					<li>
+~IF［
+%~navi の`遷移$ ~NEQ ~NULL
+］
+⇒
+`~promiseを解決する$( %~navi の`遷移$の`完遂-時の~promise$nTr )
+◎
+If navigation's transition is not null, then resolve navigation's transition's finished promise with undefined.
+</li>
+					<li>
+%~navi の`遷移$ ~SET ~NULL
+◎
+Set navigation's transition to null.
+</li>
+				</ol>
+			</li>
+			<li class="algo">
+`失敗~手続き^i は、
+所与の
+( %事由 )
+に対し
+⇒
+`~navigate_ev~event~handlerの失敗を処理する$( %~event, %事由 )
+◎
+and the following failure step given reason: process navigate event handler failure given event and reason.
+</li>
+		</ul>
+	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
 `~navigate_ev~eventを~commitする@
 ~algoは、
 所与の
@@ -8020,125 +8214,15 @@ Append the following session history traversal steps to navigable's traversable 
 If navigation's transition is not null, then resolve navigation's transition's committed promise with undefined.
 </li>
 	<li>
-<p>
 ~IF［
-%終了~結果は同一-文書か ~EQ ~T
-］：
-◎
-If endResultIsSameDocument is true:
-</p>
-		<ol>
-			<li>
-%~promise~list ~LET 新たな`~list$
-◎
-Let promisesList be an empty list.
-</li>
-			<li>
-%~promise~list に %~API~method追跡子 の`~commit時の~promise$amTを`付加する$
-◎
-Append apiMethodTracker's committed promise to promisesList.
-</li>
-			<li>
-%~event の`~navi~handler~list$nEvを成す
-~EACH( %~handler )
-に対し
-⇒
-%~promise~list に次の結果を`付加する$
-⇒
-`~callback関数を呼出す$( %~handler, « », ε )
-◎
-For each handler of event's navigation handler list:
-• Append the result of invoking handler with an empty arguments list to promisesList.
-</li>
-			<li>
-<p>
-`すべての~promiseを待機する$( %~promise~list )
-— 次を与える下で：
-◎
-Wait for all of promisesList, with＼
-</p>
-				<ul>
-					<li class="algo">
-<p>
-`成功~手続き^i は：
-◎
-the following success steps:
-</p>
-						<ol>
-							<li>
-~IF［
-%~event に`関連な大域~obj$に`結付けられた文書$は`全部的に作動中$でない
+%終了~結果は同一-文書か ~EQ ~F
+］~AND［
+%~API~method追跡子 ~NEQ ~NULL
 ］
-⇒
-~RET
-◎
-If event's relevant global object is not fully active, then abort these steps.
-</li>
-							<li>
-If event's abort controller's signal is aborted, then abort these steps.
-</li>
-							<li>
-~Assert：
-%~event ~EQ %~navi の`進行中な~navigate_ev~event$
-◎
-Assert: event equals navigation's ongoing navigate event.
-</li>
-							<li>
-%~navi の`進行中な~navigate_ev~event$ ~SET ~NULL
-◎
-Set navigation's ongoing navigate event to null.
-</li>
-							<li>
-`~navigate_ev~eventを完遂する$( %~event, ~T )
-◎
-Finish event given true.
-</li>
-							<li>
-`完遂-時の~promiseを解決する$( %~API~method追跡子 )
-◎
-Resolve the finished promise for apiMethodTracker.
-</li>
-							<li>
-`~eventを発火する$( %~navi, `navigatesuccess$et )
-◎
-Fire an event named navigatesuccess at navigation.
-</li>
-							<li>
-~IF［
-%~navi の`遷移$ ~NEQ ~NULL
-］
-⇒
-`~promiseを解決する$( %~navi の`遷移$の`完遂-時の~promise$nTr )
-◎
-If navigation's transition is not null, then resolve navigation's transition's finished promise with undefined.
-</li>
-							<li>
-%~navi の`遷移$ ~SET ~NULL
-◎
-Set navigation's transition to null.
-</li>
-						</ol>
-					</li>
-					<li class="algo">
-`失敗~手続き^i は、
-所与の
-( %事由 )
-に対し
-⇒
-`~navigate_ev~event~handlerの失敗を処理する$( %~event, %事由 )
-◎
-and the following failure step given reason: process navigate event handler failure given event and reason.
-</li>
-				</ul>
-			</li>
-		</ol>
-	</li>
-	<li>
-~ELSE
 ⇒
 `追跡子を片付ける$( %~API~method追跡子 )
 ◎
-Otherwise, clean up apiMethodTracker.
+If endResultIsSameDocument is false and apiMethodTracker is non-null, then clean up apiMethodTracker.
 </li>
 	<li>
 <p>
@@ -8677,7 +8761,7 @@ Returns the ViewTransition object that represents an outbound cross-document vie
 </dd>
 	<dd class="trans-note">【†
 “外へ出る （ `outbound^en ）” とは、
-2 つある~view遷移
+2 つある`~view遷移$
 — 旧-文書におけるそれ, 新-文書におけるそれ —
 のうち，前者に属する方を意味する。
 】</dd>
@@ -8721,7 +8805,7 @@ Returns the ViewTransition object that represents an inbound cross-document view
 </dd>
 	<dd class="trans-note">【†
 “内へ来る （ `inbound^en ）” とは、
-2 つある~view遷移
+2 つある`~view遷移$
 — 旧-文書におけるそれ, 新-文書におけるそれ —
 のうち，後者に属する方を意味する。
 】</dd>
