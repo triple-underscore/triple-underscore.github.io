@@ -196,8 +196,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2026-03-10
-trans_update:2026-03-14
+spec_date:2026-03-24
+trans_update:2026-03-25
 source_checked:260225
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -223,6 +223,7 @@ slR:js-slot
 slB:js-slot
 slG:js-slot
 wS:js-slot
+A:abstract
 ft:frame-type
 er:error-code
 sp:settings-parameter
@@ -260,6 +261,7 @@ slR:span
 slB:span
 slG:span
 slW:span
+A:span
 wS:span
 ft:code
 er:code
@@ -1102,8 +1104,6 @@ dw.write:~STREAMS#default-writer-write
 rs0.cancel:~STREAMS#rs-cancel
 ws.close:~STREAMS#ws-close
 ws.abort:~STREAMS#ws-abort
-ws.getWriter:~STREAMS#ws-get-writer
-m.new WritableStreamDefaultWriter:~STREAMS#default-writer-constructor
 
 	＠~WEBIDL#dom-domexception-code
 	＠~STREAMS#default-writer-ready
@@ -1193,6 +1193,7 @@ sp.SETTINGS_H3_DATAGRAM:~HTTPdatagram#setting
 h.Origin:~FETCH#http-origin
 h.WT-Available-Protocols:~WT-HTTP3#field-wt-available-protocol
 
+A.SetUpWritableStreamDefaultWriter:~STREAMS#set-up-writable-stream-default-writer
 
 	●用語
 下層~接続:#underlying-connection
@@ -1399,6 +1400,7 @@ WS.設定しておく:~STREAMS#writablestream-set-up
 	.中止-~algo:~STREAMS#writablestream-set-up-abortalgorithm
 	.~close~algo:~STREAMS#writablestream-set-up-closealgorithm
 	.書込n~algo:~STREAMS#writablestream-set-up-writealgorithm
+WSW.~chunkを書込む:~STREAMS#writablestreamdefaultwriter-write-a-chunk
 
 並列的:~HTMLINFRA#in-parallel
 大域~taskを~queueする:~WAPI#queue-a-global-task
@@ -7851,13 +7853,16 @@ Return p.
 
 	<dt>`getWriter()@mS</dt>
 	<dd>
-この~methodは、
-`WritableStream$I から継承した `getWriter()$ws と同じ方式で実装するモノトスル
-— ただし、
-`WritableStreamDefaultWriter$I を作成する所では，
-代わりに `WebTransportWriter$I を`作成する$TWモノトスル。
+この~stream用の `WebTransportWriter$I を作成する。
 ◎
-This method must be implemented in the same manner as getWriter inherited from WritableStream, except in place of creating a WritableStreamDefaultWriter, it must instead create a WebTransportWriter with this.
+Creates a WebTransportWriter for this stream.
+</dd>
+	<dd class="algo">
+~method手続きは
+⇒
+~RET `WebTransportWriter$I を`作成する$TW( コレ )
+◎
+When getWriter is called, return the result of creating a WebTransportWriter with this.
 </dd>
 </dl>
 
@@ -8226,12 +8231,9 @@ wait for the operation to complete.＼
 </p>
 				<ul>
 					<li>
-この時点ですでに~queueされたかどうかを問わず，
-この~transport越しに送信されることになる［
-~stream, ~datagram
-］の送信と前後してもヨイ。
+`送信-順序の規則$に従うモノトスル。
 ◎
-This sending MAY be interleaved with sending of previously queued streams and datagrams, as well as streams and datagrams yet to be queued to be sent over this transport.
+This sending MUST follow the send-order rules.
 </li>
 					<li>
 ~UAは、
@@ -8242,35 +8244,6 @@ This sending MAY be interleaved with sending of previously queued streams and da
 The user-agent MAY have a buffer to improve the transfer performance. Such a buffer SHOULD have a fixed upper limit, to carry the backpressure information to the user of the WebTransportSendStream.
 </li>
 					<li>
-<p>
-［
-~AND↓ を満たす各~stream %送信-~stream
-］上に送信するために~queueされたすべての~byteが送信されるまでは，後回するモノトスル：
-◎
-This sending MUST starve until all bytes queued for sending on streams with＼
-</p>
-						<ul>
-							<li>
-%送信-~stream . `SendGroup$slS ~EQ %~stream . `SendGroup$slS
-◎
-the same [[SendGroup]] and＼
-</li>
-							<li>
-%送信-~stream . `SendOrder$slS ~GT %~stream . `SendOrder$slS
-◎
-a higher [[SendOrder]],＼
-</li>
-							<li>
-~NOT `~error＠~STREAMS#writablestream-error$WSした
-◎
-that are neither errored＼
-</li>
-							<li>
-~NOT `~flow制御$により阻まれた
-◎
-nor blocked by flow control, have been sent.
-</li>
-						</ul>
 <p>
 ここでは、
 %~stream . `SendOrder$slS に対し`並列的$に~accessする。
@@ -8292,7 +8265,7 @@ Note: Ordering of retransmissions is implementation-defined, but user agents are
 </p>
 					</li>
 					<li>
-前項により後回されるもの，および`~flow制御$の［
+`送信-順序の規則$により後回されるもの，および`~flow制御$の［
 事由／`~error＠~STREAMS#writablestream-error$WS
 ］を除き、
 後回しないモノトスル。
@@ -10080,9 +10053,9 @@ If stream is undefined, return a promise rejected with a TypeError.
 Set stream.[[InsideSynchronousAtomicWrite]] to true.
 </li>
 			<li>
-%~promise ~LET コレ上の `write$dw 手続き( %chunk )
+%~promise ~LET コレに`~chunkを書込む$WSW( %chunk )
 ◎
-Let p be the result of write(chunk) on WritableStreamDefaultWriter with chunk.
+Let p be the result of writing chunk to this.
 </li>
 			<li>
 %~stream . `InsideSynchronousAtomicWrite$slS ~SET ~F
@@ -10217,9 +10190,9 @@ To create a WebTransportWriter, with a WebTransportSendStream stream, run these 
 Let writer be a new WebTransportWriter.
 </li>
 	<li>
-%書込器 上の `new WritableStreamDefaultWriter$m 構築子~手続き( %~stream )
+`SetUpWritableStreamDefaultWriter$A( %書込器, %~stream )
 ◎
-Run the new WritableStreamDefaultWriter(stream) constructor steps passing writer as this, and stream as the constructor argument.
+Perform SetUpWritableStreamDefaultWriter(writer, stream).
 </li>
 	<li>
 ~RET %書込器
