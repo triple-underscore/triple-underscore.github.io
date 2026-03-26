@@ -129,8 +129,8 @@ return text;
 
 ●●options
 
-spec_date:2025-09-17
-trans_update:2025-09-24
+spec_date:2026-03-25
+trans_update:2026-03-27
 source_checked:241217
 page_state_key:HTML
 spec_status:LS
@@ -214,6 +214,8 @@ e.q:~HEtextlevel#the-q-element
 e.img:~HEimages#the-img-element
 e.iframe:~HEembed#the-iframe-element
 e.script:~HEscripting#the-script-element
+e.audio:~HEmedia#the-audio-element
+e.video:~HEmedia#the-video-element
 
 		●attr
 a.nonce:#attr-nonce
@@ -276,6 +278,7 @@ l.render:#blocking-token-render
 
 ~lazy読込n交差~観測器:#lazy-load-intersection-observer
 ~lazy読込n再開~手続き:#lazy-load-resumption-steps
+~poster~lazy読込n再開~手続き:#poster-lazy-load-resumption-steps
 ~lazyに読込んでいる要素の交差~観測を開始する:#start-intersection-observing-a-lazy-loading-element
 ~lazyに読込んでいる要素の交差~観測を停止する:#stop-intersection-observing-a-lazy-loading-element
 ~lazyに読込むことになる:#will-lazy-load-element-steps
@@ -336,7 +339,6 @@ scE.結果:~HEscripting#concept-script-result
 	●Encoding
 ~labelから符号化法を取得する:~ENCODING#concept-encoding-get
 ~UTF-8:~ENCODING#utf-8
-
 
 	●Fetch
 ~fetch:~FETCH#concept-fetch
@@ -418,6 +420,8 @@ meta 要素から符号化法を抽出する:#algorithm-for-extracting-a-charact
 rq.優先度:~FETCH#request-priority
 
 	●他
+新たな~obj:~WEBIDLjs#new
+
 ~MIME型:~MIMESNIFF#mime-type
 算出される~MIME型:~MIMESNIFF#computed-mime-type
 画像を特定的に~sniffするための規則:~MIMESNIFF#rules-for-sniffing-images-specifically
@@ -493,11 +497,16 @@ accessor::::アクセス子:アクセサ
 
 	%base:-
 	%~about基底~URL:-
-	%再開~手続き:resumptionSteps
 	初期化-:initialization
 	%~URL:url
 	%要素:el
 	%要素:element
+	%~entry群:entries
+	%観測器:observer
+	%~target:-
+	%交差しているか:-
+	%再開~手続き:resumptionSteps
+	%~poster再開~手続き:posterResumptionSteps
 	%生の~token群:rawTokens
 	%符号化法:encoding
 	%~label:-
@@ -510,9 +519,9 @@ accessor::::アクセス子:アクセサ
 	%局所~名:localName
 	%文書:doc
 	%文書:document
-	%旧-値
-	%値
-	%名前空間
+	%旧-値:-
+	%値:value
+	%名前空間:namespace
 	%子孫:descendant
 	%旧-結果:oldResult
 	%新-結果:newResult
@@ -549,6 +558,7 @@ track::::トラック
 iframe-srcdoc:iframe srcdoc
 種類:kind:~
 給-:supply:~
+poster::::ポスター
 
 	〜を包装する手続き:wrapper
 	予約-済み:reserved
@@ -2007,28 +2017,47 @@ The will lazy load element steps, given an element element, are as follows:
 • Return false.
 </div>
 
+<div>
 <p>
 各［
-`img$e ／ `iframe$e
+`img$e ／ `audio$e ／ `video$e ／ `iframe$e
 ］要素には、
 `~lazy読込n再開~手続き@
-が結付けられ，初期~時は ~NULL になるとする。
-◎
-Each img and iframe element has associated lazy load resumption steps, initially null.
+が結付けられる
+— 初期~時は ~NULL になるとする。
 </p>
 
 <p class="note">注記：
 この手続きは、［
-それらの要素のうち，`~lazyに読込むことになる$もの
+これらの要素のうち，`~lazyに読込むことになる$もの
 ］用にあり，［
 `~lazy読込n交差~観測器$の~callback内から／
 要素の`~lazy読込ng属性$が `Eager$st 状態に変化した【！設定された】とき
 ］走らすことになる。
 これは、
 当の要素の読込ngを継続させる。
-◎
-For img and iframe elements that will lazy load, these steps are run from the lazy load intersection observer's callback or when their lazy loading attribute is set to the Eager state. This causes the element to continue loading.
 </p>
+
+<p>
+各 `video$e 要素には、
+`~poster~lazy読込n再開~手続き@
+が結付けられる
+— 初期~時は ~NULL になるとする。
+</p>
+
+<p class="note">注記：
+`video$e 要素~用に`~lazy読込n再開~手続き$を走らすときには、
+この手続きも同時に走る。
+</p>
+
+◎
+Each img, audio, video, and iframe element has associated lazy load resumption steps, initially null.
+◎
+Each video element also has associated poster lazy load resumption steps, initially null.
+◎
+For img, audio, video, and iframe elements that will lazy load, these steps are run from the lazy load intersection observer's callback or when their lazy loading attribute is set to the Eager state. This causes the element to continue loading.＼
+For video elements, poster lazy load resumption steps are also run at the same time.
+</div>
 
 <p>
 各`文書$は、
@@ -2067,15 +2096,15 @@ If doc's lazy load intersection observer is null,＼
 </p>
 		<ol>
 			<li>
-%文書 の`~lazy読込n交差~観測器$ ~SET 新たな `IntersectionObserver$I ~obj
+%文書 の`~lazy読込n交差~観測器$ ~SET `新たな~obj$( `IntersectionObserver$I )
 ◎
 set it to a new IntersectionObserver instance, initialized as follows:
 </li>
 			<li>
 <p>
-%文書 の`~lazy読込n交差~観測器$上で
-`new IntersectionObserver$m 構築子~手続き( %callback, %options )
-を遂行する※【下を見よ（以下同様）】
+%文書 の`~lazy読込n交差~観測器$上の
+`new IntersectionObserver$m 構築子~手続き( %callback, %options ) ※
+【下を見よ（以下同様）】
 — ここで：
 ◎
 The intention is to use the original value of the IntersectionObserver constructor. However, we're forced to use the JavaScript-exposed constructor in this specification, until Intersection Observer exposes low-level hooks for use in specifications. See bug w3c/IntersectionObserver#464 which tracks this. [INTERSECTIONOBSERVER]
@@ -2085,7 +2114,7 @@ The intention is to use the original value of the IntersectionObserver construct
 <p>
 `IntersectionObserverCallback$I ~callback %callback は、
 引数
-( %~entry~list, %観測器 )
+( %~entry群, %観測器 )
 に対し，次の手続きを走らす：
 ◎
 The callback is these steps, with arguments entries and observer:
@@ -2093,55 +2122,123 @@ The callback is these steps, with arguments entries and observer:
 						<ol>
 							<li>
 <p>
-%~entry~list 内の
+%~entry群 を成す
 ~EACH( %~entry )
 に対し
 <span class="XXX">，開発者が改変-可能な［
 配列~accessorや反復~hook
-］は誘発しない反復~手法を利用して</span>：
+］を誘発しない反復~手法を利用して</span>：
+◎
+For each entry in entries using a method of iteration which does not trigger developer-modifiable array accessors or iteration hooks:
 </p>
 								<ol>
 									<li>
+%~target ~LET %~entry 上の `target$m 取得子~手続き()※
+◎
+↓</li>
+									<li>
+%交差しているか ~LET %~entry 上の `isIntersecting$m 取得子~手続き()※
+◎
+↓</li>
+									<li>
+%再開~手続き ~LET ~NULL
+◎
+Let resumptionSteps be null.
+◎
+↓ If entry.isIntersecting is true, then set resumptionSteps to entry.target's lazy load resumption steps.
+</li>
+									<li>
+%~poster再開~手続き ~LET ~NULL
+◎
+Let posterResumptionSteps be null.
+</li>
+									<li>
+<p>
 ~IF［
-%~entry 上の `isIntersecting$m 取得子~手続き()※ ~EQ ~F
+%交差しているか ~EQ ~T
+］：
+</p>
+										<ol>
+											<li>
+%再開~手続き ~SET %~target の`~lazy読込n再開~手続き$
+</li>
+											<li>
+~IF［
+%~target は `video$e 要素である
 ］
 ⇒
-~CONTINUE
+%~poster再開~手続き ~SET %~target の`~poster~lazy読込n再開~手続き$
 </li>
-									<li>
-%~target ~LET %~entry 上の `target$m 取得子~手続き()※
-</li>
-									<li>
-%再開~手続き ~LET %~target の`~lazy読込n再開~手続き$
+										</ol>
+◎
+If entry.isIntersecting is true and entry.target is a video element, then set posterResumptionSteps to the video element's poster lazy load resumption steps.
 </li>
 									<li>
 ~IF［
 %再開~手続き ~EQ ~NULL
+］~AND［
+%~poster再開~手続き ~EQ ~NULL
 ］
 ⇒
 ~RET
+【 ~CONTINUE ？】
+◎
+If resumptionSteps is null and posterResumptionSteps is null, then return.
 </li>
 									<li>
 `~lazyに読込んでいる要素の交差~観測を停止する$( %~target )
-</li>
-									<li>
-%~target の`~lazy読込n再開~手続き$ ~SET ~NULL
-</li>
-									<li>
-%再開~手続き を呼出す
-</li>
-								</ol>
 ◎
-For each entry in entries using a method of iteration which does not trigger developer-modifiable array accessors or iteration hooks:
-• Let resumptionSteps be null.
-• If entry.isIntersecting is true, then set resumptionSteps to entry.target's lazy load resumption steps.
-• If resumptionSteps is null, then return.
-• Stop intersection-observing a lazy loading element for entry.target.
-• Set entry.target's lazy load resumption steps to null.
-• Invoke resumptionSteps.
+Stop intersection-observing a lazy loading element for entry.target.
+</li>
+									<li>
+<p>
+~IF［
+%再開~手続き ~NEQ ~NULL
+］：
+◎
+If resumptionSteps is not null, then:
+</p>
+										<ol>
+											<li>
+%~target の`~lazy読込n再開~手続き$ ~SET ~NULL
+◎
+Set entry.target's lazy load resumption steps to null.
+</li>
+											<li>
+%再開~手続き()
+◎
+Invoke resumptionSteps.
+</li>
+										</ol>
+									</li>
+									<li>
+<p>
+~IF［
+%~poster再開~手続き ~NEQ ~NULL
+］：
+◎
+If posterResumptionSteps is not null, then:
+</p>
+										<ol>
+											<li>
+%~target の`~poster~lazy読込n再開~手続き$ ~SET ~NULL
+◎
+Set the video element's poster lazy load resumption steps to null.
+</li>
+											<li>
+%~poster再開~手続き()
+◎
+Invoke posterResumptionSteps.
+</li>
+										</ol>
+									</li>
+								</ol>
+<p>
 ◎
 The intention is to use the original value of the isIntersecting and target getters. See w3c/IntersectionObserver#464. [INTERSECTIONOBSERVER]
-</li>
+</p>
+
+							</li>
 						</ol>
 					</li>
 					<li>
@@ -2222,7 +2319,7 @@ The intention is to use the original value of the unobserve method. See w3c/Inte
 <p class="XXX">※
 `INTERSECTIONOBSERVER$r に定義される これらの~interface~member
 （ `new IntersectionObserver()$m 構築子, 等々）には、
-それぞれの元の【~JSにより改変されていない】値を利用して~accessすることが意図nにある
+各自の元の【~JSにより改変されていない】値を利用して~accessすることが意図nにある
 【そのように解釈されるよう、この訳では “構築子~手続き” 等々を利用しているが】
 。
 しかしながら，その仕様が他の仕様における利用-用に低~levelな~hookを公開するまでは、
@@ -2264,7 +2361,7 @@ The typical scrolling speed: increase the value for devices with faster typical 
 現在~scrollしている速さや勢い
 ⇒
 ~UAは、
-~scrollが停止しそうになる所を予測しようと試みて，
+~scrollが停止しそうになる所を予測するよう試みて，
 それに則って値を調整できる。
 ◎
 The current scrolling speed or momentum: the UA can attempt to predict where the scrolling will likely stop, and adjust the value accordingly.
