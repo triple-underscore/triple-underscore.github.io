@@ -1449,6 +1449,8 @@ resize::::リサイズ
 別名:alias::~
 確立-:establish:~
 省略-:omit:~
+	省略-不可:not/neither 〜 omissible
+省略:omission:~
 保持-:hold:~
 形成-:form:~
 不透明:opaque::~
