@@ -196,8 +196,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2026-03-24
-trans_update:2026-03-25
+spec_date:2026-03-25
+trans_update:2026-03-27
 source_checked:260225
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -366,6 +366,8 @@ export:
 exporter:
 quota::::クォータ
 guard::::ガード
+送信器:sender::~
+受信器:receiver::~
 
 	送信者~側:sender-side
 	受信-時:reception
@@ -378,6 +380,7 @@ guard::::ガード
 	`RESET_STREAM^ft:reset
 	KiB:kibibytes
 	順序どおりに到着するとは限らない:can arrive out of order
+	~frame化:framing
 
 	●stream
 一方向:unidirectional::~
@@ -462,6 +465,7 @@ deadlock::::デッドロック
 commit:
 合体-:coalesce:~
 並列:parallel::~
+併合-:merge::~
 
 	渡-:pass
 	~milli秒数:milliseconds
@@ -482,6 +486,7 @@ commit:
 	順序どおりでない:out-of-order
 	順序どおり:in-order
 	~errorしない:un-errored
+	構築し直-:reconstruct
 
 	●変数
 in-flight:
@@ -1812,6 +1817,39 @@ A WebTransport stream is a concept for a reliable in-order stream of bytes on a 
 </ul>
 ◎
 A WebTransport stream is one of incoming unidirectional, outgoing unidirectional or bidirectional.
+</div>
+
+<div class="note" role="note"> 
+<p>注記：
+`~WebTransport~stream$上に送信された~dataは、
+`undifferentiated^en な【~~区切りが無い？】~byte列として送達される。
+送信~側における 1 回の書込n演算を成す~byte数と
+受信~側における 1 回の読取n演算を成す~byte数は、
+合致しないかもしれない。
+別々な書込nが 1 個の~byte列に併合された上で送達されることもあれば、
+1 回の書込nが別々に送達されることもある。
+◎
+Data sent on a stream is delivered as an undifferentiated sequence of bytes. The number of bytes in a single write operation on the sending side might not match the number of bytes read in single operation at the receiving side. Separate writes can be merged and delivered as a single byte sequence; a single write might be delivered separately.
+</p>
+
+<p>
+このことは、
+`atomicWrite()$dw による不可分な書込nも含む
+— それが存在するのは、
+~flow制御の~deadlockを防止するためであり，
+~dataが一緒に送達されることを保証するためではない。
+◎
+This includes atomic writes, which exist to prevent flow control deadlocks, not to guarantee that data is delivered together.
+</p>
+
+<p>
+~messageに基づく~protocolのうち［
+送信器と受信器の間で~message境界を保全するもの
+］に依存している応用は、
+各~messageを構築し直せるよう，~frame化~層を追加する必要がある。
+◎
+Applications that depend on having a message-based protocol that preserves message boundaries between sender and receiver need to add a framing layer so that messages can be reconstructed.
+</p>
 </div>
 
 <p>
@@ -6862,13 +6900,12 @@ Optionally specifies an application’s preference for using a readable byte str
 	<dd class="note">注記：
 `可読~stream$は~datagram意味論と互換であるが、
 `可読~byte~stream$は そうでない。
-~datagramたちは、
-順序どおりに到着するとは限らない［
-0 個以上の~byteたちが成す `differentiated^en 【~byte数が不揃いな？】~message
-］たちである
-— `undifferentiated^en ~byte列ではなく。
-空な~datagramは喪失され，
-`min＠~STREAMS#dom-readablestreambyobreaderreadoptions-min$mb は【に既定の値 1 以外を指定すると？】~messageの `delineation^en を喪失する。
+~datagramたちは、［
+0 個以上の~byteたちが成す `differentiated^en な【~~区切りがある？】~message
+］たちであり，順序どおりに到着するとは限らない
+— `undifferentiated^en な~byte列ではなく。
+空な~datagramは喪失され、
+`min＠~STREAMS#dom-readablestreambyobreaderreadoptions-min$mb は~messageの~~区切り（ `delineation^en ）を喪失させる。
 ◎
 Note: While readable stream is compatible with datagram semantics, readable byte stream is not. Datagrams are differentiated messages of zero or more bytes, that can arrive out of order, not an undifferentiated byte sequence. Empty datagrams are lost, and min loses message delineation.
 </dd>
@@ -8152,6 +8189,23 @@ Let promise be a new promise.
 %~byte列 ~LET %~chunk に`保持された~byte列の複製を取得する$
 ◎
 Let bytes be a copy of the byte sequence which chunk represents.
+</li>
+	<li>
+<p>
+~IF［
+%~byte列 の`長さ$byte ~EQ 0
+］：
+</p>
+		<ol>
+			<li>
+`~promiseを解決する$( %~promise )
+</li>
+			<li>
+~RET %~promise
+</li>
+		</ol>
+◎
+If bytes length is 0, resolve promise with undefined and return promise.
 </li>
 	<li>
 %~stream . `PendingOperation$slS ~SET %~promise
