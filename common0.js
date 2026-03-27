@@ -1193,7 +1193,7 @@ FETCH:Fetch-ja.html
 FILEAPI:File_API-ja.html
 FILTERS:filter-effects-ja.html
 FULLSCREEN:fullscreen-ja.html
-GEOLOCATION:geolocation-api-ja.html
+GEOLOCATION:geolocation-ja.html
 GEOMETRY:geometry-ja.html
 HEcanvas:HTML-canvas-ja.html
 HEcustom:HTML-custom-ja.html
