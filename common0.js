@@ -1537,6 +1537,11 @@ navigable::::ナビ可能
 利用元:user:~
 有用:useful:~
 用法:usage:~
+利用度:usage:~
+	用途:usage
+	各利用:usage
+	利用有無:usages
+	利用-〜こと:usage
 開発者:developer:~
 実装:implementation:~
 実装定義:implementation-defined:~

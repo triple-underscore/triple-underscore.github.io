@@ -898,7 +898,6 @@ agent::::エージェント
 不利:disadvantage:~
 利点:advantage:~
 有利:advantageous:~
-利用e:usage:利用
 誤用-:misuse:~
 濫用:abuse:~
 上限:limit:~
