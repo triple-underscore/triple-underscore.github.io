@@ -899,6 +899,7 @@ agent::::エージェント
 利点:advantage:~
 有利:advantageous:~
 誤用-:misuse:~
+誤認-:mistake:~
 濫用:abuse:~
 上限:limit:~
 創出-:mint:~
@@ -964,7 +965,6 @@ agent::::エージェント
 設置-:place:~
 設置しな:placeしな:課さな
 設置する:placeする:課す
-誤解:mistake:~
 責務:responsibility:~
 開示-:disclose:~
 開示:disclosure:~
