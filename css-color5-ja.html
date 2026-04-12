@@ -174,8 +174,8 @@ return text;
 ●●options
 
 spec_title:CSS Color Module Level 5
-spec_date:2026-03-24
-trans_update:2026-03-25
+spec_date:2026-04-10
+trans_update:2026-04-11
 source_checked:250423
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-color-5/
@@ -430,6 +430,9 @@ c.application/vnd.iccprofile:~IANA-a/media-types/application/vnd.iccprofile
 ~sRGBに解決される:#resolve-to-srgb
 旧来の色~構文を~supportする:#support-legacy-color-syntax
 
+実効~百分率:#effective-percentage
+色~引数~群を直列化する:#_serialize-color-mix-arguments
+
 ~level 4:#biblio-css-color-4
 
 	●用語（level 4
@@ -488,14 +491,18 @@ c.application/vnd.iccprofile:~IANA-a/media-types/application/vnd.iccprofile
 § ~color_t 値の解決-法:~CSSCOLOR#resolving-color-values
 § ~color_t 値の直列化-法:~CSSCOLOR#serializing-color-values
 
+色停:~CSSIMAGE#color-stop
+生来な~size:~CSSIMAGE#natural-size
+線型~gradient:~CSSIMAGE#linear-gradients
+
 	●用語（外部
+~size:~INFRA#list-size
 付加する:~INFRA#list-append
 連結する:~INFRA#string-concatenate
 	不要）
 	~stack:~INFRA#stack
 	~pop:~INFRA#stack-pop
 	~push:~INFRA#stack-push
-	~size:~INFRA#list-size
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 ~ASCII小文字~化する:~INFRA#ascii-lowercase
 
@@ -662,6 +669,7 @@ grayscale::::グレイスケール
 	度数:angles in degree
 	度数による:in degrees
 	°:degree
+色停:color-stop::~
 
 	~~鮮やかさ:how "colorful"
 	~~中間的:moderate
@@ -869,11 +877,14 @@ hex:16 進
 	●CSS
 For:for:用途
 宣言d:declared::宣言
+生来:natural::~
+式:expression::~
+線型:linear::~
+
+	`light-dark-image$t:the image form of light-dark()
 
 	●変数
 残余:leftover:~
-	%p1:p1
-	%p2:p2
 	%色~空間:-
 	%色~空間~名:-
 	%色:-
@@ -896,6 +907,22 @@ For:for:用途
 	%色:the resulting color
 	%色:a
 	%item の色:b
+
+	%宣言d値:-
+	%補間~method:-
+	%引数~群:-
+	%引数:-
+	%色~空間:-
+	%百分率の総和:specified sum
+	%百分率が省略された個数:omitted count
+	%百分率~群:-
+	%百分率:-
+	%直列化された百分率~群:-
+	%直列化された百分率:-
+	%省略された百分率を算出するか:-
+	%百分率をすべて直列化するか:-
+	%結果~list:-
+	%i
 
 	●UI
 picker:::選択 UI
@@ -1011,7 +1038,6 @@ puzzle::::パズル
 	^e:figure
 	-:MacBeth
 	〜を利用していて:optional
-	事実:fact
 	通常でない:outside their normal
 	序論:intro
 	~~述べていた:said
@@ -1057,6 +1083,10 @@ locale::::ロケール
 発生-:arise:~
 最終-:final:~
 寄与-:contribute:~
+raster::::ラスター
+実効:effective:~
+縮約-:collapse:~
+総和:sum:~
 
 	取得子:on getting
 	一定:constant
@@ -5963,7 +5993,7 @@ There are two forms of this function: one takes a pair of colors while the other
 `light-dark-color@t
 	= light-dark(`color$t, `color$t)
 `light-dark-image@t
-	= light-dark(`image$t | `none^v, `image$t | `none^v)
+	= light-dark( [ `image$t | `none^v ], [ `image$t | `none^v ] )
 </pre>
 
 <p>
@@ -5977,7 +6007,24 @@ There are two forms of this function: one takes a pair of colors while the other
 ◎
 For the color form, this function computes to the computed value of the first color, if the used color scheme is light or unknown, or to the computed value of the second color, if the used color scheme is dark.
 ◎
-For the image form, this function returns the first image, if the used color scheme is light or unknown, or the second image, if the used color scheme is dark.
+For the image form, this function returns the first image, if the used color scheme is light or unknown, or the second image, if the used color scheme is dark.＼
+</p>
+
+<p>
+`light-dark-image$t 用の~keyword `none^v は、
+全部的に透明かつ`生来な~size$を伴わない画像を生産する。
+それは、
+`linear-gradient(transparent)^v
+— ［
+色 `transparent$v を伴う 1 個の`色停$
+］を伴う`線型~gradient$ —
+と等価になる。
+◎
+The none keyword produces a fully transparent image with no natural size.
+◎
+It is equivalent to a single-stop gradient whose stop color is transparent':
+◎
+linear-gradient(transparent)
 </p>
 
 <div class="example" id="ex-light-dark-color">
@@ -6044,6 +6091,21 @@ For example, to provide easily visible list bullets for light mode and dark mode
     url("icons/pale-yellow-star.png")
   );
 }
+</pre>
+</div>
+
+<div class="example" id="ex-light-dark-none">
+<p>
+例えば，［
+明な~modeの下では，ある~raster画像／
+暗な~modeの下では，全部的に透明な画像
+］を利用するよう求まれるなら：
+◎
+For example, a raster image is used in light mode, while in dark mode we want a fully-transparent image.
+</p>
+
+<pre class="lang-css">
+background-image: light-dark(url(my-light-image.png), none);
 </pre>
 </div>
 
@@ -6397,213 +6459,259 @@ As usual, if the alpha of the result is exactly 1, it is omitted from the serial
 		<section id="serial-color-mix">
 <h3 title="Serializing color-mix()">11.1. `color-mix^f の直列化-法</h3>
 
-<p class="trans-note">【
-`color-mix$f は，任意個数の色をとり得るよう更新されたが、
-以下の記述は，それを反映していない。
-】</p>
-
 <div class="algo">
-`color-mix$f 関数の`宣言d値$ を直列化する~algoは：
-⇒
-~RET 次を順に`連結する$
-⇒＃
-`color-mix(in ^l,
-`~ASCII小文字~化する$( 指定された `color-space$t )
-`, ^l,
-指定された 1 個目の色,
-指定された 1 個目の百分率（下を見よ）,
-`, ^l,
-指定された 2 個目の色,
-指定された 2 個目の百分率（下を見よ）,
-`)^l
+<p>
+`color-mix$f 関数の`宣言d値$ %宣言d値 を直列化する~algoは：
 ◎
 The serialization of the declared value of a color-mix() function is＼
-the string "color-mix(in ",＼
-followed by the specified &lt;color-space&gt; in all-lowercase,＼
+</p>
+<ol>
+	<li>
+%結果~list ~LET « `color-mix(^l »
+◎
+the string "color-mix(",＼
+</li>
+	<li>
+~IF［
+%宣言d値 には `oklab$v でない `color-space$t %色~空間 が指定された
+］
+⇒
+%結果~list に次を順に`付加する$
+⇒＃
+`in ^l,
+`~ASCII小文字~化する$( %色~空間 )
+◎
+followed by, unless the &lt;color-space&gt; is oklab (whether explicitly specified or defaulted): the string "in ", followed by the &lt;color-space&gt; in all-lowercase,＼
+</li>
+	<li>
+~IF［
+%宣言d値 には `shorter hue^v でない `hue-interpolation-method$t %補間~method が指定された
+］
+⇒
+%結果~list に次を順に`付加する$
+⇒＃
+` ^l,
+`~ASCII小文字~化する$( %補間~method )
+◎
+followed by, if a &lt;hue-interpolation-method&gt; was specified and is not shorter hue, " " and the &lt;hue-interpolation-method&gt; in all-lowercase,＼
+</li>
+	<li>
+%結果~list に `, ^l を`付加する$
+◎
 followed by ", ",＼
-followed by the first specified color,＼
-followed by a space,＼
-followed by the serialization of the first percentage (see below)＼
-followed by ", ",＼
-followed by the second specified color,＼
-followed by the serialization of the second percentage (see below),＼
+</li>
+	<li>
+%結果~list に次の結果を`付加する$
+⇒
+`色~引数~群を直列化する$( %宣言d値 に指定された［
+`color$t と `percentage$t が成す引数
+］たちが成す~list )
+◎
+followed by the serialization of each color argument (see below), separated by ", ",＼
+</li>
+	<li>
+%結果~list に `)^l を`付加する$
+◎
 followed by ")".
-</div>
-
-<p class="trans-note">【
-色と百分率を分離する~spaceは、
-（原文では上で直に記されているが）
-この訳では，以下に織り込むことにする
-— 百分率が省略された場合の結果が正確aでなくなるので。
-】</p>
-
-<p>
-`color-mix$f 関数の宣言d値を成す［
-1 個目の百分率 %p1, 2 個目の百分率 %p2
-］の直列化は、
-次に従うものと定義される
-— ［
-%p1, %p2
-］いずれも，指定されなかった場合は ε をとるとする：
-◎
-↓</p>
-<ul>
-	<li class="algo">
-<p>
-%p1 を直列化する~algoは：
-◎
-The serialization of the first percentage of a declared value of a color-mix() function is defined as:
-</p>
-		<ol>
-			<li>
-<p>
-~IF［
-%p1 ~NEQ ε
-］：
-</p>
-				<ol>
-					<li>
-~IF［
-%p1 ~EQ 50%
-］~AND［
-%p2 ~IN { ε, 50% }
-］
-⇒
-~RET 空~文字列
 </li>
-					<li>
-~RET 次を順に`連結する$
-⇒＃
-1 個の~space,
-%p1 をそのままに直列化した結果
-</li>
-				</ol>
-◎
-If BOTH the first percentage p1 and second percentage p2 are specified:
-• if both p1 equals 50% and p2 equals 50%, nothing is serialized.
-• else, p1 is serialized as is.
-◎
-else if ONLY the first percentage p1 is specified:
-• if p1 is equal to 50%, nothing is serialized.
-• else, p1 is serialized as is.
-</li>
-			<li>
-<p>
-~ELSE：
-</p>
-				<ol>
-					<li>
-~IF［
-%p2 ~NIN { ε, 50% }
-］~AND［
-%p2 は `calc$f でない
-］
-⇒
-~RET 次を順に`連結する$
-⇒＃
-1 個の~space,
-100% ~MINUS %p2 の値を直列化した結果
-</li>
-					<li>
-~RET 空~文字列
-</li>
-				</ol>
-◎
-else if ONLY the second percentage p2 is specified:
-• if p2 equals 50%, nothing is serialized.
-• if p2 is not calc(), the value of 100% - p2 is serialized.
-• else, nothing is serialized.
-◎
-else if NEITHER is specified:
-• nothing is serialized.
-</li>
-		</ol>
-	</li>
-	<li class="algo">
-<p>
-%p2 を直列化する~algoは：
-◎
-The serialization of the second percentage of a declared value of a color-mix() function is defined as:
-</p>
-		<ol>
-			<li>
-~IF［
-%p2 ~EQ ε
-］
-⇒
-~RET 空~文字列
-◎
-↓</li>
-			<li>
-<p>
-~IF［
-%p1 ~NEQ ε
-］：
-</p>
-				<ol>
-					<li>
-~IF［
-%p1 は `calc$f でない
-］~AND［
-%p2 は `calc$f でない
-］~AND［
-%p1 ~PLUS %p2 ~EQ 100%
-］
-⇒
-~RET 空~文字列
-</li>
-				</ol>
-◎
-If BOTH the first percentage p1 and second percentages p2 are specified:
-• if neither p1 nor p2 is calc(), and p1 + p2 equals 100%, nothing is serialized.
-• else, p2 is serialized as is.
-◎
-else if ONLY the first percentage p1 is specified:
-• nothing is serialized.
-</li>
-			<li>
-<p>
-~ELSE：
-</p>
-				<ol>
-					<li>
-~IF［
-%p2 ~EQ 50%
-］~OR［
-%p2 は `calc$f でない
-］
-⇒
-~RET 空~文字列
-</li>
-				</ol>
-◎
-else if ONLY the second percentage p2 is specified:
-• if p2 equals 50%, nothing is serialized.
-• if p2 is not calc(), nothing is serialized.
-• else, p2 is serialized as is.
-◎
-else if NEITHER is specified:
-• nothing is serialized.
-</li>
-			<li>
-~RET 次を順に`連結する$
-⇒＃
-1 個の~space,
-%p2 をそのままに直列化した結果
+	<li>
+~RET %結果~list を`連結する$
 ◎
 ↑</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`色~引数~群を直列化する@
+~algoは、
+所与の
+( %引数~群 )
+に対し：
+</p>
+<ol>
+	<li>
+%N ~LET %引数~群 の`~size$
+</li>
+	<li>
+%百分率~群 ~LET « »
+</li>
+	<li>
+%百分率の総和 ~LET 0
+</li>
+	<li>
+%百分率が省略された個数 ~LET 0
+</li>
+	<li>
+%省略された百分率を算出するか ~LET ~T
+</li>
+	<li>
+%百分率をすべて直列化するか ~LET ~F
+</li>
+	<li>
+<p>
+%引数~群 を成す
+~EACH( %引数 )
+に対し：
+</p>
+		<ol>
+			<li>
+%百分率 ~LET ［
+%引数 を成す `percentage$t は指定されたならば その値 ／
+~ELSE_ ε
+］
+</li>
+			<li>
+%百分率~群 に %百分率 を`付加する$
+</li>
+			<li>
+~IF［
+%百分率 ~EQ ε
+］
+⇒
+%百分率が省略された個数 ~INCBY 1
+</li>
+			<li>
+~ELIF［
+%百分率 は `calc$f 式である
+］
+⇒
+%省略された百分率を算出するか ~SET ~F
+</li>
+			<li>
+~ELSE
+⇒
+%百分率の総和 ~INCBY %百分率
+</li>
 		</ol>
 	</li>
-</ul>
+	<li>
+%直列化された百分率~群 ~LET « »
+</li>
+	<li>
+<p>
+%百分率~群 を成す
+~EACH( %百分率 )
+に対し：
+</p>
+		<ol>
+			<li>
+%直列化された百分率 ~SET %百分率 に応じて
+⇒＃
+ε ならば空~文字列 ／
+~ELSE_ %百分率 を そのままに直列化した結果
+</li>
+			<li>
+<p>
+~IF［
+%百分率 ~EQ ε
+］~AND［
+%省略された百分率を算出するか ~EQ ~T
+］：
+</p>
+				<ol>
+					<li>
+<p>
+%百分率 ~SET ( 100% ~MINUS %百分率の総和 ) ~DIV %百分率が省略された個数
+</p>
+
+<p class="trans-note">【
+%百分率の総和 が 100% を超える場合、
+負になる
+— これは、
+本当に意図された挙動なのか？
+】</p>
+
+					</li>
+					<li>
+%直列化された百分率 ~SET %百分率 を `percentage$t として直列化した結果
+</li>
+				</ol>
+			</li>
+			<li>
+~IF［
+%百分率 は `calc$f 式である
+］~OR［
+%百分率 ~NEQ ( 100% ~DIV %N )
+］
+⇒
+%百分率をすべて直列化するか ~SET ~T
+</li>
+			<li>
+%直列化された百分率~群 に %直列化された百分率 を`付加する$
+</li>
+		</ol>
+<p>
+`実効~百分率@
+とは、
+この段の結果の百分率を指す
+— それは、［
+ε ／ `calc$f 式
+］である場合は，未知になる
+（未知と称される）。
+</p>
+	</li>
+	<li>
+%結果~list ~LET « »
+</li>
+	<li>
+<p>
+範囲 { 0 〜 %N ~MINUS 1 } を成す
+~EACH( 整数 %i )
+に対し：
+</p>
+		<ol>
+			<li>
+%直列化された成分 ~LET %引数~群[ %i ] を成す `color$t を
+【`~level 4$ の `§ ~color_t 値の直列化-法$ に則って】
+直列化した結果
+</li>
+			<li>
+~IF［
+%百分率をすべて直列化するか ~EQ ~T
+］
+⇒
+%直列化された成分 ~SET 次を順に`連結する$
+⇒＃
+%直列化された成分,
+` ^l,
+%直列化された百分率~群[ %i ]
+</li>
+			<li>
+%結果~list に %直列化された成分 を`付加する$
+</li>
+		</ol>
 
 <p class="note">注記：
-`calc$f 値は未知であると見なされるので［
-50% に等しくなる／
-他との総和が 100% に等しくなる
-］ことは<strong>決してない</strong>。
-◎
-Note: calc() values are consider to be unknown, so are never equal 50%, and never sum with something else to equal 100%.
+色が一致する引数が複数個ある場合でも，［
+【それらの百分率を合算した上で】 1 個の引数へ縮約される
+］ことはない。
 </p>
+	</li>
+	<li>
+~RET %結果~list を `, ^l で`連結する$
+</li>
+</ol>
+
+◎
+Each color argument is serialized as the serialized &lt;color&gt;, followed by, if a percentage is serialized for this argument (see below), " " and the serialized percentage.
+◎
+Each color argument is serialized individually; in particular, identical colors are not collapsed into a single argument.
+◎
+The serialized percentages of the declared value of a color-mix() function are determined as follows. Let N be the number of color arguments.
+◎
+For each argument, let its effective percentage be:
+• its specified &lt;percentage&gt;, if one was explicitly provided and is not a calc() expression;
+• if its &lt;percentage&gt; was omitted, and none of the other specified &lt;percentage&gt;s are calc() expressions: (100% − specified sum) / omitted count, where specified sum is the sum of the explicitly specified &lt;percentage&gt;s and omitted count is the number of arguments with omitted &lt;percentage&gt;s;
+• otherwise, unknown.
+◎
+If all effective percentages are known and equal to 100% / N, no percentages are serialized. Otherwise, each argument’s percentage is serialized as follows:
+• If a &lt;percentage&gt; was explicitly specified, it is serialized as-is.
+• If a &lt;percentage&gt; was omitted and none of the other specified &lt;percentage&gt;s are calc() expressions: the value (100% − specified sum) / omitted count is serialized, where specified sum and omitted count are as defined above.
+• Otherwise (a &lt;percentage&gt; was omitted but another argument has a calc() &lt;percentage&gt;): nothing is serialized.
+◎
+Note: calc() values are considered unknown, so are never equal to 100% / N, and prevent computation of omitted &lt;percentage&gt;s.
+</div>
 
 <div class="example" id="ex-serial-specified-mix">
 <p>
@@ -6619,9 +6727,22 @@ the serialized declared value of
 • color-mix(in oklab, teal, peru 40%)
 </dt>
 	<dd>
-`color-mix(in oklab, teal 60%, peru)^l
+`color-mix(teal 60%, peru 40%)^l
 ◎
-would be the string "color-mix(in oklab, teal 60%, peru)".
+would be the string "color-mix(teal 60%, peru 40%)":＼
+</dd>
+	<dd>
+色~空間は、
+既定のそれ（ `oklab$v ）が指定されたので省略される。
+◎
+the color space is omitted because it is the default (oklab),＼
+</dd>
+	<dd>
+百分率は、
+100% ~DIV 2 ~EQ 50% に等しくないものがあるので，
+すべて直列化される。
+◎
+and all percentages are serialized because they are not all equal to 100%/2 = 50%.
 </dd>
 
 	<dt>
@@ -6631,9 +6752,16 @@ The serialized declared value of
 • color-mix(in oklab, teal 50%, peru 50%)
 </dt>
 	<dd>
-`color-mix(in oklab, teal, peru)^l
+`color-mix(teal, peru)^l
 ◎
-would be the string "color-mix(in oklab, teal, peru)".
+would be the string "color-mix(teal, peru)":＼
+</dd>
+	<dd>
+百分率は、
+どちらも 100% ~DIV 2 ~EQ 50% に等しいので，
+すべて省略される。
+◎
+both percentages equal 100%/2 = 50%, so they are all omitted.
 </dd>
 
 	<dt>
@@ -6643,15 +6771,64 @@ The serialized declared value of
 • color-mix(in oklab, teal 70%, peru 70%)
 </dt>
 	<dd>
-`color-mix(in oklab, teal 70%, peru 70%)^l
+`color-mix(teal 70%, peru 70%)^l
 ◎
-would be the string "color-mix(in oklab, teal 70%, peru 70%)"＼
+would be the string "color-mix(teal 70%, peru 70%)":＼
 </dd>
 	<dd>
-この例の指定された百分率は，どちらも 50% に正規化されるが、
-その事実が発見されるのは，百分率を正規化した後なので。
+百分率は、
+`50%^v ではなく `70%^v が指定されたので，省略されない
+— それらは、
+50% へ正規化するよう算出されるが，それでも。
 ◎
-because the fact that these normalize to 50% each is only discovered after percentage normalization.
+the specified percentages are 70%, not 50%, so they are not omitted, even though they normalize to 50% each during computation.
+</dd>
+
+	<dt>
+`color-mix(in oklch longer hue, red, green, blue)^v
+◎
+The serialized declared value of
+• color-mix(in oklch longer hue, red, green, blue)
+</dt>
+	<dd>
+`color-mix(in oklch longer hue, red, green, blue)^l
+◎
+would be the string "color-mix(in oklch longer hue, red, green, blue)":＼
+</dd>
+	<dd>
+色~空間（ `oklch$v ）は、
+既定ではない。
+</dd>
+	<dd>
+色相~補間~methodは（ `longer hue^v ）は、
+既定（ `shorter hue^v ）ではない。
+</dd>
+	<dd>
+百分率は、
+すべて 100% ~DIV 3 に等しいので，すべて省略される。
+◎
+the color space (oklch) is not the default, the hue interpolation method (longer) is not the default (shorter), and all percentages equal 100%/3, so they are all omitted.
+</dd>
+
+	<dt>
+`color-mix(red 50%, green, blue)^v
+◎
+The serialized declared value of
+• color-mix(red 50%, green, blue)
+</dt>
+	<dd>
+`color-mix(red 50%, green 25%, blue 25%)^l
+◎
+would be the string "color-mix(red 50%, green 25%, blue 25%)":＼
+</dd>
+	<dd>
+百分率は、
+100% ~DIV 3 に等しくないものがあるので，すべて直列化される
+— 省略されたものも含めて。
+省略されたそれらは、
+( 100% ~MINUS 50% ) ~DIV 2 ~EQ 25% になる。
+◎
+the percentages are not all equal to 100%/3, so all are serialized, including the omitted ones which each get (100% − 50%) / 2 = 25%.
 </dd>
 </dl>
 </div>
@@ -7633,10 +7810,43 @@ This specification adds a way to ensure adequate contrast for text whose backgro
 Added a second form of the light-dark() function, which takes a pair of images rather than a pair of colors (Issue 12513)
 </dd>
 	<dd>
+`light-dark-image$t に `none^v ~optionを追加した。
+（ `12513$issue ）
+◎
+Added a "none" option to the image form of light-dark() (Issue 12513)
+</dd>
+	<dd>
 もはや 2 個だけの色に制約されなくなった `color-mix$f に
 3 個の色を伴う例を追加した。
 ◎
 Added a color-mix() example with three colors, now that it is no longer restricted to just two.
+</dd>
+	<dd>
+<p>
+`color-mix^f の直列化を更新した
+（ `13320$issue ）：
+</p>
+		<ul>
+			<li>
+色~空間は、
+既定ののそれ（ `oklab$v ）でないときに限り，
+直列化される。
+</li>
+			<li>
+色相~補間~methodは、
+既定ののそれでないときに限り，直列化される。
+</li>
+			<li>
+百分率~用の規則を %N 個の色~用に一般~化した
+（すべてが 100% ~DIV %N に等しいならば すべて省略して，
+他の場合は すべて直列化するよう）。
+</li>
+			<li>
+一致する色たちが 1 個に縮約されないことを明確化した。
+</li>
+		</ul>
+◎
+Updated color-mix() serialization: omit color space when it is the default (oklab), serialize hue interpolation method when non-default, generalize percentage rules for N colors (omit all when equal to 100%/N, otherwise serialize all), and clarify that identical colors are not collapsed (Issue 13320)
 </dd>
 
 	<dt id="changes-20250318">
@@ -8748,7 +8958,7 @@ device-cmyk() function, for specifying uncalibrated colors in an output-device-s
 		</ul>
 	</dd>
 	<dd>
-新たな `color-mix$f 関数は、
+新たな関数 `color-mix$f は、
 2 個の色を指定された色~空間~内で混合して，新たな色を得ることを許容する。
 ◎
 In addition the new color-mix() function allows two colors to be mixed, in a specified color space, to yield a new color.
