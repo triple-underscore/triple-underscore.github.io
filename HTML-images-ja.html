@@ -131,7 +131,7 @@ return text;
 ●●options
 
 spec_date:2026-04-24
-trans_update:2026-04-28
+trans_update:2026-04-29
 source_checked:230602
 page_state_key:HTML
 spec_status:LS
@@ -659,9 +659,13 @@ rq.同期~flag:~HTMLdep#synchronous-flag
 成分~値:~CSSSYN#component-value
 ~CSS関数:~CSSSYN#function
 具象-~obj~size:~CSSIMAGE#concrete-object-size
-	生来な寸法:~CSSIMAGE#natural-dimensions → 生来な横幅／生来な縦幅
+既定の~obj~size:~CSSIMAGE#default-object-size
+	生来な寸法:~CSSIMAGE#natural-dimensions
+	→ 生来な横幅／生来な縦幅
 生来な横幅:~CSSIMAGE#natural-width
 生来な縦幅:~CSSIMAGE#natural-height
+既定の~sizing~algo:~CSSIMAGE#default-sizing-algorithm
+	#default-sizing
 
 選好d縦横比:~SIZING#preferred-aspect-ratio
 
@@ -840,6 +844,7 @@ main::::メイン
 
 	●変数
 旧-:old:~
+	%img:img
 	%~CORS属性~状態:corsAttributeState
 	%~URL~record:urlString
 	%再開~手続き:resumptionSteps
@@ -847,7 +852,11 @@ main::::メイン
 	%物理-縦幅:physicalHeight
 	%要請:req
 	%~EXIF~tag~map:exifTagMap
-	%寸法:dim
+	%寸法:dimensions
+	%密度:density
+	-:intrinsicWidth
+	-:intrinsicHeight
+	-:intrinsicRatio
 	%寸法~X:dimX:#6
 	%寸法~Y:dimY:#6
 	%解像度~X:resX:#4
@@ -892,7 +901,7 @@ main::::メイン
 
 	●構文
 	token化:tokenizer
-未解析:unparsed::~::未パースの
+未解析:unparsed::~::未パースな
 丸括弧:parentheses:~
 読飛ばす:skipする:読み飛ばす
 不一致:mismatch:~
@@ -3411,14 +3420,15 @@ They can be set, to change the corresponding content attributes.
 
 	<dt>%image.`naturalWidth$m</dt>
 	<dt>%image.`naturalHeight$m</dt>
-	<dd>
-これらの属性は、この画像の［
-`生来な横幅$／`生来な縦幅$
-］は既知ならば それ ／
+	<dd>＊
+これらの属性は、［
+当の`画像は可用$であるならば その`密度~補正-済み生来な~size$を成す［
+横幅／縦幅
+］
 ~ELSE_ 0
 ］を返す
 ◎
-These attributes return the natural dimensions of the image, or 0 if the dimensions are not known.
+These attributes return the density-corrected natural width and height of the image, or 0 if the image is not available.
 </dd>
 
 	<dt>%image.`complete$m</dt>
@@ -3479,11 +3489,21 @@ Returns a new img element, with the width and height attributes set to the value
 </p>
 <ol>
 	<li>
-%~size ~LET ［
-画像は`具現化されて$いるならば描画された画像の~size ／
-~ELSE_ `画像は可用$であるならば画像の`密度~補正-済み生来な~size$／
-~ELSE_ ( 0, 0 )
+%~size ~LET ( 0, 0 )
+</li>
+	<li>
+~IF［
+当の画像は`具現化されて$いる
 ］
+⇒
+%~size ~SET 描画された画像の~size
+</li>
+	<li>
+~ELIF［
+当の`画像は可用$である
+］
+⇒
+%~size ~SET 当の画像の`密度~補正-済み生来な~size$
 </li>
 	<li>
 ~RET %~size を成す［
@@ -3508,23 +3528,28 @@ or else 0, if the image is not available or does not have density-corrected natu
 ／
 `naturalHeight@m
 ］取得子~手続きは：
+◎
+The naturalWidth and naturalHeight getter steps are:
 </p>
 <ol>
 	<li>
-%~size ~LET ［
-`画像は可用$であるならば画像の`密度~補正-済み生来な~size$／
-~ELSE_ ( 0, 0 )
+~IF［
+`画像は可用$でない
 ］
+⇒
+~RET 0
+◎
+If the image is not available, then return 0.
 </li>
 	<li>
-~RET %~size を成す［
+~RET 当の画像の`密度~補正-済み生来な~size$を成す［
 `naturalWidth^m 用には横幅／
 `naturalHeight^m 用には縦幅
 ］を成す `px$css 数
+◎
+Return the respective component of the image's density-corrected natural width and height, in CSS pixels. [CSS]
 </li>
 </ol>
-◎
-The IDL attributes naturalWidth and naturalHeight must return the density-corrected natural width and height of the image, in CSS pixels, if the image has density-corrected natural width and height and is available, or else 0. [CSS]
 </div>
 
 <p class="note">注記：
@@ -5020,7 +5045,7 @@ If an image candidate string for an element has the width descriptor specified, 
 
 <p>
 `画像~候補~文字列$の`横幅~記述子$にて指定される`横幅~値$は、
-`画像~候補~文字列$の~URLで与えられる資源に`生来な横幅$がある場合には，
+`画像~候補~文字列$の~URLで与えられる資源に`生来な横幅$が有る場合には，
 それに合致させるモノトスル。
 ◎
 The specified width in an image candidate string's width descriptor must match the natural width in the resource given by the image candidate string's URL, if it has a natural width.
@@ -5396,9 +5421,8 @@ Each image request has a current pixel density, which must initially be 1.
 	<li>
 `選好される密度~補正-済み寸法@
 ⇒
-~NULL または
-( 横幅, 縦幅 ) からなる構造体。
-初期~時は ~NULL とする。
+~NULL ／ ( 横幅, 縦幅 ) からなる構造体
+— 初期~時は ~NULL とする。
 ◎
 Each image request has preferred density-corrected dimensions, which is either a struct consisting of a width and a height or is null. It must initially be null.
 </li>
@@ -5417,17 +5441,21 @@ Each image request has preferred density-corrected dimensions, which is either a
 <p>
 `img$e 要素 %img の
 `密度~補正-済み生来な~size@
-を決定する
-~algoは：
+を決定する~algoは：
 ◎
 To determine the density-corrected natural width and height of an img element img:
 </p>
 <ol>
 	<li>
+%密度 ~LET %img の`現在の画素~密度$
+◎
+Let density be img's current request's current pixel density.
+</li>
+	<li>
 <p>
 %寸法 ~LET %img の`選好される密度~補正-済み寸法$
 ◎
-Let dim be img's current request's preferred density-corrected dimensions.
+Let dimensions be img's current request's preferred density-corrected dimensions.
 </p>
 
 <p class="note">注記：
@@ -5439,50 +5467,38 @@ The preferred density-corrected dimensions are set in the prepare an image for p
 </p>
 	</li>
 	<li>
-<p>
 ~IF［
-%寸法 ~EQ ~NULL
-］：
+%寸法 ~NEQ ~NULL
+］
+⇒
+~RET ( %寸法 の横幅 ~DIV %密度, %寸法 の縦幅 ~DIV %密度 )
+◎
+If dimensions is not null, then set dimensions's width to dimensions's width divided by density, set dimensions's height to dimensions's height divided by density, and return dimensions.
+</li>
+	<li>
+<p>
+~RET %img に対し`既定の~sizing~algo$を適用した結果
+— ただし：
 </p>
-		<ol>
+		<ul>
 			<li>
-%寸法 の横幅 ~SET %img の`生来な横幅$は［
-在るならば それ／
-無いならば 0†
-］
+%img の［
+`生来な横幅$, `生来な縦幅$
+］は、
+（有るならば）元のそれらを %密度 で除算した結果と見做す
 </li>
 			<li>
-%寸法 の縦幅 ~SET %img の`生来な縦幅$は［
-在るならば それ／
-無いならば 0†
-］
+`既定の~obj~size$として ( 横幅 300, 縦幅 150 ) を利用する
 </li>
-		</ol>
-<p class="trans-note">【†
-原文は、［
-生来な横幅／生来な縦幅
-］が無い場合の取扱いを述べていない。
-一方で，`密度~補正-済み生来な~size$を参照している他所においては、
-それが無い場合の取扱いを述べており，その場合は 0 と見なすものと指定されているので、
-その取扱いをここに集約する。
-】</p>
+		</ul>
 ◎
-If dim is null, set dim to img's natural dimensions.
-</li>
-	<li>
-%寸法 の横幅 ~SET %寸法 の横幅 ~DIV %img の`現在の画素~密度$
+Let intrinsicWidth, intrinsicHeight, and intrinsicRatio be img's intrinsic width, intrinsic height, and intrinsic aspect ratio, if any, respectively.
 ◎
-Set dim's width to dim's width divided by img's current request's current pixel density.
-</li>
-	<li>
-%寸法 の縦幅 ~SET %寸法 の縦幅 ~DIV %img の`現在の画素~密度$
+If intrinsicWidth is not absent, then set intrinsicWidth to intrinsicWidth divided by density.
 ◎
-Set dim's height to dim's height divided by img's current request's current pixel density.
-</li>
-	<li>
-~RET %寸法
+If intrinsicHeight is not absent, then set intrinsicHeight to intrinsicHeight divided by density.
 ◎
-Return dim.
+Return the result of applying the default sizing algorithm with intrinsicWidth, intrinsicHeight, and intrinsicRatio, using a default object size of 300 by 150.
 </li>
 </ol>
 </div>
