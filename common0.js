@@ -1143,6 +1143,7 @@ CSSFLEX:css-flexbox-ja.html
 CSSFONT:css-fonts4-ja.html
 CSSFONTLOADING:css-font-loading-ja.html
 CSSFORMS:css-forms-ja.html
+CSSGAP:https://drafts.csswg.org/css-gaps-1/
 CSSGRID:css-grid-ja.html
 CSSIMAGE4:css-images4-ja.html
 CSSIMAGE:css-images-ja.html
