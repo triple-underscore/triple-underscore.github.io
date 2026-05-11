@@ -1145,8 +1145,9 @@ CSSFONTLOADING:css-font-loading-ja.html
 CSSFORMS:css-forms-ja.html
 CSSGAP:https://drafts.csswg.org/css-gaps-1/
 CSSGRID:css-grid-ja.html
-CSSIMAGE4:css-images4-ja.html
 CSSIMAGE:css-images-ja.html
+CSSIMAGE4:css-images4-ja.html
+CSSIMAGE5:css-images5-ja.html
 CSSINLINE:css-inline-ja.html
 CSSLIST:css-lists-ja.html
 CSSLOGICAL:css-logical-ja.html
