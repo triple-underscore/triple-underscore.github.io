@@ -1663,6 +1663,7 @@ CSSINLINE3=副         ~/css-inline-ja.html
 CSSIMAGES3=副         ~/css-images-ja.html
 CSSIMAGES3=副2        ~momdo/CR-css3-images-20120417.html
 CSSIMAGES4=副         ~/css-images4-ja.html
+CSSIMAGES5=副         ~/css-images5-ja.html
 CSSLINKEDPARAMS=副    ~/css-link-params-ja.html
 CSSLISTS3=副          ~/css-lists-ja.html
 CSSLOGICAL1=副        ~/css-logical-ja.html
