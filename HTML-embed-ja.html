@@ -122,8 +122,8 @@ return text;
 
 ●●options
 
-spec_date:2026-04-14
-trans_update:2026-04-15
+spec_date:2026-05-12
+trans_update:2026-05-13
 source_checked:240712
 page_state_key:HTML
 spec_status:LS
@@ -372,6 +372,7 @@ i.~fallback:#_object-fallback
 	#process-iframe-initial-insertion
 
 処理待ちな資源~計時の開始~時刻:#iframe-pending-resource-timing-start-time
+処理待ちな資源~計時~URL:#iframe-pending-resource-timing-url
 
 
 	●用語HTML
@@ -401,6 +402,7 @@ i.~fallback:#_object-fallback
 ~lazyに読込んでいる要素の交差~観測を開始する:~HTMLurl#start-intersection-observing-a-lazy-loading-element
 ~about_blank に合致して:~HTMLurl#matches-about:blank
 ~about_srcdoc に合致して:~HTMLurl#matches-about:srcdoc
+~URLを相対的に構文解析する:~HTMLurl#parse-a-url
 
 真偽-属性:~HTMLcms#boolean-attribute
 ~space等で分離された~token集合:~HTMLcms#set-of-space-separated-tokens
@@ -761,6 +763,7 @@ srcdoc:
 	%挿入された~node:insertedNode
 	%除去される~node:removedNode
 	%準拠な文字列:compliantString
+	%資源~計時~URL:-
 
 	●未分類
 要素間:inter-element::~
@@ -1752,14 +1755,26 @@ Let historyHandling be "auto".
 If element's content navigable's active document is not completely loaded, then set historyHandling to "replace".
 </li>
 	<li>
+<p>
 ~IF［
 %iframe は `iframe$e である
 ］
-⇒
+◎
+If element is an iframe:
+</p>
+		<ol>
+			<li>
 %iframe の`処理待ちな資源~計時の開始~時刻$ ~SET `現在の高分解能~時刻$( %iframe の`~node文書$に`関連な大域~obj$ )
 ◎
-If element is an iframe, then set element's pending resource-timing start time to the current high resolution time given element's node document's relevant global object.
+Set element's pending resource-timing start time to the current high resolution time given element's node document's relevant global object.
 </li>
+			<li>
+%iframe の`処理待ちな資源~計時~URL$ ~SET %~URL
+◎
+Set element's pending resource-timing URL to url.
+</li>
+		</ol>
+	</li>
 	<li>
 `~navigableを~URLへ~navigateする$( %~navigable, %~URL, %iframe の`~node文書$ )
 — 次も与える下で
@@ -1774,17 +1789,28 @@ Navigate element's content navigable to url using element's node document, with 
 </ol>
 </div>
 
+<div>
 <p>
 各`文書$は、
+次に挙げるものを有する：
+</p>
+
+<dl class="def-list">
+	<dt>
 `~iframe~loadは進捗-中か@
-,
+</dt>
+	<dt>
 `~iframe~loadを黙らすか@
-を有する
-— いずれも、
-真偽値をとり，当の文書の作成-時には ~F になるモノトスル。
+</dt>
+	<dd>
+いずれも、
+真偽値をとり，
+当の文書の作成-時には ~F になるモノトスル。
+</dd>
+</dl>
 ◎
 Each Document has an iframe load in progress flag and a mute iframe load flag. When a Document is created, these flags must be unset for that Document.
-</p>
+</div>
 
 <div class="algo">
 <p>
@@ -1831,6 +1857,12 @@ If element's pending resource-timing start time is not null, then:
 </p>
 		<ol>
 			<li>
+~Assert：
+%iframe の`処理待ちな資源~計時~URL$ ~NEQ ~NULL
+◎
+Assert: element's pending resource-timing URL is not null.
+</li>
+			<li>
 %大域~obj ~LET %iframe の`~node文書$に`関連な大域~obj$
 ◎
 Let global be element's node document's relevant global object.
@@ -1845,22 +1877,31 @@ Let global be element's node document's relevant global object.
 Let fallbackTimingInfo be a new fetch timing info whose start time is element's pending resource-timing start time and whose response end time is the current high resolution time given global.
 </li>
 			<li>
+%資源~計時~URL ~LET `~URLを相対的に構文解析する$( %iframe の`処理待ちな資源~計時~URL$, 【ここに与えるべき引数が指定されていない】 )
+◎
+↓</li>
+			<li>
 `資源~計時を~markする$( ↓ )
 ⇒＃
 %~fallback計時~報,
-%~URL,
+%資源~計時~URL,
 "`iframe$e",
 %大域~obj,
 空~文字列,
 新たな`応答~本体~報$,
 0
 ◎
-Mark resource timing given fallbackTimingInfo, url, "iframe", global, the empty string, a new response body info, and 0.
+Mark resource timing given fallbackTimingInfo, the result of parsing element's pending resource-timing URL, "iframe", global, the empty string, a new response body info, and 0.
 </li>
 			<li>
 %iframe の`処理待ちな資源~計時の開始~時刻$ ~SET ~NULL
 ◎
 Set element's pending resource-timing start time to null.
+</li>
+			<li>
+%iframe の`処理待ちな資源~計時~URL$ ~SET ~NULL
+◎
+Set element's pending resource-timing URL to null.
 </li>
 		</ol>
 	</li>
@@ -1931,40 +1972,72 @@ anything is delaying the load event of element's content navigable's active docu
 If, during the handling of the load event, element's content navigable is again navigated, that will further delay the load event.
 </p>
 
-<p>
-各 `iframe$e 要素には
-`現在の~naviは~lazyに読込まれるか@
-が結付けられる
-— それは、
-真偽値をとり，
-初期~時は ~F とする。
-それは、
-`~iframe属性~群を処理する$中で［
-~T／~F
-］に設定される。
-◎
-Each iframe element has an associated current navigation was lazy loaded boolean, initially false. It is set and unset in the process the iframe attributes algorithm.
-</p>
 
 <p>
-`iframe$e 要素は、［
-`現在の~naviは~lazyに読込まれるか$ ~EQ ~F
-］ならば，`~load~eventを遅延し得る$とする。
+各 `iframe$e 要素には、
+次に挙げるものが結付けられる：
+◎
+↓</p>
+<dl class="def-list">
+	<dt>
+`現在の~naviは~lazyに読込まれるか@
+◎
+Each iframe element has an associated current navigation was lazy loaded＼
+</dt>
+	<dd>
+ある真偽値
+◎
+boolean,＼
+</dd>
+	<dd>
+初期~時は ~F とする。
+◎
+initially false.＼
+</dd>
+	<dd>
+これは、
+`~iframe属性~群を処理する$中で設定される【！set and unset】。
+◎
+It is set and unset in the process the iframe attributes algorithm.
+</dd>
+	<dd>
+`iframe$e 要素は、
+これが ~F をとるならば，`~load~eventを遅延し得る$とする。
 ◎
 An iframe element whose current navigation was lazy loaded boolean is false potentially delays the load event.
-</p>
+</dd>
 
-<p>
-各 `iframe$e 要素には
+	<dt>
 `処理待ちな資源~計時の開始~時刻@
-が結付けられる
-— それは、［
-~NULL ／ `DOMHighResTimeStamp$I
-］をとり，
+◎
+Each iframe element has an associated null or DOMHighResTimeStamp pending resource-timing start time,＼
+</dt>
+	<dd>
+~NULL ／ ある `DOMHighResTimeStamp$I
+◎
+↑</dd>
+	<dd>
 初期~時は ~NULL とする。
 ◎
-Each iframe element has an associated null or DOMHighResTimeStamp pending resource-timing start time, initially set to null.
-</p>
+initially set to null.
+</dd>
+
+	<dt>
+`処理待ちな資源~計時~URL@
+◎
+Each iframe element has an associated null or URL pending resource-timing URL,＼
+</dt>
+	<dd>
+~NULL ／ ある`~URL$
+◎
+◎
+↑</dd>
+	<dd>
+初期~時は ~NULL とする。
+◎
+initially set to null.
+</dd>
+</dl>
 
 <p class="note">注記：
 当の要素†の作成-時に，［
@@ -1973,11 +2046,15 @@ Each iframe element has an associated null or DOMHighResTimeStamp pending resour
 `src$aF 属性を有してなかったか, 有していたが その値を成す`~URLを符号化法の下で相対的に構文解析する$のに失敗した
 ］場合、
 要素の`内容~navigable$は，`まだ初期~about_blank 文書で$あり続けることになる。
-【† `iframe^e 要素に限られない？ — この注記は、
-過去には，他の要素にも適用される “`~load~eventを遅延し得る$” のすぐ後に置かれていたので。】
 ◎
 If, when the element is created, the srcdoc attribute is not set, and the src attribute is either also not set or set but its value cannot be parsed, the element's content navigable will remain at the initial about:blank Document.
 </p>
+
+<p class="trans-note">【†
+`iframe^e 要素に限られない？
+— この注記は、
+過去には，他の要素にも適用される “`~load~eventを遅延し得る$” のすぐ後に置かれていたので。
+】</p>
 
 <p class="note">注記：
 利用者がこの~page【 `~about_blank^sc に限られない？】から他所へ`~navigate$した場合、
