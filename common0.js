@@ -1351,6 +1351,7 @@ CSS:
 API:
 XML:
 SVG:
+MathML:
 ID:
 	~ID:id
 UTF-8:

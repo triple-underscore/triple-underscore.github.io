@@ -743,7 +743,6 @@ COMMON_DATA.words_table += `
 ●●words_table
 	●略称
 	~HTML:HTML5
-MathML:
 ECMAScript:
 SVG-2:SVG 2
 SVG-11:SVG 1.1
