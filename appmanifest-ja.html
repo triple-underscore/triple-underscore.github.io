@@ -126,14 +126,6 @@ case 'issue':
 	href = `https://github.com/w3c/manifest/issues/${key}`
 	text = `課題 #${key}`;
 	break;
-case 'commit':
-	href = `https://github.com/w3c/manifest/commit/${key}`;
-	text = 'commit';
-	break;
-case 'pull':
-	href = `https://github.com/w3c/manifest/pull/${key}`;
-	text = `#${key}`;
-	break;
 case 'dgm':
 	return `<a id="_dgm-${key}">＊</a>`;
 case 'en':
@@ -176,8 +168,8 @@ return text;
 
 ●●options
 spec_title:Web Application Manifest
-spec_date:2026-04-09
-trans_update:2026-04-14
+spec_date:2026-05-07
+trans_update:2026-05-13
 source_checked:240702
 	page_state_key:
 original_url:https://w3c.github.io/manifest/
@@ -335,9 +327,10 @@ t.color:~CSSCOLOR#typedef-color
 ~app~manifest~MIME型:#dfn-application-manifest-media-type
 ~manifest:#dfn-manifest
 ~manifest~URL:#dfn-manifest-url
+~client:#dfn-client
 処理-済み~manifest:#dfn-processed-manifest
 ~manifestを処理する:#dfn-processing-a-manifest
-~manifestを処理-:#dfn-processing-a-manifest
+処理-:#dfn-processing-a-manifest
 ~app文脈:#dfn-application-context
 ~appの名前:#dfn-application-s-name
 ~web~appを立上げる:#dfn-launching-a-web-application
@@ -388,12 +381,12 @@ t.color:~CSSCOLOR#typedef-color
 方位~値:#dfn-orientation-values
 一緒に利用できない:#dfn-cannot-be-used-together
 表示~mode:#dfn-display-mode
-既定の表示~mode:#dfn-default-display-mode
+適用される表示~mode:#dfn-applied-display-mode
 既定の~theme色:#dfn-default-theme-color
 表示~mode~list:#dfn-display-modes-list
 ~fallback連鎖:#dfn-fallback-chain
 ~web~appが選んだ表示~modeを決定する手続き:#dfn-steps-for-determining-the-web-app-s-chosen-display-mode
-
+~manifest画像~資源を~fetchする:#dfn-fetch-a-manifest-image-resource
 
 処理~拡張~地点:#dfn-processing-extension-point
 無視する:#dfn-ignore
@@ -461,6 +454,9 @@ nav.作動中な閲覧~文脈:~HTMLds#nav-bc
 生成元:~ORIGIN#concept-origin
 同一-生成元:~ORIGIN#same-origin
 
+環境~設定群~obj:~WAPI#environment-settings-object
+関連な設定群~obj:~WAPI#relevant-settings-object
+
 	■URL
 ~URL:~URL1#concept-url
 url.~path:~URL1#concept-url-path
@@ -481,10 +477,16 @@ doc.~URL:~DOM4#concept-document-url
 ~fetch:~FETCH#concept-fetch
 ~CORS~protocol:~FETCH#cors-protocol
 ~CORS要請:~FETCH#cors-request
+
+要請:~FETCH#concept-request
+rq.~URL:~FETCH#concept-request-url
+rq.行先:~FETCH#concept-request-destination
+rq.~client:~FETCH#concept-request-client
 rq.資格証~mode:~FETCH#concept-request-credentials-mode
 
 	■外部他
 画像~資源:~ImageResource1#dfn-image-resource
+画像~資源を~fetchする:~ImageResource1#dfn-fetching-an-image-resource
 ~JSONから画像~資源を処理する:~ImageResource1#dfn-process-an-image-resource-from-json
 
 ~monkey~patch:~DESIGN-PRINCIPLES#monkey-patch
@@ -516,7 +518,8 @@ P.Language-Tag:~RFCx/bcp47#section-2.1
 
 ~locale:~TR/i18n-glossary/#dfn-locale
 
-	●外部
+~sw:~SW1#dfn-service-worker
+~CSP:~CSP3#content-security-policy
 
 	`FULLSCREEN$r:Fullscreen API Standard
 	https://fullscreen.spec.whatwg.org/
@@ -968,6 +971,8 @@ social::::ソーシャル
 識別情報:identity:~
 整形式:well-formed::~
 暗な:dark::暗い
+施行:enforcement::~
+横取n:interception::横取り
 
 	~MIME型:media type
 	何段階かの:a range of
@@ -3968,10 +3973,12 @@ The processing extension-point is meant to help avoid issues related to monkey p
 `~manifestを処理する@
 ~algoは、
 所与の
-( `~URL$ %文書~URL, `~URL$ %~manifest~URL, `~byte列$ %本体~byte列 )
+( `~URL$ %文書~URL, `~URL$ %~manifest~URL, `~byte列$ %本体~byte列, ［
+~NULL ／ `環境~設定群~obj$
+］ %~client )
 に対し：
 ◎
-The steps for processing a manifest are given by the following algorithm. The algorithm takes a URL document URL, a URL manifest URL, and a byte sequence bodyBytes.
+The steps for processing a manifest are given by the following algorithm. The algorithm takes a URL document URL, a URL manifest URL, a byte sequence bodyBytes, and client (an environment settings object or null).
 </p>
 <ol>
 	<li>
@@ -4125,6 +4132,13 @@ Process the shortcuts member passing json, manifest, and manifest URL.
 Processing extension-point: process any proprietary and/or other supported members at this point in the algorithm.
 </li>
 	<li>
+%~manifest の
+`~client@
+~SET %~client
+◎
+Set manifest's client to client.
+</li>
+	<li>
 %文書 の
 `処理-済み~manifest@
 【！~LET】~SET %~manifest
@@ -4259,12 +4273,16 @@ Set map[member] to the value of json[member].
 `~manifestを処理する$手続きは，
 `HTML$r における `link$e 要素~用の処理~手続き【 § `manifest$v を見よ】から呼出されるが、
 ~UAは，`文書$を伴わない~manifestを処理するために呼出しても`ヨイ^EM。
+当の~manifestの`~client$は、［
+前者の事例では当の文書に`関連な設定群~obj$／
+後者の事例では ~NULL
+］になる。
 ◎
-The processing a manifest steps are invoked by [HTML]'s processing steps for the link element, but MAY also be invoked by the user agent to process a manifest without an associated document.
+The processing a manifest steps are invoked by [HTML]'s processing steps for the link element, in which case client is the document's relevant settings object. The steps MAY also be invoked by the user agent to process a manifest without an associated document, in which case client is null.
 </p>
 
 <p>
-この事例では、
+後者の事例では、
 `HTML$r 内の対応する手続きにより為される保証に合致するためには，~UAは
 — 少なくとも，過去の ある時点で —
 次を確保する`ベキ^EMである：
@@ -4492,7 +4510,7 @@ The start URL is not necessarily the value of the start_url member: the user or 
 `~manifest$は、
 `manifest$v ~link関係~用に指定されるとおり，
 読込まれる~pageごとに~fetchされ処理される。
-~UAは，成功裡に`~manifestを処理-$したときは、
+~UAは，成功裡に~manifestを`処理-$したときは、
 更新された~manifestを［
 当の~appに結付けられた
 — 現在の, または未来の —
@@ -4653,12 +4671,13 @@ If a user changes localization settings, the user agent MAY automatically adjust
 各
 `~manifest画像~資源@
 は、
-概念的には，~web~appの一部を成す画像~資源
-— この~objを利用している~memberの意味論に依存して，様々な文脈で利用するのに相応しいそれ —
-を与える
-（例：~app~menuの一部を成す~icon, 等々）。
+`画像~資源$である。
+ある~manifest画像~資源が，どの文脈において呈示されるかは、
+結付けられた~manifest~memberの意味論により決定される
+（例： `icons$mM ~memberは、
+一般に，~app~iconを表現するために利用される）。
 ◎
-Each manifest image resource is an image resource that is conceptually part of a web application, suitable to use in various contexts depending on the semantics of the member that is using the object (e.g., an icon that is part of an application menu, etc.).
+Each manifest image resource is an image resource. The context in which a manifest image resource is presented is determined by the semantics of the associated manifest member (e.g., an icons member is generally used to represent the application icon).
 </p>
 
 <p>
@@ -4678,8 +4697,97 @@ A manifest image resource differs from a image resource in that it can have an a
 色の変更や隅が切取られるなどにより，重要な情報が失われるのを避けるため、
 開発者には，画像~資源をそのような局面~用に準備することが推奨される。
 ◎
-User agents MAY modify the images associated with an manifest image resource to better match the platform’s visual style before displaying it to the user, for example by rounding the corners or painting it in a specific color. It is recommended that developers prepare their image resources for such scenarios to avoid losing important information through, e.g., change of color or clipped corners.
+User agents MAY modify the images associated with a manifest image resource to better match the platform's visual style before displaying it to the user, for example by rounding the corners or painting it in a specific color. It is recommended that developers prepare their image resources for such scenarios to avoid losing important information through, e.g., change of color or clipped corners.
 </p>
+
+<div class="algo">
+<p>
+`~manifest画像~資源を~fetchする@
+~algoは、
+所与の
+( `~manifest画像~資源$ %画像, `~manifest$ %~manifest )
+に対し，［
+~NULL ／ある`応答$
+］を返す：
+◎
+To fetch a manifest image resource given a manifest image resource image and an application manifest manifest, return either the result of fetching an image resource or null:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%~manifest の`~client$ ~EQ ~NULL
+］
+⇒
+~RET ~NULL
+◎
+If manifest's client is null, return null.
+</p>
+
+<p class="note">注記：
+ある~manifestが結付けられた`文書$を伴わずに処理されたときは、
+%~manifest の`~client$は ~NULL になり，
+画像~fetchは遂行されない。
+これは、［
+~CSPの`施行＠~CSP3/#enforced$,
+`~sw$による~fetchの横取n
+］の効果
+— それは、
+当の`文書$に`関連な設定群~obj$に依存する —
+があり続けることを確保する。
+◎
+Note
+
+When a manifest is processed without an associated document, manifest's client is null and no image fetch is performed. This ensures that enforcement of CSP and service worker fetch interception, which depend on the document's relevant settings object, remain in effect.
+</p>
+	</li>
+	<li>
+%要請 ~LET 新たな`要請$
+— その
+⇒＃
+`~URL$rq ~SET %画像 の `src$m,
+`行先$rq ~SET `image^l,
+`~client$rq ~SET %~manifest の`~client$
+◎
+Let request be a new request.
+◎
+Set request's URL to image's src.
+◎
+Set request's destination to "image".
+◎
+Set request's client to manifest's client.
+</li>
+	<li>
+~RET `画像~資源を~fetchする$( %画像, %要請 )
+◎
+Return the result of fetching an image resource with image and request.
+</li>
+</ol>
+
+<p class="note">注記：
+この~algoは、
+~UAが［
+~installation~promptを呈示するよう準備する／
+`~app文脈$を作成する
+］ときに~callされるものと意図される。
+~UAは、
+概して，
+この~algoを定例の~page読込nの間に~callすることはない。
+この~algoを~callすることは、
+`~client$が【 ~NULL 以外に】設定されることを要求する
+（すなわち，
+当の~manifestは，ある`文書$の文脈~内で`処理-$された）
+— それは、［
+`~CSP$の施行, `~sw$による~fetchの横取n
+］の効果があり続けることを確保する。
+これをいつ~callするかに関する規範的な~algoは、
+`1216$issue にて追跡される。
+◎
+Note
+
+This algorithm is intended to be called when a user agent prepares to present an installation prompt or creates an application context. User agents do not typically call this algorithm during regular page loads. Calling this algorithm requires that the client be set (i.e., the manifest was processed in the context of a document), which ensures that Content Security Policy and service worker fetch interception remain in effect. A normative algorithm for when to call this is tracked in issue #1216.
+</p>
+</div>
 
 		<section id="purpose-member">
 <h3 title="purpose member">2.1. `purpose^mI ~member</h3>
@@ -6382,30 +6490,40 @@ Note
 The fullscreen display mode is orthogonal to, and works independently of, the Fullscreen API Standard. The fullscreen display mode affects the fullscreen state of the browser window, while the [FULLSCREEN] API operates on an element contained within the viewport. As such, a web application can have its display mode set to fullscreen, while document.fullScreenElement returns null, and fullscreenEnabled returns false.
 </p>
 
-
 <p>
-~UAが`~app文脈$に特定0の`表示~mode$を適用したなら、
-それは，`~top-level閲覧~文脈$用の
-`既定の表示~mode@
-になる
-（すなわち、
-~windowが`~navigate$されたときに表示~modeとして利用される）。
-~UAは、
-~securityの理由があれば，`既定の表示~mode$を上書きしても`ヨイ^EM
-（例：`~top-level閲覧~文脈$が別の生成元へ`~navigate$されたとき）。
-~UAはまた、
+ある`~top-level閲覧~文脈$に ある`~manifest$が`適用-$されたなら、
+それに効果がある`表示~mode$
+【すなわち，`~web~appが選んだ表示~modeを決定する手続き$の結果】
+は，
+当の閲覧~文脈~用に
+`適用される表示~mode@
+になる。
+~UAは：
+◎
+Once a manifest is applied to a top-level browsing context, the display mode in effect is the applied display mode for that top-level browsing context.＼
+</p>
+<ul>
+	<li>
+~securityの理由があれば，
+`適用される表示~mode$を変更しても`ヨイ^EM
+（例：当の閲覧~文脈が~scopeの外へ`~navigate$したとき）。
+◎
+The user agent MAY change the applied display mode for security reasons (e.g., the top-level browsing context is navigated out of scope) and/or＼
+</li>
+	<li>
 別の`表示~mode$へ切替える手段を利用者に供しても`ヨイ^EM。
 ◎
-Once a user agent applies a particular display mode to an application context, it becomes the default display mode for the top-level browsing context (i.e., it is used as the display mode when the window is navigated). The user agent MAY override the default display mode for security reasons (e.g., the top-level browsing context is navigated to another origin) and/or the user agent MAY provide the user with a means of switching to another display mode.
-</p>
+the user agent MAY provide the user with a means of switching to another display mode.
+</li>
+</ul>
 
 <p>
 `display$mM ~memberが欠落であるか，その値が妥当でないときは、
-~UAは，`既定の表示~mode$として `browser$l `表示~mode$を利用する。
+~UAは，`適用される表示~mode$として `browser$l を利用する。
 そのようなわけで、
 ~UAは，`表示~mode$として `browser$l を~supportする`モノトスル^EM。
 ◎
-When the display member is missing, or if there is no valid display member, the user agent uses the browser display mode as the default display mode. As such, the user agent MUST support the browser display mode.
+When the display member is missing, or if there is no valid display member, the user agent uses the browser display mode as the applied display mode. As such, the user agent MUST support the browser display mode.
 </p>
 
 <div>
@@ -6531,18 +6649,14 @@ The display modes list is the list « "fullscreen", "standalone", "minimal-ui", 
 
 <p>
 ~UAは、
-適用される［
-~web~appの`表示~mode$
-］
-【すなわち、上の~algoで決定されたそれ】
-を `display-mode$d 媒体~特能 `MEDIAQUERIES-5$r 内に反映する`モノトスル^EM。
+~web~appに`適用される表示~mode$を `display-mode$d 媒体~特能 `MEDIAQUERIES-5$r 内に反映する`モノトスル^EM。
 ◎
 A user agent MUST reflect the applied display mode of the web application in the display-mode media feature [MEDIAQUERIES-5].
 </p>
 
 <p class="note">注記：
 ~UAは、
-適用されている実際の表示~modeを
+`適用される表示~mode$を
 — ［
 ~CSS／~JS
 ］を通して~access可能な `display-mode$d 媒体~特能を介して —
@@ -6559,7 +6673,7 @@ A user agent MUST reflect the applied display mode of the web application in the
 ◎
 Note
 
-A user agent will expose the actual display mode being applied — not necessarily the one declared in the manifest — via the display-mode media feature, accessible through CSS or JavaScript. Note that this media feature will also reflect other display modes for a web page when a manifest is not being applied. For example, if the end-user puts the page into fullscreen, then the user agent would reflect this change to CSS and scripts via the display-mode media feature.
+A user agent will expose the applied display mode — not necessarily the one declared in the manifest — via the display-mode media feature, accessible through CSS or JavaScript. Note that this media feature will also reflect other display modes for a web page when a manifest is not being applied. For example, if the end-user puts the page into fullscreen, then the user agent would reflect this change to CSS and scripts via the display-mode media feature.
 </p>
 
 	</section>
@@ -6941,8 +7055,7 @@ Reference:
 注記
 ⇒
 ~web~manifestが どう［
-`~fetch$される／
-`処理される＠#dfn-processing-a-manifest$
+`~fetch$される／`処理-$される
 ］かの詳細は、
 ~link型 `manifest$v を見よ。
 ◎
@@ -7468,135 +7581,12 @@ There are no issues listed in this specification.
 ◎
 The following are some significant changes that were made since First Public Working Draft:
 </p>
+
 <p class="trans-note">【
-以下、原文は~commitの~titleそのものなので，訳さないことにする。
+以下，この節を成す内容は、
+2019年 9月 26日以降の`~commit履歴＠https://github.com/w3c/manifest/commits/$が（一部を除き）そのまま挙げられているに過ぎないので，
+和訳は省略する。
 】</p>
-<ul lang="en">
-	<li>
-Remove problematic icon matching algorithm
-( `2f54efe$commit, `1120$pull ）
-</li>
-	<li>
-Processing steps for id now removes the fragment
-( `bceb2ee$commit, `1122$pull ）
-</li>
-	<li>
-Rewrite privacy considerations on fingerprinting in start_url
-( `2a8fc0a$commit, `1114$pull ）
-</li>
-	<li>
-Change "A" to "An"
-( `662cc34$commit, `1103$pull ）
-</li>
-	<li>
-Allow manifest processing to be invoked without going through an HTML…
-( `22a0b1e$commit ）
-</li>
-	<li>
-Ran tidy.
-( `7d41b99$commit, `1067$pull ）
-</li>
-	<li>
-Describe manifest update behavior
-( `54acb9e$commit, `1011$pull ）
-</li>
-	<li>
-Link to manifest-app-info in the README
-( `8d0663e$commit, `1030$pull ）
-</li>
-	<li>
-Address privacy issue with start_url
-( `5d2ac4b$commit, `1029$pull ）
-</li>
-	<li>
-Transfer display-mode to mediaqueries-5
-( `874996c$commit, `1022$pull ）
-</li>
-	<li>
-Add id member to manifest
-( `8102fc5$commit, `988$pull ）
-</li>
-	<li>
-Use docURL as start_url
-( `a8284f3$commit, `991$pull ）
-</li>
-	<li>
-Add missing shortcut icon
-( `100cd9a$commit, `979$pull ）
-</li>
-	<li>
-Remove query &amp; fragment from scope
-( `04b2157$commit, `961$pull ）
-</li>
-	<li>
-Remove WebIDL + rewrite all the things
-( `32b497c$commit )
-</li>
-	<li>
-Revert "Editorial: Move some members to App Information Note
-( `10c255d$commit, `900$pull )
-</li>
-	<li>
-Moving to data-cite for the accessible name
-( `72ba21c$commit, `920$pull )
-</li>
-	<li>
-BREAKING CHANGE: remove `platform` from ManifestImageResource
-( `4ab46a2$commit, `913$pull )
-</li>
-	<li>
-Adding in some accessibility-related language
-( `d1699ec$commit, `898$pull )
-</li>
-	<li>
-Add privacy section for shortcuts member
-( `1860fe4$commit,`896$pull )
-</li>
-	<li>
-BREAKING CHANGE: Replace "badge" with "monochrome"
-( `2c55d86$commit, `833$pull )
-</li>
-	<li>
-Update links to the WG
-( `f704809$commit, `871$pull )
-</li>
-	<li>
-Remove beforeinstallprompt and appinstalled events.
-( `8c7fd7b$commit, `836$pull )
-</li>
-	<li>
-Set the manifest request's .
-( `9888403$commit, `829$pull )
-</li>
-	<li>
-Rewrite processing shortcuts algorithm to be more precise
-( `83fd72b$commit, `832$pull )
-</li>
-	<li>
-BREAKING CHANGE: remove serviceworker member
-( `8923ba4$commit, `825$pull )
-</li>
-	<li>
-Make Service Worker registration work properly (don't use outdated st…
-( `6708bc8$commit )
-</li>
-	<li>
-Add shortcuts feature to the explainer and spec
-( `4c24e73$commit, `768$pull )
-</li>
-	<li>
-Make BeforeInstallPrompt optional
-( `32ce484$commit, `797$pull )
-</li>
-	<li>
-Various fixes to ImageResource processing algorithms:
-( `c3e18c8$commit, `811$pull )
-</li>
-	<li>
-Rewrite installation process and install prompting logic
-( `f8f227e$commit, `790$pull )
-</li>
-</ul>
 
 	</section>
 	<section id="acknowledgements">
@@ -7613,27 +7603,26 @@ This document reuses text from the [HTML] specification, as permitted by the lic
 </p>
 
 <p>
+`Dave Raggett^en, `Dominique Hazael-Massieux^en
+両氏は、
 `HTML5Apps project^en
-を介してこの仕様に貢献された
-`Dave Raggett and Dominique Hazael-Massieux^en
-氏に。
+を介してこの仕様に貢献された。
 ◎
 Dave Raggett and Dominique Hazael-Massieux contributed to this specification via the HTML5Apps project.
 </p>
 
 <p>
-~icon例の画像を寄せられた
-`Claudio Gomboli^en 氏に。
+`Claudio Gomboli^en 氏は、
+~icon例の画像を寄せられた。
 ◎
 Claudio Gomboli for icon example images.
 </p>
 
 <p>
+`Indiana University Bloomington^en の方々は、
 事実調査から［
 ~scopeの外にある~URLへの~naviに関係する潜在的な~risk
-］を報告して，この仕様に貢献された
-`Indiana University Bloomington^en
-の方々に。
+］を報告して，この仕様に貢献された。
 ◎
 Indiana University Bloomington security researchers have contributed to this specification by reporting potential risks related to out-of-scope navigation. </p>
 
