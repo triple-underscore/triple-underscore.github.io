@@ -56,7 +56,8 @@ case 'r':
 	href = `svg-refs.html#ref-${key.toLowerCase()}`;
 	break;
 case 't':
-	text = `&lt;${text}&gt;`;
+	text = `&lt;${key}&gt;`;
+	key = key.replace(/\s*\[.+/, '');
 	break;
 case 'tp':
 	text = `&lt;'<code class="property">${key}</code>'&gt;`;
@@ -218,6 +219,7 @@ Exposed:~WEBIDLjs#Exposed
 SameObject:~WEBIDLjs#SameObject
 NewObject:~WEBIDLjs#NewObject
 PutForwards:~WEBIDLjs#PutForwards
+Reflect:~HTMLcdom#xattr-reflect
 
 E.NoModificationAllowedError:~WEBIDL#nomodificationallowederror
 E.IndexSizeError:~WEBIDL#indexsizeerror
@@ -245,7 +247,6 @@ I.SVGDefsElement:~SVGstruct#InterfaceSVGDefsElement
 I.SVGDescElement:~SVGstruct#InterfaceSVGDescElement
 I.SVGDocument:~SVGstruct#InterfaceDocumentExtensions
 I.SVGElement:~SVGtypes#InterfaceSVGElement
-I.SVGElementInstance:~SVGstruct#InterfaceSVGElementInstance
 I.SVGEllipseElement:~SVGshapes#InterfaceSVGEllipseElement
 I.SVGFitToViewBox:~SVGtypes#InterfaceSVGFitToViewBox
 I.SVGForeignObjectElement:~SVGembedded#InterfaceSVGForeignObjectElement
@@ -316,7 +317,7 @@ I.Element:~DOM4#element
 I.CSSPseudoElement:~CSSPSEUDO#csspseudoelement
 I.GlobalEventHandlers:~WAPI#globaleventhandlers
 I.HTMLHyperlinkElementUtils:~HTMLlinks#htmlhyperlinkelementutils
-I.HTMLOrSVGElement:~HTMLdom#htmlorsvgelement
+I.HTMLOrSVGOrMathMLElement:~HTMLdom#htmlorsvgelement
 I.LinkStyle:~CSSOM1#the-linkstyle-interface
 I.NodeList:~DOM4#interface-nodelist
 I.ShadowRoot:~DOM4#interface-shadowroot
@@ -456,16 +457,12 @@ p.object-position:~CSSIMAGE#propdef-object-position
 p.opacity:~SVGrender#ObjectAndGroupOpacityProperties
 p.overflow:~SVGrender#OverflowAndClipProperties
 p.paint-order:~SVGpainting#PaintOrderProperty
+p.path-length:~SVGpaths#PathLengthCSSProperty
 p.pointer-events:~SVGinteract#PointerEventsProperty
 p.r:~SVGgeometry#RProperty
 p.rx:~SVGgeometry#RxProperty
 p.ry:~SVGgeometry#RyProperty
-p.shape-inside:~SVGtext#ShapeInsideProperty
-p.shape-image-threshold:~SVGtext#TextShapeImageThreshold
-p.shape-margin:~SVGtext#ShapeMarginProperty
-p.shape-padding:~SVGtext#TextShapePadding
 p.shape-rendering:~SVGpainting#ShapeRenderingProperty
-p.shape-subtract:~SVGtext#ShapesubtractProperty
 p.stop-color:~SVGpservers#StopColorProperty
 p.stop-opacity:~SVGpservers#StopOpacityProperty
 p.stroke-dasharray:~SVGpainting#StrokeDasharrayProperty
@@ -591,8 +588,6 @@ t.dasharray:~SVGpainting#DataTypeDasharray
 ~instance根:~SVGstruct#TermInstanceRoot
 ~instance:~SVGstruct#TermElementInstance
 要素~instance:~SVGstruct#TermElementInstance
-対応している要素:~SVGstruct#TermCorrespondingElement
-対応している~use要素:~SVGstruct#TermCorrespondingUseElement
 参照先の~graphic:~SVGstruct#TermReferencedDocumentSubtree
 参照先の文書~下位tree:~SVGstruct#TermReferencedDocumentSubtree
 参照先の要素:~SVGstruct#TermReferencedElement
