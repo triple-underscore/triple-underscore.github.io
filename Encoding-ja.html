@@ -308,8 +308,8 @@ return text;
 ●●options
 
 spec_title:Encoding
-spec_date:2025-08-12
-trans_update:2025-04-25
+spec_date:2026-05-21
+trans_update:2026-05-25
 source_checked:240613
 spec_status:LS
 original_url:https://encoding.spec.whatwg.org/
@@ -561,6 +561,7 @@ dec.~BOMを見つけたか:#textdecoder-bom-seen-flag
 dec.~error~mode:#textdecoder-error-mode
 
 入出力~queueを直列化する:#concept-td-serialize
+~text復号器~streamを設定しておく:#set-up-a-text-decoder-stream
 
 enc.符号化器:#textencoderstream-encoder
 enc.頭部~surrogate:#textencoderstream-pending-high-surrogate
@@ -1031,9 +1032,11 @@ JSON:
 	%復号器:-
 	%復号器:decoder
 	%~errorになり得る:potentialError
-	%~BOM符号化法:BOMEncoding
-	%N:-
+	%~error~mode:errorMode
 	%~BOM:BOM
+	%~BOM符号化法:BOMEncoding
+	%~BOMを無視するか:ignoreBOM
+	%N:-
 	%行
 	%符号化器:encoder
 	%複製:-
@@ -1260,7 +1263,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/encoding/commits
-	<a href="https://encoding.spec.whatwg.org/commit-snapshots/96e7b6d19055ce31868e00e9a450759c7c10e91f/">Snapshot as of this commit</a>
+	<a href="https://encoding.spec.whatwg.org/commit-snapshots/a985b62a9b45c17da3e17a9f0a0b4e30c34c4a8a/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/encodings">@encodings</a>
 
 Tests:
@@ -5101,36 +5104,64 @@ Let encoding be the result of getting an encoding from label.
 If encoding is failure or replacement, then throw a RangeError.
 </li>
 	<li>
-コレの`符号化法$dec ~SET %符号化法
+%~error~mode ~LET %options[ "`fatal$mb" ] に応じて
+⇒＃
+~T ならば `fatal^l ／
+~F ならば `replacement^l
 ◎
-Set this’s encoding to encoding.
+Let errorMode be "fatal" if options["fatal"] is true; otherwise "replacement".
 </li>
 	<li>
-~IF［
-%options[ "`fatal$mb" ] ~EQ ~T
-］
-⇒
-コレの`~error~mode$dec ~SET `fatal^l
+`~text復号器~streamを設定しておく$( コレ, %符号化法, %~error~mode, %options[ "`ignoreBOM$mb" ] )
 ◎
-If options["fatal"] is true, then set this’s error mode to "fatal".
+Set up a text decoder stream with this, encoding, errorMode, and options["ignoreBOM"].
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`~text復号器~streamを設定しておく@
+~algoは、
+所与の
+⇒＃
+`TextDecoderStream$I ~obj %~stream,
+`符号化法$ %符号化法 ~DF `UTF-8$n,
+`~error~mode$ %~error~mode ~DF `replacement^l,
+真偽値 %~BOMを無視するか ~DF ~F
+◎終
+に対し：
+◎
+To set up a text decoder stream given a TextDecoderStream object stream, an optional encoding encoding (default UTF-8), an optional error mode errorMode (default "replacement"), and an optional boolean ignoreBOM (default false), run these steps:
+</p>
+<ol>
+ 	<li>
+~Assert：
+%符号化法 ~NEQ `replacement$n
+◎
+Assert: encoding is not replacement.
 </li>
 	<li>
-コレの`~BOMは無視するか$dec ~SET %options[ "`ignoreBOM$mb" ]
+%~stream の
+⇒＃
+`符号化法$dec ~SET %符号化法,
+`~error~mode$dec ~SET %~error~mode,
+`~BOMは無視するか$dec ~SET %~BOMを無視するか,
+`復号器$dec ~SET %符号化法 の`復号器$を成す新たな~instance,
+`入出力~queue$dec ~SET 新たな`入出力~queue$`~byte^tA
 ◎
-Set this’s ignore BOM to options["ignoreBOM"].
+Set stream’s encoding to encoding.
+◎
+Set stream’s error mode to errorMode.
+◎
+Set stream’s ignore BOM to ignoreBOM.
+◎
+Set stream’s decoder to a new instance of encoding’s decoder.
+◎
+Set stream’s I/O queue to a new I/O queue.
 </li>
 	<li>
-コレの`復号器$dec ~SET コレの`符号化法$decの`復号器$の新たな~instance
-◎
-Set this’s decoder to a new instance of this’s encoding’s decoder,＼
-</li>
-	<li>
-コレの`入出力~queue$dec ~SET 新たな`入出力~queue$`~byte^tA
-◎
-and set this’s I/O queue to a new I/O queue.
-</li>
-	<li>
-%形式変換~stream ~SET `新たな~obj$( `TransformStream$I, コレに`関連な~realm$ )
+%形式変換~stream ~SET `新たな~obj$( `TransformStream$I, %~stream に`関連な~realm$ )
 ◎
 ↓</li>
 	<li>
@@ -5140,32 +5171,32 @@ and set this’s I/O queue to a new I/O queue.
 </p>
 		<ul>
 			<li class="algo">
-`形式変換~algo^i ~SET 所与の
+`形式変換~algo^i は、
+所与の
 ( %~chunk )
-に対し，次を走らす~algo
+に対し
 ⇒
-`~chunkを復号して~enqueueする$( コレ, %~chunk )
+`~chunkを復号して~enqueueする$( %~stream, %~chunk )
 </li>
 			<li class="algo">
-`書出n~algo^i ~SET 次を走らす~algo
+`書出n~algo^i は
 ⇒
-`書出して~enqueueする$( コレ )
+`書出して~enqueueする$( %~stream )
 </li>
 		</ul>
 ◎
-Let transformAlgorithm be an algorithm which takes a chunk argument and runs the decode and enqueue a chunk algorithm with this and chunk.
+Let transformAlgorithm be an algorithm which takes a chunk argument and runs the decode and enqueue a chunk algorithm with stream and chunk.
 ◎
-Let flushAlgorithm be an algorithm which takes no arguments and runs the flush and enqueue algorithm with this.
+Let flushAlgorithm be an algorithm which takes no arguments and runs the flush and enqueue algorithm with stream.
 ◎
 Let transformStream be a new TransformStream.
 ◎
 Set up transformStream with transformAlgorithm set to transformAlgorithm and flushAlgorithm set to flushAlgorithm.
 </li>
 	<li>
-コレの`形式変換$ ~SET %形式変換~stream
+%~stream の`形式変換$ ~SET %形式変換~stream
 ◎
-◎
-Set this’s transform to transformStream.
+Set stream’s transform to transformStream.
 </li>
 </ol>
 </div>
