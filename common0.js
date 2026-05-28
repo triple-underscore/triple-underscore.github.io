@@ -2635,6 +2635,7 @@ promise:
 	時間~越し:over time
 計時:timing::~
 時列線:timeline::~::タイムライン
+存続期間:lifetime::~
 日付:date::~
 準備済み:ready::~
 準備-:prepare:~
