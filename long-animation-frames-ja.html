@@ -120,9 +120,9 @@ return text;
 ●●options
 
 spec_title:Long Animation Frames API
-spec_date:2026-03-13
-trans_update:2026-03-16
-source_checked:240108
+spec_date:2026-04-16
+trans_update:2026-05-27
+source_checked:260416
 page_state_key:TIMING
 original_url:https://w3c.github.io/long-animation-frames/
 	abbr_url:LONGAF
@@ -268,6 +268,7 @@ ftI.~task所要時間~群:#frame-timing-info-task-durations
 ftI.最初の~UI~event時刻印:#frame-timing-info-first-ui-event-timestamp
 ftI.~script群:#frame-timing-info-scripts
 ftI.処理待ち~script:#frame-timing-info-pending-script
+ftI.~scriptから起動されたか:#frame-timing-info-script-initiated
 
 psT.計時~報:#performancescripttiming-timing-info
 psT.~window帰属:#performancescripttiming-window-attribution
@@ -288,12 +289,13 @@ stI.静止-所要時間:#script-timing-info-pause-duration
 stI.~window:#script-timing-info-window
 
 doc.現在の~frame計時~報:#current-frame-timing-info
-同一-生成元に属する最も近い根:#nearest-same-origin-root
+同一-生成元な最も近い根:#nearest-same-origin-root
 関連な~frame計時~報:#relevant-frame-timing-info
 長い~animation~frame~entryを~queueする:#queue-a-long-animation-frame-entry
 
 ~task開始~時刻を記録する:#record-task-start-time
 ~task終了~時刻を記録する:#record-task-end-time
+必要なら~task時刻の記録処理を開始する:#start-recording-task-time-if-needed
 静止-所要時間を記録する:#record-pause-duration
 描画~時刻を記録する:#record-rendering-time
 利用元~callback用に計時~報を記録する:#record-timing-info-for-user-callback
@@ -346,6 +348,7 @@ url.~scheme:~URL1#concept-url-scheme
 doc.生成元:~DOM4#concept-document-origin
 属性を名前により取得する:~DOM4#concept-element-attributes-get-by-name
 evL.~callback:~DOM4#event-listener-callback
+~eventを発火する:~DOM4#concept-event-fire
 
 ~CORS非同一-生成元:~HTMLurl#cors-cross-origin
 doc.可視性~状態:~HTMLinteraction#visibility-state
@@ -377,6 +380,7 @@ sC.設定群~obj:~WAPI#settings-object
 rM.設定群~obj:~WAPI#concept-realm-settings-object
 環境~設定群~obj:~WAPI#environment-settings-object
 描画を更新する手続き:~WAPI#update-the-rendering
+暗黙な文書:~WAPI#implied-document
 
 時刻を粗化する:~HRTIME#dfn-coarsen-time
 所要時間:~HRTIME#dfn-duration
@@ -421,6 +425,7 @@ checkpoint:
 塗り:paint::~
 刻む:markする::~
 降順:descending order:~
+記録処理:recording::~
 
 	〜に応じて:corresponding to the first matching statement
 
@@ -452,6 +457,7 @@ checkpoint:
 	%実行~開始~時刻:-
 	%~callback:callback
 	%設定群:settings
+	%設定群~obj:settingsObject
 	%~script計時~報:scriptTimingInfo
 	%~handler:handler
 	-:setTimeoutOrInterval
@@ -485,6 +491,8 @@ checkpoint:
 	%~script~navigable:-
 	%入口~navigable:-
 	%所要時間:duration
+	%記録処理を開始したか:didStartRecording
+	%終了~時刻:endTime
 
 	●計時／long task／animation frame task
 極小:minimal:~
@@ -532,7 +540,7 @@ touch::::タッチ
 活動:activity:~
 	-:〜 interactions
 応答性:responsiveness::~
-知覚-:preceive:~
+知覚-:perceive:~
 	締め出され:locked up
 	~~長い:high
 	可変:variable
@@ -900,7 +908,7 @@ some animation and scrolling interactions require coordination between composito
 （および `RUM＠https://en.wikipedia.org/wiki/Real_user_monitoring$ ~vendor
 【 `real user monitoring^en ／ “現実の利用者~体験の監視” 】
 ）は、
-すでに， “長い~task” が起こる事例を識別して追跡しようと試みている。
+すでに， “長い~task” が起こる事例を識別して追跡するよう試みている。
 一例として、
 短い周期的な~timerを~installした上で，各~満了から次回の満了までに経過した時間を検分する~patternが知られている。
 経過した時間が~timer周期を超えるならば、
@@ -1000,7 +1008,7 @@ Register observer for previous and future long animation frame notifications. Af
 当の~frameが描画されるか，~UAが描画するものは何も無いと裁定する
 ］ときまでを成す ある `sequence^en を測定するので。
 ◎
-While both long tasks and long animation frames measure congestion and jank, long animation frames provide information that has a better correlation with how users preceive this type of congestion. That’s because long animation frames measure a sequence that begins when the main thread is idle, and end when the frame either renders or the user agents decides there is nothing to render.
+While both long tasks and long animation frames measure congestion and jank, long animation frames provide information that has a better correlation with how users perceive this type of congestion. That’s because long animation frames measure a sequence that begins when the main thread is idle, and end when the frame either renders or the user agents decides there is nothing to render.
 </p>
 
 <p>
@@ -1300,7 +1308,7 @@ whose timing info is scriptInfo and＼
 			<li>
 <p>
 %~script~entry の`~window帰属$psT ~SET 
-( %~script~navigable, %入口~navigable )
+( %~script~window, %入口~window, %~script~navigable, %入口~navigable )
 に応じて：
 ◎
 whose window attribution is the value corresponding to the first matching statement:
@@ -1866,10 +1874,22 @@ A list of script timing info, initially empty.
 pending script
 </dt>
 	<dd>
-~NULL ／ ある`~script計時~報$
+~NULL ／ある`~script計時~報$
 — 初期~時は ~NULL とする。
 ◎
 Null or a script timing info, initially null.
+</dd>
+
+	<dt>
+`~scriptから起動されたか@ftI
+◎
+script initiated
+</dt>
+	<dd>
+ある真偽値
+— 初期~時は ~F とする。
+◎
+A boolean, initially false.
 </dd>
 </dl>
 
@@ -2012,8 +2032,8 @@ A Document has a null or frame timing info current frame timing info, initially 
 所与の
 ( `文書$ %文書 )
 と
-`同一-生成元に属する最も近い根@
-は：
+`同一-生成元な最も近い根@
+を得る~algoは：
 ◎
 To get the nearest same-origin root for a Document document:
 </p>
@@ -2053,12 +2073,82 @@ Return document.
 ( `文書$ %文書 )
 に
 `関連な~frame計時~報@
-は
+を得る~algoは
 ⇒
-~RET %文書 と`同一-生成元に属する最も近い根$の`現在の~frame計時~報$doc
+~RET %文書 と`同一-生成元な最も近い根$の`現在の~frame計時~報$doc
 ◎
 The relevant frame timing info for a Document document is its nearest same-origin root’s current frame timing info.
 </p>
+</div>
+
+<div class="algo">
+<p>
+`必要なら~task時刻の記録処理を開始する@
+~algoは、
+所与の
+( `環境~設定群~obj$ %設定群~obj )
+に対し：
+◎
+To start recording task time if needed given an environment settings object settingsObject:
+</p>
+
+<p class="note">注記：
+この~algoは、［
+`~eventを発火する$／`~script入口点を作成する$
+］~algoから~callされ，
+それらの~algoが~taskであったかのように当の［
+~eventの発火／~script
+］の所要時間~用に~frame計時~報の記録処理を開始する。
+これは、［
+~script／~event
+］のうち［
+~taskに結付けられず，他では`暗黙な文書$を要求することになるもの
+］たちの所要時間を織り込む。
+◎
+Note: this is called from the fire an event algorithm and the create script entry point algorithm. It starts recording frame timing info for the duration of the event firing or script, as if it was a task. This accounts for script and event durations that are not associated with tasks, which would otherwise require an implied document.
+</p>
+<ol>
+	<li>
+~IF［
+%設定群~obj の`大域~obj$enVは`~window$でない
+］
+⇒
+~RET ~F
+◎
+↓</li>
+	<li>
+<p>
+%文書 ~LET %設定群~obj の`大域~obj$enVに`結付けられた文書$
+</p>
+
+<p class="trans-note">【
+この段と前~段は、
+この訳による補完。
+原文は、
+%設定群~obj を`文書$であるかのように取扱っていて，意味不明な見かけになっている。
+】</p>
+◎
+↓</li>
+	<li>
+~IF［
+%文書 に`関連な~frame計時~報$ ~NEQ ~NULL
+］
+⇒
+~RET ~F
+◎
+If settingsObject is not a Document or its relevant frame timing info is non-null, then return false.
+</li>
+	<li>
+`~task開始~時刻を記録する$( `安全でない共有される現在の時刻$, %文書【！%設定群~obj】 )
+◎
+Record task start time given the unsafe shared current time and settingsObject.
+</li>
+	<li>
+~RET ~T
+◎
+Return true.
+</li>
+</ol>
 </div>
 
 <div class="algo">
@@ -2073,7 +2163,7 @@ To record task start time given a DOMHighResTimeStamp unsafeTaskStartTime, and a
 </p>
 <ol>
 	<li>
-%根 ~LET %文書 と`同一-生成元に属する最も近い根$
+%根 ~LET %文書 と`同一-生成元な最も近い根$
 ◎
 Let root be document’s nearest same-origin root.
 </li>
@@ -2105,7 +2195,7 @@ Set root’s current frame timing info’s current task start time to unsafeTask
 ⇒
 %計時~報 の`開始~時刻$ftI ~SET %安全でない~task開始~時刻
 ◎
-If root’s current frame timing info’s ’s start time is 0, then set root’s current frame timing info’s start time to unsafeTaskStartTime.
+If root’s current frame timing info’s 's start time is 0, then set root’s current frame timing info’s start time to unsafeTaskStartTime.
 </li>
 </ol>
 </div>
@@ -2172,7 +2262,7 @@ If the user agent believes that updating the rendering of document’s node navi
 </p>
 		<ol>
 			<li>
-%文書 の`同一-生成元に属する最も近い根$の`現在の~frame計時~報$doc ~SET ~NULL
+%文書 と`同一-生成元な最も近い根$の`現在の~frame計時~報$doc ~SET ~NULL
 ◎
 set document’s nearest same-origin root’s current frame timing info to null.
 </li>
@@ -2255,7 +2345,7 @@ Let frameDuration be the duration between the relative high resolution time give
 %~frame所要時間 ~LT 50ms
 ］
 ⇒＃
-%文書 の`同一-生成元に属する最も近い根$の`現在の~frame計時~報$doc ~SET ~NULL；
+%文書 と`同一-生成元な最も近い根$の`現在の~frame計時~報$doc ~SET ~NULL；
 ~RET
 ◎
 If frameDuration is less than 50 milliseconds, then set document’s nearest same-origin root’s current frame timing info to null and return.
@@ -2655,32 +2745,23 @@ Let document be settings’s document.
 Let frameTimingInfo be document’s relevant frame timing info.
 </li>
 	<li>
-~IF［
-%~frame計時~報 ~EQ ~NULL
-］
-⇒
-~RET
+~Assert：
+%~frame計時~報 ~NEQ ~NULL
 ◎
-↓</li>
+Assert: frameTimingInfo is non-null.
+</li>
 	<li>
 %処理待ち~script ~LET %~frame計時~報 の`処理待ち~script$ftI
 ◎
 ↓</li>
 	<li>
 ~IF［
-%処理待ち~script ~NEQ ~NULL
-【~EQ ~NULL ？】
+%処理待ち~script ~NEQ【~EQ ？】 ~NULL
 ］
 ⇒
 ~RET
 ◎
-If frameTimingInfo is null or if frameTimingInfo’s pending script is not null, then return.
-</li>
-	<li>
-~Assert：
-%処理待ち~script の`呼出元~種別$stI ~EQ `classic-script^l
-◎
-Assert: frameTimingInfo’s pending script’s invoker type is "`classic-script`".
+If frameTimingInfo’s pending script is not null, then return.
 </li>
 	<li>
 %処理待ち~script の`実行~開始~時刻$stI ~SET `安全でない共有される現在の時刻$
@@ -2772,18 +2853,25 @@ Let document be settings’s document.
 If document is not fully active or hidden, then return.
 </li>
 	<li>
+%記録処理を開始したか ~LET `必要なら~task時刻の記録処理を開始する$( %文書 )
+◎
+Let didStartRecording be the result of calling start recording task time if needed given document.
+</li>
+	<li>
 %~frame計時~報 ~LET %文書 に`関連な~frame計時~報$
 ◎
 Let frameTimingInfo be document’s relevant frame timing info.
 </li>
 	<li>
-~IF［
-%~frame計時~報 ~EQ ~NULL
-］
-⇒
-~RET
+~Assert：
+%~frame計時~報 ~NEQ ~NULL
 ◎
-If frameTimingInfo is null, then return.
+Assert: frameTimingInfo is non-null.
+</li>
+	<li>
+%~frame計時~報 の`~scriptから起動されたか$ftI ~SET %記録処理を開始したか
+◎
+Set frameTimingInfo’s script initiated to didStartRecording.
 </li>
 	<li>
 ~IF［
@@ -2861,9 +2949,20 @@ If document is not fully active or hidden, then return.
 Let frameTimingInfo be document’s relevant frame timing info.
 </li>
 	<li>
+~Assert：
+%~frame計時~報 ~NEQ ~NULL
+◎
+Assert: frameTimingInfo is not null.
+</li>
+	<li>
 %~script計時~報 ~LET %~frame計時~報 の`処理待ち~script$ftI
 ◎
 Let scriptTimingInfo be frameTimingInfo’s pending script.
+</li>
+	<li>
+%終了~時刻 ~LET `安全でない共有される現在の時刻$
+◎
+Let endTime be the unsafe shared current time.
 </li>
 	<li>
 %~frame計時~報 の`処理待ち~script$ftI ~SET ~NULL
@@ -2880,9 +2979,9 @@ Set frameTimingInfo’s pending script to null.
 If scriptTimingInfo is null, then return.
 </li>
 	<li>
-%~script計時~報 の`終了~時刻$stI ~SET `安全でない共有される現在の時刻$
+%~script計時~報 の`終了~時刻$stI ~SET %終了~時刻
 ◎
-Set scriptTimingInfo’s end time to the unsafe shared current time.
+Set scriptTimingInfo’s end time to endTime.
 </li>
 	<li>
 ~IF［
@@ -2911,6 +3010,27 @@ If script is a classic script whose muted errors is true, then:
 ◎
 If the duration between scriptTimingInfo’s start time and scriptTimingInfo’s end time is greater than 5 milliseconds, then append scriptTimingInfo to frameTimingInfo’s scripts.
 </li>
+	<li>
+<p>
+~IF［
+%~frame計時~報 の`~scriptから起動されたか$ftI ~EQ ~T
+］
+⇒
+`~task終了~時刻を記録する$( %終了~時刻, %文書 )
+◎
+If frameTimingInfo is script initiated, then record task end time given endTime and document.
+</p>
+
+<p class="note">注記：
+~event~listener用には、
+当の~taskの存続期間は，`~eventを発火する$~algoにより管理される。
+それは、
+同じ~eventに対し複数の~listenerを呼出すこともある
+— 単独の~listenerの実行の終了にて，【その時刻を記録する？】ではなく。
+◎
+Note: For event listeners, the task lifetime is managed by the fire an event algorithm, which may invoke multiple listeners to the same event, rather than at the end of a single listener’s execution.
+</p>
+	</li>
 </ol>
 </div>
 
@@ -3000,16 +3120,13 @@ If document is not fully active or hidden, then return.
 	<li>
 %~frame計時~報 ~LET %文書 に`関連な~frame計時~報$
 ◎
-Let frameTimingInfo be document’s relevant frame timing info.
+Let frameTimingInfo be the relevant frame timing info given document.
 </li>
 	<li>
-~IF［
-%~frame計時~報 ~EQ ~NULL
-］
-⇒
-~RET
+~Assert：
+%~frame計時~報 ~NEQ ~NULL
 ◎
-If frameTimingInfo is null, then return.
+Assert: frameTimingInfo is not null.
 </li>
 	<li>
 ~IF［
@@ -3022,7 +3139,6 @@ If frameTimingInfo’s pending script is null, then return.
 </li>
 	<li>
 %~frame計時~報 の`処理待ち~script$ftIの`静止-所要時間$stI ~INCBY %所要時間
-
 ◎
 Increment frameTimingInfo’s pending script’s pause duration by the milliseconds value of duration.
 </li>
@@ -3309,7 +3425,7 @@ only documents that are associated with a work task that contributed to the sequ
 </li>
 	<li>
 長い~animation~frameが可用になる文書は、
-前項の文書と`同一-生成元に属する最も近い根$に限られる。
+前項の文書と`同一-生成元な最も近い根$に限られる。
 【！前項の文書の先祖のうち［その親は［無い／非同一-生成元に属する］もの］のうち文書に最も近いもの】
 ◎
 and that long animation frame would be available only in their nearest ancestor that is either topmost or has a cross-origin parent.
