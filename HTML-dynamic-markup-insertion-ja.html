@@ -116,8 +116,8 @@ return text;
 
 ●●options
 
-spec_date:2026-06-03
-trans_update:2026-06-10
+spec_date:2026-06-10
+trans_update:2026-06-11
 source_checked:240415
 page_state_key:HTML
 spec_status:LS
@@ -144,6 +144,7 @@ m:code
 m1:code
 mb:code
 mbU:code
+mbP:code
 mbA:code
 mbE:code
 c:code
@@ -205,6 +206,7 @@ I.SanitizerConfig:#sanitizerconfig
 I.SanitizerPresets:#sanitizerpresets
 I.SetHTMLOptions:#sethtmloptions
 I.SetHTMLUnsafeOptions:#sethtmlunsafeoptions
+I.ParseHTMLUnsafeOptions:#parsehtmlunsafeoptions
 I.SanitizerElementNamespace:#sanitizerelementnamespace
 I.SanitizerElementNamespaceWithAttributes:#sanitizerelementnamespacewithattributes
 I.SanitizerAttributeNamespace:#sanitizerattributenamespace
@@ -285,6 +287,9 @@ mbE.namespace:#dom-sanitizerelementnamespace-namespace
 mbE.removeAttributes:#dom-sanitizerelementnamespacewithattributes-removeattributes
 
 mbU.sanitizer:#dom-sethtmlunsafeoptions-sanitizer
+mbU.runScripts:#dom-sethtmlunsafeoptions-runscripts
+
+mbP.sanitizer:#dom-parsehtmlunsafeoptions-sanitizer
 
 document.write 手続き:#document-write-steps
 document.open 手続き:#document-open-steps
@@ -489,6 +494,7 @@ set.付加する:~INFRA#set-append
 未満の符号単位~列:~INFRA#code-unit-less-than
 符号単位~接頭辞:~INFRA#code-unit-prefix
 
+	~Assert:~INFRA#assert
 	~EACH:~INFRA#list-iterate
 	map.~DF:~INFRA#map-with-default
 	~SET ε:~INFRA#map-remove 
@@ -659,6 +665,7 @@ pi:::処理命令
 	%名前空間~A:namespaceA
 	%名前空間~B:namespaceB
 	%置換される要素~群:-
+	%~scripting~mode:scriptingMode
 
 	●データ／型／構造／操作
 消去-:erase:~
@@ -803,6 +810,7 @@ template:
 
 	変わる:varies
 	重ねて:twice
+	直後:immediately after
 	に加え
 	化
 	在る
@@ -1749,6 +1757,10 @@ dictionary `SetHTMLOptions@I {
 };
 dictionary `SetHTMLUnsafeOptions@I {
   (`Sanitizer$I or `SanitizerConfig$I or `SanitizerPresets$I) `sanitizer@mbU = {};
+  boolean `runScripts@mbU = false;
+};
+dictionary `ParseHTMLUnsafeOptions@I {
+  (`Sanitizer$I or `SanitizerConfig$I or `SanitizerPresets$I) `sanitizer@mbP = {};
 };
 
 dictionary `GetHTMLOptions@I {
@@ -2091,8 +2103,10 @@ Parses html using the HTML parser with options options, and replaces the childre
 %element の中へ挿入される前に，
 %options の `sanitizer$mbU ~memberに基づいて`無毒化-$される。
 【！If the options dictionary contains】
+%options の `runScripts$mbU ~memberが ~T をとる場合、
+%html 内に包含される各~scriptは，~node~treeが更新された直後に実行されることになる。
 ◎
-Parses html using the HTML parser with options options, and replaces the children of element with the result. element provides context for the HTML parser. If the options dictionary contains a "sanitizer" member, it is used to sanitize the parsed fragment before it is inserted into element.
+Parses html using the HTML parser with options options, and replaces the children of element with the result. element provides context for the HTML parser. If the options dictionary contains a "sanitizer" member, it is used to sanitize the parsed fragment before it is inserted into element. If the options dictionary's "runScripts" member is true, scripts contained in html will be executed immediately after the node tree is updated.
 </dd>
 
 	<dt>%shadowRoot.`setHTMLUnsafe(html, options)$m1</dt>
@@ -2104,8 +2118,10 @@ Parses html using the HTML parser with options options, and replaces the childre
 %shadowRoot の中へ挿入される前に，
 %options の `sanitizer$mbU ~memberに基づいて`無毒化-$される。
 【！If the options dictionary contains】
+%options の `runScripts$mbU ~memberが ~T をとる場合、
+%html 内に包含される各~scriptは，~node~treeが更新された直後に実行されることになる。
 ◎
-Parses html using the HTML parser with options options, and replaces the children of shadowRoot with the result. shadowRoot's host provides context for the HTML parser. If the options dictionary contains a "sanitizer" member, it is used to sanitize the parsed fragment before it is inserted into shadowRoot.
+Parses html using the HTML parser with options options, and replaces the children of shadowRoot with the result. shadowRoot's host provides context for the HTML parser. If the options dictionary contains a "sanitizer" member, it is used to sanitize the parsed fragment before it is inserted into shadowRoot. If the options dictionary's "runScripts" member is true, scripts contained in html will be executed immediately after the node tree is updated.
 </dd>
 
 	<dt>%doc = `Document$I.`parseHTML(html, options)$m</dt>
@@ -2133,7 +2149,7 @@ Parses html using the HTML parser with options options, and returns the resultin
 ］ことに注意。
 文書の`~URL$docは `~about_blank$sc になる。
 結果の~DOMは、
-%options の `sanitizer$mbU ~memberに基づいて`無毒化-$される。
+%options の `sanitizer$mbP ~memberに基づいて`無毒化-$される。
 【！If the options dictionary contains】
 ◎
 Note that script elements are not evaluated during parsing, and the resulting document's encoding will always be UTF-8. The document's URL will be about:blank. If the options dictionary contains a "sanitizer" member, it is used to sanitize the resulting DOM.
@@ -3425,6 +3441,14 @@ The serializeToString(root) method steps are:
 		<section id="html-sanitization">
 <h3 title="HTML sanitization">8.6. ~HTMLの無毒化</h3>
 
+<p class="trans-note">【
+この節に現れる（ `Sanitizer$I を~~構成するものとして利用される）語 “要素”, “属性” は、
+ほとんどが，それらの型を識別する名前
+— ( 名前, 名前空間 ) が成す組 —
+を意味することに注意
+（個々の~nodeではなく）。
+】</p>
+
 			<section id="introduction-12">
 <h4 title="Introduction">8.6.1. 序論</h4>
 
@@ -3715,8 +3739,6 @@ Set sanitizer's configuration to configuration.
 に対し：
 ◎
 To canonicalize the configuration SanitizerConfig configuration with a boolean allowCommentsPIsAndDataAttributes:
-• For each member of configuration that is a list of strings:（冗長な段）
-•• Replace each string in member with the result of canonicalizing it.
 </p>
 <ol>
 	<li>
@@ -4389,7 +4411,7 @@ If configuration["dataAttributes"] is true, then remove all items item from elem
 ］
 ⇒
 %element[ "`removeAttributes$mbE" ] ~SET
-`交差集合$`名前$sub【！`正準-化された交差集合$( `~listから集合を作成する$`名前$sub( %element[ "`removeAttributes$mbE" ] ), %環境設定[ "`attributes$mb" ] )
+`交差集合$`名前$sub【！`正準-化された交差集合$】( `~listから集合を作成する$`名前$sub( %element[ "`removeAttributes$mbE" ] ), %環境設定[ "`attributes$mb" ] )
 ◎
 If element["removeAttributes"] exists:
 • Set element["removeAttributes"] to the result of creating a set from element["removeAttributes"].
@@ -5758,6 +5780,47 @@ then return.
 ◎
 Let sanitizer be the result of calling getting a sanitizer from options given safe.
 </li>
+	<li>
+%~scripting~mode ~LET `不活$i
+◎
+Let scriptingMode be Inert.
+</li>
+	<li>
+<p>
+~IF［
+%~option群[ "`runScripts$mbU" ] ~EQ ~T
+］：
+◎
+If options["runScripts"] is true:
+</p>
+		<ol>
+			<li>
+~Assert：
+%安全か ~EQ ~F
+◎
+Assert: safe is false.
+</li>
+			<li>
+%~scripting~mode ~SET `素片$i
+◎
+Set scriptingMode to Fragment.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+%新たな子~群 ~LET `~HTML素片の構文解析~algo$( %文脈~要素, %~HTML, ~T, %~scripting~mode )
+◎
+Let newChildren be the result of parsing a fragment given contextElement, html, true, and scriptingMode.
+</p>
+
+<p class="note">注記：
+%新たな子~群 内の~scriptは、
+%~target の中へ挿入されたときに限り，実行されることになる。
+◎
+Scripts in newChildren will only execute once inserted into target.
+</p>
+	</li>
 	<li>
 %新たな子~群 ~LET `~HTML素片の構文解析~algo$( %文脈~要素, %~HTML, ~T )
 ◎
