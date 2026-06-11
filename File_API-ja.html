@@ -150,8 +150,8 @@ return text;
 ●●options
 
 spec_title:File API
-spec_date:2025-12-03
-trans_update:2025-12-04
+spec_date:2026-06-04
+trans_update:2026-06-11
 source_checked:190315
 original_url:https://w3c.github.io/FileAPI/
 spec_status:ED
@@ -159,7 +159,7 @@ ref_id_prefix:biblio-
 ref_id_lowercase:true
 site_nav:storage
 conformance:w3c
-copyright:2025,permissive
+copyright:2026,permissive
 trans_1st_pub:2012-01-03
 
 
@@ -298,30 +298,27 @@ I.FileReader:#filereader
 I.FileReaderSync:#filereadersync
 I.MediaSource:http://w3c.github.io/media-source/#mediasource
 I.ReadableStream:~STREAMS#readablestream
+I.TextDecoderStream:~ENCODING#textdecoderstream
 
 I.Array:~TC39#sec-array-constructor
 I.Date:~TC39#sec-date-constructor
 I.DOMException:~WEBIDL#idl-DOMException
 
-	●constructor
-m.new Blob:#dom-blob-blob
-	m.Blob:#dom-blob-blob-blobparts-options
-m.new File:#dom-file-file
-m.new FileReader:#dom-filereader-filereader
-m.new FileReaderSync:#dom-filereadersync-filereadersync
-
-	■attrs/method
 
 	Blob
+m.new Blob:#dom-blob-blob
+	m.Blob:#dom-blob-blob-blobparts-options
 m.size:#dfn-size
 m.type:#dfn-type
 m.slice:#dfn-slice
 m.stream:#dom-blob-stream
 m.text:#dom-blob-text
 m.arrayBuffer:#dom-blob-arraybuffer
+m.textStream:#dom-blob-textstream
 m.bytes:#dom-blob-bytes
 
 	File
+m.new File:#dom-file-file
 m.name:#dfn-name
 m.lastModified:#dfn-lastModified
 
@@ -330,6 +327,7 @@ m.item:#dfn-item
 m.length:#dfn-length
 
 	FileReader
+m.new FileReader:#dom-filereader-filereader
 m.readAsArrayBuffer:#dfn-readAsArrayBuffer
 m.readAsBinaryString:#dfn-readAsBinaryString
 m.readAsDataURL:#dfn-readAsDataURL
@@ -349,6 +347,7 @@ m.onloadstart:#dfn-onloadstart
 m.onprogress:#dfn-onprogress
 
 	FileReaderSync
+m.new FileReaderSync:#dom-filereadersync-filereadersync
 mS.readAsArrayBuffer:#dfn-readAsArrayBufferSync
 mS.readAsBinaryString:#dfn-readAsBinaryStringSync
 mS.readAsDataURL:#dfn-readAsDataURLSync
@@ -515,15 +514,18 @@ RS.~byte読取り~support付きで設定しておく:~STREAMS#readablestream-set
 RS.~errorにする:~STREAMS#readablestream-error
 RS.読取器を取得する:~STREAMS#readablestream-get-a-reader
 RS.~chunkを~enqueueする:~STREAMS#readablestream-enqueue
+RS.通して~pipeする:~STREAMS#readablestream-pipe-through
 RSR.すべての~byteを読取る:~STREAMS#readablestreamdefaultreader-read-all-bytes
 x.反映されていない:https://github.com/w3c/FileAPI/issues/187
 RSR.~chunkを読取る:~STREAMS#readablestreamdefaultreader-read-a-chunk
+形式変換:~STREAMS#generictransformstream-transform
 
 ~UTF-8:~ENCODING#utf-8
 ~labelから符号化法を取得する:~ENCODING#concept-encoding-get
 ~UTF-8符号化する:~ENCODING#utf-8-encode
 ~UTF-8復号する:~ENCODING#utf-8-decode
 ~Unicodeに復号する:~ENCODING#decode
+~text復号器~streamを設定しておく:~ENCODING#set-up-a-text-decoder-stream
 
 ~eventを発火する:~DOM4#concept-event-fire
 発火-:~DOM4#concept-event-fire
@@ -591,7 +593,7 @@ PublicML:https://lists.w3.org/Archives/Public
 
 ●●words_table
 
-	●network／URL／IO／storage
+	●network／URL／IO／storage／stream
 Blob:
 blob:
 ReadableStream:
@@ -620,6 +622,8 @@ store::::ストア
 
 切出す:sliceする::切り出す
 切出し:slice::切り出し
+pipe::::パイプ
+
 
 	●構文
 UTF-16:
@@ -698,6 +702,7 @@ span:
 	-:isAuthorized
 	%~blob~storage~key:blobStorageKey
 	%環境~storage~key:environmentStorageKey
+	%復号器:decoder
 
 
 	●保安
@@ -1594,6 +1599,7 @@ read from the Blob.
   [`NewObject$] `ReadableStream$I `stream$m();
   [`NewObject$] `Promise$&lt;`USVString$&gt; `text$m();
   [`NewObject$] `Promise$&lt;`ArrayBuffer$&gt; `arrayBuffer$m();
+  [`NewObject$] `ReadableStream$I `textStream$m();
   [`NewObject$] `Promise$&lt;`Uint8Array$&gt; `bytes$m();
 };
 
@@ -2487,6 +2493,47 @@ that returns a new Uint8Array wrapping an ArrayBuffer containing its first argum
 </div>
 	</li>
 </ol>
+</div>
+
+<div class="algo">
+<p id="text-stream-method-algo">
+`textStream()@m
+~method手続きは：
+◎
+3.3.6. The textStream() method
+◎
+The textStream() method steps are:
+</p>
+<ol>
+	<li>
+%~stream ~LET コレの`~streamを取得する$()
+◎
+Let stream be the result of calling get stream on this.
+</li>
+	<li>
+%復号器 ~LET `新たな~obj$( `TextDecoderStream$I, コレに`関連な~realm$ )
+◎
+Let decoder be a new TextDecoderStream in this’s relevant realm.
+</li>
+	<li>
+`~text復号器~streamを設定しておく$( %復号器, `~UTF-8$ )
+◎
+Set up decoder with UTF-8.
+</li>
+	<li>
+~RET %~stream を %復号器 【の`形式変換$】を`通して~pipeする$RS
+◎
+Return the result of calling stream, piped through decoder.
+</li>
+</ol>
+
+<p class="note">注記：
+この~methodは、
+常に `~UTF-8$ 符号化法を利用することにおいて，
+`readAsText()$m とは相違する。
+◎
+Note: This differs from readAsText() in that it always uses the UTF-8 encoding.
+</p>
 </div>
 
 		</section>
