@@ -207,8 +207,8 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2026-05-08
-trans_update:2026-05-14
+spec_date:2026-06-05
+trans_update:2026-06-11
 source_checked:250918
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -555,6 +555,7 @@ I.WorkerGlobalScope:~WORKERS#workerglobalscope
 I.ServiceWorkerGlobalScope:~SW1#serviceworkerglobalscope
 I.ReferrerPolicy:~REFERRER-POLICY#enumdef-referrerpolicy
 I.EventSource:~HTMLsse#eventsource
+I.TextDecoderStream:~ENCODING#textdecoderstream
 
 
 I.WindowOrWorkerGlobalScope:~HTMLGAPI#windoworworkerglobalscope
@@ -1158,6 +1159,7 @@ rR.~error手続き:~STREAMS#read-request-error-steps
 RS.~byte読取り~support付きで設定しておく:~STREAMS#readablestream-set-up-with-byte-reading-support
 	取消~algo:~STREAMS#readablestream-set-up-cancelalgorithm
 	~pull~algo:~STREAMS#readablestream-set-up-pullalgorithm
+RS.設定しておく:~STREAMS#readablestream-set-up
 RS.読取器を取得する:~STREAMS#readablestream-get-a-reader
 RS.~proxyを作成する:~STREAMS#readablestream-create-a-proxy
 RS.~byte列から~pullする:~STREAMS#readablestream-pull-from-bytes
@@ -1171,15 +1173,15 @@ RS.~errorした:~STREAMS#readablestream-errored
 RS.妨げられている:~STREAMS#is-readable-stream-disturbed
 RS.~lockされている:~STREAMS#readablestream-locked
 RS.もっと~dataが必要:~STREAMS#readablestream-need-more-data
+RS.通して~pipeする:~STREAMS#readablestream-pipe-through
 
 RSR.~chunkを読取る:~STREAMS#readablestreamdefaultreader-read-a-chunk
 RSR.すべての~byteを読取る:~STREAMS#readablestreamdefaultreader-read-all-bytes
 
-RS.通して~pipeする:~STREAMS#readablestream-pipe-through
-
 TS.設定しておく:~STREAMS#transformstream-set-up
 TS.~chunkを~enqueueする:~STREAMS#transformstream-enqueue
 恒等変換~stream:~STREAMS#identity-transform-stream
+形式変換:~STREAMS#generictransformstream-transform
 
 
 	●Fetch API
@@ -1443,6 +1445,7 @@ enc.~UTF-8:~ENCODING#utf-8
 ~UTF-8符号化する:~ENCODING#utf-8-encode
 ~UTF-8復号する:~ENCODING#utf-8-decode
 ~BOMはそのままに~UTF-8復号する:~ENCODING#utf-8-decode-without-bom
+~text復号器~streamを設定しておく:~ENCODING#set-up-a-text-decoder-stream
 
 ~URL:~URL1#concept-url
 	誤）~TR/pub-manifest/#dfn-url
@@ -2007,6 +2010,8 @@ background::::バックグラウンド
 	%環境:environment
 	%模倣された言語:emulatedLanguage
 	%符号化-済みな模倣された言語:encodedEmulatedLanguage
+	%空な~stream:emptyStream
+	%復号器:decoder
 
 	●URL
 hostname::::ホスト名
@@ -2575,6 +2580,7 @@ shim:
 	広く:widely-
 	見かけ:look
 	一定:constant
+	有無:presence
 
 ●●ref_key_map
 ORIGIN:RFC6454
@@ -2734,7 +2740,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/301650c6d9ee932f126d6598262966242eb3d838/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/30140d05af57eb9d24d43a2c18f108abac7964ce/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -21776,6 +21782,7 @@ interface mixin `Body@I {
   [`NewObject$] `Promise$&lt;`FormData$I&gt; `formData$m();
   [`NewObject$] `Promise$&lt;`any$&gt; `json$m();
   [`NewObject$] `Promise$&lt;`USVString$&gt; `text$m();
+  [`NewObject$] `ReadableStream$I `textStream$m();
 };
 </pre>
 
@@ -21892,6 +21899,14 @@ Returns a promise fulfilled with requestOrResponse’s body parsed as JSON.
 充足される~promiseを返す。
 ◎
 Returns a promise fulfilled with requestOrResponse’s body as string.
+</dd>
+
+	<dt>%requestOrResponse . `textStream()$m</dt>
+	<dd>
+%requestOrResponse の本体を文字列~chunkたちとして伴う
+`ReadableStream$I ~objを返す。
+◎
+Returns a ReadableStream object with requestOrResponse’s body as string chunks.
 </dd>
 </dl>
 
@@ -22229,10 +22244,10 @@ Parse bytes, using the value of the `boundary` parameter from mimeType, per the 
 `name$mF 属性の値 ~SET `filename^bl ~parameterの値
 </li>
 									<li>
-`type$mF 属性の値 ~SET %部位 内に `Content-Type$h ~headerが［
+`type$mF 属性の値 ~SET %部位 内に `Content-Type$h ~headerが
+⇒＃
 在るならば その~header値 ／
 無いならば `text/plain^bl （ `RFC7578$r § 4.4 に定義される既定）
-］
 </li>
 								</ul>
 ◎
@@ -22251,8 +22266,9 @@ Each part whose `Content-Disposition` header does not contain a `filename` param
 
 <p class="note">注記：
 これは、［
-`Content-Type$h ~header ／ `charset^bl ~parameter
-］の有無やその値に関わらず行われる。
+`Content-Type$h ~headerの有無やその値,
+`charset^bl ~parameterの有無やその値
+］に関わらず，行われる。
 ◎
 This is done regardless of the presence or the value of a `Content-Type` header and regardless of the presence or the value of a `charset` parameter.
 </p>
@@ -22352,6 +22368,88 @@ The above method can reject with a SyntaxError.
 ◎
 The text() method steps are to return the result of running consume body with this and UTF-8 decode.
 </p>
+</div>
+
+<div class="algo">
+<p>
+`textStream()@m
+~method手続きは：
+◎
+The textStream() method steps are:
+</p>
+<ol>
+	<li>
+~IF［
+コレは`利用-不能$Bdである
+］
+⇒
+~THROW `TypeError$E
+◎
+If this is unusable, then throw a TypeError.
+</li>
+	<li>
+<p>
+~IF［
+コレの`本体$Bd ~EQ ~NULL
+］：
+◎
+If this’s body is null:
+</p>
+		<ol>
+			<li>
+%空な~stream ~LET `新たな~obj$( `ReadableStream$I, コレに`関連な~realm$ )
+◎
+Let emptyStream be a new ReadableStream in this’s relevant realm.
+</li>
+			<li>
+%空な~stream を`設定しておく$RS()
+◎
+Set up emptyStream.
+</li>
+			<li>
+%空な~stream を`~closeする$RS()
+◎
+Close emptyStream.
+</li>
+			<li>
+~RET %空な~stream
+◎
+Return emptyStream.
+</li>
+		</ol>
+	</li>
+	<li>
+%~stream ~LET コレの`本体$Bdの`~stream$bd
+◎
+Let stream be this’s body’s stream.
+</li>
+	<li>
+%復号器 ~LET `新たな~obj$( `TextDecoderStream$I, コレに`関連な~realm$ )
+◎
+Let decoder be a new TextDecoderStream object in this’s relevant realm.
+</li>
+	<li>
+<p>
+`~text復号器~streamを設定しておく$( %復号器, `~UTF-8$enc )
+◎
+Set up decoder with UTF-8.
+</p>
+
+<p class="note">注記：
+これは、［
+`Content-Type$h ~headerの有無やその値,
+`charset^bl ~parameterの有無やその値
+］に関わらず，行われる。
+◎
+This is done regardless of the presence or the value of a `Content-Type` header and regardless of the presence or the value of a `charset` parameter.
+</p>
+	</li>
+	<li>
+~RET %~stream を %復号器 【の`形式変換$】を`通して~pipeする$RS
+◎
+Return the result of stream, piped through decoder.
+</li>
+</ol>
 </div>
 
 		</section>
