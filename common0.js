@@ -1095,6 +1095,11 @@ LTE: <span class="op">≤</span>
 GTE: <span class="op">≥</span> 
 IN: <span class="op">∈</span> 
 NIN: <span class="op">∉</span> 
+FN:<sup>†</sup>
+FN1:<sup>†1</sup>
+FN2:<sup>†2</sup>
+FN3:<sup>†3</sup>
+FN4:<sup>†4</sup>
 SOTD-CSS:<a href="css-common-ja.html#sotd">CSS 日本語訳 共通ページ</a>／<a href="#_spec_metadata">この文書についての詳細</a>
 SOTD-W3C:<a href="w3c-common-ja.html#sotd">W3C 日本語訳 共通ページ</a>／<a href="#_spec_metadata">この文書についての詳細</a>
 CSSisaLANG:<p><a href="css-snapshot-ja.html#css-is-a-lang">CSS とは…</a></p>
