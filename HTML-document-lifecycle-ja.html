@@ -98,8 +98,8 @@ return text;
 
 ●●options
 
-spec_date:2026-03-31
-trans_update:2026-04-01
+spec_date:2026-06-25
+trans_update:2026-06-28
 source_checked:250730
 page_state_key:HTML
 spec_status:LS
@@ -134,11 +134,13 @@ sub:sub
 
 ●●words_table
 
-		●network
-Content-Type:
-	HTTP_S:HTTP(S) 
-Speculation-Rules:
+	●名称／略語
+TAO:
 COOP:
+Content-Type:
+Speculation-Rules:
+
+	●network
 close:
 load:
 読込直す:reloadする::読み込み直す::リロードする
@@ -148,7 +150,7 @@ unload:
 部位t:part:部位
 	複-部位t:multipart
 
-		●環境 ／ navi
+	●環境 ／ navi
 lifecycle:
 agent:
 iframe:
@@ -616,6 +618,7 @@ set.付加する:~INFRA#set-append
 ~size:~INFRA#list-size
 ~HTML名前空間:~INFRA#html-namespace
 ~byte列:~INFRA#byte-sequence
+	i.成功:~INFRA#success
 
 	~Assert:~INFRA#assert
 	~IN:~INFRA#list-contain
@@ -633,6 +636,7 @@ rq.~URL:~FETCH#concept-request-url
 rq.~redirect回数:~FETCH#concept-request-redirect-count
 rq.~referrer:~FETCH#concept-request-referrer
 rq.現在の~URL:~FETCH#concept-request-current-url
+rq.~client:~FETCH#concept-request-client
 rs.~URL:~FETCH#concept-response-url
 rs.~header~list:~FETCH#concept-response-header-list
 rs.~sw計時~報:~FETCH#response-service-worker-timing-info
@@ -646,6 +650,7 @@ rs.非同一-生成元~redirectはあるか:~FETCH#response-has-cross-origin-red
 応答:~FETCH#concept-response
 有構造~field値を取得する:~FETCH#concept-header-list-get-structured-header
 先送d~fetch~quotaを必要なら自由化する:~FETCH#potentially-free-deferred-fetch-quota
+~navi~TAO検査:~FETCH#navigation-tao-check
 
 doc.種別:~DOM4#concept-document-type
 doc.内容~型:~DOM4#concept-document-content-type
@@ -929,7 +934,7 @@ Let topLevelOrigin be navigationParams's origin.
 %~navigable の`容器$nav ~NEQ ~NULL
 ］：
 ◎
-If navigable's container is not null, then:
+If navigable's container is not null:
 </p>
 				<ol>
 					<li>
@@ -1057,12 +1062,16 @@ Set document's ancestor origins list to the result of running the ancestor origi
 Run CSP initialization for a Document given document. [CSP]
 </li>
 	<li>
+%要請 ~LET %~navi~params の`要請$nvP
+◎
+↓</li>
+	<li>
 <p>
 ~IF［
-%~navi~params の`要請$nvP ~NEQ ~NULL
+%要請 ~NEQ ~NULL
 ］：
 ◎
-If navigationParams's request is non-null, then:
+If navigationParams's request is non-null:
 </p>
 		<ol>
 			<li>
@@ -1071,7 +1080,7 @@ If navigationParams's request is non-null, then:
 Set document's referrer to the empty string.
 </li>
 			<li>
-%~referrer ~LET %~navi~params の`要請$nvPの`~referrer$rq
+%~referrer ~LET %要請 の`~referrer$rq
 ◎
 Let referrer be navigationParams's request's referrer.
 </li>
@@ -1103,7 +1112,7 @@ Per Fetch, referrer will be either a URL record or "no-referrer" at this point.
 %~navi~params の`~fetch制御器$nvP ~NEQ ~NULL
 ］：
 ◎
-If navigationParams's fetch controller is not null, then:
+If navigationParams's fetch controller is not null:
 </p>
 		<ol>
 			<li>
@@ -1112,12 +1121,49 @@ If navigationParams's fetch controller is not null, then:
 Let fullTimingInfo be the result of extracting the full timing info from navigationParams's fetch controller.
 </li>
 			<li>
-%~redirect回数 ~LET %~navi~params の`応答$nvPの`非同一-生成元~redirectはあるか$rsに応じて
-⇒＃
-~T ならば 0 ／
-~F ならば %~navi~params の`要請$nvPの`~redirect回数$rq
+<p>
+%~redirect回数 ~LET ［
+~OR↓ が満たされるならば %要請 の`~redirect回数$rq ／
+~ELSE_ 0
+］：
+</p>
+				<ul>
+					<li>
+%~navi~params の`応答$nvPの`非同一-生成元~redirectはあるか$rs ~EQ ~F
+</li>
+					<li>
+<p>
+~AND↓：
+</p>
+						<ul>
+							<li>
+<p>
+~OR↓：
+</p>
+								<ul>
+									<li>
+%要請 の`~client$rq ~EQ ~NULL
+</li>
+									<li>
+%要請 の`~referrer$rq ~NEQ `no-referrer^l
+</li>
+								</ul>
+</li>
+							<li>
+次の結果 ~EQ `成功^i
+⇒
+`~navi~TAO検査$( %~navi~params の`応答$nvP, %~navi~params の`生成元$nvP )
+</li>
+						</ul>
+					</li>
+				</ul>
 ◎
-Let redirectCount be 0 if navigationParams's response's has cross-origin redirects is true; otherwise navigationParams's request's redirect count.
+Let redirectCount be 0.
+◎
+If navigationParams's response's has cross-origin redirects is false, or all of the following are true:
+• navigationParams's request's client is null, or navigationParams's request's referrer is not "no-referrer", and
+• navigation TAO check given navigationParams's response and navigationParams's origin returns success,
+then set redirectCount to navigationParams's request's redirect count.
 </li>
 			<li>
 `~navi計時~entryを作成する$( ↓ )
@@ -2725,7 +2771,7 @@ For each WebTransport object transport whose relevant global object is window, r
 %文書 の`回復可能か$doc ~EQ ~F
 ］：
 ◎
-If document's salvageable state is false, then:
+If document's salvageable state is false:
 </p>
 		<ol>
 			<li>
@@ -2907,7 +2953,7 @@ To destroy a document and its descendants given a Document document and an optio
 %文書 は`全部的に作動中$でない
 ］：
 ◎
-If document is not fully active, then:
+If document is not fully active:
 </p>
 		<ol>
 			<li>
@@ -3066,7 +3112,7 @@ Cancel any instances of the fetch algorithm in the context of document, discardi
 %文書 の`読込ng中における~WebDriver-BiDi用の~navi~ID$doc ~NEQ ~NULL
 ］：
 ◎
-If document's during-loading navigation ID for WebDriver BiDi is non-null, then:
+If document's during-loading navigation ID for WebDriver BiDi is non-null:
 </p>
 		<ol>
 			<li>
@@ -3091,7 +3137,7 @@ Set document's during-loading navigation ID for WebDriver BiDi to null.
 %文書 には`作動中な構文解析器$がある
 ］：
 ◎
-If document has an active parser, then:
+If document has an active parser:
 </p>
 		<ol>
 			<li>
