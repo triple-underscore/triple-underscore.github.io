@@ -207,8 +207,8 @@ return `${quote}${text}${quote}`;
 ●●options
 
 spec_title:Fetch
-spec_date:2026-06-05
-trans_update:2026-06-11
+spec_date:2026-06-25
+trans_update:2026-06-28
 source_checked:250918
 spec_status:LS
 original_url:https://fetch.spec.whatwg.org/
@@ -860,6 +860,7 @@ rq.済んだか:#done-flag
 rq.計時許容に失敗したか:#timing-allow-failed
 rq.~top-level~navi起動元~生成元:#request-top-level-navigation-initiator-origin
 rq.~WebTransport~hash~list:#request-webtransport-hash-list
+rq.~navi計時~許容-値~群~list:#request-navigation-timing-allow-values-list
 rq.~WebDriver~ID:#concept-webdriver-id
 
 行先~種別:#destination-type
@@ -905,6 +906,7 @@ rs.計時許容に合格したか:#concept-response-timing-allow-passed
 rs.本体~報:#concept-response-body-info
 rs.~sw計時~報:#response-service-worker-timing-info
 rs.~redirect~taint:#response-redirect-taint
+rs.~navi計時~許容-値~群~list:#response-navigation-timing-allow-values-list
 
 応答の~Location~URLを得る:#concept-response-location-url
 
@@ -1099,6 +1101,8 @@ cc.~method:#concept-cache-method
 
 ~CORS検査:#concept-cors-check
 ~TAO検査:#concept-tao-check
+~navi~TAO検査:#navigation-tao-check
+要請の~navi計時~許容-値~群~listに付加する:#append-to-a-requests-navigation-timing-allow-values-list
 
 整数を直列化する:#serialize-an-integer
 
@@ -1221,6 +1225,9 @@ Bd.本体:#concept-body-body
 中止されたときは:~INFRA#if-aborted
 	~BREAK:~INFRA#iteration-break
 	~CONTINUE:~INFRA#iteration-continue
+	~IN:~INFRA#list-contain
+	i.失敗:~INFRA#failure
+	i.成功:~INFRA#success
 
 真偽値:~INFRA#boolean
 ~byte列:~INFRA#byte-sequence
@@ -1898,7 +1905,6 @@ background::::バックグラウンド
 	%応答の本体~終了~時の処理n:processResponseEndOfBody
 	%応答の本体~終了~時の処理n用の~task:processResponseEndOfBodyTask
 	%応答の本体を消費する処理n:processResponseConsumeBody
-	-:doneAlgorithm
 	%~CORS予行を為すか:makeCORSPreflight
 	%資格証を含めるか:includeCredentials
 	%資格証を伴うか:credentials
@@ -1910,7 +1916,6 @@ background::::バックグラウンド
 	%本体の処理n:processBody
 	%成功~手続き:successSteps
 	%~error手続き:~errorSteps
-	-:continueAlgorithm
 	%要請~素片:requestFragment
 	%接続~群:connections
 	%不依拠-可能を要求するか:requireUnreliable
@@ -1927,7 +1932,6 @@ background::::バックグラウンド
 	%大域~obj:global
 	%大域~obj:globalObject
 	%~sw開始~時刻:serviceWorkerStartTime
-	%-:handleFetchDone
 	%形式変換~stream:transformStream
 	%形式変換~algo:transformAlgorithm
 	%恒等変換~algo:identityTransformAlgorithm
@@ -2012,6 +2016,10 @@ background::::バックグラウンド
 	%符号化-済みな模倣された言語:encodedEmulatedLanguage
 	%空な~stream:emptyStream
 	%復号器:decoder
+	%~TAO値~群:taoValues
+	%行先:destination
+	%行先の素:potentialDestination
+	%行先~生成元:destinationOrigin
 
 	●URL
 hostname::::ホスト名
@@ -2740,7 +2748,7 @@ Participate:
 
 Commits:
 	https://github.com/whatwg/fetch/commits
-	<a href="https://fetch.spec.whatwg.org/commit-snapshots/30140d05af57eb9d24d43a2c18f108abac7964ce/" id="commit-snapshot-link">Snapshot as of this commit</a>
+	<a href="https://fetch.spec.whatwg.org/commit-snapshots/aa0bd92cfe376b9ad77a1fee4306776cf7cb4194/" id="commit-snapshot-link">Snapshot as of this commit</a>
 	<a href="https://twitter.com/fetchstandard">@fetchstandard</a>
 
 Tests:
@@ -8052,8 +8060,27 @@ A request has an associated timing allow failed flag.＼
 ある真偽値
 ◎
 Unless stated otherwise, it is unset.
+</dd>
+
+	<dt>
+`~navi計時~許容-値~群~list@rq
+（ « » ）
 ◎
-↓ A request’s URL list, current URL, redirect count, response tainting, done flag, and timing allow failed flag are used as bookkeeping details by the fetch algorithm.
+A request has an associated navigation timing allow values list＼
+</dt>
+	<dd>
+`文字列$たちが成す`~list$たちが成す`~list$
+◎
+(a list of lists of strings). Unless stated otherwise, it is « ».
+</dd>
+	<dd class="note">注記：
+この~listを成す各`~item$は、［
+ある~naviの~redirect連鎖を成す ある~redirect`応答$の `Timing-Allow-Origin$h ~field値を成す値~群
+］を保持する。
+◎
+Each item in the navigation timing allow values list holds the `Timing-Allow-Origin` values of one redirect response in a navigation’s redirect chain.
+◎
+↓ A request’s URL list, current URL, redirect count, response tainting, done flag, timing allow failed flag, and navigation timing allow values list are used as bookkeeping details by the fetch algorithm.
 </dd>
 
 	<dt>
@@ -8091,11 +8118,12 @@ The WebDriver id is used by WebDriver-BiDi. It remains constant across redirects
 `~redirect回数$rq,
 `応答~tainting$rq,
 `済んだか$rq,
-`計時許容に失敗したか$rq
+`計時許容に失敗したか$rq,
+`~navi計時~許容-値~群~list$rq
 ◎
 ↑</p>
 
-<hr>
+	<hr>
 
 <p>
 `下位資源~要請@
@@ -8809,6 +8837,31 @@ which is initially unset.
 要請の`計時許容に失敗したか$rqを利用して内部的に追跡される。
 ◎
 This is used so that the caller to a fetch can determine if sensitive timing data is allowed on the resource fetched by looking at the flag of the response returned. Because the flag on the response of a redirect has to be set if it was set for previous responses in the redirect chain, this is also tracked internally using the request’s timing allow failed flag.
+</dd>
+
+	<dt>
+`~navi計時~許容-値~群~list@rs
+（ « » ）
+◎
+A response has an associated navigation timing allow values list＼
+</dt>
+	<dd>
+`文字列$たちが成す`~list$たちが成す`~list$
+◎
+(a list of lists of strings). Unless stated otherwise, it is « ».
+</dd>
+	<dd class="note">注記：
+この~listを成す各`~item$は、［
+ある~naviの~redirect連鎖を成す ある~redirect`応答$の `Timing-Allow-Origin$h ~field値を成す値~群
+］を保持する。
+これは、［
+当の~naviの行先~生成元が既知になったなら，
+【当の~naviの】~call元が［
+当の~redirect連鎖を成すどの~redirectも，当の生成元を許容する
+］か否かを決定できる
+］ようにするために利用される。
+◎
+This holds the `Timing-Allow-Origin` values of each redirect response in a navigation’s redirect chain. It is used so that callers can determine, once the navigation’s destination origin is known, whether that origin is allowed by every redirect in the redirect chain.
 </dd>
 
 	<dt>
@@ -14391,6 +14444,15 @@ Set internalResponse’s redirect taint to request’s redirect-taint.
 </li>
 	<li>
 ~IF［
+%要請 は`~navi要請$である
+］
+⇒
+%内部~応答 の`~navi計時~許容-値~群~list$rs ~SET %要請 の`~navi計時~許容-値~群~list$rqを`~cloneする$
+◎
+If request is a navigation request, then set internalResponse’s navigation timing allow values list to a clone of request’s navigation timing allow values list.
+</li>
+	<li>
+~IF［
 %要請 の`計時許容に失敗したか$rq ~EQ ~F
 ］
 ⇒
@@ -16064,6 +16126,15 @@ The cross-origin resource policy check runs for responses coming from the networ
 If internalResponse’s status is a redirect status:
 </p>
 		<ol>
+			<li>
+~IF［
+%要請 は`~navi要請$である
+］
+⇒
+`要請の~navi計時~許容-値~群~listに付加する$( %要請, %内部~応答 )
+◎
+If request is a navigation request, then append to a request’s navigation timing allow values list given request and internalResponse.
+</li>
 			<li>
 <p>
 ~IF［
@@ -19280,7 +19351,6 @@ There is a header-name cache entry match for headerName using request when there
 ］
 </li>
 </ul>
-
 ◎
 one of
 • its header name is a byte-case-insensitive match for headerName
@@ -19295,7 +19365,7 @@ is true.
 
 <div class="algo">
 <p>
-`~CORS検査@
+`	@
 を遂行する
 ~algoは、
 所与の
@@ -19476,6 +19546,104 @@ If request’s response tainting is "basic", then return success.
 Return failure.
 </li>
 </ol>
+
+<div class="algo">
+<p>
+`要請の~navi計時~許容-値~群~listに付加する@
+~algoは、
+所与の
+( `要請$ %要請, `応答$ %応答 )
+に対し：
+◎
+To append to a request’s navigation timing allow values list, given a request request and a response response:
+</p>
+<ol>
+	<li>
+~Assert：
+%要請 は`~navi要請$である。
+◎
+Assert: request is a navigation request.
+</li>
+	<li>
+%~TAO値~群 ~LET `~header~listから値を取得して復号して分割する$( `Timing-Allow-Origin$h, %応答 の`~header~list$rs )
+◎
+Let taoValues be the result of getting, decoding, and splitting `Timing-Allow-Origin` from response’s header list.
+</li>
+	<li>
+~IF［
+%~TAO値~群 ~EQ ~NULL
+］
+⇒
+%~TAO値~群 ~SET « »
+◎
+If taoValues is null, then set taoValues to « ».
+</li>
+	<li>
+%要請 の`~navi計時~許容-値~群~list$rqに %~TAO値~群 を`付加する$
+◎
+Append taoValues to request’s navigation timing allow values list.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`~navi~TAO検査@
+を遂行する~algoは、
+所与の
+( `応答$ %応答, `生成元$ %行先~生成元 )
+に対し：
+◎
+To perform a navigation TAO check for a response response and an origin destinationOrigin:
+</p>
+<ol>
+	<li>
+<p>
+%応答 の`~navi計時~許容-値~群~list$rsを成す
+~EACH( %~TAO値~群 )
+に対し：
+◎
+For each taoValues of response’s navigation timing allow values list:
+</p>
+		<ol>
+			<li>
+<p>
+~IF［
+~AND↓
+］…
+⇒
+</p>
+				<ul>
+					<li>
+`*^l ~NIN %~TAO値~群
+</li>
+					<li>
+次の結果 ~NIN %~TAO値~群
+⇒
+`生成元を直列化する$( %行先~生成元 )
+</li>
+				</ul>
+<p>
+…ならば
+⇒
+~RET `失敗^i
+</p>
+◎
+If taoValues contains "*", then continue.
+◎
+If taoValues contains destinationOrigin, serialized, then continue.
+◎
+Return failure.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET `成功^i
+◎
+Return success.
+</li>
+</ol>
+</div>
 
 		</section>
 		<section id="deferred-fetch">
@@ -26795,7 +26963,7 @@ portions in the source code are licensed under the <a href="https://opensource.o
 </p>
 
 <p>
-This is the Living Standard. Those interested in the patent-review version should view the <a href="https://fetch.spec.whatwg.org/review-drafts/2025-12/">Living Standard Review Draft</a>.
+This is the Living Standard. Those interested in the patent-review version should view the <a href="https://fetch.spec.whatwg.org/review-drafts/2026-06/">Living Standard Review Draft</a>.
 </p>
 </div>
 
