@@ -238,8 +238,8 @@ return text;
 
 ●●options
 
-spec_date:2026-06-23
-trans_update:2026-04-28
+spec_date:2026-06-25
+trans_update:2026-06-29
 source_checked:240712
 page_state_key:HTML
 spec_status:LS
@@ -321,6 +321,7 @@ writing:https://html.spec.whatwg.org/multipage/writing.html
 003F:QUESTION MARK:-
 005B:LEFT SQUARE BRACKET:-
 005D:RIGHT SQUARE BRACKET:-
+005F:LOW LINE:-
 0060:GRAVE ACCENT:-
 0058:LATIN CAPITAL LETTER:-
 0055:LATIN CAPITAL LETTER:-
@@ -356,6 +357,7 @@ I.Comment:~DOM4#interface-comment
 I.Element:~DOM4#interface-element
 I.Document:~HTMLdom#document
 I.DocumentType:~DOM4#interface-documenttype
+I.ProcessingInstruction:~DOM4#interface-processinginstruction
 I.HTMLMenuElement:~HEgrouping#htmlmenuelement
 I.ServiceWorkerContainer:~SW1#serviceworkercontainer
 I.ShadowRoot:~DOM4#interface-shadowroot
@@ -613,7 +615,6 @@ ast.なし:~HEscripting#attr-shadowrootmode-none-state
 	#parse-error-unexpected-character-in-unquoted-attribute-value
 	#parse-error-unexpected-equals-sign-before-attribute-name
 	#parse-error-unexpected-null-character
-	#parse-error-unexpected-question-mark-instead-of-tag-name
 	#parse-error-unexpected-solidus-in-tag
 	#parse-error-unknown-named-character-reference
 
@@ -683,6 +684,11 @@ st.~comment始端:#comment-start-state
 st.~comment終端~bang:#comment-end-bang-state
 st.~comment終端~dash:#comment-end-dash-state
 st.~comment終端:#comment-end-state
+st.処理命令~open:#processing-instruction-open-state
+st.処理命令~target:#processing-instruction-target-state
+st.処理命令~targetの後:#after-processing-instruction-target-state
+st.処理命令~data:#processing-instruction-data-state
+st.処理命令~疑問符可能:#processing-instruction-questionable-state
 st.~data:#data-state
 st.~decimal文字~参照:#decimal-character-reference-state
 st.~decimal文字~参照~始端:#decimal-character-reference-start-state
@@ -816,6 +822,7 @@ V.元の挿入~mode:#original-insertion-mode
 用の規則を利用して:#using-the-rules-for
 ~HTML要素を挿入する:#insert-an-html-element
 ~commentを挿入する:#insert-a-comment
+処理命令を挿入する:#insert-a-processing-instruction
 要素を挿入する:#_insert-an-element
 外来な要素を挿入する:#insert-a-foreign-element
 文字を挿入する:#insert-a-character
@@ -845,6 +852,7 @@ i.素片:#scripting-mode-fragment
 適切な~node挿入-先:#appropriate-place-for-inserting-a-node
 属性の一部として消費されて:#charref-in-attribute
 文字~参照として消費される~cpを一掃する:#flush-code-points-consumed-as-a-character-reference
+一時~bufferを~commentに変換する:#convert-the-temporary-buffer-to-a-comment
 
 ~p要素を閉じる:#close-a-p-element
 ~cellを閉じる:#close-the-cell
@@ -943,6 +951,9 @@ V.終了~条件:#prescan-end-condition
 ~DOCTYPE:~HTMLwriting#syntax-doctype
 ~CDATAsec:~HTMLwriting#syntax-cdata
 ~comment:~HTMLwriting#syntax-comments
+処理命令:~HTMLwriting#syntax-processing-instruction
+処理命令~target:~HTMLwriting#syntax-pi-target
+処理命令~data:~HTMLwriting#syntax-pi-data
 ~DOCTYPE:~HTMLwriting#syntax-doctype
 多義的~ampersand:~HTMLwriting#syntax-ambiguous-ampersand
 属性:~HTMLwriting#syntax-attributes
@@ -1063,6 +1074,7 @@ doc.読込んだとき印刷するか:~HTMLGAPI#print-when-loaded
 sct.~item:~INFRA#struct-item
 
 文字列:~INFRA#string
+連結する:~INFRA#string-concatenate
 sub.大小無視:~INFRA#ascii-case-insensitive
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 ~ASCII英字:~INFRA#ascii-alpha
@@ -1138,6 +1150,7 @@ elem.作成:~DOM4#concept-create-element
 ~tree順序:~DOM4#concept-tree-order
 
 cd.~data:~DOM4#concept-cd-data
+pI.~target:~DOM4#concept-pi-target
 dT.名前:~DOM4#concept-doctype-name
 dT.公な~ID:~DOM4#concept-doctype-publicid
 dT.~system~ID:~DOM4#concept-doctype-systemid
@@ -1293,6 +1306,7 @@ C1:
 二重:double::~
 一重引用符付き:single-quoted::~
 二重引用符付き:double-quoted::~
+疑問符可能:questionable:~
 
 	●parser
 sniff:
@@ -1429,6 +1443,7 @@ void:
 	%~scripting~mode:scriptingMode
 	%新-符号化法:the new encoding
 	%現-符号化法:the current encoding
+	%処理命令~token:the processing instruction token being processed
 
 	●環境／保安
 locale::::ロケール
@@ -1660,9 +1675,7 @@ WebDriver-BiDi:
 	後続-:follow
 	後続して:subsequently
 	直:immediate
-	直前:right before
 	末尾:inside, after its last child (if any)
-	直前:immediately before
 	の手前まで:but not including,
 	以前の／前の／前:previous
 	前述した:aforementioned
@@ -1674,13 +1687,14 @@ WebDriver-BiDi:
 	先頭:topmost
 	末尾:the bottom
 	末尾:bottommost
-	直前:just before
-	直後:immediately after
+	直前:right before
 	直前:immediately before
+	直前:just before
+	直前に在る（~stack内で）:immediately above
+	直後:immediately after
 	直後:just after
 	直後:immediately followed-by
 	より後に在る（~stack内で）:lower
-	直前に在る（~stack内で）:immediately above
 
 	どう〜であれ:however
 	ものは、何であれ:everything
@@ -1802,9 +1816,6 @@ document.write('<p>');
 
 ■unexpected-equals-sign-before-attribute-name
 <div foo="bar" ="baz">
-
-■unexpected-question-mark-instead-of-tag-name
-<?xml-stylesheet type="text/css" href="style.css"?>
 
 ■text-node-1
 A<％script>
@@ -2364,6 +2375,20 @@ This error occurs if the parser encounters a numeric character reference that re
 The parser resolves such character references as-is except C1 control references that are replaced according to the numeric character reference end state.
 </dd>
 
+	<dt>`disallowed-processing-instruction-target@pE</dt>
+	<dd>誘因：
+`~ASCII大小無視$で［
+`xml^l ／ `xml-stylesheet^l
+］に合致する`処理命令~target$に遭遇した。
+◎
+This error occurs if the parser encounters a processing instruction target that is an ASCII case-insensitive match for "xml" or "xml-stylesheet".＼
+</dd>
+	<dd>処置：
+先行する最後の `003F^U から後続する最初の `003E^U （無い場合は`入力~stream$の終端）までを成すすべての内容を，~commentとして扱う。
+◎
+The preceding U+003F (?) and all content that follows up to a U+003E (&gt;) (if present) or to the end of the input stream is treated as a comment.
+</dd>
+
 	<dt>`duplicate-attribute@pE</dt>
 	<dd>誘因：
 同じ~tag内にすでに在る属性と同じ名前の`属性$に遭遇した。
@@ -2463,6 +2488,24 @@ This error occurs if the parser encounters the end of the input stream in a DOCT
 ◎
 In such a case, if the DOCTYPE is correctly placed as a document preamble, the parser sets the Document to quirks mode.
 </dd>
+
+	<dt>`eof-in-processing-instruction@pE</dt>
+	<dd>誘因：
+`処理命令$内で，`入力~stream$の終端に遭遇した。
+◎
+This error occurs if the parser encounters the end of the input stream in a processing instruction＼
+</dd>
+	<dd>例：
+`&lt;?^c ／ `&lt;?marker name=^c
+◎
+(e.g., &lt;? or &lt;?marker name=).＼
+</dd>
+	<dd>処置：
+そのような処理命令は無視する。
+◎
+Such processing instructions are ignored.
+</dd>
+
 
 	<dt>`eof-in-script-html-comment-like-text@pE</dt>
 	<dd>誘因：
@@ -2582,13 +2625,27 @@ This error occurs if the parser encounters any code point sequence other than "P
 In such a case, the parser ignores any following public or system identifiers, and if the DOCTYPE is correctly placed as a document preamble, and if the parser cannot change the mode flag is false, sets the Document to quirks mode.
 </dd>
 
+	<dt>`invalid-first-character-of-processing-instruction-target@pE</dt>
+	<dd>誘因：
+`処理命令~target$を成す最初の~cpが期待される所で［
+`~ASCII英字$ ／ `005F^U
+］でない`~cp$に遭遇した。
+◎
+This error occurs if the parser encounters a code point that is not an ASCII alpha or U+005F (_) where the first code point of a processing instruction target is expected.＼
+</dd>
+	<dd>処置：
+先行する最後の `003F^U から後続する最初の `003E^U （無い場合は`入力~stream$の終端）までを成すすべての内容を，~commentとして扱う。
+◎
+The preceding U+003F (?) and all content that follows up to a U+003E (&gt;) (if present) or to the end of the input stream is treated as a comment.
+</dd>
+
 	<dt>`invalid-first-character-of-tag-name@pE</dt>
 	<dd>誘因：
 ［
 `開始~tag$／`終了~tag$
 ］の名前を成す最初の~cpが期待される所で，`~ASCII英字$でない`~cp$に遭遇した。
 ◎
-This error occurs if the parser encounters a code point that is not an ASCII alpha where first code point of a start tag name or an end tag name is expected.＼
+This error occurs if the parser encounters a code point that is not an ASCII alpha where the first code point of a start tag name or an end tag name is expected.＼
 </dd>
 	<dd>処置：
 開始~tagに対しては、
@@ -2632,6 +2689,22 @@ This will be parsed into:
 — 後続な~cpたちには，広~範囲な~cp（`~ASCII数字$を含む）が許容される。
 ◎
 While the first code point of a tag name is limited to an ASCII alpha, a wide range of code points (including ASCII digits) is allowed in subsequent positions.
+</dd>
+
+	<dt>`invalid-processing-instruction-target@pE</dt>
+	<dd>誘因：
+`処理命令~target$が期待される所で次に挙げるもの以外の`~cp$に遭遇した
+⇒＃
+`~ASCII英数字$,
+`002D^U,
+`005F^U
+◎
+This error occurs if the parser encounters a code point that is not an ASCII alphanumeric, U+002D (-), or U+005F (_) where a processing instruction target is expected.＼
+</dd>
+	<dd>処置：
+先行する最後の `003F^U から後続する最初の `003E^U （無い場合は`入力~stream$の終端）までを成すすべての内容を，~commentとして扱う。
+◎
+The preceding U+003F (?) and all content that follows up to a U+003E (&gt;) (if present) or to the end of the input stream is treated as a comment.
 </dd>
 
 	<dt>`missing-attribute-value@pE</dt>
@@ -3188,53 +3261,6 @@ This error occurs if the parser encounters a U+0000 NULL code point in the input
 ~securityの理由から， `FFFD^U に置換されることもある。
 ◎
 In general, such code points are either ignored or, for security reasons, replaced with a U+FFFD REPLACEMENT CHARACTER.
-</dd>
-
-	<dt>`unexpected-question-mark-instead-of-tag-name@pE</dt>
-	<dd>誘因：
-`開始~tag$の名前を成す最初の~cpが期待される所で， `003F^U に遭遇した。
-◎
-This error occurs if the parser encounters a U+003F (?) code point where first code point of a start tag name is expected.＼
-</dd>
-	<dd>処置：
-`003F^U から［
-それに後続する最初の `003E^U （無い場合は`入力~stream$の終端）
-］までを成すすべての内容を，~commentとして扱う。
-◎
-The U+003F (?) and all content that follows up to a U+003E (&gt;) code point (if present) or to the end of the input stream is treated as a comment.
-</dd>
-	<dd class="example">
-<p>
-例えば，次の~markupを考える：
-◎
-For example, consider the following markup:
-</p>
-
-`unexpected-question-mark-instead-of-tag-name^xCode
-
-<p>
-これは、
-次のように構文解析されることになる：
-◎
-This will be parsed into:
-</p>
-
-<ul class="domTree"><li>`#comment$: <span>?xml-stylesheet type="text/css" href="style.css"?</span>
-</li><li>`html$e
-	<ul><li>`head$e
-	</li><li>`body$e
-	</li></ul>
-</li></ul>
-</dd>
-	<dd class="note">注記：
-この~errorに共通的な理由は、［
-~HTML内で，~XML処理命令
-（例： `&lt;?xml-stylesheet type="text/css" href="style.css"?&gt;^c ） ／
-~XML宣言
-（例： `&lt;?xml version="1.0" encoding="UTF-8" ?&gt;^c ）
-］が利用されたときである。
-◎
-The common reason for this error is an XML processing instruction (e.g., &lt;?xml-stylesheet type="text/css" href="style.css"?&gt;) or an XML declaration (e.g., &lt;?xml version="1.0" encoding="UTF-8" ?&gt;) being used in HTML.
 </dd>
 
 	<dt>`unexpected-solidus-in-tag@pE</dt>
@@ -6521,10 +6547,21 @@ When a state says to reconsume a matched character in a specified state, that me
 ］に依存する。
 </li>
 	<li>
+<p>
 進捗-を追跡するために
 `一時~buffer@V
 も利用する。
-</li>
+</p>
+
+<p class="trans-note">【
+これは、
+原文では，~cpたちが成す配列であるかのように扱われているが、
+この訳では，単に文字列として扱うことにする。
+この変数に対する演算は、［
+何らかの文字を付加する／何らかの文字列に設定する
+］ことに限られる（~randomに~accessされない）ので。
+】</p>
+	</li>
 	<li>
 `文字~参照$stは、
 それを呼出した`状態$へ戻るために
@@ -6547,115 +6584,212 @@ The output of the tokenization step is a series of zero or more of the following
 </p>
 
 <dl class="def-list">
-	<dt>~DOCTYPE~token</dt>
+	<dt>
+~DOCTYPE~token
+◎
+DOCTYPE tokens＼
+</dt>
 	<dd>
 <p>
-次に挙げるものを有する
-— 作成-時には括弧内に与える値になるモノトスル：
+次に挙げるものを有する：
 </p>
-
 		<ul>
 			<li>
-名前（ ε ）
+名前
+⇒
+ε ／ある文字列
+— 初期~時は ε とする。
 </li>
 			<li>
-~publicID（ ε ）
+~publicID
+⇒
+ε ／ある文字列
+— 初期~時は ε とする。
 </li>
 			<li>
-~systemID（ ε ）
+~systemID
+⇒
+ε ／ある文字列
+— 初期~時は ε とする。
 </li>
 			<li>
 `過去互換を強制するか@
-（ ~F ）
+⇒
+ある真偽値
+— 初期~時は ~F とする。
 </li>
 		</ul>
 ◎
-DOCTYPE tokens have a name, a public identifier, a system identifier, and a force-quirks flag. When a DOCTYPE token is created, its name, public identifier, and system identifier must be marked as missing (which is a distinct state from the empty string), and the force-quirks flag must be set to off (its other state is on).＼
+have a name, a public identifier, a system identifier, and a force-quirks flag. When a DOCTYPE token is created, its name, public identifier, and system identifier must be marked as missing (which is a distinct state from the empty string), and the force-quirks flag must be set to off (its other state is on).＼
 </dd>
 
-	<dt>開始~tag~token</dt>
-	<dt>終了~tag~token</dt>
+	<dt>
+開始~tag~token
+◎
+Start and＼
+</dt>
+	<dt>
+終了~tag~token
+◎
+end tag tokens＼
+</dt>
 	<dd>
 <p>
 いずれも，次に挙げるものを有する：
 </p>
-		<dl class="def-list">
-			<dt>~tag名</dt>
-			<dd>
-作成-時に与えられる。
-</dd>
+		<ul>
+			<li>
+~tag名
+⇒
+ある文字列
+— 作成-時に設定される。
+</li>
+			<li>
+`自己閉じか@
+⇒
+ある真偽値
+— 初期~時は ~F とする。
+</li>
+			<li>
+<p>
+属性~list
+⇒
+属性たちが成す~list
+— 初期~時は空とする。
+</p>
 
-			<dt>`自己閉じか@</dt>
-			<dd>
-初期~時は ~F とする。
-</dd>
-
-			<dt>属性~list</dt>
-			<dd>
-属性たちが成す~listであり、
-初期~時は空とする
-— ~listを成す各~属性は［
-名前（初期~時は空）,
-値（初期~時は空）
-］からなる。
-</dd>
-		</dl>
+<p>
+この~listを成す各~属性は、
+次に挙げるものからなる
+</p>
+				<ul>
+					<li>
+名前
+⇒
+ある文字列
+— 初期~時は空~文字列とする。
+</li>
+					<li>
+値
+⇒
+ある文字列
+— 初期~時は空~文字列とする。
+</li>
+				</ul>
+			</li>
+		</ul>
 ◎
-Start and end tag tokens have a tag name, a self-closing flag, and a list of attributes, each of which has a name and a value. When a start or end tag token is created, its self-closing flag must be unset (its other state is that it be set), and its attributes list must be empty.＼
+have a tag name, a self-closing flag, and a list of attributes, each of which has a name and a value. When a start or end tag token is created, its self-closing flag must be unset (its other state is that it be set), and its attributes list must be empty.＼
 </dd>
 	<dd>
-“新たな開始~tag~token( %名前 )”
+“開始~tag~token( %名前 )”
 という表記は、
 新たな開始~tag~tokenであって［
-その~tag名 ~SET %名前
-］にされたものを表すとする。
+その~tag名は %名前
+］に設定されたものを表すとする。
 ◎
 ＼</dd>
 	<dd>
-“新たな終了~tag~token()”
+“終了~tag~token()”
 という表記は、
 新たな終了~tag~tokenであって［
-その~tag名 ~SET 空~文字列
-］にされたものを表すとする。
+その~tag名は空~文字列
+］に設定されたものを表すとする。
 ◎
 ＼</dd>
 
-	<dt>~comment~token</dt>
+	<dt>
+~comment~token
+◎
+Comment
+</dt>
 	<dd>
 作成-時に与えられる~data（文字列）を有する。
 ◎
-Comment and＼
- </dd>
+↓↓ and＼
+</dd>
 	<dd>
-“新たな~comment~token( %~data )”
+“~comment~token( %~data )”
 という表記は、
 新たな~comment~tokenであって［
-その~data ~SET %~data
-］にされたものを表すとする。
+その~dataは %~data
+］に設定されたものを表すとする。
 ◎
 ＼</dd>
 
-	<dt>文字~token</dt>
+	<dt>
+文字~token
+◎
+character tokens＼
+</dt>
 	<dd>
 作成-時に与えられる 1 個の文字を有する。
 ◎
-character tokens have data.＼
+have data.＼
 </dd>
 	<dd>
-“新たな文字~token( %文字 )”
+“文字~token( %文字 )”
 という表記は、
 新たな文字~tokenであって［
-その文字 ~SET %文字
-］にされたものを表すとする。
+その文字は %文字
+］に設定されたものを表すとする。
 ◎
 ＼</dd>
 
-	<dt>~eof~token</dt>
+	<dt>
+処理命令~token
+◎
+＼
+</dt>
+	<dd>
+<p>
+`処理命令$を表現する。
+次に挙げるものを有する
+— いずれも，作成-時に設定される：
+</p>
+		<ul>
+			<li>
+~target
+⇒
+ある`処理命令~target$
+</li>
+			<li>
+~data
+⇒
+空~文字列／ある`処理命令~data$
+</li>
+		</ul>
+◎
+＼
+</dd>
+	<dd>
+“処理命令~token( %~target, %~data )”
+という表記は、
+新たな処理命令~tokenであって［
+その~targetは %~target,
+その~dataは %~data
+］に設定されたものを表すとする。
+◎
+＼
+</dd>
+
+	<dt>
+~eof~token
+◎
+＼</dt>
 	<dd>
 入力~全体の終端を表現する~token。
 ◎
 ＼</dd>
 </dl>
+
+<p class="trans-note">【
+上に挙げた各種~tokenのうち，
+処理命令~tokenと~eof~tokenは、
+この訳による補完。
+各種~tokenの表記法（ “ … ~token(…) ” ）は、
+この訳による追加。
+】</p>
 
 <p>
 ~tokenが発されたときは
@@ -6672,7 +6806,7 @@ When a token is emitted, it must immediately be handled by the tree construction
 
 <p class="note">注記：
 ~tokenを［
-作成すること, 発すること
+作成すること~FN, 発すること
 ］は、
 別個な動作である。
 作成された~tokenは、［
@@ -6685,11 +6819,17 @@ When a token is emitted, it must immediately be handled by the tree construction
 Creating a token and emitting it are distinct actions. It is possible for a token to be created but implicitly abandoned (never emitted), e.g. if the file ends unexpectedly while processing the characters that are being parsed into a start tag token.
 </p>
 
+<p class="trans-note">【~FN
+“…~tokenを作成する” と記された所では、
+“現token”
+（あるいは，より特定的に “現在の開始~tag~token” 等々）は，
+当の作成された~tokenを指すようになる。
+】</p>
+
 <ul>
 	<li>
-開始~tag~tokenが［
-その`自己閉じか$ ~SET ~T
-］にされて発されたときは、
+開始~tag~tokenが，
+その`自己閉じか$が ~T に設定されて発されたときは、
 それが~tree構築~段階により処理されるとき［
 当の~tokenの
 `自己閉じを承認する@
@@ -6707,9 +6847,8 @@ When a start tag token is emitted with its self-closing flag set, if the flag is
 When an end tag token is emitted with attributes, that is an end-tag-with-attributes parse error.
 </li>
 	<li>
-終了~tag~tokenが［
-その`自己閉じか$ ~SET ~T
-］にされて発されたときは、
+終了~tag~tokenが，
+その`自己閉じか$が ~T に設定されて発されたときは、
 `end-tag-with-trailing-solidus$pE
 になるとする
 ◎
@@ -6718,7 +6857,7 @@ When an end tag token is emitted with its self-closing flag set, that is an end-
 </ul>
 
 <p>
-終了~tag~tokenが
+所与の終了~tag~tokenが
 `適切な終了~tag~token@
 であるとは、
 次が満たされることをいう
@@ -6730,14 +6869,16 @@ An appropriate end tag token is an end tag token whose tag name matches the tag 
 </p>
 
 <p>
+所与の`文字~参照$が
+`属性の一部として消費されて@
+いるとは、
+それが消費された時点で，次が満たされていたことをいう
+⇒
 `戻先~状態$V ~IN {
 `二重引用符付き属性~値$st,
 `一重引用符付き属性~値$st,
 `引用符無し属性~値$st
 }
-にある下での`文字~参照$は、
-`属性の一部として消費されて@
-いるとされる。
 ◎
 A character reference is said to be consumed as part of an attribute if the return state is either attribute value (double-quoted) state, attribute value (single-quoted) state, or attribute value (unquoted) state.
 </p>
@@ -6782,6 +6923,35 @@ emit the code point as a character token otherwise.
 </ol>
 </div>
 
+<div class="algo">
+<p>
+`一時~bufferを~commentに変換する@
+~algoは：
+</p>
+<ol>
+	<li>
+%~data ~LET 次を順に`連結する$
+⇒＃
+`?^l,
+`一時~buffer$V
+</li>
+	<li>
+~comment~token( %~data ) を作成する
+</li>
+</ol>
+
+<p class="note">注記：
+これは、
+ある処理命令が妥当でない~targetを有することが見出され，
+代わりに似非~commentとして扱われるときに利用される。
+</p>
+◎
+To convert the temporary buffer to a comment, create a comment token whose data is the concatenation of "?" and the code points in the temporary buffer, in the order they were added to the buffer.
+◎
+This is used when a processing instruction is found to have an invalid target and is instead treated as a bogus comment.
+</div>
+
+<div class="algo">
 <p id="check-parser-pause-flag">
 ~UAは、
 ~tokenizerを成す各~段の前に，次を行うモノトスル
@@ -6795,6 +6965,7 @@ emit the code point as a character token otherwise.
 ◎
 Before each step of the tokenizer, the user agent must first check the parser pause flag. If it is true, then the tokenizer must abort the processing of any nested invocations of the tokenizer, yielding control back to the caller.
 </p>
+</div>
 
 <p>
 ~tokenizerを成す状態~機械は、
@@ -7078,7 +7249,7 @@ Switch to the end tag open state.
 
 	<dt>`~ASCII英字$</dt>
 	<dd>
-<ol><li>新たな開始~tag~token( 空~文字列 ) を作成する
+<ol><li>開始~tag~token( 空~文字列 ) を作成する
 </li><li>`~tag名$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7087,13 +7258,12 @@ Create a new start tag token, set its tag name to the empty string. Reconsume in
 
 	<dt>`003F^U</dt>
 	<dd>
-<ol><li>`unexpected-question-mark-instead-of-tag-name$pE
-</li><li>新たな~comment~token( 空~文字列 ) を作成する
-</li><li>`似非~comment$st内で`消費し直す$
+<ol><li>`一時~buffer$V ~SET 空~文字列
+</li><li>`処理命令~open$stに`切替える$
 </li></ol>
 ◎
-This is an unexpected-question-mark-instead-of-tag-name parse error.＼
-Create a comment token whose data is the empty string. Reconsume in the bogus comment state.
+Set the temporary buffer to the empty string.＼
+Switch to the processing instruction open state.
 </dd>
 
 	<dt>~EOF</dt>
@@ -7132,7 +7302,7 @@ Consume the next input character:
 <dl class="switch">
 	<dt>`~ASCII英字$</dt>
 	<dd>
-<ol><li>%~token ~LET 新たな終了~tag~token()
+<ol><li>終了~tag~token() を作成する
 </li><li>`~tag名$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7152,8 +7322,8 @@ Switch to the data state.
 	<dt>~EOF</dt>
 	<dd>
 <ol><li>`eof-before-tag-name$pE
-</li><li>新たな文字~token( `003C^U ) を発する
-</li><li>新たな文字~token( `002F^U ) を発する
+</li><li>文字~token( `003C^U ) を発する
+</li><li>文字~token( `002F^U ) を発する
 </li><li>~eof~tokenを発する
 </li></ol>
 ◎
@@ -7164,7 +7334,7 @@ Emit a U+003C LESS-THAN SIGN character token, a U+002F SOLIDUS character token a
 	<dt>~AnyElse</dt>
 	<dd>
 <ol><li>`invalid-first-character-of-tag-name$pE
-</li><li>新たな~comment~token( 空~文字列 ) を作成する
+</li><li>~comment~token( 空~文字列 ) を作成する
 </li><li>`似非~comment$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7272,7 +7442,7 @@ Set the temporary buffer to the empty string. Switch to the RCDATA end tag open 
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
 </li><li>`~RCDATA$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7293,7 +7463,7 @@ Consume the next input character:
 <dl class="switch">
 	<dt>`~ASCII英字$</dt>
 	<dd>
-<ol><li>%~token ~LET 新たな終了~tag~token()
+<ol><li>%~token ~LET 終了~tag~token() を作成する
 </li><li>`~RCDATA終了~tag名$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7302,8 +7472,8 @@ Create a new end tag token, set its tag name to the empty string. Reconsume in t
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
-</li><li>新たな文字~token( `002F^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
+</li><li>文字~token( `002F^U ) を発する
 </li><li>`~RCDATA$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7403,14 +7573,14 @@ Append the current input character to the current tag token's tag name. Append t
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
-</li><li>新たな文字~token( `002F^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
+</li><li>文字~token( `002F^U ) を発する
 </li><li>
 `一時~buffer$V を成す
 ~EACH( %文字 )
 に対し
 ⇒
-新たな文字~token( %文字 ) を発する
+文字~token( %文字 ) を発する
 </li><li>`~RCDATA$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7440,7 +7610,7 @@ Set the temporary buffer to the empty string. Switch to the RAWTEXT end tag open
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
 </li><li>`~RAWTEXT$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7461,7 +7631,7 @@ Consume the next input character:
 <dl class="switch">
 	<dt>`~ASCII英字$</dt>
 	<dd>
-<ol><li>%~token ~LET 新たな終了~tag~token()
+<ol><li>終了~tag~token() を作成する
 </li><li>`~RAWTEXT終了~tag名$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7470,8 +7640,8 @@ Create a new end tag token, set its tag name to the empty string. Reconsume in t
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
-</li><li>新たな文字~token( `002F^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
+</li><li>文字~token( `002F^U ) を発する
 </li><li>`~RAWTEXT$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7573,17 +7743,17 @@ Append the current input character to the current tag token's tag name. Append t
 	<dd>
 		<ol>
 			<li>
-新たな文字~token( `003C^U ) を発する
+文字~token( `003C^U ) を発する
 </li>
 			<li>
-新たな文字~token( `002F^U ) を発する
+文字~token( `002F^U ) を発する
 </li>
 			<li>
 `一時~buffer$V を成す
 ~EACH( %文字 )
 に対し
 ⇒
-新たな文字~token( %文字 ) を発する
+文字~token( %文字 ) を発する
 </li>
 			<li>
 `~RAWTEXT$st内で`消費し直す$
@@ -7617,8 +7787,8 @@ Set the temporary buffer to the empty string. Switch to the script data end tag 
 	<dt>`0021^U</dt>
 	<dd>
 <ol><li>`~script~data~escape始端$stに`切替える$
-</li><li>新たな文字~token( `003C^U ) を発する
-</li><li>新たな文字~token( `0021^U ) を発する
+</li><li>文字~token( `003C^U ) を発する
+</li><li>文字~token( `0021^U ) を発する
 </li></ol>
 ◎
 Switch to the script data escape start state. Emit a U+003C LESS-THAN SIGN character token and a U+0021 EXCLAMATION MARK character token.
@@ -7626,7 +7796,7 @@ Switch to the script data escape start state. Emit a U+003C LESS-THAN SIGN chara
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
 </li><li>`~script~data$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7647,7 +7817,7 @@ Consume the next input character:
 <dl class="switch">
 	<dt>`~ASCII英字$</dt>
 	<dd>
-<ol><li>%~token ~LET 新たな終了~tag~token()
+<ol><li>終了~tag~token() を作成する
 </li><li>`~script~data終了~tag名$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7656,8 +7826,8 @@ Create a new end tag token, set its tag name to the empty string. Reconsume in t
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
-</li><li>新たな文字~token( `002F^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
+</li><li>文字~token( `002F^U ) を発する
 </li><li>`~script~data$st内で`消費し直す$
 </li></ol>
 ◎
@@ -7759,17 +7929,17 @@ Append the current input character to the current tag token's tag name. Append t
 	<dd>
 		<ol>
 			<li>
-新たな文字~token( `003C^U ) を発する
+文字~token( `003C^U ) を発する
 </li>
 			<li>
-新たな文字~token( `002F^U ) を発する
+文字~token( `002F^U ) を発する
 </li>
 			<li>
 `一時~buffer$V を成す
 ~EACH( %文字 )
 に対し
 ⇒
-新たな文字~token( %文字 ) を発する
+文字~token( %文字 ) を発する
 </li>
 			<li>
 `~script~data$st内で`消費し直す$
@@ -7794,7 +7964,7 @@ Consume the next input character:
 	<dt>`002D^U</dt>
 	<dd>
 <ol><li>`~script~data~escape始端~dash$stに`切替える$
-</li><li>新たな文字~token( `002D^U ) を発する
+</li><li>文字~token( `002D^U ) を発する
 </li></ol>
 ◎
 Switch to the script data escape start dash state. Emit a U+002D HYPHEN-MINUS character token.
@@ -7823,7 +7993,7 @@ Consume the next input character:
 	<dt>`002D^U</dt>
 	<dd>
 <ol><li>`~script~data~escape済み~dash~dash$stに`切替える$
-</li><li>新たな文字~token( `002D^U ) を発する
+</li><li>文字~token( `002D^U ) を発する
 </li></ol>
 ◎
 Switch to the script data escaped dash dash state. Emit a U+002D HYPHEN-MINUS character token.
@@ -7852,7 +8022,7 @@ Consume the next input character:
 	<dt>`002D^U</dt>
 	<dd>
 <ol><li>`~script~data~escape済み~dash$stに`切替える$
-</li><li>新たな文字~token( `002D^U ) を発する
+</li><li>文字~token( `002D^U ) を発する
 </li></ol>
 ◎
 Switch to the script data escaped dash state. Emit a U+002D HYPHEN-MINUS character token.
@@ -7869,7 +8039,7 @@ Switch to the script data escaped less-than sign state.
 	<dt>`0000^U</dt>
 	<dd>
 <ol><li>`unexpected-null-character$pE
-</li><li>新たな文字~token( `FFFD^U ) を発する
+</li><li>文字~token( `FFFD^U ) を発する
 </li></ol>
 ◎
 This is an unexpected-null-character parse error.＼
@@ -7888,7 +8058,7 @@ Emit an end-of-file token.
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `現在の入力~文字$ ) を発する
+<ol><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Emit the current input character as a character token.
@@ -7909,7 +8079,7 @@ Consume the next input character:
 	<dt>`002D^U</dt>
 	<dd>
 <ol><li>`~script~data~escape済み~dash~dash$stに`切替える$
-</li><li>新たな文字~token( `002D^U ) を発する
+</li><li>文字~token( `002D^U ) を発する
 </li></ol>
 ◎
 Switch to the script data escaped dash dash state. Emit a U+002D HYPHEN-MINUS character token.
@@ -7927,7 +8097,7 @@ Switch to the script data escaped less-than sign state.
 	<dd>
 <ol><li>`unexpected-null-character$pE
 </li><li>`~script~data~escape済み$stに`切替える$
-</li><li>新たな文字~token( `FFFD^U ) を発する
+</li><li>文字~token( `FFFD^U ) を発する
 </li></ol>
 ◎
 This is an unexpected-null-character parse error.＼
@@ -7947,7 +8117,7 @@ Emit an end-of-file token.
 	<dt>~AnyElse</dt>
 	<dd>
 <ol><li>`~script~data~escape済み$stに`切替える$
-</li><li>新たな文字~token( `現在の入力~文字$ ) を発する
+</li><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Switch to the script data escaped state. Emit the current input character as a character token.
@@ -7967,7 +8137,7 @@ Consume the next input character:
 <dl class="switch">
 	<dt>`002D^U</dt>
 	<dd>
-<ol><li>新たな文字~token( `002D^U ) を発する
+<ol><li>文字~token( `002D^U ) を発する
 </li></ol>
 ◎
 Emit a U+002D HYPHEN-MINUS character token.
@@ -7984,7 +8154,7 @@ Switch to the script data escaped less-than sign state.
 	<dt>`003E^U</dt>
 	<dd>
 <ol><li>`~script~data$stに`切替える$
-</li><li>新たな文字~token( `003E^U ) を発する
+</li><li>文字~token( `003E^U ) を発する
 </li></ol>
 ◎
 Switch to the script data state. Emit a U+003E GREATER-THAN SIGN character token.
@@ -7994,7 +8164,7 @@ Switch to the script data state. Emit a U+003E GREATER-THAN SIGN character token
 	<dd>
 <ol><li>`unexpected-null-character$pE
 </li><li>`~script~data~escape済み$stに`切替える$
-</li><li>新たな文字~token( `FFFD^U ) を発する
+</li><li>文字~token( `FFFD^U ) を発する
 </li></ol>
 ◎
 This is an unexpected-null-character parse error.＼
@@ -8014,7 +8184,7 @@ Emit an end-of-file token.
 	<dt>~AnyElse</dt>
 	<dd>
 <ol><li>`~script~data~escape済み$stに`切替える$
-</li><li>新たな文字~token( `現在の入力~文字$ ) を発する
+</li><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Switch to the script data escaped state. Emit the current input character as a character token.
@@ -8044,7 +8214,7 @@ Set the temporary buffer to the empty string. Switch to the script data escaped 
 	<dt>`~ASCII英字$</dt>
 	<dd>
 <ol><li>`一時~buffer$V ~SET 空~文字列
-</li><li>新たな文字~token( `003C^U ) を発する
+</li><li>文字~token( `003C^U ) を発する
 </li><li>`~script~data二重~escape始端$st内で`消費し直す$
 </li></ol>
 ◎
@@ -8053,7 +8223,7 @@ Set the temporary buffer to the empty string. Emit a U+003C LESS-THAN SIGN chara
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
 </li><li>`~script~data~escape済み$st内で`消費し直す$
 </li></ol>
 ◎
@@ -8074,7 +8244,7 @@ Consume the next input character:
 <dl class="switch">
 	<dt>`~ASCII英字$</dt>
 	<dd>
-<ol><li>%~token ~LET 新たな終了~tag~token()
+<ol><li>終了~tag~token() を作成する
 </li><li>`~script~data~escape済み終了~tag名$st内で`消費し直す$
 </li></ol>
 ◎
@@ -8083,8 +8253,8 @@ Create a new end tag token, set its tag name to the empty string. Reconsume in t
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `003C^U ) を発する
-</li><li>新たな文字~token( `002F^U ) を発する
+<ol><li>文字~token( `003C^U ) を発する
+</li><li>文字~token( `002F^U ) を発する
 </li><li>`~script~data~escape済み$st内で`消費し直す$
 </li></ol>
 ◎
@@ -8186,17 +8356,17 @@ Append the current input character to the current tag token's tag name. Append t
 	<dd>
 		<ol>
 			<li>
-新たな文字~token( `003C^U ) を発する
+文字~token( `003C^U ) を発する
 </li>
 			<li>
-新たな文字~token( `002F^U ) を発する
+文字~token( `002F^U ) を発する
 </li>
 			<li>
 `一時~buffer$V を成す
 ~EACH( %文字 )
 に対し
 ⇒
-新たな文字~token( %文字 ) を発する
+文字~token( %文字 ) を発する
 </li>
 			<li>
 `~script~data~escape済み$st内で`消費し直す$
@@ -8241,7 +8411,7 @@ Consume the next input character:
 `~script~data~escape済み$stに`切替える$
 </li>
 			<li>
-新たな文字~token( `現在の入力~文字$ ) を発する
+文字~token( `現在の入力~文字$ ) を発する
 </li>
 		</ol>
 ◎
@@ -8252,7 +8422,7 @@ If the temporary buffer is "script", then switch to the script data double escap
 	<dd>
 <ol><li>`一時~buffer$V ~APPEND `現在の入力~文字$に対応する小文字
 （文字の~cpに `0020^X を加算する）
-</li><li>新たな文字~token( `現在の入力~文字$ ) を発する
+</li><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Append the lowercase version of the current input character (add 0x0020 to the character's code point) to the temporary buffer. Emit the current input character as a character token.
@@ -8261,7 +8431,7 @@ Append the lowercase version of the current input character (add 0x0020 to the c
 	<dt>`~ASCII英小文字$</dt>
 	<dd>
 <ol><li>`一時~buffer$V ~APPEND `現在の入力~文字$
-</li><li>新たな文字~token( `現在の入力~文字$ ) を発する
+</li><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Append the current input character to the temporary buffer. Emit the current input character as a character token.
@@ -8290,7 +8460,7 @@ Consume the next input character:
 	<dt>`002D^U</dt>
 	<dd>
 <ol><li>`~script~data二重~escape済み~dash$stに`切替える$
-</li><li>新たな文字~token( `002D^U ) を発する
+</li><li>文字~token( `002D^U ) を発する
 </li></ol>
 ◎
 Switch to the script data double escaped dash state. Emit a U+002D HYPHEN-MINUS character token.
@@ -8299,7 +8469,7 @@ Switch to the script data double escaped dash state. Emit a U+002D HYPHEN-MINUS 
 	<dt>`003C^U</dt>
 	<dd>
 <ol><li>`~script~data二重~escape済み~LTsign$stに`切替える$
-</li><li>新たな文字~token( `003C^U ) を発する
+</li><li>文字~token( `003C^U ) を発する
 </li></ol>
 ◎
 Switch to the script data double escaped less-than sign state. Emit a U+003C LESS-THAN SIGN character token.
@@ -8308,7 +8478,7 @@ Switch to the script data double escaped less-than sign state. Emit a U+003C LES
 	<dt>`0000^U</dt>
 	<dd>
 <ol><li>`unexpected-null-character$pE
-</li><li>新たな文字~token( `FFFD^U ) を発する
+</li><li>文字~token( `FFFD^U ) を発する
 </li></ol>
 ◎
 This is an unexpected-null-character parse error.＼
@@ -8327,7 +8497,7 @@ Emit an end-of-file token.
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `現在の入力~文字$ ) を発する
+<ol><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Emit the current input character as a character token.
@@ -8348,7 +8518,7 @@ Consume the next input character:
 	<dt>`002D^U</dt>
 	<dd>
 <ol><li>`~script~data二重~escape済み~dash~dash$stに`切替える$
-</li><li>新たな文字~token( `002D^U ) を発する
+</li><li>文字~token( `002D^U ) を発する
 </li></ol>
 ◎
 Switch to the script data double escaped dash dash state. Emit a U+002D HYPHEN-MINUS character token.
@@ -8357,7 +8527,7 @@ Switch to the script data double escaped dash dash state. Emit a U+002D HYPHEN-M
 	<dt>`003C^U</dt>
 	<dd>
 <ol><li>`~script~data二重~escape済み~LTsign$stに`切替える$
-</li><li>新たな文字~token( `003C^U ) を発する
+</li><li>文字~token( `003C^U ) を発する
 </li></ol>
 ◎
 Switch to the script data double escaped less-than sign state. Emit a U+003C LESS-THAN SIGN character token.
@@ -8367,7 +8537,7 @@ Switch to the script data double escaped less-than sign state. Emit a U+003C LES
 	<dd>
 <ol><li>`unexpected-null-character$pE
 </li><li>`~script~data二重~escape済み$stに`切替える$
-</li><li>新たな文字~token( `FFFD^U ) を発する
+</li><li>文字~token( `FFFD^U ) を発する
 </li></ol>
 ◎
 This is an unexpected-null-character parse error.＼
@@ -8387,7 +8557,7 @@ Emit an end-of-file token.
 	<dt>~AnyElse</dt>
 	<dd>
 <ol><li>`~script~data二重~escape済み$stに`切替える$
-</li><li>新たな文字~token( `現在の入力~文字$ ) を発する
+</li><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Switch to the script data double escaped state. Emit the current input character as a character token.
@@ -8407,7 +8577,7 @@ Consume the next input character:
 <dl class="switch">
 	<dt>`002D^U</dt>
 	<dd>
-<ol><li>新たな文字~token( `002D^U ) を発する
+<ol><li>文字~token( `002D^U ) を発する
 </li></ol>
 ◎
 Emit a U+002D HYPHEN-MINUS character token.
@@ -8416,7 +8586,7 @@ Emit a U+002D HYPHEN-MINUS character token.
 	<dt>`003C^U</dt>
 	<dd>
 <ol><li>`~script~data二重~escape済み~LTsign$stに`切替える$
-</li><li>新たな文字~token( `003C^U ) を発する
+</li><li>文字~token( `003C^U ) を発する
 </li></ol>
 ◎
 Switch to the script data double escaped less-than sign state. Emit a U+003C LESS-THAN SIGN character token.
@@ -8425,7 +8595,7 @@ Switch to the script data double escaped less-than sign state. Emit a U+003C LES
 	<dt>`003E^U</dt>
 	<dd>
 <ol><li>`~script~data$stに`切替える$
-</li><li>新たな文字~token( `003E^U ) を発する
+</li><li>文字~token( `003E^U ) を発する
 </li></ol>
 ◎
 Switch to the script data state. Emit a U+003E GREATER-THAN SIGN character token.
@@ -8435,7 +8605,7 @@ Switch to the script data state. Emit a U+003E GREATER-THAN SIGN character token
 	<dd>
 <ol><li>`unexpected-null-character$pE
 </li><li>`~script~data二重~escape済み$stに`切替える$
-</li><li>新たな文字~token( `FFFD^U ) を発する
+</li><li>文字~token( `FFFD^U ) を発する
 </li></ol>
 ◎
 This is an unexpected-null-character parse error.＼
@@ -8455,7 +8625,7 @@ Emit an end-of-file token.
 	<dt>~AnyElse</dt>
 	<dd>
 <ol><li>`~script~data二重~escape済み$stに`切替える$
-</li><li>新たな文字~token( `現在の入力~文字$ ) を発する
+</li><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Switch to the script data double escaped state. Emit the current input character as a character token.
@@ -8477,7 +8647,7 @@ Consume the next input character:
 	<dd>
 <ol><li>`一時~buffer$V ~SET 空~文字列
 </li><li>`~script~data二重~escape終端$stに`切替える$
-</li><li>新たな文字~token( `002F^U ) を発する
+</li><li>文字~token( `002F^U ) を発する
 </li></ol>
 ◎
 Set the temporary buffer to the empty string. Switch to the script data double escape end state. Emit a U+002F SOLIDUS character token.
@@ -8525,7 +8695,7 @@ Consume the next input character:
 `~script~data二重~escape済み$stに`切替える$
 </li>
 			<li>
-新たな文字~token( `現在の入力~文字$ ) を発する
+文字~token( `現在の入力~文字$ ) を発する
 </li>
 		</ol>
 ◎
@@ -8536,7 +8706,7 @@ If the temporary buffer is "script", then switch to the script data escaped stat
 	<dd>
 <ol><li>`一時~buffer$V ~APPEND `現在の入力~文字$ に対応する小文字
 （文字の~cpに `0020^X を加算する）
-</li><li>新たな文字~token( `現在の入力~文字$ ) を発する
+</li><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Append the lowercase version of the current input character (add 0x0020 to the character's code point) to the temporary buffer. Emit the current input character as a character token.
@@ -8545,7 +8715,7 @@ Append the lowercase version of the current input character (add 0x0020 to the c
 	<dt>`~ASCII英小文字$</dt>
 	<dd>
 <ol><li>`一時~buffer$V ~APPEND `現在の入力~文字$
-</li><li>新たな文字~token( `現在の入力~文字$ ) を発する
+</li><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Append the current input character to the temporary buffer. Emit the current input character as a character token.
@@ -9201,7 +9371,7 @@ Two U+002D HYPHEN-MINUS characters (-)
 </dt>
 	<dd>
 <ol><li>それらの文字を消費する
-</li><li>新たな~comment~token( 空~文字列 ) を作成する
+</li><li>~comment~token( 空~文字列 ) を作成する
 </li><li>`~comment始端$stに`切替える$
 </li></ol>
 ◎
@@ -9250,7 +9420,7 @@ If there is an adjusted current node and it is not an element in the HTML namesp
 Otherwise, this is a cdata-in-html-content parse error.＼
 </li>
 			<li>
-新たな~comment~token( `[CDATA[^l ) を作成する
+~comment~token( `[CDATA[^l ) を作成する
 ◎
 Create a comment token whose data is "[CDATA[".＼
 </li>
@@ -9265,7 +9435,7 @@ Switch to the bogus comment state.
 	<dt>~AnyElse</dt>
 	<dd>
 <ol><li>`incorrectly-opened-comment$pE
-</li><li>新たな~comment~token( 空~文字列 ) を作成する
+</li><li>~comment~token( 空~文字列 ) を作成する
 </li><li>`似非~comment$stに`切替える$
 </li></ol>
 <p>
@@ -9732,9 +9902,9 @@ Reconsume in the before DOCTYPE name state.
 	<dt>~EOF</dt>
 	<dd>
 <ol><li>`eof-in-doctype$pE
-</li><li>%~token ~LET 新たな~DOCTYPE~token
-</li><li>`過去互換を強制するか$ ~SET ~T
-</li><li>%~token を発する
+</li><li>~DOCTYPE~tokenを作成する
+</li><li>現tokenの`過去互換を強制するか$ ~SET ~T
+</li><li>現tokenを発する
 </li><li>~eof~tokenを発する
 </li></ol>
 ◎
@@ -9777,8 +9947,8 @@ Ignore the character.
 
 	<dt>`~ASCII英大文字$</dt>
 	<dd>
-<ol><li>%~token ~LET 新たな~DOCTYPE~token
-</li><li>%~token の名前 ~SET `現在の入力~文字$に対応する小文字
+<ol><li>~DOCTYPE~tokenを作成する
+</li><li>現tokenの名前 ~SET `現在の入力~文字$に対応する小文字
 （文字の~cpに `0020^X を加算する）
 </li><li>`~DOCTYPE名$stに`切替える$
 </li></ol>
@@ -9789,8 +9959,8 @@ Create a new DOCTYPE token. Set the token's name to the lowercase version of the
 	<dt>`0000^U</dt>
 	<dd>
 <ol><li>`unexpected-null-character$pE
-</li><li>%~token ~LET 新たな~DOCTYPE~token
-</li><li>%~token の名前 ~SET `FFFD^U
+</li><li>~DOCTYPE~tokenを作成する
+</li><li>現tokenの名前 ~SET `FFFD^U
 </li><li>`~DOCTYPE名$stに`切替える$
 </li></ol>
 ◎
@@ -9801,10 +9971,10 @@ Create a new DOCTYPE token. Set the token's name to a U+FFFD REPLACEMENT CHARACT
 	<dt>`003E^U</dt>
 	<dd>
 <ol><li>`missing-doctype-name$pE
-</li><li>%~token ~LET 新たな~DOCTYPE~token
-</li><li>`過去互換を強制するか$ ~SET ~T
+</li><li>~DOCTYPE~tokenを作成する
+</li><li>現tokenの`過去互換を強制するか$ ~SET ~T
 </li><li>`~data$stに`切替える$
-</li><li>%~token を発する
+</li><li>現tokenを発する
 </li></ol>
 ◎
 This is a missing-doctype-name parse error.＼
@@ -9814,9 +9984,9 @@ Create a new DOCTYPE token. Set its force-quirks flag to on. Switch to the data 
 	<dt>~EOF</dt>
 	<dd>
 <ol><li>`eof-in-doctype$pE
-</li><li>%~token ~LET 新たな~DOCTYPE~token
-</li><li>`過去互換を強制するか$ ~SET ~T
-</li><li>%~token を発する
+</li><li>~DOCTYPE~tokenを作成する
+</li><li>現tokenの`過去互換を強制するか$ ~SET ~T
+</li><li>現tokenを発する
 </li><li>~eof~tokenを発する
 </li></ol>
 ◎
@@ -9826,8 +9996,8 @@ Create a new DOCTYPE token. Set its force-quirks flag to on. Emit the current to
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>%~token ~LET 新たな~DOCTYPE~token
-</li><li>%~token の名前 ~SET `現在の入力~文字$
+<ol><li>~DOCTYPE~tokenを作成する
+</li><li>現tokenの名前 ~SET `現在の入力~文字$
 </li><li>`~DOCTYPE名$stに`切替える$
 </li></ol>
 ◎
@@ -10840,7 +11010,7 @@ Emit an end-of-file token.
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `現在の入力~文字$ ) を発する
+<ol><li>文字~token( `現在の入力~文字$ ) を発する
 </li></ol>
 ◎
 Emit the current input character as a character token.
@@ -10877,7 +11047,7 @@ Switch to the CDATA section end state.
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `005D^U ) を発する
+<ol><li>文字~token( `005D^U ) を発する
 </li><li>`~CDATAsec$st内で`消費し直す$
 </li></ol>
 ◎
@@ -10898,7 +11068,7 @@ Consume the next input character:
 <dl class="switch">
 	<dt>`005D^U</dt>
 	<dd>
-<ol><li>新たな文字~token( `005D^U ) を発する
+<ol><li>文字~token( `005D^U ) を発する
 </li></ol>
 ◎
 Emit a U+005D RIGHT SQUARE BRACKET character token.
@@ -10914,8 +11084,8 @@ Switch to the data state.
 
 	<dt>~AnyElse</dt>
 	<dd>
-<ol><li>新たな文字~token( `005D^U ) を発する
-</li><li>新たな文字~token( `005D^U ) を発する
+<ol><li>文字~token( `005D^U ) を発する
+</li><li>文字~token( `005D^U ) を発する
 </li><li>`~CDATAsec$st内で`消費し直す$
 </li></ol>
 ◎
@@ -10924,8 +11094,280 @@ Emit two U+005D RIGHT SQUARE BRACKET character tokens. Reconsume in the CDATA se
 </dl>
 
 				</section>
+				<section id="processing-instruction-open-state">
+<h5 title="Processing instruction open state">13.2.5.72. `処理命令~open^st</h5>
+
+<p>
+`次回の入力~文字$を消費する：
+◎
+Consume the next input character:
+</p>
+
+<dl class="switch">
+	<dt>`~ASCII英字$</dt>
+	<dt>`005F^U</dt>
+	<dd>
+<ol><li>`処理命令~target$st内で`消費し直す$
+</li></ol>
+◎
+Reconsume in the processing instruction target state.
+</dd>
+
+	<dt>~EOF</dt>
+	<dd>
+<ol><li>`eof-in-processing-instruction$pE
+</li><li>~eof~tokenを発する
+</li></ol>
+◎
+This is an eof-in-processing-instruction parse error.＼
+Emit an end-of-file token.
+</dd>
+
+	<dt>~AnyElse</dt>
+	<dd>
+<ol><li>`invalid-first-character-of-processing-instruction-target$pE
+</li><li>`一時~bufferを~commentに変換する$
+</li><li>`似非~comment$st内で`消費し直す$
+</li></ol>
+◎
+This is an invalid-first-character-of-processing-instruction-target parse error.＼
+Convert the temporary buffer to a comment.＼
+Reconsume in the bogus comment state.
+</dd>
+</dl>
+
+
+				</section>
+				<section id="processing-instruction-target-state">
+<h5 title="Processing instruction target state">13.2.5.73. `処理命令~target^st</h5>
+
+<p>
+`次回の入力~文字$を消費する：
+◎
+Consume the next input character:
+</p>
+
+<dl class="switch">
+	<dt>`0009^U</dt>
+	<dt>`000A^U</dt>
+	<dt>`000C^U</dt>
+	<dt>`0020^U</dt>
+	<dt>`003F^U</dt>
+	<dt>`003E^U</dt>
+	<dd>
+		<ol>
+			<li>
+%~target ~LET `一時~buffer$V
+◎
+Let target be the concatenation of the code points in the temporary buffer, in the order they were added to the buffer.
+</li>
+			<li>
+<p>
+~IF［
+%~target ~IN`大小無視$sub { `xml^l, `xml-stylesheet^l }
+］：
+◎
+If target is an ASCII case-insensitive match for "xml" or "xml-stylesheet":
+</p>
+				<ol>
+					<li>
+`disallowed-processing-instruction-target$pE
+◎
+This is a disallowed-processing-instruction-target parse error.
+</li>
+					<li>
+`一時~bufferを~commentに変換する$
+◎
+Convert the temporary buffer to a comment.
+</li>
+					<li>
+`似非~comment$st内で`消費し直す$
+◎
+Reconsume in the bogus comment state.
+</li>
+				</ol>
+			</li>
+			<li>
+<p>
+~ELSE：
+◎
+Otherwise:
+</p>
+				<ol>
+					<li>
+処理命令~token( %~target, 空~文字列 ) を作成する
+◎
+Create a processing instruction token whose target is target and data is the empty string.
+</li>
+					<li>
+`処理命令~targetの後$st内で`消費し直す$
+◎
+Reconsume in the after processing instruction target state.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</dd>
+
+	<dt>`~ASCII英数字$</dt>
+	<dt>`002D^U</dt>
+	<dt>`005F^U</dt>
+	<dd>
+<ol><li>`一時~buffer$V ~APPEND `現在の入力~文字$
+</li></ol>
+◎
+Append the current input character to the temporary buffer.
+</dd>
+
+	<dt>~EOF</dt>
+	<dd>
+<ol><li>`eof-in-processing-instruction$pE
+</li><li>~eof~tokenを発する
+</li></ol>
+◎
+This is an eof-in-processing-instruction parse error.＼
+Emit an end-of-file token.
+</dd>
+
+	<dt>~AnyElse</dt>
+	<dd>
+<ol><li>`invalid-processing-instruction-target$pE
+</li><li>`一時~bufferを~commentに変換する$
+</li><li>`似非~comment$st内で`消費し直す$
+</li></ol>
+◎
+This is an invalid-processing-instruction-target parse error.＼
+Convert the temporary buffer to a comment.＼
+Reconsume in the bogus comment state.
+</dd>
+</dl>
+
+				</section>
+				<section id="after-processing-instruction-target-state">
+<h5 title="After processing instruction target state">13.2.5.74 `処理命令~targetの後^st</h5>
+
+<p>
+`次回の入力~文字$を消費する：
+◎
+Consume the next input character:
+</p>
+
+<dl class="switch">
+	<dt>`0009^U</dt>
+	<dt>`000A^U</dt>
+	<dt>`000C^U</dt>
+	<dt>`0020^U</dt>
+	<dd>
+<ol><li>この文字は無視する
+</li></ol>
+◎
+Ignore the character.
+</dd>
+
+	<dt>~AnyElse</dt>
+	<dd>
+<ol><li>`処理命令~data$st内で`消費し直す$
+</li></ol>
+◎
+Reconsume in the processing instruction data state.
+</dd>
+</dl>
+
+
+				</section>
+				<section id="processing-instruction-data-state">
+<h5 title="Processing instruction data state">13.2.5.75 `処理命令~data^st</h5>
+
+<p>
+`次回の入力~文字$を消費する：
+◎
+Consume the next input character:
+</p>
+
+<dl class="switch">
+	<dt>`003F^U</dt>
+	<dd>
+<ol><li>`処理命令~疑問符可能$stに`切替える$
+</li></ol>
+◎
+Switch to the processing instruction questionable state.
+</dd>
+
+	<dt>`003E^U</dt>
+	<dd>
+<ol><li>`~data$stに`切替える$
+</li><li>現在の処理命令~tokenを発する
+</li></ol>
+◎
+Switch to the data state.＼
+Emit the current processing instruction token.
+</dd>
+
+	<dt>~EOF</dt>
+	<dd>
+<ol><li>`eof-in-processing-instruction$pE
+</li><li>~eof~tokenを発する
+</li></ol>
+◎
+This is an eof-in-processing-instruction parse error.＼
+Emit an end-of-file token.
+</dd>
+
+	<dt>~AnyElse</dt>
+	<dd>
+<ol><li>現在の処理命令~tokenの~data ~APPEND `現在の入力~文字$
+</li></ol>
+◎
+Append the current input character to the current processing instruction token's data.
+</dd>
+</dl>
+
+
+				</section>
+				<section id="processing-instruction-questionable-state">
+<h5 title="Processing instruction questionable state">13.2.5.76 `処理命令~疑問符可能^st</h5>
+
+<p>
+`次回の入力~文字$を消費する：
+◎
+Consume the next input character:
+</p>
+
+<dl class="switch">
+	<dt>`003E^U</dt>
+	<dd>
+<ol><li>`~data$stに`切替える$
+</li><li>現在の処理命令~tokenを発する
+</li></ol>
+◎
+Switch to the data state.＼
+Emit the current processing instruction token.
+</dd>
+
+	<dt>~EOF</dt>
+	<dd>
+<ol><li>`eof-in-processing-instruction$pE
+</li><li>~eof~tokenを発する
+</li></ol>
+◎
+This is an eof-in-processing-instruction parse error.＼
+Emit an end-of-file token.
+</dd>
+
+	<dt>~AnyElse</dt>
+	<dd>
+<ol><li>現在の処理命令~tokenの~data ~APPEND `003F^U
+</li><li>`処理命令~data$st内で`消費し直す$
+</li></ol>
+◎
+Append U+003F (?) to the current processing instruction token's data.＼
+Reconsume in the processing instruction data state.
+</dd>
+</dl>
+
+				</section>
 				<section id="character-reference-state">
-<h5 title="Character reference state">13.2.5.72. `文字~参照^st</h5>
+<h5 title="Character reference state">13.2.5.77. `文字~参照^st</h5>
 
 <ol>
 	<li>
@@ -10974,7 +11416,7 @@ Flush code points consumed as a character reference. Reconsume in the return sta
 
 				</section>
 				<section id="named-character-reference-state">
-<h5 title="Named character reference state">13.2.5.73. `有名~文字~参照^st</h5>
+<h5 title="Named character reference state">13.2.5.78. `有名~文字~参照^st</h5>
 
 <ol>
 	<li>
@@ -11129,7 +11571,7 @@ However, if the markup contains the string I'm &amp;notit; I tell you in an attr
 
 				</section>
 				<section id="ambiguous-ampersand-state">
-<h5 title="Ambiguous ampersand state">13.2.5.74. `多義的~ampersand^st</h5>
+<h5 title="Ambiguous ampersand state">13.2.5.79. `多義的~ampersand^st</h5>
 
 <p>
 `次回の入力~文字$を消費する：
@@ -11151,7 +11593,7 @@ Consume the next input character:
 			<li>
 ~ELSE
 ⇒
-新たな文字~token( `現在の入力~文字$ ) を発する
+文字~token( `現在の入力~文字$ ) を発する
 </li>
 		</ol>
 
@@ -11180,7 +11622,7 @@ Reconsume in the return state.
 
 				</section>
 				<section id="numeric-character-reference-state">
-<h5 title="Numeric character reference state">13.2.5.75. `数量-文字~参照^st</h5>
+<h5 title="Numeric character reference state">13.2.5.80. `数量-文字~参照^st</h5>
 
 <ol>
 	<li>
@@ -11220,7 +11662,7 @@ Reconsume in the decimal character reference start state.
 
 				</section>
 				<section id="hexadecimal-character-reference-start-state">
-<h5 title="Hexadecimal character reference start state">13.2.5.76. `~hexadecimal文字~参照~始端^st</h5>
+<h5 title="Hexadecimal character reference start state">13.2.5.81. `~hexadecimal文字~参照~始端^st</h5>
 
 <p>
 `次回の入力~文字$を消費する：
@@ -11251,7 +11693,7 @@ Flush code points consumed as a character reference. Reconsume in the return sta
 
 				</section>
 				<section id="decimal-character-reference-start-state">
-<h5 title="Decimal character reference start state">13.2.5.77. `~decimal文字~参照~始端^st</h5>
+<h5 title="Decimal character reference start state">13.2.5.82. `~decimal文字~参照~始端^st</h5>
 
 <p>
 `次回の入力~文字$を消費する：
@@ -11282,7 +11724,7 @@ Flush code points consumed as a character reference. Reconsume in the return sta
 
 				</section>
 				<section id="hexadecimal-character-reference-state">
-<h5 title="Hexadecimal character reference state">13.2.5.78. `~hexadecimal文字~参照^st</h5>
+<h5 title="Hexadecimal character reference state">13.2.5.83. `~hexadecimal文字~参照^st</h5>
 
 <p>
 `次回の入力~文字$を消費する：
@@ -11345,7 +11787,7 @@ Reconsume in the numeric character reference end state.
 
 				</section>
 				<section id="decimal-character-reference-state">
-<h5 title="Decimal character reference state">13.2.5.79. `~decimal文字~参照^st</h5>
+<h5 title="Decimal character reference state">13.2.5.84. `~decimal文字~参照^st</h5>
 
 <p>
 `次回の入力~文字$を消費する：
@@ -11388,7 +11830,7 @@ Reconsume in the numeric character reference end state.
 
 				</section>
 				<section id="numeric-character-reference-end-state">
-<h5 title="Numeric character reference end state">13.2.5.80. `数量-文字~参照~終端^st</h5>
+<h5 title="Numeric character reference end state">13.2.5.85. `数量-文字~参照~終端^st</h5>
 
 <ol>
 	<li>
@@ -13029,6 +13471,47 @@ When the steps below require the user agent to insert a comment while processing
 • Insert the newly created node at the adjusted insertion location.
 </div>
 
+<div class="algo">
+<p>
+`処理命令を挿入する@
+~algoは、
+所与の
+( 処理命令~token %処理命令~token, 挿入~位置 %位置 ~DF ε )
+に対し：
+◎
+When the steps below require the user agent to insert a processing instruction while processing a processing instruction token, the user agent must run the following steps:
+</p>
+<ol>
+	<li>
+~IF［
+%位置 ~EQ ε
+］
+⇒
+%位置 ~SET `適切な~node挿入-先$( `現在の~node$ )【！the adjusted insertion location】
+◎
+↓</li>
+	<li>
+%処理命令 ~LET 新たな `ProcessingInstruction$I ~node
+— その
+⇒＃
+`~target$pI ~SET %処理命令~token の~target,
+`~data$cd ~SET %処理命令~token の~data,
+`~node文書$ ~SET %位置 が所属する~nodeの`~node文書$
+◎
+Let target be the target given in the processing instruction token being processed.
+◎
+Let data be the data given in the processing instruction token being processed.
+◎
+Create a ProcessingInstruction node whose target is target, data is data, and node document is the same as that of the node in which the adjusted insertion location finds itself.
+</li>
+	<li>
+%処理命令 を %位置 に挿入する
+◎
+Insert the newly created node at the adjusted insertion location.
+</li>
+</ol>
+</div>
+
 				</section>
 				<section id="parsing-elements-that-contain-only-text">
 <h5 title="Parsing elements that contain only text">13.2.6.2. ~textのみを包含する要素の構文解析</h5>
@@ -13128,7 +13611,7 @@ When the steps below require the UA to generate all implied end tags thoroughly,
 
 <p class="trans-note">【
 次に与える手続きは、
-以下を簡潔に記述するために，この訳に導入している。
+以下を簡潔に述べるために，この訳に導入している。
 これは、
 ~DOMにおいて，当の要素とその子孫が成す~treeを “閉じる” ことに相当する。
 】</p>
@@ -13233,6 +13716,18 @@ A comment token
 </li></ol>
 ◎
 Insert a comment as the last child of the Document object.
+</dd>
+
+	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token, `文書$内の末尾 )
+</li></ol>
+◎
+Insert a processing instruction as the last child of the Document object.
 </dd>
 
 	<dt>
@@ -13646,6 +14141,18 @@ Insert a comment as the last child of the Document object.
 </dd>
 
 	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token, `文書$内の末尾 )
+</li></ol>
+◎
+Insert a processing instruction as the last child of the Document object.
+</dd>
+
+	<dt>
 文字~token { `~ASCII空白$ }
 ◎
 A character token that is one of U+0009 CHARACTER TABULATION, U+000A LINE FEED (LF), U+000C FORM FEED (FF), U+000D CARRIAGE RETURN (CR), or U+0020 SPACE
@@ -13800,6 +14307,18 @@ Insert a comment.
 </dd>
 
 	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
+</dd>
+
+	<dt>
 ~DOCTYPE~token
 ◎
 A DOCTYPE token
@@ -13935,6 +14454,18 @@ A comment token
 </li></ol>
 ◎
 Insert a comment.
+</dd>
+
+	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
 </dd>
 
 	<dt>
@@ -14860,6 +15391,18 @@ Insert a comment.
 </dd>
 
 	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
+</dd>
+
+	<dt>
 ~DOCTYPE~token
 ◎
 A DOCTYPE token
@@ -15114,6 +15657,18 @@ A comment token
 </li></ol>
 ◎
 Insert a comment.
+</dd>
+
+	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
 </dd>
 
 	<dt>
@@ -18272,6 +18827,18 @@ Insert a comment.
 </dd>
 
 	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
+</dd>
+
+	<dt>
 ~DOCTYPE~token
 ◎
 A DOCTYPE token
@@ -18351,7 +18918,7 @@ A start tag whose tag name is "col"
 Clear the stack back to a table context. (See below.)
 </li>
 			<li>
-`要素を挿入する$( 新たな開始~tag~token( `colgroup^l ) )
+`要素を挿入する$( 開始~tag~token( `colgroup^l ) )
 ◎
 Insert an HTML element for a "colgroup" start tag token with no attributes, then＼
 </li>
@@ -18406,7 +18973,7 @@ A start tag whose tag name is one of: "td", "th", "tr"
 Clear the stack back to a table context. (See below.)
 </li>
 			<li>
-`要素を挿入する$( 新たな開始~tag~token( `tbody^l ) )
+`要素を挿入する$( 開始~tag~token( `tbody^l ) )
 ◎
 Insert an HTML element for a "tbody" start tag token with no attributes, then＼
 </li>
@@ -18978,6 +19545,18 @@ Insert a comment.
 </dd>
 
 	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
+</dd>
+
+	<dt>
 ~DOCTYPE~token
 ◎
 A DOCTYPE token
@@ -19197,7 +19776,7 @@ Parse error.
 Clear the stack back to a table body context. (See below.)
 </li>
 			<li>
-`要素を挿入する$( 新たな開始~tag~token( `tr^l ) )
+`要素を挿入する$( 開始~tag~token( `tr^l ) )
 ◎
 Insert an HTML element for a "tr" start tag token with no attributes, then＼
 </li>
@@ -19676,7 +20255,7 @@ A start tag whose tag name is one of: "caption", "col", "colgroup", "tbody", "td
 ~Assert：
 `視野~内$に在る( `~table視野$, { `td^e, `th^e } )
 ◎
-Assert: The stack of open elements has a td or th element in table scope.
+Assert: the stack of open elements has a td or th element in table scope.
 </li>
 			<li>
 `~cellを閉じる$
@@ -20110,6 +20689,19 @@ Insert a comment as the last child of the first element in the stack of open ele
 </dd>
 
 	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>
+`処理命令を挿入する$( 現token, `~open要素~stack$の先頭にある要素（ `html$e 要素）内の末尾 )
+</li></ol>
+◎
+Insert a processing instruction as the last child of the first element in the stack of open elements (the html element).
+</dd>
+
+	<dt>
 ~DOCTYPE~token
 ◎
 A DOCTYPE token
@@ -20222,6 +20814,18 @@ A comment token
 </li></ol>
 ◎
 Insert a comment.
+</dd>
+
+	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
 </dd>
 
 	<dt>
@@ -20422,6 +21026,18 @@ Insert a comment.
 </dd>
 
 	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
+</dd>
+
+	<dt>
 ~DOCTYPE~token
 ◎
 A DOCTYPE token
@@ -20517,6 +21133,18 @@ Insert a comment as the last child of the Document object.
 </dd>
 
 	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token, `文書$内の末尾 )
+</li></ol>
+◎
+Insert a processing instruction as the last child of the Document object.
+</dd>
+
+	<dt>
 ~DOCTYPE~token
 ◎
 A DOCTYPE token
@@ -20587,6 +21215,18 @@ A comment token
 </li></ol>
 ◎
 Insert a comment as the last child of the Document object.
+</dd>
+
+	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token, `文書$内の末尾 )
+</li></ol>
+◎
+Insert a processing instruction as the last child of the Document object.
 </dd>
 
 	<dt>
@@ -20715,6 +21355,18 @@ A comment token
 </li></ol>
 ◎
 Insert a comment.
+</dd>
+
+	<dt>
+処理命令~token
+◎
+A processing instruction token
+</dt>
+	<dd>
+<ol><li>`処理命令を挿入する$( 現token )
+</li></ol>
+◎
+Insert a processing instruction.
 </dd>
 
 	<dt>
@@ -23052,7 +23704,7 @@ Set up the HTML parser's stack of open elements so that it contains just the sin
 If context is a template element, then push "in template" onto the stack of template insertion modes so that it is the new current template insertion mode.
 </li>
 	<li>
-%開始~tag~token ~LET 新たな開始~tag~token( %文脈 の局所~名 )
+%開始~tag~token ~LET 開始~tag~token( %文脈 の局所~名 ) を作成する
 ◎
 Create a start tag token whose name is the local name of context and＼
 </li>
