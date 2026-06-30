@@ -222,7 +222,7 @@ const navToInit = () => {
 	let e;
 	let id = window.location.hash;
 
-	const targetId1 = (id) => {
+	const remapId = (id) => {
 		// 訳文id:原文id （先頭の \t も有効）
 		id = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 		const rxp = new RegExp( '^\t?([^\\s:]+):' + id + '$', 'm' );
@@ -234,7 +234,7 @@ const navToInit = () => {
 	if(id){
 		id = id.slice(1);
 		if(id.indexOf('_xref-') === 0) return; // 生成リンク（ common1.js ）
-		id = targetId1(id) || id;
+		id = remapId(id) || id;
 		e = E(id);
 	}
 	if(!e){
@@ -1485,7 +1485,7 @@ additional: '文献（この訳による追加）'
 					result.push(
 `<dd><a href="${url}">${url}</a></dd>`
 					);
-					const rfc_n = url.match(/\/(?:rfc)\/rfc(\d+)/);
+					const rfc_n = url.match(/\/(?:rfc|info)\/rfc(\d+)/);
 					if(!rfc_n) return;
 					const rfc_num = rfc_n[1];
 					add_altref_link(ref_key, `https://rfcs.web.fc2.com/rfc${rfc_num}.html`, 'google 翻訳');
