@@ -297,20 +297,11 @@ I.SVGViewElement:~SVGlinking#InterfaceSVGViewElement
 I.Animation:~WANIMapi#the-animation-interface
 	~TR/web-animations-1/#the-animation-interface
 I.ShadowAnimation:~SVGstruct#InterfaceShadowAnimation
-I.DOMMatrix:~GEOMETRY#dommatrix
-	~TR/geometry-1/#dom-dommatrix
-I.DOMMatrixReadOnly:~GEOMETRY#dommatrixreadonly
-	~TR/geometry-1/#dom-dommatrixreadonly
+I.SVGMatrix:~GEOMETRY#dommatrix
 I.DOMMatrix2DInit:~GEOMETRY#dictdef-dommatrix2dinit
-I.DOMPoint:~GEOMETRY#dompoint
-	~TR/geometry-1/#dom-dompoint
+I.SVGPoint:~GEOMETRY#dompoint
 I.DOMPointInit:~GEOMETRY#dictdef-dompointinit
-I.DOMPointReadOnly:~GEOMETRY#dompointreadonly
-	~TR/geometry-1/#dom-dompointreadonly
-I.DOMRect:~GEOMETRY#domrect
-	~TR/geometry-1/#dom-domrect
-I.DOMRectReadOnly:~GEOMETRY#domrectreadonly
-	~TR/geometry-1/#dom-domrectreadonly
+I.SVGRect:~GEOMETRY#domrect
 I.DOMTokenList:~DOM4#interface-domtokenlist
 I.Document:~DOM4#document
 I.Element:~DOM4#element
