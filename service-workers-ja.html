@@ -258,8 +258,8 @@ mWC: 'code',
 
 ●●options
 
-spec_date:2026-06-22
-trans_update:2026-06-24
+spec_date:2026-07-06
+trans_update:2026-07-16
 source_checked:250530
 original_url:https://w3c.github.io/ServiceWorker/
 	abbr_url:SW1
@@ -931,6 +931,7 @@ rcR.~quotaを超過したか:#dfn-dfn-count-router-condition-result-quota-exceed
 ~ASCII大小無視:~INFRA#ascii-case-insensitive
 連結する:~INFRA#string-concatenate
 符号単位~接頭辞:~INFRA#code-unit-prefix
+同型に復号する:~INFRA#isomorphic-decode
 
 map.値~群:~INFRA#map-getting-the-values
 	~EACH:~INFRA#map-iterate
@@ -2039,7 +2040,7 @@ not:
 [RFC2119]
     S. Bradner. ＜Key words for use in RFCs to Indicate Requirement Levels＞. March 1997. Best Current Practice. URL: https://datatracker.ietf.org/doc/html/rfc2119
 [RFC5234]
-    D. Crocker, Ed.; P. Overell. ＜Augmented BNF for Syntax Specifications: ABNF＞. January 2008. Internet Standard. URL: https://www.rfc-editor.org/rfc/rfc5234
+    D. Crocker, Ed.; P. Overell. ＜Augmented BNF for Syntax Specifications: ABNF＞. January 2008. Internet Standard. URL: https://www.rfc-editor.org/info/rfc5234/
 [RFC7230]
     R. Fielding, Ed.; J. Reschke, Ed.. ＜Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing＞. June 2014. Proposed Standard. URL: https://httpwg.org/specs/rfc7230.html
 [RFC7231]
@@ -12574,22 +12575,14 @@ Note: Even if the cache mode is not set to "no-cache", the user agent obeys Cach
 Set request’s service-workers mode to "none".
 </li>
 			<li>
-<p>
 ~IF［
 %~top-levelか ~EQ ~F
-］：
-</p>
-				<ol>
-					<li>
+］
+⇒
 ~RET %要請 を`~fetchする$
 — 次を与える下で
 ⇒
 `応答の本体を消費する処理n^i ~SET %~custom~fetch応答の処理n
-</li>
-					<li>；
-~RET
-</li>
-				</ol>
 【！If isTopLevel is false fetch request with processCustomFetchResponse as processResponseConsumeBody, and abort these steps.】
 ◎
 If the isTopLevel flag is unset, then return the result of fetching request.
@@ -12650,10 +12643,9 @@ Asynchronously complete these steps with a network error.
 					</li>
 					<li>
 <p>
-%許容される~sw ~LET 
-`~header~listから値を抽出する$( %応答 の`~header~list$rs, `Service-Worker-Allowed^h )
+%許容される~sw ~LET `~header~listから値を取得する$( %応答 の`~header~list$rs, `Service-Worker-Allowed$h )
 ◎
-Let serviceWorkerAllowed be the result of extracting header list values given `Service-Worker-Allowed` and response’s header list.
+Let serviceWorkerAllowed be the result of get `Service-Worker-Allowed` from response’s header list.
 </p>
 
 <p class="note">注記：
@@ -12664,20 +12656,25 @@ Note: See the definition of the Service-Worker-Allowed header in Appendix B: Ext
 </p>
 					</li>
 					<li>
+~IF［
+%許容される~sw ~NEQ ~NULL
+］
+⇒
+%許容される~sw ~SET `同型に復号する$( %許容される~sw )
+◎
+If serviceWorkerAllowed is not null, then set serviceWorkerAllowed to the result of isomorphic decode serviceWorkerAllowed.
+</li>
+					<li>
 %施策~容器 ~SET `~fetch応答から施策~容器を作成する$( %応答 )
 ◎
 Set policyContainer to the result of creating a policy container from a fetch response given response.
 </li>
 					<li>
-~IF［
-%許容される~sw ~EQ `失敗^i
-］
-⇒＃
-%~custom~fetch応答の処理n( `~network~error$ )；
-~RET【！If serviceWorkerAllowed is failure, then: Invoke processCustomFetchResponse with a network error and abort these steps.】
+%最大-~scope ~LET ε
 ◎
-If serviceWorkerAllowed is failure, then:
-• Asynchronously complete these steps with a network error.
+↓↓ Let scopeURL be registration’s scope url.
+◎
+↓↓ Let maxScopeString be null.
 </li>
 					<li class="algo">
 <p>
@@ -12686,19 +12683,12 @@ If serviceWorkerAllowed is failure, then:
 ↓↓</p>
 						<ol>
 							<li>
-%最大-~scope ~LET ε
-◎
-↓↓ Let scopeURL be registration’s scope url.
-◎
-↓↓ Let maxScopeString be null.
-</li>
-							<li>
 <p>
 ~IF［
 %許容される~sw ~EQ ~NULL
 ］
 ⇒
-%最大-~scope ~LET `~URL構文解析する$( `./^l, %~job の`~script~URL$job )
+%最大-~scope ~SET `~URL構文解析する$( `./^l, %~job の`~script~URL$job )
 ◎
 If serviceWorkerAllowed is null, then:
 • Let resolvedScope be the result of parsing "./" using job’s script url as the base URL.
@@ -12706,7 +12696,7 @@ If serviceWorkerAllowed is null, then:
 </p>
 
 <p class="note">注記：
-%最大-~scope の`~path$urlの最後の~itemは，常に空~文字列になるので、
+%最大-~scope の`~path$urlを成す最後の~itemは，常に空~文字列になるので、
 下の %最大-~scope文字列 の末尾は `/^l になる。
 ◎
 Note: The final item in resolvedScope’s path will always be an empty string, so maxScopeString will have a trailing "/".
@@ -12720,9 +12710,19 @@ Else:
 </p>
 								<ol>
 									<li>
-%最大-~scope ~LET `~URL構文解析する$( %許容される~sw, %~job の`~script~URL$job )
+%最大-~scope ~SET `~URL構文解析する$( %許容される~sw, %~job の`~script~URL$job )
 ◎
 Let maxScope be the result of parsing serviceWorkerAllowed using job’s script url as the base URL.
+</li>
+									<li>
+~IF［
+%最大-~scope ~EQ `失敗^i
+］
+⇒
+~RET ~F
+◎
+If maxScope is failure, then:
+• Asynchronously complete these steps with a network error.
 </li>
 									<li>
 ~IF［
@@ -12752,15 +12752,9 @@ If maxScope’s origin is job’s script url’s origin, then:
 Let scopeString be "/", followed by the strings in scopeURL’s path (including empty strings), separated from each other by "/".
 </li>
 							<li>
-~IF［
-%最大-~scope文字列 は %~scope文字列 の`符号単位~接頭辞$でない【！not start with】
+~RET ~IS［
+%最大-~scope文字列 は %~scope文字列 の`符号単位~接頭辞$である【！not start with】
 ］
-⇒
-~RET ~F
-◎
-↓</li>
-							<li>
-~RET ~T
 ◎
 ↓</li>
 						</ol>
@@ -12775,7 +12769,13 @@ If maxScopeString is null or scopeString does not start with maxScopeString, the
 </p>
 						<ol>
 							<li>
+~IF［
+%最大-~scope ~NEQ `失敗^i
+］
+⇒
 `~job~promiseを却下する$( %~job, `SecurityError$E 例外 )
+◎
+↑
 ◎
 Invoke Reject Job Promise with job and "SecurityError" DOMException.
 </li>
@@ -12783,10 +12783,11 @@ Invoke Reject Job Promise with job and "SecurityError" DOMException.
 %~custom~fetch応答の処理n( `~network~error$ )
 【！】
 ◎
-Asynchronously complete these steps with a network error.
-</li>
+↑↑</li>
 							<li>
 ~RET
+◎
+Asynchronously complete these steps with a network error.
 </li>
 						</ol>
 					</li>
@@ -20039,3 +20040,17 @@ Thanks also to Vivian Cromwell, Greg Simon, Alex Komoroske, Wonsuk Lee, and Seoj
 
 	</section>
 </main></div>
+＊
+`~header~listから値を抽出する$
+
+					<li>
+~IF［
+%許容される~sw ~EQ `失敗^i
+］
+⇒＃
+%~custom~fetch応答の処理n( `~network~error$ )；
+~RET【！If serviceWorkerAllowed is failure, then: Invoke processCustomFetchResponse with a network error and abort these steps.】
+◎
+If serviceWorkerAllowed is failure, then:
+• Asynchronously complete these steps with a network error.
+</li>
