@@ -162,8 +162,8 @@ return text;
 ●●options
 
 spec_title:Streams
-spec_date:2026-04-30
-trans_update:2026-05-14
+spec_date:2026-07-17
+trans_update:2026-07-18
 source_checked:231113
 spec_status:LS
 original_url:https://streams.spec.whatwg.org/
@@ -328,6 +328,7 @@ unrestricted double:~WEBIDL#idl-unrestricted-double
 any:~WEBIDL#idl-any
 object:~WEBIDL#idl-object
 sequence:~WEBIDL#idl-sequence
+async_sequence:~WEBIDL#idl-async-iterable-type
 boolean:~WEBIDL#idl-boolean
 Promise:~WEBIDL#idl-promise
 
@@ -692,7 +693,6 @@ A.StructuredDeserializeWithTransfer:~HTMLcloning#structureddeserializewithtransf
 
 	■ TC39（Ax.XXX:~TC39#sec-xxx ( lowercase )
 Ax.Get:~TC39#sec-get-o-p
-	Ax.Call
 	Ax.CloneArrayBuffer
 	Ax.Construct
 	Ax.CopyDataBlockBytes
@@ -700,14 +700,9 @@ Ax.Get:~TC39#sec-get-o-p
 	Ax.CreateBuiltinFunction
 	Ax.CreateDataProperty
 	Ax.DetachArrayBuffer
-	Ax.GetIterator
-	Ax.GetMethod
 	Ax.GetV
 	Ax.IsDetachedBuffer
 	Ax.IsInteger
-	Ax.IteratorComplete
-	Ax.IteratorNext
-	Ax.IteratorValue
 	Ax.OrdinaryObjectCreate
 	Ax.SameValue
 
@@ -836,6 +831,7 @@ RS.~byte読取り~support付きで設定しておく:#readablestream-set-up-with
 RS.取消す:#readablestream-cancel
 RS.~closeする:#readablestream-close
 RS.~proxyを作成する:#readablestream-create-a-proxy
+RS.非同期c連列から作成する:#readablestream-create-from-async-sequence
 RS.~chunkを~enqueueする:#readablestream-enqueue
 RS.~errorにする:#readablestream-error
 RS.読取器を取得する:#readablestream-get-a-reader
@@ -934,13 +930,8 @@ jI.Object.prototype:~TC39#sec-properties-of-the-object-prototype-object
 	●WEBIDL/promise
 ~platform~obj:~WEBIDL#dfn-platform-object
 ~callback文脈:~WEBIDL#dfn-callback-context
-i.反復~終了:~WEBIDL#end-of-iteration
-次回の反復~結果を取得する手続き:~WEBIDL#dfn-get-the-next-iteration-result
-非同期~反復子から返る手続き:~WEBIDL#asynchronous-iterator-return
-非同期~反復子の初期化~手続き:~WEBIDL#asynchronous-iterator-initialization-steps
 内包-:~WEBIDL#include
 構築子~手続き:~WEBIDL#constructor-steps
-
 新たな~promise:~WEBIDLjs#a-new-promise
 ~promiseを却下する:~WEBIDLjs#reject
 ~promiseを解決する:~WEBIDLjs#resolve
@@ -950,6 +941,15 @@ i.反復~終了:~WEBIDL#end-of-iteration
 充足-時:~WEBIDLjs#upon-fulfillment
 却下-時:~WEBIDLjs#upon-rejection
 ~promiseに反応する:~WEBIDLjs#dfn-perform-steps-once-promise-is-settled
+
+非同期c連列:~WEBIDL#async-sequence-type
+i.反復~終了:~WEBIDL#end-of-iteration
+次回の反復~結果を取得する手続き:~WEBIDL#dfn-get-the-next-iteration-result
+非同期~反復子から返る手続き:~WEBIDL#asynchronous-iterator-return
+非同期~反復子の初期化~手続き:~WEBIDL#asynchronous-iterator-initialization-steps
+次回の値を取得する:~WEBIDLjs#async-iterator-get-next-value
+非同期c反復子を~closeする:~WEBIDLjs#async-iterator-close
+非同期c連列を~openする:~WEBIDLjs#async-sequence-open
 
 BS.~byte長さ:~WEBIDLjs#buffersource-byte-length
 保持された~byte列の複製を取得する:~WEBIDLjs#dfn-get-buffer-source-copy
@@ -1724,6 +1724,7 @@ template::::テンプレート
 	%可用な~size:available
 	%欲される~size:desiredSize
 	%~view:view
+	%連列:sequence
 
 	●指示語
 後方:backward:~
@@ -1858,8 +1859,7 @@ Participate:
 
 Commits:
 	<a href="https://github.com/whatwg/streams/commits">GitHub whatwg/streams/commits</a>
-	<a href="https://streams.spec.whatwg.org/commit-snapshots/cae9b72b2241d2b89916940588e423572dbaedf1" id="commit-snapshot-link">Snapshot as of this commit</a>
-	<a href="https://twitter.com/streamsstandard">@streamsstandard</a>
+	<a href="https://streams.spec.whatwg.org/commit-snapshots/29997074ffcfbe5b72a4451775398a54cef5b297" id="commit-snapshot-link">Snapshot as of this commit</a>
 
 テスト
 	<a href="https://github.com/web-platform-tests/wpt/tree/master/streams">web-platform-tests streams/</a> (<a href="https://github.com/web-platform-tests/wpt/labels/streams">ongoing work</a>)
@@ -1900,7 +1900,7 @@ Commits:
 この仕様は、
 ~data~streamを［
 低~levelな入出力~primitiveに効率的に対応付ける
-］ように［
+］よう［
 作成する／組立てる／消費する
 ］ための~APIを供する。
 ◎
@@ -2980,8 +2980,7 @@ The Web IDL definition for the ReadableStream class is given as follows:
 interface `ReadableStream@I {
   `ReadableStream$mc(optional `object$ %underlyingSource, optional `QueuingStrategy$I %strategy = {});
 
-  static `ReadableStream$I `from$rs(`any$ %asyncIterable);
-
+  static `ReadableStream$I `from$rs(`async_sequence$&lt;`any$&gt; %asyncIterable);
   readonly attribute `boolean$ `locked$rs;
 
   `Promise$&lt;`undefined$&gt; `cancel$rs(optional `any$ %reason);
@@ -3779,7 +3778,7 @@ Assert: underlyingSourceDict["type"] does not exist.
 </li>
 			<li>
 %sizeAlgorithm ~LET
-~ABRUPT `ExtractSizeAlgorithm$A( %strategy )
+~NOABRUPT `ExtractSizeAlgorithm$A( %strategy )
 ◎
 Let sizeAlgorithm be ! ExtractSizeAlgorithm(strategy).
 </li>
@@ -7370,10 +7369,9 @@ ReadableStreamFromIterable(asyncIterable) performs the following steps:
 Let stream be undefined.
 </li>
 	<li>
-%iteratorRecord ~LET
-~ABRUPT `GetIterator$Ax( %asyncIterable, `async^i )
+%iterator ~LET `非同期c連列を~openする$( %asyncIterable )
 ◎
-Let iteratorRecord be ? GetIterator(asyncIterable, async).
+Let iterator be the result of opening an async sequence asyncIterable.
 </li>
 	<li class="algo">
 %startAlgorithm ~LET 次を走らす~algo
@@ -7390,186 +7388,66 @@ Let pullAlgorithm be the following steps:
 </p>
 		<ol>
 			<li>
-%nextResult ~LET 
-`IteratorNext$Ax( %iteratorRecord )
+%nextPromise ~LET `次回の値を取得する$( %iterator )
 ◎
-Let nextResult be IteratorNext(iteratorRecord).
-</li>
-			<li>
-~IF［
-%nextResult は`中途完了^である
-］
-⇒
-~RET `却下される~promise$( %nextResult.`Value^sl )
-◎
-If nextResult is an abrupt completion, return a promise rejected with nextResult.[[Value]].
-</li>
-			<li>
-%nextPromise ~LET `解決される~promise$( %nextResult.`Value^sl )
-◎
-Let nextPromise be a promise resolved with nextResult.[[Value]].
+Let nextPromise be the result of getting the next value of iterator.
 </li>
 			<li>
 <p>
 ~RET `~promiseに反応する$( %nextPromise )
 — 次を与える下で：
 ◎
-Return the result of reacting to nextPromise with＼
+Return the result of reacting to nextPromise:
 </p>
 				<ul>
 					<li class="algo">
 <p>
 `充足~手続き^i は、
-所与の
-( %iterResult )
-に対し：
+所与の ( 値 %v ) に対し：
 ◎
-the following fulfillment steps, given iterResult:
+If nextPromise was fulfilled with value v:
 </p>
 						<ol>
 							<li>
 ~IF［
-%iterResult は `Object$jt でない
-］
-⇒
-~THROW `TypeError$jE
-◎
-If iterResult is not an Object, throw a TypeError.
-</li>
-							<li>
-%done ~LET
-~ABRUPT `IteratorComplete$Ax( %iterResult )
-◎
-Let done be ? IteratorComplete(iterResult).
-</li>
-							<li>
-~IF［
-%done ~EQ ~T
+%v ~EQ `反復~終了$i
 ］
 ⇒
 ~NOABRUPT `ReadableStreamDefaultControllerClose$A( %stream.`controller$rS )
 ◎
-If done is true:
-• Perform ! ReadableStreamDefaultControllerClose(stream.[[controller]]).
+If v is end of iteration, perform ! ReadableStreamDefaultControllerClose(stream.[[controller]]).
 </li>
 							<li>
-<p>
-~ELSE：
+~ELSE
+⇒
+~NOABRUPT `ReadableStreamDefaultControllerEnqueue$A( %stream.`controller$rS, %v )
 ◎
-Otherwise:
-</p>
-								<ol>
-									<li>
-%value ~LET
-~ABRUPT `IteratorValue$Ax( %iterResult )
-◎
-Let value be ? IteratorValue(iterResult).
+Otherwise, perform ! ReadableStreamDefaultControllerEnqueue(stream.[[controller]], v).
 </li>
-									<li>
-~NOABRUPT `ReadableStreamDefaultControllerEnqueue$A( %stream.`controller$rS, %value )
-◎
-Perform ! ReadableStreamDefaultControllerEnqueue(stream.[[controller]], value).
-</li>
-								</ol>
-							</li>
 						</ol>
 					</li>
+					<li class="algo">
+`却下~手続き^i は、
+所与の
+( 事由 %r )
+に対し
+⇒
+~NOABRUPT `ReadableStreamDefaultControllerError$A( %stream.`controller$rS, %r )
+◎
+If nextPromise was rejected with reason r, perform ! ReadableStreamDefaultControllerError(stream.[[controller]], r).
+</li>
 				</ul>
 			</li>
 		</ol>
 	</li>
 	<li class="algo">
-<p>
-%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo：
+%cancelAlgorithm ~LET 所与の ( %reason ) に対し，次を走らす~algo
+⇒
+~RET `非同期c反復子を~closeする$( %iterator, %reason )
 ◎
 Let cancelAlgorithm be the following steps, given reason:
-</p>
-		<ol>
-			<li>
-%iterator ~LET %iteratorRecord.`Iterator^sl
-◎
-Let iterator be iteratorRecord.[[Iterator]].
+• Return the result of closing iterator with reason.
 </li>
-			<li>
-%returnMethod ~LET
-`GetMethod$Ax( %iterator, `return^l )
-◎
-Let returnMethod be GetMethod(iterator, "return").
-</li>
-			<li>
-~IF［
-%returnMethod は`中途完了^である
-］
-⇒
-~RET `却下される~promise$( %returnMethod.`Value^sl )
-◎
-If returnMethod is an abrupt completion, return a promise rejected with returnMethod.[[Value]].
-</li>
-			<li>
-~IF［
-%returnMethod.`Value^sl ~EQ `undefined^jv
-］
-⇒
-~RET `解決される~promise$( `undefined^jv )
-◎
-If returnMethod.[[Value]] is undefined, return a promise resolved with undefined.
-</li>
-			<li>
-%returnResult ~LET
-`Call$Ax( %returnMethod.`Value^sl, %iterator, « %reason » )
-◎
-Let returnResult be Call(returnMethod.[[Value]], iterator, « reason »).
-</li>
-			<li>
-~IF［
-%returnResult は`中途完了^である
-］
-⇒
-~RET `却下される~promise$( %returnResult.`Value^sl )
-◎
-If returnResult is an abrupt completion, return a promise rejected with returnResult.[[Value]].
-</li>
-			<li>
-%returnPromise ~LET `解決される~promise$( %returnResult.`Value^sl )
-◎
-Let returnPromise be a promise resolved with returnResult.[[Value]].
-</li>
-			<li>
-<p>
-~RET `~promiseに反応する$( %returnPromise )
-— 次を与える下で：
-◎
-Return the result of reacting to returnPromise with＼
-</p>
-				<ul>
-					<li class="algo">
-<p>
-`充足~手続き^i は、
-所与の ( %iterResult ) に対し：
-◎
-the following fulfillment steps, given iterResult:
-</p>
-						<ol>
-							<li>
-~IF［
-%iterResult は `Object$jt でない
-］
-⇒
-~THROW `TypeError$jE
-◎
-If iterResult is not an Object, throw a TypeError.
-</li>
-							<li>
-~RET `undefined^jv
-◎
-Return undefined.
-</li>
-						</ol>
-					</li>
-				</ul>
-			</li>
-		</ol>
-	</li>
 	<li>
 %stream ~SET 
 ~NOABRUPT `CreateReadableStream$A( %startAlgorithm, %pullAlgorithm, %cancelAlgorithm, 0 )
@@ -15435,7 +15313,7 @@ Perform ! InitializeWritableStream(this).
 </li>
 	<li>
 %sizeAlgorithm ~LET
-~ABRUPT `ExtractSizeAlgorithm$A( %strategy )
+~NOABRUPT `ExtractSizeAlgorithm$A( %strategy )
 ◎
 Let sizeAlgorithm be ! ExtractSizeAlgorithm(strategy).
 </li>
@@ -20780,7 +20658,9 @@ Return the result of reacting to transformPromise with＼
 			<li class="algo">
 <p>
 `却下~手続き^i は、
-所与の ( %r ) に対し：
+所与の
+( %r )
+に対し：
 ◎
 the following rejection steps given the argument r:
 </p>
@@ -23700,6 +23580,21 @@ Set up readableStream given….
 ◎
 Subclasses of ReadableStream will use the set up or set up with byte reading support operations directly on the this value inside their constructor steps.
 </p>
+
+<div class="algo">
+`ReadableStream$I を
+`非同期c連列から作成する@RS
+~algoは、
+所与の
+( `非同期c連列$ %連列 )
+に対し
+⇒
+~RET
+~ABRUPT `ReadableStreamFromIterable$A( %連列 )
+◎
+To create a ReadableStream from an async sequence sequence:
+• Return ? ReadableStreamFromIterable(sequence).
+</div>
 
 <hr>
 
