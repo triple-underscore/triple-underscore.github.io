@@ -1485,10 +1485,10 @@ additional: '文献（この訳による追加）'
 					result.push(
 `<dd><a href="${url}">${url}</a></dd>`
 					);
-					const rfc_n = url.match(/\/(?:rfc|info)\/rfc(\d+)/);
+					const rfc_n = url.match(/\/(?:rfc|info|specs)\/rfc(\d+)/);
 					if(!rfc_n) return;
 					const rfc_num = rfc_n[1];
-					add_altref_link(ref_key, `https://rfcs.web.fc2.com/rfc${rfc_num}.html`, 'google 翻訳');
+					add_altref_link(ref_key, `https://www-rfc--editor-org.translate.goog/rfc/rfc${rfc_num}.html?_x_tr_sl=en&amp;_x_tr_tl=ja&amp;_x_tr_hl=ja`, 'google 翻訳');
 					if(parseInt(rfc_num) >= 2220){
 						add_altref_link(ref_key, `https://tex2e.github.io/rfc-translater/html/rfc${rfc_num}.html`, 'rfc-translater');
 					}
