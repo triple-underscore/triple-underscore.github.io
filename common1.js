@@ -595,13 +595,13 @@ const fillIndexes = () => {
 
 const fillConformance = () => {
 	const links = {
-w3c: '<a href="w3c-common-ja.html#conformance">W3C 日本語訳 共通ページ</a>',
-css: '<a href="css-snapshot-ja.html#conformance">CSS Snapshot ページ</a>',
+w3c: '<a href="w3c-common-ja.html#w3c-conformance">W3C 日本語訳 共通ページ</a>',
+css: '<a href="css-snapshot-ja.html#w3c-conformance">CSS Snapshot ページ</a>',
 	};
 	const link = links[ (options.conformance ) || ''];
 	if(!link) return;
 	const sec = C('section');
-	sec.id = 'conformance';
+	sec.id = 'w3c-conformance';
 	sec.innerHTML = `
 <h2 title="Conformance">適合性</h2>
 <p class="trans-note">【この節の内容は ${link}に移譲。】</p>
