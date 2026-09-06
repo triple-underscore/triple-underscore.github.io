@@ -122,8 +122,8 @@ return text;
 
 ●●options
 
-spec_date:2026-08-18
-trans_update:2026-08-30
+spec_date:2026-09-04
+trans_update:2026-09-06
 source_checked:240712
 page_state_key:HTML
 spec_status:LS
@@ -146,6 +146,7 @@ st:attr-state
 sl:js-slot
 v:value
 h:header
+css:css
 U:code-point
 obsMb:comment
 
@@ -171,11 +172,12 @@ h:code
 sub:sub
 U:span
 v:code
-V:var
+css:code
 sl:span
 i:i
 cite:cite
 obsMb:span
+
 
 ●●original_urls
 mathml:https://html.spec.whatwg.org/multipage/embedded-content-other.html
@@ -376,6 +378,7 @@ san.安全でない:~HTMLdynamic#sanitizer-category-unsafe
 処理待ちな資源~計時の開始~時刻:#iframe-pending-resource-timing-start-time
 処理待ちな資源~計時~URL:#iframe-pending-resource-timing-url
 
+画像の寸法を決定する:#determine-dimensions
 
 	●用語（HTML
 
@@ -409,6 +412,7 @@ san.安全でない:~HTMLdynamic#sanitizer-category-unsafe
 真偽-属性:~HTMLcms#boolean-attribute
 ~space等で分離された~token集合:~HTMLcms#set-of-space-separated-tokens
 妥当な負でない整数:~HTMLcms#valid-non-negative-integer
+負でない整数として構文解析する:~HTMLcms#rules-for-parsing-non-negative-integers
 
 
 分類:~HTMLdom#concept-element-categories
@@ -589,7 +593,9 @@ attr.値:~DOM4#concept-attribute-value
 
 生来な横幅:~CSSIMAGE#natural-width
 生来な縦幅:~CSSIMAGE#natural-height
-~CSS~pixel:~CSSVAL#px
+内容~box:~CSSBOX#content-box
+
+css.px:~CSSVAL#px
 
 ●●words_table1
 about_blank:about:blank
@@ -761,6 +767,12 @@ srcdoc:
 	%除去される~node:removedNode
 	%準拠な文字列:compliantString
 	%資源~計時~URL:-
+	%要素:element
+	%生来な寸法:naturalDimensions
+	%横幅:width
+	%縦幅:height
+	%属性~横幅:attributeWidth
+	%属性~縦幅:attributeHeight
 
 	●未分類
 要素間:inter-element::~
@@ -769,6 +781,8 @@ WindowProxy:
 代理-:proxy::~::プロキシ
 名目上の:nominal:~
 代行業者:broker:~
+出自の:originating:~
+実数:number:~
 
 	instance化:instantiate
 	jump
@@ -795,11 +809,6 @@ WindowProxy:
 	現れ:appear
 	~~供給-:furnish
 	見られ:view
-
-
-	●指示語
-出自の:originating:~
-
 	~~追加の:extra
 	この時点で／今:now
 	自身のみでは:on its own
@@ -4544,7 +4553,8 @@ The width and height attributes on img, iframe, embed, object, video, source whe
 
 <p>
 これらの属性は、
-要素の視覚的な内容の寸法を`~CSS~pixel$単位で与える（順に，出力~mediaの名目上の方向に相対的な［
+要素の視覚的な内容の寸法を `px$css 単位 `CSS$r で与える
+（順に，出力~mediaの名目上の方向に相対的な［
 横幅, 縦幅
 ］を与える）。
 両~属性とも、
@@ -4555,10 +4565,10 @@ to give the dimensions of the visual content of the element (the width and heigh
 
 <p>
 指定する寸法は、
-資源~自身に指定されている寸法から相違してもヨイ
-— 資源の解像度は`~CSS~pixel$の解像度から相違することもあるので。
-（`~CSS~pixel$の解像度は、
-~screen上では 96ppi になるが，一般には 読み取り距離に依存する。）
+資源~自身に指定された寸法から相違してもヨイ
+— 資源の解像度は `px$css の解像度から相違することもあるので
+（後者の解像度は、
+~screen上では 96ppi になるが，一般には読み取り距離に依存する）。
 両~属性とも指定する場合、
 ~OR↓ を満たさなければナラナイ：
 ◎
@@ -4595,7 +4605,9 @@ The target ratio is the ratio of the natural width to the natural height in the 
 </p>
 
 <p>
-当の資源が`生来な横幅$も`生来な縦幅$も持たない場合、
+当の資源が［
+`生来な横幅$, `生来な縦幅$
+］どちらも有していない場合、
 両~属性とも省略しなければナラナイ。
 ◎
 The two attributes must be omitted if the resource in question does not have both a natural width and a natural height.
@@ -4603,7 +4615,7 @@ The two attributes must be omitted if the resource in question does not have bot
 
 <p>
 両~属性とも値が 0 の場合、
-要素は 利用者~向けに意図されていないことを指示する
+当の要素は利用者~向けに意図されたものではないことを指示する
 （例：~pageが見られた回数を数える~service用途など）。
 ◎
 If the two attributes are both 0, it indicates that the element is not intended for the user (e.g. it might be a part of a service to count page views).
@@ -4652,6 +4664,134 @@ For iframe, embed and object the IDL attributes are DOMString; for video and sou
 ◎
 The corresponding IDL attributes for img and input elements are defined in those respective elements' sections, as they are slightly more specific to those elements' other behaviors.
 </p>
+
+<div class="algo">
+<p>
+`画像の寸法を決定する@
+~algoは、
+所与の
+⇒＃
+［ `img$e ／ `input$e ］要素 %要素,
+［ ~NULL ／ ( 横幅, 縦幅 ) が成す~tuple ］ %生来な寸法
+◎終
+に対し
+【， ( 横幅, 縦幅 ) を `px$css 数で表現する ( 実数, 実数 ) が成す~tupleを返す】：
+◎
+To determine the dimensions of an img or input element element given a struct consisting of a width and a height, or null, naturalDimensions:
+</p>
+<ol>
+	<li>
+<p>
+~IF［
+%要素 は`具現化されて$いる
+］：
+</p>
+		<ol>
+			<li>
+%寸法 ~LET %要素 の`内容~box$の~size
+</li>
+			<li>
+~RET ( %寸法 の横幅を成す `px$css 数, %寸法 の縦幅を成す `px$css 数 )
+</li>
+		</ol>
+◎
+If element is being rendered, then return the width and height of element's content box, in CSS pixels. [CSS]
+</li>
+	<li>
+« %横幅, %縦幅 » ~LET « 0, 0 »
+◎
+Let width and height be 0.
+</li>
+	<li>
+<p>
+~IF［
+%生来な寸法 ~NEQ NULL
+］
+⇒
+« %横幅, %縦幅 » ~SET « %生来な寸法 の横幅を成す `px$css 数, %生来な寸法 の縦幅を成す `px$css 数 »
+</p>
+
+<p class="trans-note">【
+原文は最後の段で `px^css 単位に換算しているが、
+以下で処理される［
+`width$a ／ `height$a
+］属性の値は `px^css 単位の数を表現するので，
+ここで換算しておくべきであろう。
+】</p>
+◎
+If naturalDimensions is not null, then set width to naturalDimensions's width and height to naturalDimensions's height.
+</li>
+	<li>
+%属性~横幅 ~LET ［
+%要素 は `width$a 属性を有するならば その値 ／
+~ELSE_ ε
+］
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%属性~横幅 ~NEQ ε
+］：
+◎
+If element has a width attribute:
+</p>
+		<ol>
+			<li>
+%属性~横幅 ~SET `負でない整数として構文解析する$( %属性~横幅 )
+◎
+Let attributeWidth be the result of parsing that attribute's value.
+</li>
+			<li>
+~IF［
+%属性~横幅 ~NEQ `失敗^i
+］
+⇒
+%横幅 ~SET %属性~横幅
+◎
+If attributeWidth is not an error, then set width to attributeWidth.
+</li>
+		</ol>
+	</li>
+	<li>
+%属性~縦幅 ~LET ［
+%要素 は `height$a 属性を有するならば その値 ／
+~ELSE_ ε
+］
+◎
+↓</li>
+	<li>
+<p>
+~IF［
+%属性~縦幅 ~NEQ ε
+］：
+◎
+If element has a height attribute:
+</p>
+		<ol>
+			<li>
+%属性~縦幅 ~LET `負でない整数として構文解析する$( %属性~縦幅 )
+◎
+Let attributeHeight be the result of parsing that attribute's value.
+</li>
+			<li>
+~IF［
+%属性~縦幅 ~NEQ `失敗^i
+］
+⇒
+%縦幅 ~SET %属性~縦幅
+◎
+If attributeHeight is not an error, then set height to attributeHeight.
+</li>
+		</ol>
+	</li>
+	<li>
+~RET ( %横幅, %縦幅 )
+◎
+Return a width of width and a height of height, in CSS pixels.
+</li>
+</ol>
+</div>
 
 				</section>
 			</section>
