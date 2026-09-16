@@ -257,8 +257,8 @@ return text;
 ●●options
 
 spec_title:CSS View Transitions Module Level 2
-spec_date:2026-08-18
-trans_update:2026-08-22
+spec_date:2026-08-31
+trans_update:2026-09-16
 source_checked:250205
 page_state_key:CSS
 original_url:https://drafts.csswg.org/css-view-transitions-2/
@@ -558,6 +558,7 @@ vT.作動中な型~群:#viewtransition-active-types
 vT.~inboundな非同一-文書な遷移か:#viewtransition-is-inbound-cross-document-transition
 vT.外へ出る捕捉-後の手続き:#viewtransition-outbound-post-capture-steps
 vT.根~要素:#viewtransition-root-element
+VT.決着するまで待機する~promise数:#viewtransition-wait-until-promise-count
 
 i.捕捉-待ち:#_pending-capture
 i.~animate中:#_animating
@@ -568,10 +569,9 @@ doc.作動中な~view遷移:#document-active-view-transition
 doc.~view遷移~用の描画を抑止するか:#document-rendering-suppression-for-view-transitions
 doc.動的な~view遷移~stylesheet:#document-dynamic-view-transition-style-sheet
 doc.更新~callback~queue:#document-update-callback-queue
-doc.決着するまで待機する~promise数:#document-wait-until-promise-count
 
-el.作動中な~view遷移:#_element-active-view-transition
-el.ある~view遷移~内に捕捉されたか:#captured-in-a-view-transition
+el.作動中な~view遷移:#element-active-view-transition
+el.ある~view遷移~内に捕捉されたか:#element-captured-in-a-view-transition
 
 捕捉された要素:#captured-element
 cE.旧-画像:#captured-element-old-image
@@ -755,7 +755,6 @@ i.稼働中:~WANIM#play-state-running
 有順序~集合:~INFRA#ordered-set
 set.付加する:~INFRA#set-append
 ~cloneする:~INFRA#list-clone
-	~IN:~INFRA#list-contain
 空にする:~INFRA#list-empty
 構造体:~INFRA#struct
 sct.~item:~INFRA#struct-item
@@ -767,7 +766,7 @@ map.~cloneする:~INFRA#map-clone
 ~tuple:~INFRA#tuple
 集合:~INFRA#ordered-set
 	map.~EACH:~INFRA#map-iterate
-	包含-:~INFRA#list-contain
+	~IN:~INFRA#list-contain
 	~Assert:~INFRA#assert
 	~CONTINUE:~INFRA#iteration-continue
 	~EACH:~INFRA#list-iterate
@@ -1101,7 +1100,7 @@ params::::パラメタ群
 	%縦幅:height
 	%~callback~promise:callbackPromise
 	%事由:reason
-	%作動中な~animationはあるか:hasActiveAnimations
+	%作動中な~animationは在るか:hasActiveAnimations
 	%書字~mode:writingMode
 	%方向:direction
 	%~text方位:textOrientation
@@ -1142,6 +1141,8 @@ params::::パラメタ群
 	%捕捉された要素:capturedElement
 	%遷移~名:transitionName
 	%遷移:transition
+	%遷移:-
+	%遷移~群:transitions
 	%包含ng~group名:containingGroupName
 	%要素:element
 	%算出d値:computed
@@ -2540,7 +2541,7 @@ viewTransition = document.startViewTransition(updateCallback)
 </dt>
 	<dd>
 新たな`~view遷移$を開始する
-（`文書$に既存の`作動中な~view遷移$docがある場合、
+（`文書$に既存の`作動中な~view遷移$doc【！`作動中な~view遷移$el】が在る場合、
 それを取消した上で）。
 ◎
 Starts a new view transition (canceling the document’s existing active view transition, if any).
@@ -2786,9 +2787,9 @@ If this is not the document root element, force this to have both layout contain
 	<li>
 <p>
 ~IF［
-%文書 にて`作動中な~view遷移$doc ~NEQ ~NULL
+%文書 にて`作動中な~view遷移$doc【！`作動中な~view遷移$el】 ~NEQ ~NULL
 ］~AND［
-%文書 にて`作動中な~view遷移$docの`外へ出る捕捉-後の手続き$vT ~NEQ ~NULL
+%文書 にて`作動中な~view遷移$doc【！`作動中な~view遷移$el】の`外へ出る捕捉-後の手続き$vT ~NEQ ~NULL
 ］：
 ◎
 If document’s active view transition is not null and its outbound post-capture steps is not null, then:
@@ -2851,10 +2852,19 @@ Note: This can result in two asynchronous update callbacks running concurrently 
 </p>
 	</li>
 	<li>
-<p>
 コレにて`作動中な~view遷移$el ~SET %~view遷移
 ◎
 Set this’s active view transition to viewTransition.
+</li>
+	<li>
+<p>
+~IF［
+コレは`根~要素$である
+］
+⇒
+%文書 にて`作動中な~view遷移$doc ~SET %~view遷移
+◎
+If this is the document root element, set document’s active view transition to viewTransition.
 </p>
 
 <p class="note">注記：
@@ -2898,7 +2908,7 @@ Return viewTransition.
 `activeViewTransition@m1
 取得子~手続きは
 ⇒
-~RET コレにて`作動中な~view遷移$el【！`作動中な~view遷移$doc】
+~RET コレにて`作動中な~view遷移$el
 ◎
 2.2.2. activeViewTransition Property
 ◎
@@ -3081,8 +3091,6 @@ For view transitions started on the Document, this is the document element.
 ~view遷移の完遂-を所与の~promiseが決着するまで遅延する。
 ◎
 Delays view transition finish until the given promise is settled
-◎
-↓ When invoked with Promise p, run delay finish for promise steps with p.
 </dd>
 </dl>
 
@@ -3321,6 +3329,27 @@ root element
 ◎
 An Element, indicating which element is hosting the ViewTransition.
 </dd>
+
+	<dt>
+`決着するまで待機する~promise数@VT
+◎
+wait until promise count
+</dt>
+	<dd>
+ある整数
+◎
+An integer,＼
+</dd>
+	<dd>
+初期~時は 0 とする。
+◎
+initially 0.
+</dd>
+	<dd>
+`waitUntil()$m ~methodを介して追加された~promiseのうち決着-済みでないものの個数を表現する。
+◎
+Represents the count of promises that have been added via waitUntil() and have not settled.
+</dd>
 </dl>
 
 <div class="algo">
@@ -3367,14 +3396,6 @@ The types getter steps are to return this’s active types.
 ◎
 The transitionRoot getter steps are to return this’s root element.
 </div>
-
-<div class="algo">
-`waitUntil(promise)@m
-~method手続きは
-⇒
-`遷移の完遂-を遅延する~promiseを追加する$( %promise )
-◎
-↑</div>
 
 			<section id="the-viewtransitiontypeset-interface">
 <h4 title="The ViewTransitionTypeSet Interface">2.3.1. `ViewTransitionTypeSet^I ~interface</h4>
@@ -3428,6 +3449,20 @@ If this’s phase is not "done", then skip the view transition for this with an 
 </div>
 
 			</section>
+			<section id="ViewTransition-waitUntil">
+<h4 title="waitUntil() Method Steps">2.3.3. `waitUntil()^m ~method手続き</h4>
+
+<div class="algo">
+`waitUntil(promise)@m
+~method手続きは
+⇒
+`遷移の完遂-を遅延する~promiseを追加する$( コレ, %promise )
+◎
+The method steps for waitUntil(promise) are:
+• Delay finish for promise given this and promise.
+</div>
+
+			</section>
 		</section>
 	</section>
 	<section id="css-properties">
@@ -3473,7 +3508,7 @@ Note: though view-transition-name is discretely animatable, animating it doesn�
 
 <p>
 `view-transition-name$p ~propは、
-`~view遷移~内に捕捉され＠#captured-in-a-view-transition$る要素~用の “~tag” を付与する
+ある`~view遷移~内に捕捉され＠#element-captured-in-a-view-transition$る要素~用の “~tag” を付与する
 — 当の要素は、
 この~propに指定された
 `~view遷移~名@
@@ -5116,21 +5151,18 @@ Note: The intent of the feature is to be able to capture the contents of the pag
 </p>
 
 <p>
-所与の`文書$ %文書 に対し，［
-%文書 にて`作動中な~view遷移$docの`相$vT ~EQ `~animate中$i
-］の間は
+【所与の`要素$にて】`作動中な~view遷移$el %~view遷移 の`相$vT ~EQ `~animate中$i の間は
 ⇒
 ［
-%文書 内の要素のうち`~view遷移~内に捕捉され＠#captured-in-a-view-transition$たもの %要素 により生成される~box, および %要素 の`内容$
+%~view遷移 `内に捕捉され＠#element-captured-in-a-view-transition$た各~要素 %要素 により生成される~box, および %要素 の`内容$
 ］は，［
-%文書 の`文書~要素$上の `view-transition$pe `疑似要素$の`広義-子孫$であるもの
+%~view遷移 の`根~要素$vT上の `view-transition$pe `疑似要素$の`広義-子孫$であるもの
 ］を除いて
 ⇒＃
 塗られない（ %要素 の `opacity$p は `0^v であったかのように）／
 接触判定に応答しない（ %要素 の `pointer-events$p は `none^v であったかのように）
 ◎
-When a Document’s active view transition’s phase is "animating", the boxes generated by any element in that Document with captured in a view transition and its element contents, except the inclusive descendants of the ::view-transition pseudo-element on that Document’s document element, are not painted (as if they had opacity: 0) and do not respond to hit-testing (as if they had pointer-events: none).
-
+When an active view transition’s phase is "animating", the boxes generated by any element with captured in a view transition in that transition and its element contents, except the inclusive descendants of the ::view-transition pseudo-element on that transition’s root element, are not painted (as if they had opacity: 0) and do not respond to hit-testing (as if they had pointer-events: none).
 </p>
 
 <p class="note">注記：
@@ -6466,8 +6498,8 @@ This would not be active
 <p>
 `active-view-transition@ps
 疑似類は、
-当の文書にて`作動中な~view遷移$docは ~NULL でないならば，
-当の文書の根~要素に適用される。
+当の文書の根~要素【すなわち，`文書~要素$】にて`作動中な~view遷移$elは ~NULL でないならば，
+当の根~要素に適用される。
 ◎
 The :active-view-transition pseudo-class applies to the root element of the document, if it has an active view transition.
 </p>
@@ -6495,10 +6527,10 @@ An :active-view-transition pseudo-class matches the document element when its no
 <p>
 `active-view-transition-type()@ps
 疑似類は、
-当の文書にて`作動中な~view遷移$docは［
+当の文書の根~要素【すなわち，`文書~要素$】にて`作動中な~view遷移$elは［
 ~NULL でない, かつ【いずれかの引数に】合致している
 ］ならば，
-当の文書の根~要素に適用される。
+当の根~要素に適用される。
 その構文は：
 ◎
 The :active-view-transition-type() pseudo-class applies to the root element of the document, if it has a matching active view transition. It has the following syntax definition:
@@ -7109,28 +7141,6 @@ A view-transition-name generated by auto is a tree-scoped name.
 		<section id="concepts">
 <h3 title="Data Structures">12.1. ~data構造</h3>
 
-<p>
-各~要素は、
-`作動中な~view遷移@el
-を有する
-— それは、［
-~NULL ／
-ある `ViewTransition$I
-］であり，
-初期~時は ~NULL とする。
-</p>
-
-<p class="trans-note">【
-この定義は、
-この訳による補完。
-原文は、
-`文書$用に定義された`作動中な~view遷移$docを参照している。
-加えて，`文書$にて`作動中な~view遷移$docは、
-実際には，`文書~要素$にて`作動中な~view遷移$elを参照するべきに思われる。
-`startViewTransition()$m ~methodは、
-そのようになるよう更新されたので。
-】</p>
-
 			<section id="additions-to-document">
 <h4 title="Additions to Document">12.1.1. 文書に対する追加</h4>
 
@@ -7267,27 +7277,6 @@ Initially false.
 ◎
 Note: this value can be read in parallel while navigating.
 </dd>
-
-	<dt>
-`決着するまで待機する~promise数@doc
-◎
-wait until promise count
-</dt>
-	<dd>
-ある整数
-◎
-an integer,＼
-</dd>
-	<dd>
-初期~時は 0 とする。
-◎
-initially 0.
-</dd>
-	<dd>
-`waitUntil()$m ~method【！function】を介して追加された~promiseのうち決着-済みでないものの個数を表現する
-◎
-Represents the count of promises that have been added via waitUntil function and have not settled.
-</dd>
 </dl>
 
 <p class="trans-note">【
@@ -7307,14 +7296,52 @@ Represents the count of promises that have been added via waitUntil function and
 <h4 title="Additions to Elements">12.1.2. 要素に対する追加</h4>
 
 <p>
-各 `要素$は、
-`ある~view遷移~内に捕捉されたか@el
-を有する
-— それは、
-真偽値をとり，初期~時は ~F とする。
+各`要素$は、
+次に挙げるものを追加的に有する：
 ◎
-Elements have a captured in a view transition boolean, initially false.
+Elements additionally have:
 </p>
+<dl>
+	<dt>
+`作動中な~view遷移@el
+◎
+active view transition
+</dt>
+	<dd>
+~NULL ／
+ある `ViewTransition$I
+◎
+a ViewTransition or null.＼
+</dd>
+	<dd>
+初期~時は ~NULL とする。
+◎
+Initially null.
+</dd>
+
+	<dt>
+`ある~view遷移~内に捕捉されたか@el
+◎
+captured in a view transition
+</dt>
+	<dd>
+ある真偽値
+◎
+a boolean.＼
+</dd>
+	<dd>
+初期~時は ~F とする。
+◎
+Initially false.
+</dd>
+	<dd class="trans-note">【
+この用語を参照している一部の要件は、
+これが ~T をとるとき，
+どの~view遷移に捕捉されたかについても［
+当の要件が適用されるための条件
+］に含んでいる。
+】</dd>
+</dl>
 
 <p class="note">注記：
 この仕様は、
@@ -7779,35 +7806,80 @@ To perform pending transition operations given a Document document, perform the 
 </p>
 <ol>
 	<li>
-%~view遷移 ~LET %文書 にて`作動中な~view遷移$doc
+%遷移~群 ~LET 新たな`~list$
 ◎
-↓</li>
+Let transitions be a new list.
+</li>
 	<li>
 <p>
 ~IF［
-%~view遷移 ~NEQ ~NULL
-］：
+%文書 にて`作動中な~view遷移$doc ~NEQ ~NULL
+］
+⇒
+%遷移~群 に %文書 にて`作動中な~view遷移$docを`付加する$
 ◎
-If document’s active view transition is not null, then:
+If document’s active view transition is not null, append document’s active view transition to transitions.
+</li>
+	<li>
+<p>
+%文書 の`平坦~tree$を成す
+~EACH( %要素 )
+に対し，`~tree順序$で：
+◎
+For each element in document’s flat tree, in tree order:
+</p>
+		<ol>
+			<li>
+%遷移 ~LET %要素 にて`作動中な~view遷移$el
+</li>
+			<li>
+~IF［
+%遷移 ~NEQ ~NULL
+］~AND［
+%遷移 ~NIN %遷移~群
+］
+⇒
+%遷移~群 に %遷移 を`付加する$
+◎
+If element’s active view transition is not null and transitions does not contain element’s active view transition, then append element’s active view transition to transitions.
+</li>
+		</ol>
+	</li>
+	<li>
+<p>
+%遷移~群 を成す
+~EACH( %遷移 )
+に対し：
+◎
+For each transition of transitions:
 </p>
 		<ol>
 			<li>
 ~IF［
-%~view遷移 の`相$vT ~EQ `捕捉-待ち$i
+%遷移 の`相$vT ~EQ `済み$i
 ］
 ⇒
-`~view遷移を設定しておく$( %~view遷移 )
+~CONTINUE
 ◎
-If document’s active view transition’s phase is "pending-capture", then setup view transition for document’s active view transition.
+If transition’s phase is "done", then continue.
+</li>
+			<li>
+~IF［
+%遷移 の`相$vT ~EQ `捕捉-待ち$i
+］
+⇒
+`~view遷移を設定しておく$( %遷移 )
+◎
+If transition’s phase is "pending-capture", then setup view transition for transition.
 </li>
 			<li>
 ~ELIF［
-%~view遷移 の`相$vT ~EQ `~animate中$i
+%遷移 の`相$vT ~EQ `~animate中$i
 ］
 ⇒
 `遷移~frameを取扱う$( %~view遷移 )
 ◎
-Otherwise, if document’s active view transition’s phase is "animating", then handle transition frame for document’s active view transition.
+Otherwise, if transition’s phase is "animating", then handle transition frame for transition.
 </li>
 		</ol>
 	</li>
@@ -7908,9 +7980,9 @@ Return a set of strings corresponding to typesDescriptor’s computed value.
 
 <p class="trans-note">【
 集合なので、
-重複する文字列たちは，一つ（おそらく，最初のそれ）だけ残して他は除去されることになる。
+重複な文字列たちは，一つを残して他を除去する必要があるが、
+どれを残すか（最初のそれ？）指定されていないため，順序がきちんと定義されていない。
 】</p>
-
 	</li>
 </ol>
 </div>
@@ -9253,7 +9325,7 @@ Note: We don’t know yet if newDocument has opted in, as it might not be parsed
 %旧-文書 にて`作動中な~view遷移$doc ~NEQ~NULL
 ］
 ⇒
-`~view遷移を飛ばす$( %旧-文書 にて`作動中な~view遷移$doc, %旧-文書 に`関連な~realm$に属する `AbortError$E 例外 )
+`~view遷移を飛ばす$( %旧-文書 にて`作動中な~view遷移$doc【！`作動中な~view遷移$el】, %旧-文書 に`関連な~realm$に属する `AbortError$E 例外 )
 ◎
 If oldDocument’s active view transition is not null, then skip oldDocument’s active view transition with an "AbortError" DOMException in oldDocument’s relevant Realm.
 </p>
@@ -9367,7 +9439,7 @@ Call proceedWithNavigation.
 	</li>
 	<li>
 <p>
-%旧-文書 にて`作動中な~view遷移$doc ~SET %外へ出る遷移
+%旧-文書 にて`作動中な~view遷移$doc【！`作動中な~view遷移$el】 ~SET %外へ出る遷移
 ◎
 Set oldDocument’s active view transition to outboundTransition.
 </p>
@@ -9502,7 +9574,7 @@ Prepend the following step to the Perform pending transition operations algorith
 </p>
 <ol>
 	<li>
-%~view遷移 ~LET %文書 にて`作動中な~view遷移$doc
+%~view遷移 ~LET %文書 にて`作動中な~view遷移$doc【！`作動中な~view遷移$el】
 ◎
 ↓</li>
 	<li>
@@ -9642,7 +9714,7 @@ Set document’s inbound view transition params to null.
 	<li>
 <p>
 ~IF［
-%文書 にて`作動中な~view遷移$doc ~NEQ ~NULL
+%文書 にて`作動中な~view遷移$doc【！`作動中な~view遷移$el】 ~NEQ ~NULL
 ］
 ⇒
 ~RET ~NULL
@@ -9683,7 +9755,7 @@ If resolvedRule is "skip transition", then return null.
 Let transition be a new ViewTransition in document’s relevant Realm, whose named elements is inboundViewTransitionParams’s named elements, and initial snapshot containing block size is inboundViewTransitionParams’s initial snapshot containing block size.
 </li>
 	<li>
-%文書 にて`作動中な~view遷移$doc ~SET %遷移
+%文書 にて`作動中な~view遷移$doc【！`作動中な~view遷移$el】 ~SET %遷移
 ◎
 Set document’s active view transition to transition.
 </li>
@@ -10568,12 +10640,14 @@ Set rendering suppression for view transitions to false.
 </li>
 	<li>
 ~IF［
+%遷移 の`根~要素$vTにて`作動中な~view遷移$el ~EQ %遷移
+］~OR［
 %文書 にて`作動中な~view遷移$doc ~EQ %遷移
 ］
 ⇒
 `~view遷移を~clearする$( %遷移 )
 ◎
-If document’s active view transition is transition, Clear view transition transition.
+If transition’s root element’s active view transition is transition or document’s active view transition is transition, clear view transition of transition.
 </li>
 	<li>
 %遷移 の`相$vT ~SET `済み$i
@@ -10679,7 +10753,7 @@ If document’s visibility state is "hidden", then:
 ~ELSE
 ⇒
 ~Assert：
-%~view遷移 ~EQ ~NULL
+%~view遷移【！`作動中な~view遷移$el】 ~EQ ~NULL
 ◎
 Otherwise, assert: active view transition is null.
 </li>
@@ -11010,25 +11084,29 @@ Note: This is necessary since the descendant will generate its own snapshot whic
 `遷移の完遂-を遅延する~promiseを追加する@
 ~algoは、
 所与の
-( ~promise %~promise )
+( `ViewTransition$I %遷移, ~promise %~promise )
 に対し：
 ◎
-To delay finish for promise, given promise p:
+To delay finish for promise, given a ViewTransition transition and promise p: 
 </p>
 <ol>
 	<li>
 ~IF［
+%遷移 の`相$vT ~EQ `済み$i
+］~OR［
 %~promise は決着-済みである
 ］
 ⇒
 ~RET
 ◎
+If transition’s phase is "done", abort the remainder of the steps and return.
+◎
 If p is settled, abort the remainder of the steps and return.
 </li>
 	<li>
-コレの`決着するまで待機する~promise数$doc ~INCBY 1
+%遷移 の`決着するまで待機する~promise数$VT ~INCBY 1
 ◎
-Increment this’s wait until promise count.
+Increment transition’s wait until promise count.
 </li>
 	<li>
 <p>
@@ -11043,16 +11121,16 @@ Upon fulfillment or rejection of p:
 <div class="algo">
 手続きは
 ⇒
-コレの`決着するまで待機する~promise数$doc ~DECBY 1
+%遷移 の`決着するまで待機する~promise数$VT ~DECBY 1
 ◎
-• Decrement this’s wait until promise count.
+• Decrement transition’s wait until promise count.
 </div>
 
 <p class="note">注記：
-コレの`決着するまで待機する~promise数$doc ~EQ 0 の場合、
-当の遷移は，次回の`描画~機会$に完遂することになる。
+%遷移 の`決着するまで待機する~promise数$VT ~EQ 0 の場合、
+%遷移 は，次回の`描画~機会$に完遂することになる。
 ◎
-Note: If this’s wait until promise count is 0, the transition will finish at the next rendering opportunity.
+Note: If transition’s wait until promise count is 0, the transition will finish at the next rendering opportunity.
 </p>
 	</li>
 </ol>
@@ -11080,7 +11158,7 @@ To handle transition frame given a ViewTransition transition:
 Let document be transition’s relevant global object’s associated document.
 </li>
 	<li>
-%作動中な~animationはあるか ~LET ~F
+%作動中な~animationは在るか ~LET ~F
 ◎
 Let hasActiveAnimations be a boolean, initially false.
 </li>
@@ -11128,7 +11206,7 @@ For each element of the inclusive descendants of the ::view-transition pseudo-el
 <p>
 …ならば
 ⇒＃
-%作動中な~animationはあるか ~SET ~T；
+%作動中な~animationは在るか ~SET ~T；
 ~BREAK
 </p>
 ◎
@@ -11141,12 +11219,12 @@ For each animation whose timeline is a document timeline associated with documen
 	<li>
 <p>
 ~IF［
-%作動中な~animationはあるか ~EQ ~F
+%作動中な~animationは在るか ~EQ ~F
 ］~AND［
-コレの`決着するまで待機する~promise数$doc ~EQ 0
+%遷移 の`決着するまで待機する~promise数$VT ~EQ 0
 ］：
 ◎
-If hasActiveAnimations is false and this’s wait until promise count is 0:
+If hasActiveAnimations is false and transition’s wait until promise count is 0:
 </p>
 		<ol>
 			<li>
@@ -11558,9 +11636,13 @@ Let document be transition’s relevant global object’s associated document.
 </li>
 	<li>
 ~Assert：
+［
+%遷移 の`根~要素$vTにて`作動中な~view遷移$el ~EQ %遷移
+］~OR［
 %文書 にて`作動中な~view遷移$doc ~EQ %遷移
+］
 ◎
-Assert: document’s active view transition is transition.
+Assert: transition’s root element’s active view transition is transition or document’s active view transition is transition.
 </li>
 	<li>
 <p>
@@ -11604,9 +11686,22 @@ For each style of capturedElement’s style definitions:
 Remove all children of the ::view-transition pseudo-element on transition’s root element.
 </li>
 	<li>
+~IF［
+%遷移 の`根~要素$vT ~NEQ ~NULL
+］
+⇒
+%遷移 の`根~要素$vTにて`作動中な~view遷移$el ~SET ~NULL
+◎
+If transition’s root element is not null, set transition’s root element’s active view transition to null.
+</li>
+	<li>
+~IF［
+%文書 にて`作動中な~view遷移$doc ~EQ %遷移
+］
+⇒
 %文書 にて`作動中な~view遷移$doc ~SET ~NULL
 ◎
-Set document’s active view transition to null.
+If document’s active view transition is transition, set document’s active view transition to null.
 </li>
 </ol>
 </div>
