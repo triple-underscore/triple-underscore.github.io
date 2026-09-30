@@ -196,8 +196,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2026-09-02
-trans_update:2026-09-08
+spec_date:2026-09-23
+trans_update:2026-10-01
 source_checked:260225
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -721,7 +721,6 @@ polyfill:
 	~~説明:illustrate
 	主な:main
 	~~限定的:niche
-	知れる:learn
 	ただし:except
 	限りにおいて:provided
 	が、:in spite of
@@ -1299,6 +1298,7 @@ wtB.作成する:#bidirectionalstream-create
 ~byte列:~INFRA#byte-sequence
 符号単位:~INFRA#code-unit
 	符号単位~接頭辞:~INFRA#code-unit-prefix
+~tuple:~INFRA#tuple
 ~queue:~INFRA#queue
 ~dequeueする:~INFRA#queue-dequeue
 ~enqueueする:~INFRA#queue-enqueue
@@ -2002,7 +2002,7 @@ A queue＼
 </dd>
 	<dd>
 ( 流出~datagram, 時刻印, ~promise )
-が成す~tupleたちからなる。
+が成す`~tuple$たちからなる。
 ◎
 of tuples of an outgoing datagram, a timestamp and a promise＼
 </dd>
@@ -2218,11 +2218,9 @@ Let promise be a new promise.
 Let bytes be a copy of bytes which data represents.
 </li>
 	<li>
-%~chunk ~LET
-( %~byte列, %時刻印, %~promise )
-が成す~tuple
+%~chunk ~LET ( %~byte列, %時刻印, %~promise )
 ◎
-Let chunk be a tuple of bytes, timestamp and promise.
+Let chunk be (bytes, timestamp, promise).
 </li>
 	<li>
 %可書~stream . `OutgoingDatagramsQueue$slW に %~chunk を`~enqueueする$
@@ -2612,9 +2610,9 @@ A queue＼
 </dd>
 	<dd>
 ( 流入~datagram, 時刻印 )
-が成す~pairたちからなる。
+が成す`~tuple$たちからなる。
 ◎
-of pairs of an incoming datagram and a timestamp.
+of tuples of an incoming datagram and a timestamp.
 </dd>
 
 	<dt>`IncomingDatagramsPullPromise@sl</dt>
@@ -5513,7 +5511,7 @@ exportKeyingMaterial(BufferSource label, BufferSource context, unsigned long out
 </dt>
 
 	<dd>
-`~TLS鍵~用~素材~exporter＠~RFCx/rfc9846#section-7.3$から
+`~TLS鍵~用~素材~exporter＠~RFCx/rfc9846#name-exporters$から
 鍵~用~素材を~exportする
 — コレの`下層~接続$に一意に結付けられた~TLS~session用に。
 ◎
@@ -6175,9 +6173,13 @@ Set transport.[[SendStreams]] to an empty set.
 Set transport.[[ReceiveStreams]] to an empty set.
 </li>
 	<li>
-%~transport . `Datagrams$sl . `OutgoingDatagramsQueue$slW ~SET 新たな`~queue$
+%流出~datagram可書~stream群 を成す
+~EACH( %可書~stream )
+に対し
+⇒
+%可書~stream . `OutgoingDatagramsQueue$slW ~SET 新たな`~queue$
 ◎
-Set transport.[[Datagrams]].[[OutgoingDatagramsQueue]] to an empty queue.
+For each writable in outgoingDatagramWritables, set writable.[[OutgoingDatagramsQueue]] to an empty queue.
 </li>
 	<li>
 %~transport . `Datagrams$sl . `IncomingDatagramsQueue$sl ~SET 新たな`~queue$
@@ -6659,12 +6661,10 @@ A WebTransport object whose [[State]] is "draining" must not be garbage collecte
 </li>
 			<li>
 ~networkへ伝送するよう~queueされた~dataがある
-— この~dataには、
-%~transport . `Datagrams$sl . `OutgoingDatagramsQueue$slW 内の~datagramも含まれる。
 </li>
 		</ul>
 ◎
-A WebTransport object with an established WebTransport session that has data queued to be transmitted to the network, including datagrams in [[Datagrams]].[[OutgoingDatagramsQueue]], must not be garbage collected.
+A WebTransport object with an established WebTransport session that has data queued to be transmitted to the network, must not be garbage collected.
 </li>
 </ul>
 
@@ -10168,18 +10168,14 @@ The atomicWrite method will reject if the chunk given to it could not be sent in
 	<dd class="note">注記：
 この~methodは、
 送信~後であっても，一部の~dataを却下し得る。
-それは、
-~flow制御に関する不可分~性を供するが，他の~errorも生じ得る。
-この~methodは、
-~dataが［
+それは，~flow制御に関する不可分~性を供するが、
+他の~network~errorは，当の書込nを失敗させることもある。
+さらには、
+この~methodは，~dataが［
 複数の~packetに分割される／他の~dataと前後する
 ］ことを防止しない。
-この~methodが［
-可用な~flow制御~creditの欠如に因り失敗する
-］か否かを知れるのは、
-送信者に限られる。
 ◎
-Note: atomicWrite can still reject after sending some data. Though it provides atomicity with respect to flow control, other errors may occur. atomicWrite does not prevent data from being split between packets or being interleaved with other data. Only the sender learns if atomicWrite fails due to lack of available flow control credit.
+Note: atomicWrite can still reject after sending some data. Though it provides atomicity with respect to flow control, other network errors could cause the write to fail. Furthermore, atomicWrite does not prevent data from being split between packets or being interleaved with other data.
 </dd>
 	<dd class="note">注記：
 不可分な書込nは、
@@ -10189,9 +10185,11 @@ Note: atomicWrite can still reject after sending some data. Though it provides a
 この仕方で却下された不可分でない書込nは、
 当の~streamを`~errorにする$WSことになる。
 したがって、
-応用には，不可分な書込nを常に待受けることが奨励される。
+応用には，［
+同じ~streamに対し後続な書込nを試みる前に，不可分な書込nを常に待受ける
+］ことが奨励される。
 ◎
-Note: Atomic writes can still block if queued behind non-atomic writes. If the atomic write is rejected, everything queued behind it at that moment will be rejected as well. Any non-atomic writes rejected in this way will error the stream. Applications are therefore encouraged to always await atomic writes.
+Note: Atomic writes can still block if queued behind non-atomic writes. If the atomic write is rejected, everything queued behind it at that moment will be rejected as well. Any non-atomic writes rejected in this way will error the stream. Applications are therefore encouraged to always await an atomic write before attempting subsequent writes to the same stream.
 </dd>
 	<dd class="algo">
 <p>
@@ -10561,7 +10559,7 @@ The getter steps are to return this’s [[StreamErrorCode]].
 `WebTransportError$I ~objは`直列化-可能$である
 — その：
 ◎
-WebTransportError objects are serializable objects.＼
+WebTransportError objects are serializable objects.
 </p>
 <ul>
 	<li class="algo">
