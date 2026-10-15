@@ -2783,6 +2783,8 @@ field::::フィールド
 slot::::スロット
 prop:property:::プロパティ
 属性:attribute::~
+同等:equal:~
+同等性:equality:~
 構造体:struct::~
 共用体:union::~
 連列:sequence::~::シーケンス
