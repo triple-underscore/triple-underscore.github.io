@@ -276,7 +276,7 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2026-10-15
+spec_date:2026-10-16
 trans_update:2026-10-17
 source_checked:260709
 spec_status:LS
@@ -297,6 +297,7 @@ prod:production
 jv:js-value
 U:code-point
 cn:cp-name
+sc:scheme
 
 ●●tag_map
 b:b
@@ -308,6 +309,7 @@ et:code
 prod:code
 m:code
 c:code
+sc:code
 jv:code
 V:var
 U:span
@@ -729,6 +731,7 @@ poll:
 	%公な~ID:publicId
 	%~system~ID:systemId
 	%以前の~registry:previousRegistry
+	%基底~URL:baseURL
 
 	●計時
 時計:clock:~
@@ -962,6 +965,7 @@ body:
 CDATAsec:CDATA section::CDATA 節::CDATA セクション
 側:side:~
 
+	~schemeな:schemed
 	直前の:previous
 	直後の:next
 	次回に:next time
@@ -1657,6 +1661,8 @@ doc.生成元:#concept-document-origin
 doc.~mode:#concept-document-mode
 doc.宣言的な~shadow根を許容するか:#document-allow-declarative-shadow-roots
 doc.~custom要素~registry:#document-custom-element-registry
+doc.基底~URLを取得する~algo:#get-the-base-url
+doc.基底~URLを上書きするもの:#document-base-url-override
 ~HTML文書:#html-document
 ~XML文書:#xml-document
 制限付き過去互換~mode:#concept-document-limited-quirks
@@ -1980,7 +1986,6 @@ str.長さ:~INFRA#string-length
 文字列~化の挙動:~WEBIDL#dfn-stringification-behavior
 
 	●HTML
-文書~基底~URL:~HTMLurl#document-base-url
 結付けられた文書:~WINDOW#concept-document-window
 
 ~HTML構文解析器:~HTMLparsing#html-parser
@@ -2205,7 +2210,7 @@ Participate:
 	<a href="https://whatwg.org/chat">Chat on Matrix</a>
 Commits:
 	https://github.com/whatwg/dom/commits
-	<a href="https://dom.spec.whatwg.org/commit-snapshots/b76da7af5fe35a2a368127cc9ec22449ac8fd559/">Snapshot as of this commit</a>
+	<a href="https://dom.spec.whatwg.org/commit-snapshots/8b515270f1644349b79a0a949cb6e121856d0fd9/">Snapshot as of this commit</a>
 	<a href="https://twitter.com/thedomstandard">@thedomstandard</a>
 
 Tests:
@@ -13422,20 +13427,43 @@ DocumentFragment
 <dl class="domintro">
 	<dt>%node . $baseURI</dt>
 	<dd>
-%node の`~node文書$用の`文書~基底~URL$を返す。
+%node の`~node文書$の基底~URLを返す。
 ◎
-Returns node’s node document’s document base URL.
+Returns node’s node document’s base URL.
 </dd>
 </dl>
 
 <div class="algo">
+<p>
 @baseURI
-取得子~手続きは
-⇒
-~RET `~URLを直列化する$( コレの`~node文書$の`文書~基底~URL$ )
+取得子~手続きは：
 ◎
-The baseURI getter steps are to return this’s node document’s document base URL, serialized.
+The baseURI getter steps are:
+</p>
+<ol>
+	<li>
+%基底~URL ~LET コレの`~node文書$の`基底~URLを取得する~algo$doc()
+◎
+Let baseURL be the result of running this’s node document’s get the base URL algorithm.
+</li>
+	<li>
+~IF［
+%基底~URL ~EQ ~NULL
+］
+⇒
+%基底~URL ~SET コレの`~node文書$の`~URL$doc
+◎
+If baseURL is null, then set baseURL to this’s node document’s URL.
+</li>
+	<li>
+~RET `~URLを直列化する$( %基底~URL )
+◎
+Return baseURL, serialized.
+</li>
+</ol>
 </div>
+
+<hr>
 
 <dl class="domintro">
 	<dt>%node . $isConnected</dt>
@@ -14344,8 +14372,11 @@ Document
 `種別$doc ~SET %~node の`種別$doc,
 `~mode$doc ~SET %~node の`~mode$doc,
 `宣言的な~shadow根を許容するか$doc ~SET %~node の`宣言的な~shadow根を許容するか$doc,
+%複製 の`基底~URLを上書きするもの$doc ~SET %~node の`基底~URLを取得する~algo$doc()
 ◎
 Set copy’s encoding, content type, URL, origin, type, mode, and allow declarative shadow roots, to those of node.
+◎
+Set copy’s base URL override to the result of running node’s get the base URL.
 </li>
 							<li>
 ~IF［
@@ -15647,6 +15678,41 @@ Unless stated otherwise, a document’s encoding is the utf-8 encoding, content 
 ◎
 A document is said to be an XML document if its type is "xml"; otherwise an HTML document. Whether a document is an HTML document or an XML document affects the behavior of certain APIs.
 </div>
+
+<p>
+各`文書$には次に挙げるものが結付けられる：
+</p>
+<ul>
+	<li>
+`基底~URLを取得する~algo@doc
+⇒
+［
+~NULL／ ある`~URL$
+］を返す~algo
+— 他が指定されない限り， ~NULL を返す~algoになるとする。
+◎
+Each document has an associated get the base URL algorithm, which returns a URL or null. Unless specified otherwise it returns null.
+</li>
+	<li>
+`基底~URLを上書きするもの@doc
+⇒
+~NULL ／ある`~URL$ 
+— 初期~時は ~NULL とする。
+◎
+Each document has a base URL override (a URL or null), initially null.
+</li>
+</ul>
+
+<p class="note">注記：
+`基底~URLを上書きするもの$docは、
+`文書$を`~cloneする＠#concept-node-clone$ときに設定される。
+`HTML$r は、［
+`base^e 要素／
+`about:^sc ~schemeな`文書$が継承する基底~URL
+］を織り込むために，`基底~URLを取得する~algo$docを上書きする。
+◎
+The base URL override is set when cloning a document. HTML overrides the get the base URL algorithm to account for the base element and for the base URL "about:"-schemed documents inherit. [HTML]
+</p>
 
 <div class="p">
 <p>
