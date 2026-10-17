@@ -276,8 +276,8 @@ function expand(){
 ●●options
 
 spec_title:DOM
-spec_date:2026-10-05
-trans_update:2026-10-08
+spec_date:2026-10-09
+trans_update:2026-10-17
 source_checked:260709
 spec_status:LS
 original_url:https://dom.spec.whatwg.org/
@@ -374,6 +374,7 @@ worklet:
 	文字列~化-:stringify
 	文字列~化:stringification
 	直列化-:serialization
+	負でない整数:number
 
 	●一般処理
 反復器:iterator::~
@@ -404,6 +405,8 @@ poll:
 処理待ち:pending:~
 不可分:atomic::~
 	不可分に:atomically
+一過:transient::~
+昇順:ascending order::~
 
 	一度限りか:once
 	通達-時:signaling
@@ -600,14 +603,13 @@ poll:
 	%新-直前の同胞:newPreviousSibling
 	%広義-先祖:inclusiveAncestor
 	%登録-済み:registered
-	%登録-済み~list:registered observer list
 	%文字列:string
 	%およそ直前の同胞:viablePreviousSibling
 	%およそ直後の同胞:viableNextSibling
 	%O:-
 	%O:set
 	%~ID:-
-	%通知-集合:notifySet
+	%通知-~list:notifyList
 	%記録~群:records
 	%種別:type
 	%有関係~観測器~群:interestedObservers
@@ -960,6 +962,7 @@ CDATAsec:CDATA section::CDATA 節::CDATA セクション
 
 	直前の:previous
 	直後の:next
+	次回に:next time
 	`required^c を伴う:required
 	調整-済み:-adjusted
 	渡-:pass
@@ -1792,15 +1795,20 @@ cR.視野~付き文書~集合:~HEcustom#scoped-document-set
 ~node群を~nodeに変換する:#convert-nodes-into-a-node
 
 mo.~callback:#concept-mo-callback
+mo.作成~index:#mutationobserver-creation-index
 mo.~node~list:#mutationobserver-node-list
+mo.一過な~node集合:#mutationobserver-transient-node-set
 mo.記録~queue:#concept-mo-queue
 
-変異~観測器の小taskは~queueされたか:#mutation-observer-compound-microtask-queued-flag
+変異~観測器 小taskは~queueされたか:#mutation-observer-compound-microtask-queued-flag
 変異~観測器 小taskを~queueする:#queue-a-mutation-observer-compound-microtask
 変異~観測器に通知する:#notify-mutation-observers
+変異~観測器~counter:#mutation-observer-counter
+一過な変異~観測器たちを追加する:#add-transient-registered-observers
+一過な変異~観測器たちを除去する:#remove-transient-registered-observers
 
 登録-済み観測器:#registered-observer
-一時~登録-済み観測器:#transient-registered-observer
+一過な登録-済み観測器:#transient-registered-observer
 処理待ち変異~観測器~群:#mutation-observer-list
 登録-済み観測器~list:#registered-observer-list
 
@@ -1899,6 +1907,7 @@ set.置換する:~INFRA#set-replace
 挿入する:~INFRA#list-insert
 置換する:~INFRA#list-replace
 拡張する:~INFRA#list-extend
+~listを昇順に~sortする:~INFRA#list-sort-in-ascending-order
 	~INFRA#list-contain
 ~queue:~INFRA#queue
 ~enqueueする:~INFRA#queue-enqueue
@@ -1914,7 +1923,7 @@ map.空:~INFRA#map-is-empty
 構造体:~INFRA#struct
 ~tuple:~INFRA#tuple
 	list.~EACH:~INFRA#list-iterate
-	list.~CONTINUE:~INFRA#iteration-continue
+	~CONTINUE:~INFRA#iteration-continue
 	list.包含-:~INFRA#list-contain
 	list.~IN:~INFRA#list-contain
 	list.~NIN:~INFRA#list-contain
@@ -6967,7 +6976,6 @@ To signal abort on an AbortController controller with an optional reason, signal
 </p>
 </div>
 
-
 		</section>
 		<section id="interface-AbortSignal">
 <h3 title="Interface AbortSignal">3.2. ^@AbortSignal ~interface</h3>
@@ -8901,7 +8909,7 @@ To signal a slot change, for a slot slot:
 Append slot to slot’s relevant agent’s signal slots.
 </li>
 	<li>
-`変異~観測器 小taskを~queueする$
+`変異~観測器 小taskを~queueする$()
 ◎
 Queue a mutation observer microtask.
 </li>
@@ -10093,6 +10101,11 @@ Run assign slottables for a tree with node.
 		</ol>
 	</li>
 	<li>
+`一過な変異~観測器たちを追加する$( %~node, %旧-親 )
+◎
+Add transient registered observers given node and oldParent.
+</li>
+	<li>
 <p>
 ~IF［
 %子 ~NEQ ~NULL
@@ -10623,28 +10636,9 @@ If descendant is custom and isParentConnected is true, then enqueue a custom ele
 		</ol>
 	</li>
 	<li>
-%親 の
-~EACH( `広義-先祖$ %広義-先祖 )
-に対し
-⇒
-%広義-先祖 の`登録-済み観測器~list$を成す
-~EACH( %登録-済み )
-に対し
-⇒
-~IF［
-%登録-済み の`~option群$ob[ "$MutationObserverInit.subtree" ] ~EQ ~T
-］
-⇒
-%~node の`登録-済み観測器~list$に 次を`付加する$
-⇒
-新たな`一時~登録-済み観測器$
-— その
-⇒＃
-`観測器$ob ~SET %登録-済み の`観測器$ob,
-`~option群$ob ~SET %登録-済み の`~option群$ob,
-`~source$ob ~SET %登録-済み
+`一過な変異~観測器たちを追加する$( %~node, %親 )
 ◎
-For each inclusive ancestor inclusiveAncestor of parent, and then for each registered of inclusiveAncestor’s registered observer list, if registered’s options["subtree"] is true, then append a new transient registered observer whose observer is registered’s observer, options is registered’s options, and source is registered to node’s registered observer list.
+Add transient registered observers given node and parent.
 </li>
 	<li>
 ~IF［
@@ -11819,7 +11813,7 @@ or null if there is no such element.
 ↓</p>
 <ul>
 	<li>
-`変異~観測器の小taskは~queueされたか@
+`変異~観測器 小taskは~queueされたか@
 ⇒
 ある真偽値
 — 初期~時は ~F とする。
@@ -11834,6 +11828,14 @@ $MutationObserver ~objたちが成す`有順序~集合$
 ◎
 Each similar-origin window agent also has pending mutation observers (a set of zero or more MutationObserver objects), which is initially empty.
 </li>
+	<li>
+`変異~観測器~counter@
+⇒
+ある負でない整数
+— 初期~時は 0 とする。
+◎
+Each similar-origin window agent also has a mutation observer counter (a number), which is initially 0.
+</li>
 </ul>
 
 <div class="algo">
@@ -11846,7 +11848,7 @@ To queue a mutation observer microtask:
 <ol>
 	<li>
 ~IF［
-`~surrounding~agent$の`変異~観測器の小taskは~queueされたか$ ~EQ ~T
+`~surrounding~agent$の`変異~観測器 小taskは~queueされたか$ ~EQ ~T
 ］
 ⇒
 ~RET
@@ -11854,7 +11856,7 @@ To queue a mutation observer microtask:
 If the surrounding agent’s mutation observer microtask queued is true, then return.
 </li>
 	<li>
-`~surrounding~agent$の`変異~観測器の小taskは~queueされたか$ ~SET ~T
+`~surrounding~agent$の`変異~観測器 小taskは~queueされたか$ ~SET ~T
 ◎
 Set the surrounding agent’s mutation observer microtask queued to true.
 </li>
@@ -11875,15 +11877,30 @@ To notify mutation observers:
 </p>
 <ol>
 	<li>
-`~surrounding~agent$の`変異~観測器の小taskは~queueされたか$ ~SET ~F
+`~surrounding~agent$の`変異~観測器 小taskは~queueされたか$ ~SET ~F
 ◎
 Set the surrounding agent’s mutation observer microtask queued to false.
 </li>
 	<li>
-%通知-集合 ~LET `~surrounding~agent$の`処理待ち変異~観測器~群$を`~cloneする$
+<p>
+%通知-~list ~LET `~listを昇順に~sortする$( `~surrounding~agent$の`処理待ち変異~観測器~群$, 次の手続き )
 ◎
-Let notifySet be a clone of the surrounding agent’s pending mutation observers.
-</li>
+Let notifyList be the result of sorting the surrounding agent’s pending mutation observers in ascending order,＼
+</p>
+
+<div class="algo">
+手続きは、
+所与の
+( %a, %b )
+に対し
+⇒
+~RET ~IS［
+%a の`作成~index$mo ~LT %b の`作成~index$mo
+］
+◎
+with a being less than b if a’s creation index is less than b’s creation index.
+</div>
+	</li>
 	<li>
 `~surrounding~agent$の`処理待ち変異~観測器~群$を`空にする$
 ◎
@@ -11901,11 +11918,11 @@ Empty the surrounding agent’s signal slots.
 </li>
 	<li>
 <p>
-%通知-集合 を成す
+%通知-~list を成す
 ~EACH( %観測器 )
 に対し：
 ◎
-For each mo of notifySet:
+For each mo of notifyList:
 </p>
 		<ol>
 			<li>
@@ -11919,16 +11936,9 @@ Let records be a clone of mo’s record queue.
 Empty mo’s record queue.
 </li>
 			<li>
-%観測器 の`~node~list$moを成す
-~EACH( %~node )
-に対し
-⇒
-%~node の`登録-済み観測器~list$から 次を満たす`一時~登録-済み観測器$をすべて`除去する$
-⇒
-その`観測器$ob ~EQ %観測器
+`一過な変異~観測器たちを除去する$( %観測器 )
 ◎
-For each node of mo’s node list:＼
-remove all transient registered observers whose observer is mo from node’s registered observer list.
+Remove transient registered observers for mo.
 </li>
 			<li>
 ~IF［
@@ -11983,43 +11993,204 @@ Each node has a registered observer list (a list of zero or more registered obse
 	<li>
 `観測器@ob
 ⇒
-$MutationObserver ~obj
+ある $MutationObserver ~obj
 </li>
 	<li>
 `~option群@ob
 ⇒
-$MutationObserverInit 辞書
+ある $MutationObserverInit 辞書
 </li>
 </ul>
 ◎
 A registered observer consists of an observer (a MutationObserver object) and options (a MutationObserverInit dictionary).
 </div>
 
-<div class="p">
 <p>
-`一時~登録-済み観測器@
+`一過な登録-済み観測器@
 は、
-上述に加えて 次に挙げるものも有する，`登録-済み観測器$である：
+`登録-済み観測器$であることに加え，次に挙げるものも有する：
+◎
+A transient registered observer is a registered observer that also consists of＼
 </p>
 <ul>
 	<li>
 `~source@ob
 ⇒
-`登録-済み観測器$
+`一過な登録-済み観測器$ではない，ある`登録-済み観測器$
+◎
+a source (a registered observer that is not a transient registered observer).
 </li>
 </ul>
-◎
-A transient registered observer is a registered observer that also consists of a source (a registered observer).
-</div>
 
 <p class="note">注記：
-`一時~登録-済み観測器$は、
-所与の`~node$に対し，それが除去された後も`~node$の`子孫$における変異を追跡するために利用される
+`一過な登録-済み観測器$は、
+所与の`~node$に対し，それが［
+除去された／移動された
+］後も`~node$の`子孫$における変異を追跡するために利用される
 — これにより、
-`~node$の`親$にて $MutationObserverInit.subtree が ~T に設定されたときでも，それらの変異は失われずに済む。
+`~node$の以前の`親$に対し $MutationObserverInit.subtree が ~T に設定されたときでも，
+それらの変異は失われずに済む。
+それらは、
+次回に変異~観測器たちに通知されるとき除去される。
 ◎
-Transient registered observers are used to track mutations within a given node’s descendants after node has been removed so they do not get lost when subtree is set to true on node’s parent.
+Transient registered observers are used to track mutations within a given node’s descendants after node has been removed or moved so they do not get lost when subtree is set to true on node’s former parent. They are removed the next time mutation observers are notified.
 </p>
+
+<div class="algo">
+<p>
+`一過な変異~観測器たちを追加する@
+~algoは、
+所与の
+( `~node$ %~node, `~node$ %親 )
+に対し：
+◎
+To add transient registered observers given a node node and a node parent:
+</p>
+<ol>
+	<li>
+<p>
+%親 の`広義-先祖$たちを成す
+~EACH( %広義-先祖 )
+に対し【順序が指定されていない（`~tree順序$？）】：
+◎
+For each inclusive ancestor inclusiveAncestor of parent,＼
+</p>
+		<ol>
+			<li>
+<p>
+%広義-先祖 の`登録-済み観測器~list$を成す
+~EACH( %登録-済み )
+に対し：
+◎
+and then for each registered of inclusiveAncestor’s registered observer list:
+</p>
+				<ol>
+					<li>
+~IF［
+%登録-済み の`~option群$ob[ "$MutationObserverInit.subtree" ] ~EQ ~F
+］
+⇒
+~CONTINUE
+◎
+If registered’s options["subtree"] is false, then continue.
+</li>
+					<li>
+%観測器 ~LET %登録-済み の`観測器$ob
+◎
+Let observer be registered’s observer.
+</li>
+					<li>
+%~source ~LET %登録-済み に応じて
+⇒＃
+`一過な登録-済み観測器$であるならば %登録-済み の`~source$ob ／
+~ELSE_ %登録-済み
+◎
+Let source be registered’s source if registered is a transient registered observer; otherwise registered.
+</li>
+					<li>
+<p>
+~IF［
+%~node の`登録-済み観測器~list$を成す~itemとして ~AND↓ を満たすものが在る
+］…
+</p>
+						<ul>
+							<li>
+`一過な登録-済み観測器$である
+</li>
+							<li>
+その`~source$ob ~EQ %~source
+</li>
+						</ul>
+<p>
+…ならば
+⇒
+~CONTINUE
+</p>
+◎
+If node’s registered observer list contains a transient registered observer whose source is source, then continue.
+</li>
+					<li>
+%~node の`登録-済み観測器~list$に次を`付加する$
+⇒
+新たな`一過な登録-済み観測器$
+— その
+⇒＃
+`観測器$ob ~SET %観測器,
+`~option群$ob ~SET %~source の`~option群$ob,
+`~source$ob ~SET %~source
+◎
+Append a new transient registered observer whose observer is observer, options is source’s options, and source is source to node’s registered observer list.
+</li>
+					<li>
+%観測器 の`一過な~node集合$moに %~node への弱い参照を`付加する$set
+◎
+Append a weak reference to node to observer’s transient node set.
+</li>
+					<li>
+<p>
+`~surrounding~agent$の`処理待ち変異~観測器~群$に %観測器 を`付加する$set
+◎
+Append observer to the surrounding agent’s pending mutation observers.
+</p>
+
+<p class="note">注記：
+この段は、［
+%観測器 用に~queueされた $MutationRecord ~objは無い場合
+］でも，［
+%~node の`一過な登録-済み観測器$たち
+］が［
+次回に変異~観測器たちに通知されるとき除去される
+］ことを確保する。
+◎
+This ensures node’s transient registered observers are removed the next time mutation observers are notified, even if no MutationRecord object is queued for observer.
+</p>
+					</li>
+					<li>
+`変異~観測器 小taskを~queueする$()
+◎
+Queue a mutation observer microtask.
+</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`一過な変異~観測器たちを除去する@
+~algoは、
+所与の
+( $MutationObserver ~obj %観測器 )
+に対し：
+◎
+To remove transient registered observers for a MutationObserver object observer:
+</p>
+<ol>
+	<li>
+%観測器 の`一過な~node集合$moを成す
+~EACH( %~node )
+に対し
+⇒
+%~node の`登録-済み観測器~list$から次を満たすものを`除去する$
+⇒
+［
+`一過な登録-済み観測器$である
+］~AND［
+その`観測器$ob ~EQ %観測器
+］
+◎
+For each node of observer’s transient node set:＼
+remove all transient registered observers whose observer is observer from node’s registered observer list.
+</li>
+	<li>
+%観測器 の`一過な~node集合$moを`空にする$
+◎
+Empty observer’s transient node set.
+</li>
+</ol>
+</div>
 
 			<section id="interface-mutationobserver">
 <h4 title="Interface MutationObserver">4.3.1. ^@MutationObserver ~interface</h4>
@@ -12065,20 +12236,34 @@ Each MutationObserver object has these associated concepts:
 	<li>
 `~callback@mo
 ⇒
-~callback関数。
-~objの作成-時に設定される。
+ある~callback関数
+— 当の~objの作成-時に設定される。
 ◎
 A callback set on creation.
 </li>
 	<li>
+`作成~index@mo
+⇒
+ある負でない整数
+— 当の~objの作成-時に設定される。
+◎
+A creation index (a number) set on creation.
+</li>
+	<li>
 `~node~list@mo
 ⇒
-［
-`~node$への弱い参照
-］たちが成す`~list$
+`~node$への弱い参照たちが成す`~list$
 — 初期~時は`空$とする。
 ◎
 A node list (a list of weak references to nodes), which is initially empty.
+</li>
+	<li>
+`一過な~node集合@mo
+⇒
+`~node$への弱い参照たちが成す`有順序~集合$
+— 初期~時は空とする。
+◎
+A transient node set (a set of weak references to nodes), which is initially empty.
 </li>
 	<li>
 `記録~queue@mo
@@ -12211,12 +12396,28 @@ Empties the record queue and returns what was in there.
 <div class="algo">
 <p>
 @MutationObserver(callback)
-構築子~手続きは
-⇒
+構築子~手続きは：
+◎
+The new MutationObserver(callback) constructor steps are:
+</p>
+<ol>
+	<li>
 コレの`~callback$mo ~SET %callback
 ◎
-The new MutationObserver(callback) constructor steps are to set this’s callback to callback.
-</p>
+Set this’s callback to callback.
+</li>
+	<li>
+コレの`作成~index$mo ~SET コレに`関連な~agent$の`変異~観測器~counter$
+◎
+Set this’s creation index to this’s relevant agent’s mutation observer counter.
+</li>
+	<li>
+コレに`関連な~agent$の`変異~観測器~counter$ ~INCBY 1
+◎
+Increase this’s relevant agent’s mutation observer counter by 1.
+</li>
+</ol>
+
 </div>
 
 <div class="algo">
@@ -12307,32 +12508,62 @@ If options["characterDataOldValue"] is true and options["characterData"] is fals
 ↑</p>
 	</li>
 	<li>
-%登録-済み~list ~LET %target の`登録-済み観測器~list$内の次を満たす`登録-済み観測器$たちが成す~list
+<p>
+%登録-済み ~LET %target の`登録-済み観測器~list$内に次を満たすものは［
+在るならば それ~FN／
+無いならば ~NULL
+］
 ⇒
+［
+`一過な登録-済み観測器$でない
+］~AND［
 その`観測器$ob ~EQ コレ
+］
 ◎
-↓</li>
+Let registered be the registered observer in target’s registered observer list that is not a transient registered observer and whose observer is this, if any; otherwise null.
+</p>
+
+<p class="trans-note">【~FN
+該当するものが 1 個に限られるようになることは、
+以下の段により施行される。
+】</p>
+
+<p class="note">注記：
+%~target がコレが観測している下位tree内に在って，除去されたか移動された場合、
+%~target の`登録-済み観測器~list$は，［
+`一過な登録-済み観測器$である
+］~AND［
+その`観測器$ob ~EQ コレ
+］を満たすものも包含し得る。
+それらは、
+次回に変異~観測器たちに通知されるとき除去されるので，無視される。
+◎
+If target was in a subtree that this observes and was removed or moved, target’s registered observer list can also contain transient registered observers whose observer is this. These are ignored, as they are removed the next time mutation observers are notified.
+</p>
+	</li>
 	<li>
 <p>
-%登録-済み~list を成す
-~EACH( %登録-済み )
-に対し：
+~IF［
+%登録-済み ~NEQ ~NULL
+］：
 ◎
-For each registered of target’s registered observer list:＼
-if registered’s observer is this:
+If registered is non-null:
 </p>
 		<ol>
 			<li>
-コレの`~node~list$moを成す
+コレの`一過な~node集合$moを成す
 ~EACH( %~node )
 に対し
 ⇒
-%~node の`登録-済み観測器~list$から 次を満たす`一時~登録-済み観測器$をすべて`除去する$
+%~node の`登録-済み観測器~list$から次を満たすものを`除去する$
 ⇒
+［
+`一過な登録-済み観測器$である
+］~AND［
 その`~source$ob ~EQ %登録-済み
+］
 ◎
-For each node of this’s node list:＼
-remove all transient registered observers whose source is registered from node’s registered observer list.
+For each node of this’s transient node set: remove all transient registered observers whose source is registered from node’s registered observer list.
 </li>
 			<li>
 %登録-済み の`~option群$ob ~SET %options
@@ -12343,9 +12574,7 @@ Set registered’s options to options.
 	</li>
 	<li>
 <p>
-~IF［
-%登録-済み~list は`空$である
-］：
+~ELSE：
 ◎
 Otherwise:
 </p>
@@ -12393,6 +12622,16 @@ The disconnect() method steps are:
 ◎
 For each node of this’s node list:＼
 remove any registered observer from node’s registered observer list for which this is the observer.
+</li>
+	<li>
+`一過な変異~観測器たちを除去する$( コレ )
+◎
+Remove transient registered observers for this.
+</li>
+	<li>
+コレの`~node~list$moを`空にする$
+◎
+Empty this’s node list.
 </li>
 	<li>
 コレの`記録~queue$moを`空にする$
@@ -12473,7 +12712,7 @@ and then for each registered of node’s registered observer list:
 </p>
 				<ol>
 					<li>
-%options ~LET %登録-済み の`~option群$ob
+%~option群 ~LET %登録-済み の`~option群$ob
 ◎
 Let options be registered’s options.
 </li>
@@ -12491,7 +12730,7 @@ If none of the following are true
 ［
 %~node ~NEQ %~target
 ］~AND［
-%options[ "$subtree" ] ~EQ ~F
+%~option群[ "$subtree" ] ~EQ ~F
 ］
 ◎
 node is not target and options["subtree"] is false
@@ -12500,7 +12739,7 @@ node is not target and options["subtree"] is false
 ［
 %種別 ~EQ `attributes^l
 ］~AND［
-%options[ "$attributes" ] ~NEQ ~T
+%~option群[ "$attributes" ] ~NEQ ~T
 ］
 ◎
 type is "attributes" and options["attributes"] either does not exist or is false
@@ -12509,9 +12748,9 @@ type is "attributes" and options["attributes"] either does not exist or is false
 ［
 %種別 ~EQ `attributes^l
 ］~AND［
-%options[ "$attributeFilter" ] ~NEQ ε
+%~option群[ "$attributeFilter" ] ~NEQ ε
 ］~AND［［
-%名前 ~NIN %options[ "$attributeFilter" ]
+%名前 ~NIN %~option群[ "$attributeFilter" ]
 ］~OR［
 %~ns ~NEQ ~NULL
 ］］
@@ -12522,7 +12761,7 @@ type is "attributes", options["attributeFilter"] exists, and options["attributeF
 ［
 %種別 ~EQ `characterData^l
 ］~AND［
-%options[ "$characterData" ] ~NEQ ~T
+%~option群[ "$characterData" ] ~NEQ ~T
 ］
 ◎
 type is "characterData" and options["characterData"] either does not exist or is false
@@ -12531,7 +12770,7 @@ type is "characterData" and options["characterData"] either does not exist or is
 ［
 %種別 ~EQ `childList^l
 ］~AND［
-%options[ "$childList" ] ~EQ ~F
+%~option群[ "$childList" ] ~EQ ~F
 ］
 ◎
 type is "childList" and options["childList"] is false 
@@ -12572,7 +12811,7 @@ If either＼
 ［
 %種別 ~EQ `attributes^l
 ］~AND［
-%options[ "$attributeOldValue" ] ~EQ ~T
+%~option群[ "$attributeOldValue" ] ~EQ ~T
 ］
 ◎
 
@@ -12582,7 +12821,7 @@ type is "attributes" and options["attributeOldValue"] is true,＼
 ［
 %種別 ~EQ `characterData^l
 ］~AND［
-%options[ "$characterDataOldValue" ] ~EQ ~T
+%~option群[ "$characterDataOldValue" ] ~EQ ~T
 ］
 ◎
 or type is "characterData" and options["characterDataOldValue"] is true,＼
@@ -12600,6 +12839,15 @@ then set interestedObservers[mo] to oldValue.
 			</li>
 		</ol>
 	</li>
+	<li>
+~IF［
+%有関係~観測器~群 は`空$mapである
+］
+⇒
+~RET
+◎
+If interestedObservers is empty, then return.
+</li>
 	<li>
 <p>
 %有関係~観測器~群 を成す
@@ -12638,7 +12886,7 @@ Append observer to the surrounding agent’s pending mutation observers.
 		</ol>
 	</li>
 	<li>
-`変異~観測器 小taskを~queueする$
+`変異~観測器 小taskを~queueする$()
 ◎
 Queue a mutation observer microtask.
 </li>
@@ -16611,7 +16859,6 @@ Null or a CustomElementRegistry object registry is a global custom element regis
 この用語は、
 ~NULL にも適用-可能であることに注意。
 】</p>
-
 
 <div class="algo">
 <p>
@@ -24272,8 +24519,7 @@ END_TO_START:
 		</ul>
 	</li>
 	<li>
-~RET ［
-%この点 は %~source点 ［
+~RET %この点 は %~source点 ［
 `より前$i ならば −1 ／
 `に等しい$i ならば 0 ／
 `より後$i ならば 1
