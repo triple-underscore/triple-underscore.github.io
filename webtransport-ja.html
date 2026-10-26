@@ -196,8 +196,8 @@ return text;
 ●●options
 
 spec_title:WebTransport
-spec_date:2026-09-23
-trans_update:2026-10-01
+spec_date:2026-10-19
+trans_update:2026-10-25
 source_checked:260225
 	page_state_key:
 original_url:https://w3c.github.io/webtransport/
@@ -506,6 +506,7 @@ Headers:
 	%~commitされた~offset:committedOffset
 	%~data:data
 	%~datagram群:datagrams
+	%~datagram群:-
 	-:pullDatagramsAlgorithm
 	-:writeDatagramsAlgorithm
 	%~datagram可読~stream種別:datagramsReadableType
@@ -599,6 +600,7 @@ Headers:
 	%~header群:headers
 	%要請~header群:requestHeaders
 	%応答~header群:responseHeaders
+	%二重化~stream:duplex
 
 	●保安
 証明書:certificate::~
@@ -906,7 +908,6 @@ Exposed:~WEBIDLjs#Exposed
 SecureContext:~WEBIDLjs#SecureContext
 EnforceRange:~WEBIDLjs#EnforceRange
 NewObject:~WEBIDLjs#NewObject
-SameObject:~WEBIDLjs#SameObject
 Serializable:~HTMLcloning#serializable
 Transferable:~HTMLcloning#transferable
 Clamp:~WEBIDL#Clamp
@@ -1149,6 +1150,7 @@ sl.RequireUnreliable:#dom-webtransport-requireunreliable-slot
 sl.ResponseHeaders:#dom-webtransport-responseheaders-slot
 
 slW.OutgoingDatagramsQueue:#dom-webtransportdatagramswritable-outgoingdatagramsqueue-slot
+slW.BackpressurePromise:#dom-webtransportdatagramswritable-backpressurepromise-slot
 slW.Transport:#dom-webtransportdatagramswritable-transport-slot
 slW.SendGroup:#dom-webtransportdatagramswritable-sendgroup-slot
 slW.SendOrder:#dom-webtransportdatagramswritable-sendorder-slot
@@ -1249,6 +1251,8 @@ TW.作成する:#webtransportwriter-create
 ~datagram群を受信する:#receivedatagrams
 ~datagram群を書込む:#writedatagrams
 ~datagram群を送信する:#senddatagrams
+流出~datagram群から~dequeueする:#dequeue-outgoing-datagrams
+
 双方向~streamを~pullする:#pullbidirectionalstream
 一方向~streamを~pullする:#pullunidirectionalstream
 ~WebTransportを片付ける:#webtransport-cleanup
@@ -2001,18 +2005,23 @@ Internal Slot｜Description (non-normative)
 A queue＼
 </dd>
 	<dd>
-( 流出~datagram, 時刻印, ~promise )
+( 流出~datagram, 時刻印 )
 が成す`~tuple$たちからなる。
 ◎
-of tuples of an outgoing datagram, a timestamp and a promise＼
+of tuples of an outgoing datagram and a timestamp.
+</dd>
+
+	<dt>`BackpressurePromise@slW</dt>
+	<dd>
+ある~promise
+◎
+A promise＼
 </dd>
 	<dd>
-この~tupleを成す~promiseは、
-~datagramが［
-送信される／破棄される
-］とき解決される。
+これは、
+`OutgoingDatagramsQueue$slW が別の~datagram用に＊部屋を有さなくなったとき解決される。
 ◎
-which is resolved when the datagram is sent or discarded.
+which is resolved once [[OutgoingDatagramsQueue]] has room for another datagram.
 </dd>
 
 	<dt>`Transport@slW</dt>
@@ -2057,6 +2066,7 @@ To create a WebTransportDatagramsWritable, given a WebTransport transport, a sen
 — その
 ⇒＃
 `OutgoingDatagramsQueue$slW ~SET 新たな`~queue$,
+`BackpressurePromise$slW ~SET `解決される~promise$( `undefined^jv )
 `Transport$slW ~SET %~transport,
 `SendGroup$slW ~SET %送信-~group,
 `SendOrder$slW ~SET %送信-順序
@@ -2064,6 +2074,8 @@ To create a WebTransportDatagramsWritable, given a WebTransport transport, a sen
 Let stream be a new WebTransportDatagramsWritable, with:
 • [[OutgoingDatagramsQueue]]
 •• an empty queue
+• [[BackpressurePromise]]
+•• a promise resolved with undefined
 • [[Transport]]
 •• transport
 • [[SendGroup]]
@@ -2087,6 +2099,11 @@ Let stream be a new WebTransportDatagramsWritable, with:
 Let writeDatagramsAlgorithm be an action that runs writeDatagrams with transport and stream.
 ◎
 Set up stream with writeAlgorithm set to writeDatagramsAlgorithm.
+</li>
+	<li>
+%~transport . `Datagrams$sl . `Writables$sl に %~stream を`付加する$set
+◎
+Append stream to transport.[[Datagrams]].[[Writables]].
 </li>
 	<li>
 ~RET %~stream
@@ -2116,12 +2133,16 @@ The getter steps are:
 </dd>
 	<dd class="algo">
 <p>
-設定子~手続きは、
-`所与の値$ %値 に対し：
+設定子~手続きは：
 ◎
-The setter steps, given value, are:
+The setter steps＼
 </p>
 		<ol>
+			<li>
+%値 ~LET `所与の値$
+◎
+given value, are:
+</li>
 			<li>
 ~IF［
 %値 ~NEQ ~NULL
@@ -2194,23 +2215,20 @@ Let timestamp be a timestamp representing now.
 If data is not a BufferSource object, then return a promise rejected with a TypeError.
 </li>
 	<li>
-%~datagram群 ~LET %~transport . `Datagrams$sl
+%二重化~stream ~LET %~transport . `Datagrams$sl
 ◎
+Let duplex be transport.[[Datagrams]].
+
 Let datagrams be transport.[[Datagrams]].
 </li>
 	<li>
 ~IF［
-%~datagram群 . `OutgoingMaxDatagramSize$sl ~LT %~data . `ByteLength^sl
+%二重化~stream . `OutgoingMaxDatagramSize$sl ~LT %~data . `ByteLength^sl
 ］
 ⇒
 ~RET `解決される~promise$( `undefined^jv )
 ◎
-If datagrams.[[OutgoingMaxDatagramSize]] is less than data’s [[ByteLength]], return a promise resolved with undefined.
-</li>
-	<li>
-%~promise ~LET `新たな~promise$
-◎
-Let promise be a new promise.
+If duplex.[[OutgoingMaxDatagramSize]] is less than data’s [[ByteLength]], return a promise resolved with undefined.
 </li>
 	<li>
 %~byte列 ~LET %~data に`保持された~byte列の複製を取得する$
@@ -2218,9 +2236,9 @@ Let promise be a new promise.
 Let bytes be a copy of bytes which data represents.
 </li>
 	<li>
-%~chunk ~LET ( %~byte列, %時刻印, %~promise )
+%~chunk ~LET ( %~byte列, %時刻印 )
 ◎
-Let chunk be (bytes, timestamp, promise).
+Let chunk be (bytes, timestamp).
 </li>
 	<li>
 %可書~stream . `OutgoingDatagramsQueue$slW に %~chunk を`~enqueueする$
@@ -2229,33 +2247,102 @@ Enqueue chunk to writable.[[OutgoingDatagramsQueue]].
 </li>
 	<li>
 ~IF［
-%可書~stream . `OutgoingDatagramsQueue$slW の`~size$【！長さ】 ~LT %~datagram群 . `OutgoingMaxBufferedDatagrams$sl
+%可書~stream . `OutgoingDatagramsQueue$slW の`~size$【！長さ】 ~GTE %二重化~stream . `OutgoingMaxBufferedDatagrams$sl
 ］
 ⇒
-`~promiseを解決する$( %~promise )
+%可書~stream . `BackpressurePromise$slW ~SET `新たな~promise$
 ◎
-If the length of writable.[[OutgoingDatagramsQueue]] is less than datagrams.[[OutgoingMaxBufferedDatagrams]], then resolve promise with undefined.
+If the length of writable.[[OutgoingDatagramsQueue]] is not less than duplex.[[OutgoingMaxBufferedDatagrams]], then set writable.[[BackpressurePromise]] to a new promise.
 </li>
 	<li>
-~RET %~promise
+~RET %可書~stream . `BackpressurePromise$slW
 ◎
-Return promise.
+Return writable.[[BackpressurePromise]].
 </li>
 </ol>
 
+<p class="note">＊注記：
+~the~sinkから返された~promiseは、
+送達ではなく，
+送信-~queue内の部屋を通達する。
+それは、
+`OutgoingDatagramsQueue$slW が別の~datagram用の部屋を~hasようになり次第，解決される
+,
+~whichは
+当の送信-~queueを満杯に保つする。
+◎
+Note: The promise returned from the sink signals room in the send queue, not delivery. It resolves as soon as [[OutgoingDatagramsQueue]] has room for another datagram, which keeps that queue full.
+</p>
+
 <p class="note">注記：
 結付けられた `WritableStream$I
-【 %~datagram群 . `Writables$sl ？】は、
-`that^en ~stream【？】用に［
-`~datagram群を書込む$から返されたすべての~promise
-］が解決されたときに限り，`~datagram群を書込む$を~callする。
+【 %二重化~stream＊ . `Writables$sl ？】は、
+＊`that^en ~stream【？】用の前回の~the~previous `~datagram群を書込む$ により返された~promiseが解決されたときに限り，`~datagram群を書込む$を再び~callする。
 よって，［
-時刻印, 失効n所要時間【 %~datagram群 . `OutgoingDatagramsExpirationDuration$sl ？】
+時刻印, 失効n所要時間
+【 %二重化~stream＊ . `OutgoingDatagramsExpirationDuration$sl ／ ＊`OutgoingDatagramsQueue$slW ？】
 ］がきちんと働くのは、
 ~web開発者が `WritableStreamDefaultWriter.ready＠~STREAMS#default-writer-ready$c に気を配るときに限られる。
 ◎
-Note: The associated WritableStream calls writeDatagrams only when all the promises that have been returned by writeDatagrams for that stream have been resolved. Hence the timestamp and the expiration duration work well only when the web developer pays attention to WritableStreamDefaultWriter.ready.
+Note: The associated WritableStream calls writeDatagrams again only when the promise returned by the previous writeDatagrams for that stream has been resolved. Hence the timestamp and the expiration duration work well only when the web developer pays attention to WritableStreamDefaultWriter.ready.
 </p>
+</div>
+
+<div class="algo">
+<p>
+`流出~datagram群から~dequeueする@
+~algoは、
+所与の
+( `WebTransport$I ~obj %~transport, `WebTransportDatagramsWritable$I ~obj
+%可書~stream, %~count＊ )
+に対し，
+`~network~taskを~queueする$( %~transport, 次の手続き )
+◎
+To dequeue outgoing datagrams, given a WebTransport object transport, a WebTransportDatagramsWritable object writable and a count, queue a network task with transport to＼
+</p>
+<div>
+<p>
+手続きは：
+◎
+run these steps:
+</p>
+<ol>
+	<li>
+%~datagram群 ~LET %可書~stream . `OutgoingDatagramsQueue$slW
+◎
+↓</li>
+	<li>
+<p>
+~WHILE［
+%~count ~GT 0
+］~AND［
+%~datagram群 は`空$でない
+］：
+</p>
+		<ol>
+			<li>
+%~datagram群 から`~dequeueする$
+</li>
+			<li>
+%~count ~DECBY 1
+</li>
+		</ol>
+◎
+Let n be the minimum of count and the length of writable.[[OutgoingDatagramsQueue]].
+◎
+Repeat dequeuing writable.[[OutgoingDatagramsQueue]] n times.
+</li>
+	<li>
+~IF［
+%~datagram群 の`~size$【！長さ】 ~LT %~transport . `Datagrams$sl . `OutgoingMaxBufferedDatagrams$sl 
+］
+⇒
+`~promiseを解決する$( %可書~stream . `BackpressurePromise$slW )
+◎
+If the length of writable.[[OutgoingDatagramsQueue]] is less than transport.[[Datagrams]].[[OutgoingMaxBufferedDatagrams]], then resolve writable.[[BackpressurePromise]] with undefined.
+</li>
+</ol>
+</div>
 </div>
 
 <div class="algo">
@@ -2280,29 +2367,33 @@ the following steps:
 <ol>
 	<li>
 <p>
-%~queue ~LET %可書~stream . `OutgoingDatagramsQueue$slW の複製
+%~datagram群 ~LET %可書~stream . `OutgoingDatagramsQueue$slW を`~cloneする$＊複製
 ◎
-Let queue be a copy of writable.[[OutgoingDatagramsQueue]].
+Let datagrams be a copy of writable.[[OutgoingDatagramsQueue]].
 </p>
 
-<p class="note">注記：
-上で複製する所, および~network~taskを~queueする所は、
+<p class="note">＊注記：
+~because以下の手続きは，`並列的$に走るので
+%~datagram群 は複製である
+,
+一方で，
+%可書~stream . `OutgoingDatagramsQueue$slW に~touchするものは
+`流出~datagram群から~dequeueする$しかない~ever,
+~which
+そうするために~network~taskを~queueする。
+この複製, および ~toこの手続きを走らすために~network~taskを~queueする所は、
 最適化できる。
 ◎
-Note: The above copy, as well as the queueing of a network task to run these steps, can be optimized.
+Note: datagrams is a copy because the steps below run in parallel, whereas writable.[[OutgoingDatagramsQueue]] is only ever touched by dequeue outgoing datagrams, which queues a network task to do so. The copy, as well as the queueing of a network task to run these steps, can be optimized.
 </p>
 	</li>
 	<li>
-%~datagram群 ~LET %~transport . `Datagrams$sl
-◎
-↓</li>
-	<li>
-%最大-~size ~LET %~datagram群 . `OutgoingMaxDatagramSize$sl
+%最大-~size ~LET %~transport . `Datagrams$sl . `OutgoingMaxDatagramSize$sl
 ◎
 Let maxSize be transport.[[Datagrams]].[[OutgoingMaxDatagramSize]].
 </li>
 	<li>
-%所要時間 ~LET %~datagram群 . `OutgoingDatagramsExpirationDuration$sl
+%所要時間 ~LET %~transport . `Datagrams$sl . `OutgoingDatagramsExpirationDuration$sl
 ◎
 Let duration be transport.[[Datagrams]].[[OutgoingDatagramsExpirationDuration]].
 </li>
@@ -2315,6 +2406,13 @@ Let duration be transport.[[Datagrams]].[[OutgoingDatagramsExpirationDuration]].
 ◎
 If duration is null, then set duration to an implementation-defined value.
 </li>
+	<li>＊
+%接続されたか ~LET ~IS［
+%~transport . `State$sl ~EQ `connected^l
+］
+◎
+Let connected be true if transport.[[State]] is "connected", and false otherwise.
+</li>
 	<li class="algo">
 <p>
 この段は`並列的$に走らす：
@@ -2323,117 +2421,163 @@ Run the following steps in parallel:
 </p>
 		<ol>
 			<li>
+%~count ~LET 0
+◎
+Let count be 0.
+</li>
+			<li>
 <p>
 ~WHILE［
-%~queue は空でない
+%~datagram群 は`空$でない
 ］：
+◎
+While datagrams is not empty:
 </p>
 				<ol>
 					<li>
+( %~byte列, %時刻印 ) ~LET %~datagram群[ 0 ]
+◎
+Let bytes and timestamp be datagrams[0].
+</li>
+					<li>
 ~IF［
-%~queue[ 0 ][ 1 ] から［
-今を表現している時刻印
-］までを成す~milli秒数 ~LTE %所要時間
+%時刻印 から現~時刻までを成す~milli秒数 ~LTE %所要時間
 ］
 ⇒
 ~BREAK
+◎
+If duration milliseconds or less have passed since timestamp, then break this loop.
 </li>
 					<li>
-%~queue から`~dequeueする$【！Remove the first element】
+%~datagram群 から`~dequeueする$
+◎
+Dequeue datagrams.
 </li>
+					<li>
+%~count ~INCBY 1
+◎
+Set count to count + 1.
+</li>
+				</ol>
+			</li>
+			<li>
+<p>
+~IF［
+%~count ~GT 0
+］：
+</p>
+				<ol>
 					<li>
 <p>
-`~network~taskを~queueする$( %~transport, 次の手続き )
+＊~the~UA~MAY：
 </p>
-<div class="algo">
-手続きは
-⇒
-`~promiseを解決する$( %~promise )
-</div>
+						<ol>
+							<li>
+`流出~datagram群から~dequeueする$( %~transport, %可書~stream, %~count )
+</li>
+							<li>
+%~count ~SET 0
+</li>
+						</ol>
 					</li>
 				</ol>
 ◎
-While queue is not empty:
-• Let bytes, timestamp and promise be queue’s first element.
-• If more than duration milliseconds have passed since timestamp, then:
-•• Remove the first element from queue.
-•• Queue a network task with transport to resolve promise with undefined.
-• Otherwise, break this loop.
-</li>
-			<li>
-~IF［
-%~transport . `State$sl ~NEQ `connected^l
-］
-⇒
-~RET
-◎
-If transport.[[State]] is not "connected", then return.
+If count is greater than 0, then the user agent MAY dequeue outgoing datagrams with transport, writable and count, and if it does, set count to 0.
 </li>
 			<li>
 <p>
 ~WHILE［
-%~queue は空でない
+%接続されたか ~EQ ~T
+］~AND［
+%~datagram群 は`空$でない
 ］：
 ◎
-While queue is not empty:
+While connected is true and datagrams is not empty:
 </p>
 				<ol>
-					<li>
-( %~byte列, %時刻印, %~promise ) ~LET %~queue[ 0 ]【！’s first element】
+    				<li>
+( %~byte列, %時刻印 ) ~LET %~datagram群[ 0 ]
 ◎
-Let bytes, timestamp and promise be queue’s first element.
+Let bytes and timestamp be datagrams[0].
 </li>
 					<li>
-<p>
 ~IF［
 %~byte列 の長さ ~LTE %最大-~size
-］：
-◎
-If bytes’s length ≤ maxSize:
-</p>
-						<ol>
-							<li>
-~IF［
+］~AND［
 %~byte列 を~networkへ即時に送信することはアリでない
 ］
 ⇒
 ~BREAK
 ◎
-If it is not possible to send bytes to the network immediately, then break this loop.
+If bytes’s length ≤ maxSize and it is not possible to send bytes to the network immediately, then break this loop.
 </li>
-							<li>
-`~datagramを送信する$( %~transport . `Session$sl, %~byte列 )
-◎
-Send a datagram, with transport.[[Session]] and bytes.
-</li>
-						</ol>
-					</li>
 					<li>
-%~queue から`~dequeueする$【！Remove the first element】
+%~datagram群 から`~dequeueする$
 ◎
-Remove the first element from queue.
+Dequeue datagrams.
+</li>
+					<li>
+%~count ~INCBY 1
+◎
+Set count to count + 1.
 </li>
 					<li>
 <p>
-`~network~taskを~queueする$( %~transport, 次の手続き )
-◎
-Queue a network task with transport to＼
+＊~the~UA~MAY：
 </p>
-<div class="algo">
-手続きは
-⇒
-`~promiseを解決する$( %~promise )
+						<ol>
+							<li>
+`流出~datagram群から~dequeueする$( %~transport, %可書~stream, %~count )
+</li>
+							<li>
+%~count ~SET 0
+</li>
+						</ol>
 ◎
-resolve promise with undefined.
-</div>
-					</li>
+The user agent MAY dequeue outgoing datagrams with transport, writable and count, and if it does, set count to 0.
+</li>
+					<li>
+~IF［
+%~byte列 の長さ ~LTE %最大-~size
+］
+⇒
+`~datagramを送信する$( %~transport . `Session$sl, %~byte列 )
+◎
+If bytes’s length ≤ maxSize, then send a datagram, with transport.[[Session]] and bytes.
+</li>
 				</ol>
 			</li>
+			<li>
+~IF［
+%~count ~GT 0
+］
+⇒
+`流出~datagram群から~dequeueする$( %~transport, %可書~stream, %~count )
+◎
+If count is greater than 0, then dequeue outgoing datagrams with transport, writable and count.
+</li>
 		</ol>
 	</li>
 </ol>
 </div>
 </div>
+
+<p class="note">＊注記：
+`流出~datagram群から~dequeueする$は、
+~is
+~what
+~for~more~datagrams用に部屋を~makeするもの。
+これらの~callたちが~the~longer~batchされるほど,
+~the
+~more~the送信-~queueは~drainする
+~the
+`WritableStream$I が~is~itを~to~refillするよう依頼される前に
+。
+~batchは
+限り~as~much~as調律することが要求-~sする。
+◎
+Note: Dequeue outgoing datagrams is what makes room for more datagrams. The longer these calls are batched, the more the send queue drains before the WritableStream is asked to refill it. Batch only as much as tuning requires.
+</p>
 
 <p>
 ~UAは、
@@ -2903,12 +3047,16 @@ The getter steps are:
 </dd>
 	<dd class="algo">
 <p>
-設定子~手続きは、
-`所与の値$ %値 に対し：
+設定子~手続きは：
 ◎
-The setter steps, given value, are:
+The setter steps＼
 </p>
 		<ol>
+			<li>
+%値 ~LET `所与の値$
+◎
+given value, are:
+</li>
 			<li>
 ~IF［
 %値 ~LT 0
@@ -2970,12 +3118,16 @@ The getter steps are:
 </dd>
 	<dd class="algo">
 <p>
-設定子~手続きは、
-`所与の値$ %値 に対し：
+設定子~手続きは：
 ◎
 The setter steps, given value, are:
 </p>
 		<ol>
+			<li>
+%値 ~LET `所与の値$
+◎
+given value, are:
+</li>
 			<li>
 ~IF［
 %値 ~LT 0
@@ -3039,12 +3191,16 @@ The getter steps are:
 </dd>
 	<dd class="algo">
 <p>
-設定子~手続きは、
-`所与の値$ %値 に対し：
+設定子~手続きは：
 ◎
-The setter steps, given value, are:
+The setter steps＼
 </p>
 		<ol>
+			<li>
+%値 ~LET `所与の値$
+◎
+given value, are:
+</li>
 			<li>
 ~IF［
 %値 ~LT 1
@@ -3094,12 +3250,16 @@ The getter steps are:
 </dd>
 	<dd class="algo">
 <p>
-設定子~手続きは、
-`所与の値$ %値 に対し：
+設定子~手続きは：
 ◎
-The setter steps, given value, are:
+The setter steps,＼
 </p>
 		<ol>
+			<li>
+%値 ~LET `所与の値$
+◎
+given value, are:
+</li>
 			<li>
 ~IF［
 %値 ~LT 1
@@ -3113,6 +3273,19 @@ If value is &lt; 1, set value to 1.
 コレ . `OutgoingMaxBufferedDatagrams$sl ~SET %値
 ◎
 Set this.[[OutgoingMaxBufferedDatagrams]] to value.
+</li>
+	<li>
+コレ . `Writables$sl を成す
+~EACH( %可書~stream )
+に対し
+⇒
+~IF［
+%可書~stream . `OutgoingDatagramsQueue$slW の`~size$【！長さ】 ~LT %値
+］
+⇒
+`~promiseを解決する$( %可書~stream . `BackpressurePromise$slW )
+◎
+For each writable in this.[[Writables]], if the length of writable.[[OutgoingDatagramsQueue]] is less than value, then resolve writable.[[BackpressurePromise]] with undefined.
 </li>
 		</ol>
 	</dd>
@@ -3492,7 +3665,7 @@ interface `WebTransport@I {
   readonly attribute `WebTransportCongestionControl$I `congestionControl$mT;
   attribute [`EnforceRange$] `unsigned short$? `anticipatedConcurrentIncomingUnidirectionalStreams$mT;
   attribute [`EnforceRange$] `unsigned short$? `anticipatedConcurrentIncomingBidirectionalStreams$mT;
-  [`SameObject$] readonly attribute `Headers$I? `responseHeaders$mT;
+  readonly attribute `Headers$I? `responseHeaders$mT;
   readonly attribute DOMString `protocol$mT;
 
   readonly attribute `Promise$&lt;`WebTransportCloseInfo$I&gt; `closed$mT;
@@ -5044,7 +5217,7 @@ The getter steps are to return this’s [[AnticipatedConcurrentIncomingUnidirect
 	<dd class="algo">
 設定子~手続きは
 ⇒
-コレ . `AnticipatedConcurrentIncomingUnidirectionalStreams$sl ~SET 所与の値
+コレ . `AnticipatedConcurrentIncomingUnidirectionalStreams$sl ~SET `所与の値$
 ◎
 The setter steps, given value, are to set this’s [[AnticipatedConcurrentIncomingUnidirectionalStreams]] to value.
 </dd>
@@ -5071,7 +5244,7 @@ The getter steps are to return this’s [[AnticipatedConcurrentIncomingBidirecti
 	<dd class="algo">
 設定子~手続きは
 ⇒
-コレ . `AnticipatedConcurrentIncomingBidirectionalStreams$sl ~SET 所与の値
+コレ . `AnticipatedConcurrentIncomingBidirectionalStreams$sl ~SET `所与の値$
 ◎
 The setter steps, given value, are to set this’s [[AnticipatedConcurrentIncomingBidirectionalStreams]] to value.
 </dd>
@@ -6173,14 +6346,31 @@ Set transport.[[SendStreams]] to an empty set.
 Set transport.[[ReceiveStreams]] to an empty set.
 </li>
 	<li>
+%~transport . `Datagrams$sl . `Writables$sl ~SET 新たな`有順序~集合$
+◎
+Set transport.[[Datagrams]].[[Writables]] to an empty set.
+</li>
+	<li>
+<p>
 %流出~datagram可書~stream群 を成す
 ~EACH( %可書~stream )
-に対し
-⇒
+に対し：
+◎
+For each writable in outgoingDatagramWritables:
+</p>
+		<ol>
+			<li>
 %可書~stream . `OutgoingDatagramsQueue$slW ~SET 新たな`~queue$
 ◎
-For each writable in outgoingDatagramWritables, set writable.[[OutgoingDatagramsQueue]] to an empty queue.
+Set writable.[[OutgoingDatagramsQueue]] to an empty queue.
 </li>
+			<li>
+`~promiseを解決する$( %可書~stream . `BackpressurePromise$slW )
+◎
+Resolve writable.[[BackpressurePromise]] with undefined.
+</li>
+		</ol>
+	</li>
 	<li>
 %~transport . `Datagrams$sl . `IncomingDatagramsQueue$sl ~SET 新たな`~queue$
 ◎
@@ -7854,12 +8044,16 @@ The getter steps are:
 </dd>
 	<dd class="algo">
 <p>
-設定子~手続きは、
-`所与の値$ %値 に対し：
+設定子~手続きは：
 ◎
-The setter steps, given value, are:
+The setter steps＼
 </p>
 		<ol>
+			<li>
+%値 ~LET `所与の値$
+◎
+given value, are:
+</li>
 			<li>
 ~IF［
 %値 ~NEQ ~NULL
@@ -7893,10 +8087,9 @@ The getter steps are:
 • Return this’s [[SendOrder]].
 </dd>
 	<dd class="algo">
-設定子~手続きは、
-`所与の値$ %値 に対し
+設定子~手続きは
 ⇒
-コレ . `SendOrder$slS ~SET %値
+コレ . `SendOrder$slS ~SET `所与の値$
 ◎
 The setter steps, given value, are:
 • Set this.[[SendOrder]] to value.
@@ -12099,4 +12292,44 @@ The WebTransport interface is based on the QuicTransport interface initially des
 </p>
 
 	</section>
+
+
+
+●●
+<pre>
+流出~datagram群から~dequeueする:#dequeue-outgoing-datagrams
+複製:copy#2
+~UA:UA#2
+~MAY:MAY#2
+~T:T#1
+部屋~room:#3
+~touch:#1
+~ever:#1
+	%~count:~count
+	%接続されたか:connected
+	%時刻印:timestamp0
+~longer:#1
+~batch:#2
+~drain:#1
+埋め直す~refill:#1
+調律すること~tuning:#1
+現~時刻まで:have passed since
+</pre>
+
 </main></div>
+＊
+
+●廃
+	<dd>
+この~tupleを成す~promiseは、
+~datagramが［
+送信される／破棄される
+］とき解決される。
+◎
+which is resolved when the datagram is sent or discarded.
+</dd>
+%~promise ~LET `新たな~promise$
+
+%~queue
+%~datagram群
+%~promise
