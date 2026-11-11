@@ -1683,6 +1683,7 @@ CSSSHAPES1=副         ~/css-shapes-ja.html
 CSSSHAPES2=副         ~/css-shapes2-ja.html
 CSSSPEECH1=副         ~/css-speech-ja.html
 CSSSIZING3=副         ~/css-sizing-ja.html
+CSSSIZING4=副         ~/css-sizing4-ja.html
 CSSOM1=副             ~/cssom-ja.html
 CSSOMVIEW1=副         ~/cssom-view-ja.html
 CSSPAINTAPI1=副       ~/css-paint-api-ja.html
