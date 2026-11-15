@@ -1156,6 +1156,7 @@ CSSIMAGE5:css-images5-ja.html
 CSSINLINE:css-inline-ja.html
 CSSLIST:css-lists-ja.html
 CSSLOGICAL:css-logical-ja.html
+CSSLP:css-link-params-ja.html
 CSSMCOL:css-multicol-ja.html
 CSSNESTING:css-nesting-ja.html
 CSSNS:css-namespaces-ja.html
