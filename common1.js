@@ -1203,7 +1203,7 @@ Util.dfnInit = () => {
 		dfnMDN.style.display = 'none';
 		let href = mdn_urls[id];
 		if(!href) {
-			if( !/^propdef-/.test(id) ){ // css property
+			if( /^propdef-/.test(id) ){ // css property
 				href = `CSS/Reference/Properties/${id.slice(8)}`;
 			} else {
 				return;
