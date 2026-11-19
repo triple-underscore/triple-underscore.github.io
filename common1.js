@@ -1201,10 +1201,16 @@ Util.dfnInit = () => {
 	const setLinkForMDN = (id) => {
 		// MDNリンク先を設定
 		dfnMDN.style.display = 'none';
-		const href = mdn_urls[id];
-		if(!href) return;
+		let href = mdn_urls[id];
+		if(!href) {
+			if( !/^propdef-/.test(id) ){ // css property
+				href = `CSS/Reference/Properties/${id.slice(8)}`;
+			} else {
+				return;
+			}
+		}
 		dfnMDN.href = `https://developer.mozilla.org/en-US/docs/Web/${href}`;
-//		dfnMDN.href = `https://developer.mozilla.org/docs/Web/${href}`;
+//		`https://developer.mozilla.org/docs/Web/${href}`;
 		dfnMDN.style.display = '';
 	}
 
