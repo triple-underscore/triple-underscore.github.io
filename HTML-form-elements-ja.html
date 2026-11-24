@@ -158,8 +158,8 @@ return text;
 
 ●●options
 
-spec_date:2026-11-09
-trans_update:2025-11-19
+spec_date:2026-11-12
+trans_update:2025-11-24
 source_checked:260625
 page_state_key:HTML
 spec_status:LS
@@ -706,16 +706,15 @@ san.未分類:~HTMLdynamic#sanitizer-uncategorized
 	!select
 !select.表示~size:#concept-select-size
 !select.~toggle:#concept-select-toggle
-
+~selectedcontent_eの更新は処理待ちか:#select-pending-selectedcontent-update
 ~select_eから~option_eを選ぶ:#concept-select-pick
 ~option_e~list:#concept-select-option-list
 ~select_eの更新を通知する:#send-select-update-notifications
 仮入力~label~option_e:#placeholder-label-option
 選択状態を設定する:#selectedness-setting-algorithm
 ~select_eの選択状態を設定し直す:#reset-a-select's-selectedness
-~option_eを設定し直すよう依頼する:#ask-for-a-reset
-~option_e用の子孫~selectedcontent_e要素たちを更新する:#update-descendant-selectedcontent-elements-for-an-option
 ~select_eの子孫~selectedcontent_e要素たちを更新する:#update-a-select's-descendant-selectedcontent-elements
+~select_eの子孫~selectedcontent_e要素たちの更新を~queueする:#queue-an-update-of-a-select's-descendant-selectedcontent-elements
 ~selectedcontent_eを更新する:#update-a-selectedcontent
 ~selectedcontent_e要素の不能化状態を計算し直す:#recalculate-a-selectedcontent-element's-disabledness
 別の~option_eを~focusする:#focus-another-option
@@ -755,7 +754,7 @@ opt.値:#concept-option-value
 
 	!selectedcontent
 !selectedcontent.不能化されたか:#selectedcontent-disabled
-
+!selectedcontent.~cacheされた~select_e:#selectedcontent-cached-select
 ~selectedcontent_eを~clearする:#clear-a-selectedcontent
 ~option_eを~selectedcontent_eの中へ~cloneする:#clone-an-option-into-a-selectedcontent
 
@@ -1006,6 +1005,7 @@ open:
 factory::::ファクトリ
 持続-:persist:~
 不能化状態:disabledness:~
+処理待ち:pending::~
 
 	設定し直す:reset
 	最新:up to date
@@ -1075,6 +1075,7 @@ factory::::ファクトリ
 	%可能化された最初の~option_e:firstEnabledOption
 	%選択された最後の~option_e:lastSelectedOption
 	%不能化されるか:-
+	%不能化されたか:wasDisabled
 
 	●状態／妥当性
 check::::チェック
@@ -5564,44 +5565,6 @@ To get the list of options given a select element select:
 
 <div class="algo">
 <p>
-`~option_eを設定し直すよう依頼する@
-~algoは、
-所与の
-( `option$e 要素 %~option_e )
-に対し：
-◎
-To ask for a reset given an option element option:
-</p>
-<ol>
-	<li>
-~select_e ~LET %~option_e の`~cacheされた最も近い先祖~select_e要素$
-◎
-Let select be option's cached nearest ancestor select element.
-</li>
-	<li>
-~IF［
-~select_e ~EQ ~NULL
-］
-⇒
-~RET
-◎
-If select is null, then return.
-</li>
-	<li>
-`選択状態を設定する$( ~select_e )
-◎
-Run the selectedness setting algorithm given select.
-</li>
-	<li>
-`~select_eの子孫~selectedcontent_e要素たちを更新する$( ~select_e )
-◎
-Update a select's descendant selectedcontent elements given select.
-</li>
-</ol>
-</div>
-
-<div class="algo">
-<p>
 `選択状態を設定する@
 ~algoは、
 所与の
@@ -5727,6 +5690,88 @@ Return hasChanged.
 </li>
 </ol>
 </div>
+
+<p>
+各 `select$e 要素は、
+`~selectedcontent_eの更新は処理待ちか@
+を有する
+— それは、
+真偽値であり，初期~時は ~F とする。
+◎
+Each select element has a boolean pending selectedcontent update, initially false.
+</p>
+
+<div class="algo">
+<p>
+`~select_eの子孫~selectedcontent_e要素たちの更新を~queueする@
+~algoは、
+所与の
+( `select$e 要素 %~select_e )
+に対し：
+◎
+To queue an update of a select's descendant selectedcontent elements given a select element select:
+</p>
+<ol>
+	<li>
+~IF［
+%~select_e の`~selectedcontent_eの更新は処理待ちか$ ~EQ ~T
+］~OR［
+%~select_e の`子孫$である `selectedcontent$e 要素は無い
+］
+⇒
+~RET
+◎
+If select's pending selectedcontent update is true or select has no descendant selectedcontent elements, then return.
+</li>
+	<li>
+%~select_e の`~selectedcontent_eの更新は処理待ちか$ ~SET ~T
+◎
+Set select's pending selectedcontent update to true.
+</li>
+	<li>
+<p>
+`小taskを~queueする$( 次の手続き )
+◎
+Queue a microtask to run＼
+</p>
+
+<div class="algo">
+<p>
+手続きは：
+◎
+these steps:
+</p>
+		<ol>
+			<li>
+~IF［
+%~select_e の`~selectedcontent_eの更新は処理待ちか$ ~EQ ~F
+］
+⇒
+~RET
+◎
+If select's pending selectedcontent update is false, then return.
+</li>
+			<li>
+`~select_eの子孫~selectedcontent_e要素たちを更新する$( %~select_e )
+◎
+Update a select's descendant selectedcontent elements given select.
+</li>
+		</ol>
+</div>
+	</li>
+</ol>
+
+<p class="note">
+この小taskは、
+その間【それが走るまでの間】に
+%~select_e の子孫である `selectedcontent$e 要素が
+— 例： `option$e 用の`~HTML要素~接続~後の手続き$により —
+更新された場合には，何もしない。
+◎
+The microtask does nothing if select's descendant selectedcontent elements are updated in the meantime, e.g., by the option HTML element post-connection steps.
+</p>
+</div>
+
 
 <div class="algo">
 <p>
@@ -6870,15 +6915,15 @@ The disabled attribute is a boolean attribute and can be used to disable a group
 属性が［
 追加された／除去された
 ］ときは、
-次を遂行するモノトスル：
+次を走らすモノトスル：
 ◎
-Whenever an optgroup element's disabled attribute is added or removed, then:
+Whenever an optgroup element optgroup's disabled attribute is added or removed, run these steps:
 </p>
 <ol>
 	<li>
 %~select_e ~LET `最も近い先祖~select_eを取得する$( %~optgroup_e )
 ◎
-Let select be the optgroup element's nearest ancestor select.
+Let select be optgroup's nearest ancestor select.
 </li>
 	<li>
 ~IF［
@@ -7250,15 +7295,15 @@ Return false.
 `option$e 要素 %~option_e の ``disabled$a 属性が［
 追加された／除去された
 ］ときは、
-次を遂行するモノトスル：
+次を走らすモノトスル：
 ◎
-Whenever an option element's disabled attribute is added or removed, then:
+Whenever an option element option's disabled attribute is added or removed, run these steps:
 </p>
 <ol>
 	<li>
 %~select_e ~LET %~option_e の`~cacheされた最も近い先祖~select_e要素$
 ◎
-Let select be the option element's cached nearest ancestor select element.
+Let select be option's cached nearest ancestor select element.
 </li>
 	<li>
 ~IF［
@@ -7414,9 +7459,9 @@ The selectedness of an option element is a boolean state, initially false. Excep
 `option$e 要素 %~option_e の ``selected$a 属性が［
 追加された／除去された
 ］ときは、
-次を遂行するモノトスル：
+次を走らすモノトスル：
 ◎
-Whenever an option element option's selected attribute is added or removed:
+Whenever an option element option's selected attribute is added or removed, run these steps:
 </p>
 <ol>
 	<li>
@@ -7634,64 +7679,72 @@ Return result.
 `option$e 用の`~HTML要素~挿入-時の手続き$は、
 所与の
 ( %挿入された~option_e )
-に対し
-⇒
-`~option_eに最も近い先祖~select_eを更新する$( %挿入された~option_e )
-◎
-The option HTML element insertion steps, given insertedOption, are to update an option's nearest ancestor select given insertedOption.
-</p>
-
-<p class="note">注記：
-返される `select$e 要素たちは、
-ここでは，意図的に無視される。
-`selectedcontent$e に対する更新は、
-代わりに， `option$e 用の`~HTML要素~接続~後の手続き$により遂行される
-— それは、
-当の~treeが一貫した状態になったとき走ることになる。
-◎
-The returned select elements are intentionally ignored here. Any selectedcontent update is instead performed by the option HTML element post-connection steps, which run once the tree is in a consistent state.
-</p>
-</div>
-
-<div class="algo">
-<p>
-`option$e 用の`~HTML要素~接続~後の手続き$は、
-所与の
-( %挿入された~option_e )
-に対し
-⇒
-`~option_e用の子孫~selectedcontent_e要素たちを更新する$( %挿入された~option_e )
-◎
-The option HTML element post-connection steps, given insertedOption, are to update descendant selectedcontent elements for an option given insertedOption.
-</p>
-</div>
-
-<div class="algo">
-<p>
-`~option_e用の子孫~selectedcontent_e要素たちを更新する@
-~algoは、
-所与の
-( `option$e 要素 %~option_e )
 に対し：
 ◎
-To update descendant selectedcontent elements for an option, given an option element option:
+The option HTML element insertion steps, given insertedOption, are:
 </p>
 <ol>
 	<li>
-%~select_e ~LET %~option_e の`~cacheされた最も近い先祖~select_e要素$
+%~select_e群 ~LET `~option_eに最も近い先祖~select_eを更新する$( %挿入された~option_e )
 ◎
-Let select be option's cached nearest ancestor select element.
+Let selects be the result of update an option's nearest ancestor select given insertedOption.
+</li>
+	<li>
+<p>
+~IF［
+%挿入された~option_e は`接続されて$いない
+］
+⇒
+~RET
+◎
+If insertedOption is not connected, then return.
+</p>
+
+<p class="note">注記：
+`selectedcontent$e 要素と同じく、
+`接続されて$いない `option$e 要素を挿入しても，
+`selectedcontent$e 要素たちが更新されることはない。
+◎
+As with selectedcontent elements, inserting an option element that is not connected does not update any selectedcontent elements.
+</p>
+	</li>
+	<li>
+%~select_e群 を成す
+~EACH( %~select_e )
+に対し
+⇒
+`~select_eの子孫~selectedcontent_e要素たちの更新を~queueする$( %~select_e )
+◎
+For each select of selects: queue an update of a select's descendant selectedcontent elements given select.
+</li>
+</ol>
+</div>
+
+<div class="algo">
+<p>
+`option$e 要素~用の`~HTML要素~接続~後の手続き$は、
+所与の
+( %挿入された~option_e )
+に対し：
+◎
+The option HTML element post-connection steps, given insertedOption, are:
+</p>
+<ol>
+	<li>
+%~select_e ~LET %挿入された~option_e の`~cacheされた最も近い先祖~select_e要素$
+◎
+Let select be insertedOption's cached nearest ancestor select element.
 </li>
 	<li>
 ~IF［
 %~select_e ~EQ ~NULL
 ］~OR［
-%~option_e の`選択状態$opt ~EQ ~F
+%~select_e の`~selectedcontent_eの更新は処理待ちか$ ~EQ ~F
 ］
 ⇒
 ~RET
 ◎
-If select is null or option's selectedness is false, then return.
+If select is null or select's pending selectedcontent update is false, then return.
 </li>
 	<li>
 `~select_eの子孫~selectedcontent_e要素たちを更新する$( %~select_e )
@@ -7699,6 +7752,20 @@ If select is null or option's selectedness is false, then return.
 Update a select's descendant selectedcontent elements given select.
 </li>
 </ol>
+
+<p class="note">注記：
+更新は、
+`option$e 用の`~HTML要素~挿入-時の手続き$ではなく，ここで起こる
+— 当の~tree【を成す要素たち】が一貫した状態になるよう。
+%挿入された~option_e の`選択状態$optではなく，
+%~select_e の`~selectedcontent_eの更新は処理待ちか$を検査することは、
+次を意味する
+⇒＃
+更新は， %挿入された~option_e が別の `option$e 要素を選択させるときにも起こる。
+複数の `option$e 要素が一緒に挿入されたときでも，更新は 1 回しか起こらない。
+◎
+The update happens here rather than in the option HTML element insertion steps, as the tree is then in a consistent state. Checking select's pending selectedcontent update rather than insertedOption's selectedness means it also happens when insertedOption causes another option element to become selected, and only once when multiple option elements are inserted together.
+</p>
 </div>
 
 <div class="algo">
@@ -7717,21 +7784,13 @@ The option HTML element removing steps, given removedNode, isSubtreeRoot, and ol
 Let selects be the result of update an option's nearest ancestor select given removedNode.
 </li>
 	<li>
-<p>
 %~select_e群 を成す
 ~EACH( %~select_e )
 に対し
 ⇒
-`小taskを~queueする$( 次の手続き )
-</p>
-
-<div class="algo">
-手続きは
-⇒
-`~select_eの子孫~selectedcontent_e要素たちを更新する$( %~select_e )
-</div>
+`~select_eの子孫~selectedcontent_e要素たちの更新を~queueする$( %~select_e )
 ◎
-For each select of selects: queue a microtask to update a select's descendant selectedcontent elements given select.
+For each select of selects: queue an update of a select's descendant selectedcontent elements given select.
 </li>
 </ol>
 </div>
@@ -7752,21 +7811,13 @@ The option HTML element moving steps, given movedNode, isSubtreeRoot, and oldAnc
 Let selects be the result of update an option's nearest ancestor select given movedNode.
 </li>
 	<li>
-<p>
 %~select_e群 を成す
 ~EACH( %~select_e )
 に対し
 ⇒
-`小taskを~queueする$( 次の手続き )
-</p>
-
-<div class="algo">
-手続きは
-⇒
-`~select_eの子孫~selectedcontent_e要素たちを更新する$( %~select_e )
-</div>
+`~select_eの子孫~selectedcontent_e要素たちの更新を~queueする$( %~select_e )
 ◎
-For each select of selects: queue a microtask to update a select's descendant selectedcontent elements given select.
+For each select of selects: queue an update of a select's descendant selectedcontent elements given select.
 </li>
 </ol>
 </div>
@@ -7903,14 +7954,37 @@ Set select's select fallback button text to text.
 </div>
 
 <div class="algo">
+<p>
 `option$e 要素 %~option_e が［
 `~HTML構文解析器$／`~XML構文解析器$
 ］の`~open要素~stack$から~popされたときは、
-次を遂行するモノトスル
-⇒
-`~option_e用の子孫~selectedcontent_e要素たちを更新する$( %~option_e )
+次を走らすモノトスル：
 ◎
-When an option element option is popped off the stack of open elements of an HTML parser or XML parser, update descendant selectedcontent elements for an option given option.
+When an option element option is popped off the stack of open elements of an HTML parser or XML parser, run these steps:
+</p>
+<ol>
+	<li>
+%~select_e ~LET %~option_e の`~cacheされた最も近い先祖~select_e要素$
+◎
+Let select be option's cached nearest ancestor select element.
+</li>
+	<li>
+~IF［
+%~select_e ~EQ ~NULL
+］~OR［
+%~option_e の`選択状態$opt ~EQ ~F
+］
+⇒
+~RET
+◎
+If select is null or option's selectedness is false, then return.
+</li>
+	<li>
+`~select_eの子孫~selectedcontent_e要素たちを更新する$( %~select_e )
+◎
+Update a select's descendant selectedcontent elements given select.
+</li>
+</ol>
 </div>
 
 <dl class="domintro">
@@ -8023,7 +8097,7 @@ The value getter steps are to return this's value.
 ⇒
 ~RET コレの`選択状態$opt
 ◎
-The selected getter steps are to return true if this's selectedness is true, and false otherwise.
+The selected getter steps are to return this's selectedness.
 </li>
 	<li class="algo">
 <p>
@@ -8043,9 +8117,23 @@ Set this's selectedness to the given value.
 Set this's dirtiness to true.
 </li>
 			<li>
-`~option_eを設定し直すよう依頼する$( コレ )
+%~select_e ~LET コレの`~cacheされた最も近い先祖~select_e要素$
 ◎
-Ask for a reset given this.
+Let select be this's cached nearest ancestor select element.
+</li>
+			<li>
+~IF［
+%~select_e ~EQ ~NULL
+］
+⇒
+~RET
+◎
+If select is null, then return.
+</li>
+			<li>
+`~select_eの選択状態を設定し直す$( %~select_e, ~T )
+◎
+Reset a select's selectedness given select and true.
 </li>
 		</ol>
 	</li>
@@ -11615,12 +11703,39 @@ The option element's label attribute can be used to render a visible label for t
 
 <p>
 各 `selectedcontent$e 要素は、
-``不能化されたか@
-を有する
-— それは、
-真偽値であり，初期~時は ~F とする。
+次に挙げるものを有する：
 ◎
-Every selectedcontent element has a boolean disabled, which is initially false.
+Every selectedcontent element has＼
+</p>
+<ul>
+	<li>
+``不能化されたか@
+⇒
+真偽値
+— 初期~時は ~F とする。
+◎
+a boolean disabled, which is initially false,＼
+</li>
+	<li>
+``~cacheされた~select_e@
+⇒
+~NULL／ある `select$e 要素
+— 初期~時は ~NULL とする。
+◎
+and a cached select, which is a select element or null, initially null.
+</li>
+</ul>
+
+<p class="note">注記：
+`selectedcontent$e 要素の［
+``不能化されたか$, ``~cacheされた~select_e$
+］は、［
+当の要素か，そのいずれかの先祖
+］が［
+挿入された／除去された／移動された
+］ときに更新される。
+◎
+A selectedcontent element's disabled and cached select are updated whenever it or one of its ancestors is inserted, removed, or moved.
 </p>
 
 <div class="algo">
@@ -11634,6 +11749,11 @@ Every selectedcontent element has a boolean disabled, which is initially false.
 To update a select's descendant selectedcontent elements given a select element select:
 </p>
 <ol>
+	<li>
+%~select_e の`~selectedcontent_eの更新は処理待ちか$ ~SET ~F
+◎
+Set select's pending selectedcontent update to false.
+</li>
 	<li>
 ~IF［
 %~select_e は `multiple$a 属性を有する
@@ -11808,28 +11928,24 @@ To clear a selectedcontent given a selectedcontent element selectedcontent:
 `selectedcontent$e 用の`~HTML要素~挿入-時の手続き$は、
 所与の
 ( %~selectedcontent_e )
-に対し
-⇒
-`~selectedcontent_e要素の不能化状態を計算し直す$( %~selectedcontent_e )
-◎
-The selectedcontent HTML element insertion steps, given selectedcontent, are to recalculate a selectedcontent element's disabledness given selectedcontent.
-</p>
-</div>
-
-<div class="algo">
-<p>
-`selectedcontent$e 用の`~HTML要素~接続~後の手続き$は、
-所与の
-( %~selectedcontent_e )
 に対し：
 ◎
-The selectedcontent HTML element post-connection steps, given selectedcontent, are:
+The selectedcontent HTML element insertion steps, given selectedcontent, are:
 </p>
 <ol>
 	<li>
 %~select_e ~LET `~selectedcontent_e要素の不能化状態を計算し直す$( %~selectedcontent_e )
 ◎
 Let select be the result of recalculate a selectedcontent element's disabledness given selectedcontent.
+</li>
+	<li>
+~IF［
+%~selectedcontent_e は`接続されて$いない
+］
+⇒
+~RET
+◎
+If selectedcontent is not connected, then return.
 </li>
 	<li>
 ~IF［
@@ -11845,11 +11961,67 @@ Let select be the result of recalculate a selectedcontent element's disabledness
 If selectedcontent's disabled is true, select is null, or select has the multiple attribute, then return.
 </li>
 	<li>
-`~selectedcontent_eを更新する$( %~select_e, %~selectedcontent_e )
+`~select_eの子孫~selectedcontent_e要素たちの更新を~queueする$( %~select_e )
 ◎
-Update a selectedcontent given select and selectedcontent.
+Queue an update of a select's descendant selectedcontent elements given select.
 </li>
 </ol>
+</div>
+
+<div class="algo">
+<p>
+`selectedcontent$e 用の`~HTML要素~接続~後の手続き$は、
+所与の
+( %~selectedcontent_e )
+に対し：
+◎
+The selectedcontent HTML element post-connection steps, given selectedcontent, are:
+</p>
+<ol>
+	<li>
+%~select_e ~LET %~selectedcontent_e の``~cacheされた~select_e$
+◎
+Let select be selectedcontent's cached select.
+</li>
+	<li>
+~IF［
+%~select_e ~EQ ~NULL
+~OR
+%~select_e の`~selectedcontent_eの更新は処理待ちか$ ~EQ ~F
+］
+⇒
+~RET
+◎
+If select is null or select's pending selectedcontent update is false, then return.
+</li>
+	<li>
+`~select_eの子孫~selectedcontent_e要素たちを更新する$( %~select_e )
+◎
+Update a select's descendant selectedcontent elements given select.
+</li>
+</ol>
+</div>
+
+<p class="note">注記：
+`option$e 要素と `selectedcontent$e 要素が %~select_e の中へ一緒~挿入されたときは、
+それら用の`~HTML要素~接続~後の手続き$のうち最初に走ったものが，
+`処理待ち＠#select-pending-selectedcontent-update$な~selectedcontent_eの更新を遂行する
+— 他のものは何もしない。
+◎
+When option and selectedcontent elements are inserted into select together, whichever of their HTML element post-connection steps runs first performs select's pending selectedcontent update, and the others do nothing.
+</p>
+
+<div class="algo">
+<p>
+`selectedcontent$e 要素~用の`~HTML要素~除去-時の手続き$は、
+所与の
+( %除去された~node, %下位treeの根か, %旧-先祖 )
+に対し
+⇒
+`~selectedcontent_e要素の不能化状態を計算し直す$( %除去された~node )
+◎
+The selectedcontent HTML element removing steps, given removedNode, isSubtreeRoot, and oldAncestor, are to recalculate a selectedcontent element's disabledness given removedNode.
+</p>
 </div>
 
 <div class="algo">
@@ -11862,6 +12034,16 @@ Update a selectedcontent given select and selectedcontent.
 The selectedcontent HTML element moving steps, given movedNode, isSubtreeRoot, and oldAncestor, are:
 </p>
 <ol>
+	<li>
+%旧-~select_e ~LET %移動された~node の``~cacheされた~select_e$
+◎
+Let oldSelect be movedNode's cached select.
+</li>
+	<li>
+%不能化されたか ~LET %移動された~node の``不能化されたか$
+◎
+Let wasDisabled be movedNode's disabled.
+</li>
 	<li>
 %~select_e ~LET `~selectedcontent_e要素の不能化状態を計算し直す$( %移動された~node )
 ◎
@@ -11882,16 +12064,29 @@ If movedNode's disabled is true, select is null, or select has the multiple attr
 </li>
 	<li>
 <p>
-`小taskを~queueする$( 次の手続き )
+~IF［
+%不能化されたか ~EQ ~F
+］~AND［
+%~select_e ~EQ %旧-~select_e
+］
+⇒
+~RET
+◎
+If wasDisabled is false and select is oldSelect, then return.
 </p>
 
-<div class="algo">
-手続きは
-⇒
-`~selectedcontent_eを更新する$( %~select_e, %移動された~node )
-</div>
+<p class="note">＊注記：
+一例として，
+%~select_e のある先祖を移動しても，
+どの %移動された~node が反映するかを変更しない~does~not。
 ◎
-Queue a microtask to update a selectedcontent given select and movedNode.
+For instance, moving an ancestor of select does not change what movedNode reflects.
+</p>
+	</li>
+	<li>
+`~select_eの子孫~selectedcontent_e要素たちの更新を~queueする$( %~select_e )
+◎
+Queue an update of a select's descendant selectedcontent elements given select.
 </li>
 </ol>
 </div>
@@ -11985,6 +12180,11 @@ For each ancestor of selectedcontent's ancestors, in reverse tree order:
 ◎
 ↑</li>
 	<li>
+%~selectedcontent_e の``~cacheされた~select_e$ ~SET %最も近い~select_e先祖
+◎
+Set selectedcontent's cached select to nearestSelectAncestor.
+</li>
+	<li>
 ~RET %最も近い~select_e先祖
 ◎
 Return nearestSelectAncestor.
@@ -11994,4 +12194,5 @@ Return nearestSelectAncestor.
 
 			</section>
 </main>
+
 
